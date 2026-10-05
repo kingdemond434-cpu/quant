@@ -379,7 +379,7 @@ def measure_queue() -> dict[str, Any]:
     per_hour = (win.get("testing") or {}).get("per_hour")
     if isinstance(disc, int) and isinstance(judged, int):
         out.update(status="MEASURED", depth=max(0, disc - judged), discovered=disc,
-                   judged_last_sweep=judged)
+                   depth_scope="sweep", judged_last_sweep=judged)
     deferred_build = meas.get("n_cells_deferred_build_budget")
     deferred_mem = meas.get("n_cells_deferred_memory_budget")
     out.update(
@@ -683,15 +683,25 @@ def task_time_limit_s(task: str = GAUNTLET_TASK) -> float | None:
         return None
     h, mi, s = (float(g or 0) for g in m.groups())
     total = h * 3600.0 + mi * 60.0 + s
-    return total or None
+    # PT0S means unlimited execution, not a failed measurement. Conflating the two
+    # resurrected the previous four-hour limit after the operator removed it.
+    return total
 
 
-def fresh_budget_s(limit_s: float | None) -> tuple[float | None, str]:
+def fresh_budget_s(limit_s: float | None, current_budget_s: float | None = None) -> tuple[float | None, str]:
     """The build seconds to publish, or None to leave the sealed default alone. ONE WAY: the
     figure is floored at the sealed default, so this can only ever give the judge MORE time."""
     if limit_s is None:
         return None, ("the judge task's ExecutionTimeLimit is unreadable, so the sealed "
                       f"{SEALED_FRESH_BUDGET_SEC:.0f}s build budget stands unchanged")
+    if limit_s == 0:
+        import math
+        prior = current_budget_s
+        want = (max(SEALED_FRESH_BUDGET_SEC, prior)
+                if isinstance(prior, (int, float)) and math.isfinite(prior)
+                else SEALED_FRESH_BUDGET_SEC)
+        return (want if want > SEALED_FRESH_BUDGET_SEC else None,
+                f"task execution is unlimited; retain the bounded {want:.0f}s build budget")
     want = max(SEALED_FRESH_BUDGET_SEC, limit_s * FRESH_BUDGET_SHARE_OF_LIMIT)
     if want <= SEALED_FRESH_BUDGET_SEC:
         return None, (f"{FRESH_BUDGET_SHARE_OF_LIMIT:.0%} of the task's {limit_s:.0f}s limit is "
@@ -933,7 +943,18 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
         prev = ((_read_json(OUT, {}) or {}).get("decision") or {}).get("task_time_limit_s")
         if isinstance(prev, (int, float)) and prev > 0:
             _limit, _limit_basis = float(prev), "previous_pass (schtasks query unanswered)"
-    _fresh, _fresh_why = fresh_budget_s(_limit)
+    _current_budget = None
+    if _limit == 0:
+        previous_env = _read_json(ENV_FILE, {}) or {}
+        stamp = previous_env.get("measured_on") or {}
+        if (stamp.get("cores") == box.get("cores")
+                and stamp.get("total_phys_mb") == box.get("total_phys_mb")):
+            try:
+                _current_budget = float((previous_env.get("env") or {}).get(
+                    "GAUNTLET_FRESH_BUDGET_SEC"))
+            except (TypeError, ValueError):
+                pass
+    _fresh, _fresh_why = fresh_budget_s(_limit, _current_budget)
     decision["fresh_budget_s"] = _fresh
     decision["fresh_budget_why"] = _fresh_why
     decision["task_time_limit_s"] = _limit if _limit is not None else UNMEASURED
@@ -1108,7 +1129,10 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
     t = _now(now)
     ver = _verdict_counts(t, ledger)
     cre = _creation_counts(t, registry)
-    backlog = queue.get("depth")
+    # One sweep can cover only a prefix of the full docket. Its remainder is not
+    # the institutional backlog and must never drive a claim of full clearance.
+    backlog = (UNMEASURED if queue.get("depth_scope") == "sweep"
+               else queue.get("depth"))
     backlog_source = queue.get("source", UNMEASURED)
     # THE DOCKET IS THE BACKLOG. GAUNTLET_BACKPRESSURE counts one sweep's discovered-minus-judged
     # and went unwritten from 2026-09-25, which left this ETA UNMEASURED for five days while

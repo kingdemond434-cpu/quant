@@ -152,14 +152,11 @@ def _cell_id(row: dict[str, Any]) -> str | None:
         desk = str(BASE)
         if desk not in sys.path:
             sys.path.insert(0, desk)
-        from research.frontier_identity import cell_id
+        from research.frontier_identity import docket_cell_id
     except Exception:
         return None
     try:
-        return str(cell_id({"sym": row.get("symbol") or row.get("sym"),
-                            "family": row.get("family"),
-                            "params": row.get("params") or {},
-                            "timeframe": row.get("timeframe")}))
+        return str(docket_cell_id(row))
     except Exception:
         return None
 
@@ -204,9 +201,9 @@ def judged_index(path: Path | None = None, *, now: datetime | None = None,
                  window_h: float = WINDOW_H) -> tuple[set[str], dict[str, int], dict[str, int]]:
     """(cells carrying a real verdict, judged-per-family all-time, judged-per-family in window).
 
-    A row is JUDGED when the ledger recorded a terminal gate or a pass/fail for it. A row whose
-    downstream status is a `NOT_RUN_*` deferral is NOT judged: the budget never reached the cell,
-    and calling that a verdict is what made deferral mean "never" for a third of the docket.
+    A row is JUDGED only when the ledger recorded a real terminal gate or a successful pass.
+    `UNKNOWN` is the sealed evaluator's unmeasured path, even when it carries passed=False.
+    Neither that path nor a `NOT_RUN_*` deferral clears the backlog or earns judge capacity.
     """
     seen: set[str] = set()
     total: dict[str, int] = {}
@@ -229,7 +226,7 @@ def judged_index(path: Path | None = None, *, now: datetime | None = None,
             continue
         if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
             continue
-        if row.get("passed") in (None, "None") and not row.get("terminal_gate"):
+        if row.get("passed") is not True and str(row.get("terminal_gate") or "") in ("", "UNKNOWN"):
             continue
         fam = str(row.get("family") or "")
         cell = str(row.get("cell") or "")
@@ -261,9 +258,16 @@ def measured_capacity(judged_total: dict[str, int], ledger: Path | None = None,
                 if not line:
                     continue
                 try:
-                    at = _ts(json.loads(line).get("at"))
+                    row = json.loads(line)
                 except ValueError:
                     continue
+                if not isinstance(row, dict):
+                    continue
+                if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
+                    continue
+                if row.get("passed") is not True and str(row.get("terminal_gate") or "") in ("", "UNKNOWN"):
+                    continue
+                at = _ts(row.get("at"))
                 if at is None or at.timestamp() < cutoff:
                     continue
                 key = at.strftime("%Y-%m-%dT%H")
@@ -877,10 +881,19 @@ READMIT_MAX_DAYS = 90.0
 CPCV_MIN_DAYS = 60
 
 
-def readmit_due(row: dict[str, Any], *, now: datetime | None = None) -> bool:
+def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
+                bar_sizes: dict[tuple[str, str], int] | None = None) -> bool:
     """True when a parked cell's history has grown enough, or it has waited long enough."""
     parked_bytes = int(row.get("bar_bytes") or 0)
-    bars = _bar_bytes(str(row.get("sym") or ""), str(row.get("tf") or "H1"))
+    key = (str(row.get("sym") or ""), str(row.get("tf") or "H1"))
+    # A pass measures each chart once. Never retain this snapshot across passes: new
+    # bars must re-admit every eligible sibling on the next reading.
+    if bar_sizes is None:
+        bars = _bar_bytes(*key)
+    else:
+        if key not in bar_sizes:
+            bar_sizes[key] = _bar_bytes(*key)
+        bars = bar_sizes[key]
     if parked_bytes <= 0:
         return bars > 0
     if row.get("reason") in ("build_failed", "series_exception"):
@@ -906,7 +919,9 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     target = path or UNRUNNABLE_BANK
     bank = unrunnable_bank(target)
     now_ts = _ts(at)
-    readmitted = [cell for cell, row in bank.items() if readmit_due(row, now=now_ts)]
+    bar_sizes: dict[tuple[str, str], int] = {}
+    readmitted = [cell for cell, row in bank.items()
+                  if readmit_due(row, now=now_ts, bar_sizes=bar_sizes)]
     for cell in readmitted:
         bank.pop(cell, None)
     added = 0

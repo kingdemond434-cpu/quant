@@ -26,7 +26,11 @@ def test_streamed_docket_round_trips_without_dumps(tmp_path: Path, monkeypatch) 
 
     monkeypatch.setattr(merge.json, "dumps", one_row_dumps)
     merge._write_docket_atomically(target, rows)
-    assert json.loads(target.read_text("utf-8")) == rows
+    actual = json.loads(target.read_text("utf-8"))
+    # The canonical publisher groups symbols for streaming judge consumption.
+    # Every row and parameter must survive even when physical row order changes.
+    assert sorted(actual, key=lambda r: r["symbol"]) == sorted(rows, key=lambda r: r["symbol"])
+    assert [r["symbol"] for r in actual] == ["EURUSD", "USDJPY"]
     assert list(tmp_path.glob("*.tmp")) == []
 
 

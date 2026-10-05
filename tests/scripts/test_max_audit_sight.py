@@ -51,7 +51,7 @@ def _deferred_imports() -> list[str]:
     return sorted(m for m in mods if m.split(".")[0] in {"libs", "scripts"})
 
 
-def _run_as_script(code: str) -> subprocess.CompletedProcess:
+def _run_as_script(code: str, *, timeout: float = 120) -> subprocess.CompletedProcess:
     """Execute `code` under the sys.path max_audit really gets when run as a script.
 
     Emulated by running with cwd=scripts/ and sys.path[0]=scripts/ -- NOT by importing the
@@ -59,7 +59,7 @@ def _run_as_script(code: str) -> subprocess.CompletedProcess:
     nothing.
     """
     return subprocess.run([sys.executable, "-c", code], cwd=str(ROOT / "scripts"),
-                          capture_output=True, text=True, timeout=120, check=False)
+                          capture_output=True, text=True, timeout=timeout, check=False)
 
 
 def test_root_is_on_path_under_script_invocation() -> None:
@@ -94,19 +94,35 @@ def test_deferred_import_resolves_under_script_invocation(module: str) -> None:
     )
 
 
-def test_every_registered_check_runs_without_raising() -> None:
+@pytest.mark.timeout(1800)
+def test_every_registered_check_runs_without_raising(tmp_path: Path) -> None:
     """No check may be blind. Ports the fence's own condition into a hard assertion.
 
     The fence keeps a broken check from costing the sweep; this keeps a broken check from being
     quietly acceptable. A defect the auditor cannot see is not a defect the auditor found.
     """
+    # The collection check alone has a 300-second production bound. On the live
+    # sixteen-worker Windows box, all 117 checks took 985 seconds without an
+    # exception (2026-10-04), including 463s for the bounded history audit. The
+    # former 120-second total cap could never cover
+    # those existing bounds. Scope the extra time to this complete smoke run;
+    # dependency-import probes retain their 120-second limit and every check runs.
+    # Exercise the real collection probe and its existing ratchet, with an output
+    # copy owned by this test. An observation must not rewrite the shared record.
+    record = tmp_path / "test_suite_record.json"
+    source_record = ROOT / "docs/research/test_suite_record.json"
+    if source_record.exists():
+        record.write_bytes(source_record.read_bytes())
     r = _run_as_script(
         "import runpy;m=runpy.run_path('max_audit.py', run_name='not_main');"
+        "from pathlib import Path;"
+        f"m['check_test_suite_collectable'].__globals__['TEST_RECORD']=Path({record.as_posix()!r});"
         "bad=[]\n"
         "for name,fn in m['CHECKS']:\n"
         "    try: fn([])\n"
         "    except Exception as e: bad.append(f'{name}: {type(e).__name__}: {e}')\n"
-        "print('BLIND=' + str(len(bad)));print(chr(10).join(bad))"
+        "print('BLIND=' + str(len(bad)));print(chr(10).join(bad))",
+        timeout=1500,
     )
     assert r.returncode == 0, r.stderr[-2000:]
     # SEARCH FOR THE MARKER, never assume it is line one. This assertion used to read

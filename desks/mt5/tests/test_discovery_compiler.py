@@ -236,6 +236,35 @@ def test_closure_dedupes_by_content_hash(desk, ctx):
     assert dc._hash_of(parent) not in hashes
 
 
+def test_missing_chart_is_not_silently_promoted_to_h1(ctx):
+    """A source lead without a clock is UNMEASURED, not an H1 hypothesis."""
+    parent = dc.parent_of({"discovery_id": "clockless", "symbol": "XAUUSD",
+                           "family": "asia_momentum", "session": "asia",
+                           "declared_mechanism": "session_handover",
+                           "why": "asia handover"}, ctx)
+
+    assert parent["chart"] == ""
+    assert parent["horizon"] == "unknown"
+    ok, why = dc.gate_data(parent, ctx)
+    assert ok is False and why == "data:no_chart"
+    children, _counts, _possible = dc.closure(parent, ctx)
+    assert children  # the other independent transformations still report their attempts
+    assert {child["chart"] for child in children} == {""}
+    assert {dc.gate_data(child, ctx)[1] for child in children} == {"data:no_chart"}
+
+
+def test_explicit_params_timeframe_remains_a_declared_chart(ctx):
+    """The repair preserves a clock explicitly carried in the source parameter envelope."""
+    parent = dc.parent_of({"discovery_id": "clocked", "symbol": "XAUUSD",
+                           "family": "asia_momentum", "session": "asia",
+                           "params": {"timeframe": "m15"},
+                           "declared_mechanism": "session_handover",
+                           "why": "asia handover"}, ctx)
+
+    assert parent["chart"] == "M15"
+    assert parent["horizon"] == "intrabar"
+
+
 # --------------------------------------------------------------------------- the three gates
 def test_gate_economic_refuses_an_equity_by_the_two_lane_mandate(ctx):
     ok, why = dc.gate_economic(_child(symbol="APPLE"), ctx)

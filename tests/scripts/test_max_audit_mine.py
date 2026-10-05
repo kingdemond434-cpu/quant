@@ -188,6 +188,35 @@ class TestDigUncommitted:
         m.check_dig_uncommitted(defects)
         assert defects == []
 
+    def test_git_timeout_is_unmeasured_in_an_existing_repository(self, tmp_path: Path,
+                                                               monkeypatch) -> None:
+        self._repo(tmp_path)
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+
+        def timed_out(*args, **kwargs):
+            raise subprocess.TimeoutExpired(args[0], 20)
+
+        monkeypatch.setattr(subprocess, "run", timed_out)
+        defects: list[tuple[str, str]] = []
+        m.check_dig_uncommitted(defects)
+        assert len(defects) == 1
+        assert defects[0][0] == "dig-output-unmeasured"
+        assert "UNMEASURED" in defects[0][1]
+        assert "TimeoutExpired" in defects[0][1]
+        assert str(tmp_path) in defects[0][1]
+
+    def test_git_refusal_is_unmeasured_in_an_existing_repository(self, tmp_path: Path,
+                                                               monkeypatch) -> None:
+        self._repo(tmp_path)
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs:
+                            subprocess.CompletedProcess(args[0], 128, "", "refused"))
+        defects: list[tuple[str, str]] = []
+        m.check_dig_uncommitted(defects)
+        assert len(defects) == 1
+        assert defects[0][0] == "dig-output-unmeasured"
+        assert "exit 128" in defects[0][1]
+
     def test_the_defect_names_the_tree_that_owes_the_commit(self, tmp_path: Path,
                                                             monkeypatch) -> None:
         """A basename alone is unactionable on a box running a dozen worktrees, and the way it
@@ -340,7 +369,7 @@ class TestTamperChecks:
 
     def test_ratchet_record_lives_in_a_tracked_path(self) -> None:
         # under data/* it was one `rm` from a fresh, easier bar; in docs/ a reset shows in git
-        assert "docs/research" in str(m.MINE_RATCHET)
+        assert "docs/research" in m.MINE_RATCHET.as_posix()
         assert "data/" not in str(m.MINE_RATCHET)
 
     def test_truncated_ledger_fires(self, tmp_path: Path, monkeypatch) -> None:

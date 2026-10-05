@@ -30,7 +30,7 @@ HYP = BASE / "data" / "hypotheses"
 TARGET = HYP / "external_survivors.json"
 
 
-def _write_docket_atomically(path: Path, rows: list[dict[str, Any]]) -> None:
+def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, Any]) -> None:
     """Stream the large docket without a second, multi-gigabyte JSON string.
 
     The previous ``json.dumps(rows)`` raised MemoryError on the live 1.6M-row
@@ -40,21 +40,37 @@ def _write_docket_atomically(path: Path, rows: list[dict[str, Any]]) -> None:
     fd, pending = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
-            # One serialization and one buffered write per row. ``json.dump(rows)``
-            # also streams, but its indented encoder makes millions of tiny Python
-            # writes; a compact row at a time keeps both peak RAM and wall time bounded.
-            stream.write("[\n")
-            for i, row in enumerate(rows):
-                if i:
-                    stream.write(",\n")
-                stream.write(json.dumps(row, separators=(",", ":"), default=str))
-            stream.write("\n]\n")
+            if isinstance(rows, dict):
+                # Preserve legacy envelopes and their metadata without allocating a
+                # second full-bank JSON string. The temporary file is still durable.
+                json.dump(rows, stream, default=str)
+            else:
+                # One serialization and buffered write per row avoids millions of
+                # small writes. Stable chart grouping conserves every row and the
+                # prior attention order while avoiding gate-zero frame-cache churn.
+                stream.write("[\n")
+                for i, row in enumerate(_chart_local_order(rows)):
+                    if i:
+                        stream.write(",\n")
+                    stream.write(json.dumps(row, separators=(",", ":"), default=str))
+                stream.write("\n]\n")
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(pending, path)
     finally:
         if os.path.exists(pending):
             os.unlink(pending)
+
+
+def _chart_local_order(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def key(row: dict[str, Any]) -> tuple[str, str]:
+        params = row.get("params") or {}
+        chart = str(params.get("timeframe") or "H1").upper()
+        if row.get("family") == "lvc_asia_london":
+            chart = "M5"  # the canonical judge's fixed native chart
+        return str(row.get("sym") or row.get("symbol") or ""), chart
+
+    return sorted(rows, key=key)
 
 
 #: THE STUDY BANK. Rows of a family that is BANNED FROM LIVE CAPITAL keep existing here -- they
@@ -376,6 +392,52 @@ def stamp_fresh_intake(row: dict[str, Any], source: str, now: datetime) -> dict[
     return pit_stamp(body, source, now=now)
 
 
+def recover_banked_provenance(row: dict[str, Any], *, now: datetime) -> dict[str, Any]:
+    """Give legacy rows a conservative backfill receipt, never an invented past vintage.
+
+    Complete original stamps remain authoritative. Missing/invalid receipt fields are filled
+    by the canonical PIT stamper; first_seen is research history, never availability evidence.
+    """
+    from libs.data.pit import is_stamped, stamp
+
+    if is_stamped(row):
+        return row
+    body = dict(row)
+    for key in ("available_time", "ingested_time", "source_version", "payload_hash"):
+        if not isinstance(body.get(key), str) or not body.get(key):
+            body.pop(key, None)
+    body["provenance_backfill"] = {
+        "at": now.isoformat(),
+        "source_artifact": "external_survivors.json",
+        "availability_policy": ("recorded producer availability or actual backfill receipt; "
+                                "never first_seen"),
+    }
+    return stamp(body, "canonical_docket_backfill", source_version="backfill", now=now)
+
+
+def admit_registry_row(merged: dict[str, dict], row: dict) -> str:
+    """A stamped registry re-emission supersedes an unstamped exact identity.
+
+    Never copy a stamp onto another payload. Keep the registry's entire emitted row and
+    recorded availability; an already stamped producer remains authoritative.
+    """
+    from libs.data.pit import is_stamped
+
+    ident = _identity(row)
+    prior = merged.get(ident)
+    if prior is not None and (is_stamped(prior) or not is_stamped(row)):
+        return "kept"
+    if not is_stamped(row):
+        return "refused"
+    emitted = {**row, "producer": "alpha_registry"}
+    if prior is not None:
+        for field in ("first_seen", "merged_at"):
+            if prior.get(field):
+                emitted.setdefault(field, prior[field])
+    merged[ident] = emitted
+    return "recovered" if prior is not None else "new"
+
+
 def tradeable_universe() -> dict[str, str]:
     """UPPERCASE -> the registry's own spelling, for every symbol the desk can actually replay.
 
@@ -504,6 +566,10 @@ def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
     by_symbol: dict[str, int] = {}
     if refusal is None:
         return list(rows), off_lane, by_lane, by_symbol
+    # A million variants repeat the same few instrument/family classifications.
+    # Resolve each pair once for this batch instead of statting the broker registry
+    # per variant. The cache is local, so the next merge observes registry changes.
+    routing: dict[tuple[str, str], str] = {}
     for row in rows:
         symbol = str(row.get("symbol") or row.get("sym") or "")
         # ABSENCE IS NOT A VERDICT (L1.28a), and this is the SAME rule the donation door keeps
@@ -511,7 +577,10 @@ def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
         # be in the wrong lane, and refusing it would turn a missing field into a policy breach.
         # A row that DOES name one and whose class the desk has never seen is a different thing --
         # that is UNCLASSIFIED, and absence of a rule about a real instrument is not a permission.
-        verdict = _refuse(refusal, symbol, row.get("family")) if symbol else ""
+        key = (symbol, str(row.get("family") or ""))
+        if key not in routing:
+            routing[key] = _refuse(refusal, symbol, row.get("family")) if symbol else ""
+        verdict = routing[key]
         if not verdict:
             judged.append(row)
             continue
@@ -678,13 +747,13 @@ def main() -> int:
         _reg_rows, registry_census = _registry_feed(tradeable=tradeable or None,
                                                     banned=live_banned_families())
         kept = 0
+        recovered = 0
         for row in _reg_rows:
-            ident = _identity(row)
-            if ident in merged:
-                continue
-            merged[ident] = {**row, "producer": "alpha_registry"}
-            kept += 1
+            disposition = admit_registry_row(merged, row)
+            kept += disposition == "new"
+            recovered += disposition == "recovered"
         registry_census["merged_new"] = kept
+        registry_census["recovered_unstamped_identity"] = recovered
         per_source["alpha_registry.sqlite"] = kept
         source_state["alpha_registry.sqlite"] = str(registry_census.get("status") or "UNMEASURED")
         print(f"   registry feed: {registry_census.get('candidates', 0)} unjudged candidate(s), "
@@ -767,8 +836,10 @@ def main() -> int:
             row["banked"] = True
             merged[ident] = row
             readmitted += 1
-    for row in merged.values():
+    for ident, row in merged.items():
+        row = recover_banked_provenance(row, now=now)
         row.setdefault("first_seen", now.isoformat(timespec="seconds"))
+        merged[ident] = row
     if readmitted:
         print(f"   docket bank: {readmitted} previously-known candidate(s) re-admitted "
               f"(idempotent re-judging; freshness still governs provenance)")

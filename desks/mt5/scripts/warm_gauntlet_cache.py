@@ -692,6 +692,9 @@ def gate_room(anatomy: dict | None = None) -> dict:
     base = {"status": "UNMEASURED", "cells": None, "task_limit_s": limit,
             "build_budget_s": fresh, "safety": GATE_SAFETY,
             "anatomy_status": anatomy.get("status")}
+    if isinstance(limit, (int, float)) and not isinstance(limit, bool) and limit == 0:
+        return {**base, "status": "MEASURED_UNLIMITED",
+                "why": "scheduler ExecutionTimeLimit=PT0S; no task-deadline gate-room ceiling; build deadline, measured capacity and memory floor still apply"}
     per_cell = anatomy.get("post_build_s_per_cell")
     if anatomy.get("status") != "MEASURED" or not isinstance(per_cell, (int, float)) \
             or per_cell <= 0:

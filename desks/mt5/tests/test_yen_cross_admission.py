@@ -103,17 +103,18 @@ def test_an_unreadable_policy_still_falls_back_to_gold_only(tmp_path: Path) -> N
     assert lp.refuse({"symbol": "USDJPY", "name": CHOSEN_MT5}, pol) is not None
 
 
-def test_the_shipped_policy_file_admits_exactly_gold_and_one_yen_sleeve() -> None:
+def test_the_shipped_policy_file_admits_the_authorized_universe_with_mechanism_fences() -> None:
     """The artifact itself, as it will be read on the box."""
     f = DESK / "data" / "live_sleeve_policy.json"
     if not f.exists():                      # the box writes its own; absent on a fresh clone
         pytest.skip("no live_sleeve_policy.json in this checkout")
     pol = lp.policy(f)
-    assert pol.live_symbols == frozenset({"XAUUSD", "USDJPY"})
+    assert pol.live_symbols == frozenset({"*"})
     assert "discovered" in pol.banned_families
     assert lp.refuse({"symbol": "USDJPY", "name": CHOSEN_MT5}, pol) is None
     assert lp.refuse({"symbol": "EURJPY", "name": "eurjpy_session_range_breakout_asia_0_wb_12"},
-                     pol) is not None
+                     pol) is None
+    assert lp.refuse({"symbol": "EURJPY", "family": "discovered"}, pol) is not None
 
 
 # ------------------------------------------------------------------- E8's correlation block

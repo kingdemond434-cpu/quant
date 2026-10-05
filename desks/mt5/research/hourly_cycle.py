@@ -1044,7 +1044,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
-                     "compile_candidates", "merge_docket",
+                     "intake_catchup", "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
@@ -2847,6 +2847,32 @@ def compile_candidates() -> dict:
                      "--budget-s", "600")
 
 
+def catch_up_intake() -> dict:
+    """Publish already waiting discoveries before spending the pass on new searches.
+
+    The normal mine/compile/deepen/merge chain still runs later for this pass's new
+    production. This bounded catch-up uses the same compiler cursor and merger, so
+    existing discoveries need not wait behind hours of generation to reach the judge.
+    Never merge an old compiler artifact after a failed compilation.
+    """
+    from research.job_lock import exclusive_job
+
+    with exclusive_job("miner_candidate_compiler", need_mb=14000) as acquired:
+        if not acquired:
+            return {"status": "SKIPPED", "why": "canonical compiler lane already owned"}
+        compiled = compile_candidates()
+    if compiled.get("exit_code") != 0:
+        return {"status": "FAILED", "compile": compiled,
+                "why": "fresh compilation failed; catch-up merge withheld"}
+    with exclusive_job("merge_hypotheses", need_mb=14000) as acquired:
+        if not acquired:
+            return {"status": "SKIPPED", "compile": compiled,
+                    "why": "canonical merge lane already owned"}
+        merged = _producer("merge_hypotheses", "research/merge_hypotheses.py")
+    return {"status": "OK" if merged.get("exit_code") == 0 else "FAILED",
+            "compile": compiled, "merge": merged}
+
+
 def placement_interlock() -> dict:
     """`placement_interlock`: has any sleeve been refused in a run with no placement since, or
     has the release identity stopped allowing new risk? `scripts/check_placement_interlock.py`
@@ -3616,6 +3642,9 @@ def main() -> None:
     rb = _costed("refresh_bars", refresh_bars)
     smoke = _costed("smoke_release", smoke_release)
     h = _costed("health", health)
+    # Drain existing intake before the long research legs. The later pipeline still
+    # compiles and merges discoveries generated during this pass.
+    _costed("intake_catchup", catch_up_intake)
     t = _costed("record_tape", record_tape)
     s = _costed("state_vector", state_vector)
     rg = _costed("regime_monitor", refresh_regime)

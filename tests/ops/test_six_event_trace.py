@@ -72,3 +72,26 @@ def test_the_mining_digest_proves_events_one_to_three(tmp_path: Path) -> None:
     assert by["2"]["n_instances"] == 1  # a contract sealed after its verdict never counts
     assert by["3"]["verdict"] == "PROVEN"
     assert by["3"]["n_instances"] == 3  # two rejecting chains plus the ledger row
+
+
+def test_retirement_remains_visible_after_monitor_replaces_current_actions(tmp_path: Path) -> None:
+    data = tmp_path / "desks" / "mt5" / "data"
+    data.mkdir(parents=True)
+    (data / "decay_live.json").write_text(json.dumps({"actions_taken": []}), encoding="utf-8")
+    retirement = {"at": "2026-09-29T10:00:00Z", "action": "RETIRE", "sleeve": "measured"}
+    (data / "decay_actions.jsonl").write_text(json.dumps(retirement) + "\n", encoding="utf-8")
+    event = _run(tmp_path)["events"][5]
+    assert event["verdict"] == "PROVEN"
+    assert event["latest"]["decay_action"]["sleeve"] == "measured"
+
+
+def test_fade_recovery_and_voided_retirement_do_not_prove_retirement(tmp_path: Path) -> None:
+    data = tmp_path / "desks" / "mt5" / "data"
+    data.mkdir(parents=True)
+    fade = {"at": "2026-09-29T10:00:00Z", "action": "FADE"}
+    recovery = {**fade, "action": "UNFADE"}
+    voided = {**fade, "action": "RETIRE", "voided_at": "2026-09-29T11:00:00Z"}
+    (data / "decay_live.json").write_text(json.dumps({"actions_taken": [fade, recovery]}),
+                                         encoding="utf-8")
+    (data / "decay_actions.jsonl").write_text(json.dumps(voided) + "\n", encoding="utf-8")
+    assert _run(tmp_path)["events"][5]["verdict"] == "MISSING"

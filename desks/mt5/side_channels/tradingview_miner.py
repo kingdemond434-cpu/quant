@@ -65,7 +65,11 @@ def mine_tradingview() -> list[dict]:
 def run_and_save() -> list[dict]:
     discoveries = mine_tradingview()
     out_file = OUT / f"discoveries_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
-    out_file.write_text(json.dumps(discoveries, indent=2), encoding="utf-8")
+    try:
+        from side_channels.discovery_io import write_discoveries
+    except ModuleNotFoundError:
+        from discovery_io import write_discoveries
+    discoveries = write_discoveries(out_file, discoveries)
     print(f"tradingview: {len(discoveries)} discoveries saved")
     return discoveries
 

@@ -3,14 +3,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_terminal_boot_keeps_only_the_process_in_its_interactive_session() -> None:
+def test_terminal_boot_requires_one_process_in_its_interactive_session() -> None:
     source = (ROOT / "ops" / "ensure_terminal.ps1").read_text(encoding="utf-8")
     assert "Get-CimInstance Win32_Process" in source
     assert "Where-Object { $_.ExecutablePath -eq $exe }" in source
     assert "Sort-Object CreationDate" in source
     assert "Where-Object { $_.SessionId -eq $session }" in source
-    assert "$keeper = $local[0]" in source
-    assert "Stop-Process -Id $duplicate.ProcessId -Force" in source
+    assert "if ($terminals.Count -gt 1)" in source
+    assert "refusing automatic termination of an unverified owner" in source
+    assert "Stop-Process" not in source
 
 
 def test_terminal_boot_never_kills_a_different_broker_terminal() -> None:

@@ -233,7 +233,8 @@ TASK name="MT5-NewsDesk" trigger="at system start-up (resident)" runs="desks/mt5
 TASK name="MT5-NoLog" trigger="daily 06:40" runs="desks/mt5/research/no_log.py" installer="NONE" lane="ops"
 TASK name="MT5-RegimeMonitor" trigger="every 15 minutes" runs="desks/mt5/research/regime_monitor.py" installer="NONE" lane="research"
 TASK name="MT5-MoatRecorder-Watchdog" trigger="every 30 minutes" runs="desks/mt5/moat/moat_recorder.py" installer="NONE" lane="data"
-TASK name="E8-Executor" trigger="every 5 minutes" runs="desks/mt5/prop/e8_executor.py --manage-only" installer="desks/mt5/scripts/install_e8_tasks.ps1" lane="prop"
+TASK name="E8-Executor" trigger="every 5 minutes" runs="desks/mt5/prop/e8_executor.py --enable-certified-entries" installer="desks/mt5/scripts/install_e8_tasks.ps1" lane="prop"
+TASK name="E8-Book" trigger="every 1 hour" runs="desks/mt5/prop/e8_book.py" installer="desks/mt5/scripts/install_e8_tasks.ps1" lane="prop"
 TASK name="E8-Spreads" trigger="every 1 hour, at :02" runs="desks/mt5/prop/e8_spread_sampler.py" installer="NONE" lane="prop"
 TASK name="MT5-Healers" trigger="every 1 hour, at :48" runs="ops/run_healers.cmd" installer="NONE" lane="research"
 # Referenced by ops/run_gold_hour_sweep.cmd; not installed on the box 2026-09-16, cadence unknown.

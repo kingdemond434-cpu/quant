@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import json
-import pytest
 import sqlite3
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
@@ -15,6 +16,7 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, _p)
 
 from research import judging_throughput as jt  # noqa: E402
+
 
 @pytest.fixture(autouse=True)
 def isolate_coverage_dependency(tmp_path, monkeypatch):
@@ -263,7 +265,8 @@ def test_the_warmer_is_no_longer_pinned_through_the_env(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("age_hours,expected", [(48, 100), (0.25, 999), (-0.25, 100)])
-def test_stale_or_future_coverage_cannot_replace_backlog(tmp_path, monkeypatch, age_hours, expected):
+def test_stale_or_future_coverage_cannot_replace_backlog(
+        tmp_path, monkeypatch, age_hours, expected):
     coverage = tmp_path / "coverage.json"
     coverage.write_text(json.dumps({"at": (NOW-timedelta(hours=age_hours)).isoformat(),
                                    "totals": {"unjudged_total": 999}}))
@@ -295,3 +298,22 @@ def test_recent_births_use_an_indexed_range_not_a_registry_table_scan(tmp_path: 
     assert any("ix_candidates_created_at" in str(row) for row in plan), plan
     conn.close()
     assert jt._creation_counts(NOW, path)["counts"] == {"24h": 1, "7d": 2}
+
+
+def test_sweep_remainder_cannot_masquerade_as_full_backlog(tmp_path):
+    got = jt.measure_rate({"depth": 59_834, "depth_scope": "sweep"}, {}, NOW,
+                          ledger=tmp_path / "absent.jsonl",
+                          registry=tmp_path / "absent.sqlite")
+    assert got["backlog"] == UNMEASURED
+    assert got["eta_to_drain"]["status"] == UNMEASURED
+
+
+def test_fresh_full_coverage_replaces_sweep_remainder(tmp_path, monkeypatch):
+    coverage = tmp_path / "coverage.json"
+    coverage.write_text(json.dumps({"at": NOW.isoformat(),
+                                   "totals": {"unjudged_total": 1_601_468}}), "utf-8")
+    monkeypatch.setattr(jt, "JUDGE_COVERAGE", coverage)
+    got = jt.measure_rate({"depth": 59_834, "depth_scope": "sweep"}, {}, NOW,
+                          ledger=tmp_path / "absent.jsonl",
+                          registry=tmp_path / "absent.sqlite")
+    assert got["backlog"] == 1_601_468
