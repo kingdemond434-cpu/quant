@@ -85,6 +85,17 @@ def test_delayed_moves_one_bar_and_drops_the_last_bar() -> None:
     assert [s.time for s in out] == [b.index[11]]
 
 
+def test_selector_is_the_shared_session_axis_not_a_family_parameter() -> None:
+    b = _bars(48)
+    sigs = [_sig(b, i) for i in range(len(b))]
+    kwargs, mods = cm.split(fam, {"lookback": 3, "selector": "ny"})
+    assert kwargs == {"lookback": 3} and mods == {"selector": "ny"}
+    assert cm.refusal(mods) is None
+    got = cm.apply(sigs, b, mods)
+    assert got and all(14 <= s.time.hour < 22 for s in got)
+    assert "session window" in cm.refusal({"selector": "invented"})
+
+
 def test_volatility_regime_uses_the_generic_family_definition() -> None:
     from mt5desk.family_generic import _CONTEXTS
 
@@ -139,5 +150,7 @@ def test_family_call_applies_the_same_modifiers_the_gauntlet_does():
     flipped = fc.signals(fam, bars, side=1, params={"lookback": 3, "side_mode": "revert"})
     assert flipped == cm.apply(plain, bars, {"side_mode": "revert"})
     assert flipped[0].side == -1
+    selected = fc.signals(fam, bars, side=1, params={"lookback": 3, "selector": "asia"})
+    assert selected == plain
     with pytest.raises(ValueError, match="NOT_RUN_MODIFIER"):
         fc.signals(fam, bars, side=1, params={"regime": "risk_off"})
