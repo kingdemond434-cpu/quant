@@ -88,5 +88,19 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "8D1oxcfnuGs",
+  "published": "2026-10-05T12:03:23Z",
+  "title": "I Learned Card Counting From A Movie!",
+  "description": "One movie was enough to make him study 40 videos on how to beat the casino. \ud83c\udccf",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
