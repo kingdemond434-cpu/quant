@@ -86,7 +86,7 @@ TASK name="MT5-TerminalBoot"       trigger="at startup"           runs="terminal
 # protocol. The sealed file is never edited; the cadence below
 # is raised to :05 by `judging_throughput.apply_cadence` while the queue is deep and headroom
 # exists, and the manifest records the base trigger.
-TASK name="MT5-Gauntlet"           trigger="every 10 minutes, at :01 (raised to every 5 by judging_throughput while the queue is deep)" runs="desks/mt5/scripts/run_sharded_gauntlet.py" installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="research"
+TASK name="MT5-Gauntlet"           trigger="every 10 minutes, at :01 (raised to every 5 by judging_throughput while the queue is deep)" runs="desks/mt5/scripts/run_sharded_gauntlet.py" organ="desks/mt5/scripts/external_gauntlet.py" installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="research"
 TASK name="MT5-Shadow"             trigger="every 1 hour, at :55" runs="desks/mt5/research/shadow_cycle.py"          installer="NONE" lane="research"
 TASK name="MT5-UniversalGate"      trigger="every 1 hour, at :07" runs="desks/mt5/research/universal_gate.py"        installer="NONE" lane="research"
 TASK name="MT5-QQuantShadow"       trigger="every 30 minutes, at :25" runs="desks/mt5/research/qquant_shadow.py"         installer="NONE" lane="research"
