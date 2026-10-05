@@ -102,5 +102,44 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UC7NJLsf6IonOy8QI8gt5BeA",
+  "channel": "Trading with DaviddTech",
+  "video_id": "zfEnBDG-u6s",
+  "published": "2026-10-05T13:00:30Z",
+  "title": "I Built an INSANE AI Trading Bot to Trade Stocks (Full Guide)",
+  "description": "\ud83d\udc49\ud83c\udffb Learn AI trading bots and algorithmic trading with us:\nhttps://www.skool.com/daviddtech/about\n\nI built an AI trading bot to trade stocks and ETFs, and this full guide shows you how to build and test the workflow yourself.\n\nUsing ChatGPT through OpenAI Codex, I connect AI strategy research, backtesting and automated alerts with TradingKit, Trigger.trade and an Alpaca paper trading account.\n\nYou describe what you want in plain English. AI writes the code, while TradingKit provides the backtesting engine and strategy alerts.\n\nThe big change in this setup: I create the alerts directly inside TradingKit, removing the need for a paid TradingView subscription for the automation shown in this video.\n\nI'll walk through the research prompt, a two-hour strategy research schedule, the results dashboard and the broker connection. You'll also see why I give strategies an incubation period before risking capital, and why I currently trade only seven bots after testing thousands of ideas and settings.\n\nThe broker demonstration uses Alpaca paper trading with simulated funds. The strategy results discussed are historical backtests.\n\nIN THIS VIDEO, YOU'LL DISCOVER:\n\n\u2705 How I use ChatGPT and OpenAI Codex to build AI trading bots for stocks and ETFs\n\u2705 How to install and connect the TradingKit plugin\n\u2705 Where I research strategies using Google Scholar, Quantpedia and open-source indicators\n\u2705 How to schedule an AI strategy research and backtesting loop\n\u2705 How I review a dashboard showing 1,368 strategy tests and 277 marked as passed\n\u2705 How I assess equity curves, profit factor and historical test periods\n\u2705 Why backtests still need incubation and forward testing\n\u2705 How to create automated strategy alerts directly in TradingKit\n\u2705 How to connect Trigger.trade to an Alpaca paper trading account\n\u2705 How API keys, webhook URLs and alert templates fit together\n\u2705 Where stop losses and take profits fit into the automation\n\u2705 What I've learned about diversification, trade samples and switching bots off\n",
+  "links": [
+   "https://www.skool.com/daviddtech/about",
+   "https://tradingkit.com/",
+   "https://trigger.trade/",
+   "https://alpaca.markets/",
+   "https://www.tradingview.com/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "sLK9agEYd1g",
+  "published": "2026-10-05T13:00:45Z",
+  "title": "LIVE TRADING!  | NEW YORK SESSION | IQ Capital TV |  MONDAY 05/10/26",
+  "description": "Welcome to IQ Capital TV!\nReal markets with real setups, real risk management, real results!\n\n\ud83d\ude80 Get funded with the #1 Prop Firm - start with just $9 for Crypto & Futures \ud83d\udc49 https://www.iqcapital.io/?aff=STREAM\n\n\ud83d\udc49 Join Our Official Discord Community:    / discord  \n\nVisit and follow us on our social media accounts:\n\nX (Twitter): https://x.com/IQCapital_io\nInstagram:    / iqcapitalofficial\n\nNatalie's social media:\n\nhttps://youtube.com/@natalietradesfit24?si=gKl2RBKvtdsdPZ1h\n\nhttps://www.instagram.com/natalietradesfit\n\n\ud83d\udccc Risk Disclaimer:\nIQ Capital provides educational and informational content only and does not offer financial, investment, or trading advice. IQ Capital operates as a proprietary trading firm; traders do not invest their own capital. Trading occurs in simulated evaluation environments or proprietary funded accounts under defined rules and risk limits. Trading leveraged instruments involves substantial risk and may result in the loss of all allocated capital. No strategy, rule set, or evaluation guarantees profitability. Past performance, payouts, and testimonials are not indicative of future results. Examples may reflect hypothetical or simulated performance. Traders act at their own discretion and are solely responsible for trading decisions, risk management, and legal, tax, and regulatory compliance. IQ Capital assumes no liability for losses arising from the use of its content or services.\nTranscript",
+  "links": [
+   "https://www.iqcapital.io/?aff=STREAM",
+   "https://x.com/IQCapital_io",
+   "https://youtube.com/@natalietradesfit24?si=gKl2RBKvtdsdPZ1h",
+   "https://www.instagram.com/natalietradesfit"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
