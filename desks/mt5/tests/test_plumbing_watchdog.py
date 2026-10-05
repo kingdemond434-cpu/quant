@@ -329,10 +329,14 @@ def test_all_four_git_writers_use_the_lock_helper() -> None:
     assert "MT5-GitWriter-v2" in helper
 
 
-def test_live_policy_allows_the_authorized_universe_and_preserves_m15_filter_at_both_doors() -> None:
-    """The principal removed gold-only scope; both doors retain the remaining policy."""
+def test_live_policy_allows_the_authorized_universe_and_preserves_m15_filter_at_both_doors(
+    tmp_path: Path,
+) -> None:
+    """An explicitly supplied wider policy keeps the remaining mechanism fences."""
     from mt5desk import live_policy as lp
-    pol = lp.policy()
+    policy_file = tmp_path / "live_sleeve_policy.json"
+    policy_file.write_text(json.dumps({"live_symbols": ["*"]}), encoding="utf-8")
+    pol = lp.policy(policy_file)
     fx = {"name": "chfnok_carry_asia", "symbol": "CHFNOK", "status": "LIVE"}
     m15 = {"name": "xau_m15", "symbol": "XAUUSD", "timeframe": "M15", "status": "LIVE"}
     gold = {"name": "gold_asia", "symbol": "XAUUSD", "timeframe": "H1", "status": "LIVE"}
