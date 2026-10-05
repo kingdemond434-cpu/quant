@@ -1,0 +1,420 @@
+[
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD NY Session Short",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "liquidity"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "My Setup on Monday for GOLD!",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "NFP trade fundamental analysis + technical execution",
+    "url": "",
+    "symbols": [
+      "XAUUSD",
+      "DXY"
+    ],
+    "patterns": [
+      "support"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "AUDCAD BUY",
+    "url": "",
+    "symbols": [
+      "AUDCAD"
+    ],
+    "patterns": [
+      "order block"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Retired XAUUSD scalper here",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "scalp"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Missing out",
+    "url": "",
+    "symbols": [
+      "USDCAD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD SETUP MONDAY!",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support",
+      "EMA",
+      "momentum"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD SETUP NEW",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support",
+      "liquidity",
+      "trend",
+      "momentum"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "GBPUSD: What do you think of this setup ?",
+    "url": "",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [
+      "swing",
+      "trend"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Forex to Future? What do I need to know?",
+    "url": "",
+    "symbols": [
+      "XAUUSD",
+      "NAS100"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Does anyone know what are main selling lvls in xauusd ?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD SETUP FRIDAY...",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "CHFJPY: SHORT",
+    "url": "",
+    "symbols": [
+      "USDJPY",
+      "CHFJPY"
+    ],
+    "patterns": [
+      "trend"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Xauusd",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "GBPJPY: Short",
+    "url": "",
+    "symbols": [
+      "GBPJPY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Holding XAUUSD overnight for the first time \u2014 now it\u2019s just testing my patience \ud83d\ude02",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Guys , I want to get into buying silver but not even sure where to start . What are the best / safest places to buy ? Costco seems legit but the only had this 10oz silver coin",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "The Royal Canadian Mint know how to do silver bugs!",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "It's not organized.",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "I now own quite a few silver coins and bars, but these pieces remain my favourites because my grandad left them to me, and so they hold a very special meaning that bullion simply doesn\u2019t have",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [
+      "EMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "1 oz Silver Coins AT SPOT price!",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Small brag, big time idk what it\u2019s worth",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Found this today at a market... sterling silver sugar castor, made in London England, by silversmith William Justis and dated 1735. It also has a little set of initials engraved on it.",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Dental alloy silver",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Why Buy Rounds Over Sovereign? (Still Kind of A New Buyer)",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Why does it seem like buying secondary market rounds is less popular?",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "First silver, not much but looks great",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "New to the game",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "State of the stack since i started at the beginning of this year.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Fake Silver Eagle?",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "300Ha Gold Mining Claim In Zvishavane, Midlands",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Silver Eagles Helmet",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Silver with black diamonds",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Started donating plasma to buy silver",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "I paid roughly $0.12 for this ounce of Silver",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  }
+]
