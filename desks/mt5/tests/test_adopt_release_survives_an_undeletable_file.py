@@ -59,10 +59,12 @@ def _repo(tmp_path: Path) -> Path:
 STATE_PREFIXES = ("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
                   "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
                   "data/", "reports/", "logs/", "web/")
+STATE_FILES = frozenset(re.findall(
+    r'"([^"]+)"', SCRIPT.read_text("utf-8").split("$StateFiles = @(", 1)[1].split(")", 1)[0]))
 
 
 def _is_state(rel: str) -> bool:
-    return any(rel.startswith(p) for p in STATE_PREFIXES)
+    return rel in STATE_FILES or any(rel.startswith(p) for p in STATE_PREFIXES)
 
 
 def _adopt(repo: Path, target: str, kept: list[str] | None = None,
@@ -516,7 +518,7 @@ def test_the_script_untracks_state_deletions_before_it_keeps_or_deletes() -> Non
     assert guard < pending
     assert re.search(r"^\}\s*$", code[guard:pending], re.M), "the add block closes before $pending"
     assert re.search(r"^\$pending = ", code, re.M), "$pending is at top level"
-    assert code.index('"commit", "-m"', pending) > pending
+    assert code.index('Invoke-GuardedIndexCommit -Message', pending) > pending
 
 
 def test_a_locked_file_is_retried_before_it_is_reported() -> None:

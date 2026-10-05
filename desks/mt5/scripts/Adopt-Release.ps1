@@ -293,6 +293,40 @@ function Invoke-Git {
     return $out
 }
 
+function Invoke-GuardedIndexCommit {
+    # Windows porcelain commit refreshes the evidence lake and has crashed with
+    # C0000005 after adoption. Commit the already staged tree, with the actual
+    # repository guards and an atomic old-value ref check; never skip validation.
+    param([string] $Message)
+    $beforeHead = (Invoke-Git @("rev-parse", "HEAD")).Trim()
+    $branchRef = (Invoke-Git @("symbolic-ref", "-q", "HEAD")).Trim()
+    if (-not $beforeHead -or -not $branchRef) { throw "Cannot commit a detached or unmeasured adoption" }
+    $beforeTree = (Invoke-Git @("write-tree")).Trim()
+    $guardPython = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+    $guardArgs = @()
+    if (-not (Test-Path -LiteralPath $guardPython)) {
+        if (Get-Command py -ErrorAction SilentlyContinue) { $guardPython = "py"; $guardArgs = @("-3") }
+        else { $guardPython = "python" }
+    }
+    foreach ($relativeGuard in @("scripts/moneypath_precommit_guard.py", "scripts/check_protected_records.py")) {
+        $guardPath = Join-Path $RepoRoot $relativeGuard
+        if (-not (Test-Path -LiteralPath $guardPath)) { throw "Adoption guard missing: $relativeGuard" }
+        $previousPreference = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        try {
+            $guardOutput = @(& $guardPython @guardArgs $guardPath 2>&1 | ForEach-Object { "$_" })
+            $guardResult = $LASTEXITCODE
+        } finally { $ErrorActionPreference = $previousPreference }
+        $guardOutput | ForEach-Object { Write-Host ("  " + $_) }
+        if ($guardResult -ne 0) { throw "Adoption guard refused: $relativeGuard (exit $guardResult)" }
+    }
+    $afterTree = (Invoke-Git @("write-tree")).Trim()
+    if ($afterTree -ne $beforeTree) { throw "Adoption guards changed the staged tree; no commit recorded" }
+    $commit = (Invoke-Git @("commit-tree", $beforeTree, "-p", $beforeHead, "-m", $Message)).Trim()
+    if ($commit -notmatch '^[0-9a-f]{40}$') { throw "Adoption commit-tree returned no measured commit" }
+    Invoke-Git @("update-ref", $branchRef, $commit, $beforeHead) | Out-Null
+}
+
 function Invoke-GitBytes {
     # BYTE-EXACT, and it has to be. PowerShell 5.1's `>` writes UTF-16 and
     # Out-File writes a BOM; either one changes the content, so the file would
@@ -340,7 +374,9 @@ function Get-WorktreeBytes {
             throw ("cat-file {0}:{1} failed: {2}" -f $Rev, $Path, $r.Error)
         }
     }
-    return $r.Bytes
+    # PowerShell enumerates an empty array into no pipeline output, yielding null
+    # at the caller. A zero-byte Git blob is a real file, not a missing buffer.
+    return ,$r.Bytes
 }
 
 function Write-InPlace {
@@ -444,7 +480,8 @@ $StatePrefixes = @("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/", "
 # MIRRORS libs/ops/release.STATE_FILES -- a test pins the two lists to each other. The eighth
 # entry was measured 2026-09-23: an otherwise clean adoption refused to seal on swap_exposure.json,
 # which the box rewrites hourly beside the code.
-$StateFiles = @("desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
+$StateFiles = @("context/decision_journal.jsonl", "docs/desk_lessons.jsonl",
+                "desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
                 "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
                 "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json",
                 "desks/mt5/mech_split.json", "desks/mt5/swap_exposure.json",
@@ -1143,8 +1180,7 @@ if ($staged.Count -gt 0) {
 $pending = @(Invoke-Git @("diff", "--cached", "--name-only") |
              ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
 if ($pending.Count -gt 0) {
-    Invoke-Git @("commit", "-m",
-        ("Adopt {0} in place; NTFS entry corruption blocks unlink" -f $target.Substring(0, 12))) | Out-Null
+    Invoke-GuardedIndexCommit -Message ("Adopt {0} in place; NTFS entry corruption blocks unlink" -f $target.Substring(0, 12))
     Write-Host ("  committed {0} path(s)" -f $pending.Count)
 }
 
@@ -1254,7 +1290,7 @@ while ($drift.Count -gt 0 -and $repairPasses -lt 2) {
     $pendingRepair = @(Invoke-Git @("diff", "--cached", "--name-only") |
                        ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
     if ($pendingRepair.Count -gt 0) {
-        Invoke-Git @("commit", "-m",
+        Invoke-GuardedIndexCommit -Message (
             ("Adopt {0} in place (repair pass {1}); paths that lost an index.lock race" -f
              $target.Substring(0, 12), $repairPasses)) | Out-Null
         Write-Host ("    committed {0} path(s) on the repair pass" -f $pendingRepair.Count)
