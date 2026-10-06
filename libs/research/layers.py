@@ -260,6 +260,8 @@ LEG_LAYER: dict[str, str] = {
     "trend_core": "prediction",
     # the within-class rank legs are claims about relative returns: prediction, like trend_core
     "cross_sectional_breadth": "prediction",
+    # weekly CFTC positioning change as a claim about next week's return: prediction
+    "cot_positioning_flow": "prediction",
     "event_surprise": "information",
     # public analyst views collected and stamped at first sighting: information
     "alpha_capture": "information",

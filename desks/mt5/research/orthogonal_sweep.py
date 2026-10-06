@@ -366,7 +366,20 @@ def _cot_frame(symbol: str | None = None):
             series = frame[symbol].astype(float).dropna().resample("W-FRI").last().dropna()
             series.index = series.index + pd.Timedelta(days=COT_RELEASE_LAG_DAYS)
             if len(series) >= 52:
-                return series.rename("net").to_frame()
+                return _cot_enriched(series.rename("net").to_frame(), symbol)
+        except Exception:
+            pass
+    # THE IN-GIT REPORTS, ON THE SAME RELEASE CLOCK (2026-10-06). Legacy, TFF and disaggregated
+    # positioning per symbol live under `data/cot*/` and were read by nothing on this path, so a
+    # positioning-CHANGE cell on any trader class had no input and a tree without the box's
+    # cache built every COT cell with `cot=None`. `mt5desk.cot_frames` labels them exactly as the
+    # cache above is labelled; its "net" is the same 52-week z of legacy non-commercial net.
+    if symbol:
+        try:
+            from mt5desk import cot_frames
+            got = cot_frames.frame(symbol)
+            if got is not None and len(got) >= 52:
+                return got
         except Exception:
             pass
     for name in ("cot_tff.json", "cot.json", "cot_disagg.json"):
@@ -388,6 +401,16 @@ def _cot_frame(symbol: str | None = None):
         except Exception:
             continue
     return None
+
+
+def _cot_enriched(base, symbol: str):
+    """The cache's frame plus every in-git positioning column, joined on its own labels. A
+    failure leaves the cache's frame exactly as it was: enrichment never costs the default."""
+    try:
+        from mt5desk import cot_frames
+        return cot_frames.enrich(base, symbol)
+    except Exception:
+        return base
 
 
 def _legs(symbol: str) -> tuple[str, str] | None:

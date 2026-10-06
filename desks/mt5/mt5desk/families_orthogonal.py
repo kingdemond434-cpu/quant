@@ -412,6 +412,10 @@ def family_cot_positioning(
     stop_atr: float = 3.0,
     rr: float = 2.0,
     ttl_bars: int = 240,
+    series: str = "net",
+    transform: str = "level",
+    mode: str = "fade",
+    change_weeks: int = 1,
 ) -> list[Signal]:
     """Fade crowded speculative positioning at multi-year extremes.
 
@@ -423,11 +427,25 @@ def family_cot_positioning(
 
     REFUSES WITHOUT COT DATA rather than substituting a price-based crowding proxy, which would
     be a momentum sleeve with a misleading name.
+
+    POSITIONING CHANGE, ANY TRADER CLASS (2026-10-06). `series` names the column of the COT
+    frame (`mt5desk.cot_frames.COLUMNS`: legacy non-commercial/commercial, TFF leveraged money/
+    asset managers/dealers, disaggregated managed money/swap dealers -- all oriented so positive
+    is long THIS symbol), `transform="change"` reads its `change_weeks`-week change instead of
+    its level, and `mode="follow"` trades WITH an extreme instead of against it: the flow
+    hypothesis (a class still adding is not yet done) beside the crowding one. The defaults are
+    the original construction exactly; a column the frame does not carry, or an unknown
+    transform or mode, refuses ([]) rather than substituting another series.
     """
-    if cot is None or cot.empty or "net" not in cot.columns:
+    if cot is None or cot.empty or series not in cot.columns:
+        return []
+    if transform not in ("level", "change") or mode not in ("fade", "follow"):
         return []
     d = _h1(df)
-    net = cot["net"].astype(float)
+    net = cot[series].astype(float).dropna()
+    if transform == "change":
+        net = net.diff(max(1, int(change_weeks))).dropna()
+    toward = 1 if mode == "follow" else -1
     hi = net.rolling(lookback_weeks, min_periods=26).quantile(extreme_pct)
     lo = net.rolling(lookback_weeks, min_periods=26).quantile(1 - extreme_pct)
     atr = _atr(d, atr_n)
@@ -444,9 +462,9 @@ def family_cot_positioning(
             continue
         side = 0
         if value >= h:
-            side = -1
+            side = toward
         elif value <= low:
-            side = 1
+            side = -toward
         if side == 0:
             continue
         a = float(atr.iloc[idx])
