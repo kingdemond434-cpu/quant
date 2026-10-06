@@ -226,10 +226,16 @@ def plan() -> tuple[list[tuple[str, str, dict[str, Any]]], dict[str, list[str]]]
             add(sym, fam)
     missing["positioning_flow"] = sorted(p for p in have if not (ROOT / p).exists())
 
+    # The limit operator mints nothing until the engine declares a limit order type (PR #222):
+    # its cells would be judged on an inferred touch-fill. The wait is named, not charged.
+    entry_fams = ["entry_alpha_spread_gate", "entry_alpha_open_offset"]
+    if ec.limit_engine_ready():
+        entry_fams.insert(0, "entry_alpha_limit_pullback")
+    else:
+        missing["execution_entry"].append(ec.LIMIT_ENGINE_WAIT)
     for sym in EXECUTION_INSTRUMENTS:
         for base in ec.ENTRY_BASES:
-            for fam in ("entry_alpha_limit_pullback", "entry_alpha_spread_gate",
-                        "entry_alpha_open_offset"):
+            for fam in entry_fams:
                 add(sym, fam, {"base_family": base, "base_params": {}})
 
     if not ec.fed_calendar():

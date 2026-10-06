@@ -125,8 +125,12 @@ def _params(fam: str, sym: str) -> dict:
 
 #: Families with a synthetic input in `world`. The term-structure and consensus families need a
 #: second index / a consensus store and are pinned to REFUSE without them below.
+#: `entry_alpha_limit_pullback` waits on the declared limit order type (PR #222) and is pinned
+#: to REFUSE until the engine has one (`test_limit_pullback_waits_for_the_limit_engine`).
+WAITING = set() if ec.limit_engine_ready() else {"entry_alpha_limit_pullback"}
 FIRING = sorted(set(ec.EMPTY_CLUSTER_FAMILIES) - {"implied_vol_term_inversion",
-                                                  "event_surprise_consensus"})
+                                                  "event_surprise_consensus"} - WAITING)
+ENTRY_ALPHA = sorted(f for f in ec.EMPTY_CLUSTER_FAMILIES if f.startswith("entry_alpha"))
 
 
 @pytest.mark.parametrize("family", FIRING)
@@ -415,3 +419,88 @@ def test_forcer_names_this_organ_and_donates_through_the_door(tmp_path, monkeypa
     row = got[0][1][0]
     assert row["symbol"] == "EURUSD" and row["alpha_cluster"] == "fixing_roll_calendar"
     assert "source_culture" in row
+
+
+# ------------------------------------------------- execution_entry operators: causality (#163)
+def _entry_key(sigs, upto=None):
+    return sorted((pd.Timestamp(s.time).value, s.side, round(s.stop, 8), round(s.target, 8),
+                   None if s.trigger is None else round(s.trigger, 8))
+                  for s in sigs if upto is None or pd.Timestamp(s.time) <= upto)
+
+
+@pytest.mark.parametrize("family", ENTRY_ALPHA)
+def test_entry_alpha_future_bar_perturbation_leaves_every_earlier_signal(world, family):
+    """Corrupt prices AND spreads of every bar after a cutoff: signals at or before it must be
+    byte-identical. A waiting family must refuse identically on both."""
+    d = world["frames"]["AUDJPY"]
+    p = _params(family, "AUDJPY")
+    fn = ec.EMPTY_CLUSTER_FAMILIES[family]
+    rng = np.random.default_rng(5)
+    for frac in (0.4, 0.7):
+        cut = d.index[int(len(d) * frac)]
+        dirty = d.copy()
+        later = dirty.index > cut
+        n = int(later.sum())
+        dirty.loc[later, ["open", "high", "low", "close"]] *= rng.uniform(0.7, 1.3, (n, 1))
+        dirty.loc[later, "high"] = dirty.loc[later, ["open", "high", "close"]].max(axis=1)
+        dirty.loc[later, "low"] = dirty.loc[later, ["open", "low", "close"]].min(axis=1)
+        dirty.loc[later, "spread"] = rng.integers(1, 200, n)
+        a = _entry_key(fn(d, **p), cut)
+        assert a or family in WAITING, f"{family} emitted nothing before {cut}: vacuous"
+        assert a == _entry_key(fn(dirty, **p), cut), f"{family} reads bars after {cut}"
+
+
+@pytest.mark.parametrize("family", ENTRY_ALPHA)
+def test_entry_alpha_fill_bar_spread_probe(world, family):
+    """The defect fixed 2026-10-06: `entry_alpha_spread_gate` admitted an entry on the spread of
+    the bar it FILLS in, which has not closed when the order is sent. For a sample of emitted
+    signals, widen ONLY the fill bar's spread: that signal and every one before it must stand."""
+    d = world["frames"]["AUDJPY"]
+    p = _params(family, "AUDJPY")
+    fn = ec.EMPTY_CLUSTER_FAMILIES[family]
+    sigs = fn(d, **p)
+    if family in WAITING:
+        assert sigs == []
+        return
+    assert len(sigs) >= 10, f"{family}: too few signals for the probe"
+    col = d.columns.get_loc("spread")
+    for s in sigs[:: max(1, len(sigs) // 12)]:
+        j = d.index.get_loc(pd.Timestamp(s.time))
+        if j + 1 >= len(d):
+            continue
+        for wide in (1, 10_000):
+            poked = d.copy()
+            poked.iloc[j + 1, col] = wide
+            assert _entry_key(sigs, s.time) == _entry_key(fn(poked, **p), s.time), (
+                f"{family}: the fill bar's spread after {s.time} moved a decision")
+
+
+def test_spread_gate_admits_only_on_a_closed_normal_bar_after_a_wide_decision(world):
+    """Every emitted spread-gate signal sits on a bar whose OWN spread is at or under its
+    trailing quantile, and the base decision it delays was on a bar that was not."""
+    d = world["frames"]["AUDJPY"]
+    p = _params("entry_alpha_spread_gate", "AUDJPY")
+    sigs = ec.family_entry_alpha_spread_gate(d, **p)
+    assert sigs
+    sp = d["spread"].astype(float)
+    thr = sp.rolling(240, min_periods=120).quantile(float(p["spread_q"])).shift(1)
+    for s in sigs:
+        t = pd.Timestamp(s.time)
+        assert sp[t] <= thr[t], f"{t}: admitted on a bar whose own spread was wide"
+        assert s.trigger is None and s.tag.startswith("entry_alpha_spread_gate<")
+
+
+def test_limit_pullback_waits_for_the_limit_engine(world, producer):
+    """Until the engine declares `Signal.order_type == "limit"` (PR #222) the limit operator
+    refuses, and the producer names the wait as execution_entry's missing artifact instead of
+    charging cells that cannot fire."""
+    if ec.limit_engine_ready():
+        pytest.skip("the limit engine is present: the family is armed and covered by FIRING")
+    d = world["frames"]["AUDJPY"]
+    p = _params("entry_alpha_limit_pullback", "AUDJPY")
+    assert ec.family_entry_alpha_limit_pullback(d, **p) == []
+    ecb, _donated = producer
+    cells, missing = ecb.plan()
+    assert not any(f == "entry_alpha_limit_pullback" for _s, f, _p in cells)
+    assert ec.LIMIT_ENGINE_WAIT in missing["execution_entry"]
+

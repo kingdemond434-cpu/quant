@@ -56,11 +56,23 @@ THE FAMILIES, BY CLUSTER, WITH THE PAYER EACH ONE NAMES (priors written before a
     entry_alpha_limit_pullback  A base family's signals re-entered with a LIMIT `pullback_atr`
         ATRs better, resting `wait_bars`. The base cell entered at market is the control arm and
         is already in the docket. Payer: the impatient taker whose overshoot the limit fills.
-    entry_alpha_spread_gate     A base family's signals delayed until the bar's spread is at or
-        below its own trailing `spread_q` quantile (dropped after `max_wait` bars). Payer: the
+        WAITING ON THE LIMIT ENGINE (PR #222, `Signal.order_type == "limit"`): this tree's engine
+        infers a limit from a resting trigger and fills it on a TOUCH at the limit price, and a
+        gap through the level turns it into a stop. That flatters a pullback limit by exactly the
+        adverse selection it exists to measure, so until the engine declares a limit order type
+        the family returns [] and the producer mints none of its cells (the wait is named as the
+        cluster's missing artifact instead of charged as trials).
+    entry_alpha_spread_gate     A base family's signals decided on a WIDE-spread bar, held until
+        the first later CLOSED bar whose spread is at or below its own trailing `spread_q`
+        quantile over ALL hours (dropped after `max_wait` bars). Only the delayed signals are
+        emitted. Distinct from `entry_alpha_spread_session_median` (PR #254), which judges each
+        bar against its OWN SESSION's median and keeps the undelayed signals too. CAUSAL
+        (2026-10-06 fix): the spread that admits an entry is the decision bar's, which has
+        closed; the first version admitted on the FILL bar's spread, which had not. Payer: the
         venue's wide-spread hours, which the market entry paid.
     entry_alpha_open_offset     A base family's signals that land in the first `offset_bars` of a
-        session open are moved to the first bar after it. Payer: the opening auction's
+        session open are moved to the first bar after it. Reads only the bar CLOCK (scheduled
+        hours), never a price or spread of the bar it moves to. Payer: the opening auction's
         liquidity vacuum.
 
   news_reaction     (unscheduled: central-bank tone and shocks no calendar announced)
@@ -635,12 +647,29 @@ def _rebased(s: Signal, t: Any, entry_ref: float, *, trigger: float | None, wait
                   tag=f"{tag}<{s.tag}", trigger=trigger, wait_bars=int(wait))
 
 
+def limit_engine_ready() -> bool:
+    """True once the engine DECLARES a limit order type (PR #222: `Signal.order_type`), so a
+    limit fills only where the bar trades to it and never as a stop after a gap. Until then a
+    limit-entry operator would be judged on the touch-fill this tree's engine infers."""
+    import dataclasses
+    return "order_type" in {f.name for f in dataclasses.fields(Signal)}
+
+
+#: Why `entry_alpha_limit_pullback` mints nothing on this tree, named for the producer's report.
+LIMIT_ENGINE_WAIT = ("entry_alpha_limit_pullback: waiting on the declared limit order type "
+                     "(PR #222, Signal.order_type == 'limit'); the inferred touch-fill would "
+                     "flatter a pullback limit")
+
+
 def family_entry_alpha_limit_pullback(
     df: pd.DataFrame, *, symbol: str, base_family: str, base_params: dict | None = None,
     pullback_atr: float = 0.3, wait_bars: int = 4, atr_n: int = 20,
 ) -> list[Signal]:
-    """The base's signals entered with a resting LIMIT `pullback_atr` ATRs better."""
+    """The base's signals entered with a resting LIMIT `pullback_atr` ATRs better. Refuses
+    ([]) until the engine declares a limit order type -- see `limit_engine_ready`."""
     if not symbol or float(pullback_atr) <= 0 or int(wait_bars) < 1:
+        return []
+    if not limit_engine_ready():
         return []
     d = _h1(df)
     base = _base_signals(d, base_family, base_params)
@@ -658,8 +687,10 @@ def family_entry_alpha_limit_pullback(
             continue
         ref = float(close[p])
         lim = ref - s.side * float(pullback_atr) * float(atr[p])
-        out.append(_rebased(s, s.time, ref, trigger=lim, wait=int(wait_bars),
-                            tag="entry_alpha_limit_pullback"))
+        g = _rebased(s, s.time, ref, trigger=lim, wait=int(wait_bars),
+                     tag="entry_alpha_limit_pullback")
+        import dataclasses
+        out.append(dataclasses.replace(g, order_type="limit"))  # type: ignore[call-arg]
     return out
 
 
@@ -667,8 +698,13 @@ def family_entry_alpha_spread_gate(
     df: pd.DataFrame, *, symbol: str, base_family: str, base_params: dict | None = None,
     spread_q: float = 0.5, window: int = 240, max_wait: int = 3,
 ) -> list[Signal]:
-    """The base's signals delayed to the first bar whose spread is at or under its trailing
-    `spread_q` quantile; dropped when no such bar arrives within `max_wait` bars."""
+    """The base's signals decided on a wide-spread bar, delayed to the first later CLOSED bar
+    whose spread is at or under its trailing `spread_q` quantile; dropped when none arrives
+    within `max_wait` bars. A decision bar already at or under it is the base cell unchanged
+    and is not emitted (no second trial for the same question).
+
+    CAUSAL: bar j's spread is known when bar j closes, the signal is stamped at j and the engine
+    fills at j+1's open. The threshold at j is the quantile of bars STRICTLY before j."""
     if not symbol or "spread" not in df.columns or not 0 < float(spread_q) < 1:
         return []
     d = _h1(df)
@@ -687,12 +723,13 @@ def family_entry_alpha_spread_gate(
         if s.trigger is not None:
             continue
         p = int(np.searchsorted(st, pd.Timestamp(s.time).value, side="left"))
-        # the base decided at bar p and would fill at p+1; the gate may hold the fill to p+1+k
-        for q in range(p + 1, min(p + 1 + int(max_wait), len(d) - 1)):
-            if bool(ok[q]):
-                if q == p + 1:
-                    break                 # no delay: identical to the base, not a new question
-                out.append(_rebased(s, d.index[q - 1], float(close[q - 1]), trigger=None,
+        if p >= len(d) - 1 or bool(ok[p]):
+            continue                      # no delay: identical to the base, not a new question
+        # the base decided at closed bar p on a wide spread; hold the decision to the first later
+        # CLOSED bar j whose own spread has normalised, and fill at j+1 -- never reading j+1.
+        for j in range(p + 1, min(p + 1 + int(max_wait), len(d) - 1)):
+            if bool(ok[j]):
+                out.append(_rebased(s, d.index[j], float(close[j]), trigger=None,
                                     wait=1, tag="entry_alpha_spread_gate"))
                 break
     return out
