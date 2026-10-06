@@ -583,6 +583,13 @@ NOT_SOURCED_HERE = {
                     "research/elitequant_breadth seeds these commodity class books on commodity "
                     "legs and charges each look once by identity; sweeping them here would "
                     "charge them twice and spend trials on classes the papers never named"),
+    # The Roman rows (mt5desk/families_roman.py). The hedge and beta legs read a partner named by
+    # `pair_symbol`, which only the seeder's pair table supplies; hawkes_flow refits a
+    # three-type Hawkes process (~20 s a symbol) and is seeded where its events exist.
+    **dict.fromkeys(("kalman_hedge_spread", "kalman_beta_residual", "hawkes_flow"),
+                    "research/elitequant_breadth seeds these on the pairs and symbols the Roman "
+                    "rows name and charges each look once; blind here the pair legs have no "
+                    "partner and the Hawkes refits would spend the sweep's whole budget"),
 }
 
 

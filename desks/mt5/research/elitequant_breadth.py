@@ -57,16 +57,18 @@ from mt5desk import families_elitequant as eq  # noqa: E402
 from mt5desk import families_quantguild as qg  # noqa: E402
 from mt5desk import families_queued_repos as qr  # noqa: E402
 from mt5desk import families_quanttrading as qt  # noqa: E402
+from mt5desk import families_roman as rm  # noqa: E402
 
 #: Every family absorbed from the two curated lists, with its grid and declared culture:
 #: EliteQuant (Western canon), thuquant/awesome-quant (the CN futures CTA canon) and
 #: je-suis-tm/quant-trading (retail chart patterns and the Oil Money commodity-FX residual).
 FAMILIES = {**eq.ELITEQUANT_FAMILIES, **cn.CN_CTA_FAMILIES, **qt.QUANTTRADING_FAMILIES,
-            **qg.QUANTGUILD_FAMILIES, **qr.QUEUED_REPO_FAMILIES, **cm.CLASS_MOMENT_FAMILIES}
+            **qg.QUANTGUILD_FAMILIES, **qr.QUEUED_REPO_FAMILIES, **cm.CLASS_MOMENT_FAMILIES,
+            **rm.ROMAN_FAMILIES}
 PARAM_GRID = {**eq.PARAM_GRID, **cn.PARAM_GRID, **qt.PARAM_GRID, **qg.PARAM_GRID,
-              **qr.PARAM_GRID, **cm.PARAM_GRID}
+              **qr.PARAM_GRID, **cm.PARAM_GRID, **rm.PARAM_GRID}
 CULTURE = {**eq.CULTURE, **cn.CULTURE, **qt.CULTURE, **qg.CULTURE, **qr.CULTURE,
-           **cm.CULTURE}
+           **cm.CULTURE, **rm.CULTURE}
 #: Where each family came from, for the donated row's provenance.
 ORIGIN = {**dict.fromkeys(eq.ELITEQUANT_FAMILIES, "github.com/EliteQuant/EliteQuant (Apache-2.0)"),
           **dict.fromkeys(cn.CN_CTA_FAMILIES, "github.com/thuquant/awesome-quant (MIT)"),
@@ -79,7 +81,11 @@ ORIGIN = {**dict.fromkeys(eq.ELITEQUANT_FAMILIES, "github.com/EliteQuant/EliteQu
           # The queued repositories (czsc, tqsdk, quant-wiki, sunday-quant-scientist), rewritten.
           **qr.ORIGIN,
           # The paperswithbacktest commodity class books, rewritten from the papers it indexes.
-          **cm.ORIGIN}
+          **cm.ORIGIN,
+          # The Roman blueprint rows: Quant Guild clusters 3 (Hawkes) and 4 (Kalman), rewritten.
+          **dict.fromkeys(rm.ROMAN_FAMILIES,
+                          "github.com/romanmichaelpaolucci/Quant-Guild-Library (no licence; "
+                          "rewritten)")}
 #: The registry id each family's cells are credited to (`origin_source_id` on the donated row):
 #: the donor repository, a federation seed (`external_federation.ABSORBED_REPOS`) whose roster
 #: row in data/source_rosters/external_federation_seeds.json names this organ in `fetched_by`.
@@ -90,6 +96,9 @@ SYMBOL_KEYED = frozenset({"commodity_fx_residual", *cm.CLASS_MOMENT_FAMILIES})
 #: Families whose claim names one peer class (`universe_policy.peer_class`): the index calendar
 #: anomalies. Screened only there, so no trial is spent on a mechanism nobody proposed elsewhere.
 CLASS_ONLY = {**qr.CLASS_ONLY, **cm.CLASS_ONLY}
+#: Families that read a partner leg named by `pair_symbol`: screened only on the symbols the
+#: pair table names, each with its partner in the cell's params.
+PAIR_OF = dict.fromkeys(rm.PEER_KEYED, rm.PAIRS)
 
 SOURCE = "elitequant_breadth"
 OUT = BASE / "reports" / "ELITEQUANT_BREADTH.json"
@@ -194,8 +203,10 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
             stopped = f"time budget {budget_s:g}s reached; resumes next pass"
             break
         klass = up.peer_class(sym)
-        plan = [(f, {**p, "symbol": sym} if f in SYMBOL_KEYED else p)
-                for f in FAMILIES if f not in CLASS_ONLY or klass in CLASS_ONLY[f]
+        plan = [(f, {**p, "symbol": sym} if f in SYMBOL_KEYED
+                 else {**p, "pair_symbol": PAIR_OF[f][sym]} if f in PAIR_OF else p)
+                for f in FAMILIES if (f not in CLASS_ONLY or klass in CLASS_ONLY[f])
+                and (f not in PAIR_OF or sym in PAIR_OF[f])
                 for p in grid(f)]
         stale = any((cells.get(identity(sym, f, p)) or {}).get("day") != today for f, p in plan)
         d = pc.bars(sym) if stale else None

@@ -2495,6 +2495,20 @@ for _cm_name in CLASS_MOMENT_FAMILIES:
     FAMILY_TIMEFRAMES[_cm_name] = FAMILY_TIMEFRAMES["cross_sectional_class_momentum"]
 del _cm_name
 
+# THE ROMAN ROWS ON MT5 BARS (2026-10-06): Kalman hedge/beta/trend/vol residuals and bar-event
+# Hawkes flow states, filtered by the shared libs/research/state_space.py and point_process.py.
+# Seeded by `research/elitequant_breadth.py`.
+from mt5desk.families_roman import ROMAN_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(ROMAN_FAMILIES)
+for _rm_name in ROMAN_FAMILIES:
+    FAMILY_INPUTS[_rm_name] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["kalman_hedge_spread"] = (
+    "price only", "the cell's bars plus its pair_symbol's, read as of each bar from "
+    "data/universe/*_H1.parquet")
+FAMILY_INPUTS["kalman_beta_residual"] = FAMILY_INPUTS["kalman_hedge_spread"]
+del _rm_name
+
 # THE ALPHA ZOO AS CLASS BOOKS (2026-09-30): 317 published alphas (GTJA 191, Qlib 158, Alpha101,
 # academic) vendored from HKUDS/Vibe-Trading (MIT) under mt5desk/alpha_zoo/, each ranked within
 # the cell's peer class on each date. Loads its own class panel keyed by the cell's `symbol`, like

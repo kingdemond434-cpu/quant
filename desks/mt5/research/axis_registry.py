@@ -151,7 +151,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     "trend_persistence price_only market": "anti_three_bar_momentum h4_momentum momentum_volgate"
                                            " multi_speed_trend trend_ma_cross"
                                            " htf_anchor_trend parabolic_sar_flip carver_accel"
-                                           " awesome_saucer quiet_grind ribbon_release escalator",
+                                           " awesome_saucer quiet_grind ribbon_release escalator"
+                                           " kalman_trend",
     "trend_persistence price_only stop": "adx_channel_hybrid",
     "trend_persistence price_only limit": "pullback_entry",
     "session_handover price_only market": "asia_momentum clock_transition monday_gap"
@@ -196,7 +197,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     # the class's positively skewed members.
     "positioning_crowding cross_asset market": "cross_sectional_class_skew"
                                                " cross_sectional_class_asymmetry",
-    "range_reversion cross_asset market": "cross_sectional_class_reversal",
+    "range_reversion cross_asset market": "cross_sectional_class_reversal"
+                                         " kalman_hedge_spread kalman_beta_residual",
     "forced_liquidation cross_asset market": "crisis_only_class_defensive",
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"
                                         " mean_reversion_rsi range_reversion",
@@ -204,6 +206,7 @@ _FAMILY_GROUPS: dict[str, str] = {
                                          " heikin_ashi_reversal rsi_head_shoulders bollinger_w"
                                          " ffd_reversion kalman_ou_level"
                                          " td_setup_exhaustion volume_climax_fade"
+                                         " kalman_vol_residual"
                                          " rare_losing_streak",
     "breakout_liquidity price_only stop": "anti_donchian_breakout d1_swing_break level_breakout"
                                           " london_ny_breakout opening_range"
@@ -220,7 +223,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
                                                      " spread_state",
     "gamma_hedging_state microstructure market": "liquidity_gamma_reversal",
-    "inventory_shock microstructure market": "volume_spike",
+    "inventory_shock microstructure market": "volume_spike hawkes_flow",
     # NO MECHANISM NAMED, AND THAT IS THE MEASUREMENT. `discovered` is the desk's own generated
     # family and dominates the docket; `generic`/`formula`/`ensemble`/`joint_genome` are spec
     # constructors. All map to UNKNOWN so the count is visible rather than assumed away.
