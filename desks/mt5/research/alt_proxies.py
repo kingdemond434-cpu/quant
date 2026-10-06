@@ -3038,7 +3038,9 @@ def allocation_intel(points_by_source: dict[str, dict[str, list[dict[str, Any]]]
     return {"generated_at": now.isoformat(timespec="seconds"), "use": "allocation_intel",
             "rule": ("read-only PIT summary: tilt = mean(sign * clip(surprise_z, +-3)) over the "
                      "components released and not stale on that day. It sizes nothing; the "
-                     "allocator is not wired to it"),
+                     "allocator is not wired to it. Its reader is research/alt_intel_forecasts.py, "
+                     "which publishes each tilt as a scoreable forecast_contract belief and grades "
+                     "it against the bars (reports/ALT_INTEL_FORECASTS.json)"),
             "instruments": out}
 
 
@@ -3794,6 +3796,19 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
     if not dry_run:
         _atomic(paths.state, state)
         _atomic(paths.allocation_intel, intel)
+        # THE INTEL'S READER runs on this clock: today's tilts become scoreable beliefs in the
+        # forecast register and matured ones are graded against the bars
+        # (research/alt_intel_forecasts.py). A failure here is reported, never fatal.
+        try:
+            from research import alt_intel_forecasts
+            fc = alt_intel_forecasts.run(paths.desk, intel, lambda sym: _bars_close(paths, sym),
+                                         now=now,
+                                         register=paths.desk / "data" / "forecast_register.jsonl")
+            report["allocation_intel"]["forecasts"] = {
+                "published": fc["published_this_pass"], "resolved": fc["resolved_this_pass"],
+                "skill": fc["skill"].get("status"), "brier": fc["skill"].get("brier")}
+        except Exception as exc:                                         # noqa: BLE001
+            report["allocation_intel"]["forecasts"] = {"error": f"{type(exc).__name__}: {exc}"}
         _atomic(paths.equity_handoff, handoff)
         _atomic(paths.report, report)
         from libs.research import asia_alt_digest

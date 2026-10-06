@@ -91,10 +91,12 @@ class SeriesLoader:
 
     def __init__(self) -> None:
         self.rows: dict[str, Any] = {}
+        self.names: dict[str, str] = {}
         try:
             from research.acquire_datasets import acquired_series
             raw = acquired_series(require_authority=True)
             self.rows = {self._key(k): v for k, v in raw.items()}
+            self.names = {self._key(k): str(k) for k in raw}
         except Exception:
             self.rows = {}
 
@@ -109,6 +111,11 @@ class SeriesLoader:
         row = self.rows.get(self._key(text))
         if row is None:
             return None
+        # Credit the read where it happens, for this series only (libs.data.dataset_use).
+        from libs.data.dataset_use import record_reads
+        record_reads("global_research_os",
+                     {f"acquired:{self.names.get(self._key(text), text)}": None},
+                     use="new_hypotheses")
         try:
             idx = row.index
             dates = idx.tz_convert("UTC").tz_localize(None).values if getattr(idx, "tz", None) \
