@@ -528,3 +528,73 @@ def test_a_missing_index_keeps_the_cursor_and_refeeds_nothing(tmp_path: Path) ->
     assert bare["ledger_status"] == "OK"
     assert bare["totals"]["appended"] == 0 and bare["totals"]["conflicts"] == 0
     assert len(_all_rows(root)) == n
+
+
+def _other_desk(tmp: Path) -> Path:
+    """A second desk with a DIFFERENT Asian store (two KR rows, read after the Seoul close)."""
+    desk = tmp / "desk2"
+    _write(desk / "data" / "asia_sources.json", {"sources": [
+        {"id": "kr_other", "country": "kr", "plane": "kr_markets", "access": "public",
+         "cadence": "daily"}]})
+    frame = desk / "data" / "lake" / "series" / "kr_other.csv"
+    frame.parent.mkdir(parents=True, exist_ok=True)
+    frame.write_text(
+        "level,event_time,available_time,ingested_time,source_id,vintage_id\n"
+        "1.0,2026-09-01,2026-09-01 00:00:00+00:00,2026-09-01T16:00:00+00:00,kr_other,v1\n"
+        "2.0,2026-09-02,2026-09-02 00:00:00+00:00,2026-09-02T16:00:00+00:00,kr_other,v1\n",
+        encoding="utf-8")
+    return desk
+
+
+def _pass_in_thread(desk: Path, rep: Path, root: Path, start: Any,
+                    docs: list[dict[str, Any]], errors: list[BaseException]) -> None:
+    try:
+        start.wait()
+        docs.append(ad.run(desk, ledger_root=root, report=rep, now=NOW))
+    except BaseException as exc:                  # surfaced by the caller, never swallowed
+        errors.append(exc)
+
+
+def test_concurrent_passes_lose_nothing_and_conflict_nowhere(tmp_path: Path) -> None:
+    """Every adapter write goes through #208's locked append. Three passes at once against one
+    ledger -- two over the SAME stores, one over different ones -- must leave every vintage in
+    the index, no conflict anywhere, and exactly the deduplicated union of rows."""
+    import threading
+    src = (DESK / "research" / "asia_sensor_adapter.py").read_text("utf-8")
+    # the adapter never touches a ledger, index, lock or ledger tmp file itself
+    for banned in ("latest_numeric", "ledger.lock", "index_path.write", "obs_dir /",
+                   ".open(\"a"):
+        assert banned not in src, banned
+    for round_ in range(3):
+        base = tmp_path / f"r{round_}"
+        desk1, desk2 = _desk(base), _other_desk(base)
+        root = base / "sensors"
+        jobs = [(desk1, base / "a.json"), (desk1, base / "b.json"), (desk2, base / "c.json")]
+        start = threading.Barrier(len(jobs))
+        docs: list[dict[str, Any]] = []
+        errors: list[BaseException] = []
+
+        threads = [threading.Thread(target=_pass_in_thread,
+                                    args=(desk, rep, root, start, docs, errors))
+                   for desk, rep in jobs]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(60)
+        assert not errors and len(docs) == 3
+        assert all(d["totals"].get("conflicts", 0) == 0 for d in docs)
+        assert all(d["totals"].get("refused", 0) == 0 for d in docs)
+        rows = _all_rows(root)
+        # deduped union: desk1's 7 rows once (not twice) plus desk2's 2
+        assert len(rows) == 9
+        assert len({r["observation_id"] for r in rows}) == 9
+        assert sum(d["totals"].get("appended", 0) for d in docs) == 9
+        # no lost index entry: every row's vintage is in a fresh read of the index
+        led = sc.SensorLedger(root)
+        for r in rows:
+            got = led.as_of(r["sensor_id"], r["entity"], r["metric"], r["event_time"],
+                            r["knowable_at"], basis="world")
+            assert got is not None and got["knowable_at"] == r["knowable_at"], r["metric"]
+        keys = {"|".join((r["sensor_id"], r["entity"], r["metric"], r["event_time"]))
+                for r in rows}
+        assert set(led.latest_index()) == keys

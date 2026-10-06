@@ -61,8 +61,11 @@ import hashlib
 import json
 import math
 import os
+import sys
+import threading
 from collections import Counter
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field, fields
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -417,6 +420,13 @@ class SensorLedger:
       * a torn last line (a crash mid-write) is quarantined to `torn/<day>.jsonl` and cut from
         the shard before the next append; its observation id is never taken from the fragment,
         so the re-sent observation is admitted.
+      * ONE WRITER AT A TIME, ACROSS PROCESSES (audit #208 round 2): load, reconcile, append and
+        the index write all run under an exclusive lock on `ledger.lock` (flock / msvcrt), and
+        every append re-reads the index and re-reconciles from the ON-DISK watermark under it --
+        so two producers (the event-surprise run and the Asia adapter) never write an index that
+        drops the other's rows while its watermark claims their bytes. Each writer has its own
+        temp file. A shard cut below its watermark (or removed) rebuilds the whole index from the
+        shards, so an index entry never outlives the row it was derived from.
     `as_of` answers what the ledger said a key was worth at any instant -- by default on the
     DESK's clock (the later of world-knowable and received), or on the world clock with
     basis="world"; `latest` the newest.
@@ -431,6 +441,9 @@ class SensorLedger:
         self.clock_dir = self.root / "clocks"
         self.index_path = self.root / "latest_numeric.json"
         self.torn_dir = self.root / "torn"
+        self.lock_path = self.root / "ledger.lock"
+        self._lock_depth = 0
+        self._tlock = threading.RLock()
         self._index: dict[str, dict[str, Any]] | None = None
         self._meta: dict[str, Any] = {"shards": {}}
         self._seen: dict[str, set[str]] = {}
@@ -439,6 +452,47 @@ class SensorLedger:
     def _shard(self, day: str, kind: str = "observations") -> Path:
         base = self.obs_dir if kind == "observations" else self.clock_dir
         return base / f"{day}.jsonl"
+
+    @contextmanager
+    def _locked(self) -> Iterator[None]:
+        """Exclusive across processes (an OS file lock) and threads; re-entrant in one ledger."""
+        with self._tlock:
+            if self._lock_depth:
+                self._lock_depth += 1
+                try:
+                    yield
+                finally:
+                    self._lock_depth -= 1
+                return
+            self.root.mkdir(parents=True, exist_ok=True)
+            fh = self.lock_path.open("a+b")
+            try:
+                if sys.platform.startswith("win"):
+                    import msvcrt
+                    fh.seek(0)
+                    while True:
+                        try:
+                            msvcrt.locking(fh.fileno(), msvcrt.LK_LOCK, 1)
+                            break
+                        except OSError:              # LK_LOCK gives up after ~10s: keep waiting
+                            continue
+                else:
+                    import fcntl
+                    fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+                self._lock_depth = 1
+                try:
+                    yield
+                finally:
+                    self._lock_depth = 0
+                    if sys.platform.startswith("win"):
+                        import msvcrt
+                        fh.seek(0)
+                        msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+                    else:
+                        import fcntl
+                        fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+            finally:
+                fh.close()
 
     @staticmethod
     def _entry(raw: Any) -> dict[str, Any]:
@@ -454,30 +508,62 @@ class SensorLedger:
                     "ids": sorted(set(ids))}
         raise LedgerIndexCorrupt(f"unreadable index entry {str(raw)[:80]!r}")
 
-    def _load_index(self) -> dict[str, dict[str, Any]]:
+    def _load_index(self, fresh: bool = False) -> dict[str, dict[str, Any]]:
+        if fresh:
+            self._index = None
+            self._seen = {}
         if self._index is None:
-            meta: Any = None
-            if not self.index_path.exists():
-                index: dict[str, dict[str, Any]] = {}       # rebuilt from the shards below
-            else:
-                try:
-                    doc = json.loads(self.index_path.read_text(encoding="utf-8"))
-                except (OSError, ValueError) as exc:
-                    raise LedgerIndexCorrupt(f"{self.index_path}: {type(exc).__name__}: "
-                                             f"{str(exc)[:120]}") from exc
-                if not isinstance(doc, dict):
-                    raise LedgerIndexCorrupt(f"{self.index_path}: not a JSON object")
-                meta = doc.pop(META, None)
-                index = {str(k): self._entry(v) for k, v in doc.items()}
-            # an index with no watermark (absent, or written before the watermark existed)
-            # reconciles every shard from byte 0; ids already held are recognised, not re-added
-            self._meta = ({"shards": {str(k): int(v) for k, v in meta["shards"].items()}}
-                          if isinstance(meta, dict) and isinstance(meta.get("shards"), dict)
-                          else {"shards": {}})
-            if self._reconcile(index):
-                self._write_index(index)
-            self._index = index
+            with self._locked():
+                self._index = self._read_reconciled()
         return self._index
+
+    @staticmethod
+    def _parse_meta(meta: Any) -> dict[str, Any]:
+        """The watermark block, or LedgerIndexCorrupt: an unreadable watermark is a corrupt
+        index (fail closed), never a ValueError that crashes the caller."""
+        if meta is None:
+            return {"shards": {}}
+        if not isinstance(meta, dict) or not isinstance(meta.get("shards", {}), dict):
+            raise LedgerIndexCorrupt(f"unreadable {META} block {str(meta)[:80]!r}")
+        try:
+            return {"shards": {str(k): int(v) for k, v in meta.get("shards", {}).items()}}
+        except (TypeError, ValueError) as exc:
+            raise LedgerIndexCorrupt(f"unreadable {META} watermark: {exc}") from exc
+
+    def _read_reconciled(self) -> dict[str, dict[str, Any]]:
+        """The on-disk index, reconciled against the shards (and persisted if that changed
+        it). Called only under `_locked`."""
+        meta: Any = None
+        if not self.index_path.exists():
+            index: dict[str, dict[str, Any]] = {}       # rebuilt from the shards below
+        else:
+            try:
+                doc = json.loads(self.index_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                raise LedgerIndexCorrupt(f"{self.index_path}: {type(exc).__name__}: "
+                                         f"{str(exc)[:120]}") from exc
+            if not isinstance(doc, dict):
+                raise LedgerIndexCorrupt(f"{self.index_path}: not a JSON object")
+            meta = doc.pop(META, None)
+            index = {str(k): self._entry(v) for k, v in doc.items()}
+        # an index with no watermark (absent, or written before the watermark existed)
+        # reconciles every shard from byte 0; ids already held are recognised, not re-added
+        self._meta = self._parse_meta(meta)
+        if self._shard_cut():
+            # a shard shorter than (or missing past) the bytes the index absorbed: entries
+            # derived from the cut rows must go, so the index is rebuilt from the shards
+            index, self._meta = {}, {"shards": {}}
+        if self._reconcile(index):
+            self._write_index(index)
+        return index
+
+    def _shard_cut(self) -> bool:
+        for day, mark in self._meta["shards"].items():
+            path = self._shard(day)
+            size = path.stat().st_size if path.is_file() else 0
+            if int(mark) > size:
+                return True
+        return False
 
     @staticmethod
     def _absorb(index: dict[str, dict[str, Any]], row: Mapping[str, Any]) -> bool:
@@ -538,7 +624,8 @@ class SensorLedger:
 
     def _write_index(self, index: dict[str, dict[str, Any]]) -> None:
         self.index_path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.index_path.with_suffix(".tmp")
+        tmp = self.index_path.with_name(
+            f"{self.index_path.stem}.{os.getpid()}.{threading.get_ident()}.tmp")
         tmp.write_text(json.dumps({**index, META: self._meta}, separators=(",", ":")),
                        encoding="utf-8")
         os.replace(tmp, self.index_path)
@@ -652,9 +739,14 @@ class SensorLedger:
     def append(self, observations: Iterable[SensorObservation],
                now: datetime | None = None) -> dict[str, Any]:
         """Append what is new; a new vintage becomes a revision row. Returns the census."""
+        with self._locked():
+            return self._append_locked(observations, now)
+
+    def _append_locked(self, observations: Iterable[SensorObservation],
+                       now: datetime | None) -> dict[str, Any]:
         when = now or datetime.now(UTC)
         try:
-            index = self._load_index()
+            index = self._load_index(fresh=True)    # another writer may have moved it
         except LedgerIndexCorrupt as exc:
             return {"status": "INDEX_CORRUPT", "why": str(exc), "appended": 0,
                     "duplicates": 0, "revisions": 0, "conflicts": 0, "refused": 0,
@@ -766,7 +858,7 @@ class SensorLedger:
         rows = [json.dumps({"observation_id": oid, "clock": clock, "at": stamp,
                             "consumer": consumer, **(dict(detail or {}))}, default=str)
                 for oid in observation_ids]
-        with path.open("a", encoding="utf-8") as fh:
+        with self._locked(), path.open("a", encoding="utf-8") as fh:
             fh.write("\n".join(rows) + "\n")
         return len(rows)
 
