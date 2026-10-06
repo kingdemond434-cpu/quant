@@ -85,19 +85,49 @@ STRONG_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = tuple(re.compile(p) for p 
     r"\b[0-9]{8,10}:AA[0-9A-Za-z_-]{33}",                      # Telegram bot token
     r"-----BEGIN[A-Z ]{0,40}PRIVATE KEY", r"PRIVATE KEY-----",   # whole or split PEM header
 ))
-WEAK_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = (*(re.compile(p, re.IGNORECASE) for p in (
-    # No leading \b: MT5_PASSWORD, $mt5Password and aws_secret_access_key must all match.
-    r"(?:pass(?:word|wd)?|pwd|token|secret|api[_-]?key|access[_-]?key|auth(?:orization)?|bearer)"
-    r"[\w-]*[\"']?\s*(?:[=:]|%3[ad])",
+#: The credential words, matched as WHOLE identifier segments only (audit, 2026-10-06 rescore: the
+#: first broad pattern withheld 23.5% of code files on "authority", "passed" and "author:"). Bare
+#: "pass" is not one: it is a test verdict and a loop pass far more often than a password.
+_CRED_WORD = (r"(?:password|passwd|pwd|token|secret|api[_-]?key|access[_-]?key"
+              r"|auth(?:orization)?|bearer|credentials?)")
+_NOT_A_VALUE = r"(?!(?:none|null|true|false|nil|undefined)\b)"
+#: A VALUE worth withholding: any quoted literal, or an unquoted token carrying a digit or a symbol
+#: (hunter2, s3cr3t!, a hex key). An unquoted plain word after a colon is a type annotation, a
+#: variable or prose (`token: str`, `"api_key": key`, `secret: the ...`) and is not a value.
+_CRED_VALUE = (r"(?:[\"'][^\"'\s]+|" + _NOT_A_VALUE +
+               r"(?=[^\s\"'()\[\]{},;$%]*[0-9+/~!@#^*])[A-Za-z0-9+/_~!@#^*-][^\s\"'()\[\]{},;$%]{2,}"
+               r"(?=[\s\"',;}&]|$))")
+_SEP = r"[\"']?[ \t]*(?:[=:]|%3[ad])[ \t]*"
+_CI = re.IGNORECASE | re.M
+WEAK_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = (*(re.compile(p, _CI) for p in (
+    # 0. A credential word as its own segment (snake_case, kebab, a JSON key, an env name:
+    #    MT5_PASSWORD, db_password, "access_key", password%3D), assigned a value.
+    r"(?<![a-z])(?:[a-z0-9]+[_-])*" + _CRED_WORD + r"(?:[_-][a-z0-9]+)*(?![a-z0-9])" + _SEP
+    + _CRED_VALUE,
+    # 1. An env / ini / dotenv line: NAME=plainword to the end of the line (MT5_PASSWORD=hunter).
+    r"^[ \t]*(?:export[ \t]+|set[ \t]+|\$env:)?(?:[a-z0-9]+[_-])*" + _CRED_WORD
+    + r"(?:[_-][a-z0-9]+)*[ \t]*=[ \t]*" + _NOT_A_VALUE + r"[^\s\"'$%(]{3,}(?=[ \t]*(?:#|$))",
+    # 2. A URL-encoded separator is a query string, so any value counts (token%3Aabc).
+    r"(?<![a-z])(?:[a-z0-9]+[_-])*" + _CRED_WORD + r"(?:[_-][a-z0-9]+)*%3[ad][^&\s\"'#]{3,}",
     # An Authorization header value; the digit lookahead keeps "basic functionality" prose out.
     r"\b(?:bearer|basic)\s+(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{12,}",
     r"x-api-key",
     r"\b[a-z][a-z0-9+.-]*://[^\s/:@'\"]+:[^\s/@'\"]+@",          # scheme://user:password@host
     r"-----BEGIN",
+    # 7. ANY name ending in key (eia_key, Eia_Key, "key", api-key) holding a LONG value: 16+ key
+    #    characters with a digit in them. Python's `key=len` and `sort_key=fn` stay out.
+    r"[a-z0-9_-]*key" + _SEP + r"[\"']?(?=[A-Za-z0-9+/_=-]*[0-9])[A-Za-z0-9+/_=-]{16,}",
+    # 8. A key in a query string: ?key=, &api_key=, &apikey= with any 8+ character value.
+    r"[?&][a-z0-9_-]*key=[^&\s\"'#]{8,}",
 )),
-    # Upper-case env names ending in KEY (EIA_KEY=, MY_KEY:), case-SENSITIVE so Python's `key=`
-    # keyword and JSON "key": do not withhold half the tree.
-    re.compile(r"\b[A-Z][A-Z0-9_]*_KEY\b[\"']?\s*(?:[=:]|%3[ADad])"),
+    # 9. camelCase (case-SENSITIVE): $mt5Password, dbToken, myApiKey -- the word starts a new
+    #    capitalised segment, so "authority" or "passed" never match.
+    re.compile(r"[a-z0-9](?:Password|Passwd|Pwd|Token|Secret|ApiKey|AccessKey|Auth|Authorization"
+               r"|Bearer|Credentials?)(?![a-z])" + _SEP + _CRED_VALUE, re.M),
+    # 10. Upper-case env names ending in KEY (EIA_KEY=abc, MY_KEY: x), case-SENSITIVE so Python's
+    #    `key=` keyword and JSON "key": do not withhold half the tree.
+    re.compile(r"\b[A-Z][A-Z0-9_]*_KEY\b" + _SEP + r"(?:" + _CRED_VALUE + r"|" + _NOT_A_VALUE
+               + r"[^\s\"'$%(]{3,}(?=[ \t]*(?:#|$)))", re.M),
 )
 #: An encoded run worth decoding and re-screening (base64 and its url-safe form).
 _B64_RUN = re.compile(r"[A-Za-z0-9+/_-]{20,}={0,2}")
@@ -310,10 +340,16 @@ def _inflate(data: bytes) -> bytes | None:
 
 def screen_bytes(data: bytes) -> str | None:
     """A blob's raw bytes. Anything that is not plain text (a NUL anywhere -- which is also every
-    utf-16 file -- or gzip/zip magic) cannot be screened as text, so it is WITHHELD at least; the
+    utf-16 file -- gzip/zip magic, or ANY byte sequence that is not valid UTF-8: xz, 7z, bz2) cannot
+    be screened as text, so it is WITHHELD at least; the
     decodings we can read cheaply (utf-16, gzip) are also scanned so a credential inside them
     escalates to strong and refuses the push."""
-    binary = b"\x00" in data or data.startswith(_BINARY_MAGIC)
+    try:
+        data.decode("utf-8")
+        not_utf8 = False
+    except UnicodeDecodeError:
+        not_utf8 = True     # xz, 7z, bz2, latin-1 ... anything we cannot read as text is withheld
+    binary = not_utf8 or b"\x00" in data or data.startswith(_BINARY_MAGIC)
     texts = [data.decode("utf-8", errors="replace")]
     if binary:
         for enc in ("utf-16", "utf-16-le", "utf-16-be"):

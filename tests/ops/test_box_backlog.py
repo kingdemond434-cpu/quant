@@ -7,8 +7,10 @@ box-only CODE to `box/backlog-<stamp>` -- never the live branch -- and reports t
 from __future__ import annotations
 
 import base64
+import bz2
 import gzip
 import json
+import lzma
 import os
 import subprocess
 from datetime import UTC, datetime
@@ -189,9 +191,9 @@ def test_ordinary_code_is_not_denied() -> None:
 
 
 def test_a_weak_hit_withholds_one_file_and_never_wedges_the_drain(box: tuple[Path, Path]) -> None:
-    """Audit D2, third condition: code that merely READS a token must not block every drain."""
+    """Audit D2, third condition: one suspicious file is withheld, the rest still drains."""
     repo, remote = box
-    _write(repo, "libs/c.py", 'token = os.environ.get("GITHUB_TOKEN")\n')
+    _write(repo, "libs/c.py", 'password = "hunter2"\n')
     _git(repo, "add", ".")
     _git(repo, "commit", "-qm", "box code that reads a token")
     doc = bb.run(repo, upstream="origin/live", push=True)
@@ -272,8 +274,14 @@ def test_any_unscreenable_blob_is_withheld(data: bytes) -> None:
     assert bb.screen_bytes(data) in ("weak", "strong")
 
 
-@pytest.mark.parametrize("text", ["def f(xs): return sorted(xs, key=len)", 'row = {"key": 1}',
-                                  "the basic functionality of the module"])
+@pytest.mark.parametrize("text", [
+    "def f(xs): return sorted(xs, key=len)", 'row = {"key": 1}',
+    "the basic functionality of the module",
+    # audit rescore 2026-10-06: the broad pattern 0 flagged 23.5% of code files on these
+    '{"authority": "ramp"}', '{"passed": true}', "author: zuck", "pass: the next slot retries",
+    "def f(token: str) -> None:", '{"api_key": key}', "secret: the reason it stays local",
+    'token = os.environ.get("GITHUB_TOKEN")', "password = None", "sort_key=by_date",
+])
 def test_ordinary_code_is_not_withheld(text: str) -> None:
     assert bb.secret_strength(text) is None
 
@@ -352,3 +360,41 @@ def test_a_failed_ignore_read_is_unmeasured(box: tuple[Path, Path],
     monkeypatch.setattr(bb, "_git", broken)
     doc = bb.run(repo, upstream="origin/live", push=True)
     assert doc["verdict"] == "UNMEASURED" and doc["push"]["pushed"] is False
+
+
+# AUDIT RESCORE (2026-10-06, rescore/PR210_v3.md): what --push still needs.
+_HEX32 = "0123456789abcdef" * 2
+
+
+@pytest.mark.parametrize("text", [
+    f"eia_key={_HEX32}", f"Eia_Key = '{_HEX32}'", f"https://api.eia.gov/v2/x?key={_HEX32}",
+    f"https://x.org/q?a=1&api_key={_HEX32}", f'{{"key": "{_HEX32}"}}', f'{{"key":"{_HEX32}"}}',
+])
+def test_any_key_name_with_a_long_value_is_withheld(text: str) -> None:
+    assert bb.secret_strength(text) in ("weak", "strong"), text
+
+
+@pytest.mark.parametrize("data", [
+    lzma.compress(b"plain text"), bz2.compress(b"plain text"),
+    b"7z\xbc\xaf\x27\x1c\x00\x04" + b"\x80" * 16,      # a 7z header
+    "caf\u00e9 latin-1".encode("latin-1"),
+])
+def test_any_blob_that_is_not_utf8_is_withheld(data: bytes) -> None:
+    assert bb.screen_bytes(data) in ("weak", "strong")
+
+
+def test_the_screen_withholds_few_of_this_repositorys_own_code_files() -> None:
+    """The rescore measured 23.5% of code files withheld by the broad pattern. A screen that
+    withholds a quarter of the tree drains nothing; this pins the narrowed rate below 5%."""
+    import subprocess as sp
+    files = sp.run(["git", "-C", str(bb.ROOT), "ls-files", "*.py", "*.ps1", "*.sh"],
+                   capture_output=True, text=True, check=True).stdout.split()
+    assert len(files) > 100
+    held = 0
+    for rel in files:
+        try:
+            data = (bb.ROOT / rel).read_bytes()
+        except OSError:
+            continue
+        held += bb.screen_bytes(data) is not None
+    assert held / len(files) < 0.05, f"{held}/{len(files)} withheld"
