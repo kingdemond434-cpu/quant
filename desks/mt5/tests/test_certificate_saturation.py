@@ -324,7 +324,8 @@ def test_temperature_reads_measured_inputs_only() -> None:
 def test_research_budget_factor_follows_the_split() -> None:
     hot = {"factors": {}, "budget_split": bl.budget_split({"fired": ["stall"]})}
     assert bl.budget_factor("frontier_unknowns", hot) > 1.0
-    assert bl.budget_factor("deepen", hot) < 1.0
+    # the split only ADDS (audit must-fix 3): a heated A/C never trims a B leg below par
+    assert bl.budget_factor("deepen", hot) == 1.0
     assert bl.budget_factor("deepen", {}) == 1.0
     assert bl.FACTOR_CLIP[0] <= bl.budget_factor("breadth_sweep", hot) <= bl.FACTOR_CLIP[1]
 
