@@ -146,9 +146,9 @@ def _write_atomic(p: Path, text: str) -> None:
 
 
 def _key_present(src: dict[str, Any]) -> bool:
-    import os
+    from libs.ops.env_keys import read_key
     env = str(src.get("key_env") or "")
-    return bool(env and os.environ.get(env))
+    return bool(env and read_key(env))
 
 
 def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool, str]:

@@ -242,7 +242,8 @@ def github_token() -> str | None:
     """The token, or None. Absence is a normal state, not an error."""
     import os
     from pathlib import Path
-    tok = os.environ.get(GITHUB_TOKEN_ENV, "").strip()
+    from libs.ops.env_keys import read_key
+    tok = read_key(GITHUB_TOKEN_ENV)
     if tok:
         return tok
     path = Path(GITHUB_TOKEN_FILE).expanduser()

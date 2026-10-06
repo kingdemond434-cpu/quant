@@ -32,6 +32,7 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.env_keys import read_key  # noqa: E402
 from libs.research.vintage import record  # noqa: E402
 
 _KEYFILE = Path("data/secrets/fred.json")
@@ -51,7 +52,7 @@ _ARCHIVE_LONG = Path("data/fred_macro_long.json")
 
 
 def _key() -> str | None:
-    k = os.environ.get("FRED_API_KEY")
+    k = read_key("FRED_API_KEY")
     if k:
         return k
     try:

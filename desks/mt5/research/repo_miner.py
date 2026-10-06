@@ -34,6 +34,8 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from libs.ops.env_keys import read_key  # noqa: E402
+
 WATCHLIST = _DESK / "data" / "repo_watchlist.json"
 CACHE = _DESK / "data" / "repo_cache"
 REPORT = _DESK / "reports" / "REPO_MINER.json"
@@ -62,7 +64,7 @@ def _watchlist() -> dict[str, Any]:
 def _get(url: str, timeout: float = 20.0) -> Any:
     req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json",
                                                "User-Agent": "quant-repo-miner"})
-    tok = os.environ.get("GITHUB_TOKEN")
+    tok = read_key("GITHUB_TOKEN") or None
     if tok:
         req.add_header("Authorization", f"Bearer {tok}")
     with urllib.request.urlopen(req, timeout=timeout) as r:

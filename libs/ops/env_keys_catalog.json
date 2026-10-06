@@ -1,0 +1,428 @@
+{
+ "about": "Every API key or credential the code reads. Read by libs/ops/env_keys.py, scripts/check_keys.py and scripts/check_keys.ps1. Policy: public or licensed only; free self-registered keys count as licensed; paid data stays unused. X, Discord user tokens, Reddit, StockTwits and crypto venues are fenced (libs/data/terms_fence.py) and are not listed.",
+ "keys": [
+  {
+   "name": "FRED_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box+vps",
+   "signup": "https://fredaccount.stlouisfed.org/apikeys",
+   "unlocks": "FRED macro and ALFRED vintages (macro surprise, first prints)",
+   "readers": [
+    "desks/mt5/research/fetch_alfred.py",
+    "scripts/collect_fred_macro.py"
+   ],
+   "owner": "World sensor and macro surprise",
+   "file_fallback": "data/secrets/fred.json {\"key\": ...} or secrets/fred_api_key"
+  },
+  {
+   "name": "EIA_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://www.eia.gov/opendata/register.php",
+   "unlocks": "EIA weekly petroleum stocks -> XTIUSD, XBRUSD, USDCAD",
+   "readers": [
+    "desks/mt5/research/asia_collector.py (asia_sources.json eia_energy)"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "ECOS_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://ecos.bok.or.kr/api/#/AuthKeyApply",
+   "unlocks": "Bank of Korea card spending (kr_bok_card_spend)",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "same_key_as": "BOK_API_KEY"
+  },
+  {
+   "name": "BOK_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://ecos.bok.or.kr/api/#/AuthKeyApply",
+   "unlocks": "Bank of Korea ECOS macro (bok_ecos)",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "same_key_as": "ECOS_API_KEY"
+  },
+  {
+   "name": "TUSHARE_TOKEN",
+   "group": "free_data",
+   "cost": "free (points-tiered)",
+   "machine": "box",
+   "signup": "https://tushare.pro/register",
+   "unlocks": "China futures, settlement, margin, minute/OI, China release calendar",
+   "readers": [
+    "libs/data/free_stack.py",
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "JQ_USER",
+   "group": "free_data",
+   "cost": "free trial",
+   "machine": "box",
+   "signup": "https://www.joinquant.com/default/index/sdk",
+   "unlocks": "JoinQuant jqdatasdk (with JQ_PASS)",
+   "readers": [
+    "libs/data/free_stack.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "note": "your JoinQuant login phone/username"
+  },
+  {
+   "name": "JQ_PASS",
+   "group": "free_data",
+   "cost": "free trial",
+   "machine": "box",
+   "signup": "https://www.joinquant.com/default/index/sdk",
+   "unlocks": "JoinQuant jqdatasdk (with JQ_USER)",
+   "readers": [
+    "libs/data/free_stack.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "note": "your JoinQuant password"
+  },
+  {
+   "name": "ESTAT_APP_ID",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://www.e-stat.go.jp/api/en",
+   "unlocks": "Japan e-Stat: Tokyo CPI, immigration, customs microdata",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py",
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "FIRMS_MAP_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://firms.modaps.eosdis.nasa.gov/api/map_key/",
+   "unlocks": "NASA FIRMS thermal hotspots (refineries, smelters, CN industrial)",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py",
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "KOBIS_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://www.kobis.or.kr/kobisopenapi/homepg/apikey/ckUser/findApikeyList.do",
+   "unlocks": "Korea box office (consumer spend proxy)",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "SEOUL_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://data.seoul.go.kr/together/mypage/actkeyMain.do",
+   "unlocks": "Seoul subway ridership (activity proxy)",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "DATA_GO_KR_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://www.data.go.kr/",
+   "unlocks": "Korea MOF container TEU (apply for dataset 1192000/SsopCargContnImxprt2)",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "note": "use the Decoding (raw) service key"
+  },
+  {
+   "name": "INEGI_TOKEN",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://www.inegi.org.mx/app/desarrolladores/generatoken/Usuarios/token_Verify",
+   "unlocks": "Mexico INEGI retail (EMEC) -> USDMXN",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "BANXICO_TOKEN",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://www.banxico.org.mx/SieAPIRest/service/v1/token",
+   "unlocks": "Banco de Mexico SIE series -> USDMXN, GBPMXN",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "JQUANTS_TOKEN",
+   "group": "free_data",
+   "cost": "free plan (delayed data)",
+   "machine": "box",
+   "signup": "https://jpx-jquants.com/",
+   "unlocks": "JPX investor-type flow -> USDJPY, JP225",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "note": "J-Quants refresh tokens expire after a week; the collector needs a refresh-token flow (routed to the Asia thread)"
+  },
+  {
+   "name": "CDSE_TOKEN",
+   "group": "free_data",
+   "cost": "free account",
+   "machine": "box",
+   "signup": "https://dataspace.copernicus.eu/",
+   "unlocks": "Sentinel-5P NO2/SO2/CO over industrial clusters",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "note": "CDSE access tokens are short-lived OAuth tokens; the collector needs a username/password token flow (routed to the Asia thread)"
+  },
+  {
+   "name": "QUANT_EDGAR_UA",
+   "group": "free_data",
+   "cost": "free (not a key)",
+   "machine": "box+vps",
+   "signup": "https://www.sec.gov/os/accessing-edgar-data",
+   "unlocks": "SEC EDGAR filings (alpha_capture, edgar_transmission)",
+   "readers": [
+    "desks/mt5/research/alpha_capture.py",
+    "desks/mt5/research/sandboxes/edgar_transmission.py"
+   ],
+   "owner": "World sensor and macro surprise",
+   "note": "value is a declared User-Agent: \"YourName your@email\""
+  },
+  {
+   "name": "GITHUB_TOKEN",
+   "group": "free_infra",
+   "cost": "free",
+   "machine": "box+vps",
+   "signup": "https://github.com/settings/personal-access-tokens/new",
+   "unlocks": "repo miners and paper code search at 5000 req/h instead of 60",
+   "readers": [
+    "desks/mt5/research/repo_miner.py",
+    "libs/data/papers.py",
+    "desks/mt5/side_channels/github_miner.py"
+   ],
+   "owner": "Mine the EliteQuant list",
+   "note": "fine-grained token, public repositories read-only, no write scopes",
+   "file_fallback": "~/.gh_token"
+  },
+  {
+   "name": "OPENROUTER_API_KEY",
+   "group": "free_llm",
+   "cost": "free models available (QUANT_FREE_TIER=1 default)",
+   "machine": "box+vps",
+   "signup": "https://openrouter.ai/settings/keys",
+   "unlocks": "LLM idea-miner seat (#142): proposer seat, event factors, convert swarm",
+   "readers": [
+    "libs/ops/llm_seat.py",
+    "libs/research/proposer_seat.py",
+    "libs/research/event_factors_llm.py",
+    "ops/convert_swarm.py"
+   ],
+   "owner": "Finish the old committees work",
+   "file_fallback": "data/secrets/llm_panel.json"
+  },
+  {
+   "name": "YOUTUBE_API_KEY",
+   "group": "free_data",
+   "cost": "free quota",
+   "machine": "vps",
+   "signup": "https://console.cloud.google.com/apis/library/youtube.googleapis.com",
+   "unlocks": "YouTube transcript/video miner",
+   "readers": [
+    "desks/mt5/side_channels/youtube_miner.py"
+   ],
+   "owner": "Mine the EliteQuant list",
+   "file_fallback": "VPS data/secrets/youtube.env"
+  },
+  {
+   "name": "CLAUDE_CODE_OAUTH_TOKEN",
+   "group": "infra",
+   "cost": "your Claude plan",
+   "machine": "vps",
+   "signup": "run `claude setup-token` on the VPS",
+   "unlocks": "VPS brain/frontier/dataaxis hunters",
+   "readers": [
+    "ops/brain_env.sh",
+    "ops/quant-frontier.service"
+   ],
+   "owner": "Breadth and tier assessment",
+   "file_fallback": "VPS data/secrets/claude_oauth_token or ~/.claude_token.env"
+  },
+  {
+   "name": "DARWINEX_TOKEN",
+   "group": "account_free",
+   "cost": "free with a Darwinex account (check terms)",
+   "machine": "box",
+   "signup": "https://www.darwinex.com/",
+   "unlocks": "DARWIN attribute genome (survivorship-free strategy data)",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "QuantConnect, WorldQuant and fund miners"
+  },
+  {
+   "name": "C2_API_KEY",
+   "group": "account_free",
+   "cost": "account-gated (check terms)",
+   "machine": "box",
+   "signup": "https://collective2.com/api-docs/latest",
+   "unlocks": "Collective2 strategy graveyard",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "QuantConnect, WorldQuant and fund miners"
+  },
+  {
+   "name": "MYFXBOOK_SESSION",
+   "group": "account_free",
+   "cost": "free account",
+   "machine": "box",
+   "signup": "https://www.myfxbook.com/api",
+   "unlocks": "Myfxbook community outlook (retail crowding)",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "QuantConnect, WorldQuant and fund miners",
+   "note": "a login session id that expires; the collector needs a login flow (routed)"
+  },
+  {
+   "name": "OPENAI_API_KEY",
+   "group": "paid_llm",
+   "cost": "paid",
+   "machine": "box+vps",
+   "signup": "https://platform.openai.com/api-keys",
+   "unlocks": "optional extra LLM seat",
+   "readers": [
+    "libs/ops/llm_seat.py"
+   ],
+   "owner": "Finish the old committees work"
+  },
+  {
+   "name": "DEEPSEEK_API_KEY",
+   "group": "paid_llm",
+   "cost": "paid (cheap)",
+   "machine": "box+vps",
+   "signup": "https://platform.deepseek.com/api_keys",
+   "unlocks": "optional extra LLM seat",
+   "readers": [
+    "libs/ops/llm_seat.py"
+   ],
+   "owner": "Finish the old committees work"
+  },
+  {
+   "name": "XAI_API_KEY",
+   "group": "paid_llm",
+   "cost": "paid",
+   "machine": "box+vps",
+   "signup": "https://console.x.ai/",
+   "unlocks": "optional extra LLM seat (API only, not X data)",
+   "readers": [
+    "libs/ops/llm_seat.py"
+   ],
+   "owner": "Finish the old committees work"
+  },
+  {
+   "name": "ANTHROPIC_API_KEY",
+   "group": "paid_llm",
+   "cost": "paid",
+   "machine": "vps",
+   "signup": "https://console.anthropic.com/settings/keys",
+   "unlocks": "optional brain seat (dormant; OAuth token preferred)",
+   "readers": [
+    "ops/brain_env.sh",
+    "desks/mt5/mt5desk/analyst_rank.py"
+   ],
+   "owner": "Breadth and tier assessment"
+  },
+  {
+   "name": "TIANYANCHA_TOKEN",
+   "group": "paid_blocked",
+   "cost": "paid, not used by policy",
+   "machine": "box",
+   "signup": "https://open.tianyancha.com/",
+   "unlocks": "CN corporate registry graph",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "BAIDU_INDEX_COOKIE",
+   "group": "paid_blocked",
+   "cost": "login cookie, not used by policy",
+   "machine": "box",
+   "signup": "-",
+   "unlocks": "Baidu Index attention",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  }
+ ],
+ "config": [
+  {
+   "name": "ALT_ECOS_CARD_STAT",
+   "for": "ECOS_API_KEY",
+   "what": "ECOS stat code for card spending"
+  },
+  {
+   "name": "ALT_ECOS_CARD_ITEM",
+   "for": "ECOS_API_KEY",
+   "what": "ECOS item code for card spending"
+  },
+  {
+   "name": "ALT_ESTAT_IMMIG_STATS_ID",
+   "for": "ESTAT_APP_ID",
+   "what": "e-Stat immigration table id"
+  },
+  {
+   "name": "ALT_ESTAT_IMMIG_CAT01",
+   "for": "ESTAT_APP_ID",
+   "what": "e-Stat immigration category"
+  },
+  {
+   "name": "ALT_INEGI_EMEC_ID",
+   "for": "INEGI_TOKEN",
+   "what": "INEGI EMEC indicator id"
+  }
+ ],
+ "infra_already_set": [
+  "QUANT_RELEASE_SIGNING_KEY",
+  "QUANT_CONTROLLER_TOKEN",
+  "RESTIC_PASSWORD",
+  "E8_TL_USERNAME",
+  "E8_TL_PASSWORD",
+  "E8_TL_SERVER",
+  "E8_TL_ENV"
+ ]
+}
