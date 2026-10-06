@@ -2446,3 +2446,18 @@ for _av_name in ("analyst_revision_drift", "analyst_cross_market_lead"):
         "a view is a daily-cadence event measured at +1/+5/+21 trading days; its hold is counted "
         "in H1 bars per trading day, and the tracker that set the measured side read H1 closes")
 del _av_name
+
+# SPECIALIST FAMILIES (2026-09-30, `research/specialist_cell.py`). Four mechanisms an asset-class
+# specialist names and no registered family expressed: carry harvested in calm and unwound in
+# risk-off, the fixed-weight allocator's month-end rebalancing flow, a day-of-year weather or crop
+# window, and the entry-filter OPERATOR the residual search mints conditioned cells with. Each
+# loads its foreign series from the bar store given only what the cell carries (`risk_symbol`,
+# `bond_symbol`, `cond_symbol`), as the class books do, so the sealed gauntlet builds them through
+# its ordinary `fn(h1, **params)` call with no input branch.
+from mt5desk.families_specialist import INPUTS as _SPEC_INPUTS  # noqa: E402
+from mt5desk.families_specialist import SPECIALIST_FAMILIES  # noqa: E402
+from mt5desk.families_specialist import TIMEFRAMES as _SPEC_TIMEFRAMES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(SPECIALIST_FAMILIES)
+FAMILY_INPUTS.update(_SPEC_INPUTS)
+FAMILY_TIMEFRAMES.update(_SPEC_TIMEFRAMES)

@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 761,
+  "NEVER": 765,
   "UNMEASURED": 37
  },
  "scope": {
-  "attested": 979,
+  "attested": 983,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -273,6 +273,19 @@
     "organs": [
      "executable:desks/mt5/research/dormant_components.py",
      "library:libs/ops/intelligence_inputs.py"
+    ]
+   },
+   {
+    "at": "2026-10-06T16:19:17+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:scripts/lessons.py",
+     "leg:residual_search",
+     "leg:specialist_cell",
+     "task:E8-Book"
     ]
    }
   ]
@@ -25230,6 +25243,118 @@
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
    "measured_at": "2026-10-01T12:25:50+00:00"
+  },
+  {
+   "organ": "executable:scripts/lessons.py",
+   "kind": "executable",
+   "code": [
+    "scripts/lessons.py"
+   ],
+   "clock": "invoked:libs/ops/agent_denials.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/NIGHTLY_CATCHUP.json",
+   "artifact_declared": "desks/mt5/reports/NIGHTLY_CATCHUP.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-06T16:19:17+00:00"
+  },
+  {
+   "organ": "leg:residual_search",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/residual_search.py"
+   ],
+   "clock": "hourly_cycle:residual_search",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/RESIDUAL_SEARCH.json",
+   "artifact_declared": "desks/mt5/reports/RESIDUAL_SEARCH.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-06T16:19:17+00:00"
+  },
+  {
+   "organ": "leg:specialist_cell",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/specialist_cell.py"
+   ],
+   "clock": "hourly_cycle:specialist_cell",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/SPECIALIST_CELLS.json",
+   "artifact_declared": "desks/mt5/reports/SPECIALIST_CELLS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-06T16:19:17+00:00"
+  },
+  {
+   "organ": "task:E8-Book",
+   "kind": "task",
+   "code": [
+    "desks/mt5/prop/e8_book.py"
+   ],
+   "clock": "E8-Book",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/E8_BOOK.json",
+   "artifact_declared": "desks/mt5/reports/E8_BOOK.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "task_runs",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-06T16:19:17+00:00"
   }
  ],
  "ratchet": {

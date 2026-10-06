@@ -251,7 +251,8 @@ LEG_LAYER: dict[str, str] = {
     "model_role_benchmark": "meta", "research_departments": "meta",
     "qd_frontier": "information", "blind_reviewer": "meta",
     "evaluator_lab": "meta", "value_of_data": "information", "research_api_status": "meta",
-    "artifact_chain": "meta", "residual_queue": "information", "unseen_frontier": "information",
+    "artifact_chain": "meta", "residual_queue": "information",
+    "residual_search": "information", "unseen_frontier": "information",
     "attribution_reconcile": "meta",
     "macro_state_engine": "information",
     "research_artifacts": "meta",
@@ -260,6 +261,7 @@ LEG_LAYER: dict[str, str] = {
     "trend_core": "prediction",
     # the within-class rank legs are claims about relative returns: prediction, like trend_core
     "cross_sectional_breadth": "prediction",
+    "specialist_cell": "prediction",
     "event_surprise": "information",
     # public analyst views collected and stamped at first sighting: information
     "alpha_capture": "information",

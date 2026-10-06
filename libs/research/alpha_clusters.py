@@ -257,6 +257,10 @@ FAMILY_CLUSTER: dict[str, str] = {
     "lead_lag_class_catchup": "cross_asset_lead_lag",
     # Fires ONLY in a lagged class-stress regime and is idle otherwise: forced deleveraging.
     "crisis_only_class_defensive": "crisis_drawdown",
+    # the specialist families (desks/mt5/mt5desk/families_specialist.py, 2026-09-30)
+    "carry_risk_off": "macro_rates",
+    "month_end_rebalance": "fixing_roll_calendar",
+    "seasonal_window": "fixing_roll_calendar",
     # -- crisis and drawdown alpha
     "drawdown_conditional": "crisis_drawdown",
     "crisis_only": "crisis_drawdown",
