@@ -96,7 +96,7 @@ def thresholdout(study: str, queries: Mapping[str, tuple[float, float]], *, scal
     path = state_path or STATE
     loaded = _load(path)
     if loaded is None:
-        return {"study": study, "answers": {k: None for k in queries}, "overfit": [],
+        return {"study": study, "answers": dict.fromkeys(queries), "overfit": [],
                 "budget_left": 0, "budget": budget, "questions_total": None,
                 "status": "EXHAUSTED", "state_error": f"{path.name} missing or malformed: "
                 "the budget fails closed (a deleted file never refills it)"}
@@ -129,7 +129,7 @@ def thresholdout(study: str, queries: Mapping[str, tuple[float, float]], *, scal
         _save(path, doc)
     except OSError as exc:
         # An uncharged answer is a free look at the holdout: the pass answers nothing.
-        return {"study": study, "answers": {k: None for k in queries}, "overfit": [],
+        return {"study": study, "answers": dict.fromkeys(queries), "overfit": [],
                 "budget_left": 0, "budget": budget, "questions_total": asked,
                 "status": "EXHAUSTED", "state_error": f"{type(exc).__name__}: {exc}"}
     return {"study": study, "answers": answers, "overfit": overfit, "budget_left": left,
