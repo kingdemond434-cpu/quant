@@ -289,7 +289,7 @@ def test_queue_age_publishes_oldest_quantiles_flow_latency_and_trend(tmp_path) -
     doc = jt.queue_age(rate, now, registry=reg, funnel=funnel, prior_path=prior)
     age = doc["age"]
     assert age["unjudged"] == 100 and age["oldest_h"] == 100.0
-    assert age["p50_h"] == 50.0 and age["p90_h"] == 90.0
+    assert age["p50_h"] == 51.0 and age["p90_h"] == 91.0      # nearest rank from the oldest end
     assert age["oldest_trend"] == "FALLING"
     assert doc["flow"]["judged_over_created"] == 1.5 and doc["flow"]["status"] == "ABOVE_TARGET"
     assert doc["latency_h"]["same_day_p50"] is True
