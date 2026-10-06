@@ -2071,7 +2071,10 @@ def bracket_deadline(sleeve: str, window: str | None = None,
 #: The terminal's order-comment bound ("DW" + 27), mirrored by `gateway.COMMENT_MAX`, which is
 #: where it was measured. Kept here so the tag is built by the same pure code CI covers.
 SLEEVE_TAG_MAX = 29
-#: Hex digits of the name's hash a tag carries when the name does not fit the bound.
+#: Hex digits of the name's hash a tag carries when the name does not fit the bound. Computed:
+#: 8 hex digits = 32 bits, so the birthday probability of any collision among n over-long names
+#: is about n^2 / 2^33 -- 2.9e-05 at 500 names -- and it leaves 29 - 8 - 1 = 20 characters of
+#: readable prefix before the "~". Not a sizing number: it names an order, never sizes one.
 SLEEVE_TAG_HASH = 8
 
 
