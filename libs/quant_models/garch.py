@@ -43,10 +43,12 @@ class GarchParams:
 
 def garch_filter(r: FArr, omega: float, alpha: float, beta: float, h0: float) -> FArr:
     """Conditional variances h_1..h_{n+1} (h_{n+1} is the forecast after the last return)."""
+    from scipy.signal import lfilter
     h = np.empty(r.size + 1)
     h[0] = h0
-    for i in range(r.size):
-        h[i + 1] = omega + alpha * r[i] * r[i] + beta * h[i]
+    if r.size:
+        # h_{i+1} = omega + alpha r_i^2 + beta h_i  is an AR(1) filter of omega + alpha r^2
+        h[1:] = lfilter([1.0], [1.0, -beta], omega + alpha * r * r, zi=[beta * h0])[0]
     return h
 
 
@@ -72,7 +74,7 @@ def fit_garch(returns: FArr) -> GarchParams:
     scale = 1.0 / math.sqrt(var)            # fit on unit-variance returns: well conditioned
     z = r * scale
     best = None
-    for a0, b0 in ((0.05, 0.9), (0.1, 0.85), (0.03, 0.95), (0.15, 0.7)):
+    for a0, b0 in ((0.05, 0.9), (0.12, 0.8)):
         x0 = np.asarray([1.0 - a0 - b0, a0, b0])
         sol = minimize(garch_nll, x0, args=(z, 1.0), method="L-BFGS-B",
                        bounds=[(1e-6, 2.0), (1e-6, 0.6), (0.0, 0.9989)])
@@ -175,8 +177,10 @@ class Ewma(BlackScholes):
     measure = "P"
     params: EwmaParams
 
-    def __init__(self, params: EwmaParams | None = None) -> None:
+    def __init__(self, params: EwmaParams | None = None, fit_lambda: bool = True) -> None:
         self.params = params or EwmaParams()
+        #: False keeps the decay fixed (the cheap daily step between likelihood refits)
+        self.fit_lambda = fit_lambda
 
     def calibrate(self, data: MarketData) -> Ewma:
         from scipy.optimize import minimize_scalar
@@ -185,7 +189,7 @@ class Ewma(BlackScholes):
         if r.size < 30:
             return self
         lam = self.params.lam
-        if r.size >= 250:
+        if self.fit_lambda and r.size >= 250:
             sol = minimize_scalar(ewma_nll, bounds=(0.8, 0.995), args=(r,), method="bounded")
             lam = float(sol.x)
         h = ewma_variance(np.append(r, 0.0), lam=lam)[-1]   # forecast after the last return

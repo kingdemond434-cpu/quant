@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 import numpy as np
 
@@ -56,6 +57,7 @@ class RoughParams:
     log_level: float = math.log(0.04)
 
 
+@lru_cache(maxsize=256)
 def lift(hurst: float, n: int, x_lo: float, x_hi: float) -> tuple[FArr, FArr]:
     """(weights c_i, speeds x_i) of the OU lift of K(t) = t^{H-1/2}/Gamma(H+1/2)."""
     a = hurst + 0.5
@@ -64,7 +66,10 @@ def lift(hurst: float, n: int, x_lo: float, x_hi: float) -> tuple[FArr, FArr]:
     lo, hi = edges[:-1], edges[1:]
     c = (hi ** (1.0 - a) - lo ** (1.0 - a)) / ((1.0 - a) * norm)
     m1 = (hi ** (2.0 - a) - lo ** (2.0 - a)) / ((2.0 - a) * norm)
-    return np.asarray(c, dtype=np.float64), np.asarray(m1 / c, dtype=np.float64)
+    c_out, x_out = np.asarray(c, dtype=np.float64), np.asarray(m1 / c, dtype=np.float64)
+    c_out.flags.writeable = False          # cached: shared, never mutated
+    x_out.flags.writeable = False
+    return c_out, x_out
 
 
 def _cov_grow(c: FArr, x: FArr, s: float) -> float:

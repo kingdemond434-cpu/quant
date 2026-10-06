@@ -19,7 +19,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from libs.quant_models.base import YEAR_DAYS, MarketData, OptionSpec, StochasticModel
-from libs.quant_models.numerics import FArr, bs_price, normals
+from libs.quant_models.numerics import FArr, bs_price_vec, normals
 from libs.regime.hmm import GaussianHMM
 
 TRADING_YEAR = 252.0
@@ -135,8 +135,8 @@ class RegimeHMM(StochasticModel):
         _, var, _, _ = self._arrays()
         s = self.regime_paths(self.mc_paths, n, self.seed)
         vols = np.sqrt(var[s].sum(axis=1) / spec.expiry_years)
-        return float(np.mean([bs_price(spec.kind, spec.spot, spec.strike, spec.expiry_years,
-                                       spec.rate, spec.div, float(v)) for v in vols]))
+        return float(np.mean(bs_price_vec(spec.kind, spec.spot, spec.strike, spec.expiry_years,
+                                          spec.rate, spec.div, vols)))
 
     def has_fast_price(self) -> bool:
         return False

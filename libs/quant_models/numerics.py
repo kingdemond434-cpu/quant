@@ -15,6 +15,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from functools import lru_cache
 
 import numpy as np
 import numpy.typing as npt
@@ -65,6 +66,21 @@ def bs_price(kind: str, spot: float, strike: float, t: float, rate: float, div: 
     return strike * dr * norm_cdf(-d2) - spot * dq * norm_cdf(-d1)
 
 
+def bs_price_vec(kind: str, spot: float, strike: float, t: float, rate: float, div: float,
+                 vols: FArr) -> FArr:
+    """`bs_price` over an array of vols (Hull-White mixing over simulated variance paths)."""
+    v = np.maximum(np.asarray(vols, dtype=np.float64), 1e-12)
+    sd = v * math.sqrt(t)
+    d1 = (math.log(spot / strike) + (rate - div) * t + 0.5 * sd * sd) / sd
+    d2 = d1 - sd
+    dq, dr = math.exp(-div * t), math.exp(-rate * t)
+    if kind == "call":
+        out = spot * dq * ndtr(d1) - strike * dr * ndtr(d2)
+    else:
+        out = strike * dr * ndtr(-d2) - spot * dq * ndtr(-d1)
+    return np.asarray(out, dtype=np.float64)
+
+
 def bs_greeks(kind: str, spot: float, strike: float, t: float, rate: float, div: float,
               vol: float) -> dict[str, float]:
     """Closed-form delta, gamma, vega (per unit vol), theta (per year, dV/dt) and rho."""
@@ -105,9 +121,15 @@ def implied_vol(price: float, kind: str, spot: float, strike: float, t: float, r
 
 
 # ============================================================================== CF pricing
+@lru_cache(maxsize=8)
+def _leggauss(order: int) -> tuple[FArr, FArr]:
+    x, w = np.polynomial.legendre.leggauss(order)
+    return np.asarray(x, dtype=np.float64), np.asarray(w, dtype=np.float64)
+
+
 def _gl_grid(upper: float, panel: float = 2.0, order: int = 16) -> tuple[FArr, FArr]:
     """Composite Gauss-Legendre nodes and weights on (0, upper]."""
-    x, w = np.polynomial.legendre.leggauss(order)
+    x, w = _leggauss(order)
     n = max(8, math.ceil(upper / panel))
     edges = np.linspace(0.0, upper, n + 1)
     a, b = edges[:-1, None], edges[1:, None]
