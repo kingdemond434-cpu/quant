@@ -83,6 +83,14 @@ DOWNSTREAM_CLOCKS: tuple[str, ...] = ("decision_available_at", "forecast_updated
 #: What an observation IS. A document is text whose meaning the classifier reads; a state is a
 #: continuous level; an event is a discontinuity a producer declared or the router detected.
 KINDS: tuple[str, ...] = ("state", "event", "document")
+#: HOW the knowable instant was established. A first-class field, never an attribute, because a
+#: joiner must be able to refuse a row whose world clock is a guess:
+#:   printed_stamp       the agency's or source's own publication stamp, read off the record
+#:   calendar            a published release calendar's scheduled instant (the print was on time)
+#:   declared_lag        the event/period time plus a lag the producer DECLARES (e.g. close + 1 day)
+#:   bounded_by_receipt  no world stamp exists; knowable_at is set to receipt, the latest it can be
+KNOWABLE_BASES: tuple[str, ...] = ("printed_stamp", "calendar", "declared_lag",
+                                   "bounded_by_receipt")
 #: |surprise_z| at or above which a continuous observation is ROUTED as an event. A declared
 #: prior -- a routing threshold, not a trading one -- and every routed row carries the basis.
 DISCONTINUITY_Z = 2.0
@@ -114,6 +122,7 @@ class SensorObservation:
     knowable_at: str = UNMEASURED
     received_at: str = UNMEASURED
     parse_complete_at: str = UNMEASURED
+    knowable_basis: str = UNMEASURED
     # expectation and surprise
     expected_value: float | None = None
     consensus: float | None = None
@@ -293,6 +302,14 @@ def defects(obs: SensorObservation) -> list[str]:
         raw = getattr(obs, clock)
         if raw != UNMEASURED and parse_time(raw) is None:
             out.append(f"{clock} {raw!r} is not an ISO time")
+    if obs.knowable_basis != UNMEASURED and obs.knowable_basis not in KNOWABLE_BASES:
+        out.append(f"knowable_basis {obs.knowable_basis!r} is not one of {KNOWABLE_BASES}")
+    if obs.knowable_at != UNMEASURED and obs.knowable_basis == UNMEASURED:
+        out.append("knowable_at is stamped but knowable_basis is not: say whether it was printed, "
+                   "scheduled, a declared lag or bounded by receipt")
+    if (obs.knowable_basis == "bounded_by_receipt" and obs.knowable_at != UNMEASURED
+            and obs.received_at != UNMEASURED and obs.knowable_at != obs.received_at):
+        out.append("knowable_basis bounded_by_receipt requires knowable_at == received_at")
     if obs.authority != AUTHORITY:
         out.append("a sensor observation can never carry trading authority")
     received, parsed = parse_time(obs.received_at), parse_time(obs.parse_complete_at)
@@ -366,6 +383,14 @@ class SensorLedger:
     and the throughput meter reads exactly one shard. Numeric revisions are detected against a
     small index of the latest value per (sensor, entity, metric, event_time); documents are
     deduplicated by observation id within the shard.
+
+    IDEMPOTENT ACROSS VINTAGES. The index also remembers every observation id it has ever
+    admitted under a key, so a producer that re-sends an OLDER vintage after its revision (a
+    first print re-read from a cache, a replay) is a duplicate, never a new "revision" of the
+    revised value back to the first print.
+
+    The shards are box-local state and are NOT committed (`.gitignore`): the hourly
+    `sensor_ledger` leg publishes `desks/mt5/reports/SENSOR_LEDGER.json` (see `digest`) instead.
     """
 
     def __init__(self, root: Path | None = None) -> None:
@@ -408,7 +433,31 @@ class SensorLedger:
     def revision_key(obs: SensorObservation) -> str:
         return "|".join((obs.sensor_id, obs.entity, obs.metric, obs.event_time))
 
+    @staticmethod
+    def _known(entry: Sequence[Any]) -> set[str]:
+        ids = {str(entry[0])}
+        if len(entry) > 3 and isinstance(entry[3], list):
+            ids.update(str(i) for i in entry[3])
+        return ids
+
     # -- public
+    def latest(self, sensor_id: str, entity: str, metric: str, event_time: Any
+               ) -> dict[str, Any] | None:
+        """The newest admitted value for one key: {observation_id, value, revision_n}, or None.
+
+        The public read of the revision index, so an adapter never opens `index_path` itself."""
+        key = "|".join((sensor_id, entity, metric, iso(event_time)))
+        entry = self._load_index().get(key)
+        if entry is None:
+            return None
+        return {"observation_id": str(entry[0]), "value": _f(entry[1]),
+                "revision_n": int(entry[2]), "known_ids": sorted(self._known(entry))}
+
+    def latest_index(self) -> dict[str, dict[str, Any]]:
+        """A copy of the whole revision index, keyed `sensor|entity|metric|event_time`."""
+        return {k: {"observation_id": str(v[0]), "value": _f(v[1]), "revision_n": int(v[2])}
+                for k, v in self._load_index().items()}
+
     def append(self, observations: Iterable[SensorObservation],
                now: datetime | None = None) -> dict[str, Any]:
         """Append what is new; turn a changed value into a revision row. Returns the census."""
@@ -427,15 +476,21 @@ class SensorLedger:
             if obs.value is not None and obs.kind != "document" and obs.event_time != UNMEASURED:
                 key = self.revision_key(obs)
                 prior = index.get(key)
-                if prior is not None and _f(prior[1]) == obs.value:
+                known = self._known(prior) if prior is not None else set()
+                # AN ID THE LEDGER ALREADY ADMITTED IS A DUPLICATE, WHATEVER THE LATEST VALUE IS:
+                # checked BEFORE revision detection, so a re-sent first print stays a first print.
+                if obs.observation_id in known or (prior is not None
+                                                   and _f(prior[1]) == obs.value):
                     n_dup += 1
                     continue
+                incoming = obs.observation_id
                 if prior is not None and not obs.revision_of:
                     obs = make(**{**asdict(obs), "revision_of": str(prior[0]),
                                   "revision_delta": round(obs.value - float(prior[1]), 12),
                                   "revision_n": int(prior[2]) + 1, "observation_id": ""})
                     n_rev += 1
-                index[key] = [obs.observation_id, obs.value, obs.revision_n]
+                index[key] = [obs.observation_id, obs.value, obs.revision_n,
+                              sorted(known | {incoming, obs.observation_id})]
             seen = self._seen_ids(day)
             if obs.observation_id in seen:
                 n_dup += 1
@@ -619,4 +674,39 @@ def intake_metrics(rows: Sequence[Mapping[str, Any]],
         "pit_completeness": {
             "knowable_at": round(knowable_known / n, 4) if n else UNMEASURED,
             "received_at": round(received_known / n, 4) if n else UNMEASURED},
+    }
+
+
+# ============================================================================== the digest
+def digest(ledger: SensorLedger | None = None, now: datetime | None = None,
+           days: int = 2) -> dict[str, Any]:
+    """What the ledger holds, published where git can carry it. The shards themselves stay on
+    the box; this is their measured summary: per receipt day the intake metrics (with the
+    downstream clock joins), and for the whole ledger the shard count and bytes, the revision
+    index size and how many keys were revised. A ledger with no shard is UNMEASURED, never 0."""
+    led = ledger or SensorLedger()
+    when = now or datetime.now(UTC)
+    shards = sorted(led.obs_dir.glob("*.jsonl")) if led.obs_dir.exists() else []
+    index = led.latest_index()
+    per_day: dict[str, Any] = {}
+    for back in range(max(1, days)):
+        day = (when - timedelta(days=back)).date().isoformat()
+        rows = led.rows(day)
+        per_day[day] = (intake_metrics(rows, led.clock_rows(day)) if rows
+                        else {"rows": 0, "status": UNMEASURED,
+                              "why": "no observation shard for this receipt day"})
+    return {
+        "schema": "sensor_ledger_digest/1",
+        "at": when.isoformat(timespec="seconds"),
+        "root": str(led.root),
+        "status": "MEASURED" if shards else UNMEASURED,
+        "why": "" if shards else "the ledger has no observation shard on this host yet",
+        "shards": len(shards),
+        "shard_bytes": sum(p.stat().st_size for p in shards),
+        "first_day": shards[0].stem if shards else UNMEASURED,
+        "last_day": shards[-1].stem if shards else UNMEASURED,
+        "index_keys": len(index),
+        "revised_keys": sum(1 for v in index.values() if v["revision_n"] > 0),
+        "days": per_day,
+        "authority": AUTHORITY,
     }

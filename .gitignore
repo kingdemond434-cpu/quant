@@ -466,3 +466,6 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
+# The universal sensor ledger's day shards, clock rows and revision index are box-local state
+# that grows every day; the hourly `sensor_ledger` leg publishes reports/SENSOR_LEDGER.json.
+desks/mt5/data/sensors/
