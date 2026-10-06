@@ -317,3 +317,81 @@ def test_fresh_full_coverage_replaces_sweep_remainder(tmp_path, monkeypatch):
                           ledger=tmp_path / "absent.jsonl",
                           registry=tmp_path / "absent.sqlite")
     assert got["backlog"] == 1_601_468
+
+
+def _reference_verdict_counts(now: datetime, path: Path) -> dict:
+    """The pre-streaming implementation's first-terminal rule, kept as the oracle."""
+    from research.judging_burndown import classify
+    cuts = {w: (now - timedelta(hours=h)).isoformat(timespec="seconds")
+            for w, h in (("1h", 1), ("24h", 24), ("7d", 168))}
+    first = dict.fromkeys(cuts, 0)
+    seen: set[str] = set()
+    for line in path.read_text("utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        try:
+            stamp = datetime.fromisoformat(str(row.get("at")).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if stamp.tzinfo is None or stamp > now:
+            continue
+        at = stamp.astimezone(UTC).isoformat(timespec="seconds")
+        cell = str(row.get("cell", ""))
+        if not cell or classify(row) != "ruled" or cell in seen:
+            continue
+        seen.add(cell)
+        for w, cut in cuts.items():
+            if at >= cut:
+                first[w] += 1
+    return {"first": first, "cells": len(seen)}
+
+
+def _synthetic_ledger(path: Path, n_old: int, n_new: int, seed: int = 7) -> None:
+    import random
+    rnd = random.Random(seed)  # noqa: S311 -- synthetic fixture data
+    gates = ["PASSED", "deflated_sharpe", "cpcv", "UNKNOWN"]
+    with path.open("w", encoding="utf-8") as fh:
+        for i in range(n_old):
+            at = NOW - timedelta(days=8 + rnd.random() * 30)
+            fh.write(json.dumps({"cell": f"OLD{i}.fam.{{\"p\": {i}}}", "at": at.isoformat(),
+                                 "terminal_gate": rnd.choice(gates)}) + "\n")
+        for i in range(n_new):
+            # half re-judge an old cell (not a first terminal), half are new cells
+            cell = (f"OLD{rnd.randrange(max(n_old, 1))}.fam.{{\"p\": 0}}" if i % 2
+                    else f"NEW{i % 97}")
+            at = NOW - timedelta(hours=rnd.random() * 200)
+            fh.write(json.dumps({"cell": cell, "at": at.isoformat(),
+                                 "terminal_gate": rnd.choice(gates)}) + "\n")
+
+
+def test_streamed_first_terminal_counts_equal_the_in_memory_rule(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "ledger.jsonl"
+    _synthetic_ledger(path, 3000, 2000)
+    monkeypatch.setattr(jt, "VERDICT_HASH_CHUNK", 257)       # force many spilled chunks
+    got = jt._verdict_counts(NOW, path)
+    ref = _reference_verdict_counts(NOW, path)
+    assert got["first_terminal_counts"] == ref["first"]
+    assert got["first_terminal_cells"] == ref["cells"]
+
+
+def test_verdict_count_memory_is_bounded_by_the_window_not_the_history(tmp_path,
+                                                                      monkeypatch) -> None:
+    """Ten times the history must not cost ten times the memory: the peak is the window plus one
+    hash chunk. The old implementation held every cell id string, ~linear in history."""
+    import tracemalloc
+    monkeypatch.setattr(jt, "VERDICT_HASH_CHUNK", 4096)
+
+    def peak(n_old: int) -> int:
+        path = tmp_path / f"ledger_{n_old}.jsonl"
+        _synthetic_ledger(path, n_old, 500)
+        tracemalloc.start()
+        jt._verdict_counts(NOW, path)
+        _cur, top = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+        return top
+
+    small, large = peak(20_000), peak(200_000)
+    # 200k distinct ids as a str set alone is > 20 MB; the streamed count stays near-flat.
+    assert large < 4 * 1024 * 1024
+    assert large < small * 2

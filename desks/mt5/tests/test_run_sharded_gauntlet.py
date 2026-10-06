@@ -187,3 +187,52 @@ def test_model_file_is_desk_state() -> None:
     from libs.ops.release import is_state_path
     rel = Path("desks/mt5/data/judging_shard_memory.json")
     assert is_state_path(str(rel))
+
+
+def test_run_gauntlet_cmd_passes_its_arguments_to_this_launcher() -> None:
+    cmd = (Path(runner.__file__).parent / "RunGauntlet.cmd").read_text("utf-8")
+    launches = [ln for ln in cmd.splitlines() if "run_sharded_gauntlet.py" in ln
+                and not ln.lstrip().lower().startswith("rem")]
+    assert launches and all(ln.rstrip().endswith("run_sharded_gauntlet.py %*") for ln in launches)
+
+
+def test_the_cmd_s_arguments_reach_the_gauntlet_invocation(monkeypatch) -> None:
+    import types
+    seen: dict[str, object] = {}
+
+    def cli_main() -> int:
+        seen["argv"] = list(sys.argv)
+        return 0
+
+    fake = types.SimpleNamespace(SHARD_PROTOCOL=2, _cli_main=cli_main,
+                                 run_sharded=lambda *a, **k: pytest.fail("sharded a repro run"))
+    monkeypatch.setitem(sys.modules, "scripts.external_gauntlet", fake)
+    import scripts
+    monkeypatch.setattr(scripts, "external_gauntlet", fake, raising=False)
+    import research.judging_throughput as jt
+    monkeypatch.setattr(jt, "apply_env", lambda *a, **k: None)
+    before = list(sys.argv)
+    rc = runner.main(["--only", "EURUSD.fam.{}", "--report-to", "r.json"])
+    assert rc == 0
+    argv = seen["argv"]
+    assert isinstance(argv, list)
+    assert argv[0].endswith("external_gauntlet.py")
+    assert argv[1:] == ["--only", "EURUSD.fam.{}", "--report-to", "r.json"]
+    assert sys.argv == before                         # restored for the caller
+
+
+def test_no_arguments_still_runs_the_sharded_sweep(monkeypatch) -> None:
+    import types
+    calls: list[int] = []
+    fake = types.SimpleNamespace(
+        SHARD_PROTOCOL=2, _cli_main=lambda: pytest.fail("no args must not take the CLI path"),
+        run_sharded=lambda n, d: calls.append(n) or 0)
+    monkeypatch.setitem(sys.modules, "scripts.external_gauntlet", fake)
+    import scripts
+    monkeypatch.setattr(scripts, "external_gauntlet", fake, raising=False)
+    import research.judging_throughput as jt
+    monkeypatch.setattr(jt, "apply_env", lambda *a, **k: None)
+    monkeypatch.setattr(runner, "DESK", Path(runner.MODEL_FILE).parent)
+    monkeypatch.setattr(runner, "decide", lambda *a, **k: {
+        "n_shards": 3, "shards_why": "t", "max_concurrency": 1})
+    assert runner.main([]) == 0 and calls == [3]

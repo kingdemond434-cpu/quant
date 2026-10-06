@@ -476,10 +476,30 @@ def decide(model: dict[str, Any] | None = None) -> dict[str, Any]:
             "planned_cells_last_run": last_planned, "per_cell_mb": per_cell_mb(model)}
 
 
-def main() -> int:
+def forward_args(judge: Any, argv: list[str]) -> int:
+    """RunGauntlet.cmd passes `%*` here. The sealed judge's own CLI owns those flags (today
+    `--only` / `--report-to`, the single-cell reproduction path, which writes no authority file
+    and must not be sharded), so they go to `judge._cli_main()` VERBATIM under the judge's own
+    argv[0]. An unknown flag therefore fails loudly in the judge's argparse instead of being
+    dropped and running a full certifying sweep the caller did not ask for."""
+    saved = sys.argv
+    sys.argv = [str(DESK / "scripts" / "external_gauntlet.py"), *argv]
+    try:
+        return int(judge._cli_main() or 0)
+    finally:
+        sys.argv = saved
+
+
+def main(argv: list[str] | None = None) -> int:
     from research.judging_throughput import apply_env
 
+    args = list(sys.argv[1:] if argv is None else argv)
     apply_env()
+    if args:
+        from scripts import external_gauntlet as judge
+        print(f"{datetime.now(UTC).isoformat()} run_sharded_gauntlet: forwarding {args!r} "
+              "to the judge's own CLI (unsharded)", flush=True)
+        return forward_args(judge, args)
     log_path = DESK / "logs" / "MT5-Gauntlet.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     decision = decide()

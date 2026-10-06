@@ -1082,11 +1082,88 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
 _AT = re.compile(r'"at"\s*:\s*"([^"]+)"')
 
 
+#: Hashes held in memory at once by the distinct-cell count before a sorted chunk is spilled to
+#: disk (8 bytes each). The count stays exact; only this many are ever resident.
+VERDICT_HASH_CHUNK = 1 << 20
+
+
+def _cell_hash(cell: str) -> int:
+    """A 64-bit digest of a cell id: 8 bytes in place of the id string (~200 bytes as a str)."""
+    import hashlib
+    return int.from_bytes(hashlib.blake2b(cell.encode("utf-8", "replace"),
+                                          digest_size=8).digest(), "little")
+
+
+class _DistinctCounter:
+    """Exact distinct count of 64-bit hashes in bounded memory: sorted-unique chunks spilled to
+    disk, merged once at the end. Resident memory is one chunk, never the whole history."""
+
+    def __init__(self, chunk: int | None = None) -> None:
+        from array import array
+        self._array = array
+        self.chunk = max(1, int(VERDICT_HASH_CHUNK if chunk is None else chunk))
+        self.buf = array("Q")
+        self.spills: list[str] = []
+        self._dir: Any = None
+
+    def add(self, h: int) -> None:
+        self.buf.append(h)
+        if len(self.buf) >= self.chunk:
+            self._spill()
+
+    def _spill(self) -> None:
+        import tempfile
+        if self._dir is None:
+            self._dir = tempfile.TemporaryDirectory(prefix="verdict_counts_")
+        path = f"{self._dir.name}/{len(self.spills)}.bin"
+        uniq = self._array("Q", sorted(set(self.buf)))
+        with open(path, "wb") as fh:
+            uniq.tofile(fh)
+        self.spills.append(path)
+        self.buf = self._array("Q")
+
+    def _iter(self, path: str, block: int = 1 << 16):
+        with open(path, "rb") as fh:
+            while True:
+                part = self._array("Q")
+                with contextlib.suppress(EOFError):   # a short last block is still read
+                    part.fromfile(fh, block)
+                if not part:
+                    return
+                yield from part
+
+    def count(self) -> int:
+        import heapq
+        try:
+            if not self.spills:
+                return len(set(self.buf))
+            if self.buf:
+                self._spill()
+            # The merge's read buffers share ONE chunk between them, so its memory does not
+            # grow with the number of spills (i.e. with the history).
+            block = max(64, self.chunk // len(self.spills))
+            n, prev = 0, None
+            for h in heapq.merge(*(self._iter(p, block) for p in self.spills)):
+                if h != prev:
+                    n += 1
+                    prev = h
+            return n
+        finally:
+            if self._dir is not None:
+                self._dir.cleanup()
+                self._dir = None
+
+
 def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
     """Verdict rows the judge appended in the last 1h / 24h / 7d, from its own ledger.
 
-    Streams the file and reads only each row's `at` stamp, so a multi-million-row ledger costs
-    one pass and constant memory. An absent ledger is UNMEASURED -- never zero verdicts."""
+    Streams the file and never holds the history in memory. Raw event counts are one pass of
+    constant memory. FIRST-terminal counts (a cell's first ruled row, the backlog actually
+    cleared) are exact in two passes whose memory is bounded by the 7d WINDOW, never the history:
+    pass 1 keeps the first in-window ruled row per cell (a 64-bit hash, not the id); pass 2
+    disqualifies any of those that a ruled row EARLIER in the file already judged. The all-time
+    distinct count is a sorted-unique pass over spilled hash chunks (`_DistinctCounter`).
+    An absent ledger is UNMEASURED -- never zero verdicts."""
     from research.judging_burndown import classify
 
     p = GATE_LEDGER if path is None else path
@@ -1096,11 +1173,26 @@ def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
             for w, h in (("1h", 1), ("24h", 24), ("7d", 168))}
     counts = dict.fromkeys(cuts, 0)
     first_counts = dict.fromkeys(cuts, 0)
-    first_terminal_cells: set[str] = set()
+    distinct = _DistinctCounter()
+    # hash -> (line index of its first in-window ruled row, its stamp); window-bounded.
+    cand: dict[int, tuple[int, str]] = {}
     total, unstamped, last = 0, 0, ""
+
+    def _ruled_hash(line: str) -> int | None:
+        try:
+            row = json.loads(line)
+        except ValueError:
+            return None
+        if not isinstance(row, dict):
+            return None
+        cell = str(row.get("cell", ""))
+        if not cell or classify(row) != "ruled":
+            return None
+        return _cell_hash(cell)
+
     try:
         with p.open("r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
+            for idx, line in enumerate(fh):
                 if not line.strip():
                     continue
                 total += 1
@@ -1124,28 +1216,43 @@ def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
                 # The writer appends only when a terminal verdict changes. Repeated cells
                 # are retests, not backlog cleared. UNKNOWN/build/data refusals are not
                 # completed evidence judgements either. Preserve the raw event count above.
-                try:
-                    row = json.loads(line)
-                except ValueError:
+                h = _ruled_hash(line)
+                if h is None:
                     continue
-                if not isinstance(row, dict):
-                    continue
-                cell = str(row.get("cell", ""))
-                if not cell or classify(row) != "ruled":
-                    continue
-                if cell in first_terminal_cells:
-                    continue
-                first_terminal_cells.add(cell)
-                for w, cut in cuts.items():
-                    if at >= cut:
-                        first_counts[w] += 1
+                distinct.add(h)
+                if at >= cuts["7d"] and h not in cand:
+                    cand[h] = (idx, at)
+        if cand:
+            # Pass 2: a candidate is a FIRST terminal only if no stamped ruled row for the same
+            # cell came earlier in the file -- the same rule the in-memory set applied.
+            with p.open("r", encoding="utf-8", errors="replace") as fh:
+                for idx, line in enumerate(fh):
+                    if not cand or not line.strip() or not _AT.search(line):
+                        continue
+                    h = _ruled_hash(line)
+                    if h is None or h not in cand or idx >= cand[h][0]:
+                        continue
+                    m = _AT.search(line)
+                    try:
+                        stamp = datetime.fromisoformat(
+                            m.group(1).replace("Z", "+00:00")) if m else None
+                    except ValueError:
+                        continue
+                    if stamp is None or stamp.tzinfo is None or stamp > now:
+                        continue
+                    del cand[h]
+        for _idx, at in cand.values():
+            for w, cut in cuts.items():
+                if at >= cut:
+                    first_counts[w] += 1
+        n_distinct = distinct.count()
     except OSError as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     return {"status": "MEASURED", "rows_total": total, "rows_unstamped": unstamped,
             "last_verdict_at": last or None, "counts": counts,
             "count_basis": "changed verdict events; unchanged retests do not append",
             "first_terminal_counts": first_counts,
-            "first_terminal_cells": len(first_terminal_cells),
+            "first_terminal_cells": n_distinct,
             "first_terminal_per_hour": {
                 "1h": float(first_counts["1h"]),
                 "24h": round(first_counts["24h"] / 24.0, 3),
