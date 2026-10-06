@@ -126,7 +126,7 @@ def test_expiry_remints(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_missing_credential_is_blocked_on_key(monkeypatch: pytest.MonkeyPatch,
-                                              myfx_unfenced: None) -> None:
+                                              myfx_unfenced: None, jq_unfenced: None) -> None:
     f = _fake(monkeypatch, [])
     for env in T.MANAGED:
         r = T.get_token(env, environ={}, now=NOW)
@@ -174,7 +174,8 @@ def test_token_never_in_repr(monkeypatch: pytest.MonkeyPatch, myfx_unfenced: Non
     assert url.endswith("session=SESS%2Bsecret123")
 
 
-def test_jquants_v1_mint_and_v2_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_jquants_v1_mint_and_v2_api_key(monkeypatch: pytest.MonkeyPatch,
+                                        jq_unfenced: None) -> None:
     idt = _jwt(NOW + 86400)
     f = _fake(monkeypatch, [(200, {"refreshToken": "rt-abc"}), (200, {"idToken": idt})])
     env = {"JQUANTS_MAILADDRESS": "me@example.org", "JQUANTS_PASSWORD": PASSWORD}
@@ -262,7 +263,8 @@ def _collector() -> Any:
     return C
 
 
-def test_failed_refresh_is_blocked_auth_not_unconfigured(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_failed_refresh_is_blocked_auth_not_unconfigured(monkeypatch: pytest.MonkeyPatch,
+                                                         jq_unfenced: None) -> None:
     _fake(monkeypatch, [(401, None)])
     r = T.get_token("CDSE_TOKEN", environ=CDSE_ENV, now=NOW)
     assert r.status == T.REFRESH_FAILED and T.collector_status(r) == T.BLOCKED_AUTH
@@ -354,7 +356,8 @@ def test_jquants_is_fenced_on_terms_and_sends_nothing(monkeypatch: pytest.Monkey
     assert "私的使用の目的に限ります" in ev["terms_quote"]
 
 
-def test_credentials_come_from_read_key_not_os_environ(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_credentials_come_from_read_key_not_os_environ(monkeypatch: pytest.MonkeyPatch,
+                                                       jq_unfenced: None) -> None:
     """The default credential source is read_key (#201): a value only the machine registry
     holds (setx /M after the task started) is seen, and os.environ is never consulted."""
     from libs.ops import env_secret
@@ -461,7 +464,8 @@ def test_session_in_a_raised_url_never_reaches_the_row(monkeypatch: pytest.Monke
     assert "SESSIONSECRET" not in json.dumps(rec)
 
 
-def test_jquants_v2_key_attaches_to_the_real_api_call(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_jquants_v2_key_attaches_to_the_real_api_call(monkeypatch: pytest.MonkeyPatch,
+                                                      jq_unfenced: None) -> None:
     """The registry row points at the V2 API (not the landing page), and the API key read from a
     fake key source rides as `x-api-key` on that call -- never in the url or the row."""
     rows = json.loads((ROOT / "desks/mt5/data/asia_sources.json").read_text(encoding="utf-8"))
