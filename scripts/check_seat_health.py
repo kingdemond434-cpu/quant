@@ -407,6 +407,9 @@ def audit(*, strict: bool = False, window_cadences: float = WINDOW_CADENCES,
     mapping = organs if organs is not None else seat_organs(clocks)
     ages = last_donation()
     retired = retired_seats()
+    #: Seats whose ground's Terms of Use prohibit automated access (mql5_terms): refused on
+    #: purpose and recorded, so they read BLOCKED_TERMS -- never OVERDUE, never a pass.
+    blocked = PCEN.terms_blocked_seats()
     here = _host()
     #: MEASURED, not inferred from `os.name`. A build box is Windows too, and its
     #: data/intelligence is a git mirror whose newest file is as old as the last pull -- judging
@@ -428,6 +431,10 @@ def audit(*, strict: bool = False, window_cadences: float = WINDOW_CADENCES,
         }
         if seat in retired:
             rec.update({"verdict": "RETIRED", "why": retired[seat]})
+            rows.append(rec)
+            continue
+        if seat in blocked:
+            rec.update({"verdict": PCEN.BLOCKED_TERMS, "why": blocked[seat]})
             rows.append(rec)
             continue
         if organ and not (ROOT / organ).exists():

@@ -23,6 +23,12 @@ import requests
 BASE = Path(__file__).resolve().parent.parent
 if str(BASE.parent.parent) not in sys.path:
     sys.path.insert(0, str(BASE.parent.parent))
+try:
+    from side_channels import mql5_terms
+except ModuleNotFoundError:
+    if str(Path(__file__).resolve().parent) not in sys.path:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import mql5_terms
 INTEL = BASE / "data" / "intelligence"
 STATE = INTEL / "seed_miners_state.json"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -31,6 +37,8 @@ LINK_RE = re.compile(r"https?://[^\s)\"'<>]+")
 
 
 def fetch(url: str, as_json: bool = False, timeout: int = 20):
+    # FAIL-CLOSED TERMS FENCE (mql5_terms): raises before any request for an mql5.com URL.
+    mql5_terms.guard(url)
     time.sleep(1.0)
     r = requests.get(url, headers=HEADERS, timeout=timeout)
     r.raise_for_status()
@@ -145,11 +153,19 @@ SOURCE_WALLS: dict[str, dict] = {
         "since": "2026-08-26",
     },
 }
+#: TERMS PROHIBIT (2026-10-06). MQL5's Terms of Use 3.7/3.9/3.13 forbid automated access and
+#: reproduction, and the desk holds no permitting agreement. Unlike every wall above this is not
+#: re-probed at all (`probe: never`): a written prohibition is lifted by an agreement, never by a
+#: fetch. Every seat that only ever held mql5.com output is walled, so `check_miner_health` reads
+#: them as walled and the sweep writes a BLOCKED_TERMS row instead of fetching.
+SOURCE_WALLS.update({seat: dict(mql5_terms.WALL) for seat in sorted(mql5_terms.MQL5_SEATS)})
 REPROBE_DAYS = 7
 
 
 def _wall_due(name: str, st: dict) -> bool:
     """True when this walled source's periodic rediscovery probe is due."""
+    if (SOURCE_WALLS.get(name) or {}).get("probe") == "never":
+        return False
     last = (st.get("wall_probes") or {}).get(name)
     if not last:
         return True
@@ -186,6 +202,8 @@ def _robots_still_disallows(host: str, ua_token: str) -> bool:
 
 def _probe_wall(name: str, wall: dict) -> tuple[bool, str]:
     """Ask once whether a wall has lifted. Returns (lifted, note)."""
+    if wall.get("probe") == "never":
+        return False, f"{wall.get('verdict')}: never re-probed -- only an agreement lifts it"
     if wall.get("probe") == "robots":
         if _robots_still_disallows(wall["host"], wall.get("ua_token", "*")):
             return False, f"robots.txt still disallows {wall.get('ua_token')}"
@@ -688,7 +706,8 @@ def run_and_save() -> dict:
                                  wall["evidence"], verdict=wall["verdict"],
                                  walled_since=wall["since"], needs_selector_work=False)]
             else:
-                rows_ = [row(name, "walled", f"{wall['verdict']} (probe not due)",
+                when = "never re-probed" if wall.get("probe") == "never" else "probe not due"
+                rows_ = [row(name, "walled", f"{wall['verdict']} ({when})",
                              wall.get("url", f"https://{wall['host']}/"), wall["evidence"],
                              verdict=wall["verdict"], walled_since=wall["since"],
                              needs_selector_work=False)]

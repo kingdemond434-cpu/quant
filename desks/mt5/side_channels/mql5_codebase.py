@@ -7,14 +7,23 @@ Uses MQL5 public pages (no API key needed).
 """
 
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
 
+try:
+    from side_channels import mql5_terms
+except ModuleNotFoundError:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import mql5_terms
+
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "mql5"
 OUT.mkdir(parents=True, exist_ok=True)
+#: Fixed name: a refused hour overwrites the last refusal (mql5_terms).
+REFUSAL = OUT / "discoveries_blocked_terms_codebase.json"
 
 CODEBASE_URL = "https://www.mql5.com/en/code_base"
 SYMBOLS = [
@@ -45,6 +54,8 @@ def _extract_patterns(text: str) -> list[str]:
 
 def mine_codebase(max_pages: int = 3) -> list[dict]:
     """Scrape MQL5 codebase for recent EAs and indicators."""
+    # FAIL-CLOSED TERMS FENCE: MQL5 ToU 3.7/3.9/3.13 prohibit this fetch.
+    mql5_terms.guard(CODEBASE_URL)
     discoveries = []
 
     for page in range(1, max_pages + 1):
@@ -90,6 +101,10 @@ def mine_codebase(max_pages: int = 3) -> list[dict]:
 
 def run_and_save() -> list[dict]:
     """Mine codebase and save results."""
+    # Refused before any request; the refusal is the hour's recorded artifact.
+    if mql5_terms.is_mql5_url(CODEBASE_URL):
+        mql5_terms.refuse("mql5_codebase", REFUSAL)
+        return []
     discoveries = mine_codebase()
     out_file = OUT / f"codebase_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
     try:

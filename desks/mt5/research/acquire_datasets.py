@@ -48,6 +48,7 @@ if str(_ROOT) not in sys.path:
 
 from libs.data.pit_certificate import certify  # noqa: E402
 from libs.data.pit_certificate import write as write_certificate  # noqa: E402
+from libs.data.polite_fetch import terms_refusal  # noqa: E402
 from libs.research import country_lab as country_lab  # noqa: E402
 
 WORLD = DESK / "data" / "intelligence" / "world"
@@ -133,6 +134,9 @@ def _fetch(url: str) -> tuple[bytes | None, str]:
     landing pages. Reading the header costs nothing and turns a confusing parse failure into an
     accurate one -- "this was a web page" rather than "this data was malformed".
     """
+    refused = terms_refusal(url)
+    if refused:                       # terms prohibit automated access: no request at all
+        return None, refused
     req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "*/*"})
     try:
         with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as r:

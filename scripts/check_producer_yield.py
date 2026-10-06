@@ -161,6 +161,14 @@ def _read(p: Path, default: Any = None) -> Any:
         return default if default is not None else {}
 
 
+def _terms_blocked() -> dict[str, str]:
+    """seat -> why, for the seats whose ground's terms prohibit automated access."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.ops import producer_census
+    return producer_census.terms_blocked_seats()
+
+
 def _seat_output(window_days: float) -> dict[str, int]:
     """Rows each intelligence seat donated inside the window, from the files themselves.
 
@@ -211,14 +219,20 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
         if producer not in seats and seat in seats:
             seats[producer] = seats[seat]
 
-    universe = list(seats.values())
+    # TERMS PROHIBIT (desks/mt5/side_channels/mql5_terms.py): these seats are refused on purpose,
+    # before any request. They are BLOCKED_TERMS -- never DEAD, never STARVED -- and they are kept
+    # out of the median so a refused ground cannot drag every peer's bar down.
+    blocked = _terms_blocked()
+    universe = [n for k, n in seats.items() if k not in blocked]
     median = sorted(universe)[len(universe) // 2] if universe else 0
 
     for name in sorted(set(proposers) | set(seats) | set(REPLACEMENTS)):
         n = seats.get(name)
         rec: dict[str, Any] = {"producer": name, "rows_in_window": n,
                                "window_days": window_days}
-        if n is None:
+        if name in blocked:
+            rec.update({"verdict": "BLOCKED_TERMS", "why": blocked[name]})
+        elif n is None:
             rec.update({"verdict": "UNMEASURED",
                         "why": ("no intelligence seat records this producer's output. It may "
                                 "write elsewhere, or it may write nowhere -- and those are not "

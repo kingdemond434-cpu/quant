@@ -63,6 +63,7 @@ from mql5_codebase import run_and_save as mql5_codebase_mine
 from mql5_articles import run_and_save as mql5_articles_mine
 from mql5_signals import run_and_save as mql5_signals_mine
 from mql5_forum import run_and_save as mql5_forum_mine
+import mql5_terms  # noqa: E402
 from tradingview_miner import run_and_save as tradingview_mine
 from quantconnect_miner import run_and_save as quantconnect_mine
 from reddit_miner import run_and_save as reddit_mine
@@ -136,6 +137,18 @@ def run_all_miners() -> dict:
     results = {}
     total = 0
     for name, fn in ALL_MINERS:
+        if name in mql5_terms.HARVESTERS:
+            # TERMS PROHIBIT (mql5_terms): run in-process, because the harvester makes no request
+            # -- it only writes its BLOCKED_TERMS refusal row -- and report it as BLOCKED_TERMS,
+            # never as a failed or empty miner.
+            try:
+                fn()
+            except Exception as e:
+                print(f"  {name}: refusal artifact not written ({type(e).__name__}: {e})")
+            results[name] = {"count": 0, "status": mql5_terms.STATUS,
+                             "reason": mql5_terms.REASON, "discoveries": []}
+            print(f"  {name}: {mql5_terms.STATUS} ({mql5_terms.REASON})")
+            continue
         status, payload = _run_miner(name, fn)
         if status == "ok":
             disc = payload
@@ -149,8 +162,10 @@ def run_all_miners() -> dict:
             print(f"  {name}: FAILED ({payload})")
 
     ok = sum(1 for r in results.values() if r.get("count", 0) > 0)
+    blocked = sorted(k for k, r in results.items() if r.get("status") == mql5_terms.STATUS)
     results["summary"] = {
         "total_miners": len(ALL_MINERS),
+        "blocked_terms": blocked,
         "total_discoveries": total,
         "successful_miners": ok,
         "timestamp": datetime.now(timezone.utc).isoformat(),

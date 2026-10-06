@@ -4,14 +4,23 @@ Scans MQL5.com articles for trading strategy ideas and research.
 """
 
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
 
+try:
+    from side_channels import mql5_terms
+except ModuleNotFoundError:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import mql5_terms
+
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "mql5"
 OUT.mkdir(parents=True, exist_ok=True)
+#: Fixed name: a refused hour overwrites the last refusal (mql5_terms).
+REFUSAL = OUT / "discoveries_blocked_terms_articles.json"
 
 ARTICLES_URL = "https://www.mql5.com/en/articles"
 SYMBOLS = ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF", "NZDUSD",
@@ -29,6 +38,8 @@ def _extract_patterns(text: str) -> list[str]:
     return [p for p in known if p.lower() in text.lower()]
 
 def mine_articles(max_pages: int = 3) -> list[dict]:
+    # FAIL-CLOSED TERMS FENCE: MQL5 ToU 3.7/3.9/3.13 prohibit this fetch.
+    mql5_terms.guard(ARTICLES_URL)
     discoveries = []
     for page in range(1, max_pages + 1):
         try:
@@ -55,6 +66,10 @@ def mine_articles(max_pages: int = 3) -> list[dict]:
     return discoveries
 
 def run_and_save() -> list[dict]:
+    # Refused before any request; the refusal is the hour's recorded artifact.
+    if mql5_terms.is_mql5_url(ARTICLES_URL):
+        mql5_terms.refuse("mql5_articles", REFUSAL)
+        return []
     discoveries = mine_articles()
     out_file = OUT / f"articles_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
     try:

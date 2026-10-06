@@ -67,6 +67,8 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.data.polite_fetch import terms_refusal  # noqa: E402
+
 REGISTRY = BASE / "data" / "asia_sources.json"
 VAULT = BASE / "data" / "lake" / "vault"
 SERIES = BASE / "data" / "lake" / "series"
@@ -363,6 +365,13 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                     "why": (f"declares {access} access and {src.get('key_env') or 'no key env'} "
                             f"is not set. A named state, never a failure and never a silent "
                             f"skip: a missing subscription must not read as a dead endpoint")})
+        return rec
+
+    # TERMS PROHIBIT (fail-closed, side_channels/mql5_terms.py): a host whose Terms of Use forbid
+    # automated access is refused before ANY request -- not robots.txt either -- and named.
+    refused = terms_refusal(url)
+    if refused:
+        rec.update({"status": "BLOCKED_TERMS", "why": refused})
         return rec
 
     # ROBOTS IS READ AND RECORDED, NEVER OBEYED AS A REFUSAL (LAWS 5e, 2026-09-23). The reading

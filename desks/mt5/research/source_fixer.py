@@ -35,6 +35,10 @@ from pathlib import Path
 from typing import Any
 
 BASE = Path(__file__).resolve().parents[1]
+if str(BASE.parent.parent) not in sys.path:
+    sys.path.insert(0, str(BASE.parent.parent))
+from libs.data.polite_fetch import terms_refusal  # noqa: E402
+
 REGISTRY = BASE / "data" / "asia_sources.json"
 COLLECTOR_REPORT = BASE / "reports" / "ASIA_COLLECTOR.json"
 COLLECTOR_STATE = BASE / "data" / "lake" / "collector_state.json"
@@ -98,6 +102,8 @@ def candidate_urls(url: str) -> list[str]:
 
 def _probe(url: str) -> tuple[int | None, str, bytes]:
     """(status, content-type, first bytes) for a GET; status None when unreachable."""
+    if terms_refusal(url):            # terms prohibit automated access: no request at all
+        return None, "", b""
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:
@@ -128,6 +134,8 @@ def _acceptable(expect: str, ctype: str, head: bytes) -> tuple[bool, str]:
 
 
 def _wayback(url: str) -> str | None:
+    if terms_refusal(url):            # no archived copy of a terms-refused page is fetched either
+        return None
     try:
         with urllib.request.urlopen(WAYBACK + urllib.parse.quote(url, safe=""),
                                     timeout=TIMEOUT_S) as r:

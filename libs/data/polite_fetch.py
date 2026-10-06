@@ -66,6 +66,28 @@ HOST_INTERVAL_S: dict[str, float] = {
 }
 MAX_RETRY_AFTER_S = 30.0
 MAX_BYTES = 2_000_000
+#: HOSTS WHOSE TERMS PROHIBIT AUTOMATED ACCESS, refused here before any connection. A written
+#: prohibition with no permitting agreement is fail-closed: `get` returns a BLOCKED_TERMS response
+#: and never opens a socket. The record and the verbatim clauses live in
+#: `desks/mt5/side_channels/mql5_terms.py` (MQL5_TERMS); this mirrors its HOSTS so every client
+#: built on this module (deep_forest_miner, moat_collectors, archaeology) is fenced too, and
+#: `test_mql5_terms_fence.py` fails if the two drift.
+TERMS_REFUSED_HOSTS: dict[str, str] = {
+    "www.mql5.com": "MQL5 ToU 3.7/3.9/3.13: automated access not permitted",
+    "mql5.com": "MQL5 ToU 3.7/3.9/3.13: automated access not permitted",
+}
+
+
+def terms_refusal(url: str) -> str:
+    """`BLOCKED_TERMS: <reason>` when the URL's host (or a parent domain) is terms-refused."""
+    try:
+        host = (urlparse(str(url)).hostname or "").lower().rstrip(".")
+    except ValueError:
+        return ""
+    for refused, reason in TERMS_REFUSED_HOSTS.items():
+        if host == refused or host.endswith("." + refused):
+            return f"BLOCKED_TERMS: {reason}"
+    return ""
 
 
 # --------------------------------------------------------------------------- TLS
@@ -245,6 +267,10 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     `timeout` is per attempt; `deadline` (a `time.monotonic()` value) caps the whole call,
     retries and backoff included, so no fetch can outlive the budget of the leg that made it.
     """
+    refused = terms_refusal(url)
+    if refused:
+        _stat(leg, error="BLOCKED_TERMS")
+        return Response(url=url, error=refused)
     hdr = {**BROWSER_HEADERS, **(headers or {})}
     host = urlparse(url).netloc.lower()
     open_ = opener or urllib.request.urlopen

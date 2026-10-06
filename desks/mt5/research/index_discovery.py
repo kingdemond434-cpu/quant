@@ -61,6 +61,7 @@ ROOT = BASE.parent.parent
 for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+from libs.data.polite_fetch import terms_refusal  # noqa: E402
 
 REGISTRY = BASE / "data" / "asia_sources.json"
 SEEDS = BASE / "data" / "deep_forest_sources.json"
@@ -87,6 +88,9 @@ def _ctx():
 
 
 def _get(url: str, timeout: float = 25.0, cap: int = 2_000_000) -> tuple[bytes | None, str]:
+    refused = terms_refusal(url)
+    if refused:                       # terms prohibit automated access: no request at all
+        return None, refused
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:

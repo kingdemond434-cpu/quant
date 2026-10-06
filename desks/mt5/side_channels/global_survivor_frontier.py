@@ -32,6 +32,7 @@ import requests
 _dir = str(Path(__file__).resolve().parent)
 if _dir not in sys.path:
     sys.path.insert(0, _dir)
+import mql5_terms  # noqa: E402
 from lang_intel import LEXICON  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
@@ -144,6 +145,8 @@ def search(query: str) -> list[dict]:
 
 def score_source(url: str) -> dict:
     """Fetch once and score what the page actually EXPOSES, in any language."""
+    if mql5_terms.is_mql5_url(url):   # terms prohibit automated access: no request at all
+        return {"reachable": False, "error": mql5_terms.STATUS, "score": 0}
     try:
         time.sleep(1.2)
         r = requests.get(url, headers=HEADERS, timeout=20)

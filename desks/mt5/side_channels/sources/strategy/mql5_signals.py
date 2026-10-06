@@ -40,6 +40,7 @@ import numpy as np
 import pandas as pd
 
 from ...base import SideChannelAxis, SideChannelHypothesis, generate_id, save_hypothesis, DATA_DIR
+from ... import mql5_terms
 
 
 @dataclass
@@ -343,7 +344,7 @@ class MQL5SignalsMiner:
         self.base_path = base_path
         self.parser = MQL5SignalParser()
         self.reconstructor = MQL5BehaviorReconstructor()
-        self.session = requests.Session()
+        self.session = mql5_terms.fence_session(requests.Session())
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (compatible; QuantResearchBot/1.0)"
         })
@@ -364,6 +365,9 @@ class MQL5SignalsMiner:
     
     def discover(self, config, reputation) -> list:
         """Discover new MQL5 signals."""
+        # FAIL-CLOSED TERMS FENCE: MQL5 ToU 3.7/3.9/3.13 -- no request, recorded refusal.
+        mql5_terms.refuse("mql5_signals")
+        return []
         items = []
         
         try:

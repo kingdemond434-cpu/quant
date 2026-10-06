@@ -81,6 +81,7 @@ for _p in (str(_ROOT), str(_DESK), str(_DESK / "research"), str(_DESK / "side_ch
 
 import deep_forest_miner as dfm  # noqa: E402  (the desk's ONE http client)
 
+from libs.data.polite_fetch import terms_refusal  # noqa: E402
 from libs.moat import registry as reg  # noqa: E402
 from libs.research import lead_schema as ls  # noqa: E402
 
@@ -300,6 +301,9 @@ def fetch_bytes(url: str, lang: str = "") -> tuple[bytes, int, str]:
     """`_http` with the decode step removed. A PDF, an image or a spreadsheet cannot survive
     `errors="replace"`, and the shared text client cannot be asked to stop decoding -- so this
     borrows its headers and its bound and returns the body untouched."""
+    refused = terms_refusal(url)
+    if refused:                       # terms prohibit automated access: no request at all
+        return b"", 0, refused
     hdr = {**dfm._UA, "Accept-Language": dfm.accept_language(lang)}
     req = urllib.request.Request(url, headers=hdr)
     try:
