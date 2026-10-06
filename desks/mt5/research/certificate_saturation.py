@@ -187,6 +187,13 @@ RETARGET_MIN_ROWS = 50
 RETARGET_PATIENCE = 24
 #: A near-duplicate's breadth value is at most the credit of ONE effective twin (preregistered).
 DUPLICATE_TAX_CREDIT = 1.0 / math.sqrt(2.0)
+#: The duplicate tax's four terms (breadth law §22: density, duplicate rate, effective trials
+#: already spent, declining survivor yield). PREREGISTERED 2026-10-06. Trials scale: a cluster
+#: that has already cost this many judged cells halves a duplicate's value again at 3x it.
+DUPLICATE_TAX_TRIALS_SCALE = 100.0
+#: The tax never takes a duplicate's value below this: it sinks in the order, it is never lost,
+#: and when the judge reaches it it is charged its trial like any cell.
+DUPLICATE_TAX_FLOOR = 0.01
 #: THE PER-PRODUCER DUPLICATE BUDGET (audit rank 6, 2026-10-06). The share of a producer's next
 #: generation that may be near-duplicates of the certified book before it is told to retarget.
 #: Half the RETARGET share: the budget warns before the retarget fires. Preregistered, never
@@ -1829,6 +1836,15 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
     except Exception:
         debt_doc, boost_for = None, (lambda _c, _d: 1.0)
     boosted = 0
+    taxed = 0
+    tax_sum: Counter[str] = Counter()
+    # the duplicate rate each producer was last published at (the tax's rate term)
+    prev_rate: dict[str, float] = {}
+    fb_prev = _read(FEEDBACK)
+    for k, v in ((fb_prev.get("producers") or {}) if isinstance(fb_prev, dict) else {}).items():
+        r0 = _num(v.get("duplicate_share")) if isinstance(v, Mapping) else None
+        if r0 is not None:
+            prev_rate[str(k)] = r0
     # EXPECTED dk_eff AT GENERATION (breadth law 13, producer law 9): each row's P(survivor) x the
     # marginal k_eff of admitting it at its effective coupling to the certified book
     # (rho = 1 - novelty credit). Signed: a duplicate's marginal is negative, which is the point.
@@ -1871,9 +1887,18 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
             s["breadth_value"] = float(s["breadth_value"]) * b
             boosted += 1
         if s.get("near_duplicate_rule") and s["duplicate"]:
-            # THE DUPLICATE TAX (law §3, §22): a near-duplicate has at least one effective twin,
-            # so its breadth value is at most the preregistered credit at local count 1
-            s["breadth_value"] = min(float(s["breadth_value"]), DUPLICATE_TAX_CREDIT)
+            # THE DUPLICATE TAX (law §3, §22): density, the producer's duplicate rate, the twin
+            # cluster's effective trials spent and its survivor-yield decline. Order only.
+            tw = sc.clusters.get(str(s.get("nearest_cluster"))) or {}
+            src0 = str(row.get("source") or row.get("producer") or "unattributed")
+            s["breadth_value"], tax = duplicate_tax(
+                float(s["breadth_value"]), local_count=_num(s.get("effective_local_count")),
+                duplicate_rate=prev_rate.get(src0),
+                trials_spent=_num(tw.get("effective_trials_spent")),
+                yield_ratio=_num(tw.get("yield_ratio")))
+            for k, v in tax.items():
+                tax_sum[k] += v
+            taxed += 1
         row["_sat"] = s["breadth_value"]
         row["_satq"] = 1 if s["channel"] == "QUALITY" else 0
         row["_dup"] = 1 if s["duplicate"] else 0
@@ -1955,11 +1980,42 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
             "breadth_constrained_mode": (debt_doc or {}).get("breadth_constrained_mode",
                                                              UNMEASURED),
             "mode_boosted_rows": boosted,
+            "duplicate_tax": {"rows_taxed": taxed,
+                              "mean_factor": {k: round(v / taxed, 6) for k, v in tax_sum.items()}
+                              if taxed else {},
+                              "terms": "density x rate x trials x yield (breadth law §22)"},
             "map_at": d.get("at"), "certificates": d.get("certificates"),
             "producers": producers,
             "rule": ("_sat = novelty credit (exception floor where A-F/H holds); _dup = in "
                      "saturated ground with no exception -> tail of its family stream; _satq = "
                      "QUALITY channel, served at its own protected share. Reorder only")}
+
+
+def duplicate_tax(value: float, *, local_count: float | None = None,
+                  duplicate_rate: float | None = None, trials_spent: float | None = None,
+                  yield_ratio: float | None = None) -> tuple[float, dict[str, float]]:
+    """A near-duplicate's taxed breadth value and the factor each §22 term applied.
+
+    density      the novelty credit at the effective local count, never above one twin's
+    rate         1 - rate/2 for the producer's last published duplicate share
+    trials       1/sqrt(1 + spent/DUPLICATE_TAX_TRIALS_SCALE) for the twin cluster's trials
+    yield        min(1, yield ratio) where the cluster's survivor yield has fallen below the desk's
+
+    An unmeasured term is 1.0 (it neither taxes nor credits). ORDER ONLY: the result is floored
+    at DUPLICATE_TAX_FLOOR and moves a row down its family stream; it never removes a row, never
+    touches a trial charge, a gate, a verdict, capital or sizing."""
+    f: dict[str, float] = {}
+    f["density"] = min(DUPLICATE_TAX_CREDIT, novelty_credit(max(1.0, float(local_count or 1.0))))
+    r = _num(duplicate_rate)
+    f["rate"] = 1.0 - 0.5 * max(0.0, min(1.0, r)) if r is not None else 1.0
+    t = _num(trials_spent)
+    f["trials"] = 1.0 / math.sqrt(1.0 + max(0.0, t) / DUPLICATE_TAX_TRIALS_SCALE) \
+        if t is not None else 1.0
+    y = _num(yield_ratio)
+    f["yield"] = max(0.0, min(1.0, y)) if y is not None else 1.0
+    taxed = float(value)
+    taxed = min(taxed, f["density"]) * f["rate"] * f["trials"] * f["yield"]
+    return max(DUPLICATE_TAX_FLOOR, taxed), {k: round(v, 6) for k, v in f.items()}
 
 
 def family_factor(rows: Iterable[Mapping[str, Any]]) -> dict[str, float]:
@@ -2116,14 +2172,17 @@ def _book_context(d: Mapping[str, Any], top: int = 12) -> dict[str, Any]:
     clock (L5) and realised-return cluster (L6), the desk's recent survivor yield, and the
     effective trials already spent across the map. A level the map cannot read is UNMEASURED."""
     clusters = d.get("clusters") if isinstance(d.get("clusters"), Mapping) else {}
-    by: dict[str, Counter[str]] = {lv: Counter() for lv in ("L2", "L4", "L5", "L6")}
+    by: dict[str, Counter[str]] = {lv: Counter() for lv in ("L1", "L2", "L4", "L5", "L6")}
     trials = 0.0
     trials_seen = False
+    fwd = live = 0
     for v in (clusters or {}).values():
         if not isinstance(v, Mapping):
             continue
         h = v.get("hierarchy") if isinstance(v.get("hierarchy"), Mapping) else {}
         n = int(v.get("certificate_count") or 0)
+        fwd += int(v.get("forward_count") or 0)
+        live += int(v.get("live_count") or 0)
         for lv in by:
             by[lv][str((h or {}).get(lv) or UNKNOWN)] += n
         t = v.get("effective_trials_spent")
@@ -2134,6 +2193,10 @@ def _book_context(d: Mapping[str, Any], top: int = 12) -> dict[str, Any]:
     realised: Any = ([{"cluster": k, "certificates": c} for k, c in l6.most_common(top)]
                      if set(l6) - {UNMEASURED, UNKNOWN} else UNMEASURED)
     return {
+        "forward_sleeves": fwd,
+        "promoted_live_sleeves": live,
+        "economic_mechanism_clusters": [{"mechanism": k, "certificates": c}
+                                        for k, c in by["L1"].most_common(top)],
         "information_source_clusters": [{"cluster": k, "certificates": c}
                                         for k, c in by["L2"].most_common(top)],
         "factor_exposures": [{"factor": k, "certificates": c}

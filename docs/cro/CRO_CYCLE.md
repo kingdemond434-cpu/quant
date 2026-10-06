@@ -294,6 +294,9 @@ The noon lane (MT5-CycleNoon) runs this step every pass. The midnight lane runs 
 5. **The split.**
    - Read `reports/BREADTH_LADDER.json` → `temperature.mode`, `budget_split.split` and `fired`.
    - A stall that fired with no rise in A and C is a defect in `research_budget`'s reading of the ladder.
+6. **Mode, empty clusters and coverage.**
+   - Read `reports/BREADTH_DEBT.json` → `breadth_constrained_mode` (ON / OFF / UNMEASURED) and `mode.fired`. List `empty_clusters` with their bounty value, Δk_eff and auction bids.
+   - Read `reports/BREADTH_LAW_COVERAGE.json` → `counts` and `downgraded`. A downgraded row means code a COVERED claim relied on has gone. That is a defect, and it competes in STEP 7.
 
 Carry `breadth_law` in the cycle ledger row: `{basis, n_certificates, n_effective_certificates, duplicate_survivor_share, n_saturated_clusters, fence_status, mode, top_debt}`.
 
