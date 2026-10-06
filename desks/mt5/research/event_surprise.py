@@ -985,7 +985,13 @@ def release_vintage_rows(*, now: datetime, refresh: bool, budget_s: float,
         return {"rows": [], "sensor_inputs": [], "census": {"status": "skipped"}}
     try:
         from macro import release_vintages as rv
-        built = rv.build(now=now, refresh_budget_s=budget_s if refresh else 0.0)
+        try:
+            from macro.market_state import regime_label
+            regime = regime_label(now)
+        except Exception:                                # pragma: no cover - guarded
+            regime = UNMEASURED
+        built = rv.build(now=now, refresh_budget_s=budget_s if refresh else 0.0,
+                         conditioning={"regime": regime})
     except Exception as exc:                             # pragma: no cover - guarded organ
         return {"rows": [], "sensor_inputs": [],
                 "census": {"status": UNMEASURED,
@@ -993,6 +999,19 @@ def release_vintage_rows(*, now: datetime, refresh: bool, budget_s: float,
     horizon = (now - timedelta(days=DAYS)).date()
     recent = [s for s in built["sensor_inputs"] if s["sched"].date() >= horizon]
     return {"rows": built["rows"], "sensor_inputs": recent, "census": built["census"]}
+
+
+def physical_rows(*, now: datetime, enabled: bool = True) -> dict[str, Any]:
+    """EIA weekly inventory changes against their five-year seasonal expectation
+    (`macro.physical_state`), as pairs for the same store and the same reaction measurement."""
+    if not enabled:
+        return {"rows": [], "census": {"status": "skipped"}}
+    try:
+        from macro.physical_state import store_rows
+        return store_rows(now)
+    except Exception as exc:                             # pragma: no cover - guarded organ
+        return {"rows": [], "census": {"status": UNMEASURED,
+                                       "why": f"physical_state: {type(exc).__name__}"}}
 
 
 def record_sensors(sensor_inputs: list[dict[str, Any]], received_at: datetime) -> dict[str, Any]:
@@ -1023,6 +1042,9 @@ def build(*, days: int = DAYS, budget_s: float = 300.0, max_donations: int = MAX
                                 enabled=collect_enabled if vintages_enabled is None
                                 else vintages_enabled)
     fresh_rows += vint["rows"]
+    phys = physical_rows(now=now, enabled=collect_enabled if vintages_enabled is None
+                         else vintages_enabled)
+    fresh_rows += phys["rows"]
     stored, added = merge_store([r for r in fresh_rows if isinstance(r, dict)], now=now)
     cal, cal_status = calendar_pairs(days, now)
     kept, store_status = store_pairs(days, now)
@@ -1049,6 +1071,7 @@ def build(*, days: int = DAYS, budget_s: float = 300.0, max_donations: int = MAX
         "budget_s": budget_s,
         "collector": {k: v for k, v in collected.items() if k not in ("rows", "state")},
         "release_vintages": vint["census"],
+        "physical_state": phys["census"],
         "store": {**store_status, "added_this_pass": added, "rows_after": len(stored)},
         "calendar": cal_status,
         "surprise": surprise_status,

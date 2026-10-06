@@ -39,6 +39,17 @@ _WEB = Path("web/fred_macro.json")
 _BASE = "https://api.stlouisfed.org/fred/series/observations"
 #: DFII10 (10-year TIPS real yield) added 2026-09-16 for the macro state's `real_rates` axis.
 _SERIES = ("DGS10", "T10Y2Y", "VIXCLS", "DTWEXBGS", "WALCL", "M2SL", "DFII10")
+#: THE MARKET-STATE SERIES (2026-10-06, world sensor J/L). Written to their OWN archive,
+#: `data/fred_market_state.json`, so the consumers that iterate every series of fred_macro*.json
+#: (macro_view, world_model, exposure_decomposition) see exactly the inputs they were built on.
+#:   CBOE implied vol: VIXCLS VXVCLS (3m) VXNCLS VXDCLS RVXCLS OVXCLS GVZCLS EVZCLS VXEEMCLS
+#:   Treasury curve:   DGS3MO DGS2 DGS5 DGS10 DGS30
+#:   EIA weekly petroleum: WCESTUS1 (crude ex SPR) WCSSTUS1 (SPR) WGTSTUS1 (gasoline)
+#:                         WDISTUS1 (distillate) WPULEUS3 (refinery utilisation %)
+_STATE_SERIES = ("VIXCLS", "VXVCLS", "VXNCLS", "VXDCLS", "RVXCLS", "OVXCLS", "GVZCLS",
+                 "EVZCLS", "VXEEMCLS", "DGS3MO", "DGS2", "DGS5", "DGS10", "DGS30",
+                 "WCESTUS1", "WCSSTUS1", "WGTSTUS1", "WDISTUS1", "WPULEUS3")
+_STATE_ARCHIVE = Path("data/fred_market_state.json")
 #: ~11.5y fetched: the allocator's regime kernel (`libs.portfolio.macro_state`) ranks each day's
 #: state against its trailing year and needs that state on EVERY day of the backtest matrix
 #: (2018+) -- a day with no state is excluded from the regime contrast, and at 1200 days two
@@ -85,6 +96,18 @@ def main() -> None:
     if not series:
         raise SystemExit("fred-macro: zero series fetched -- check the key")
     ts = datetime.now(tz=UTC).isoformat()
+    state: dict[str, list[tuple[str, float]]] = {}
+    for sid in _STATE_SERIES:
+        try:
+            state[sid] = series[sid] if sid in series else _fetch(key, sid)
+        except Exception as e:                           # one dead series never kills the rest
+            print(f"fred-macro: state {sid} FAILED {e!r}"[:120])
+    for sid, rows in state.items():
+        if sid not in series:
+            record(_ROOT, sid, dict(rows), vintage=ts)
+    if state:
+        _STATE_ARCHIVE.parent.mkdir(parents=True, exist_ok=True)
+        _STATE_ARCHIVE.write_text(json.dumps({"updated": ts, "series": state}), "utf-8")
 
     # R0316: RECORD THE VINTAGE BEFORE OVERWRITING THE ARCHIVE. `_ARCHIVE.write_text` replaces the
     # file wholesale AND `_LOOKBACK_DAYS` truncates to a rolling window, so until now every run

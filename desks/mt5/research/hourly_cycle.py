@@ -3422,6 +3422,16 @@ def fred_macro() -> dict:
         out["macro_view"] = "rebuilt"
     except Exception as exc:
         out["macro_view"] = f"not rebuilt: {type(exc).__name__}: {exc}"
+    # THE MARKET AND PHYSICAL STATES (world sensor J/L, 2026-10-06) read the archive the collector
+    # just refreshed: vol term structure, implied vs realised, the curve, beta, and the EIA
+    # inventories against their seasonal norm -> reports + the sensor ledger.
+    for name in ("market_state", "physical_state"):
+        try:
+            import importlib
+            mod = importlib.import_module(f"macro.{name}")
+            out[name] = "rc=" + str(mod.main([]))
+        except Exception as exc:
+            out[name] = f"not built: {type(exc).__name__}: {str(exc)[:120]}"
     return out
 
 

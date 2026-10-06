@@ -77,6 +77,12 @@ REGISTRY = DESK / "data" / "asia_sources.json"
 STATE = DESK / "data" / "lake" / "collector_state.json"
 VAULT = DESK / "data" / "lake" / "vault"
 FOUND = DESK / "data" / "intelligence" / "asia_endpoints"
+#: PROVIDER CARDS FROM DONOR TERMINALS (principal 2026-10-05, "OPENTERMINAL"): the EliteQuant
+#: miner reads a donor's provider list (ErTasselli/OpenTerminal first) and writes one card per
+#: provider here; this organ prices each as a candidate source. Schema per row: id, name, url,
+#: targets, observable, mechanism, cadence, access (public|keyed|paid), licence,
+#: machine_use_allowed. A donor is a LIST OF PLACES TO LOOK, never code or data copied in.
+DONORS = DESK / "data" / "intelligence" / "provider_donors"
 POSTERIOR = DESK / "reports" / "POSTERIOR_ALPHA.json"
 OUT = DESK / "reports" / "SOURCE_EVIG.json"
 
@@ -125,6 +131,28 @@ def _derived() -> list[dict[str, Any]]:
             out.append({"id": sid, "url": r.get("url"), "targets": r.get("targets") or [],
                         "cadence": r.get("cadence") or "irregular", "plane": r.get("plane"),
                         "access": r.get("access") or "public", "derived": True,
+                        "machine_use_allowed": r.get("machine_use_allowed")})
+    try:
+        cards = sorted(DONORS.glob("*/providers_*.json"), reverse=True)
+    except OSError:
+        cards = []
+    for f in cards:
+        doc = _read(f, {})
+        rows = doc.get("providers") if isinstance(doc, dict) else doc
+        for r in rows or []:
+            if not isinstance(r, dict):
+                continue
+            sid = f"donor:{f.parent.name}:{r.get('id') or r.get('name') or r.get('url') or ''}"
+            if sid.endswith(":") or sid in seen:
+                continue
+            seen.add(sid)
+            out.append({"id": sid, "url": r.get("url"), "targets": r.get("targets") or [],
+                        "cadence": r.get("cadence") or "irregular",
+                        "plane": r.get("plane") or "donor_provider",
+                        "country": r.get("country"), "observable": r.get("observable"),
+                        "mechanism": r.get("mechanism") or r.get("name"),
+                        "access": r.get("access") or "unknown", "licence": r.get("licence"),
+                        "derived": True, "donor": f.parent.name,
                         "machine_use_allowed": r.get("machine_use_allowed")})
     return out
 
@@ -298,7 +326,7 @@ def price(sources: list[dict[str, Any]], state: dict[str, Any],
         evig = u * max(n_share, 0.05) * p_usable * w / cost
         rows.append({
             "id": sid, "plane": s.get("plane"), "cadence": s.get("cadence"),
-            "access": s.get("access"), "role": s.get("role") or "mechanism",
+            "access": s.get("access"), "donor": s.get("donor"), "role": s.get("role") or "mechanism",
             "derived": bool(s.get("derived")),
             "targets": targets, "novel_targets": novel,
             "u_prior_sd": round(u, 6), "u_status": ("MEASURED" if prior
