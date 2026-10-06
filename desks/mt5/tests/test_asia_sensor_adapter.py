@@ -386,12 +386,13 @@ def test_a_corrupt_index_is_counted_and_never_reset(tmp_path: Path) -> None:
     index.write_text("{not json", encoding="utf-8")
     rep.unlink()                                   # force every store to be re-sent
     doc = ad.run(desk, ledger_root=root, report=rep, now=NOW + timedelta(hours=1))
+    # the pass COMPLETES and reports it: nothing appended, nothing marked seen
     assert doc["ledger_status"].startswith("INDEX_CORRUPT")
-    assert doc["totals"]["index_corrupt"] >= 1 and doc["totals"].get("appended", 0) == 0
-    assert all(v["status"] in ("INDEX_CORRUPT", "MAPPED") for v in doc["stores"].values()
-               if "status" in v and v.get("mapped"))
-    carried = [k for k, v in doc["stores"].items() if v.get("mapped")]
-    assert carried and not any(k in doc["stores_seen"] for k in carried)   # re-sent next pass
+    assert doc["totals"]["index_corrupt"] >= 3 and doc["totals"].get("appended", 0) == 0
+    assert all(v["status"] == "INDEX_CORRUPT" for v in doc["stores"].values()
+               if v.get("status") not in ("ERROR",))
+    assert doc["stores_seen"] == {}                                    # re-sent next pass
+    assert rep.exists()
     assert index.read_text(encoding="utf-8") == "{not json"          # never reset
     assert {p.name: p.read_bytes() for p in (root / "observations").glob("*.jsonl")} == shards
 
@@ -437,44 +438,76 @@ def test_as_of_on_adapter_rows_answers_nothing_before_knowable_at(tmp_path: Path
         assert sc.usable_at(r, k - timedelta(seconds=1)) is False
 
 
-def test_an_intraday_read_is_held_then_admitted_after_the_local_close(tmp_path: Path) -> None:
-    """A date-only CN close fetched at 02:00Z (10:00 CST) is not final: refused, and the cursor
-    does not advance. The pass after the Shanghai day ends re-sends it and it is admitted,
-    knowable at 15:59:59Z, never earlier."""
+def test_an_intraday_read_is_held_until_a_refetch_after_the_local_close(tmp_path: Path) -> None:
+    """A date-only CN close fetched at 02:00Z (10:00 CST) may be provisional: it is held, not
+    sent, and the cursor does not advance. A later pass WITHOUT a re-fetch still holds it (the
+    run clock never stands in for a fetch). A re-fetch at 19:00Z is admitted with received_at
+    19:00Z and knowable_at 15:59:59Z, the 02:00Z read kept as first_read_at."""
     desk = tmp_path / "desk"
     _write(desk / "data" / "asia_sources.json", {"sources": [
         {"id": "cn_close", "country": "cn", "plane": "cn_markets", "access": "public",
          "cadence": "daily"}]})
-    series = desk / "data" / "lake" / "series"
-    series.mkdir(parents=True, exist_ok=True)
-    (series / "cn_close.csv").write_text(
-        "close,event_time,available_time,ingested_time,source_id,vintage_id\n"
-        "3.5,2026-09-01,2026-09-01 00:00:00+00:00,2026-09-01T02:00:00+00:00,cn_close,v1\n",
-        encoding="utf-8")
+    frame = desk / "data" / "lake" / "series" / "cn_close.csv"
+    frame.parent.mkdir(parents=True, exist_ok=True)
+    head = "close,event_time,available_time,ingested_time,source_id,vintage_id\n"
+    frame.write_text(head + "3.5,2026-09-01,2026-09-01 00:00:00+00:00,"
+                            "2026-09-01T02:00:00+00:00,cn_close,v1\n", encoding="utf-8")
     root = tmp_path / "sensors"
     rep = tmp_path / "rep.json"
+    name = "asia_parser_frames:cn_close"
     early = ad.run(desk, ledger_root=root, report=rep,
                    now=datetime(2026, 9, 1, 2, 30, tzinfo=UTC))
-    st = early["stores"]["asia_parser_frames:cn_close"]
-    assert st["intraday_held_until_local_close"] == 1 and st["refused"] == 1
-    assert st["appended"] == 0
-    assert "asia_parser_frames:cn_close" not in early["stores_seen"]      # cursor held
+    st = early["stores"][name]
+    assert st["intraday_held_until_local_close"] == 1 and st["appended"] == 0
+    assert name not in early["stores_seen"] and len(early["intraday_held"]) == 1
     assert _all_rows(root) == []
+    # 20:00Z, the store NOT re-fetched: the 02:00Z value is not the close, so still held
+    stale = ad.run(desk, ledger_root=root, report=rep,
+                   now=datetime(2026, 9, 1, 20, 0, tzinfo=UTC))
+    st = stale["stores"][name]
+    assert st["intraday_held_until_local_close"] == 1 and st["appended"] == 0
+    assert name not in stale["stores_seen"] and _all_rows(root) == []
+    # the store re-fetches at 19:00Z (after the 15:59:59Z Shanghai end of day)
+    frame.write_text(head + "3.6,2026-09-01,2026-09-01 00:00:00+00:00,"
+                            "2026-09-01T19:00:00+00:00,cn_close,v2\n", encoding="utf-8")
     late = ad.run(desk, ledger_root=root, report=rep,
-                  now=datetime(2026, 9, 1, 20, 0, tzinfo=UTC))
-    st = late["stores"]["asia_parser_frames:cn_close"]
-    assert st["appended"] == 1 and st["refused"] == 0 and st["intraday_settled"] == 1
-    assert "asia_parser_frames:cn_close" in late["stores_seen"]
+                  now=datetime(2026, 9, 1, 20, 30, tzinfo=UTC))
+    st = late["stores"][name]
+    assert st["appended"] == 1 and st["intraday_settled"] == 1
+    assert st["intraday_held_until_local_close"] == 0
+    assert name in late["stores_seen"] and late["intraday_held"] == {}
     (row,) = _all_rows(root)
+    assert row["value"] == 3.6
     assert row["knowable_at"] == "2026-09-01T15:59:59+00:00"
     assert row["knowable_basis"] == "declared_lag"
-    assert row["received_at"] == "2026-09-01T20:00:00+00:00"
+    assert row["received_at"] == "2026-09-01T19:00:00+00:00"          # the re-fetch, not now
     assert row["attributes"]["first_read_at"] == "2026-09-01T02:00:00+00:00"
     led = sc.SensorLedger(root)
     args = (row["sensor_id"], row["entity"], row["metric"], row["event_time"])
     assert led.as_of(*args, "2026-09-01T15:59:58Z") is None
     got = led.as_of(*args, "2026-09-01T15:59:59Z")
-    assert got is not None and got["value"] == 3.5
+    assert got is not None and got["value"] == 3.6
     again = ad.run(desk, ledger_root=root, report=tmp_path / "rep2.json",
                    now=datetime(2026, 9, 2, 1, 0, tzinfo=UTC))
     assert again["totals"].get("appended", 0) == 0 and again["totals"]["conflicts"] == 0
+
+
+def test_a_missing_index_keeps_the_cursor_and_refeeds_nothing(tmp_path: Path) -> None:
+    desk = _desk(tmp_path)
+    root = tmp_path / "sensors"
+    rep = tmp_path / "rep.json"
+    first = ad.run(desk, ledger_root=root, report=rep, now=NOW)
+    assert first["ledger_status"] == "EMPTY" and first["totals"]["appended"] == 7
+    n = len(_all_rows(root))
+    (root / "latest_numeric.json").unlink()
+    doc = ad.run(desk, ledger_root=root, report=rep, now=NOW + timedelta(hours=1))
+    assert doc["ledger_status"] == "INDEX_MISSING"
+    # the cursor is kept: no store is re-fed because the index went missing
+    assert all(v["status"] == "UNCHANGED" for k, v in doc["stores"].items()
+               if k in first["stores_seen"])
+    assert doc["totals"].get("appended", 0) == 0
+    rep.unlink()           # and with no cursor either, the append dedupes every re-sent row
+    bare = ad.run(desk, ledger_root=root, report=rep, now=NOW + timedelta(hours=2))
+    assert bare["ledger_status"] == "INDEX_MISSING"
+    assert bare["totals"]["appended"] == 0 and bare["totals"]["conflicts"] == 0
+    assert len(_all_rows(root)) == n

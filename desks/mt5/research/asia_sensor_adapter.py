@@ -243,8 +243,8 @@ def _date_bound(stamp: Any, received: Any, country: Any) -> tuple[str, str]:
     `declared_lag`, whenever the desk read it -- a value published on day D was knowable at the
     end of D, so history keeps its release instant. A row read BEFORE the local day ended keeps
     the end of day too and is refused by the contract (received_at precedes knowable_at): an
-    intraday read of a date-stamped value may be a partial; `run` holds it and re-sends it
-    after the close (`_settle_intraday`)."""
+    intraday read of a date-stamped value may be a provisional value, not the close; `run`
+    holds it until the store re-fetches it after the close (`settle_intraday`)."""
     eod = local_end_of_day(stamp, country)
     if eod is None:
         rx = sc.parse_time(received)
@@ -689,34 +689,65 @@ def restamp_corrections(ledger: sc.SensorLedger, obs: list[sc.SensorObservation]
     return out, n
 
 
-def settle_intraday(obs: list[sc.SensorObservation], now: datetime
-                    ) -> tuple[list[sc.SensorObservation], int, int]:
-    """A date-only row first read BEFORE its local day ended (received_at < knowable_at) is not
-    final at that read, and the contract refuses it. Once this pass runs after the local close,
-    the desk demonstrably holds the stored value then: it is re-sent with received_at = this
-    pass, knowable_at unchanged (the end of the day), and the intraday read kept as
-    `attributes.first_read_at`. Before the close it is HELD (sent as is, refused, counted) and
-    the caller keeps the store's cursor where it was so the next pass re-sends it.
-    Returns (observations, settled, held)."""
+def settle_intraday(obs: list[sc.SensorObservation], store_time: datetime | None,
+                    held_before: Mapping[str, str]
+                    ) -> tuple[list[sc.SensorObservation], dict[str, str], int, int]:
+    """Admit a date-only row only from a READ AT OR AFTER the end of its local day.
+
+    The read's time is the record's own fetch stamp (received_at), or the store file's mtime
+    when the record carries none. A read before the close may be a provisional value, not the
+    close: it is HELD -- not sent, counted, and the caller keeps the store's cursor -- and only a
+    later RE-FETCH (a record whose own fetch stamp is after the close) is admitted, with
+    received_at = that re-fetch, never this pass's clock. The held read's stamp is remembered
+    (the report's `intraday_held`) and written as `attributes.first_read_at` on the re-fetched
+    row that replaces it. Returns (to_send, still_held {key: first read}, settled, held)."""
     out: list[sc.SensorObservation] = []
-    settled = held = 0
+    held: dict[str, str] = {}
+    settled = 0
     for o in obs:
-        k, rx = sc.parse_time(o.knowable_at), sc.parse_time(o.received_at)
-        if (not o.attributes.get("date_only_stamp") or k is None or rx is None
-                or rx >= k - timedelta(seconds=1)):
+        if not o.attributes.get("date_only_stamp"):
             out.append(o)
             continue
-        if now < k:
-            held += 1
-            out.append(o)
+        k = sc.parse_time(o.knowable_at)
+        rx = sc.parse_time(o.received_at)
+        if rx is None and store_time is not None:
+            o = sc.make(**{**{f.name: getattr(o, f.name) for f in fields(o)},
+                           "received_at": sc.iso(store_time),
+                           "attributes": {**dict(o.attributes), "received_from": "store_mtime"}})
+            rx = store_time
+        if k is None or rx is None:
+            out.append(o)                        # UNMEASURED receipt: never usable on desk basis
             continue
-        attrs = {**dict(o.attributes), "first_read_at": o.received_at,
-                 "settled_after_local_close": True}
-        out.append(sc.make(**{**{f.name: getattr(o, f.name) for f in fields(o)},
-                              "observation_id": "", "received_at": sc.iso(now),
-                              "attributes": attrs}))
-        settled += 1
-    return out, settled, held
+        key = sc.SensorLedger.revision_key(o)
+        if rx < k:
+            held[key] = held_before.get(key) or o.received_at
+            continue
+        first = held_before.get(key)
+        if first and first != o.received_at:
+            o = sc.make(**{**{f.name: getattr(o, f.name) for f in fields(o)},
+                           "attributes": {**dict(o.attributes), "first_read_at": first}})
+            settled += 1
+        out.append(o)
+    return out, held, settled, len(held)
+
+
+def ledger_state(ledger: sc.SensorLedger) -> str:
+    """The ledger's index state, read through what #208 exposes (`latest_index`, which raises
+    LedgerIndexCorrupt; `index_path`; `obs_dir`). EMPTY: no index and no shards -- a new ledger,
+    the only state that re-feeds every store. INDEX_MISSING: shards exist but no index file
+    (documents only, or a lost index) -- the cursor is KEPT, so only stores that changed are
+    sent, and the append dedupes them by observation id per receipt-day shard. INDEX_CORRUPT:
+    nothing is appended this pass, the index is never reset. OK otherwise."""
+    try:
+        held = ledger.latest_index()
+    except sc.LedgerIndexCorrupt as exc:
+        return f"INDEX_CORRUPT: {str(exc)[:160]}"
+    if held:
+        return "OK"
+    shards = ledger.obs_dir.is_dir() and any(ledger.obs_dir.glob("*.jsonl"))
+    if ledger.index_path.exists():
+        return "OK" if not shards else "OK (index holds no numeric key)"
+    return "INDEX_MISSING" if shards else "EMPTY"
 
 
 def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float = 60.0,
@@ -731,14 +762,14 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
     except (OSError, ValueError):
         prev = {}
     seen: dict[str, str] = dict(prev.get("stores_seen") or {}) if isinstance(prev, dict) else {}
-    ledger_status = "OK"
-    try:
-        if not ledger.latest_index():
-            seen = {}      # an empty ledger is re-filled, whatever the cursor says
-    except sc.LedgerIndexCorrupt as exc:
-        # FAIL CLOSED: the index is never reset or rebuilt here, and the cursor is kept; every
-        # append below is refused by the ledger (INDEX_CORRUPT) and counted, nothing is lost
-        ledger_status = f"INDEX_CORRUPT: {str(exc)[:160]}"
+    held_before: dict[str, str] = (dict(prev.get("intraday_held") or {})
+                                   if isinstance(prev, dict) else {})
+    held_after = dict(held_before)
+    ledger_status = ledger_state(ledger)
+    if ledger_status == "EMPTY":
+        seen = {}          # a NEW ledger is filled, whatever the cursor says; nothing else resets
+    # INDEX_CORRUPT fails closed: nothing is appended this pass, the cursor is kept, the index is
+    # never reset or rebuilt here (#208 owns it); the pass still completes and reports it
     stores: dict[str, Any] = {}
     totals: Counter[str] = Counter()
     deferred: list[str] = []
@@ -757,6 +788,10 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
             if time.monotonic() - t0 > budget_s:
                 deferred.append(name)
                 continue
+            if ledger_status.startswith("INDEX_CORRUPT"):
+                stores[name] = {"status": "INDEX_CORRUPT", "mapped": 0, "appended": 0}
+                totals["index_corrupt"] += 1
+                continue
             try:
                 obs = load()
             except Exception as exc:
@@ -764,8 +799,8 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
                                 "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
                 continue
             n_fix = 0
-            obs, n_settled, n_held = settle_intraday(obs, now)
-            if obs and ledger_status == "OK":
+            obs, held_now, n_settled, n_held = settle_intraday(obs, _as_time(path), held_before)
+            if obs and not ledger_status.startswith("INDEX_CORRUPT"):
                 try:
                     obs, n_fix = restamp_corrections(ledger, obs, _as_time(path), now)
                 except sc.LedgerIndexCorrupt as exc:
@@ -796,9 +831,12 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
                 if status == "INDEX_CORRUPT":
                     ledger_status = f"INDEX_CORRUPT: {str(res.get('why') or '')[:160]}"
                 continue
+            for o in obs:
+                held_after.pop(sc.SensorLedger.revision_key(o), None)
+            held_after.update(held_now)
             if n_held:
                 # a row read before its local close is not lost: the cursor stays put, so the
-                # first pass after the close re-sends the store and the row is admitted
+                # pass after the store RE-FETCHES it past the close admits the re-fetched row
                 continue
             seen[name] = sig
     families = Counter(n.split(":", 1)[0] for n in stores)
@@ -810,8 +848,9 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
         "rule": ("pure mapping of stored Asia observations into the universal sensor ledger; "
                  "knowable_at = publication (bounded by first sight) with its knowable_basis; "
                  "a DATE-only declared stamp = the local end of that day (declared_lag; "
-                 "pit_quality=backfill when first read > 24h later; an intraday read is held "
-                 "until the local close, then re-sent); "
+                 "pit_quality=backfill when first read > 24h later; a read before the local "
+                 "close is held until the store re-fetches it after the close, admitted with "
+                 "that re-fetch's received_at); "
                  "received_at = first sight; every revision or correction is its own, strictly "
                  "later vintage; authority NONE"),
         "ledger_root": str(ledger.root),
@@ -823,6 +862,7 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
         "contract_gaps": list(CONTRACT_GAPS),
         "stores": stores,
         "stores_seen": seen,
+        "intraday_held": held_after,
         "wall_s": round(time.monotonic() - t0, 2),
     }
     report.parent.mkdir(parents=True, exist_ok=True)
