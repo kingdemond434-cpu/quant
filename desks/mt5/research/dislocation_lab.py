@@ -1307,6 +1307,8 @@ def _hunt_universe(ctx: Context) -> list[str]:
 #   ine_brent           INE SC0 (ine_sc_ret)                     vs  XBRUSD x USDCNH
 #   cny_fix_cnh         CFETS central parity vs USDCNH's previous 16:30 Beijing close
 #                       (pack_cells' cfets_fix__sem: fix_vs_cnh_gap_pips)
+#   kr/in/tr_gold_london  KRX / IBJA / Borsa Istanbul physical premiums over the landed parity
+#                       (physical_gold_premium), each terms-gated like SGE.
 #   sge_london          SGE benchmark USD/oz premium over XAUUSD (fetch_sge_premium's
 #                       sge_premium_features) -- ONLY when alt_proxies' terms gate reads
 #                       `confirmed` for SGE; it reads `refused` (2026-10-06), so BLOCKED_ON_TERMS.
@@ -1334,6 +1336,17 @@ HARD_PAIRS: dict[str, dict[str, Any]] = {
     "sge_london": {"kind": "level", "series": "sge_premium_features",
                    "column": "premium_usd_oz", "targets": ("XAUUSD",),
                    "terms_ref": "cn_sge_premium"},
+    # The physical premiums of research/physical_gold_premium.py: local price over the landed
+    # parity (India: import duty applied), each behind its own gate-only terms row.
+    "kr_gold_london": {"kind": "level", "series": "physical_premium_kr_krx_gold",
+                       "column": "premium_pct", "targets": ("XAUUSD",),
+                       "terms_ref": "kr_krx_gold"},
+    "in_gold_london": {"kind": "level", "series": "physical_premium_in_ibja_gold",
+                       "column": "premium_pct", "targets": ("XAUUSD",),
+                       "terms_ref": "in_ibja_gold"},
+    "tr_gold_london": {"kind": "level", "series": "physical_premium_tr_borsa_gold",
+                       "column": "premium_pct", "targets": ("XAUUSD",),
+                       "terms_ref": "tr_borsa_gold"},
 }
 
 

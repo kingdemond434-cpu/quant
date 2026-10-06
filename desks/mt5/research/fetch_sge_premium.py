@@ -544,6 +544,13 @@ def record_benchmark_and_features(fetched_at: str) -> dict[str, Any]:
 
 def main() -> int:
     report: dict[str, object] = {"at": datetime.now(UTC).isoformat(timespec="seconds")}
+    # THE OTHER PHYSICAL PREMIUMS (KRX, IBJA, Borsa Istanbul) ride this leg's clock and carry
+    # their own terms rows; SGE's refusal never silences them, nor theirs SGE.
+    try:
+        from research.physical_gold_premium import record_physical_premiums
+        report["physical"] = record_physical_premiums(str(report["at"]))
+    except Exception as exc:
+        report["physical"] = {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}"[:200]}
     state, why = terms_state()
     report["terms"] = {"state": state, "why": why}
     if state != "confirmed":

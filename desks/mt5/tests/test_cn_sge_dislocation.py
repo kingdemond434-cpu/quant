@@ -310,3 +310,88 @@ def test_p6_reads_no_premium_from_a_terms_blocked_report(
     monkeypatch.setattr(DL, "_cot_series", lambda _c, _s: ([], "none"))
     r = DL.engine_p6(ctx, "XAUUSD", "h1", pd.DataFrame(), np.array([]))
     assert r.status == DL.UNMEASURED and "sge_premium 0 rows" in r.why
+
+
+# ============================================================ physical premiums (KR / IN / TR)
+def test_physical_tables_parse_in_their_own_conventions() -> None:
+    from research import physical_gold_premium as P
+    kr = P.parse_price_table((FIX / "krx_gold.json").read_bytes(), P.MARKETS["kr_krx_gold"])
+    ind = P.parse_price_table((FIX / "ibja_rates.html").read_bytes(), P.MARKETS["in_ibja_gold"])
+    tr = P.parse_price_table((FIX / "borsa_gold.html").read_bytes(), P.MARKETS["tr_borsa_gold"])
+    assert kr[0] == {"kind": "physical", "contract": "kr_krx_gold", "session_date": "2026-10-05",
+                     "price_local": 152340.0}
+    assert ind[0]["session_date"] == "2026-10-05" and ind[0]["price_local"] == 78450.0
+    assert tr[0]["price_local"] == 4120.5                       # "4.120,50", decimal comma
+    assert P.duty_at(P.MARKETS["in_ibja_gold"], datetime(2024, 7, 1).date()) == 0.15
+    assert P.duty_at(P.MARKETS["in_ibja_gold"], datetime(2026, 7, 1).date()) == 0.06
+
+
+def test_physical_markets_fetch_nothing_until_their_terms_are_confirmed(tmp_path: Path) -> None:
+    from research import physical_gold_premium as P
+
+    def _no_net(*_a: Any, **_k: Any) -> Any:
+        raise AssertionError("a terms-blocked market was requested")
+    rep = P.record_physical_premiums("2026-10-06T00:00:00+00:00", fetch=_no_net,
+                                     bars_fn=lambda _s: None, series_dir=tmp_path)
+    assert set(rep) == {"kr_krx_gold", "in_ibja_gold", "tr_borsa_gold"}
+    for mid, row in rep.items():
+        assert row["status"] == "BLOCKED_ON_TERMS" and row["terms"] == "to_confirm", mid
+        assert A.terms_gate(mid)[0] == "to_confirm"
+    assert not list(tmp_path.iterdir())
+
+
+def test_a_confirmed_physical_market_reaches_a_series_and_the_lab_screens_it(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """End to end on a confirmed gate: table -> vintages -> landed-parity premium -> series ->
+    dislocation pair -> exogenous_conditioner cells (the family the judge evaluates)."""
+    from mt5desk.families_orthogonal import ORTHOGONAL_FAMILIES
+
+    from research import physical_gold_premium as P
+    root = _clock(tmp_path)
+    desk = root / "desks" / "mt5"
+    series = desk / "data" / "lake" / "series"
+    monkeypatch.setitem(A.GATE_TERMS, "in_ibja_gold", ("confirmed", "test licence"))
+    monkeypatch.setattr(S, "VINTAGES", tmp_path / "v.jsonl")
+    xau = _bars("2026-05-01", 135, 2400.0, seed=21)
+    inr = _bars("2026-05-01", 135, 84.0, seed=22)
+    m = P.MARKETS["in_ibja_gold"]
+    rng = np.random.default_rng(23)
+    lines, prem = ["<table><tr><th>Date</th><th>Gold 999</th></tr>"], 2.0
+    want: dict[str, float] = {}
+    for d in pd.date_range("2026-05-04", "2026-09-10", freq="B"):
+        st = pd.Timestamp(d.date(), tz="UTC") + pd.Timedelta(hours=14)     # 11:30 UTC + 3h
+        if st not in xau.index:
+            continue
+        prem = 0.7 * prem + rng.normal(0.6, 0.4)
+        landed = (float(xau.loc[st, "open"]) * float(inr.loc[st, "open"]) / P.GRAMS_PER_TROY_OZ
+                  * m.purity * 1.06)
+        px = round(landed * (1 + prem / 100.0) * 10.0, 2)
+        want[d.strftime("%Y-%m-%d")] = (px / 10.0 / landed - 1.0) * 100.0
+        lines.append(f"<tr><td>{d.strftime('%d/%m/%Y')}</td><td>{px}</td></tr>")
+    body = ("".join(lines) + "</table>").encode()
+
+    class _Resp:
+        content = body
+
+        def raise_for_status(self) -> None:
+            return None
+    bars = {"XAUUSD": xau, "USDINR": inr}.get
+    rep = P.record_physical_premiums("2026-09-11T00:00:00+00:00",
+                                     fetch=lambda *_a, **_k: _Resp(), bars_fn=bars,
+                                     clock_root=root, series_dir=series)
+    row = rep["in_ibja_gold"]
+    assert row["status"] == "PARSED" and row["premium"]["status"] == "OK", row
+    assert rep["kr_krx_gold"]["status"] == "BLOCKED_ON_TERMS"
+    f = pd.read_parquet(series / "physical_premium_in_ibja_gold.parquet")
+    got = dict(zip(pd.to_datetime(f["event_time"]).dt.strftime("%Y-%m-%d"), f["premium_pct"],
+                   strict=True))
+    assert all(abs(got[k] - v) < 1e-6 for k, v in want.items() if k in got) and len(got) > 40
+    assert {"premium_delta", "premium_accel", "premium_z"} <= set(f.columns)
+
+    monkeypatch.setattr(PK, "NULL_TRIALS", tmp_path / "null.jsonl")
+    monkeypatch.setattr(PK, "resolve_targets", lambda raw: [s for s in raw if s == "XAUUSD"])
+    lab = DL.hard_dislocations(DL.Paths(desk), bars_fn=bars, clock_root=root)
+    pair = lab["pairs"]["in_gold_london"]
+    assert pair["status"] == DL.MEASURED and pair["tests"] == 4, pair
+    assert lab["pairs"]["kr_gold_london"]["status"] == "BLOCKED_ON_TERMS"
+    assert "exogenous_conditioner" in ORTHOGONAL_FAMILIES     # the judge builds this family

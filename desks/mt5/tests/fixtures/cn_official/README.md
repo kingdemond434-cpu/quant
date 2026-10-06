@@ -20,3 +20,15 @@ NO_TABLE with its reason, never as an empty series.
 | `customs_import_table.html` | GACC monthly "进口主要商品量值表": two-row header (month / cumulative over 数量 / 金额), 计量单位 column, title carrying the month and direction |
 | `sge_daily_quote.html` | SGE 每日行情 table (合约 / 开盘价 / 最高价 / 最低价 / 收盘价 / 加权平均价 / 成交量 / 成交金额 / 持仓量 / 交收量) -- parsed ONLY when SGE's terms are confirmed; they are REFUSED (see alt_proxies.TERMS_EVIDENCE) |
 | `sge_benchmark.html` | SGE 上海金基准价 table (日期 / 早盘价 / 午盘价) and silver benchmark (日期 / 基准价) -- same terms gate |
+
+## Physical gold premium fixtures (physical_gold_premium.py)
+
+- `krx_gold.json` -- the KRX Data Marketplace JSON shape (`output` list of records with `TRD_DD`
+  as `YYYY/MM/DD` and `TDD_CLSPRC` as a comma-grouped string), KRW per gram for the
+  금 99.99_1Kg board.
+- `ibja_rates.html` -- the ibjarates.com rate table: `Date` as `DD/MM/YYYY` and a `Gold 999`
+  column in INR per 10 g, quoted excluding GST.
+- `borsa_gold.html` -- a Borsa Istanbul precious-metals end-of-day table: `Tarih` as
+  `DD.MM.YYYY`, `Kapanış` in TRY per gram with Turkish digit grouping (`4.120,50`).
+
+All three venues are BLOCKED_ON_TERMS (to_confirm) on 2026-10-06; values are illustrative.

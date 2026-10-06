@@ -2540,6 +2540,47 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
 #: registrable suffix, so en./www. and any sub-host are governed together.
 TERMS_HOSTS: dict[str, str] = {"sge.com.cn": "cn_sge_premium"}
 
+#: GATE-ONLY TERMS ROWS: decisions for feeds that are not alt_proxies sources (so they stay out of
+#: TERMS, whose keys are exactly this organ's sources) but are fetched by another organ through
+#: `terms_gate` -- the physical gold premium adapters (research/physical_gold_premium.py). Same
+#: vocabulary, same fail-closed rule, same evidence shape; they are matched by id only, never by
+#: host, so other organs' rows on the same hosts are untouched.
+GATE_TERMS: dict[str, tuple[str, str]] = {
+    "kr_krx_gold": ("to_confirm", "KRX Data Marketplace: no terms-of-use text readable on "
+                    "2026-10-06 (portal landing page names 이용약관 / 법적고지; the legal-notice "
+                    "page returned a server error)"),
+    "in_ibja_gold": ("to_confirm", "ibjarates.com: '(c) India Bullion and Jewellers Association "
+                     "Ltd.(IBJA). All Rights Reserved'; official rates are sold by API "
+                     "subscription; no reuse grant"),
+    "tr_borsa_gold": ("to_confirm", "Borsa Istanbul: 'market data are disseminated on real "
+                      "time, delayed and end of day basis through Borsa Istanbul's licensed data "
+                      "vendors'; the Data Distribution Agreement was not readable"),
+}
+GATE_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    "kr_krx_gold": {
+        "terms_url": "https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd",
+        "terms_quote": "(no terms text on the page; footer links 홈페이지 이용약관, 법적고지)",
+        "judgement": ("TO_CONFIRM: the KRX gold market close is public on the portal but no "
+                      "reuse terms could be read. Fail closed until the 이용약관 is read and "
+                      "quoted, or a KRX data licence is held"),
+        "checked_at": "2026-10-06"},
+    "in_ibja_gold": {
+        "terms_url": "https://ibjarates.com/",
+        "terms_quote": ("(c) India Bullion and Jewellers Association Ltd.(IBJA). All Rights "
+                        "Reserved"),
+        "judgement": ("TO_CONFIRM: rates are displayed publicly, the site reserves all rights "
+                      "and sells the official rates by API subscription; no free-reuse grant"),
+        "checked_at": "2026-10-06"},
+    "tr_borsa_gold": {
+        "terms_url": "https://www.borsaistanbul.com/en/data/data-dissemination",
+        "terms_quote": ("Borsa Istanbul market data are disseminated on real time, delayed and "
+                        "end of day basis through Borsa Istanbul's licensed data vendors."),
+        "judgement": ("TO_CONFIRM: dissemination is through licensed vendors; the Data "
+                      "Distribution Agreement was not readable. Fail closed until it is quoted "
+                      "or a vendor licence is held"),
+        "checked_at": "2026-10-06"},
+}
+
 
 def terms_gate(ref_or_url: str) -> tuple[str, str]:
     """(state, why) for a TERMS id or a URL. `confirmed` / `to_confirm` / `refused` for a governed
@@ -2554,8 +2595,9 @@ def terms_gate(ref_or_url: str) -> tuple[str, str]:
         if sid is None:
             return "ungoverned", ""
         ref = sid
-    state, why = TERMS.get(ref, ("to_confirm", f"{ref}: no terms row -- fail closed"))
-    ev = TERMS_EVIDENCE.get(ref) or {}
+    state, why = TERMS.get(ref) or GATE_TERMS.get(
+        ref, ("to_confirm", f"{ref}: no terms row -- fail closed"))
+    ev = TERMS_EVIDENCE.get(ref) or GATE_TERMS_EVIDENCE.get(ref) or {}
     if ev.get("terms_url"):
         why = f"{why} [{ev['terms_url']}, checked {ev.get('checked_at', '?')}]"
     return state, why
