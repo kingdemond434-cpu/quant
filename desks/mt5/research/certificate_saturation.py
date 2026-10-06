@@ -1455,7 +1455,7 @@ def publish(doc: Mapping[str, Any], path: Path | None = None) -> Path:
     cl = out.get("clusters")
     if isinstance(cl, dict):
         out["clusters"] = {k: {kk: vv for kk, vv in v.items() if not kk.startswith("_")}
-                           | {"archive": v.get("_archive", [])[:50]}
+                           | {"archive": v.get("_archive", [])}
                            for k, v in cl.items()}
     tmp = target.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(out, indent=1, default=str), "utf-8")
