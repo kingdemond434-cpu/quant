@@ -19,8 +19,13 @@
   "libs/regime/state_admission.py": "1fc3e4878041db7a",
   "scripts/check_growth_governance.py": "0ea2336e08cd14a9",
   "scripts/check_heat_floor_wiring.py": "e5b3ff5a58848e00",
-  "scripts/check_immutable_evaluator.py": "baa4c6b46cb2f3e5",
-  "scripts/run_deadman_switch.py": "799db26dadc9c8e3"
+  "scripts/check_immutable_evaluator.py": "96b44f55b63f9d0f",
+  "scripts/run_deadman_switch.py": "799db26dadc9c8e3",
+  "desks/mt5/mt5desk/family_call.py": "6586b13c420b5d7e",
+  "desks/mt5/mt5desk/family_inputs.py": "36794fd9c07a2d62",
+  "desks/mt5/mt5desk/live_policy.py": "32912e70d8a7c2cc",
+  "desks/mt5/mt5desk/cell_modifiers.py": "65c0f03222be519a",
+  "desks/mt5/prop/e8_executor.py": "b885ce6c0ab1d4a8"
  },
  "rule": "these files judge hypotheses; a change must arrive with a re-signed manifest -- research organs may change the hypothesis, never the judge",
  "append_only": {

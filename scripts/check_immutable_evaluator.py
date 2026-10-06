@@ -52,6 +52,15 @@ IMMUTABLE: tuple[str, ...] = (
     "scripts/check_heat_floor_wiring.py",
     "scripts/check_immutable_evaluator.py",
     "scripts/run_deadman_switch.py",
+    # WHAT TRADES, NOT ONLY WHAT JUDGES (post-merge audit of #181, 2026-10-06). Each of these
+    # changes which orders the desk sends -- the family call and its inputs, the live policy,
+    # the per-cell modifiers and the E8 executor -- and none was sealed, so any of them could
+    # move unsigned while the judge above stayed frozen.
+    "desks/mt5/mt5desk/family_call.py",
+    "desks/mt5/mt5desk/family_inputs.py",
+    "desks/mt5/mt5desk/live_policy.py",
+    "desks/mt5/mt5desk/cell_modifiers.py",
+    "desks/mt5/prop/e8_executor.py",
 )
 
 # ------------------------------------------------------------- the wall beyond frozen code
