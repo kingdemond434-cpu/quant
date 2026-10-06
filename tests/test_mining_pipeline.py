@@ -962,8 +962,8 @@ def test_a_pinned_family_row_names_the_judges_chart() -> None:
 def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_path: Path) -> None:
     """Credit comes from a DECLARED seat or the longest proper URL prefix; a host-only registry
     URL never captures other pages, a cross-jurisdiction tie credits nobody, one page within one
-    jurisdiction is its first definer's, an undeclared seat is nobody's -- and ACTIVE also needs
-    the source's own fetcher to have run."""
+    jurisdiction is its seat-declaring row's, an undeclared seat is nobody's -- and ACTIVE also
+    needs the source's own fetcher to have run."""
     def src(sid: str, key: str, **kw: Any) -> acq.Source:
         return acq.Source(id=sid, fetcher=kw.pop("fetcher", "owned"), kind="text",
                           uses=["direct_cells"], url_key=key, **kw)
@@ -972,7 +972,7 @@ def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_pat
              src("smart_lab_home", "smart-lab.ru"),
              src("twin_a", "x.org/p", region="pe"),
              src("twin_b", "x.org/p", region="bo"),
-             src("dup_a", "y.org/q", region="cn",
+             src("dup_a", "y.org/q", region="cn", seats=["miner:dup_a_lane"],
                  consumer="desks/mt5/research/orthogonal_sweep.py"),
              src("dup_b", "y.org/q"),
              src("boj_listing", "boj.or.jp/en/statistics", fetcher="html_listing")]
@@ -1148,7 +1148,8 @@ def test_audit_round_two_attribution_rules(tmp_path: Path) -> None:
     pipe = _pipe(tmp_path, sources=srcs)
     idx, seats = pipe._url_index(), pipe._seat_index()
     assert pipe.attribute_url("https://stats.gov.cn/sj/x", idx) == ""          # two seats: tie
-    assert pipe.url_collisions()["cross_region_ties"] == 1
+    assert pipe.url_collisions()["by_kind"] == {"seated_tie": 1}             # one region: no
+    assert pipe.url_collisions()["cross_region_ties"] == 0                   # cross-region label
     row = {"source": "miner:discovery_compiler", "origin_seat": "boj",
            "source_url": "https://www.boj.or.jp/en/x"}
     assert pipe.attribute_source(row, idx, seats) == ("boj", "lineage")
@@ -1173,3 +1174,34 @@ def test_audit_round_two_attribution_rules(tmp_path: Path) -> None:
     assert st["boj"]["evaluated_cells_30d"] == 1
     assert st["boj"]["cold_reason"].startswith("no fetcher of it ran in 30 days (PRODUCER MAP")
     assert pipe._attribution["producer_map_error"].startswith("PRODUCER MAP FAILED")
+
+
+def test_seatless_rows_sharing_a_page_are_distinct_datasets_and_tie(tmp_path: Path) -> None:
+    """Two seatless rows on one page in one jurisdiction are distinct datasets (the acquirer folds
+    same-named duplicates into aliases first), so neither is credited by the first-definer guess:
+    the two e-Stat series registered on the bare getStatsData endpoint (audit 2026-10-01)."""
+    key = acq.canonical_url("https://api.e-stat.go.jp/rest/3.0/app/json/getStatsData")
+    srcs = [acq.Source(id=i, fetcher="owned", kind="text", uses=["direct_cells"], url_key=key,
+                       region="JP") for i in ("jp_estat_immigration", "jp_tokyo_cpi")]
+    pipe = _pipe(tmp_path, sources=srcs)
+    idx = pipe._url_index()
+    assert pipe.attribute_url("https://api.e-stat.go.jp/rest/3.0/app/json/getStatsData", idx) == ""
+    col = pipe.url_collisions()
+    assert col["by_kind"] == {"seatless_tie": 1} and col["same_region_owned"] == 0
+    assert col["by_source"]["jp_tokyo_cpi"][0]["owner"] == ""
+
+
+def test_a_ground_another_organ_reads_registers_it_by_fetched_by() -> None:
+    """The BoJ statistics ground's bond PDFs reach the docket from central_bank_miner; the row
+    names it in `fetched_by`, so that organ's credited rows are its fetch evidence (audit
+    2026-10-01), and the committed grounds file carries the declaration."""
+    row = acq.normalise_row({"id": "ground:jp:boj", "url": "https://www.boj.or.jp/statistics/",
+                             "fetched_by": ["central_bank_miner"]}, origin="t",
+                            defaults={"fetcher": "owned",
+                                      "consumer": "desks/mt5/research/deep_forest_miner.py"})
+    assert row is not None
+    assert MS.registered_organs(row, {}) == {"deep_forest_miner", "central_bank_miner"}
+    grounds = json.loads((Path(__file__).resolve().parents[1] / "desks/mt5/data/"
+                          "deep_forest_sources.json").read_text("utf-8"))["grounds"]
+    boj = [g for g in grounds if g.get("url") == "https://www.boj.or.jp/statistics/index.htm"]
+    assert boj and boj[0]["fetched_by"] == ["central_bank_miner"]

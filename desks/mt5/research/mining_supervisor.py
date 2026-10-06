@@ -39,6 +39,7 @@ import re
 import statistics
 import sys
 import time
+from collections import Counter
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -135,8 +136,12 @@ OTHER_ORGAN_FETCHERS = frozenset({"owned"})
 
 def registered_organs(src: acq.Source, organ_of: Mapping[str, str]) -> set[str]:
     """The organs a registry row names as its fetcher: a `scout:<name>` owner, its consumer
-    file's stem, and the producer of every seat it declares."""
+    file's stem, the producer of every seat it declares, and any organ its row names in
+    `fetched_by` (a ground another organ also reads: the BoJ statistics ground, whose bond PDFs
+    reach the docket from central_bank_miner, audit 2026-10-01)."""
     out = {Path(src.consumer).stem} if src.consumer else set()
+    fetched = src.config.get("fetched_by") or []
+    out |= {str(o) for o in ([fetched] if isinstance(fetched, str) else fetched)}
     if src.owner.startswith("scout:"):
         out.add(src.owner.removeprefix("scout:"))
     out |= {producer_of(seat, organ_of) for seat in src.seats}
@@ -867,11 +872,14 @@ class Pipeline:
         Several rosters name one page (133 keys, 310 rows on 2026-09-30), and a tie credits
         nobody, so every such page's judged rows went uncredited. Within ONE jurisdiction (equal
         regions, or one side the `global` default) the page is one source for attribution, owned
-        by the ONE row that declares a seat, else the FIRST definition -- the registry's
-        precedence. The tie stands (credit nobody) across jurisdictions (two countries' packs
-        naming one vendor page) and wherever two or more rows declare seats on the page: those
-        are distinct producers' sources (stats.gov.cn/sj, unipass ets), and picking one would be
-        a guess. Every collision is published per source (`registry.url_collisions`)."""
+        by the ONE row that declares a seat. The tie stands (credit nobody) across jurisdictions
+        (two countries' packs naming one vendor page), wherever two or more rows declare seats
+        (distinct producers' sources: stats.gov.cn/sj, unipass ets), and wherever NO row declares
+        one: the acquirer already folded same-named duplicates into aliases, so seatless rows
+        still sharing a page are distinct datasets (two e-Stat series on the bare getStatsData
+        endpoint, two np pack datasets on one forum) and the first definition would be a guess
+        (audit 2026-10-01). Each collision is published per source with its cause
+        (`registry.url_collisions`)."""
         keyed: dict[str, list[acq.Source]] = {}
         for s in self.roster:
             for k in dict.fromkeys(s.url_keys or ([s.url_key] if s.url_key else [])):
@@ -884,11 +892,12 @@ class Pipeline:
             seated = [x for x in srcs if x.seats]
             owner = seated[0] if seated else srcs[0]
             regions = {x.region for x in srcs} - {"global"}
-            keep = [owner] if len(regions) <= 1 and len(seated) <= 1 else srcs
+            kind = ("cross_region_tie" if len(regions) > 1 else "seated_tie" if len(seated) > 1
+                    else "seatless_tie" if not seated and len(srcs) > 1 else "seated_owner")
+            keep = [owner] if kind == "seated_owner" else srcs
             srcs = [owner, *[x for x in srcs if x is not owner]]
             if len(srcs) > 1:
-                col[k] = {"owner": owner.id if len(keep) == 1 else "",
-                          "kind": "same_region" if len(keep) == 1 else "cross_region_tie",
+                col[k] = {"owner": owner.id if len(keep) == 1 else "", "kind": kind,
                           "sources": [x.id for x in srcs]}
             for x in keep:
                 idx.setdefault(k.partition("/")[0], []).append((k, x.id))
@@ -897,7 +906,7 @@ class Pipeline:
 
     def url_collisions(self) -> dict[str, Any]:
         """The published collision report: counts, and per source the ids it shares a page with
-        and who owns that page for attribution ('' = a cross-jurisdiction tie, credits nobody)."""
+        and who owns that page for attribution ('' = a tie, credits nobody; `kind` says why)."""
         col: dict[str, dict[str, Any]] = getattr(self, "_url_collisions", None) or {}
         if not col and self.roster:
             self._url_index()
@@ -908,9 +917,12 @@ class Pipeline:
                 by.setdefault(sid, []).append({"url_key": k, "owner": c["owner"],
                                                "with": ",".join(x for x in c["sources"]
                                                                 if x != sid)})
+        kinds = Counter(c["kind"] for c in col.values())
         return {"keys": len(col), "rows": sum(len(c["sources"]) for c in col.values()),
                 "same_region_owned": sum(1 for c in col.values() if c["owner"]),
-                "cross_region_ties": sum(1 for c in col.values() if not c["owner"]),
+                "cross_region_ties": kinds["cross_region_tie"],
+                "ties": sum(1 for c in col.values() if not c["owner"]),
+                "by_kind": dict(sorted(kinds.items())),
                 "by_source": dict(sorted(by.items()))}
 
     def _seat_index(self) -> dict[str, str]:

@@ -235,7 +235,7 @@ def normalise_row(row: Mapping[str, Any], *, origin: str,
         auth = "login"
     cfg = dict(row.get("config") or {})
     for k in ("url", "urls", "listing", "feeds", "queries", "subs", "channels", "pages",
-              "paths", "item_regex"):
+              "paths", "item_regex", "fetched_by"):
         if k in row and k not in cfg:
             cfg[k] = row[k]
     fetcher = str(row.get("fetcher") or defaults.get("fetcher") or (
