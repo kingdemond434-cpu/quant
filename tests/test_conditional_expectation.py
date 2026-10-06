@@ -37,4 +37,6 @@ def test_planted_state_is_found_and_the_null_states_are_not():
     z = (m.mean - m.total) / m.se
     late = slice(5000, None)
     assert np.nanmin(z[late][state[late] == 2]) > 3
-    assert np.nanmax(np.abs(z[late][state[late] == 0])) < 4
+    null = late.start + np.flatnonzero(state[late] == 0)
+    assert np.nanmax(np.abs(m.mean[null] / m.se[null])) < 4      # its own mean is zero
+    assert np.nanmax(z[null]) < 0                                 # and sits below the total

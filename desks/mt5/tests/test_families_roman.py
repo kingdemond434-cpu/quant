@@ -86,8 +86,6 @@ def test_no_pair_no_signals():
                                                       "window": 2000, "min_events": 60}),
                                      ("hawkes_flow", {"mode": "churn_fade",
                                                       "window": 2000, "min_events": 60}),
-                                     ("hawkes_flow", {"mode": "forced_exhaustion",
-                                                      "window": 2000, "min_events": 60}),
                                      ("total_expectation_state", {"states": "vol_trend",
                                                                   "entry_z": 1.5}),
                                      ("total_expectation_state", {"states": "session_vol",
@@ -119,6 +117,28 @@ def test_proxy_events_are_named_and_rare():
     assert rm.ROWS["total_expectation_state"] == ["ROMAN-0997"]
 
 
+def test_forced_exhaustion_fades_planted_cascades():
+    d = _bars()
+    rng = np.random.default_rng(4)
+    c = d["close"].to_numpy().copy()
+    r = np.diff(np.log(c), prepend=0.0)
+    for b in rng.choice(np.arange(200, N - 10), 50, replace=False):
+        r[b:b + 3] += 0.02 * rng.choice([-1, 1])              # three-bar forced cascades
+        d.iloc[b:b + 3, d.columns.get_loc("tick_volume")] *= 20
+    c = 1.3 * np.exp(np.cumsum(r))
+    d["close"] = c
+    d["open"] = np.r_[c[0], c[:-1]]
+    d["high"] = np.maximum(d["open"], c) * 1.0005
+    d["low"] = np.minimum(d["open"], c) * 0.9995
+    kw = {"mode": "forced_exhaustion", "window": 2000, "refit": 240}
+    sigs = rm.family_hawkes_flow(d, **kw)
+    assert sigs
+    cut = d.index[4300]
+    part = {(s.time, s.side) for s in rm.family_hawkes_flow(d.iloc[:4500], **kw)
+            if s.time < cut}
+    assert part == {(s.time, s.side) for s in sigs if s.time < cut}
+
+
 def test_bar_states_cover_their_range_and_are_causal():
     d = _bars()
     for kind in rm.STATE_KINDS:
@@ -146,7 +166,8 @@ def test_cross_excitation_report_names_every_set_and_why(monkeypatch, tmp_path):
     rep = ce.run(budget_s=60.0)
     assert rep["status"] == "RAN" and rep["ran"] == ["XAUUSD"]
     x = rep["sets"]["XAUUSD"]
-    assert set(x["branching"]) <= {"buy", "sell", "large", "depletion", "vshock"}
+    assert set(x["branching"]) <= {"buy", "sell", "large", "depletion", "vshock",
+                                     "churn", "forced"}
     assert all(v["status"] == "UNMEASURED" and v["why"] for k, v in rep["sets"].items()
                if k != "XAUUSD")
     assert (tmp_path / "CROSS_EXCITATION.json").exists()

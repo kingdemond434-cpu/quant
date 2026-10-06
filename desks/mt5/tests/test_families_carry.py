@@ -162,3 +162,16 @@ def test_registered_wired_and_gated_in_the_seeder():
         assert eb.SOURCE_ID[fam] == "github:paperswithbacktest/awesome-systematic-trading"
         assert eb.grid(fam)
         assert ax.FAMILY_TABLE[fam] == ("carry_rollover", "carry", "market")
+
+
+def test_commodity_basis_ranks_the_implied_roll_yield(world, monkeypatch):
+    d, write = world
+    monkeypatch.setattr(xs, "class_of", lambda s: "commodity")
+    write("XTIUSD", RANKED)
+    lvl = fc.family_commodity_basis_carry(d, symbol="XTIUSD", mode="level")
+    assert lvl and {s.side for s in lvl} == {1}
+    # a constant basis has no surprise: the residual book ranks nothing it can trust
+    res = fc.family_commodity_basis_carry(d, symbol="XTIUSD", mode="residual")
+    assert len(res) < len(lvl)
+    assert fc.family_commodity_basis_carry(d, symbol="XTIUSD", mode="spread") == []
+    assert fc.GATES["commodity_basis_carry"]()["classes"] == ["commodity"]
