@@ -398,3 +398,70 @@ def test_timeframe_session_tier_composes_after_saturation_and_never_filters(sat:
     last_clean = max(i for i, r in enumerate(tiered) if not r.get("_dup"))
     first_dup = min(i for i, r in enumerate(tiered) if r.get("_dup"))
     assert last_clean < first_dup
+
+
+# ------------------------------------------------------------------ the box's survivor set
+BOX_FAMILIES = {"cross_asset_residual": 347, "macro_conditional": 152, "carry": 144,
+                "formula": 92, "clock_transition": 34, "overnight_gap_decay": 32,
+                "spread_state": 18, "pca_residual": 16, "session_range_breakout": 7,
+                "range_reversion": 5}
+
+
+def _box_rows() -> dict:
+    """Synthetic rows in the box's shape: `external.<SYM>.<family>.p=...` keys, source
+    external_discoveries, no shadow_spec, the edge only in the gates."""
+    syms = ("EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "US500", "AUDJPY", "USDCAD", "UKOIL")
+    out = {}
+    for fam, n in BOX_FAMILIES.items():
+        for i in range(n):
+            sym = syms[i % len(syms)]
+            out[f"external.{sym}.{fam}.p=lb={10 + i},z=1.5"] = {
+                "hunt": "external_discoveries",
+                "gates": {"walk_forward": {"oos_sharpe": 0.15}}}
+    return {"survivors": out, "swept_at": datetime.now(UTC).isoformat()}
+
+
+def test_box_key_shape_parses_family_symbol_and_params() -> None:
+    assert cs.parse_cert_key("external.XAUUSD.session_range_breakout.p=lb=20,z=1.5") == (
+        "XAUUSD", "session_range_breakout", {"lb": 20, "z": 1.5}, None)
+    assert cs.parse_cert_key("external.EURUSD.carry.rr=1.5_wb=12")[2] == {"rr": 1.5, "wb": 12}
+    assert cs.parse_cert_key("XAUUSD@M5.carry.k=3")[3] == "M5"
+    assert cs.parse_cert_key(
+        "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY")[:2] == (
+        "AUDNZD", "dav_range_filter_adx")
+    sym, fam, params, _tf, _s, _r, _spec = cs.cert_fields(
+        "external.USDJPY.macro_conditional.p=lb=5", {"hunt": "external_discoveries"})
+    assert (sym, fam, params) == ("USDJPY", "macro_conditional", {"lb": 5})
+
+
+def test_box_shaped_survivor_set_builds_with_every_row_counted() -> None:
+    doc = _build(_box_rows())
+    cert = doc["certificates"]
+    assert cert["n_certificates"] == sum(BOX_FAMILIES.values()) == 847
+    # family inverse-Simpson on this table is ~4.09: within-family coupling collapses it further
+    assert cert["n_effective_certificates"] < 4.09 * 2
+    assert cert["n_strategy_variants"] < 847
+
+
+def test_live_survivor_set_is_read_first_and_every_count_carries_its_basis(
+        tmp_path: Path, monkeypatch) -> None:
+    live, canon = tmp_path / "UNIVERSAL_SURVIVORS.json", tmp_path / "canon.json"
+    canon.write_text(json.dumps({"survivors": {"a": _cert("EURUSD", "carry", {})}}), "utf-8")
+    monkeypatch.setattr(cs, "SURVIVORS_LIVE", live)
+    monkeypatch.setattr(cs, "CANON", canon)
+    doc, basis = cs.load_survivors()
+    assert len(doc["survivors"]) == 1 and basis["basis"] == "git_snapshot"
+    assert basis["source"].endswith("canon.json") and basis["source_mtime"]
+    live.write_text(json.dumps(_box_rows()), "utf-8")
+    doc, basis = cs.load_survivors()
+    assert basis["basis"] == "box_live" and basis["n_rows"] == 847
+    stale = _box_rows()
+    stale["swept_at"] = "2026-09-16T15:07:26+00:00"
+    live.write_text(json.dumps(stale), "utf-8")
+    _doc, basis = cs.load_survivors(now=datetime(2026, 10, 6, tzinfo=UTC))
+    assert basis["basis"] == "git_snapshot" and basis["swept_at"] == stale["swept_at"]
+    built = cs.build(
+        shadow={}, sleeves={}, judged={}, coupling_tab={}, residual={}, forward_daily={},
+        book={}, previous={}, loader=lambda s: None)
+    assert built["certificates"]["basis"] == "git_snapshot"
+    assert built["certificates"]["source"].endswith("UNIVERSAL_SURVIVORS.json")

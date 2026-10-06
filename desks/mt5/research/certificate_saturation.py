@@ -114,6 +114,12 @@ REPORTS = BASE / "reports"
 REPORT = REPORTS / "CERTIFICATE_SATURATION.json"
 FEEDBACK = REPORTS / "BREADTH_FEEDBACK.json"
 CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+#: THE BOX'S LIVE SURVIVOR SET (the sweep writes it; ~847 rows on 2026-10-06). Read FIRST; the
+#: sealed git canon (52 rows in the repo) is the fallback. Every N_CERT carries its basis.
+SURVIVORS_LIVE = REPORTS / "UNIVERSAL_SURVIVORS.json"
+#: a survivor file swept (or written) within this many hours is the box's live set; older is a
+#: snapshot carried by git and is labelled so wherever its counts are printed
+LIVE_BASIS_MAX_AGE_H = 48.0
 SHADOW_STATE = REPORTS / "shadow" / "shadow_state.json"
 SLEEVES = BASE / "data" / "sleeves.json"
 SEEN_CELLS = BASE / "data" / "hypotheses" / "gauntlet_seen_cells.json"
@@ -513,22 +519,111 @@ def row_fields(row: Mapping[str, Any]) -> tuple[str, str, dict[str, Any], Any, A
     return (str(sym or "").strip().upper(), str(row.get("family") or ""), params, tf, sess, reg)
 
 
+def _param_value(v: str) -> Any:
+    try:
+        f = float(v)
+        return int(f) if f.is_integer() and "." not in v else f
+    except ValueError:
+        return v
+
+
+def parse_cert_key(key: str) -> tuple[str, str, dict[str, Any], Any]:
+    """(SYMBOL, family, params, timeframe) from a survivor KEY or cell when the row's own fields
+    are missing. Handles the box's shapes:
+
+        external.XAUUSD.session_range_breakout.p=...      (lane prefix, dotted)
+        external.XAUUSD.session_range_breakout.rr=1.5_wb=12
+        XAUUSD@M5.carry.k=3                                (chart on the symbol)
+        qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY  (spaced)
+    """
+    import re
+    s = str(key or "").strip()
+    s = re.sub(r"^qquant\.[^ ]*?\.json\.", "", s)
+    for prefix in ("external.", "universal.", "qquant.", "internal."):
+        if s.startswith(prefix):
+            s = s[len(prefix):]
+            break
+    if " " in s.split(".", 1)[0] or (" " in s and "." not in s.split(" ", 1)[0]):
+        tok = s.split()
+        sym, fam, rest = (tok[0] if tok else ""), (tok[1] if len(tok) > 1 else ""), ""
+    else:
+        bits = s.split(".", 2)
+        sym = bits[0] if bits else ""
+        fam = bits[1] if len(bits) > 1 else ""
+        rest = bits[2] if len(bits) > 2 else ""
+    tf = sym.rsplit("@", 1)[-1] if "@" in sym else None
+    sym = sym.split("@", 1)[0].upper()
+    params: dict[str, Any] = {}
+    if rest.startswith("p=") and "=" in rest[2:]:
+        rest = rest[2:]                       # `p=<k=v,...>`: the payload is the params
+    if rest:
+        segs = re.split(r"[,;]", rest) if re.search(r"[,;]", rest) else \
+            re.split(r"_(?=[A-Za-z][A-Za-z0-9]*=)", rest)
+        for seg in segs:
+            if "=" in seg:
+                k, v = seg.split("=", 1)
+                if k.strip():
+                    params[k.strip()] = _param_value(v.strip())
+    return sym, fam, params, tf
+
+
 def cert_fields(key: str, cert: Mapping[str, Any]) -> tuple[str, str, dict[str, Any], Any, Any,
                                                             Any, dict[str, Any]]:
     raw = cert.get("shadow_spec")
     spec: dict[str, Any] = dict(raw) if isinstance(raw, Mapping) else {}
     rp = spec.get("params") if isinstance(spec.get("params"), Mapping) else cert.get("params")
     params: dict[str, Any] = dict(rp) if isinstance(rp, Mapping) else {}
-    cell = str(cert.get("cell") or key)
-    parts = cell.split(".")
-    sym = str(spec.get("symbol") or cert.get("sym") or (parts[0] if parts else "")).upper()
+    # fields first; the KEY (the box's `external.<SYM>.<family>.p=...`) only fills what is missing
+    k_sym, k_fam, k_params, k_tf = parse_cert_key(str(cert.get("cell") or key))
+    if not k_sym or not k_fam:
+        k_sym, k_fam, k_params, k_tf = parse_cert_key(str(key))
+    if not params:
+        params = dict(k_params)
+    sym = str(spec.get("symbol") or cert.get("sym") or cert.get("symbol") or k_sym).upper()
     sym = sym.split("@", 1)[0]
-    fam = str(spec.get("family") or cert.get("family") or (parts[1] if len(parts) > 1 else ""))
-    tf = _first(spec.get("timeframe"), params.get("timeframe"), cert.get("timeframe"),
-                (parts[0].rsplit("@", 1)[-1] if parts and "@" in parts[0] else None))
+    fam = str(spec.get("family") or cert.get("family") or k_fam)
+    tf = _first(spec.get("timeframe"), params.get("timeframe"), cert.get("timeframe"), k_tf)
     sess = _first(spec.get("selector"), spec.get("session"), params.get("session"))
     reg = _first(spec.get("condition"), spec.get("regime"))
     return sym, fam, params, tf, sess, reg, spec
+
+
+def survivor_basis(path: Path, doc: Any, *, now: datetime | None = None) -> dict[str, Any]:
+    """Where an N_CERT came from: path, mtime, swept_at, rows, and `basis` -- `box_live` when
+    swept (or written) within LIVE_BASIS_MAX_AGE_H, else `git_snapshot`."""
+    try:
+        mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+    except OSError:
+        mtime = None
+    swept = doc.get("swept_at") if isinstance(doc, dict) else None
+    ref = None
+    try:
+        ref = datetime.fromisoformat(str(swept).replace("Z", "+00:00")) if swept else mtime
+    except ValueError:
+        ref = mtime
+    age = (((now or datetime.now(tz=UTC)) - ref).total_seconds() / 3600.0) if ref else None
+    sv = doc.get("survivors") if isinstance(doc, dict) else None
+    try:
+        rel = str(path.relative_to(BASE.parents[1]))
+    except ValueError:
+        rel = str(path)
+    return {"basis": ("box_live" if age is not None and age <= LIVE_BASIS_MAX_AGE_H
+                      else "git_snapshot"),
+            "source": rel, "source_mtime": mtime.isoformat(timespec="seconds") if mtime else None,
+            "swept_at": swept, "age_h": round(age, 2) if age is not None else None,
+            "n_rows": len(sv) if isinstance(sv, dict) else None}
+
+
+def load_survivors(*, now: datetime | None = None) -> tuple[Any, dict[str, Any]]:
+    """The box's live survivor set first (reports/UNIVERSAL_SURVIVORS.json), the git canon only
+    when that is absent or empty; the basis is returned either way."""
+    for path in (SURVIVORS_LIVE, CANON):
+        doc = _read(path)
+        sv = doc.get("survivors") if isinstance(doc, dict) else None
+        if isinstance(sv, dict) and sv:
+            return doc, survivor_basis(path, doc, now=now)
+    return None, {"basis": UNMEASURED, "source": None,
+                  "why": f"neither {SURVIVORS_LIVE.name} nor {CANON.name} holds survivors"}
 
 
 def cert_edge(cert: Mapping[str, Any]) -> float | None:
@@ -857,13 +952,20 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
           now: datetime | None = None) -> dict[str, Any]:
     """The whole saturation map. Every input left None is read from its artifact."""
     at = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
-    canon = _read(CANON) if canon is None else canon
+    if canon is None:
+        canon, basis = load_survivors(now=now)
+    else:
+        basis = {"basis": "supplied", "source": "caller", "source_mtime": None,
+                 "n_rows": (len(canon.get("survivors") or {}) if isinstance(canon, dict)
+                            else None)}
     survivors = canon.get("survivors") if isinstance(canon, dict) else None
     if not isinstance(survivors, dict) or not survivors:
         return {"at": at, "status": UNMEASURED,
-                "why": f"no readable certificates in {CANON.name}: saturation is UNMEASURED and "
-                       "every consumer orders exactly as it did before this map existed",
-                "certificates": {"n_certificates": 0, "n_effective_certificates": None}}
+                "why": f"no readable certificates in {SURVIVORS_LIVE.name} or {CANON.name}: "
+                       "saturation is UNMEASURED and every consumer orders exactly as it did "
+                       "before this map existed",
+                "certificates": {"n_certificates": 0, "n_effective_certificates": None,
+                                 **basis}}
     shadow = _read(SHADOW_STATE) if shadow is None else shadow
     sleeves = _read(SLEEVES) if sleeves is None else sleeves
     judged = judged_by_pair() if judged is None else judged
@@ -1108,6 +1210,7 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
     n_variants = len({g["cluster"] for g in glist})
     quality = edge_quality(certs, now=now)
     headline = {
+        **basis,
         "n_certificates": n_cert,
         "n_effective_certificates": round(n_eff, 3),
         "n_effective_certificates_structural": round(n_eff_structural, 3),
