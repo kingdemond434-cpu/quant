@@ -9091,7 +9091,7 @@
    "gate": "none",
    "evidence": [
     "desks/mt5/research/alt_proxies.py:2328 (TERMS cn_sge_premium refused, with TERMS_EVIDENCE quote and URL)",
-    "desks/mt5/research/alt_proxies.py:2544 (terms_gate: by id or host, fail closed)",
+    "desks/mt5/research/alt_proxies.py:2585 (terms_gate: by id or host, fail closed)",
     "desks/mt5/research/fetch_sge_premium.py:293 (append_vintages)",
     "desks/mt5/research/fetch_sge_premium.py:449 (benchmark_premium)",
     "desks/mt5/research/fetch_sge_premium.py:482 (premium_features)",
@@ -9114,15 +9114,36 @@
    "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/dislocation_lab.py:1325 (HARD_PAIRS)",
-    "desks/mt5/research/dislocation_lab.py:1340 (half_life)",
-    "desks/mt5/research/dislocation_lab.py:1430 (hard_dislocations)",
+    "desks/mt5/research/dislocation_lab.py:1327 (HARD_PAIRS: SHFE Au/Ag, INE SC, CNY fix, SGE and the KR/IN/TR physical premiums)",
+    "desks/mt5/research/dislocation_lab.py:1353 (half_life)",
+    "desks/mt5/research/dislocation_lab.py:1443 (hard_dislocations)",
+    "desks/mt5/mt5desk/families_orthogonal.py:2369 (exogenous_conditioner is an ORTHOGONAL_FAMILIES member: the judge builds the donated cells)",
     "desks/mt5/tests/test_cn_sge_dislocation.py"
    ],
    "scheduled_by": "hourly_cycle:dislocation_lab",
    "artifact": "desks/mt5/reports/DISLOCATION_LAB.json",
    "consumer": "data/intelligence/dislocation_lab_hard/discoveries_*.json -> desks/mt5/research/miner_candidate_compiler.py; mt5desk/family_exogenous_conditioner.py reads series/dislocation_<pair>.parquet",
    "gap": "Live yield UNMEASURED: needs free_stack's akshare series (shfe_au_ret / shfe_ag_ret / ine_sc_ret) and a measured BAR_CLOCK.json on the host; sge_london stays BLOCKED_ON_TERMS."
+  },
+  {
+   "id": "PHYS1",
+   "item": "PHYSICAL GOLD PREMIUMS OUTSIDE CHINA (audit 2026-10-06 repair #4): KRX gold (KRW/g), IBJA 999 (INR/10 g, ex-GST, landed parity with the declared Indian import-duty schedule) and Borsa Istanbul standard gold (TRY/g) against XAUUSD x USDKRW / USDINR / USDTRY at each market's close on the measured bar clock, in the SGE framework: vintages in the SGE ledger, premium change/acceleration/z/percentile, series published for the dislocation lab, screened as exogenous_conditioner cells and donated through proposer_common.",
+   "domain": "PCN",
+   "phase": "PCN",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/physical_gold_premium.py:191 (market_premium)",
+    "desks/mt5/research/physical_gold_premium.py:223 (record_physical_premiums: terms gate, route, vintages, features, series)",
+    "desks/mt5/research/alt_proxies.py:2548 (GATE_TERMS: kr_krx_gold, in_ibja_gold, tr_borsa_gold, all to_confirm with quoted evidence)",
+    "desks/mt5/research/fetch_sge_premium.py:545 (main: runs the physical markets on the sge_premium leg before SGE's own gate)",
+    "desks/mt5/tests/test_cn_sge_dislocation.py"
+   ],
+   "scheduled_by": "hourly_cycle:sge_premium",
+   "artifact": "desks/mt5/reports/sge_premium.json",
+   "consumer": "desks/mt5/research/dislocation_lab.py hard_dislocations (kr/in/tr_gold_london) -> data/intelligence/dislocation_lab_hard -> miner_candidate_compiler -> external_gauntlet (exogenous_conditioner)",
+   "gap": "BLOCKED_ON_TERMS: KRX, IBJA and Borsa Istanbul terms are to_confirm (2026-10-06); KRX and Borsa routes are UNCONFIGURED until a verified route is set (PHYS_GOLD_URL_<MARKET>). Code end to end is tested on a confirmed gate with fixtures; live yield UNMEASURED.",
+   "next_step": "Principal: read and quote each venue's terms (or hold a vendor licence), flip alt_proxies.GATE_TERMS, set the routes on the box."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
