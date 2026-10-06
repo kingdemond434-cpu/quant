@@ -1188,7 +1188,8 @@ def _observation(item: Item, *, kind_label: str, story_id: str, event_id: str | 
         geography=item.geography or ",".join(item.entities[:3]),
         asset_domain=",".join(sorted(set(affected_classes))[:4]),
         text=item.title[:400] or item.text[:400], language=item.language or UNMEASURED,
-        source_publication_time=know, knowable_at=know, received_at=item.seen_at,
+        source_publication_time=know, knowable_at=know,
+        knowable_basis="printed_stamp" if know else UNMEASURED, received_at=item.seen_at,
         parse_complete_at=_now(), source_confidence=confidence,
         commercial_rights=("GDELT open data, citation" if item.origin.startswith("gdelt")
                            else UNMEASURED),

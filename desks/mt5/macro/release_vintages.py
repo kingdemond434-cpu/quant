@@ -524,7 +524,7 @@ def sensor_observations(sensor_inputs: Sequence[Mapping[str, Any]], received_at:
                   "commercial_rights": "public statistics (US federal), attribution"}
         first = sc.make(**common, value=s["actual"], consensus=s["consensus"],
                         expected_value=s["expected"], knowable_at=s["sched"],
-                        received_at=max(received_at, s["sched"]), parse_complete_at=received_at
+                        knowable_basis="calendar", received_at=max(received_at, s["sched"]), parse_complete_at=received_at
                         if received_at >= s["sched"] else s["sched"],
                         surprise_z=z if isinstance(z, float) else None,
                         percentile=pct if isinstance(pct, float) else None,
@@ -533,7 +533,8 @@ def sensor_observations(sensor_inputs: Sequence[Mapping[str, Any]], received_at:
         for r in p["revisions"]:
             vt = scheduled_utc(spec, date.fromisoformat(r["vintage"]))
             out.append(sc.make(**common, value=_round(r["value"], s["decimals"]),
-                               knowable_at=vt, received_at=max(received_at, vt),
+                               knowable_at=vt, knowable_basis="calendar",
+                               received_at=max(received_at, vt),
                                parse_complete_at=max(received_at, vt),
                                attributes={"vintage": r["vintage"], "revision": True}))
         if s["consensus"] is not None and s.get("consensus_at"):
@@ -542,7 +543,7 @@ def sensor_observations(sensor_inputs: Sequence[Mapping[str, Any]], received_at:
                                   "source_id": "ff_calendar_vintage",
                                   "licence": UNMEASURED, "commercial_rights": UNMEASURED},
                                value=s["consensus"], knowable_at=s["consensus_at"],
-                               received_at=s["consensus_at"],
+                               knowable_basis="bounded_by_receipt", received_at=s["consensus_at"],
                                parse_complete_at=s["consensus_at"],
                                attributes={"expectation_kind": "consensus_median"}))
     return out
