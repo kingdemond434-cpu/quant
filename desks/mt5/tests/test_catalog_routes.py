@@ -56,12 +56,24 @@ def _q(url: str) -> dict[str, str]:
     return dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(url).query))
 
 
+_PERMITS = {"verdict": "PERMITS", "terms_url": "https://terms.example.org/",
+            "terms_quote": "You may reuse the data freely, including by automated means."}
+#: Every fixture host, as permitted by a quoted clause -- except the fenced and crypto ones,
+#: which the fence must refuse even when terms evidence would permit them.
+TEST_HOSTS = ("example.org", "example.gov", "example.eu", "example.kr", "example", "a.org",
+              "cat", "b", "s", "commoncrawl.org", "sdmx.org", "venuea.com", "reddit.com")
+
+
 @pytest.fixture()
 def box(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(cr, "STATE", tmp_path / "catalog_routes" / "state.json")
     monkeypatch.setattr(cr, "CACHE", tmp_path / "catalog_routes" / "cache")
     monkeypatch.setattr(cr, "WORLD", tmp_path / "world")
     monkeypatch.setattr(cr, "REPORT", tmp_path / "reports" / "CATALOG_ROUTES.json")
+    ev = tmp_path / "catalog_routes" / "terms_evidence.json"
+    ev.parent.mkdir(parents=True, exist_ok=True)
+    ev.write_text(json.dumps({"hosts": {h: _PERMITS for h in TEST_HOSTS}}))
+    monkeypatch.setattr(cr, "TERMS_EVIDENCE", ev)
     return tmp_path
 
 
@@ -556,3 +568,26 @@ def test_source_frontier_publishes_yield_by_discovery_method() -> None:
     assert rows["seed"] == {"method": "seed", "sources": 2, "sources_with_yield": 1,
                             "testable": 4, "compute_h": 2.0}
     assert rows["catalog_route:ckan"]["testable"] == SF.UNMEASURED      # no yield row yet
+
+
+def test_a_host_without_permitting_terms_evidence_is_never_fetched(box: Path) -> None:
+    """Fail closed: no quoted permitting clause for the host, no request at all."""
+    ev = json.loads(cr.TERMS_EVIDENCE.read_text())
+    ev["hosts"].pop("example.org")
+    ev["hosts"]["portal.example.org"] = {"verdict": "UNREAD", "terms_url": "", "terms_quote": ""}
+    cr.TERMS_EVIDENCE.write_text(json.dumps(ev))
+    net = Net({"portal.example.org/api/3/action/package_search": ckan_handler(3)})
+    r = _run(box, _roster(box, [CKAN]), net)
+    assert r["portals"]["xx_ckan"]["status"] == "TERMS_UNVERIFIED"
+    assert net.calls == []
+    assert r["terms"]["unverified_portals"] == ["xx_ckan"]
+
+
+def test_permission_needs_a_quote_and_a_terms_url() -> None:
+    ev = {"a.org": {"verdict": "PERMITS", "terms_url": "https://a.org/t", "terms_quote": "ok"},
+          "b.org": {"verdict": "PERMITS", "terms_url": "https://b.org/t", "terms_quote": " "},
+          "c.org": {"verdict": "PROHIBITS", "terms_url": "https://c.org/t", "terms_quote": "x"},
+          "d.org": {"verdict": "PERMITS", "terms_url": "", "terms_quote": "ok"}}
+    allowed = cr.permitted_hosts(ev)
+    assert allowed == {"a.org"}
+    assert cr.terms_permit("data.a.org", allowed) and not cr.terms_permit("aa.org", allowed)

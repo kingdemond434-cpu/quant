@@ -83,6 +83,11 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 ROUTES_DIR = DESK / "data" / "catalog_routes"
 ROSTER = ROUTES_DIR / "roster.json"
 STATE = ROUTES_DIR / "state.json"
+#: TERMS EVIDENCE, PER CATALOGUE HOST. A host is fetched only when this file holds a row for it
+#: (or a parent domain) whose verdict is PERMITS with the permitting clause quoted verbatim from
+#: the host's own terms page. No row, an unread page or a prohibiting clause: nothing is fetched,
+#: the portal reports TERMS_UNVERIFIED, and the report lists it. Fail closed (audit of #192).
+TERMS_EVIDENCE = ROUTES_DIR / "terms_evidence.json"
 #: Parsed listings and the dedup index: reconstructible (the index from the discoveries files,
 #: the listings by one request), so gitignored like every other cache on this desk.
 CACHE = ROUTES_DIR / "cache"
@@ -111,13 +116,31 @@ KEYED: re.Pattern[str] = _ACQ_KEYED
 
 
 def _terms_platform(host: str) -> str | None:
-    """The shared platform terms fence (libs/data/terms_fence.py) when it is importable. Its
-    absence falls back to the roster's own social entries, which stay refused: fail closed."""
+    """The shared platform terms fence (libs/data/terms_fence.py). If it cannot be imported every
+    host is refused: a fence that is missing is not a fence that passed. Fail closed."""
     try:
         from libs.data import terms_fence as _tf
     except Exception:  # noqa: BLE001
-        return None
+        return "terms_fence_unavailable"
     return _tf.platform_of_url(f"https://{host}/")
+
+
+def load_terms_evidence(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    doc = _read_json(path or TERMS_EVIDENCE, {})
+    return {str(h).lower(): r for h, r in (doc.get("hosts") or {}).items()
+            if isinstance(r, dict)} if isinstance(doc, dict) else {}
+
+
+def permitted_hosts(evidence: Mapping[str, Mapping[str, Any]]) -> frozenset[str]:
+    """Hosts whose own terms page was read and quoted, and permits our use."""
+    return frozenset(h for h, r in evidence.items()
+                     if r.get("verdict") == "PERMITS" and str(r.get("terms_quote") or "").strip()
+                     and str(r.get("terms_url") or "").startswith("http"))
+
+
+def terms_permit(host: str, permitted: Iterable[str]) -> bool:
+    h = host.lower().split(":")[0].rstrip(".")
+    return bool(h) and any(h == p or h.endswith("." + p) for p in permitted)
 
 # ----------------------------------------------------------------------------- formats ----
 #: Formats the acquirer can parse (delimited text, workbooks, JSON, archives of CSV, parquet).
@@ -308,6 +331,7 @@ class Session:
         self.budget_s = float(budget_s)
         self.max_requests = int(max_requests)
         self.blocked = tuple(blocked)
+        self.permitted: frozenset[str] = frozenset()
         self.requests = 0
         self.not_modified = 0
         self.refusals: Counter[str] = Counter()
@@ -377,6 +401,9 @@ class Session:
         if is_blocked(host, self.blocked):
             self.refusals["BLOCKED_HOST"] += 1
             return Response(-1, error="BLOCKED_HOST")
+        if not terms_permit(host, self.permitted):
+            self.refusals["TERMS_UNVERIFIED"] += 1
+            return Response(-1, error="TERMS_UNVERIFIED")
         # ROBOTS IS OBEYED. A Disallow, or a robots.txt that cannot be read, refuses the request
         # and is counted; the host is also recorded so the report shows what robots cost.
         robots, why = self.allowed_by_robots(url, gap_s, timeout)
@@ -1505,6 +1532,7 @@ def run(budget_s: float = DEFAULT_BUDGET_S, *, fetch: Fetch | None = None,
     blocked = [str(b) for b in roster.get("blocked_hosts") or []]
     sess = Session(state, fetch or urllib_fetch, now=now, budget_s=budget_s,
                    max_requests=max_requests, blocked=blocked, clock=clock, sleep=sleep)
+    sess.permitted = permitted_hosts(load_terms_evidence())
     portals = [p for p in roster.get("portals") or []
                if isinstance(p, dict) and p.get("id") and p.get("route")
                and (not only_routes or p["route"] in only_routes)]
@@ -1524,6 +1552,9 @@ def run(budget_s: float = DEFAULT_BUDGET_S, *, fetch: Fetch | None = None,
             continue
         if is_blocked(host_of(str(p.get("base") or "")), blocked):
             v = Visit(status="BLOCKED_HOST", remainder=0)
+        elif route != "keyed" and not terms_permit(host_of(str(p.get("base") or "")),
+                                                   sess.permitted):
+            v = Visit(status="TERMS_UNVERIFIED", remainder=UNMEASURED)
         elif route not in ROUTES:
             v = Visit(status=f"UNKNOWN_ROUTE_{route}", remainder=UNMEASURED)
         else:
@@ -1578,6 +1609,9 @@ def run(budget_s: float = DEFAULT_BUDGET_S, *, fetch: Fetch | None = None,
         "requests": sess.requests, "not_modified": sess.not_modified,
         "refusals": dict(sess.refusals),
         "labels": dict(sess.labels), "robots_disallow_hosts": sorted(sess.robots_disallow),
+        "terms": {"evidence": TERMS_EVIDENCE.name, "permitted_hosts": len(sess.permitted),
+                  "unverified_portals": sorted(pid for pid, r in table.items()
+                                               if r.get("status") == "TERMS_UNVERIFIED")},
         "budget_s": budget_s, "spent_s": round(sess.clock() - sess.started, 1),
         "remainder_total": sum(int(r["remainder"]) for r in table.values()
                                if isinstance(r.get("remainder"), int)),
