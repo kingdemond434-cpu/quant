@@ -36,6 +36,7 @@ from typing import Any
 import yaml
 
 from libs.civilizations import backpressure as BP
+from libs.civilizations import breadth as B
 from libs.civilizations import coverage as CV
 from libs.civilizations import expression as E
 from libs.civilizations import fetchers  # noqa: F401  (registers git_mirror / sitemap)
@@ -152,6 +153,9 @@ class Resident:
         self.fields = WQ.FieldTaxonomy.load(self.reports / "FIELD_TAXONOMY.json")
         self.genomes = WQ.GenomeIndex.load(self.data / "genome_index.json")
         self.parked = BP.ParkedQueue(self.data / "parked.jsonl")
+        self.breadth = B.BreadthLedger(self.data / "breadth_ledger.jsonl")
+        self.last_screen: dict[str, Any] = {}
+        self.bmap: B.BreadthMap | None = None
         self.tensor = CV.Tensor()
         self.pass_stats: dict[str, Counter[str]] = defaultdict(Counter)
         self.compute: dict[str, float] = defaultdict(float)
@@ -462,7 +466,7 @@ class Resident:
         paused = budget is None and hourly == 0
         pend = self.parked.pending()
         sat = self.saturated_areas(pipeline)
-        chosen = BP.select(pend, cap, sat)
+        chosen = self._breadth_order(pipeline, pend, cap, sat)
         made = compiled = 0
         done: list[str] = []
         for c in chosen:
@@ -490,13 +494,51 @@ class Resident:
         self.parked.mark_released(done)
         if done:
             BP.log_release(self.data / "release_log.txt", len(done))
+            at = _iso(_now())
+            self.breadth.append(
+                {"at": at, "source_id": c.get("source_id"), "civilization": c.get("civilization"),
+                 "candidate_id": c.get("candidate_id"),
+                 **(c.get("_breadth") or {"unscreened": True})}
+                for c in chosen)
         return {"budget": cap, "hourly_budget": hourly, "released_last_hour": already,
                 "paused_on_backlog": paused,
                 "backlog_growing": "UNMEASURED" if growing is None else growing,
                 "judge_backlog": load.unjudged if load.measured
                 else "UNMEASURED", "pending_before": len(pend), "released": len(done),
                 "cells_made": made, "rules_compiled": compiled,
-                "saturated_areas": len(sat), "still_parked": len(pend) - len(done)}
+                "saturated_areas": len(sat), "still_parked": len(pend) - len(done),
+                "breadth_screen": self.last_screen}
+
+    def _breadth_order(self, pipeline: Any, pend: list[dict[str, Any]], cap: int,
+                       sat: set[str]) -> list[dict[str, Any]]:
+        """The anti-saturation law at the producer (zuck 2026-10-05): before any cell is built,
+        each candidate's compiled specs are checked against the certified canon, docket_keff's
+        marginal k_eff and this producer's own released ground; independent ground goes first
+        and near-duplicates ride at the 1-in-10 exploration floor. An unloadable map falls back
+        to the backpressure order (and says so) -- the screen never blocks a release."""
+        from libs.mining import compiler
+        base_key = lambda c: BP.priority(c, saturated=c.get("area") in sat)  # noqa: E731
+        try:
+            bmap = B.BreadthMap(self.root)
+        except Exception as exc:
+            self.last_screen = {"error": f"breadth map: {type(exc).__name__}: {exc}"[:300]}
+            return BP.select(pend, cap, sat)
+        self.bmap = bmap
+        released = self.breadth.released_keys()
+        hooks = getattr(pipeline, "hooks", None)
+
+        def assess(c: dict[str, Any]) -> dict[str, Any]:
+            try:
+                res = compiler.compile_rule(
+                    dict(c.get("rule") or {}), universe=getattr(hooks, "universe", None),
+                    family_params=getattr(hooks, "family_params", None))
+                specs = [s.spec() for s in res.specs]
+            except Exception:
+                specs = []
+            return bmap.assess(specs, released)
+
+        chosen, self.last_screen = B.order(pend, cap, assess=assess, base_key=base_key)
+        return chosen
 
     def saturated_areas(self, pipeline: Any) -> set[str]:
         """civilization:skeleton areas with >= SATURATION_JUDGED judged cells, no survivor."""
@@ -617,13 +659,14 @@ class Resident:
                  ("ingest", lambda: G.ingest_all(self.kg, self.root)
                   if not (self.data / "INGESTED").exists() else {"skipped": "already"}),
                  ("culture", lambda: self.culture_rows(pipeline, since=started)),
+                 ("breadth", self.breadth_report),
                  ("roi", lambda: self.source_roi(pipeline)),
                  ("coverage", self.coverage),
                  ("fence", lambda: self.feed_fence(pipeline)),
                  ("lanes", lambda: self.lane_status(pipeline, now=now)))
         for name, fn in steps:
-            if time.monotonic() - t0 > budget_s and name not in ("culture", "roi", "coverage",
-                                                                 "fence", "lanes"):
+            if time.monotonic() - t0 > budget_s and name not in ("culture", "breadth", "roi",
+                                                                 "coverage", "fence", "lanes"):
                 out[name] = {"skipped": "budget"}
                 continue
             try:
@@ -862,6 +905,7 @@ class Resident:
         except (OSError, ValueError):
             prior = {}
         rows = {}
+        keff = self.breadth.keff_by_source()
         for sid in sorted(self.meta):
             acq_s = dict(getattr(pipeline, "acquire_seconds", {}) or {})
             secs = (float((prior.get(sid) or {}).get("compute_seconds") or 0.0)
@@ -870,7 +914,10 @@ class Resident:
                                  records=int(recs.get(sid, 0)), new=int(new.get(sid, 0)),
                                  mechanisms=mech[sid], cells=cells[sid], judged=judged[sid],
                                  survivors=won[sid], forward=0, outcomes=routed[sid],
-                                 compute_seconds=secs)
+                                 compute_seconds=secs, k_eff_increment=keff.get(sid))
+            # docket_keff units, summed over this lane's independent releases: what the
+            # released ground is EXPECTED to add before judging, so the budget leans to it
+            rows[sid]["incremental_k_eff_basis"] = "expected_pre_judging_docket_keff"
             rows[sid]["civilization"] = self.meta[sid].get("civilization")
             rows[sid]["lane"] = self.meta[sid].get("lane")
         by_civ: dict[str, Counter[str]] = defaultdict(Counter)
@@ -884,6 +931,27 @@ class Resident:
                                         {k: dict(v) for k, v in by_civ.items()},
                                         "next_pass_item_budget": budgets})
         return {"lanes": len(rows), "by_civilization": {k: dict(v) for k, v in by_civ.items()}}
+
+    def breadth_report(self) -> dict[str, Any]:
+        """CIVILIZATION_BREADTH.json: duplicate share and delta-k_eff per compute-hour."""
+        secs: dict[str, float] = {}
+        try:
+            prior = json.loads((self.reports / "SOURCE_ROI.json").read_text("utf-8")
+                               ).get("sources") or {}
+        except (OSError, ValueError):
+            prior = {}
+        for sid in self.meta:
+            secs[sid] = (float((prior.get(sid) or {}).get("compute_seconds") or 0.0)
+                         + self.compute.get(sid, 0.0))
+        bmap = self.bmap
+        if bmap is None:
+            try:
+                bmap = B.BreadthMap(self.root)
+            except Exception:
+                bmap = None
+        doc = self.breadth.report(secs, self.meta, bmap, self.last_screen)
+        self._write("CIVILIZATION_BREADTH.json", doc)
+        return {"totals": doc["totals"], "keff_status": doc["keff_status"]}
 
     def fetch_plan(self) -> dict[str, tuple[int, int]]:
         """The READER of SOURCE_ROI.json's next_pass_item_budget: {lane: (order, max_items)}.
