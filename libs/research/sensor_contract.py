@@ -376,18 +376,35 @@ def default_root() -> Path:
     return Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / "sensors"
 
 
+class LedgerIndexCorrupt(RuntimeError):
+    """The revision index exists and cannot be read. Nothing is appended and nothing is reset:
+    a silently re-created index would re-admit every vintage as new and every revision as a
+    first print, which is exactly the corruption the index exists to prevent."""
+
+
+def _vintage_key(knowable_at: str) -> datetime:
+    return parse_time(knowable_at) or datetime.min.replace(tzinfo=UTC)
+
+
 class SensorLedger:
-    """Append-only, day-sharded observation ledger with revision detection.
+    """Append-only, day-sharded observation ledger with vintage-keyed revision detection.
 
     Shards are `observations/<YYYY-MM-DD>.jsonl` by RECEIPT day, so a day's intake is one file
-    and the throughput meter reads exactly one shard. Numeric revisions are detected against a
-    small index of the latest value per (sensor, entity, metric, event_time); documents are
-    deduplicated by observation id within the shard.
+    and the throughput meter reads exactly one shard. Documents are deduplicated by observation
+    id within the shard.
 
-    IDEMPOTENT ACROSS VINTAGES. The index also remembers every observation id it has ever
-    admitted under a key, so a producer that re-sends an OLDER vintage after its revision (a
-    first print re-read from a cache, a replay) is a duplicate, never a new "revision" of the
-    revised value back to the first print.
+    NUMERIC OBSERVATIONS ARE KEYED BY (series, period, vintage): series = sensor|entity|metric,
+    period = event_time, vintage = knowable_at. The index holds every vintage of every key, so:
+      * the same vintage re-sent is a DUPLICATE (same value) or a refused CONFLICT (a different
+        value for a vintage already held), never a new row;
+      * an observation id ever admitted under a key is a duplicate, so a producer that re-sends
+        its first print after the revision (every pass, every day) appends nothing;
+      * a new vintage revises the vintage BEFORE it in knowable order (revision_of, delta, n),
+        and a vintage that arrives late (older than one already held) is appended as history
+        with `late_vintage`, never as a revision of the newer value;
+      * the index is updated only AFTER the shard write succeeded, and a corrupt index fails
+        closed (`LedgerIndexCorrupt`): nothing is appended and nothing is reset.
+    `as_of` answers what the ledger said a key was worth at any instant; `latest` the newest.
 
     The shards are box-local state and are NOT committed (`.gitignore`): the hourly
     `sensor_ledger` leg publishes `desks/mt5/reports/SENSOR_LEDGER.json` (see `digest`) instead.
@@ -398,7 +415,7 @@ class SensorLedger:
         self.obs_dir = self.root / "observations"
         self.clock_dir = self.root / "clocks"
         self.index_path = self.root / "latest_numeric.json"
-        self._index: dict[str, list[Any]] | None = None
+        self._index: dict[str, dict[str, Any]] | None = None
         self._seen: dict[str, set[str]] = {}
 
     # -- internals
@@ -406,20 +423,40 @@ class SensorLedger:
         base = self.obs_dir if kind == "observations" else self.clock_dir
         return base / f"{day}.jsonl"
 
-    def _load_index(self) -> dict[str, list[Any]]:
+    @staticmethod
+    def _entry(raw: Any) -> dict[str, Any]:
+        """One index entry in the vintage form. The pre-vintage list form [id, value, n, ids]
+        is read as a single vintage of unknown knowable instant."""
+        if isinstance(raw, dict) and isinstance(raw.get("vintages"), list):
+            return {"vintages": [list(v) for v in raw["vintages"]],
+                    "ids": [str(i) for i in raw.get("ids") or []]}
+        if isinstance(raw, list) and len(raw) >= 3:
+            ids = [str(raw[0])] + ([str(i) for i in raw[3]] if len(raw) > 3
+                                   and isinstance(raw[3], list) else [])
+            return {"vintages": [[UNMEASURED, str(raw[0]), _f(raw[1]), int(raw[2])]],
+                    "ids": sorted(set(ids))}
+        raise LedgerIndexCorrupt(f"unreadable index entry {str(raw)[:80]!r}")
+
+    def _load_index(self) -> dict[str, dict[str, Any]]:
         if self._index is None:
+            if not self.index_path.exists():
+                self._index = {}
+                return self._index
             try:
                 doc = json.loads(self.index_path.read_text(encoding="utf-8"))
-                self._index = doc if isinstance(doc, dict) else {}
-            except (OSError, ValueError):
-                self._index = {}
+            except (OSError, ValueError) as exc:
+                raise LedgerIndexCorrupt(f"{self.index_path}: {type(exc).__name__}: "
+                                         f"{str(exc)[:120]}") from exc
+            if not isinstance(doc, dict):
+                raise LedgerIndexCorrupt(f"{self.index_path}: not a JSON object")
+            self._index = {str(k): self._entry(v) for k, v in doc.items()}
         return self._index
 
     def _seen_ids(self, day: str) -> set[str]:
         if day not in self._seen:
             ids: set[str] = set()
             path = self._shard(day)
-            if path.exists():
+            if path.is_file():
                 with path.open(encoding="utf-8", errors="replace") as fh:
                     for line in fh:
                         i = line.find('"observation_id": "')
@@ -434,38 +471,62 @@ class SensorLedger:
         return "|".join((obs.sensor_id, obs.entity, obs.metric, obs.event_time))
 
     @staticmethod
-    def _known(entry: Sequence[Any]) -> set[str]:
-        ids = {str(entry[0])}
-        if len(entry) > 3 and isinstance(entry[3], list):
-            ids.update(str(i) for i in entry[3])
-        return ids
+    def _key(sensor_id: str, entity: str, metric: str, event_time: Any) -> str:
+        return "|".join((sensor_id, entity, metric, iso(event_time)))
 
     # -- public
     def latest(self, sensor_id: str, entity: str, metric: str, event_time: Any
                ) -> dict[str, Any] | None:
-        """The newest admitted value for one key: {observation_id, value, revision_n}, or None.
-
-        The public read of the revision index, so an adapter never opens `index_path` itself."""
-        key = "|".join((sensor_id, entity, metric, iso(event_time)))
-        entry = self._load_index().get(key)
-        if entry is None:
+        """The newest vintage held for one key: {observation_id, value, revision_n, knowable_at,
+        known_ids}, or None. The public read of the index; never open `index_path` directly."""
+        entry = self._load_index().get(self._key(sensor_id, entity, metric, event_time))
+        if not entry or not entry["vintages"]:
             return None
-        return {"observation_id": str(entry[0]), "value": _f(entry[1]),
-                "revision_n": int(entry[2]), "known_ids": sorted(self._known(entry))}
+        v = max(entry["vintages"], key=lambda r: _vintage_key(r[0]))
+        return {"observation_id": str(v[1]), "value": _f(v[2]), "revision_n": int(v[3]),
+                "knowable_at": str(v[0]), "known_ids": sorted(entry["ids"])}
+
+    def as_of(self, sensor_id: str, entity: str, metric: str, event_time: Any, at: Any
+              ) -> dict[str, Any] | None:
+        """What the ledger held for one key at instant `at`: the newest vintage whose knowable
+        instant is at or before it. A vintage of unmeasured knowable instant is never returned."""
+        t = parse_time(at)
+        entry = self._load_index().get(self._key(sensor_id, entity, metric, event_time))
+        if t is None or not entry:
+            return None
+        held = [v for v in entry["vintages"]
+                if parse_time(v[0]) is not None and _vintage_key(v[0]) <= t]
+        if not held:
+            return None
+        v = max(held, key=lambda r: _vintage_key(r[0]))
+        return {"observation_id": str(v[1]), "value": _f(v[2]), "revision_n": int(v[3]),
+                "knowable_at": str(v[0])}
 
     def latest_index(self) -> dict[str, dict[str, Any]]:
-        """A copy of the whole revision index, keyed `sensor|entity|metric|event_time`."""
-        return {k: {"observation_id": str(v[0]), "value": _f(v[1]), "revision_n": int(v[2])}
-                for k, v in self._load_index().items()}
+        """Every key's newest vintage, keyed `sensor|entity|metric|event_time`."""
+        out: dict[str, dict[str, Any]] = {}
+        for k, entry in self._load_index().items():
+            if entry["vintages"]:
+                v = max(entry["vintages"], key=lambda r: _vintage_key(r[0]))
+                out[k] = {"observation_id": str(v[1]), "value": _f(v[2]),
+                          "revision_n": int(v[3])}
+        return out
 
     def append(self, observations: Iterable[SensorObservation],
                now: datetime | None = None) -> dict[str, Any]:
-        """Append what is new; turn a changed value into a revision row. Returns the census."""
+        """Append what is new; a new vintage becomes a revision row. Returns the census."""
         when = now or datetime.now(UTC)
-        index = self._load_index()
+        try:
+            index = self._load_index()
+        except LedgerIndexCorrupt as exc:
+            return {"status": "INDEX_CORRUPT", "why": str(exc), "appended": 0,
+                    "duplicates": 0, "revisions": 0, "conflicts": 0, "refused": 0,
+                    "refusals": [], "shards": []}
+        staged: dict[str, dict[str, Any]] = {}
         by_day: dict[str, list[str]] = {}
+        new_ids: dict[str, set[str]] = {}
         refused: list[dict[str, Any]] = []
-        n_new = n_dup = n_rev = 0
+        n_new = n_dup = n_rev = n_conf = 0
         for obs in observations:
             bad = defects(obs)
             if bad:
@@ -473,44 +534,85 @@ class SensorLedger:
                 continue
             received = parse_time(obs.received_at) or when
             day = received.date().isoformat()
+            seen = self._seen_ids(day) | new_ids.get(day, set())
+            key = ""
             if obs.value is not None and obs.kind != "document" and obs.event_time != UNMEASURED:
                 key = self.revision_key(obs)
-                prior = index.get(key)
-                known = self._known(prior) if prior is not None else set()
-                # AN ID THE LEDGER ALREADY ADMITTED IS A DUPLICATE, WHATEVER THE LATEST VALUE IS:
-                # checked BEFORE revision detection, so a re-sent first print stays a first print.
-                if obs.observation_id in known or (prior is not None
-                                                   and _f(prior[1]) == obs.value):
+                if key in staged:
+                    entry = staged[key]
+                elif key in index:
+                    entry = self._entry(index[key])          # a copy: staged until written
+                else:
+                    entry = {"vintages": [], "ids": []}
+                if obs.observation_id in entry["ids"]:
                     n_dup += 1
                     continue
-                incoming = obs.observation_id
-                if prior is not None and not obs.revision_of:
-                    obs = make(**{**asdict(obs), "revision_of": str(prior[0]),
-                                  "revision_delta": round(obs.value - float(prior[1]), 12),
-                                  "revision_n": int(prior[2]) + 1, "observation_id": ""})
+                same = [v for v in entry["vintages"] if v[0] == obs.knowable_at]
+                if same:
+                    if _f(same[0][2]) == obs.value:
+                        n_dup += 1
+                    else:
+                        n_conf += 1
+                        refused.append({"observation_id": obs.observation_id,
+                                        "defects": [f"vintage conflict: {key} @ "
+                                                    f"{obs.knowable_at} is already held as "
+                                                    f"{same[0][2]}, not {obs.value}"]})
+                    continue
+                order = sorted(entry["vintages"], key=lambda r: _vintage_key(r[0]))
+                before = [v for v in order if _vintage_key(v[0]) < _vintage_key(obs.knowable_at)]
+                later = len(before) < len(order)
+                pred = before[-1] if before else None
+                if pred is not None and _f(pred[2]) == obs.value and not later:
+                    n_dup += 1                     # restated unchanged: nothing new to hold
+                    continue
+                if obs.observation_id in seen:
+                    n_dup += 1
+                    continue
+                if pred is not None and not obs.revision_of:
+                    attrs = dict(obs.attributes)
+                    if later:
+                        attrs["late_vintage"] = True
+                    obs = make(**{**asdict(obs), "revision_of": str(pred[1]),
+                                  "revision_delta": round(obs.value - float(pred[2]), 12),
+                                  "revision_n": int(pred[3]) + 1, "observation_id": "",
+                                  "attributes": attrs})
                     n_rev += 1
-                index[key] = [obs.observation_id, obs.value, obs.revision_n,
-                              sorted(known | {incoming, obs.observation_id})]
-            seen = self._seen_ids(day)
-            if obs.observation_id in seen:
+                elif later:
+                    obs = make(**{**asdict(obs), "observation_id": "",
+                                  "attributes": {**dict(obs.attributes), "late_vintage": True}})
+                entry["vintages"].append([obs.knowable_at, obs.observation_id, obs.value,
+                                          obs.revision_n])
+                entry["ids"] = sorted(set(entry["ids"]) | {obs.observation_id})
+                staged[key] = entry
+            elif obs.observation_id in seen:
                 n_dup += 1
                 continue
-            seen.add(obs.observation_id)
+            new_ids.setdefault(day, set()).add(obs.observation_id)
             by_day.setdefault(day, []).append(json.dumps(obs.to_row(), default=str,
                                                          ensure_ascii=False))
             n_new += 1
-        for day, lines in by_day.items():
-            path = self._shard(day)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            with path.open("a", encoding="utf-8") as fh:
-                fh.write("\n".join(lines) + "\n")
-        if n_rev or any(by_day.values()):
+        written: list[str] = []
+        try:
+            for day, lines in by_day.items():
+                path = self._shard(day)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with path.open("a", encoding="utf-8") as fh:
+                    fh.write("\n".join(lines) + "\n")
+                written.append(day)
+                self._seen_ids(day).update(new_ids.get(day, set()))
+        except OSError as exc:
+            return {"status": "WRITE_FAILED", "why": f"{type(exc).__name__}: {exc}",
+                    "appended": 0, "duplicates": n_dup, "revisions": 0, "conflicts": n_conf,
+                    "refused": len(refused), "refusals": refused[:8], "shards": written}
+        if staged:
+            # THE INDEX MOVES ONLY AFTER THE ROWS IT DESCRIBES ARE ON DISK.
+            index.update(staged)
             self.index_path.parent.mkdir(parents=True, exist_ok=True)
             tmp = self.index_path.with_suffix(".tmp")
             tmp.write_text(json.dumps(index, separators=(",", ":")), encoding="utf-8")
             os.replace(tmp, self.index_path)
-        return {"appended": n_new, "duplicates": n_dup, "revisions": n_rev,
-                "refused": len(refused), "refusals": refused[:8],
+        return {"status": "OK", "appended": n_new, "duplicates": n_dup, "revisions": n_rev,
+                "conflicts": n_conf, "refused": len(refused), "refusals": refused[:8],
                 "shards": sorted(by_day)}
 
     def stamp_downstream(self, observation_ids: Sequence[str], clock: str, at: Any,
@@ -546,6 +648,33 @@ class SensorLedger:
                     if limit is not None and len(out) >= limit:
                         break
         return out
+
+    def rows_since(self, day: str, offset: int = 0, max_rows: int | None = None
+                   ) -> tuple[list[dict[str, Any]], int]:
+        """Rows appended to a day shard after byte `offset`, streamed line by line, and the
+        offset to resume from. Only whole lines are consumed, so a row being written is read on
+        the next call; an offset past the end (a rotated shard) restarts at 0."""
+        path = self._shard(day)
+        if not path.is_file():
+            return [], offset
+        size = path.stat().st_size
+        pos = 0 if offset > size else offset
+        out: list[dict[str, Any]] = []
+        with path.open("rb") as fh:
+            fh.seek(pos)
+            for raw in fh:
+                if not raw.endswith(b"\n"):
+                    break
+                pos += len(raw)
+                try:
+                    row = json.loads(raw)
+                except ValueError:
+                    continue
+                if isinstance(row, dict):
+                    out.append(row)
+                    if max_rows is not None and len(out) >= max_rows:
+                        break
+        return out, pos
 
     def clock_rows(self, day: str) -> list[dict[str, Any]]:
         path = self._shard(day, "clocks")
@@ -687,7 +816,11 @@ def digest(ledger: SensorLedger | None = None, now: datetime | None = None,
     led = ledger or SensorLedger()
     when = now or datetime.now(UTC)
     shards = sorted(led.obs_dir.glob("*.jsonl")) if led.obs_dir.exists() else []
-    index = led.latest_index()
+    try:
+        index = led.latest_index()
+        index_status = "OK"
+    except LedgerIndexCorrupt as exc:
+        index, index_status = {}, f"INDEX_CORRUPT: {exc}"
     per_day: dict[str, Any] = {}
     for back in range(max(1, days)):
         day = (when - timedelta(days=back)).date().isoformat()
@@ -705,6 +838,7 @@ def digest(ledger: SensorLedger | None = None, now: datetime | None = None,
         "shard_bytes": sum(p.stat().st_size for p in shards),
         "first_day": shards[0].stem if shards else UNMEASURED,
         "last_day": shards[-1].stem if shards else UNMEASURED,
+        "index_status": index_status,
         "index_keys": len(index),
         "revised_keys": sum(1 for v in index.values() if v["revision_n"] > 0),
         "days": per_day,
