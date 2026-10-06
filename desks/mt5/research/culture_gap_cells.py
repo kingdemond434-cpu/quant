@@ -43,7 +43,7 @@ family's own parameter grid, and the roster row whose publisher states the fact
      because that publisher states that fact); the failure-mode sentence and the crowding prior
      are left to the one inference rule, so `crowding_prior` follows the same rules as every other
      cell. MT5/Fusion instruments only (a symbol absent from the universe is refused and named),
-     never the `discovered` family, never a crypto-exchange universe.
+     never the `discovered` family, and no crypto-exchange universe.
 
   4. ORDERS BY THE GAP LIST. Recipes whose gap is ZERO in the last published CELL_CULTURE.json go
      first, then THIN, then covered ones; an absent summary is UNMEASURED and reorders nothing.
