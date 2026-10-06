@@ -210,8 +210,10 @@ def test_meta_rnds_pick_goes_through_the_reusable_holdout(tmp_path):
     assert g["status"] in ("VALID", "EXHAUSTED") and g["winner"] in meta_rnd.POLICIES
     assert g["n_train"] + g["n_holdout"] == 60
     small = meta_rnd.guarded_winner(_rows(4), {}, state_path=tmp_path / "rh.json")
-    assert meta_rnd.guarded_winner(_rows(60), {}, state_path=tmp_path / "gone.json")[
-        "status"] == "EXHAUSTED"                                  # no state file: closed
+    gone = tmp_path / "gone.json"                                # a state file lost after the
+    rh.register_path(gone).write_text(json.dumps(                # study opened: closed
+        {"study": "meta_rnd.test_ordering@0"}) + "\n")
+    assert meta_rnd.guarded_winner(_rows(60), {}, state_path=gone)["status"] == "EXHAUSTED"
     assert small["status"] == "UNMEASURED" and small["winner"] is None
 
 
