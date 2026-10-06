@@ -66,6 +66,10 @@ MIN_LIVE_DEALS = 30
 #: Which representation lane a source belongs to. The same table the frontier map uses, because
 #: two organs disagreeing about what `miner:anomalies` IS would make both reports unreadable.
 _LANE: tuple[tuple[str, str], ...] = (
+    # TERMS-FENCED PLATFORMS (libs/data/terms_fence.py, principal 2026-09-30) are read first and
+    # never credited as an external-claim lane: their certificates stay visible under their own
+    # label, and no delayed credit flows back to fund more of them.
+    ("reddit", "terms_fenced"), ("stocktwits", "terms_fenced"),
     ("joint_evolution", "joint_genome"), ("research_tree", "joint_genome"),
     ("alpha_evolution", "symbolic_grammar"), ("orthogonal_sweep", "symbolic_grammar"),
     ("edge_search", "symbolic_grammar"),
@@ -76,7 +80,7 @@ _LANE: tuple[tuple[str, str], ...] = (
     # that has not been read.
     ("ext_", "external_claim"),
     ("external", "external_claim"), ("deep_forest", "external_claim"),
-    ("reddit", "external_claim"), ("forexfactory", "external_claim"),
+    ("forexfactory", "external_claim"),
     ("github", "external_claim"), ("tradingview", "external_claim"),
     ("mql5", "external_claim"), ("darwinex", "external_claim"), ("fxblue", "external_claim"),
     ("kimi", "seat_proposal"), ("deepseek", "seat_proposal"), ("seat", "seat_proposal"),

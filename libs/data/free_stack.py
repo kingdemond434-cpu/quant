@@ -137,6 +137,14 @@ class Harvest:
 
 def _get(fetch: Fetch, h: Harvest, url: str, headers: Mapping[str, str] | None = None,
          body: bytes | None = None) -> bytes | None:
+    # THE TERMS FENCE, BEFORE ANY REQUEST (principal 2026-09-30: no Reddit or StockTwits at all).
+    # A fenced URL is refused closed and counted; it is never a request and never a failure.
+    from libs.data import terms_fence as _tf
+    platform = _tf.platform_of_url(url)
+    if platform:
+        h.failures[_tf.PLATFORMS[platform]["status"]] += 1
+        h.notes.append(f"terms fence ({platform}): {url[:120]}")
+        return None
     h.requests += 1
     try:
         return fetch(url, headers, body)
