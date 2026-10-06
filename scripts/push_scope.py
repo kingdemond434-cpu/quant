@@ -16,19 +16,30 @@ classifier unimportable) is NOT state-only: the default is the full gate, never 
 
     python scripts/push_scope.py < <pre-push ref lines>    # read from stdin, as git hands them
     exit 0  -> state-only, gates may be skipped        exit 1 -> run the gates
+
+A SKIPPED GATE LEAVES EVIDENCE. Every verdict is written to `data/push_scope.json` (gitignored host
+state, so recording it never changes the tree being pushed): the last verdict, its reason, and a
+running tally of skips versus full-gate runs. A failed write is reported and never changes the
+exit code -- the record is evidence of the decision, not a precondition of it.
 """
 from __future__ import annotations
 
+import json
+import os
 import subprocess
 import sys
 from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 ZERO = "0" * 40
 #: release.py counts docs/ as state (the box may carry its own rendering of them), but the law
 #: fences read docs/LAWS.md and friends -- a docs change is exactly what they exist to judge.
 NOT_STATE_FOR_PUSH: tuple[str, ...] = ("docs/",)
+#: The verdict record (gitignored: `data/*`).
+RECORD = ROOT / "data" / "push_scope.json"
 
 
 def is_push_state(rel: str) -> bool:
@@ -95,9 +106,38 @@ def verdict(root: Path, lines: Iterable[str]) -> tuple[bool, str]:
     return True, f"state-only push: {len(paths)} path(s), all box state"
 
 
+def record(path: Path, ok: bool, why: str, now: datetime | None = None) -> bool:
+    """Write the verdict and bump the skip/run tally; False (never raises) when unwritable."""
+    prev: dict[str, Any] = {}
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(loaded, dict):
+            prev = loaded
+    except (OSError, ValueError):
+        prev = {}
+    raw = prev.get("tally")
+    old: dict[str, Any] = raw if isinstance(raw, dict) else {}
+    key = "skipped" if ok else "gated"
+    tally = {"skipped": int(old.get("skipped", 0)), "gated": int(old.get("gated", 0))}
+    tally[key] += 1
+    doc = {"at": (now or datetime.now(UTC)).isoformat(timespec="seconds"),
+           "state_only": ok, "verdict": "SKIP_GATES" if ok else "RUN_GATES",
+           "why": why, "tally": tally}
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
+        os.replace(tmp, path)
+    except OSError:
+        return False
+    return True
+
+
 def main() -> int:
     ok, why = verdict(ROOT, sys.stdin.read().splitlines())
     print(f"pre-push: {why}", file=sys.stderr)
+    if not record(RECORD, ok, why):
+        print(f"pre-push: verdict NOT recorded ({RECORD} unwritable)", file=sys.stderr)
     return 0 if ok else 1
 
 
