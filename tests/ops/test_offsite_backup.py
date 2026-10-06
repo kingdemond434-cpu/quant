@@ -119,3 +119,39 @@ def test_ops_redundancy_row_reads_the_report() -> None:
     from research import ops_redundancy as orr
     row = orr._offsite_backup_row()
     assert row["item"] == "encrypted_offbox_backup" and row["status"] != "PASS"
+
+
+def test_restore_drill_identical_is_by_content_and_full_path(tmp_path: Path) -> None:
+    """IDENTICAL is earned by bytes, not by a timestamp string in whichever zone restic used; and
+    a restored file is found by its full path, never by a name another directory also uses."""
+    a, b = tmp_path / "EURUSD" / "ticks.parquet", tmp_path / "GBPUSD" / "ticks.parquet"
+    for p, body in ((a, b"PAR1-eur-PAR1"), (b, b"PAR1-gbp-PAR1")):
+        p.parent.mkdir(parents=True)
+        p.write_bytes(body)
+    # restic's mtime is local time with an offset: it must not matter
+    nodes = "\n".join(json.dumps({"struct_type": "node", "type": "file", "path": str(p),
+                                   "size": p.stat().st_size,
+                                   "mtime": "2026-09-30T14:00:00.000+02:00"}) for p in (a, b))
+
+    def runner(cmd: list[str], env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+        if cmd[1] == "restore":
+            root = Path(cmd[cmd.index("--target") + 1]) / "C"      # a drive component
+            for p in (a, b):
+                q = root / str(p).lstrip("/")
+                q.parent.mkdir(parents=True, exist_ok=True)
+                q.write_bytes(p.read_bytes())
+        return subprocess.CompletedProcess(cmd, 0, nodes if cmd[1] == "ls" else "", "")
+
+    rep = ob.restore_drill("restic", {}, runner, NOW)
+    assert rep["verdict"] == "PASS" and rep["counts"]["IDENTICAL"] == 2, rep
+
+    def swapped(cmd: list[str], env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+        if cmd[1] == "restore":                       # only GBPUSD's file comes back
+            q = Path(cmd[cmd.index("--target") + 1]) / "C" / str(b).lstrip("/")
+            q.parent.mkdir(parents=True, exist_ok=True)
+            q.write_bytes(b.read_bytes())
+        return subprocess.CompletedProcess(cmd, 0, nodes if cmd[1] == "ls" else "", "")
+
+    rep = ob.restore_drill("restic", {}, swapped, NOW)
+    # EURUSD's file is MISSING, never graded against GBPUSD's same-named file
+    assert rep["counts"]["MISSING"] == 1 and rep["counts"]["IDENTICAL"] == 1, rep

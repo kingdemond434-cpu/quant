@@ -49,7 +49,8 @@ ACCOUNT = DATA / "account_state.json"
 STALL = (DATA / "stall_watch.json", ROOT / "data" / "stall_watch.json")
 
 #: The fix for the gateway rows, sent to the desktop pass (money path; the cloud edit is refused).
-GATEWAY_SPEC = "patches/recovery_drills/gateway_new_risk_gate.md"
+GATEWAY_SPEC = "docs/desktop_pass/recovery_drills/gateway_new_risk_gate.md"
+FILL_ORDER_SPEC = "docs/desktop_pass/recovery_drills/gateway_partial_fill_and_ordering.md"
 #: Fields an authoritative account ledger needs; the publisher writes a subset.
 ACCOUNT_FIELDS = ("balance", "equity", "margin", "margin_free", "swap", "positions")
 DISK_FLOOR_GB = 5.0
@@ -305,11 +306,11 @@ DRILLS: tuple[tuple[str, str, Callable[[datetime], dict[str, Any]]], ...] = (
     ("partial_fill", "partial fill",
      _gap("the order door labels a partial fill but nothing acts on the unfilled remainder "
           "(no resize of the stop leg, no record of the residual)",
-          "money path: order_door/gateway, desktop pass")),
+          FILL_ORDER_SPEC)),
     ("out_of_order", "out-of-order updates",
      _gap("no sequencing of broker updates anywhere in mt5desk/: a stale positions read after "
           "a newer deal is taken at face value",
-          "money path: order_door/gateway, desktop pass")),
+          FILL_ORDER_SPEC)),
     ("stale_data", "stale data / stale source", _stale),
     ("revision_leakage", "revision leakage (point in time)", _pit),
     ("malformed_forecast", "malformed forecast", _forecast),

@@ -154,6 +154,24 @@ def _sample(nodes: list[dict[str, Any]], k: int = RESTORE_FILES) -> list[dict[st
     return files[::step][:k]
 
 
+def _restored_at(target: Path, snap_path: str) -> Path | None:
+    """Where restic wrote `snap_path` under `target`, matched on the FULL path below the drive.
+
+    restic keeps a Windows drive as a leading component (`/C/opt/...`), so the direct join can
+    miss; the fallback matches every component after the drive, never the bare file name -- tick
+    archives reuse one name across symbol directories, and a name match would grade one symbol's
+    file against another's source."""
+    parts = [p for p in snap_path.replace("\\", "/").split("/") if p and p != "."]
+    if not parts:
+        return None
+    rel = "/".join(parts[1:] if len(parts) > 1 and parts[0].rstrip(":").isalpha()
+                   and len(parts[0].rstrip(":")) == 1 else parts)
+    for cand in target.rglob(parts[-1]):
+        if cand.is_file() and cand.relative_to(target).as_posix().endswith(rel):
+            return cand
+    return None
+
+
 def restore_drill(exe: str, env: dict[str, str], runner: Any = _run,
                   now: datetime | None = None) -> dict[str, Any]:
     """Restore a sample of the latest snapshot to a temp directory and compare it with the box.
@@ -185,9 +203,8 @@ def restore_drill(exe: str, env: dict[str, str], runner: Any = _run,
         for n in pick:
             snap_path = str(n["path"])
             got = Path(tmp) / snap_path.lstrip("/").replace(":", "")
-            if not got.exists():   # restic keeps a Windows drive as /C/..., match on the tail
-                tail = Path(snap_path).name
-                got = next(iter(Path(tmp).rglob(tail)), got)
+            if not got.exists():
+                got = _restored_at(Path(tmp), snap_path) or got
             row: dict[str, Any] = {"path": snap_path, "size": n.get("size")}
             if not got.exists():
                 row["result"] = "MISSING"
@@ -196,12 +213,13 @@ def restore_drill(exe: str, env: dict[str, str], runner: Any = _run,
                     os.name == "nt" and len(snap_path) > 2 and snap_path[0] == "/"
                     and snap_path[2] == "/") else Path(snap_path)
                 same = False
+                # CONTENT, NEVER TIMESTAMPS: restic reports mtime in the box's local zone, so a
+                # string compare against a UTC stamp never matched off-UTC and IDENTICAL could not
+                # occur. Same size and same SHA-256 is identical; a source edited since the
+                # snapshot differs and falls through to the format check, as it should.
                 with contextlib.suppress(OSError):
-                    unchanged = (src.stat().st_size == got.stat().st_size and
-                                 str(n.get("mtime", ""))[:19] ==
-                                 datetime.fromtimestamp(src.stat().st_mtime, tz=UTC)
-                                 .isoformat()[:19])
-                    same = unchanged and _sha256(src) == _sha256(got)
+                    same = (src.stat().st_size == got.stat().st_size
+                            and _sha256(src) == _sha256(got))
                 row["result"] = ("IDENTICAL" if same else
                                  "READABLE" if _readable(got) else "CORRUPT")
             files.append(row)

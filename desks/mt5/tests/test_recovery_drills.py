@@ -100,3 +100,11 @@ def test_every_named_failure_mode_has_a_row_and_build_is_total() -> None:
     assert all(r["verdict"] in (rd.PASS, rd.FAIL, rd.UNMEASURED, rd.CI_ONLY)
                for r in doc["drills"])
     assert doc["verdict"] != rd.PASS or doc["counts"][rd.PASS] == doc["n"]
+
+
+def test_every_fix_pointer_names_a_file_in_this_tree() -> None:
+    root = Path(__file__).resolve().parents[3]
+    for spec in (rd.GATEWAY_SPEC, rd.FILL_ORDER_SPEC):
+        assert (root / spec).is_file(), spec
+    gaps = [r for r in rd.build(NOW)["drills"] if r.get("evidence") == "code"]
+    assert gaps and all(r["fix"] == rd.FILL_ORDER_SPEC for r in gaps)
