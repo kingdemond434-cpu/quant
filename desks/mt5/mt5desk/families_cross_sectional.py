@@ -196,9 +196,7 @@ def _decision_rows(d: pd.DataFrame, decision_hour: int,
     The decision bar is the LAST bar stamped at or before `decision_hour` on that broker date,
     and no older than `max_stale_h` hours before it. A day without one has no decision.
     """
-    # ns by construction: the 3_600_000_000_000 constants below are hours IN NANOSECONDS, and a
-    # pandas-3 index parsed from strings is in microseconds.
-    idx = pd.DatetimeIndex(d.index).as_unit("ns")
+    idx = d.index
     hours = idx.hour.to_numpy()
     days = idx.normalize()
     dow = days.dayofweek.to_numpy()
@@ -206,11 +204,13 @@ def _decision_rows(d: pd.DataFrame, decision_hour: int,
     if not ok.any():
         return np.empty(0, dtype="int64"), np.empty(0, dtype="int64")
     pos = np.flatnonzero(ok)
-    day_ns = days.asi8[pos]
+    # ns by construction: the 3_600_000_000_000 constants below are hours IN NANOSECONDS, and a
+    # pandas-3 index parsed from strings is in microseconds.
+    day_ns = days.as_unit("ns").asi8[pos]
     # last eligible bar per date: where the next eligible bar is on a different date
     last = np.r_[day_ns[1:] != day_ns[:-1], True]
     pos, day_ns = pos[last], day_ns[last]
-    stamps = idx.asi8[pos]
+    stamps = idx.as_unit("ns").asi8[pos]
     target = day_ns + int(decision_hour) * 3_600_000_000_000
     fresh = (target - stamps) <= float(max_stale_h) * 3_600_000_000_000
     return pos[fresh], stamps[fresh]

@@ -46,6 +46,10 @@ ALLOW: dict[tuple[str, str], str] = {
         "an Int64 index of ns already, built by _utc_ns (as_unit('ns')), not a DatetimeIndex",
     ("libs/data/feature_store.py", "z.index.to_numpy(dtype='int64')"):
         "an Int64 index of ns already, built by _utc_ns (as_unit('ns')), not a DatetimeIndex",
+    ("desks/mt5/research/world_model.py", "(stamps[usable] // 3600 % 24).astype(int)"):
+        "integer clock arithmetic on epoch SECONDS cast via to_numpy(dtype='datetime64[s]')",
+    ("desks/mt5/research/world_model.py", "((stamps[usable] // 86400 + 3) % 7).astype(int)"):
+        "integer clock arithmetic on epoch SECONDS cast via to_numpy(dtype='datetime64[s]')",
 }
 
 #: (path, unparsed expression) -> where the fix lives.
