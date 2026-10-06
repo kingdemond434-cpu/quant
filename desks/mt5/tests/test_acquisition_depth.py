@@ -207,3 +207,34 @@ def test_discovered_endpoints_hold_a_reserved_share_of_the_pass(tmp_path, monkey
     out = A._endpoints(40, now=datetime(2026, 10, 6, tzinfo=UTC))
     assert len(out) == 40
     assert sum(1 for _u, h in out if h == "catalog.test") == 10      # a quarter, packs the rest
+
+
+def test_information_value_prices_novelty_per_fetch_second_without_reading_a_return(tmp_path):
+    """ROMAN-1003: a copy of a held series reads near-zero novelty; an orthogonal one near one;
+    cost comes from the acquirer's measured fetch; outcome is UNMEASURED until the gauntlet credits it."""
+    import numpy as np
+
+    from research import dataset_use_census as C
+    rng = np.random.default_rng(7)
+    idx = pd.date_range("2010-01-31", periods=120, freq="ME")
+    base = np.cumsum(rng.normal(size=120))
+    frames = {"a": base, "a_copy": base * 2.0 + 1.0, "orth": np.cumsum(rng.normal(size=120))}
+    series, by_url = {}, {}
+    for name, vals in frames.items():
+        path = tmp_path / f"{name}.parquet"
+        pd.DataFrame({"value": vals}, index=idx).to_parquet(path)
+        url = f"https://x.test/{name}.csv"
+        series[name] = {"path": str(path), "url": url, "refreshed_at": "2026-10-06"}
+        by_url[url] = {"series": [name], "bytes": 2_000_000, "visits": 2, "fetch_s_total": 4.0}
+    reg = tmp_path / "reg.json"
+    reg.write_text(json.dumps({"series": series, "by_url": by_url}))
+    value = C.information_value(reg, tmp_path / "no_roi.json")
+    assert value["acquired:a_copy"]["novelty"] < 0.01
+    assert value["acquired:a_copy"]["nearest"] == "a"
+    assert value["acquired:orth"]["novelty"] > 0.8
+    assert value["acquired:orth"]["cost"]["fetch_s_per_visit"] == 2.0
+    assert value["acquired:orth"]["outcome"]["status"] == "UNMEASURED"
+    doc = C.build(datetime(2026, 10, 6, tzinfo=UTC), use_root=tmp_path / "use", acquired=reg,
+                  axes=tmp_path / "none", lake=tmp_path / "none", research_roi=tmp_path / "x")
+    assert doc["unfed"][0]["dataset"] == "acquired:orth"          # most novel unfed first
+    assert doc["information_value"]["near_duplicates"] == 2

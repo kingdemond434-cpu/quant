@@ -33,6 +33,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -604,9 +605,15 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
         def _refuse_url(why: str) -> None:
             _refuse(why)
             reg["by_url"][url] = {"host": host, "series": [], "at": attempt_at,
-                                  "status": "REFUSED", "refusal": why}
+                                  "status": "REFUSED", "refusal": why, **cost}
 
+        t_fetch = time.monotonic()
         raw, ctype = _fetch(url)
+        # THE DATA COST, measured per visit, so the use census can price information per cost.
+        took = time.monotonic() - t_fetch
+        cost = {"bytes": len(raw) if raw is not None else 0, "fetch_s": round(took, 3),
+                "visits": int(prev.get("visits") or 0) + 1,
+                "fetch_s_total": round(float(prev.get("fetch_s_total") or 0.0) + took, 3)}
         if raw is None:
             _refuse_url("served HTML, not data" if ctype == "html" else "unreachable")
             continue
@@ -618,7 +625,7 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
         # NEVER RE-PARSE UNCHANGED BYTES. Identical content with no open cursor has nothing new
         # to give; the visit is recorded so the refresh clock still advances.
         if same_bytes and not prev.get("cursor_open") and prev.get("status") in _HEALTHY:
-            reg["by_url"][url] = {**prev, "at": attempt_at, "status": "UNCHANGED"}
+            reg["by_url"][url] = {**prev, "at": attempt_at, "status": "UNCHANGED", **cost}
             unchanged += 1
             continue
         # A cursor is only meaningful against the bytes it was opened on.
@@ -716,7 +723,7 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
                               "member_cursor": next_m, "column_cursor": next_c,
                               "cursor_open": cursor_open,
                               "columns_remaining": cols_after,
-                              "members_remaining": members_after}
+                              "members_remaining": members_after, **cost}
         kept += int(bool(persisted))
 
     access = _access_states(keyed)
