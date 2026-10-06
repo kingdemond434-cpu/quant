@@ -42,62 +42,73 @@ def _graph_counts() -> tuple[int, dict[str, int]]:
     return sum(by_fam.values()), by_fam
 
 
-def _graph_judged_by_source() -> dict[tuple[str, str], int]:
-    """Judged cells keyed by (the source that BORE the cell, family).
+def _graph_judged() -> dict[str, str]:
+    """Judged node id -> family.
 
-    A cell's current row carries the judge's `hunt` as its source; the proposer that donated it is
-    on the cell's BORN row, so that is read here. A cell with no BORN row reads source ''."""
+    A graph node id IS the spec identity (`hypothesis_graph.node_id` over symbol, family and
+    params), so a judged cell joins a screened one by spec, never by a donation's own row id."""
     try:
         from libs.research.hypothesis_graph import Graph
         g = Graph()
-        rows, cur = g.rows(), g.current()
+        cur = g.current()
     except Exception:
         return {}
-    born: dict[str, str] = {}
-    for r in rows:
-        i = str(r.get("id"))
-        if i not in born and r.get("fate") == "BORN":
-            born[i] = str(r.get("source") or "").removeprefix("miner:")
-    out: dict[tuple[str, str], int] = {}
-    for i, r in cur.items():
-        if r.get("fate") in ("FAILED", "BURIED", "CERTIFIED", "JUDGED"):
-            k = (born.get(i, ""), str(r.get("family") or "?"))
-            out[k] = out.get(k, 0) + 1
-    return out
+    return {i: str(r.get("family") or "?") for i, r in cur.items()
+            if r.get("fate") in ("FAILED", "BURIED", "CERTIFIED", "JUDGED")}
 
 
-def judged_screened_overlap(screened_by_source: dict[tuple[str, str], int],
-                            mass_fam: dict[str, int],
-                            judged_by_source: dict[tuple[str, str], int] | None = None
-                            ) -> dict[str, int]:
+def judged_screened_overlap(screened: dict[str, Any], mass_fam: dict[str, int],
+                            judged: dict[str, str] | None = None) -> dict[str, int]:
     """Per family, the judged cells that were ALREADY charged as screened (audit, 2026-10-06).
 
-    A proposer's `tests_run` counts every cell it screened, the ones it donated included; the judge
-    then records the donated cell in the graph and the old join charged it a second time. The same
-    for a mass-screen cell forwarded to the judge. One configuration is one trial, so the overlap
-    is removed once -- capped at min(judged, screened) per (source, family), so a source never
-    gives back more than it was charged, and a cell nobody screened (no BORN row, or a source
-    whose files carry no `tests_run`) keeps its judged charge."""
-    jb = _graph_judged_by_source() if judged_by_source is None else judged_by_source
+    A proposer's `tests_run` counts every cell it screened, the ones it donated included; the
+    compiler turns a donation into a docket cell, the gauntlet judges it, and the old join charged
+    it a second time as a graph node. The same for a mass-screen cell forwarded to the judge.
+
+    THE JOIN IS ON SPEC IDENTITY. `screened["ids"]` holds the node id of every donated row that
+    names symbol, family and params, from a file whose `tests_run` was charged; a judged node is
+    already charged exactly when its id is one of them. NOT by seat: the compiler expands one
+    donated row into cells along chart/session axes the proposer never screened, and those are
+    new trials. Each identity is subtracted once however many seats donated it, and never more
+    per family than the proposers charged -- the double count over-deflated, so the correction
+    must never under-charge. Mass-screen
+    families exist only through the mass screen, so their judged cells are capped at its count."""
+    judged = _graph_judged() if judged is None else judged
+    ids = set(screened.get("ids") or ())
+    charged = dict(screened.get("by_family") or {})
     out: dict[str, int] = {}
-    for (src, fam), j in jb.items():
-        k = min(j, screened_by_source.get((src, fam), 0)) if src else 0
-        if k:
-            out[fam] = out.get(fam, 0) + k
+    for i, fam in judged.items():
+        if i in ids:
+            out[fam] = out.get(fam, 0) + 1
+    out = {f: min(k, int(charged.get(f, k))) for f, k in out.items()}
     for fam, m in mass_fam.items():
-        j = sum(v for (_s, f), v in jb.items() if f == fam)
+        j = sum(1 for f in judged.values() if f == fam)
         k = min(j - out.get(fam, 0), m)
         if k > 0:
             out[fam] = out.get(fam, 0) + k
-    return out
+    return {f: k for f, k in out.items() if k > 0}
 
 
-def _proposer_counts(by_source: dict[tuple[str, str], int] | None = None
-                     ) -> tuple[int, dict[str, int]]:
+def _note_screened(screened: dict[str, Any], doc: dict[str, Any], n: int,
+                   fams: set[str]) -> None:
+    from libs.research.hypothesis_graph import node_id, spec_identity
+    ids = screened.setdefault("ids", set())
+    by_fam = screened.setdefault("by_family", {})
+    for r in doc.get("discoveries") or []:
+        if not isinstance(r, dict):
+            continue
+        sym, fam, params = spec_identity(r)
+        if sym and fam and params:
+            ids.add(node_id(sym, fam, params))
+    for fam in fams or {"?"}:
+        by_fam[fam] = by_fam.get(fam, 0) + n // max(1, len(fams))
+
+
+def _proposer_counts(screened: dict[str, Any] | None = None) -> tuple[int, dict[str, int]]:
     """`tests_run` on every discovery file, attributed to the families it proposed.
 
-    `by_source`, when given, is filled with the same charge keyed by (row source, family): the
-    join `judged_screened_overlap` needs to know WHICH screened cells the judge later saw."""
+    `screened`, when given, is filled with the spec ids and per-family charge of every
+    `tests_run` file: `judged_screened_overlap` needs to know WHICH screened cells the judge saw."""
     total = 0
     by_fam: dict[str, int] = {}
     llm_files: list[tuple[str, Any]] = []
@@ -120,13 +131,8 @@ def _proposer_counts(by_source: dict[tuple[str, str], int] | None = None
                 if isinstance(r, dict) and r.get("family")}
         for fam in fams or {"?"}:
             by_fam[fam] = by_fam.get(fam, 0) + n // max(1, len(fams))
-        if by_source is not None:
-            seat = Path(f).parent.name
-            pairs = {(str(r.get("source") or seat).removeprefix("miner:"),
-                      str(r.get("family") or "?"))
-                     for r in (doc.get("discoveries") or []) if isinstance(r, dict)}
-            for pair in pairs:
-                by_source[pair] = by_source.get(pair, 0) + n // len(pairs)
+        if screened is not None:
+            _note_screened(screened, doc, n, fams)
     # FACTOR x MODEL PAIRINGS ARE TRIALS TOO. Co-evolution writes no discovery file (a pairing is
     # not a cell), so its ledger is read here and charged to the model_pairing family.
     try:
@@ -276,10 +282,10 @@ def _prereg_counts() -> int:
 
 def lifetime(write: bool = True) -> dict[str, Any]:
     g_total, g_fam = _graph_counts()
-    screened_by_source: dict[tuple[str, str], int] = {}
-    p_total, p_fam = _proposer_counts(screened_by_source)
+    screened: dict[str, Any] = {}
+    p_total, p_fam = _proposer_counts(screened)
     m_total, m_fam = _mass_screen_counts()
-    overlap = judged_screened_overlap(screened_by_source, m_fam)
+    overlap = judged_screened_overlap(screened, m_fam)
     overlap = {f: min(k, g_fam.get(f, 0)) for f, k in overlap.items()}
     o_total = sum(overlap.values())
     for fam, k in m_fam.items():
