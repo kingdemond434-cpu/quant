@@ -85,7 +85,51 @@ def _row(c: Mapping[str, Any]) -> dict[str, Any] | None:
         # the producer already set, so this is the registry's recorded time and not `now()`.
         "available_time": str(c.get("created_at") or ""),
         "payload_hash": str(c.get("content_hash") or ""),
+        # CULTURE PROVENANCE RIDES ONTO THE DOCKET (libs/research/cell_culture.py): stamped at
+        # the registry door, carried here so the judged cell and its certificate keep it.
+        **_culture_of(c),
+        # LINEAGE RIDES WITH IT: the registry's `lineage_json` (the producer's chain -- parent
+        # family, island, genome, swarm producer) verbatim, so a judged cell can still be traced
+        # to what minted it and Tier S can group verdicts by culture AND by parent.
+        **_lineage_of(c),
     }
+
+
+#: The registry's culture columns, carried verbatim when present.
+CULTURE_COLUMNS: tuple[str, ...] = ("source_culture", "participant_structure",
+                                    "failure_mode_hypothesis", "crowding_prior",
+                                    "culture_derivation")
+
+
+def _culture_of(c: Mapping[str, Any]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for k in CULTURE_COLUMNS:
+        v = c.get(k)
+        if v in (None, ""):
+            continue
+        if k == "culture_derivation" and isinstance(v, str):
+            try:
+                v = json.loads(v)
+            except ValueError:
+                continue
+        out[k] = v
+    return out
+
+
+#: The registry's lineage column, carried verbatim (the stored JSON text) when present.
+LINEAGE_COLUMNS: tuple[str, ...] = ("lineage_json",)
+
+
+def _lineage_of(c: Mapping[str, Any]) -> dict[str, Any]:
+    v = c.get("lineage_json")
+    if v in (None, "", "{}", "null"):
+        return {}
+    if not isinstance(v, str):
+        try:
+            v = json.dumps(v, sort_keys=True, default=str)
+        except (TypeError, ValueError):
+            return {}
+    return {"lineage_json": v}
 
 
 def candidate_rows(conn: sqlite3.Connection, *, tradeable: Mapping[str, str] | None = None,
@@ -97,9 +141,15 @@ def candidate_rows(conn: sqlite3.Connection, *, tradeable: Mapping[str, str] | N
     is already holding the whole docket bank in memory.
     """
     ban = banned or frozenset()
+    try:
+        have = {str(r[1]) for r in conn.execute("PRAGMA table_info(research_candidates)")}
+    except sqlite3.Error:
+        have = set()
+    extra = "".join(f", {k}" for k in (*CULTURE_COLUMNS, *LINEAGE_COLUMNS) if k in have)
+    # `extra` is built from CULTURE_COLUMNS and LINEAGE_COLUMNS, never from input
     cur = conn.execute(
-        "SELECT id, symbol, family, params_json, chart, origin, mechanism, grid_cell, score,"
-        " created_at, content_hash FROM research_candidates "
+        "SELECT id, symbol, family, params_json, chart, origin, mechanism, grid_cell, score,"  # noqa: S608
+        f" created_at, content_hash{extra} FROM research_candidates "
         "WHERE symbol IS NOT NULL AND symbol != '' AND family IS NOT NULL AND family != '' "
         "AND judged_at IS NULL AND COALESCE(status,'') != 'survived' ORDER BY score DESC, seq")
     while True:
