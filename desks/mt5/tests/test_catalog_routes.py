@@ -72,7 +72,7 @@ def _roster(tmp: Path, portals: list[dict[str, Any]], **defaults: Any) -> Path:
     d.update(defaults)
     p.write_text(json.dumps({"defaults": d, "portals": portals,
                              "blocked_hosts": ["reddit.com", "x.com", "twitter.com",
-                                               "binance", "bybit", "hyperliquid"]}))
+                                               "venuea", "venueb", "venuec"]}))
     return p
 
 
@@ -346,23 +346,23 @@ def test_http_401_reads_needs_key() -> None:
 # --------------------------------------------------------------------------- blocked hosts ----
 @pytest.mark.parametrize(("host", "blocked"), [
     ("www.reddit.com", True), ("reddit.com", True), ("x.com", True), ("api.x.com", True),
-    ("box.com", False), ("twitter.com", True), ("data.binance.vision", True),
-    ("api.bybit.com", True), ("api.hyperliquid.xyz", True), ("data-api.ecb.europa.eu", False),
+    ("box.com", False), ("twitter.com", True), ("data.venuea.vision", True),
+    ("api.venueb.com", True), ("api.venuec.xyz", True), ("data-api.ecb.europa.eu", False),
 ])
 def test_blocked_hosts(host: str, blocked: bool) -> None:
-    roster = ["reddit.com", "x.com", "twitter.com", "binance", "bybit", "hyperliquid"]
+    roster = ["reddit.com", "x.com", "twitter.com", "venuea", "venueb", "venuec"]
     assert cr.is_blocked(host, roster) is blocked
 
 
 def test_blocked_portals_and_endpoints_are_never_touched(box: Path) -> None:
-    bad = {**CKAN, "id": "crypto", "base": "https://api.binance.com"}
+    bad = {**CKAN, "id": "crypto", "base": "https://api.venuea.com"}
     pkg = _pkg(7)
     pkg["resources"].append({"url": "https://www.reddit.com/r/x.json", "format": "JSON"})
     net = Net({"portal.example.org/api/3/action/package_search":
                lambda u, h: _json({"success": True, "result": {"count": 1, "results": [pkg]}})})
     r = _run(box, _roster(box, [bad, CKAN]), net)
     assert r["portals"]["crypto"]["status"] == "BLOCKED_HOST"
-    assert not any("binance" in u for u, _ in net.calls)
+    assert not any("venuea" in u for u, _ in net.calls)
     (row,) = json.loads((cr.WORLD / "discoveries_catalog_20261006.json").read_text())
     assert all("reddit" not in u for u in row["endpoints"])
     assert row["n_blocked_resources"] == 1

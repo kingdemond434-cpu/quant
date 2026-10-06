@@ -210,7 +210,7 @@ def host_of(url: str) -> str:
 def is_blocked(host: str, blocked: Iterable[str]) -> bool:
     """Terms-fenced platforms (the shared fence) and crypto-exchange hosts (the 2026-08-18 MT5
     mandate, from the roster). A dotted entry is a domain (and its subdomains); a bare name
-    matches any host label containing it, so `data.binance.vision` is refused too."""
+    matches any host label containing it, so `data.<name>.vision` is refused too."""
     h = host.lower().split(":")[0].rstrip(".")
     if h and _terms_platform(h):
         return True
