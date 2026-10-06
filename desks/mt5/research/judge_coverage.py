@@ -1128,13 +1128,27 @@ def saturation_stamp(rows: list[dict[str, Any]], capacity: int | None = None) ->
 _SAT_KEYS = ("_sat", "_satq", "_dup", "_satq_arch")
 
 
+def _tf_session_key() -> Any:
+    """`breadth_rotation.tf_session_key()` (PR #200's timeframe x session tier: under-target
+    (chart, session) buckets rank 0), or a neutral key when it cannot be read. With no census
+    every row ranks 0, so the composed order is exactly the order without it."""
+    for mod in ("research.breadth_rotation", "breadth_rotation"):
+        try:
+            key = __import__(mod, fromlist=["tf_session_key"]).tf_session_key()
+            return key if callable(key) else (lambda _r: 0)
+        except Exception:
+            continue
+    return lambda _r: 0
+
+
 def quality_share() -> float:
     """The protected QUALITY / REPLACEMENT share of each family stream (law section 15): the
     ladder's adaptive B budget (research/breadth_ladder.py `budget_split`), bounded to
     [QUALITY_SHARE_BOUNDS]; the default when the ladder is unreadable."""
     try:
         doc = json.loads((REPORTS / "BREADTH_LADDER.json").read_text("utf-8"))
-        v = float(((doc.get("budget_split") or {}).get("split") or {}).get("B"))
+        raw: Any = ((doc.get("budget_split") or {}).get("split") or {}).get("B")
+        v = float(raw)
         if math.isfinite(v):
             return min(max(v, QUALITY_SHARE_BOUNDS[0]), QUALITY_SHARE_BOUNDS[1])
     except (OSError, ValueError, TypeError, AttributeError):
@@ -1432,7 +1446,8 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
                    use_keff: bool = True,
                    use_occupancy: bool = True,
                    use_saturation: bool = True,
-                   quality: float | None = None) -> list[dict[str, Any]]:
+                   quality: float | None = None,
+                   tf_key: Any = None) -> list[dict[str, Any]]:
     """Weighted interleave of the families, so EVERY PREFIX of the docket is family-balanced.
 
     Each family is emitted on its own virtual clock ticking at 1/quota, and the family whose next
@@ -1465,6 +1480,12 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
     archived variant last. Unstamped rows score par and keep their place; `use_saturation=False`
     reproduces the order before this law.
 
+    THE TIMEFRAME x SESSION TIER (breadth_rotation.tf_session_key, PR #200) is composed right
+    after the anti-saturation terms (freshness, strong duplicate, archived challenger) and before
+    the variant / value terms: inside each saturation tier, rows in under-target (chart, session)
+    buckets go first. It reorders and never filters; with no census it is 0 for every row.
+    `tf_key` overrides it (a callable row -> int); `use_saturation=False` leaves it out.
+
     No row is dropped. A family with no quota still ships, after the quota'd stream, because the
     docket this returns is the whole docket and the judge's budget -- not this order -- decides
     where the hour stops.
@@ -1472,8 +1493,9 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
     if not rows:
         return []
     ids = unjudged_ids or set()
+    tf = (tf_key if tf_key is not None else _tf_session_key()) if use_saturation else None
 
-    def rank(row: dict[str, Any]) -> tuple[int, int, float, str]:
+    def rank(row: dict[str, Any]) -> tuple[Any, ...]:
         cid = str(row.get("_cell") or "")
         fresh = 0 if (not ids or cid in ids) else 1
         # A parameter variant of a rule already claiming this grid cell ranks below an unseen
@@ -1483,10 +1505,11 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
         keff = -float(row.get("_keff") or 0.0) if use_keff else 0.0
         if use_occupancy:
             keff -= float(row.get("_occ") or 0.0) + float(row.get("_orth") or 0.0)
+        tier = int(tf(row)) if tf is not None else 0
         if use_saturation and "_sat" in row:
-            return (fresh, int(row.get("_dup") or 0), int(row.get("_satq_arch") or 0), variant,
-                    -_row_value(row), str(row.get("first_seen") or "9999"))
-        return (fresh, 0, 0, variant, keff, str(row.get("first_seen") or "9999"))
+            return (fresh, int(row.get("_dup") or 0), int(row.get("_satq_arch") or 0), tier,
+                    variant, -_row_value(row), str(row.get("first_seen") or "9999"))
+        return (fresh, 0, 0, tier, variant, keff, str(row.get("first_seen") or "9999"))
 
     streams: dict[str, list[dict[str, Any]]] = {}
     for row in rows:

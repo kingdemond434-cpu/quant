@@ -377,3 +377,24 @@ def test_alpha_breadth_leg_publishes_the_map(sat: dict, tmp_path: Path, monkeypa
     published = json.loads((tmp_path / "CERTIFICATE_SATURATION.json").read_text("utf-8"))
     assert published["certificates"]["n_effective_certificates"] is not None
     assert "book_breadth" in published
+
+
+def test_timeframe_session_tier_composes_after_saturation_and_never_filters(sat: dict) -> None:
+    rows = _docket()
+    cs.stamp(rows, sat)
+    q = {"session_range_breakout": 1}
+    neutral = [r["_cell"] for r in jc.coverage_order(rows, q, quality=0.0,
+                                                     tf_key=lambda r: 0)]
+    # no census -> the PR #200 key is neutral and the order is unchanged
+    census = brot.tf_session_key({})
+    assert [r["_cell"] for r in jc.coverage_order(rows, q, quality=0.0,
+                                                  tf_key=census)] == neutral
+    # US500 rows sit in an under-target bucket: they lead their saturation tier, duplicates stay
+    # behind every non-duplicate, and nothing is dropped
+    tiered = jc.coverage_order(rows, q, quality=0.0,
+                               tf_key=lambda r: 0 if r.get("symbol") == "US500" else 1)
+    assert len(tiered) == len(rows)
+    assert tiered[0]["symbol"] == "US500"
+    last_clean = max(i for i, r in enumerate(tiered) if not r.get("_dup"))
+    first_dup = min(i for i, r in enumerate(tiered) if r.get("_dup"))
+    assert last_clean < first_dup
