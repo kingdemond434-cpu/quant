@@ -152,14 +152,11 @@ def _cell_id(row: dict[str, Any]) -> str | None:
         desk = str(BASE)
         if desk not in sys.path:
             sys.path.insert(0, desk)
-        from research.frontier_identity import cell_id
+        from research.frontier_identity import docket_cell_id
     except Exception:
         return None
     try:
-        return str(cell_id({"sym": row.get("symbol") or row.get("sym"),
-                            "family": row.get("family"),
-                            "params": row.get("params") or {},
-                            "timeframe": row.get("timeframe")}))
+        return str(docket_cell_id(row))
     except Exception:
         return None
 
@@ -204,9 +201,9 @@ def judged_index(path: Path | None = None, *, now: datetime | None = None,
                  window_h: float = WINDOW_H) -> tuple[set[str], dict[str, int], dict[str, int]]:
     """(cells carrying a real verdict, judged-per-family all-time, judged-per-family in window).
 
-    A row is JUDGED when the ledger recorded a terminal gate or a pass/fail for it. A row whose
-    downstream status is a `NOT_RUN_*` deferral is NOT judged: the budget never reached the cell,
-    and calling that a verdict is what made deferral mean "never" for a third of the docket.
+    A row is JUDGED only when the ledger recorded a real terminal gate or a successful pass.
+    `UNKNOWN` is the sealed evaluator's unmeasured path, even when it carries passed=False.
+    Neither that path nor a `NOT_RUN_*` deferral clears the backlog or earns judge capacity.
     """
     seen: set[str] = set()
     total: dict[str, int] = {}
@@ -229,7 +226,7 @@ def judged_index(path: Path | None = None, *, now: datetime | None = None,
             continue
         if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
             continue
-        if row.get("passed") in (None, "None") and not row.get("terminal_gate"):
+        if row.get("passed") is not True and str(row.get("terminal_gate") or "") in ("", "UNKNOWN"):
             continue
         fam = str(row.get("family") or "")
         cell = str(row.get("cell") or "")
@@ -261,9 +258,16 @@ def measured_capacity(judged_total: dict[str, int], ledger: Path | None = None,
                 if not line:
                     continue
                 try:
-                    at = _ts(json.loads(line).get("at"))
+                    row = json.loads(line)
                 except ValueError:
                     continue
+                if not isinstance(row, dict):
+                    continue
+                if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
+                    continue
+                if row.get("passed") is not True and str(row.get("terminal_gate") or "") in ("", "UNKNOWN"):
+                    continue
+                at = _ts(row.get("at"))
                 if at is None or at.timestamp() < cutoff:
                     continue
                 key = at.strftime("%Y-%m-%dT%H")
@@ -877,10 +881,19 @@ READMIT_MAX_DAYS = 90.0
 CPCV_MIN_DAYS = 60
 
 
-def readmit_due(row: dict[str, Any], *, now: datetime | None = None) -> bool:
+def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
+                bar_sizes: dict[tuple[str, str], int] | None = None) -> bool:
     """True when a parked cell's history has grown enough, or it has waited long enough."""
     parked_bytes = int(row.get("bar_bytes") or 0)
-    bars = _bar_bytes(str(row.get("sym") or ""), str(row.get("tf") or "H1"))
+    key = (str(row.get("sym") or ""), str(row.get("tf") or "H1"))
+    # A pass measures each chart once. Never retain this snapshot across passes: new
+    # bars must re-admit every eligible sibling on the next reading.
+    if bar_sizes is None:
+        bars = _bar_bytes(*key)
+    else:
+        if key not in bar_sizes:
+            bar_sizes[key] = _bar_bytes(*key)
+        bars = bar_sizes[key]
     if parked_bytes <= 0:
         return bars > 0
     if row.get("reason") in ("build_failed", "series_exception"):
@@ -906,7 +919,9 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     target = path or UNRUNNABLE_BANK
     bank = unrunnable_bank(target)
     now_ts = _ts(at)
-    readmitted = [cell for cell, row in bank.items() if readmit_due(row, now=now_ts)]
+    bar_sizes: dict[tuple[str, str], int] = {}
+    readmitted = [cell for cell, row in bank.items()
+                  if readmit_due(row, now=now_ts, bar_sizes=bar_sizes)]
     for cell in readmitted:
         bank.pop(cell, None)
     added = 0
@@ -974,6 +989,19 @@ def family_breadth(path: Path | None = None) -> dict[str, float]:
                 fam = "_".join(parts[1:-1])
                 occ[fam] = occ.get(fam, 0.0) + 1.0
     return occ
+
+
+def certified_family_shares() -> tuple[dict[str, float], int]:
+    """The certified canon's family occupancy, from the existing search fitness reader.
+
+    A missing or unreadable canon leaves the ranking neutral. It never becomes evidence that all
+    families are empty. The judge's family floor is independent of this optional priority input.
+    """
+    try:
+        from libs.research.alpha_fitness import certified_family_shares as read_shares
+        return read_shares()
+    except Exception:
+        return {}, 0
 
 
 def judge_seconds_per_cell(capacity: int) -> float:
@@ -1083,6 +1111,7 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
 
         ev_per_cell = p_optimistic * net_value_if_it_passes * (1 + marginal_breadth)
                                    * orthogonality_factor * certificate_factor
+                                   * certified_breadth_factor
         ev_per_s    = ev_per_cell / (seconds_per_cell * this family's bar cost)
 
     Every term is something the desk already measures -- the learned prior, the net-of-cost slot
@@ -1104,6 +1133,7 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
     priors = family_priors(fams, realised)
     values, median = family_value()
     occ = family_breadth()
+    certified_shares, certified_n = certified_family_shares()
     signals = producer_signals()
     # MARGINAL k_eff PER FAMILY (research/docket_keff.py): 1 + max(0, mean cell priority) over the
     # rows `build` stamped. One-sided like the two factors above, and exactly 1.0 for rows that
@@ -1127,7 +1157,14 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
         ortho_f = float(sig.get("orthogonality_factor") or 1.0)
         cert_f = float(sig.get("certificate_factor") or 1.0)
         kf = float(keff_f.get(fam, 1.0))
-        ev_cell = float(pr["p_optimistic"]) * value * (1.0 + breadth) * ortho_f * cert_f * kf
+        cert_share = float(certified_shares.get(fam, 0.0)) if certified_n else None
+        # A family absent from a readable certified canon gets the strongest discovery bonus;
+        # an already dominant family gets less. This is a one-sided research-priority credit,
+        # so neither the family floor nor any cell's eligibility is reduced. The candidate-level
+        # scorer separately recognises a new session/chart/regime inside an incumbent family.
+        cert_breadth = 2.0 - cert_share if cert_share is not None else 1.0
+        ev_cell = (float(pr["p_optimistic"]) * value * (1.0 + breadth) * ortho_f * cert_f
+                   * kf * cert_breadth)
         rl = realised.get(fam) or {}
         out.append({
             "family": fam, "unjudged": backlog[fam],
@@ -1142,6 +1179,11 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
             "stored_prior_n": int(pr.get("stored_n", pr["n"])),
             "net_value_if_pass": value, "value_source": "NET_EDGE" if fam in values else "median",
             "breadth_gain": round(breadth, 4), "cluster_occupancy": occ.get(fam, 0.0),
+            "certified_family_share": round(cert_share, 6) if cert_share is not None else None,
+            "certified_family_count": (round(cert_share * certified_n)
+                                       if cert_share is not None else None),
+            "certified_breadth_factor": round(cert_breadth, 6),
+            "certified_breadth_status": "MEASURED" if certified_n else "UNMEASURED",
             # THE TWO SIGNALS THE PRINCIPAL ORDERED COMPUTE STEERED BY (2026-09-23), measured per
             # producer in `orthogonality_yield` and published here beside the number they moved.
             # `breadth_gain` above stays exactly as it was -- it reads the LIVE BOOK's clusters and
@@ -1231,15 +1273,38 @@ def grid_cell(row: dict[str, Any]) -> str:
     return f"{fam}|{sym}|{hor}"
 
 
+def structural_cell(row: dict[str, Any]) -> str:
+    """A family's distinct research condition within the existing coverage grid.
+
+    The public grid key stays family|symbol|horizon for its established consumers. For ordering
+    variants inside one family, chart, session, regime, direction and representation matter too.
+    Threshold-only parameter changes do not, and no structural distinction certifies an edge.
+    """
+    params = row.get("params") or {}
+
+    def axis(*values: Any) -> str:
+        chosen = next((v for v in values if v is not None and str(v).strip()), "?")
+        return str(chosen).strip().lower()
+    return "|".join((
+        grid_cell(row), axis(params.get("timeframe"), row.get("timeframe"), "H1"),
+        axis(row.get("session"), row.get("selector"), params.get("session"),
+             params.get("selector")),
+        axis(row.get("regime"), row.get("condition"), params.get("regime"),
+             params.get("condition")),
+        axis(row.get("direction"), row.get("side"), params.get("direction"),
+             params.get("side")),
+        axis(row.get("representation"), params.get("representation"),
+             params.get("feature")),
+    ))
+
+
 def variant_split(rows: list[dict[str, Any]],
                   unjudged_ids: set[str] | None = None) -> dict[str, Any]:
     """Mark each docket row UNSEEN MECHANISM or VARIANT, and say how many of each there are.
 
-    CHARGE A VARIANT AGAINST ITS PARENT (2026-09-23). 18,201 raw cells collapse to 2,844 grid
-    cells and 583 mechanisms: most of what reaches the judge is a parameter variant of a rule
-    already in the same queue on the same symbol and horizon, and a variant adds almost no
-    independent ground. The FIRST row to claim a grid cell is that cell's mechanism; every later
-    row on it is a variant OF that row and is charged against it.
+    Charge repeated parameter settings against their first structural cell. A different chart,
+    session, regime, direction or representation remains a distinct experiment within the same
+    family. The legacy family|symbol|horizon grid count is reported separately for its consumers.
 
     NOTHING IS DROPPED AND NOTHING IS CAPPED. The queue stays whole and uncapped; the variant is
     marked `_variant = 1` and ranks below an unseen mechanism inside its own family stream, after
@@ -1256,17 +1321,21 @@ def variant_split(rows: list[dict[str, Any]],
     order = sorted(range(len(rows)),
                    key=lambda i: (_fresh(rows[i]), str(rows[i].get("first_seen") or "9999"), i))
     seen: set[str] = set()
+    grid_seen: set[str] = set()
     variants = 0
     for i in order:
-        cell = grid_cell(rows[i])
+        cell = structural_cell(rows[i])
         is_variant = 1 if cell in seen else 0
         seen.add(cell)
+        grid_seen.add(grid_cell(rows[i]))
         rows[i]["_variant"] = is_variant
         variants += is_variant
     return {"rows": len(rows), "unseen_mechanisms": len(rows) - variants, "variants": variants,
-            "distinct_grid_cells": len(seen),
+            "distinct_grid_cells": len(grid_seen),
+            "distinct_structural_cells": len(seen),
             "variant_share": round(variants / len(rows), 4) if rows else None,
-            "collapse_raw_per_grid_cell": round(len(rows) / len(seen), 3) if seen else None}
+            "collapse_raw_per_grid_cell": (round(len(rows) / len(grid_seen), 3)
+                                           if grid_seen else None)}
 
 
 def _unseen_in_prefix(rows: list[dict[str, Any]], n: int) -> int:
@@ -1284,9 +1353,9 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
     Each family is emitted on its own virtual clock ticking at 1/quota, and the family whose next
     tick is earliest goes next -- classic weighted fair queueing. The result: in any first N rows
     the gauntlet's budget reaches, family f holds about N * quota[f] / sum(quota) of them. Within
-    a family, NEVER-JUDGED rows go first, then UNSEEN MECHANISMS before parameter variants of a
-    rule already claiming the same (family|symbol|horizon) cell, then the oldest first -- so the
-    head of a family's stream is exactly the backlog the ratchet measures, spent on independent
+    a family, NEVER-JUDGED rows go first, then DISTINCT STRUCTURAL CELLS before parameter variants
+    of a rule already claiming the same chart/session/regime/direction/representation, then oldest.
+    The head of a family's stream is exactly the backlog the ratchet measures, spent on independent
     ground rather than on the same rule's constants. `demote_variants=False` reproduces the
     pre-2026-09-23 order, which is how the freed-slot count below is measured.
 

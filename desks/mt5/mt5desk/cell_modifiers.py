@@ -48,7 +48,7 @@ import pandas as pd
 MODIFIER_KEYS = frozenset({
     "regime", "side_mode", "entry_timing", "execution_style", "entry_style", "representation",
     "cost_aware", "residual", "residual_tag", "conditioner", "macro_axis", "macro_state",
-    "publication_lag_d", "transform",
+    "publication_lag_d", "transform", "selector",
 })
 
 #: Labels: they name the coordinate a cell occupies and change nothing about how it trades.
@@ -156,6 +156,13 @@ def refusal(mods: dict[str, Any]) -> str | None:
                 "point-in-time macro state series is wired into the replay")
     if "publication_lag_d" in mods or "transform" in mods:
         return "publication-lagged transform: no point-in-time input series is wired for it"
+    if "selector" in mods:
+        from mt5desk.family_call import SESSIONS
+
+        selector = _s(mods.get("selector"))
+        if selector not in SESSIONS:
+            return (f"selector={mods.get('selector')!r}: no declared session window; refusing "
+                    "rather than running the cell across all hours")
     regime = _s(mods.get("regime"))
     if regime not in NO_OP_REGIMES and regime not in VOL_REGIMES \
             and regime not in CALENDAR_REGIMES:
@@ -217,6 +224,10 @@ def apply(sigs: list, bars: pd.DataFrame, mods: dict[str, Any]) -> list:
     spec = alt_conditioner(mods.get("conditioner")) if "conditioner" in mods else None
     if spec is not None:
         out = _alt_filter(out, bars, spec)
+    if "selector" in mods:
+        from mt5desk.family_call import session_filter
+
+        out = session_filter(out, mods.get("selector"))
     side = _s(mods.get("side_mode"))
     if side == "revert":
         out = [f for f in (_flip(s, bars) for s in out) if f is not None]

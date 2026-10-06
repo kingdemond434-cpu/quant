@@ -74,6 +74,7 @@ import os
 import re
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Callable, Iterable
@@ -3932,11 +3933,15 @@ def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
             obs2: list[Obs] | None = parse_gdelt_events(body, req.ctx)
             parsed += len(obs2 or [])
         except Exception as exc:
-            if getattr(exc, "code", None) != 404:
-                errors.append(f"{slot}: {type(exc).__name__}: {str(exc)[:100]}")
-                stopped.add(direction)
-                continue
-            obs2 = None
+            try:
+                if getattr(exc, "code", None) != 404:
+                    errors.append(f"{slot}: {type(exc).__name__}: {str(exc)[:100]}")
+                    stopped.add(direction)
+                    continue
+                obs2 = None
+            finally:
+                if isinstance(exc, urllib.error.HTTPError):
+                    exc.close()
         gdelt_accumulate(acc, slot, obs2)
         if direction == "fwd":
             sst["fwd"] = (_slot_time(slot) + timedelta(minutes=15)).isoformat()

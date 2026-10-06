@@ -176,3 +176,22 @@ def test_the_campaign_edits_no_code() -> None:
     src = (_ROOT / "libs" / "ops" / "wiring_campaign.py").read_text("utf-8")
     for banned in ("write_text", "subprocess", "os.system", "unlink", "Edit"):
         assert banned not in src, f"the campaign reaches for {banned}"
+
+
+def test_each_pass_observes_a_fresh_tree_once(q, monkeypatch) -> None:
+    from libs.ops import wiring_campaign as campaign
+
+    observations = []
+
+    def census(root):
+        observations.append(root)
+        return [_f(f"libs.changed_{len(observations)}")]
+
+    monkeypatch.setattr(campaign, "findings", census)
+    first = run(_ROOT, q, batch=1)
+    second = run(_ROOT, q, batch=1)
+    assert first["queued"] == ["libs.changed_1"]
+    assert second["queued"] == ["libs.changed_2"]
+    assert first["progress"]["remaining_unreachable"] == first["audit_total"] == 1
+    assert second["progress"]["remaining_unreachable"] == second["audit_total"] == 1
+    assert observations == [_ROOT, _ROOT]

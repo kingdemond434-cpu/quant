@@ -52,14 +52,136 @@ from libs.portfolio.posterior_growth import (
     solve,
 )
 
-__all__ = ["FEEDS_LIVE", "ConstraintSpec", "evaluate", "solve_constrained"]
+__all__ = ["FEEDS_LIVE", "ConstraintSpec", "adopt_if_proven", "decide", "evaluate",
+           "read_switch", "solve_constrained"]
 
-#: THE SWITCH. The constrained book is a MEASURED SHADOW: nothing on the money path reads it.
-#: Feeding it into live sizing is the principal's decision (it can move heat in either direction
-#: and it changes which sleeves the gateway funds). Flipping this does nothing by itself -- no
-#: consumer exists -- and `desks/mt5/tests/test_constrained_book.py` pins it False so it cannot be
-#: flipped by accident.
+#: THE FIAT SWITCH, AND IT STAYS OFF. Nobody turns the constrained book on by hand -- not a
+#: reviewer, not a session, not the principal's "it looks safer" -- because a book fed on
+#: preference is exactly the fiat cap Growth Rule 1 forbids. The ONLY way it feeds is the PROOF
+#: SWITCH below: `decide()` runs hourly against the live book (`research/constrained_book.py`),
+#: and the allocator adopts the constrained book only while that decision says its robust
+#: E[log W] beats the traded book's on the allocator's own posterior worlds, and only after the
+#: allocator re-contests it on its own paths at the moment of adoption (`adopt_if_proven`).
+#: `desks/mt5/tests/test_constrained_book.py` pins this constant False.
 FEEDS_LIVE = False
+
+#: A decision older than this no longer describes the live book: the allocator treats it as OFF.
+SWITCH_MAX_AGE_S = 2 * 3600
+
+
+def decide(doc: Mapping[str, Any], *, now_iso: str, valid_s: int = SWITCH_MAX_AGE_S
+           ) -> dict[str, Any]:
+    """THE PROOF SWITCH: does the constrained book's robust E[log W] beat the traded book's?
+
+    ON only when every one of these holds, each measured on this pass:
+      * the shadow is MEASURED on a FRESH world population (a stale one decides nothing);
+      * the paired contest on identical posterior paths says `beats` -- dE[log W] > 0 AND the
+        bootstrap interval excludes zero (robust, not a point estimate);
+      * the constrained book is no more ruinous than the traded one on the same paths;
+      * it holds at least the heat law's floor (the flat 20% is never lowered by this switch).
+    Anything else is OFF, with the reason by name. Two-sided: the constrained book may carry
+    MORE heat than the traded one, and then this is growth, fed on the same proof.
+    """
+    reasons: list[str] = []
+    contest = doc.get("contest_constrained_vs_current") or {}
+    con = doc.get("constrained") or {}
+    spec = doc.get("spec") or {}
+    floor = float(spec.get("floor") or 0.20)
+    total = float(con.get("total_heat") or 0.0)
+    if doc.get("status") != "MEASURED":
+        reasons.append(f"shadow {doc.get('status')}: {doc.get('why', '')}")
+    if doc.get("worlds_stale"):
+        reasons.append("the allocator's world population is stale")
+    if not isinstance(contest, Mapping) or contest.get("error") or "beats" not in contest:
+        reasons.append(f"no contest on the live book ({(contest or {}).get('error', 'absent')})")
+    elif not contest.get("beats"):
+        reasons.append(f"does not beat the traded book: dE[log W] "
+                       f"{float(contest.get('delta_elogw_per_day', 0.0)):+.6f}/day, CI "
+                       f"[{float(contest.get('ci_lo', 0.0)):+.6f}, "
+                       f"{float(contest.get('ci_hi', 0.0)):+.6f}]")
+    elif float(contest.get("p_ruin_a", 1.0)) > float(contest.get("p_ruin_b", 0.0)) + 1e-12:
+        reasons.append("more ruinous than the traded book on the same paths")
+    if total < floor - 1e-6:
+        reasons.append(f"holds {total:.4f} heat, below the {floor:.2f} floor: never fed")
+    feeds = not reasons
+    try:
+        from datetime import datetime, timedelta
+        until = (datetime.fromisoformat(now_iso) + timedelta(seconds=valid_s)).isoformat()
+    except ValueError:
+        until = now_iso
+    return {"feeds_live": feeds, "decided_at": now_iso, "valid_until": until,
+            "fiat_switch": FEEDS_LIVE,
+            "why": ("robust E[log W] beats the traded book on the allocator's worlds: the "
+                    "allocator adopts it after re-contesting on its own paths" if feeds
+                    else "; ".join(reasons)),
+            "delta_elogw_per_day": contest.get("delta_elogw_per_day"),
+            "ci": [contest.get("ci_lo"), contest.get("ci_hi")],
+            "total_heat": total, "floor": floor,
+            "book": dict(con.get("book") or {}) if feeds else {},
+            "rule": ("fed only while its measured robust E[log W] beats the baseline's; never "
+                     "by fiat, never below the floor, re-proven by the allocator at adoption")}
+
+
+def read_switch(doc: Any, *, now_iso: str) -> dict[str, Any]:
+    """The allocator's reading of the switch artifact: ON only if it says so and is fresh."""
+    if not isinstance(doc, Mapping):
+        return {"feeds": False, "why": "no constrained-book decision published"}
+    if not doc.get("feeds_live"):
+        return {"feeds": False, "why": f"switch OFF: {doc.get('why', '')}"}
+    if str(doc.get("valid_until") or "") < now_iso:
+        return {"feeds": False,
+                "why": f"switch ON but stale (valid until {doc.get('valid_until')})"}
+    book = {str(k): float(v) for k, v in (doc.get("book") or {}).items()
+            if isinstance(v, (int, float)) and math.isfinite(float(v)) and float(v) > 0}
+    if not book:
+        return {"feeds": False, "why": "switch ON with an empty book"}
+    return {"feeds": True, "book": book, "why": doc.get("why", ""),
+            "decided_at": doc.get("decided_at")}
+
+
+def adopt_if_proven(switch: Mapping[str, Any], incumbent: Mapping[str, float],
+                    paths: PosteriorPaths, *, floor: float,
+                    score: Callable[[Mapping[str, float]], float],
+                    h_prev: Mapping[str, float] | None = None, turnover_cost: float = 0.0,
+                    seed: int = 0) -> tuple[dict[str, float] | None, dict[str, Any]]:
+    """Re-contest the switched-on book against the allocator's own book, on the allocator's paths.
+
+    Returns (book to publish or None, record). The hourly decision is necessary, not sufficient:
+    the allocator's incumbent may have moved since, so the swap is proven again HERE, on the
+    paths the allocator is about to publish from. `score` is the allocator's own scorer; a book
+    it scores non-finite (ruinous in some world) is never published, however it contested.
+    """
+    rec: dict[str, Any] = {"switch": {k: v for k, v in switch.items() if k != "book"},
+                           "adopted": False}
+    if not switch.get("feeds"):
+        rec["why"] = switch.get("why", "switch OFF")
+        return None, rec
+    names = set(paths.names)
+    book = {k: float(v) for k, v in (switch.get("book") or {}).items() if k in names}
+    dropped = sorted(set(switch.get("book") or {}) - names)
+    rec["dropped_not_in_worlds"] = dropped
+    total = sum(book.values())
+    if total < floor - 1e-6:
+        rec["why"] = (f"only {total:.4f} heat of the switched book is in today's worlds, below "
+                      f"the {floor:.2f} floor: not adopted")
+        return None, rec
+    cmp_ = compare(book, dict(incumbent), paths, h_prev=h_prev, turnover_cost=turnover_cost,
+                   seed=seed)
+    rec["vs_incumbent"] = cmp_
+    if not cmp_.get("beats"):
+        rec["why"] = "does not beat the allocator's book on its own paths: incumbent stands"
+        return None, rec
+    if float(cmp_.get("p_ruin_a", 1.0)) > float(cmp_.get("p_ruin_b", 0.0)) + 1e-12:
+        rec["why"] = "more ruinous than the allocator's book on its own paths: incumbent stands"
+        return None, rec
+    s = float(score(book))
+    if not math.isfinite(s):
+        rec["why"] = "the allocator scores it ruinous in some world: never published"
+        return None, rec
+    rec.update(adopted=True, total_heat=round(total, 6),
+               why=(f"adopted: dE[log W] {cmp_['delta_elogw_per_day']:+.6f}/day over the "
+                    f"allocator's book, CI [{cmp_['ci_lo']:+.6f}, {cmp_['ci_hi']:+.6f}]"))
+    return book, rec
 
 
 @dataclass(frozen=True)

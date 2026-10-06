@@ -224,6 +224,16 @@ class CarryAdapter(ResearchAdapter):
                 notes=(f"{sym} terms recorded but no financing figure among "
                        f"money_per_lot_night/carry_per_lot_night/swap"))
 
+        # A current snapshot cannot describe financing before the desk observed it.
+        # The receipt is conservative: even a stable historical "since" does not
+        # establish that today's price-dependent money conversion was known then.
+        stamp = row.get("terms_observed_at") or st.get("generated_at")
+        available = pd.to_datetime(stamp, utc=True, errors="coerce")
+        if pd.isna(available) or available is None:
+            return MeasurementResult(
+                status="UNAVAILABLE", adapter="CarryAdapter",
+                notes="carry snapshot has no valid observation receipt; historical PIT unreadable")
+
         # THE CARRY DIFFERENTIAL is what the mechanism is about: what you are paid to be long
         # minus what you are paid to be short.
         # Narrow explicitly rather than with a ternary mypy cannot follow: the differential is
@@ -238,6 +248,11 @@ class CarryAdapter(ResearchAdapter):
         # carry_state is a SNAPSHOT, not a time series: the honest observable is a constant level
         # per symbol, and that is exactly what it is -- a cross-sectional carry, not a change.
         series = pd.Series(level, index=bars.index, dtype=float)
+        series = series.where(_as_utc_index(bars.index) >= available)
+        if not series.notna().any():
+            return MeasurementResult(
+                status="UNAVAILABLE", adapter="CarryAdapter",
+                notes="all requested bars precede the carry snapshot's observation receipt")
         return MeasurementResult(
             status="VALIDATED_PROXY",
             adapter="CarryAdapter",
@@ -289,6 +304,10 @@ class CrossAssetAdapter(ResearchAdapter):
                 notes=(f"no peer instrument for {sym}. A single-instrument feature contains no "
                        f"cross-market information at all -- this is not a weaker measure of the "
                        f"mechanism, it is a measure of something else."))
+        if str(peer).upper() == sym.upper():
+            return MeasurementResult(
+                status="UNAVAILABLE", adapter="CrossAssetAdapter",
+                notes="a cross-market hypothesis needs a distinct peer instrument")
         path = DESK / "data" / "universe" / f"{peer}_H1.parquet"
         if not path.exists():
             return MeasurementResult(

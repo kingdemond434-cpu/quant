@@ -305,7 +305,7 @@ def test_smoke_release_passes_on_a_sealed_signed_tree(sealed: Path, tmp_path: Pa
     # A CRLF checkout of the signed judge files is reported, never failed.
     _git(sealed, "checkout", "--", SIZING)
     judge = sealed / "desks/mt5/research/promoter.py"
-    judge.write_bytes(judge.read_bytes().replace(b"\n", b"\r\n"))
+    judge.write_bytes(judge.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
     # The immutable fence itself now hashes CRLF -> LF (scripts/check_immutable_evaluator.py,
     # "Normalising CRLF -> LF makes the hash mean what it always claimed to mean"), so a CRLF
     # checkout is no finding at all -- not even one the smoke has to excuse as `crlf_only`.

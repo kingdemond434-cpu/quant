@@ -257,6 +257,7 @@ class CycleReport:
     errors: dict[str, str] = field(default_factory=dict)
     budget_exhausted: bool = False
     elapsed_s: float = 0.0
+    completed_at: str = ""
 
     def render(self) -> str:
         head = (f"cycle {self.cycle_id} {self.at}  {self.ticks:,} ticks  "
@@ -337,15 +338,16 @@ class TickRecorder:
         # -- THE OUTAGE CHECK COMES FIRST, BEFORE ANY PULL. A recorder that backfills and then
         # decides whether it was down has already made the hole invisible to itself.
         last_end = int(state.get("last_cycle_end_ms") or 0)
+        last_finished = int(state.get("last_cycle_finished_ms") or last_end)
         down_window: tuple[int, int] | None = None
         max_gap_ms = self.config.cycle_s * 1000 * MAX_CYCLE_GAP_MULT
-        if last_end and (now_ms - last_end) > max_gap_ms:
+        if last_end and (now_ms - last_finished) > max_gap_ms:
             down_window = (last_end, min(end_ms, now_ms))
             for sym in active:
                 g = GapRecord(
                     symbol=sym, from_ms=down_window[0], to_ms=down_window[1],
                     reason=GAP_RECORDER_DOWN, cycle_id=cycle_id,
-                    detail=(f"no cycle completed for {(now_ms - last_end)/1000.0:.0f}s "
+                    detail=(f"no cycle completed for {(now_ms - last_finished)/1000.0:.0f}s "
                             f"(budget {max_gap_ms/1000.0:.0f}s) -- the recorder, the terminal "
                             f"or the box was not running"))
                 self.store.record_gap(g)
@@ -879,14 +881,22 @@ class TickRecorder:
     def _finish(self, rep: CycleReport, state: dict[str, Any], end_ms: int, t_start: float,
                 cursors: dict[str, dict[str, Any]]) -> None:
         rep.elapsed_s = round(time.monotonic() - t_start, 3)
+        # A completed slow cycle is not an outage. Keep capture-window time separate from
+        # liveness; otherwise its gap writes consume the next budget and repeat indefinitely.
+        finished_ms = end_ms + self.config.settle_ms + round(rep.elapsed_s * 1000)
+        rep.completed_at = datetime.fromtimestamp(finished_ms / 1000, tz=UTC).isoformat(
+            timespec="seconds"
+        )
         rep.window_ms = (int(state.get("last_cycle_end_ms") or 0), end_ms)
         state["last_cycle_end_ms"] = end_ms
+        state["last_cycle_finished_ms"] = finished_ms
         state["cycles"] = int(state.get("cycles") or 0) + 1
         state["last_report"] = asdict(rep)
         self.store.write_state(STATE_CURSORS, cursors)
         self.store.write_state(STATE_RECORDER, state)
         self.store.write_state(HEARTBEAT, {
-            "at": rep.at, "cycle_id": rep.cycle_id, "pid": os.getpid(),
+            "at": rep.completed_at, "capture_started_at": rep.at,
+            "cycle_id": rep.cycle_id, "pid": os.getpid(),
             "ticks_this_cycle": rep.ticks, "bytes_this_cycle": rep.bytes,
             "symbols_seen": rep.symbols_seen, "symbols_pulled": rep.symbols_pulled,
             "paused": rep.paused, "elapsed_s": rep.elapsed_s,
@@ -906,7 +916,7 @@ class TickRecorder:
             now_ms = int(time.time() * 1000)
             doc = {
                 "schema": "tape-recorder-1",
-                "at": rep.at,
+                "at": rep.completed_at, "capture_started_at": rep.at,
                 "state": "PAUSED" if rep.paused else "RECORDING",
                 "paused_reason": rep.paused,
                 "tape_root": str(self.config.tape_root),

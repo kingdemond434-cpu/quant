@@ -59,10 +59,12 @@ def _repo(tmp_path: Path) -> Path:
 STATE_PREFIXES = ("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
                   "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
                   "data/", "reports/", "logs/", "web/")
+STATE_FILES = frozenset(re.findall(
+    r'"([^"]+)"', SCRIPT.read_text("utf-8").split("$StateFiles = @(", 1)[1].split(")", 1)[0]))
 
 
 def _is_state(rel: str) -> bool:
-    return any(rel.startswith(p) for p in STATE_PREFIXES)
+    return rel in STATE_FILES or any(rel.startswith(p) for p in STATE_PREFIXES)
 
 
 def _adopt(repo: Path, target: str, kept: list[str] | None = None,
@@ -221,7 +223,7 @@ def _undeletable(f: Path):
         d = f.parent
         d.chmod(0o555)                   # entries may not be created or removed
         return lambda: d.chmod(0o755)
-    fh = open(f, "r+b")                  # Windows: an open handle denies DELETE sharing
+    fh = open(f, "r+b")  # noqa: SIM115  # returned closer deliberately holds the handle open
     return fh.close
 
 
@@ -502,7 +504,9 @@ def test_an_adoption_whose_only_change_is_untracking_is_still_committed(tmp_path
 
 def test_the_script_untracks_state_deletions_before_it_keeps_or_deletes() -> None:
     code = _executable_lines(SCRIPT.read_text("utf-8"))
-    untrack = code.index('if ($op.Kind -eq "D" -and (Test-StatePath $rel) -and -not $boxAdded.ContainsKey($rel))')
+    untrack = code.index(
+        'if ($op.Kind -eq "D" -and (Test-StatePath $rel) '
+        '-and -not $boxAdded.ContainsKey($rel))')
     assert untrack < code.index("if (Test-KeptByBox $rel)")
     assert untrack < code.index("[System.IO.File]::Delete($full)")
     branch = code[untrack:code.index("if (Test-KeptByBox $rel)")]
@@ -514,7 +518,7 @@ def test_the_script_untracks_state_deletions_before_it_keeps_or_deletes() -> Non
     assert guard < pending
     assert re.search(r"^\}\s*$", code[guard:pending], re.M), "the add block closes before $pending"
     assert re.search(r"^\$pending = ", code, re.M), "$pending is at top level"
-    assert code.index('"commit", "-m"', pending) > pending
+    assert code.index('Invoke-GuardedIndexCommit -Message', pending) > pending
 
 
 def test_a_locked_file_is_retried_before_it_is_reported() -> None:
@@ -540,9 +544,33 @@ def test_partial_adoption_target_matches_do_not_become_permanent_false_conflicts
     assert "foreach ($rel in $normalisedDirty)" in block
     assert '@("ls-tree", $target, "--", $rel)' in block
     assert '@("hash-object", "--path=$rel", "--", $rel)' in block
+    assert "$worktreeBlob -eq $targetBlob" in block
+    assert "if (-not $targetExists)" in block                  # target deletions are covered
     assert "$stillDirty.Add($rel)" in block
     assert "$dirty = @($stillDirty)" in block
     assert "already equal the fetched target" in block
+
+
+def test_dirty_code_refusal_publishes_current_adoption_state_before_exit() -> None:
+    """The watchdog must receive the blocker that caused this scheduled run to fail.
+
+    Measured on the box 2026-10-03: the console refused 28 dirty code paths against target
+    4473f67ed, while ADOPTION_STATE.json still described one path and target 14be56cb from
+    2026-09-30.  The preflight exit sat above the script's only report writer.
+    """
+    code = _executable_lines(SCRIPT.read_text("utf-8"))
+    refusal = code.index('if ($dirtyCode.Count -gt 0)')
+    refusal_exit = code.index("exit 1", refusal)
+    block = code[refusal:refusal_exit + len("exit 1")]
+
+    assert '$preflightState = [ordered]@{' in block
+    assert 'stage       = "preflight-dirty-code"' in block
+    assert 'code_drift = $dirtyCode.Count' in block
+    assert 'code_drift  = @($dirtyCode)' in block
+    assert 'state_drift = @($dirtyState | Select-Object -First 200)' in block
+    assert '"ADOPTION_STATE.json"' in block
+    assert '[System.IO.File]::WriteAllText(' in block
+    assert block.index('[System.IO.File]::WriteAllText(') < block.index("exit 1")
 
 
 def test_a_write_the_acl_refuses_falls_back_to_unlink_without_ever_going_first() -> None:

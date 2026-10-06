@@ -131,7 +131,7 @@ def test_law_and_state_fences_are_separated():
     assert sched_law == [("--report-only",)]
 
 
-@pytest.mark.timeout(900)
+@pytest.mark.timeout(2400)
 def test_laws_only_gate_passes_in_a_fresh_checkout():
     """R0402: this test asserted a property of a FRESH CHECKOUT and evaluated it against the
     shared working tree. On a box where sibling sessions build continuously that is a different
@@ -157,7 +157,14 @@ def test_laws_only_gate_passes_in_a_fresh_checkout():
     other test's verdict in those runs was simply unknown. A suite that cannot finish is worse
     than a suite with a named red: it converts one slow test into total blindness.
 
-    900s is this test's honest cost plus contention headroom, and it is scoped to this test
+    Windows under the live sixteen-worker judging load exceeded 900 seconds on 2026-10-04.
+    The production path already permits 300 seconds to create the HEAD checkout, 1800 for
+    its law subprocess, and 120 for cleanup. A 900-second outer timeout killed pytest while
+    the correctly bounded child continued, losing all earlier diagnostic results. The 2400
+    second bound covers those existing limits plus process startup overhead; no assertion or
+    production timeout changes.
+
+    2400s is this test's honest cost plus contention headroom, and it is scoped to this test
     alone -- the 300s floor is untouched for everything else (the ratchet rule: one test's need
     is never the whole suite's licence)."""
     from scripts.run_law_gate import full_gate

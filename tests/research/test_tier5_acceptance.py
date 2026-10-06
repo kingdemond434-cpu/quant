@@ -90,7 +90,11 @@ def test_monoculture_concentration_is_reported_never_capped() -> None:
 
 def test_aggression_floors_are_the_principals_and_no_organ_can_lower_them() -> None:
     gw = _src(DESK / "mt5desk" / "gateway.py")
-    assert re.search(r"^LOT\s*=\s*0\.02\s*$", gw, re.M), "the 0.02-lot gold floor stands"
+    # Principal removed the hardcoded 0.02 floor; the allocator owns sizing with
+    # a 0.01 baseline. Preserve the prohibition on research organs changing it.
+    core = _src(DESK / "mt5desk" / "decision_core.py")
+    assert re.search(r"^GOLD_MIN_LOT\s*=\s*0\.01\s*$", core, re.M)
+    assert re.search(r"^LOT\s*=\s*0\.01\s*$", gw, re.M)
     cfg = _src(DESK / "mt5desk" / "gateway_config_fallback.py")
     assert re.search(r"^HEAT_TARGET\s*=\s*0\.20?\s*$", cfg, re.M), "the 20% heat floor stands"
     forbidden = re.compile(r"^\s*(from|import)\s+(mt5desk\.gateway|gateway|heat_policy|"

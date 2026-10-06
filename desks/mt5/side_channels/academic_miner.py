@@ -120,7 +120,11 @@ def run_and_save() -> list[dict]:
     ssrn = mine_ssrn()
     all_disc = arxiv + ssrn
     out_file = OUT / f"discoveries_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
-    out_file.write_text(json.dumps(all_disc, indent=2, default=str), encoding="utf-8")
+    try:
+        from side_channels.discovery_io import write_discoveries
+    except ModuleNotFoundError:
+        from discovery_io import write_discoveries
+    all_disc = write_discoveries(out_file, all_disc)
     print(f"academic: {len(all_disc)} discoveries saved ({len(arxiv)} arxiv, {len(ssrn)} ssrn)")
     return all_disc
 

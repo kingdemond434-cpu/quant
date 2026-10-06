@@ -33,6 +33,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -167,7 +168,7 @@ LEDGER_LOOKBACK_DAYS = 30
 #: for between 0.01 and 0.02 rounds to one end and realised heat misses target by a whole step.
 #: At 0.02 the same absolute step is 50% of the ticket. A FLOOR on the gold book only -- Q_OPT
 #: below decides the actual size and this never raises it.
-LOT = 0.02
+LOT = 0.01
 # RISK FRACTION OF EQUITY PER TRADE. Was 0.055, and that was not an arbitrary number: measured
 # full Kelly on the 3-leg gold book (E[ln(1+qR)] maximised over the daily portfolio series,
 # 5,728 trades, 2018-2026) is q* = 6.00%, so 5.5% was ~92% of Kelly, chosen deliberately.
@@ -269,11 +270,6 @@ from mt5desk.decision_core import (
 )
 from mt5desk.decision_core import (
     implementable_lot as implementable_lot,
-)
-# Re-exported for callers that read it off the gateway (test_decision_core's reachability rule).
-# An import alias, not a Name: no gateway path consults the old 0.05R threshold (935ffe891).
-from mt5desk.decision_core import (
-    MIN_RATCHET_IMPROVEMENT_R as MIN_RATCHET_IMPROVEMENT_R,
 )
 from mt5desk.decision_core import (
     heat_budget as heat_budget,
@@ -706,8 +702,19 @@ def load_state() -> dict:
 
 
 def save_state(st: dict) -> None:
+    """Persist completely before replacing the last valid restart state."""
     STATE.parent.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps(st, indent=2, default=str), encoding="utf-8")
+    body = json.dumps(st, indent=2, default=str)
+    fd, temporary = tempfile.mkstemp(dir=STATE.parent, prefix=STATE.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(body)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, STATE)
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            os.unlink(temporary)
 
 
 def connect() -> bool:
@@ -877,6 +884,9 @@ def _state_vector_id() -> str:
 
 DECISIONS = BASE / "data" / "decision_ledger.jsonl"
 _PROCESS_INSTANCE_ID = f"{os.getpid()}:{datetime.now(UTC).isoformat(timespec='seconds')}"
+#: In-process cache of sleeve -> strategy-state identity, keyed by sleeves.json's mtime
+#: (47b75ca86, 2026-09-27). The -1.0 is a sentinel derived from the stat() contract -- no real
+#: mtime is negative -- so the first pass always reads the file. It sizes nothing.
 _SLEEVE_ID_CACHE: tuple[float, dict[str, str]] = (-1.0, {})
 
 
@@ -1596,6 +1606,10 @@ def journal_refusal(sleeve: str, symbol: str, side: int, stage: str, why: str,
 #: A stop closer than this many spreads to the entry is inside the quote's own noise. Three:
 #: the entry pays one spread, and a stop two more away is still hit by a normal widening at a
 #: session open without any move in the mid.
+#: Measured 2026-09-16 on the live account (ebd9074cb, `floor_stop_to_spread`): an EURGBP scalp
+#: stop landed 1.8 pips from entry and three stop-outs cost -11.87 EUR, each a slippage loss past
+#: a stop the quote could reach without the mid moving. The floor scales stop AND target by the
+#: same factor, so the certified R:R and risk fraction are unchanged; only the lot moves.
 MIN_STOP_SPREAD_MULT = 3.0
 MIN_STOP_SPREAD_MULT = float(os.environ.get("MIN_STOP_SPREAD_MULT", MIN_STOP_SPREAD_MULT))
 
@@ -2866,11 +2880,14 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
         if recovered is not None:
             params = dict(recovered)
     try:
-        from mt5desk.family_inputs import resolve, strip_identity_keys
+        from mt5desk.family_inputs import resolve, runtime_call_params
     except Exception as exc:
         return None, f"family_inputs unavailable ({type(exc).__name__}: {exc})"
     try:
-        call_params = strip_identity_keys(family, params)
+        call_params = runtime_call_params(family, params)
+        # `session` is not a family keyword, but family_call.signals consumes it to apply the
+        # exact session filter used by the gauntlet. Stripping it here made Asia/London/NY
+        # certificates execute the unrestricted signal stream on Fusion.
         extra, why = resolve(str(s["symbol"]), family, params, bars)
     except Exception as exc:
         return None, f"input reconstruction raised ({type(exc).__name__}: {exc})"
@@ -3903,8 +3920,8 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
     (`ramped_fraction` charged before the stop was known, `promoted_lot` sized after it).
 
     `"auto"` is the gold book and nothing else -- `decision_core.roster` gives it to the three
-    GOLD_WINDOWS rows alone -- so the principal's 0.02 floor binds inside `gold_book_lot` as
-    `max(allocator, policy, floor)` and never as a replacement for the policy lot.
+    GOLD_WINDOWS rows alone. The principal removed the special 0.02 floor; the
+    allocator's target and the symbol's own venue minimum govern implementability.
     """
     mode = s.get("lot")
     if mode == "auto":
