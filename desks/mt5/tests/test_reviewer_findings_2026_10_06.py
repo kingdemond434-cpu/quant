@@ -8,8 +8,8 @@ in the same change.
 
 Owners:
   allocator_trigger, fast-path world cache, heat_policy   -> "Growth allocator overhaul" (desktop)
-  forecast_contract                                       -> "World sensor and macro surprise"
-  acquire_datasets, source_evig                           -> "Global data discovery and use"
+  forecast_contract, source_evig                          -> "World sensor and macro surprise"
+  acquire_datasets                                        -> "Global data discovery and use"
 
 The portfolio-library half (robust_elog concavity, multiperiod, decay) lives in
 tests/portfolio/test_reviewer_findings_2026_10_06.py.
@@ -396,7 +396,10 @@ def _short_csv() -> bytes:
     return _csv({"date": _dates(150), "gamma": list(rng.normal(0, 1, 150))})
 
 
-KEYED = "https://example.org/data.csv?api_key=REDACTED"
+#: A secret that no redaction placeholder can equal, so "surfaced" can never mean "leaked".
+KEY_VALUE = "SECRETVALUE123"
+KEYED = f"https://example.org/data.csv?api_key={KEY_VALUE}"
+KEYED_SURFACE = "example.org/data.csv"
 PLAIN = "https://example.org/plain.csv"
 
 
@@ -506,7 +509,7 @@ def test_reproduction_acquire_keyed_sources_skipped_unnamed(
     monkeypatch.setattr(acq, "_fetch", lambda u: (None, "html"))
     rep = acq.acquire(limit=10)
     text = _all_text(sandbox, rep)
-    assert PLAIN in text and KEYED not in text and "api_key" not in text
+    assert PLAIN in text and KEYED_SURFACE not in text and KEY_VALUE not in text
 
 
 @pytest.mark.xfail(strict=True, reason=(
@@ -519,7 +522,9 @@ def test_acceptance_acquire_keyed_sources_are_surfaced(
         json.dumps([{"host": "example.org", "endpoints": [KEYED, PLAIN]}]), encoding="utf-8")
     monkeypatch.setattr(acq, "_fetch", lambda u: (None, "html"))
     rep = acq.acquire(limit=10)
-    assert KEYED in _all_text(sandbox, rep)
+    text = _all_text(sandbox, rep)
+    assert KEYED_SURFACE in text, "the keyed source must be named in the report or registry"
+    assert KEY_VALUE not in text, "naming a keyed source must never print its key"
 
 
 # ======================================= finding 9: source_evig novelty is keyed on symbols only
@@ -559,7 +564,7 @@ def test_reproduction_evig_new_observable_scores_like_a_duplicate(
 
 @pytest.mark.xfail(strict=True, reason=(
     "ACCEPTANCE OWED 2026-10-06: novelty keyed on target symbols only "
-    "(desks/mt5/research/source_evig.py:178-197). " + DATA))
+    "(desks/mt5/research/source_evig.py:178-197). " + SENSOR))
 def test_acceptance_evig_novelty_separates_information_from_coverage(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A new observable/mechanism on a covered instrument is NEW INFORMATION and must out-score
