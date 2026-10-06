@@ -215,8 +215,13 @@ def test_acceptance_fast_cache_invalidated_by_decision_relevant_evidence() -> No
 #
 # heat_policy.resolve: "THE STATE MAY ONLY RAISE" (heat_policy.py:629-634) -- a measured state
 # curve whose argmax inside [floor, ceiling] is BELOW the unconditional optimum is ignored.
-# The 20% utilisation floor (heat_policy.py:583) is a principal's standing law and is NOT in
-# question here; only the state adjustment ABOVE the floor is.
+#
+# THE FLOOR (ALLOC-11, principal 2026-10-06 15:42Z "yes" in the Growth allocator thread): the
+# fixed 20% utilisation floor (heat_policy.py:583) is replaced by a two-sided growth policy. The
+# 20% target still holds the book up when the measured growth curve says it costs nothing; when
+# the curve says 20% gives up growth (or growth is negative everywhere) exposure falls to the
+# growth optimum, cash included. The survival bars, the effective-heat ceiling and the
+# catastrophe guard stay.
 
 GLOBAL_CURVE = {0.20: 0.0010, 0.22: 0.0012, 0.24: 0.0014, 0.26: 0.0016, 0.28: 0.0018,
                 0.30: 0.0017}
@@ -241,22 +246,65 @@ def test_reproduction_heat_state_adjustment_only_raises() -> None:
     assert up.total_heat == pytest.approx(0.30) and up.binding == "state_growth"
 
 
-def test_floor_law_holds_whatever_the_state_wants() -> None:
-    """THE 20% FLOOR IS LAW AND STAYS PINNED: no state curve can resolve the book below it."""
-    v = hp.resolve(0.10, curve={0.20: 0.0, 0.25: -0.001, 0.30: -0.002}, state="bad",
-                   curves={"bad": hp.StateCurve("bad", {0.20: 0.0, 0.25: -0.01, 0.30: -0.02},
-                                                64)})
+NEGATIVE_CURVE = {0.0: 0.0, 0.10: -0.0005, 0.20: -0.0010, 0.25: -0.0015, 0.30: -0.0020}
+COSTLY_FLOOR_CURVE = {0.0: 0.0, 0.10: 0.0020, 0.20: 0.0010, 0.25: 0.0006, 0.30: 0.0002}
+FREE_FLOOR_CURVE = {0.10: 0.0010, 0.20: 0.0010, 0.25: 0.0010, 0.30: 0.0009}
+
+
+def test_reproduction_flat_floor_holds_the_book_at_20_when_growth_is_negative() -> None:
+    """REPRODUCED: with growth negative at every heat (optimum: cash) and a state curve agreeing,
+    the flat floor still resolves the book to 20% (binding="mandate")."""
+    v = hp.resolve(0.0, curve=NEGATIVE_CURVE, state="bad",
+                   curves={"bad": hp.StateCurve("bad", NEGATIVE_CURVE, 64)})
+    assert v.total_heat == pytest.approx(0.20)
+    assert v.binding == "mandate"
+    c = hp.resolve(0.10, curve=COSTLY_FLOOR_CURVE)
+    assert c.total_heat == pytest.approx(0.20) and c.binding == "mandate"
+
+
+def test_the_target_still_holds_the_book_up_when_it_costs_nothing() -> None:
+    """KEPT UNDER ALLOC-11: when the measured curve says 20% gives up no growth, the 20% target
+    still holds the book up. This holds today and must keep holding after the change."""
+    v = hp.resolve(0.10, curve=FREE_FLOOR_CURVE)
     assert v.total_heat >= 0.20 - 1e-12
-    assert v.floor == pytest.approx(0.20)
+
+
+@pytest.mark.xfail(strict=True, reason=(
+    "ACCEPTANCE OWED 2026-10-06 (ALLOC-11, principal 'yes' 15:42Z): the flat 20% floor "
+    "(desks/mt5/research/heat_policy.py:583, :617-626) holds the book at 20% when growth is "
+    "negative everywhere. " + ALLOC))
+def test_acceptance_negative_growth_everywhere_resolves_to_cash() -> None:
+    """Growth negative at every heat: the growth optimum is cash, so the book resolves to 0."""
+    v = hp.resolve(0.0, curve=NEGATIVE_CURVE, state="bad",
+                   curves={"bad": hp.StateCurve("bad", NEGATIVE_CURVE, 64)})
+    assert v.total_heat == pytest.approx(0.0, abs=1e-9)
+    assert v.binding != "mandate"
+
+
+@pytest.mark.xfail(strict=True, reason=(
+    "ACCEPTANCE OWED 2026-10-06 (ALLOC-11, principal 'yes' 15:42Z): the flat 20% floor "
+    "(desks/mt5/research/heat_policy.py:583, :617-626) overrides a growth optimum of 10% that "
+    "the measured curve pays 0.0020/day for against 0.0010/day at 20%. " + ALLOC))
+def test_acceptance_a_costly_floor_yields_to_the_growth_optimum() -> None:
+    """20% gives up real growth: exposure falls to the growth optimum (10% here)."""
+    v = hp.resolve(0.10, curve=COSTLY_FLOOR_CURVE)
+    assert v.total_heat == pytest.approx(0.10)
+    assert v.binding != "mandate"
+
+
+def test_the_catastrophe_guard_and_survival_bar_stay() -> None:
+    """KEPT UNDER ALLOC-11: the survival bar still clips growth, whatever the floor becomes."""
+    v = hp.resolve(0.30, curve=GLOBAL_CURVE, survival_ceiling=0.24)
+    assert v.total_heat <= 0.24 + 1e-12
+    assert v.binding == "survival_ceiling"
 
 
 @pytest.mark.xfail(strict=True, reason=(
     "ACCEPTANCE OWED 2026-10-06: state adjustment is up-only ('THE STATE MAY ONLY RAISE', "
     "desks/mt5/research/heat_policy.py:629-634). " + ALLOC))
 def test_acceptance_heat_state_adjustment_is_two_sided_above_the_floor() -> None:
-    """HOW THIS SQUARES WITH THE FLOOR LAW. The principal's 20% heat floor is never lowered by
-    fiat and this test does not ask for it: the floor is asserted above. What is owed is that
-    the STATE adjustment inside [floor, ceiling] is two-sided. Under Rule 1 a reduction must
+    """The STATE adjustment inside the band is two-sided (the floor itself is covered by the
+    ALLOC-11 acceptance tests above). Under Rule 1 a reduction must
     prove it raises robust forward E[log W]; the state's own growth curve, measured on that
     state's worlds (64 here, above MIN_STATE_WORLDS), IS that measurement -- E[log W | calm]
     is 0.0015/day at 22% against 0.0005/day at 28%. So the book should resolve to 22%, which is
