@@ -5549,9 +5549,10 @@ def main() -> None:
     # MAXIMUM AGGRESSION INSIDE SURVIVAL (principal 2026-09-30): per gold window, the Fusion lot
     # and the E8 risk fraction with the highest ruin-counted growth (Fusion) or fastest pass (E8)
     # whose P(death) stays under EPS_STOP. Read by prop/e8_gold.py; absent or stale -> today's
-    # sizing, unchanged.
+    # sizing, unchanged. `--book` adds the whole certified book under the same rule (the `book`
+    # block, principal 2026-10-06); nothing sizes from it until the gateway reads it.
     kls = _costed("kelly_survival", lambda: _producer(
-        "kelly_survival", "research/kelly_survival.py"))
+        "kelly_survival", "research/kelly_survival.py", "--book"))
     xbg = _costed("experimental_budget", lambda: _producer(
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
