@@ -273,7 +273,7 @@ def test_the_leg_measures_each_producer_from_the_registry(tmp_path: Path) -> Non
     assert htf["scheduled"] and "hourly_cycle:htf_anchor" in htf["clocks"]
     cag = doc["producers"]["cross_asset_graph"]
     assert cag["cells_7d"] == 1 and cag["buildable_share"] == 1.0
-    assert cag["status"] == "UNBLOCKED"
+    assert cag["status"] == "WIDENED"
     unfed = {u["cluster"]: u["why"] for u in doc["totals"]["empty_clusters_unfed"]}
     # cross_asset_graph's lead_lag cell is buildable since 76895fedc, so the registry's fresh
     # cell FEEDS the lead-lag cluster: it is no longer listed as unfed at all.

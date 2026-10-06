@@ -848,8 +848,16 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         if res["added"]:
             try:
-                _atomic(paths.out_json,
-                        json.dumps(res["doc"], indent=1, default=str, sort_keys=False))
+                # MIRROR THE COMMITTED FILE'S ENCODING. It has carried raw '→'/'—' on one branch
+                # and '\u2192' escapes on another; choosing either rewrote every LIVE row that held
+                # one, and a merge tool must leave those rows byte-equal.
+                try:
+                    _prior = paths.out_json.read_text("utf-8")
+                except OSError:
+                    _prior = ""
+                _text = json.dumps(res["doc"], indent=1, default=str, sort_keys=False,
+                                   ensure_ascii=not any(ord(c) > 127 for c in _prior))
+                _atomic(paths.out_json, _text + ("\n" if _prior.endswith("\n") else ""))
                 _atomic(paths.out_md, render(res["doc"]))
             except OSError as exc:
                 print(f"runtime_attestation --only-missing: NOT written "

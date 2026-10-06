@@ -55,6 +55,13 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 OUT = BASE / "reports" / "ASIA_TRANSMISSION.json"
+#: THE CHAIN MEASUREMENTS ARE LOOKS TOO (2026-10-06). Each declared chain is lag-searched twice
+#: by `lead_lag.edge` -- pooled and Asia-hours only -- before anything is proposed, and an edge
+#: that came back NO_EDGE was still tried. Each (chain, ordered pair, window, lag grid, method)
+#: identity is charged one `lead_lag` trial the first pass it is measured, once over the
+#: lifetime, through the same union door `cross_asset_graph` uses for its pairs.
+CHARGED = BASE / "reports" / "asia_transmission_charged.json"
+EDGE_METHOD = "ols_t_nonoverlap"
 
 #: Asian trading hours in UTC. Tokyo opens 00:00 UTC and Shanghai's afternoon session ends around
 #: 07:00; London's pre-open begins to dominate by 08:00. The window is deliberately generous at
@@ -201,6 +208,7 @@ def measure(budget_s: float = 600.0) -> dict[str, Any]:
     have = {p.stem.removesuffix("_H1") for p in pc.UNI.glob("*_H1.parquet")}
     bars: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
+    looked: list[str] = []
 
     for ch in CHAINS:
         d, t = str(ch["driver"]), str(ch["target"])
@@ -232,6 +240,9 @@ def measure(budget_s: float = 600.0) -> dict[str, Any]:
                              plausible_role=ch["name"])
         rec["pooled"] = pooled
         rec["asia_hours"] = asia
+        for window, got in (("pooled", pooled), ("asia_hours", asia)):
+            if got.get("verdict") != "UNMEASURED":        # too few aligned bars: no lag search
+                looked.append(chain_identity(ch["name"], d, t, window, lead_lag.MAX_LAG))
 
         sign_ok = str(asia.get("direction") or "") == str(ch["expected"])
         if asia.get("verdict") == "EDGE" and sign_ok:
@@ -259,7 +270,18 @@ def measure(budget_s: float = 600.0) -> dict[str, Any]:
         if time.monotonic() - started > budget_s:
             break
 
-    return {"rows": rows, "bars": bars, "meta": meta}
+    new, union = pc.charge_union(
+        "asia_transmission", looked, CHARGED, "lead_lag",
+        "declared chain edges lag-searched for the first time (pooled and Asia-hours); each "
+        "(chain, ordered pair, window, lag grid, method) is charged once over the lifetime union",
+        kind="chain_identity_union")
+    return {"rows": rows, "bars": bars, "meta": meta,
+            "chain_looks": {"looked": len(looked), "newly_charged": new, "lifetime_union": union}}
+
+
+def chain_identity(name: str, driver: str, target: str, window: str, max_lag: int) -> str:
+    """(chain, ordered pair, window, lag grid, method): what one charged chain look is."""
+    return f"{name}|{driver}->{target}|{window}|lags=1..{max_lag}|{EDGE_METHOD}"
 
 
 def propose(measured: dict[str, Any], budget_s: float = 600.0) -> list[dict[str, Any]]:
@@ -315,16 +337,33 @@ def main(argv: list[str] | None = None) -> int:
     rows = measured["rows"]
     proposals: list[dict[str, Any]] = []
     donated: str | None = None
+    null_charged = 0
     if args.propose:
         proposals = pc.best_per_cell(propose(measured, budget_s=args.budget))
+        # `candidate` takes title and evidence too; called with five arguments it raised
+        # TypeError on the first hour a chain survived, so the organ could never donate.
         cands = [pc.candidate("asia_transmission", p["symbol"], "lead_lag", p["params"],
                               next((c["rationale"] for c in CHAINS if c["name"] == p["chain"]),
-                                   "declared Asian transmission chain"))
+                                   "declared Asian transmission chain"),
+                              title=(f"{p['symbol']}.lead_lag.{p['params'].get('driver_symbol')}"
+                                     f".asia lag={p['params'].get('lag')}"),
+                              evidence={k: p.get(k) for k in (
+                                  "chain", "verdict", "edge_t", "n_independent",
+                                  "gross_per_trade", "net_per_trade", "cost_frac", "t_gross",
+                                  "t_deflated_sweep", "n_tests_sweep")})
                  for p in proposals]
+        tests_run = len(CHAINS) * len(ENTRY_Z) * len(HOLDS)
         if cands:
-            path = pc.donate("asia_transmission", cands, tests_run=len(CHAINS) * len(ENTRY_Z)
-                             * len(HOLDS))
+            path = pc.donate("asia_transmission", cands, tests_run=tests_run)
             donated = str(path) if path else None
+        if donated is None:
+            # A PASS THAT DONATES NOTHING STILL RAN ITS TESTS (2026-10-06). The organ is on the
+            # hourly clock now, so a quiet hour is the common case, and with no discovery file
+            # its trials never reached the lifetime ledger. They go through the same null-pass
+            # door `alt_proxies._donate` uses; a pass writes one or the other, never both.
+            null_charged = pc.charge_side_trials(
+                "asia_transmission", tests_run, {"lead_lag": tests_run},
+                "tested cells charged; no discovery file carried them this pass")
 
     census = Counter(str(r.get("verdict")) for r in rows)
     doc = {
@@ -339,6 +378,8 @@ def main(argv: list[str] | None = None) -> int:
                                  "measures as empty in both the traded and certified books",
         "n_proposals": len(proposals),
         "donated_to": donated,
+        "null_trials_charged": null_charged,
+        "chain_looks": measured.get("chain_looks"),
         "chains": rows,
         "proposals": proposals,
     }

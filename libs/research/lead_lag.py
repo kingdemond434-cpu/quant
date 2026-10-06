@@ -75,6 +75,21 @@ def _oos_gain(x: np.ndarray, y: np.ndarray) -> float:
     return ll - base
 
 
+def _forward_sums(y: np.ndarray, h: int) -> np.ndarray:
+    """`[y[i+1:i+1+h].sum() for i in range(y.size - h)]`, vectorised and BIT-IDENTICAL.
+
+    The list comprehension was ~85% of an edge's cost (one numpy reduction per bar, ~350k a
+    pair). numpy sums a slice shorter than 8 elements left to right from 0.0, so adding the h
+    shifted slices in the same order onto zeros performs exactly the same float additions; the
+    pin `test_forward_sums_are_bit_identical_to_the_loop` holds it to equality, not tolerance.
+    MAX_LAG is 6, so every h this module uses is inside that regime."""
+    m = max(y.size - h, 0)
+    out = np.zeros(m)
+    for k in range(1, h + 1):
+        out += y[k:k + m]
+    return out
+
+
 def edge(driver: pd.DataFrame, target: pd.DataFrame, *, plausible_role: str | None = None,
          max_lag: int = MAX_LAG) -> dict[str, Any]:
     x, y, _idx = _align(driver, target)
@@ -82,14 +97,14 @@ def edge(driver: pd.DataFrame, target: pd.DataFrame, *, plausible_role: str | No
         return {"verdict": "UNMEASURED", "n": int(x.size)}
     best: dict[str, Any] = {"lag": 0, "t": 0.0, "beta": 0.0}
     for h in range(1, max_lag + 1):
-        xs, ys = x[:-h], np.array([y[i + 1:i + 1 + h].sum() for i in range(x.size - h)])
+        xs, ys = x[:-h], _forward_sums(y, h)
         xs, ys = xs[::h], ys[::h]                            # non-overlapping targets
         beta, t = _t_reg(xs, ys)
         if abs(t) > abs(best["t"]):
             best = {"lag": h, "t": round(t, 2), "beta": round(beta, 6)}
     h = int(best["lag"]) or 1
     xs = x[:-h][::h]
-    ys = np.array([y[i + 1:i + 1 + h].sum() for i in range(x.size - h)])[::h]
+    ys = _forward_sums(y, h)[::h]
     vol = pd.Series(y).rolling(48, min_periods=24).std().to_numpy()[:-h][::h]
     hi = np.isfinite(vol) & (vol > np.nanmedian(vol))
     t_hi = _t_reg(xs[hi], ys[hi])[1] if hi.sum() > 30 else 0.0

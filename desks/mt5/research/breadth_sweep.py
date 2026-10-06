@@ -128,6 +128,27 @@ READY: dict[str, dict] = {
             for s in (1, -1)
         ],
     },
+    # THE VENUE'S OWN FILL SURFACE (2026-10-01). Sealed pass 2 (76895fedc) gave `build_cell` an
+    # execution_state branch that loads the per-symbol surface itself, so a docket cell needs no
+    # input but its mode. Before this row the family reached the docket only at its defaults
+    # (`cheap_deep`, 0.30/0.70) through `default_families`, so `dear_thin` -- the fade of a move
+    # priced by an empty book -- was never once judged. Both modes are economically real; the
+    # gauntlet decides which holds per instrument.
+    "execution_state": {
+        "why": "the only family whose ENTRY is an execution state: follow a move the venue "
+               "quoted cheap and deep, or fade one it quoted dear and thin -- read off the "
+               "desk's own recorded surface, so its errors cannot correlate with a public source",
+        "grid": [
+            {"mode": m, "spread_pct": sp, "activity_pct": 0.70, "hold_bars": h,
+             "rr": 1.5, "atr_n": 20}
+            for m in ("cheap_deep", "dear_thin")
+            for sp in (0.20, 0.30)
+            for h in (6, 12)
+        ],
+        # Only instruments the published surface covers: a cell on any other builds as a named
+        # failure and spends a judge slot to say so.
+        "needs_surface": True,
+    },
     # MEASURED: _bars('EURUSD','H1') returns 37,366 bars, so a peer leg loads. The gauntlet's
     # build path already pops `peer_symbol` and hands the family a `peer` frame.
     "relative_value": {
@@ -305,7 +326,24 @@ def _targets(fam: str, spec: dict, syms: list[str]) -> list[tuple[str, dict]]:
         return [(a, {"factor_symbols": list(f)}) for a, f in spec["factor_sets"] if a in syms]
     allowed = spec.get("symbols")
     pool = [s for s in syms if (not allowed or s in allowed)]
+    if spec.get("needs_surface"):
+        covered = _surface_symbols()
+        if covered is not None:              # unreadable -> no filter (L1.28a), the judge names it
+            pool = [s for s in pool if s in covered]
     return [(s, {}) for s in pool]
+
+
+def _surface_symbols() -> set[str] | None:
+    """Symbols the venue's published spread/activity surface covers, read by the SAME reader the
+    sealed gauntlet's execution_state branch uses. None when it cannot be read."""
+    try:
+        from research import orthogonal_sweep as inputs
+        doc = json.loads(Path(inputs.MICROSTRUCTURE_SURFACES).read_text("utf-8"))
+    except Exception:
+        return None
+    syms = doc.get("symbols") if isinstance(doc, dict) else None
+    return {str(k) for k, v in syms.items() if isinstance(v, dict) and v} \
+        if isinstance(syms, dict) else None
 
 
 #: What the last `cells()` call set aside as UNTESTABLE, by `family|chart|verdict`, and why. A

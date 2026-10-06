@@ -121,32 +121,43 @@ INVENTORY: dict[str, dict[str, Any]] = {
     },
     "cross_asset_graph": {
         "module": "cross_asset_graph", "seats": ["cross_asset_graph"],
-        "cap": "book_symbols()[:12] (alphabetical prefix of the live book)",
-        "status": "UNBLOCKED",
-        "change": ("Sealed pass 2 (76895fedc, 2026-10-01) added the build_cell lead_lag branch, "
-                   "so its cells now load their driver (0 -> 3,670 signals on GBPUSD<-EURUSD). "
-                   "The book_symbols()[:12] cap is NOT yet lifted: that is the next build."),
+        "cap": ("the book plus every hypothesis-lane symbol with H1 bars; causal-role pairs "
+                "every pass, statistical pairs walked by a persisted cursor within half the "
+                "900 s budget; every measured edge kept in the published graph"),
+        "status": "WIDENED",
+        "change": ("Sealed pass 2 (76895fedc) made lead_lag buildable (0 -> 3,670 signals on "
+                   "GBPUSD<-EURUSD); 2026-10-01 lifted book_symbols()[:12] (the alphabetical "
+                   "first twelve of the book, never USDJPY/XAUUSD) and the 20-edge event-chain "
+                   "slice, and replaced an O(n^4) pair scan with a set; 2026-10-06 charges "
+                   "every lag-searched pair identity once over the lifetime union"),
     },
     "asia_transmission": {
         "module": "asia_transmission", "seats": ["asia_transmission"],
-        "cap": "on no hourly clock; lead_lag only",
-        "status": "UNBLOCKED",
-        "change": ("lead_lag is buildable since 76895fedc (see cross_asset_graph); wiring it "
-                   "onto an hourly clock is the next build"),
+        "cap": "every declared chain, measured and proposed each hour (--propose --budget 300)",
+        "status": "WIRED",
+        "change": ("lead_lag is buildable since 76895fedc; 2026-10-01 put the organ on the "
+                   "hourly clock with --propose, so its chains reach the compiler; a pass "
+                   "that donates nothing charges its tests through the null-pass ledger"),
     },
     "event_surprise": {
         "module": "event_surprise", "seats": ["event_surprise"],
-        "cap": "MAX_DONATIONS=10, MAX_SOURCES_PER_PASS=16; event_reaction only",
-        "status": "UNBLOCKED",
-        "change": ("Sealed pass 2 (76895fedc) made the event_reaction branch pass "
-                   "events_for_symbol(events, sym) with symbol=sym, so its cells carry signals. "
-                   "MAX_DONATIONS=10 is NOT yet lifted: that is the next build."),
+        "cap": ("MAX_DONATIONS = MAX_PUBLISHED (400), one cell per (symbol, kind, bucket); "
+                "MAX_SOURCES_PER_PASS=16; event_reaction only"),
+        "status": "WIDENED",
+        "change": ("Sealed pass 2 (76895fedc) made event_reaction cells carry signals; "
+                   "2026-10-01 lifted MAX_DONATIONS 10 -> 400: every clearing cell already "
+                   "paid the n_cells trial charge, so the cap discarded paid-for hypotheses; "
+                   "2026-10-06 params from each reaction's measured shape, deduplicated on "
+                   "executable identity"),
     },
     "event_response_atlas": {
         "module": "event_response_atlas", "seats": ["event_response_atlas"],
-        "cap": "event_reaction only", "status": "UNBLOCKED",
-        "change": "as event_surprise: the re-signed event_reaction branch (76895fedc) feeds the "
-                  "right shape; widening is the next build",
+        "cap": "MAX_DONATIONS = MAX_PUBLISHED (300) clearing cells; event_reaction only",
+        "status": "WIDENED",
+        "change": ("as event_surprise: re-signed event_reaction (76895fedc), then 2026-10-01 "
+                   "lifted max_donations 15 -> 300 at no added trial charge; 2026-10-06 "
+                   "params from each reaction's measured shape, deduplicated on executable "
+                   "identity"),
     },
     "edge_search": {
         "module": "edge_search", "artifact": "edge_search_results.json",
