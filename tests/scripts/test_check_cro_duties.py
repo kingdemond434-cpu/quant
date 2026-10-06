@@ -152,7 +152,8 @@ def test_d17_to_d21_name_their_publishing_artifacts() -> None:
     rows = ccd.duty_rows(ccd.CYCLE.read_text("utf-8"))
     assert rows["D17"]["artifacts"] == ["reports/BOX_STATE_FRESHNESS.json"]
     duties = json.loads(ccd.METRICS.read_text("utf-8"))["duties"]
-    assert duties["D18"]["artifacts"] == ["reports/DATASET_EXPLOITATION.json"]
+    assert duties["D18"]["artifacts"] == ["reports/DATASET_USE.json",
+                                          "data/digests/dataset_use_digest.json"]
     assert duties["D19"]["artifacts"] == ["reports/PAID_SOURCES_SUBSTITUTED.json"]
     assert duties["D20"]["artifacts"] == ["reports/CULTURE_ORTHOGONALITY_VERDICTS.json"]
     assert duties["D21"]["artifacts"] == ["reports/RESEARCH_LIVE_IDENTITY.json"]

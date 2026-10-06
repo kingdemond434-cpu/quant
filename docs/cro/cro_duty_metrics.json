@@ -19,7 +19,8 @@
   },
   "D18": {
    "artifacts": [
-    "reports/DATASET_EXPLOITATION.json"
+    "reports/DATASET_USE.json",
+    "data/digests/dataset_use_digest.json"
    ],
    "metrics": [
     "unfed_datasets"
