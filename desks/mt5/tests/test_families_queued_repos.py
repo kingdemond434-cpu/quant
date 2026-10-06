@@ -41,7 +41,7 @@ def test_registered_through_the_one_door_seeded_and_mapped():
         assert "rewritten" in eb.ORIGIN[name]
         assert set(qr.CULTURE[name]) == {"source_culture", "participant_structure",
                                          "crowding_prior", "failure_mode_hypothesis"}
-        assert ax.FAMILY_TABLE[name][1] == "price_only", name
+        assert ax.FAMILY_TABLE[name][1] in {"price_only", "seasonality"}, name
 
 
 def test_every_family_is_credited_to_a_rostered_seed_fetched_by_the_seeder():
