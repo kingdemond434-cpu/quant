@@ -299,7 +299,8 @@ def lifetime(write: bool = True) -> dict[str, Any]:
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
                     "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl) + "
-                    "each claim family's stated source selection, once; a judged cell its proposer or "
+                    "each claim family's stated source selection, once; a judged cell its "
+                    "proposer or "
                     "the mass screen already charged is not charged again; "
                     "consumers may only deflate MORE with it, never less")}
     if write:
