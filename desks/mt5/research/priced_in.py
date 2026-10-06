@@ -73,6 +73,9 @@ MACRO_CATEGORIES = frozenset({"macro", "rates", "fed", "fomc", "cpi", "inflation
 #: The legs a macro surprise is read on (card candidates), first listed candidate wins.
 LEGS: tuple[tuple[str, ...], ...] = (("EURUSD",), ("USDJPY",), ("XAUUSD", "GOLD"),
                                      ("US500", "SPX500"), ("NAS100", "USTEC"))
+#: The cell door's terms-gate key: the desk's own forecast store (prediction_markets venues are
+#: read under their labels there), not a held provider.
+DATA_SOURCE = "prediction_markets:forecast_store"
 VOL_WINDOW = 60
 LATE_HOUR_UTC = 20
 #: Two stamps within this are the same release (forecast store vs consensus store).
@@ -349,8 +352,9 @@ def run(*, now: datetime, days: int = 1200, forecasts: Sequence[Mapping[str, Any
     if lake_rows and not dry_run:
         lake = se.write_lake_series(SERIES, lake_rows, root=lake_root)
     if lake_rows and emit_cells and legs:
-        cells = se.emit_conditioner_cells(
-            SERIES, ["surprise_pm", "abs_surprise_pm"], legs,
+        from macro.option_chains import emit_gated
+        cells = emit_gated(
+            SERIES, ["surprise_pm", "abs_surprise_pm"], legs, data_source=DATA_SOURCE,
             mechanism=("prices move on the unexpected component of news: a macro outcome priced "
                        "at p (prediction market, measure Q) moves FX/indices/gold in proportion "
                        "to |outcome - p|"),
@@ -379,7 +383,8 @@ def run(*, now: datetime, days: int = 1200, forecasts: Sequence[Mapping[str, Any
            "with_consensus_z": n_cons, "legs": legs, "contracts": contracts,
            "verdicts": {v: sum(1 for c in contracts if c.get("verdict") == v)
                         for v in (se.GAIN, se.NO_GAIN, se.UNMEASURED)},
-           "lake": lake, "cells": cells, "ledger": ledger_out, "measure": MEASURE,
+           "lake": lake, "cells": cells, "data_source": DATA_SOURCE, "ledger": ledger_out,
+           "measure": MEASURE,
            "latest": [{k: (v.isoformat() if isinstance(v, datetime) else v)
                        for k, v in e.items()} for e in events[-10:]],
            "authority": "NONE"}

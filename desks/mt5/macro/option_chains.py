@@ -141,12 +141,22 @@ SOURCE: dict[str, Any] = {
     "licence": ("public delayed (~15 min) quotes published by Cboe on its CDN; numbers are read "
                 "and tested on this desk, the chain itself is not redistributed and the raw body "
                 "is not kept"),
+    "data_source": "cboe_delayed:options",
     "refetch_s": REFETCH_S,
     "timeout_s": TIMEOUT_S,
     "format": ("ASSUMED (written offline against a constructed fixture): top-level `timestamp` "
                "and `data` {current_price, options:[{option (OCC symbol), bid, ask, iv, "
                "open_interest, volume, delta, gamma}]}; anything else is PARSE_FAILED"),
 }
+
+#: The provider:dataset key the cell door's terms gate reads (libs/data/terms_hold.py). Per-strike
+#: chains stay TERMS-HELD until desks/mt5/data/terms_clearances.json records CLEARED for it: this
+#: organ measures and stores state regardless, and its cells are HELD. Never renamed to dodge it.
+DATA_SOURCE = "cboe_delayed:options"
+TERMS_CLEARANCES = DESK / "data" / "terms_clearances.json"
+#: Mirrors the keys terms_hold holds (coordinator, 2026-10-06), used only when that module is
+#: absent from this tree -- so the fallback fails closed exactly where the shared gate would.
+HELD_KEYS: tuple[str, ...] = ("cboe", "yahoo", "ff_calendar", "tradingeconomics")
 
 CARD_ADH001_FALSIFIER = ("no difference in continuation rate between GEX<0 and GEX>0 days "
                          "(two-sided, n>=250 days)")
@@ -651,6 +661,44 @@ def feature_row(chain: Mapping[str, Any], feats: Mapping[str, Any], mt5: str | N
             "measure": MEASURE, **{k: feats["features"].get(k) for k in FEATURE_COLS}}
 
 
+# ============================================================================== terms gate
+def terms_status(data_source: str = DATA_SOURCE, path: Path | None = None) -> dict[str, Any]:
+    """CLEARED or HELD for `data_source`, as this tree can read it. The shared gate inside
+    `emit_conditioner_cells` is authoritative; this is what the report shows."""
+    held_key = any(k in data_source.lower() for k in HELD_KEYS)
+    rec: Any = None
+    try:
+        doc = json.loads((path or TERMS_CLEARANCES).read_text("utf-8"))
+        rows = doc.get("clearances", doc) if isinstance(doc, dict) else {}
+        rec = rows.get(data_source) if isinstance(rows, dict) else None
+    except (OSError, ValueError, AttributeError):
+        rec = None
+    cleared = (rec == "CLEARED" or (isinstance(rec, dict)
+                                    and str(rec.get("status", "")).upper() == "CLEARED"))
+    status = "CLEARED" if (cleared or not held_key) else "HELD"
+    return {"data_source": data_source, "status": status,
+            "why": ("" if status == "CLEARED" else
+                    "per-strike chains are terms-gated: cells are HELD until "
+                    "desks/mt5/data/terms_clearances.json records CLEARED for this key; state "
+                    "is still measured and stored"),
+            "clearance_record": rec}
+
+
+def emit_gated(series: str, signals: Sequence[str], symbols: Sequence[str], *, data_source: str,
+               **kw: Any) -> dict[str, Any]:
+    """`emit_conditioner_cells` with `data_source`. In a tree whose cell door predates the terms
+    gate, a held source is NOT emitted (fail closed) rather than emitted ungated."""
+    import inspect
+    if "data_source" in inspect.signature(se.emit_conditioner_cells).parameters:
+        return dict(se.emit_conditioner_cells(series, signals, symbols, data_source=data_source,
+                                              **kw))
+    if any(k in data_source.lower() for k in HELD_KEYS):
+        return {"series_id": series, "data_source": data_source, "emitted": 0, "created": 0,
+                "status": "HELD", "why": "terms-held source and this cell door has no gate: "
+                                         "failing closed"}
+    return dict(se.emit_conditioner_cells(series, signals, symbols, **kw))
+
+
 # ============================================================================== contracts
 def _cut(day: str) -> datetime:
     d = date.fromisoformat(day[:10])
@@ -912,8 +960,8 @@ def run(*, now: datetime, fetch: bool = True, fetcher: Callable[[str], tuple[Any
         # ---- cells (gex and skew, both sides: the mechanism does not fix a sign the
         #      conditioner can express -- continuation under GEX<0 is a momentum reading)
         if emit_cells and lake_rows:
-            cells.append(se.emit_conditioner_cells(
-                sid, ["gex", "skew_90_110"], [sym],
+            cells.append(emit_gated(
+                sid, ["gex", "skew_90_110"], [sym], data_source=DATA_SOURCE,
                 mechanism=(f"{proxy.etf} option-chain dealer gamma (measure Q, {DEALER_CONVENTION})"
                            f" and 90/110 skew as state for {sym}: negative dealer gamma "
                            "amplifies moves, positive dampens; skew prices tail demand"),
@@ -941,6 +989,7 @@ def run(*, now: datetime, fetch: bool = True, fetcher: Callable[[str], tuple[Any
         se.publish(ENGINE, contracts, root=contracts_root,
                    extra={"measure": MEASURE, "dealer_convention": DEALER_CONVENTION})
     doc = {"engine": ENGINE, "at": _iso(now), "dry_run": dry_run, "source": SOURCE,
+           "terms": terms_status(),
            "measure": MEASURE, "dealer_convention": DEALER_CONVENTION,
            "symbols": per, "contracts": contracts,
            "verdicts": {v: sum(1 for c in contracts if c.get("verdict") == v)
@@ -960,7 +1009,7 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     etfs = [s.strip().upper() for s in a.symbols.split(",") if s.strip()] or None
     doc = run(now=datetime.now(UTC), fetch=not a.no_fetch, etfs=etfs, dry_run=a.dry_run)
-    print(json.dumps({"at": doc["at"], "verdicts": doc["verdicts"],
+    print(json.dumps({"at": doc["at"], "verdicts": doc["verdicts"], "terms": doc["terms"]["status"],
                       "fetch": {k: v.get("fetch") for k, v in doc["symbols"].items()},
                       "mapping": {k: v["mapping"].get("mt5_symbol") or v["mapping"]["status"]
                                   for k, v in doc["symbols"].items()}}, indent=1))

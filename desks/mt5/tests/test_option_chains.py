@@ -185,12 +185,34 @@ def test_run_budget_lake_ledger_and_unmeasured_contracts(tmp_path: Path) -> None
     assert sorted(p.name for p in (tmp_path / "oc").rglob("*")) == before
 
 
-def test_cell_door_emits_both_sides_for_gex_and_skew(tmp_path: Path) -> None:
+def test_cboe_cells_are_terms_held_but_state_is_still_measured(tmp_path: Path) -> None:
     reg = {"US500": {"symbol": "US500"}}
     doc = oc.run(now=RECEIVED, fetcher=lambda e: (_doc(), "OK"), etfs=["SPY"],
                  data_dir=tmp_path / "oc", registry=reg, closes_fn=lambda s, n: [],
                  vol_index_fn=lambda t: {}, dry_run=True)
-    assert doc["cells"][0]["emitted"] == 2 * 1 * 3 * 2
+    assert doc["terms"]["status"] == "HELD"
+    assert doc["terms"]["data_source"] == "cboe_delayed:options"
+    assert doc["cells"][0].get("emitted", 0) == 0          # held: nothing reaches the registry
+    assert doc["symbols"]["SPY"]["latest"]["gex"] < 0      # ...while the state is measured
+    clear = tmp_path / "terms_clearances.json"
+    clear.write_text(json.dumps({"cboe_delayed:options": {"status": "CLEARED"}}), "utf-8")
+    assert oc.terms_status(path=clear)["status"] == "CLEARED"
+    assert oc.terms_status("prediction_markets:forecast_store")["status"] == "CLEARED"
+
+
+def test_old_cell_door_fails_closed_for_a_held_source(monkeypatch: pytest.MonkeyPatch) -> None:
+    called: list[Any] = []
+
+    def old_door(series: str, signals: Any, symbols: Any, **kw: Any) -> dict[str, Any]:
+        called.append(kw)
+        return {"emitted": 1}
+
+    monkeypatch.setattr(oc.se, "emit_conditioner_cells", old_door)
+    got = oc.emit_gated("s", ["a"], ["US500"], data_source="cboe_delayed:options",
+                        mechanism="m", falsifier="f", generator="g")
+    assert got["status"] == "HELD" and not called
+    assert oc.emit_gated("s", ["a"], ["US500"], data_source="prediction_markets:forecast_store",
+                         mechanism="m", falsifier="f", generator="g")["emitted"] == 1
 
 
 # ------------------------------------------------------------------ the GAIN path, synthetic
