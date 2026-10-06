@@ -16,9 +16,9 @@ map onto free equivalents as follows, and each is measured or carries its reason
                                 2x5y-2y-10y curvature, five-print changes
     BETA                        63-day beta and correlation of every charted MT5 instrument's
                                 daily return to US500's
-    OMST (per-strike chains)    EXTERNALLY BLOCKED: no per-strike chain source is cleared by the
-                                terms gate; routed to discovery as an acquisition target, never
-                                approximated
+    OMST (per-strike chains)    STATE in `macro/option_chains.py`; its cells are TERMS-HELD, and a
+                                cleared chain source is routed to discovery as an acquisition
+                                target, never approximated
 
 PIT. Every number is read AS OF the instant the desk held it: a vol_archive row at its own
 `observed_at`, a Treasury constant-maturity yield the next business afternoon (16:30 ET, H.15)
@@ -59,10 +59,10 @@ CURVE_SOURCE = "fred:h15"
 #: folder (`source_evig` prices every row there and proposes the next ground to acquire).
 CHAIN_REQUEST = DESK / "data" / "intelligence" / "asia_endpoints" / "endpoints_world_sensor.json"
 CHAIN_TARGETS = ("US500", "NAS100", "US30", "XAUUSD", "USOIL", "EURUSD", "USDJPY")
-CHAINS_BLOCKED = ("no per-strike option chain source is cleared by the terms gate on this desk "
-                  "(free delayed chains exist but their machine-use terms are unconfirmed); "
-                  "OMST/OMON per-strike skew and open interest are an acquisition target, never "
-                  "approximated from an index")
+CHAINS_BLOCKED = ("per-strike chains are measured as STATE by macro/option_chains.py (CBOE delayed "
+                  "quotes) and their cells are HELD by the terms gate until a clearance is "
+                  "recorded; the acquisition of a terms-cleared chain source is routed to "
+                  "discovery, never approximated from an index")
 
 
 def terms(source_id: str) -> dict[str, Any]:

@@ -882,6 +882,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness", "certificate_clock_law",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries", "sensor_ledger",
+    "ws_vol_conditioner", "ws_option_chains", "ws_priced_in", "ws_name_sentiment",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -2895,6 +2896,32 @@ def sensor_ledger() -> dict:
     return _producer("sensor_ledger", "research/sensor_ledger_digest.py")
 
 
+#: THE WORLD-SENSOR ENGINES (binding header J/K, Quant Guild cards, ROMAN rows; 2026-10-06): each
+#: is its own leg so each has its own clock, cost row and artifact. A leg whose report is younger
+#: than its cadence is skipped and says so; the engines measure STATE and emit gauntlet cells
+#: through the one terms-gated door (sensor_engines.emit_conditioner_cells), never sizes.
+WORLD_SENSOR_LEGS: dict[str, tuple[str, tuple[str, ...], float, str]] = {
+    "ws_vol_conditioner": ("macro/vol_conditioner.py", (), 1.0, "VOL_CONDITIONER.json"),
+    "ws_option_chains": ("macro/option_chains.py", (), 1.0, "OPTION_CHAINS.json"),
+    "ws_priced_in": ("research/priced_in.py", ("--days", "1200"), 6.0, "PRICED_IN.json"),
+    "ws_name_sentiment": ("research/name_sentiment.py", ("--days", "400"), 20.0,
+                          "NAME_SENTIMENT.json"),
+}
+
+
+def world_sensor(name: str) -> dict:
+    """One world-sensor engine leg, at its declared cadence."""
+    script, args, every_h, report = WORLD_SENSOR_LEGS[name]
+    path = BASE / "reports" / report
+    try:
+        age_h = (time.time() - path.stat().st_mtime) / 3600.0
+    except OSError:
+        age_h = None
+    if age_h is not None and age_h < every_h:
+        return {"status": "skipped_fresh", "report_age_h": round(age_h, 2), "every_h": every_h}
+    return _producer(name, script, args)
+
+
 def mutation_yield() -> dict:
     """`mutation_yield`: certification fate joined back to the generator and operator that
     proposed each cell, rewriting data/generator_weights.json -- the compute reallocation the
@@ -3781,6 +3808,13 @@ def main() -> None:
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
     sld = _costed("sensor_ledger", sensor_ledger)
+    wsl = {"ws_vol_conditioner": _costed("ws_vol_conditioner",
+                                         lambda: world_sensor("ws_vol_conditioner")),
+           "ws_option_chains": _costed("ws_option_chains",
+                                       lambda: world_sensor("ws_option_chains")),
+           "ws_priced_in": _costed("ws_priced_in", lambda: world_sensor("ws_priced_in")),
+           "ws_name_sentiment": _costed("ws_name_sentiment",
+                                        lambda: world_sensor("ws_name_sentiment"))}
     pil = _costed("placement_interlock", placement_interlock)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back
@@ -5656,7 +5690,7 @@ def main() -> None:
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
                     "session_variant_remap": svr, "candidate_conservation": ccv,
-                    "pit_canaries": pcn, "sensor_ledger": sld, "placement_interlock": pil,
+                    "pit_canaries": pcn, "sensor_ledger": sld, **wsl, "placement_interlock": pil,
                     "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
