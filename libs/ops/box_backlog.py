@@ -30,9 +30,11 @@ ownership setting) and inherits the caller's credential header when the publishe
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -50,6 +52,19 @@ from libs.ops.release import is_state_path as is_state  # noqa: E402
 OUT_REL = "desks/mt5/reports/BOX_BACKLOG.json"
 REVIEW_PREFIX = "box/backlog-"
 MAX_BLOB_BYTES = 2_000_000
+#: THE REPOSITORY IS PUBLIC (audit D2, 2026-10-06). Box-local files that hold credentials or keys
+#: never leave the box: these names are denied outright (matched on the basename and the path,
+#: case-insensitive), and a path origin's .gitignore covers is denied too.
+DENY_GLOBS: tuple[str, ...] = ("*.ini", "*.env", ".env*", "*secret*", "*credential*", "*token*",
+                               "*.pem", "*.key", "*.pfx", "*.p12", "data/secrets/*")
+#: Content that looks like a credential. ANY hit refuses the WHOLE push; only path names are
+#: recorded, never the matching text.
+SECRET_PATTERNS: tuple[re.Pattern[str], ...] = tuple(re.compile(p, re.IGNORECASE) for p in (
+    r"ghp_[A-Za-z0-9]{20,}", r"github_pat_[A-Za-z0-9_]{20,}", r"gho_[A-Za-z0-9]{20,}",
+    r"\bsk-[A-Za-z0-9_-]{16,}", r"\bAKIA[0-9A-Z]{16}\b", r"-----BEGIN [A-Z ]*PRIVATE KEY",
+    r"-----BEGIN", r"\bpassword\s*[=:]", r"\btoken\s*[=:]",
+))
+
 #: Refs this module may never write, whatever it is asked.
 FORBIDDEN_REFS = ("claude/llm-auto-upgrade-verify-gcjac3", "production", "master", "main",
                   "desk-sync-clean")
@@ -138,7 +153,63 @@ def differing_blobs(root: Path, upstream: str,
                 skipped.append({"path": rel, "bytes": int(size), "why": "over MAX_BLOB_BYTES"})
                 continue
             keep.append((mode, sha, rel))
+    keep, adopted = _drop_origin_history(root, upstream, keep)
+    for rel in adopted:
+        skipped.append({"path": rel,
+                        "why": "blob is in origin's history (an adoption, not box code)"})
     return keep, skipped
+
+
+def _drop_origin_history(root: Path, upstream: str,
+                         blobs: list[Blob]) -> tuple[list[Blob], list[str]]:
+    """AUDIT D1 (2026-10-06): Adopt-Release records each adoption as a NON-merge commit of origin's
+    code, so the box's HEAD blob for a path can be an OLDER origin version (box adopted v1, origin
+    moved on to v2). That is not box code, and draining it would revert origin. A (path, blob)
+    whose blob appears anywhere in origin's history of that path is dropped."""
+    if not blobs:
+        return blobs, []
+    seen: set[tuple[str, str]] = set()
+    paths = [b[2] for b in blobs]
+    for i in range(0, len(paths), 200):
+        chunk = paths[i:i + 200]
+        _, out, _ = _git(root, "log", "--format=", "--raw", "--no-abbrev", "--no-renames",
+                         upstream, "--", *chunk)
+        for line in out.splitlines():
+            if not line.startswith(":"):
+                continue
+            meta, _, rel = line.partition("\t")
+            f = meta.split()
+            if len(f) >= 4:
+                seen.add((rel, f[2]))
+                seen.add((rel, f[3]))
+    keep = [b for b in blobs if (b[2], b[1]) not in seen]
+    return keep, [b[2] for b in blobs if (b[2], b[1]) in seen]
+
+
+def _denied_name(rel: str) -> bool:
+    low = rel.lower()
+    base = low.rsplit("/", 1)[-1]
+    return any(fnmatch.fnmatch(base, g) or fnmatch.fnmatch(low, g) for g in DENY_GLOBS)
+
+
+def screen_secrets(root: Path, upstream: str,
+                   blobs: list[Blob]) -> tuple[list[Blob], list[str], list[str]]:
+    """AUDIT D2: (kept, denied-by-name-or-ignore, content-hits). Path names only, never text."""
+    denied = [b[2] for b in blobs if _denied_name(b[2])]
+    rest = [b for b in blobs if b[2] not in denied]
+    if rest:
+        # Ignored by the rules origin carries: check-ignore --no-index reads .gitignore from the
+        # tree, so a box-local file under an ignored path is refused even if the box tracked it.
+        _, out, _ = _git(root, "check-ignore", "--no-index", "--", *[b[2] for b in rest])
+        ignored = {ln.strip() for ln in out.splitlines() if ln.strip()}
+        denied += [b[2] for b in rest if b[2] in ignored]
+        rest = [b for b in rest if b[2] not in ignored]
+    hits: list[str] = []
+    for _mode, sha, rel in rest:
+        rc, text, _ = _git(root, "cat-file", "-p", sha)
+        if rc != 0 or any(p.search(text) for p in SECRET_PATTERNS):
+            hits.append(rel)
+    return rest, denied, hits
 
 
 def push_review(root: Path, upstream: str, blobs: list[tuple[str, str, str]], branch: str,
@@ -200,12 +271,19 @@ def run(root: Path, *, upstream: str, push: bool, now: datetime | None = None,
     if doc.get("verdict") != "MEASURED":
         return doc
     blobs, skipped = differing_blobs(root, upstream, code_paths)
+    blobs, denied, hits = screen_secrets(root, upstream, blobs)
     doc.update(code_paths_differing=len(blobs), code_paths=[b[2] for b in blobs][:500],
-               skipped=skipped, blob_digest=_digest(blobs))
+               skipped=skipped, denied_paths=denied, secret_screen_hits=hits,
+               blob_digest=_digest(blobs))
     prev = _previous(out) if out else {}
     raw_push = prev.get("push")
     prev_push: dict[str, Any] = raw_push if isinstance(raw_push, dict) else {}
-    if not blobs:
+    if hits:
+        # One suspicious blob refuses the whole push: a partial drain of a tree that holds a
+        # credential is still a tree that holds one. Path names only are recorded.
+        doc["push"] = {"pushed": False, "why": f"REFUSED: secret screen matched {len(hits)} "
+                                              "path(s); nothing pushed (see secret_screen_hits)"}
+    elif not blobs:
         doc["push"] = {"pushed": False, "why": "nothing to drain: no box-only code differs"}
     elif prev.get("blob_digest") == doc["blob_digest"] and prev_push.get("pushed"):
         # The same box-only code is already on a review branch; a new branch every slot is noise.

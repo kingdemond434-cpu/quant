@@ -187,6 +187,8 @@ def test_a_crash_writes_a_diagnosis_that_travels() -> None:
                 "git_processes_alive", "command"):
         assert key in fn, key
     assert "<{0} path(s)>" in fn, "paths are counted, never listed"
+    assert "Windows Error Reporting" in fn and "git\\.exe" in fn, "events must name git.exe"
+    assert "-match 'git'" not in fn
     retry = code[code.index("function Invoke-GitWriteRetry"):]
     assert "if ($rc -lt 0 -or $rc -gt 255) { Write-GitCrashDiag" in retry
     assert "-Extra @($script:CrashDiagRel, $script:BacklogRel)" in code

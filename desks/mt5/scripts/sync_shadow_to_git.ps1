@@ -106,8 +106,11 @@ function Write-GitCrashDiag {
         $objects = @(Git-Lines @("count-objects", "-v"))
         $events = @()
         try {
-            $events = @(Get-WinEvent -FilterHashtable @{ LogName = "Application"; StartTime = (Get-Date).AddMinutes(-10) } -MaxEvents 200 -ErrorAction Stop |
-                        Where-Object { $_.Message -match 'git' } | Select-Object -First 3 |
+            # Only the crash reporters (Application Error, Windows Error Reporting) and only events
+            # that name git.exe: a bare 'git' match caught "digital" and "legitimate".
+            $events = @(Get-WinEvent -FilterHashtable @{ LogName = "Application"; StartTime = (Get-Date).AddMinutes(-10);
+                                                         ProviderName = @("Application Error", "Windows Error Reporting") } -MaxEvents 200 -ErrorAction Stop |
+                        Where-Object { $_.Message -match '(?i)\bgit\.exe\b' } | Select-Object -First 3 |
                         ForEach-Object { [ordered]@{ time = $_.TimeCreated.ToUniversalTime().ToString("o");
                                                      provider = $_.ProviderName; id = $_.Id;
                                                      message = ("$($_.Message)" -replace '\s+', ' ').Substring(0, [math]::Min(800, "$($_.Message)".Length)) } })
