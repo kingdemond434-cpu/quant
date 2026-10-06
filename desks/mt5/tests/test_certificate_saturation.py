@@ -184,7 +184,8 @@ def _docket() -> list[dict]:
     for i in range(60):
         rows.append({"_cell": f"dup{i}", "family": "session_range_breakout", "symbol": USD[i % 5],
                      "params": {"rr": 1 + i}, "selector": "london", "source": "miner_x",
-                     "premortem": {"p_survivor": 0.5}, "first_seen": f"2026-10-01T{i // 60:02d}:{i % 60:02d}"})
+                     "premortem": {"p_survivor": 0.5},
+                     "first_seen": f"2026-10-01T{i // 60:02d}:{i % 60:02d}"})
     for i in range(10):
         rows.append({"_cell": f"q{i}", "family": "session_range_breakout", "symbol": "EURUSD",
                      "params": {"rr": 50 + i}, "selector": "london", "source": "execution_cost",
