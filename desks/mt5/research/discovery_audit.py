@@ -9,13 +9,14 @@ What this measures is BENCHMARK COVERAGE, NOT WORLD COVERAGE, and the report say
 first field.
 
 WITHHELD MEANS WITHHELD, TWICE. The committed benchmark is SEALED: salted hashes of each URL and
-dataset id plus its type/region/language, nothing a reader could copy (`--seal`); the plaintext
-is kept off the repository. And a benchmark the seeds can read measures the seeds, not discovery: copy
-one URL into a roster and recall rises without discovering anything. So the audit first checks
-every seed the discovery path starts from -- the catalog-routes roster, the deep-forest, free-
-stack, Asia and event rosters, the acquirer's `_SEED_ENDPOINTS`, every country pack's declared
-URLs, and the URL literals in the discovery organs' own code -- and if any benchmark URL or its
-exact dataset id appears in any of them the verdict is CONTAMINATED and no recall is published.
+dataset id plus its type/region/language, nothing a reader could copy (`--seal`); the plaintext AND
+THE SALT are kept off the repository. And a benchmark the seeds can read measures the seeds, not
+discovery: copy one URL into a roster and recall rises without discovering anything. So the audit
+first checks every seed the discovery path starts from -- the catalog-routes roster, the
+deep-forest, free-stack, Asia and event rosters, the acquirer's `_SEED_ENDPOINTS`, every country
+pack's declared URLs, and the URL literals in the discovery organs' own code -- and if any
+benchmark URL or its exact dataset id appears in any of them the verdict is CONTAMINATED and no
+recall is published.
 
 ROTATION. A weekly subset (deterministic by ISO week, so every run in a week measures the same
 items and the next week a different mix) is measured in full; the whole benchmark's recall is
