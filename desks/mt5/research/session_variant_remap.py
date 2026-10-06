@@ -11,12 +11,13 @@ WHAT ONE PASS DOES, bounded by rows and by seconds:
   1. streams the docket and collects every session variant;
   2. measures the oracle keys it has never measured (cache `data/family_firing_hours.json`,
      versioned), within `--measure-s`;
-  3. classifies each variant LIVE / LIVE_FILTER_ONLY / SESSION_TZ_MISMATCH / DEAD / UNMEASURED.
-     DEAD needs BOTH clocks empty (never on today's server-hour filter, never in the market's own
-     session); UNMEASURED is never DEAD; and the evidence guard (`family_firing.protected`: the
-     certificate canon, the judge's verdict ledger, the docket's own net verdicts) turns any DEAD
-     answer on a certified, passed or net-positive cell into PROTECTED_BY_EVIDENCE. Only DEAD is
-     remapped; LIVE_FILTER_ONLY trades as the desk runs today and is never marked or sorted last;
+  3. classifies each variant LIVE / DEAD / UNMEASURED on the shared filter's own clock (pass 2,
+     2026-10-06: the market's session, or the anchored window for an open/close/gap/rollover
+     family -- `session_clock.filter_mask`; the pre-pass-2 LIVE_FILTER_ONLY and
+     SESSION_TZ_MISMATCH counters stay in the report and read 0). UNMEASURED is never DEAD; and
+     the evidence guard (`family_firing.protected`: the certificate canon, the judge's verdict
+     ledger, the docket's own net verdicts) turns any DEAD answer on a certified, passed or
+     net-positive cell into PROTECTED_BY_EVIDENCE. Only DEAD is remapped;
   4. writes every DEAD variant to the sidecar `data/hypotheses/DEAD_SESSION_VARIANTS.jsonl`, with
      the hours its family fires and its stand-in -- the file a feeder (the cache warmer, the
      two-stage judge) reads to skip a slot it would otherwise spend on an empty signal list;

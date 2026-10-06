@@ -4,12 +4,12 @@ The load-bearing pins:
   * `test_session_cells_never_mint_fewer` -- a dead slot is REPLACED one for one, so the count a
     producer mints never falls and every minted cell is distinct;
   * `test_unmeasured_is_never_dead` -- a family the oracle cannot measure keeps its variant;
-  * `test_tz_mismatch_is_counted_apart_and_never_remapped` -- a variant dead only because the
-    shared filter reads the server clock is SESSION_TZ_MISMATCH, not DEAD;
-  * `test_live_filter_only_is_kept_and_never_remapped` -- DEAD needs BOTH clocks empty; a variant
-    that fires under today's filter is LIVE_FILTER_ONLY and trades as it stands;
+  * PASS 2 (2026-10-06): the shared filter IS the market clock, and an anchor-clocked family
+    (open / close / gap / rollover) keeps its anchor -- `test_verdicts_on_the_filter_clock`,
+    `test_market_session_fire_is_live_not_a_mismatch`,
+    `test_anchor_clocked_family_is_live_in_its_anchored_sessions`;
   * `test_certified_chfdkk_eurzar_asia_are_never_dead` -- the audit's case: two ten-gate
-    certificates the market-clock-only rule marked DEAD;
+    certificates (overnight_gap_decay asia, fires at server 00) stay LIVE on the anchor clock;
   * `test_cache_version_follows_the_clock_module` -- a change to session_clock re-measures;
   * `test_leg_marks_donates_and_is_idempotent` -- the docket is read, never written; stand-ins go
     through the registry door once.
@@ -34,10 +34,21 @@ from libs.research import family_firing as ff  # noqa: E402
 SYM = "EURUSD"
 
 
-def _rec(hours: dict[int, int], market: dict[str, int]) -> dict:
-    return {"status": "MEASURED", "n": sum(hours.values()), "chart": "H1",
-            "hours": {str(h): c for h, c in hours.items()},
-            "market_sessions": {s: market.get(s, 0) for s in ff.MARKET_SESSIONS}}
+def _rec(hours: dict[int, int], market: dict[str, int],
+         kept: dict[str, int] | None = None) -> dict:
+    """A measured record. `kept` is the shared filter's own count per session (the anchored
+    window for an anchor-clocked family); without it the filter count is the market count."""
+    rec = {"status": "MEASURED", "n": sum(hours.values()), "chart": "H1",
+           "hours": {str(h): c for h, c in hours.items()},
+           "market_sessions": {s: market.get(s, 0) for s in ff.MARKET_SESSIONS}}
+    if kept is not None:
+        rec["filter_sessions"] = {s: kept.get(s, 0) for s in ff.MARKET_SESSIONS}
+    return rec
+
+
+#: overnight_gap_decay as measured: every signal at server 00, the prior close, which lies in the
+#: anchored window of all three sessions and in no market's 08:00-16:00.
+GAP = dict.fromkeys(("asia", "london", "ny"), 269)
 
 
 def _cache(entries: dict[str, dict], verified: tuple[str, ...] = ()) -> dict:
@@ -46,27 +57,32 @@ def _cache(entries: dict[str, dict], verified: tuple[str, ...] = ()) -> dict:
 
 
 # ------------------------------------------------------------------------------ the verdicts
-def test_verdicts_on_both_clocks() -> None:
+def test_verdicts_on_the_filter_clock() -> None:
     rec = _rec({16: 100}, {"london": 100, "ny": 100})
     assert ff.verdict(rec, "asia") == ff.DEAD            # never in Tokyo's session
-    assert ff.verdict(rec, "ny") == ff.LIVE               # server window [14, 22) and NY's own
-    assert ff.verdict(rec, "london") == ff.TZ_MISMATCH    # London's own clock yes, server no
+    assert ff.verdict(rec, "ny") == ff.LIVE
+    assert ff.verdict(rec, "london") == ff.LIVE           # pass 2: London's own clock is the filter
     assert ff.verdict(rec, "all") == ff.LIVE
-    # Fires at server 00: inside today's asia filter [0, 8), outside Tokyo 08-16 (server 1/2-9).
+    # A plain family at server 00 is outside Tokyo 08-16: DEAD, there is no filter-only class.
     late = _rec({0: 100}, {})
-    assert ff.verdict(late, "asia") == ff.LIVE_FILTER_ONLY
-    assert ff.verdict(late, "london") == ff.DEAD          # neither clock
+    assert ff.verdict(late, "asia") == ff.DEAD
+    # The same hours for an anchor-clocked family: the filter's own count says LIVE.
+    anchored = _rec({0: 100}, {}, {"asia": 100, "london": 100, "ny": 100})
+    assert {ff.verdict(anchored, s) for s in ("asia", "london", "ny")} == {ff.LIVE}
+    # The two pre-pass-2 classes are never produced.
+    for r in (rec, late, anchored):
+        for s in ("asia", "london", "ny"):
+            assert ff.verdict(r, s) not in (ff.TZ_MISMATCH, ff.LIVE_FILTER_ONLY)
 
 
-def test_live_filter_only_is_kept_and_never_remapped() -> None:
+def test_anchor_clocked_family_is_live_in_its_anchored_sessions() -> None:
     fam = "overnight_gap_decay"
-    cache = _cache({ff.key(fam, {}, SYM): _rec({0: 269}, {})})
+    from libs.regime import session_clock
+    assert session_clock.anchor_clocked(fam)
+    cache = _cache({ff.key(fam, {}, SYM): _rec({0: 269}, {}, GAP)})
     slots = ff.session_cells(fam, {}, ("all", "asia", "london", "ny"), cache=cache, symbol=SYM)
-    assert len(slots) == 4
-    assert slots[1] == ("asia", {"session": "asia"}, None)  # minted exactly as proposed, no mark
-    for _s, _p, note in slots[2:]:                        # london / ny: neither clock -> DEAD
-        assert note and note["dead_session"] in ("london", "ny")
-        assert note["cause"] == ff.NEVER_FIRES
+    assert slots == [("all", {}, None), ("asia", {"session": "asia"}, None),
+                     ("london", {"session": "london"}, None), ("ny", {"session": "ny"}, None)]
     assert ff.replacements(fam, {}, "asia", cache=cache, symbol=SYM) == []
     assert ff.standin(fam, {}, "asia", cache=cache, symbol=SYM) == ({"session": "asia"}, None)
 
@@ -84,13 +100,14 @@ def test_certified_chfdkk_eurzar_asia_are_never_dead(tmp_path: Path) -> None:
     fam = "overnight_gap_decay"
     canon = _canon(tmp_path / "canon.json", [("CHFDKK", fam, "asia"), ("EURZAR", fam, "asia")])
     guard = ff.load_guard(canon, tmp_path / "no_ledger.jsonl")
-    # The measured shape (fires at server 00 only): LIVE_FILTER_ONLY on the rule alone.
-    measured = _rec({0: 269}, {})
+    # The measured shape (fires at server 00 only): LIVE on the anchor clock, by the rule alone.
+    measured = _rec({0: 269}, {}, GAP)
     for sym in ("CHFDKK", "EURZAR"):
         assert ff.guarded_verdict(measured, "asia", symbol=sym, family=fam,
-                                  params={"session": "asia"}, guard=guard) == ff.LIVE_FILTER_ONLY
-    # Even a firing set that says DEAD on both clocks cannot overrule the certificate.
-    nowhere = _rec({23: 269}, {})
+                                  params={"session": "asia"}, guard=guard) == ff.LIVE
+    # Even a firing set the filter calls DEAD cannot overrule the certificate. Server 23 lies
+    # after Tokyo's 16:00 close and before the next prior-close boundary.
+    nowhere = _rec({23: 269}, {}, {"ny": 269})
     assert ff.verdict(nowhere, "asia") == ff.DEAD
     for sym in ("CHFDKK", "EURZAR"):
         assert ff.guarded_verdict(nowhere, "asia", symbol=sym, family=fam,
@@ -256,12 +273,12 @@ def test_unverified_shift_is_not_trusted() -> None:
             assert n["remap"] == "rehomed"                 # no guessed re-anchor
 
 
-def test_tz_mismatch_is_counted_apart_and_never_remapped() -> None:
+def test_market_session_fire_is_live_not_a_mismatch() -> None:
+    # Pre-pass-2 this was SESSION_TZ_MISMATCH: in London's own session, outside the old 8-16
+    # server window. The filter is London's own clock now, so it is simply LIVE.
     fam = "london_close_momentum"
     cache = _cache({ff.key(fam, {}, SYM): _rec({16: 100}, {"london": 100, "ny": 100})})
-    p, note = ff.standin(fam, {}, "london", cache=cache, symbol=SYM)
-    assert p == {"session": "london"}
-    assert note and note["cause"] == ff.TZ_MISMATCH and note["remapped"] is False
+    assert ff.standin(fam, {}, "london", cache=cache, symbol=SYM) == ({"session": "london"}, None)
 
 
 def test_live_session_never_raises(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -280,6 +297,19 @@ def test_measures_a_fixed_hour_family_on_cached_bars() -> None:
     assert set(rec["hours"]) == {"16"}
     assert ff.verdict(rec, "asia") == ff.DEAD
     assert ff.stale(rec) is False
+
+
+def test_measures_an_anchor_clocked_family_on_its_anchor() -> None:
+    if not (ff.UNIVERSE / "EURUSD_H1.parquet").exists():
+        pytest.skip("no cached EURUSD H1 bars on this host")
+    rec = ff.measure("overnight_gap_decay", {}, "EURUSD")
+    if rec["status"] != "MEASURED":
+        pytest.skip(f"overnight_gap_decay unmeasured on EURUSD here: {rec.get('why')}")
+    assert rec["anchor_clocked"] is True
+    # It fires on the day's first bar, outside every market's 08-16, inside every anchored window.
+    assert rec["market_sessions"]["asia"] == 0
+    assert rec["filter_sessions"]["asia"] == rec["n"]
+    assert ff.verdict(rec, "asia") == ff.LIVE
 
 
 def test_unmeasured_from_another_host_is_retried() -> None:
@@ -337,11 +367,11 @@ def test_leg_marks_donates_and_is_idempotent(tmp_path: Path,
         doc = svr.run(**kw)
         assert docket.read_text(encoding="utf-8") == before       # box state untouched
         assert doc["session_variants"] == 3
-        assert doc["dead_found"] == 1 and doc["session_tz_mismatch"] == 1
-        assert doc["live"] == 1 and doc["remapped"] == 1
+        # Pass 2: london is LIVE on London's own clock; only asia is dead.
+        assert doc["dead_found"] == 1 and doc["session_tz_mismatch"] == 0
+        assert doc["live"] == 2 and doc["remapped"] == 1
         assert doc["donation"]["created"] == 1
         marks = [json.loads(x) for x in (tmp_path / "DEAD.jsonl").read_text().splitlines()]
-        # SESSION_TZ_MISMATCH is counted, never written to the sort-last sidecar.
         assert {m["cause"] for m in marks} == {ff.NEVER_FIRES}
         assert doc["session_tz_mismatch_in_sidecar"] == 0
         for m in marks:
@@ -362,12 +392,12 @@ def test_leg_is_wired() -> None:
     assert '"session_variant_remap": 300' in src
 
 
-def test_leg_keeps_certified_and_filter_only_variants_out_of_the_sidecar(
+def test_leg_keeps_anchor_clocked_certified_variants_out_of_the_sidecar(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import session_variant_remap as svr
     fam = "overnight_gap_decay"
     cache_path = tmp_path / "firing.json"
-    ff.save_cache(_cache({ff.key(fam, {}, sym): {**_rec({0: 269}, {}), "host": ff._host(),
+    ff.save_cache(_cache({ff.key(fam, {}, sym): {**_rec({0: 269}, {}, GAP), "host": ff._host(),
                                                  "measured_at": 1e12}
                           for sym in ("CHFDKK", "EURZAR")}), cache_path)
     docket = tmp_path / "external_survivors.json"
@@ -378,11 +408,11 @@ def test_leg_keeps_certified_and_filter_only_variants_out_of_the_sidecar(
     doc = svr.run(budget_s=30.0, donate_rows=False, docket=docket, cache_path=cache_path,
                   sidecar=tmp_path / "DEAD.jsonl", out=tmp_path / "REMAP.json", canon=canon,
                   ledger=tmp_path / "no_ledger.jsonl")
-    assert doc["live_filter_only"] == 2 and doc["dead_found"] == 4
+    # Anchored to the prior close, the gap family is LIVE in all three sessions: nothing dead.
+    assert doc["live"] == 6 and doc["dead_found"] == 0 and doc["live_filter_only"] == 0
     assert doc["guard"]["certified_or_positive_dead"] == 0
-    assert doc["dead_but_server_window_fires"] == 0
-    marks = [json.loads(x) for x in (tmp_path / "DEAD.jsonl").read_text().splitlines()]
-    assert all(m["session"] != "asia" for m in marks)
+    side = tmp_path / "DEAD.jsonl"
+    assert not side.exists() or side.read_text().strip() == ""
 
 
 def test_unreadable_universe_is_warned_and_published_and_stays_unmeasured(

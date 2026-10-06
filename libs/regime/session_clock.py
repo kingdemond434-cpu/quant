@@ -22,6 +22,7 @@ session" in the market's own local clock, so London and New York follow their ow
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import numpy as np
@@ -87,3 +88,65 @@ def in_session(index: Any, session: str) -> np.ndarray | None:
     tz, lo, hi = spec
     local = server_to_utc(index).tz_convert(tz)
     return np.asarray((local.hour >= lo) & (local.hour < hi))
+
+
+# ------------------------------------------------------------------------------ anchor clocks
+#
+# ANCHOR-CLOCKED FAMILIES KEEP THEIR ANCHOR (principal/coordinator decision, 2026-10-06). A family
+# whose signal is DEFINED by a market's open, close, gap or the daily rollover fires at that
+# anchor, which for the FX day is the venue's 00:00 stamp (17:00 New York) -- outside every
+# market's 08:00-16:00 local window. Filtering such a family by `in_session` would leave its
+# `asia` cell with no signals at all (overnight_gap_decay fires at server 00 only). For these
+# families a session means ANCHORED TO THAT MARKET: from the prior close (the venue's day
+# boundary, server 00:00) through the market's own session end (16:00 local), DST included.
+# That window always contains both the market session and the old server-hour windows
+# (asia 0-8, london 8-16, ny 14-22), so no anchored cell can lose a signal it had.
+
+#: Families whose signal is defined by an open, a close, a gap or the rollover, by name.
+ANCHOR_FAMILIES = frozenset({"overnight_gap_decay", "session_range_breakout", "opening_range",
+                             "carry"})
+#: ...and any family whose NAME says the same.
+_ANCHOR_NAME = re.compile(r"(^|_)(gap|overnight|opening|rollover)(_|$)|(^|_)session_range(_|$)")
+#: ...or whose spec carries an open/close anchor parameter.
+_ANCHOR_PARAM = re.compile(r"(^|_)anchor$|^(open|close)_hour$|^anchor_")
+
+
+def anchor_clocked(family: Any, params: dict[str, Any] | None = None) -> bool:
+    """Is this family's signal defined by a market's open, close, gap or the rollover?"""
+    name = str(family or "").strip().lower().removeprefix("family_")
+    if not name:
+        return False
+    if name in ANCHOR_FAMILIES or _ANCHOR_NAME.search(name):
+        return True
+    return any(_ANCHOR_PARAM.search(str(k).lower()) for k in (params or {}))
+
+
+def in_anchored_session(index: Any, session: str) -> np.ndarray | None:
+    """Per stamp, whether it lies between the prior close (the venue's 00:00 stamp of its own
+    day) and the end of that market's session (16:00 local) -- the window an anchor-clocked family
+    is judged in. None for a session this table does not know, as `in_session`."""
+    key = SESSION_ALIAS.get(str(session).strip().lower(), str(session).strip().lower())
+    spec = MARKET_SESSIONS.get(key)
+    if spec is None:
+        return None
+    tz, _lo, hi = spec
+    idx = pd.DatetimeIndex(index)
+    if idx.tz is not None:
+        idx = idx.tz_convert("UTC").tz_localize(None)
+    if len(idx) == 0:
+        return np.zeros(0, dtype=bool)
+    start = server_to_utc(idx.normalize()).tz_convert(tz)     # the prior close, local
+    day = start.tz_localize(None).normalize()
+    end_wall = day + pd.Timedelta(hours=hi)
+    later = np.asarray(start.tz_localize(None) >= end_wall)    # the session ends the next day
+    end_wall = end_wall + pd.to_timedelta(later.astype(int), unit="D")
+    end = end_wall.tz_localize(tz, ambiguous=np.ones(len(idx), dtype=bool),
+                               nonexistent="shift_forward")
+    local = server_to_utc(idx).tz_convert(tz)
+    return np.asarray(local < end)
+
+
+def filter_mask(index: Any, session: str, *, anchored: bool = False) -> np.ndarray | None:
+    """The shared session filter's own answer per stamp: the market's session, or for an
+    anchor-clocked family the anchored window."""
+    return in_anchored_session(index, session) if anchored else in_session(index, session)
