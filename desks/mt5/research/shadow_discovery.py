@@ -127,6 +127,10 @@ def _session_bands() -> tuple[tuple[int, int, str], ...]:
         table = {"asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None}
     spans = {k: (int(v[0]), int(v[1])) for k, v in table.items()
              if isinstance(v, (tuple, list)) and len(v) == 2}
+    # a sub-window (the Tokyo fix inside asia, the London fix and the overlap session inside ny)
+    # names part of a broad session, not a band of the day: the partition is cut by the broad ones
+    spans = {k: w for k, w in spans.items()
+             if not any(o != w and o[0] <= w[0] and w[1] <= o[1] for o in spans.values())}
     out = []
     for lo, hi in pairwise(sorted({0, 24, *(h for s in spans.values() for h in s)})):
         named = sorted(k for k, (a, b) in spans.items() if a <= lo and hi <= b)
