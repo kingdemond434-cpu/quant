@@ -20,9 +20,9 @@ map onto free equivalents as follows, and each is measured or carries its reason
                                 terms gate; routed to discovery as an acquisition target, never
                                 approximated
 
-PIT. Every series is read AS OF a knowable instant, never its observation date: a CBOE close is
-knowable the next morning (09:00 ET, when FRED carries it), a Treasury constant-maturity yield the
-next business afternoon (16:30 ET, H.15). Bars are read only up to `now`.
+PIT. Every number is read AS OF the instant the desk held it: a vol_archive row at its own
+`observed_at`, a Treasury constant-maturity yield the next business afternoon (16:30 ET, H.15)
+after its date, and bars only up to `now`.
 
 NOTHING HERE HAS A DIRECTION. These are states. `regime_label` hands a bucket key to
 `event_surprise` (conditioning, never a sign) and every number goes to the sensor ledger.
