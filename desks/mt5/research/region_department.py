@@ -60,6 +60,7 @@ for _p in (str(BASE), str(BASE / "research"), str(REPO)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.data import terms_fence  # noqa: E402
 from libs.moat import registry as R  # noqa: E402
 from libs.research import region_mandate as RM  # noqa: E402
 
@@ -630,16 +631,24 @@ def _ingest_datasets(p: Pass, budget_s: float) -> dict[str, Any]:
     is the field the catalogue exists for."""
     res = dict(_run_miners(p, "data", budget_s))
     not_pit = [d.name for d in p.mandate.datasets if not d.pit_feasible]
+    # A dataset HELD ON TERMS (PR #229: CFETS refused, SAFE to_confirm) is remembered PENDING
+    # with BLOCKED_ON_TERMS as its cause, never as a success (the table's CHECK allows only
+    # pending/success/failure): it is named in memory and claims nothing.
+    held = {d.name: terms_fence.row_hold(d) for d in p.mandate.datasets}
+    held = {k: v for k, v in held.items() if v[0]}
     res["datasets"] = len(p.mandate.datasets)
     res["not_pit_feasible"] = not_pit
+    res["blocked_on_terms"] = sorted(held)
     if p.dry_run or not p.mandate.datasets:
         return res
     tag = RM.tag(p.mandate)
     for d in p.mandate.datasets:
+        hold = held.get(d.name)
         R.remember("region_dataset", f"{d.name}: {d.source}", kind="dataset",
                    memory_key=f"{tag}dataset:{d.name}",
-                   result="success" if d.pit_feasible else "pending",
-                   failure_cause=None if d.pit_feasible else RM.PIT_UNSAFE,
+                   result="success" if d.pit_feasible and not hold else "pending",
+                   failure_cause=(terms_fence.status(hold[0]) if hold
+                                  else None if d.pit_feasible else RM.PIT_UNSAFE),
                    payload={"region": p.mandate.region, "name": d.name, "source": d.source,
                             "coverage": d.coverage, "frequency": d.frequency,
                             "publication_lag_days": d.publication_lag_days,

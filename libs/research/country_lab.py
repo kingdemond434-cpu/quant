@@ -63,6 +63,7 @@ from typing import Any
 
 import numpy as np
 
+from libs.data import terms_fence
 from libs.moat import registry as R
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -2085,9 +2086,18 @@ def generic_calendar_settlement(pack: CountryPack, ctx: LabCtx) -> dict[str, Any
                               f"{cur} leg, which would make it a time-of-day effect",
                     payload={"reading": res, "convention": rule.name, "kind": rule.kind})
                 n += int(created or did != "dry-run")
+    held: list[dict[str, str]] = []
     for fx in pack.fixing_conventions:
         if ctx.remaining_s() <= 0:
             break
+        # A fixing HELD ON TERMS (the CFETS parity and close, PR #229) is counted BLOCKED and
+        # never measured: no reading, no card, no coverage. It stays in the pack, named.
+        t_state, t_why = terms_fence.row_hold(fx)
+        if t_state:
+            ctx.note(f"fixing:{fx.name}", t_why[:240])
+            held.append({"fixing": fx.name, "status": terms_fence.status(t_state),
+                         "why": t_why[:240]})
+            continue
         hhmm = parse_hhmm(fx.time_utc)
         if hhmm is None:
             ctx.note(f"fixing:{fx.name}", f"time_utc {fx.time_utc!r} is not HH:MM")
@@ -2106,6 +2116,7 @@ def generic_calendar_settlement(pack: CountryPack, ctx: LabCtx) -> dict[str, Any
     return {"outcome": OK if measured else UNMEASURED, "discoveries": n,
             "conventions": len(pack.settlement_conventions),
             "fixings": len(pack.fixing_conventions), "measured": len(measured),
+            "blocked_on_terms": held,
             "why": "" if measured else "no convention produced a measurable window",
             "readings": measured[:12]}
 
@@ -2230,7 +2241,12 @@ def generic_positioning(pack: CountryPack, ctx: LabCtx) -> dict[str, Any]:
                  f"cot_currency {key or 'not declared'}: no row in {COT_JSON.name}; the local "
                  f"sources the pack names are {list(pack.positioning_sources) or 'none'}")
         n = 0
+        held: list[str] = []
         for src in pack.positioning_sources:
+            # A positioning source HELD ON TERMS (SAFE, PR #229) is not an acquisition lead.
+            if terms_fence.hold_of(src)[0]:
+                held.append(str(src).split(" :: ", 1)[0])
+                continue
             did, created = ctx.record(
                 mechanism=f"{pack.code}_positioning_dataset_gap",
                 source_id=f"dataset:{_tok(src)}", source_type="dataset",
@@ -2248,7 +2264,7 @@ def generic_positioning(pack: CountryPack, ctx: LabCtx) -> dict[str, Any]:
             n += int(created or did != "dry-run")
         return {"outcome": UNMEASURED, "discoveries": n,
                 "why": f"no COT row for {key or 'an undeclared currency'}",
-                "dataset_discoveries": n}
+                "dataset_discoveries": n, "blocked_on_terms": held}
     rows: list[dict[str, Any]] = []
     n = 0
     for sym in [s.upper() for s in pack.executable_instruments][:5]:
@@ -2420,7 +2436,11 @@ def generic_institutional_flow(pack: CountryPack, ctx: LabCtx) -> dict[str, Any]
                  "insurer)")
         return {"outcome": UNMEASURED, "why": "no institutional sources declared"}
     n = 0
+    held: list[str] = []
     for src in pack.institutional_flow_sources:
+        if terms_fence.hold_of(src)[0]:            # held on terms (PR #229): not a lead
+            held.append(str(src))
+            continue
         did, created = ctx.record(
             mechanism=f"{pack.code}_institutional_allocation_band",
             source_id=f"institution:{_tok(src)}", source_type="institutional",
@@ -2441,6 +2461,7 @@ def generic_institutional_flow(pack: CountryPack, ctx: LabCtx) -> dict[str, Any]
         ctx.note("institutional_flow", f"{src}: holdings series not on this box; recorded as a "
                                        f"lead for acquisition")
     return {"outcome": OK, "discoveries": n, "sources": list(pack.institutional_flow_sources),
+            "blocked_on_terms": held,
             "why": "recorded as acquisition leads; no holdings series is on this box"}
 
 
@@ -2921,8 +2942,11 @@ def _declared_spec_adapter(spec: Mapping[str, Any]
                 ctx.note(name, f"{domain.id} has no executable instrument")
                 continue
             controls = "; ".join(domain.controls) or "the matched non-event/non-state sample"
+            # A dataset HELD ON TERMS is never a card's required data: the card would be a
+            # claim on an input the desk may not use (PR #229).
             datasets = [d.name for d in pack.datasets
-                        if not d.assets or any(a in assets for a in d.assets)]
+                        if (not d.assets or any(a in assets for a in d.assets))
+                        and not terms_fence.row_hold(d)[0]]
             did, created = ctx.record(
                 mechanism=f"{pack.code}_{_tok(name)}_{_tok(domain.id)}",
                 source_id=f"declared_spec:{_tok(name)}:{_tok(domain.id)}",

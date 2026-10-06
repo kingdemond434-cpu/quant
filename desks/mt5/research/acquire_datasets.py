@@ -46,6 +46,7 @@ _ROOT = DESK.parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from libs.data import terms_fence  # noqa: E402
 from libs.data.pit_certificate import certify  # noqa: E402
 from libs.data.pit_certificate import write as write_certificate  # noqa: E402
 from libs.research import country_lab as country_lab  # noqa: E402
@@ -309,6 +310,8 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
         region = str(pack.region_command or "UNMEASURED")
         urls: list[str] = []
         for dataset in pack.datasets:
+            if terms_fence.row_hold(dataset)[0]:          # held on terms: never an endpoint
+                continue
             urls.extend(str(value) for value in (dataset.how_to_fetch, dataset.source)
                         if str(value).startswith(("http://", "https://")))
         for source in country_lab.source_rows(pack):
@@ -358,11 +361,19 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
     tried = kept = 0
     refusals: dict[str, int] = {}
     new_series: list[str] = []
+    held_on_terms: dict[str, str] = {}
 
     def _refuse(why: str) -> None:
         refusals[why] = refusals.get(why, 0) + 1
 
     for url, host in _endpoints(limit):
+        # A URL on a ground HELD ON TERMS (CFETS refused, SAFE to_confirm; PR #229) is never
+        # requested, whichever organ discovered it. Counted BLOCKED, never as a refusal of the
+        # page and never as tried.
+        t_state = terms_fence.host_hold(url)[0]
+        if t_state:
+            held_on_terms[url] = terms_fence.status(t_state)
+            continue
         tried += 1
         attempt_at = datetime.now(UTC).isoformat(timespec="seconds")
 
@@ -453,6 +464,7 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
         "endpoints_tried": tried, "datasets_kept": kept,
         "new_series": new_series, "total_series": len(reg["series"]),
         "refusals": refusals,
+        "blocked_on_terms": held_on_terms,
         "rule": ("point-in-time or nothing: a frame with no usable date column is refused rather "
                  "than stamped with now, because backfilling today's value across history "
                  "manufactures an edge that never existed"),

@@ -54,6 +54,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from libs.data import terms_fence
 from libs.research import country_lab as CL
 from libs.research import forests as F
 
@@ -193,6 +194,7 @@ class PackDepth:
     layers_unverified: int = 0        # declared, nothing fetched yet
     layers_unmapped: int = 0          # no source and no declared absence
     untagged_sources: int = 0
+    datasets_blocked_on_terms: int = 0   # held on terms (PR #229): named, never depth
     pit_feasible_share: float | None = None
     fatal: tuple[str, ...] = ()
     score: float | None = None
@@ -211,6 +213,7 @@ class PackDepth:
                 "layers_unmapped": self.layers_unmapped,
                 "layers_declared": self.layers_declared,
                 "untagged_sources": self.untagged_sources,
+                "datasets_blocked_on_terms": self.datasets_blocked_on_terms,
                 "pit_feasible_share": self.pit_feasible_share, "fatal": list(self.fatal),
                 "score": self.score, "why": self.why}
 
@@ -233,7 +236,8 @@ def pack_depth(pack: CL.CountryPack | None, code: str = "",
     inventory = CL.layer_inventory(pack.code, pack=pack)
     mapped = unverified = unmapped = 0
     for layer in CL.SOURCE_LAYERS:
-        rows = inventory[layer]
+        # A source HELD ON TERMS (PR #229) is named in the pack and maps nothing.
+        rows = [r for r in inventory[layer] if not terms_fence.row_hold(r)[0]]
         if any(r.get("absent_reason") for r in rows) or any(r.get("verified") for r in rows):
             mapped += 1
         elif rows:
@@ -241,7 +245,10 @@ def pack_depth(pack: CL.CountryPack | None, code: str = "",
         else:
             unmapped += 1
     terms = {t for words in dict(pack.terminology).values() for t in words}
-    pit = [bool(ds.pit_feasible) for ds in pack.datasets]
+    # A dataset HELD ON TERMS is counted BLOCKED beside the depth, never as depth: the desk may
+    # not use it, so it deepens nothing (PR #229).
+    usable = [ds for ds in pack.datasets if not terms_fence.row_hold(ds)[0]]
+    pit = [bool(ds.pit_feasible) for ds in usable]
     try:
         problems = CL.validate_pack(pack, reg)
     except Exception as exc:                    # a pack that breaks the validator is a defect
@@ -249,7 +256,8 @@ def pack_depth(pack: CL.CountryPack | None, code: str = "",
     fatal = tuple(CL.fatal_problems(problems))
     d = PackDepth(code=pack.code, resolved=True, actors=len(pack.actors),
                   domains=len(pack.domains), edges=len(pack.transmission_edges_seed),
-                  terms=len(terms), datasets=len(pack.datasets), eras=len(pack.policy_eras),
+                  terms=len(terms), datasets=len(usable), eras=len(pack.policy_eras),
+                  datasets_blocked_on_terms=len(pack.datasets) - len(usable),
                   instruments=len(pack.executable_instruments),
                   languages=len(pack.native_languages), layers_mapped=mapped,
                   layers_unverified=unverified, layers_unmapped=unmapped,

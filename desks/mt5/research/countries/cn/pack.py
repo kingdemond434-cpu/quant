@@ -206,6 +206,9 @@ def layer_counts(classes: Sequence[Mapping[str, Any]]) -> dict[str, int]:
     out = dict.fromkeys(SOURCE_LAYERS, 0)
     for sc in classes:
         layer = str(sc.get("layer") or "")
+        # A class HELD ON TERMS is named, not coverage: it counts toward no layer.
+        if str(sc.get("licence") or "").startswith("BLOCKED_ON_TERMS"):
+            continue
         if layer in out and not str(sc.get("id") or "").startswith("absent_"):
             out[layer] += 1
     return out
@@ -249,6 +252,73 @@ def nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
     first = date(year, month, 1)
     offset = (weekday - first.weekday()) % 7
     return date(year, month, 1 + offset + 7 * (n - 1))
+
+
+# --------------------------------------------------------------------------- terms holds
+# THE CFETS AND SAFE GROUNDS ARE HELD ON TERMS (2026-10-06). The Asia lane read the China official
+# hosts' terms (PR #229, `alt_proxies.GATE_TERMS`): CFETS -- chinamoney.com.cn, and shibor.org for
+# SHIBOR -- forbids any use of its market data without written permission, so it reads `refused`;
+# SAFE's statement grants no use of its statistics, so it reads `to_confirm` and is held
+# fail-closed. The rows below are NOT DELETED: each still says what the ground is and why it
+# matters, and now also says, in the desk's own status vocabulary (`alt_proxies.status_of`), that
+# it is BLOCKED_ON_TERMS, with the clause, the ruling and the lawful substitute where one exists.
+# `libs.data.terms_fence` is the generic organs' copy of the same ruling; the strings are kept
+# identical by test, and this file still imports nothing at module level (see the adapter note).
+TERMS_BLOCKED = "BLOCKED_ON_TERMS"
+TERMS_RULING = ("PR #229 (claude/asia-cn-official-sge, alt_proxies.GATE_TERMS), terms read "
+                "2026-10-06")
+TERMS_RULINGS: dict[str, dict[str, str]] = {
+    "cn_cfets_chinamoney": {
+        "terms": "refused",
+        "hosts": "chinamoney.com.cn, shibor.org",
+        "clause": ("CFETS market-data terms (https://www.chinamoney.com.cn/english/svcmds/): 'No "
+                   "institution or individual shall copy, transmit, save, use, publish, sell, "
+                   "permit others to use or process CFETS market data, nor develop or produce "
+                   "work derived therefrom in any form without written permission from CFETS.' "
+                   "Covers the CNY central parity, the CFETS closes and SHIBOR"),
+    },
+    "cn_safe_official": {
+        "terms": "to_confirm",
+        "hosts": "safe.gov.cn",
+        "clause": ("SAFE legal statement (https://www.safe.gov.cn/safe/flsm/index.html): "
+                   "commercial reprint barred; non-commercial reprint only by permitted media "
+                   "with attribution; no grant to use the data. Held to_confirm and FAIL-CLOSED "
+                   "until a written SAFE grant or a clearer reuse clause is quoted"),
+    },
+}
+
+
+def terms_text(ref: str) -> str:
+    """`BLOCKED_ON_TERMS:<terms> -- <clause> (ruling: ...)` for one terms id."""
+    r = TERMS_RULINGS[ref]
+    return f"{TERMS_BLOCKED}:{r['terms']} -- {r['clause']} (ruling: {TERMS_RULING})"
+
+
+def held_dataset(name: str, *, ref: str, substitute: str, was: str,
+                 **fields: Any) -> dict[str, Any]:
+    """A dataset row held on terms. Every catalogue field is kept (the ontology stays open);
+    `licence` and `how_to_fetch` LEAD with the status so the typed `DatasetRow`, which has no
+    status field, still carries it, and the rich row adds the terms fields by name."""
+    r = TERMS_RULINGS[ref]
+    held = f"{TERMS_BLOCKED}:{r['terms']}"
+    row = dataset(name, licence=terms_text(ref),
+                  how_to_fetch=(f"{held} -- NEVER FETCHED, no cell, no coverage credit while the "
+                                f"ruling stands. LAWFUL SUBSTITUTE: {substitute}. "
+                                f"(Route before the ruling: {was})"),
+                  **fields)
+    row.update({"terms_status": held, "terms": r["terms"], "terms_ref": ref,
+                "terms_clause": r["clause"], "terms_ruling": TERMS_RULING,
+                "lawful_substitute": substitute})
+    return row
+
+
+def is_terms_blocked(row: Any) -> bool:
+    """True for a rich or typed row that carries a BLOCKED_ON_TERMS hold."""
+    for name in ("terms_status", "licence", "how_to_fetch", "notes"):
+        val = row.get(name) if isinstance(row, Mapping) else getattr(row, name, "")
+        if str(val or "").startswith(TERMS_BLOCKED):
+            return True
+    return False
 
 
 # --------------------------------------------------------------------------- the broker registry
@@ -306,8 +376,9 @@ ABSENT_INSTRUMENTS: tuple[dict[str, str], ...] = (
     {"instrument": "onshore USDCNY",
      "why": "the broker quotes the offshore CNH only; the onshore price is behind a capital "
             "account and is not a CFD anywhere in the registry",
-     "carried_by": "USDCNH, with the CNH-CNY basis treated as an UNOBSERVED state variable that "
-                   "the desk can only proxy from public CFETS closes"},
+     "carried_by": "USDCNH, with the CNH-CNY basis treated as an UNOBSERVED state variable. "
+                   "The CFETS closes it was once proxied from are BLOCKED_ON_TERMS:refused "
+                   "(PR #229), so the basis stays unobserved and is named as such"},
     {"instrument": "CSI300, SSE Composite, ChiNext and STAR indices",
      "why": "no mainland equity index CFD in desks/mt5/data/universe/universe.json",
      "carried_by": "CHINAH (Hong Kong-listed mainland enterprises) and HK50; the A-H basis is "
@@ -402,6 +473,8 @@ FIXING_CONVENTIONS: dict[str, Any] = {
         "note": "The fix is published FIFTEEN MINUTES BEFORE the onshore market opens at 09:30 "
                 "Beijing. That gap is the cleanest natural experiment in the pack: the offshore "
                 "market can react to the fix while the onshore one cannot yet trade.",
+        "terms_status": "BLOCKED_ON_TERMS:refused",
+        "terms_ref": "cn_cfets_chinamoney",
     },
     "onshore_close": {
         "name": "CFETS 收盘价 / the onshore closing rate",
@@ -411,6 +484,8 @@ FIXING_CONVENTIONS: dict[str, Any] = {
         "note": "The 16:30 close is what feeds the next morning's fix formula, NOT the 23:30 "
                 "close. A study that uses the wrong one of the two is modelling a fix input "
                 "that does not exist.",
+        "terms_status": "BLOCKED_ON_TERMS:refused",
+        "terms_ref": "cn_cfets_chinamoney",
     },
     "cnh_hibor": {
         "name": "CNH HIBOR",
@@ -731,16 +806,30 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "name": "SAFE 银行结售汇 -- bank FX settlement and sales",
      "covers": "the netted corporate and household conversion flow",
      "frequency": "monthly", "lag": "about three weeks",
-     "root": "safe.gov.cn", "licence": "free, public",
+     "root": "safe.gov.cn", "licence": terms_text("cn_safe_official"),
+     "terms_status": "BLOCKED_ON_TERMS:to_confirm", "terms": "to_confirm",
+     "terms_ref": "cn_safe_official",
+     "lawful_substitute": ("none for the renminbi flow itself (the CFTC carries no CNY or CNH "
+                           "contract -- see cftc_cot_absent). For POSITIONING on the carriers "
+                           "this flow reaches, CFTC COT (AUD, COMEX copper and gold) and the "
+                           "mainland exchange member tables above are the lawful reads, and they "
+                           "measure a different thing"),
      "note": "The closest China publishes to an FX flow series. Netted and late, so it is an "
-             "ex-post attribution tool and never a signal."},
+             "ex-post attribution tool and never a signal. HELD BLOCKED_ON_TERMS:to_confirm "
+             "(SAFE grants no use of its statistics): never fetched, fail-closed, until a "
+             "written grant is quoted."},
     {"id": "pboc_reserves",
      "name": "外汇储备 -- official FX reserves",
      "covers": "the headline reserve stock, valuation effects included",
      "frequency": "monthly", "lag": "about seven days",
-     "root": "pbc.gov.cn, safe.gov.cn", "licence": "free, public",
+     "root": "pbc.gov.cn, safe.gov.cn", "licence": terms_text("cn_safe_official"),
+     "terms_status": "BLOCKED_ON_TERMS:to_confirm", "terms": "to_confirm",
+     "terms_ref": "cn_safe_official",
+     "lawful_substitute": ("none confirmed: both publishers (SAFE; the PBOC, whose pbc.gov.cn "
+                           "terms #229 also holds to_confirm) are unread or ungranted"),
      "note": "Valuation moves dominate the monthly change, so the raw print is close to useless "
-             "without a currency and duration adjustment the desk would have to build itself."},
+             "without a currency and duration adjustment the desk would have to build itself. "
+             "HELD BLOCKED_ON_TERMS:to_confirm on its SAFE root, fail-closed."},
     {"id": "ccass_southbound_holdings",
      "name": "CCASS shareholding search -- southbound holdings of Hong Kong names",
      "covers": "mainland ownership of HK-listed shares, by name, daily",
@@ -756,7 +845,9 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "note": "DECLARED ABSENT BY NAME. There is no renminbi futures contract in the CFTC's "
              "reports, so a Chinese study has no speculative-positioning series of the kind a "
              "JPY or AUD study takes for granted. The exchange member tables above are the "
-             "honest substitute and they measure a different thing."},
+             "honest substitute and they measure a different thing. COT REMAINS THE LAWFUL "
+             "POSITIONING READ FOR THE CARRIERS (AUD, COMEX copper and gold) while the SAFE "
+             "flow series are held on terms; it is named, not invented, for the renminbi."},
 )
 
 
@@ -811,26 +902,67 @@ REFUSED_SOURCES: tuple[dict[str, str], ...] = (
             "one of them, which the desk cannot replicate"},
     {"ground": "CNKI and Wanfang full text behind the paywall",
      "why": "licence; abstracts and figures are free and are what this pack reads"},
+    {"ground": "CFETS market data (chinamoney.com.cn, shibor.org)",
+     "why": "BLOCKED_ON_TERMS:refused (PR #229): CFETS forbids any use of its market data "
+            "without written permission; held in cn_cfets_market_data so the gap is named"},
+    {"ground": "SAFE statistics (safe.gov.cn)",
+     "why": "BLOCKED_ON_TERMS:to_confirm (PR #229): no grant to use the data; fail-closed in "
+            "cn_safe_official until a written grant is quoted"},
     {"ground": "single-name mainland equity hypothesis mining",
      "why": "two-lane order (2026-09-06): single names are traded on news and never hunted for "
             "statistical hypotheses"},
 )
 
 SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
-    source_class("cn_official", "The PBOC, CFETS, SAFE, the statistics bureau and customs",
+    source_class("cn_official", "The PBOC, the statistics bureau, customs, MOF and the NDRC",
                  layer="official",
-                 roots=("pbc.gov.cn", "chinamoney.com.cn", "safe.gov.cn", "stats.gov.cn",
-                        "data.stats.gov.cn", "customs.gov.cn", "mof.gov.cn", "ndrc.gov.cn"),
+                 roots=("pbc.gov.cn", "stats.gov.cn", "data.stats.gov.cn", "customs.gov.cn",
+                        "mof.gov.cn", "ndrc.gov.cn"),
                  queries=("人民币汇率中间价", "公开市场业务交易公告", "贷款市场报价利率",
                           "存款准备金率", "货币政策执行报告", "社会融资规模", "银行结售汇",
                           "进出口商品总值", "采购经理指数", "外汇风险准备金率"),
                  languages=("zh-Hans", "en"), access_label="OPEN_DATA",
                  credibility="AUTHORITATIVE", predictive_state="UNTESTED",
                  licence="free, public",
-                 notes="chinamoney.com.cn is the authoritative root for the central parity and "
-                       "the CFETS closes -- the two inputs the fix formula actually uses. Note "
-                       "that the January and February trade and activity data are published "
-                       "COMBINED, which is two missing observations a year by design."),
+                 notes="CFETS (chinamoney.com.cn, shibor.org) and SAFE (safe.gov.cn) were "
+                       "roots of this class until 2026-10-06 and are now their own HELD classes "
+                       "below (BLOCKED_ON_TERMS, PR #229), so no crawler starting from this "
+                       "class reaches them. Note that the January and February trade and "
+                       "activity data are published COMBINED, which is two missing observations "
+                       "a year by design."),
+    source_class("cn_cfets_market_data",
+                 "CFETS market data: the central parity, the CFETS closes and SHIBOR -- "
+                 "HELD ON TERMS",
+                 layer="official",
+                 roots=("chinamoney.com.cn", "shibor.org"),
+                 queries=(),
+                 languages=("zh-Hans", "en"), access_label="LICENSED",
+                 credibility="AUTHORITATIVE", predictive_state="UNTESTED",
+                 licence=terms_text("cn_cfets_chinamoney"),
+                 machine_use_allowed=False,
+                 notes="The authoritative root for the central parity and the CFETS closes -- the "
+                       "two inputs the fix formula actually uses -- and for SHIBOR. CFETS "
+                       "forbids any use of its market data without a written licence, so this "
+                       "class is BLOCKED_ON_TERMS:refused: registered so the gap is named, never "
+                       "fetched, never a cell, never coverage. Lawful today: the desk's own "
+                       "USDCNH tape around the public fixing clock. Lifts only on a written "
+                       "CFETS licence."),
+    source_class("cn_safe_official",
+                 "SAFE: bank FX settlement, cross-border receipts and payments, reserves -- "
+                 "HELD ON TERMS",
+                 layer="official",
+                 roots=("safe.gov.cn",),
+                 queries=(),
+                 languages=("zh-Hans", "en"), access_label="PUBLIC_WITH_TERMS",
+                 credibility="AUTHORITATIVE", predictive_state="UNTESTED",
+                 licence=terms_text("cn_safe_official"),
+                 machine_use_allowed=False,
+                 notes="SAFE's statement bars commercial reprint and grants no use of the data, "
+                       "so the class is BLOCKED_ON_TERMS:to_confirm and fetching FAILS CLOSED "
+                       "until a written SAFE grant or a clearer reuse clause is quoted. For "
+                       "positioning, CFTC COT on the carriers (AUD, COMEX copper and gold) is "
+                       "the lawful read; there is no lawful substitute for the renminbi flow "
+                       "itself."),
     source_class("cn_institutional", "The exchanges, the Connect operator and the industry bodies",
                  layer="institutional",
                  roots=("sse.com.cn", "szse.cn", "cffex.com.cn", "shfe.com.cn", "dce.com.cn",
@@ -975,53 +1107,86 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                        f"because a package that already reads a series is a map of where that "
                        f"series lives. This layer also carries what the graph REFUSES to "
                        f"traverse: {'; '.join(r['ground'] for r in REFUSED_SOURCES)}. Reasons "
-                       f"are in REFUSED_SOURCES and none of those grounds is named, subscribed "
-                       f"or crawled anywhere in this pack."),
+                       f"are in REFUSED_SOURCES and none of those grounds is subscribed or "
+                       f"crawled anywhere in this pack; the two held on terms are NAMED, in "
+                       f"held classes, so the gap shows -- and a package that reads CFETS or "
+                       f"SAFE for the desk is the same ground and is held with it."),
 )
 
 
 # --------------------------------------------------------------------------- datasets
 DATASETS: tuple[dict[str, Any], ...] = (
-    dataset("cfets_central_parity",
-            source="中国外汇交易中心 (CFETS) 人民币汇率中间价",
-            coverage="the daily USD/CNY central parity and the CFETS basket indices",
-            frequency="daily",
-            publication_lag_days=0.0,
-            revisions="none",
-            licence="free, public",
-            history_from="2006-01",
-            pit_feasible=True,
-            assets=("USDCNH", "HK50", "CHINAH"),
-            mechanism_families=("fixing", "policy_guidance", "band"),
-            how_to_fetch="chinamoney.com.cn, published 09:15 Beijing = 01:15 UTC, fifteen "
-                         "minutes before the onshore market opens"),
-    dataset("cfets_onshore_close",
-            source="CFETS 收盘价",
-            coverage="the 16:30 Beijing onshore closing rate that feeds the next day's fix",
-            frequency="daily",
-            publication_lag_days=0.0,
-            revisions="none",
-            licence="free, public",
-            history_from="2006-01",
-            pit_feasible=True,
-            assets=("USDCNH",),
-            mechanism_families=("fixing", "onshore_offshore_basis"),
-            how_to_fetch="chinamoney.com.cn; 08:30 UTC. Do NOT substitute the 23:30 Beijing "
-                         "close: the fix formula uses the 16:30 one"),
-    dataset("cn_cnh_cny_basis",
-            source="derived: the CFETS onshore close against the broker's own USDCNH tape",
-            coverage="the offshore-minus-onshore spread in pips, daily",
-            frequency="daily",
-            publication_lag_days=0.0,
-            revisions="none",
-            licence="free (the onshore leg) plus the desk's own tape (the offshore leg)",
-            history_from="2010-08",
-            pit_feasible=True,
-            assets=("USDCNH", "HK50", "CHINAH"),
-            mechanism_families=("onshore_offshore_basis", "intervention_proxy",
-                                "capital_control_stress"),
-            how_to_fetch="computed on this desk; both legs are held here, which makes this one "
-                         "of the few China observables that is genuinely point-in-time safe"),
+    # ---- HELD ON TERMS (2026-10-06): CFETS refuses use of its market data without a written
+    # licence. Kept as rows so the gap is named; never fetched, never a cell, never coverage.
+    held_dataset("cfets_central_parity",
+                 ref="cn_cfets_chinamoney",
+                 substitute=("none confirmed for the VALUE. Lawful today: the desk's own USDCNH "
+                             "tape around the public fixing CLOCK (01:15 UTC, a calendar fact, "
+                             "not CFETS data). Candidate once its terms are read: the PBOC's own "
+                             "parity announcement on pbc.gov.cn, which #229 holds to_confirm"),
+                 was=("chinamoney.com.cn, published 09:15 Beijing = 01:15 UTC, fifteen minutes "
+                      "before the onshore market opens"),
+                 source="中国外汇交易中心 (CFETS) 人民币汇率中间价",
+                 coverage="the daily USD/CNY central parity and the CFETS basket indices",
+                 frequency="daily",
+                 publication_lag_days=0.0,
+                 revisions="none",
+                 history_from="2006-01",
+                 pit_feasible=True,
+                 assets=("USDCNH", "HK50", "CHINAH"),
+                 mechanism_families=("fixing", "policy_guidance", "band")),
+    held_dataset("cfets_onshore_close",
+                 ref="cn_cfets_chinamoney",
+                 substitute=("none confirmed: the onshore price is quoted nowhere in the broker "
+                             "registry and CFETS is its only publisher. The 08:30 UTC close CLOCK "
+                             "stays usable as a window on the desk's own USDCNH tape"),
+                 was=("chinamoney.com.cn; 08:30 UTC. Do NOT substitute the 23:30 Beijing close: "
+                      "the fix formula uses the 16:30 one"),
+                 source="CFETS 收盘价",
+                 coverage="the 16:30 Beijing onshore closing rate that feeds the next day's fix",
+                 frequency="daily",
+                 publication_lag_days=0.0,
+                 revisions="none",
+                 history_from="2006-01",
+                 pit_feasible=True,
+                 assets=("USDCNH",),
+                 mechanism_families=("fixing", "onshore_offshore_basis")),
+    held_dataset("cn_cnh_cny_basis",
+                 ref="cn_cfets_chinamoney",
+                 substitute=("none confirmed: the CFETS clause forbids work DERIVED from its "
+                             "data, and the onshore leg has no other publisher. The offshore leg "
+                             "(the desk's own USDCNH tape) and CNH HIBOR (TMA, Hong Kong; its "
+                             "own terms not ruled here) remain the readable half of the basis"),
+                 was=("computed on this desk from the CFETS onshore close and the broker's "
+                      "USDCNH tape"),
+                 source="derived: the CFETS onshore close against the broker's own USDCNH tape",
+                 coverage="the offshore-minus-onshore spread in pips, daily",
+                 frequency="daily",
+                 publication_lag_days=0.0,
+                 revisions="none",
+                 history_from="2010-08",
+                 pit_feasible=True,
+                 assets=("USDCNH", "HK50", "CHINAH"),
+                 mechanism_families=("onshore_offshore_basis", "intervention_proxy",
+                                     "capital_control_stress")),
+    held_dataset("cn_shibor",
+                 ref="cn_cfets_chinamoney",
+                 substitute=("none confirmed for onshore interbank funding. Candidates once "
+                             "their own terms are read: the PBOC open-market announcements "
+                             "(pboc_omo_daily, pbc.gov.cn, held to_confirm by #229) and CNH "
+                             "HIBOR (TMA) for the OFFSHORE funding cost, which is a different "
+                             "rate and is named as such"),
+                 was=("shibor.org / chinamoney.com.cn, published about 11:00 Beijing = 03:00 UTC "
+                      "each business day"),
+                 source="全国银行间同业拆借中心 上海银行间同业拆放利率 (SHIBOR)",
+                 coverage="the overnight to one-year onshore interbank offered rates",
+                 frequency="daily",
+                 publication_lag_days=0.0,
+                 revisions="none",
+                 history_from="2006-10",
+                 pit_feasible=True,
+                 assets=("USDCNH", "HK50", "CHINAH"),
+                 mechanism_families=("liquidity", "onshore_funding", "curve_slope")),
     dataset("pboc_omo_daily",
             source="中国人民银行 公开市场业务交易公告",
             coverage="the daily reverse-repo operation size, tenor and rate, and the net "
@@ -1797,7 +1962,11 @@ TRANSMISSION_EDGES_SEED: tuple[dict[str, Any], ...] = (
                  "fix cannot be told apart; and the same window on USDSGD",
          evidence="HYPOTHESIS",
          notes="The highest-prior edge in this pack: an announced number, an exact minute, a "
-               "fifteen-minute window in which only one of the two markets can trade."),
+               "fifteen-minute window in which only one of the two markets can trade. ITS INPUT "
+               "IS HELD: the fix VALUE is CFETS market data, BLOCKED_ON_TERMS:refused (PR "
+               "#229), so the residual cannot be computed from CFETS until a written licence "
+               "exists; the PBOC's own announcement is the candidate once pbc.gov.cn's terms "
+               "are read."),
     edge("cnh_funding_squeeze_to_cnh",
          source="CNH HIBOR spiking at the 03:15 UTC fixing",
          mechanism="raising the offshore funding cost makes a short CNH position expensive to "
@@ -2065,7 +2234,8 @@ INSTITUTIONAL_FLOW_SOURCES: tuple[str, ...] = (
     "Stock Connect northbound and southbound turnover (hkex.com.hk; northbound real-time flow "
     "ended 2024-08-19)",
     "CCASS shareholding search (daily southbound holdings by participant, hkex.com.hk)",
-    "SAFE 银行结售汇 (monthly netted FX settlement and sales, safe.gov.cn)",
+    "SAFE 银行结售汇 (monthly netted FX settlement and sales, safe.gov.cn) -- "
+    "BLOCKED_ON_TERMS:to_confirm, never fetched (ruling: PR #229)",
 )
 
 
@@ -2097,17 +2267,23 @@ def _central_bank_row(lab: Any) -> Any:
 
 
 def _fixing_rows(lab: Any) -> tuple[Any, ...]:
-    """China's three published references, in UTC. CST never shifts, so `dst_rule` is 'none'."""
+    """China's three published references, in UTC. CST never shifts, so `dst_rule` is 'none'.
+
+    The two CFETS rows carry BLOCKED_ON_TERMS at the head of `notes` (PR #229): the fixing lab
+    reads that and counts them blocked instead of measuring them. They stay in the tuple so the
+    references are named."""
     return (
         lab.Fixing(name="人民币汇率中间价 (CFETS central parity)", time_utc="01:15",
                    dst_rule="none", instruments=("USDCNH",), window_minutes=25,
-                   notes=str(FIXING_CONVENTIONS["central_parity"]["note"])),
+                   notes=(f"{terms_text('cn_cfets_chinamoney')}. "
+                          f"{FIXING_CONVENTIONS['central_parity']['note']}")),
         lab.Fixing(name="CNH HIBOR (TMA, Hong Kong)", time_utc="03:15", dst_rule="none",
                    instruments=("USDCNH", "HK50"), window_minutes=60,
                    notes=str(FIXING_CONVENTIONS["cnh_hibor"]["note"])),
         lab.Fixing(name="CFETS 收盘价 (the 16:30 Beijing reference close)", time_utc="08:30",
                    dst_rule="none", instruments=("USDCNH",), window_minutes=45,
-                   notes=str(FIXING_CONVENTIONS["onshore_close"]["note"])),
+                   notes=(f"{terms_text('cn_cfets_chinamoney')}. "
+                          f"{FIXING_CONVENTIONS['onshore_close']['note']}")),
     )
 
 
@@ -2372,7 +2548,10 @@ def _typed(lab: Any) -> dict[str, Any]:
         "terminology": TERMINOLOGY,
         "source_classes": source_class_lines(),
         "institutional_flow_sources": INSTITUTIONAL_FLOW_SOURCES,
-        "datasets": tuple(lab.DatasetRow(**d) for d in DATASETS),
+        # The typed row has the catalogue fields only; a held row's status already leads its
+        # `licence` and `how_to_fetch`, so the extra terms keys are not lost by the filter.
+        "datasets": tuple(lab.DatasetRow(**{k: d[k] for k in DATASET_FIELDS})
+                          for d in DATASETS),
         "actors": tuple(lab.ActorRow(**a) for a in ACTORS),
         "domains": tuple(lab.DomainRow(**d) for d in DOMAINS),
         "miner_domains": {m["name"]: m["domain_ids"] for m in CUSTOM_MINERS},
@@ -2395,6 +2574,20 @@ def _rich() -> dict[str, Any]:
         "terminology": TERMINOLOGY, "source_classes": SOURCE_CLASSES, "datasets": DATASETS,
         "actors": ACTORS, "domains": DOMAINS, "custom_miners": CUSTOM_MINERS,
         "transmission_edges_seed": TRANSMISSION_EDGES_SEED, "policy_eras": POLICY_ERAS,
+    }
+
+
+def terms_held_rows() -> dict[str, tuple[str, ...]]:
+    """Every row of this pack held on terms, by section -- what the hold covers, named."""
+    return {
+        "datasets": tuple(d["name"] for d in DATASETS if is_terms_blocked(d)),
+        "source_classes": tuple(sc["id"] for sc in SOURCE_CLASSES
+                                if str(sc["licence"]).startswith(TERMS_BLOCKED)),
+        "positioning_sources": tuple(p["id"] for p in POSITIONING_SOURCES
+                                     if str(p.get("terms_status") or "").startswith(TERMS_BLOCKED)),
+        "fixing_conventions": tuple(k for k, v in FIXING_CONVENTIONS.items()
+                                    if isinstance(v, dict)
+                                    and str(v.get("terms_status") or "").startswith(TERMS_BLOCKED)),
     }
 
 

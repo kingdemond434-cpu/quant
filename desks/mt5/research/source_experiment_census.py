@@ -20,6 +20,7 @@ for _path in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+from libs.data import terms_fence  # noqa: E402
 from libs.moat import registry as R  # noqa: E402
 from libs.research import country_lab as CL  # noqa: E402
 
@@ -71,7 +72,7 @@ def build() -> dict[str, Any]:
     def append_source(*, code: str, region: str, source_id: str, source: str,
                       urls: list[str], information: list[str], coverage: str = "",
                       publication_lag_days: float | None = None, revisions: str = "",
-                      pit_feasible: bool | None = None) -> None:
+                      pit_feasible: bool | None = None, terms_hold: str = "") -> None:
         attempted_urls = [url for url in urls if url in by_url]
         matched_urls = [url for url in attempted_urls
                         if str((by_url.get(url) or {}).get("status") or "SUCCESS") == "SUCCESS"]
@@ -82,7 +83,11 @@ def build() -> dict[str, Any]:
         last_attempt = max((str(by_url[url].get("at") or "") for url in attempted_urls),
                            default="")
         last_fetch = max((str(by_url[url].get("at") or "") for url in matched_urls), default="")
-        if not urls:
+        if terms_hold:
+            # HELD ON TERMS (PR #229): blocked by a ruling, not by a missing organ -- never
+            # acquired, never credited, and owned by whoever can lift the ruling.
+            blocker, owner = terms_hold, "terms_ruling"
+        elif not urls:
             blocker, owner = "NO_MACHINE_ENDPOINT", "source_frontier"
         elif not attempted_urls:
             blocker, owner = "NOT_ACQUIRED", ACQUISITION_OWNER
@@ -116,7 +121,8 @@ def build() -> dict[str, Any]:
                                      "verdict_at": e.get("verdict_at")} for e in exp],
             "disposition": "EVALUATED" if not blocker else "UNRESOLVED",
             "blocker": blocker or None, "owner": owner or None,
-            "next_attempt": "next hourly owner pass" if blocker else None,
+            "next_attempt": ("when the terms ruling lifts" if terms_hold
+                             else "next hourly owner pass" if blocker else None),
         })
 
     for code in _codes():
@@ -136,22 +142,30 @@ def build() -> dict[str, Any]:
         region = str(pack.region_command or "UNMEASURED")
         for dataset in pack.datasets:
             source_id = f"{code}:dataset:{_token(dataset.name)}"
+            t_state = terms_fence.row_hold(dataset)[0]
             possible = [str(dataset.how_to_fetch or ""), str(dataset.source or "")]
-            urls = [u for u in possible if u.startswith(("http://", "https://"))]
+            urls = ([] if t_state else
+                    [u for u in possible if u.startswith(("http://", "https://"))])
             append_source(code=code, region=region, source_id=source_id,
                           source=str(dataset.source or dataset.name), urls=urls,
                           information=list(dataset.mechanism_families),
-                          coverage=dataset.coverage,
+                          coverage=(terms_fence.status(t_state) if t_state
+                                    else dataset.coverage),
                           publication_lag_days=float(dataset.publication_lag_days),
-                          revisions=dataset.revisions, pit_feasible=bool(dataset.pit_feasible))
+                          revisions=dataset.revisions, pit_feasible=bool(dataset.pit_feasible),
+                          terms_hold=terms_fence.status(t_state) if t_state else "")
         for source in CL.source_rows(pack):
             if source.absent_reason:
                 continue
+            s_state = terms_fence.row_hold(source)[0]
             append_source(code=code, region=region,
                           source_id=str(source.id or f"{code}:source:{_token(source.label)}"),
-                          source=str(source.label or source.id), urls=list(source.roots),
+                          source=str(source.label or source.id),
+                          urls=[] if s_state else list(source.roots),
                           information=[source.layer or "UNTAGGED"],
-                          coverage="DECLARED_VERIFIED" if source.verified else "DECLARED")
+                          coverage=(terms_fence.status(s_state) if s_state
+                                    else "DECLARED_VERIFIED" if source.verified else "DECLARED"),
+                          terms_hold=terms_fence.status(s_state) if s_state else "")
 
     per_region: dict[str, dict[str, int]] = {}
     for region in sorted({str(row["region"]) for row in rows}):

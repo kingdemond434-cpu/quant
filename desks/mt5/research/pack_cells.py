@@ -60,6 +60,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.data import terms_fence  # noqa: E402
+
 REGISTRY = DESK / "data" / "asia_sources.json"
 SERIES = DESK / "data" / "lake" / "series"
 CURSOR = DESK / "data" / "pack_cells_cursor.json"
@@ -941,6 +943,13 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
         targets = targets_of(p)
         row: dict[str, Any] = {"id": pid, "stage": stage, "targets": targets,
                                "cadence": p.get("cadence")}
+        t_state, t_why = terms_fence.row_hold(p)
+        if t_state:
+            # HELD ON TERMS (CFETS refused, SAFE to_confirm; PR #229): a series already on disk
+            # from before the ruling is not a licence to use it. Never eligible, never a cell.
+            row.update({"terms": f"BLOCKED_ON_TERMS:{t_state}", "reason": t_why[:300]})
+            rows.append(row)
+            continue
         if not st:
             row["reason"] = ("UNMEASURED: source_drain has not published a chain state on this "
                              "host, so no pack's stage is known")
@@ -1155,6 +1164,7 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
         "status": "OK" if rows else "UNMEASURED",
         "n_packs": len(rows),
         "n_eligible": len(eligible),
+        "blocked_on_terms": sorted(r["id"] for r in rows if r.get("terms")),
         "n_reached_this_pass": len(reached),
         "packs_with_cells": n_emit,
         "packs_with_a_judged_cell": n_judged,
