@@ -8,8 +8,9 @@ can widen silently.
 """
 from __future__ import annotations
 
-import importlib.util
+import importlib
 import re
+import sys
 from pathlib import Path
 
 import yaml
@@ -20,11 +21,11 @@ ROSTER = ROOT / "desks" / "mt5" / "data" / "source_rosters" / "civilizations.yam
 
 
 def _sc():  # type: ignore[no-untyped-def]
-    spec = importlib.util.spec_from_file_location("source_civilizations_scope", SC)
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+    desk = ROOT / "desks" / "mt5"
+    for p in (str(desk), str(desk / "research")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    return importlib.import_module("research.source_civilizations")
 
 
 def test_exactly_one_author_exception_scoped_to_public_github() -> None:
