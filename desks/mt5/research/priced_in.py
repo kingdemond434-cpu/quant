@@ -169,18 +169,30 @@ def build_events(rows: Sequence[Mapping[str, Any]]) -> tuple[list[dict[str, Any]
     return events, acc
 
 
+#: The expanding recalibration is refitted once this many new resolved events have accrued in a
+#: category (each fit still sees ONLY events resolved before the one it adjusts).
+REFIT_EVERY = 10
+
+
 def adjust(events: list[dict[str, Any]]) -> int:
     """Expanding per-category recalibration: each event uses only EARLIER resolved events."""
     pm = _pm()
     n_adj = 0
+    fits: dict[str, tuple[int, Mapping[str, Any]]] = {}
     for i, ev in enumerate(events):
         prior = [e for e in events[:i] if e["category"] == ev["category"]
                  and e["available_at"] <= ev["p_last_at"]]
-        fit = pm.fit_recalibration([e["p_last"] for e in prior], [e["outcome"] for e in prior])
+        n_prior, fit = fits.get(ev["category"], (-REFIT_EVERY, {"verdict": UNMEASURED}))
+        if len(prior) - n_prior >= REFIT_EVERY or (fit.get("verdict") != "MEASURED"
+                                                   and len(prior) >= pm.MIN_FORECASTS
+                                                   and len(prior) != n_prior):
+            fit = pm.fit_recalibration([e["p_last"] for e in prior],
+                                       [e["outcome"] for e in prior])
+            fits[ev["category"]] = (len(prior), fit)
         if fit.get("verdict") == "MEASURED":
             p_adj = float(pm.recalibrate(ev["p_last"], fit))
             ev.update({"p_adj": p_adj, "surprise_pm_adj": ev["outcome"] - p_adj,
-                       "adj_measure": "P_recalibrated", "adj_fit_n": fit["n"]})
+                       "adj_measure": "P_recalibrated", "adj_fit_n": int(fit["n"])})
             n_adj += 1
         else:
             ev.update({"p_adj": UNMEASURED, "surprise_pm_adj": UNMEASURED,

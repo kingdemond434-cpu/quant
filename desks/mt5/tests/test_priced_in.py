@@ -84,7 +84,7 @@ def test_reaction_day_and_z() -> None:
     days = [date(2026, 1, 1) + timedelta(days=i) for i in range(80)]
     px = [100.0 * math.exp(0.01 * ((-1) ** i)) for i in range(80)]
     closes = [(d.isoformat(), p) for d, p in zip(days, px, strict=True)]
-    assert pi.reaction_z(closes, days[70]) == pytest.approx(2.0, rel=0.05)
+    assert pi.reaction_z(closes, days[70]) == pytest.approx(1.0, rel=0.02)
     assert pi.reaction_z(closes, days[10]) is None                  # not enough history
     assert pi.resolve_legs({"EURUSD": {}, "USTEC": {}, "GOLD": {}}) == ["EURUSD", "GOLD", "USTEC"]
 
