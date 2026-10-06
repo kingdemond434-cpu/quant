@@ -36,7 +36,7 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
     R.set_path(tmp_path / "alpha_registry.sqlite")
     for name in ("REGISTRY_PATH", "REPORT", "ROI_REPORT", "MINER_CANDIDATES", "SLEEVES",
-                 "FORWARD", "CLAIMS_JSONL"):
+                 "FORWARD", "CLAIMS_JSONL", "RESIDENT_REPORT"):
         monkeypatch.setattr(fo, name, tmp_path / f"{name.lower()}.json")
     monkeypatch.setattr(fo, "DONATIONS", tmp_path / "intelligence" / "federation_ops")
     monkeypatch.setattr(fo, "DESK", tmp_path)
@@ -293,3 +293,36 @@ def test_a_drained_packet_charges_its_trials_on_the_contract(tmp_path, monkeypat
     doc = json.loads(next(xfo.DONATIONS.glob("discoveries_*.json")).read_text())
     assert doc["tests_run"] == 2 and len(doc["discoveries"]) == 2
     assert doc["discoveries"][0]["generator"] == "ext:quant_guild_library"
+
+
+def test_the_resident_github_miner_publishes_cursors_and_daily_yield(desk) -> None:
+    """CRO D35: the delta scan IS the resident miner; its file carries cursors and per-day
+    counts, accumulates the day's distinct repos across passes, and reads UNMEASURED when a
+    pass hashed nothing."""
+    reg = FR.Registry()
+    reg.upsert({"system_id": "gh_a", "upstream_repo": "github:o/a",
+                "last_upstream_delta_scan": "2026-10-06T01:00:00+00:00"})
+    reg.upsert({"system_id": "web_b", "upstream_repo": "https://example.org/b"})
+    reg.delta.observe("gh_a", "repos", "{}", at="2026-10-06T01:00:00+00:00")
+    recs = [{"system_id": "gh_a", "candidates": 5, "at": "2026-10-06T00:30:00+00:00"},
+            {"system_id": "web_b", "candidates": 9, "at": "2026-10-06T00:30:00+00:00"}]
+    at = "2026-10-06T02:00:00+00:00"
+    doc = fo.resident_miner_doc(reg, {"scanned": ["gh_a", "web_b"]}, recs, None, at=at)
+    assert doc["status"] == "RAN" and doc["forge_upstreams"] == 1
+    assert doc["repos_mined_per_day"] == {"2026-10-06": 1}
+    assert doc["cells_extracted_per_day"] == {"2026-10-06": 5}
+    assert doc["delta_cursors"]["gh_a"]["surfaces_hashed"] == ["repos"]
+    reg.upsert({"system_id": "gh_c", "upstream_repo": "https://github.com/o/c"})
+    again = fo.resident_miner_doc(reg, {"scanned": ["gh_c"]}, [], doc, at=at)
+    assert again["repos_mined_per_day"] == {"2026-10-06": 2}
+    assert again["never_hashed"] == ["gh_c"]
+    assert again["cells_extracted_per_day"] == fo.UNMEASURED
+    idle = fo.resident_miner_doc(reg, {"scanned": []}, [], again, at=at)
+    assert idle["status"] == fo.UNMEASURED and idle["unmeasured"]
+    assert idle["repos_mined_per_day"] == {"2026-10-06": 2}
+
+
+def test_a_pass_writes_the_resident_miner_file(desk) -> None:
+    fo.run_pass(budget_s=30, dry_run=False, no_fetch=True)
+    doc = json.loads(fo.RESIDENT_REPORT.read_text(encoding="utf-8"))
+    assert doc["duty"] == "CRO D35" and doc["forge_upstreams"] >= 7
