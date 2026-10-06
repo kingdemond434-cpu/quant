@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 764,
+  "NEVER": 768,
   "UNMEASURED": 37
  },
  "scope": {
-  "attested": 982,
+  "attested": 986,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -285,6 +285,19 @@
      "executable:scripts/lessons.py",
      "leg:sensor_ledger",
      "task:E8-Book"
+    ]
+   },
+   {
+    "at": "2026-10-06T20:25:02+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:desks/mt5/research/name_sentiment.py",
+     "executable:desks/mt5/research/priced_in.py",
+     "library:libs/ops/env_secret.py",
+     "task:MT5-NewsResident"
     ]
    }
   ]
@@ -25326,6 +25339,118 @@
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
    "measured_at": "2026-10-06T16:26:51+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/name_sentiment.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/name_sentiment.py"
+   ],
+   "clock": "invoked:desks/mt5/research/hourly_cycle.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/NAME_SENTIMENT.json",
+   "artifact_declared": "desks/mt5/reports/NAME_SENTIMENT.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-06T20:25:02+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/priced_in.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/priced_in.py"
+   ],
+   "clock": "invoked:desks/mt5/research/hourly_cycle.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/PRICED_IN.json",
+   "artifact_declared": "desks/mt5/reports/PRICED_IN.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-06T20:25:02+00:00"
+  },
+  {
+   "organ": "library:libs/ops/env_secret.py",
+   "kind": "library",
+   "code": [
+    "libs/ops/env_secret.py"
+   ],
+   "clock": "import:desks/mt5/research/fetch_alfred.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/data/locks/dept_africa.lock",
+   "artifact_declared": "desks/mt5/data/locks/dept_africa.lock",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-06T20:25:02+00:00"
+  },
+  {
+   "organ": "task:MT5-NewsResident",
+   "kind": "task",
+   "code": [
+    "desks/mt5/research/news_event_stream.py"
+   ],
+   "clock": "MT5-NewsResident",
+   "cadence_s": 600,
+   "max_silence_s": 1200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/NEWS_EVENT_STREAM.json",
+   "artifact_declared": "desks/mt5/reports/NEWS_EVENT_STREAM.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "task_runs",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-06T20:25:02+00:00"
   }
  ],
  "ratchet": {

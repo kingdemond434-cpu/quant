@@ -52,6 +52,19 @@ DESK = Path(__file__).resolve().parents[2] / "desks" / "mt5"
 LAKE = DESK / "data" / "lake" / "series"
 CONTRACTS = DESK / "reports" / "sensor_contracts"
 ROLLUP = DESK / "reports" / "SENSOR_CONTRACTS.json"
+#: Every Quant Guild card this thread owns (docs/research/quant_guild/cards_world_sensor.json on
+#: PR #166) and the engine that carries it: the rollup shows each one, so a card with no contract
+#: reads UNMEASURED with 0 contracts rather than vanishing.
+DECLARED_CARDS: dict[str, dict[str, str]] = {
+    "QG25-05": {"engine": "vol_conditioner"}, "QG25-06": {"engine": "implied_move"},
+    "QG25-25": {"engine": "name_sentiment"}, "QG25-26": {"engine": "priced_in"},
+    "QG25-29": {"engine": "regime_probabilities"}, "QG26-07": {"engine": "vol_conditioner"},
+    "QG26-08": {"engine": "vol_conditioner"}, "QG26-09": {"engine": "vol_conditioner"},
+    "QG26-17": {"engine": "model_disagreement"}, "QG-ADH-001": {"engine": "option_chains"},
+    "QG-ADH-003": {"engine": "priced_in"}, "QG-QFIN-005": {"engine": "model_disagreement"},
+    "QG-OT-002": {"engine": "release_vintages"}, "QG-OT-003": {"engine": "release_vintages"},
+    "QG-OT-005": {"engine": "option_chains"},
+}
 STAMP = ("available_time", "event_time", "source_id")
 #: Trading days a year: the Kelly growth and Sharpe annualiser.
 YEAR = 252
@@ -354,6 +367,8 @@ def publish(engine: str, contracts: Sequence[Mapping[str, Any]], *,
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(doc, indent=1, sort_keys=True, default=str) + "\n", "utf-8")
     os.replace(tmp, path)
+    if root is None:
+        rollup()                                         # the desk-wide view stays current
     return path
 
 
@@ -376,13 +391,17 @@ def rollup(root: Path | None = None, out: Path | None = None,
                      "gain": c.get("gain"), "null_p": c.get("null_p"), "n": c.get("n"),
                      "label": c.get("label")})
     card_rows = {}
-    for cid, meta in (cards or {}).items():
+    for cid, meta in (DECLARED_CARDS if cards is None else cards).items():
         rows = by_card.get(cid, [])
         best = (GAIN if any(r["verdict"] == GAIN for r in rows) else
                 NO_GAIN if any(r["verdict"] == NO_GAIN for r in rows) else UNMEASURED)
         card_rows[cid] = {**dict(meta), "contracts": len(rows), "best_verdict": best}
     doc = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "engines": engines,
-           "cards": card_rows or {k: {"contracts": len(v)} for k, v in by_card.items()},
+           "cards": {**{k: {"contracts": len(v),
+                            "best_verdict": (GAIN if any(r["verdict"] == GAIN for r in v) else
+                                             NO_GAIN if any(r["verdict"] == NO_GAIN for r in v)
+                                             else UNMEASURED)}
+                        for k, v in by_card.items()}, **card_rows},
            "rule": "GAIN needs n >= min_n, positive gain, p < 0.05 vs its null; UNMEASURED is "
                    "never zero and never a pass"}
     target = out or ROLLUP
