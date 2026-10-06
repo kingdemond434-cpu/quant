@@ -41,8 +41,8 @@ def _verdict(root: Path) -> dict:
 
 
 def test_a_complete_backup_restores_and_reconciles(sandbox: Path) -> None:
-    live = (sandbox / "desks/mt5/data/sleeve_registry.json").read_bytes()
     _live_and_backup(sandbox)
+    live = (sandbox / "desks/mt5/data/sleeve_registry.json").read_bytes()
     assert drill.main() == 0
     v = _verdict(sandbox)
     assert v["status"] == "PASS"
