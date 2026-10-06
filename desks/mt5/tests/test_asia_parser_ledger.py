@@ -116,7 +116,7 @@ def test_generic_snapshot_tables_become_a_series(lake: Path) -> None:
     assert len(wide) == 2 and "volume|A" in wide.columns
 
 
-def test_a_json_document_is_not_read_as_csv() -> None:
+def test_a_json_document_is_not_read_as_csv(lake: Path) -> None:
     """The cfets_fixing tokenizer error (source_drain.py:177): a JSON blob handed to read_csv."""
     rec = {"status": "PARSED", "files": ["x.json"]}
     AP._stamp_pit(rec, "x", {"fetched_utc": "2026-10-06T01:20:00+00:00"}, {})

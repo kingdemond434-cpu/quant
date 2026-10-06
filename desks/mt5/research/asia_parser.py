@@ -627,6 +627,7 @@ def _stamp_pit(rec: dict[str, Any], source_id: str, meta: dict[str, Any],
     doc = {"source_id": source_id, "lag_days": lag, "lag_basis": lag_why, "frames": stamped,
            "n_rows": int(n_rows), "canonical_file": rec.get("canonical_file"),
            "stamped_at": datetime.now(UTC).isoformat(timespec="seconds")}
+    SERIES.mkdir(parents=True, exist_ok=True)
     (SERIES / f"{source_id}.pit.json").write_text(json.dumps(doc, indent=1), encoding="utf-8")
     statuses = [f.get("status") for f in stamped if f.get("status") != "DOCUMENT"]
     rec["n_rows"] = int(n_rows)
