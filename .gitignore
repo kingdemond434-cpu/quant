@@ -421,6 +421,10 @@ desks/mt5/data/free_stack/
 # key index are box-local and regenerated; data_registry.json + reports/DATASET_HUNT.json
 # are the tracked record of what it holds.
 desks/mt5/data/world_datasets/
+# catalog_routes caches: parsed catalogue listings and the dedup index, both reconstructible
+# (the index from discoveries_catalog_*.json, the listings by one request). roster.json and
+# state.json (the resumable cursors) stay tracked.
+desks/mt5/data/catalog_routes/cache/
 
 # Session scratch: throwaway measurement one-liners written to answer one question.
 # Excluded from ruff too (pyproject [tool.ruff] exclude) -- 32 of these once held the trading
