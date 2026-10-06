@@ -1,0 +1,110 @@
+{
+ "schema": "cro_duty_metrics/1",
+ "note": "Which counters each STEP 4B duty must find in its artifacts. The artifacts themselves are read from the duty's row in docs/cro/CRO_CYCLE.md, so a duty row and its check cannot drift. A counter no artifact carries reads UNMEASURED, and an UNMEASURED duty counts as MISSED. Targets are checked only where they are a plain comparison; the rest are the CRO's judgement on the measured values.",
+ "default_max_age_h": 26,
+ "duties": {
+  "D37": {
+   "max_age_h": 3,
+   "metrics": [
+    "status_counts",
+    "latent_state_age",
+    "search_queue_n"
+   ],
+   "targets": [
+    {
+     "metric": "search_queue_n",
+     "op": "==",
+     "value": 0
+    }
+   ]
+  },
+  "D38": {
+   "max_age_h": 3,
+   "metrics": [
+    "prewarm_seconds",
+    "prewarm_fail_share",
+    "shards",
+    "failed",
+    "first_judged_per_day",
+    "declared_need_mb",
+    "shards_launched",
+    "shards_completed",
+    "verdicts_committed_per_attempt",
+    "build_failures",
+    "worker_peak_mb"
+   ]
+  },
+  "D39": {
+   "metrics": [
+    "n_nominal",
+    "n_eff",
+    "cluster_occupancy",
+    "certified_family_share",
+    "n_effective_cert",
+    "stress_k_eff",
+    "duplicate_compute_share",
+    "delta_keff_per_compute_hour",
+    "breadth_debt"
+   ]
+  },
+  "D40": {
+   "metrics": [
+    "by_timeframe",
+    "h1_only_symbols",
+    "by_session",
+    "certificate_share_by_timeframe"
+   ]
+  },
+  "D41": {
+   "metrics": [
+    "unreached",
+    "no_clock",
+    "counts"
+   ],
+   "targets": [
+    {
+     "metric": "unreached",
+     "op": "len==",
+     "value": 0
+    },
+    {
+     "metric": "no_clock",
+     "op": "len==",
+     "value": 0
+    }
+   ]
+  },
+  "D42": {
+   "metrics": [
+    "cumulative_species",
+    "grounds_never_sampled",
+    "new_since_last_pass"
+   ]
+  },
+  "D43": {
+   "max_age_h": 3,
+   "metrics": [
+    "passed",
+    "scores",
+    "n_inputs_stale",
+    "optimality_gap",
+    "lost_pending_events",
+    "scenario_cache_fingerprint",
+    "event_to_decision_p95_s"
+   ]
+  },
+  "D44": {
+   "max_age_h": 30,
+   "metrics": [
+    "machinery_improvements"
+   ],
+   "targets": [
+    {
+     "metric": "machinery_improvements",
+     "op": "len>=",
+     "value": 1
+    }
+   ]
+  }
+ }
+}
