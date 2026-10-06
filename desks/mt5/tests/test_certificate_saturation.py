@@ -477,3 +477,16 @@ def test_duplicate_survivor_share_counts_the_archive_of_saturated_clusters(sat: 
     assert sat["certificates"]["n_certificates"] == 840
     fresh = _build({"survivors": {"a": _cert("EURUSD", "carry", {})}})
     assert fresh["certificates"]["duplicate_survivor_share"] == 0.0
+
+
+def test_kimi_seat_gets_the_same_facts_only_brief(sat: dict, monkeypatch) -> None:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import kimi_hunter as kh
+    monkeypatch.setattr(cs, "load", lambda *a, **k: (sat, "fresh"))
+    monkeypatch.setitem(sys.modules, "certificate_saturation", cs)
+    brief = kh._breadth_brief()
+    assert brief == cs.producer_brief("kimi", doc=sat)
+    section = kh._breadth_section()
+    assert "DESK BREADTH FACTS" in section and '"n_certificates": 840' in section
+    monkeypatch.setattr(kh, "_breadth_brief", lambda: {})
+    assert kh._breadth_section() == ""
