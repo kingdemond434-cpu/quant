@@ -272,6 +272,33 @@ Every STALE or MISSING event is a defect in the organ that should produce it, an
 
 ---
 
+## STEP 4D — EFFECTIVE CERTIFICATES, SATURATION AND BREADTH DEBT (noon pass; breadth law 2026-10-05)
+
+The noon lane (MT5-CycleNoon) runs this step every pass. The midnight lane runs it only when no noon row from the last 24 h carries `breadth_law`. Breadth decides what is hunted and judged next. It never decides what passes, so nothing in this step moves a gate.
+
+1. **N_CERT beside N_EFFECTIVE_CERT, with the basis.**
+   - Read `desks/mt5/reports/CERTIFICATE_SATURATION.json` → `certificates`. Report `n_certificates`, `n_effective_certificates`, `effective_over_nominal`, `duplicate_survivor_share`, and the robust, stress and tail `k_eff`.
+   - Always report `basis`, `source` and `source_mtime` with them. `box_live` means the box's own `reports/UNIVERSAL_SURVIVORS.json`, swept within 48 h. `git_snapshot` means the repo's copy, which is never presented as live.
+   - The map is absent, or its `at` is older than 6 h: the reading is UNMEASURED. That counts as MISSED (L1.28a), and the producing leg (`alpha_breadth`, `certificate_saturation_pass`) is a defect that competes in STEP 7.
+2. **The fence.**
+   - Run `python scripts/check_breadth_mandate.py`. Its `n_effective_cert` block is the verdict.
+   - `NOMINAL_ALONE` or `BREACH` is a defect. Name the organ that minted certificates into the same bets.
+   - `BASIS_CHANGED` means the floor was recorded on the other book. Re-record it with `--set-floor` only on a `box_live` reading.
+3. **Saturation.**
+   - List the SATURATED clusters (`clusters[*].state`) with `certificate_count`, `effective_certificate_count`, `clone_novelty_credit`, and their champion and challengers.
+   - Read `reports/BREADTH_FEEDBACK.json`. Name every producer at RETARGET or PARK_CANDIDATE with its `duplicate_share`. A PARK_CANDIDATE is published and never auto-parked: the pass retargets it, which means it changes the producer's generation instructions toward a breadth debt.
+4. **Breadth debt.**
+   - Read the top 10 `breadth_debts` (mechanism / information / class, `expected_delta_k_eff`, `historical_search_effort`, `empty_prior_decay`).
+   - Confirm they reached the funding side as `PORTFOLIO_BOUNTY.json` rows of kind `breadth_debt`, and that `RESEARCH_AUCTION.json` bids rose for the addressed departments.
+   - A debt with zero search effort for 48 h while compute was spent is a defect in the router that should have taken it.
+5. **The split.**
+   - Read `reports/BREADTH_LADDER.json` → `temperature.mode`, `budget_split.split` and `fired`.
+   - A stall that fired with no rise in A and C is a defect in `research_budget`'s reading of the ladder.
+
+Carry `breadth_law` in the cycle ledger row: `{basis, n_certificates, n_effective_certificates, duplicate_survivor_share, n_saturated_clusters, fence_status, mode, top_debt}`.
+
+---
+
 ## STEP 5 — PREREGISTRATION / EVIDENCE-INTEGRITY CHECK
 
 For new serious candidates or material validation changes verify:
