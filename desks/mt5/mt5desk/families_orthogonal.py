@@ -2463,6 +2463,16 @@ FAMILY_INPUTS["commodity_fx_residual"] = (
     "read as of the cell's own daily decision bar from data/universe/*_H1.parquet")
 del _qt_name
 
+# TWO MECHANISMS FROM THE QUANT GUILD LECTURES (2026-10-06): an OU fair value tracked by a Kalman
+# filter on the price level, and a Hawkes intensity that follows clustered jumps and fades lone
+# ones. Re-derived (no upstream licence). Seeded by `research/elitequant_breadth.py`.
+from mt5desk.families_quantguild import QUANTGUILD_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(QUANTGUILD_FAMILIES)
+for _qg_name in QUANTGUILD_FAMILIES:
+    FAMILY_INPUTS[_qg_name] = ("price only", "data/universe/*_H1.parquet")
+del _qg_name
+
 # THE ALPHA ZOO AS CLASS BOOKS (2026-09-30): 317 published alphas (GTJA 191, Qlib 158, Alpha101,
 # academic) vendored from HKUDS/Vibe-Trading (MIT) under mt5desk/alpha_zoo/, each ranked within
 # the cell's peer class on each date. Loads its own class panel keyed by the cell's `symbol`, like

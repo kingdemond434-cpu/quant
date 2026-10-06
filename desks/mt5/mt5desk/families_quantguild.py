@@ -92,6 +92,8 @@ def family_kalman_ou_level(df: pd.DataFrame, *, window: int = 720, refit: int = 
         half = -math.log(2.0) / math.log(phi)
         ttl = int(min(max_ttl, max(4, round(3 * half))))
         fair = float(math.exp(mu))
+        if (fair - c[i]) * side <= 0:                         # the price already crossed back
+            continue
         out.append(Signal(time=h.index[i], side=side, stop=c[i] - side * stop_atr * a,
                           target=fair, ttl_bars=ttl,
                           tag=f"kalman_ou_level:{window}:{entry_z:g}"))
