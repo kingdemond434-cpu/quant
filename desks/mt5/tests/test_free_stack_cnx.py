@@ -367,15 +367,15 @@ def test_seasonal_surprise_against_the_same_week_of_two_prior_years() -> None:
     d = date(2023, 1, 6)                                             # Fridays, 3 years
     while d < date(2026, 1, 1):
         wk = d.isocalendar()[1]
-        lvl += 500 * math.sin(wk / 52 * 2 * math.pi) + (4000 if d.year == 2025 and wk == 30
-                                                         else 0)
+        lvl += (500 * math.sin(wk / 52 * 2 * math.pi) + 60 * math.sin(d.toordinal() * 1.7)
+                + (4000 if d.year == 2025 and wk == 30 else 0))
         weekly[d.isoformat()] = lvl
         d += timedelta(days=7)
     rows = [r for r in cnx.derive({"cu_inv": weekly}, {}) if r["key"].startswith("cu_inv_seas")]
     assert rows and all(r["period_end"] >= "2025" for r in rows)       # two prior years needed
     spike = next(r for r in rows if r["key"] == "cu_inv_seas_surp"
                  and date.fromisoformat(r["period_end"]).isocalendar()[1] == 30)
-    assert spike["raw_surprise"] == pytest.approx(4000, abs=1e-6)
+    assert spike["raw_surprise"] == pytest.approx(4000, abs=300)       # spike + noise
     assert spike["seasonal_expected"] == spike["expected_value"]
     z = next(r for r in rows if r["key"] == "cu_inv_seas_z"
              and r["period_end"] == spike["period_end"])
