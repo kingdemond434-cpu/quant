@@ -186,7 +186,7 @@ def _stamps_closes(frame: pd.DataFrame) -> tuple[np.ndarray, np.ndarray] | None:
     close = close[~close.index.duplicated(keep="last")].sort_index()
     if close.empty:
         return None
-    return close.index.asi8.astype("int64"), close.to_numpy(dtype="float32")
+    return close.index.as_unit("ns").asi8.astype("int64"), close.to_numpy(dtype="float32")
 
 
 def _decision_rows(d: pd.DataFrame, decision_hour: int,
@@ -196,7 +196,9 @@ def _decision_rows(d: pd.DataFrame, decision_hour: int,
     The decision bar is the LAST bar stamped at or before `decision_hour` on that broker date,
     and no older than `max_stale_h` hours before it. A day without one has no decision.
     """
-    idx = d.index
+    # ns by construction: the 3_600_000_000_000 constants below are hours IN NANOSECONDS, and a
+    # pandas-3 index parsed from strings is in microseconds.
+    idx = pd.DatetimeIndex(d.index).as_unit("ns")
     hours = idx.hour.to_numpy()
     days = idx.normalize()
     dow = days.dayofweek.to_numpy()

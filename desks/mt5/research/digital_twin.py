@@ -270,7 +270,7 @@ def load_window(symbol: str) -> tuple[dt.SimBars, dict[str, Any]] | None:
                 "end": idx[-1].isoformat(), "tick_days": (ticks or {}).get("tick_days") or [],
                 "tick_bars_covered": (ticks or {}).get("bars_covered") or 0,
                 "unmeasured_fields": unmeasured,
-                "index": [int(v) for v in idx.asi8], "price_scale": float(bars["close"].iloc[0]),
+                "index": [int(v) for v in idx.as_unit("ns").asi8], "price_scale": float(bars["close"].iloc[0]),
                 "volume_scale": float(np.nanmean(volume)) if np.isfinite(volume).any() else 1.0}
     return window, meta_out
 

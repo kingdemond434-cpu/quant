@@ -265,7 +265,7 @@ def _mt5_scan(root: Path, streams: dict[str, dict[str, Any]], deltas: dict[str, 
                 ok = recv.notna() & venue.notna()
                 if not bool(ok.any()):
                     continue
-                recv_ms = recv[ok].astype("int64") // 10**6
+                recv_ms = recv[ok].dt.as_unit("ns").astype("int64") // 10**6
                 d = recv_ms - venue[ok].astype("int64")
                 # NEGATIVES ARE KEPT AND COUNTED (latency_lab does the same). Dropping them would
                 # turn a broker-clock offset into a flattering one-sided receipt delay made

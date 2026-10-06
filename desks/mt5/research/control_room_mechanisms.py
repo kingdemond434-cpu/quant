@@ -83,7 +83,7 @@ def gap_trades(symbol: str) -> dict[str, list[float]] | None:
     tr = np.maximum(high - low, np.abs(high - np.r_[close[0], close[:-1]]))
     atr = pd.Series(tr).rolling(20).mean().to_numpy()
     idx = h1.index
-    gaps = np.where(np.diff(idx.asi8) > 36 * 3600 * 10**9)[0] + 1   # first bar after a weekend
+    gaps = np.where(np.diff(idx.as_unit("ns").asi8) > 36 * 3600 * 10**9)[0] + 1   # first bar after a weekend
     arms: dict[str, list[float]] = {"fade": [], "follow": [], "regime_gated": [],
                                     "fade_in_range_only": [], "fade_in_trend_only": []}
     lab_days = labels.index.to_numpy(dtype=str)

@@ -7,7 +7,7 @@ df = pd.read_parquet("/home/quant/quant-platform/desks/mt5/data/universe/XAUUSD_
 h1 = families._h1(df)
 
 # Engine method
-idx_ns = np.asarray(h1.index.asi8, dtype="int64")
+idx_ns = np.asarray(h1.index.as_unit("ns").asi8, dtype="int64")
 print(f"Engine idx_ns[0]: {idx_ns[0]}")
 print(f"Engine idx_ns[10]: {idx_ns[10]}")
 

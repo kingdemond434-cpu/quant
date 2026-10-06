@@ -9,7 +9,7 @@ fn = get_family_func("session_range_breakout")
 sigs = fn(h1, range_start=7, wait_bars=8, atr_n=20, ttl_bars=12, rr=2.0, signal_at=7, trend_filter="aligned")
 
 idx = h1.index
-idx_ns = pd.Series(idx).astype('int64').values
+idx_ns = idx.as_unit("ns").asi8
 n = len(idx)
 
 valid = 0
