@@ -37,6 +37,12 @@ function Measure-Key([string]$name) {
 
 $rows = foreach ($k in $cat.keys) {
     $r = Measure-Key $k.name
+    if ($r.Status -eq 'MISSING' -and $k.aliases) {
+        foreach ($al in $k.aliases) {
+            $a2 = Measure-Key $al
+            if ($a2.Status -eq 'present') { $r = $a2; $r.Key = "$($k.name) (as $al)"; break }
+        }
+    }
     $r.Group = $k.group
     $r.Machine = $k.machine
     $r

@@ -43,6 +43,8 @@ def test_catalog_rows_are_well_formed() -> None:
     for r in rows:
         for field in ("group", "cost", "machine", "signup", "unlocks", "readers", "owner"):
             assert r.get(field), (r["name"], field)
+        if r.get("pending_pr"):
+            continue  # its reader lands with that PR
         for reader in r["readers"]:
             path = reader.split(" ")[0]
             assert (ROOT / path).exists(), (r["name"], path)
@@ -58,3 +60,13 @@ def test_every_declared_key_env_is_in_the_catalog() -> None:
     declared |= set(re.findall(r'key_env="([A-Z0-9_]+)"', alt))
     assert declared, "no key_env found: the scan pattern rotted"
     assert declared <= names, sorted(declared - names)
+
+
+def test_every_built_credential_registry_var_is_in_the_catalog() -> None:
+    reg = json.loads((ROOT / "desks/mt5/data/credential_registry.json").read_text("utf-8"))
+    known = set(env_keys.key_names())
+    for r in env_keys.catalog():
+        known |= set(r.get("aliases") or [])
+    built = {v["env"] for v in reg["vars"] if str(v.get("built")) == "BUILT"}
+    assert built, "credential registry has no BUILT var: the scan rotted"
+    assert built <= known, sorted(built - known)

@@ -76,7 +76,7 @@ def test_a_name_one_consumer_does_not_read_is_mismatched() -> None:
     st = cred.status(cred.BY_ENV["SEC_EDGAR_USER_AGENT"],
                      environ={"SEC_EDGAR_USER_AGENT": SENTINEL}, root=Path("/nonexistent"))
     assert st["status"] == cred.MISMATCHED_NAME
-    assert "desks/mt5/research/alpha_capture.py" in st["dark_consumers"]
+    assert "desks/mt5/research/sec_fundamentals.py" in st["dark_consumers"]
     assert SENTINEL not in json.dumps(st)
 
 
@@ -94,7 +94,9 @@ def test_secrets_file_is_read_by_key_name_only(tmp_path: Path) -> None:
 
 def test_name_mismatches_record_the_edgar_split() -> None:
     mm = {(m["var"], m["consumer"]) for m in cred.name_mismatches()}
-    assert ("SEC_EDGAR_USER_AGENT", "desks/mt5/research/alpha_capture.py") in mm
+    # alpha_capture accepts all three names since #201 (2026-10-06); the disclosure lane still
+    # reads only its own two
+    assert ("SEC_EDGAR_USER_AGENT", "desks/mt5/research/alpha_capture.py") not in mm
     assert ("SEC_EDGAR_USER_AGENT", "desks/mt5/research/corporate_disclosure.py") in mm
 
 
@@ -192,7 +194,7 @@ def test_every_edgar_reader_on_this_branch_accepts_all_three_names() -> None:
                           "SEC_EDGAR_USER_AGENT", "--", "*.py", ":!tests", ":!libs/data"],
                          cwd=ROOT, capture_output=True, text=True, check=False).stdout.split()
     readers = [p for p in out
-               if any(t in (ROOT / p).read_text("utf-8") for t in ("environ", "read_key("))]
+               if any(t in (ROOT / p).read_text("utf-8") for t in ("environ", "read_key"))]
     assert readers
     for p in readers:
         text = (ROOT / p).read_text("utf-8")

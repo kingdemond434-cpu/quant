@@ -23,7 +23,8 @@
    "signup": "https://www.eia.gov/opendata/register.php",
    "unlocks": "EIA weekly petroleum stocks -> XTIUSD, XBRUSD, USDCAD",
    "readers": [
-    "desks/mt5/research/asia_collector.py (asia_sources.json eia_energy)"
+    "desks/mt5/research/asia_collector.py (asia_sources.json eia_energy)",
+    "desks/mt5/research/keyed_sources.py"
    ],
    "owner": "Asian quant practices gap check"
   },
@@ -35,7 +36,8 @@
    "signup": "https://ecos.bok.or.kr/api/#/AuthKeyApply",
    "unlocks": "Bank of Korea card spending (kr_bok_card_spend)",
    "readers": [
-    "desks/mt5/research/alt_proxies.py"
+    "desks/mt5/research/alt_proxies.py",
+    "desks/mt5/research/keyed_sources.py"
    ],
    "owner": "Asian quant practices gap check",
    "same_key_as": "BOK_API_KEY"
@@ -101,7 +103,8 @@
    "unlocks": "Japan e-Stat: Tokyo CPI, immigration, customs microdata",
    "readers": [
     "desks/mt5/research/alt_proxies.py",
-    "desks/mt5/research/asia_collector.py"
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/keyed_sources.py"
    ],
    "owner": "Asian quant practices gap check"
   },
@@ -190,7 +193,7 @@
     "desks/mt5/research/asia_collector.py"
    ],
    "owner": "Asian quant practices gap check",
-   "note": "J-Quants refresh tokens expire after a week; the collector needs a refresh-token flow (routed to the Asia thread)"
+   "note": "asia_collector reads this name; corporate_disclosure (#140) mints its own from JQUANTS_MAIL + JQUANTS_PASSWORD"
   },
   {
    "name": "CDSE_TOKEN",
@@ -206,6 +209,131 @@
    "note": "CDSE access tokens are short-lived OAuth tokens; the collector needs a username/password token flow (routed to the Asia thread)"
   },
   {
+   "name": "NASDAQ_DATA_LINK_KEY",
+   "group": "free_data",
+   "cost": "free (50k calls/day)",
+   "machine": "box",
+   "signup": "https://data.nasdaq.com/sign-up",
+   "unlocks": "LBMA gold/silver fixes, OPEC basket -> XAUUSD, XAGUSD, XBRUSD, XTIUSD",
+   "readers": [
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "owner": "Global data discovery and use"
+  },
+  {
+   "name": "KOSIS_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://kosis.kr/openapi/index/index.jsp",
+   "unlocks": "Statistics Korea CPI and exports",
+   "readers": [
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "owner": "Global data discovery and use"
+  },
+  {
+   "name": "BLS_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://data.bls.gov/registrationEngine/",
+   "unlocks": "BLS CPI components, average hourly earnings, PPI",
+   "readers": [
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "owner": "Global data discovery and use"
+  },
+  {
+   "name": "EDINET_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://api.edinet-fsa.go.jp/api/auth/index.aspx?mode=1",
+   "unlocks": "Japan FSA filings (securities and large-holding reports)",
+   "readers": [
+    "desks/mt5/research/corporate_disclosure.py"
+   ],
+   "pending_pr": 140,
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "DART_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://opendart.fss.or.kr/uss/umt/EgovMberInsertView.do",
+   "unlocks": "Korea FSS OpenDART corporate filings",
+   "readers": [
+    "desks/mt5/research/corporate_disclosure.py"
+   ],
+   "pending_pr": 140,
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "JQUANTS_MAIL",
+   "group": "free_data",
+   "cost": "free plan",
+   "machine": "box",
+   "signup": "https://jpx-jquants.com/",
+   "unlocks": "J-Quants login (mints the refresh token itself; with JQUANTS_PASSWORD)",
+   "readers": [
+    "desks/mt5/research/corporate_disclosure.py"
+   ],
+   "pending_pr": 140,
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "JQUANTS_PASSWORD",
+   "group": "free_data",
+   "cost": "free plan",
+   "machine": "box",
+   "signup": "https://jpx-jquants.com/",
+   "unlocks": "J-Quants login (with JQUANTS_MAIL)",
+   "readers": [
+    "desks/mt5/research/corporate_disclosure.py"
+   ],
+   "pending_pr": 140,
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "JQUANTS_REFRESH_TOKEN",
+   "group": "free_data",
+   "cost": "free plan",
+   "machine": "box",
+   "signup": "https://jpx-jquants.com/",
+   "unlocks": "J-Quants statements and forecasts (expires weekly; MAIL+PASSWORD renews it)",
+   "readers": [
+    "desks/mt5/research/corporate_disclosure.py"
+   ],
+   "pending_pr": 140,
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "TELEGRAM_API_ID",
+   "group": "account_free",
+   "cost": "free (your own Telegram account)",
+   "machine": "box",
+   "signup": "https://my.telegram.org/apps",
+   "unlocks": "full history of public finance channels (with TELEGRAM_API_HASH)",
+   "readers": [
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "owner": "Global data discovery and use"
+  },
+  {
+   "name": "TELEGRAM_API_HASH",
+   "group": "account_free",
+   "cost": "free (your own Telegram account)",
+   "machine": "box",
+   "signup": "https://my.telegram.org/apps",
+   "unlocks": "(pair of TELEGRAM_API_ID)",
+   "readers": [
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "owner": "Global data discovery and use"
+  },
+  {
    "name": "QUANT_EDGAR_UA",
    "group": "free_data",
    "cost": "free (not a key)",
@@ -217,7 +345,11 @@
     "desks/mt5/research/sandboxes/edgar_transmission.py"
    ],
    "owner": "World sensor and macro surprise",
-   "note": "value is a declared User-Agent: \"YourName your@email\""
+   "note": "value is a declared User-Agent: \"YourName your@email\"",
+   "aliases": [
+    "SEC_EDGAR_USER_AGENT",
+    "SEC_EDGAR_UA"
+   ]
   },
   {
    "name": "GITHUB_TOKEN",

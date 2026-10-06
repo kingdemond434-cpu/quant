@@ -24,11 +24,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from libs.ops.env_keys import CATALOG_PATH, catalog, registry_sources
 
 
-def _row(name: str) -> dict[str, Any]:
-    proc = (os.environ.get(name) or "").strip()
-    scopes = registry_sources(name)
-    where = (["process"] if proc else []) + [s for s, _ in scopes]
-    length = len(proc) if proc else (len(scopes[0][1]) if scopes else 0)
+def _row(name: str, aliases: list[str] | None = None) -> dict[str, Any]:
+    where: list[str] = []
+    length = 0
+    for n in [name, *(aliases or [])]:
+        proc = (os.environ.get(n) or "").strip()
+        scopes = registry_sources(n)
+        tag = "" if n == name else f"({n})"
+        where += ([f"process{tag}"] if proc else []) + [s + tag for s, _ in scopes]
+        if not length:
+            length = len(proc) if proc else (len(scopes[0][1]) if scopes else 0)
     return {"name": name, "present": bool(where), "length": length, "where": where}
 
 
@@ -39,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     rows = []
     for k in catalog():
-        r = _row(str(k["name"]))
+        r = _row(str(k["name"]), list(k.get("aliases") or []))
         r.update(group=k["group"], cost=k["cost"], machine=k["machine"])
         rows.append(r)
     if a.names:
@@ -64,7 +69,8 @@ def main(argv: list[str] | None = None) -> int:
                                                                        "free_infra")]
     print(f"\n{len(rows) - sum(1 for r in rows if not r['present'])}/{len(rows)} present; "
           f"free keys still missing: {', '.join(str(r['name']) for r in missing) or 'none'}")
-    if any(r["present"] and "process" not in r["where"] for r in rows):
+    if any(r["present"] and not any(str(w).startswith("process") for w in r["where"])
+           for r in rows):
         print("Some keys are set in the registry but not in this shell: open a NEW PowerShell, "
               "or rely on read_key, which reads the registry directly.")
     return 0
