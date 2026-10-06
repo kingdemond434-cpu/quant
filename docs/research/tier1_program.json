@@ -5491,6 +5491,36 @@
    "next_step": "Commit the named files from the machine that built them, or rebuild them in this repository, then restore LANDED with checked citations."
   },
   {
+   "id": "K3",
+   "item": "Korea and Hong Kong official planes as parsed PIT series through the alt-data factory: BOK ECOS (base rate, KRW call rate, FX reserves, export prices), the customs 10/20-day export prints as an event system, HKMA (aggregate balance, Convertibility Undertaking FX leg, HIBOR fixings and term spreads, EF bills outstanding, monetary base) with currency-board events; KRX and HKEX refused on their own terms",
+   "domain": "K",
+   "phase": "K",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/alt_proxies.py:1530 make_ecos_parser -- one ECOS StatisticSearch item per row",
+    "desks/mt5/research/alt_proxies.py:1614 parse_hkma_liquidity -- aggregate balance, CU FX leg, HIBOR, TWI",
+    "desks/mt5/research/alt_proxies.py:1642 _hkma_requests -- paged backfill then one page per pass",
+    "desks/mt5/research/alt_proxies.py:2489 KR_HK_PLANE_SOURCES -- the seven rows, instruments routed by universe_policy via may_mint",
+    "desks/mt5/research/alt_proxies.py:2638 KR_HK_TERMS_EVIDENCE -- DATA.GOV.HK and KRX/HKEX terms quoted verbatim, read 2026-10-06",
+    "desks/mt5/research/alt_proxies.py:3192 build_points -- level, delta, acceleration, surprise, revision_delta and the s2.5 clock names on every point of every source",
+    "desks/mt5/research/countries/_official_plane.py:125 run -- the region's lanes read back from the factory's stores, cells judged per lane, refused lanes with their quotes",
+    "desks/mt5/research/countries/kr/official_plane.py:53 export_events -- 10/20-day prints RELEASED and SCHEDULED",
+    "desks/mt5/research/countries/hk/official_plane.py:44 cu_events -- WEAK_SIDE / STRONG_SIDE CU legs",
+    "desks/mt5/research/countries/kr/miners.py:118 NOT_IN_REPO -- the box-built miners are registered only where their files exist, so MISSING is empty",
+    "libs/data/key_aliases.py -- ECOS_API_KEY canonical, BOK_API_KEY adopted as its alias",
+    "tests/test_kr_hk_official_planes.py"
+   ],
+   "scheduled_by": "hourly_cycle:alt_proxies, hourly_cycle:global_research_os",
+   "artifact": "desks/mt5/reports/ALT_PROXIES.json + desks/mt5/reports/KR_OFFICIAL_PLANE.json + desks/mt5/reports/HK_OFFICIAL_PLANE.json",
+   "consumer": "desks/mt5/research/global_research_os.py _load_extra (kr and hk miners.py MINERS['official_plane']); the axes (data/axes/alt_kr_ecos_*.json, alt_hk_hkma_*.json) read by alpha_dsl.FieldCatalogue and representation_forge; reports/ALT_PROXIES_ALLOCATION_INTEL.json; proposer_common.donate (direct and conditioned cells, every look charged)",
+   "landed": [
+    "2026-10-06: seven parsed rows ride the existing alt_proxies leg; fixture pass parses every row, no fixture cell is ever minted; the Korea department registers 1 committed miner and 0 MISSING (16 box-built miners reported NOT_IN_REPO)"
+   ],
+   "gap": "Live yield UNMEASURED: the authoring container cannot reach ecos.bok.or.kr or api.hkma.gov.hk, so no row has returned real data; the ECOS rows wait on ECOS_API_KEY on the box (BLOCKED_ON_KEY) and their item codes are verified there against StatisticItemList (ALT_ECOS_*_PATH overrides). KRX investor-type flows, program trading, short selling and KOSPI200 OI, and HKEX Stock Connect flows, are BLOCKED_ON_TERMS:refused with no lawful substitute. No KOSPI CFD exists in universe.json, so Korea maps to USDKRW / AUDUSD.",
+   "next_step": "On the box: set ECOS_API_KEY (or keep BOK_API_KEY), run alt_proxies --once, confirm each ECOS code returns rows, read KR_OFFICIAL_PLANE.json / HK_OFFICIAL_PLANE.json; then restore K1/K2 by committing the box-built agents/lattice/moat/data_plane/nowcast if they still exist there."
+  },
+  {
    "id": "U1",
    "item": "The ingestion-exploitation contract and checker (every ingested unit gets a disposition; stranded units become discoveries; the ratchet floor) and the macro intelligence fusion (posteriors, nowcasts, news lane, two-sided suggestions through the router contract)",
    "domain": "U",

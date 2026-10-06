@@ -60,6 +60,7 @@ state, never a silent skip; no key is ever printed, logged or vaulted (the vault
 from __future__ import annotations
 
 import argparse
+import bisect
 import contextlib
 import gzip
 import hashlib
@@ -112,6 +113,12 @@ PARENTS_PER_SYMBOL = 3
 #: A component older than this (days since its release) no longer describes "now" in the
 #: allocation-intel artifact. Keyed by cadence.
 STALE_DAYS = {"daily": 10, "weekly": 21, "10-daily": 25, "monthly": 45, "event": 30}
+
+# ONE KEY, ONE NAME (2026-10-06): BOK_API_KEY, when it is the only name set, is adopted as
+# ECOS_API_KEY for this process. Names only; no value is printed or returned.
+with contextlib.suppress(ImportError):
+    from libs.data import key_aliases as _key_aliases
+    _key_aliases.adopt()
 
 
 @dataclass(frozen=True)
@@ -1498,6 +1505,150 @@ def parse_kr_mof_container(body: bytes, ctx: Ctx) -> list[Obs]:
     return [Obs("container_teu", d, v) for d, v in sorted(tot.items())]
 
 
+# ======================================================================= KR / HK official planes
+# THE KOREA AND HONG KONG OFFICIAL PLANES (asia directive PARTS X and XI, audit rows 31-33,
+# 2026-10-06).
+# Two documented, keyed-or-keyless official APIs, parsed into PIT series that ride this organ's
+# clock, doors and three uses unchanged. KRX and HKEX are NOT here: their published terms refuse
+# commercial use / systematic retrieval, so the fail-closed terms gate below never builds them a
+# fetcher (the refusals and their verbatim quotes are in `KR_HK_TERMS_EVIDENCE` and are carried by
+# `countries/kr|hk/official_plane.py` into the departments' reports).
+
+def _ecos_period(t: str) -> date | None:
+    """ECOS TIME: YYYYMMDD (daily), YYYYMM (monthly -> month end), YYYYQn (quarter end)."""
+    t = str(t or "").strip()
+    with contextlib.suppress(ValueError):
+        if len(t) == 8 and t.isdigit():
+            return date(int(t[:4]), int(t[4:6]), int(t[6:]))
+        if len(t) == 6 and t.isdigit():
+            return _month_end(int(t[:4]), int(t[4:]))
+        if len(t) == 6 and t[4] == "Q" and t[:4].isdigit() and t[5] in "1234":
+            return _month_end(int(t[:4]), 3 * int(t[5]))
+    return None
+
+
+def make_ecos_parser(series: str) -> Callable[[bytes, Ctx], list[Obs]]:
+    """A StatisticSearch parser for ONE ECOS item, named `series`. The URL filters to the item, so
+    every row is that item; an ECOS error document (`RESULT.CODE`, e.g. INFO-200 no data or
+    INFO-100 bad key) parses to nothing and the pass names it, never a zero."""
+
+    def parse(body: bytes, ctx: Ctx) -> list[Obs]:
+        try:
+            doc = json.loads(body.decode("utf-8", errors="replace"))
+        except ValueError:
+            return []
+        rows = ((doc or {}).get("StatisticSearch") or {}).get("row") \
+            if isinstance(doc, dict) else None
+        out: list[Obs] = []
+        for r in rows if isinstance(rows, list) else []:
+            if not isinstance(r, dict):
+                continue
+            period, v = _ecos_period(str(r.get("TIME") or "")), _num(str(r.get("DATA_VALUE") or ""))
+            if period is not None and v is not None:
+                out.append(Obs(series, period, v))
+        return out
+
+    parse.__name__ = f"parse_ecos_{series}"
+    return parse
+
+
+def _hkma_records(body: bytes) -> list[dict[str, Any]]:
+    """HKMA Open API envelope: {"header": {"success": true, ...}, "result": {"datasize": n,
+    "records": [...]}}. A `success: false` header (bad segment, bad page) is no records."""
+    try:
+        doc = json.loads(body.decode("utf-8-sig", errors="replace"))
+    except ValueError:
+        return []
+    if not isinstance(doc, dict) or not (doc.get("header") or {}).get("success", False):
+        return []
+    recs = (doc.get("result") or {}).get("records")
+    return [r for r in recs if isinstance(r, dict)] if isinstance(recs, list) else []
+
+
+def _hkma_obs(body: bytes, ctx: Ctx, date_key: str, fields: dict[str, str],
+              spreads: tuple[tuple[str, str, str], ...] = ()) -> list[Obs]:
+    out: list[Obs] = []
+    today = ctx.fetched_at.date()
+    for r in _hkma_records(body):
+        try:
+            d = date.fromisoformat(str(r.get(date_key) or "")[:10])
+        except ValueError:
+            continue
+        if d >= today:                 # a figure still being filled for today is never frozen
+            continue
+        vals: dict[str, float] = {}
+        for field_name, series in fields.items():
+            v = _num(str(r.get(field_name))) if r.get(field_name) not in (None, "") else None
+            if v is not None:
+                vals[series] = v
+                out.append(Obs(series, d, v))
+        for name, hi, lo in spreads:
+            if hi in vals and lo in vals:
+                out.append(Obs(name, d, round(vals[hi] - vals[lo], 6)))
+    return out
+
+
+#: Daily Figures of Interbank Liquidity (apidocs.hkma.gov.hk, read 2026-10-06), HK$ million and
+#: % p.a. `forex_trans_t1` is the FX transaction booked for T+1 -- the Convertibility Undertaking
+#: leg: positive when the HKMA sold HKD at the strong side (inflow), negative when it bought HKD
+#: at the weak side (outflow defence, which drains the aggregate balance).
+HKMA_LIQUIDITY_FIELDS: dict[str, str] = {
+    "closing_balance": "aggregate_balance_hkd_mn", "hibor_overnight": "hibor_overnight",
+    "hibor_fixing_1m": "hibor_1m", "twi": "hkd_twi", "disc_win_base_rate": "base_rate",
+    "forex_trans_t1": "cu_forex_trans_t1_hkd_mn",
+    "forecast_aggregate_bal_t1": "aggregate_balance_forecast_t1_hkd_mn"}
+#: Hong Kong Interbank Interest Rates, segment hibor.fixing (HKAB fixing, 11:15 HKT), % p.a.
+HKMA_HIBOR_FIELDS: dict[str, str] = {
+    "ir_overnight": "hibor_on", "ir_1w": "hibor_1w", "ir_1m": "hibor_1m", "ir_3m": "hibor_3m",
+    "ir_6m": "hibor_6m", "ir_12m": "hibor_12m"}
+#: Daily Figures of Monetary Base, HK$ million. EF bills and notes enter as their OUTSTANDING
+#: amount here; the per-issue EFBN yields endpoint serves the latest day only and is a Refinitiv
+#: feed, so it is not read.
+HKMA_MB_FIELDS: dict[str, str] = {
+    "aggr_balance_af_disc_win": "aggregate_balance_hkd_mn",
+    "outstanding_efbn": "efbn_outstanding_hkd_mn",
+    "cert_of_indebt": "certificates_of_indebtedness_hkd_mn",
+    "mb_bf_disc_win_total": "monetary_base_hkd_mn"}
+
+
+def parse_hkma_liquidity(body: bytes, ctx: Ctx) -> list[Obs]:
+    """HKMA daily interbank liquidity: aggregate balance, CU FX leg, HIBOR, TWI."""
+    return _hkma_obs(body, ctx, "end_of_date", HKMA_LIQUIDITY_FIELDS,
+                     (("aggregate_balance_forecast_gap_hkd_mn",
+                       "aggregate_balance_forecast_t1_hkd_mn", "aggregate_balance_hkd_mn"),))
+
+
+def parse_hkma_hibor(body: bytes, ctx: Ctx) -> list[Obs]:
+    """HKMA HIBOR fixings by tenor plus the term spread (3M over overnight), % p.a."""
+    return _hkma_obs(body, ctx, "end_of_day", HKMA_HIBOR_FIELDS,
+                     (("hibor_3m_on_spread", "hibor_3m", "hibor_on"),
+                      ("hibor_12m_1m_spread", "hibor_12m", "hibor_1m")))
+
+
+def parse_hkma_monetary_base(body: bytes, ctx: Ctx) -> list[Obs]:
+    """HKMA daily monetary base: aggregate balance, outstanding EF bills/notes, CIs, total."""
+    return _hkma_obs(body, ctx, "end_of_date", HKMA_MB_FIELDS)
+
+
+#: The date field each HKMA endpoint sorts on, for the paged request.
+HKMA_DATE_KEY: dict[str, str] = {"hk_hkma_interbank_liquidity": "end_of_date",
+                                 "hk_hkma_hibor_fixing": "end_of_day",
+                                 "hk_hkma_monetary_base": "end_of_date"}
+HKMA_PAGE = 1000
+#: Pages read on the first pass (about sixteen years of business days); one page afterwards.
+HKMA_BACKFILL_PAGES = 4
+
+
+def _hkma_requests(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
+    pages = 1 if state.get("full_done") else HKMA_BACKFILL_PAGES
+    state["full_done_next"] = True
+    sep = "&" if "?" in src.url else "?"
+    sort = HKMA_DATE_KEY.get(src.id, "end_of_date")
+    return [Request(f"{src.url}{sep}pagesize={HKMA_PAGE}&offset={k * HKMA_PAGE}"
+                    f"&sortby={sort}&sortorder=desc", Ctx(part=f"page{k}", fetched_at=now))
+            for k in range(pages)]
+
+
 # ============================================================================ the sources
 @dataclass(frozen=True)
 class Source:
@@ -2313,6 +2464,230 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
 #: open data under a stated open licence, CC/CC0 data, public statistics behind a documented API,
 #: or a publisher's written "anyone may use this". Everything else is `to_confirm` until a human
 #: reads the terms, and a `to_confirm` or `refused` source is NEVER fetched (BLOCKED_ON_TERMS).
+# ---------------------------------------------------------------------------- KR / HK planes
+ECOS_URL = "https://ecos.bok.or.kr/api/StatisticSearch/{key}/json/kr/1/10000/"
+#: ECOS item paths (STAT/CYCLE/START/END/ITEM[/ITEM2]). Each is overridable on the box; a wrong code
+#: returns an ECOS error document, which parses to nothing and is reported -- never a value.
+ECOS_PATHS: dict[str, str] = {
+    "kr_ecos_base_rate": os.environ.get("ALT_ECOS_BASE_RATE_PATH",
+                                        "722Y001/D/20150101/{yyyymmdd}/0101000"),
+    "kr_ecos_call_rate": os.environ.get("ALT_ECOS_CALL_RATE_PATH",
+                                        "817Y002/D/20150101/{yyyymmdd}/010101000"),
+    "kr_ecos_fx_reserves": os.environ.get("ALT_ECOS_FX_RESERVES_PATH",
+                                          "732Y001/M/201001/{yyyymm}/99"),
+    "kr_ecos_export_prices": os.environ.get("ALT_ECOS_EXPORT_PRICES_PATH",
+                                            "402Y014/M/201001/{yyyymm}/*AA/W"),
+}
+HKMA_BASE = "https://api.hkma.gov.hk/public/market-data-and-statistics/"
+_BOK = "Bank of Korea ECOS Open API (free key; attribution to the Bank of Korea)"
+_HKMA = ("HKMA Open API, published on DATA.GOV.HK: free commercial and non-commercial reuse "
+         "with attribution to the HKMA and DATA.GOV.HK; no key")
+_ECOS_NOTE = ("parsed ECOS item; the code path is overridable (ALT_ECOS_*_PATH) and is verified "
+              "on the box against StatisticItemList -- a wrong code parses to nothing, never a "
+              "value. Key: ECOS_API_KEY (BOK_API_KEY is adopted as its alias)")
+
+KR_HK_PLANE_SOURCES: tuple[Source, ...] = (
+    Source(
+        id="kr_ecos_base_rate", name="Bank of Korea base rate (ECOS 722Y001, daily)",
+        url=ECOS_URL + ECOS_PATHS["kr_ecos_base_rate"], region="KR", language="ko",
+        cadence="daily", parse=make_ecos_parser("base_rate"), rule=_lag_rule(0, 1),
+        transform="given", key_env="ECOS_API_KEY", instruments={"USDKRW": -1},
+        signal_series=("base_rate",),
+        mechanism=("the BOK policy rate is the anchor of KRW carry; a move (or the end of a "
+                   "cycle) reprices the won against the dollar before Korean flows adjust"),
+        payer="won carry positions sized on the prior policy path",
+        constraint="FX swap and NDF books reprice only at MPC dates",
+        licence=_BOK, source_culture="KR/ko", participant_structure=("policy_driven",),
+        failure_mode_hypothesis=("fails when the move was fully priced by the KTB curve and "
+                                 "when Fed surprises dominate the same week"),
+        crowding_prior="high", note=_ECOS_NOTE),
+    Source(
+        id="kr_ecos_call_rate", name="Korea interbank call rate, overnight (ECOS 817Y002)",
+        url=ECOS_URL + ECOS_PATHS["kr_ecos_call_rate"], region="KR", language="ko",
+        cadence="daily", parse=make_ecos_parser("call_rate_1d"), rule=_lag_rule(1, 9),
+        transform="given", key_env="ECOS_API_KEY", instruments={"USDKRW": -1},
+        signal_series=("call_rate_1d",),
+        mechanism=("the KRW interbank call rate against the base rate is onshore won liquidity: "
+                   "a call rate trading over the base rate is a funding squeeze that forces "
+                   "dollar selling by onshore banks"),
+        payer="offshore NDF holders who do not see onshore funding until it moves spot",
+        constraint="onshore/offshore won markets are segmented by capital controls",
+        licence=_BOK, source_culture="KR/ko",
+        participant_structure=("institutional", "settlement_constrained"),
+        failure_mode_hypothesis=("fails at quarter- and year-end balance-sheet dates, which "
+                                 "move the call rate mechanically"),
+        crowding_prior="low", note=_ECOS_NOTE),
+    Source(
+        id="kr_ecos_fx_reserves", name="Korea official FX reserves (ECOS 732Y001, monthly)",
+        url=ECOS_URL + ECOS_PATHS["kr_ecos_fx_reserves"], region="KR", language="ko",
+        cadence="monthly", parse=make_ecos_parser("fx_reserves_usd_k"),
+        rule=_lag_rule(7, 0, weekday=True), transform="mom_monthly", key_env="ECOS_API_KEY",
+        instruments={"USDKRW": -1}, signal_series=("fx_reserves_usd_k",),
+        mechanism=("the monthly change in reserves net of valuation is the footprint of BOK "
+                   "smoothing operations: a drawdown is the authority selling dollars into a "
+                   "weak won, which it cannot do forever"),
+        payer="won shorts who read intervention only after the fact",
+        constraint="the BOK publishes intervention net totals quarterly, with a lag",
+        licence=_BOK, source_culture="KR/ko", participant_structure=("policy_driven",),
+        failure_mode_hypothesis=("fails when valuation (EUR/JPY moves, bond prices) dominates "
+                                 "the monthly change, which a raw MoM cannot separate"),
+        crowding_prior="low", note=_ECOS_NOTE),
+    Source(
+        id="kr_ecos_export_prices", name="Korea export price index, won basis (ECOS 402Y014)",
+        url=ECOS_URL + ECOS_PATHS["kr_ecos_export_prices"], region="KR", language="ko",
+        cadence="monthly", parse=make_ecos_parser("export_price_index"),
+        rule=_lag_rule(20, 0, weekday=True), transform="yoy_monthly", key_env="ECOS_API_KEY",
+        instruments={"USDKRW": -1, "AUDUSD": 1}, signal_series=("export_price_index",),
+        mechanism=("Korean export prices are the pricing power of the Asian manufacturing "
+                   "chain (chips, petrochemicals, steel): rising export prices are terms of "
+                   "trade for the won and a demand read for the commodity bloc"),
+        payer="slow repricers of Asian terms of trade",
+        constraint="price indices print monthly and three weeks late",
+        licence=_BOK, source_culture="KR/ko",
+        participant_structure=("physical_flow", "institutional"),
+        failure_mode_hypothesis=("fails when the won-basis index moves on the won itself "
+                                 "(a translation effect) rather than on contract prices"),
+        crowding_prior="low", note=_ECOS_NOTE),
+    Source(
+        id="hk_hkma_interbank_liquidity",
+        name="HKMA daily interbank liquidity (aggregate balance, CU FX leg, HIBOR, TWI)",
+        url=HKMA_BASE + "daily-monetary-statistics/daily-figures-interbank-liquidity",
+        region="HK", language="en", cadence="daily", parse=parse_hkma_liquidity,
+        rule=_lag_rule(1, 1), transform="level_dev",
+        instruments={"HK50": 1, "USDHKD": 1, "AUDUSD": 1},
+        series_instruments={"hibor": {"USDHKD": -1, "HK50": -1},
+                            "cu_forex": {"USDHKD": 1, "HK50": 1, "USDCNH": -1}},
+        signal_series=("aggregate_balance_hkd_mn", "cu_forex_trans_t1_hkd_mn"),
+        mechanism=("under the currency board the aggregate balance IS HKD liquidity: a "
+                   "weak-side Convertibility Undertaking purchase drains it, HIBOR rises toward "
+                   "SOFR and the HKD carry trade unwinds; a strong-side sale floods it"),
+        payer="HKD carry trades and HK equity holders who wait for HIBOR to move",
+        constraint="the CU settles T+2 and the balance moves on a fixed schedule",
+        licence=_HKMA, source_culture="HK/en",
+        participant_structure=("policy_driven", "settlement_constrained"),
+        failure_mode_hypothesis=("fails around IPO subscription and dividend seasons, when "
+                                 "HIBOR spikes on locked liquidity without a CU leg"),
+        crowding_prior="medium",
+        note=("asia_sources `hkma_open_api` fetches the same endpoint as one generic frame; "
+              "this is the parsed, paged series with currency-board semantics")),
+    Source(
+        id="hk_hkma_hibor_fixing", name="HKMA HIBOR fixings by tenor (HKAB, 11:15 HKT)",
+        url=(HKMA_BASE + "monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily"
+             "?segment=hibor.fixing"),
+        region="HK", language="en", cadence="daily", parse=parse_hkma_hibor,
+        rule=_lag_rule(0, 4), transform="level_dev",
+        instruments={"USDHKD": -1, "HK50": -1, "USDCNH": -1},
+        signal_series=("hibor_1m", "hibor_3m_on_spread"),
+        mechanism=("the HIBOR term structure is the price of HKD funding; a rising 1M fixing or "
+                   "a steepening 3M-over-overnight spread is the offshore market pricing a "
+                   "liquidity drain before the aggregate balance shows it"),
+        payer="HKD carry and HK equity books funded at HIBOR",
+        constraint="the fixing is set once a day by the HKAB panel",
+        licence=_HKMA, source_culture="HK/en", participant_structure=("institutional",),
+        failure_mode_hypothesis=("fails in quarter-end and IPO lock-up spikes that mean-revert "
+                                 "within days"),
+        crowding_prior="medium"),
+    Source(
+        id="hk_hkma_monetary_base", name="HKMA daily monetary base (aggregate balance, EFBN)",
+        url=HKMA_BASE + "daily-monetary-statistics/daily-figures-monetary-base",
+        region="HK", language="en", cadence="daily", parse=parse_hkma_monetary_base,
+        rule=_lag_rule(1, 2), transform="level_dev",
+        instruments={"HK50": -1, "USDHKD": -1},
+        series_instruments={"aggregate_balance": {"HK50": 1, "USDHKD": 1}},
+        signal_series=("efbn_outstanding_hkd_mn",),
+        mechanism=("Exchange Fund Bill issuance is the HKMA's own liquidity tool: issuing bills "
+                   "moves cash out of the aggregate balance as surely as a CU purchase"),
+        payer="HK equity and HKD funding positions that read only HIBOR",
+        constraint="EFBN tenders are scheduled; their liquidity effect lands on settlement",
+        licence=_HKMA, source_culture="HK/en", participant_structure=("policy_driven",),
+        failure_mode_hypothesis=("fails when issuance is a pre-announced roll with no net "
+                                 "change in outstanding"),
+        crowding_prior="low"),
+)
+
+#: Terms for the plane rows, read 2026-10-06 (TERMS_EVIDENCE for the 2026-09-30 review is
+#: separate and pinned to that review).
+KR_HK_TERMS: dict[str, tuple[str, str]] = {
+    "kr_ecos_base_rate": ("confirmed", "BOK ECOS documented Open API (the desk's 2026-09-30 "
+                          "decision for kr_bok_card_spend, same API and publisher)"),
+    "kr_ecos_call_rate": ("confirmed", "BOK ECOS documented Open API"),
+    "kr_ecos_fx_reserves": ("confirmed", "BOK ECOS documented Open API"),
+    "kr_ecos_export_prices": ("confirmed", "BOK ECOS documented Open API"),
+    "hk_hkma_interbank_liquidity": ("confirmed", "DATA.GOV.HK terms: commercial and "
+                                    "non-commercial reuse, free, with attribution"),
+    "hk_hkma_hibor_fixing": ("confirmed", "DATA.GOV.HK terms: commercial and non-commercial "
+                             "reuse, free, with attribution"),
+    "hk_hkma_monetary_base": ("confirmed", "DATA.GOV.HK terms: commercial and non-commercial "
+                              "reuse, free, with attribution"),
+}
+_CHK_PLANES = "2026-10-06"
+_DGH = {"terms_url": "https://data.gov.hk/en/terms-and-conditions",
+        "terms_quote": ("You are allowed to browse, download, distribute, reproduce, hyperlink "
+                        "to, and print the Data for both commercial and non-commercial purposes "
+                        "on a free-of-charge basis"),
+        "listing_url": ("https://data.gov.hk/en-data/dataset/"
+                        "hk-hkma-t06-t060301hk-interbank-ir-endperiod"),
+        "listing_quote": ("Data Provider: Hong Kong Monetary Authority; Resource: "
+                          "https://api.hkma.gov.hk/public/market-data-and-statistics/..."),
+        "api_doc_quote": ("No application, registration or certification is required for using "
+                          "the Open API offered by the HKMA's website. It is also free of "
+                          "charge. (apidocs.hkma.gov.hk/abouthkmasapi)"),
+        "robots": "api.hkma.gov.hk is the documented Open API host",
+        "checked_at": _CHK_PLANES}
+#: Evidence for the plane rows AND for the two refused hosts no fetcher is built for.
+KR_HK_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    **{sid: dict(_DGH) for sid in ("hk_hkma_interbank_liquidity", "hk_hkma_hibor_fixing",
+                                   "hk_hkma_monetary_base")},
+    **{sid: {"terms_url": "https://ecos.bok.or.kr/api/",
+             "terms_quote": ("(the ECOS terms page is a JavaScript app not readable from the "
+                             "authoring container; the desk confirmed ECOS as a documented "
+                             "free-key Open API on 2026-09-30 for kr_bok_card_spend, and these "
+                             "rows read the same API from the same publisher)"),
+             "robots": "ecos.bok.or.kr/api is the documented Open API",
+             "checked_at": _CHK_PLANES}
+       for sid in ("kr_ecos_base_rate", "kr_ecos_call_rate", "kr_ecos_fx_reserves",
+                   "kr_ecos_export_prices")},
+    "kr_krx_market_data": {
+        "terms_url": "https://openapi.krx.co.kr/contents/OPP/INFO/OPPINFO005.jsp",
+        "terms_quote": ("Art. 6(2): API Users may only use the API Service for non-commercial "
+                        "purposes and may not charge third parties any consideration for the "
+                        "results of the API Service. Art. 11(2): The API User may not provide "
+                        "the data provided by the KRX to any third parties."),
+        "robots": "not read: the terms alone refuse commercial use",
+        "decision": "refused",
+        "checked_at": _CHK_PLANES},
+    "hk_hkex_stock_connect": {
+        "terms_url": "https://www.hkex.com.hk/Global/Exchange/Terms-of-Use",
+        "terms_quote": ("You are not permitted to ... create or compile derivative works "
+                        "(including, without limitation, through framing or systematic "
+                        "retrieval to create collections, compilations, databases or "
+                        "directories) from the Information ... You are not permitted to "
+                        "conduct, facilitate, enable, authorise or permit any text or data "
+                        "mining or web scraping in relation to this Website"),
+        "robots": "not read: the terms alone refuse systematic retrieval",
+        "decision": "refused",
+        "checked_at": _CHK_PLANES},
+}
+#: What each refused host would have carried, and the lawful series standing nearest to it.
+KR_HK_REFUSED: dict[str, dict[str, Any]] = {
+    "kr_krx_market_data": {
+        "would_carry": ["daily investor-type net buying (foreign / institutional / retail) "
+                        "for KOSPI and KOSDAQ", "program trading (arbitrage / non-arbitrage)",
+                        "short-selling balances", "KOSPI200 futures and options open interest"],
+        "status": "BLOCKED_ON_TERMS:refused",
+        "nearest_lawful": ["kr_ecos_call_rate", "kr_ecos_fx_reserves", "kr_exports_early"],
+        "why_not_a_substitute": ("no free public source with commercial reuse publishes "
+                                 "investor-type flows or KOSPI200 OI; the nearest lawful series "
+                                 "measure onshore funding and the authority's FX footprint, "
+                                 "not who is buying")},
+    "hk_hkex_stock_connect": {
+        "would_carry": ["Northbound / Southbound daily net buy and turnover"],
+        "status": "BLOCKED_ON_TERMS:refused",
+        "nearest_lawful": ["hk_hkma_interbank_liquidity"],
+        "why_not_a_substitute": ("the CU FX leg and the aggregate balance measure the HKD side "
+                                 "of cross-border flow, not the mainland equity leg")},
+}
+
 TERMS: dict[str, tuple[str, str]] = {
     "kr_exports_early": ("confirmed", "KOGL public-sector open licence"),
     "us_tsa_throughput": ("confirmed", "US federal work, public domain"),
@@ -2519,8 +2894,9 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "checked_at": _CHK},
 }
 
+TERMS.update(KR_HK_TERMS)
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
-                for s in (*SOURCES, *SUBSTITUTE_SOURCES))
+                for s in (*SOURCES, *SUBSTITUTE_SOURCES, *KR_HK_PLANE_SOURCES))
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
 BY_ID = {s.id: s for s in SOURCES}
 
@@ -2681,7 +3057,10 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
         # page, which TSA publishes at /<year>.
         return [Request(src.url, Ctx(fetched_at=now)),
                 Request(f"{src.url}/{now.year - 1}", Ctx(part="prior_year", fetched_at=now))]
-    url = src.url.replace("{key}", key).replace("{yyyymm}", now.strftime("%Y%m"))
+    if src.id in HKMA_DATE_KEY:
+        return _hkma_requests(src, now, state)
+    url = (src.url.replace("{key}", key).replace("{yyyymmdd}", now.strftime("%Y%m%d"))
+           .replace("{yyyymm}", now.strftime("%Y%m")))
     for env in src.config_env:
         code = os.environ.get(env, "").strip()
         if not code:
@@ -2862,9 +3241,20 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
         surprises: list[float] = []
         pts: list[dict[str, Any]] = []
         prior_x: list[float] = []
+        seen_sorted: list[float] = []
+        prev_delta: float | None = None
         for i, r in enumerate(rows):
             x = pace[i]
-            surprise = z = None
+            surprise = z = exp = None
+            # LEVEL / CHANGE / ACCELERATION on the first-seen value, in availability order (the
+            # five alpha objects of the alt-data factory: level, change, acceleration, surprise,
+            # revision). Each uses only what was knowable at this point.
+            delta = vals[i] - vals[i - 1] if i >= 1 else None
+            accel = delta - prev_delta if delta is not None and prev_delta is not None else None
+            prev_delta = delta
+            pct = (bisect.bisect_left(seen_sorted, vals[i]) / len(seen_sorted)
+                   if len(seen_sorted) >= EXPECTATION_N else None)
+            bisect.insort(seen_sorted, vals[i])
             if x is not None:
                 exp = _mean(prior_x[-EXPECTATION_N:]) if len(prior_x) >= 3 else None
                 if exp is not None:
@@ -2890,7 +3280,23 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                 "value": r["value_first"],
                 "pace": None if x is None else round(x, 6),
                 "surprise": None if surprise is None else round(surprise, 6),
-                "surprise_z": None if z is None else round(z, 4)})
+                "surprise_z": None if z is None else round(z, 4),
+                "delta": None if delta is None else round(delta, 6),
+                "acceleration": None if accel is None else round(accel, 6),
+                "revision_delta": (round(float(r["value_last"]) - float(r["value_first"]), 6)
+                                   if r.get("revision_time") and r.get("value_last") is not None
+                                   else None),
+                # MANDATE 2026-10-06 s2.5 names, beside the desk's own (same values, never a
+                # second clock): the sensor ledger and its adapter read these verbatim.
+                "source_id": src.id, "metric": name,
+                "knowable_at": str(r["published_time"]),
+                "publication_time": str(r["published_time"]),
+                "received_at": r.get("first_seen_at"),
+                "expected_value": None if exp is None else round(exp, 6),
+                "raw_surprise": None if surprise is None else round(surprise, 6),
+                "percentile": None if pct is None else round(pct, 4),
+                "revision_of": (_vintage(src.id, r.get("first_seen_at"), r["value_first"])
+                                if r.get("revision_time") else None)})
         out[name] = pts
     # FIRMS: a total across the declared footprints, per day, from the per-cluster counts.
     if src.id == "cn_firms_industrial":
@@ -2935,8 +3341,8 @@ def axis_doc(src: Source, points: dict[str, list[dict[str, Any]]], now: datetime
     alpha_dsl.axis_fields, world_model.load_inputs and representation_forge read unchanged."""
     series: dict[str, Any] = {}
     for name, pts in sorted(points.items()):
-        for col in ("value", "pace", "surprise_z"):
-            keep = [{"d": p["d"], "v": p[col], "available_time": p["available_time"],
+        for col in ("value", "pace", "surprise_z", "delta", "acceleration"):
+            keep = [{"d": p["d"], "v": p.get(col), "available_time": p["available_time"],
                      "published_time": p["published_time"], "event_time": p["event_time"],
                      "first_seen_at": p["first_seen_at"], "revision_time": p["revision_time"],
                      "vintage_id": p["vintage_id"], "pit_quality": p["pit_quality"]}
@@ -2950,7 +3356,8 @@ def axis_doc(src: Source, points: dict[str, list[dict[str, Any]]], now: datetime
             "cadence": src.cadence, "n_series": len(series),
             "pit_fields": ["event_time", "published_time", "available_time", "first_seen_at",
                            "revision_time", "vintage_id"],
-            "shape": "series[<series>.<value|pace|surprise_z>].points, joined on available_time",
+            "shape": ("series[<series>.<value|pace|surprise_z|delta|acceleration>].points, "
+                      "joined on available_time"),
             "vintage_note": ("first value seen is the value; a revision is recorded with its own "
                              "revision_time and never back-dated"),
             "series": series}
@@ -2974,7 +3381,9 @@ def write_lake_series(paths: Paths, src: Source, points: dict[str, list[dict[str
                             "retrieval_time": p["retrieval_time"],
                             "revision_time": p["revision_time"], "source_id": src.id,
                             "vintage_id": p["vintage_id"], "value": p["value"], "pace": p["pace"],
-                            "surprise_z": p["surprise_z"], "pit_quality": p["pit_quality"]}
+                            "surprise_z": p["surprise_z"], "pit_quality": p["pit_quality"],
+                            "delta": p.get("delta"), "acceleration": p.get("acceleration"),
+                            "revision_delta": p.get("revision_delta")}
                            for p in pts])
         target = paths.series / f"{lake_file(src, name)}.csv"
         tmp = target.with_suffix(f".tmp{os.getpid()}")

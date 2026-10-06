@@ -245,7 +245,7 @@ ORGANS: tuple[Entry, ...] = (
     _e("desks/mt5/research/asia_transmission.py", "the Asian production-chain transmission graph"),
     _e("desks/mt5/research/middle_east_interaction.py", "six mechanism families, two triples"),
     _e("desks/mt5/research/south_america_interaction.py", "local state as a SENSOR, not a trade"),
-    _e("desks/mt5/research/countries/kr/miners.py", "the Korea miner registry: twelve agents"),
+    _e("desks/mt5/research/countries/kr/miners.py", "Korea miners: official plane, box agents"),
     # Africa and Japan now run through the canonical country-pack/forest machinery.
     # Korea's miners own its nowcast and candidate lattice.  Keeping the superseded
     # one-off paths here would create duplicate work and makes the battery claim it

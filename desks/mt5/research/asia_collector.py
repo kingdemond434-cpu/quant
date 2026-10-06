@@ -67,6 +67,14 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+# ONE KEY, ONE NAME (2026-10-06): a key set under an alias (BOK_API_KEY) satisfies the row that
+# declares its canonical name (ECOS_API_KEY). Names only; no value is read out of this process.
+try:
+    from libs.data import key_aliases as _key_aliases
+    _key_aliases.adopt()
+except ImportError:                                            # pragma: no cover - import guard
+    pass
+
 REGISTRY = BASE / "data" / "asia_sources.json"
 VAULT = BASE / "data" / "lake" / "vault"
 SERIES = BASE / "data" / "lake" / "series"

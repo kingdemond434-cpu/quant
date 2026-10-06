@@ -734,7 +734,10 @@
    "url": "https://ecos.bok.or.kr/api/",
    "expect": "any",
    "access": "key",
-   "key_env": "BOK_API_KEY",
+   "key_env": "ECOS_API_KEY",
+   "key_env_aliases": [
+    "BOK_API_KEY"
+   ],
    "cadence": "daily",
    "targets": [
     "AUDUSD",
@@ -760,7 +763,9 @@
     "USDJPY",
     "JP225"
    ],
-   "mechanism": "derivatives OI, investor type, foreign trading, program trading and short selling -- a full participant picture on a market that opens before Europe"
+   "mechanism": "derivatives OI, investor type, foreign trading, program trading and short selling -- a full participant picture on a market that opens before Europe",
+   "access_label": "PUBLIC_WITH_TERMS",
+   "terms_note": "KRX Data Marketplace OPEN API terms (https://openapi.krx.co.kr/contents/OPP/INFO/OPPINFO005.jsp, read 2026-10-06): Art. 6(2) 'API Users may only use the API Service for non-commercial purposes'; Art. 11(2) 'The API User may not provide the data provided by the KRX to any third parties.' PUBLIC_WITH_TERMS (LAWS 5e): research use is unaffected by this label; redistribution and any commercial product built on KRX data are withheld. The parsed-series lanes in alt_proxies do NOT build a KRX fetcher (its terms gate is fail-closed); see reports/KR_OFFICIAL_PLANE.json"
   },
   {
    "id": "kr_exports_20d",
@@ -821,7 +826,9 @@
     "HK50",
     "USDCNH"
    ],
-   "mechanism": "Northbound/Southbound flow is mainland money crossing a border, which is the CN/HK transmission measured directly"
+   "mechanism": "Northbound/Southbound flow is mainland money crossing a border, which is the CN/HK transmission measured directly",
+   "access_label": "PUBLIC_WITH_TERMS",
+   "terms_note": "HKEX website Terms of Use (https://www.hkex.com.hk/Global/Exchange/Terms-of-Use, read 2026-10-06): 'You are not permitted to ... create or compile derivative works (including ... through framing or systematic retrieval to create collections, compilations, databases or directories) from the Information' and no 'text or data mining or web scraping in relation to this Website'. PUBLIC_WITH_TERMS (LAWS 5e); the alt_proxies lanes do NOT build a Stock Connect fetcher (fail-closed terms gate); see reports/HK_OFFICIAL_PLANE.json"
   },
   {
    "id": "mas_api",
@@ -3500,7 +3507,9 @@
     "KS11",
     "USDKRW"
    ],
-   "mechanism": "investor-category trading value separates the foreign book from the domestic retail one, the same member-positioning observation mined on SHFE, CFFEX and now CFTC"
+   "mechanism": "investor-category trading value separates the foreign book from the domestic retail one, the same member-positioning observation mined on SHFE, CFFEX and now CFTC",
+   "access_label": "PUBLIC_WITH_TERMS",
+   "terms_note": "KRX Data Marketplace OPEN API terms (https://openapi.krx.co.kr/contents/OPP/INFO/OPPINFO005.jsp, read 2026-10-06): Art. 6(2) 'API Users may only use the API Service for non-commercial purposes'; Art. 11(2) 'The API User may not provide the data provided by the KRX to any third parties.' PUBLIC_WITH_TERMS (LAWS 5e): research use is unaffected by this label; redistribution and any commercial product built on KRX data are withheld. The parsed-series lanes in alt_proxies do NOT build a KRX fetcher (its terms gate is fail-closed); see reports/KR_OFFICIAL_PLANE.json"
   },
   {
    "id": "moex_derivatives",
