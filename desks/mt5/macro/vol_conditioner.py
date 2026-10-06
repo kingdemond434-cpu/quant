@@ -124,16 +124,19 @@ def read_vintages() -> list[dict[str, Any]]:
         return []
 
 
-def resolve_symbol(candidates: Sequence[str], universe: Path = UNIVERSE) -> str | None:
+def resolve_symbol(candidates: Sequence[str], universe_dir: Path = UNIVERSE_DIR) -> str | None:
     try:
-        reg = json.loads(universe.read_text("utf-8"))
+        reg = json.loads((universe_dir / "universe.json").read_text("utf-8"))
         from recorders.vol_archive import resolve_symbol as rs
-        return rs(tuple(candidates), reg)
+        got = rs(tuple(candidates), reg)
+        if got:
+            return str(got)
     except Exception:
-        for c in candidates:
-            if (UNIVERSE_DIR / f"{c}_H1.parquet").exists():
-                return c
-        return None
+        pass
+    for c in candidates:
+        if (universe_dir / f"{c}_H1.parquet").exists():
+            return c
+    return None
 
 
 def daily_closes(symbol: str, universe_dir: Path = UNIVERSE_DIR) -> dict[str, float]:
@@ -394,7 +397,7 @@ def observations(ticker: str, symbol: str, last: Mapping[str, Any], received_at:
         v = last.get(metric)
         if not isinstance(v, int | float):
             continue
-        out.append(sc.make(sensor_id="market:vol_conditioner", source_id=f"cboe:{ticker}",
+        out.append(sc.make(sensor_id="market:vol_conditioner", source_id=f"{VOL_SOURCE}:{ticker}",
                            metric=f"{ticker}_{metric}", entity=symbol, kind="state",
                            sensor_class="market_state", asset_domain="vol", value=float(v),
                            event_time=last["event_time"], knowable_at=know,
@@ -416,7 +419,7 @@ def run(*, dry_run: bool = False, reference: Path = REFERENCE,
         for (t, d), (v, _) in vint.items():
             if t == ticker:
                 iv.setdefault(d, v)
-        sym = resolve_symbol(cands)
+        sym = resolve_symbol(cands, universe_dir)
         if not iv:
             grounds[ticker] = {"status": UNMEASURED, "why": "no reference history and no "
                                "archive vintage (MT5-VolArchive has not written one here)"}
