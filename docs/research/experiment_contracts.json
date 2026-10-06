@@ -175,6 +175,21 @@
     "threshold": 0,
     "after": "30 days of readings in which the solved book grows slower than today's: survival is costing growth rather than protecting it (growth governance Rule 1)"
    }
+  },
+  "cot_positioning_flow": {
+   "hypothesis": "Judging CFTC weekly positioning-change cells per trader class on every FX major and metal puts verdicts into the empty positioning_flow cluster, so the count of judged cells there rises from zero and the cluster is either occupied or falsified by measurement rather than left unattempted.",
+   "metric": {
+    "gain": "FALSIFICATION",
+    "metric": "verdicts.cells_judged",
+    "better": "up",
+    "organ": "report:COT_POSITIONING_FLOW.json"
+   },
+   "falsifier": {
+    "metric": "seeding.donated_total",
+    "op": "==",
+    "threshold": 0,
+    "after": "24h window: the proposer donated no cell, so nothing reaches the judge and the cluster stays unattempted"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
