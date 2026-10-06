@@ -17,8 +17,9 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from research import breadth_rotation as br  # noqa: E402
 from research.frontier_identity import docket_cell_id  # noqa: E402
+
+from research import breadth_rotation as br  # noqa: E402
 
 
 def _universe(tmp: Path, charts: dict[str, list[str]]) -> Path:
@@ -124,7 +125,7 @@ def test_key_is_neutral_without_a_census_and_puts_under_target_first_with_one() 
     key = br.tf_session_key(census)
     assert [key(r) for r in rows] == [1, 0]
     # composed in front of an existing key, the old order holds inside each tier
-    old = sorted(rows + [{"family": "a", "params": {"timeframe": "M15"}}],
+    old = sorted([*rows, {"family": "a", "params": {"timeframe": "M15"}}],
                  key=lambda r: (key(r), r["family"]))
     assert [r["params"].get("timeframe", "H1") for r in old] == ["M15", "M15", "H1"]
     # a bucket the census does not know (no bars, odd session) is never promoted

@@ -909,6 +909,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
+    # WHICH ORGANS ARE RESIDENT AND WHICH STILL RIDE A TIMER, with lease and heartbeat state
+    # (2026-10-06). The work-seeking lanes refresh it after every unit; this is its watchdog
+    # clock, so a dead lane still gets a census that says so. Reads files, seconds.
+    "resident_census",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
     "alpha_rank", "factory_contracts",
@@ -1124,6 +1128,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # PRODUCER BREADTH: every producer's reach against what it minted -- the
                      # machine measuring its own breadth, beside the census it complements.
                      "producer_breadth",
+                     # RESIDENT vs TIMER-ONLY: the machine measuring how its own work is driven.
+                     "resident_census",
                      # Tier-1 B1/B7/B10/B11: the release bit, the scientists' league table, the
                      # failure prior and the unified EVIG acquisition are all the machine
                      # measuring and scheduling itself.
@@ -1225,7 +1231,8 @@ OWN_CLOCK_LEGS: frozenset[str] = frozenset({
 
 def in_plan(name: str, plan: str | None = None) -> bool:
     """Does leg `name` run under `plan`? core = CORE_LEGS only; heavy = every non-core leg;
-    dept:<d> = the non-core legs of department d; all = everything.
+    dept:<d> = the non-core legs of department d; legs:<a,b> = exactly the named legs (the
+    work-seeking lane of `department_resident` runs one unit this way); all = everything.
     An `auto_*` leg is already filtered by its own plan in run_auto_legs and always passes.
     A leg in `OWN_CLOCK_LEGS` runs on its own scheduled task and in no plan."""
     p = (plan if plan is not None else HOURLY_PLAN)
@@ -1233,6 +1240,8 @@ def in_plan(name: str, plan: str | None = None) -> bool:
         return True
     if name in OWN_CLOCK_LEGS:
         return False
+    if p.startswith("legs:"):
+        return name in {x.strip() for x in p.split(":", 1)[1].split(",") if x.strip()}
     if p == "core":
         return name in CORE_LEGS
     if p == "heavy":
@@ -1423,6 +1432,20 @@ def _leg_artifacts(name: str) -> list[Path]:
     return list(_LEG_ARTIFACTS.get(name, []))
 
 
+def _resident_owned(name: str) -> tuple[bool, str]:
+    """(owned, why) from `department_resident.resident_owns`; never owned under a `legs:` plan
+    (that IS the lane running it) and never owned when the resident module cannot be read."""
+    if HOURLY_PLAN.startswith("legs:"):
+        return False, "this pass is the lane's own run"
+    try:
+        import department_resident as _dr
+        if name not in _dr.RESIDENT_UNITS:
+            return False, "not a resident unit"
+        return _dr.resident_owns(name)
+    except Exception as exc:
+        return False, f"resident state unreadable ({type(exc).__name__})"
+
+
 def _costed(name: str, fn):
     """Run one leg and record what it COST, whatever it returns or raises.
 
@@ -1462,6 +1485,15 @@ def _costed(name: str, fn):
     if not in_plan(name):
         # Not this clock's leg: no ledger row, no verdict -- the other plan owns it.
         return {"status": "SKIPPED_BY_PLAN", "plan": HOURLY_PLAN,
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    # THE HOURLY CLOCK IS THE WATCHDOG OF A WORK-SEEKING UNIT, NOT ITS DRIVER (2026-10-06). A leg
+    # in `department_resident.RESIDENT_UNITS` is run by its department's lane the moment an event
+    # or an input change makes it READY; while that lane is alive and the unit's checkpoint is
+    # fresh and OK, this pass skips it (no ledger row: it did not run HERE). A dead lane, a failed
+    # run or a missing checkpoint and the leg runs below exactly as it always has.
+    _owned, _owned_why = _resident_owned(name)
+    if _owned:
+        return {"status": "RESIDENT_OWNED", "plan": HOURLY_PLAN, "why": _owned_why,
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
     # THE ROTATION, AND WHY IT IS HERE RATHER THAN AT THE CALL SITES. Every leg passes through
     # this one boundary, so membership can be decided for all 325 of them without moving a line
@@ -1941,6 +1973,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # PRODUCER BREADTH reads the registry with one grouped query and at most 384 MB of seat files
     # (its own MAX_SEAT_BYTES_TOTAL); measured 0.6 s on a tree without the registry. Generous.
     "producer_breadth": 300,
+    "resident_census": 120,
     # THE ANCHOR/EXIT PROPOSER measures its bind census under 240 s and then registers a
     # 1,200-row slice, which the first pass measured at roughly four rows a second; the cap sits
     # above census + registration so the slice lands rather than being cut at the same prefix.
@@ -5594,6 +5627,13 @@ def main() -> None:
     # reader of the registry, the seats and the producers' own reports -- seconds, core clock.
     pbr = _costed("producer_breadth", lambda: _producer(
         "producer_breadth", "research/producer_breadth.py"))
+    # RESIDENT vs TIMER-ONLY (2026-10-06: "cadence must never be the primary driver"). Every leg
+    # classified by what drives it -- a department pass loop, the work-seeking lane, its own task,
+    # or MT5-HourlyCore alone -- with each resident's lock and heartbeat and each unit's lease,
+    # checkpoint and current readiness. The lanes refresh it after every unit; this is the clock
+    # that still publishes it when a lane is dead.
+    rcn = _costed("resident_census", lambda: _producer(
+        "resident_census", "research/department_resident.py", "--census"))
     # THE NORTH STAR AND THE CONTRACTS (Tier-1 #9/#11, 2026-09-29). `alpha_rank` builds the
     # eight-channel independence graph over every CERTIFIED edge and publishes the effective
     # independent alpha rank with each certificate's marginal contribution, credited to the
@@ -5804,6 +5844,7 @@ def main() -> None:
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
+                    "resident_census": rcn,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
                     "box_state_freshness": bsf, "desk_health": dhl,
