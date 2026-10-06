@@ -318,9 +318,9 @@ def test_the_real_table_covers_all_635_rows_with_no_dead_anchor() -> None:
     assert sum(doc["counts"].values()) == 635
     assert doc["downgraded"] == [], doc["downgraded"]
     for r in doc["rows"]:
-        if r["status"] == blc.COVERED:
+        if r["status"] in (blc.COVERED, blc.COVERED_SHADOW):
             assert r["where"], r["id"]
-    assert doc["counts"][blc.REFUSED] >= 1
+    assert doc["counts"][blc.COVERED_SHADOW] >= 1
 
 
 def test_every_classified_anchor_resolves_in_this_tree() -> None:
