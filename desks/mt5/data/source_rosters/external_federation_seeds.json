@@ -2521,6 +2521,631 @@
    "licence": "UNVERIFIED",
    "cadence": "hourly",
    "system_id": "openterminal"
+  },
+  {
+   "id": "github:EliteQuant/EliteQuant",
+   "name": "EliteQuant",
+   "url": "https://github.com/EliteQuant/EliteQuant",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_elitequant_elitequant",
+   "config": {
+    "fetched_by": [
+     "elitequant_breadth"
+    ]
+   }
+  },
+  {
+   "id": "github:thuquant/awesome-quant",
+   "name": "awesome-quant",
+   "url": "https://github.com/thuquant/awesome-quant",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_thuquant_awesome_quant",
+   "config": {
+    "fetched_by": [
+     "elitequant_breadth"
+    ]
+   }
+  },
+  {
+   "id": "github:jamesmawm/High-Frequency-Trading-Model-with-IB",
+   "name": "High-Frequency-Trading-Model-with-IB",
+   "url": "https://github.com/jamesmawm/High-Frequency-Trading-Model-with-IB",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_jamesmawm_high_frequency_trading_model_with_ib"
+  },
+  {
+   "id": "github:HKUDS/Vibe-Trading",
+   "name": "Vibe-Trading",
+   "url": "https://github.com/HKUDS/Vibe-Trading",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_hkuds_vibe_trading",
+   "config": {
+    "fetched_by": [
+     "zoo_breadth"
+    ]
+   }
+  },
+  {
+   "id": "github:hsliuping/TradingAgents-CN",
+   "name": "TradingAgents-CN",
+   "url": "https://github.com/hsliuping/TradingAgents-CN",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_hsliuping_tradingagents_cn"
+  },
+  {
+   "id": "github:StockSharp/StockSharp",
+   "name": "StockSharp",
+   "url": "https://github.com/StockSharp/StockSharp",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_stocksharp_stocksharp"
+  },
+  {
+   "id": "github:je-suis-tm/quant-trading",
+   "name": "quant-trading",
+   "url": "https://github.com/je-suis-tm/quant-trading",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_je_suis_tm_quant_trading",
+   "config": {
+    "fetched_by": [
+     "elitequant_breadth"
+    ]
+   }
+  },
+  {
+   "id": "github:paperswithbacktest/awesome-systematic-trading",
+   "name": "awesome-systematic-trading",
+   "url": "https://github.com/paperswithbacktest/awesome-systematic-trading",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_paperswithbacktest_awesome_systematic_trading"
+  },
+  {
+   "id": "github:asavinov/intelligent-trading-bot",
+   "name": "intelligent-trading-bot",
+   "url": "https://github.com/asavinov/intelligent-trading-bot",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_asavinov_intelligent_trading_bot",
+   "config": {
+    "fetched_by": [
+     "model_search"
+    ]
+   }
+  },
+  {
+   "id": "github:stefan-jansen/machine-learning-for-trading",
+   "name": "machine-learning-for-trading",
+   "url": "https://github.com/stefan-jansen/machine-learning-for-trading",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_stefan_jansen_machine_learning_for_trading",
+   "config": {
+    "fetched_by": [
+     "model_search"
+    ]
+   }
+  },
+  {
+   "id": "github:avhz/RustQuant",
+   "name": "RustQuant",
+   "url": "https://github.com/avhz/RustQuant",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_avhz_rustquant"
+  },
+  {
+   "id": "github:LLMQuant/quant-mind",
+   "name": "quant-mind",
+   "url": "https://github.com/LLMQuant/quant-mind",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_llmquant_quant_mind"
+  },
+  {
+   "id": "github:dkl0707/QuantDatabase",
+   "name": "QuantDatabase",
+   "url": "https://github.com/dkl0707/QuantDatabase",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_dkl0707_quantdatabase"
+  },
+  {
+   "id": "github:hummingbot/quants-lab",
+   "name": "quants-lab",
+   "url": "https://github.com/hummingbot/quants-lab",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_hummingbot_quants_lab"
+  },
+  {
+   "id": "github:ZhuLinsen/daily_stock_analysis",
+   "name": "daily_stock_analysis",
+   "url": "https://github.com/ZhuLinsen/daily_stock_analysis",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_zhulinsen_daily_stock_analysis"
+  },
+  {
+   "id": "github:LowinLi/fushare",
+   "name": "fushare",
+   "url": "https://github.com/LowinLi/fushare",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_lowinli_fushare"
+  },
+  {
+   "id": "github:yutiansut/QUANTAXIS",
+   "name": "QUANTAXIS",
+   "url": "https://github.com/yutiansut/QUANTAXIS",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_yutiansut_quantaxis"
+  },
+  {
+   "id": "github:AgriQuantAI/AgriQuant-AI",
+   "name": "AgriQuant-AI",
+   "url": "https://github.com/AgriQuantAI/AgriQuant-AI",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_agriquantai_agriquant_ai"
+  },
+  {
+   "id": "github:waditu/czsc",
+   "name": "czsc",
+   "url": "https://github.com/waditu/czsc",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_waditu_czsc"
+  },
+  {
+   "id": "github:QuantaAlpha/QuantaAlpha",
+   "name": "QuantaAlpha",
+   "url": "https://github.com/QuantaAlpha/QuantaAlpha",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_quantaalpha_quantaalpha"
+  },
+  {
+   "id": "github:charliedream1/ai_quant_trade",
+   "name": "ai_quant_trade",
+   "url": "https://github.com/charliedream1/ai_quant_trade",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_charliedream1_ai_quant_trade"
+  },
+  {
+   "id": "github:LongOnly/Quantitative-Notebooks",
+   "name": "Quantitative-Notebooks",
+   "url": "https://github.com/LongOnly/Quantitative-Notebooks",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_longonly_quantitative_notebooks"
+  },
+  {
+   "id": "github:shinnytech/tqsdk-python",
+   "name": "tqsdk-python",
+   "url": "https://github.com/shinnytech/tqsdk-python",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_shinnytech_tqsdk_python"
+  },
+  {
+   "id": "github:Micro-sheep/efinance",
+   "name": "efinance",
+   "url": "https://github.com/Micro-sheep/efinance",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_micro_sheep_efinance"
+  },
+  {
+   "id": "github:cybergeekgyan/Quant-Developers-Resources",
+   "name": "Quant-Developers-Resources",
+   "url": "https://github.com/cybergeekgyan/Quant-Developers-Resources",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_cybergeekgyan_quant_developers_resources"
+  },
+  {
+   "id": "github:QuantFans/quantdigger",
+   "name": "quantdigger",
+   "url": "https://github.com/QuantFans/quantdigger",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_quantfans_quantdigger"
+  },
+  {
+   "id": "github:LLMQuant/quant-wiki",
+   "name": "quant-wiki",
+   "url": "https://github.com/LLMQuant/quant-wiki",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_llmquant_quant_wiki"
+  },
+  {
+   "id": "github:quant-science/sunday-quant-scientist",
+   "name": "sunday-quant-scientist",
+   "url": "https://github.com/quant-science/sunday-quant-scientist",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_quant_science_sunday_quant_scientist"
+  },
+  {
+   "id": "github:AI-Efficiency/Awesome-Model-Quantization",
+   "name": "Awesome-Model-Quantization",
+   "url": "https://github.com/AI-Efficiency/Awesome-Model-Quantization",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_ai_efficiency_awesome_model_quantization"
+  },
+  {
+   "id": "github:PyPatel/Quant-Finance-Resources",
+   "name": "Quant-Finance-Resources",
+   "url": "https://github.com/PyPatel/Quant-Finance-Resources",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_pypatel_quant_finance_resources"
+  },
+  {
+   "id": "github:Ricktho1/Quant_resources",
+   "name": "Quant_resources",
+   "url": "https://github.com/Ricktho1/Quant_resources",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_ricktho1_quant_resources"
+  },
+  {
+   "id": "github:LukePrior/Australian-Open-Banking-Data-Database",
+   "name": "Australian-Open-Banking-Data-Database",
+   "url": "https://github.com/LukePrior/Australian-Open-Banking-Data-Database",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "au",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_lukeprior_australian_open_banking_data_database"
+  },
+  {
+   "id": "github:Finnhub-Stock-API/finnhub-python",
+   "name": "finnhub-python",
+   "url": "https://github.com/Finnhub-Stock-API/finnhub-python",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_finnhub_stock_api_finnhub_python"
+  },
+  {
+   "id": "github:mega-byte2600/hedge-desk",
+   "name": "hedge-desk",
+   "url": "https://github.com/mega-byte2600/hedge-desk",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_mega_byte2600_hedge_desk"
+  },
+  {
+   "id": "github:IdealAuror/all-weather-portfolio",
+   "name": "all-weather-portfolio",
+   "url": "https://github.com/IdealAuror/all-weather-portfolio",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "gh_idealauror_all_weather_portfolio"
   }
  ]
 }

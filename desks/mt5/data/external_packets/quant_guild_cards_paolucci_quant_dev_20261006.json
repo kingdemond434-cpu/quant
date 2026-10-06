@@ -32,6 +32,7 @@
  "provenance": {
   "cards": "/mnt/project-files/mining/quant_guild/",
   "translated_by": "thread Mine the EliteQuant list",
-  "licence_note": "ideas only where upstream has no licence; no code copied"
+  "licence_note": "ideas only where upstream has no licence; no code copied",
+  "dedup": "one candidate per (symbol, family, params) across the three packets; QG25-08 and QG26-19 shared four pca_residual cells"
  }
 }

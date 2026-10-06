@@ -114,6 +114,14 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False) -> dict[str, Any]:
     state = _read(STATE) if isinstance(_read(STATE), dict) else {}
     books: dict[str, Any] = state.setdefault("books", {})
     donated: dict[str, Any] = state.setdefault("donated", {})
+    # EACH LOOK IS CHARGED ONCE, BY IDENTITY (audit PR166_v2, 2026-10-06). A book (both signs)
+    # and a leg screen are trials the first time they are measured, on the pass that measures
+    # them, whether or not it donates; re-measuring the same identity is not a new trial. Every
+    # pass that donated before this rule charged every book it had, so a legacy book on a desk
+    # that has donated counts as charged.
+    screened: dict[str, Any] = state.setdefault("legs_screened", {})
+    legacy_charged = bool(donated)
+    new_looks: Counter[str] = Counter()
     try:
         cls = classes()
     except Exception as exc:
@@ -142,9 +150,16 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False) -> dict[str, Any]:
                 continue
             for h in HORIZONS:
                 ic = None if score is None else book_ic(score, panel, h)
-                books[f"{klass}|{aid}|{h}"] = {"day": today, "klass": klass, "alpha": aid,
-                                               "h": h, "t": None if ic is None else round(ic[0], 3),
-                                               "days": None if ic is None else ic[1]}
+                key = f"{klass}|{aid}|{h}"
+                prior = books.get(key) or {}
+                charged_at = prior.get("charged_at") or (
+                    "legacy" if prior and legacy_charged else None)
+                if charged_at is None and ic is not None:
+                    new_looks["zoo_alpha_class"] += 2            # both signs are a test
+                    charged_at = today
+                books[key] = {"day": today, "klass": klass, "alpha": aid,
+                              "h": h, "t": None if ic is None else round(ic[0], 3),
+                              "days": None if ic is None else ic[1], "charged_at": charged_at}
                 measured += 1
         else:
             continue
@@ -177,6 +192,9 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False) -> dict[str, Any]:
             except Exception as exc:
                 errors[f"leg {sym}: {type(exc).__name__}"] += 1
                 continue
+            if ident not in screened:                    # a leg screen is a look too
+                new_looks["zoo_alpha_class"] += 1
+                screened[ident] = today
             if int(r.get("n_independent") or 0) >= MIN_TRADES and r.get("clears_cost"):
                 cands.append({"ident": ident, "params": params, "book": key, "book_t": v["t"],
                               "t_gross": r.get("t_gross"), "n": r.get("n_independent")})
@@ -196,9 +214,12 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False) -> dict[str, Any]:
                 {"screen_t_gross": c["t_gross"], "n_independent": c["n"], "book": c["book"],
                  "book_t": c["book_t"], "book_tests": n_tests, "origin": ORIGIN})
             row.update(zoo.ZOO_CULTURE[z])
+            row["origin_source_id"] = "github:HKUDS/Vibe-Trading"     # the federation seed row
+            row.setdefault("provenance", {})["source_id"] = row["origin_source_id"]
             row["culture_derivation"] = dict.fromkeys(zoo.ZOO_CULTURE[z], "declared")
             rows.append(row)
-        path = pc.donate(SOURCE, rows, n_tests)
+        path = pc.donate_or_charge(SOURCE, rows, sum(new_looks.values()),
+                                   dict(new_looks))["path"]
         counts = pc.donation_counts()
         donation = {"status": "DONATED" if path else "REFUSED_AT_DOOR",
                     "path": str(path) if path else None, "n": int(counts.get("donated") or 0),
@@ -206,6 +227,9 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False) -> dict[str, Any]:
         if path:
             for c in cands:
                 donated[c["ident"]] = _now()
+    elif new_looks and not dry_run:
+        donation["charged_on"] = pc.donate_or_charge(
+            SOURCE, [], sum(new_looks.values()), dict(new_looks))["charged_on"]
     if not dry_run:
         _atomic(STATE, state)
     tv = [abs(float(v["t"])) for _, v in ts]
@@ -215,7 +239,8 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False) -> dict[str, Any]:
         "elapsed_s": round(time.monotonic() - started, 1), "classes": {k: len(v) for k, v in
                                                                         cls.items()},
         "alphas_offered": len(cat), "books_measured_this_pass": measured,
-        "books_measured_total": len(ts), "book_tests_charged": n_tests,
+        "books_measured_total": len(ts), "book_tests_deflated_over": n_tests,
+        "new_looks_charged": 0 if dry_run else int(sum(new_looks.values())),
         "abs_t_tail": {"gt_2": sum(t > 2 for t in tv), "gt_3": sum(t > 3 for t in tv),
                        "null_expected_gt_2": round(0.0455 * len(tv), 1),
                        "null_expected_gt_3": round(0.0027 * len(tv), 1)},

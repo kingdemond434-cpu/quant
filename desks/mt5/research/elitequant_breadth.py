@@ -73,8 +73,8 @@ ORIGIN = {**dict.fromkeys(eq.ELITEQUANT_FAMILIES, "github.com/EliteQuant/EliteQu
                           "github.com/romanmichaelpaolucci/Quant-Guild-Library (no licence; "
                           "rewritten)")}
 #: The registry id each family's cells are credited to (`origin_source_id` on the donated row):
-#: the donor repository, rostered in data/source_rosters/elitequant_breadth_origins.json (the
-#: Quant Guild Library is a federation seed row that names this organ in `fetched_by`).
+#: the donor repository, a federation seed (`external_federation.ABSORBED_REPOS`) whose roster
+#: row in data/source_rosters/external_federation_seeds.json names this organ in `fetched_by`.
 SOURCE_ID = {fam: "github:" + ORIGIN[fam].split(" ")[0].removeprefix("github.com/")
              for fam in FAMILIES}
 #: Families that read their own second leg keyed by the cell's `symbol` parameter.
@@ -175,6 +175,7 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
     cands: list[dict[str, Any]] = []
     no_bars: list[str] = []
     errors: Counter = Counter()
+    new_looks: Counter = Counter()
     stopped = "grid exhausted"
     for sym in syms:
         if time.monotonic() - started > budget_s:
@@ -204,6 +205,13 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
                 prior = {**prior, "day": today, "family": fam, "symbol": sym, "params": params,
                          "t_gross": r.get("t_gross"), "n_independent": r.get("n_independent"),
                          "clears_cost": bool(r.get("clears_cost"))}
+                # EACH LOOK IS CHARGED ONCE, BY IDENTITY (audit PR166_v2, 2026-10-06). A cell
+                # first screened on this pass is a new trial whether or not anything donates; a
+                # daily re-screen of the same identity is not a new one. A legacy cell already
+                # donated was charged on that discovery file.
+                if not prior.get("charged_at") and not prior.get("donated_at"):
+                    new_looks[fam] += 1
+                prior["charged_at"] = prior.get("charged_at") or today
                 cells[ident] = prior
                 by_family[fam]["measured_this_pass"] += 1
             n_ind = int(prior.get("n_independent") or 0)
@@ -231,8 +239,8 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
             row.setdefault("provenance", {})["source_id"] = SOURCE_ID[c["family"]]
             row["culture_derivation"] = dict.fromkeys(culture, "declared")
             rows.append(row)
-        measured = sum(int(v["measured_this_pass"]) for v in by_family.values())
-        path = pc.donate(SOURCE, rows, measured or len(rows))
+        charged = pc.donate_or_charge(SOURCE, rows, sum(new_looks.values()), dict(new_looks))
+        path = charged["path"]
         counts = pc.donation_counts()
         donation = {"status": "DONATED" if path else "REFUSED_AT_DOOR",
                     "path": str(path) if path else None, "n": int(counts.get("donated") or 0),
@@ -243,6 +251,10 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
             for c in cands:
                 cells[c["ident"]]["donated_at"] = at
                 by_family[c["family"]]["donated_this_pass"] += 1
+    elif new_looks and not dry_run:
+        # NOTHING CLEARED, AND THE LOOKS ARE STILL TRIALS: charged on the null side ledger.
+        charged = pc.donate_or_charge(SOURCE, [], sum(new_looks.values()), dict(new_looks))
+        donation = {"status": "NOTHING_NEW", "charged_on": charged["charged_on"]}
     if not dry_run:
         _save_state(state)
 
@@ -267,6 +279,7 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
         "symbols_without_bars": sorted(set(no_bars)), "min_trades": MIN_TRADES,
         "cells_by_family": {k: dict(v) for k, v in by_family.items()},
         "candidates_this_pass": len(cands), "donation": donation, "errors": dict(errors),
+        "new_looks_charged": int(sum(new_looks.values())) if not dry_run else 0,
         "contract": contract,
         "contract_rule": ("each family earns its place by the ten gates' verdicts on its donated "
                           "cells; the screen tails say only whether the family prints more |t|>2 "

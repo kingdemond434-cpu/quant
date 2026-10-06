@@ -546,6 +546,35 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     return path
 
 
+#: Trials from passes that donated nothing (`experiment_ledger` reads it, as alt_proxies writes it).
+NULL_TRIALS = _DESK / "data" / "null_pass_trials.jsonl"
+
+
+def donate_or_charge(source: str, candidates: list[dict], tests_run: int,
+                     by_family: dict[str, int] | None = None) -> dict:
+    """Donate, and charge this pass's NEW looks exactly once wherever they land.
+
+    A pass that donated carries `tests_run` on its discovery file. A pass that donated nothing --
+    no row cleared, or the door refused them all -- writes no file, so its looks go to the null
+    side ledger instead. Exactly one of the two carries them, so nothing is counted twice, and a
+    look the caller already charged on an earlier pass must not be in `tests_run` at all (the
+    caller tracks that by cell identity)."""
+    tests_run = max(0, int(tests_run))
+    path = donate(source, candidates, tests_run) if candidates else None
+    out: dict = {"path": str(path) if path else None, "tests_run": tests_run,
+                 "charged_on": "discovery_file" if path else None}
+    if tests_run and not path:
+        row = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "source": source,
+               "tests_run": tests_run,
+               "by_family": {k: int(v) for k, v in sorted((by_family or {}).items()) if v},
+               "why": "new looks charged; no discovery file carried them this pass"}
+        NULL_TRIALS.parent.mkdir(parents=True, exist_ok=True)
+        with NULL_TRIALS.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, sort_keys=True) + "\n")
+        out["charged_on"] = "null_pass_trials"
+    return out
+
+
 def _record_in_registry(source: str, candidates: list[dict]) -> None:
     """EVERY MINER WRITES THE CANONICAL REGISTRY (principal 2026-09-17). Each donated row is
     one DiscoveryObject in state QUEUED (it is compiled and in the docket's intake) and one

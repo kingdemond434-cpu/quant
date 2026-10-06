@@ -93,8 +93,9 @@ def test_no_jumps_no_trades():
 
 def test_every_seeded_family_is_credited_to_a_rostered_donor():
     import json
-    rosters = ("elitequant_breadth_origins.json", "external_federation_seeds.json")
-    ids = {r["id"] for name in rosters for r in json.loads(
-        (_DESK / "data" / "source_rosters" / name).read_text(encoding="utf-8"))["sources"]}
-    assert set(eb.SOURCE_ID.values()) <= ids
+    rows = json.loads((_DESK / "data" / "source_rosters" / "external_federation_seeds.json")
+                      .read_text(encoding="utf-8"))["sources"]
+    by_id = {r["id"]: r for r in rows}
+    for sid in set(eb.SOURCE_ID.values()):
+        assert "elitequant_breadth" in by_id[sid]["config"]["fetched_by"], sid
     assert eb.SOURCE_ID["kalman_ou_level"] == "github:romanmichaelpaolucci/Quant-Guild-Library"

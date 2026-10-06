@@ -495,9 +495,10 @@ def _factor_symbols(symbols: list[str], meta: dict) -> list[str]:
 #: defect, and `test_every_family_needing_an_input_is_wired_to_one` fails on it.
 NOT_SOURCED_HERE = {
     "zoo_alpha_class": "the alpha and its peer-class panel are named by research/zoo_breadth, "
-                       "which builds the class panel from the hypothesis-lane peers, screens each "
-                       "zoo alpha x symbol x side it tries and charges that grid; enumerating "
-                       "the zoo here would be a second uncharged search over the same catalogue",
+                       "which builds the class panel from the hypothesis-lane peers, measures "
+                       "each class book (both signs) and screens each leg, charging every look "
+                       "once by identity whether or not the pass donates; enumerating the zoo "
+                       "here would be a second search over the same catalogue",
     "regime_split": "the base family and the regime are named by regime_split_miner, which "
                     "deflates over every family x regime cell it tried and kills with purged "
                     "walk-forward; a sweep that enumerated the split here would be a second "

@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from typing import Any
@@ -809,6 +810,57 @@ SEEDS: tuple[ExternalSystem, ...] = (
                    discovery_source="principal_header_2026-10-05"),
 )
 
+#: EVERY REPOSITORY THE "MINE THE ELITEQUANT LIST" THREAD ABSORBED (audit PR166_v2 fix 4,
+#: 2026-10-06), as a federation system under its registry id `github:<owner>/<repo>`, so the
+#: mining registry can credit a cell to the donor it came from and the delta scan reopens the
+#: donor when it moves. Ideas were rewritten (REBUILT); code was vendored only where the
+#: upstream licence allowed it, with its notice. The licence stays UNVERIFIED here until a
+#: provisioning run pins it at a commit; what the clone carried is in the thread's gap table.
+ABSORBED_REPOS: tuple[tuple[str, str, str], ...] = (
+    ("EliteQuant/EliteQuant", "global", "quant map; ffd, Corwin-Schultz, SADF, Carver rules"),
+    ("thuquant/awesome-quant", "cn", "CN futures CTA canon: Dual Thrust, R-Breaker, Keltner"),
+    ("jamesmawm/High-Frequency-Trading-Model-with-IB", "global", "pairs HFT model"),
+    ("HKUDS/Vibe-Trading", "cn", "the alpha zoo: GTJA191, Alpha158, Alpha101"),
+    ("hsliuping/TradingAgents-CN", "cn", "CN multi-agent analyst roles"),
+    ("StockSharp/StockSharp", "global", "execution and connector architecture"),
+    ("je-suis-tm/quant-trading", "global", "chart patterns and Oil Money"),
+    ("paperswithbacktest/awesome-systematic-trading", "global", "replicated-paper index"),
+    ("asavinov/intelligent-trading-bot", "global", "rolling features and extremum labels"),
+    ("stefan-jansen/machine-learning-for-trading", "global", "ML4T methods and tscan target"),
+    ("avhz/RustQuant", "global", "pricing and stochastic-process library"),
+    ("LLMQuant/quant-mind", "global", "LLM research-agent pipeline"),
+    ("dkl0707/QuantDatabase", "cn", "CN market database builder"),
+    ("hummingbot/quants-lab", "global", "research notebooks and backtests"),
+    ("ZhuLinsen/daily_stock_analysis", "cn", "daily analysis pipeline"),
+    ("LowinLi/fushare", "cn", "CN futures data"),
+    ("yutiansut/QUANTAXIS", "cn", "Tongdaxin indicator canon"),
+    ("AgriQuantAI/AgriQuant-AI", "global", "softs and grains sources"),
+    ("waditu/czsc", "cn", "Chan theory structure, TD9, exit operators"),
+    ("QuantaAlpha/QuantaAlpha", "cn", "LLM alpha-mining methods"),
+    ("charliedream1/ai_quant_trade", "cn", "CN AI trading collection"),
+    ("LongOnly/Quantitative-Notebooks", "global", "factor and allocation notebooks"),
+    ("shinnytech/tqsdk-python", "cn", "CN futures SDK and strategy demos"),
+    ("Micro-sheep/efinance", "cn", "Eastmoney data: SHFE gold premium, flows"),
+    ("cybergeekgyan/Quant-Developers-Resources", "global", "resource list"),
+    ("QuantFans/quantdigger", "cn", "CN backtest engine"),
+    ("LLMQuant/quant-wiki", "cn", "CN quant wiki: dollar carry, asymmetry, 12-month cycle"),
+    ("quant-science/sunday-quant-scientist", "global", "weekly strategy notebooks"),
+    ("AI-Efficiency/Awesome-Model-Quantization", "global", "model compression methods"),
+    ("PyPatel/Quant-Finance-Resources", "global", "reading list"),
+    ("Ricktho1/Quant_resources", "global", "resource links"),
+    ("LukePrior/Australian-Open-Banking-Data-Database", "au", "AU bank-rate snapshots"),
+    ("Finnhub-Stock-API/finnhub-python", "global", "Finnhub free-tier client"),
+    ("mega-byte2600/hedge-desk", "global", "auction concession, oil lead, free feeds"),
+    ("IdealAuror/all-weather-portfolio", "cn", "CN risk parity"),
+)
+_SEEDED_UPSTREAMS = {s.upstream for s in SEEDS}
+SEEDS = SEEDS + tuple(
+    ExternalSystem("gh_" + re.sub(r"[^a-z0-9]+", "_", repo.lower()).strip("_"),
+                   repo.split("/", 1)[1], f"github:{repo}", role, "REBUILT",
+                   _s("research_reproduction",), _s("model_family",), region=region,
+                   languages=_s("zh",) if region == "cn" else _s("en",),
+                   discovery_source="elitequant_thread_absorbed")
+    for repo, region, role in ABSORBED_REPOS if f"github:{repo}" not in _SEEDED_UPSTREAMS)
 SEED_BY_ID: dict[str, ExternalSystem] = {s.system_id: s for s in SEEDS}
 
 

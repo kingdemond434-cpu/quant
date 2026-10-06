@@ -287,7 +287,8 @@ def test_the_roster_names_every_seed_every_adapter_and_every_cell(tmp_path: Path
     # deliberately, each with a Spec and (since this commit) its adapter module.
     # 140 -> 148 (2026-10-06): the Roman Paolucci / Quant Guild civilization (six repositories
     # and the account feed) and OpenTerminal, seeded deliberately for the federation delta scan.
-    assert doc["counts"]["seeds"] == 148
+    # 148 -> +N: every repository the EliteQuant thread absorbed (ABSORBED_REPOS, audit fix 4).
+    assert doc["counts"]["seeds"] == 148 + len(fed.ABSORBED_REPOS)
 
 
 def test_every_roster_row_carries_the_columns_the_question_asked_for(tmp_path: Path) -> None:

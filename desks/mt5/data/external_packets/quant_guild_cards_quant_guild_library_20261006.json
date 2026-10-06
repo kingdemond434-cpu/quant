@@ -455,48 +455,6 @@
    "failure_mode_hypothesis": "Timing share <= 0 or monkey beat-rate < 0.9."
   },
   {
-   "symbol": "EURUSD",
-   "family": "pca_residual",
-   "params": {
-    "entry_z": 2.0
-   },
-   "mechanism": "Spectral decomposition of a stock panel: the first components are market and sector; alpha and other priced risk live in what is left after removing them.",
-   "title": "EURUSD pca_residual (QG26-19)",
-   "card_id": "QG26-19",
-   "source_culture": "US/en",
-   "participant_structure": "retail_education",
-   "crowding_prior": "medium",
-   "failure_mode_hypothesis": "Gauntlet rejection."
-  },
-  {
-   "symbol": "GBPUSD",
-   "family": "pca_residual",
-   "params": {
-    "entry_z": 2.0
-   },
-   "mechanism": "Spectral decomposition of a stock panel: the first components are market and sector; alpha and other priced risk live in what is left after removing them.",
-   "title": "GBPUSD pca_residual (QG26-19)",
-   "card_id": "QG26-19",
-   "source_culture": "US/en",
-   "participant_structure": "retail_education",
-   "crowding_prior": "medium",
-   "failure_mode_hypothesis": "Gauntlet rejection."
-  },
-  {
-   "symbol": "AUDUSD",
-   "family": "pca_residual",
-   "params": {
-    "entry_z": 2.0
-   },
-   "mechanism": "Spectral decomposition of a stock panel: the first components are market and sector; alpha and other priced risk live in what is left after removing them.",
-   "title": "AUDUSD pca_residual (QG26-19)",
-   "card_id": "QG26-19",
-   "source_culture": "US/en",
-   "participant_structure": "retail_education",
-   "crowding_prior": "medium",
-   "failure_mode_hypothesis": "Gauntlet rejection."
-  },
-  {
    "symbol": "USDCAD",
    "family": "pca_residual",
    "params": {
@@ -504,20 +462,6 @@
    },
    "mechanism": "Spectral decomposition of a stock panel: the first components are market and sector; alpha and other priced risk live in what is left after removing them.",
    "title": "USDCAD pca_residual (QG26-19)",
-   "card_id": "QG26-19",
-   "source_culture": "US/en",
-   "participant_structure": "retail_education",
-   "crowding_prior": "medium",
-   "failure_mode_hypothesis": "Gauntlet rejection."
-  },
-  {
-   "symbol": "XAUUSD",
-   "family": "pca_residual",
-   "params": {
-    "entry_z": 2.0
-   },
-   "mechanism": "Spectral decomposition of a stock panel: the first components are market and sector; alpha and other priced risk live in what is left after removing them.",
-   "title": "XAUUSD pca_residual (QG26-19)",
    "card_id": "QG26-19",
    "source_culture": "US/en",
    "participant_structure": "retail_education",
@@ -681,10 +625,11 @@
    "failure_mode_hypothesis": "Forward hit-rate/expectancy not above the random-direction control after 100 views."
   }
  ],
- "trials_charged": 43,
+ "trials_charged": 39,
  "provenance": {
   "cards": "/mnt/project-files/mining/quant_guild/",
   "translated_by": "thread Mine the EliteQuant list",
-  "licence_note": "ideas only where upstream has no licence; no code copied"
+  "licence_note": "ideas only where upstream has no licence; no code copied",
+  "dedup": "one candidate per (symbol, family, params) across the three packets; QG25-08 and QG26-19 shared four pca_residual cells"
  }
 }

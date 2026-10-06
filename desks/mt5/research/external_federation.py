@@ -283,7 +283,13 @@ def source_id_of(system: fed.ExternalSystem | None, system_id: str) -> str:
 
 #: Seeds whose cells another organ also donates: the Quant Guild families are seeded by
 #: elitequant_breadth, so that organ is named as a fetcher of the same registry row.
-ALSO_FETCHED_BY = {"quant_guild_library": ["elitequant_breadth"]}
+ALSO_FETCHED_BY = {"quant_guild_library": ["elitequant_breadth"],
+                   "gh_elitequant_elitequant": ["elitequant_breadth"],
+                   "gh_thuquant_awesome_quant": ["elitequant_breadth"],
+                   "gh_je_suis_tm_quant_trading": ["elitequant_breadth"],
+                   "gh_hkuds_vibe_trading": ["zoo_breadth"],
+                   "gh_asavinov_intelligent_trading_bot": ["model_search"],
+                   "gh_stefan_jansen_machine_learning_for_trading": ["model_search"]}
 
 
 def seed_roster() -> dict[str, Any]:
@@ -322,6 +328,7 @@ def drain_packets(state: dict[str, Any], apply: bool) -> dict[str, Any]:
         return out
     rows: list[dict[str, Any]] = []
     charged = 0
+    cells_seen = set(state.get("cells_seen") or [])
     for p in sorted(PACKETS.glob("*.json")):
         doc = _read(p, None)
         if not isinstance(doc, dict):
@@ -349,8 +356,23 @@ def drain_packets(state: dict[str, Any], apply: bool) -> dict[str, Any]:
         seen.add(key)
         # THE SEARCH BURDEN IS CHARGED, at least one trial per candidate it proposes: a packet that
         # declares fewer trials than candidates has still put that many cells in front of a judge.
-        charged += max(packet.trials_charged, len(packet.candidates))
+        # ONE CELL, ONE TRIAL (audit PR166_v2 fix 5): a candidate whose (symbol, family, params)
+        # another packet or an earlier candidate already put up is not a new trial, and is not
+        # donated twice. Identity is held across passes in `cells_seen`.
+        fresh = []
+        dupes = 0
         for cand in packet.candidates:
+            ident = hashlib.sha256(json.dumps(
+                [cand.get("symbol"), cand.get("family"), cand.get("params")],
+                sort_keys=True, default=str).encode()).hexdigest()[:16]
+            if ident in cells_seen:
+                out["duplicates"] += 1
+                dupes += 1
+                continue
+            cells_seen.add(ident)
+            fresh.append(cand)
+        charged += max(packet.trials_charged - dupes, len(fresh))
+        for cand in fresh:
             row = dict(cand)
             row.setdefault("kind", "hypothesis")
             row["origin"] = "EXTERNAL"
@@ -380,6 +402,7 @@ def drain_packets(state: dict[str, Any], apply: bool) -> dict[str, Any]:
     out["donated"] = len(rows)
     out["trials_charged"] = charged
     state["packets_seen"] = sorted(seen)[-500:]
+    state["cells_seen"] = sorted(cells_seen)
     return out
 
 
