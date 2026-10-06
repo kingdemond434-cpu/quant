@@ -53,6 +53,8 @@ def test_catalog_rows_are_well_formed() -> None:
 def test_every_declared_key_env_is_in_the_catalog() -> None:
     """A new keyed source must land in the catalog, or the operator's checker never shows it."""
     names = set(env_keys.key_names())
+    for r in env_keys.catalog():
+        names |= set(r.get("aliases") or [])
     declared: set[str] = set()
     asia = json.loads((ROOT / "desks/mt5/data/asia_sources.json").read_text("utf-8"))
     declared |= set(re.findall(r'"key_env":\s*"([A-Z0-9_]+)"', json.dumps(asia)))
