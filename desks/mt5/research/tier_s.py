@@ -17,6 +17,10 @@ WHAT IT CHANGES (research side only -- nothing here sizes, admits, certifies or 
                                       removes, throttles or re-orders a miner.
   * data/tier_s/truth_journal.jsonl   the content-addressed lineage (append-only, hash-chained)
   * data/tier_s/*.json                organ state (Red Queen populations, genomes, ledgers)
+  * reports/tier_s/SCHEDULER_STEER.json per-leg research-compute weights from the method
+                                      tournament (arena, Red Queen champion, researcher market,
+                                      meta-benchmark) with a seeded random holdout; READ by
+                                      cycle_pricing.build_plan. Two-sided, never below par.
   * data/tier_s/PROMOTION_FREEZE.json the immune system's verdict. CONSUMED by the promoter's
                                       Tier S door (libs/tiers/promotion_authority.py): a DROP judged
                                       by the production certifier withholds new live rows.
