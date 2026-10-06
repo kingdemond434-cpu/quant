@@ -79,11 +79,8 @@ def secret_forms(secrets: Iterable[str]) -> list[str]:
     for s in secrets:
         s = str(s or "")
         if s:
-            enc = {urllib.parse.quote_plus(s), urllib.parse.quote(s, safe=""),
-                   urllib.parse.quote(s)}
-            # Percent escapes are case-insensitive (RFC 3986 2.1): a server may echo `%2b`.
-            enc |= {re.sub(r"%[0-9A-F]{2}", lambda m: m.group(0).lower(), e) for e in enc}
-            forms.update({s, *enc})
+            forms.update({s, urllib.parse.quote_plus(s), urllib.parse.quote(s, safe=""),
+                          urllib.parse.quote(s)})
     return sorted(forms, key=len, reverse=True)
 
 
@@ -93,8 +90,16 @@ def redact(text: object, secrets: Iterable[str]) -> str:
     straddles it, and the scrub can no longer find the whole key to replace."""
     out = str(text)
     for form in secret_forms(secrets):
-        out = out.replace(form, "<redacted>")
+        out = _escape_pattern(form).sub("<redacted>", out)
     return out
+
+
+def _escape_pattern(form: str) -> re.Pattern[str]:
+    """``form`` as a pattern whose percent escapes match in either case (RFC 3986 2.1: `%2B` and
+    `%2b` are the same octet, and a server may echo either, or a mix)."""
+    parts = re.split(r"(%[0-9A-Fa-f]{2})", form)
+    return re.compile("".join(f"(?i:{re.escape(p)})" if p.startswith("%") else re.escape(p)
+                              for p in parts if p))
 
 
 def scrub_body(body: bytes, secrets: Iterable[str]) -> bytes:
@@ -123,9 +128,9 @@ def scrub_body(body: bytes, secrets: Iterable[str]) -> bytes:
         if isinstance(params, dict) and "api_key" in params:
             params.pop("api_key")
             out = json.dumps(doc, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    for form in secret_forms(keys):
-        out = out.replace(form.encode("utf-8"), b"<redacted>")
-    return out
+    text = out.decode("utf-8", errors="surrogateescape")
+    scrubbed = redact(text, keys)
+    return out if scrubbed == text else scrubbed.encode("utf-8", errors="surrogateescape")
 
 
 #: Header names that carry a credential. Dropped from any redirect that leaves the host or
