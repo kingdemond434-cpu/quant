@@ -130,3 +130,37 @@ def test_the_hook_keeps_its_interpreter_fallback() -> None:
     assert src.index("for cand in python3 python") < src.index("push_scope.py")
     assert src.index("push_scope.py") < src.index('"$ROOT/ops/gates.sh"')
     assert src.index("push_scope.py") < src.index("run_law_gate.py")
+
+
+def test_every_verdict_is_recorded_with_a_running_tally(tmp_path: Path) -> None:
+    """A skipped gate leaves evidence: the verdict, its reason and the skip/run tally."""
+    import json
+
+    rec = tmp_path / "data" / "push_scope.json"
+    assert push_scope.record(rec, True, "state-only push: 3 path(s), all box state")
+    assert push_scope.record(rec, False, "1 non-state path(s) in this push (e.g. libs/x.py)")
+    assert push_scope.record(rec, True, "state-only push: 1 path(s), all box state")
+    doc = json.loads(rec.read_text("utf-8"))
+    assert doc["verdict"] == "SKIP_GATES" and doc["state_only"] is True
+    assert doc["tally"] == {"skipped": 2, "gated": 1}
+    assert "state-only" in doc["why"]
+
+
+def test_a_corrupt_record_restarts_the_tally_and_an_unwritable_one_never_raises(
+        tmp_path: Path) -> None:
+    import json
+
+    rec = tmp_path / "push_scope.json"
+    rec.write_text("{not json", "utf-8")
+    assert push_scope.record(rec, False, "push scope UNMEASURED -- running the full gate")
+    assert json.loads(rec.read_text("utf-8"))["tally"] == {"skipped": 0, "gated": 1}
+    blocker = tmp_path / "file"
+    blocker.write_text("x", "utf-8")
+    assert push_scope.record(blocker / "sub" / "push_scope.json", True, "x") is False
+
+
+def test_the_record_is_gitignored_host_state() -> None:
+    """Writing the record during a push must never dirty the tree that push is judging."""
+    r = subprocess.run(["git", "-C", str(ROOT), "check-ignore", "-q",
+                        str(push_scope.RECORD.relative_to(ROOT))], check=False)
+    assert r.returncode == 0
