@@ -11,6 +11,7 @@ import math
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -193,8 +194,8 @@ def test_shibor_curve_features() -> None:
 def test_cfets_fix_surprise_recovers_the_basket_beta_and_stamps_after_the_basket(
         tmp_path: Path) -> None:
     root = _clock(tmp_path)
-    cnh = _bars("2026-05-01", 130, 7.20, seed=3)
-    usdx = _bars("2026-05-01", 130, 98.0, seed=4)
+    cnh = _bars("2026-05-01", 135, 7.20, seed=3)
+    usdx = _bars("2026-05-01", 135, 98.0, seed=4)
     rng = np.random.default_rng(5)
     days = pd.date_range("2026-05-02 01:15", "2026-09-10 01:15", freq="D", tz="UTC")
     fixes = []
@@ -303,15 +304,13 @@ def test_hard_dislocations_measure_publish_and_charge(
 
 
 def test_p6_reads_no_premium_from_a_terms_blocked_report() -> None:
-    class _Ctx:
-        sge = {"status": "BLOCKED_ON_TERMS", "rows": 999}
-        cot: dict[str, Any] = {}
-        cot_gold = None
+    ctx = SimpleNamespace(sge={"status": "BLOCKED_ON_TERMS", "rows": 999}, cot={},
+                          cot_gold=None)
     pts: list[Any] = []
     orig = DL._cot_series
     try:
         DL._cot_series = lambda _c, _s: (pts, "none")   # type: ignore[assignment]
-        r = DL.engine_p6(_Ctx(), "XAUUSD", "h1", pd.DataFrame(), np.array([]))  # type: ignore[arg-type]
+        r = DL.engine_p6(ctx, "XAUUSD", "h1", pd.DataFrame(), np.array([]))  # type: ignore[arg-type]
     finally:
         DL._cot_series = orig                            # type: ignore[assignment]
     assert r.status == DL.UNMEASURED and "sge_premium 0 rows" in r.why
