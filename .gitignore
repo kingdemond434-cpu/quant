@@ -414,6 +414,9 @@ desks/mt5/logs/
 # them made both hosts unpullable while the desk was running, which is always.
 desks/mt5/data/.job_locks/
 desks/mt5/data/free_data_cache/
+# keyed_sources store: PIT observations and cursors are box-local; reports/KEYED_SOURCES.json is
+# the record of what it holds (and reports/CREDENTIAL_COVERAGE.json of which keys are set).
+desks/mt5/data/keyed_sources/
 # free_stack_hunter store: PIT observations, raw archive, cursors, column map, catalogue finds and
 # the bulk-file inbox are box-local; reports/FREE_STACK_YIELD.json is the record of what it holds.
 desks/mt5/data/free_stack/

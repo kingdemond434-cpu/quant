@@ -151,10 +151,49 @@ def _key_present(src: dict[str, Any]) -> bool:
     env = str(src.get("key_env") or "")
     if env in _token_refresh.MANAGED:
         # SHORT-LIVED TOKENS (JQUANTS_TOKEN, CDSE_TOKEN, MYFXBOOK_SESSION) come from
-        # libs.ops.token_refresh: a pasted env value still wins, else a cached or freshly minted
+        # libs.ops.token_refresh: a pasted value still wins, else a cached or freshly minted
         # token from the long-lived credential. Present means "a valid token is in hand".
         return _token_refresh.get_token(env).ok
-    return bool(env and os.environ.get(env))
+    from libs.ops.env_keys import read_key
+    return bool(env and read_key(env))
+
+
+def _apply_key(src: dict[str, Any], url: str, headers: dict[str, str]
+               ) -> tuple[str, dict[str, str], str]:
+    """(url to SEND, headers, key) with the source's key placed where its row DECLARES.
+
+    `key_in` is `query:<param>`, `header:<name>` or `bearer`; a row without it sends no key (its
+    url is a landing page, and the keyed fetch of that dataset lives in keyed_sources/alt_proxies,
+    which build the real endpoint). The recorded `url` never carries the key, and the returned
+    key lets the caller scrub it out of any error text before the row is written."""
+    from libs.ops.env_keys import read_key
+    place = str(src.get("key_in") or "")
+    env = str(src.get("key_env") or "")
+    key = read_key(env) if (place and env) else ""
+    if not key:
+        return url, headers, ""
+    out = dict(headers)
+    kind, _, name = place.partition(":")
+    if kind == "query" and name:
+        sep = "&" if "?" in url else "?"
+        return f"{url}{sep}{urllib.parse.urlencode({name: key})}", out, key
+    if kind == "header" and name:
+        out[name] = key
+    elif kind == "bearer":
+        out["Authorization"] = f"Bearer {key}"
+    return url, out, key
+
+
+def _why(e: BaseException, key: str = "") -> str:
+    """`Type: message` for a row, with every credential removed FIRST and the cut taken AFTER.
+
+    Truncating first is the leak the security audit of #218 found: a key that straddles char 90
+    loses its tail, and the scrub can no longer find the whole key to replace. The scrub covers
+    the request's own key in every encoded form, every managed token / long-lived credential,
+    and any credential carried in a URL query string the message quotes."""
+    from libs.data.keyed_sources import redact
+    text = redact(f"{type(e).__name__}: {e}", (key,) if key else ())
+    return _token_refresh.scrub(text)[:90]
 
 
 def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool, str]:
@@ -194,7 +233,8 @@ def _vault(source_id: str, body: bytes, url: str, ctype: str) -> dict[str, Any]:
     if fresh:
         blob.write_bytes(gzip.compress(body))
         _write_atomic(blob.with_suffix(".meta.json"), json.dumps({
-            "source_id": source_id, "url": url, "content_type": ctype,
+            "source_id": source_id, "url": _token_refresh.strip_url_credentials(url),
+            "content_type": ctype,
             "sha256": digest, "bytes": len(body),
             "fetched_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         }, indent=1))
@@ -360,17 +400,32 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     url = _resolve_url(src)
     expect = str(src.get("expect") or "any")
     access = str(src.get("access") or "public")
-    rec: dict[str, Any] = {"id": sid, "plane": src.get("plane"), "url": url, "expect": expect,
+    # The recorded url never carries a credential, whatever the registry row holds.
+    rec: dict[str, Any] = {"id": sid, "plane": src.get("plane"),
+                           "url": _token_refresh.strip_url_credentials(url), "expect": expect,
                            "access": access,
                            "collected_utc": datetime.now(UTC).isoformat(timespec="seconds")}
 
+    # PAID DATA IS REFUSED BY RULE, NOT BY THE ACCIDENT OF A MISSING KEY (audit of #201,
+    # 2026-10-06): private or paid data stays blocked whatever is set on the box.
+    if access == "paid":
+        rec.update({"status": "BLOCKED_PAID",
+                    "why": "paid source: refused by the data policy (public or licensed only), "
+                           "whatever credential the host holds"})
+        return rec
+
     key_env = str(src.get("key_env") or "")
     tok = (_token_refresh.get_token(key_env) if key_env in _token_refresh.MANAGED else None)
-    present = tok.ok if tok is not None else _key_present(src)
-    if access in ("key", "paid") and not present:
-        if tok is not None:
-            rec.update({"token_status": tok.status, "token_http": tok.http,
-                        "token_detail": tok.detail})
+    if access == "key" and tok is not None and not tok.ok:
+        # A MANAGED TOKEN'S REASON IS NAMED, NEVER COLLAPSED (security audit of #218): an absent
+        # credential is UNCONFIGURED, a refresh the provider refused is BLOCKED_AUTH, and a
+        # provider whose terms are not confirmed is BLOCKED_ON_TERMS (no credential was sent).
+        st = _token_refresh.collector_status(tok)
+        rec.update({"status": st, "key_env": key_env, "token_status": tok.status,
+                    "token_http": tok.http, "token_detail": tok.detail,
+                    "why": (tok.detail or st)})
+        return rec
+    if access == "key" and tok is None and not _key_present(src):
         rec.update({"status": "UNCONFIGURED", "key_env": src.get("key_env"),
                     "why": (f"declares {access} access and {src.get('key_env') or 'no key env'} "
                             f"is not set. A named state, never a failure and never a silent "
@@ -405,14 +460,24 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
             headers["If-Modified-Since"] = str(validators["last_modified"])
     headers.update(_declared_headers(src))
     body_out = _declared_form(src)
-    send_url = url
     if tok is not None:
         # The token goes on the request only for the provider's own API host; `url` (what is
         # recorded in the row and the vault) never carries it.
         send_url, headers = _token_refresh.apply_to_request(tok, url, headers)
+        _key = str(tok.token or "")
+        place, hname = "", ""
+    else:
+        send_url, headers, _key = _apply_key(src, url, headers)
+        place, _, hname = str(src.get("key_in") or "").partition(":")
     req = urllib.request.Request(send_url, data=body_out, headers=headers)
+    # A KEYED ROW NEVER HANDS ITS CREDENTIAL TO ANOTHER HOST: urllib copies headers to a
+    # cross-host redirect target, so the bearer / declared key header is dropped there.
+    from libs.data.keyed_sources import keyed_opener, scrub_body
+    opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else ())
+              if _key else None)
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+        with (opener.open(req, timeout=timeout) if opener else
+              urllib.request.urlopen(req, timeout=timeout, context=_TLS)) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")
@@ -434,12 +499,15 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                                  f"change")})
         return rec
     except (urllib.error.URLError, TimeoutError, OSError) as e:
-        rec.update({"status": "UNREACHABLE",
-                    "why": _token_refresh.scrub(f"{type(e).__name__}: {str(e)[:90]}")})
+        # SCRUB FIRST, TRUNCATE AFTER (security audit of #218): cutting first kept the prefix
+        # of a key that straddled the cut, and `unknown url type` carries the whole URL.
+        rec.update({"status": "UNREACHABLE", "why": _why(e, _key)})
         return rec
     except Exception as e:
-        rec.update({"status": "UNMEASURED", "why": f"{type(e).__name__}: {str(e)[:90]}"})
+        rec.update({"status": "UNMEASURED", "why": _why(e, _key)})
         return rec
+    if _key:
+        body = scrub_body(body, (_key,))
 
     rec.update({"http": status, "content_type": ctype, "bytes": len(body)})
     accept = _ACCEPT.get(expect, ())
@@ -645,7 +713,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"asia collector: {len(rows)} attempted of {len(sources)} -> {dict(census)}")
     for st in ("COLLECTED", "NEEDS_PARSER", "ROUTE_CHANGED", "HTTP_ERROR", "UNREACHABLE",
-               "UNCONFIGURED", "BLOCKED_BY_ROBOTS"):
+               "UNCONFIGURED", "BLOCKED_PAID", "BLOCKED_BY_ROBOTS"):
         rs = [r for r in rows if r.get("status") == st]
         if not rs:
             continue
