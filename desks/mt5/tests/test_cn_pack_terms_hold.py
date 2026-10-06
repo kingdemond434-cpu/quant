@@ -417,3 +417,12 @@ def test_pack_cells_and_source_drain_hold_the_pboc_and_customs_registry_rows(
         "pboc_open_market": "BLOCKED_ON_TERMS:to_confirm",
         "china_customs": "BLOCKED_ON_TERMS:to_confirm",
         "cn_customs_detail": "BLOCKED_ON_TERMS:to_confirm", "nbs_pmi": None}
+
+
+def test_one_held_root_among_open_roots_does_not_silence_the_whole_source() -> None:
+    mixed = {"id": "mar_physical", "roots": ["http://stats.customs.gov.cn",
+                                             "https://www.pbs.gov.pk"]}
+    assert TF.row_hold(mixed) == ("", "")
+    assert TF.hold_of("http://stats.customs.gov.cn")[0] == "to_confirm"   # the URL itself is
+    assert TF.row_hold({"id": "y", "roots": ["pbc.gov.cn", "safe.gov.cn"]})[0] == "to_confirm"
+    assert TF.row_hold({"id": "z", "roots": ["chinamoney.com.cn", "safe.gov.cn"]})[0] == "refused"

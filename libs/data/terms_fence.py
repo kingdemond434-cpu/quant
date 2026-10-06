@@ -185,16 +185,18 @@ def row_hold(row: Any) -> tuple[str, str]:
     if ref in TERMS_REFS:
         state, clause = TERMS_REFS[ref]
         return state, reason(state, clause)
-    for name in ("url", "root"):                 # a root may list several hosts, comma-joined
-        for part in _get(row, name).split(","):
-            got = host_hold(part)
-            if got[0]:
-                return got
+    # A row is held by its hosts only when EVERY host it names is held: a source with one held
+    # root among several open ones stays open, and the per-URL gate (`host_hold`, asked by every
+    # fetching organ) skips just the held root. Otherwise one mirror root on customs.gov.cn would
+    # silence a whole multi-country source.
+    hosts = [part for name in ("url", "root") for part in _get(row, name).split(",")
+             if part.strip()]
     roots = row.get("roots") if isinstance(row, Mapping) else getattr(row, "roots", None)
-    for r in (roots or ()):
-        got = host_hold(str(r))
-        if got[0]:
-            return got
+    hosts += [str(r) for r in (roots or ()) if str(r).strip()]
+    holds = [host_hold(h) for h in hosts]
+    if holds and all(h[0] for h in holds):
+        refused = [h for h in holds if h[0] == "refused"]
+        return (refused or holds)[0]
     return "", ""
 
 
