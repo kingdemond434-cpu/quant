@@ -266,6 +266,13 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # (resident, discovery window, lattice) reads UNMEASURED without the registry rather than
     # failing. `--strict` promotes the live flags and belongs in the hourly box gate, not here.
     ("check_regional_parity.py", ()),
+    # THE ASIA DIRECTIVE'S COMPLETION AUDIT (PART XXXVII, 2026-10-06). The portable half: the
+    # requirement file must be well formed (13-state ladder, unique ids, every row names an
+    # evidence artifact and a known clock kind) and the last audit's summary is printed for the
+    # CRO, so the gate's own log carries the census and the XLIV proofs. It never fails on a
+    # requirement's STATE -- the audit reports, it does not veto -- and an absent audit prints
+    # UNMEASURED. The hourly leg `asia_completion_audit` writes the audit itself.
+    ("check_asia_directive.py", ("--fence",)),
     # EVERY REGION'S CELLS AND JUDGED CELLS RATCHET UP (principal 2026-09-23: equal maximum depth
     # per region, "like it's their native country quants"). `check_regional_parity` asserts the
     # federation has no absent region; this asserts the OUTPUT of those regions never falls back.

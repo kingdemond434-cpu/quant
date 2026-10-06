@@ -1854,6 +1854,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
                          "workers": n_workers, "grounds_worked": worked,
                          "grounds_scheduled": len(order), "claims_new": len(r.new),
                          "datasets_new": len(r.datasets), **doc["fetch_stats"]})
+            _append_rotation(doc, grounds_status, order)
         # THE YIELD ARTIFACT IS WRITTEN BY THE LEG THAT MOVES IT: every scheduled pass of this
         # miner (the deep_forest leg and every forest_* leg's practitioner role) republishes it.
         with contextlib.suppress(Exception):
@@ -1871,6 +1872,57 @@ def _rate(n: float, seconds: float) -> float | None:
 def _runs_path() -> Path:
     """Beside the cursor file, so a test that redirects SEEN redirects this too."""
     return SEEN.with_name(RUNS.name)
+
+
+#: Grounds that were scheduled and not worked this run: not an attempt in any language.
+NOT_ATTEMPTED = frozenset({"SKIPPED", "BUDGET_EXHAUSTED", "UNMEASURED"})
+ROTATION_NAME = "deep_forest_rotation.jsonl"
+ROTATION_KEEP_BYTES = 8 * 1024 * 1024
+
+
+def _rotation_path() -> Path:
+    """Beside the cursor file, so a test that redirects SEEN redirects this too."""
+    return SEEN.with_name(ROTATION_NAME)
+
+
+def rotation_record(doc: dict[str, Any], grounds_status: list[dict[str, Any]],
+                    order: list[dict[str, Any]]) -> dict[str, Any]:
+    """ONE RUN'S ROTATION DECISION, before and after (Asia directive XLIV: "prove native-language
+    search is still rotating across regions and not stuck on English pages").
+
+    `scheduled_by_language` is what the scheduler put in front of this run (the decision), and
+    `attempts_by_language` what the run actually worked (the outcome); `grounds` names them, so
+    a trailing window can show the cursor moved to ground it had not reached. Read by
+    `scripts/check_asia_directive.py` (proof `forest_rotation`). Accounting only: it changes
+    nothing about which ground is worked next."""
+    attempted = [s for s in grounds_status if str(s.get("status") or "") not in NOT_ATTEMPTED]
+    by_lang: dict[str, int] = {}
+    for s in attempted:
+        lang = str(s.get("language") or "unknown")
+        by_lang[lang] = by_lang.get(lang, 0) + 1
+    sched: dict[str, int] = {}
+    for g in order:
+        lang = str(g.get("language") or "unknown")
+        sched[lang] = sched.get(lang, 0) + 1
+    return {"at": doc.get("generated_utc"), "region_filter": doc.get("region_filter"),
+            "cursor_next": doc.get("cursor_next"),
+            "scheduled_by_language": dict(sorted(sched.items())),
+            "attempts_by_language": dict(sorted(by_lang.items())),
+            "grounds": sorted({str(s.get("ground")) for s in attempted})[:400],
+            "n_attempted": len(attempted), "n_scheduled": len(order)}
+
+
+def _append_rotation(doc: dict[str, Any], grounds_status: list[dict[str, Any]],
+                     order: list[dict[str, Any]]) -> None:
+    with contextlib.suppress(OSError), _xlock("deep_forest_rotation"):
+        p = _rotation_path()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(rotation_record(doc, grounds_status, order),
+                                ensure_ascii=False, default=str) + "\n")
+        if p.stat().st_size > ROTATION_KEEP_BYTES:          # keep the newest half
+            lines = p.read_text("utf-8", errors="replace").splitlines()
+            _atomic_text(p, "\n".join(lines[len(lines) // 2:]) + "\n")
 
 
 def _vector_stats_path() -> Path:

@@ -67,6 +67,13 @@ VAULT = DESK / "data" / "lake" / "vault"
 FOUND = DESK / "data" / "intelligence" / "asia_endpoints"
 POSTERIOR = DESK / "reports" / "POSTERIOR_ALPHA.json"
 OUT = DESK / "reports" / "SOURCE_EVIG.json"
+UNIVERSE = DESK / "data" / "universe" / "universe.json"
+#: THE DECISION LEDGER (Asia directive XLIV: "prove EVIG affects actual collection order"). Every
+#: order the collector asks for is appended here as BEFORE (the due list as it arrived) and AFTER
+#: (the order handed back); `scripts/check_asia_directive.py` joins it with the collector's own
+#: report to name the sources fetched only because of the ranking.
+DECISIONS = DESK / "data" / "evig_order_decisions.jsonl"
+DECISIONS_KEEP_BYTES = 8 * 1024 * 1024
 
 #: Declared cadence -> the seconds of desk attention one attempt costs, before measured seconds
 #: replace it. A daily portal is attempted thirty times more often than a monthly one, so the
@@ -77,6 +84,7 @@ CADENCE_COST: dict[str, float] = {
 }
 FETCH_COST_S = 6.0          # the floor: no source is free to ask for
 OK_STATUSES = ("COLLECTED", "UNCHANGED", "NOT_MODIFIED")
+UNMEASURED = "UNMEASURED"
 
 
 def _read(path: Path, default: Any) -> Any:
@@ -173,9 +181,79 @@ def _lag_weight(row: dict[str, Any]) -> float:
     return round(math.exp(-max(lag, 0.0) / 30.0), 6)
 
 
+def _universe() -> set[str] | None:
+    doc = _read(UNIVERSE, None)
+    if isinstance(doc, dict) and doc:
+        syms = doc.get("symbols") if isinstance(doc.get("symbols"), (dict, list)) else doc
+        return {str(k).upper() for k in syms}
+    return None
+
+
+def _chain() -> dict[str, Any] | None:
+    """source_drain's per-source chain, or None when it has not run here (term off, UNMEASURED)."""
+    try:
+        from research.source_drain import chain_state
+        got = chain_state()
+    except Exception:
+        return None
+    return got or None
+
+
+#: Chain stages at which a source's bytes were parsed into a stamped series.
+PARSED_STAGES = ("represented", "cells_emitted", "cells_judged")
+
+
+def _parse_term(chain: dict[str, Any] | None, sid: str) -> tuple[float, str]:
+    """P(parsed | collected): Beta(1+parsed, 1+unparsed) from the source's own chain stage.
+
+    PARSING COST (directive XXVI). A portal whose bytes the parser has never turned into a series
+    costs a parser before it pays anything; one already represented does not. One observation per
+    source, so the posterior is 2/3 or 1/3, and 1/2 for a source the chain has not reached --
+    the same uninformed prior P(usable) uses. No chain on this host: the term is off (1.0)."""
+    if chain is None:
+        return 1.0, UNMEASURED
+    row = chain.get(sid)
+    if not isinstance(row, dict) or not row.get("collected"):
+        return 0.5, "PRIOR"
+    parsed = 1 if str(row.get("stage_reached") or "") in PARSED_STAGES else 0
+    return (1.0 + parsed) / 3.0, "MEASURED"
+
+
+def _relevance(universe: set[str] | None, targets: list[str]) -> tuple[float, str]:
+    """EXPECTED MT5 RELEVANCE (directive XXVI): the share of declared targets the desk can trade.
+    A source about instruments absent from the MT5 universe informs nothing the gateway can
+    place. No targets: the neutral 0.5 novelty uses. No universe file: term off (1.0)."""
+    if universe is None:
+        return 1.0, UNMEASURED
+    if not targets:
+        return 0.5, "NO_TARGETS"
+    return max(sum(1 for t in targets if t in universe) / len(targets), 0.05), "MEASURED"
+
+
+def _licence(s: dict[str, Any]) -> tuple[float, str]:
+    """LICENSING COST (directive XXVI), in seconds-equivalent, ONLY as the registry declares it.
+
+    `licence_cost_s` on a registry row is added to the cost; a paid row that declares no price is
+    published as PAID_UNPRICED and charged nothing, because an invented price would let a free
+    source dominate for being free or a paid one for looking institutional -- the two failures
+    the directive names."""
+    try:
+        declared = float(s.get("licence_cost_s") or 0.0)
+    except (TypeError, ValueError):
+        declared = 0.0
+    access = str(s.get("access") or "public").lower()
+    if declared > 0:
+        return declared, "DECLARED"
+    return 0.0, ("PAID_UNPRICED" if access == "paid" else access.upper())
+
+
 def price(sources: list[dict[str, Any]], state: dict[str, Any],
-          sd: dict[str, float]) -> list[dict[str, Any]]:
-    """One priced row per source, highest EVIG first. Pure: no I/O, so the test can drive it."""
+          sd: dict[str, float], *, universe: set[str] | None = None,
+          chain: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    """One priced row per source, highest EVIG first. Pure: no I/O, so the test can drive it.
+
+    `universe` and `chain` switch on the MT5-relevance and parsing-cost terms; left None each term
+    is 1.0 and stamped UNMEASURED, so a caller that cannot read them changes no ranking."""
     covered: dict[str, int] = {}
     for s in sources:
         ok, _f, _s = _history(state, str(s.get("id")))
@@ -201,8 +279,11 @@ def price(sources: list[dict[str, Any]], state: dict[str, Any],
         w = _lag_weight(s)
         cost = secs if secs is not None else (
             CADENCE_COST.get(str(s.get("cadence") or "irregular").lower(), 10.0))
-        cost = max(float(cost) + FETCH_COST_S, 1.0)
-        evig = u * max(n_share, 0.05) * p_usable * w / cost
+        lic_s, lic_status = _licence(s)
+        cost = max(float(cost) + FETCH_COST_S + lic_s, 1.0)
+        p_parse, parse_status = _parse_term(chain, sid)
+        rel, rel_status = _relevance(universe, targets)
+        evig = u * max(n_share, 0.05) * p_usable * w * p_parse * rel / cost
         rows.append({
             "id": sid, "plane": s.get("plane"), "cadence": s.get("cadence"),
             "access": s.get("access"), "role": s.get("role") or "mechanism",
@@ -213,6 +294,9 @@ def price(sources: list[dict[str, Any]], state: dict[str, Any],
             "novelty": round(n_share, 4), "p_usable": round(p_usable, 4),
             "lag_weight": w, "cost_s": round(cost, 3),
             "cost_basis": ("measured seconds" if secs is not None else "declared cadence"),
+            "licence_cost_s": round(lic_s, 3), "licence_status": lic_status,
+            "p_parsed": round(p_parse, 4), "parse_status": parse_status,
+            "mt5_relevance": round(rel, 4), "relevance_status": rel_status,
             "ok": ok, "fail": fail,
             "never_collected": ok == 0,
             "evig": round(evig, 9),
@@ -223,13 +307,52 @@ def price(sources: list[dict[str, Any]], state: dict[str, Any],
     return rows
 
 
-def fetch_order(ids: list[str]) -> list[str]:
+def decision_record(before: list[str], after: list[str], evig_at: Any) -> dict[str, Any]:
+    """The BEFORE/AFTER of one ordering decision: how many sources the ranking moved and by how
+    far. Pure, so the proof's arithmetic is testable without a collector."""
+    pos = {sid: i for i, sid in enumerate(before)}
+    shifts = [abs(i - pos[sid]) for i, sid in enumerate(after) if sid in pos]
+    return {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "evig_at": evig_at, "n_due": len(before),
+            "moved": sum(1 for x in shifts if x), "max_shift": max(shifts, default=0),
+            "mean_abs_shift": round(sum(shifts) / len(shifts), 3) if shifts else 0.0,
+            "before": list(before), "after": list(after)}
+
+
+def _record_decision(rec: dict[str, Any]) -> None:
+    """Append-only; never fails the collector (the order is already decided either way)."""
+    try:
+        DECISIONS.parent.mkdir(parents=True, exist_ok=True)
+        with DECISIONS.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(rec, ensure_ascii=True, default=str) + "\n")
+        if DECISIONS.stat().st_size > DECISIONS_KEEP_BYTES:      # keep the newest half
+            lines = DECISIONS.read_text("utf-8", errors="replace").splitlines()
+            tmp = DECISIONS.with_suffix(".jsonl.tmp")
+            tmp.write_text("\n".join(lines[len(lines) // 2:]) + "\n", encoding="utf-8")
+            tmp.replace(DECISIONS)
+    except OSError as exc:
+        print(f"source evig: decision record not written ({type(exc).__name__}: {exc})")
+
+
+def fetch_order(ids: list[str], *, record: bool = False) -> list[str]:
     """THE CONSUMER'S DOOR. `asia_collector` hands its due ids here and fetches in the order
     that comes back: highest expected information gain first, so a spent budget defers the
     cheapest-value sources rather than whichever the registry happened to list last.
 
     Every id the ranking does not know is returned in its original order AFTER the ranked ones --
-    an unpriced source is never dropped, only unordered (absence is not a demotion)."""
+    an unpriced source is never dropped, only unordered (absence is not a demotion).
+
+    `record=True` (the collector's call) appends the decision to DECISIONS so the completion
+    audit can prove the ranking changed what was fetched, not only the order of a list."""
+    out = _order(ids)
+    if record:
+        doc = _read(OUT, {})
+        _record_decision(decision_record(list(ids), out,
+                                         doc.get("at") if isinstance(doc, dict) else None))
+    return out
+
+
+def _order(ids: list[str]) -> list[str]:
     doc = _read(OUT, {})
     rank: dict[str, int] = {}
     if isinstance(doc, dict):
@@ -251,7 +374,8 @@ def build(budget_s: float = 120.0) -> dict[str, Any]:
     state = state if isinstance(state, dict) else {}
     sd, sd_why = _posterior_sd()
     sources = [*_sources(), *_derived()]
-    rows = price(sources, state, sd)
+    universe, chain = _universe(), _chain()
+    rows = price(sources, state, sd, universe=universe, chain=chain)
     proposals = [r for r in rows if r["never_collected"]][:20]
     return {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
@@ -262,9 +386,20 @@ def build(budget_s: float = 120.0) -> dict[str, Any]:
         "prior_basis": ("POSTERIOR_ALPHA mean mu_sd per symbol" if sd
                         else f"flat prior 1.0: {sd_why}"),
         "n_priors": len(sd),
-        "formula": ("EVIG(s) = U(s) x novelty(s) x P(usable|s) x exp(-lag/30) / cost_s; U is the "
-                    "desk's posterior sd on the instruments s declares, novelty the share of "
-                    "those the collector has never successfully read from another source"),
+        "formula": ("EVIG(s) = U(s) x novelty(s) x P(usable|s) x exp(-lag/30) x P(parsed|s) x "
+                    "MT5relevance(s) / (cost_s + licence_cost_s); U is the desk's posterior sd on "
+                    "the instruments s declares, novelty the share of those the collector has "
+                    "never successfully read from another source, P(parsed) the Beta posterior "
+                    "from s's own chain stage, MT5 relevance the share of its targets in the MT5 "
+                    "universe, licence cost only as the registry declares it"),
+        "terms": {"parsing": ("MEASURED from source_drain's chain" if chain is not None
+                              else "UNMEASURED: no chain on this host, term 1.0"),
+                  "mt5_relevance": ("MEASURED against data/universe/universe.json"
+                                    if universe is not None
+                                    else "UNMEASURED: no universe file, term 1.0"),
+                  "licensing": "DECLARED licence_cost_s only; paid rows without one are "
+                               "PAID_UNPRICED and charged nothing"},
+        "decisions": str(DECISIONS),
         "unit": "posterior sd x usable share per second of collector attention",
         "rows": rows,
         "proposals": proposals,

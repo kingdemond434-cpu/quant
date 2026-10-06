@@ -1,0 +1,2519 @@
+{
+ "schema": "asia_directive_requirements/1",
+ "directive": "/mnt/project-files/mandates/ASIA_CHINA_FIRST_DIRECTIVE_2026-10-05.md (PARTS I-XLV)",
+ "derived_from": "reports/asia_directive_diff_2026-10-06.md section 1 (55 rows); baseline is that report's code-path verdict",
+ "ladder": [
+  "ABSENT",
+  "CODED",
+  "WIRED",
+  "SCHEDULED",
+  "RUNNING",
+  "PRODUCING_DATA",
+  "PRODUCING_CELLS",
+  "JUDGED",
+  "FORWARD",
+  "LIVE",
+  "PROVEN",
+  "BLOCKED",
+  "UNMEASURED"
+ ],
+ "rule": "each row names the artifacts that would PROVE its state; the checker derives the state from those runtime artifacts. Code existence can lift a row only as far as SCHEDULED; an absent artifact is UNMEASURED, never a pass.",
+ "requirements": [
+  {
+   "id": "R01",
+   "report_row": 1,
+   "title": "SAFE values, release history and flow features (settlement-sales imbalance)",
+   "parts": [
+    "I.A",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "CN",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P3",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "safe_fx_settlement",
+      "safe_cross_border",
+      "safe_reserves"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "safe_fx_settlement",
+      "safe_cross_border",
+      "safe_reserves"
+     ]
+    }
+   ],
+   "consumer": "pack_cells -> libs/moat/registry -> the gauntlet",
+   "blocker": "registry rows point at index pages; no index->article->xls walk",
+   "next_repair": "P3: cn_official_tables SAFE walk, vintage-accumulating asia_parser, settlement-sales imbalance transform",
+   "proxy": false,
+   "box": true,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/cn_official_tables.py",
+     "contains": "safe"
+    }
+   ],
+   "verify": {
+    "kind": "min_rows",
+    "min_rows": 12,
+    "why": "XLIV: actual values AND release history, not an index page"
+   }
+  },
+  {
+   "id": "R02",
+   "report_row": 2,
+   "title": "CFETS daily fixing fetched with history",
+   "parts": [
+    "I.B"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "PARSED_NO_PIT",
+   "package": "P3",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "cfets_fixing"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "cfets_fixing"
+     ]
+    }
+   ],
+   "consumer": "pack_cells",
+   "blocker": "newest-blob-only parser; tokenizer error leaves frames UNSTAMPED",
+   "next_repair": "P3: vintage accumulation + fix the cfets tokenizer",
+   "proxy": false,
+   "box": true,
+   "verify": {
+    "kind": "min_rows",
+    "min_rows": 20,
+    "why": "a one-day ccpr.json snapshot is not a history"
+   }
+  },
+  {
+   "id": "R03",
+   "report_row": 3,
+   "title": "CFETS fixing SURPRISE vs model-implied fix; fixing-defence index",
+   "parts": [
+    "I.B",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "CN",
+   "baseline": "ABSENT",
+   "package": "P3",
+   "owner": [
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "cfets_fixing"
+     ]
+    }
+   ],
+   "consumer": "P5 latent FX-flow state; pack_cells cells",
+   "blocker": "no implied-fix model",
+   "next_repair": "P3: implied fix = prior 16:30 close + basket term; surprise published as a series",
+   "proxy": false,
+   "box": true,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/pack_cells.py",
+     "contains": "fix_surprise"
+    }
+   ]
+  },
+  {
+   "id": "R04",
+   "report_row": 4,
+   "title": "PBOC OMO/MLF/LPR/RRR, DR007, SHIBOR, ChinaBond curve; liquidity impulse",
+   "parts": [
+    "I.B"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P3",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "pboc_open_market",
+      "pboc_survey_stats",
+      "chinabond_curve"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "pboc_open_market",
+      "pboc_survey_stats",
+      "chinabond_curve"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "landing pages only",
+   "next_repair": "P3: chinamoney SHIBOR/DR007 JSON, PBOC OMO net injection",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R05",
+   "report_row": 5,
+   "title": "NBS PMI subcomponents, IP/FAI/CPI/PPI; surprise, diffusion, divergence",
+   "parts": [
+    "I.C"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P3",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "nbs_pmi",
+      "nbs_industrial"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "nbs_pmi",
+      "nbs_industrial"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "easyquery without query parameters",
+   "next_repair": "P3: parameterised NBS easyquery (dbcode=hgyd)",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R06",
+   "report_row": 6,
+   "title": "NBS retail sales headline",
+   "parts": [
+    "I.C"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "DONATED (code)",
+   "package": "P4",
+   "owner": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "scheduler": [
+    "hourly:alt_proxies"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ALT_PROXIES.json"
+   ],
+   "probes": [
+    {
+     "kind": "alt_proxies",
+     "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+     "ids": [
+      "cn_nbs_retail"
+     ]
+    }
+   ],
+   "consumer": "proposer_common.donate -> the gauntlet",
+   "blocker": "",
+   "next_repair": "runtime yield is measured on the box",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R07",
+   "report_row": 7,
+   "title": "China customs commodity x country x port, unit value, quantity surprise",
+   "parts": [
+    "I.D"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P3",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "china_customs",
+      "cn_customs_detail"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "china_customs",
+      "cn_customs_detail"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "form-driven query tool",
+   "next_repair": "P3: box probe of the customs export endpoint, HS x country",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R08",
+   "report_row": 8,
+   "title": "SGE actual daily history + USD/oz premium vs XAUUSD",
+   "parts": [
+    "II.A",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "CN",
+   "baseline": "PIT_NO_CELLS",
+   "package": "P1",
+   "owner": [
+    "desks/mt5/research/fetch_sge_premium.py"
+   ],
+   "scheduler": [
+    "hourly:sge_premium"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/data/lake/sge_daily.parquet",
+    "desks/mt5/reports/ALT_PROXIES.json",
+    "desks/mt5/reports/sge_premium.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/data/lake/sge_daily.parquet",
+     "what": "SGE daily prints"
+    },
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/sge_premium.json"
+    },
+    {
+     "kind": "alt_proxies",
+     "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+     "ids": [
+      "cn_sge_premium"
+     ]
+    }
+   ],
+   "consumer": "alt_proxies cn_sge_premium (terms to_confirm), dislocation_lab P6",
+   "blocker": "cn_sge_premium terms to_confirm (principal); forward-recorded only, no backfill",
+   "next_repair": "P1: backfill from dated sjzx/mrhq pages; principal settles SGE terms",
+   "proxy": false,
+   "box": true,
+   "verify": {
+    "kind": "min_rows",
+    "min_rows": 20,
+    "why": "XLIV: actual daily history, not one day"
+   }
+  },
+  {
+   "id": "R09",
+   "report_row": 9,
+   "title": "SGE premium derivatives (z, accel, extremes, x CNH / sessions, lead-lag)",
+   "parts": [
+    "II.A"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "ABSENT",
+   "package": "P1",
+   "owner": [
+    "desks/mt5/research/fetch_sge_premium.py"
+   ],
+   "scheduler": [
+    "hourly:sge_premium"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/sge_premium.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/sge_premium.json",
+     "rows_key": "transforms"
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P1: publish level, delta, acceleration, z, percentile, x CNH, x session",
+   "proxy": false,
+   "box": false,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/fetch_sge_premium.py",
+     "contains": "premium_z"
+    }
+   ]
+  },
+  {
+   "id": "R10",
+   "report_row": 10,
+   "title": "SGE benchmark AM/PM, Ag(T+D), silver benchmark, volume, OI, delivery",
+   "parts": [
+    "II.A"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P1",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "sge_benchmark",
+      "sge_silver"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "sge_benchmark",
+      "sge_silver"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P1: parse the quote tables for benchmark, silver, volume, OI",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R11",
+   "report_row": 11,
+   "title": "SHFE/INE member rankings -> numeric concentration history",
+   "parts": [
+    "II.B",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "CN",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P2",
+   "owner": [
+    "libs/data/free_stack.py"
+   ],
+   "scheduler": [
+    "hourly:free_stack_hunt",
+    "hourly:free_stack_proposer"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/FREE_STACK_YIELD.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "shfe_member_rank"
+     ]
+    },
+    {
+     "kind": "free_stack",
+     "artifact": "desks/mt5/reports/FREE_STACK_YIELD.json",
+     "ids": [
+      "shfe_member_rank"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "dataview.html is a JavaScript shell; nothing fetches pm<date>.dat",
+   "next_repair": "P2: SHFE pm<date>.dat fetcher + top-5/top-20 concentration transforms",
+   "proxy": false,
+   "box": true,
+   "verify": {
+    "kind": "min_rows",
+    "min_rows": 20,
+    "why": "XLIV: numeric concentration as HISTORICAL features"
+   }
+  },
+  {
+   "id": "R12",
+   "report_row": 12,
+   "title": "SHFE warehouse receipts / inventory history + divergence candidates",
+   "parts": [
+    "II.B",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "CN",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P2",
+   "owner": [
+    "libs/data/free_stack.py"
+   ],
+   "scheduler": [
+    "hourly:free_stack_hunt",
+    "hourly:free_stack_proposer"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/FREE_STACK_YIELD.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "shfe_warehouse"
+     ]
+    },
+    {
+     "kind": "free_stack",
+     "artifact": "desks/mt5/reports/FREE_STACK_YIELD.json",
+     "ids": [
+      "shfe_warehouse"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P2: weekly warehouse stocks, inventory-price divergence cells",
+   "proxy": false,
+   "box": true,
+   "verify": {
+    "kind": "min_rows",
+    "min_rows": 8,
+    "why": "XLIV: preserve history and generate divergence candidates"
+   }
+  },
+  {
+   "id": "R13",
+   "report_row": 13,
+   "title": "SHFE/INE prices (Au, Ag, Cu, Al, Zn, Ni, SC)",
+   "parts": [
+    "II.B"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "DONATED (proxy)",
+   "package": "P2",
+   "owner": [
+    "libs/data/free_stack.py",
+    "desks/mt5/research/free_stack_proposer.py"
+   ],
+   "scheduler": [
+    "hourly:free_stack_hunt",
+    "hourly:free_stack_proposer"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/FREE_STACK_YIELD.json"
+   ],
+   "probes": [
+    {
+     "kind": "free_stack",
+     "artifact": "desks/mt5/reports/FREE_STACK_YIELD.json",
+     "ids": [
+      "akshare"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P2: OI, settlement, volume and basis beside the log return",
+   "proxy": true,
+   "box": true
+  },
+  {
+   "id": "R14",
+   "report_row": 14,
+   "title": "SHFE OI / OI change, settlement, term structure, calendar spreads, basis",
+   "parts": [
+    "II.B"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "ABSENT",
+   "package": "P2",
+   "owner": [
+    "libs/data/free_stack.py"
+   ],
+   "scheduler": [
+    "hourly:free_stack_hunt"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/FREE_STACK_YIELD.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "shfe_daily"
+     ]
+    },
+    {
+     "kind": "free_stack",
+     "artifact": "desks/mt5/reports/FREE_STACK_YIELD.json",
+     "ids": [
+      "shfe_daily"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P2: kx<date>.dat contract-month parse",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R15",
+   "report_row": 15,
+   "title": "DCE / CZCE / GFEX daily + member ranks",
+   "parts": [
+    "II.C"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P2",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "dce_daily",
+      "czce_daily",
+      "gfex_daily",
+      "dce_member_rank",
+      "czce_member_rank"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "dce_daily",
+      "czce_daily",
+      "gfex_daily",
+      "dce_member_rank",
+      "czce_member_rank"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P2: DCE/CZCE/GFEX daily and rank tables",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R16",
+   "report_row": 16,
+   "title": "CFFEX daily + member rankings",
+   "parts": [
+    "II.C"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "PARSED_NO_PIT",
+   "package": "P3",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "cffex_daily",
+      "cffex_member_rank"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "cffex_daily",
+      "cffex_member_rank"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P3: per-day vintage accumulation + concentration transform",
+   "proxy": false,
+   "box": true,
+   "verify": {
+    "kind": "min_rows",
+    "min_rows": 20,
+    "why": "a per-day snapshot overwritten daily is not a history"
+   }
+  },
+  {
+   "id": "R17",
+   "report_row": 17,
+   "title": "CFFEX option IV / Greeks; CN/JP/HK option surfaces",
+   "parts": [
+    "II.C",
+    "XXXII"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "ABSENT",
+   "package": "",
+   "owner": [],
+   "scheduler": [],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "cffex_option_stats"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "unowned: no package builds option surfaces yet",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R18",
+   "report_row": 18,
+   "title": "Chinese ports as parsed time series, by port",
+   "parts": [
+    "III.A",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "CN",
+   "baseline": "REGISTRY_ONLY",
+   "package": "P4",
+   "owner": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "scheduler": [
+    "hourly:alt_proxies"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ALT_PROXIES.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "alt_proxies",
+     "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+     "ids": [
+      "cn_mot_port_weekly",
+      "imf_portwatch_ports"
+     ]
+    },
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "mot_port_throughput"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "MOT terms to_confirm; PortWatch covers 2 Chinese ports",
+   "next_repair": "P4: MOT monthly xlsx after terms; PortWatch Qingdao/Tianjin/Dalian/Rizhao/Tangshan/Guangzhou/Shenzhen",
+   "proxy": false,
+   "box": true,
+   "verify": {
+    "kind": "min_rows",
+    "min_rows": 12,
+    "why": "XLIV: tables/spreadsheets parsed into usable series"
+   }
+  },
+  {
+   "id": "R19",
+   "report_row": 19,
+   "title": "Freight by route x origin x destination (SCFI/CCFI, bulk, tanker)",
+   "parts": [
+    "III.B"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P4",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "sse_freight_indices"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "sse_freight_indices"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P4: SCFI/CCFI route indices preserved by route",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R20",
+   "report_row": 20,
+   "title": "Rail / highway freight",
+   "parts": [
+    "III.A"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P4",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "cn_rail_freight"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "cn_rail_freight"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R21",
+   "report_row": 21,
+   "title": "Electricity / thermal / hydro / power-PMI divergence",
+   "parts": [
+    "III.C"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P4",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "cn_power_output",
+      "kr_kpx_power"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "cn_power_output"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P4: NBS energy / power output",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R22",
+   "report_row": 22,
+   "title": "Production chains and transmission edges (iron ore, copper, oil, gold, ag)",
+   "parts": [
+    "III.D",
+    "XV"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "CELLS_NOT_DONATED (proxy)",
+   "package": "P5",
+   "owner": [
+    "desks/mt5/research/asia_transmission.py"
+   ],
+   "scheduler": [
+    "battery:desks/mt5/research/asia_transmission.py"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_TRANSMISSION.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/ASIA_TRANSMISSION.json",
+     "rows_key": "edges",
+     "cells_key": "donated"
+    }
+   ],
+   "consumer": "",
+   "blocker": "battery passes no --propose",
+   "next_repair": "P5: --propose in batteries.py so non-REFUTED edges donate",
+   "proxy": true,
+   "box": true
+  },
+  {
+   "id": "R23",
+   "report_row": 23,
+   "title": "Tianyancha UNCONFIGURED + a free substitute path",
+   "parts": [
+    "IV",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "CN",
+   "baseline": "REGISTRY_ONLY",
+   "package": "P4",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:alt_proxies"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ALT_PROXIES.json",
+    "desks/mt5/reports/ASIA_COLLECTOR.json"
+   ],
+   "probes": [
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "tianyancha_supply"
+     ]
+    },
+    {
+     "kind": "alt_proxies",
+     "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+     "ids": [
+      "cn_supply_chain_disclosure"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "paid; TIANYANCHA_TOKEN absent -> UNCONFIGURED; no substitute row",
+   "next_repair": "P4: CNINFO supplier/customer disclosures + CCGP awards as the free substitute",
+   "proxy": false,
+   "box": true,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/alt_proxies.py",
+     "contains": "tianyancha"
+    }
+   ],
+   "key_env": [
+    "TIANYANCHA_TOKEN"
+   ]
+  },
+  {
+   "id": "R24",
+   "report_row": 24,
+   "title": "Procurement awards -> infrastructure / steel / copper order indices",
+   "parts": [
+    "V",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "CN",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P4",
+   "owner": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "scheduler": [
+    "hourly:alt_proxies"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ALT_PROXIES.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "alt_proxies",
+     "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+     "ids": [
+      "cn_ccgp_awards"
+     ]
+    },
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "ccgp_procurement"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P4: CCGP award aggregation with provincial breadth",
+   "proxy": false,
+   "box": true,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/alt_proxies.py",
+     "contains": "ccgp"
+    }
+   ],
+   "verify": {
+    "kind": "min_rows",
+    "min_rows": 4,
+    "why": "XLIV: awards aggregated into order indices"
+   }
+  },
+  {
+   "id": "R25",
+   "report_row": 25,
+   "title": "NASA FIRMS industrial-cluster points",
+   "parts": [
+    "VI.B",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "CN",
+   "baseline": "DONATED (code)",
+   "package": "P4",
+   "owner": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "scheduler": [
+    "hourly:alt_proxies"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ALT_PROXIES.json"
+   ],
+   "probes": [
+    {
+     "kind": "alt_proxies",
+     "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+     "ids": [
+      "cn_firms_industrial"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "BLOCKED_ON_KEY unless FIRMS_MAP_KEY is set",
+   "next_repair": "P4: smelter/refinery/port clusters, seasonal baseline, land-cover mask",
+   "proxy": false,
+   "box": true,
+   "key_env": [
+    "FIRMS_MAP_KEY"
+   ]
+  },
+  {
+   "id": "R26",
+   "report_row": 26,
+   "title": "Copernicus Sentinel-5P NO2/SO2 over clusters",
+   "parts": [
+    "VI.A",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "CN",
+   "baseline": "REGISTRY_ONLY",
+   "package": "P4",
+   "owner": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "scheduler": [
+    "hourly:alt_proxies"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ALT_PROXIES.json",
+    "desks/mt5/reports/ASIA_COLLECTOR.json"
+   ],
+   "probes": [
+    {
+     "kind": "alt_proxies",
+     "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+     "ids": [
+      "cn_s5p_no2"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "copernicus_s5p"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "no S5P parser; BLOCKED_ON_KEY CDSE_TOKEN",
+   "next_repair": "P4: S5P NO2 parser on the FIRMS cluster registry",
+   "proxy": false,
+   "box": true,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/alt_proxies.py",
+     "contains": "parse_s5p"
+    }
+   ],
+   "key_env": [
+    "CDSE_TOKEN"
+   ]
+  },
+  {
+   "id": "R27",
+   "report_row": 27,
+   "title": "Baidu Index only with real access",
+   "parts": [
+    "VII.A",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "CN",
+   "baseline": "REGISTRY_ONLY (UNCONFIGURED)",
+   "package": "",
+   "owner": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json"
+   ],
+   "probes": [
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "baidu_index"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "UNCONFIGURED by design: no HTML scraping (XLIV)",
+   "next_repair": "principal: whether a session cookie is an acceptable key",
+   "proxy": false,
+   "box": false,
+   "key_env": [
+    "BAIDU_INDEX_COOKIE"
+   ]
+  },
+  {
+   "id": "R28",
+   "report_row": 28,
+   "title": "Naver DataLab / Korea attention",
+   "parts": [
+    "VII.B"
+   ],
+   "xliv": false,
+   "region": "KR",
+   "baseline": "ABSENT",
+   "package": "P4",
+   "owner": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "scheduler": [
+    "hourly:alt_proxies"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ALT_PROXIES.json"
+   ],
+   "probes": [
+    {
+     "kind": "alt_proxies",
+     "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+     "ids": [
+      "kr_naver_datalab"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P4: Naver DataLab (free official API)",
+   "proxy": false,
+   "box": true,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/alt_proxies.py",
+     "contains": "naver"
+    }
+   ],
+   "key_env": [
+    "NAVER_CLIENT_ID"
+   ]
+  },
+  {
+   "id": "R29",
+   "report_row": 29,
+   "title": "J-Quants parsed values + cells",
+   "parts": [
+    "IX",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "JP",
+   "baseline": "REGISTRY_ONLY",
+   "package": "P6",
+   "owner": [
+    "desks/mt5/research/countries/jp/data_plane.py"
+   ],
+   "scheduler": [
+    "hourly:global_research_os"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/JP_DATA_PLANE.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "jpx_jquants"
+     ]
+    },
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/JP_DATA_PLANE.json",
+     "rows_key": "series"
+    }
+   ],
+   "consumer": "",
+   "blocker": "URL is the marketing site; no parser",
+   "next_repair": "P6: api.jquants.com data plane",
+   "proxy": false,
+   "box": true,
+   "key_env": [
+    "JQUANTS_TOKEN"
+   ]
+  },
+  {
+   "id": "R30",
+   "report_row": 30,
+   "title": "BOJ time series, JGB, MOF intervention, TFX",
+   "parts": [
+    "IX",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "JP",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P6",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "boj_timeseries",
+      "jp_mof_intervention",
+      "tfx_swap_points",
+      "jp_jsda_bonds"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "boj_timeseries",
+      "jp_mof_intervention",
+      "tfx_swap_points",
+      "jp_jsda_bonds"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P6: BOJ stat-search flat files, MOF intervention history, TFX swap points",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R31",
+   "report_row": 31,
+   "title": "KRX, BOK ECOS",
+   "parts": [
+    "X",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "KR",
+   "baseline": "SCHEDULED_NO_PARSE",
+   "package": "P6",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "krx_open_api",
+      "krx_derivatives_stats",
+      "bok_ecos"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "krx_open_api",
+      "bok_ecos"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "KRX JavaScript loaders; ECOS_API_KEY vs BOK_API_KEY name the same service",
+   "next_repair": "P6: KRX derivatives OI and foreigner flows; one ECOS env var",
+   "proxy": false,
+   "box": true,
+   "key_env": [
+    "ECOS_API_KEY",
+    "BOK_API_KEY"
+   ]
+  },
+  {
+   "id": "R32",
+   "report_row": 32,
+   "title": "Korea 1-10 / 1-20 day exports",
+   "parts": [
+    "X"
+   ],
+   "xliv": false,
+   "region": "KR",
+   "baseline": "DONATED (code)",
+   "package": "P4",
+   "owner": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "scheduler": [
+    "hourly:alt_proxies"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ALT_PROXIES.json"
+   ],
+   "probes": [
+    {
+     "kind": "alt_proxies",
+     "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+     "ids": [
+      "kr_exports_early"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R33",
+   "report_row": 33,
+   "title": "HKMA aggregate balance / HIBOR",
+   "parts": [
+    "XI",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "HK",
+   "baseline": "DONATED (generic)",
+   "package": "P6",
+   "owner": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_parser.py",
+    "desks/mt5/research/pack_cells.py"
+   ],
+   "scheduler": [
+    "hourly:asia_collector",
+    "hourly:asia_parser",
+    "hourly:source_drain",
+    "hourly:pack_cells"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COLLECTOR.json",
+    "desks/mt5/reports/PACK_CELLS.json"
+   ],
+   "probes": [
+    {
+     "kind": "pack_cells",
+     "artifact": "desks/mt5/reports/PACK_CELLS.json",
+     "ids": [
+      "hkma_open_api"
+     ]
+    },
+    {
+     "kind": "collector",
+     "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+     "ids": [
+      "hkma_open_api"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P6: HIBOR-spread and aggregate-balance semantics",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R34",
+   "report_row": 34,
+   "title": "Japan / Korea departments as working organs",
+   "parts": [
+    "IX",
+    "X",
+    "XXVII"
+   ],
+   "xliv": false,
+   "region": "JP/KR",
+   "baseline": "ABSENT",
+   "package": "P6",
+   "owner": [
+    "desks/mt5/research/countries/kr/miners.py",
+    "desks/mt5/research/countries/jp/data_plane.py",
+    "desks/mt5/research/countries/kr/data_plane.py"
+   ],
+   "scheduler": [
+    "hourly:global_research_os"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/GLOBAL_RESEARCH_OS.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/GLOBAL_RESEARCH_OS.json",
+     "rows_key": "countries"
+    }
+   ],
+   "consumer": "",
+   "blocker": "16 Korea miners MISSING; JP department module absent",
+   "next_repair": "P6: jp/kr data planes",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R35",
+   "report_row": 35,
+   "title": "Public trader genome with graveyard",
+   "parts": [
+    "XIV",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "GLOBAL",
+   "baseline": "PARSED_NO_PIT",
+   "package": "P8",
+   "owner": [
+    "desks/mt5/research/book_forensics.py",
+    "desks/mt5/research/provider_reverse.py"
+   ],
+   "scheduler": [
+    "daily:book_forensics"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/data/trader_genome.parquet"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/data/trader_genome.parquet",
+     "what": "genome incl. graveyard"
+    }
+   ],
+   "consumer": "",
+   "blocker": "no graveyard set; book_forensics on no clock",
+   "next_repair": "P8: trader_genome.parquet with delisted accounts",
+   "proxy": false,
+   "box": true,
+   "verify": {
+    "kind": "min_rows",
+    "min_rows": 1,
+    "why": "XLIV: graveyard/dead-strategy data used where available"
+   }
+  },
+  {
+   "id": "R36",
+   "report_row": 36,
+   "title": "Asia causal graph with failures kept",
+   "parts": [
+    "XV"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "CELLS_NOT_DONATED (proxy)",
+   "package": "P5",
+   "owner": [
+    "desks/mt5/research/asia_transmission.py",
+    "desks/mt5/research/world_causal_graph.py"
+   ],
+   "scheduler": [
+    "hourly:causal_graph"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_TRANSMISSION.json",
+    "desks/mt5/reports/TRANSMISSION_GRAPH.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/ASIA_TRANSMISSION.json",
+     "rows_key": "edges",
+     "cells_key": "donated"
+    },
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/TRANSMISSION_GRAPH.json",
+     "rows_key": "edges"
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "",
+   "proxy": true,
+   "box": true
+  },
+  {
+   "id": "R37",
+   "report_row": 37,
+   "title": "Unified Asia dislocation lab on hard series",
+   "parts": [
+    "XVI",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "CN",
+   "baseline": "ABSENT",
+   "package": "P1",
+   "owner": [
+    "desks/mt5/research/dislocation_lab.py"
+   ],
+   "scheduler": [
+    "hourly:dislocation_lab"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/DISLOCATION_LAB.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/DISLOCATION_LAB.json",
+     "rows_key": "asia_hard_series"
+    }
+   ],
+   "consumer": "",
+   "blocker": "P6 reads SGE as a row count only",
+   "next_repair": "P1: SGE-vs-XAUUSD and China-silver-vs-XAGUSD residual cells",
+   "proxy": false,
+   "box": true,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/dislocation_lab.py",
+     "contains": "sge_vs_xauusd"
+    }
+   ]
+  },
+  {
+   "id": "R38",
+   "report_row": 38,
+   "title": "China Industrial Latent State as a PIT dataset",
+   "parts": [
+    "XVII.A",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "CN",
+   "baseline": "ABSENT",
+   "package": "P5",
+   "owner": [
+    "desks/mt5/research/macro_state_engine.py"
+   ],
+   "scheduler": [
+    "hourly:macro_state_engine"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/data/axes/latent_cn_industrial.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/data/axes/latent_cn_industrial.json",
+     "rows_key": "rows",
+     "what": "PIT latent rows"
+    }
+   ],
+   "consumer": "FieldCatalogue / representation_forge via the axis door; the ASIA INTELLIGENCE panel",
+   "blocker": "",
+   "next_repair": "P5: publish level/surprise/acceleration/uncertainty/contributions",
+   "proxy": false,
+   "box": false,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/macro_state_engine.py",
+     "contains": "latent_cn_industrial"
+    }
+   ],
+   "verify": {
+    "kind": "min_rows",
+    "min_rows": 20,
+    "why": "XLIV: a real PIT dataset, not a paragraph"
+   }
+  },
+  {
+   "id": "R39",
+   "report_row": 39,
+   "title": "China Physical Gold State",
+   "parts": [
+    "XVII.B"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "ABSENT",
+   "package": "P5",
+   "owner": [
+    "desks/mt5/research/macro_state_engine.py"
+   ],
+   "scheduler": [
+    "hourly:macro_state_engine"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/data/axes/latent_cn_physical_gold.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/data/axes/latent_cn_physical_gold.json",
+     "rows_key": "rows",
+     "what": "PIT latent rows"
+    }
+   ],
+   "consumer": "FieldCatalogue / representation_forge via the axis door; the ASIA INTELLIGENCE panel",
+   "blocker": "",
+   "next_repair": "P5: publish level/surprise/acceleration/uncertainty/contributions",
+   "proxy": false,
+   "box": false,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/macro_state_engine.py",
+     "contains": "latent_cn_physical_gold"
+    }
+   ],
+   "verify": {
+    "kind": "min_rows",
+    "min_rows": 20,
+    "why": "XLIV: a real PIT dataset, not a paragraph"
+   }
+  },
+  {
+   "id": "R40",
+   "report_row": 40,
+   "title": "Asia Industrial Export State (+ Korea Export State)",
+   "parts": [
+    "XVII.C"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "ABSENT",
+   "package": "P5",
+   "owner": [
+    "desks/mt5/research/macro_state_engine.py"
+   ],
+   "scheduler": [
+    "hourly:macro_state_engine"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/data/axes/latent_asia_export.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/data/axes/latent_asia_export.json",
+     "rows_key": "rows",
+     "what": "PIT latent rows"
+    }
+   ],
+   "consumer": "FieldCatalogue / representation_forge via the axis door; the ASIA INTELLIGENCE panel",
+   "blocker": "",
+   "next_repair": "P5: publish level/surprise/acceleration/uncertainty/contributions",
+   "proxy": false,
+   "box": false,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/macro_state_engine.py",
+     "contains": "latent_asia_export"
+    }
+   ],
+   "verify": {
+    "kind": "min_rows",
+    "min_rows": 20,
+    "why": "XLIV: a real PIT dataset, not a paragraph"
+   }
+  },
+  {
+   "id": "R41",
+   "report_row": 41,
+   "title": "Asia Funding / Carry State (+ Japan Funding State)",
+   "parts": [
+    "XVII.D"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "ABSENT",
+   "package": "P5",
+   "owner": [
+    "desks/mt5/research/macro_state_engine.py"
+   ],
+   "scheduler": [
+    "hourly:macro_state_engine"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/data/axes/latent_asia_funding.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/data/axes/latent_asia_funding.json",
+     "rows_key": "rows",
+     "what": "PIT latent rows"
+    }
+   ],
+   "consumer": "FieldCatalogue / representation_forge via the axis door; the ASIA INTELLIGENCE panel",
+   "blocker": "",
+   "next_repair": "P5: publish level/surprise/acceleration/uncertainty/contributions",
+   "proxy": false,
+   "box": false,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/macro_state_engine.py",
+     "contains": "latent_asia_funding"
+    }
+   ],
+   "verify": {
+    "kind": "min_rows",
+    "min_rows": 20,
+    "why": "XLIV: a real PIT dataset, not a paragraph"
+   }
+  },
+  {
+   "id": "R42",
+   "report_row": 42,
+   "title": "Event lifecycle objects for Asian events",
+   "parts": [
+    "XVIII"
+   ],
+   "xliv": false,
+   "region": "CN",
+   "baseline": "ABSENT for Asia-native events",
+   "package": "P5",
+   "owner": [
+    "libs/regime/event_state.py",
+    "desks/mt5/research/state_vector_build.py"
+   ],
+   "scheduler": [
+    "own_clock:state_vector"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/data/state_vector.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/data/state_vector.json",
+     "rows_key": "asia_events"
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "",
+   "proxy": false,
+   "box": false,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/state_vector_build.py",
+     "contains": "cfets"
+    }
+   ]
+  },
+  {
+   "id": "R43",
+   "report_row": 43,
+   "title": "Source-market ROI that changes research budget (after adequate sample)",
+   "parts": [
+    "XXV",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "GLOBAL",
+   "baseline": "CONSUMED",
+   "package": "P7",
+   "owner": [
+    "desks/mt5/research/research_roi.py",
+    "libs/research/forests.py"
+   ],
+   "scheduler": [
+    "hourly:research_roi"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/data/roi_budget_decisions.jsonl",
+    "desks/mt5/reports/RESEARCH_ROI.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/RESEARCH_ROI.json",
+     "rows_key": "source_roi"
+    },
+    {
+     "kind": "proof",
+     "proof": "roi_budget",
+     "artifact": "desks/mt5/data/roi_budget_decisions.jsonl"
+    }
+   ],
+   "consumer": "libs/research/forests.py allocation_for -> forest_runner (data/forest_runs.jsonl allocation)",
+   "blocker": "",
+   "next_repair": "per-source (not per-forest) budgets; API/subscription/network cost terms",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R44",
+   "report_row": 44,
+   "title": "Source EVIG that changes collection order",
+   "parts": [
+    "XXVI",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "GLOBAL",
+   "baseline": "CONSUMED",
+   "package": "P7",
+   "owner": [
+    "desks/mt5/research/source_evig.py",
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "scheduler": [
+    "hourly:source_evig",
+    "hourly:asia_collector"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/data/evig_order_decisions.jsonl",
+    "desks/mt5/reports/SOURCE_EVIG.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/SOURCE_EVIG.json",
+     "rows_key": "rows"
+    },
+    {
+     "kind": "proof",
+     "proof": "evig_order",
+     "artifact": "desks/mt5/data/evig_order_decisions.jsonl"
+    }
+   ],
+   "consumer": "asia_collector main() -> fetch_order(due ids)",
+   "blocker": "",
+   "next_repair": "EVIG over alt_proxies, free_stack and deep_forest too",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R45",
+   "report_row": 45,
+   "title": "Native-language deep-forest rotation",
+   "parts": [
+    "VIII",
+    "XXVIII",
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "GLOBAL",
+   "baseline": "CONSUMED",
+   "package": "P7",
+   "owner": [
+    "desks/mt5/research/deep_forest_miner.py"
+   ],
+   "scheduler": [
+    "hourly:forest_china",
+    "hourly:forest_korea",
+    "daily:deep_forest_miner"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/data/deep_forest_rotation.jsonl",
+    "desks/mt5/reports/DEEP_FOREST.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/DEEP_FOREST.json",
+     "rows_key": "grounds"
+    },
+    {
+     "kind": "proof",
+     "proof": "forest_rotation",
+     "artifact": "desks/mt5/data/deep_forest_rotation.jsonl"
+    }
+   ],
+   "consumer": "deep_forest_miner scheduler (least-recently-attempted cursor)",
+   "blocker": "",
+   "next_repair": "",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R46",
+   "report_row": 46,
+   "title": "10-layer source taxonomy per country",
+   "parts": [
+    "XXVII"
+   ],
+   "xliv": false,
+   "region": "ASIA",
+   "baseline": "REGISTRY_ONLY",
+   "package": "P6",
+   "owner": [
+    "desks/mt5/research/countries/__init__.py"
+   ],
+   "scheduler": [
+    "fence:check_regional_parity.py"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/regional_parity.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/regional_parity.json",
+     "rows_key": "regions"
+    }
+   ],
+   "consumer": "",
+   "blocker": "jp has no SOURCE_CLASSES; no layer->yield accounting",
+   "next_repair": "",
+   "proxy": false,
+   "box": false
+  },
+  {
+   "id": "R47",
+   "report_row": 47,
+   "title": "App ecosystems and archives",
+   "parts": [
+    "XXVIII",
+    "XXIX"
+   ],
+   "xliv": false,
+   "region": "ASIA",
+   "baseline": "DONATED (partial)",
+   "package": "",
+   "owner": [
+    "libs/data/free_stack.py"
+   ],
+   "scheduler": [
+    "hourly:free_stack_hunt",
+    "hourly:free_stack_proposer"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/FREE_STACK_YIELD.json"
+   ],
+   "probes": [
+    {
+     "kind": "free_stack",
+     "artifact": "desks/mt5/reports/FREE_STACK_YIELD.json",
+     "ids": [
+      "app_rank_apple",
+      "telegram",
+      "cn_weibo",
+      "cn_xueqiu",
+      "cn_zhihu",
+      "cn_guba"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "Asian broker/exchange apps; platform-migration tracking",
+   "proxy": false,
+   "box": true
+  },
+  {
+   "id": "R48",
+   "report_row": 48,
+   "title": "Failure memory + failure-aware mutation",
+   "parts": [
+    "XXX"
+   ],
+   "xliv": false,
+   "region": "GLOBAL",
+   "baseline": "CONSUMED",
+   "package": "",
+   "owner": [
+    "desks/mt5/research/graveyard_resurrection.py"
+   ],
+   "scheduler": [
+    "hourly:graveyard_resurrection",
+    "hourly:failure_prior"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/FAILURE_PRIOR.json",
+    "desks/mt5/reports/GRAVEYARD_RESURRECTION.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/GRAVEYARD_RESURRECTION.json"
+    },
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/FAILURE_PRIOR.json"
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "Asia kill classes are on the unmerged mt5-mining-followups branch",
+   "proxy": false,
+   "box": false
+  },
+  {
+   "id": "R49",
+   "report_row": 49,
+   "title": "Machine-readable completion audit ABSENT..PROVEN",
+   "parts": [
+    "XXXVII"
+   ],
+   "xliv": false,
+   "region": "GLOBAL",
+   "baseline": "ABSENT",
+   "package": "P7",
+   "owner": [
+    "scripts/check_asia_directive.py"
+   ],
+   "scheduler": [
+    "hourly:asia_completion_audit"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_COMPLETION_AUDIT.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/ASIA_COMPLETION_AUDIT.json",
+     "rows_key": "items"
+    }
+   ],
+   "consumer": "desk_dashboard_state ASIA INTELLIGENCE section; run_law_gate fence summary",
+   "blocker": "",
+   "next_repair": "",
+   "proxy": false,
+   "box": false
+  },
+  {
+   "id": "R50",
+   "report_row": 50,
+   "title": "ASIA INTELLIGENCE dashboard + China latent states + research economics",
+   "parts": [
+    "XXXIX"
+   ],
+   "xliv": false,
+   "region": "GLOBAL",
+   "baseline": "ABSENT",
+   "package": "P7",
+   "owner": [
+    "desks/mt5/research/desk_dashboard_state.py",
+    "web/dashboard.html"
+   ],
+   "scheduler": [
+    "hourly:desk_dashboard_state"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/DESK_DASHBOARD_STATE.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/DESK_DASHBOARD_STATE.json",
+     "rows_key": "sections.asia_intelligence.regions"
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "",
+   "proxy": false,
+   "box": false,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/desk_dashboard_state.py",
+     "contains": "asia_intelligence"
+    },
+    {
+     "path": "web/dashboard.html",
+     "contains": "ASIA INTELLIGENCE"
+    }
+   ]
+  },
+  {
+   "id": "R51",
+   "report_row": 51,
+   "title": "Paid-data rent test (incremental information / annual cost)",
+   "parts": [
+    "XIX",
+    "XLI"
+   ],
+   "xliv": false,
+   "region": "ASIA",
+   "baseline": "ABSENT",
+   "package": "P4",
+   "owner": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "scheduler": [
+    "hourly:alt_proxies"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/data/paid_data_substitutes_asia_blocked.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/data/paid_data_substitutes_asia_blocked.json",
+     "rows_key": "rent"
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "",
+   "proxy": false,
+   "box": false,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/alt_proxies.py",
+     "contains": "annual_cost"
+    }
+   ]
+  },
+  {
+   "id": "R52",
+   "report_row": 52,
+   "title": "PIT law on the generic path (release time, vintages, revisions)",
+   "parts": [
+    "XX"
+   ],
+   "xliv": false,
+   "region": "ASIA",
+   "baseline": "PARSED_NO_PIT",
+   "package": "P3",
+   "owner": [
+    "desks/mt5/research/asia_parser.py"
+   ],
+   "scheduler": [
+    "hourly:asia_parser"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_PARSER.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/ASIA_PARSER.json",
+     "rows_key": "rows"
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "P3: accumulate vintages across blobs, stamp available_time from the page",
+   "proxy": false,
+   "box": false,
+   "code_markers": [
+    {
+     "path": "desks/mt5/research/asia_parser.py",
+     "contains": "vintage"
+    }
+   ]
+  },
+  {
+   "id": "R53",
+   "report_row": 53,
+   "title": "Alt-data placebos (release-time, shifted-release, random-geography, substitution, canaries)",
+   "parts": [
+    "XXIII"
+   ],
+   "xliv": false,
+   "region": "ASIA",
+   "baseline": "CONSUMED (1 of 6)",
+   "package": "",
+   "owner": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "scheduler": [
+    "hourly:alt_proxies"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ALT_PROXIES.json"
+   ],
+   "probes": [
+    {
+     "kind": "alt_proxies",
+     "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+     "ids": [
+      "*"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "five placebos absent",
+   "proxy": false,
+   "box": false
+  },
+  {
+   "id": "R54",
+   "report_row": 54,
+   "title": "Cross-culture orthogonality / merge of duplicate mechanisms",
+   "parts": [
+    "XXXVI"
+   ],
+   "xliv": false,
+   "region": "GLOBAL",
+   "baseline": "CONSUMED",
+   "package": "",
+   "owner": [
+    "desks/mt5/research/culture_orthogonality.py"
+   ],
+   "scheduler": [
+    "hourly:occupancy_map"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/CULTURE_ORTHOGONALITY.json"
+   ],
+   "probes": [
+    {
+     "kind": "artifact",
+     "artifact": "desks/mt5/reports/CULTURE_ORTHOGONALITY.json"
+    }
+   ],
+   "consumer": "",
+   "blocker": "",
+   "next_repair": "",
+   "proxy": false,
+   "box": false
+  },
+  {
+   "id": "R55",
+   "report_row": 55,
+   "title": "Asia hard-source cells (all registry rows)",
+   "parts": [
+    "XLIV"
+   ],
+   "xliv": true,
+   "region": "ASIA",
+   "baseline": "DONATED (proxy)",
+   "package": "",
+   "owner": [
+    "desks/mt5/research/asia_plane.py"
+   ],
+   "scheduler": [
+    "hourly:asia_plane"
+   ],
+   "inputs": [],
+   "outputs": [
+    "desks/mt5/reports/ASIA_PLANE.json"
+   ],
+   "probes": [
+    {
+     "kind": "asia_plane",
+     "artifact": "desks/mt5/reports/ASIA_PLANE.json",
+     "ids": [
+      "*"
+     ]
+    }
+   ],
+   "consumer": "",
+   "blocker": "price-only expression families under hard-source names",
+   "next_repair": "replace with channel cells as P1-P6 land",
+   "proxy": true,
+   "box": false
+  }
+ ]
+}

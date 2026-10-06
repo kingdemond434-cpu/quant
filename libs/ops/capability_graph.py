@@ -820,6 +820,8 @@ NODES: tuple[Node, ...] = (
     Node("acceptance", "scripts/check_acceptance_properties.py",
          writes=("docs/research/tier1_program.json",
                  "desks/mt5/reports/acceptance_properties.json")),
+    Node("asia_completion_audit", "scripts/check_asia_directive.py",
+         writes=("desks/mt5/reports/ASIA_COMPLETION_AUDIT.json",)),
     Node("alpha_rl", "desks/mt5/research/alpha_rl_run.py",
          writes=("desks/mt5/reports/ALPHA_RL.json",)),
     Node("asia_collector", "desks/mt5/research/asia_collector.py",
