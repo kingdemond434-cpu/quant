@@ -131,7 +131,9 @@ def test_pass_maps_every_asia_store_and_a_downstream_reader_sees_it(tmp_path: Pa
     assert t["appended"] == 7, doc["stores"]
     assert t["revisions"] == 2 and t["refused"] == 0
     assert "alt_proxies:jp_jnto_arrivals" not in doc["stores"]     # refused terms: never read
-    assert "asia_parser:us_test_stat" not in doc["stores"]         # not an Asian geography
+    assert "asia_parser_frames:us_test_stat" not in doc["stores"]  # not an Asian geography
+    assert doc["hooks"]["asia_parser_frames"]["status"] == "READING"
+    assert doc["hooks"]["cn_exchange"]["status"] == "READING"
     assert doc["stores"]["cn_exchange:old_source"]["mapped"] == 0  # pre-contract store
     assert doc["hooks"]["latent"]["status"].startswith("ABSENT")
 

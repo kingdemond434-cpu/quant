@@ -491,7 +491,7 @@ def collect_asia_parser(desk: Path) -> Iterator[tuple[str, Path, Callable[[], li
             for r in recs:
                 out.extend(map_asia_frame_row(row, r, numeric, labels, frame_ref=ref))
             return out
-        yield f"asia_parser:{sid}", frame, load_f
+        yield f"asia_parser_frames:{sid}", frame, load_f
 
 
 def _carries_contract(path: Path) -> bool:
