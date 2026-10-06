@@ -377,7 +377,7 @@ def _zscore_move(lc: np.ndarray, n: int) -> np.ndarray:
     vol = r1.rolling(VOL_WINDOW, min_periods=VOL_WINDOW // 2).std()
     move = s - s.shift(n)
     with np.errstate(divide="ignore", invalid="ignore"):
-        z = (move / (vol * math.sqrt(n))).to_numpy(dtype=float)
+        z = (move / (vol * math.sqrt(n))).to_numpy(dtype=float, copy=True)
     z[~np.isfinite(z)] = np.nan
     return np.clip(z, -4.0, 4.0)
 
@@ -668,7 +668,7 @@ def engine_p4(ctx: Context, sym: str, h: str, df: pd.DataFrame, close_t: np.ndar
         if ddf is None:
             continue
         dl = pd.Series(np.log(ddf["close"].to_numpy(dtype=float)), index=ddf.index)
-        aligned = dl.reindex(df.index, method="ffill").to_numpy(dtype=float)
+        aligned = dl.reindex(df.index, method="ffill").to_numpy(dtype=float, copy=True)
         z = _zscore_move(aligned, hb)
         x = x + sign * np.nan_to_num(z, nan=0.0)
         used.append(f"{d}({'+' if sign > 0 else '-'}, {src})")
@@ -769,7 +769,7 @@ def engine_p6(ctx: Context, sym: str, h: str, df: pd.DataFrame, close_t: np.ndar
     mu = vals.rolling(156, min_periods=26).mean()
     sd = vals.rolling(156, min_periods=26).std()
     with np.errstate(divide="ignore", invalid="ignore"):
-        z = ((vals - mu) / sd).to_numpy(dtype=float)
+        z = ((vals - mu) / sd).to_numpy(dtype=float, copy=True)
     z[~np.isfinite(z)] = np.nan
     pv = _sigmoid_arr(-0.5 * np.clip(z, -4, 4))
     pv[np.isnan(z)] = np.nan
