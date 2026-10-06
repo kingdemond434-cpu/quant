@@ -891,7 +891,8 @@ def _saturation_exposure(family: str, slots: Mapping[str, Any]) -> tuple[float, 
         desk = str(DESK)
         if desk not in sys.path:
             sys.path.insert(0, desk)
-        from research import certificate_saturation as cs
+        import importlib
+        cs = importlib.import_module("research.certificate_saturation")
         sc = cs._default_scorer()
         if sc is None:
             return None
