@@ -35,8 +35,11 @@ def _main_loop_continues() -> list[tuple[int, bool]]:
     bound: stamped means an `_unmeasured(` call sits in the same block before it."""
     tree = ast.parse(SRC)
     main = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "main")
+    # the per-row state: `st = state.get(key, {...})`. Skips before it are enrolment refusals
+    # with no row to stamp; every skip after it must stamp.
     st_line = min(n.lineno for n in ast.walk(main) if isinstance(n, ast.Assign)
-                  and any(isinstance(t, ast.Name) and t.id == "st" for t in n.targets))
+                  and any(isinstance(t, ast.Name) and t.id == "st" for t in n.targets)
+                  and "state.get(key" in ast.unparse(n.value))
     out: list[tuple[int, bool]] = []
 
     def visit(body: list[ast.stmt]) -> None:
@@ -68,25 +71,11 @@ def test_the_no_bars_skip_and_its_siblings_stamp_unmeasured() -> None:
 
 
 def test_no_skip_after_the_row_is_bound_leaves_a_stale_stamp() -> None:
-    """Every `continue` in the per-row loop after `st` exists stamps the row first, or is one of
-    the paths that already fail the row loudly elsewhere (named here, so a new one is a choice)."""
-    unstamped = [line for line, stamped in _main_loop_continues() if not stamped]
-    allowed = _allowed_unstamped()
-    assert set(unstamped) <= allowed, (
-        f"shadow_forward.main skips rows at lines {sorted(set(unstamped) - allowed)} without "
-        "stamping forward_evidence UNMEASURED")
-
-
-def _allowed_unstamped() -> set[int]:
-    """Continues that skip BEFORE a row is created for this key (enrolment refusals), where there
-    is no row to stamp: each is recognised by the log line it emits just before."""
-    lines = SRC.splitlines()
-    ok: set[int] = set()
-    for line, stamped in _main_loop_continues():
-        if stamped:
-            continue
-        window = "\n".join(lines[max(0, line - 6):line])
-        if ("no clock is created" in window or "REFUSED_BANNED_FAMILY" in window
-                or ("state[key] = st" not in window and "key in state" not in window)):
-            ok.add(line)
-    return ok
+    """Every `continue` in the per-row loop after `st` is bound stamps the row first -- no
+    exemptions (audit 2026-10-06: a window heuristic let a bare `slog(...); continue` through)."""
+    found = _main_loop_continues()
+    assert found, "the per-row loop was not found"
+    unstamped = [line for line, stamped in found if not stamped]
+    assert not unstamped, (
+        f"shadow_forward.main skips rows at lines {unstamped} without stamping "
+        "forward_evidence UNMEASURED")

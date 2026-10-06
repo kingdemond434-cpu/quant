@@ -384,7 +384,7 @@ def block(name: str) -> str | None:
         ("panel_and_theory", _panel_and_theory)]
     checks: list[tuple[str, Callable[[], str | None]]] = [
         (label, partial(fn, name)) for label, fn in per_cert]
-    checks.append(("freeze", _freeze))
+    checks.append(("freeze", partial(_freeze, name)))
     checks.append(("release_stop", _release_stop))
     for label, check in checks:
         try:

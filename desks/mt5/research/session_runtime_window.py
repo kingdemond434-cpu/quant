@@ -17,6 +17,7 @@ from typing import Any
 
 from mt5desk.family_call import (
     SESSIONS,
+    certified_session,
     certified_session_filter,
     session_filter,
     session_window,
@@ -33,7 +34,8 @@ import sleeve_registry
 # every pass.
 VERSION = "session-" + hashlib.sha256("|".join(
     sleeve_registry.behaviour_hash(fn) for fn in
-    (session_filter, certified_session_filter, runtime_call_params, strip_identity_keys)
+    (session_filter, certified_session_filter, runtime_call_params, strip_identity_keys,
+     session_window, certified_session)
 ).encode("ascii")).hexdigest()[:16]
 
 #: The identity keys as of 2026-10-06, probed ALONGSIDE the live set: dropping one changes what
@@ -111,7 +113,12 @@ CONTRACT = contract_fingerprint()
 
 def _is_terminal(status: object) -> bool:
     """The forward clock's own terminal rule (`shadow_forward._is_terminal`), so every spelling it
-    treats as terminal -- PROMOTION CANDIDATE, KILL_*, ... -- is never reset here."""
+    treats as terminal -- KILL_*, PROMOTED, ... -- is never reset here, EXCEPT a PROMOTION
+    CANDIDATE: the promoter writes a LIVE row on that status alone, so a candidate judged under
+    the old session rule must re-earn it under the corrected one (reset to ACTIVE, n=0, no
+    authority), never carry it to LIVE on stale evidence (audit 2026-10-06)."""
+    if str(status or "").strip().upper().replace("_", " ").startswith("PROMOTION CANDIDATE"):
+        return False
     try:
         from research.shadow_forward import _is_terminal as rule
     except ImportError:

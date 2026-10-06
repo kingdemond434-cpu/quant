@@ -89,7 +89,7 @@ def test_door_fails_closed_when_a_check_raises(monkeypatch: Any) -> None:
 
     for fn in ("_constitution", "_replication", "_fdr", "_panel_and_theory"):
         monkeypatch.setattr(pa, fn, lambda name: None)
-    monkeypatch.setattr(pa, "_freeze", lambda: None)
+    monkeypatch.setattr(pa, "_freeze", lambda *a: None)
     assert pa.block("EURUSD.x") is None
     monkeypatch.setattr(pa, "_fdr", boom)
     why = pa.block("EURUSD.x") or ""

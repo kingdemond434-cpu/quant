@@ -62,11 +62,10 @@ def test_all_session_does_not_discard_valid_forward_history(tmp_path: Path) -> N
 
 
 def test_terminal_clock_is_not_reactivated_and_not_frozen(tmp_path: Path) -> None:
-    """Every spelling the forward clock calls terminal -- PROMOTED, KILL, KILL_*, PROMOTION
-    CANDIDATE -- is neither revived nor aborted (audit 2026-10-06): raising made shadow_forward
-    skip the sleeve every pass, and an exact-match tuple reset PROMOTION CANDIDATE and KILL_*
-    rows to ACTIVE with n=0."""
-    for status in ("KILL", "PROMOTED", "KILL_DD", "PROMOTION CANDIDATE"):
+    """Every final spelling the forward clock calls terminal -- PROMOTED, KILL, KILL_* -- is
+    neither revived nor aborted (audit 2026-10-06): raising made shadow_forward skip the sleeve
+    every pass, and an exact-match tuple reset KILL_* rows to ACTIVE with n=0."""
+    for status in ("KILL", "PROMOTED", "KILL_DD"):
         state = {"status": status, "n": 50, "runtime_version": None}
         assert not runtime.ensure("x", {"session": "asia"}, state, ledger=tmp_path / "x.json")
         assert state["status"] == status and state["n"] == 50
@@ -181,6 +180,29 @@ def test_an_active_row_loses_authority_in_new_window(
     key = "EURUSD.cross_asset_residual.asia"
     _window_registry(tmp_path, monkeypatch, key)
     state = {"status": "ACTIVE", "n": 50,
+             "promotion_authority": True, "order_authority": True}
+    assert runtime.ensure(key, {"session": "asia"}, state,
+                          ledger=tmp_path / "ledger.json",
+                          clock_path=tmp_path / "clocks.json",
+                          now=datetime(2026, 10, 3, tzinfo=UTC))
+    assert state["status"] == "ACTIVE"
+    assert state["n"] == 0
+    assert state["promotion_authority"] is False
+    assert state["order_authority"] is False
+
+
+def test_prior_promotion_candidate_loses_authority_in_new_window(
+        tmp_path: Path, monkeypatch) -> None:
+    """Codex e0143fba6, restored (audit 2026-10-06): the promoter writes LIVE on PROMOTION
+    CANDIDATE alone, so a candidate judged under the old session rule re-earns it."""
+    key = "EURUSD.cross_asset_residual.asia"
+    register = tmp_path / "sleeve_registry.json"
+    register.write_text(json.dumps({"sleeves": {key: {
+        "status": "LIVE", "forward_start": "2026-09-20T00:00:00+00:00",
+        "identity": {"family": "cross_asset_residual"}
+    }}}), "utf-8")
+    monkeypatch.setattr(sleeve_registry, "REGISTRY", register)
+    state = {"status": "PROMOTION CANDIDATE", "n": 50,
              "promotion_authority": True, "order_authority": True}
     assert runtime.ensure(key, {"session": "asia"}, state,
                           ledger=tmp_path / "ledger.json",
