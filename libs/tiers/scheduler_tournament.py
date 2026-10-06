@@ -278,7 +278,8 @@ def holdout_comparison(assignments: Sequence[Mapping[str, Any]]) -> dict[str, An
         outcomes = a.get("outcomes")
         if not isinstance(outcomes, dict):
             continue
-        elog = a.get("elogw_outcomes") if isinstance(a.get("elogw_outcomes"), dict) else {}
+        raw_elog = a.get("elogw_outcomes")
+        elog: Mapping[str, Any] = raw_elog if isinstance(raw_elog, Mapping) else {}
         for leg, row in (a.get("legs") or {}).items():
             if not isinstance(row, dict):
                 continue
