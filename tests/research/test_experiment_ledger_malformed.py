@@ -33,8 +33,10 @@ def test_side_ledgers_charge_every_line_after_a_bad_one(desk) -> None:
     total, by_fam = el._proposer_counts()
     assert total == 2 + 3 + 4 + 6 + 2
     assert by_fam["model_pairing"] == 5 and by_fam["x"] == 1 and by_fam["y"] == 1
-    assert el._MALFORMED == {"coevolution_trials.jsonl": 1, "null_pass_trials.jsonl": 2,
-                             "learned_miners_trials.jsonl": 1}
+    got = {k.rsplit("/", 1)[-1]: v for k, v in el._MALFORMED.items()}
+    assert got == {"coevolution_trials.jsonl": 1, "null_pass_trials.jsonl": 2,
+                   "learned_miners_trials.jsonl": 1}
+    assert len(el._MALFORMED) == 3
 
 
 def test_mass_screen_and_swarm_skip_bad_lines(desk, tmp_path) -> None:
@@ -47,7 +49,8 @@ def test_mass_screen_and_swarm_skip_bad_lines(desk, tmp_path) -> None:
                 {"family": "g", "cells": ["n3"]}])
     total, fam, skipped = el._swarm_counts(frozenset({"n2"}), sw)
     assert (total, fam, skipped) == (2, {"g": 2}, 1)
-    assert el._MALFORMED["ms.jsonl"] == 1 and el._MALFORMED["sw.jsonl"] == 1
+    got = {k.rsplit("/", 1)[-1]: v for k, v in el._MALFORMED.items()}
+    assert got["ms.jsonl"] == 1 and got["sw.jsonl"] == 1
 
 
 def test_lifetime_publishes_the_malformed_count(desk, monkeypatch) -> None:
@@ -63,4 +66,12 @@ def test_lifetime_publishes_the_malformed_count(desk, monkeypatch) -> None:
     monkeypatch.setattr(el, "_swarm_counts", lambda *a, **k: (0, {}, 0))
     doc = el.lifetime(write=False)
     assert doc["lifetime_trials"] == 1
-    assert doc["malformed_ledger_lines"]["coevolution_trials.jsonl"] == 1
+    lines = doc["malformed_ledger_lines"]
+    assert [v for k, v in lines.items() if k.endswith("/coevolution_trials.jsonl")] == [1]
+
+
+def test_same_named_ledgers_in_two_directories_do_not_collide(desk, tmp_path) -> None:
+    for sub in ("a", "b"):
+        _write(tmp_path / sub / "x.jsonl", [b"bad", {"cells_screened": 1}])
+        el._mass_screen_counts(tmp_path / sub / "x.jsonl")
+    assert sorted(v for k, v in el._MALFORMED.items() if k.endswith("x.jsonl")) == [1, 1]

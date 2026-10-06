@@ -76,7 +76,11 @@ def _jsonl_rows(path: Path) -> list[dict[str, Any]]:
             rows.append(row)
         else:
             bad += 1
-    _MALFORMED[path.name] = bad
+    try:
+        key = path.resolve().relative_to(DESK.resolve().parents[1]).as_posix()
+    except (OSError, ValueError):
+        key = path.as_posix()
+    _MALFORMED[key] = bad
     return rows
 
 
