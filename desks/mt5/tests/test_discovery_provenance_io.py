@@ -149,3 +149,38 @@ def test_producer_breadth_publishes_quarantined_rows_per_producer(tmp_path: Path
                    "china": {"writes": 1, "written": 3, "quarantined": 0}}
     absent, why = pb.quarantine_by_seat(now, tmp_path / "none.jsonl")
     assert absent == {} and why.startswith(pb.UNMEASURED)
+
+
+def test_the_receipts_rotate_by_size_and_the_totals_stay_exact(tmp_path: Path,
+                                                              monkeypatch) -> None:
+    """Audit of #222: both door files grew without bound. Past the cap the live file becomes
+    `.1`, the old `.1` is folded into totals.json, and totals + `.1` + live == every write."""
+    qpath = tmp_path / "q" / "discoveries.jsonl"
+    rpath = tmp_path / "q" / "write_receipts.jsonl"
+    monkeypatch.setattr(io, "MAX_SEGMENT_BYTES", 400)
+    for k in range(40):
+        io.write_discoveries(tmp_path / f"seat_{k % 2}" / f"d{k}.json",
+                             [{"title": "x", "captured_at": "2026-10-03T08:00:00+00:00"},
+                              "bad"], quarantine=qpath, receipts=rpath)
+    assert rpath.stat().st_size < 2 * 400 and (rpath.parent / (rpath.name + ".1")).exists()
+    totals = json.loads(io.totals_path(rpath).read_text("utf-8"))
+    live = [json.loads(x) for seg in (rpath.parent / (rpath.name + ".1"), rpath)
+            for x in seg.read_text("utf-8").splitlines()]
+    writes = sum(v["writes"] for v in totals["by_producer"].values()) + len(live)
+    quarantined = (sum(v["quarantined"] for v in totals["by_producer"].values())
+                   + sum(r["quarantined"] for r in live))
+    assert writes == 40 and quarantined == 40
+    qtot = json.loads(io.totals_path(qpath).read_text("utf-8"))
+    qlive = sum(len(seg.read_text("utf-8").splitlines())
+                for seg in (qpath.parent / (qpath.name + ".1"), qpath) if seg.exists())
+    assert sum(v["quarantined"] for v in qtot["by_producer"].values()) + qlive == 40
+
+
+def test_a_fold_is_never_counted_twice(tmp_path: Path) -> None:
+    rpath = tmp_path / "write_receipts.jsonl"
+    seg = tmp_path / "write_receipts.jsonl.1"
+    seg.write_text(json.dumps({"producer": "a", "written": 2, "quarantined": 1}) + "\n", "utf-8")
+    io._fold(seg, io._tally_receipts)
+    io._fold(seg, io._tally_receipts)                # the pass died before the delete
+    doc = json.loads(io.totals_path(rpath).read_text("utf-8"))
+    assert doc["by_producer"]["a"] == {"writes": 1, "written": 2, "quarantined": 1}

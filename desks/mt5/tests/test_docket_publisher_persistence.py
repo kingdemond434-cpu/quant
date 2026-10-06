@@ -228,3 +228,43 @@ def test_converter_deduplicates_alias_and_same_pass_candidates(monkeypatch, tmp_
                   {'symbols': ['GBPUSD'], 'family': 'carry'}]
     added, total = lc.feed_docket(candidates)
     assert (added, total) == (1, 2)
+
+
+def test_a_deferral_is_claimed_by_rename_so_two_drainers_cannot_double_merge(tmp_path):
+    """Audit of #222: two drainers reading the same waiting file would both merge it."""
+    mh._write_deferred('local_converter', [{'symbol': 'GBPUSD', 'family': 'carry'}])
+    first, claims = mh._claim('local_converter')
+    second, none = mh._claim('local_converter')     # the file is already renamed away
+    assert [r for r, _ in first] == [{'symbol': 'GBPUSD', 'family': 'carry'}]
+    assert second == [] and none == []
+    assert not mh.deferred_path('local_converter').exists()
+    # A failed merge hands the rows back, with their original deferral time.
+    stamp = first[0][1]
+    mh._unclaim('local_converter', first, claims)
+    assert mh.read_deferred('local_converter') == [{'symbol': 'GBPUSD', 'family': 'carry'}]
+    assert mh._parse_lines(mh.deferred_path('local_converter'))[0][1] == stamp
+    assert not mh._claims('local_converter')
+
+
+def test_an_orphaned_claim_is_taken_back_once_stale(tmp_path):
+    import os
+
+    mh._write_deferred('breadth_sweep', [{'symbol': 'EURUSD', 'family': 'carry'}])
+    _rows, claims = mh._claim('breadth_sweep')         # this "pass" dies holding the claim
+    assert mh._claim('breadth_sweep') == ([], [])      # fresh claim: someone holds it
+    old = claims[0].stat().st_mtime - mh.CLAIM_STALE_S - 5
+    os.utime(claims[0], (old, old))
+    rows, again = mh._claim('breadth_sweep')
+    assert [r for r, _ in rows] == [{'symbol': 'EURUSD', 'family': 'carry'}] and again
+
+
+def test_deferral_depth_and_oldest_age_are_published_per_writer(tmp_path):
+    from datetime import UTC, datetime, timedelta
+
+    mh._write_deferred('local_converter', [{'symbol': 'GBPUSD'}, {'symbol': 'EURUSD'}])
+    later = datetime.now(tz=UTC) + timedelta(hours=2)
+    got = mh.deferral_status(later)
+    assert got['local_converter']['depth'] == 2
+    assert got['local_converter']['oldest_age_s'] >= 7190
+    assert got['breadth_sweep'] == {'depth': 0, 'files': 0, 'oldest_age_s': None,
+                                    'unaged_rows': 0}

@@ -554,18 +554,25 @@ def quarantine_by_seat(now: datetime, path: Path | None = None,
     Read from the TAIL under a byte cap. No receipts file is UNMEASURED with the reason; a seat
     that wrote and quarantined nothing reads 0, which is a measurement."""
     p = path or WRITE_RECEIPTS
-    try:
-        size = p.stat().st_size
-        with p.open("rb") as fh:
-            if size > MAX_RECEIPT_BYTES:
-                fh.seek(size - MAX_RECEIPT_BYTES)
-                fh.readline()
-            lines = fh.read().decode("utf-8", "replace").splitlines()
-    except FileNotFoundError:
+    # The door rotates the live file to `<name>.1` past its size cap; the window spans both.
+    lines: list[str] = []
+    found = False
+    for seg in (p.with_name(p.name + ".1"), p):
+        try:
+            size = seg.stat().st_size
+            with seg.open("rb") as fh:
+                if size > MAX_RECEIPT_BYTES:
+                    fh.seek(size - MAX_RECEIPT_BYTES)
+                    fh.readline()
+                lines += fh.read().decode("utf-8", "replace").splitlines()
+            found = True
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            return {}, f"{UNMEASURED}: receipts unreadable ({type(exc).__name__})"
+    if not found:
         return {}, f"{UNMEASURED}: no write receipts at {p.name} (no miner has written since " \
                    "the door began recording them)"
-    except OSError as exc:
-        return {}, f"{UNMEASURED}: receipts unreadable ({type(exc).__name__})"
     since = now - timedelta(days=days)
     out: dict[str, dict[str, int]] = {}
     for line in lines:
@@ -602,6 +609,14 @@ def _cluster(fam: str) -> str:
         return str(classify_family(fam))
     except Exception:
         return UNMEASURED
+
+
+def _deferrals(now: datetime) -> Any:
+    try:
+        from research.merge_hypotheses import deferral_status
+        return deferral_status(now)
+    except Exception as exc:
+        return f"{UNMEASURED}: {type(exc).__name__}: {exc}"
 
 
 def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]:
@@ -737,6 +752,10 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         "quarantined_rows_7d": (sum(v["quarantined"] for v in q_seats.values())
                                 if q_seats else UNMEASURED),
         "quarantine_source": q_why,
+        # DOCKET-MERGE DEFERRALS, per writer (audit of #222): rows waiting for the canonical
+        # lane, and how long the oldest has waited. A lane that keeps refusing shows up here as
+        # a growing age, not as rows that quietly never arrive.
+        "docket_deferrals": _deferrals(now),
     }
     return {
         "generated_at": now.isoformat(timespec="seconds"),

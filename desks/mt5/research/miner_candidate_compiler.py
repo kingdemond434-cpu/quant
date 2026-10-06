@@ -711,6 +711,16 @@ def _claim_lineage(row: dict, mechanism: str, source: str) -> dict:
 
 def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
                mechanism: str) -> dict:
+    # A DEFAULTED CHART IS A DECISION, NOT A BLANK (2026-10-06, audit of #222). The discovery
+    # compiler stamps `chart_defaulted` when a clockless discovery got the family's default
+    # chart. That chart is H1 unless the family's declared domain excludes H1, and then it is the
+    # ONLY chart the family can run on -- so it rides into `params["timeframe"]`, which
+    # `expand_axes` respects as written instead of re-expanding the cell onto M5/M15/M30/H1.
+    # A defaulted H1 stays open to the intraday expansion every other candidate gets.
+    if row.get("chart_defaulted"):
+        chart = str(row.get("chart") or row.get("timeframe") or "").upper()
+        if chart and chart != "H1" and "timeframe" not in params:
+            params = {**params, "timeframe": chart}
     gid = _genome_id(symbol, family, params)
     return {
         # ONE SEARCHED CLAIM IS ONE BREADTH UNIT, CHARGED ITS SOURCE'S SELECTION ONCE (2026-09-30:
@@ -741,7 +751,8 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
         # 35,199 `parent` values resolved to any of the 23,972 node ids. Only the four
         # unambiguous lineage fields are copied, and only when the row carries them; the
         # top-level `parent` of an arbitrary crawler row is NOT lineage and is not read here.
-        **{k: row[k] for k in ("lineage", "operator", "mutated_from", "parent_ids")
+        **{k: row[k] for k in ("lineage", "operator", "mutated_from", "parent_ids",
+                               "chart_defaulted")
            if row.get(k)},
     }
 

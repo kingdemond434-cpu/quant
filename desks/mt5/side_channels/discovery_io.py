@@ -38,6 +38,112 @@ QUARANTINE = ROOT / "desks" / "mt5" / "data" / "quarantine" / "discoveries.jsonl
 RECEIPTS = ROOT / "desks" / "mt5" / "data" / "quarantine" / "write_receipts.jsonl"
 
 
+#: BOUNDED, WITH EXACT RUNNING TOTALS (audit of #222). Both files are append-only and written by
+#: every miner every pass. When the live file passes MAX_SEGMENT_BYTES it is renamed to `<name>.1`
+#: (the previous `.1` is first FOLDED into `<name>.totals.json` -- per-producer counts -- and then
+#: deleted). So disk holds at most two segments, the last 7 days stay readable line by line, and
+#: totals.json + `.1` + the live file is the exact all-time count. The fold is idempotent: the
+#: totals record the folded segment's digest, so a pass that died between the fold and the
+#: delete does not count the segment twice.
+MAX_SEGMENT_BYTES = 8 * 1024 * 1024
+
+
+def _tally_receipts(lines: list[str]) -> dict[str, dict[str, int]]:
+    out: dict[str, dict[str, int]] = {}
+    for line in lines:
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(r, dict):
+            continue
+        slot = out.setdefault(str(r.get("producer") or "?").lower(),
+                              {"writes": 0, "written": 0, "quarantined": 0})
+        slot["writes"] += 1
+        slot["written"] += int(r.get("written") or 0)
+        slot["quarantined"] += int(r.get("quarantined") or 0)
+    return out
+
+
+def _tally_quarantine(lines: list[str]) -> dict[str, dict[str, int]]:
+    out: dict[str, dict[str, int]] = {}
+    for line in lines:
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(r, dict):
+            continue
+        producer = Path(str(r.get("destination") or "?")).parent.name.lower() or "?"
+        out.setdefault(producer, {"quarantined": 0})["quarantined"] += 1
+    return out
+
+
+def totals_path(path: Path) -> Path:
+    return path.with_name(path.name + ".totals.json")
+
+
+def _fold(segment: Path, tally: Any) -> None:
+    import hashlib
+
+    blob = segment.read_bytes()
+    digest = hashlib.sha256(blob).hexdigest()
+    tpath = totals_path(segment.with_name(segment.name[: -len(".1")]))
+    try:
+        doc = json.loads(tpath.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        doc = {}
+    if doc.get("last_folded_sha256") == digest:
+        return                                   # already counted by a pass that died after
+    lines = blob.decode("utf-8", "replace").splitlines()
+    by = doc.setdefault("by_producer", {})
+    for producer, counts in tally(lines).items():
+        slot = by.setdefault(producer, {})
+        for k, v in counts.items():
+            slot[k] = int(slot.get(k, 0)) + int(v)
+    doc["folded_lines"] = int(doc.get("folded_lines", 0)) + len(lines)
+    doc["folded_segments"] = int(doc.get("folded_segments", 0)) + 1
+    doc["last_folded_sha256"] = digest
+    doc["at"] = datetime.now(UTC).isoformat(timespec="seconds")
+    fd, tmp = tempfile.mkstemp(prefix=f".{tpath.name}.", suffix=".tmp", dir=tpath.parent)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        json.dump(doc, handle, indent=1)
+    os.replace(tmp, tpath)
+
+
+def _rotate(path: Path, tally: Any, max_bytes: int | None = None) -> None:
+    """Rotate `path` once it passes the cap. Never raises: a rotation never costs a write."""
+    cap = MAX_SEGMENT_BYTES if max_bytes is None else max_bytes
+    try:
+        if path.stat().st_size < cap:
+            return
+    except OSError:
+        return
+    lock = path.with_name(path.name + ".rotate.lock")
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        try:
+            if datetime.now(UTC).timestamp() - lock.stat().st_mtime > 600:
+                lock.unlink(missing_ok=True)      # a rotator that died; the next pass rotates
+        except OSError:
+            pass
+        return
+    except OSError:
+        return
+    try:
+        old = path.with_name(path.name + ".1")
+        if old.exists():
+            _fold(old, tally)
+            old.unlink()
+        os.replace(path, old)
+    except OSError:
+        pass                                      # e.g. another process holds it open (Windows)
+    finally:
+        os.close(fd)
+        lock.unlink(missing_ok=True)
+
+
 class WrittenDiscoveries(list[dict[str, Any]]):
     """The stamped rows that were written (a list, so every caller keeps working), plus the
     count and location of the rows quarantined on the way."""
@@ -55,6 +161,7 @@ def _quarantine(path: Path, bad: list[dict[str, Any]], qpath: Path) -> None:
         for entry in bad:
             handle.write(json.dumps({"at": at, "destination": str(path), **entry},
                                     default=str, ensure_ascii=False) + "\n")
+    _rotate(qpath, _tally_quarantine)
 
 
 def _receipt(path: Path, written: int, quarantined: int, rpath: Path) -> None:
@@ -65,6 +172,7 @@ def _receipt(path: Path, written: int, quarantined: int, rpath: Path) -> None:
                 "at": datetime.now(UTC).isoformat(timespec="seconds"),
                 "producer": path.parent.name, "artifact": path.name,
                 "written": int(written), "quarantined": int(quarantined)}) + "\n")
+        _rotate(rpath, _tally_receipts)
     except OSError:
         pass                                   # a receipt never costs the discoveries
 

@@ -190,12 +190,15 @@ def _state_refusal(name: str, path: Path | None = None) -> str | None:
 
 ENTRY_TIMINGS = frozenset({"", "instant", "delayed"})
 MARKET_STYLES = frozenset({"", "market"})
-#: A LIMIT FILL NEEDS NO NEW FILL MODEL (2026-10-06): `mt5desk.engine` already fills a trigger
-#: that sits on the far side of the market from the trade (buy below, sell above) as a resting
-#: LIMIT -- filled only on a bar whose range reaches it, at the limit price, for `wait_bars` bars.
-#: So a `limit` variant is the family's next-open signal re-expressed as a passive order resting
-#: at the signal bar's close for one bar: no touch, no trade. Signals that already rest (a stop
-#: entry with its own trigger) are the family's own order type and are left as they are.
+#: A LIMIT VARIANT IS A DECLARED LIMIT ORDER (2026-10-06, audit of #222). The first cut set
+#: `trigger` to the signal close and let `mt5desk.engine` INFER limit-vs-stop from the next open:
+#: after a gap down a "limit" buy filled as a STOP above the market, and when the next open equals
+#: the close (22% of XAUUSD M5 bars, 63% of EURUSD H1) it filled exactly like market. The engine
+#: now has `Signal.order_type == "limit"`: a buy rests at the signal bar's close for one bar and
+#: fills only if the low reaches it, at min(open, limit) -- never above the limit, never as a stop;
+#: sells mirror it. A signal that already rests on its own trigger is a STOP entry by the family's
+#: design; it has no limit expression, so the limit variant drops it rather than re-labelling the
+#: parent's order as the child's.
 LIMIT_STYLES = frozenset({"limit"})
 
 
@@ -347,12 +350,11 @@ def apply(sigs: list, bars: pd.DataFrame, mods: dict[str, Any]) -> list:
         rested = []
         for s in out:
             if s.trigger is not None:
-                rested.append(s)
                 continue
             ref = closes.get(s.time)
             if ref is None or not (float(ref) == float(ref)):
                 continue
-            rested.append(replace(s, trigger=float(ref), wait_bars=1))
+            rested.append(replace(s, trigger=float(ref), wait_bars=1, order_type="limit"))
         out = rested
     if _s(mods.get("entry_timing")) == "delayed":
         # One bar later: the signal moves to the next bar, so the engine fills a bar after it

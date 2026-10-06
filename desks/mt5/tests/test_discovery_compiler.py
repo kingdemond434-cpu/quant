@@ -544,3 +544,48 @@ def test_cli_dry_run(desk, ctx, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "dry run" in out and "conversion coverage" in out
     assert not desk["paths"]["OUT"].exists()
+
+
+def test_a_defaulted_chart_survives_discovery_to_candidate_to_docket_row(ctx, monkeypatch):
+    """Audit of #222: `miner_candidate_compiler._candidate` dropped `chart_defaulted`, and
+    `expand_axes` re-expanded a family-forced default chart onto M5/M15/M30/H1. Compile THROUGH
+    every hop -- discovery -> child -> donation row -> candidate -> axis expansion -> docket
+    stamp -- and both the stamp and the chart must still be there."""
+    from datetime import UTC, datetime
+
+    from mt5desk import families_orthogonal as fo
+    from research import merge_hypotheses as mh
+    from research import miner_candidate_compiler as mcc
+
+    monkeypatch.setitem(fo.FAMILY_TIMEFRAMES, "asia_momentum", (("M15",), "toy: M15 only"))
+    parent = dc.parent_of({"discovery_id": "clockless-m15", "symbol": "XAUUSD",
+                           "family": "asia_momentum", "session": "asia",
+                           "declared_mechanism": "session_handover",
+                           "why": "asia handover"}, ctx)
+    assert parent["chart"] == "M15" and parent["chart_defaulted"] is True
+    children, _c, _n = dc.closure(parent, ctx)
+    child = next(c for c in children if c.get("chart") == "M15" and c.get("chart_defaulted"))
+    row = dc._donation_row({**child, "family": "asia_momentum"}, parent)
+
+    produced, disposition = mcc.compile_row("discovery_compiler", row, {"XAUUSD"})
+    assert produced, disposition
+    expanded = mcc.expand_axes(produced)
+    assert expanded
+    now = datetime(2026, 10, 6, tzinfo=UTC)
+    docket = [mh.stamp_fresh_intake(c, "miner_candidates.json", now) for c in expanded]
+    for r in docket:
+        assert r["chart_defaulted"] is True
+        assert r["params"]["timeframe"] == "M15"          # never re-expanded to M5/M30/H1
+
+    # A defaulted H1 carries the stamp and stays open to the intraday expansion.
+    monkeypatch.delitem(fo.FAMILY_TIMEFRAMES, "asia_momentum")
+    h1_parent = dc.parent_of({"discovery_id": "clockless-h1", "symbol": "XAUUSD",
+                              "family": "asia_momentum", "session": "asia",
+                              "declared_mechanism": "session_handover",
+                              "why": "asia handover"}, ctx)
+    h1_kids, _c, _n = dc.closure(h1_parent, ctx)
+    h1_child = next(c for c in h1_kids if c.get("chart") == "H1")
+    h1_row = dc._donation_row({**h1_child, "family": "asia_momentum"}, h1_parent)
+    h1_produced, _d = mcc.compile_row("discovery_compiler", h1_row, {"XAUUSD"})
+    assert h1_produced and all(c["chart_defaulted"] is True for c in h1_produced)
+    assert all("timeframe" not in c["params"] for c in h1_produced)

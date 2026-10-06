@@ -211,7 +211,52 @@ def test_limit_style_rests_a_passive_order_at_the_signal_close() -> None:
     out = cm.apply([_sig(b, 2), resting], b, {"execution_style": "limit"})
     assert cm.refusal({"execution_style": "limit"}) is None
     assert out[0].trigger == float(b["close"].iloc[2]) and out[0].wait_bars == 1
-    assert out[1] == resting                       # an order that already rests is its own type
+    assert out[0].order_type == "limit"            # DECLARED, never inferred from the next open
+    assert len(out) == 1          # a family's own stop entry has no limit expression: dropped
+
+
+def _gap_bars(opens: list[float], highs: list[float], lows: list[float],
+              closes: list[float]) -> pd.DataFrame:
+    idx = pd.date_range("2026-01-01", periods=len(opens), freq="h", tz="UTC")
+    return pd.DataFrame({"open": opens, "high": highs, "low": lows, "close": closes}, index=idx)
+
+
+def _entry(b: pd.DataFrame, sigs: list) -> float:
+    from mt5desk.engine import Costs, run_backtest
+
+    res = run_backtest(b, sigs, Costs())
+    assert res.n == 1, res.n
+    return float(res.trades[0].entry)
+
+
+def test_a_limit_buy_after_a_gap_down_fills_no_worse_than_market() -> None:
+    # Signal close 100, next bar gaps DOWN to open 99. Market buys at 99. A real limit at 100
+    # fills at min(open, limit) = 99 -- the inferred trigger used to fill it as a STOP at 100.
+    b = _gap_bars([100, 100, 99, 99, 99, 99], [100.2, 100.2, 99.5, 99.5, 99.5, 99.5],
+                  [99.8, 99.8, 98.5, 98.5, 98.5, 98.5], [100, 100, 99, 99, 99, 99])
+    sig = Signal(time=b.index[1], side=1, stop=97.0, target=110.0, ttl_bars=3, tag="t")
+    limited = cm.apply([sig], b, {"execution_style": "limit"})
+    assert _entry(b, limited) <= _entry(b, [sig])
+    assert _entry(b, limited) == 99.0
+
+
+def test_a_limit_sell_after_a_gap_up_fills_no_worse_than_market() -> None:
+    b = _gap_bars([100, 100, 101, 101, 101, 101], [100.2, 100.2, 101.5, 101.5, 101.5, 101.5],
+                  [99.8, 99.8, 100.5, 100.5, 100.5, 100.5], [100, 100, 101, 101, 101, 101])
+    sig = Signal(time=b.index[1], side=-1, stop=103.0, target=90.0, ttl_bars=3, tag="t")
+    limited = cm.apply([sig], b, {"execution_style": "limit"})
+    assert _entry(b, limited) >= _entry(b, [sig])
+    assert _entry(b, limited) == 101.0
+
+
+def test_an_untouched_limit_never_fills() -> None:
+    # Next bar opens ABOVE the buy limit and its low never comes back to it.
+    b = _gap_bars([100, 100, 101, 102, 103, 104], [100.2, 100.2, 101.5, 102.5, 103.5, 104.5],
+                  [99.8, 99.8, 100.5, 101.5, 102.5, 103.5], [100, 100, 101, 102, 103, 104])
+    sig = Signal(time=b.index[1], side=1, stop=97.0, target=110.0, ttl_bars=3, tag="t")
+    from mt5desk.engine import Costs, run_backtest
+
+    assert run_backtest(b, cm.apply([sig], b, {"execution_style": "limit"}), Costs()).n == 0
 
 
 def test_the_engine_fills_the_limit_only_on_a_touch() -> None:
