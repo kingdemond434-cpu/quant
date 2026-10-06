@@ -336,11 +336,18 @@ def test_the_donated_params_are_the_familys_own(world: dict,
     assert payload["donated"]["n"] == 3
     assert payload["donated"]["status"] == "donated"
     candidates = seen[0]
-    accepted = set(signature(ORTHOGONAL_FAMILIES[A.FAMILY]).parameters)
+    from mt5desk import cell_modifiers
+
+    fn = ORTHOGONAL_FAMILIES[A.FAMILY]
+    accepted = set(signature(fn).parameters)
     for candidate in candidates:
         assert candidate["family"] == "event_reaction"
         assert candidate["symbol"] != EQUITY
-        assert set(candidate["params"]) <= accepted
+        # The family's own params, plus only the variant keys `cell_modifiers` APPLIES in the
+        # gauntlet and the forward clock (entry_timing, regime): never one silently dropped.
+        _call, mods = cell_modifiers.split(fn, candidate["params"])
+        assert set(_call) <= accepted
+        assert set(mods) <= {"entry_timing", "regime"} and cell_modifiers.refusal(mods) is None
         assert candidate["params"]["side"] in (1, -1)
         assert candidate["params"]["mode"] in ("drift", "fade")
         assert candidate["symbols"] == [candidate["symbol"]]
