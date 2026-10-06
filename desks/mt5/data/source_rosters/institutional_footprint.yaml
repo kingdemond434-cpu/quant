@@ -5903,7 +5903,9 @@ sources:
   dataset: fx_reserves
   source_class: official_reserves
   role: central_bank
-  url: https://www.cbc.gov.tw/en/
+  url: https://www.cbc.gov.tw/tw/np-644-1.html
+  url_confidence: dataset
+  evidence: 'UNVERIFIED 2026-10-06: CBC foreign-exchange reserves page, linked from cbc.gov.tw/en; it resolved but the content is rendered by script and could not be read. Replaces the CBC home page'
   frequency: monthly
   publication_lag_days: 5
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10729,7 +10731,7 @@ sources:
   dataset: investment_fund_statistics
   source_class: fund_flows
   role: fund_filings
-  url: https://www.nationalbanken.dk/da/viden-og-nyheder/statistik
+  url: https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10762,12 +10764,12 @@ sources:
     failure_mode_hypothesis: declared
     crowding_prior: declared
   url_confidence: landing
-  evidence: repo-registered source root (desks/mt5/research/countries/dk), not re-fetched this pass
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Danmarks Nationalbank data and statistics page (gateway to its StatBank). The old /da/viden-og-nyheder/statistik hub returned 404; no per-topic page was confirmed, so the row stays on this shared gateway'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.nationalbanken.dk/da/viden-og-nyheder/statistik
+    - https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
   pack_source_ids:
   - pack_dk_dk_archives
   - pack_dk_dk_nationalbank
@@ -10779,7 +10781,7 @@ sources:
   dataset: securities_statistics
   source_class: fund_holdings
   role: central_bank
-  url: https://www.nationalbanken.dk/da/viden-og-nyheder/statistik
+  url: https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10812,12 +10814,12 @@ sources:
     failure_mode_hypothesis: declared
     crowding_prior: declared
   url_confidence: landing
-  evidence: repo-registered source root (desks/mt5/research/countries/dk), not re-fetched this pass
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Danmarks Nationalbank data and statistics page (gateway to its StatBank). The old /da/viden-og-nyheder/statistik hub returned 404; no per-topic page was confirmed, so the row stays on this shared gateway'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.nationalbanken.dk/da/viden-og-nyheder/statistik
+    - https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
   pack_source_ids:
   - pack_dk_dk_archives
   - pack_dk_dk_nationalbank
@@ -10875,7 +10877,7 @@ sources:
   dataset: destr
   source_class: money_market_plumbing
   role: central_bank
-  url: https://www.nationalbanken.dk/da/viden-og-nyheder/statistik
+  url: https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10906,12 +10908,12 @@ sources:
     failure_mode_hypothesis: declared
     crowding_prior: declared
   url_confidence: landing
-  evidence: repo-registered source root (desks/mt5/research/countries/dk), not re-fetched this pass
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Danmarks Nationalbank data and statistics page (gateway to its StatBank). The old /da/viden-og-nyheder/statistik hub returned 404; no per-topic page was confirmed, so the row stays on this shared gateway'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.nationalbanken.dk/da/viden-og-nyheder/statistik
+    - https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
   pack_source_ids:
   - pack_dk_dk_archives
   - pack_dk_dk_nationalbank
@@ -10923,7 +10925,7 @@ sources:
   dataset: dk_net_short_positions
   source_class: securities_lending_short
   role: short_position
-  url: https://www.esma.europa.eu/publications-and-data/databases-and-registers
+  url: https://www.dfsa.dk/financial-themes/capital-market/short-selling/published-net-short-positions
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10951,13 +10953,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: https://www.esma.europa.eu/publications-and-data/databases-and-registers
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Danish FSA list of published net short positions. Replaces the shared ESMA register hub'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.esma.europa.eu/publications-and-data/databases-and-registers
+    - https://www.dfsa.dk/financial-themes/capital-market/short-selling/published-net-short-positions
 - id: institutional.dk.esma.dk_major_holdings_oam
   name: Danish major-shareholding notifications (Danish FSA OAM), reached via ESMA national-register links
   jurisdiction: dk
@@ -10965,7 +10967,7 @@ sources:
   dataset: dk_major_holdings_oam
   source_class: beneficial_ownership
   role: regulator
-  url: https://www.esma.europa.eu/publications-and-data/databases-and-registers
+  url: https://oam.finanstilsynet.dk/
   frequency: event
   publication_lag_days: 2
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10994,13 +10996,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: https://www.esma.europa.eu/publications-and-data/databases-and-registers
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Finanstilsynet OAM, the Danish officially appointed mechanism for company announcements and major-holding notifications. Replaces the shared ESMA register hub'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.esma.europa.eu/publications-and-data/databases-and-registers
+    - https://oam.finanstilsynet.dk/
 - id: institutional.dk.esma.dk_pdmr_oam
   name: Danish PDMR transactions and buyback reports (Danish FSA OAM), reached via ESMA national-register links
   jurisdiction: dk
@@ -11008,7 +11010,7 @@ sources:
   dataset: dk_pdmr_oam
   source_class: corporate_flow
   role: regulator
-  url: https://www.esma.europa.eu/publications-and-data/databases-and-registers
+  url: https://www.finanstilsynet.dk/finansielle-temaer/kapitalmarked/mar-for-ledende-medarbejdere/artikel-19-i-markedsmisbrugsforordningen
   frequency: event
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11037,12 +11039,12 @@ sources:
     failure_mode_hypothesis: declared
     crowding_prior: declared
   url_confidence: landing
-  evidence: https://www.esma.europa.eu/publications-and-data/databases-and-registers
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Finanstilsynet MAR art.19 PDMR page; notifications are published on its OAM (oam.finanstilsynet.dk). Replaces the shared ESMA register hub'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.esma.europa.eu/publications-and-data/databases-and-registers
+    - https://www.finanstilsynet.dk/finansielle-temaer/kapitalmarked/mar-for-ledende-medarbejdere/artikel-19-i-markedsmisbrugsforordningen
 - id: institutional.dk.nationalbanken.balance_of_payments
   name: Danmarks Nationalbank balance of payments and portfolio investment (monthly)
   jurisdiction: dk
@@ -11050,7 +11052,7 @@ sources:
   dataset: balance_of_payments
   source_class: cross_border_capital
   role: central_bank
-  url: https://www.nationalbanken.dk/da/viden-og-nyheder/statistik
+  url: https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
   frequency: monthly
   publication_lag_days: 40
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11083,12 +11085,12 @@ sources:
     failure_mode_hypothesis: declared
     crowding_prior: declared
   url_confidence: landing
-  evidence: repo-registered source root (desks/mt5/research/countries/dk), not re-fetched this pass
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Danmarks Nationalbank data and statistics page (gateway to its StatBank). The old /da/viden-og-nyheder/statistik hub returned 404; no per-topic page was confirmed, so the row stays on this shared gateway'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.nationalbanken.dk/da/viden-og-nyheder/statistik
+    - https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
   pack_source_ids:
   - pack_dk_dk_archives
   - pack_dk_dk_nationalbank
@@ -11100,7 +11102,7 @@ sources:
   dataset: fx_reserves_intervention
   source_class: official_reserves
   role: central_bank
-  url: https://www.nationalbanken.dk/da/viden-og-nyheder/statistik
+  url: https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
   frequency: monthly
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11131,12 +11133,12 @@ sources:
     failure_mode_hypothesis: declared
     crowding_prior: declared
   url_confidence: landing
-  evidence: repo-registered source root (desks/mt5/research/countries/dk), not re-fetched this pass
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Danmarks Nationalbank data and statistics page (gateway to its StatBank). The old /da/viden-og-nyheder/statistik hub returned 404; no per-topic page was confirmed, so the row stays on this shared gateway'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.nationalbanken.dk/da/viden-og-nyheder/statistik
+    - https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
   pack_source_ids:
   - pack_dk_dk_archives
   - pack_dk_dk_nationalbank
@@ -11333,7 +11335,7 @@ sources:
   dataset: reference_exchange_rates
   source_class: fx_settlement_fixing
   role: central_bank
-  url: https://www.nationalbanken.dk/da/viden-og-nyheder/statistik
+  url: https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11365,12 +11367,12 @@ sources:
     failure_mode_hypothesis: declared
     crowding_prior: declared
   url_confidence: landing
-  evidence: repo-registered source root (desks/mt5/research/countries/dk), not re-fetched this pass
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Danmarks Nationalbank data and statistics page (gateway to its StatBank). The old /da/viden-og-nyheder/statistik hub returned 404; no per-topic page was confirmed, so the row stays on this shared gateway'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.nationalbanken.dk/da/viden-og-nyheder/statistik
+    - https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
   pack_source_ids:
   - pack_dk_dk_archives
   - pack_dk_dk_nationalbank
@@ -11428,7 +11430,7 @@ sources:
   dataset: dk_registered_firms
   source_class: adviser_topology
   role: regulator
-  url: https://www.esma.europa.eu/publications-and-data/databases-and-registers
+  url: https://virksomhedsregister.finanstilsynet.dk/
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11456,13 +11458,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: https://www.esma.europa.eu/publications-and-data/databases-and-registers
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Finanstilsynet register of supervised firms. Replaces the shared ESMA register hub'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.esma.europa.eu/publications-and-data/databases-and-registers
+    - https://virksomhedsregister.finanstilsynet.dk/
 - id: institutional.dk.finans_danmark.mortgage_statistics
   name: 'Finance Denmark mortgage-lending data: lending by loan type (callable fixed vs adjustable), refinancing and prepayment'
   jurisdiction: dk
@@ -12250,7 +12252,7 @@ sources:
   dataset: pl_pdmr_buybacks
   source_class: corporate_flow
   role: regulator
-  url: https://www.esma.europa.eu/publications-and-data/databases-and-registers
+  url: https://www.knf.gov.pl/dla_rynku/Informacje_dla_podmiotow_nadzorowanych/mar/raportowanie_19_MAR
   frequency: event
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12279,12 +12281,12 @@ sources:
     failure_mode_hypothesis: declared
     crowding_prior: declared
   url_confidence: landing
-  evidence: https://www.esma.europa.eu/publications-and-data/databases-and-registers
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): KNF MAR art.19 PDMR notification page. Replaces the shared ESMA register hub'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.esma.europa.eu/publications-and-data/databases-and-registers
+    - https://www.knf.gov.pl/dla_rynku/Informacje_dla_podmiotow_nadzorowanych/mar/raportowanie_19_MAR
 - id: institutional.pl.nbp.balance_of_payments
   name: NBP balance of payments incl. portfolio investment flows (monthly)
   jurisdiction: pl
@@ -13507,7 +13509,7 @@ sources:
   dataset: investment_fund_statistics
   source_class: fund_flows
   role: fund_filings
-  url: https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+  url: https://statisztika.mnb.hu/publikacios-temak/penzugyi-intezmenyek-merlegei
   frequency: monthly
   publication_lag_days: 35
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13539,13 +13541,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: repo-registered source root (desks/mt5/research/countries/hu, cee_balkans), not re-fetched this pass
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): MNB balance sheets of financial institutions (domestic investment funds section). The old adatok-idosorok hub returned 404'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+    - https://statisztika.mnb.hu/publikacios-temak/penzugyi-intezmenyek-merlegei
   pack_source_ids:
   - pack_cee_balkans_cee_academic
   - pack_cee_balkans_cee_broker_and_payment_apps
@@ -13561,7 +13563,7 @@ sources:
   dataset: securities_statistics
   source_class: fund_holdings
   role: central_bank
-  url: https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+  url: https://statisztika.mnb.hu/publikacios-temak/ertekpapirok
   frequency: monthly
   publication_lag_days: 35
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13594,13 +13596,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: repo-registered source root (desks/mt5/research/countries/hu, cee_balkans), not re-fetched this pass
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): MNB securities statistics by issuer and owner sector. The old adatok-idosorok hub returned 404'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+    - https://statisztika.mnb.hu/publikacios-temak/ertekpapirok
   pack_source_ids:
   - pack_cee_balkans_cee_academic
   - pack_cee_balkans_cee_broker_and_payment_apps
@@ -13616,7 +13618,7 @@ sources:
   dataset: credit_institutions_balance_sheet
   source_class: dealer_bank_balance_sheet
   role: central_bank
-  url: https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+  url: https://statisztika.mnb.hu/publikacios-temak/penzugyi-intezmenyek-merlegei
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13647,13 +13649,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: repo-registered source root (desks/mt5/research/countries/hu, cee_balkans), not re-fetched this pass
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): MNB balance sheets of financial institutions (domestic credit institutions). The old adatok-idosorok hub returned 404'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+    - https://statisztika.mnb.hu/publikacios-temak/penzugyi-intezmenyek-merlegei
   pack_source_ids:
   - pack_cee_balkans_cee_academic
   - pack_cee_balkans_cee_broker_and_payment_apps
@@ -13669,7 +13671,7 @@ sources:
   dataset: money_market_rates
   source_class: money_market_plumbing
   role: central_bank
-  url: https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+  url: https://statisztika.mnb.hu/publikacios-temak/kamatlabak_-penz-es-tokepiaci-adatok
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13700,13 +13702,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: repo-registered source root (desks/mt5/research/countries/hu, cee_balkans), not re-fetched this pass
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): MNB interest rates and money and capital market data. The old adatok-idosorok hub returned 404'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+    - https://statisztika.mnb.hu/publikacios-temak/kamatlabak_-penz-es-tokepiaci-adatok
   pack_source_ids:
   - pack_cee_balkans_cee_academic
   - pack_cee_balkans_cee_broker_and_payment_apps
@@ -13873,7 +13875,7 @@ sources:
   dataset: balance_of_payments
   source_class: cross_border_capital
   role: central_bank
-  url: https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+  url: https://statisztika.mnb.hu/publikacios-temak/fizetesi-merleg-es-kapcsolodo-statisztikak
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13905,13 +13907,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: repo-registered source root (desks/mt5/research/countries/hu, cee_balkans), not re-fetched this pass
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): MNB balance of payments and related statistics. The old adatok-idosorok hub returned 404'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+    - https://statisztika.mnb.hu/publikacios-temak/fizetesi-merleg-es-kapcsolodo-statisztikak
   pack_source_ids:
   - pack_cee_balkans_cee_academic
   - pack_cee_balkans_cee_broker_and_payment_apps
@@ -13978,7 +13980,7 @@ sources:
   dataset: international_reserves
   source_class: official_reserves
   role: central_bank
-  url: https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+  url: https://statisztika.mnb.hu/publikacios-temak/nemzetkozi-tartalekok
   frequency: monthly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -14010,13 +14012,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: repo-registered source root (desks/mt5/research/countries/hu, cee_balkans), not re-fetched this pass
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): MNB international reserves. The old adatok-idosorok hub returned 404'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+    - https://statisztika.mnb.hu/publikacios-temak/nemzetkozi-tartalekok
   pack_source_ids:
   - pack_cee_balkans_cee_academic
   - pack_cee_balkans_cee_broker_and_payment_apps
@@ -14189,7 +14191,7 @@ sources:
   dataset: pension_insurance_statistics
   source_class: pension_insurance
   role: central_bank
-  url: https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+  url: https://statisztika.mnb.hu/publikacios-temak/felugyeleti-statisztikak
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -14220,13 +14222,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: repo-registered source root (desks/mt5/research/countries/hu, cee_balkans), not re-fetched this pass
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): MNB supervisory statistics (insurers and pension funds sections). The old adatok-idosorok hub returned 404'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.mnb.hu/statisztika/statisztikai-adatok-informaciok/adatok-idosorok
+    - https://statisztika.mnb.hu/publikacios-temak/felugyeleti-statisztikak
   pack_source_ids:
   - pack_cee_balkans_cee_academic
   - pack_cee_balkans_cee_broker_and_payment_apps
@@ -15919,7 +15921,7 @@ sources:
   dataset: fx_derivatives_turnover
   source_class: otc_swaps
   role: central_bank
-  url: https://www.cbc.gov.tw/en/
+  url: https://www.cbc.gov.tw/tw/np-534-1.html
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15949,13 +15951,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: atlas row institutional.tw.cbc.fx_reserves landing
+  url_confidence: dataset
+  evidence: 'UNVERIFIED 2026-10-06: CBC FX derivatives trading-volume page, linked from cbc.gov.tw/en; it resolved but the content is rendered by script. Replaces the CBC home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.cbc.gov.tw/en/
+    - https://www.cbc.gov.tw/tw/np-534-1.html
 - id: institutional.tw.sitca.fund_flows
   name: SITCA monthly investment-trust fund AUM, subscriptions and redemptions by fund type, including ETFs
   jurisdiction: tw
@@ -16051,7 +16053,7 @@ sources:
   dataset: financial_statistics
   source_class: dealer_bank_balance_sheet
   role: central_bank
-  url: https://www.cbc.gov.tw/en/
+  url: https://www.cbc.gov.tw/tw/np-532-1.html
   frequency: monthly
   publication_lag_days: 25
   declared_status: DISCOVERED_NOT_INGESTED
@@ -16079,13 +16081,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: atlas row institutional.tw.cbc.fx_reserves landing
+  url_confidence: dataset
+  evidence: 'UNVERIFIED 2026-10-06: CBC Financial Statistics Monthly page, linked from cbc.gov.tw/en; it resolved but the content is rendered by script. Replaces the CBC home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.cbc.gov.tw/en/
+    - https://www.cbc.gov.tw/tw/np-532-1.html
 - id: institutional.tw.tpex.bond_repo
   name: 'TPEx bond market statistics: outright and repo (RP/RS) transaction volumes by bond type'
   jurisdiction: tw
@@ -16137,7 +16139,7 @@ sources:
   dataset: money_market_rates
   source_class: money_market_plumbing
   role: central_bank
-  url: https://www.cbc.gov.tw/en/
+  url: https://www.cbc.gov.tw/tw/np-641-1.html
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -16166,13 +16168,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: atlas row institutional.tw.cbc.fx_reserves landing
+  url_confidence: dataset
+  evidence: 'UNVERIFIED 2026-10-06: CBC interbank overnight call-loan rate page, linked from cbc.gov.tw/en; it resolved but the content is rendered by script. Replaces the CBC home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.cbc.gov.tw/en/
+    - https://www.cbc.gov.tw/tw/np-641-1.html
 - id: institutional.tw.twse.short_sale_sbl_balances
   name: TWSE daily margin short-sale (rongquan) and SBL short-sale balances by security
   jurisdiction: tw
@@ -16311,7 +16313,7 @@ sources:
   dataset: balance_of_payments
   source_class: cross_border_capital
   role: central_bank
-  url: https://www.cbc.gov.tw/en/
+  url: https://www.cbc.gov.tw/tw/lp-538-1.html
   frequency: quarterly
   publication_lag_days: 50
   declared_status: DISCOVERED_NOT_INGESTED
@@ -16341,13 +16343,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: atlas row institutional.tw.cbc.fx_reserves landing
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): CBC international balance of payments statistics page. Replaces the CBC home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.cbc.gov.tw/en/
+    - https://www.cbc.gov.tw/tw/lp-538-1.html
 - id: institutional.tw.cbc.fx_market_operations
   name: CBC semiannual net FX market intervention disclosure, NCD issuance and open market operations
   jurisdiction: tw
@@ -16355,7 +16357,7 @@ sources:
   dataset: fx_market_operations
   source_class: central_bank_operations
   role: central_bank
-  url: https://www.cbc.gov.tw/en/
+  url: https://www.cbc.gov.tw/tw/lp-6305-1.html
   frequency: quarterly
   publication_lag_days: 90
   declared_status: DISCOVERED_NOT_INGESTED
@@ -16383,13 +16385,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: atlas row institutional.tw.cbc.fx_reserves landing
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): CBC net foreign-exchange purchases and sales (intervention) page. Replaces the CBC home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.cbc.gov.tw/en/
+    - https://www.cbc.gov.tw/tw/lp-6305-1.html
 - id: institutional.tw.mof.customs_trade
   name: MOF Customs Administration monthly trade statistics by commodity (crude, LNG, gold, copper imports/exports)
   jurisdiction: tw
@@ -16529,7 +16531,7 @@ sources:
   dataset: ntd_daily_close_turnover
   source_class: fx_settlement_fixing
   role: central_bank
-  url: https://www.cbc.gov.tw/en/
+  url: https://www.cbc.gov.tw/tw/np-382-1.html
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -16559,13 +16561,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: atlas row institutional.tw.cbc.fx_reserves landing
+  url_confidence: dataset
+  evidence: 'UNVERIFIED 2026-10-06: CBC NTD/USD daily closing rate and turnover page, linked from cbc.gov.tw/en; it resolved but the content is rendered by script. Replaces the CBC home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.cbc.gov.tw/en/
+    - https://www.cbc.gov.tw/tw/np-382-1.html
 - id: institutional.tw.ib.life_insurer_foreign_investment
   name: FSC Insurance Bureau monthly life insurers' foreign investment balances, hedge ratios and FX valuation reserve
   jurisdiction: tw
@@ -18255,7 +18257,7 @@ sources:
   dataset: administrative_penalties
   source_class: enforcement_archaeology
   role: regulator
-  url: http://www.csrc.gov.cn/csrc/c101971/zfxxgk_zdgk.shtml
+  url: https://www.csrc.gov.cn/csrc/c101971/common_list.shtml?channelid=17d5ff2fe43e488dba825807ae40d63f
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -18287,13 +18289,12 @@ sources:
     failure_mode_hypothesis: declared
     crowding_prior: declared
   url_confidence: landing
-  evidence: statistics-page path from memory, not fetched 2026-10-06 (no egress to the host); verify_urls probes it on the
-    box and two failures mark it BROKEN and requeue the search
+  evidence: 'UNVERIFIED 2026-10-06: CSRC column titled 行政处罚决定 (administrative penalty decisions), found in the search index; csrc.gov.cn refused the fetch (robots.txt unreachable), so verify_urls must confirm it on the box. Replaces the zfxxgk_zdgk proactive-disclosure guide'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - http://www.csrc.gov.cn/csrc/c101971/zfxxgk_zdgk.shtml
+    - https://www.csrc.gov.cn/csrc/c101971/common_list.shtml?channelid=17d5ff2fe43e488dba825807ae40d63f
 - id: institutional.cn.nfra.insurance_fund_utilization
   name: 'NFRA insurance industry statistics: premiums, total assets and fund utilisation by asset class'
   jurisdiction: cn
@@ -21764,7 +21765,7 @@ sources:
   dataset: scheduled_banks_gop_holdings
   source_class: dealer_bank_balance_sheet
   role: central_bank
-  url: https://www.sbp.org.pk/ecodata/index2.asp
+  url: https://www.sbp.org.pk/economic-data/banks-and-non-banks-holdings-of-gop-securities
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -21792,13 +21793,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: https://www.sbp.org.pk/ecodata/index2.asp
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): SBP banks and non-banks holdings of GoP securities. Replaces the shared SBP ecodata hub'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.sbp.org.pk/ecodata/index2.asp
+    - https://www.sbp.org.pk/economic-data/banks-and-non-banks-holdings-of-gop-securities
   pack_source_ids:
   - pack_pk_pk_academic
   - pack_pk_pk_archive
@@ -21812,7 +21813,7 @@ sources:
   dataset: repo_market
   source_class: repo_collateral
   role: central_bank
-  url: https://www.sbp.org.pk/ecodata/index2.asp
+  url: https://www.sbp.org.pk/assets/document/overnightsreporates2.pdf
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -21841,13 +21842,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: https://www.sbp.org.pk/ecodata/index2.asp
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): SBP weighted-average overnight repo rate report. Replaces the shared SBP ecodata hub'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.sbp.org.pk/ecodata/index2.asp
+    - https://www.sbp.org.pk/assets/document/overnightsreporates2.pdf
   pack_source_ids:
   - pack_pk_pk_academic
   - pack_pk_pk_archive
@@ -21861,7 +21862,7 @@ sources:
   dataset: kibor
   source_class: money_market_plumbing
   role: central_bank
-  url: https://www.sbp.org.pk/ecodata/index2.asp
+  url: https://www.sbp.org.pk/economic-data/kibor-rates
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -21889,13 +21890,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: https://www.sbp.org.pk/ecodata/index2.asp
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): SBP KIBOR rates table. Replaces the shared SBP ecodata hub'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.sbp.org.pk/ecodata/index2.asp
+    - https://www.sbp.org.pk/economic-data/kibor-rates
   pack_source_ids:
   - pack_pk_pk_academic
   - pack_pk_pk_archive
@@ -21994,7 +21995,7 @@ sources:
   dataset: balance_of_payments
   source_class: cross_border_capital
   role: central_bank
-  url: https://www.sbp.org.pk/ecodata/index2.asp
+  url: https://www.sbp.org.pk/assets/document/Balancepayment_BPM6.pdf
   frequency: monthly
   publication_lag_days: 17
   declared_status: DISCOVERED_NOT_INGESTED
@@ -22023,13 +22024,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: https://www.sbp.org.pk/ecodata/index2.asp
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): SBP summary balance of payments, BPM6. Replaces the shared SBP ecodata hub'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.sbp.org.pk/ecodata/index2.asp
+    - https://www.sbp.org.pk/assets/document/Balancepayment_BPM6.pdf
   pack_source_ids:
   - pack_pk_pk_academic
   - pack_pk_pk_archive
@@ -22092,7 +22093,7 @@ sources:
   dataset: omo_results
   source_class: central_bank_operations
   role: central_bank
-  url: https://www.sbp.org.pk/ecodata/index2.asp
+  url: https://www.sbp.org.pk/assets/document/Result-OMO.pdf
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -22120,13 +22121,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: https://www.sbp.org.pk/ecodata/index2.asp
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): SBP OMO result document (latest operation). Replaces the shared SBP ecodata hub'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.sbp.org.pk/ecodata/index2.asp
+    - https://www.sbp.org.pk/assets/document/Result-OMO.pdf
   pack_source_ids:
   - pack_pk_pk_academic
   - pack_pk_pk_archive
@@ -33077,7 +33078,7 @@ sources:
   dataset: sanctions
   source_class: enforcement_archaeology
   role: regulator
-  url: https://www.superfinanciera.gov.co/publicaciones/10084734/
+  url: https://www.superfinanciera.gov.co/publicaciones/20708/sanciones-20708/
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -33107,12 +33108,12 @@ sources:
     failure_mode_hypothesis: declared
     crowding_prior: declared
   url_confidence: landing
-  evidence: fetched https://www.superfinanciera.gov.co/ navigation
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): SFC Sanciones section (sanctions dashboard and the report of final sanctions). Replaces the shared RNVE hub'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.superfinanciera.gov.co/publicaciones/10084734/
+    - https://www.superfinanciera.gov.co/publicaciones/20708/sanciones-20708/
 - id: institutional.co.banrep.trm
   name: TRM representative market rate (USDCOP), settlement reference for NDFs and BVC futures
   jurisdiction: co
@@ -38702,7 +38703,7 @@ sources:
   dataset: tlref
   source_class: money_market_plumbing
   role: exchange
-  url: https://www.borsaistanbul.com/en
+  url: https://www.borsaistanbul.com/en/indices/tlref
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38735,12 +38736,12 @@ sources:
     failure_mode_hypothesis: declared
     crowding_prior: declared
   url_confidence: landing
-  evidence: well-known
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Borsa Istanbul TLREF page (rate, methodology, data dissemination). Replaces the Borsa Istanbul home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.borsaistanbul.com/en
+    - https://www.borsaistanbul.com/en/indices/tlref
 - id: institutional.tr.borsa_istanbul.short_sale_statistics
   name: Borsa Istanbul daily short-sale volume statistics by stock
   jurisdiction: tr
@@ -39010,7 +39011,7 @@ sources:
   dataset: precious_metals_market
   source_class: physical_inventory
   role: physical_market
-  url: https://www.borsaistanbul.com/en
+  url: https://www.borsaistanbul.com/en/data/precious-metals-and-diamond-market
   frequency: monthly
   publication_lag_days: 15
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39041,13 +39042,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: well-known
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Borsa Istanbul precious metals and diamond market data. Replaces the Borsa Istanbul home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.borsaistanbul.com/en
+    - https://www.borsaistanbul.com/en/data/precious-metals-and-diamond-market
 - id: institutional.tr.mkk.foreign_investor_transactions
   name: MKK monthly foreign investor transactions and holdings in Borsa Istanbul equities
   jurisdiction: tr
@@ -39101,7 +39102,7 @@ sources:
   dataset: index_ground_rules
   source_class: index_mechanical
   role: exchange
-  url: https://www.borsaistanbul.com/en
+  url: https://www.borsaistanbul.com/en/indices/methodologies-and-changes
   frequency: quarterly
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39129,13 +39130,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: well-known
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Borsa Istanbul index methodologies and changes. Replaces the Borsa Istanbul home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.borsaistanbul.com/en
+    - https://www.borsaistanbul.com/en/indices/methodologies-and-changes
 - id: institutional.tr.spk.weekly_bulletin_sanctions
   name: 'SPK weekly bulletin: administrative fines and trading bans for market manipulation'
   jurisdiction: tr
@@ -40010,7 +40011,7 @@ sources:
   dataset: opcvm_weekly_statistics
   source_class: fund_flows
   role: fund_filings
-  url: https://www.ammc.ma/en
+  url: https://www.ammc.ma/en/donnees-statistiques
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -40039,13 +40040,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: well-known
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): AMMC statistics page carrying the UCITS (OPCVM) weekly statistics. Replaces the AMMC home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.ammc.ma/en
+    - https://www.ammc.ma/en/donnees-statistiques
   pack_source_ids:
   - pack_ma_ma_bourse_ammc
 - id: institutional.ma.ammc.opcvm_asset_composition
@@ -40289,7 +40290,7 @@ sources:
   dataset: issuance_prospectuses
   source_class: corporate_flow
   role: regulator
-  url: https://www.ammc.ma/en
+  url: https://www.ammc.ma/en/espace-emetteurs/documents-information
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -40317,13 +40318,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: well-known
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): AMMC prospectus and information-document database. Replaces the AMMC home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.ammc.ma/en
+    - https://www.ammc.ma/en/espace-emetteurs/documents-information
   pack_source_ids:
   - pack_ma_ma_bourse_ammc
 - id: institutional.ma.office_des_changes.balance_of_payments
@@ -40519,7 +40520,7 @@ sources:
   dataset: sanctions
   source_class: enforcement_archaeology
   role: regulator
-  url: https://www.ammc.ma/en
+  url: https://www.ammc.ma/en/decisions/sanctions
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -40548,13 +40549,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: landing
-  evidence: well-known
+  url_confidence: dataset
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): AMMC sanctions database (disciplinary and monetary penalties). Replaces the AMMC home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://www.ammc.ma/en
+    - https://www.ammc.ma/en/decisions/sanctions
   pack_source_ids:
   - pack_ma_ma_bourse_ammc
 - id: institutional.ma.acaps.insurance_pension_statistics
