@@ -958,6 +958,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE INGESTION-EXPLOITATION GATE (LAWS 5c): an artifact read and two ratchets, every pass.
     # The LEDGER it reads is heavy and stays in the data department; the gate is not.
     "ingestion_exploitation",
+    # THE LIVE-DESK LIVENESS PAGE (2026-09-25): reads a handful of artifacts and pages; every pass.
+    "live_alive",
     # THE LIVE-TRUTH ORGANS (Tier-1 audit #6/#17/#18/#19/#20, 2026-09-29): readers of artifacts
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
@@ -3642,6 +3644,12 @@ def main() -> None:
     rb = _costed("refresh_bars", refresh_bars)
     smoke = _costed("smoke_release", smoke_release)
     h = _costed("health", health)
+    # IS THE LIVE DESK ALIVE -- gateway state, equity, pause and release identity read from their
+    # own artifacts, paged through `libs.ops.alert_channels` when not; writes
+    # reports/live_alive.json. Light, every pass, right behind `health`, so a dead desk is known
+    # at the top of the hour.
+    lal = _costed("live_alive", lambda: _producer(
+        "live_alive", "scripts/check_live_desk_alive.py"))
     # Drain existing intake before the long research legs. The later pipeline still
     # compiles and merges discoveries generated during this pass.
     _costed("intake_catchup", catch_up_intake)
@@ -5825,6 +5833,7 @@ def main() -> None:
                     "spread_provenance": sp, "tape_features": tf,
                     "futures_lead_lag": fll, "time_joins": tj, "allocator_join": aj,
                     "fred_macro": fm,
+                    "live_alive": lal,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,
