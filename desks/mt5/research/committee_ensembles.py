@@ -761,20 +761,28 @@ def effect_sample(sp: ce.Specialist, e: Mapping[str, Any], key: str) -> ce.Resul
 FENCED: list[dict[str, Any]] = []
 
 
-def _fence(row: Mapping[str, Any]) -> list[str]:
-    """`libs.research.metric_fence.fence_row` when it is on this tree (#169); until then no
-    row is refused here and `record_integrity` still flags an impossible metric."""
+#: Whether the fence was on this tree for the last read: absent, the count is UNMEASURED, not 0.
+FENCE_MEASURED = [True]
+_FENCE_MODULE = "libs.research.metric_fence"
+
+
+def _fence(row: Mapping[str, Any]) -> list[str] | None:
+    """`libs.research.metric_fence.fence_row` (#169). None -- UNMEASURED -- only when THAT module
+    is absent from the tree; any other import or runtime error propagates."""
     import importlib
     try:
-        metric_fence = importlib.import_module("libs.research.metric_fence")
-    except ImportError:
-        return []
+        metric_fence = importlib.import_module(_FENCE_MODULE)
+    except ModuleNotFoundError as exc:
+        if exc.name != _FENCE_MODULE:
+            raise
+        return None
     return [str(x) for x in metric_fence.fence_row(row)]
 
 
 def forensic_subjects(mql5: Path | None = None, queue: Path | None = None) -> list[ce.Subject]:
     out: list[ce.Subject] = []
     FENCED.clear()
+    FENCE_MEASURED[0] = True
     d = mql5 or MQL5
     files = sorted(d.glob("discoveries_*.json"), reverse=True)[:6] if d.is_dir() else []
     seen: set[str] = set()
@@ -786,7 +794,9 @@ def forensic_subjects(mql5: Path | None = None, queue: Path | None = None) -> li
                 continue
             seen.add(str(r["url"]))
             bad = _fence(r)
-            if bad:
+            if bad is None:
+                FENCE_MEASURED[0] = False
+            elif bad:
                 # IMPOSSIBLE_METRIC (#169's metric fence): a parser defect, not a trader. It is
                 # counted here and never becomes a subject, so no seat is scored on it.
                 FENCED.append({"url": r["url"], "reasons": bad[:5]})
@@ -870,15 +880,30 @@ def tail_dependence(sp: ce.Specialist, days: Mapping[str, Mapping[str, float]], 
     sleeves, m = _matrix(days)
     if m is None:
         return _r(sp, UNMEASURED, 0.0, "more forward days per sleeve", sleeves=len(sleeves))
-    book = m.sum(axis=1)
-    worst = book <= np.quantile(book, 0.1)
-    losing = (m < 0).mean(axis=1)
-    tail, normal = float(losing[worst].mean()), float(losing[~worst].mean())
-    lift = tail / normal if normal > 0 else float("inf")
-    if lift > 1.8 and tail > 0.8:
+    def co_loss(x: Any) -> tuple[float, float]:
+        book = x.sum(axis=1)
+        worst = book <= np.quantile(book, 0.1)
+        losing = (x < 0).mean(axis=1)
+        return float(losing[worst].mean()), float(losing[~worst].mean())
+
+    tail, normal = co_loss(m)
+    # NULL: conditioning on the book's own worst decile raises co-loss mechanically, so the
+    # observed tail co-loss is judged against independently shuffled sleeves (same marginals,
+    # no dependence), seeded from the data so a re-run on unchanged evidence agrees with itself.
+    rng = np.random.default_rng(int(abs(float(m.sum())) * 1e6) % (2 ** 32))
+    null = []
+    for _ in range(200):
+        x = m.copy()
+        for j in range(x.shape[1]):
+            x[:, j] = rng.permutation(x[:, j])
+        null.append(co_loss(x)[0])
+    q99 = float(np.quantile(null, 0.99))
+    if tail > q99 and tail > 0.8:
         return _r(sp, FAIL, 0.85 if tail > 0.9 else 0.6, "regime_correlation",
-                  co_loss_in_tail=round(tail, 3), co_loss_normal=round(normal, 3))
-    return _r(sp, PASS, 0.6, co_loss_in_tail=round(tail, 3), co_loss_normal=round(normal, 3))
+                  co_loss_in_tail=round(tail, 3), co_loss_normal=round(normal, 3),
+                  null_q99=round(q99, 3))
+    return _r(sp, PASS, 0.6, co_loss_in_tail=round(tail, 3), co_loss_normal=round(normal, 3),
+              null_q99=round(q99, 3))
 
 
 def _crash_book() -> dict[str, dict[str, float]]:
@@ -1733,33 +1758,60 @@ def _queue(experiments: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     return out[:5000]
 
 
-def _outcome_fn(examined: Sequence[Mapping[str, Any]], fates: Mapping[str, Any]
-                ) -> Callable[[Mapping[str, Any]], bool | None]:
-    """Settle a claim: a graph fate for fate seats, a re-measurement on NEW evidence otherwise."""
+#: A red-team claim on a certified survivor settles PASS-side only after this long without a
+#: death: the claim said "this will fail", and the cell's forward life is the answer.
+SURVIVOR_HORIZON_DAYS = 30
+
+
+def _fate(fates: Mapping[str, Any], gid: str) -> str:
+    return str((fates.get(gid) or {}).get("fate") or "") if gid else ""
+
+
+def _stamp_fates(state: dict[str, Any], fates: Mapping[str, Any], now_ts: float) -> None:
+    """Record each fate-settled claim's cell fate AT CLAIM TIME. A claim settles only on a fate
+    CHANGE after it was made -- otherwise a seat reading a cell already labelled FAILED (or a
+    certified survivor) is 'calibrated' against a label it could already see."""
+    fate_seats = {s.name for s in SEATS if s.settles_by == "fate"}
+    for claim in state.get("pending") or []:
+        if claim.get("specialist") in fate_seats and "fate_at" not in claim:
+            claim["fate_at"] = _fate(fates, str(claim.get("cell") or ""))
+            claim["at_ts"] = now_ts
+
+
+def _outcome_fn(examined: Sequence[Mapping[str, Any]], fates: Mapping[str, Any],
+                now_ts: float | None = None) -> Callable[[Mapping[str, Any]], bool | None]:
+    """Settle a claim: a graph fate CHANGE for fate seats, a re-measurement on NEW evidence
+    otherwise. Both sides settle, so an always-FAIL seat is scored on the cells that lived."""
     fate_seats = {s.name for s in SEATS if s.settles_by == "fate"}
     now_by: dict[tuple[str, str, str], tuple[str, str]] = {}
-    cell_of: dict[tuple[str, str], str] = {}
     for ex in examined:
-        cell_of[(ex["committee"], ex["key"])] = str((ex.get("keys") or {}).get("cell") or "")
         for r in ex.get("results") or []:
             if r["verdict"] != UNMEASURED:
                 now_by[(ex["committee"], ex["key"], r["specialist"])] = (r["verdict"],
                                                                          ex["fingerprint"])
+    t_now = time.time() if now_ts is None else now_ts
 
     def outcome(claim: Mapping[str, Any]) -> bool | None:
         if claim["specialist"] in fate_seats:
-            gid = str(claim.get("cell") or "")
-            f = str((fates.get(gid) or {}).get("fate") or "") if gid else ""
+            f = _fate(fates, str(claim.get("cell") or ""))
+            was = str(claim.get("fate_at") or "")
+            if f in ("FAILED", "BURIED") and was not in ("FAILED", "BURIED"):
+                return True                     # it died after the claim
             if str(claim.get("key") or "").startswith("survivor:"):
-                # A red-team claim on a CERTIFIED cell is not settled by the certificate it
-                # challenges -- that would score every correct objection as wrong. Only a later
-                # death (forward evidence failing it) settles it; until then it stays open.
-                return True if f in ("FAILED", "BURIED") else None
-            if f == "CERTIFIED":
-                return False
-            if f in ("FAILED", "BURIED"):
-                return True
-            return None
+                # A red-team claim on a CERTIFIED cell is never settled by the certificate it
+                # challenges. It settles FAIL-side on a later death (above) and PASS-side when the
+                # cell is still alive SURVIVOR_HORIZON_DAYS after the claim.
+                try:
+                    made = float(claim["at_ts"]) if "at_ts" in claim else \
+                        datetime.fromisoformat(str(claim.get("at"))).timestamp()
+                except (TypeError, ValueError):
+                    return None
+                age = t_now - made
+                alive = f not in ("FAILED", "BURIED")
+                return False if alive and age >= SURVIVOR_HORIZON_DAYS * 86400 else None
+            if f == "CERTIFIED" and was != "CERTIFIED":
+                return False                    # it was certified after the claim
+            return None                         # no fate change since the claim
         got = now_by.get((claim["committee"], claim["key"], claim["specialist"]))
         if got is None or got[1] == claim.get("fingerprint"):
             return None                         # no strictly newer evidence yet
@@ -1821,7 +1873,11 @@ def _reweight(state: dict[str, Any], per: Mapping[str, Mapping[str, Any]], day: 
              for k in ("measured", "unique", "passes", "floor_passes")}
         if c in retired:
             if w["unique"] > 0:
-                retired.pop(c)                   # re-admitted on evidence from its probes
+                # Re-admitted on evidence from its probes: the retirement stays on the record.
+                state.setdefault("readmitted_committees", {}).setdefault(c, []).append(
+                    retired[c] | {"readmitted_at": _now(), "unique_in_window": w["unique"]})
+                retired = state["retired_committees"] = {k: v for k, v in retired.items()
+                                                         if k != c}
             continue
         if span >= ce.RETIRE_WINDOW_DAYS and w["measured"] >= ce.MIN_OBS_FOR_RETIREMENT \
                 and w["unique"] == 0 and w["passes"] and w["floor_passes"] == w["passes"]:
@@ -1876,7 +1932,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
         examined_all += ex
         res = [r for e in ex for r in e["results"]]
         if name == FORENSIC and subjects is None:
-            counts["fenced_impossible_metric"] = len(FENCED)
+            counts["fenced_impossible_metric"] = len(FENCED) if FENCE_MEASURED[0] \
+                else UNMEASURED
         per[name] = counts | {
             "status": "RETIRED_PROBE" if name in retired_c else "RAN",
             "budget_s": round(share_s, 2),
@@ -1899,8 +1956,9 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
              if e["verdict"] != PASS]
     contra = ce.contradictions(examined_all)
     ce.update_state(state, examined_all, traps)
-    settled = ce.settle(state, _outcome_fn(examined_all, fates if fates is not None
-                                           else _fates()))
+    graph = fates if fates is not None else _fates()
+    _stamp_fates(state, graph, now_ts)
+    settled = ce.settle(state, _outcome_fn(examined_all, graph, now_ts))
     for e in examined_all:
         for name, s in (e.get("saved_s") or {}).items():
             st = state["seats"].setdefault(name, {})
@@ -1974,8 +2032,10 @@ def _charge_trials(examined: Sequence[Mapping[str, Any]], write: bool) -> dict[s
         TRIAL_UNION.parent.mkdir(parents=True, exist_ok=True)
         with TRIAL_UNION.open("a", encoding="utf-8") as fh:
             fh.write("\n".join(new) + "\n")
-        stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
-        _atomic(TRIAL_DONATIONS / f"discoveries_{stamp}.json",
+        # One file per charge, never replaced: a second pass in the same second still lands its
+        # own file, so the ledger's tests_run sum equals the union's growth (charge-once).
+        stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M%S")
+        _atomic(TRIAL_DONATIONS / f"discoveries_{stamp}_{os.getpid()}_{os.urandom(4).hex()}.json",
                 {"source": "committee_ensembles", "kind": "trial_charge",
                  "tests_run": len(new), "discoveries": [],
                  "why": "falsifier looks at return data by the Scientific committee, charged "

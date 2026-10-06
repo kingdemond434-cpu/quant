@@ -42,6 +42,9 @@ def desk(tmp_path, monkeypatch):
         monkeypatch.setattr(ens, name, tmp_path / "committees" / f"{name.lower()}.json")
     monkeypatch.setattr(ens, "REPORT", tmp_path / "reports" / "COMMITTEES.json")
     monkeypatch.setattr(ens, "HEALTH", tmp_path / "reports" / "COMMITTEE_HEALTH.json")
+    # The trial charge writes the desk's real multiple-testing ledger: never from a test.
+    monkeypatch.setattr(ens, "TRIAL_UNION", tmp_path / "committees" / "trial_union.txt")
+    monkeypatch.setattr(ens, "TRIAL_DONATIONS", tmp_path / "intelligence" / "committee_ensembles")
     monkeypatch.setattr(ens, "_program", lambda: {"census": {"LIVE": 9, "NEVER": 1},
                                                   "legs": {}, "k_eff": 6.0,
                                                   "bench_cells": []})
@@ -463,3 +466,72 @@ def test_forensic_skips_rows_the_metric_fence_refuses(tmp_path, monkeypatch):
     subs = ens.forensic_subjects(d, tmp_path / "absent.json")
     assert [s.key for s in subs] == ["u/good"]
     assert ens.FENCED == [{"url": "u/bad", "reasons": ["win_pct:IMPOSSIBLE_METRIC"]}]
+
+
+def test_a_fate_claim_never_settles_against_a_label_it_could_already_see():
+    state = ce.blank_state()
+    ex = {"committee": ens.SCIENTIFIC, "key": "g9", "fingerprint": "f", "keys": {"cell": "n9"},
+          "results": [{"specialist": "cost_surface", "verdict": ce.FAIL, "strength": 0.9,
+                       "cost_s": 0.0}]}
+    ce.update_state(state, [ex], {})
+    known = {"n9": {"fate": "FAILED"}}
+    ens._stamp_fates(state, known, 1_000.0)
+    assert ce.settle(state, ens._outcome_fn([], known, 1_000.0)) == 0   # no change since claim
+
+
+def test_a_survivor_claim_settles_pass_side_when_the_cell_lives_past_the_horizon():
+    state = ce.blank_state()
+    ex = {"committee": ens.SCIENTIFIC, "key": "survivor:c2", "fingerprint": "f",
+          "keys": {"cell": "n2"},
+          "results": [{"specialist": "cost_surface", "verdict": ce.FAIL, "strength": 0.9,
+                       "cost_s": 0.0}]}
+    ce.update_state(state, [ex], {})
+    alive = {"n2": {"fate": "CERTIFIED"}}
+    ens._stamp_fates(state, alive, 0.0)
+    assert ce.settle(state, ens._outcome_fn([], alive, 86400.0)) == 0
+    later = ens.SURVIVOR_HORIZON_DAYS * 86400.0
+    assert ce.settle(state, ens._outcome_fn([], alive, later)) == 1
+    # An always-FAIL seat is scored on the cell that lived: P(FAIL)=0.95 against 0.
+    assert state["seats"]["cost_surface"]["brier_sum"] == pytest.approx(0.95 ** 2)
+
+
+def test_two_charges_in_one_second_land_two_ledger_files(desk):
+    ex = [{"committee": ens.SCIENTIFIC, "key": f"g{i}", "keys": {"cell": f"n{i}"},
+           "results": [{"specialist": "cost_surface", "verdict": ce.PASS}]} for i in range(2)]
+    ens._charge_trials(ex[:1], True)
+    ens._charge_trials(ex[1:], True)
+    files = list(ens.TRIAL_DONATIONS.glob("discoveries_*.json"))
+    assert sum(json.loads(f.read_text())["tests_run"] for f in files) == 2
+    assert len(ens.TRIAL_UNION.read_text().split()) == 2
+
+
+def test_an_absent_metric_fence_reads_unmeasured_and_other_errors_propagate(tmp_path,
+                                                                           monkeypatch):
+    import importlib
+
+    def missing(name):
+        raise ModuleNotFoundError(f"No module named {name!r}", name=name)
+    monkeypatch.setattr(importlib, "import_module", missing)
+    assert ens._fence({"url": "x"}) is None
+
+    def broken(name):
+        raise ModuleNotFoundError("No module named 'numpy'", name="numpy")
+    monkeypatch.setattr(importlib, "import_module", broken)
+    with pytest.raises(ModuleNotFoundError):
+        ens._fence({"url": "x"})
+
+
+def test_a_retirement_reached_through_run_is_recorded_and_kept_on_readmission(desk,
+                                                                            monkeypatch):
+    calls = []
+
+    def fake_retire(state, seats, day):
+        calls.append(day)
+        state.setdefault("retired", {})["cost_surface"] = {"at": day, "why": "test"}
+        return {"retired": ["cost_surface"], "reopened": []}
+    monkeypatch.setattr(ce, "retire", fake_retire)
+    doc = ens.run(budget_s=60, subjects=_planted(), fates={}, now_ts=1_000_000.0)
+    assert calls, "run() never reached the retirement rule"
+    state = json.loads(ens.STATE.read_text())
+    assert "cost_surface" in state["retired"]
+    assert doc is not None
