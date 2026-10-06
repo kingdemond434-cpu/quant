@@ -141,7 +141,10 @@ def test_git_reads_safe_directory_and_the_header_from_the_process_env(tmp_path: 
            "GIT_CONFIG_VALUE_1": "AUTHORIZATION: basic eA=="}
     out = subprocess.run(["git", "-C", str(tmp_path), "config", "--show-scope", "--get-all",
                           "safe.directory"], capture_output=True, text=True, env=env, check=True)
-    assert out.stdout.split()[0] == "command" and str(tmp_path) in out.stdout
+    # A host may carry its own system/global entries (CI's checkout adds one); ours must be among
+    # them, and in the COMMAND scope.
+    scoped = [ln.split("\t", 1) for ln in out.stdout.splitlines() if "\t" in ln]
+    assert ["command", str(tmp_path)] in [[s, v] for s, v in scoped], out.stdout
     hdr = subprocess.run(["git", "-C", str(tmp_path), "config", "--get",
                           "http.https://github.com/.extraheader"],
                          capture_output=True, text=True, env=env, check=True)
