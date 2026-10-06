@@ -472,3 +472,6 @@ desks/mt5/data/sensors/
 # vol_archive's public 10y reference history: rewritten every cycle, never the desk's vintage.
 desks/mt5/data/vol_archive/reference/
 !desks/mt5/reports/SENSOR_LEDGER.json
+# Option-chain snapshots (gzip per-expiry summaries), the feature history and the 6h fetch state
+# are box-local and grow every six hours; the lake series and reports/OPTION_CHAINS.json carry them.
+desks/mt5/data/option_chains/
