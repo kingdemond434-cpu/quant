@@ -30,7 +30,11 @@ ownership setting) and inherits the caller's credential header when the publishe
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
+import contextlib
 import fnmatch
+import gzip
 import hashlib
 import json
 import os
@@ -38,6 +42,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import zlib
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -68,14 +73,42 @@ DENY_GLOBS: tuple[str, ...] = ("*.ini", "*.env", ".env*", "*secret*", "*credenti
 #: tokens from the environment all the time (`token = os.environ[...]`), so a weak hit WITHHOLDS
 #: THAT FILE (listed in `withheld_paths` for a human) and the rest still drains: a false positive
 #: costs one named file, never the whole drain forever (audit D2, third condition).
+#:
+#: AUDIT HOLD (2026-10-06) widened both lists after a bypass list: JSON keys, prefixed env names
+#: (MT5_PASSWORD=, FRED_API_KEY=), URL-encoded separators, header values, longer GitHub tokens,
+#: Slack/Google/Telegram shapes, credentials inside a URL, a PEM header split across a string
+#: concatenation, and encoded payloads (see `screen_bytes`).
 STRONG_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = tuple(re.compile(p) for p in (
-    r"\bghp_[A-Za-z0-9]{36}\b", r"\bgithub_pat_[A-Za-z0-9_]{60,}", r"\bgh[ousr]_[A-Za-z0-9]{36}\b",
-    r"\bsk-(?:proj-|ant-)?[A-Za-z0-9_-]{20,}", r"\bAKIA[0-9A-Z]{16}\b",
-    r"-----BEGIN (?:RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY-----",
+    r"\bgh[pousr]_[A-Za-z0-9]{36,}", r"\bgithub_pat_[A-Za-z0-9_]{60,}",
+    r"\bsk-(?:proj-|ant-)?[A-Za-z0-9_-]{20,}", r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b",
+    r"\bxox[abposr]-[A-Za-z0-9-]{10,}", r"\bAIza[0-9A-Za-z_-]{35}",
+    r"\b[0-9]{8,10}:AA[0-9A-Za-z_-]{33}",                      # Telegram bot token
+    r"-----BEGIN[A-Z ]{0,40}PRIVATE KEY", r"PRIVATE KEY-----",   # whole or split PEM header
 ))
-WEAK_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = tuple(re.compile(p, re.IGNORECASE) for p in (
-    r"\b(?:password|passwd|pwd|token|secret|api_?key)\s*[=:]", r"-----BEGIN [A-Z ]+-----",
-))
+WEAK_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = (*(re.compile(p, re.IGNORECASE) for p in (
+    # No leading \b: MT5_PASSWORD, $mt5Password and aws_secret_access_key must all match.
+    r"(?:pass(?:word|wd)?|pwd|token|secret|api[_-]?key|access[_-]?key|auth(?:orization)?|bearer)"
+    r"[\w-]*[\"']?\s*(?:[=:]|%3[ad])",
+    # An Authorization header value; the digit lookahead keeps "basic functionality" prose out.
+    r"\b(?:bearer|basic)\s+(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{12,}",
+    r"x-api-key",
+    r"\b[a-z][a-z0-9+.-]*://[^\s/:@'\"]+:[^\s/@'\"]+@",          # scheme://user:password@host
+    r"-----BEGIN",
+)),
+    # Upper-case env names ending in KEY (EIA_KEY=, MY_KEY:), case-SENSITIVE so Python's `key=`
+    # keyword and JSON "key": do not withhold half the tree.
+    re.compile(r"\b[A-Z][A-Z0-9_]*_KEY\b[\"']?\s*(?:[=:]|%3[ADad])"),
+)
+#: An encoded run worth decoding and re-screening (base64 and its url-safe form).
+_B64_RUN = re.compile(r"[A-Za-z0-9+/_-]{20,}={0,2}")
+#: Bytes that make a blob unscreenable as text: a NUL (utf-16, any binary), gzip, zip.
+_BINARY_MAGIC = (b"\x1f\x8b", b"PK\x03\x04")
+_MAX_INFLATE = 8_000_000
+
+
+class Unmeasured(RuntimeError):
+    """A git read the screen depends on failed: the drain is UNMEASURED and pushes nothing."""
+
 
 #: Refs this module may never write, whatever it is asked.
 FORBIDDEN_REFS = ("claude/llm-auto-upgrade-verify-gcjac3", "production", "master", "main",
@@ -83,14 +116,23 @@ FORBIDDEN_REFS = ("claude/llm-auto-upgrade-verify-gcjac3", "production", "master
 
 
 def _git(root: Path, *args: str, env: dict[str, str] | None = None,
-         timeout: float = 300.0) -> tuple[int, str, str]:
+         timeout: float = 300.0, stdin: str | None = None) -> tuple[int, str, str]:
     try:
         r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True,
                            encoding="utf-8", errors="replace", timeout=timeout, check=False,
-                           env=env or git_env(root))
+                           env=env or git_env(root), input=stdin)
     except (OSError, subprocess.SubprocessError) as exc:
         return 127, "", f"{type(exc).__name__}: {exc}"
     return r.returncode, r.stdout, r.stderr
+
+
+def _git_bytes(root: Path, *args: str, timeout: float = 300.0) -> tuple[int, bytes]:
+    try:
+        r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, timeout=timeout,
+                           check=False, env=git_env(root))
+    except (OSError, subprocess.SubprocessError):
+        return 127, b""
+    return r.returncode, r.stdout
 
 
 def review_branch(now: datetime) -> str:
@@ -145,8 +187,10 @@ def differing_blobs(root: Path, upstream: str,
     skipped: list[dict[str, Any]] = []
     for i in range(0, len(paths), 200):
         chunk = paths[i:i + 200]
-        _, head_out, _ = _git(root, "ls-tree", "-l", "HEAD", "--", *chunk)
-        _, up_out, _ = _git(root, "ls-tree", upstream, "--", *chunk)
+        rc_h, head_out, err_h = _git(root, "ls-tree", "-l", "HEAD", "--", *chunk)
+        rc_u, up_out, err_u = _git(root, "ls-tree", upstream, "--", *chunk)
+        if rc_h != 0 or rc_u != 0:
+            raise Unmeasured(f"ls-tree failed: {(err_h or err_u).strip()[:300]}")
         up = {}
         for line in up_out.splitlines():
             meta, _, rel = line.partition("\t")
@@ -177,15 +221,22 @@ def _drop_origin_history(root: Path, upstream: str,
     """AUDIT D1 (2026-10-06): Adopt-Release records each adoption as a NON-merge commit of origin's
     code, so the box's HEAD blob for a path can be an OLDER origin version (box adopted v1, origin
     moved on to v2). That is not box code, and draining it would revert origin. A (path, blob)
-    whose blob appears anywhere in origin's history of that path is dropped."""
+    whose blob appears anywhere in origin's history of that path is dropped.
+
+    AUDIT HOLD (2026-10-06): `--full-history -m`. Without them git's history simplification hides
+    a side branch whose merge kept the other parent's version of the path, so an adopted blob that
+    only ever lived on that side branch read as box code. A failed log is UNMEASURED (raise), never
+    "nothing in origin's history" -- that reading fails open and drains origin's own code."""
     if not blobs:
         return blobs, []
     seen: set[tuple[str, str]] = set()
     paths = [b[2] for b in blobs]
     for i in range(0, len(paths), 200):
         chunk = paths[i:i + 200]
-        _, out, _ = _git(root, "log", "--format=", "--raw", "--no-abbrev", "--no-renames",
-                         upstream, "--", *chunk)
+        rc, out, err = _git(root, "log", "--full-history", "-m", "--format=", "--raw",
+                            "--no-abbrev", "--no-renames", upstream, "--", *chunk)
+        if rc != 0:
+            raise Unmeasured(f"origin history unreadable: {err.strip()[:300]}")
         for line in out.splitlines():
             if not line.startswith(":"):
                 continue
@@ -204,13 +255,79 @@ def _denied_name(rel: str) -> bool:
     return any(fnmatch.fnmatch(base, g) or fnmatch.fnmatch(low, g) for g in DENY_GLOBS)
 
 
-def secret_strength(text: str) -> str | None:
-    """'strong', 'weak' or None for a blob's text (or a commit message)."""
+def _plain_strength(text: str) -> str | None:
     if any(p.search(text) for p in STRONG_SECRET_PATTERNS):
         return "strong"
     if any(p.search(text) for p in WEAK_SECRET_PATTERNS):
         return "weak"
     return None
+
+
+def _worse(a: str | None, b: str | None) -> str | None:
+    order = {None: 0, "weak": 1, "strong": 2}
+    return a if order[a] >= order[b] else b
+
+
+def _b64_decoded(text: str) -> list[str]:
+    """Printable decodings of every base64-looking run (standard and url-safe alphabets)."""
+    found: list[str] = []
+    for m in _B64_RUN.finditer(text):
+        run = m.group(0)
+        for dec in (base64.b64decode, base64.urlsafe_b64decode):
+            try:
+                raw = dec(run + "=" * (-len(run) % 4))
+            except (binascii.Error, ValueError):
+                continue
+            try:
+                s = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                continue
+            if s and sum(c.isprintable() or c in "\r\n\t" for c in s) >= 0.9 * len(s):
+                found.append(s)
+                break
+    return found
+
+
+def secret_strength(text: str, _depth: int = 0) -> str | None:
+    """'strong', 'weak' or None for a blob's text (or a commit message), base64 runs included."""
+    level = _plain_strength(text)
+    if level == "strong" or _depth >= 2:
+        return level
+    for decoded in _b64_decoded(text):
+        level = _worse(level, secret_strength(decoded, _depth + 1))
+        if level == "strong":
+            break
+    return level
+
+
+def _inflate(data: bytes) -> bytes | None:
+    try:
+        d = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        return d.decompress(data, _MAX_INFLATE)
+    except (zlib.error, gzip.BadGzipFile, EOFError):
+        return None
+
+
+def screen_bytes(data: bytes) -> str | None:
+    """A blob's raw bytes. Anything that is not plain text (a NUL anywhere -- which is also every
+    utf-16 file -- or gzip/zip magic) cannot be screened as text, so it is WITHHELD at least; the
+    decodings we can read cheaply (utf-16, gzip) are also scanned so a credential inside them
+    escalates to strong and refuses the push."""
+    binary = b"\x00" in data or data.startswith(_BINARY_MAGIC)
+    texts = [data.decode("utf-8", errors="replace")]
+    if binary:
+        for enc in ("utf-16", "utf-16-le", "utf-16-be"):
+            with contextlib.suppress(UnicodeDecodeError):
+                texts.append(data.decode(enc))
+        inflated = _inflate(data) if data.startswith(b"\x1f\x8b") else None
+        if inflated is not None:
+            texts.append(inflated.decode("utf-8", errors="replace"))
+    level: str | None = "weak" if binary else None
+    for t in texts:
+        level = _worse(level, secret_strength(t))
+        if level == "strong":
+            break
+    return level
 
 
 def screen_secrets(root: Path, upstream: str,
@@ -226,15 +343,20 @@ def screen_secrets(root: Path, upstream: str,
     if rest:
         # Ignored by the rules origin carries: check-ignore --no-index reads .gitignore from the
         # tree, so a box-local file under an ignored path is refused even if the box tracked it.
-        _, out, _ = _git(root, "check-ignore", "--no-index", "--", *[b[2] for b in rest])
+        # --stdin, not argv: Windows caps a command line near 32K characters (audit should-fix).
+        # rc 1 means "none ignored"; anything else but 0 is a failed read, hence UNMEASURED.
+        rc, out, err = _git(root, "check-ignore", "--no-index", "--stdin",
+                            stdin="".join(b[2] + "\n" for b in rest))
+        if rc not in (0, 1):
+            raise Unmeasured(f"check-ignore failed: {err.strip()[:300]}")
         ignored = {ln.strip() for ln in out.splitlines() if ln.strip()}
         denied += [b[2] for b in rest if b[2] in ignored]
         rest = [b for b in rest if b[2] not in ignored]
     strong: list[str] = []
     weak: list[str] = []
     for _mode, sha, rel in rest:
-        rc, text, _ = _git(root, "cat-file", "-p", sha)
-        level = "strong" if rc != 0 else secret_strength(text)   # unreadable is not clean
+        rc, data = _git_bytes(root, "cat-file", "blob", sha)
+        level = "strong" if rc != 0 else screen_bytes(data)   # unreadable is not clean
         if level == "strong":
             strong.append(rel)
         elif level == "weak":
@@ -259,7 +381,10 @@ def push_review(root: Path, upstream: str, blobs: list[tuple[str, str, str]], br
         if rc != 0:
             return {"pushed": False, "why": f"read-tree failed: {err.strip()[:300]}"}
         for mode, sha, rel in blobs:
-            _git(root, "update-index", "--add", "--cacheinfo", f"{mode},{sha},{rel}", env=env)
+            rc, _, err = _git(root, "update-index", "--add", "--cacheinfo", f"{mode},{sha},{rel}",
+                              env=env)
+            if rc != 0:
+                return {"pushed": False, "why": f"update-index failed: {err.strip()[:300]}"}
         rc, tree, err = _git(root, "write-tree", env=env)
     finally:
         if os.path.exists(idx):
@@ -303,8 +428,14 @@ def run(root: Path, *, upstream: str, push: bool, now: datetime | None = None,
     code_paths = doc.pop("_code_paths", [])
     if doc.get("verdict") != "MEASURED":
         return doc
-    blobs, skipped = differing_blobs(root, upstream, code_paths)
-    blobs, denied, hits, withheld = screen_secrets(root, upstream, blobs)
+    try:
+        blobs, skipped = differing_blobs(root, upstream, code_paths)
+        blobs, denied, hits, withheld = screen_secrets(root, upstream, blobs)
+    except Unmeasured as exc:
+        # A read the drain depends on failed: no partial answer, and nothing is pushed.
+        doc.update(verdict="UNMEASURED", why=str(exc),
+                   push={"pushed": False, "why": "UNMEASURED: nothing pushed"})
+        return doc
     doc.update(code_paths_differing=len(blobs), code_paths=[b[2] for b in blobs][:500],
                skipped=skipped, denied_paths=denied, secret_screen_hits=hits,
                withheld_paths=withheld, blob_digest=_digest(blobs))

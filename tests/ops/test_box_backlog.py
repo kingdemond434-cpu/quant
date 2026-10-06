@@ -6,6 +6,8 @@ box-only CODE to `box/backlog-<stamp>` -- never the live branch -- and reports t
 """
 from __future__ import annotations
 
+import base64
+import gzip
 import json
 import os
 import subprocess
@@ -225,3 +227,128 @@ def test_the_pushed_range_is_one_commit_on_origins_tip(box: tuple[Path, Path]) -
     assert len(added) == 1
     box_shas = set(_git(repo, "rev-list", "origin/live..HEAD").split())
     assert not box_shas & set(added)
+
+
+# AUDIT HOLD (2026-10-06): one row per bypass the audit listed. Every row must at least WITHHOLD
+# its file; the credential FORMATS must refuse the whole push.
+_GH = "ghp_" + "Ab1" * 14                                   # 42 chars after the prefix
+_WITHHELD = [
+    '{"password": "hunter2"}', '{"apikey": "abc123"}', '{"access_key": "abc123"}',
+    '{"Authorization": "Bearer abc.def.123"}', "MT5_PASSWORD=hunter2", "db_password = 'x'",
+    "$mt5Password = 'x'", "GITHUB_TOKEN=abc", "access_token=abc", "FRED_API_KEY=abc",
+    "EIA_KEY=abc", "aws_secret_access_key=abc", "url?password%3Dhunter2", "q=token%3Aabc",
+    "Authorization: Bearer abcdef123456", "X-Api-Key: abc", "https://user:pw@example.com/x",
+    "ftp://bot:s3cret@10.0.0.1",
+]
+_STRONG = [
+    _GH, "xoxb-1234567890-abcdefghij", "AIza" + "B" * 35,
+    "123456789:AA" + "c" * 33, "ASIA" + "Q" * 16,
+    'KEY = "-----BEGIN RSA " + "PRIVATE KEY-----"',
+    base64.b64encode(f"token={_GH}".encode()).decode(),
+]
+
+
+@pytest.mark.parametrize("text", _WITHHELD + _STRONG)
+def test_every_audited_bypass_is_at_least_withheld(text: str) -> None:
+    assert bb.secret_strength(text) in ("weak", "strong"), text
+
+
+@pytest.mark.parametrize("text", _STRONG)
+def test_credential_formats_refuse_the_push(text: str) -> None:
+    assert bb.secret_strength(text) == "strong", text
+
+
+@pytest.mark.parametrize("data", [
+    f"KEY = '{_GH}'\n".encode("utf-16"),
+    gzip.compress(f"KEY = '{_GH}'\n".encode()),
+])
+def test_encoded_blobs_holding_a_token_refuse_the_push(data: bytes) -> None:
+    assert bb.screen_bytes(data) == "strong"
+
+
+@pytest.mark.parametrize("data", [b"\x00\x01\x02 just bytes", gzip.compress(b"plain"),
+                                  b"PK\x03\x04 zipped", "plain".encode("utf-16")])
+def test_any_unscreenable_blob_is_withheld(data: bytes) -> None:
+    assert bb.screen_bytes(data) in ("weak", "strong")
+
+
+@pytest.mark.parametrize("text", ["def f(xs): return sorted(xs, key=len)", 'row = {"key": 1}',
+                                  "the basic functionality of the module"])
+def test_ordinary_code_is_not_withheld(text: str) -> None:
+    assert bb.secret_strength(text) is None
+
+
+def test_a_binary_blob_is_withheld_not_drained(box: tuple[Path, Path]) -> None:
+    repo, _ = box
+    (repo / "libs" / "d.py").write_bytes(f"KEY = '{_GH}'\n".encode("utf-16"))
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-qm", "utf-16 file")
+    doc = bb.run(repo, upstream="origin/live", push=False)
+    assert doc["secret_screen_hits"] == ["libs/d.py"]
+    assert doc["push"]["pushed"] is False and doc["push"]["why"].startswith("REFUSED")
+
+
+def test_an_adoption_hidden_by_history_simplification_is_still_dropped(tmp_path: Path) -> None:
+    """Audit HOLD, MUST-FIX 2: origin's v1 lived only on a side branch whose merge kept main's
+    version of the path. Plain `git log -- path` simplifies that branch away, so the box's adopted
+    v1 read as box code; --full-history -m must find it."""
+    remote = tmp_path / "origin.git"
+    _git(tmp_path, "init", "-q", "--bare", "-b", "live", str(remote))
+    dev = tmp_path / "dev"
+    _git(tmp_path, "init", "-q", "-b", "live", str(dev))
+    _git(dev, "config", "commit.gpgsign", "false")
+    _write(dev, "libs/a.py", "A = 0\n")
+    _git(dev, "add", ".")
+    _git(dev, "commit", "-q", "-m", "v0")
+    _git(dev, "remote", "add", "origin", str(remote))
+    _git(dev, "push", "-q", "-u", "origin", "live")
+    box = tmp_path / "box"
+    _git(tmp_path, "clone", "-q", "-b", "live", str(remote), str(box))
+    _git(dev, "checkout", "-q", "-b", "side")
+    _write(dev, "libs/a.py", "A = 1  # side v1\n")
+    _git(dev, "commit", "-qam", "side v1")
+    _git(dev, "checkout", "-q", "live")
+    _write(dev, "other.py", "x = 1\n")
+    _git(dev, "add", ".")
+    _git(dev, "commit", "-qm", "main moves")
+    _git(dev, "merge", "-q", "-s", "ours", "--no-edit", "side")     # keeps main's a.py (v0)
+    _git(dev, "push", "-q", "origin", "live")
+    plain = _git(dev, "log", "--format=%s", "live", "--", "libs/a.py")
+    assert "side v1" not in plain, "fixture must reproduce the simplification"
+    _write(box, "libs/a.py", "A = 1  # side v1\n")      # the box adopted the side branch's v1
+    _git(box, "commit", "-qam", "adopt side v1")
+    _git(box, "fetch", "-q", "origin")
+    doc = bb.run(box, upstream="origin/live", push=False)
+    assert doc["code_paths_differing"] == 0, doc
+    assert any("origin's history" in s["why"] for s in doc["skipped"])
+
+
+def test_a_failed_history_read_is_unmeasured_and_pushes_nothing(
+        box: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+    repo, remote = box
+    real = bb._git
+
+    def broken(root: Path, *args: str, **kw: object) -> tuple[int, str, str]:
+        if args and args[0] == "log" and "--full-history" in args:
+            return 128, "", "fatal: bad object"
+        return real(root, *args, **kw)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(bb, "_git", broken)
+    doc = bb.run(repo, upstream="origin/live", push=True)
+    assert doc["verdict"] == "UNMEASURED" and doc["push"]["pushed"] is False
+    assert "box/backlog" not in _git(remote, "for-each-ref", "--format=%(refname)", "refs/heads")
+
+
+def test_a_failed_ignore_read_is_unmeasured(box: tuple[Path, Path],
+                                            monkeypatch: pytest.MonkeyPatch) -> None:
+    repo, _ = box
+    real = bb._git
+
+    def broken(root: Path, *args: str, **kw: object) -> tuple[int, str, str]:
+        if args and args[0] == "check-ignore":
+            return 128, "", "fatal: broken"
+        return real(root, *args, **kw)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(bb, "_git", broken)
+    doc = bb.run(repo, upstream="origin/live", push=True)
+    assert doc["verdict"] == "UNMEASURED" and doc["push"]["pushed"] is False

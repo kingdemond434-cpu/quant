@@ -200,7 +200,10 @@ def test_a_crash_writes_a_diagnosis_that_travels() -> None:
 def test_the_backlog_drain_is_daily_and_never_blocks_the_publish() -> None:
     code = _code(SYNC)
     tail = code[code.index("shadow state synced to origin"):]
-    assert "libs.ops.box_backlog" in tail and '"--push"' in tail
+    assert "libs.ops.box_backlog" in tail
+    # Audit HOLD (2026-10-06): the public repository gets nothing pushed until the audit clears
+    # the drain, so the box runs it classify-only.
+    assert "--push" not in tail, "the box drain must stay classify-only until the audit clears it"
     assert "TotalHours -ge 24" in tail
     assert tail.rstrip().endswith("exit 0"), "a failed drain must not fail the state publish"
 

@@ -839,15 +839,18 @@ Write-SyncLog ("shadow state synced to origin/{0} (state blobs onto origin's tip
 
 # DRAIN THE BACKLOG, ONCE A DAY, ONLY ONCE THE CREDENTIAL HAS JUST WORKED (2026-10-06). The box's
 # branch was 823 commits ahead of origin and is never pushed whole (HTTP 408, #181). State-only
-# commits are superseded by the publish above; libs/ops/box_backlog.py lifts any box-only CODE
-# onto a review branch box/backlog-<stamp> (never the live branch) and reports the counts in
+# commits are superseded by the publish above; libs/ops/box_backlog.py classifies any box-only
+# CODE (it can lift it to a review branch box/backlog-<stamp> with --push, never the live branch,
+# but the box runs it classify-only until the audit clears that) and reports the counts in
 # BOX_BACKLOG.json, which the next publish carries. It inherits this process's git environment.
 $backlogFull = Join-Path $RepoRoot ($script:BacklogRel -replace "/", "\")
 $due = -not (Test-Path -LiteralPath $backlogFull) -or
        (((Get-Date) - (Get-Item -LiteralPath $backlogFull).LastWriteTime).TotalHours -ge 24)
 if ($due) {
     $py = Join-Path $RepoRoot ".venv\Scripts\python.exe"
-    $pyArgs = @("-m", "libs.ops.box_backlog", "--push")
+    # CLASSIFY-ONLY (audit HOLD on #210, 2026-10-06): the repository is public, so the first box
+    # runs only measure and report the backlog. Adding --push here waits on the audit's clearance.
+    $pyArgs = @("-m", "libs.ops.box_backlog")
     if (-not (Test-Path -LiteralPath $py)) { $py = "py"; $pyArgs = @("-3") + $pyArgs }
     $prev = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
