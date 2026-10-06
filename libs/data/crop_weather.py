@@ -262,7 +262,10 @@ def _crop_features(crop: Crop, reg: dict[str, pd.DataFrame]) -> dict[str, pd.Dat
         if crop.heat_c is not None:
             cols["heat7"] = (f["tmax"] >= crop.heat_c).astype(float).where(
                 f["tmax"].notna()).rolling(7, min_periods=7).max()
-        av = f["avail"].astype("int64").where(f["avail"].notna()).astype(float)
+        # NANOSECONDS BY NAME, both ways (audit PR166_v2): `astype("int64")` returns the frame's
+        # own resolution (us or s under pandas 2), and line 279 reads it back as ns.
+        av = (f["avail"].astype("datetime64[ns, UTC]").astype("int64")
+              .where(f["avail"].notna()).astype(float))
         cols["_avail1"], cols["_avail30"] = av, av.rolling(30, min_periods=1).max()
         per[r.rid] = cols
     total = sum(r.share for r in crop.regions)
@@ -276,7 +279,7 @@ def _crop_features(crop: Crop, reg: dict[str, pd.DataFrame]) -> dict[str, pd.Dat
         v = (num / weight.replace(0.0, np.nan)).where(weight >= MIN_WEIGHT * total)
         which = "_avail1" if feat in ("tmin", "tmax", "prcp") else "_avail30"
         av = pd.DataFrame({r.rid: per[r.rid][which] for r in present}).where(val.notna())
-        avail = pd.to_datetime(av.max(axis=1), utc=True)
+        avail = pd.to_datetime(av.max(axis=1), unit="ns", utc=True)
         f = pd.DataFrame({"value": v, "available_time": avail}).dropna()
         out[f"cropwx_{crop.name}_{feat}"] = f
     return out

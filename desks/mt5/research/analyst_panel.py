@@ -380,6 +380,10 @@ def debate(symbol: str, context: list[str], cat: Mapping[str, Mapping[str, Any]]
         meter["trials_charged"] += float(getattr(reply, "trials_charged", 0.0) or 0.0)
         attacks = [a for a in (getattr(reply, "items", None) or []) if isinstance(a, dict)]
         meter["bear"] = {"verdict": getattr(reply, "verdict", UNMEASURED), "attacks": len(attacks)}
+        # A FALSIFIER ATTACK IS A LOOK TOO (audit PR166_v2; standing rule: any committee
+        # falsifier counts as a trial): each attack the bear returned, plus any it returned that
+        # failed validation, is charged with the analysts' ideas.
+        meter["ideas"] += len(attacks) + int(getattr(reply, "discarded", 0) or 0)
         for a in attacks:
             cells[int(a["idx"])].setdefault("red_team", []).append(
                 {"failure_class": a["failure_class"], "attack": str(a["attack"])[:240],

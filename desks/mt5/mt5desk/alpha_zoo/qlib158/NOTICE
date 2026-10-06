@@ -24,6 +24,6 @@ Modifications by Vibe-Trading
 -----------------------------
 
 The Python implementations in this directory are re-written from scratch on
-top of `mt5desk.alpha_zoo.base` operators; no source code is copied from qlib.
+top of `src.factors.base` operators; no source code is copied from qlib.
 Per-file headers cite the upstream commit and path. See `LICENSE.md` for
 full attribution scope and the list of intentionally skipped fields.

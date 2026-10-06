@@ -39,7 +39,7 @@ short names (KMID, KLEN, ROC, MA, …). That curation is the creative
 contribution, and we attribute it accordingly.
 
 The Python implementations in this directory are **re-written from scratch**
-on top of `mt5desk.alpha_zoo.base` operators — they do not copy any source code
+on top of `src.factors.base` operators — they do not copy any source code
 from `qlib`. Differences from the upstream:
 
 - We use a wide-DataFrame panel (`index=date, columns=instrument`) rather
