@@ -644,6 +644,10 @@ def _donate(findings: list[dict]) -> Path | None:
             "symbols": [],
             "url": f"kimi://{f.get('date')}/wave{f.get('wave')}/{digest}",
         })
+        # PROVENANCE: the seat's own id and the donation time; a seat reads no page, so it
+        # carries no source_url (libs.research.source_provenance).
+        from libs.research.source_provenance import stamp_row
+        stamp_row(discoveries[-1], ground="kimi", retrieved_at=now.isoformat(timespec="seconds"))
     from libs.data.pit import stamp_or_refuse
 
     discoveries, refused = stamp_or_refuse(discoveries, "kimi_k3_deep_forest")
