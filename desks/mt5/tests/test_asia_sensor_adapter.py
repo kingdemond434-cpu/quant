@@ -379,7 +379,8 @@ def test_a_corrupt_index_is_counted_and_never_reset(tmp_path: Path) -> None:
     assert doc["totals"]["index_corrupt"] >= 1 and doc["totals"].get("appended", 0) == 0
     assert all(v["status"] in ("INDEX_CORRUPT", "MAPPED") for v in doc["stores"].values()
                if "status" in v and v.get("mapped"))
-    assert not any(k.startswith("alt_proxies:") for k in doc["stores_seen"])
+    carried = [k for k, v in doc["stores"].items() if v.get("mapped")]
+    assert carried and not any(k in doc["stores_seen"] for k in carried)   # re-sent next pass
     assert index.read_text(encoding="utf-8") == "{not json"          # never reset
     assert {p.name: p.read_bytes() for p in (root / "observations").glob("*.jsonl")} == shards
 
@@ -396,7 +397,10 @@ def test_a_failed_write_is_counted_and_the_store_is_resent(tmp_path: Path,
                 "refusals": [], "shards": []}
     monkeypatch.setattr(sc.SensorLedger, "append", failed)
     doc = ad.run(desk, ledger_root=root, report=rep, now=NOW)
-    assert doc["totals"]["write_failed"] >= 3 and doc["stores_seen"] == {}
+    carried = [k for k, v in doc["stores"].items() if v.get("mapped")]
+    assert doc["totals"]["write_failed"] == len(carried) >= 3
+    assert all(doc["stores"][k]["status"] == "WRITE_FAILED" for k in carried)
+    assert not any(k in doc["stores_seen"] for k in carried)
     monkeypatch.undo()
     again = ad.run(desk, ledger_root=root, report=rep, now=NOW + timedelta(hours=1))
     assert again["totals"]["appended"] == 7
