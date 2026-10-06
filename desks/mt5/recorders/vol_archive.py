@@ -80,6 +80,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import sys
 import urllib.parse
 import urllib.request
@@ -256,6 +257,42 @@ class YahooVolSource:
             self._fred_ok = False
             return None
         return {str(k): float(v) for k, v in got.items()} if got else None
+
+
+class RecordingSource:
+    """Wraps a source and keeps every series it answered with, so the cycle's 10-year REFERENCE
+    history (fetched anyway, then discarded) is written once for the state engines to read. The
+    reference is public, restated history -- never the desk's vintage -- and is labelled so."""
+
+    def __init__(self, inner: VolSource) -> None:
+        self.inner = inner
+        self.seen: dict[str, dict[str, float]] = {}
+
+    def series(self, ticker: str) -> dict[str, float] | None:
+        got = self.inner.series(ticker)
+        if got:
+            self.seen[ticker] = dict(got)
+        return got
+
+
+REFERENCE = _DESK / "data" / "vol_archive" / "reference"
+
+
+def write_reference(seen: dict[str, dict[str, float]], root: Path = REFERENCE,
+                    now: datetime | None = None) -> int:
+    """One JSON per ticker: {fetched_at, kind: reference, series}. Overwritten each cycle."""
+    at = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    n = 0
+    for ticker, series in seen.items():
+        root.mkdir(parents=True, exist_ok=True)
+        path = root / (ticker.replace("^", "") + ".json")
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"ticker": ticker, "fetched_at": at, "kind": "reference",
+                                   "note": "public restated history; not the desk's vintage",
+                                   "series": dict(sorted(series.items()))}), "utf-8")
+        os.replace(tmp, path)
+        n += 1
+    return n
 
 
 class FakeVolSource:
@@ -556,7 +593,10 @@ def main(argv: list[str] | None = None) -> int:
               "instrument id this desk cannot confirm it trades (that is how a foreign alias "
               "becomes a node). Observing WITHOUT the join.")
 
-    cycle = observe(YahooVolSource(), registry, args.universe)
+    source = RecordingSource(YahooVolSource())
+    cycle = observe(source, registry, args.universe)
+    if not args.dry_run:
+        write_reference(source.seen)
     rows = read_archive(args.archive)
     if not args.dry_run:
         append(cycle, args.archive)
