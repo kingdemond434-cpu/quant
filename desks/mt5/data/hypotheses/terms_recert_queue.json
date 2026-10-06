@@ -1,0 +1,78 @@
+{
+ "about": "TERMS RE-CERTIFICATION QUEUE (audit of PR #162, 2026-10-06). Each QUEUED row re-proposes a cell whose certificate was judged under a terms-fenced lineage, on the Forex Factory / central-bank lineage alone. merge_hypotheses.admit_recert_queue admits every QUEUED row to the docket (external_survivors.json) on every run, replacing any banked fenced copy of the same cell; the sealed gauntlet judges it in its normal rotation. The promoter refuses the certificate (terms_fence.quarantined_certificate) until its gated_at is after requeued_at. Rows are derived from terms_fence.QUARANTINED_CERTIFICATES (recert_queue_rows).",
+ "rows": [
+  {
+   "symbol": "USDJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "params": {},
+   "source": "terms_recert:forexfactory+central_bank",
+   "lineage": [
+    "forexfactory",
+    "central_bank"
+   ],
+   "recertifies": "external.USDJPY.session_range_breakout",
+   "replaces_lineage": "ext_reddit_USDJPY_session_range_breakout",
+   "sleeve": "usdjpy_session_range_breakout_asia_session_range_breakout",
+   "requeued_at": "2026-10-06T00:00:00+00:00",
+   "status": "QUEUED"
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "params": {
+    "rr": 1.5,
+    "wait_bars": 12
+   },
+   "source": "terms_recert:forexfactory+central_bank",
+   "lineage": [
+    "forexfactory",
+    "central_bank"
+   ],
+   "recertifies": "external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+   "replaces_lineage": "ext_reddit_USDJPY_session_range_breakout",
+   "sleeve": "usdjpy_session_range_breakout_asia_5_wb_12",
+   "requeued_at": "2026-10-06T00:00:00+00:00",
+   "status": "QUEUED"
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "params": {
+    "rr": 2.0,
+    "wait_bars": 12
+   },
+   "source": "terms_recert:forexfactory+central_bank",
+   "lineage": [
+    "forexfactory",
+    "central_bank"
+   ],
+   "recertifies": "external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+   "replaces_lineage": "ext_reddit_USDJPY_session_range_breakout",
+   "sleeve": "usdjpy_session_range_breakout_asia_0_wb_12",
+   "requeued_at": "2026-10-06T00:00:00+00:00",
+   "status": "QUEUED"
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "params": {
+    "rr": 2.5,
+    "wait_bars": 12
+   },
+   "source": "terms_recert:forexfactory+central_bank",
+   "lineage": [
+    "forexfactory",
+    "central_bank"
+   ],
+   "recertifies": "external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+   "replaces_lineage": "ext_reddit_USDJPY_session_range_breakout",
+   "sleeve": null,
+   "requeued_at": "2026-10-06T00:00:00+00:00",
+   "status": "QUEUED"
+  }
+ ]
+}

@@ -44,9 +44,11 @@ def _terms_fence():
 def _get(url: str, timeout: int = 25, headers: dict | None = None) -> bytes:
     # THE PLATFORM TERMS FENCE (2026-09-30): raises TermsFenced for Reddit / StockTwits hosts
     # before any request is built (libs/data/terms_fence.py).
-    _terms_fence().check_url(url)
+    tf = _terms_fence()
+    tf.check_url(url)
     req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    # A 30x into a fenced platform raises TermsFenced instead of being followed.
+    with tf.guarded_urlopen(req, timeout=timeout) as r:
         return r.read()
 
 

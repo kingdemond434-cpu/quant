@@ -215,11 +215,14 @@ def fetch(url: str) -> tuple[bytes | None, str]:
             # cover the world quietly stops covering most of it.
             "Accept-Language": "*",
         })
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
+        # THE REDIRECT GUARD: a 30x into a fenced platform is refused, never followed.
+        with _tf.guarded_urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
             ctype = str(resp.headers.get("Content-Type", ""))
             if "html" not in ctype and "text" not in ctype and "json" not in ctype:
                 return None, f"content-type {ctype.split(';')[0] or 'unknown'}"
             return resp.read(MAX_BYTES), ""
+    except _tf.TermsFenced as exc:
+        return None, f"{exc.status}:{exc.platform}"
     except urllib.error.HTTPError as exc:
         return None, f"HTTP {exc.code}"
     except (urllib.error.URLError, TimeoutError, OSError) as exc:

@@ -655,7 +655,68 @@ def label_terms_fenced(rows: list[dict]) -> dict:
             if lab:
                 counts[lab] = counts.get(lab, 0) + 1
     return {"labelled": counts, "total": sum(counts.values()),
-            "field": "provenance_label", "rule": "label only; never delete, never re-judge"}
+            "field": "provenance_label",
+            "rule": "label every touched row; `quarantine_terms_fenced` then keeps it from a judge"}
+
+
+def quarantine_terms_fenced(rows: list[dict]) -> tuple[list[dict], dict]:
+    """THE QUARANTINE (audit of #162, 2026-10-06): every docket row `terms_fence.quarantined_row`
+    names -- fenced by its own source, route or URL, touched by a fenced contributing source, or
+    already carrying a fenced `provenance_label` -- is SKIPPED, so no judge ever sees it. Counted
+    by platform and by producer in the merge report; a quarantined row is never silently lost.
+    Fails closed: a fence that cannot load raises, and the merge stops rather than ship a docket
+    nobody fenced."""
+    root = str(BASE.parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.data import terms_fence as tf
+    kept: list[dict] = []
+    by_platform: dict[str, int] = {}
+    by_producer: dict[str, int] = {}
+    for r in rows:
+        p = tf.quarantined_row(r) if isinstance(r, dict) else None
+        if p:
+            by_platform[p] = by_platform.get(p, 0) + 1
+            prod = str(r.get("producer") or r.get("source") or "unknown")
+            by_producer[prod] = by_producer.get(prod, 0) + 1
+            continue
+        kept.append(r)
+    return kept, {"skipped": sum(by_platform.values()), "by_platform": by_platform,
+                  "by_producer": dict(sorted(by_producer.items(), key=lambda kv: -kv[1])[:20]),
+                  "reason": "terms-fenced provenance (libs/data/terms_fence.py): not judgeable",
+                  "rule": "skip and count; the row is never handed to a judge"}
+
+
+#: THE TERMS RE-CERTIFICATION QUEUE. Rows that re-certify, on a clean lineage, a certificate
+#: judged under a fenced one (`terms_fence.QUARANTINED_CERTIFICATES`). Read on EVERY run -- it is
+#: a standing queue, not a producer's fresh output, so the freshness contract does not apply --
+#: and each QUEUED row REPLACES any same-identity docket row, so the cell reaches the judge on
+#: this lineage alone even while the fenced copy is banked.
+RECERT_QUEUE = "terms_recert_queue.json"
+
+
+def admit_recert_queue(merged: dict[str, dict], now: datetime) -> dict[str, Any]:
+    doc = _read(HYP / RECERT_QUEUE)
+    if doc is None:
+        return {"status": "ABSENT", "path": RECERT_QUEUE, "admitted": 0}
+    rows = doc if isinstance(doc, list) else (doc.get("rows") if isinstance(doc, dict) else None)
+    if not isinstance(rows, list):
+        return {"status": "MALFORMED", "path": RECERT_QUEUE, "admitted": 0}
+    admitted = replaced = 0
+    cells: list[str] = []
+    for row in rows:
+        if not isinstance(row, dict) or str(row.get("status") or "") != "QUEUED":
+            continue
+        if not (row.get("symbol") and row.get("family")):
+            continue
+        enriched = stamp_fresh_intake({**row, "producer": RECERT_QUEUE}, RECERT_QUEUE, now)
+        ident = _identity(enriched)
+        replaced += ident in merged
+        merged[ident] = enriched
+        admitted += 1
+        cells.append(str(row.get("recertifies") or ident))
+    return {"status": "APPLIED", "path": RECERT_QUEUE, "admitted": admitted,
+            "replaced_same_identity": replaced, "recertifies": cells}
 
 
 def main() -> int:
@@ -867,6 +928,14 @@ def main() -> int:
     if readmitted:
         print(f"   docket bank: {readmitted} previously-known candidate(s) re-admitted "
               f"(idempotent re-judging; freshness still governs provenance)")
+    # AFTER THE BANK, so a re-certification row replaces the banked fenced copy of its cell.
+    try:
+        terms_recert = admit_recert_queue(merged, now)
+    except Exception as exc:                       # named, never silent
+        terms_recert = {"status": f"FAILED: {type(exc).__name__}: {exc}", "admitted": 0}
+    if terms_recert.get("admitted"):
+        print(f"   terms re-certification: {terms_recert['admitted']} cell(s) queued on a clean "
+              f"lineage ({terms_recert.get('replaced_same_identity', 0)} replaced a fenced copy)")
 
     # THE TRIANGLE LEGS, BACKFILLED ONTO EVERY ROW, FRESH OR BANKED (2026-09-30). All 1,796
     # triangle rows in the docket were legless, so `family_triangle` returned [] and every one
@@ -1062,13 +1131,25 @@ def main() -> int:
     # An hourly cycle where "the searcher was slow this hour" cascades into "all certificates
     # revoked" is not a freshness contract, it is a self-destruct. If this run gathered nothing
     # fresh, the existing docket STANDS: yesterday's candidates are still candidates.
+    # LABEL, THEN QUARANTINE (terms fence, audit of #162): every touched row is labelled, and no
+    # fenced row reaches the docket the judge reads.
+    terms_labels = label_terms_fenced(rows_out)
+    rows_out, terms_quarantine = quarantine_terms_fenced(rows_out)
+    if terms_quarantine["skipped"]:
+        print(f"   terms fence: {terms_quarantine['skipped']} fenced row(s) QUARANTINED, not "
+              f"judged {terms_quarantine['by_platform']}")
     if not rows_out:
         prior = _read(TARGET)
         if isinstance(prior, list) and prior:
+            # The preserved docket is quarantined too: preserving it must not preserve a
+            # fenced row for the judge.
+            kept_prior, q_prior = quarantine_terms_fenced(prior)
+            if q_prior["skipped"]:
+                _write_docket_atomically(TARGET, kept_prior)
             print(f"merge: 0 fresh rows this run -- PRESERVING the existing docket of "
-                  f"{len(prior)} candidate(s) rather than shipping an empty file downstream.")
+                  f"{len(kept_prior)} candidate(s) rather than shipping an empty file downstream"
+                  f" ({q_prior['skipped']} fenced row(s) quarantined out of it).")
             return 0
-    terms_labels = label_terms_fenced(rows_out)
     # PRE-REGISTRATION, BOTH HALVES, HERE (2026-09-30). This merge runs on the hour BEFORE the
     # judge reads the docket, so it is the last point where a card can honestly precede a
     # verdict. First the last sweep's verdicts are stamped and put on the hypothesis graph (the
@@ -1115,6 +1196,9 @@ def main() -> int:
         # EXISTING CELLS FROM A TERMS-FENCED PLATFORM (libs/data/terms_fence.py), labelled and
         # left exactly where they are: same order, same verdicts, never deleted or re-judged.
         "terms_fence_labels": terms_labels,
+        # ...and QUARANTINED: skipped with a counted reason, never handed to the judge.
+        "terms_quarantine": terms_quarantine,
+        "terms_recert_queue": terms_recert,
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
         "per_source": per_source, "source_state": source_state, "total": len(rows_out),
         "fresh_intake_stamps": intake_stamped,

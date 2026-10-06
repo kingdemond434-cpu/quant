@@ -412,13 +412,18 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     headers.update(_declared_headers(src))
     body_out = _declared_form(src)
     req = urllib.request.Request(url, data=body_out, headers=headers)
+    from libs.data import terms_fence as _tfg
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+        # THE REDIRECT GUARD: a 30x into a terms-fenced platform is refused, never followed.
+        with _tfg.guarded_urlopen(req, timeout=timeout, context=_TLS) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")
             last_mod = r.headers.get("Last-Modified")
             body = r.read(MAX_BYTES)
+    except _tfg.TermsFenced as e:
+        rec.update(_tfg.refusal(e.platform, redirected=True))
+        return rec
     except urllib.error.HTTPError as e:
         code = int(getattr(e, "code", 0) or 0)
         if code == 304:

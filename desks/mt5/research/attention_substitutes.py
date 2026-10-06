@@ -54,6 +54,7 @@ import sys
 import time
 import urllib.parse
 from collections.abc import Callable, Mapping
+from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from itertools import product
 from pathlib import Path
@@ -479,6 +480,7 @@ def run(*, budget_s: float = 240.0, fetch: Fetch | None = None, dry_run: bool = 
     doc = {"generated_at": now.isoformat(timespec="seconds"),
            "writer": "desks/mt5/research/attention_substitutes.py",
            "status": "DRY_RUN" if dry_run else "RAN",
+           "substitutes": substitute_summary(plan, recs, lake_points, take),
            "fenced_platforms": tf.registry_rows(),
            "series": recs, "status_counts": by_door,
            "cells": {"grid": len(cells), "built": len(take),
@@ -496,13 +498,71 @@ def run(*, budget_s: float = 240.0, fetch: Fetch | None = None, dry_run: bool = 
     return doc
 
 
+def substitute_summary(plan: list[dict[str, Any]], recs: dict[str, dict[str, Any]],
+                       lake_points: dict[str, int], take: list[dict[str, Any]]
+                       ) -> dict[str, dict[str, Any]]:
+    """ONE ROW PER SUBSTITUTE DOOR, the run artifact's headline: its status this pass (MEASURED
+    when at least one series answered, else the named statuses -- never a bare 0), the lake
+    series it has published, the cells it minted this pass, and the terms fence it replaces
+    (each fenced platform whose `substitutes` name this door, with that platform's reason)."""
+    out: dict[str, dict[str, Any]] = {}
+    for door in MECHANISM:
+        rows = [r for r in plan if r.get("door") == door]
+        ids = [str(r["id"]) for r in rows]
+        statuses: dict[str, int] = {}
+        for sid in ids:
+            st = str((recs.get(sid) or {}).get("status") or "NOT_DUE").split(":", 1)[0]
+            statuses[st] = statuses.get(st, 0) + 1
+        published = sorted(s for s in ids if lake_points.get(s, 0) >= MIN_POINTS)
+        if statuses.get("OK"):
+            status = "MEASURED"
+        elif published:
+            status = "MEASURED_FROM_LAKE"
+        elif not ids:
+            status = f"{UNMEASURED}: no series planned for this door"
+        else:
+            status = f"{UNMEASURED}: " + ", ".join(f"{k}={v}" for k, v in sorted(statuses.items()))
+        replaces = [{"platform": r["platform"], "status": r["status"], "reason": r["reason"]}
+                    for r in tf.registry_rows() if door in r["substitutes"]]
+        out[door] = {"status": status, "series_planned": len(ids),
+                     "series_status": statuses, "series_published": len(published),
+                     "published": published[:50],
+                     "cells_minted": sum(1 for c in take
+                                         if str(c.get("attention_door") or "") == door),
+                     "replaces": replaces}
+    return out
+
+
+def _write_failure(exc: BaseException, paths: Paths | None = None) -> None:
+    """A run that RAISED still publishes its artifact: status FAILED with the reason, so the leg
+    is never silent and never reads as a quiet zero."""
+    paths = paths or Paths()
+    with suppress(Exception):
+        _atomic(paths.report, {
+            "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "writer": "desks/mt5/research/attention_substitutes.py",
+            "status": f"FAILED: {type(exc).__name__}: {str(exc)[:200]}",
+            "substitutes": {door: {"status": f"{UNMEASURED}: run failed",
+                                   "series_published": None, "cells_minted": 0,
+                                   "replaces": [{"platform": r["platform"],
+                                                 "status": r["status"]}
+                                                for r in tf.registry_rows()
+                                                if door in r["substitutes"]]}
+                            for door in MECHANISM},
+            "fenced_platforms": tf.registry_rows()})
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--budget-s", type=float, default=240.0)
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
-    doc = run(budget_s=a.budget_s, dry_run=a.dry_run)
+    try:
+        doc = run(budget_s=a.budget_s, dry_run=a.dry_run)
+    except Exception as exc:
+        _write_failure(exc)
+        raise
     print(f"attention_substitutes: {doc['status_counts']}; grid {doc['cells']['grid']}, "
           f"minted {doc['cells']['minted']}; volume_held="
           f"{doc['attention_volume'].get('volume_held')}")

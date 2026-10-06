@@ -1786,7 +1786,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                             "Portuguese-language market and money pages, diaspora remittance "
                             "groups, and the YouTube channels that report street rates",
         layer="retail_ecology",
-        roots=("https://www.youtube.com", "https://www.facebook.com", "https://www.reddit.com"),
+        roots=("https://www.youtube.com", "https://www.facebook.com"),
         queries=("farashin kayayyaki a kasuwa yau", "taux de change parallele naira franc CFA",
                  "dalasi black market rate today", "prays fɔ dɔla tiday na Fritɔŋ",
                  "cambio paralelo escudo remessas", "cours du naira a la frontiere"),

@@ -728,10 +728,9 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
               "wave's local impact. FRINGE AND KEPT: frequently wrong, and the only daily signal "
               "on a quarterly phenomenon"),
     source_class(
-        "ge_relocant_communities", "Relocant forums, Facebook groups and Reddit",
+        "ge_relocant_communities", "Relocant forums and Facebook groups (no roots: fenced)",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/Sakartvelo/",
-               "https://www.reddit.com/r/georgiarelocation/"),
+        roots=(),
         queries=("релокация", "ВНЖ Грузия", "открыть счёт", "перевод денег", "SWIFT",
                  "карта иностранного банка", "комиссия за перевод"),
         languages=("ru", "en"), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",

@@ -156,6 +156,9 @@ def load_survivors() -> list[dict[str, Any]]:
             continue
         axes["hunt"] = str(r.get("hunt") or "")
         axes["days"] = str(r.get("days") or "")
+        # When the certificate was judged: the terms quarantine (libs/data/terms_fence.py) lifts
+        # only for a certificate re-judged after its re-certification was queued.
+        axes["gated_at"] = str(r.get("gated_at") or "")
         out.append(axes)
     return out
 

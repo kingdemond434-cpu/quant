@@ -46,6 +46,7 @@ _ROOT = DESK.parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from libs.data import terms_fence as _tf  # noqa: E402
 from libs.data.pit_certificate import certify  # noqa: E402
 from libs.data.pit_certificate import write as write_certificate  # noqa: E402
 from libs.research import country_lab as country_lab  # noqa: E402
@@ -133,13 +134,21 @@ def _fetch(url: str) -> tuple[bytes | None, str]:
     landing pages. Reading the header costs nothing and turns a confusing parse failure into an
     accurate one -- "this was a web page" rather than "this data was malformed".
     """
+    # THE TERMS FENCE, BEFORE ANY REQUEST (principal 2026-09-30: no Reddit, StockTwits or X at
+    # all). A fenced URL is never requested and a 30x INTO a fenced host is never followed
+    # (`guarded_urlopen`); either comes back as `terms_fenced:<platform>`, which `acquire` counts.
+    platform = _tf.platform_of_url(url)
+    if platform:
+        return None, f"terms_fenced:{platform}"
     req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "*/*"})
     try:
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as r:
+        with _tf.guarded_urlopen(req, timeout=FETCH_TIMEOUT_S) as r:
             ctype = str(r.headers.get("Content-Type") or "").lower()
             if "html" in ctype:
                 return None, "html"
             return r.read(MAX_BYTES + 1), ctype
+    except _tf.TermsFenced as exc:
+        return None, f"terms_fenced:{exc.platform}"
     except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError):
         return None, "unreachable"
 
@@ -257,6 +266,19 @@ def _numeric_series(df: pd.DataFrame, stem: str) -> dict[str, pd.Series]:
     return out
 
 
+#: Endpoints the last `_endpoints` pass left unselected because they sit on a terms-fenced
+#: platform, by platform. A fenced URL never takes an hourly seat, and the count says so.
+_ENDPOINT_FENCED: dict[str, int] = {}
+
+
+def _fenced_pick(url: str) -> bool:
+    """True (and counted) when `url` is on a terms-fenced platform: it is never selected."""
+    p = _tf.platform_of_url(url)
+    if p:
+        _ENDPOINT_FENCED[p] = _ENDPOINT_FENCED.get(p, 0) + 1
+    return bool(p)
+
+
 def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, str]]:
     """(url, host) from seeds/crawls, excluding only URLs refreshed within this hour.
 
@@ -265,6 +287,7 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
     initializer.  Durable identity prevents duplicate series; recency must decide refetching.
     """
     fresh: set[str] = set()
+    _ENDPOINT_FENCED.clear()
     now = now or datetime.now(UTC)
     if REGISTRY.exists():
         try:
@@ -290,6 +313,8 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
         if u in fresh or u in seen:
             continue
         seen.add(u)
+        if _fenced_pick(u):
+            continue
         out.append((u, urllib.parse.urlparse(u).netloc or "seed"))
         if len(out) >= limit:
             return out
@@ -319,6 +344,8 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
             if url in seen or url in fresh or _KEYED.search(url):
                 continue
             seen.add(url)
+            if _fenced_pick(url):
+                continue
             buckets[region].append((url, urllib.parse.urlparse(url).netloc or code))
     active = deque(sorted(region for region, rows in buckets.items() if rows))
     while active and len(out) < limit:
@@ -338,6 +365,8 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
                 if u in seen or u in fresh or _KEYED.search(u):
                     continue
                 seen.add(u)
+                if _fenced_pick(u):
+                    continue
                 out.append((u, str(r.get("host") or "")))
                 if len(out) >= limit:
                     return out
@@ -357,6 +386,7 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
 
     tried = kept = 0
     refusals: dict[str, int] = {}
+    terms_fenced: dict[str, int] = {}
     new_series: list[str] = []
 
     def _refuse(why: str) -> None:
@@ -373,6 +403,11 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
 
         raw, ctype = _fetch(url)
         if raw is None:
+            if ctype.startswith("terms_fenced:"):
+                terms_fenced[ctype.split(":", 1)[1]] = \
+                    terms_fenced.get(ctype.split(":", 1)[1], 0) + 1
+                _refuse_url(f"terms fence ({ctype.split(':', 1)[1]}): never requested")
+                continue
             _refuse_url("served HTML, not data" if ctype == "html" else "unreachable")
             continue
         if len(raw) > MAX_BYTES:
@@ -453,6 +488,9 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
         "endpoints_tried": tried, "datasets_kept": kept,
         "new_series": new_series, "total_series": len(reg["series"]),
         "refusals": refusals,
+        # FENCED ENDPOINTS, COUNTED (libs/data/terms_fence.py): refused before any request.
+        "terms_fenced": {"by_platform": terms_fenced, "total": sum(terms_fenced.values()),
+                         "endpoints_skipped_at_selection": dict(_ENDPOINT_FENCED)},
         "rule": ("point-in-time or nothing: a frame with no usable date column is refused rather "
                  "than stamped with now, because backfilling today's value across history "
                  "manufactures an edge that never existed"),

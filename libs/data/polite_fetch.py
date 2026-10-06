@@ -257,7 +257,9 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
         return resp
     hdr = {**BROWSER_HEADERS, **(headers or {})}
     host = urlparse(url).netloc.lower()
-    open_ = opener or urllib.request.urlopen
+    # THE REDIRECT GUARD: the default opener refuses a 30x into a fenced platform
+    # (`terms_fence.FencedRedirectHandler`); a caller-supplied opener is the caller's own test.
+    open_ = opener or _tf.guarded_urlopen
     t0 = time.monotonic()
     for attempt in range(max(0, retries) + 1):
         if deadline is not None and time.monotonic() >= deadline:
@@ -299,6 +301,12 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 break
             if gate is not None and host:
                 gate.penalise(host, wait or backoff_s * (2 ** attempt))
+        except _tf.TermsFenced as exc:
+            # A 30x INTO a fenced platform: refused by the redirect guard, never followed, and
+            # never retried -- the next attempt would be redirected to the same place.
+            resp.error = f"{exc.status}:{exc.platform}: {exc.reason}"
+            _stat(leg, error=f"terms_fenced:{exc.platform}")
+            break
         except Exception as exc:
             name = type(exc).__name__
             reason = getattr(exc, "reason", None)

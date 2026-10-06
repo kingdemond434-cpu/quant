@@ -681,9 +681,9 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
               "the English tables; the ground PK-C lives on"),
     # ---- retail ecology
     source_class(
-        "pk_retail_forums", "PSX retail communities: Facebook stock groups, the PSX subreddit, "
+        "pk_retail_forums", "PSX retail communities: Facebook stock groups, "
                             "Investor's Lounge, YouTube stock channels", layer="retail_ecology",
-        roots=("https://www.reddit.com/r/PSX/", "https://www.youtube.com/results?search_query="
+        roots=("https://www.youtube.com/results?search_query="
                "psx+stocks+urdu", "https://www.facebook.com/groups/psxinvestors"),
         queries=("کے ایس ای 100 آج", "کون سا شیئر خریدیں", "بلو چپ", "منافع", "اسٹاک مارکیٹ "
                  "کریش", "psx tips", "KSE 100 today", "dividend stocks pakistan"),

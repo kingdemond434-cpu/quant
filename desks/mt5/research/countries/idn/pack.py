@@ -569,8 +569,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                "it up; they are advocacy bodies, which is why the predictive state is a narrative "
                "feature rather than untested data"),
     _src("IDN-S5", "retail investor communities", layer="retail_ecology",
-         roots=("https://stockbit.com/", "https://www.kaskus.co.id/forum/10/investasi/",
-                "https://www.reddit.com/r/finansial/"),
+         roots=("https://stockbit.com/", "https://www.kaskus.co.id/forum/10/investasi/"),
          languages=("id",), licence="public web; platform terms apply",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
          predictive_state="NARRATIVE_FEATURE",

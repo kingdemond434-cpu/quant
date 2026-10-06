@@ -669,7 +669,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
          layer="retail_ecology",
          roots=("https://www.bankier.pl/forum/", "https://www.stockwatch.pl/forum/",
                 "https://www.kurzy.cz/diskuse/", "https://www.patria.cz/diskuse.html",
-                "https://www.portfolio.hu/forum", "https://www.reddit.com/r/Polska/"),
+                "https://www.portfolio.hu/forum"),
          languages=("pl", "cs", "hu"), licence="public forum, quote-and-cite only",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE", predictive_state="UNTESTED",
          weight=0.25, machine_use_allowed=True,

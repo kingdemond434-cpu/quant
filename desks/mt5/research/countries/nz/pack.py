@@ -822,10 +822,9 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         notes="the forecast is the SLOW leg and the auction is the FAST one; NZ-D's interesting "
               "cell is the divergence between them, not either alone"),
     source_class(
-        "nz_reddit", "Reddit r/PersonalFinanceNZ and r/newzealand finance threads",
+        "nz_retail_threads", "NZ personal-finance threads (terms-fenced 2026-09-30: no roots)",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/PersonalFinanceNZ/",
-               "https://www.reddit.com/r/newzealand/"),
+        roots=(),
         queries=("KiwiSaver", "which fund", "switching to conservative", "Sharesies",
                  "fixing for how long", "breaking a fix", "term deposit", "the OCR call"),
         languages=("en",), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
