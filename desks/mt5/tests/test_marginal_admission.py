@@ -38,6 +38,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+# The Tier S door fails closed on absent verifier inputs; these promoter tests are not about
+# the door, so they run against fresh, clean verifier artifacts (desks/mt5/tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("fresh_tier_s_door")
+
+
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
 for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
@@ -348,6 +353,10 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "load_ledger", lambda *a, **k: [])
     monkeypatch.setattr(promoter, "authorized_specs", lambda base=None: set())
     _open_live_policy(tmp_path, monkeypatch, "CADJPY", "EURUSD")
+    # THE TIER S DOOR IS GRANTED HERE, as the certificate authority is above. Since 7de6ccca7 it
+    # withholds with DOOR_ERROR whenever REPLICATION.json is absent or stale, which it always is
+    # in a checkout; that fail-closed rule is pinned in test_tier_s_door.py.
+    monkeypatch.setattr(promoter, "tier_s_block", lambda _name: None)
 
     class Desk:
         def shadow(self, blob: dict) -> None:

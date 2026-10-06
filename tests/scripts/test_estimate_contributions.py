@@ -14,6 +14,7 @@ measurement.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import sqlite3
 import sys
@@ -24,6 +25,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import scripts.estimate_contributions as C
+
 from libs.doctrine.contribution import Contribution
 
 
@@ -46,7 +48,7 @@ def _jsonl(p: Path, rows: list[dict]) -> None:
 
 def _table(db: Path, table: str, n: int) -> None:
     db.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(db) as c:
+    with contextlib.closing(sqlite3.connect(db)) as c, c:
         c.execute(f"create table if not exists {table} (i integer)")
         c.executemany(f"insert into {table} values (?)",  # noqa: S608 -- test fixture
                       [(i,) for i in range(n)])

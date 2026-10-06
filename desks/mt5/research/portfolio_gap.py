@@ -149,7 +149,8 @@ def load_survivors() -> list[dict[str, Any]]:
                 "window": str(spec.get("selector") or axes.get("window") or ""),
                 "family": str(spec.get("family") or axes.get("family") or "unspecified"),
                 "state": str(spec.get("condition") or axes.get("state") or ""),
-                "side": axes.get("side", ""),
+                "side": str(spec.get("side") or axes.get("side", "")),
+                "params": dict(spec.get("params") or {}),
             }
         if not axes:
             continue

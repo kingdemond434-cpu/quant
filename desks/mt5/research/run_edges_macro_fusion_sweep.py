@@ -53,6 +53,7 @@ from mt5desk import families, macro_regime  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
 from libs.tiers.bitemporal import BitemporalStore, Datum  # noqa: E402
+from libs.tiers.data_os import PUBLICATION_LAGS  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
@@ -109,7 +110,7 @@ COST_REGIMES = {"WIDE": 2.0, "RAW": 0.2, "ZERO": 0.0}
 
 
 #: MEASURED, not published: 2.00 in ACCOUNT CURRENCY per lot per side, over all 433
-#: deals account 495044 has ever done (reports/COST_TRUTH.json, 2026-09-23, p10=p50=p90).
+#: deals the live Fusion account has ever done (reports/COST_TRUTH.json, 2026-09-23, p10=p50=p90).
 #: Mirrors `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 2.25 this
 #: replaced was the brochure's USD figure fed to a field `Costs.from_symbol` converts as
 #: ACCOUNT currency -- a 1.125x overcharge on the term that is ~98% of this book's cost.
@@ -154,7 +155,9 @@ def _favourable(hist: pd.DataFrame, col: str, lookback: int):
 #: under a UTC tzinfo (+2 winter / +3 summer, `libs/research/bar_clock`). One day plus the largest
 #: broker offset is the earliest bar that could have read the print, under either clock.
 #: `orthogonal_sweep.MACRO_PUBLICATION_LAG_D` is the same one-day rule on the research side.
-MACRO_KNOWABLE_AFTER = pd.Timedelta(days=1, hours=3)
+#: ONE DECLARATION: the lag is `data_os.PUBLICATION_LAGS["cross_asset_anchors"]` (27 h), read here
+#: and by `run_macro_conditioned_sweep`, never restated.
+MACRO_KNOWABLE_AFTER = pd.Timedelta(seconds=PUBLICATION_LAGS["cross_asset_anchors"]["lag_s"])
 
 
 def favourable_store(fav: pd.Series, col: str) -> BitemporalStore:

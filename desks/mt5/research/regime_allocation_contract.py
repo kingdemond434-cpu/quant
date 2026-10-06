@@ -198,9 +198,22 @@ def macro_weights(train_days: list[str], asof: str) -> np.ndarray | None:
     use = [d for d in ms.KERNEL_DIMS if states.get(d)]
     if not use:
         return None
+    # KNOWN, NOT VALID, DATES (data_os): a FRED state dated d is re-keyed to the first whole day
+    # on which it was published (d + the declared fred_macro lag), so neither "today" nor any
+    # training day's kernel reads a print that did not yet exist.
+    from datetime import datetime as _dt
+    from datetime import timedelta as _td
+
+    from libs.tiers import data_os
+    lag = data_os.lag_of("fred_macro")
+
+    def _known(k: str) -> str:
+        at = _dt.fromisoformat(str(k)[:10]) + lag
+        return (at.date() + _td(days=1) if at.time() != _dt.min.time() else at.date()).isoformat()
+
     w = np.ones(len(train_days))
     for d in use:
-        by = states[d]
+        by = {_known(k): v for k, v in states[d].items()}
         past = [k for k in by if k <= asof]
         if not past:
             return None

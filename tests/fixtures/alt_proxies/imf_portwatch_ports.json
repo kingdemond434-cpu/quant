@@ -1,0 +1,6 @@
+{"objectIdFieldName":"ObjectId","features":[
+ {"attributes":{"date":1788220800000,"portname":"Port Hedland","portcalls":14,"import":1200.5,"export":950321.0}},
+ {"attributes":{"date":1788307200000,"portname":"Port Hedland","portcalls":11,"import":900.0,"export":801200.0}},
+ {"attributes":{"date":"2026-09-01","portname":"Shanghai","portcalls":212,"import":501200.0,"export":602100.0}},
+ {"attributes":{"date":1788307200000,"portname":"Busan","portcalls":null}}
+],"exceededTransferLimit":false}

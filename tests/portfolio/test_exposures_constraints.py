@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from tests.portfolio.conftest import make_alpha
 
 from libs.portfolio.constraints import apply_constraints
 from libs.portfolio.covariance import covariance_from_alphas
@@ -15,6 +14,7 @@ from libs.portfolio.exposures import (
 )
 from libs.portfolio.models import PortfolioConstraints, StrategyType
 from libs.risk.instruments import Factor
+from tests.portfolio.conftest import make_alpha
 
 
 def _alphas() -> list:

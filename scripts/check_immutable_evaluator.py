@@ -35,6 +35,9 @@ IMMUTABLE: tuple[str, ...] = (
     "desks/mt5/research/universal_gate.py",
     "desks/mt5/research/multiplicity.py",
     "desks/mt5/research/gate_policy.py",
+    # THE BAR ITSELF (2026-10-01): the DSR variance, the trial charge and the lockbox reads live
+    # here, and gate_policy only reads them, so sealing the reader alone let the bar move unsigned.
+    "desks/mt5/policy/gate_spec.yaml",
     "desks/mt5/research/heat_policy.py",
     "desks/mt5/research/promoter.py",
     "desks/mt5/mt5desk/gateway_config_fallback.py",
@@ -518,9 +521,46 @@ SEALED_NAMES: frozenset[str] = frozenset({"open_lockbox", "LockboxService", "_se
 SEALED_PATHS: tuple[str, ...] = ("evidence_vault.json", "data/lockbox", "holdout")
 
 
+def _child_nodes(node: ast.AST) -> tuple[ast.AST, ...]:
+    """Cache exactly the children yielded by ast.iter_child_nodes on this parsed AST."""
+    cached = getattr(node, "_quant_children", None)
+    if cached is None:
+        children = []
+        for field in node._fields:
+            value = getattr(node, field, None)
+            if isinstance(value, list):
+                children.extend(item for item in value if isinstance(item, ast.AST))
+            elif isinstance(value, ast.AST):
+                children.append(value)
+        cached = tuple(children)
+        node._quant_children = cached
+    return cached
+
+
+def _walk_fast(tree: ast.AST) -> tuple[ast.AST, ...]:
+    """Identical breadth-first order, with child tuples shared by the lexical-scope scan."""
+    from collections import deque
+    pending = deque([tree])
+    nodes = []
+    while pending:
+        node = pending.popleft()
+        nodes.append(node)
+        pending.extend(_child_nodes(node))
+    return tuple(nodes)
+
+
+def _walk_nodes(tree: ast.AST) -> tuple[ast.AST, ...]:
+    """Reuse the identical breadth-first node sequence for one parsed source tree."""
+    cached = getattr(tree, "_quant_walk_nodes", None)
+    if cached is None:
+        cached = _walk_fast(tree)
+        tree._quant_walk_nodes = cached
+    return cached
+
+
 def _docstrings(tree: ast.AST) -> set[int]:
     out: set[int] = set()
-    for node in ast.walk(tree):
+    for node in _walk_nodes(tree):
         body = getattr(node, "body", None)
         if isinstance(node, ast.Module | ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef) \
                 and isinstance(body, list) and body and isinstance(body[0], ast.Expr) \
@@ -531,7 +571,7 @@ def _docstrings(tree: ast.AST) -> set[int]:
 
 
 def _is_donor(tree: ast.AST) -> bool:
-    for node in ast.walk(tree):
+    for node in _walk_nodes(tree):
         if isinstance(node, ast.Import | ast.ImportFrom):
             # BOTH SPELLINGS. `from research import proposer_common as pc` is an ImportFrom whose
             # MODULE is "research" and whose NAME is the door -- the spelling `expression_factory`
@@ -547,7 +587,7 @@ def _is_donor(tree: ast.AST) -> bool:
 def _sealed_reads(rel: str, tree: ast.AST) -> list[dict[str, str]]:
     skip = _docstrings(tree)
     out: list[dict[str, str]] = []
-    for node in ast.walk(tree):
+    for node in _walk_nodes(tree):
         line = getattr(node, "lineno", 0)
         if isinstance(node, ast.Import | ast.ImportFrom):
             mods = [a.name for a in node.names]
@@ -581,7 +621,11 @@ def _sealed_reads(rel: str, tree: ast.AST) -> list[dict[str, str]]:
     return unique
 
 
-def generator_isolation() -> dict[str, Any]:
+def _partition_slot(rel: str, parts: int) -> int:
+    return int(hashlib.sha256(rel.encode("utf-8")).hexdigest()[:8], 16) % parts
+
+
+def generator_isolation(part: int = 0, parts: int = 1) -> dict[str, Any]:
     """Every proposer in the desk, and what it was found reaching for.
 
     Reports WHAT IT SCANNED as well as what it found: a wall that fires on nothing because it
@@ -595,6 +639,8 @@ def generator_isolation() -> dict[str, Any]:
             continue
         for path in sorted(base.rglob("*.py")):
             rel = path.relative_to(ROOT).as_posix()
+            if _partition_slot(rel, parts) != part:
+                continue
             if "/tests/" in rel or "__pycache__" in rel or rel in JUDGES:
                 continue
             try:
@@ -604,6 +650,8 @@ def generator_isolation() -> dict[str, Any]:
                 continue
             candidates[rel] = path
     for rel in EXTRA_GENERATORS:
+        if _partition_slot(rel, parts) != part:
+            continue
         path = ROOT / rel
         if path.is_file() and rel not in JUDGES:
             candidates[rel] = path
@@ -701,7 +749,7 @@ def _sealed_attrs(tree: ast.AST, names: Sequence[str], sealed: set[str]) -> set[
     enumeration backs -- the shape of a gate that never ran (L1.49).
     """
     out: set[str] = set()
-    for node in ast.walk(tree):
+    for node in _walk_nodes(tree):
         if not isinstance(node, ast.Call):
             continue
         fn = node.func
@@ -733,12 +781,12 @@ def _own_body(scope: ast.AST) -> list[ast.AST]:
     findings on the real desk were that, and both were wrong.
     """
     out: list[ast.AST] = []
-    stack: list[ast.AST] = list(ast.iter_child_nodes(scope))
+    stack: list[ast.AST] = list(_child_nodes(scope))
     while stack:
         node = stack.pop()
         out.append(node)
         if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda):
-            stack.extend(ast.iter_child_nodes(node))
+            stack.extend(_child_nodes(node))
     return out
 
 
@@ -794,7 +842,7 @@ def _rewrite_sites(tree: ast.AST, names: Sequence[str]) -> list[tuple[int, str]]
     module_sealed = _sealed_vars(tree, names)
     attrs = sorted(_sealed_attrs(tree, names, module_sealed))
     scopes: list[tuple[list[ast.AST], set[str]]] = [(_own_body(tree), module_sealed)]
-    for node in ast.walk(tree):
+    for node in _walk_nodes(tree):
         if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             body = _own_body(node)
             scopes.append((body, _seal_from(_binds(body), names, module_sealed, attrs)))
@@ -836,7 +884,7 @@ def _scope_sites(nodes: Sequence[ast.AST], names: Sequence[str], sealed: set[str
     return hits
 
 
-def inplace_rewrite_scan() -> dict[str, Any]:
+def inplace_rewrite_scan(part: int = 0, parts: int = 1) -> dict[str, Any]:
     """Every module that can rewrite a sealed record file IN PLACE, declared or not.
 
     Reports what it enumerated as well as what it found: a wall that scanned nothing would also
@@ -853,6 +901,8 @@ def inplace_rewrite_scan() -> dict[str, Any]:
             continue
         for path in sorted(base.rglob("*.py")):
             rel = path.relative_to(ROOT).as_posix()
+            if _partition_slot(rel, parts) != part:
+                continue
             if "/tests/" in rel or "__pycache__" in rel \
                     or rel.rsplit("/", 1)[-1].startswith("test_"):
                 continue
@@ -953,6 +1003,27 @@ def wall_rows() -> list[dict[str, Any]]:
         _vintage_rows(sealed_v if isinstance(sealed_v, Mapping) else {})
 
 
+_SCAN_CONFIG_NAMES = (
+    "GENERATOR_ROOTS", "EXTRA_GENERATORS", "JUDGES", "GENERATOR_MARKER",
+    "SEALED_MODULES", "SEALED_NAMES", "SEALED_PATHS", "INPLACE_DECLARED",
+    "APPEND_ONLY", "VINTAGE", "_PATH_CALLS", "_TRUNCATING_ON_TARGET", "_TRUNCATING_ON_DEST",
+)
+_SCAN_DEFAULTS = tuple(globals()[name] for name in _SCAN_CONFIG_NAMES)
+
+
+def _isolated_source_scan(kind: str, root: Path, part: int, parts: int) -> dict[str, Any]:
+    """Run the same source scan in its own interpreter; propagate every failure."""
+    import subprocess
+    import sys
+    result = subprocess.run(
+        [sys.executable, str(Path(__file__).resolve()), "--source-scan", kind,
+         "--root", str(root), "--part", str(part), "--parts", str(parts)],
+        capture_output=True, text=True, timeout=180)
+    if result.returncode:
+        raise RuntimeError(f"{kind} source scan failed: {result.stderr[-2000:]}")
+    return json.loads(result.stdout)
+
+
 def check() -> list[dict[str, str]]:
     try:
         rec = json.loads(MANIFEST.read_text("utf-8")).get("files") or {}
@@ -971,10 +1042,31 @@ def check() -> list[dict[str, str]]:
     for row in wall_rows():
         if row["status"] == "breach":
             out.append({"file": str(row["path"]), "why": str(row["why"])})
-    for hit in generator_isolation()["findings"]:
+    from concurrent.futures import ThreadPoolExecutor
+    config_unchanged = tuple(globals()[name] for name in _SCAN_CONFIG_NAMES) == _SCAN_DEFAULTS
+    sources_present = any((ROOT / rel).is_dir() for rel in ("scripts", "desks/mt5", "libs", "ops"))
+    if config_unchanged and sources_present:
+        import os
+        parts = min(4, max(1, (os.cpu_count() or 2) // 2))
+        with ThreadPoolExecutor(max_workers=2 * parts) as pool:
+            generator_jobs = [pool.submit(_isolated_source_scan, "generator", ROOT, part, parts)
+                              for part in range(parts)]
+            rewrite_jobs = [pool.submit(_isolated_source_scan, "rewrite", ROOT, part, parts)
+                            for part in range(parts)]
+            generators = [job.result() for job in generator_jobs]
+            rewrites = [job.result() for job in rewrite_jobs]
+        generator = {"findings": sorted([hit for result in generators for hit in result["findings"]],
+                                         key=lambda hit: hit["file"])}
+        rewrite = {"undeclared": sorted([hit for result in rewrites for hit in result["undeclared"]],
+                                        key=lambda hit: hit["file"])}
+    else:
+        # Fixture or explicit scanner configuration remains in this interpreter.
+        generator = generator_isolation()
+        rewrite = inplace_rewrite_scan()
+    for hit in generator["findings"]:
         out.append({"file": f"{hit['file']}:{hit['line']}",
                     "why": f"GENERATOR READS SEALED DATA -- {hit['what']}"})
-    for hit in inplace_rewrite_scan()["undeclared"]:
+    for hit in rewrite["undeclared"]:
         out.append({"file": f"{hit['file']}:{hit['line']}",
                     "why": f"UNDECLARED IN-PLACE REWRITE OF A SEALED RECORD -- {hit['what']}"})
     return out
@@ -1000,7 +1092,21 @@ def main() -> int:
     ap.add_argument("--sign-files", action="store_true")
     ap.add_argument("--by", default="principal")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--source-scan", choices=("generator", "rewrite"))
+    ap.add_argument("--root", type=Path)
+    ap.add_argument("--part", type=int, default=0)
+    ap.add_argument("--parts", type=int, default=1)
     a = ap.parse_args()
+    if a.source_scan:
+        global ROOT
+        if a.root is not None:
+            ROOT = a.root
+        if a.parts < 1 or not 0 <= a.part < a.parts:
+            ap.error("source scan partition must be in [0, parts)")
+        scan = (generator_isolation(a.part, a.parts) if a.source_scan == "generator"
+                else inplace_rewrite_scan(a.part, a.parts))
+        print(json.dumps(scan))
+        return 0
     if a.sign_files:
         try:
             doc = json.loads(MANIFEST.read_text("utf-8"))

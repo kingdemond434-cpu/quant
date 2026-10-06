@@ -117,7 +117,7 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
             continue
         n_reporting += 1
         if not _has_basis(doc):
-            undeclared.append({"artifact": str(p.relative_to(root)), "return_keys": keys[:6]})
+            undeclared.append({"artifact": p.relative_to(root).as_posix(), "return_keys": keys[:6]})
     new = [u for u in undeclared if u["artifact"] not in _KNOWN_UNDECLARED]
     debt = [u for u in undeclared if u["artifact"] in _KNOWN_UNDECLARED]
     return {

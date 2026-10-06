@@ -86,7 +86,7 @@ for _p in (str(_DESK), str(_DESK / "research")):
 #:
 #: THE UNIT WAS THE BUG AND IT IS NAMED HERE ON PURPOSE. This was 2.25 and was documented as USD
 #: -- but every consumer feeds it to `Costs.from_symbol(commission_per_lot=...)`, which converts
-#: it through `quote_per_account` as an ACCOUNT-CURRENCY amount. Account 495044 is denominated in
+#: it through `quote_per_account` as an ACCOUNT-CURRENCY amount. The live account is denominated in
 #: EUR, so the desk was charging 2.25 EUR per side for a figure it believed was 2.25 USD.
 #:
 #: MEASURED 2026-09-23 (`reports/COST_TRUTH.json`, `scripts/check_cost_truth.py`) over all 433

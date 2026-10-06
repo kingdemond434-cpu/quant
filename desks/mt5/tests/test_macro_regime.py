@@ -105,14 +105,55 @@ def test_load_history_absent_returns_none(tmp_path):
     assert mr.load_history(tmp_path / "nope.pkl") is None
 
 
-def test_load_history_adds_real_yield():
+def _anchors(tmp_path, *, breakeven_nan=False, days=1500):
+    """A small synthetic cross_asset_anchors history, so the loader is tested on inputs the test
+    controls rather than on whatever the last box-side refresh left in data/."""
+    import numpy as np
+    import pandas as pd
+
+    idx = pd.bdate_range("2019-01-01", periods=days)
+    t = np.arange(days, dtype=float)
+    df = pd.DataFrame({
+        "DGS10": 2.5 + 0.5 * np.sin(t / 90.0),
+        "T10YIE": np.nan if breakeven_nan else 2.0 + 0.2 * np.cos(t / 120.0),
+        "VIX": 18.0 + np.sin(t / 30.0),
+    }, index=idx)
+    p = tmp_path / "cross_asset_anchors.pkl"
+    df.to_pickle(p)
+    return p
+
+
+def test_load_history_adds_real_yield(tmp_path):
     """The real yield is the derived column the whole macro case rests on."""
-    h = mr.load_history()
-    if h is None:
-        pytest.skip("cross_asset_anchors.pkl absent on this clone (data/ gitignored)")
+    h = mr.load_history(_anchors(tmp_path))
+    assert h is not None
     assert "REAL_YIELD_10Y" in h.columns
+    assert h.attrs["unmeasured"] == {}
     ry = h["REAL_YIELD_10Y"].dropna()
     assert len(ry) > 1000
+    # It is nominal minus breakeven, row for row -- not an ordinal index.
+    assert (ry - (h["DGS10"] - h["T10YIE"]).dropna()).abs().max() < 1e-12
     # Sanity: a 10y real yield outside [-5%, +5%] means the inputs are not
     # what this column claims they are.
     assert ry.min() > -5.0 and ry.max() < 5.0
+
+
+def test_load_history_with_no_breakeven_observation_is_unmeasured_not_empty(tmp_path):
+    """T10YIE present but all-NaN (the committed pickle, 2026-09-30) must not attach an all-NaN
+    REAL_YIELD_10Y that reads as present; the column is withheld and the reason is carried."""
+    h = mr.load_history(_anchors(tmp_path, breakeven_nan=True))
+    assert h is not None
+    assert "REAL_YIELD_10Y" not in h.columns
+    reason = h.attrs["unmeasured"]["REAL_YIELD_10Y"]
+    assert reason.startswith("UNMEASURED") and "T10YIE" in reason
+
+
+def test_load_history_on_this_clone_is_measured_or_says_why():
+    """Whatever the box last wrote to data/: either a real yield with history, or UNMEASURED."""
+    h = mr.load_history()
+    if h is None:
+        pytest.skip("cross_asset_anchors.pkl absent on this clone (data/ gitignored)")
+    if "REAL_YIELD_10Y" in h.columns:
+        assert len(h["REAL_YIELD_10Y"].dropna()) > 0
+    else:
+        assert h.attrs["unmeasured"]["REAL_YIELD_10Y"].startswith("UNMEASURED")

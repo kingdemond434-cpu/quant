@@ -584,11 +584,19 @@ class CountryPack:
                          f"grouping; the framework files it under {command!r}")
         put(self, "region_command", command)
         raw_custom = tuple(self.custom_miners or ())
-        specs = [dict(row) for row in raw_custom if isinstance(row, Mapping)]
+        # A normalized pack (including dataclasses.replace / serialization) carries
+        # string entries plus the separate lossless specs. Do not discard its specs.
+        specs_by_entry = {str(row.get("entry") or ""): dict(row)
+                          for row in self.custom_miner_specs if isinstance(row, Mapping)}
+        for row in raw_custom:
+            if isinstance(row, Mapping):
+                specs_by_entry[str(row.get("entry") or "")] = dict(row)
+        specs = list(specs_by_entry.values())
         entries = [str(row.get("entry") or "") if isinstance(row, Mapping) else str(row)
                    for row in raw_custom]
+        entries.extend(str(row.get("entry") or "") for row in specs)
         put(self, "custom_miner_specs", tuple(specs))
-        put(self, "custom_miners", tuple(entry for entry in entries if entry))
+        put(self, "custom_miners", tuple(dict.fromkeys(entry for entry in entries if entry)))
         for name in ("executable_instruments", "positioning_sources", "native_languages",
                      "source_classes", "institutional_flow_sources"):
             put(self, name, _str_tuple(getattr(self, name)))
@@ -715,6 +723,31 @@ def parse_source_layer(text: str) -> tuple[str, str]:
         layer = next((_tok(p) for p in raw.split("::") if _tok(p) in SOURCE_LAYERS), "")
     first = raw.split("::", 1)[0].strip() or raw.strip()
     return layer, first
+
+
+#: Access labels whose terms restrict what the desk may REDISTRIBUTE (LAWS §5e). Mined in full.
+TERMS_ACCESS_LABELS: frozenset[str] = frozenset({"PUBLIC_WITH_TERMS", "LICENSED"})
+
+
+def registered_terms_ground(sources: Sequence[Mapping[str, Any]]) -> list[str]:
+    """Ids of the paywalled / terms-restricted ground a pack REGISTERED rather than omitted.
+
+    Under LAWS §5e (2026-09-23) a page whose terms forbid machine extraction is labelled
+    PUBLIC_WITH_TERMS or LICENSED and MINED IN FULL; `machine_use_allowed=false` read as
+    "registered, never scraped" is one of the deleted brakes. So "the pack names the ground it
+    cannot redistribute" is answered by the access label. A row still carrying
+    `machine_use_allowed=false` (and not an `absent_<layer>` placeholder) is counted too, so a
+    pack written under the older convention is not reported as having omitted its ground.
+    """
+    out: list[str] = []
+    for s in sources:
+        sid = str(s.get("id") or "")
+        if not sid or sid.startswith("absent_"):
+            continue
+        if (str(s.get("access_label") or "") in TERMS_ACCESS_LABELS
+                or s.get("machine_use_allowed") is False):
+            out.append(sid)
+    return out
 
 
 def source_rows(pack: CountryPack) -> list[SourceRow]:
