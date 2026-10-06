@@ -233,7 +233,9 @@ def test_dated_requests_carry_the_key_only_in_the_live_url_and_backfill_commits_
 
 def test_keyed_substitutes_block_without_their_key(monkeypatch: pytest.MonkeyPatch) -> None:
     for env in ("ECOS_API_KEY", "KOBIS_API_KEY", "SEOUL_API_KEY", "ESTAT_APP_ID", "INEGI_TOKEN",
-                "DATA_GO_KR_KEY", "DATA_GOV_IN_KEY"):
+                "DATA_GO_KR_KEY", "DATA_GOV_IN_KEY", "FRED_API_KEY", "CDSE_TOKEN",
+                "CDSE_CLIENT_ID", "CDSE_CLIENT_SECRET", "CDSE_USERNAME", "CDSE_PASSWORD",
+                "NAVER_CLIENT_ID", "NAVER_CLIENT_SECRET"):
         monkeypatch.delenv(env, raising=False)
     got = {s.id: A.status_of(s) for s in A.SUBSTITUTE_SOURCES if s.key_env}
     assert got == {"kr_bok_card_spend": "BLOCKED_ON_KEY:ECOS_API_KEY",
@@ -242,7 +244,11 @@ def test_keyed_substitutes_block_without_their_key(monkeypatch: pytest.MonkeyPat
                    "jp_estat_immigration": "BLOCKED_ON_KEY:ESTAT_APP_ID",
                    "mx_inegi_emec": "BLOCKED_ON_KEY:INEGI_TOKEN",
                    "kr_mof_container_teu": "BLOCKED_ON_KEY:DATA_GO_KR_KEY",
-                   "in_dgi_iip_consumer": "BLOCKED_ON_KEY:DATA_GOV_IN_KEY"}
+                   "in_dgi_iip_consumer": "BLOCKED_ON_KEY:DATA_GOV_IN_KEY",
+                   "us_bls_deepsea_freight": "BLOCKED_ON_KEY:FRED_API_KEY",
+                   "cn_s5p_no2_clusters": "BLOCKED_ON_KEY:CDSE_TOKEN",
+                   # terms first: an unconfirmed licence blocks before the key is asked for
+                   "kr_naver_datalab": "BLOCKED+SUBSTITUTE:wiki_asia_attention"}
     assert A.status_of(A.BY_ID["us_oi_card_spend"]) == "DEAD:2024-06"
     assert A.status_of(A.BY_ID["us_oi_google_mobility"]) == "DEAD:2022-10"
 
@@ -349,7 +355,7 @@ def test_reviewed_terms_carry_evidence() -> None:
     assert set(A.TERMS_EVIDENCE) <= set(A.TERMS)
     for sid, ev in A.TERMS_EVIDENCE.items():
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
-        assert ev["robots"] and ev["checked_at"] == "2026-09-30", sid
+        assert ev["robots"] and ev["checked_at"] in ("2026-09-30", "2026-10-06"), sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
     confirmed = {s.id for s in A.SOURCES if s.terms == "confirmed"}
     assert reviewed == confirmed >= {"cn_nbs_retail", *NEW_SUBSTITUTES}   # every confirmed one
@@ -379,7 +385,7 @@ def test_a_to_confirm_source_is_never_fetched(tmp_path: Path) -> None:
         if src.terms == "confirmed":
             continue
         assert A.status_of(src).startswith(("BLOCKED_ON_TERMS:", "BLOCKED+SUBSTITUTE:",
-                                            "DEAD:")), src.id
+                                            "UNCONFIGURED+SUBSTITUTE:", "DEAD:")), src.id
         for fixtures in (None, FIX):
             rec = A.collect(paths, src, {}, NOW, fetch=True, fixtures=fixtures,
                             deadline=1e18, getter=boom)
@@ -566,7 +572,11 @@ NEW_SUBSTITUTES = ("jp_estat_immigration", "hk_immd_passenger", "br_bcb_payments
                    "in_dgi_iip_consumer", "za_statssa_retail")
 BLOCKED = ("jp_jnto_arrivals", "cn_holiday_spend", "tr_bkm_card", "br_cielo_icva", "mx_antad_sss",
            "cn_maoyan_box_office", "in_npci_upi", "cn_sge_premium", "cn_baidu_migration",
-           "za_beti", "kr_busan_port", "cn_mot_port_weekly")
+           "za_beti", "kr_busan_port", "cn_mot_port_weekly",
+           # the physical exhaust (2026-10-06)
+           "cn_mot_port_monthly", "cn_sse_scfi_routes", "cn_ccgp_award_indices",
+           "cn_tianyancha_supply", "cn_samr_registrations", "kr_naver_datalab",
+           "in_nse_option_chain")
 
 
 def test_every_blocked_source_is_substituted_or_says_why_not() -> None:
@@ -580,7 +590,8 @@ def test_every_blocked_source_is_substituted_or_says_why_not() -> None:
             sub = A.BY_ID[x]
             assert sub.terms == "confirmed" and not sub.archive_until, (sid, x)
             assert x not in A.SUBSTITUTED_BY, x                     # never a blocked stand-in
-        assert A.status_of(A.BY_ID[sid]) == "BLOCKED+SUBSTITUTE:" + ",".join(subs)
+        pre = "UNCONFIGURED" if A.BY_ID[sid].paid_licence else "BLOCKED"   # paid: no key held
+        assert A.status_of(A.BY_ID[sid]) == f"{pre}+SUBSTITUTE:" + ",".join(subs)
     for sid, why in A.NO_SUBSTITUTE.items():
         assert why and A.status_of(A.BY_ID[sid]) == f"BLOCKED_ON_TERMS:{A.BY_ID[sid].terms}"
 
@@ -598,7 +609,7 @@ def test_a_substituted_source_is_still_never_fetched(tmp_path: Path) -> None:
     rep = A.run(paths, fixtures=FIX, donate=False, now=NOW)
     assert rep["blocked_substituted"]["kr_busan_port"] == ["kr_mof_container_teu",
                                                            "imf_portwatch_ports"]
-    assert set(rep["blocked_unsubstituted"]) == set() and A.NO_SUBSTITUTE == {}
+    assert set(rep["blocked_unsubstituted"]) == set(A.NO_SUBSTITUTE) == {"in_nse_option_chain"}
     assert rep["blocked_substituted"]["in_npci_upi"] == ["in_dgi_iip_consumer"]
     assert rep["blocked_substituted"]["za_beti"] == ["za_statssa_retail"]
     assert rep["sources"]["tr_bkm_card"]["status"].startswith("BLOCKED+SUBSTITUTE:")
@@ -725,7 +736,10 @@ def test_engine_rows_file_matches_the_code_and_the_engine_can_read_it() -> None:
     doc = json.loads(fp.read_text("utf-8"))
     assert doc == json.loads(json.dumps(A.engine_rows(), ensure_ascii=False))
     rows = {r["paid"].rsplit("[", 1)[1].rstrip("]"): r for r in doc["rows"]}
-    assert set(rows) == set(BLOCKED)
+    assert set(rows) == set(BLOCKED) | set(A.PAID_BLOCKED)
+    for vid in A.PAID_BLOCKED:                                  # paid vendors: listed, never fed
+        r = rows.pop(vid)
+        assert r["status"] == "PAID_BLOCKED" and r["free"] == "" and r["terms"] == "paid_blocked"
     for sid, r in rows.items():
         assert r["status"] == A.status_of(A.BY_ID[sid], {}), sid
         assert list(r)[:3] == ["class", "paid", "free"]      # the engine finds columns by word
