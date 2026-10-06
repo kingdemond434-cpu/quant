@@ -15,7 +15,8 @@
 # genuine emergency and dishonest for routine work; the hook cannot tell the difference, and a
 # hook with no escape hatch gets uninstalled instead of bypassed.
 ROOT="$(git rev-parse --show-toplevel)"
-"$ROOT/ops/gates.sh" || exit 1
+# git hands the hook one line per ref on stdin; read it once, before anything else consumes it.
+PUSH_REFS="$(cat)"
 
 # THE INTERPRETER, ON BOTH KINDS OF HOST (2026-10-01). The trading box is Windows: its venv is
 # .venv/Scripts/python.exe, never .venv/bin/python, and `python3` there may be absent or the
@@ -34,6 +35,19 @@ if [ -z "$PY" ]; then
     done
 fi
 [ -n "$PY" ] || PY=python3
+
+# A STATE-ONLY PUSH IS NOT JUDGED AS CODE (2026-10-06, post-merge audit of #181). The trading box
+# publishes its own ledgers and reports (sync_shadow_to_git.ps1) as one commit of state blobs; the
+# gates and law fences below judge CODE, and running them on that push only let an unrelated red
+# fence anywhere in the box's tree refuse the box's evidence. scripts/push_scope.py exits 0 only
+# when EVERY changed path is box state (libs.ops.release.is_state_path, minus docs/); one code
+# path, an unmeasurable diff, or an interpreter that will not start, and the full gate runs.
+if printf '%s\n' "$PUSH_REFS" | "$PY" "$ROOT/scripts/push_scope.py"; then
+    exit 0
+fi
+
+"$ROOT/ops/gates.sh" || exit 1
+
 if ! "$PY" "$ROOT/scripts/run_law_gate.py" --laws-only; then
     echo "" >&2
     echo "PUSH REFUSED: a constitutional law fence is failing (L1.37)." >&2

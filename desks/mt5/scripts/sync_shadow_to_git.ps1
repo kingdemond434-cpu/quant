@@ -521,10 +521,14 @@ $relPaths = @(
     # The halt of 2026-09-07..24 was recorded in the decision ledger 1,200 times and read by no
     # one; this is its verdict, carried to every reader of the branch. Box-written state.
     "desks/mt5/data/placement_interlock.json",
-    # THE SEAL THE BOX RUNS (2026-09-30). Adopt-And-Seal commits RELEASE.json locally on every
-    # seal, but it was never on this list, so origin's copy stayed at 2026-09-15 while the box
-    # re-sealed daily: no reader off the box could tell which release the gateway was running.
-    "desks/mt5/data/RELEASE.json",
+    # THE SEAL THE BOX RUNS, UNDER ITS OWN NAME (2026-09-30; renamed 2026-10-06). Adopt-And-Seal
+    # commits RELEASE.json locally on every seal, and origin's copy stayed at 2026-09-15 while the
+    # box re-sealed daily. Publishing RELEASE.json itself fixed that and broke something worse: CI's
+    # seal job ALSO writes desks/mt5/data/RELEASE.json (the TESTED seal of the branch), so the two
+    # writers overwrote each other on origin and neither reader could trust the file. The box's
+    # seal is copied to BOX_RELEASE_SEAL.json just below and published under that name; origin's
+    # RELEASE.json stays CI's. Under desks/mt5/reports/, so Adopt-Release keeps it as box state.
+    "desks/mt5/reports/BOX_RELEASE_SEAL.json",
     # THE TIER S BOX ATTESTATION (2026-09-30). Every tier_s pass writes it: per layer, whether
     # its artifact is fresh on THIS host and its contract not REJECTED, plus digests of TIER_S,
     # ALPHA_RANK, ONLINE_FDR_ROWS, IMMUNE, allocator_tilts, research_budget, the door verdicts
@@ -598,8 +602,51 @@ $reportPaths = @(
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable
     # only from the box, so the box is the only machine that can refresh it. ~1.5 MB, a daily
     # frame that changes once a day; the cap above still applies.
-    "desks/mt5/data/cross_asset_anchors.pkl"
+    "desks/mt5/data/cross_asset_anchors.pkl",
+    # THE BOX AUTHORITIES THAT NEVER REACHED ORIGIN (post-merge audit of #181, 2026-10-06). Each
+    # is written on the box and read off it as if it were current; the branch copies stopped on
+    # 2026-09-28. The survivor registry the promoter and gateway admit from; stall_watch's
+    # ten-minute health record (memory, commit holders, alerts); the allocator's forecast log and
+    # the compute ledger (both small append-only JSONL); the macro desk's state; and the world
+    # frontier, whose size is why it carries its own cap below rather than widening this one.
+    "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
+    "desks/mt5/data/stall_watch.json",
+    "desks/mt5/data/pf_forecast_log.jsonl",
+    "desks/mt5/data/compute_ledger.jsonl",
+    "desks/mt5/data/macro/MACRO_INTEL.json",
+    "desks/mt5/data/macro/multiplicity.json",
+    "desks/mt5/data/macro/source_credibility.json",
+    "desks/mt5/data/macro/taxonomy.json",
+    "desks/mt5/data/intelligence/world/frontier.json"
 )
+# A NAMED EXCEPTION TO THE CAP, NOT A WIDER CAP. world/frontier.json measured 12,473,842 bytes on
+# the branch (2026-09-28); under the 4 MB cap it would be skipped every pass and never published.
+# It alone gets 32 MB, so the rest of the wire stays bounded at 4 MB.
+$ReportCapOverride = @{
+    "desks/mt5/data/intelligence/world/frontier.json" = 32MB
+}
+# THE BOX'S SEAL, COPIED UNDER ITS OWN NAME BEFORE THE LISTS ARE READ (2026-10-06). Byte-for-byte,
+# and only when it differs, so an unchanged seal makes no new commit. A failure is logged and the
+# rest of the state still publishes: a missing seal copy is a gap the freshness check names.
+try {
+    $sealSrc = Join-Path $RepoRoot "desks\mt5\data\RELEASE.json"
+    $sealDst = Join-Path $RepoRoot "desks\mt5\reports\BOX_RELEASE_SEAL.json"
+    if (Test-Path -LiteralPath $sealSrc -PathType Leaf) {
+        $srcBytes = [System.IO.File]::ReadAllBytes($sealSrc)
+        $same = $false
+        if (Test-Path -LiteralPath $sealDst -PathType Leaf) {
+            $dstBytes = [System.IO.File]::ReadAllBytes($sealDst)
+            $same = ($dstBytes.Length -eq $srcBytes.Length) -and
+                    ([System.Linq.Enumerable]::SequenceEqual($dstBytes, $srcBytes))
+        }
+        if (-not $same) {
+            New-Item -ItemType Directory -Force -Path (Split-Path $sealDst) | Out-Null
+            [System.IO.File]::WriteAllBytes($sealDst, $srcBytes)
+        }
+    }
+} catch {
+    Write-SyncLog ("box seal copy failed: {0}" -f $_.Exception.Message)
+}
 $existing = @()
 foreach ($rel in $relPaths) {
     $full = Join-Path $RepoRoot ($rel -replace "/", "\")
@@ -609,8 +656,10 @@ foreach ($rel in $reportPaths) {
     $full = Join-Path $RepoRoot ($rel -replace "/", "\")
     if (-not (Test-Path $full -PathType Leaf)) { continue }
     $bytes = (Get-Item -LiteralPath $full).Length
-    if ($bytes -gt $ReportCapBytes) {
-        Write-SyncLog ("SKIP report {0}: {1:N0} bytes exceeds the {2:N0}-byte cap for this wire" -f $rel, $bytes, $ReportCapBytes)
+    $cap = $ReportCapBytes
+    if ($ReportCapOverride.ContainsKey($rel)) { $cap = $ReportCapOverride[$rel] }
+    if ($bytes -gt $cap) {
+        Write-SyncLog ("SKIP report {0}: {1:N0} bytes exceeds the {2:N0}-byte cap for this wire" -f $rel, $bytes, $cap)
         continue
     }
     $existing += $rel

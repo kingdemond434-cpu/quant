@@ -48,6 +48,11 @@ ROOT = Path(__file__).resolve().parents[2]
 DESK = ROOT / "desks" / "mt5"
 RELEASE = DESK / "data" / "RELEASE.json"
 RELEASE_REL = "desks/mt5/data/RELEASE.json"
+#: The box's own seal as published to origin (sync_shadow_to_git.ps1). Origin's RELEASE.json is
+#: CI's TESTED seal; this is what the trading box sealed and runs. See `box_release_view`.
+BOX_RELEASE_SEAL_REL = "desks/mt5/reports/BOX_RELEASE_SEAL.json"
+#: `sealed_by` values written by the box's own sealers (Adopt-And-Seal.ps1, Seal-IfClean.ps1).
+BOX_SEALERS: tuple[str, ...] = ("Adopt-And-Seal", "Seal-IfClean")
 
 #: Every module that places, sizes, vetoes or promotes. Widened 2026-09-05 to the modules the
 #: box-side smoke test imports: the scalp executor, netting, the execution policy and registry,
@@ -111,6 +116,9 @@ RELEASE_CODE_PATHS: tuple[str, ...] = (
 #: is the actual defect, not the five names.
 NON_CODE: frozenset[str] = frozenset({
     RELEASE_REL,
+    # The box's own seal, published under its own name so it never overwrites CI's
+    # RELEASE.json on origin (2026-10-06). A copy of RELEASE.json as the box sealed it.
+    "desks/mt5/reports/BOX_RELEASE_SEAL.json",
     "desks/mt5/data/release_identity.json",
     "desks/mt5/reports/shadow/shadow_health.json",
     "desks/mt5/data/gateway_state.json",
@@ -551,6 +559,31 @@ def load(root: Path | None = None) -> dict[str, Any] | None:
     except (OSError, ValueError):
         return None
     return doc if isinstance(doc, dict) else None
+
+
+def box_release_view(root: Path | None = None) -> tuple[dict[str, Any] | None, str]:
+    """THE SEAL THE TRADING BOX RUNS, from wherever this is read (2026-10-06).
+
+    Two writers produce a RELEASE.json: CI's seal job (the tested seal of the branch, committed
+    on origin) and the box's own sealers (committed locally on the box). On the box the local
+    file IS the box's seal; off the box origin's file is CI's, and the box's arrives as
+    BOX_RELEASE_SEAL.json. So: RELEASE.json when a box sealer wrote it, else the published box
+    seal, else RELEASE.json labelled as CI's -- never silently passed off as the box's view.
+    Returns (record or None, source label)."""
+    r = root or ROOT
+    rec = load(root)
+    if rec is not None and str(rec.get("sealed_by") or "") in BOX_SEALERS:
+        return rec, RELEASE_REL
+    try:
+        box = json.loads((r / BOX_RELEASE_SEAL_REL).read_text("utf-8-sig"))
+    except (OSError, ValueError):
+        box = None
+    if isinstance(box, dict):
+        return box, BOX_RELEASE_SEAL_REL
+    if rec is not None:
+        by = rec.get("sealed_by") or "unknown"
+        return rec, f"{RELEASE_REL} (sealed_by {by}: not the box's own seal)"
+    return None, "no RELEASE.json and no BOX_RELEASE_SEAL.json"
 
 
 _CACHE: dict[str, Any] = {"mtime": None, "id": None}

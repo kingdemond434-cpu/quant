@@ -65,6 +65,9 @@ ENV_STALE_REFUSES = "MT5_RELEASE_STALE_REFUSES"
 #: note on libs/ops/release.NON_CODE for the measurement.
 NON_CODE: frozenset[str] = frozenset({
     RELEASE_REL,
+    # The box's own seal, published under its own name so it never overwrites CI's
+    # RELEASE.json on origin (2026-10-06). A copy of RELEASE.json as the box sealed it.
+    "desks/mt5/reports/BOX_RELEASE_SEAL.json",
     "desks/mt5/data/release_identity.json",
     "desks/mt5/reports/shadow/shadow_health.json",
     "desks/mt5/data/gateway_state.json",

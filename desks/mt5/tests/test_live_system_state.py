@@ -67,6 +67,7 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
     paths: dict[str, Any] = {
         "RELEASE_IDENTITY": data / "release_identity.json",
         "RELEASE_PATHS": (data / "RELEASE.json", tmp_path / "RELEASE.json"),
+        "BOX_RELEASE_SEAL": reports / "BOX_RELEASE_SEAL.json",
         "GATEWAY_STATE": data / "gateway_state.json",
         "SLEEVES": data / "sleeves.json",
         "PF_ALLOCATION": reports / "pf_allocation.json",

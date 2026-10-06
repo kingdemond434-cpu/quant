@@ -52,6 +52,10 @@ ROOT = DESK.parent.parent
 #: the same fact is written to different paths on the VPS and on the trading box.
 RELEASE_IDENTITY = DESK / "data" / "release_identity.json"
 RELEASE_PATHS = (DESK / "data" / "RELEASE.json", ROOT / "RELEASE.json", DESK / "RELEASE.json")
+#: The box's own seal as published to origin (2026-10-06). Off the box, RELEASE.json is CI's
+#: tested seal; the box's arrives under this name (libs.ops.release.box_release_view's rule).
+BOX_RELEASE_SEAL = DESK / "reports" / "BOX_RELEASE_SEAL.json"
+BOX_SEALERS = ("Adopt-And-Seal", "Seal-IfClean")
 GATEWAY_STATE = DESK / "data" / "gateway_state.json"
 SLEEVES = DESK / "data" / "sleeves.json"
 PF_ALLOCATION = DESK / "reports" / "pf_allocation.json"
@@ -556,6 +560,12 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     inputs = Inputs(now)
     identity = inputs.json("release_identity", RELEASE_IDENTITY)
     manifest = inputs.json("release_manifest", *RELEASE_PATHS)
+    if (not (isinstance(manifest, dict) and str(manifest.get("sealed_by") or "") in BOX_SEALERS)
+            and BOX_RELEASE_SEAL.is_file()):
+        # Not the box's own seal (CI's, read off the box): the box's published seal wins.
+        box_seal = inputs.json("box_release_seal", BOX_RELEASE_SEAL)
+        if isinstance(box_seal, dict):
+            manifest = box_seal
     gateway = inputs.json("gateway_state", GATEWAY_STATE)
     sleeves_doc = inputs.json("sleeves", SLEEVES)
     allocation = inputs.json("pf_allocation", PF_ALLOCATION)
