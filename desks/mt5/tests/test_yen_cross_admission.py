@@ -114,6 +114,15 @@ def test_the_shipped_policy_file_admits_exactly_gold_and_one_yen_sleeve() -> Non
     assert lp.refuse({"symbol": "USDJPY", "name": CHOSEN_MT5}, pol) is None
     assert lp.refuse({"symbol": "EURJPY", "name": "eurjpy_session_range_breakout_asia_0_wb_12"},
                      pol) is not None
+    assert lp.refuse({"symbol": "EURJPY", "family": "discovered"}, pol) is not None
+
+
+def test_an_explicit_wider_policy_retains_mechanism_fences(tmp_path: Path) -> None:
+    pol = _policy(tmp_path, {"live_symbols": ["*"]})
+    assert lp.refuse({"symbol": "EURJPY", "family": "session_range_breakout"}, pol) is None
+    assert lp.refuse({"symbol": "EURJPY", "family": "discovered"}, pol) is not None
+    assert lp.refuse({"symbol": "EURJPY", "timeframe": "M15"}, pol) is not None
+    assert lp.refuse({"symbol": "EURJPY", "exec": "scalp_market"}, pol) is not None
 
 
 # ------------------------------------------------------------------- E8's correlation block

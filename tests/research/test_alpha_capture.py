@@ -220,9 +220,9 @@ def test_the_report_never_collides_with_execution_intelligence() -> None:
     assert ac.CONTRACT.name == "ANALYST_VIEWS_CONTRACT.json"
     state = json.loads((ROOT / "docs" / "research" / "runtime_state.json").read_text("utf-8"))
     rows = [r for r in state.get("organs") or state.get("rows") or []
-            if isinstance(r, dict)
-            and r.get("organ") == "executable:desks/mt5/research/alpha_capture.py"]
-    assert rows and rows[0]["artifact_declared"] == "desks/mt5/reports/ANALYST_VIEWS.json"
+            if isinstance(r, dict) and r.get("organ") == "leg:alpha_capture"]
+    assert rows and "desks/mt5/research/alpha_capture.py" in rows[0]["code"]
+    assert rows[0]["artifact_declared"] == "desks/mt5/reports/ANALYST_VIEWS.json"
 
 
 # ------------------------------------------------------------------------------ one pass

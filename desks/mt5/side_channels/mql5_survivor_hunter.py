@@ -244,8 +244,11 @@ def run_and_save() -> list[dict]:
     except ImportError as exc:
         print(f"  metric fence unavailable here ({exc}); the compiler still applies it")
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / f"discoveries_{now:%Y%m%d_%H%M}.json").write_text(
-        json.dumps(rows, indent=1, default=str), "utf-8")
+    try:
+        from side_channels.discovery_io import write_discoveries
+    except ModuleNotFoundError:
+        from discovery_io import write_discoveries
+    rows = write_discoveries(OUT / f'discoveries_{now:%Y%m%d_%H%M}.json', rows)
     # ranked shortlist: the ONLY thing judgment needs to read
     short = sorted((r for r in rows if r["ev_score"] > 0 and r["phenotypes"]
                     and not r.get("metric_refused")),

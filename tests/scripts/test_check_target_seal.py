@@ -44,7 +44,7 @@ def _repo(tmp_path: Path, judge: str, signed: str) -> Path:
     _git(repo, "config", "user.name", "t")
     _git(repo, "config", "commit.gpgsign", "false")
     (repo / "scripts" / "check_immutable_evaluator.py").write_text(EVAL_SRC, "utf-8")
-    (repo / "judge.py").write_text(judge, "utf-8")
+    (repo / "judge.py").write_text(judge, "utf-8", newline="")
     (repo / "desks" / "mt5" / "data" / "IMMUTABLE_MANIFEST.json").write_text(
         json.dumps({"files": {"judge.py": _h(signed)}}), "utf-8")
     _git(repo, "add", "-A")

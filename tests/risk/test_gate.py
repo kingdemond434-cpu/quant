@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from tests.risk.conftest import make_account, make_intent
 
 from libs.risk.config import PreservationConfig, RiskConfig
 from libs.risk.gate import risk_gate
 from libs.store.connection import Database
 from libs.store.registries import RiskRegistry
 from libs.store.trading import OrderStore
+from tests.risk.conftest import make_account, make_intent
 
 
 def test_benign_intent_is_approved() -> None:

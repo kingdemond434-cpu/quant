@@ -30,11 +30,14 @@ papered over with a stale number presented as current.
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "desks" / "mt5" / "data" / "account_state.json"
+sys.path.insert(0, str(ROOT / "desks" / "mt5"))
+from research.mt5_session import attach_or_initialize  # noqa: E402
 
 
 def main() -> int:
@@ -44,7 +47,7 @@ def main() -> int:
         print(f"MetaTrader5 unavailable: {type(exc).__name__}: {exc}")
         return 0
 
-    if mt5.terminal_info() is None and not mt5.initialize():
+    if not attach_or_initialize(mt5, timeout=15000):
         # LEAVE THE OLD FILE ALONE. Writing a null-filled record here would turn "I could not
         # reach the terminal this minute" into a published verdict that the account is empty --
         # the same confusion the dashboard already shipped once.
@@ -58,12 +61,17 @@ def main() -> int:
 
     now = datetime.now(UTC)
     day0 = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    deals = mt5.history_deals_get(day0, now)
+    positions = mt5.positions_get()
+    if deals is None or positions is None:
+        print("broker history or positions unavailable; previous file left in place")
+        return 1
     closed = 0.0
-    for d in mt5.history_deals_get(day0, now) or ():
+    for d in deals:
         closed += float(getattr(d, "profit", 0.0) or 0.0)
         closed += float(getattr(d, "commission", 0.0) or 0.0)
         closed += float(getattr(d, "swap", 0.0) or 0.0)
-    floating = sum(float(getattr(p, "profit", 0.0) or 0.0) for p in (mt5.positions_get() or ()))
+    floating = sum(float(getattr(p, "profit", 0.0) or 0.0) for p in positions)
 
     rec = {
         "updated_at": now.isoformat(timespec="seconds"),
@@ -81,7 +89,7 @@ def main() -> int:
         "today_pnl": round(closed + floating, 2),
         "today_closed_pnl": round(closed, 2),
         "today_floating_pnl": round(floating, 2),
-        "open_positions": len(mt5.positions_get() or ()),
+        "open_positions": len(positions),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     tmp = OUT.with_suffix(".json.tmp")

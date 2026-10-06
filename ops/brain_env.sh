@@ -392,7 +392,7 @@ brain_auth_check() {
     fi
     for m in ${_BRAIN_MODEL_CHAIN:-claude-opus-5 claude-opus-4-8}; do
         export ANTHROPIC_MODEL="$m"
-        out="$(claude -p 'Reply with exactly: PING-OK' --dangerously-skip-permissions 2>&1 | tail -3)"
+        out="$(claude -p 'Reply with exactly: PING-OK' --allowedTools "" --max-turns 1 2>&1 | tail -3)"
         if printf '%s' "$out" | grep -q "PING-OK"; then
             # An OPEN observation CLEARS the memo -- the wall is only ever believed until the
             # next successful ping, so a stale or wrong memo self-heals on first contact.
@@ -424,7 +424,7 @@ brain_auth_check() {
         unset CLAUDE_CODE_OAUTH_TOKEN
         ANTHROPIC_API_KEY="$(cat "$_BRAIN_KEYFILE")"
         export ANTHROPIC_API_KEY
-        out="$(claude -p 'Reply with exactly: PING-OK' --dangerously-skip-permissions 2>&1 | tail -3)"
+        out="$(claude -p 'Reply with exactly: PING-OK' --allowedTools "" --max-turns 1 2>&1 | tail -3)"
         if printf '%s' "$out" | grep -q "PING-OK"; then
             _brain_page "Brain hit subscription quota -- FELL BACK to metered API key; cycles continue on metered spend"
             return 0

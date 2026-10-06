@@ -99,13 +99,19 @@ def test_no_state_file_entry_is_a_python_source():
     assert bad == [], f"code exempted as state: {bad}"
 
 
-def test_every_state_file_is_under_the_desk_and_absolute_from_the_repo_root():
+def test_every_state_file_has_an_approved_runtime_owner_and_is_repo_relative():
+    canonical_runtime_records = {
+        "context/decision_journal.jsonl",
+        "docs/desk_lessons.jsonl",
+    }
     for p in release.STATE_FILES:
-        assert p.startswith("desks/mt5/"), f"{p} is not a desk path"
+        assert p.startswith("desks/mt5/") or p in canonical_runtime_records, (
+            f"{p} has no approved runtime owner")
         assert not p.startswith("/") and "\\" not in p, f"{p} is not repo-relative posix"
-        assert not any(p.startswith(pre) for pre in release.STATE_PREFIXES), (
-            f"{p} is already covered by a prefix; listing it twice makes the list lie about "
-            f"what it is for")
+        if p not in canonical_runtime_records:
+            assert not any(p.startswith(pre) for pre in release.STATE_PREFIXES), (
+                f"{p} is already covered by a prefix; listing it twice makes the list lie about "
+                f"what it is for")
 
 
 def test_the_powershell_side_carries_the_same_list():

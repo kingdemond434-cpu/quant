@@ -413,6 +413,11 @@ def run(*, budget_s: float = 900.0, dry_run: bool = False, max_new: int = MAX_NE
                                                      key=lambda r: str(r.get("id")))})
         registry_status = record_registry(minted, credit)
         if donations:
+            from libs.data.pit import stamp_or_refuse
+
+            donations, refused = stamp_or_refuse(donations, "representation_forge")
+            if refused:
+                raise ValueError(f"Representation forge refused {len(refused)} unstamped donations")
             stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M%S")
             path = DONATIONS / f"discoveries_{stamp}.json"
             _atomic(path, donations)
