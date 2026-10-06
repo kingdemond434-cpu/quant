@@ -9,6 +9,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
 for _p in (str(DESK), str(ROOT)):
@@ -64,8 +66,8 @@ def _desk(tmp: Path) -> Path:
     (series / "cn_test_stat.csv").write_text(
         head + "north,10.5,2026-07-31,2026-08-20 00:00:00+00:00,2026-09-01T00:00:00+00:00,"
                "2026-08-20,2026-09-01T00:00:00+00:00,,cn_test_stat,v1\n"
-               "south,11.0,2026-08-31,2026-09-20 00:00:00+00:00,2026-09-01T00:00:00+00:00,"
-               "2026-09-20,2026-09-01T00:00:00+00:00,,cn_test_stat,v1\n", encoding="utf-8")
+               "south,11.0,2026-08-31,2026-09-20 00:00:00+00:00,2026-09-21T00:00:00+00:00,"
+               "2026-09-20,2026-09-21T00:00:00+00:00,,cn_test_stat,v1\n", encoding="utf-8")
     (series / "us_test_stat.csv").write_text(
         head + "x,1.0,2026-07-31,2026-08-20,2026-09-01T00:00:00+00:00,2026-08-20,"
                "2026-09-01T00:00:00+00:00,,us_test_stat,v1\n", encoding="utf-8")
@@ -171,8 +173,10 @@ def test_pass_maps_every_asia_store_and_a_downstream_reader_sees_it(tmp_path: Pa
     frame = [r for r in rows if r["source_id"] == "cn_test_stat"]
     assert {r["entity"] for r in frame} == {"north", "south"}
     south = next(r for r in frame if r["entity"] == "south")
-    # declared lag says 2026-09-20 but the desk held it on 2026-09-01: knowable is bounded
-    assert south["knowable_at"] == "2026-09-01T00:00:00+00:00"
+    # declared lag says the DATE 2026-09-20; its Shanghai day ends 15:59:59Z and the desk first
+    # held it at 2026-09-21 00:00Z: knowable_at = max(local end of day, received_at)
+    assert south["knowable_at"] == "2026-09-21T00:00:00+00:00"
+    assert south["knowable_basis"] == "bounded_by_receipt"
 
 
 def test_rerun_appends_nothing_even_without_the_cursor(tmp_path: Path) -> None:
@@ -217,13 +221,15 @@ def test_each_knowable_basis_is_set_from_how_knowable_at_was_derived(tmp_path: P
     # bounded_by_receipt: no publication instant at all -> knowable_at IS received_at
     (o,) = ad.map_alt_proxies_row(src, {**base, "published_time": None})
     assert o.knowable_basis == "bounded_by_receipt" and o.knowable_at == o.received_at
-    # declared_lag: a registry frame's modelled available_time, earlier than the fetch
+    # declared_lag: a registry frame's modelled available_time is a DATE, so knowable_at is the
+    # end of that local day (no receipt instant later than it)
     reg = {"id": "cn_test_stat", "country": "cn"}
     rec = {"event_time": "2026-07-31", "available_time": "2026-08-20T00:00:00+00:00",
-           "ingested_time": "2026-09-01T00:00:00+00:00", "level": 10.5}
+           "level": 10.5}
     (o,) = ad.map_asia_frame_row(reg, rec, ["level"])
-    assert (o.knowable_basis, o.knowable_at) == ("declared_lag", "2026-08-20T00:00:00+00:00")
-    (o,) = ad.map_asia_frame_row(reg, {**rec, "available_time": "2026-09-20T00:00:00+00:00"},
+    assert (o.knowable_basis, o.knowable_at) == ("declared_lag", "2026-08-20T15:59:59+00:00")
+    # bounded_by_receipt: first sight after the local day ended -> max() is received_at
+    (o,) = ad.map_asia_frame_row(reg, {**rec, "ingested_time": "2026-09-01T00:00:00+00:00"},
                                  ["level"])
     assert o.knowable_basis == "bounded_by_receipt" and o.knowable_at == o.received_at
     # s2.5 producer rows: the contract word is kept, free text is read into the vocabulary
@@ -248,8 +254,8 @@ def test_each_knowable_basis_is_set_from_how_knowable_at_was_derived(tmp_path: P
     doc = ad.run(desk, ledger_root=root, report=tmp_path / "rep.json", now=NOW)
     assert doc["totals"]["refused"] == 0 and doc["contract_gaps"] == []
     rows = _all_rows(root)
-    assert {r["knowable_basis"] for r in rows} == {
-        "printed_stamp", "declared_lag", "bounded_by_receipt"}
+    # every frame row here was first read after its local day ended, so max() is received_at
+    assert {r["knowable_basis"] for r in rows} == {"printed_stamp", "bounded_by_receipt"}
     assert all(r["knowable_basis"] in sc.KNOWABLE_BASES for r in rows)
     assert not any("knowable_basis" in (r["attributes"] or {}) for r in rows)
     assert all(r["knowable_at"] == r["received_at"] for r in rows
@@ -280,3 +286,137 @@ def test_adapter_rows_show_up_in_the_hourly_sensor_ledger_digest(
     assert classes == {ad.SENSOR_CLASS: 7}
     assert ad.LEDGER_DIGEST == "desks/mt5/reports/SENSOR_LEDGER.json" == \
         str(dg.REPORT.relative_to(ROOT)).replace("\\", "/")
+
+
+# ============================================================== the date-only look-ahead (#225)
+def _close(country: str, received: str | None) -> sc.SensorObservation:
+    rec: dict[str, Any] = {"event_time": "2026-09-01",
+                           "available_time": "2026-09-01T00:00:00+00:00", "close": 3.5}
+    if received:
+        rec["ingested_time"] = received
+    (o,) = ad.map_asia_frame_row({"id": f"{country}_close", "country": country}, rec, ["close"])
+    return o
+
+
+def test_cn_close_dated_0901_is_not_knowable_before_the_shanghai_day_ends() -> None:
+    """A lag-0 CN close dated 09-01 was knowable at 00:00Z and usable at 03:00Z, before the
+    15:00 CST (07:00Z) close. Now knowable_at = max(end of the Shanghai day, received_at)."""
+    o = _close("cn", "2026-09-01T02:00:00+00:00")          # fetched 10:00 CST, intraday
+    k = sc.parse_time(o.knowable_at)
+    assert k is not None and k >= datetime(2026, 9, 1, 7, 0, tzinfo=UTC)   # after the close
+    assert o.knowable_at == "2026-09-01T15:59:59+00:00"     # 23:59:59 Asia/Shanghai
+    assert o.knowable_basis == "declared_lag"
+    assert sc.usable_at(o, "2026-09-01T03:00:00Z") is False
+    assert sc.usable_at(o, "2026-09-01T03:00:00Z", basis="world") is False
+    # an intraday read of a date-stamped close is refused by the contract, not admitted early
+    assert any("received_at precedes knowable_at" in d for d in sc.defects(o))
+    # read after the day ended: knowable_at IS received_at
+    late = _close("cn", "2026-09-01T20:00:00+00:00")
+    assert (late.knowable_at, late.knowable_basis) == ("2026-09-01T20:00:00+00:00",
+                                                      "bounded_by_receipt")
+    assert sc.defects(late) == [] and sc.usable_at(late, "2026-09-01T19:59:59Z") is False
+
+
+@pytest.mark.parametrize(("country", "eod"), [
+    ("jp", "2026-09-01T14:59:59+00:00"),     # Asia/Tokyo, UTC+9
+    ("kr", "2026-09-01T14:59:59+00:00"),     # Asia/Seoul, UTC+9
+    ("hk", "2026-09-01T15:59:59+00:00"),
+    ("in", "2026-09-01T18:29:59+00:00"),     # Asia/Kolkata, UTC+5:30
+    ("xx", "2026-09-02T11:59:59+00:00"),     # unknown: UTC-12, the LATEST end of day
+])
+def test_each_country_ends_its_day_in_its_own_zone(country: str, eod: str) -> None:
+    o = _close(country, None)
+    assert (o.knowable_at, o.knowable_basis) == (eod, "declared_lag")
+    assert sc.usable_at(o, "2026-09-01T03:00:00Z", basis="world") is False
+    assert sc.defects(o) == []
+
+
+def test_alt_proxies_revision_correction_and_rerun_make_no_vintage_conflict(
+        tmp_path: Path) -> None:
+    """The ledger keys vintages by knowable_at: a value re-sent under a held knowable_at with a
+    different value is a refused conflict. A revision, a correction in place and a re-run must
+    each produce 0 conflicts."""
+    desk = _desk(tmp_path)
+    root = tmp_path / "sensors"
+    rep = tmp_path / "rep.json"
+    first = ad.run(desk, ledger_root=root, report=rep, now=NOW)
+    assert first["totals"]["conflicts"] == 0 and first["totals"]["revisions"] == 2
+    again = ad.run(desk, ledger_root=root, report=tmp_path / "rep2.json", now=NOW)
+    assert again["totals"]["conflicts"] == 0 and again["totals"]["appended"] == 0
+    # the store corrects the 09-20 print IN PLACE, keeping its first_seen stamp
+    path = desk / "data" / "alt_proxies" / "obs" / "kr_exports_early.json"
+    store = json.loads(path.read_text(encoding="utf-8"))
+    store["exports|2026-09-20"]["value_first"] = 161.0
+    store["exports|2026-09-20"]["value_last"] = 161.0
+    _write(path, store)
+    fix = ad.run(desk, ledger_root=root, report=rep, now=NOW + timedelta(hours=1))
+    t = fix["totals"]
+    assert t["conflicts"] == 0 and t["corrections_restamped"] == 1 and t["revisions"] == 1
+    led = sc.SensorLedger(root)
+    held = led.latest("asia.alt_proxies:kr_exports_early", "KR", "exports", "2026-09-20")
+    assert held is not None and held["value"] == 161.0
+    assert held["knowable_at"] > "2026-09-21T09:00:00+00:00"   # strictly later than corrected
+    # the old vintage still answers for the instant before the correction was seen
+    before = led.as_of("asia.alt_proxies:kr_exports_early", "KR", "exports", "2026-09-20",
+                       "2026-09-22T00:00:00Z")
+    assert before is not None and before["value"] == 160.0
+    rerun = ad.run(desk, ledger_root=root, report=tmp_path / "rep3.json",
+                   now=NOW + timedelta(hours=2))
+    assert rerun["totals"]["conflicts"] == 0 and rerun["totals"]["appended"] == 0
+
+
+def test_a_corrupt_index_is_counted_and_never_reset(tmp_path: Path) -> None:
+    desk = _desk(tmp_path)
+    root = tmp_path / "sensors"
+    rep = tmp_path / "rep.json"
+    ad.run(desk, ledger_root=root, report=rep, now=NOW)
+    shards = {p.name: p.read_bytes() for p in (root / "observations").glob("*.jsonl")}
+    index = root / "latest_numeric.json"
+    index.write_text("{not json", encoding="utf-8")
+    rep.unlink()                                   # force every store to be re-sent
+    doc = ad.run(desk, ledger_root=root, report=rep, now=NOW + timedelta(hours=1))
+    assert doc["ledger_status"].startswith("INDEX_CORRUPT")
+    assert doc["totals"]["index_corrupt"] >= 1 and doc["totals"].get("appended", 0) == 0
+    assert all(v["status"] in ("INDEX_CORRUPT", "MAPPED") for v in doc["stores"].values()
+               if "status" in v and v.get("mapped"))
+    assert not any(k.startswith("alt_proxies:") for k in doc["stores_seen"])
+    assert index.read_text(encoding="utf-8") == "{not json"          # never reset
+    assert {p.name: p.read_bytes() for p in (root / "observations").glob("*.jsonl")} == shards
+
+
+def test_a_failed_write_is_counted_and_the_store_is_resent(tmp_path: Path,
+                                                         monkeypatch: Any) -> None:
+    desk = _desk(tmp_path)
+    root = tmp_path / "sensors"
+    rep = tmp_path / "rep.json"
+
+    def failed(self: Any, observations: Any, now: Any = None) -> dict[str, Any]:
+        return {"status": "WRITE_FAILED", "why": "OSError: disk full", "appended": 0,
+                "duplicates": 0, "revisions": 0, "conflicts": 0, "refused": 0,
+                "refusals": [], "shards": []}
+    monkeypatch.setattr(sc.SensorLedger, "append", failed)
+    doc = ad.run(desk, ledger_root=root, report=rep, now=NOW)
+    assert doc["totals"]["write_failed"] >= 3 and doc["stores_seen"] == {}
+    monkeypatch.undo()
+    again = ad.run(desk, ledger_root=root, report=rep, now=NOW + timedelta(hours=1))
+    assert again["totals"]["appended"] == 7
+
+
+def test_as_of_on_adapter_rows_answers_nothing_before_knowable_at(tmp_path: Path) -> None:
+    desk = _desk(tmp_path)
+    root = tmp_path / "sensors"
+    ad.run(desk, ledger_root=root, report=tmp_path / "rep.json", now=NOW)
+    led = sc.SensorLedger(root)
+    rows = [r for r in _all_rows(root) if r["source_id"] == "cn_test_stat"]
+    assert rows
+    for r in rows:
+        k = sc.parse_time(r["knowable_at"])
+        assert k is not None
+        args = (r["sensor_id"], r["entity"], r["metric"], r["event_time"])
+        assert led.as_of(*args, k - timedelta(seconds=1)) is None
+        got = led.as_of(*args, k)
+        assert got is not None and got["value"] == r["value"]
+        assert got["knowable_at"] == r["knowable_at"]
+        latest = led.latest(*args)
+        assert latest is not None and latest["knowable_at"] == r["knowable_at"]
+        assert sc.usable_at(r, k - timedelta(seconds=1)) is False

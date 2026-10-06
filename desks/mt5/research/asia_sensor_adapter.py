@@ -83,7 +83,8 @@ import time
 from collections import Counter
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import fields
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
+from datetime import time as dtime
 from pathlib import Path
 from typing import Any
 
@@ -186,6 +187,68 @@ def _sensor(family: str, source_id: str) -> str:
     return f"asia.{family}:{source_id}"
 
 
+#: Country -> the IANA zone whose LOCAL END OF DAY bounds a date-only stamp. Where a country
+#: spans zones the WESTERNMOST is used (its day ends latest in UTC), so the bound is never early.
+LOCAL_TZ: dict[str, str] = {
+    "CN": "Asia/Shanghai", "HK": "Asia/Hong_Kong", "MO": "Asia/Macau", "TW": "Asia/Taipei",
+    "JP": "Asia/Tokyo", "KR": "Asia/Seoul", "IN": "Asia/Kolkata", "SG": "Asia/Singapore",
+    "MY": "Asia/Kuala_Lumpur", "ID": "Asia/Jakarta", "TH": "Asia/Bangkok",
+    "VN": "Asia/Ho_Chi_Minh", "PH": "Asia/Manila", "KZ": "Asia/Oral", "BD": "Asia/Dhaka",
+    "PK": "Asia/Karachi", "LK": "Asia/Colombo"}
+#: An unknown country (or a host without the zone database) ends its day at UTC-12, the LATEST
+#: end of day anywhere in absolute time (D+1 11:59:59Z). UTC+14's end of day is the EARLIEST
+#: (D 09:59:59Z), so it would re-open the look-ahead this bound exists to close.
+LATEST_TZ = timezone(timedelta(hours=-12))
+#: The end-of-day convention: the last whole second of the local calendar day.
+END_OF_DAY = dtime(23, 59, 59)
+
+
+def _date_only(stamp: Any) -> bool:
+    """A stamp that carries a DATE and no time of day: a bare date, or (as `pit_stamp` writes a
+    date plus a whole-day lag) exactly 00:00:00 UTC. Reading such a stamp as a UTC instant is
+    the look-ahead: a CN close dated 09-01 would be knowable at 09-01 00:00Z, 15h before the
+    15:00 CST close. A genuine 00:00Z print is only made later by this reading, never earlier."""
+    text = str(stamp or "").strip()
+    if not text or text == UNMEASURED:
+        return False
+    if "T" not in text and " " not in text:
+        return sc.parse_time(text) is not None
+    t = sc.parse_time(text)
+    return t is not None and (t.hour, t.minute, t.second, t.microsecond) == (0, 0, 0, 0)
+
+
+def local_end_of_day(stamp: Any, country: Any) -> datetime | None:
+    """23:59:59 local, in UTC, of the calendar date `stamp` names, in `country`'s zone."""
+    t = sc.parse_time(stamp)
+    if t is None:
+        return None
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    name = LOCAL_TZ.get(_region(country))
+    tz: Any = LATEST_TZ
+    if name:
+        try:
+            tz = ZoneInfo(name)
+        except (ZoneInfoNotFoundError, ValueError):
+            tz = LATEST_TZ
+    return datetime.combine(t.date(), END_OF_DAY, tzinfo=tz).astimezone(UTC)
+
+
+def _date_bound(stamp: Any, received: Any, country: Any) -> tuple[str, str]:
+    """(knowable_at, knowable_basis) for a DATE-ONLY declared stamp:
+    knowable_at = max(end of that local day, received_at); `declared_lag` when it is the end of
+    day, `bounded_by_receipt` when it is received_at. A row the desk received BEFORE the local
+    day ended keeps the end of day and is then refused by the contract (received_at precedes
+    knowable_at): an intraday read of a date-stamped value may be a partial, not the print."""
+    eod = local_end_of_day(stamp, country)
+    rx = sc.parse_time(received)
+    if eod is None:
+        return (sc.iso(received), "bounded_by_receipt") if rx is not None else (UNMEASURED,
+                                                                                UNMEASURED)
+    if rx is not None and rx > eod:
+        return sc.iso(rx), "bounded_by_receipt"
+    return sc.iso(eod), "declared_lag"
+
+
 def _bounded(stamp: Any, basis: str, received: Any) -> tuple[str, str]:
     """(knowable_at, knowable_basis): the world stamp with its basis, unless first sight came
     earlier or is the only instant -- then knowable_at is received_at itself and the basis is
@@ -276,6 +339,13 @@ def map_alt_proxies_row(source: Mapping[str, Any], row: Mapping[str, Any],
     v1 = _f(row.get("value_last"))
     n_rev = int(_f(row.get("n_revisions")) or 0)
     rev_at = row.get("revision_time")
+    # a revision is its own vintage: knowable at the desk's first sight of it, which must be
+    # STRICTLY later than the vintage it revises (the ledger keys vintages by knowable_at, so an
+    # equal or earlier stamp would be a conflict or an inverted history, never a revision)
+    rev_t, first_t = sc.parse_time(rev_at), sc.parse_time(knowable)
+    if rev_t is not None and first_t is not None and rev_t <= first_t:
+        out[0].attributes["revision_not_after_first"] = sc.iso(rev_at)  # type: ignore[index]
+        return out
     if v1 is not None and n_rev > 0 and rev_at and not math.isclose(v1, v0, rel_tol=1e-9,
                                                                     abs_tol=1e-12):
         out.append(sc.make(
@@ -294,7 +364,9 @@ def map_asia_frame_row(source: Mapping[str, Any], record: Mapping[str, Any],
     """One PIT-stamped asia_parser frame row -> one observation per numeric column.
 
     The frame's `available_time` is the registry's declared publication lag (or the fetch
-    instant for a cross-section snapshot); knowable_at is that, bounded by the fetch."""
+    instant for a cross-section snapshot). It is a DATE (date + whole-day lag, stamped 00:00
+    UTC), so knowable_at = max(end of that day in the source country's zone, received_at) --
+    `_date_bound`; a timed available_time keeps its own instant, bounded by the fetch."""
     sid = str(source["id"])
     event = record.get("event_time")
     received = record.get("ingested_time") or record.get("retrieval_time")
@@ -303,7 +375,10 @@ def map_asia_frame_row(source: Mapping[str, Any], record: Mapping[str, Any],
         return []
     snapshot = sc.iso(event) == sc.iso(received) or sc.iso(avail) == sc.iso(received)
     # a cross-section snapshot's available_time IS the fetch: only receipt bounds it
-    knowable, kbasis = _bounded(None if snapshot else avail, "declared_lag", received)
+    if not snapshot and _date_only(avail):
+        knowable, kbasis = _date_bound(avail, received, source.get("country"))
+    else:
+        knowable, kbasis = _bounded(None if snapshot else avail, "declared_lag", received)
     labels = [str(record.get(c)).strip() for c in label_columns
               if str(record.get(c, "")).strip() not in ("", "nan", "None", "NaT")]
     entity = (" | ".join(labels)[:120]) or _region(source.get("country"))
@@ -362,6 +437,11 @@ def map_contract_record(record: Mapping[str, Any], *, family: str,
         kw["knowable_at"] = record["available_time"]
         # a producer's available_time is its own release rule (period end + declared lag)
         producer_basis = producer_basis or "declared_lag"
+        if _date_only(record["available_time"]):
+            # a date, not an instant: the end of that local day, bounded by receipt
+            received = kw.get("received_at") or record.get("first_seen_utc")
+            kw["knowable_at"], producer_basis = _date_bound(
+                record["available_time"], received, record.get("geography"))
     if not kw.get("received_at") and record.get("first_seen_utc"):
         kw["received_at"] = record["first_seen_utc"]
     kw["knowable_basis"] = _basis_of(kw, producer_basis)
@@ -553,6 +633,45 @@ def _sig(path: Path) -> str:
     return f"{st.st_mtime_ns}:{st.st_size}"
 
 
+def _as_time(path: Path) -> datetime | None:
+    try:
+        return datetime.fromtimestamp(path.stat().st_mtime, UTC).replace(microsecond=0)
+    except OSError:
+        return None
+
+
+def restamp_corrections(ledger: sc.SensorLedger, obs: list[sc.SensorObservation],
+                        store_time: datetime | None, now: datetime
+                        ) -> tuple[list[sc.SensorObservation], int]:
+    """A store that CORRECTED a value in place re-sends it under the vintage the ledger already
+    holds (same knowable_at, different value), which the ledger refuses as a vintage conflict.
+    The correction is a new vintage: knowable at the desk's first sight of it -- the store's
+    write time, or this pass when that is not strictly later than the held vintage -- with
+    `bounded_by_receipt` (knowable_at == received_at). Read through the public `as_of`."""
+    out: list[sc.SensorObservation] = []
+    n = 0
+    for o in obs:
+        k = sc.parse_time(o.knowable_at)
+        if o.value is None or o.kind == "document" or k is None or o.event_time == UNMEASURED:
+            out.append(o)
+            continue
+        held = ledger.as_of(o.sensor_id, o.entity, o.metric, o.event_time, o.knowable_at)
+        if (not held or held["knowable_at"] != o.knowable_at or held["value"] == o.value
+                or held["observation_id"] == o.observation_id):
+            out.append(o)
+            continue
+        seen_at = store_time if store_time is not None and store_time > k else now
+        if seen_at <= k:
+            seen_at = k + timedelta(seconds=1)
+        stamp = sc.iso(seen_at)
+        attrs = {**dict(o.attributes), "corrects_vintage": o.knowable_at}
+        out.append(sc.make(**{**{f.name: getattr(o, f.name) for f in fields(o)},
+                              "observation_id": "", "knowable_at": stamp, "received_at": stamp,
+                              "knowable_basis": "bounded_by_receipt", "attributes": attrs}))
+        n += 1
+    return out, n
+
+
 def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float = 60.0,
         report: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     """One pass: every Asia store whose bytes changed since the last pass, mapped and appended."""
@@ -565,8 +684,14 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
     except (OSError, ValueError):
         prev = {}
     seen: dict[str, str] = dict(prev.get("stores_seen") or {}) if isinstance(prev, dict) else {}
-    if not ledger.latest_index():
-        seen = {}          # an empty or reset ledger is re-filled, whatever the cursor says
+    ledger_status = "OK"
+    try:
+        if not ledger.latest_index():
+            seen = {}      # an empty ledger is re-filled, whatever the cursor says
+    except sc.LedgerIndexCorrupt as exc:
+        # FAIL CLOSED: the index is never reset or rebuilt here, and the cursor is kept; every
+        # append below is refused by the ledger (INDEX_CORRUPT) and counted, nothing is lost
+        ledger_status = f"INDEX_CORRUPT: {str(exc)[:160]}"
     stores: dict[str, Any] = {}
     totals: Counter[str] = Counter()
     deferred: list[str] = []
@@ -591,16 +716,34 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
                 stores[name] = {"status": "ERROR",
                                 "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
                 continue
+            n_fix = 0
+            if obs and ledger_status == "OK":
+                try:
+                    obs, n_fix = restamp_corrections(ledger, obs, _as_time(path), now)
+                except sc.LedgerIndexCorrupt as exc:
+                    ledger_status = f"INDEX_CORRUPT: {str(exc)[:160]}"
             # the contract owns idempotency: a re-sent print (first or revised) is a duplicate
             res: dict[str, Any] = ledger.append(obs, now=now) if obs else {
-                "appended": 0, "duplicates": 0, "revisions": 0, "refused": 0, "refusals": []}
-            for k in ("appended", "duplicates", "revisions", "refused"):
+                "status": "OK", "appended": 0, "duplicates": 0, "revisions": 0, "conflicts": 0,
+                "refused": 0, "refusals": []}
+            status = str(res.get("status") or "OK")
+            for k in ("appended", "duplicates", "revisions", "conflicts", "refused"):
                 totals[k] += int(res.get(k) or 0)
             totals["mapped"] += len(obs)
-            stores[name] = {"status": "MAPPED", "mapped": len(obs),
+            totals["corrections_restamped"] += n_fix
+            stores[name] = {"status": "MAPPED" if status == "OK" else status, "mapped": len(obs),
                             **{k: res.get(k) for k in ("appended", "duplicates", "revisions",
-                                                       "refused")},
+                                                       "conflicts", "refused")},
+                            "corrections_restamped": n_fix,
                             "refusals": (res.get("refusals") or [])[:3]}
+            if status != "OK":
+                # INDEX_CORRUPT / WRITE_FAILED: counted, the store is NOT marked seen (the next
+                # pass re-sends it) and the index is never reset by this organ
+                totals[status.lower()] += 1
+                stores[name]["why"] = str(res.get("why") or "")[:160]
+                if status == "INDEX_CORRUPT":
+                    ledger_status = f"INDEX_CORRUPT: {str(res.get('why') or '')[:160]}"
+                continue
             seen[name] = sig
     families = Counter(n.split(":", 1)[0] for n in stores)
     hooks = {fam: {**spec, "stores_seen": int(families.get(fam, 0)),
@@ -609,9 +752,12 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
     doc = {
         "generated_at": now.isoformat(timespec="seconds"),
         "rule": ("pure mapping of stored Asia observations into the universal sensor ledger; "
-                 "knowable_at = publication (bounded by first sight) with its knowable_basis, "
-                 "received_at = first sight, revisions append, authority NONE"),
+                 "knowable_at = publication (bounded by first sight) with its knowable_basis; "
+                 "a DATE-only declared stamp = max(local end of day, received_at); "
+                 "received_at = first sight; every revision or correction is its own, strictly "
+                 "later vintage; authority NONE"),
         "ledger_root": str(ledger.root),
+        "ledger_status": ledger_status,
         "ledger_digest": LEDGER_DIGEST,
         "totals": dict(totals) if totals else {"mapped": UNMEASURED},
         "deferred_over_budget": deferred,
