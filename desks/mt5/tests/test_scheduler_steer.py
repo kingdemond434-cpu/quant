@@ -97,8 +97,10 @@ def test_an_arena_verdict_changes_the_weights_both_ways(tmp_path: Path, monkeypa
     # 1.0 -- backpressure goes to the judge only
     assert legs["deepen"]["due"] == 1.0
     assert rep["contestants"]["arena"]["authority"] > 0
-    # no held-out comparison has ADMITTED the steer yet, so the scheduler sees NEUTRAL weights
-    assert rep["comparison"]["primary"] == "UNMEASURED" and rep["withdrawn"]
+    # nothing measured yet: TRIAL mode, not authoritative. One movable leg cannot be split into a
+    # holdout and a trial slice, so nothing runs on a weight this hour.
+    assert rep["comparison"]["primary"] == "UNMEASURED" and rep["mode"] == "TRIAL"
+    assert not rep["authoritative"] and not rep["withdrawn"]
     assert set(rep["weights"].values()) == {1.0}
     # and it was remembered for the tournament to score next hour
     st = json.loads((tmp_path / "state" / "scheduler_steer.json").read_text("utf-8"))
@@ -245,33 +247,99 @@ def test_the_tournament_moves_authority_both_ways() -> None:
 
 def _arms(treated: float, holdout: float, n: int = 6) -> list[dict[str, Any]]:
     return [{"outcomes": {"a": treated + 0.01 * h, "b": holdout + 0.01 * h},
-             "legs": {"a": {"due": 1.3, "arm": "treated"}, "b": {"due": 1.3, "arm": "holdout"}}}
+             "legs": {"a": {"due": 1.3, "applied": 1.3, "arm": "trial"},
+                      "b": {"due": 1.3, "applied": 1.0, "arm": "holdout"}}}
             for h in range(n)]
 
 
-def test_an_inconclusive_comparison_defaults_to_neutral() -> None:
-    props = {"researcher_market": {"x": 1.4, "y": 0.6}}
+def test_an_inconclusive_comparison_runs_only_the_trial_slice() -> None:
+    """UNMEASURED / UNDECIDED: the seeded trial slice (the holdout's size) runs on the weights,
+    every other leg is neutral, and nothing claims authority."""
+    legs = [f"g{i}" for i in range(20)]
+    props = {"researcher_market": {lg: 1.4 if i % 2 else 0.6 for i, lg in enumerate(legs)}}
     for hist in ([], _arms(5.0, 5.0, n=2), _arms(5.0, 5.0)):   # unmeasured, too few, undecided
-        doc = tour.steer(props, {}, hist, "h9", down_ok=["x", "y"])
+        doc = tour.steer(props, {}, hist, "h9", down_ok=legs)
         assert doc["comparison"]["primary"] in ("UNMEASURED", "UNDECIDED")
-        assert doc["withdrawn"] and not doc["authoritative"]
-        assert set(doc["weights"].values()) == {1.0}
-    admitted = tour.steer(props, {}, _arms(9.0, 1.0), "h9", down_ok=["x", "y"])
-    assert admitted["comparison"]["primary"] == "ADMITTED" and not admitted["withdrawn"]
+        assert doc["mode"] == "TRIAL" and not doc["authoritative"] and not doc["withdrawn"]
+        moved = {lg for lg, w in doc["weights"].items() if w != 1.0}
+        assert moved == set(doc["trial"]) and len(doc["trial"]) == len(doc["holdout"]) == 4
+        assert not moved & set(doc["holdout"])
+        assert doc["trial"] == tour.trial(sorted(set(legs) - set(doc["holdout"])), "h9", 4)
+    admitted = tour.steer(props, {}, _arms(9.0, 1.0), "h9", down_ok=legs)
+    assert admitted["mode"] == "ADMITTED" and admitted["authoritative"]
     treated = [lg for lg, r in admitted["legs"].items() if r["arm"] == "treated"]
-    assert treated and all(admitted["weights"][lg] != 1.0 for lg in treated)
+    assert len(treated) == 16 and all(admitted["weights"][lg] != 1.0 for lg in treated)
+    assert all(admitted["weights"][lg] == 1.0 for lg in admitted["holdout"])
 
 
-def test_a_rejected_holdout_comparison_withdraws_the_steer() -> None:
-    hist = []
-    for h in range(6):
-        hist.append({"outcomes": {"a": 1.0 + 0.01 * h, "b": 9.0 + 0.01 * h},
-                     "legs": {"a": {"due": 1.3, "arm": "treated"},
-                              "b": {"due": 1.3, "arm": "holdout"}}})
-    doc = tour.steer({"researcher_market": {"x": 1.4, "y": 0.6}}, {}, hist, "h9")
-    assert doc["comparison"]["up"]["verdict"] == "REJECTED"
+def test_generation_legs_stay_up_only_inside_the_trial_slice() -> None:
+    legs = [f"g{i}" for i in range(20)]
+    props = {"researcher_market": {lg: 1.4 if i % 2 else 0.6 for i, lg in enumerate(legs)}}
+    for hour in ("h1", "h2", "h3"):
+        doc = tour.steer(props, {}, [], hour)          # no down_ok: every leg is generation
+        assert all(w >= 1.0 for w in doc["weights"].values())
+
+
+def test_the_trial_slice_turns_unmeasured_into_admitted() -> None:
+    """The experiment can reach a verdict: start with no history, let the desk respond to the
+    weights (a leg that runs on a weight above 1 produces more), and the comparison of trial
+    leg-hours against held-out ones moves UNMEASURED -> ADMITTED, after which every non-holdout
+    leg is treated."""
+    legs = [f"g{i}" for i in range(20)]
+    props = {"researcher_market": {lg: 1.4 if i % 2 else 0.6 for i, lg in enumerate(legs)}}
+    hist: list[dict[str, Any]] = []
+    modes = []
+    t0 = datetime(2026, 10, 6, tzinfo=UTC)
+    for h in range(12):
+        now = t0 + timedelta(hours=h)
+        doc = tour.steer(props, {}, hist, f"h{h}", down_ok=legs, now=now)
+        modes.append((doc["mode"], doc["comparison"]["primary"]))
+        if doc["mode"] == "ADMITTED":
+            break
+        outcomes = {lg: (10.0 if r["applied"] > 1.0 else 2.0) + 0.1 * ((h + i) % 3)
+                    for i, (lg, r) in enumerate(doc["legs"].items())}
+        hist.append({"at": now.isoformat(), "legs": {lg: {k: r[k] for k in
+                                                          ("due", "applied", "arm")}
+                                                     for lg, r in doc["legs"].items()},
+                     "outcomes": outcomes})
+    assert modes[0] == ("TRIAL", "UNMEASURED")
+    assert doc["mode"] == "ADMITTED" and doc["authoritative"], modes
+    c = doc["comparison"]["up"]
+    assert c["n_treated"] >= 3 and c["n_control"] >= 3 and c["mean_treated"] > c["mean_holdout"]
+
+
+def test_a_rejected_comparison_is_neutral_cools_down_then_retries() -> None:
+    t0 = datetime(2026, 10, 6, tzinfo=UTC)
+    hist = [{**a, "at": (t0 - timedelta(hours=10 - i)).isoformat()}
+            for i, a in enumerate(_arms(1.0, 9.0))]
+    legs = [f"g{i}" for i in range(10)]
+    props = {"researcher_market": {lg: 1.4 if i % 2 else 0.6 for i, lg in enumerate(legs)}}
+    doc = tour.steer(props, {}, hist, "h0", down_ok=legs, now=t0)
+    assert doc["comparison"]["up"]["verdict"] == "REJECTED" and doc["mode"] == "REJECTED"
     assert doc["withdrawn"] and not doc["authoritative"]
     assert set(doc["weights"].values()) == {1.0}
+    assert doc["rejected_at"] == t0.isoformat()
+    cool = tour.steer(props, {}, hist, "h1", down_ok=legs, rejected_at=doc["rejected_at"],
+                      now=t0 + timedelta(hours=1))
+    assert cool["mode"] == "COOLDOWN" and set(cool["weights"].values()) == {1.0}
+    later = t0 + timedelta(hours=tour.COOLDOWN_H + 1)
+    retry = tour.steer(props, {}, hist, "h99", down_ok=legs, rejected_at=doc["rejected_at"],
+                       now=later)
+    # the pre-rejection evidence no longer counts: the trial slice retries on fresh evidence
+    assert retry["mode"] == "TRIAL" and retry["comparison"]["primary"] == "UNMEASURED"
+    assert any(w != 1.0 for w in retry["weights"].values())
+
+
+def test_credited_elogw_is_reported_beside_births() -> None:
+    hist = []
+    for h in range(5):
+        a = _arms(5.0, 5.0, n=1)[0]
+        a["elogw_outcomes"] = {"a": 0.002 + 0.0001 * h, "b": 0.0001 * h}
+        hist.append(a)
+    cmp_ = tour.holdout_comparison(hist)
+    assert cmp_["elogw"]["n_treated"] == 5 and cmp_["elogw"]["n_control"] == 5
+    assert cmp_["elogw"]["mean_treated"] > cmp_["elogw"]["mean_holdout"]
+    assert cmp_["primary"] == cmp_["up"]["verdict"]       # births decide; elogw only reports
 
 
 def test_weights_are_bounded_and_mean_one() -> None:

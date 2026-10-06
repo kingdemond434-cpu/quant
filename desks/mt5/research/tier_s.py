@@ -2677,8 +2677,28 @@ def _fresh(doc: Mapping[str, Any], *keys: str, max_age_h: float = STEER_INPUT_MA
     return False
 
 
-def _steer_outcomes(pending: list[dict[str, Any]], producer_leg: Mapping[str, str | None]
-                    ) -> None:
+#: the secondary (P&L-side) outcome: credited dE[log W] per producer, folded onto its leg
+FACTORY_CONTRACTS = REPORTS / "FACTORY_CONTRACTS.json"
+
+
+def _leg_elogw() -> dict[str, float]:
+    """{leg: credited dE[log W] summed over the producers that leg runs}, from
+    FACTORY_CONTRACTS.json (`incremental_elogw`, research_roi's delayed credit walked back along
+    provenance). The allocator's CREDITED value, not realised P&L: the desk publishes no realised
+    or forward P&L per leg, producer or family. A producer whose term is UNMEASURED adds nothing."""
+    doc = _read(FACTORY_CONTRACTS) or {}
+    out: dict[str, float] = defaultdict(float)
+    for row in ((doc.get("producers") or {}) if isinstance(doc, dict) else {}).values():
+        if not isinstance(row, dict) or not row.get("leg"):
+            continue
+        v = (row.get("contract") or {}).get("incremental_elogw")
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(float(v)):
+            out[str(row["leg"])] += float(v)
+    return dict(out)
+
+
+def _steer_outcomes(pending: list[dict[str, Any]], producer_leg: Mapping[str, str | None],
+                    elogw_now: Mapping[str, float] | None = None) -> None:
     """Fill `outcomes` on every assignment whose hour has elapsed: per leg, NOVELTY-DEFLATED births
     per CPU-hour the leg burned in that window. A birth counts only if no verdict had judged its
     (symbol, family) pair before the window opened, and then only `novelty_credit(k)` =
@@ -2739,6 +2759,10 @@ def _steer_outcomes(pending: list[dict[str, Any]], producer_leg: Mapping[str, st
                 nov[leg] += credit if (fj is None or fj >= s) else 0.0
         a["outcomes"] = {lg: round(nov[lg] / (sec[lg] / 3600.0), 6)
                          for lg in sorted(sec) if sec[lg] >= 1.0}
+        then = a.get("elogw_at") if isinstance(a.get("elogw_at"), dict) else {}
+        a["elogw_outcomes"] = {lg: round(float((elogw_now or {})[lg]) - float(v), 9)
+                               for lg, v in then.items()
+                               if lg in (elogw_now or {}) and isinstance(v, (int, float))}
         a["scored_at"] = NOW.isoformat()
 
 
@@ -2819,7 +2843,8 @@ def organ_steer() -> dict[str, Any]:
                    and (replay.parse_t(a.get("at")) or NOW) >= keep_after and a.get("hour") != hour]
     pending = [a for a in assignments if a.get("outcomes") is None
                and (replay.parse_t(a.get("at")) or NOW) + timedelta(hours=1) <= NOW]
-    _steer_outcomes(pending, producer_leg)
+    elogw_now = _leg_elogw()
+    _steer_outcomes(pending, producer_leg, elogw_now)
     # BACKPRESSURE GOES TO THE JUDGE ONLY: only the validation department's legs may be weighted
     # below 1.0; every mining / research-generation leg is up-only (the leg departments are
     # hourly_cycle's own classification, never restated here)
@@ -2828,14 +2853,17 @@ def organ_steer() -> dict[str, Any]:
         judge_legs = sorted(k for k, v in _hc.LEG_DEPARTMENT.items() if v == "validate")
     except Exception as exc:
         judge_legs, inputs["down_ok"] = [], f"hourly_cycle unavailable ({exc}): every leg up-only"
-    doc = tour.steer(proposals, suspended, assignments, hour, down_ok=judge_legs)
+    doc = tour.steer(proposals, suspended, assignments, hour, down_ok=judge_legs,
+                     rejected_at=st.get("rejected_at"), now=NOW)
     assignments.append({"hour": hour, "at": NOW.isoformat(),
                         "legs": {lg: {k: r[k] for k in ("due", "applied", "arm")}
                                  for lg, r in doc["legs"].items()},
                         "tilts": {c: p for c, p in proposals.items()
                                   if p and not suspended.get(c)},
+                        "elogw_at": {lg: elogw_now[lg] for lg in doc["legs"] if lg in elogw_now},
                         "outcomes": None})
-    _save_state("scheduler_steer", {"assignments": assignments, "at": NOW.isoformat()})
+    _save_state("scheduler_steer", {"assignments": assignments, "at": NOW.isoformat(),
+                                    "rejected_at": doc["rejected_at"]})
     cmp_ = doc["comparison"]
     scored = sum(1 for a in assignments if isinstance(a.get("outcomes"), dict))
     return {**doc, "inputs": inputs, "assignments_scored": scored,
@@ -2853,6 +2881,8 @@ def organ_steer() -> dict[str, Any]:
                            1 for r in doc["contestants"].values()
                            if float(r.get("authority") or 0.0) > 0),
                        "holdout_verdict": cmp_["primary"],
+                       "trial_legs": len(doc["trial"]),
+                       "elogw_holdout_delta": cmp_["elogw"].get("delta"),
                        "holdout_delta": cmp_["up"].get("delta"),
                        "assignments_scored": scored,
                        "authoritative": 1.0 if doc["authoritative"] else 0.0}}

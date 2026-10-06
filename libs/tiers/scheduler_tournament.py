@@ -21,17 +21,21 @@ and the order the legs run in. This module produces the per-leg WEIGHTS it now r
                                    the desk is getting easier to fool and give it back once it is
                                    not (immune score against its own trailing mean)
     tournament    each contestant's past tilts are scored against what the legs then REALISED
-                  (novel hypotheses per CPU-hour, the hour after the tilt was published); its
+                  (novelty-deflated births per CPU-hour, the hour after the tilt was published); its
                   AUTHORITY is a Hedge weight on that score -- a contestant whose tilts point at
                   the legs that went on to produce gains authority, one whose tilts point away
                   loses it. Unscored contestants sit at the prior (equal) authority.
     holdout       a SEEDED RANDOM slice (`HOLDOUT_SHARE`, re-drawn every hour from
                   sha256(salt|hour)) of the legs stays on the PRIOR allocation (weight 1.0) as a
-                  control. The rest are treated. The holdout-versus-treated comparison
-                  (`control_arm.compare`, Welch one-sided 5%) is published in the artifact. ONLY
-                  an ADMITTED comparison lets the weights reach the scheduler: REJECTED,
-                  UNDECIDED and UNMEASURED (too few legs) all default to NEUTRAL -- every weight
-                  back to 1.0 -- authority earned, never assumed (verifier pre-check, #235).
+                  control. The holdout-versus-treated comparison (`control_arm.compare`, Welch
+                  one-sided 5%) is published in the artifact and sets the MODE:
+                    TRIAL     (UNMEASURED / UNDECIDED) a second seeded slice, the holdout's
+                              size, runs on the weights; every other leg is neutral;
+                              `authoritative: false`. This is the experiment that can reach a
+                              verdict -- neutral-everywhere could never produce a treated arm.
+                    ADMITTED  every non-holdout leg runs on the weights; authoritative.
+                    REJECTED  every leg neutral, then a COOLDOWN_H cool-down, after which the
+                              trial resumes judged on post-rejection evidence only.
 
 THE LAWS IT KEEPS, by construction and pinned by tests:
 
@@ -55,6 +59,7 @@ from __future__ import annotations
 import hashlib
 import math
 from collections.abc import Iterable, Mapping, Sequence
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import numpy as np
@@ -73,6 +78,20 @@ ARENA_STEP = 0.25
 #: share of the hour's legs held on the prior allocation
 HOLDOUT_SHARE = 0.2
 SALT = "scheduler_steer"
+#: THE TRIAL SLICE. While the held-out comparison is UNMEASURED or UNDECIDED, a second seeded
+#: random draw of the SAME SIZE AS THE HOLDOUT (20% of the movable legs) runs on the weights;
+#: every other leg stays neutral. Equal arms minimise the variance of the treated-minus-holdout
+#: difference for a given exposure. The speed this buys at the hourly cadence: with M movable
+#: legs each arm gains about 0.2 M leg-hours an hour (half of them up-weighted, the primary
+#: comparison), so the Welch floor (control_arm.MIN_N = 3 per arm) is met within the first scored
+#: hour once M >= 30, and 80% power at one-sided 5% needs about 12.4 / d^2 leg-hours per arm --
+#: d = 0.5 about 50 (roughly 17 h at M = 30), d = 0.3 about 140 (roughly 2 days) -- well inside
+#: the 14-day window. A smaller slice is slower in proportion; a larger one exposes more legs to
+#: an unproven steer for no gain in power while the holdout stays the limiting arm.
+TRIAL_SALT = "scheduler_steer_trial"
+#: after a REJECTED comparison every leg is neutral this long; then the trial resumes on evidence
+#: gathered after the rejection only
+COOLDOWN_H = 72
 #: Hedge learning rate on the standardised mean score
 ETA = 1.0
 #: scored hours below which a contestant keeps the prior authority
@@ -246,34 +265,78 @@ def holdout(legs: Iterable[str], hour_key: str, share: float = HOLDOUT_SHARE,
 def holdout_comparison(assignments: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     """Treated versus held-out leg-hours, on the realised outcome, for the legs the tournament
     wanted to move UP (where a reallocation must pay) and DOWN (where it must not cost), plus all
-    steered legs. `primary` is the up-weighted comparison; REJECTED there withdraws the steer."""
-    arms: dict[str, dict[str, list[float]]] = {
-        k: {"treated": [], "holdout": []} for k in ("up", "down", "all")}
+    steered legs. `primary` is the up-weighted comparison.
+
+    A leg-hour counts as TREATED only if it actually RAN on a weight other than 1.0 (`applied`):
+    the trial slice, or every non-holdout leg once ADMITTED. A leg-hour that was due a weight and
+    ran neutral is neither arm. The held-out arm is the legs that were due a weight and held at
+    1.0. The secondary comparison is the same arms on the change in each leg's CREDITED dE[log W]
+    (`elogw_outcomes`), reported beside births and never deciding anything."""
+    keys = ("up", "down", "all", "elogw")
+    arms: dict[str, dict[str, list[float]]] = {k: {"treated": [], "holdout": []} for k in keys}
     for a in assignments:
         outcomes = a.get("outcomes")
         if not isinstance(outcomes, dict):
             continue
+        elog = a.get("elogw_outcomes") if isinstance(a.get("elogw_outcomes"), dict) else {}
         for leg, row in (a.get("legs") or {}).items():
-            if leg not in outcomes or not isinstance(row, dict):
+            if not isinstance(row, dict):
                 continue
             due = float(row.get("due") or 1.0)
             if abs(due - 1.0) <= EPS:
                 continue
-            arm = "holdout" if row.get("arm") == "holdout" else "treated"
-            y = float(outcomes[leg])
-            arms["all"][arm].append(y)
-            arms["up" if due > 1.0 else "down"][arm].append(y)
+            if row.get("arm") == "holdout":
+                arm = "holdout"
+            elif abs(float(row.get("applied") or 1.0) - 1.0) > EPS:
+                arm = "treated"
+            else:
+                continue
+            if leg in outcomes:
+                y = float(outcomes[leg])
+                arms["all"][arm].append(y)
+                arms["up" if due > 1.0 else "down"][arm].append(y)
+            if leg in elog and isinstance(elog[leg], (int, float)):
+                arms["elogw"][arm].append(float(elog[leg]))
     out = {k: {**control_arm.compare(v["treated"], v["holdout"]),
                "mean_holdout": _mean(v["holdout"]), "mean_treated": _mean(v["treated"])}
            for k, v in arms.items()}
     return {**out, "primary": out["up"]["verdict"],
-            "basis": "novel hypotheses born per CPU-hour of the leg in the hour after the weights "
-                     "were published; treated legs ran on the tournament's weights, held-out "
-                     "legs on the prior allocation (weight 1.0), same hours, same desk"}
+            "basis": "novelty-deflated births per CPU-hour of the leg in the hour after the "
+                     "weights were published; treated legs RAN on the tournament's weights, "
+                     "held-out legs on the prior allocation (weight 1.0), same hours, same desk. "
+                     "`elogw` is the secondary outcome: the change in the leg's credited "
+                     "dE[log W] (FACTORY_CONTRACTS incremental_elogw) over the same hour -- the "
+                     "allocator's credited value, not realised P&L"}
 
 
 def _mean(xs: Sequence[float]) -> float | None:
     return round(sum(xs) / len(xs), 6) if xs else None
+
+
+def trial(candidates: Sequence[str], hour_key: str, k: int,
+          salt: str = TRIAL_SALT) -> list[str]:
+    """The seeded TRIAL slice: k legs from the non-holdout movable legs, a fresh independent draw
+    every hour (seed sha256(trial_salt|hour)). It is what runs on the weights while the holdout
+    comparison is UNMEASURED or UNDECIDED, so the comparison can ever reach a verdict."""
+    pool = sorted(set(candidates))
+    k = min(int(k), len(pool))
+    if k <= 0:
+        return []
+    seed = int(hashlib.sha256(f"{salt}|{hour_key}".encode()).hexdigest()[:16], 16)
+    pick = np.random.default_rng(seed).choice(len(pool), size=k, replace=False)
+    return sorted(pool[int(i)] for i in pick)
+
+
+def _t(x: Any) -> datetime | None:
+    if isinstance(x, datetime):
+        return x if x.tzinfo else x.replace(tzinfo=UTC)
+    if not x:
+        return None
+    try:
+        d = datetime.fromisoformat(str(x).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return d if d.tzinfo else d.replace(tzinfo=UTC)
 
 
 def novelty_credit(local_count: int) -> float:
@@ -286,10 +349,13 @@ def novelty_credit(local_count: int) -> float:
 def steer(proposals: Mapping[str, Mapping[str, float]],
           suspended: Mapping[str, bool],
           history: Sequence[Mapping[str, Any]],
-          hour_key: str, down_ok: Iterable[str] = ()) -> dict[str, Any]:
+          hour_key: str, down_ok: Iterable[str] = (), rejected_at: Any = None,
+          now: datetime | None = None) -> dict[str, Any]:
     """One hour's steer: drop suspended contestants, score the rest on `history` (past assignments
     carrying `tilts` and `outcomes`), weight them, combine, draw the holdout, and withdraw
-    everything unless the holdout comparison ADMITTED the steer. `down_ok` names the only legs
+    everything to the mode the holdout comparison allows (ADMITTED: all non-holdout legs;
+    UNMEASURED / UNDECIDED: the trial slice only, not authoritative; REJECTED and its cool-down:
+    nothing). `down_ok` names the only legs
     (judge / validation) whose weight may fall below 1.0; every other leg is up-only. Returns the
     artifact body."""
     may_fall = set(down_ok)
@@ -309,15 +375,50 @@ def steer(proposals: Mapping[str, Mapping[str, float]],
     auth = {c: float(r["authority"]) for c, r in board.items()}
     due = {lg: (w if lg in may_fall else max(1.0, w))
            for lg, w in combine({c: live[c] for c in present}, auth).items()}
-    held = holdout(due, hour_key)
-    comparison = holdout_comparison(history)
-    withdrawn = comparison["primary"] != "ADMITTED"
+    # THE EXPERIMENT. Only legs the tournament actually wants to move are units; the holdout and
+    # the trial slice are drawn from them by two independent seeded draws.
+    movable = [lg for lg, w in due.items() if abs(w - 1.0) > EPS]
+    held = holdout(movable, hour_key)
+    trial_legs = trial(sorted(set(movable) - set(held)), hour_key, len(held))
+    now = now or datetime.now(UTC)
+    rejected = _t(rejected_at)
+    # after a rejection only FRESH evidence counts: the slice retries on a clean comparison
+    fresh = [a for a in history if rejected is None or (_t(a.get("at")) or now) > rejected]
+    comparison = holdout_comparison(fresh)
+    v = comparison["primary"]
+    if rejected is not None and now < rejected + timedelta(hours=COOLDOWN_H):
+        mode = "COOLDOWN"
+    elif v == "REJECTED":
+        mode, rejected = "REJECTED", now
+    elif v == "ADMITTED":
+        mode = "ADMITTED"
+    else:
+        mode = "TRIAL"
     legs: dict[str, dict[str, Any]] = {}
     for lg, w in sorted(due.items()):
-        arm = "holdout" if lg in held else "treated"
-        applied = 1.0 if (arm == "holdout" or withdrawn) else w
+        if lg in held:
+            arm = "holdout"
+        elif abs(w - 1.0) <= EPS:
+            arm = "neutral"
+        elif mode == "ADMITTED" or (mode == "TRIAL" and lg in trial_legs):
+            arm = "treated" if mode == "ADMITTED" else "trial"
+        else:
+            arm = "neutral"
+        applied = w if arm in ("treated", "trial") else 1.0
         legs[lg] = {"due": w, "applied": round(applied, 6), "arm": arm,
                     "tilts": {c: live[c][lg] for c in present if lg in live[c]}}
+    moved = any(abs(r["applied"] - 1.0) > EPS for r in legs.values())
+    why = {
+        "ADMITTED": "the held-out comparison ADMITTED the steer: every non-holdout leg carries "
+                    "the tournament's weights; the held-out slice runs on the prior allocation",
+        "TRIAL": f"comparison {v}: only the seeded trial slice ({len(trial_legs)} leg(s), the "
+                 "holdout's size) runs on the weights so the comparison can reach a verdict; "
+                 "every other leg is neutral; authoritative: false",
+        "REJECTED": "the held-out comparison REJECTED the steer: every leg neutral, and the "
+                    f"trial slice waits {COOLDOWN_H}h before retrying on fresh evidence",
+        "COOLDOWN": f"cool-down after a REJECTED comparison at {rejected_at}: every leg "
+                    "neutral until it ends",
+    }[mode]
     return {
         "hour": hour_key,
         "contestants": {c: {**board.get(c, {"authority": 0.0, "status": "NO_PROPOSAL"}),
@@ -325,17 +426,15 @@ def steer(proposals: Mapping[str, Mapping[str, float]],
                             "suspended": bool(suspended.get(c))} for c in CONTESTANTS},
         "dropped_suspended": dropped,
         "weights": {lg: r["applied"] for lg, r in legs.items()},
-        "legs": legs, "holdout": held, "holdout_share": HOLDOUT_SHARE, "salt": SALT,
+        "legs": legs, "holdout": held, "trial": trial_legs, "mode": mode,
+        "holdout_share": HOLDOUT_SHARE, "salt": SALT, "trial_salt": TRIAL_SALT,
         "comparison": comparison,
-        "authoritative": bool(legs) and not withdrawn and any(
-            abs(r["applied"] - 1.0) > EPS for r in legs.values()),
-        "withdrawn": withdrawn,
-        "why": (f"holdout comparison is {comparison['primary']}, not ADMITTED: every leg runs on "
-                "the prior allocation (neutral) until a held-out comparison admits the steer"
-                if withdrawn else
-                "treated legs carry the tournament's weights; the held-out slice runs on the prior "
-                "allocation as the control"),
+        "rejected_at": rejected.isoformat() if rejected else None,
+        "authoritative": mode == "ADMITTED" and moved,
+        "withdrawn": mode in ("REJECTED", "COOLDOWN"),
+        "why": why,
         "parameters": {"max_tilt": MAX_TILT, "arena_step": ARENA_STEP, "eta": ETA,
                        "min_hours": MIN_HOURS, "window_h": WINDOW_H,
-                       "down_ok_legs": len(may_fall)},
+                       "down_ok_legs": len(may_fall), "cooldown_h": COOLDOWN_H,
+                       "trial_size": "equal to the holdout's"},
     }
