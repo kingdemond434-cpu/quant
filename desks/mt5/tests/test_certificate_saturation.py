@@ -490,3 +490,20 @@ def test_kimi_seat_gets_the_same_facts_only_brief(sat: dict, monkeypatch) -> Non
     assert "DESK BREADTH FACTS" in section and '"n_certificates": 840' in section
     monkeypatch.setattr(kh, "_breadth_brief", lambda: {})
     assert kh._breadth_section() == ""
+
+
+def test_breadth_mandate_fences_n_effective_cert() -> None:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import check_breadth_mandate as cbm
+    fence = cbm.cert_fence
+    assert fence({}, {})["status"] == "UNMEASURED"
+    assert fence({"certificates": {"n_certificates": 840}}, {})["status"] == "NOMINAL_ALONE"
+    cert = {"n_certificates": 847, "n_effective_certificates": 3.0, "basis": "box_live"}
+    assert fence({"certificates": cert}, {})["status"] == "FLOOR_SET"
+    floor = {"n_effective_cert_floor": 4.0, "n_effective_cert_floor_basis": "box_live"}
+    assert fence({"certificates": cert}, floor)["status"] == "BREACH"
+    assert fence({"certificates": {**cert, "n_effective_certificates": 4.5}},
+                 floor)["status"] == "OK"
+    # a floor recorded on the git snapshot is not compared against the box's live set
+    snap = {**floor, "n_effective_cert_floor_basis": "git_snapshot"}
+    assert fence({"certificates": cert}, snap)["status"] == "BASIS_CHANGED"

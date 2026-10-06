@@ -99,6 +99,49 @@ def _cluster_counts() -> tuple[dict[str, int], str]:
     return dict(counts), f"{len(rows)} docket cell(s) classified"
 
 
+def cert_fence(breadth: dict[str, Any], floor_doc: dict[str, Any]) -> dict[str, Any]:
+    """N_EFFECTIVE_CERT, fenced (breadth law 2026-10-05).
+
+    Two rules. NOMINAL ALONE IS A DEFECT: a published N_CERT with no N_EFFECTIVE_CERT beside it
+    is the 840-certificates-equal-840-bets reading the law exists to stop. And N_EFFECTIVE_CERT
+    RATCHETS UP like n_eff, but only against a floor recorded on the SAME basis (`box_live` vs
+    `git_snapshot`): a 52-row git copy and the box's 847-row set are different books, and a
+    floor set on one says nothing about the other. Absent: UNMEASURED, never zero."""
+    cert = breadth.get("certificates") if isinstance(breadth.get("certificates"), dict) else None
+    if not cert:
+        return {"status": "UNMEASURED", "why": "EFFECTIVE_BREADTH carries no certificates block "
+                "(certificate_saturation has not published on this host)"}
+    n, n_eff, basis = (cert.get("n_certificates"), cert.get("n_effective_certificates"),
+                       cert.get("basis"))
+    out: dict[str, Any] = {"n_certificates": n, "n_effective_certificates": n_eff,
+                           "basis": basis, "source": cert.get("source"),
+                           "source_mtime": cert.get("source_mtime"),
+                           "floor": floor_doc.get("n_effective_cert_floor"),
+                           "floor_basis": floor_doc.get("n_effective_cert_floor_basis")}
+    if isinstance(n, (int, float)) and n > 0 and not isinstance(n_eff, (int, float)):
+        out.update({"status": "NOMINAL_ALONE",
+                    "why": f"N_CERT={n} is published with no N_EFFECTIVE_CERT beside it"})
+        return out
+    if not isinstance(n_eff, (int, float)):
+        out.update({"status": "UNMEASURED", "why": "no N_EFFECTIVE_CERT reading"})
+        return out
+    floor = out["floor"]
+    if not isinstance(floor, (int, float)):
+        out.update({"status": "FLOOR_SET", "why": "first measurement becomes the floor"})
+    elif out["floor_basis"] != basis:
+        out.update({"status": "BASIS_CHANGED",
+                    "why": (f"floor was recorded on basis {out['floor_basis']}, this reading is "
+                            f"{basis}: not comparable; --set-floor records this basis")})
+    elif n_eff + 1e-9 < float(floor):
+        out.update({"status": "BREACH",
+                    "why": (f"N_EFFECTIVE_CERT {n_eff:.3f} is BELOW its floor {float(floor):.3f} "
+                            f"on basis {basis}: certificates are being minted into the same bets "
+                            "while the independent ones were lost")})
+    else:
+        out.update({"status": "OK", "why": f"{n_eff:.3f} at or above floor {float(floor):.3f}"})
+    return out
+
+
 def check() -> dict[str, Any]:
     breadth = _read(BREADTH, {})
     clusters = breadth.get("clusters") or {}
@@ -168,6 +211,7 @@ def check() -> dict[str, Any]:
         "census": dict(census),
         "never_attempted": never,
         "ratchet": ratchet,
+        "n_effective_cert": cert_fence(breadth, floor_doc),
         "clusters": rows,
     }
 
@@ -184,20 +228,28 @@ def main(argv: list[str] | None = None) -> int:
     OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
 
     r = doc["ratchet"]
+    ce = doc["n_effective_cert"]
     if args.set_floor and isinstance(r.get("n_eff"), (int, float)):
-        FLOOR.write_text(json.dumps({"n_eff_floor": r["n_eff"],
-                                     "set_utc": doc["generated_utc"],
-                                     "rule": "ratchets UP only (L1.50)"}, indent=1),
-                         encoding="utf-8")
-        print(f"floor set to {r['n_eff']}")
+        rec: dict[str, Any] = {"n_eff_floor": r["n_eff"], "set_utc": doc["generated_utc"],
+                               "rule": "ratchets UP only (L1.50)"}
+        if isinstance(ce.get("n_effective_certificates"), (int, float)):
+            rec.update({"n_effective_cert_floor": ce["n_effective_certificates"],
+                        "n_effective_cert_floor_basis": ce.get("basis")})
+        FLOOR.write_text(json.dumps(rec, indent=1), encoding="utf-8")
+        print(f"floor set to {r['n_eff']} (N_EFFECTIVE_CERT {rec.get('n_effective_cert_floor')} "
+              f"on basis {rec.get('n_effective_cert_floor_basis')})")
 
     if args.json:
         print(json.dumps(doc, indent=1))
-        return 1 if doc["never_attempted"] else 0
+        return 1 if (doc["never_attempted"]
+                     or doc["n_effective_cert"].get("status") in ("BREACH", "NOMINAL_ALONE")) else 0
 
     print(f"breadth mandate: {doc['declared_clusters']} declared cluster(s), "
           f"{len(doc['occupied'])} occupied, {len(doc['empty'])} empty -> {doc['census']}")
     print(f"  n_eff {r.get('n_eff')} vs floor {r.get('floor')}: {r.get('status')}")
+    print(f"  N_CERT {ce.get('n_certificates')} / N_EFFECTIVE_CERT "
+          f"{ce.get('n_effective_certificates')} (basis {ce.get('basis')}, {ce.get('source')}, "
+          f"mtime {ce.get('source_mtime')}) vs floor {ce.get('floor')}: {ce.get('status')}")
     for row in doc["clusters"]:
         mark = {"NEVER_ATTEMPTED": "  DEFECT ", "UNDER_FLOOR": "  under  ",
                 "ATTEMPTED": "  ok     "}.get(str(row["verdict"]), "  ?      ")
@@ -206,7 +258,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n  {len(doc['never_attempted'])} cluster(s) NEVER ATTEMPTED. The desk cannot "
               f"call a cluster empty it has never looked at.")
     print(f"  -> {OUT}")
-    return 1 if (doc["never_attempted"] or r.get("status") == "BREACH") else 0
+    return 1 if (doc["never_attempted"] or r.get("status") == "BREACH"
+                 or ce.get("status") in ("BREACH", "NOMINAL_ALONE")) else 0
 
 
 if __name__ == "__main__":
