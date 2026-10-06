@@ -180,9 +180,13 @@ def test_acquired_series_reach_the_world_model_with_a_late_pit_stamp(desk, monke
     monkeypatch.setattr(WM, "ACQUIRED", A.REGISTRY)
     unmeasured: list[dict[str, str]] = []
     (series,) = WM._acquired_inputs(unmeasured)
-    first = series.points[0]
-    lag = datetime.fromisoformat(first.available_time) - datetime.fromisoformat(first.period_time)
-    assert lag == timedelta(days=3, hours=WM.CLOCK_PAD_H)        # weekly cadence default + pad
+    # a whole history fetched in one pass is a backfill: every point is stamped at receipt,
+    # never earlier than period + weekly cadence default + pad
+    floor = timedelta(days=3, hours=WM.CLOCK_PAD_H)
+    received = datetime.now(UTC) - timedelta(hours=1)
+    for p in series.points:
+        avail = datetime.fromisoformat(p.available_time)
+        assert avail - datetime.fromisoformat(p.period_time) >= floor and avail >= received
     monkeypatch.setattr(WM, "AXES", tmp_path / "no_axes")
     monkeypatch.setattr(WM, "FRED", tmp_path / "no_fred.json")
     monkeypatch.setattr(WM, "REPRESENTATIONS", tmp_path / "no_reps")
