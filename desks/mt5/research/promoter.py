@@ -1693,6 +1693,125 @@ def _record_tier_s_block(name: str, why: str, lane: str, row: dict) -> None:
         promotion_authority.record(name, why, lane=lane, exp_r=row.get("exp_r"), n=row.get("n"))
 
 
+def tier_s_live_door_paths() -> tuple[Path, Path]:
+    """(the door's verdicts, this promoter's reading of them), beside the roster.
+
+    THE TIER S DOOR OVER ROWS ALREADY LIVE. The `door` organ (research/tier_s.py) runs
+    `promotion_authority.review_live` over the live book every hour and publishes the verdicts
+    to `data/tier_s/live_door.json` (promotion_authority.LIVE_DOOR); until this reader existed
+    they were published and acted on nothing. What this pass did with them -- MEASURED, or
+    UNMEASURED with the reason -- goes to `data/tier_s/promoter_live_door.json`. Derived from
+    SLEEVES_FILE at call time, like the close queue, so both follow the roster they judge."""
+    d = SLEEVES_FILE.parent / "tier_s"
+    return d / "live_door.json", d / "promoter_live_door.json"
+
+#: A verdict older than this is a report, not a verdict: the same freshness the door itself
+#: demands of its inputs (promotion_authority.MAX_AGE_H).
+TIER_S_LIVE_DOOR_MAX_AGE_H = 6.0
+#: THE ONLY VERDICTS THAT RETIRE A LIVE ROW: evidence about THIS certificate -- its re-execution
+#: disagreed, it was admitted after the lifetime online-FDR budget was spent, the review panel
+#: resolved a HIGH challenge on its own evidence, or its mechanism is refuted out of sample --
+#: and IDENTITY_MISMATCH (`libs/tiers/research_live_identity`, listed by `review_live`): the spec
+#: the gateway trades (family, symbol, selector, params or code hash) is not the spec research
+#: certified, so the row is not trading its certificate at all. Measured 2026-09-30: seven LIVE
+#: sleeves carried a code-hash MISMATCH (six overnight_gap_decay_asia, chfnok_carry_asia) and
+#: without this entry the door's verdict on them was published and HELD, never acted on.
+#: Everything else the door can say is NOT evidence against a sleeve and retires nothing:
+#: DOOR_ERROR is a verifier that did not run (absence is not evidence), and CONSTITUTION_VIOLATED
+#: / IMMUNE_FREEZE are book-wide states that stop NEW rows; retiring the live book on them would
+#: cut the book by fiat. They are recorded as `held` with their reason.
+TIER_S_RETIRING_VERDICTS = ("REPLICATION_MISMATCH", "ONLINE_FDR_OVER_BUDGET",
+                            "REVIEW_PANEL_FAILED", "THEORY_REFUTED", "IDENTITY_MISMATCH")
+
+
+def _write_live_door_out(doc: dict[str, object]) -> None:
+    out = tier_s_live_door_paths()[1]
+    with suppress(OSError):
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+
+
+def retire_tier_s_live(sleeves: list[dict[str, object]], *,
+                       now: datetime | None = None) -> bool:
+    """RETIRE every LIVE row the Tier S door now refuses on evidence about that row. Returns
+    changed.
+
+    Reads `data/tier_s/live_door.json` ({"generated_utc", "rows": {LIVE name: reason}}) through
+    the same automatic retirement path as `retire_banned`: status RETIRED with the door's reason
+    on the row, a RETIRED door event, the open position handed to the gateway's close queue, and
+    the retirement billed through `promotion_authority.record` so the rail
+    `tier_s_evidence_block` measures what it cost (growth governance Rule 1).
+
+    ABSENCE IS NOT EVIDENCE. A missing, unreadable, undated or stale (> 6h) file retires nothing
+    and is published UNMEASURED with its reason in `data/tier_s/promoter_live_door.json`; so is a
+    verdict outside TIER_S_RETIRING_VERDICTS (see there). The door never sizes: it retires on its
+    verdict or it leaves the row exactly as it is."""
+    now = now or datetime.now(tz=UTC)
+    src = tier_s_live_door_paths()[0]
+    retired: dict[str, str] = {}
+    held: dict[str, str] = {}
+    out: dict[str, object] = {"at": now.isoformat(timespec="seconds"),
+                              "source": src.name,
+                              "retired": retired, "held": held}
+    try:
+        doc = json.loads(src.read_text("utf-8"))
+        if not isinstance(doc, dict):
+            raise ValueError(f"a {type(doc).__name__}, not a JSON object")
+        at = datetime.fromisoformat(str(doc.get("generated_utc")))
+        rows = doc.get("rows") or {}
+        if not isinstance(rows, dict):
+            raise ValueError(f"rows are a {type(rows).__name__}")
+    except FileNotFoundError:
+        _write_live_door_out({**out, "status": "UNMEASURED",
+                              "why": "live_door.json absent: the door has not reported; "
+                                     "absence retires nothing"})
+        return False
+    except (OSError, ValueError, TypeError) as exc:
+        _write_live_door_out({**out, "status": "UNMEASURED",
+                              "why": f"live_door.json unreadable ({type(exc).__name__}: {exc}); "
+                                     f"retires nothing"})
+        return False
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=UTC)
+    age_h = (now - at).total_seconds() / 3600.0
+    out.update({"generated_utc": at.isoformat(), "age_h": round(age_h, 2)})
+    if age_h > TIER_S_LIVE_DOOR_MAX_AGE_H:
+        _write_live_door_out({**out, "status": "UNMEASURED",
+                              "why": f"live_door.json is {age_h:.1f}h old (> "
+                                     f"{TIER_S_LIVE_DOOR_MAX_AGE_H:g}h): a stale verdict "
+                                     f"retires nothing"})
+        return False
+    stamp = now.isoformat(timespec="seconds")
+    changed = False
+    gone: list[str] = []
+    for s in sleeves:
+        name = str(s.get("name") or "")
+        if str(s.get("status") or "") != "LIVE" or name not in rows:
+            continue
+        reason = str(rows[name])
+        code = reason.split(":", 1)[0].strip()
+        if code not in TIER_S_RETIRING_VERDICTS:
+            held[name] = reason
+            continue
+        full = f"Tier S door: {reason}"
+        s.update({"status": "RETIRED", "risk_frac": 0.0, "risk_frac_source": "none",
+                  "retired_at": stamp, "retire_reason": full})
+        plog(f"AUTO-RETIRED {name} ({full})")
+        note_door(name, door="RETIRED", from_status="LIVE", to_status="RETIRED", reason=full,
+                  evidence={"certificate": s.get("certificate"), "tier_s_live_door": code,
+                            "door_generated_utc": at.isoformat()})
+        _record_tier_s_block(name, reason, "live", s)
+        retired[name] = reason
+        gone.append(name)
+        changed = True
+    if gone:
+        _queue_close(gone)
+    _write_live_door_out({**out, "status": "MEASURED",
+                          "n_door_rows": len(rows), "n_retired": len(gone),
+                          "n_held": len(held)})
+    return changed
+
+
 def regrade_block(name: str, fails: dict[str, dict]) -> dict | None:
     """The failing audit row for `name`, matched exactly or across the canon's prefixing
     convention (`external.<cell>`, `<hunt>.<cell>` on one side, the bare cell on the other)."""
@@ -1984,6 +2103,8 @@ def main() -> None:
     changed = retire_unrunnable(sleeves) or changed
     # And rows of a family the principal has banned (data/banned_families.json).
     changed = retire_banned(sleeves, identities) or changed
+    # And LIVE rows the Tier S door now refuses on evidence about them (data/tier_s/live_door.json).
+    changed = retire_tier_s_live(sleeves) or changed
 
     # WHAT THE ALLOCATOR CURRENTLY SAYS. Read ONCE per pass: the three promotion doors and the
     # reconciliation below must all decide from the same solve, or two rows written in the same
@@ -2011,7 +2132,11 @@ def main() -> None:
         # everything else; the identity map resolves both, and the parse below is only the
         # fallback for a key the enrolment no longer lists.
         ident = identities.get(key)
-        parts = key.split(".")
+        # THE PARAMETER TAIL IS NOT A KEY FIELD. `sleeve_key` appends `#rr=2.5...`, and splitting
+        # the whole key on "." cut that decimal in two, so `USDJPY.asia#rr=2.5` parsed as window
+        # `asia#rr=2` with a breakout STATE of "5": a condition no certificate carries, so the
+        # clock's gate spec never matched and the approved rr=2.5 sleeve could not be promoted.
+        parts = key.split("#", 1)[0].split(".")
         if ident:
             sym, win, family = ident["symbol"], ident["selector"], ident["family"]
             side_txt = ident.get("side", "LONG")

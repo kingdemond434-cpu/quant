@@ -216,6 +216,13 @@ def check_state(report: Path | None = None, now: datetime | None = None
     elif "n_blocked" not in doc:
         notes.append("this census predates the accruing measurement: whether the enrolled clocks "
                      "gather evidence is UNMEASURED here, which is a real answer and not a pass")
+    n_held = doc.get("n_held")
+    if isinstance(n_held, int) and n_held:
+        notes.append(f"{n_held} certificate(s) HELD by the research-integrity door (placebo "
+                     "alarm or no independent replication) -- a named decision, not a stall")
+    alarm = ((doc.get("integrity") or {}).get("placebo_alarm") or {})
+    if alarm.get("blocks"):
+        notes.append(f"PLACEBO ALARM: {alarm.get('why')}")
     n_missing = doc.get("n_missing")
     if isinstance(n_missing, int) and n_missing and not overdue:
         notes.append(f"{n_missing} certificate(s) without a clock, none yet past one cycle: the "

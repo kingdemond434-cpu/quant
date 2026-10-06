@@ -72,7 +72,7 @@ def _meta(spread: float | None, *, source: str = "", tick: float = 1e-5,
 
 # --------------------------------------------------------------------- the account contract ---
 def test_the_commission_is_the_measured_per_side_figure_in_account_currency():
-    """MEASURED over all 433 deals account 495044 has ever done (reports/COST_TRUTH.json,
+    """MEASURED over all 433 deals the live Fusion account has ever done (reports/COST_TRUTH.json,
     2026-09-23): 2.00 per lot per side with p10 = p50 = p90 = 2.00, on all twelve traded
     symbols including gold. The 2.25 this replaced was the brochure's USD figure sitting in
     a field `Costs.from_symbol` converts as ACCOUNT currency -- so the desk charged 2.25 EUR

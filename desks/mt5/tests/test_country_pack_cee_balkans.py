@@ -57,6 +57,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from libs.research.country_lab import registered_terms_ground  # noqa: E402
 
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parents[1]
@@ -388,7 +389,9 @@ def test_every_source_layer_is_named_or_declared_absent(mod: Any) -> None:
     for layer, n in counts.items():
         assert n >= 1, f"{layer}: no source and the pack declares no reason for having none"
     assert coverage["unexplained_missing"] == [], coverage["unexplained_missing"]
-    assert coverage["machine_use_forbidden"], (
+    # LAWS §5e (2026-09-23): terms-restricted ground is REGISTERED by its access label and mined;
+    # machine_use_allowed=false is a deleted brake, so the label is what proves it was not omitted.
+    assert registered_terms_ground(mod.SOURCE_CLASSES), (
         "every source machine-readable is not true of any European media layer; a pack that "
         "found none did not read the terms")
     assert coverage["low_weight_kept"], (

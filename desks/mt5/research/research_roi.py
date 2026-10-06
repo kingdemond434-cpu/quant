@@ -15,7 +15,7 @@ against is a scoreboard, not an economy.
 DELAYED CREDIT IS A WALK, NOT A JOIN. A survivor's value belongs to the SOURCE that suggested the
 mechanism, which may be two or three provenance hops upstream of the cell that survived
 (source -> discovery -> cell -> trial -> verdict). `registry.provenance_of` is that walk, and the
-credit reaches every ancestor node it passes, which is what makes a slow, hard-to-crawl 七禾网
+credit reaches every ancestor node it passes, which is what makes a slow, hard-to-crawl Ã¤Â¸Æ’Ã§Â¦Â¾Ã§Â½â€˜
 interview fundable at all: the cell it eventually produced is months downstream of the crawl.
 
     THE FIVE ROIs, all (value / cost), all published with their components:
@@ -56,6 +56,7 @@ import sys
 import time
 from collections import Counter, defaultdict
 from datetime import UTC, datetime, timedelta
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -231,7 +232,8 @@ def region_of(*tokens: Any) -> str | None:
 
 # -------------------------------------------------------------------------------- the inputs
 
-def registry_rows(conn: sqlite3.Connection) -> dict[str, list[dict[str, Any]]]:
+def registry_rows(conn: sqlite3.Connection, *, history_rows: bool = True
+                  ) -> dict[str, list[dict[str, Any]]]:
     """Everything one pass reads from the canonical registry, in one place."""
     out: dict[str, list[dict[str, Any]]] = {}
     for name, sql in (
@@ -242,11 +244,26 @@ def registry_rows(conn: sqlite3.Connection) -> dict[str, list[dict[str, Any]]]:
             ("candidates", "SELECT * FROM research_candidates LIMIT 200000"),
             ("trials", "SELECT * FROM trials_ledger LIMIT 200000"),
             ("provenance", "SELECT * FROM provenance LIMIT 400000")):
+        if not history_rows and name in ("trials", "provenance"):
+            continue
         try:
             out[name] = [dict(r) for r in conn.execute(sql)]
         except sqlite3.Error:
             out[name] = []
     return out
+
+
+def registry_history_counts(conn: sqlite3.Connection) -> dict[str, int]:
+    """Exact capped history populations without decoding unused row payloads."""
+    counts: dict[str, int] = {}
+    for name, table, limit in (("trials", "trials_ledger", 200000),
+                               ("provenance", "provenance", 400000)):
+        try:
+            counts[name] = int(conn.execute(
+                f"SELECT COUNT(*) FROM (SELECT 1 FROM {table} LIMIT {limit})").fetchone()[0])
+        except sqlite3.Error:
+            counts[name] = 0
+    return counts
 
 
 def compute_hours(window_days: int = WINDOW_DAYS) -> tuple[dict[str, float], str | None]:
@@ -298,17 +315,19 @@ def family_trials() -> tuple[dict[str, dict[str, int]], str | None]:
         return {}, f"absent: {GATE_LEDGER}"
     out: dict[str, dict[str, int]] = defaultdict(lambda: {"judged": 0, "passed": 0})
     try:
-        for line in GATE_LEDGER.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            try:
-                row = json.loads(line)
-            except ValueError:
-                continue
-            fam = str(row.get("family") or "UNKNOWN")
-            out[fam]["judged"] += 1
-            if row.get("passed"):
-                out[fam]["passed"] += 1
+        # Keep the entire trial history while bounding memory to one ledger row.
+        with GATE_LEDGER.open(encoding="utf-8") as ledger:
+            for line in ledger:
+                if not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                fam = str(row.get("family") or "UNKNOWN")
+                out[fam]["judged"] += 1
+                if row.get("passed"):
+                    out[fam]["passed"] += 1
     except OSError as exc:
         return {}, f"unreadable: {exc}"
     return dict(out), None
@@ -328,7 +347,8 @@ def survivors(unmeasured: list[dict[str, str]]) -> list[dict[str, Any]]:
         for key, cert in doc["survivors"].items():
             if not isinstance(cert, dict):
                 continue
-            spec = cert.get("shadow_spec") if isinstance(cert.get("shadow_spec"), dict) else {}
+            raw_spec = cert.get("shadow_spec")
+            spec: dict[str, Any] = raw_spec if isinstance(raw_spec, dict) else {}
             rows[str(key)] = {"cell": str(key), "family": str(spec.get("family") or "UNKNOWN"),
                               "symbol": str(spec.get("symbol") or ""), "lane": "certified"}
     else:
@@ -439,7 +459,7 @@ def credit_walk(conn: sqlite3.Connection, rows: dict[str, list[dict[str, Any]]],
     ancestor is credited exactly like a one-hop one.
     """
     by_source: dict[str, dict[str, Any]] = defaultdict(
-        lambda: {"survivors": 0.0, "delta_elogw": 0.0, "cells": [], "hops": []})
+        lambda: {"survivors": 0.0, "delta_elogw": 0.0, "cells": [], "max_hops": 0})
     by_generator: dict[str, dict[str, Any]] = defaultdict(
         lambda: {"survivors": 0.0, "delta_elogw": 0.0, "cells": []})
     by_discovery: Counter[str] = Counter()
@@ -454,6 +474,91 @@ def credit_walk(conn: sqlite3.Connection, rows: dict[str, list[dict[str, Any]]],
                  str(c.get("family") or "").lower())].append(c)
 
     unjoined = 0
+
+    graph = None
+    if conn is not None:
+        try:
+            joined: set[str] = set()
+            for survivor in surv:
+                candidates = ([cand_by_id[survivor["cell"]]]
+                              if survivor["cell"] in cand_by_id else by_pair.get(
+                                  (survivor["symbol"].lower(), survivor["family"].lower()), []))
+                joined.update(str(candidate.get("id") or "") for candidate in candidates)
+            graph = R.provenance_graph((("cell", cid) for cid in joined), conn=conn)
+        except sqlite3.Error:
+            # Preserve the existing per-cell unreadable-provenance handling.
+            graph = None
+
+    # Convert each database edge once; the same family hub can be revisited by
+    # thousands of candidate walks. Edge order and duplicates remain intact.
+    adjacency = ({key: tuple((str(edge["from_kind"]), str(edge["from_id"]))
+                              for edge in edges)
+                  for key, edges in graph.items()} if graph is not None else {})
+    CreditPattern = tuple[dict[str, int], Counter[str]]
+    empty_pattern: CreditPattern = ({}, Counter())
+
+    def summarize(frontier: tuple[tuple[str, str], ...], levels: int,
+                  seen: set[tuple[str, str]] | None = None
+                  ) -> tuple[CreditPattern, frozenset[tuple[str, str]]]:
+        visited = set() if seen is None else set(seen)
+        sources: dict[str, int] = {}
+        discoveries: Counter[str] = Counter()
+        ordinal = 0
+        for _ in range(levels):
+            upcoming = []
+            for key in frontier:
+                if key in visited:
+                    continue
+                visited.add(key)
+                for parent in adjacency.get(key, ()):
+                    ordinal += 1
+                    kind, node = parent
+                    if kind == "source":
+                        sources.setdefault(node, ordinal)
+                    elif kind == "discovery":
+                        discoveries[node] += 1
+                    if adjacency.get(parent):
+                        upcoming.append(parent)
+            if not upcoming:
+                break
+            frontier = tuple(upcoming)
+        return (sources, discoveries), frozenset(visited)
+
+    @lru_cache(maxsize=200000)
+    def tail(parents: tuple[tuple[str, str], ...]
+             ) -> tuple[CreditPattern, frozenset[tuple[str, str]]]:
+        return summarize(parents, 7)
+
+    @lru_cache(maxsize=200000)
+    def ancestors(cid: str) -> tuple[CreditPattern, CreditPattern, int]:
+        if graph is None:
+            sources: dict[str, int] = {}
+            discoveries: Counter[str] = Counter()
+            for hop, edge in enumerate(R.provenance_of("cell", cid, conn=conn), 1):
+                kind, node = str(edge.get("from_kind")), str(edge.get("from_id"))
+                if kind == "source":
+                    sources.setdefault(node, hop)
+                elif kind == "discovery":
+                    discoveries[node] += 1
+            return (sources, discoveries), empty_pattern, 0
+        root = ("cell", cid)
+        parents = adjacency.get(root, ())
+        active = tuple(parent for parent in parents if adjacency.get(parent))
+        suffix, visited = tail(active)
+        if root in visited:
+            return summarize((root,), 8)[0], empty_pattern, 0
+        prefix_sources: dict[str, int] = {}
+        prefix_discoveries: Counter[str] = Counter()
+        for hop, (kind, node) in enumerate(parents, 1):
+            if kind == "source":
+                prefix_sources.setdefault(node, hop)
+            elif kind == "discovery":
+                prefix_discoveries[node] += 1
+        return (prefix_sources, prefix_discoveries), suffix, len(parents)
+
+    grouped_credit: dict[tuple[int, frozenset[str], int], dict[str, Any]] = {}
+
+    event_index = 0
     for s in surv:
         cands = ([cand_by_id[s["cell"]]] if s["cell"] in cand_by_id
                  else by_pair.get((s["symbol"].lower(), s["family"].lower()), []))
@@ -469,36 +574,58 @@ def credit_walk(conn: sqlite3.Connection, rows: dict[str, list[dict[str, Any]]],
             by_generator[gen]["delta_elogw"] += value * share
             if len(by_generator[gen]["cells"]) < 25:
                 by_generator[gen]["cells"].append(s["cell"])
-            seen_sources: set[str] = set()
             try:
-                edges = R.provenance_of("cell", cid, conn=conn)
+                prefix, suffix, offset = ancestors(cid)
             except (sqlite3.Error, ValueError):
-                edges = []
-            for hop, edge in enumerate(edges, 1):
-                kind, node = str(edge.get("from_kind")), str(edge.get("from_id"))
-                if kind == "discovery":
-                    by_discovery[node] += 1
-                if kind == "source" and node not in seen_sources:
-                    seen_sources.add(node)
-                    row = by_source[node]
-                    row["survivors"] += share
-                    row["delta_elogw"] += value * share
-                    if len(row["cells"]) < 25:
-                        row["cells"].append(s["cell"])
-                    row["hops"].append(hop)
-            # A cell naming its source directly still credits it -- the walk is the ADDITION,
-            # never the replacement.
+                prefix, suffix, offset = empty_pattern, empty_pattern, 0
+            # Reused immutable ancestor tuples identify the same credit pattern.
+            # Aggregate weights and occurrences before touching thousands of shared
+            # family-hub ancestors; duplicate discovery edges still count separately.
+            prefix_sources = prefix[0]
+            suffix_sources = suffix[0]
+            # A source contributes once per candidate, at its first BFS ordinal.
+            # Discovery edges contribute at every occurrence, including duplicates.
+            excluded = frozenset(prefix_sources)
+            for evidence, omit, shift in ((prefix, frozenset(), 0), (suffix, excluded, offset)):
+                source_hops, discoveries = evidence
+                if not source_hops and not discoveries:
+                    continue
+                key = (id(evidence), omit, shift)
+                group = grouped_credit.get(key)
+                if group is None:
+                    group = {"pattern": evidence,
+                             "sources": {node: hop + shift for node, hop in source_hops.items()
+                                         if node not in omit}, "discoveries": discoveries,
+                             "weight": 0.0, "value": 0.0, "occurrences": 0, "cells": []}
+                    grouped_credit[key] = group
+                group["weight"] += share
+                group["value"] += value * share
+                group["occurrences"] += 1
+                if len(group["cells"]) < 25:
+                    group["cells"].append((event_index, s["cell"]))
+            event_index += 1
             direct = str(cand.get("source_id") or "")
-            if direct and direct not in seen_sources:
+            if direct and direct not in prefix_sources and direct not in suffix_sources:
                 row = by_source[direct]
                 row["survivors"] += share
                 row["delta_elogw"] += value * share
-                row["hops"].append(0)
+    for group in grouped_credit.values():
+        for node, count in group["discoveries"].items():
+            by_discovery[node] += count * group["occurrences"]
+        for node, hop in group["sources"].items():
+            row = by_source[node]
+            row["survivors"] += group["weight"]
+            row["delta_elogw"] += group["value"]
+            # Retain the first 25 cells in ORIGINAL traversal order across groups.
+            if len(row["cells"]) < 25 or (group["cells"] and
+                                           group["cells"][0][0] < row["cells"][-1][0]):
+                row["cells"] = sorted(row["cells"] + group["cells"],
+                                      key=lambda item: item[0])[:25]
+            row["max_hops"] = max(row["max_hops"], hop)
     for row in by_source.values():
-        row["max_hops"] = max(row["hops"]) if row["hops"] else 0
+        row["cells"] = [cell for _, cell in row["cells"]]
         row["survivors"] = round(row["survivors"], 6)
         row["delta_elogw"] = round(row["delta_elogw"], 12)
-        row.pop("hops", None)
     for row in by_generator.values():
         row["survivors"] = round(row["survivors"], 6)
         row["delta_elogw"] = round(row["delta_elogw"], 12)
@@ -1037,7 +1164,8 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
     own = conn is None
     c = conn or R.connect()
     try:
-        rows = registry_rows(c)
+        rows = registry_rows(c, history_rows=False)
+        history_counts = registry_history_counts(c)
         hours, hours_why = compute_hours()
         if hours_why:
             unmeasured.append({"what": "compute ledger", "why": hours_why})
@@ -1104,8 +1232,8 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
         "counts": {"sources": len(rows["sources"]), "source_yield": len(rows["source_yield"]),
                    "generators": len(rows["generator_yield"]),
                    "discoveries": len(rows["discoveries"]),
-                   "candidates": len(rows["candidates"]), "trials": len(rows["trials"]),
-                   "provenance_edges": len(rows["provenance"]), "survivors": len(surv)},
+                   "candidates": len(rows["candidates"]), "trials": history_counts["trials"],
+                   "provenance_edges": history_counts["provenance"], "survivors": len(surv)},
         "budget_s": budget_s, "elapsed_s": round(time.monotonic() - t0, 2),
         "dry_run": dry_run, "unmeasured": unmeasured,
         "limitations": [

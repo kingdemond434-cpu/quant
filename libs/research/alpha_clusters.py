@@ -187,6 +187,7 @@ FAMILY_CLUSTER: dict[str, str] = {
     # -- cross-asset lead / lag
     "cross_asset_lead_lag": "cross_asset_lead_lag",
     "lead_lag": "cross_asset_lead_lag",
+    "analyst_cross_market_lead": "cross_asset_lead_lag",
     # -- macro and rates
     "carry": "macro_rates",
     "macro_conditional": "macro_rates",
@@ -241,6 +242,7 @@ FAMILY_CLUSTER: dict[str, str] = {
     # -- unscheduled news reaction
     "cb_tone": "news_reaction",
     "news_reaction": "news_reaction",
+    "analyst_revision_drift": "news_reaction",
     # -- cross-sectional selection
     "cross_sectional": "cross_sectional_fx",
     "style_premia": "cross_sectional_fx",

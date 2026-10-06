@@ -63,6 +63,7 @@ LEG_LAYER: dict[str, str] = {
     # "what did the desk NOT test this hour" silently omits it.
     "futures_lead_lag": "information", "tape_features": "information",
     # prediction: turning information into a claim about returns
+    "intake_catchup": "prediction",
     "compile_candidates": "prediction", "merge_docket": "prediction", "search": "prediction",
     "sweep": "prediction", "hunt12": "prediction",
     "backtest": "prediction", "external_gauntlet": "prediction",
@@ -79,6 +80,7 @@ LEG_LAYER: dict[str, str] = {
     # places an order, neither sizes one, and both exist only so the prediction layer's verdict
     # is fed the right population and published the moment it exists.
     "fast_admission": "prediction", "canon_publication": "prediction",
+    "lockbox_recert": "prediction",
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
     "requeue_unrunnable": "prediction", "falsifier_run": "prediction",
@@ -198,6 +200,9 @@ LEG_LAYER: dict[str, str] = {
     # both are predictor searches.
     "producer_swarm": "prediction",
     "unknown_unknown": "prediction",
+    # The dead-session remap turns asia/london/ny variants that can never fire into stand-in
+    # cells that can -- a predictor search on the session axis: prediction.
+    "session_variant_remap": "prediction",
     # Whether the allocator's book reaches the sleeves it funds is a measurement of the desk's
     # own wiring, like `wiring_audit`: meta.
     "allocator_join": "meta",
@@ -206,6 +211,9 @@ LEG_LAYER: dict[str, str] = {
     "candidate_conservation": "meta",
     # Planted point-in-time canaries measure whether the desk can read the future: meta.
     "pit_canaries": "meta",
+    # Whether the desk has stopped placing without saying so is a measurement of its own
+    # execution wiring, not an act on the book: meta.
+    "placement_interlock": "meta",
     # THE TIER-1 CLOSED-LOOP B ROWS (2026-09-23).
     # Whether the running code may create new exposure, which scientist earned what, which
     # structures have started surviving again, and one EVIG price over every research resource
@@ -233,14 +241,17 @@ LEG_LAYER: dict[str, str] = {
     "kelly_survival": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
+    "recovery_drills": "meta",
     "forward_evidence_tracker": "meta",
+    # The box-state freshness fence and the desk health report, hourly before publication.
+    "box_state_freshness": "meta", "desk_health": "meta",
     # THE 2026-09-16 BLUEPRINT ORGANS (Tier-1 phases C/D).
     "axis_registry": "information", "forced_flow_calendar": "information",
     "standing_questions": "information",
     "novelty_gate": "prediction",
     "posterior_alpha": "sizing", "exposure_decomposition": "portfolio",
     "hazard_engine": "exit",
-    "breadth_ladder": "meta", "tier1_scorecard": "meta", "wiring_ceo": "meta",
+    "breadth_ladder": "meta", "tier1_scorecard": "meta", "tier1_gap": "meta", "wiring_ceo": "meta",
     # The queue census measures the machine's own backlog, not any strategy's: meta by
     # construction (principal 2026-09-23, "nothing should be queued").
     "queue_census": "meta",
@@ -258,6 +269,10 @@ LEG_LAYER: dict[str, str] = {
     # the within-class rank legs are claims about relative returns: prediction, like trend_core
     "cross_sectional_breadth": "prediction",
     "event_surprise": "information",
+    # public analyst views collected and stamped at first sighting: information
+    "alpha_capture": "information",
+    # free public alt-data proxies turned into PIT series: what the desk knows before it predicts
+    "alt_proxies": "information",
     "counterexample_agent": "meta",
     "search_paradigm_census": "meta",
     "source_registry": "information", "synthetic_regimes": "meta",
@@ -305,6 +320,7 @@ LEG_LAYER: dict[str, str] = {
     # other guarantees every certificate gets a forward clock the moment it is minted. They are
     # the machine that runs the machine -- throughput and evidence plumbing, not edge.
     "judging_throughput": "meta", "forward_enrolment": "meta", "judging_burndown": "meta",
+    "rejection_throughput": "meta",
     # META for the same reason, and it is the one that measures whether the other two are even
     # being reached: what fraction of the day the desk actually mints and judges, against the best
     # hour this box has ever done. It buys no prediction; it finds the hours nothing was produced.
@@ -319,6 +335,10 @@ LEG_LAYER: dict[str, str] = {
     # snapshot. That is the prediction layer's own work, done on the backlog instead of on
     # arrivals, so it sits beside the compiler that does it on arrivals.
     "conversion_maximiser": "prediction",
+    # THE CONVERSION FUNNEL measures the desk's own pipeline -- mined -> cell -> verdict ->
+    # certificate -> clock, every loss named -- and changes nothing in it: the machine reading
+    # itself, the same layer as `judging_burndown` and `forward_enrolment`.
+    "conversion_funnel": "meta",
     # WHICH SOURCES THE DESK MAY LAWFULLY CONSUME is a property of its INPUTS, decided before any
     # signal is derived from them -- the same reading that puts `source_routes` and `data_scout`
     # in information. The ROI reallocator is the machine spending on itself: meta.
@@ -349,8 +369,14 @@ LEG_LAYER: dict[str, str] = {
     # compute. It buys INFORMATION about the producers themselves -- which of them opens ground
     # nothing else covers, and which of them converts the judge's hour into a certificate.
     "orthogonality_yield": "information",
+    # Where in strategy space the desk has looked and what it found per cell, which empty cells
+    # sit next to proven ground, and each candidate's expected correlation to the book. It buys
+    # INFORMATION about the search itself; its two consumers reorder or add, never remove.
+    "occupancy_map": "information",
     # What the multiplicity budget is charged in: nominal rows vs effective independent tests.
     "effective_trials": "information",
+    # The deflated-Sharpe hurdle's two inputs, measured from judged trials with provenance.
+    "dsr_inputs": "information",
     "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
     # THE TIER-5 RESIDUALS (mandate 90, 110, 131/132, 133, 134, 136, 97/98, 162). The bounty
     # board and the drawdown-alpha miner are PORTFOLIO: both ask what the BOOK lacks -- a payoff
@@ -537,6 +563,11 @@ LEG_LAYER: dict[str, str] = {
     # files them as that ground's claims. It mints nothing and predicts nothing.
     "ground_depth": "information",
     "fill_recorder": "execution", "cost_surfaces": "execution",
+    # Classifying the live book's bad fills by cause is EXECUTION; ranking why cells never built,
+    # reading every leg's experiment contract and the health board are the machine measuring
+    # itself: META.
+    "trade_pathology": "execution",
+    "build_failure_bank": "meta", "experiment_contracts": "meta", "health_board": "meta",
     "actor_pressure": "information",
     "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",
     "shortfall_model": "execution",
@@ -544,6 +575,13 @@ LEG_LAYER: dict[str, str] = {
     # The identity chain grades the joins between the desk's own records and the placebo audit
     # grades its own gates against planted defects: the machine measuring the machine.
     "identity_chain": "meta", "placebo_audit": "meta",
+    # The null lab grades each family's own gates on data with no edge in it, and the
+    # research-live identity join grades whether the live book trades what research certified:
+    # the machine measuring the machine. The macro-conditioned sweep is a claim about returns.
+    "null_lab": "meta", "research_live_identity": "meta",
+    "macro_conditioned_sweep": "prediction",
+    # The UNKNOWN-share census grades the judge's own coverage: the machine measuring the machine.
+    "unknown_census": "meta",
     "meta_rnd": "meta",
     "wiring_audit": "meta", "queue_cycle": "meta", "time_joins": "meta", "brain_ab": "meta",
     # THE CONTROL PLANE is meta by construction: it measures whether the machine that runs the
@@ -568,7 +606,10 @@ LEG_LAYER: dict[str, str] = {
     # FOURTEEN LEGS THAT RAN WITH NO LAYER (measured 2026-09-30, `unassigned()`): each placed by
     # what it produces, the same rule as the rest of this table.
     "acquire_datasets": "information", "dukascopy_backfill": "information",
-    "source_experiment_census": "information",
+    "free_stack_hunt": "information", "free_stack_proposer": "prediction",
+    "factory_throughput": "prediction",
+    "source_experiment_census": "information", "world_dataset_hunt": "information",
+    "world_macro_proposer": "prediction",
     "cross_asset_graph": "information", "transmission_engine": "information",
     "excursions": "exit", "exit_accounts": "exit",
     "state_replay_audit": "execution", "why_not_report": "execution",

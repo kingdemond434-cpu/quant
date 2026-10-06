@@ -44,6 +44,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import socket
+import struct
 import subprocess
 import sys
 import tempfile
@@ -94,6 +96,13 @@ XCHECK_TOL = 0.006
 XCHECK_TTL_H = 20.0
 TICK_STALE_S = 300.0
 DONE_RETCODES = {10008, 10009, 10010}
+#: CLOCK SYNC (recovery drills, 2026-10-06). Every decision, intent and fill row is stamped by
+#: this box's clock, and the PIT law orders information by those stamps. The only skew check ran
+#: on the VPS over ssh; nothing measured the box against a reference. One SNTP query per server
+#: (stdlib, no dependency), the median offset judged against CLOCK_TOL_S.
+NTP_SERVERS: tuple[str, ...] = ("time.windows.com", "pool.ntp.org", "time.google.com")
+CLOCK_TOL_S = 1.0
+_NTP_EPOCH = 2_208_988_800
 
 
 def _read(p: Path) -> Any:
@@ -442,6 +451,66 @@ def duplicate_guard(data: Path = DATA) -> dict[str, Any]:
             "rule": "accepted intents, same sleeve + side + minute + intended price, counted"}
 
 
+def sntp_offset(server: str, timeout: float = 3.0) -> float:
+    """This host's clock minus the server's, in seconds (RFC 4330, one round trip)."""
+    pkt = b"\x1b" + 47 * b"\0"
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        s.settimeout(timeout)
+        t0 = time.time()
+        s.sendto(pkt, (server, 123))
+        data, _ = s.recvfrom(512)
+        t3 = time.time()
+    if len(data) < 48:
+        raise ValueError("short NTP reply")
+    def _ts(off: int) -> float:
+        sec, frac = struct.unpack("!II", data[off:off + 8])
+        return sec - _NTP_EPOCH + frac / 2 ** 32
+    t1, t2 = _ts(32), _ts(40)
+    return -(((t1 - t0) + (t2 - t3)) / 2.0)
+
+
+def clock_health(network: bool = True, query: Any = sntp_offset,
+                 servers: tuple[str, ...] = NTP_SERVERS) -> dict[str, Any]:
+    """Box clock against public time references. UNMEASURED when none answers (no network,
+    UDP 123 blocked): an unanswered query is not a synchronised clock."""
+    if not network:
+        return {"status": "UNMEASURED", "why": "network checks disabled"}
+    got: dict[str, float] = {}
+    errs: dict[str, str] = {}
+    for srv in servers:
+        try:
+            got[srv] = round(float(query(srv)), 4)
+        except Exception as exc:
+            errs[srv] = f"{type(exc).__name__}"
+    if not got:
+        return {"status": "UNMEASURED", "why": "no time server answered", "errors": errs}
+    offs = sorted(got.values())
+    med = offs[len(offs) // 2]
+    ok = abs(med) <= CLOCK_TOL_S
+    return {"status": "PASS" if ok else "FAIL", "offset_s": med, "tolerance_s": CLOCK_TOL_S,
+            "by_server": got, "errors": errs,
+            "why": (f"box clock within {CLOCK_TOL_S}s of reference ({med:+.3f}s)" if ok else
+                    f"box clock off by {med:+.3f}s: stamps on decisions and fills are wrong by "
+                    f"that much; resync (w32tm /resync)")}
+
+
+def _offsite_backup_row() -> dict[str, Any]:
+    """The box-only data (ticks, tape, terminal profile) off site, encrypted: read from
+    `scripts/offsite_backup.py`'s report, so the row is a measurement, not a standing sentence."""
+    import importlib.util
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "offsite_backup", DESK / "scripts" / "offsite_backup.py")
+        assert spec is not None and spec.loader is not None
+        ob = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ob)
+        doc = ob._load(ob.OUT)
+        status, why = ob.verdict(doc)
+    except Exception as exc:        # an unreadable organ is UNMEASURED, never a pass
+        status, why = "UNMEASURED", f"offsite_backup unreadable: {type(exc).__name__}"
+    return {"item": "encrypted_offbox_backup", "status": status, "why": why}
+
+
 def build(network: bool = True) -> dict[str, Any]:
     t0 = time.time()
     journal = journal_replay()
@@ -449,7 +518,9 @@ def build(network: bool = True) -> dict[str, Any]:
     term = terminal_health()
     xcheck = market_data_crosscheck(network=network)
     dup = duplicate_guard()
-    parts = {"journal_replay": journal["status"], "offbox_restore_drill": drill["status"],
+    clock = clock_health(network=network)
+    parts = {"clock_sync": clock["status"],
+             "journal_replay": journal["status"], "offbox_restore_drill": drill["status"],
              "terminal_health": term["status"], "market_data_crosscheck": xcheck["status"],
              "duplicate_guard": dup["status"]}
     return {
@@ -458,14 +529,12 @@ def build(network: bool = True) -> dict[str, Any]:
                    "PASS" if all(v == "PASS" for v in parts.values()) else "PARTIAL"),
         "components": parts,
         "journal_replay": journal, "offbox_restore_drill": drill, "terminal_health": term,
-        "market_data_crosscheck": xcheck, "duplicate_guard": dup,
+        "market_data_crosscheck": xcheck, "duplicate_guard": dup, "clock_sync": clock,
         "gaps": [
             {"item": "warm_standby", "status": "NOT_PROVISIONED",
              "why": "a second terminal on a second machine is a provisioning decision "
                     "(NEEDS-PRINCIPAL); the failover pair above is same-box only"},
-            {"item": "encrypted_offbox_backup", "status": "NOT_ENCRYPTED",
-             "why": "the off-box replica is a private git remote; desk-side encryption needs a "
-                    "key escrowed off the box to stay restorable (key custody: NEEDS-PRINCIPAL)"},
+            _offsite_backup_row(),
         ],
         "elapsed_s": round(time.time() - t0, 2),
     }
