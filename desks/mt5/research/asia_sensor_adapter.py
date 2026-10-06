@@ -91,6 +91,10 @@ from libs.research import sensor_contract as sc  # noqa: E402
 UNMEASURED = sc.UNMEASURED
 SENSOR_CLASS = "asia_structured"
 REPORT_NAME = "ASIA_SENSOR_ADAPTER.json"
+#: This organ's own artifact: the pass census (what was mapped, appended, refused, deferred),
+#: the hook points and their state, and the contract gaps. The OBSERVATIONS themselves go to
+#: the sensor ledger (`sensor_contract.default_root()`), which this organ does not own.
+REPORT = DESK / "reports" / REPORT_NAME
 
 #: Asian geographies, as the stores spell them (alt_proxies regions and registry countries,
 #: upper-cased). East, South, South-East and Central Asia; the Gulf rows of `asia_sources.json`
@@ -559,7 +563,7 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
     t0 = time.monotonic()
     now = now or datetime.now(UTC)
     ledger = sc.SensorLedger(ledger_root)
-    report = report or desk / "reports" / REPORT_NAME
+    report = report or (REPORT if desk == DESK else desk / "reports" / REPORT_NAME)
     try:
         prev = json.loads(report.read_text(encoding="utf-8"))
     except (OSError, ValueError):
