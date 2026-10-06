@@ -39,7 +39,7 @@ THE CONTRACTS.
                           day's return (close d+1 -> d+2, the first close after A_d), traded
                           only when |z| >= 1, against the same cell traded every day; null =
                           circular shift, strata = trailing realised-vol tercile.
-  ROMAN-0841 forecast_gain  next-week log change of gold (close d+1 -> d+6) forecast by
+  ROMAN-0841 forecast_gain  next-week log change of gold (close d -> d+5) forecast by
                           kappa x (fair value - price), kappa an expanding no-intercept regression
                           on already-knowable weeks, against the random walk (zero change).
   ROMAN-0840 gated_gain   per USD pair, the same residual-reversion cell on the pair's residual
@@ -260,12 +260,16 @@ def dollar_state(closes: Mapping[str, list[tuple[str, float]]], dates: Sequence[
     Z = np.hstack([lam[:, None], np.eye(p)])
     a0 = np.zeros(m)
 
+    # Measurement noise DECLARED (quote noise ~ 1e-4 in log price); the one free parameter, the
+    # idiosyncratic-to-PCA variance scale s, is fitted by MLE on the training window.
+    h = 1e-8
+
     def build(th: np.ndarray) -> kalman.StateSpace:
-        return kalman.StateSpace(Z=Z, H=np.eye(p) * th[0], T=np.eye(m),
-                                 Q=np.diag(np.concatenate([[1.0], th[1] * psi])), a0=a0,
+        return kalman.StateSpace(Z=Z, H=np.eye(p) * h, T=np.eye(m),
+                                 Q=np.diag(np.concatenate([[1.0], th[0] * psi])), a0=a0,
                                  P0=np.eye(m) * 1e-6)
 
-    fit = kalman.fit_mle(Y[:train], build, [float(psi.mean()) * 0.01, 1.0], maxiter=100)
+    fit = kalman.fit_mle(Y[:train], build, [1.0], maxiter=40)
     res = kalman.kalman_filter(Y, fit.model)
     f = res.a_filt[:, 0]
     resid = {}
@@ -285,14 +289,26 @@ def gold_fair_value(y: np.ndarray, X: np.ndarray, names: Sequence[str],
     if int(ok.sum()) < train + 100:
         return {"status": UNMEASURED, "why": f"{int(ok.sum())} complete rows < {train + 100}"}
     tr_end = int(np.flatnonzero(ok)[train - 1]) + 1
-    fit = kalman.fit_tvp_regression(y[first:tr_end], X[first:tr_end], maxiter=150)
-    sig2, q = float(fit.params[0]), fit.params[1:]
-    yy = kalman.tvp_y(y, X)
-    model = kalman.tvp_regression(yy, X, sig2, q)
+    # Regressors standardised on the TRAINING window only (the constant stays 1), and ONE shared
+    # random-walk variance for every beta: a fair value whose betas may each wander at their own
+    # MLE rate lets the intercept chase the price and the "fair value" becomes the price.
+    Xs = X.copy()
+    tr = X[first:tr_end]
+    for j in range(X.shape[1]):
+        col = tr[:, j][np.isfinite(tr[:, j])]
+        sd = float(col.std()) if col.size > 1 else 0.0
+        if sd > 0:
+            Xs[:, j] = (X[:, j] - float(col.mean())) / sd
+    fit = kalman.fit_tvp_regression(y[first:tr_end], Xs[first:tr_end], shared_q=True,
+                                    maxiter=150)
+    sig2, q = float(fit.params[0]), float(fit.params[1])
+    yy = kalman.tvp_y(y, Xs)
+    model = kalman.tvp_regression(yy, Xs, sig2, q)
     res = kalman.kalman_filter(yy, model)
     fv = res.y_hat[:, 0].copy()
     fv[~ok] = np.nan
     return {"status": "MEASURED", "regressors": list(names), "mle": fit.to_dict(),
+            "betas_on": "training-standardised regressors (constant unscaled)",
             "train_end_index": tr_end, "fair_value": fv, "resid_z": res.innovation_z()[:, 0],
             "betas": res.a_pred}
 
@@ -337,39 +353,48 @@ def reversion_contract(z: np.ndarray, r_next: np.ndarray, *, cards: Sequence[str
 
 
 def week_forecast_contract(logp: np.ndarray, fv: np.ndarray, start: int) -> dict[str, Any]:
-    """Change close d+1 -> d+6 forecast by kappa (fv_d - logp_d); kappa from weeks whose
-    outcome was knowable at A_d (j + 6 <= d)."""
+    """Next-week log change from the last close the desk holds at A_d (close d -> close d+5),
+    forecast by kappa (fv_d - logp_d); kappa by expanding no-intercept regression on weeks
+    whose outcome was knowable at A_d (j + 5 <= d). A forecast, not a payoff: no fill at close d
+    is assumed, only that close d is known when the forecast is made."""
     n = logp.size
     y = np.full(n, np.nan)
-    y[:n - 6] = logp[6:] - logp[1:n - 5]
+    y[:n - 5] = logp[5:] - logp[:n - 5]
     gap = fv - logp
     model = np.full(n, np.nan)
     sxx = sxy = 0.0
     cnt = 0
+    fin = np.flatnonzero(np.isfinite(gap))
+    # burn-in: the diffuse start's first filtered gaps are huge and would own the regression
+    burn = int(fin[0]) + 60 if fin.size else n
     for d in range(n):
-        j = d - 6
-        if j >= 0 and math.isfinite(gap[j]) and math.isfinite(y[j]):
+        j = d - 5
+        if j >= burn and math.isfinite(gap[j]) and math.isfinite(y[j]):
             sxx += gap[j] * gap[j]
             sxy += gap[j] * y[j]
             cnt += 1
         if cnt >= 60 and sxx > 0 and math.isfinite(gap[d]):
             model[d] = (sxy / sxx) * gap[d]
     sl = slice(start, None)
-    row = se.forecast_gain(y[sl], model[sl], np.zeros(n)[sl], engine=ENGINE, cards=[CARD_GOLD],
+    # in basis points: the spine rounds gains to 6 decimals, and a squared weekly log change
+    # (~1e-4) would round a real loss reduction to zero
+    row = se.forecast_gain(1e4 * y[sl], 1e4 * model[sl], np.zeros(n)[sl], engine=ENGINE,
+                           cards=[CARD_GOLD],
                            falsifier=("the filtered fair value does not forecast next-week gold "
                                       "better than a random walk"),
                            baseline="random walk (zero expected change)", loss="mse")
     row["label"] = "XAUUSD:next_week_change:fair_value_gap"
+    row["unit"] = "bp^2"
     return row
 
 
-def cpi_contract(infl: Mapping[str, Any], start: int) -> dict[str, Any]:
+def cpi_contract(infl: Mapping[str, Any], start: int, min_n: int = CPI_MIN_N) -> dict[str, Any]:
     falsifier = "the latent state does not forecast the next CPI print better than the last print"
     common = {"engine": ENGINE, "cards": [CARD_INFL], "falsifier": falsifier,
               "baseline": "random walk (previous CPI print)"}
     if infl.get("status") != "MEASURED" or "cpi" not in infl["inputs"]:
         row = se.contract(**common, metric="mse_reduction", value=None, baseline_value=None,
-                          n=0, min_n=CPI_MIN_N, why=infl.get("why") or "no CPI input")
+                          n=0, min_n=min_n, why=infl.get("why") or "no CPI input")
     else:
         j = infl["inputs"].index("cpi")
         col = infl["Y"][:, j]
@@ -381,16 +406,17 @@ def cpi_contract(infl: Mapping[str, Any], start: int) -> dict[str, Any]:
             ys.append(col[b])
             bs.append(col[a])
             ms.append(infl["mean"][j] + infl["sd"][j] * infl["state_pred"][b])
-        row = se.forecast_gain(ys, ms, bs, loss="mse", min_n=CPI_MIN_N, block=6, **common)
+        row = se.forecast_gain(ys, ms, bs, loss="mse", min_n=min_n, block=6, **common)
     row["label"] = "US:cpi_mm_annualised:latent_inflation"
-    row["min_n_note"] = f"min_n loosened 250 -> {CPI_MIN_N}: the target is a monthly print"
+    row["min_n_note"] = f"min_n loosened 250 -> {min_n}: the target is a monthly print"
     return row
 
 
 # ============================================================================== build
 def build(now: datetime, *, closes: Mapping[str, list[tuple[str, float]]] | None = None,
           series: Mapping[str, list[tuple[str, float]]] | None = None,
-          prints: Mapping[str, Any] | None = None, train: int = TRAIN_DAYS) -> dict[str, Any]:
+          prints: Mapping[str, Any] | None = None, train: int = TRAIN_DAYS,
+          cpi_min_n: int = CPI_MIN_N) -> dict[str, Any]:
     from macro.market_state import load_series
     syms = list(USD_PAIRS) + list(METALS)
     cl = dict(load_closes(syms, now) if closes is None else closes)
@@ -506,7 +532,7 @@ def build(now: datetime, *, closes: Mapping[str, list[tuple[str, float]]] | None
             obs[sid] = on_clock(fred_daily(fred, sid), clock)
     infl = inflation_state(obs, train)
     rep["inflation"] = {k: v for k, v in infl.items() if not isinstance(v, np.ndarray)}
-    contracts.append(cpi_contract(infl, train))
+    contracts.append(cpi_contract(infl, train, cpi_min_n))
     if infl["status"] == "MEASURED":
         cpi_j = infl["inputs"].index("cpi") if "cpi" in infl["inputs"] else None
         for i in range(n):
@@ -560,23 +586,25 @@ def publish_all(rep: Mapping[str, Any], received_at: datetime) -> dict[str, Any]
     cells = [
         se.emit_conditioner_cells(
             S_GOLD, ["gold_residual_z"], METALS, sides=(-1,), generator=ENGINE,
+            data_source="fred:DFII10",
             mechanism=("gold above its filtered macro fair value (real yield, dollar factor, "
                        "breakevens) is rich and mean-reverts toward it"),
             falsifier="gated residual-reversion gain <= 0 or p >= 0.05 (ROMAN-0841)"),
         se.emit_conditioner_cells(
             S_INFL, ["infl_state", "infl_innovation_z"], METALS, sides=(1, -1),
-            generator=ENGINE,
+            generator=ENGINE, data_source="fred:T10YIE",
             mechanism="latent inflation pressure and its surprise reprice the metals' hedge",
             falsifier="the latent state does not forecast CPI (ROMAN-0839)"),
         se.emit_conditioner_cells(
             S_USD, ["dollar_state", "dollar_innovation_z"], tuple(USD_PAIRS), sides=(1, -1),
-            generator=ENGINE,
+            generator=ENGINE, data_source="mt5:bars",
             mechanism="the common dollar factor and its surprise move every USD cross",
             falsifier="the factor's surprise carries no next-day content (ROMAN-0840)"),
     ]
     for pair in USD_PAIRS:
         cells.append(se.emit_conditioner_cells(
             S_USD, [f"{pair}_resid_z"], (pair,), sides=(-1,), generator=ENGINE,
+            data_source="mt5:bars",
             mechanism=f"{pair} rich against the common dollar factor reverts toward it",
             falsifier=f"{pair} residual-reversion gated gain <= 0 (ROMAN-0840)"))
     out["cells"] = cells

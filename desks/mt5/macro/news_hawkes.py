@@ -84,6 +84,9 @@ FAMILY_SYMBOLS: dict[str, tuple[str, ...]] = {
     "war_escalation": ("XAUUSD", "USOIL", "US500"),
     "inflation_surprise": USD_MAP, "labour_surprise": USD_MAP, "central_bank": USD_MAP,
 }
+#: The numbers' origin for the cell door's terms gate: event times from the desk's own sensor
+#: ledger (news documents) and release instants (ALFRED vintages / the free calendar).
+DATA_SOURCE = "desk:sensor_ledger"
 CB_TITLES = ("Federal Funds Rate", "FOMC Statement", "FOMC Press Conference")
 
 WINDOW_D = 365
@@ -429,7 +432,8 @@ def intensity_contracts(paths: Mapping[str, FamilyPath], daily: Mapping[str, Any
                     if tgt == "range_var":
                         target = np.log(hi / lo) ** 2 / (4 * math.log(2.0))
                     else:
-                        target = np.abs(np.diff(np.log(cl), prepend=np.nan))
+                        # basis points: the spine rounds gains to 6 decimals
+                        target = 1e4 * np.abs(np.diff(np.log(cl), prepend=np.nan))
                     y, model, base = forecast_frame(z_by_date, dates, target)
                     row = se.forecast_gain(y, model, base, loss=loss, **common)
                 row.update({"family": fam, "symbol": sym, "target": tgt,
@@ -585,11 +589,13 @@ def publish_all(rep: Mapping[str, Any], received_at: datetime) -> dict[str, Any]
     for fam, syms in FAMILY_SYMBOLS.items():
         cells.append(se.emit_conditioner_cells(
             SERIES, [f"{fam}_excess_z"], syms, sides=(1, -1), generator=ENGINE,
+            data_source=DATA_SOURCE,
             mechanism=(f"{fam} news/releases are self-exciting: excess intensity over the fitted "
                        "baseline marks a live cluster, a volatility state for the mapped CFDs"),
             falsifier=f"{fam} excess intensity does not forecast next-day range (ROMAN-0826)"))
     cells.append(se.emit_conditioner_cells(
         SERIES_NFP, ["post_nfp_persistence"], USD_MAP, sides=(1, -1), generator=ENGINE,
+        data_source=DATA_SOURCE,
         mechanism=("payrolls information that keeps exciting follow-on news for a day is not "
                    "yet absorbed: persistence marks a vol state for USD crosses, gold, US500"),
         falsifier="post-NFP persistence does not rank post-release realised vol (ROMAN-0830)"))

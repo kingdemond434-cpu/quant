@@ -117,6 +117,7 @@ def kalman_filter(y: Sequence[float] | np.ndarray, model: StateSpace) -> FilterR
     eye = np.eye(m)
     d_arr = None if model.d is None else np.asarray(model.d, dtype=float)
     ident_T = model.T.ndim == 2 and bool(np.array_equal(model.T, np.eye(m)))
+    diag_H = model.H.ndim == 2 and bool(np.count_nonzero(model.H - np.diag(np.diag(model.H))) == 0)
     for t in range(n):
         Zt = _at(model.Z, t, 2)
         Ht = _at(model.H, t, 2)
@@ -156,10 +157,38 @@ def kalman_filter(y: Sequence[float] | np.ndarray, model: StateSpace) -> FilterR
             continue
         obs = np.isfinite(ya[t])
         if obs.any():
-            Zo = Zt[obs]
+            full = bool(obs.all())
+            Zo = Zt if full else Zt[obs]
+            Ho = Ht if full else Ht[np.ix_(obs, obs)]
             v = ya[t, obs] - Zo @ a - dt[obs]
+            if m == 1 and diag_H:
+                # ONE STATE, DIAGONAL H: Sherman-Morrison, exact and O(p) (mixed-frequency
+                # factor panels such as the latent inflation state run here).
+                z = Zo[:, 0]
+                hv = np.diag(Ho)
+                pp = float(P[0, 0])
+                zh = z / hv
+                denom = 1.0 + pp * float(z @ zh)
+                u = float(zh @ v)
+                logdet = float(np.log(hv).sum()) + math.log(denom)
+                quad = float((v * v / hv).sum()) - pp * u * u / denom
+                a = a + pp * u / denom
+                P = np.array([[pp / denom]])
+                v_out[t, obs] = v
+                F_out[t][np.ix_(obs, obs)] = pp * np.outer(z, z) + np.diag(hv)
+                if seen >= model.n_diffuse:
+                    ll += -0.5 * (int(obs.sum()) * LOG2PI + logdet + quad)
+                    nobs += int(obs.sum())
+                seen += 1
+                a_filt[t] = a
+                P_filt[t] = P
+                Tt = _at(model.T, t, 2)
+                Qt = _at(model.Q, t, 2)
+                a = Tt @ a
+                P = Tt @ P @ Tt.T + Qt
+                continue
             PZ = P @ Zo.T
-            F = Zo @ PZ + Ht[np.ix_(obs, obs)]
+            F = Zo @ PZ + Ho
             F = 0.5 * (F + F.T)
             if obs.sum() == 1:
                 f = float(F[0, 0])
@@ -176,7 +205,7 @@ def kalman_filter(y: Sequence[float] | np.ndarray, model: StateSpace) -> FilterR
                 quad = float(w @ w)
             a = a + K @ v
             IKZ = eye - K @ Zo
-            P = IKZ @ P @ IKZ.T + K @ Ht[np.ix_(obs, obs)] @ K.T
+            P = IKZ @ P @ IKZ.T + K @ Ho @ K.T
             P = 0.5 * (P + P.T)
             v_out[t, obs] = v
             F_out[t][np.ix_(obs, obs)] = F
@@ -213,9 +242,11 @@ def rts_smoother(result: FilterResult, model: StateSpace) -> tuple[np.ndarray, n
 
 # ============================================================================== models
 def _diffuse_scale(y: np.ndarray) -> float:
+    """A diffuse prior variance from the FIRST observation only (1e6 x max(1, y_0^2)): a scale
+    taken from the whole sample would let later data shape early filtered values."""
     fin = y[np.isfinite(y)]
-    v = float(np.var(fin)) if fin.size > 1 else 1.0
-    return 1e6 * max(v, 1e-8)
+    y0 = float(fin[0]) if fin.size else 1.0
+    return 1e6 * max(1.0, y0 * y0)
 
 
 def local_level(y: Sequence[float] | np.ndarray, sigma2_eps: float, sigma2_eta: float,
@@ -298,7 +329,12 @@ def fit_mle(y: Sequence[float] | np.ndarray, build: Callable[[np.ndarray], State
             return 1e300
         return -res.loglik if math.isfinite(res.loglik) else 1e300
 
-    start = np.log(np.maximum(np.asarray(x0, dtype=float), 1e-300))
+    x_init = np.log(np.maximum(np.asarray(x0, dtype=float), 1e-300))
+    # MULTI-START on a common log shift (x0 x 1e-2, 1, 1e2): one starting point too far from
+    # the optimum left L-BFGS-B converged at its start on flat likelihood (measured).
+    starts = [x_init + s for s in (math.log(1e-2), 0.0, math.log(1e2))]
+    vals = [nll(s) for s in starts]
+    start = starts[int(np.argmin(vals))]
     method = "nelder_mead_fallback"
     converged = True
     theta = start
@@ -306,11 +342,23 @@ def fit_mle(y: Sequence[float] | np.ndarray, build: Callable[[np.ndarray], State
     if use_scipy:
         try:
             from scipy.optimize import minimize
+            # eps 1e-4 in LOG parameters: the diffuse start leaves ~1e-7 numerical noise in
+            # the log-likelihood, which a default 1e-8 finite-difference step turns into a
+            # useless gradient (measured: the search stalled after two iterations).
             res = minimize(nll, start, method="L-BFGS-B", bounds=[(lo, hi)] * start.size,
-                           options={"maxiter": maxiter})
+                           options={"maxiter": maxiter, "eps": 1e-4})
             theta = np.asarray(res.x, dtype=float)
             method = "lbfgsb_numeric_gradient"
             converged = bool(res.success)
+            if start.size <= 4 and int(res.nit) < 3:
+                # L-BFGS-B stopped at (or next to) its start: a derivative-free polish, cheap
+                # at this size and immune to gradient noise
+                pol = minimize(nll, theta, method="Nelder-Mead",
+                               options={"maxfev": 60 * start.size, "xatol": 1e-3,
+                                        "fatol": 1e-4})
+                if float(pol.fun) < float(res.fun):
+                    theta = np.asarray(pol.x, dtype=float)
+                    method = "lbfgsb_then_nelder_mead"
             done = True
         except ImportError:     # pragma: no cover - scipy is installed on both boxes
             done = False

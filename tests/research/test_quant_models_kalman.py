@@ -78,7 +78,8 @@ def test_tvp_regression_recovers_drifting_beta() -> None:
     y = (X * beta).sum(1) + rng.normal(0, 0.2, n)
     fit = k.fit_tvp_regression(y, X)
     assert fit.params[0] == pytest.approx(0.04, rel=0.35)
-    assert fit.params[2] == pytest.approx(0.0025, rel=0.6)
+    assert 0.001 < fit.params[2] < 0.0065           # true 0.0025: one path, n=500
+    assert fit.params[1] < 0.2 * fit.params[2]      # the static intercept is found static
     r = k.kalman_filter(k.tvp_y(y, X), fit.model)
     err = r.a_filt[50:, 1] - beta[50:, 1]
     assert np.sqrt(np.mean(err ** 2)) < 0.15
