@@ -20,6 +20,12 @@ WHAT IS CHECKED, per fault, on the gateway's real `connect`, `place_bracket` and
   REJECTION_COUNTED a rejected or empty send is not recorded as `placed`
   NO_SEND_BLIND     no order is sent when the double has no quote for the symbol
   DOWN_IS_FALSE     `connect()` answers False while the terminal is down and will not start
+  RECONCILE_BEFORE_EXPOSURE  a pass whose broker state could not be read (the restart reconcile
+                    finds the venue unreadable) or whose terminal is running but DISCONNECTED
+                    from the broker opens no new risk; a healthy pass still may. Asked of the
+                    gateway's `new_risk_gate`; a gateway without one is the finding itself
+                    (recovery drills, 2026-10-06: the pass opened new risk on top of an unread
+                    book, and `connect()` only asks whether `terminal_info()` exists)
 A breach is a FINDING about the gateway, reported with the fault that produced it; the drill
 never edits the gateway.
 """
@@ -37,7 +43,10 @@ ROOT = Path(__file__).resolve().parents[2]
 DESK = ROOT / "desks" / "mt5"
 
 FAULTS: tuple[str, ...] = ("healthy", "send_none", "reject_10015", "requote_10004",
-                           "send_raises", "tick_none", "terminal_down", "orders_get_raises")
+                           "send_raises", "tick_none", "terminal_down", "orders_get_raises",
+                           "terminal_disconnected", "reconcile_unreadable")
+#: The faults after which the pass must refuse NEW exposure (RECONCILE_BEFORE_EXPOSURE).
+REFUSE_NEW_RISK: frozenset[str] = frozenset({"terminal_disconnected", "reconcile_unreadable"})
 TIMEOUT_S = 90
 
 #: The child's program. It reads its fault from argv, builds the double, imports the gateway
@@ -57,7 +66,7 @@ def _const(name):
     raise AttributeError(name)
 m.__getattr__ = _const
 def terminal_info():
-    return None if fault == "terminal_down" else NS(connected=True)
+    return None if fault == "terminal_down" else NS(connected=fault != "terminal_disconnected")
 def initialize(**kw):
     calls["initialize"] += 1
     return fault != "terminal_down"
@@ -87,6 +96,8 @@ def orders_get(**kw):
         raise RuntimeError("orders_get failed")
     return ()
 def positions_get(**kw):
+    if fault == "reconcile_unreadable":
+        raise RuntimeError("positions_get failed")
     return ()
 for f in (terminal_info, initialize, last_error, symbol_info_tick, symbol_info, account_info,
           order_calc_margin, order_send, orders_get, positions_get):
@@ -114,6 +125,23 @@ try:
         out["expired"] = gateway.expire_stale_brackets(st)
     except Exception as exc:
         out["expire_exc"] = f"{type(exc).__name__}: {exc}"
+    # RECONCILE BEFORE EXPOSURE: the pass-level verdict the gateway would take on this venue,
+    # with a release identity that permits new risk, so only the venue can refuse it.
+    gate = getattr(gateway, "new_risk_gate", None)
+    if gate is None:
+        out["new_risk"] = "NO_GATE"
+    else:
+        try:
+            from mt5desk import order_door
+            rr = order_door.restart_reconcile(m, magic=1, armed=False)
+        except Exception as exc:
+            rr = {"verdict": "FAILED", "why": f"{type(exc).__name__}: {exc}"}
+        try:
+            ok, why = gate(True, "armed", rr, m.terminal_info())
+            out["new_risk"] = bool(ok)
+            out["new_risk_why"] = str(why)[:200]
+        except Exception as exc:
+            out["gate_exc"] = f"{type(exc).__name__}: {exc}"
 except Exception as exc:
     out["import_exc"] = f"{type(exc).__name__}: {exc}"
     out["trace"] = traceback.format_exc()[-800:]
@@ -172,7 +200,7 @@ def run_fault(fault: str, *, desk: Path = DESK) -> dict[str, Any]:
 def judge(fault: str, obs: dict[str, Any]) -> list[str]:
     """The invariants the module docstring names, checked on one observation."""
     out: list[str] = []
-    for k in ("connect_exc", "place_exc", "expire_exc"):
+    for k in ("connect_exc", "place_exc", "expire_exc", "gate_exc"):
         if obs.get(k):
             out.append(f"NO_CRASH: {k.split('_')[0]} raised {obs[k]}")
     sends = int(obs.get("sends") or 0)
@@ -189,6 +217,15 @@ def judge(fault: str, obs: dict[str, Any]) -> list[str]:
     if fault == "terminal_down" and obs.get("connect") is not False:
         out.append(f"DOWN_IS_FALSE: connect() returned {obs.get('connect')} with the terminal "
                    "down")
+    if fault in REFUSE_NEW_RISK and "new_risk" in obs:
+        if obs["new_risk"] == "NO_GATE":
+            out.append("RECONCILE_BEFORE_EXPOSURE: the gateway has no new-risk gate; this pass "
+                       "would open new exposure on a broker state it could not read")
+        elif obs["new_risk"] is not False:
+            out.append(f"RECONCILE_BEFORE_EXPOSURE: new risk allowed after {fault}")
+    if fault == "healthy" and obs.get("new_risk") is False:
+        out.append(f"RECONCILE_BEFORE_EXPOSURE: a healthy pass was refused new risk "
+                   f"({obs.get('new_risk_why')})")
     return out
 
 
