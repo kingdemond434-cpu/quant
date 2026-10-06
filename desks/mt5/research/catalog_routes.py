@@ -377,7 +377,11 @@ class Session:
                    "Accept": accept or "application/json, application/ld+json;q=0.9, "
                                        "application/xml;q=0.8, */*;q=0.5"}
         meta = self.http.get(url) or {}
-        if conditional and "next" in meta:
+        # A validator older than HTTP_META_KEEP_D is not sent (the page is fetched whole), but it
+        # is never deleted: `remember` overwrites it with the fresh one, nothing is removed.
+        seen = _parse_iso(meta.get("at"))
+        fresh = seen is not None and seen >= self.now - timedelta(days=HTTP_META_KEEP_D)
+        if conditional and "next" in meta and fresh:
             if meta.get("etag"):
                 headers["If-None-Match"] = str(meta["etag"])
             if meta.get("last_modified"):
@@ -396,12 +400,6 @@ class Session:
         lm = resp.headers.get("last-modified")
         self.http[url] = {"etag": etag, "last_modified": lm, "next": nxt, "n": int(n),
                           "at": _iso(self.now)}
-
-    def prune(self) -> None:
-        cutoff = self.now - timedelta(days=HTTP_META_KEEP_D)
-        for u in [u for u, m in self.http.items()
-                  if (_parse_iso((m or {}).get("at")) or cutoff) < cutoff]:
-            self.http.pop(u, None)
 
 
 def access_status(resp: Response) -> str:
@@ -1502,7 +1500,6 @@ def run(budget_s: float = DEFAULT_BUDGET_S, *, fetch: Fetch | None = None,
                       "total": v.total, "remainder": v.remainder, "unit": v.unit,
                       "passes": int((st.get("cursor") or {}).get("passes") or 0), **v.detail}
     kept, stats = dedup(rows_all, index)
-    sess.prune()
     by_route: dict[str, dict[str, Any]] = {}
     for pid, row in table.items():
         br = by_route.setdefault(row["route"], {"portals": 0, "rows": 0, "remainder": 0,
