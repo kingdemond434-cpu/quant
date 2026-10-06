@@ -78,3 +78,26 @@ def test_cells_are_held_by_the_terms_gate() -> None:
                                     falsifier="f", generator=vc.ENGINE, dry_run=True,
                                     data_source=f"{vc.VOL_SOURCE}:^VIX")
     assert got["status"] == "HELD_TERMS" and got["emitted"] == 0
+
+
+def test_fred_substitute_is_the_source_when_present(tmp_path: Path) -> None:
+    """Coordinator 2026-10-06: FRED's republished CBOE series replace the held Yahoo copy, on
+    FRED's own clock, and the substitute is measured against the held source."""
+    ref, uni = _world(tmp_path, planted=True)
+    held = json.loads((ref / "VIX.json").read_text())["series"]
+    fred = {"VIXCLS": [(d, v * 1.01 + 0.2) for d, v in sorted(held.items())]}
+    rep = vc.run(dry_run=True, reference=ref, universe_dir=uni,
+                 now=datetime(2030, 1, 1, tzinfo=UTC), series=fred)
+    g = rep["grounds"]["^VIX"]
+    assert g["data_source"] == "fred:VIXCLS"
+    assert g["substitute"]["covered"] is True and g["substitute"]["corr"] > 0.99
+    last = g["last"]
+    # FRED's declared lag: day d is held at d+1 09:00 ET, never earlier
+    d = datetime.fromisoformat(last["event_time"]).date()
+    assert datetime.fromisoformat(last["available_time"]) >= datetime(
+        d.year, d.month, d.day, 13, 0, tzinfo=UTC) + timedelta(days=1)
+    from libs.research import sensor_engines as se
+    admitted = se.emit_conditioner_cells("ws_vol_state_us500", ["iv_pct"], ["US500"],
+                                         mechanism="m", falsifier="f", generator=vc.ENGINE,
+                                         dry_run=True, data_source=g["data_source"])
+    assert admitted["emitted"] > 0

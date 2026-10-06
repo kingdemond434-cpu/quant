@@ -59,9 +59,18 @@ for _p in (str(ROOT), str(DESK)):
 from libs.research import sensor_engines as se  # noqa: E402
 
 REPORT = DESK / "reports" / "VOL_CONDITIONER.json"
-#: vol_archive reads the CBOE indices through Yahoo's chart API: the terms gate holds both until
-#: cleared, so the states are measured and kept and no cell is emitted (audit #211, J sources)
+#: vol_archive reads the CBOE indices through Yahoo's chart API: the terms gate holds that source
+#: (audit #211, J sources). THE LAWFUL SUBSTITUTE (coordinator, 2026-10-06): FRED republishes the
+#: CBOE indices, FRED is admitted, so a ground reads FRED first and its cells go through under
+#: data_source "fred:<series>"; the Yahoo history is used only where FRED has no series (held, no
+#: cells) and to MEASURE the substitute (level correlation >= 0.5 where both exist).
 VOL_SOURCE = "yahoo:cboe_indices"
+FRED_IDS: dict[str, str] = {
+    "^VIX": "VIXCLS", "^VIX3M": "VXVCLS", "^VXN": "VXNCLS", "^VXD": "VXDCLS",
+    "^OVX": "OVXCLS", "^GVZ": "GVZCLS", "^EVZ": "EVZCLS", "^RVX": "RVXCLS",
+    "^VXFXI": "VXFXICLS", "^VXEEM": "VXEEMCLS",
+}
+SUBSTITUTE_MIN_CORR = 0.5
 REFERENCE = DESK / "data" / "vol_archive" / "reference"
 UNIVERSE_DIR = DESK / "data" / "universe"
 UNIVERSE = UNIVERSE_DIR / "universe.json"
@@ -81,6 +90,8 @@ GROUNDS: dict[str, tuple[tuple[str, ...], bool, tuple[str, ...], str]] = {
     "^GVZ": (("XAUUSD", "GOLD", "XAUUSD.", "XAUUSDx"), False, (), ""),
     "^OVX": (("USOIL", "WTI", "UKOIL", "BRENT", "CRUDE", "OIL"), False, (), ""),
     "^EVZ": (("EURUSD",), False, (), ""),
+    "^RVX": (("US2000", "RUSSELL2000", "RUSSELL", "US2000.cash", "RTY"), True, (), ""),
+    "^VXFXI": (("CHINA50", "CN50", "CHINAH", "HK50", "CHINA.A50", "HKIND"), True, (), ""),
 }
 TENOR = {"^VIX9D": 9, "^VIX": 30, "^VIX3M": 91, "^VIX6M": 182}
 SIGNALS = ("iv_pct", "vrp_rank", "vrp_var", "iv_gap", "term_slope_short", "term_slope_long",
@@ -96,6 +107,41 @@ def load_reference(ticker: str, root: Path = REFERENCE) -> dict[str, float]:
                 if isinstance(v, int | float) and math.isfinite(float(v))}
     except (OSError, ValueError, AttributeError):
         return {}
+
+
+def fred_history(ticker: str, series: Mapping[str, Sequence[tuple[str, float]]]
+                 ) -> dict[str, float]:
+    sid = FRED_IDS.get(ticker)
+    return {d: float(v) for d, v in series.get(sid, [])} if sid else {}
+
+
+def fred_series() -> dict[str, list[tuple[str, float]]]:
+    try:
+        from macro.market_state import load_series
+        return load_series()
+    except Exception:
+        return {}
+
+
+def fred_knowable(ticker: str) -> Any:
+    """The FRED vintage clock: market_state's declared lag for a non-curve series."""
+    from macro.market_state import knowable
+    sid = FRED_IDS[ticker]
+    return lambda d: knowable(d, sid)
+
+
+def substitute_corr(fred: Mapping[str, float], held: Mapping[str, float]) -> dict[str, Any]:
+    common = sorted(set(fred) & set(held))
+    if len(common) < 60:
+        return {"status": UNMEASURED, "n": len(common),
+                "why": "fewer than 60 common days with the held source"}
+    a = np.asarray([fred[d] for d in common])
+    b = np.asarray([held[d] for d in common])
+    if a.std() == 0 or b.std() == 0:
+        return {"status": UNMEASURED, "n": len(common), "why": "a constant series"}
+    c = float(np.corrcoef(a, b)[0, 1])
+    return {"status": "MEASURED", "n": len(common), "corr": round(c, 4),
+            "covered": c >= SUBSTITUTE_MIN_CORR, "min_corr": SUBSTITUTE_MIN_CORR}
 
 
 def vintage_index(rows: Sequence[Mapping[str, Any]]) -> dict[tuple[str, str], tuple[float, str]]:
@@ -216,8 +262,8 @@ def term_slopes(points: Mapping[str, float]) -> tuple[float | None, float | None
 def build_ground(ticker: str, *, iv: Mapping[str, float], closes: Mapping[str, float],
                  term: Mapping[str, Mapping[str, float]] | None = None,
                  skew: Mapping[str, float] | None = None,
-                 vintages: Mapping[tuple[str, str], tuple[float, str]] | None = None
-                 ) -> list[dict[str, Any]]:
+                 vintages: Mapping[tuple[str, str], tuple[float, str]] | None = None,
+                 knowable_fn: Any = None) -> list[dict[str, Any]]:
     """One PIT row per index day: every feature computed from data held by its available_time."""
     days = sorted(iv)
     rv = rv_series(closes)
@@ -236,7 +282,8 @@ def build_ground(ticker: str, *, iv: Mapping[str, float], closes: Mapping[str, f
     last_taken = ""
     for i, d in enumerate(days):
         x = float(iv[d])
-        avail = datetime.fromisoformat(d).replace(tzinfo=UTC) + LAG
+        avail = (knowable_fn(d) if knowable_fn is not None else
+                 datetime.fromisoformat(d).replace(tzinfo=UTC) + LAG)
         basis = "declared_lag"
         seen = vint.get((ticker, d))
         if seen is not None:
@@ -384,8 +431,8 @@ def contracts(ticker: str, symbol: str, equity: bool, rows: Sequence[Mapping[str
 
 
 # ============================================================================== the organ
-def observations(ticker: str, symbol: str, last: Mapping[str, Any], received_at: datetime
-                 ) -> list[Any]:
+def observations(ticker: str, symbol: str, last: Mapping[str, Any], received_at: datetime,
+                 data_source: str | None = None) -> list[Any]:
     from libs.research import sensor_contract as sc
     out = []
     basis = str(last.get("knowable_basis") or "declared_lag")
@@ -397,28 +444,40 @@ def observations(ticker: str, symbol: str, last: Mapping[str, Any], received_at:
         v = last.get(metric)
         if not isinstance(v, int | float):
             continue
-        out.append(sc.make(sensor_id="market:vol_conditioner", source_id=f"{VOL_SOURCE}:{ticker}",
+        out.append(sc.make(sensor_id="market:vol_conditioner", source_id=data_source or f"{VOL_SOURCE}:{ticker}",
                            metric=f"{ticker}_{metric}", entity=symbol, kind="state",
                            sensor_class="market_state", asset_domain="vol", value=float(v),
                            event_time=last["event_time"], knowable_at=know,
                            knowable_basis=basis, received_at=rx, parse_complete_at=rx,
-                           licence="CBOE index values via public endpoints; derived state only",
+                           licence=("CBOE index values republished by FRED"
+                                    if str(data_source).startswith("fred:") else
+                                    "CBOE index values via Yahoo: terms UNCLEARED, held"),
                            commercial_rights=UNMEASURED))
     return out
 
 
 def run(*, dry_run: bool = False, reference: Path = REFERENCE,
-        universe_dir: Path = UNIVERSE_DIR, now: datetime | None = None) -> dict[str, Any]:
+        universe_dir: Path = UNIVERSE_DIR, now: datetime | None = None,
+        series: Mapping[str, Sequence[tuple[str, float]]] | None = None) -> dict[str, Any]:
     when = now or datetime.now(UTC)
+    fred = fred_series() if series is None else series
     vint = vintage_index(read_vintages())
     grounds: dict[str, Any] = {}
     all_contracts: list[dict[str, Any]] = []
     obs: list[Any] = []
     for ticker, (cands, equity, term_t, skew_t) in GROUNDS.items():
-        iv = load_reference(ticker, reference)
+        held = load_reference(ticker, reference)
         for (t, d), (v, _) in vint.items():
             if t == ticker:
-                iv.setdefault(d, v)
+                held.setdefault(d, v)
+        fiv = fred_history(ticker, fred)
+        substitute = (substitute_corr(fiv, held) if fiv and held else
+                      {"status": UNMEASURED, "why": "one side absent here"})
+        if fiv:
+            iv, data_source, knowable_fn, vintages = (fiv, f"fred:{FRED_IDS[ticker]}",
+                                                      fred_knowable(ticker), None)
+        else:
+            iv, data_source, knowable_fn, vintages = held, f"{VOL_SOURCE}:{ticker}", None, vint
         sym = resolve_symbol(cands, universe_dir)
         if not iv:
             grounds[ticker] = {"status": UNMEASURED, "why": "no reference history and no "
@@ -428,17 +487,24 @@ def run(*, dry_run: bool = False, reference: Path = REFERENCE,
             grounds[ticker] = {"status": "NOT_TRADEABLE_HERE", "tried": list(cands)}
             continue
         closes = daily_closes(sym, universe_dir)
-        term = {t: load_reference(t, reference) for t in term_t if t != ticker}
-        if term_t:
+        if fiv:
+            # FRED carries VIX and VIX3M only: the term slope is that pair, no skew proxy
+            term = {t: fred_history(t, fred) for t in term_t if t != ticker and t in FRED_IDS}
+            skew: dict[str, float] = {}
+        else:
+            term = {t: load_reference(t, reference) for t in term_t if t != ticker}
+            skew = load_reference(skew_t, reference) if skew_t else {}
+        term = {t: v for t, v in term.items() if v}
+        if term:
             term[ticker] = iv
-        skew = load_reference(skew_t, reference) if skew_t else {}
         rows = [r for r in build_ground(ticker, iv=iv, closes=closes, term=term, skew=skew,
-                                        vintages=vint)
+                                        vintages=vintages, knowable_fn=knowable_fn)
                 if datetime.fromisoformat(str(r["available_time"])) <= when]
         cs = contracts(ticker, sym, equity, rows, closes) if closes else []
         all_contracts.extend(cs)
         sid = f"ws_vol_state_{sym.lower()}"
         info: dict[str, Any] = {"status": "MEASURED", "symbol": sym, "rows": len(rows),
+                                "data_source": data_source, "substitute": substitute,
                                 "broker_days": len(closes), "series_id": sid,
                                 "last": rows[-1] if rows else None}
         if not closes:
@@ -455,12 +521,12 @@ def run(*, dry_run: bool = False, reference: Path = REFERENCE,
                                   f"when fear is high and vol mean-reverts"),
                 falsifier="gate effect indistinguishable from the shuffled-state gate across "
                           "the judged cells", generator=ENGINE, sides=sides,
-                data_source=f"{VOL_SOURCE}:{ticker}")
-            info["terms"] = {"data_source": f"{VOL_SOURCE}:{ticker}",
+                data_source=data_source)
+            info["terms"] = {"data_source": data_source,
                              "gauntlet": ("HELD" if info["cells"].get("status") == "HELD_TERMS"
                                           else "admitted"),
                              "why": info["cells"].get("why", "")}
-            obs.extend(observations(ticker, sym, rows[-1], when))
+            obs.extend(observations(ticker, sym, rows[-1], when, data_source))
         grounds[ticker] = info
     report: dict[str, Any] = {"at": when.isoformat(timespec="seconds"), "engine": ENGINE,
                               "grounds": grounds, "contracts": all_contracts,

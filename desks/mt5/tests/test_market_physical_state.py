@@ -96,8 +96,14 @@ def test_curve_regime_and_ledger() -> None:
     assert gc["slope_10y3m"] == pytest.approx(4.1 - 4.5, abs=1e-6)
     assert gc["inverted_10y3m"] is True
     assert gc["curvature"] == pytest.approx(2 * 3.9 - 4.0 - 4.1, abs=1e-6)
-    # the vol indices come through Yahoo's chart API: held from conditioning until cleared
-    assert rep["regime"].startswith("HELD_TERMS") and rep["terms"]["vol"]["gauntlet"] == "HELD"
+    # the vol indices come through Yahoo's chart API: held; FRED's VIX/VIX3M carry the key
+    assert rep["terms"]["vol"]["gauntlet"] == "HELD"
+    assert rep["regime"] == "UNMEASURED" and rep["regime_source"] == "fred:VIXCLS+VXVCLS"
+    ser = {**_series(), "VIXCLS": [(d, 15.0 + (i % 7)) for i, d in enumerate(_days(300))],
+           "VXVCLS": [(d, 18.0) for d in _days(300)]}
+    ser["VIXCLS"][-2] = (ser["VIXCLS"][-2][0], 30.0)
+    fr = ms.build(now=NOW, series=ser, charts={}, vol_rows=_vol_rows())
+    assert fr["regime"] == "vol_backwardation_high"
     assert rep["terms"]["curve"]["gauntlet"] == "admitted"
     assert rep["option_chains"]["status"] == "EXTERNALLY_BLOCKED"
     obs = ms.observations(rep, NOW)

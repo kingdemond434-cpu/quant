@@ -316,6 +316,25 @@ def regime_from(vol: Mapping[str, Any]) -> str:
     return f"vol_{vix['term_shape']}_{tier}"
 
 
+def fred_regime(series: Mapping[str, list[tuple[str, float]]], now: datetime) -> str:
+    """The same conditioning key from FRED's republished VIX and VIX3M (VIXCLS, VXVCLS): the
+    terms-admitted substitute for the held Yahoo copy (coordinator, 2026-10-06)."""
+    vix = as_of(series.get("VIXCLS", []), "VIXCLS", now)
+    v3m = dict(as_of(series.get("VXVCLS", []), "VXVCLS", now))
+    if len(vix) < 21:
+        return UNMEASURED
+    d, level = vix[-1]
+    pct = percentile([v for _, v in vix[-TRAIL - 1:-1]], level)
+    shape = (None if d not in v3m else
+             "backwardation" if level > v3m[d] else "contango")
+    if shape is None:
+        return UNMEASURED
+    if not isinstance(pct, float):
+        return f"vol_{shape}"
+    tier = "low" if pct < 1 / 3 else ("high" if pct > 2 / 3 else "mid")
+    return f"vol_{shape}_{tier}"
+
+
 def build(*, now: datetime | None = None, series: Mapping[str, list[tuple[str, float]]] | None
           = None, charts: Mapping[str, Any] | None = None,
           vol_rows: Sequence[Mapping[str, Any]] | None = None) -> dict[str, Any]:
@@ -332,9 +351,12 @@ def build(*, now: datetime | None = None, series: Mapping[str, list[tuple[str, f
             "option_chains": {"status": "EXTERNALLY_BLOCKED", "why": CHAINS_BLOCKED},
             "terms": {"vol": vol_terms, "curve": terms(CURVE_SOURCE),
                       "beta": {"gauntlet": "admitted", "why": "the desk's own MT5 bars"}},
-            # a held source's states stay stored and in the ledger, never a conditioning key
+            # a held source's states stay stored and in the ledger, never a conditioning key;
+            # FRED's republished VIX/VIX3M carry the key instead
             "regime": (regime_from(vol) if vol_terms["gauntlet"] == "admitted"
-                       else f"HELD_TERMS: {vol_terms['why']}"),
+                       else fred_regime(ser, when)),
+            "regime_source": ("vol_archive" if vol_terms["gauntlet"] == "admitted"
+                              else "fred:VIXCLS+VXVCLS"),
             "series_present": sorted(ser),
             "rule": "states, never directions; every number PIT as of its knowable instant"}
 
@@ -342,7 +364,10 @@ def build(*, now: datetime | None = None, series: Mapping[str, list[tuple[str, f
 def regime_label(now: datetime | None = None) -> str:
     """The conditioning key `event_surprise` buckets on. UNMEASURED when nothing is read."""
     if terms(VOL_SOURCE)["gauntlet"] != "admitted":
-        return UNMEASURED                                # held by the terms gate, never a key
+        try:                                             # the held source is never a key
+            return fred_regime(load_series(), now or datetime.now(UTC))
+        except Exception:
+            return UNMEASURED
     try:
         return regime_from(vol_state(read_vol_archive(), now or datetime.now(UTC)))
     except Exception:
