@@ -764,14 +764,12 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             doc["flattened"] = venue.close_all()
         return doc
 
-    # The principal replaced this certificate-selected FX lane with the same three gold
-    # windows traded on Fusion (2026-09-16).  Keep this process alive for the account guard,
-    # flattening and protection of positions opened before that decision, but make new FX
-    # authority explicit.  A scheduler accidentally invoking the legacy executor must not
-    # silently repopulate the old book.
+    # The principal removed the gold-only restriction (2026-10-02). Entry authority
+    # remains explicit in the canonical task; an accidental/default invocation
+    # continues to manage positions only. Gold retains its single E8-Gold owner.
     if not entry_enabled:
         doc["status"] = "MANAGEMENT_ONLY"
-        doc["why"] = "new entries belong to E8-Gold; legacy certified FX book is retired"
+        doc["why"] = "certified non-gold entries are disabled for this invocation"
         doc["n_considered"] = 0
         doc["n_sent" if armed else "n_would_send"] = 0
         return doc
@@ -839,6 +837,11 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         sym, fam = s["symbol"], s["family"]
         tag = f"{TAG}{fam[:6]}{sym}"[:31]
         row: dict[str, Any] = {"symbol": sym, "family": fam, "tag": tag}
+        if str(sym).upper() == "XAUUSD":
+            row["status"] = "OWNED_BY_GOLD_LANE"
+            row["why"] = "E8-Gold is the single authoritative gold entry and management writer"
+            doc["sleeves"].append(row)
+            continue
         # A BANNED FAMILY TRADES NOTHING HERE EITHER, AND WHAT IT STILL HOLDS LEAVES WITH IT
         # (2026-09-16, `discovered`; data/banned_families.json, the same file the MT5 roster
         # reads). The book builder no longer lists such a sleeve; this branch covers a book built
@@ -931,6 +934,11 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             # index i and i-1, never i+1. Live, the fill that the backtest's bar i+1 stands for
             # is the market order this pass is about to send.
             signals = func(frame, **params) if params else func(frame)
+            # Keep the certified session selector out of the family's signature, but do not
+            # lose it: E8 must apply the same post-constructor window as the gauntlet and
+            # Fusion. Both flat and {condition, params} certificate envelopes occur here.
+            from mt5desk.family_call import certified_session_filter
+            signals = certified_session_filter(list(signals or []), s)
         except Exception as exc:
             row["status"] = "SIGNAL_ERROR"
             row["why"] = f"{type(exc).__name__}: {str(exc)[:140]}"
@@ -1109,14 +1117,17 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--armed", action="store_true",
                     help="actually send orders (default is shadow: everything but create_order)")
-    ap.add_argument("--manage-only", action="store_true",
-                    help="retained for explicit scheduler readability; management-only is now the default")
+    entry = ap.add_mutually_exclusive_group()
+    entry.add_argument("--manage-only", action="store_true",
+                       help="manage existing positions only (the default)")
+    entry.add_argument("--enable-certified-entries", action="store_true",
+                       help="evaluate the canonical certified non-gold book through venue guards")
     args = ap.parse_args(argv)
     from prop.tradelocker_venue import TradeLockerVenue
 
     armed = bool(args.armed or ARMED_MARKER.exists())
     venue = TradeLockerVenue().connect()
-    doc = run(venue, armed=armed, entry_enabled=False)
+    doc = run(venue, armed=armed, entry_enabled=args.enable_certified_entries)
     doc["armed_by"] = ("--armed" if args.armed else
                        f"{ARMED_MARKER.name} present" if ARMED_MARKER.exists() else "not armed")
     OUT.parent.mkdir(parents=True, exist_ok=True)

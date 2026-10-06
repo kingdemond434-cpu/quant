@@ -161,7 +161,13 @@ def test_every_decision_that_moved_is_still_reachable_through_the_gateway() -> N
     # `load_retired_gold` and `ACCEPTED_RETCODES` were never on the gateway's surface: the
     # gateway binds the reader as the private `_load_retired_gold` (it supplies the path) and
     # has always spelled the accepted retcodes inline at its one call site.
-    exempt = {"load_retired_gold", "ACCEPTED_RETCODES"}
+    # `MIN_RATCHET_IMPROVEMENT_R` was taken off the gateway ON PURPOSE by 935ffe891 ("Gold exit
+    # fixes", item d): trail and break-even moves under 0.05R were being skipped, so both money
+    # paths now send any move that tightens by one venue stop step
+    # (`position_manager.tightens_by_min_step`). `test_gold_exit_fixes.py::
+    # test_d_neither_money_path_consults_the_r_threshold` pins that the gateway no longer consults
+    # it; no caller reads it off `mt5desk.gateway` (it lives on in decision_core for reference).
+    exempt = {"load_retired_gold", "ACCEPTED_RETCODES", "MIN_RATCHET_IMPROVEMENT_R"}
     assert (wanted - exempt) <= bound, f"lost from the gateway: {sorted(wanted - exempt - bound)}"
     assert "_load_retired_gold" in bound
 
@@ -941,6 +947,72 @@ def test_the_artifact_age_uses_the_clock_it_is_given(tmp_path) -> None:
     assert dc.allocator_heat(tmp_path, now=fresh)[0] == pytest.approx(0.2)
     assert dc.allocator_rank(tmp_path, now=fresh) is not None
     assert time.time() - f.stat().st_mtime < dc._ALLOC_MAX_AGE_S
+
+
+def test_entry_bracket_unmeasured_signal_keeps_certified_levels() -> None:
+    g = SimpleNamespace(stop=4290.0, target=4320.0)
+    entry, stop, target, dist, note, drift, verdict = dc.family_bracket(
+        g, 1, bid=4300.0, ask=4300.2, signal_close=None)
+    assert (entry, stop, target, dist) == (4300.2, 4290.0, 4320.0, pytest.approx(10.2))
+    assert verdict == "unmeasured" and drift is None and "UNMEASURED" in note
+
+
+def test_signal_level_copy_supports_frozen_dataclass_namedtuple_and_fallbacks() -> None:
+    from collections import namedtuple
+    from dataclasses import dataclass
+
+    @dataclass(frozen=True)
+    class FrozenSignal:
+        stop: float
+        target: float
+
+        def __post_init__(self) -> None:
+            if self.stop == 3.0:
+                raise ValueError("replacement rejected")
+
+    original = FrozenSignal(1.0, 2.0)
+    replacement = dc.signal_with_levels(original, 3.0, 4.0)
+    assert (replacement.stop, replacement.target) == (3.0, 4.0)
+    assert original == FrozenSignal(1.0, 2.0)
+
+    SignalTuple = namedtuple("SignalTuple", "stop target")
+    tuple_original = SignalTuple(1.0, 2.0)
+    assert dc.signal_with_levels(tuple_original, 3.0, 4.0) == SignalTuple(3.0, 4.0)
+    assert tuple_original == SignalTuple(1.0, 2.0)
+
+    class FailedReplace:
+        stop = 1.0
+        target = 2.0
+
+        def _replace(self, **kwargs):
+            raise ValueError("not a compatible namedtuple")
+
+    failed = FailedReplace()
+    copied = dc.signal_with_levels(failed, 3.0, 4.0)
+    assert (copied.stop, copied.target) == (3.0, 4.0)
+    assert (failed.stop, failed.target) == (1.0, 2.0)
+
+    class Uncopyable:
+        def __init__(self) -> None:
+            self.stop = 1.0
+            self.target = 2.0
+
+        def __copy__(self):
+            raise TypeError("copy blocked")
+
+    uncopyable = Uncopyable()
+    fallback = dc.signal_with_levels(uncopyable, 3.0, 4.0)
+    assert (fallback.stop, fallback.target) == (3.0, 4.0)
+    assert (uncopyable.stop, uncopyable.target) == (1.0, 2.0)
+
+
+def test_venue_deal_duplicate_bar_check_skips_unrelated_and_corrupt_rows() -> None:
+    deals = [SimpleNamespace(entry=1, comment="same", ticket=1, time=1),
+             SimpleNamespace(entry=0, comment="other", ticket=2, time=1),
+             SimpleNamespace(entry="bad", comment="same", ticket=3, time=1),
+             SimpleNamespace(entry=0, comment="same", ticket=4, time=1)]
+    assert dc.bar_already_traded(deals, "same") == (4, "1970-01-01T00:00:01+00:00")
+    assert dc.bar_already_traded(deals, "absent") is None
 
 
 @pytest.fixture

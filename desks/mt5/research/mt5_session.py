@@ -5,7 +5,7 @@ import os
 from typing import Any
 
 
-def windows_session_id() -> int | None:
+def windows_session_id(pid: int | None = None) -> int | None:
     """Return the current Windows session, or None off Windows/when unreadable."""
     if os.name != "nt":
         return None
@@ -13,10 +13,30 @@ def windows_session_id() -> int | None:
         import ctypes
 
         value = ctypes.c_ulong()
-        ok = ctypes.windll.kernel32.ProcessIdToSessionId(os.getpid(), ctypes.byref(value))
+        ok = ctypes.windll.kernel32.ProcessIdToSessionId(
+            os.getpid() if pid is None else pid, ctypes.byref(value))
         return int(value.value) if ok else None
     except (AttributeError, OSError, ValueError):
         return None
+
+
+def competing_terminal(session: int | None, path: str | None) -> bool:
+    """Refuse a launch when the terminal's Windows session cannot be reconciled."""
+    if os.name != "nt":
+        return False
+    if session is None:
+        return True
+    import psutil
+
+    for process in psutil.process_iter(attrs=["name", "exe"]):
+        if str(process.info.get("name") or "").lower() != "terminal64.exe":
+            continue
+        executable = process.info.get("exe")
+        if path and executable and os.path.normcase(executable) != os.path.normcase(path):
+            continue
+        if windows_session_id(process.pid) != session:
+            return True
+    return False
 
 
 def attach_or_initialize(
@@ -38,7 +58,8 @@ def attach_or_initialize(
             return True
     except Exception:
         pass
-    if not allow_autostart or windows_session_id() == 0:
+    session = windows_session_id()
+    if not allow_autostart or session == 0 or competing_terminal(session, path):
         return False
     kwargs: dict[str, Any] = {}
     if path:

@@ -310,6 +310,10 @@ def propose() -> list[dict]:
         props.append({
             "id": f"breadth:{m['family']}",
             "kind": "independent_bet",
+            # The gauntlet and judge_docket_order read this exact field.  The ID and prose
+            # already named the family, but neither consumer parses them: without this key
+            # a fresh CEO_DOCKET reports proposals while GAUNTLET_ORDER sees zero families.
+            "family": m["family"],
             "adds": f"the {m['family']} mechanism as a fundable family",
             "needs": m["needs"],
             "why_independent": ("a family the book does not hold at all, so its correlation with "

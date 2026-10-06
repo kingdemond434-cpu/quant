@@ -508,6 +508,11 @@ def _evolve(conn: sqlite3.Connection) -> dict[str, int]:
                 f'ON "{table}" BEGIN SELECT RAISE(ABORT, "{table} is immutable: the '
                 f'constitution keeps complete trial accounting"); END')
     conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_status ON research_candidates(status)")
+    # Judging throughput measures recent births on every pass. Without this index its
+    # two created_at range counts scan the entire multi-GB candidate table and can
+    # outlive the validation leg's deadline, leaving JUDGING_RATE stale.
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_created_at ON research_candidates"
+                 "(created_at)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_hash ON research_candidates"
                  "(content_hash)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_disc ON research_candidates"
@@ -612,20 +617,24 @@ def connect() -> sqlite3.Connection:
     """The one door: restore from the moat backup when absent, evolve, install the constitution."""
     restored = _restore_if_absent()
     conn = sqlite3.connect(str(_PATH), timeout=30)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA synchronous=NORMAL")
-    cache_kib, mmap_bytes = _tuning()
-    conn.execute(f"PRAGMA cache_size=-{cache_kib}")
-    conn.execute(f"PRAGMA mmap_size={mmap_bytes}")
-    conn.execute(f"PRAGMA wal_autocheckpoint={WAL_AUTOCHECKPOINT_PAGES}")
-    _evolve(conn)
-    conn.commit()
-    if restored:
-        _retire_crypto_cards(conn)
-        conn.execute("INSERT OR REPLACE INTO sync_cursor(key, value, updated_at) VALUES(?,?,?)",
-                     ("restored_from_backup", str(BACKUP), now()))
+    try:
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        cache_kib, mmap_bytes = _tuning()
+        conn.execute(f"PRAGMA cache_size=-{cache_kib}")
+        conn.execute(f"PRAGMA mmap_size={mmap_bytes}")
+        conn.execute(f"PRAGMA wal_autocheckpoint={WAL_AUTOCHECKPOINT_PAGES}")
+        _evolve(conn)
         conn.commit()
+        if restored:
+            _retire_crypto_cards(conn)
+            conn.execute("INSERT OR REPLACE INTO sync_cursor(key, value, updated_at) VALUES(?,?,?)",
+                         ("restored_from_backup", str(BACKUP), now()))
+            conn.commit()
+    except BaseException:
+        conn.close()
+        raise
     return conn
 
 
@@ -1285,6 +1294,69 @@ def provenance_of(kind: str, node_id: str, *, depth: int = 8,
             c.close()
 
 
+def provenance_graph(nodes: Iterable[tuple[str, str]], *, depth: int = 8,
+                     conn: sqlite3.Connection) -> dict[tuple[str, str], list[dict[str, Any]]]:
+    """Read many complete ancestor walks with one indexed join per depth.
+
+    Only temporary frontier rows are written. The savepoint restores the caller's
+    transaction and removes the frontier even on failure. Edge order is rowid,
+    matching the existing to-node index and individual provenance walk.
+    """
+    name = "prov_frontier_" + uuid.uuid4().hex
+    graph: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    loaded: set[tuple[str, str]] = set()
+    pending = set(nodes)
+    conn.execute(f"SAVEPOINT {name}")
+    try:
+        conn.execute(f"CREATE TEMP TABLE {name}(kind TEXT, node TEXT, PRIMARY KEY(kind,node))")
+        for _ in range(depth):
+            if not pending:
+                break
+            conn.execute(f"DELETE FROM {name}")  # noqa: S608 -- private UUID identifier
+            conn.executemany(f"INSERT INTO {name} VALUES (?,?)", pending)  # noqa: S608
+            loaded.update(pending)
+            upcoming: set[tuple[str, str]] = set()
+            # The small frontier must be outside the indexed provenance lookup.
+            cursor = conn.execute(
+                f"SELECT p.* FROM {name} f CROSS JOIN provenance p "  # noqa: S608
+                "WHERE p.to_kind=f.kind AND p.to_id=f.node "
+                "ORDER BY f.kind,f.node,p.rowid")
+            for raw in cursor:
+                row = dict(raw)
+                key = (str(row["to_kind"]), str(row["to_id"]))
+                graph.setdefault(key, []).append(row)
+                parent = (str(row["from_kind"]), str(row["from_id"]))
+                if parent not in loaded:
+                    upcoming.add(parent)
+            pending = upcoming
+        return graph
+    finally:
+        conn.execute(f"ROLLBACK TO {name}")
+        conn.execute(f"RELEASE {name}")
+
+
+def walk_provenance_graph(graph: Mapping[tuple[str, str], list[dict[str, Any]]],
+                          kind: str, node_id: str, *, depth: int = 8
+                          ) -> list[dict[str, Any]]:
+    """Keep the original BFS edge order, repeated edges and cycle semantics."""
+    out: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    frontier = [(kind, node_id)]
+    for _ in range(depth):
+        upcoming = []
+        for key in frontier:
+            if key in seen:
+                continue
+            seen.add(key)
+            for row in graph.get(key, ()):
+                out.append(row)
+                upcoming.append((str(row["from_kind"]), str(row["from_id"])))
+        if not upcoming:
+            break
+        frontier = upcoming
+    return out
+
+
 def descendants_of(kind: str, node_id: str, *, depth: int = 8,
                    conn: sqlite3.Connection | None = None) -> list[dict[str, Any]]:
     c = conn or connect()
@@ -1879,6 +1951,9 @@ def verdict_backlog(desk: Path | None = None,
             return out
         start = 0 if cursor > size else cursor
         n, oldest = 0, None
+        oldest_time = None
+        invalid_timestamps = 0
+        observed_now = datetime.now(tz=UTC)
         with p.open("rb") as f:
             f.seek(start)
             for raw in f:
@@ -1893,18 +1968,28 @@ def verdict_backlog(desk: Path | None = None,
                     continue
                 n += 1
                 at = str(obj.get("at") or "")
-                if at and (oldest is None or at < oldest):
+                try:
+                    observed = datetime.fromisoformat(at)
+                    valid = observed.tzinfo is not None and observed <= observed_now
+                except (TypeError, ValueError):
+                    valid = False
+                if not valid:
+                    invalid_timestamps += 1
+                    continue
+                if oldest_time is None or observed < oldest_time:
                     oldest = at
-        age = None
-        if oldest:
-            try:
-                age = (datetime.now(tz=UTC) - datetime.fromisoformat(oldest)).total_seconds()
-            except ValueError:
-                age = None
-        out.update({"unsynced_rows": n, "oldest_unsynced": oldest, "oldest_unsynced_age_s": age})
+                    oldest_time = observed
+        age = ((observed_now - oldest_time).total_seconds()
+               if oldest_time is not None and not invalid_timestamps else None)
+        out.update({"unsynced_rows": n, "oldest_unsynced": oldest, "oldest_unsynced_age_s": age,
+                    "invalid_timestamps": invalid_timestamps})
         if missing:
             out.update({"status": "BREACH",
                         "why": f"streams with no cursor receipt: {', '.join(missing)}"})
+        elif n and age is None:
+            out.update({"status": "BREACH",
+                        "why": f"{n} verdict receipt(s) unpoured with no valid aware past "
+                               "timestamp; backlog freshness is UNMEASURED"})
         elif age is not None and age > SYNC_CYCLE_S:
             out.update({"status": "BREACH",
                         "why": f"{n} verdict(s) unpoured, the oldest {age/3600:.1f}h old -- the "
@@ -2197,7 +2282,10 @@ def sync_from_desk(desk: Path | None = None, *, max_rows: int = 20000,
                 cell = str(r.get("cell") or "")
                 if not cell:
                     continue
-                passed = r.get("passed")
+                raw_passed = r.get("passed")
+                # A deferred/UNKNOWN receipt is not a completed measurement. In particular,
+                # bool("false") must never promote a malformed receipt to a survivor.
+                passed = raw_passed if isinstance(raw_passed, bool) else None
                 # THE CANDIDATE THIS TRIAL JUDGED. The trial keeps the cell's own name as its
                 # hypothesis id (that is what a reader recognises), but the CANDIDATE edge needs
                 # an id the registry holds: the writer's `graph_id`, the backfill map, or the
@@ -2212,10 +2300,11 @@ def sync_from_desk(desk: Path | None = None, *, max_rows: int = 20000,
                              symbol=str(r.get("sym") or ""), candidate_id=cand, conn=c)
                 out["trials"] += 1
                 n += 1
-                mark_candidate(cand, "survived" if passed else "judged",
-                               judged_at=str(r.get("at") or now()),
-                               terminal_gate=str(r.get("terminal_gate") or ""),
-                               survived=1 if passed else 0, conn=c)
+                if passed is not None:
+                    mark_candidate(cand, "survived" if passed else "judged",
+                                   judged_at=str(r.get("at") or now()),
+                                   terminal_gate=str(r.get("terminal_gate") or ""),
+                                   survived=1 if passed else 0, conn=c)
                 if n % CURSOR_EVERY == 0:
                     _cursor_set(c, "gate_verdicts", pos)
                     c.commit()

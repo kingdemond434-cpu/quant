@@ -6,7 +6,7 @@
 
 - Measured at **2026-09-30T19:42:05+00:00** (cadence 60 min; stale past 120 min)
 - Tree: `e01cbdb1f3f9` on `live-control-room`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
-- Organs attested **980** of 1357 registry components (427 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
+- Organs attested **990** of 1357 registry components (427 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
 - Pass cost 1.39s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
 
 | state | organs | meaning |
@@ -14,8 +14,8 @@
 | **LIVE** | 90 | artifact present and newer than the organ's derived max silence |
 | **STALE** | 46 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 47 | artifact absent while this host recorded the organ running |
-| **NEVER** | 763 | no artifact and no run record on this host |
-| **UNMEASURED** | 36 | artifact present, cadence undeclared -- nothing here may call it late |
+| **NEVER** | 772 | no artifact and no run record on this host |
+| **UNMEASURED** | 37 | artifact present, cadence undeclared -- nothing here may call it late |
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
 
@@ -217,7 +217,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (763)
+## NEVER (772)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -975,6 +975,13 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:empty_cluster_forcer` | `hourly_cycle:empty_cluster_forcer` | UNMEASURED UNMEASURED | `desks/mt5/reports/EMPTY_CLUSTER_FORCER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:producer_breadth` | `hourly_cycle:producer_breadth` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRODUCER_BREADTH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/release_promotion.py` | `invoked:desks/mt5/scripts/Adopt-And-Seal.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/RELEASE_GATE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:build_failure_bank` | `hourly_cycle:build_failure_bank` | UNMEASURED UNMEASURED | `desks/mt5/reports/BUILD_FAILURE_BANK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:experiment_contracts` | `hourly_cycle:experiment_contracts` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXPERIMENT_CONTRACTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:health_board` | `hourly_cycle:health_board` | UNMEASURED UNMEASURED | `desks/mt5/reports/HEALTH_BOARD.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:trade_pathology` | `hourly_cycle:trade_pathology` | UNMEASURED UNMEASURED | `desks/mt5/reports/TRADE_PATHOLOGY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `library:desks/mt5/ops/components.py` | `import:desks/mt5/research/runtime_attestation.py` | UNMEASURED UNMEASURED | `desks/mt5/data/LIVE_SYSTEM_STATE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/dormant_components.py` | `invoked:ops/run_frontier_audit.cmd` | UNMEASURED UNMEASURED | `desks/mt5/reports/DORMANT_COMPONENTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `library:libs/ops/intelligence_inputs.py` | `import:scripts/run_intelligence_cycle.py` | UNMEASURED UNMEASURED | `web/intelligence_cycle.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `battery:scripts/check_box_infra.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `daily:control_room:bench_bridge` | `MT5-Daily` | UNMEASURED UNMEASURED | `desks/mt5/reports/BENCH_BRIDGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `daily:control_room:control_room` | `MT5-Daily` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTROL_ROOM.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -982,10 +989,12 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `daily:control_room:practitioner_processes` | `MT5-Daily` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRACTITIONER_PROCESSES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `daily:control_room:regime_allocation_contract` | `MT5-Daily` | UNMEASURED UNMEASURED | `desks/mt5/reports/REGIME_ALLOCATION_CONTRACT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `daily:proposers:regime_split_miner` | `MT5-Daily` | UNMEASURED UNMEASURED | `desks/mt5/reports/regime_split_miner.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:scripts/context.py` | `invoked:desks/mt5/ops/components.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/CLOCK_FIXER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:scripts/context.py` | `invoked:desks/mt5/ops/components.py` | UNMEASURED UNMEASURED | `desks/mt5/data/LIVE_SYSTEM_STATE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:scripts/lessons.py` | `invoked:libs/ops/agent_denials.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/NIGHTLY_CATCHUP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `task:E8-Book` | `E8-Book` | UNMEASURED UNMEASURED | `desks/mt5/reports/E8_BOOK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-PrivateNetAudit:artifact` | `MT5-PrivateNetAudit` | UNMEASURED UNMEASURED | `desks/mt5/data/private_net.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
-## UNMEASURED (36)
+## UNMEASURED (37)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -1025,4 +1034,5 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `library:libs/ops/host_identity.py` | `import:scripts/check_placement_interlock.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `147714b65a5e8cb2` | ok=True |
 | `executable:scripts/record_agent_denials.py` | `invoked:desks/mt5/scripts/Run-DeskCycle.ps1` | UNMEASURED UNMEASURED | `desks/mt5/data/cro_cycle_ledger.jsonl` | 0.0h | 4K | `0d8407b434a8129b` | UNMEASURED |
 | `leg:session_variant_remap` | `hourly_cycle:session_variant_remap` | UNMEASURED UNMEASURED | `desks/mt5/reports/SESSION_VARIANT_REMAP.json` | 0.1h | 13K | `77382b6b203dc358` | UNMEASURED |
+| `fence:check_experiment_contracts` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 11.4h | 9K | `3337a43b71438faa` | ok=True |
 

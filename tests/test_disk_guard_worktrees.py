@@ -14,6 +14,8 @@ which refuses a dirty tree, and every refusal is reported with its reason instea
 from __future__ import annotations
 
 import importlib.util
+import json
+import os
 import subprocess
 import sys
 from datetime import UTC, datetime, timedelta
@@ -34,6 +36,21 @@ def guard():
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
+    if os.name == "nt":
+        import psutil
+
+        # The fixture owns these worktrees; retain real native handle/cwd
+        # observations for the process exercising the Linux reaper.
+        def held_files():
+            result = subprocess.run(
+                [sys.executable, "-c",
+                 "import json,psutil,sys;print(json.dumps([f.path for f in "
+                 "psutil.Process(int(sys.argv[1])).open_files()]))", str(os.getpid())],
+                capture_output=True, text=True, check=True, timeout=10)
+            return set(json.loads(result.stdout))
+
+        mod._open_files = held_files
+        mod._cwds = lambda: {psutil.Process().cwd()}
     return mod
 
 

@@ -31,7 +31,7 @@ echo "token written (600): data/secrets/claude_oauth_token (${#KEY} chars)" >&2
 
 echo "verifying with a live call..." >&2
 source ops/brain_env.sh
-OUT="$(claude -p 'Reply with exactly: AUTH-OK' --dangerously-skip-permissions 2>&1 || true)"
+OUT="$(claude -p 'Reply with exactly: AUTH-OK' --allowedTools "" --max-turns 1 2>&1 || true)"
 echo "$OUT"
 if echo "$OUT" | grep -q "AUTH-OK"; then
     echo "=== BRAIN AUTH VERIFIED (new account) -- watchdog will auto-fire the next cycle ===" >&2

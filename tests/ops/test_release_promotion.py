@@ -15,6 +15,7 @@ from types import ModuleType
 
 import pytest
 
+from libs.ops import proctree
 from libs.ops import release_promotion as rp
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -56,6 +57,22 @@ def _commit(repo: Path, files: dict[str, str], msg: str) -> str:
         _g(repo, "add", rel)
     _g(repo, "commit", "-q", "-m", msg)
     return _g(repo, "rev-parse", "HEAD")
+
+
+def test_git_runner_is_noninteractive_and_uses_process_tree_cleanup(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    called = {}
+
+    def fake(argv, **kwargs):
+        called.update(argv=argv, kwargs=kwargs)
+        return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+
+    monkeypatch.setattr(proctree, "run", fake)
+    result = rp.Git(tmp_path).run("status", env={"ONE": "1"})
+    assert result.stdout == "ok\n"
+    assert called["kwargs"]["env"]["GIT_TERMINAL_PROMPT"] == "0"
+    assert called["kwargs"]["env"]["GCM_INTERACTIVE"] == "never"
+    assert called["kwargs"]["env"]["ONE"] == "1"
 
 
 @pytest.fixture
@@ -269,11 +286,22 @@ def box(world: dict[str, Path]) -> Path:
     return box
 
 
-def test_gate_without_any_release_keeps_todays_behaviour(world: dict[str, Path],
+def test_gate_without_any_release_holds_untested_code(world: dict[str, Path],
                                                          box: Path) -> None:
     d = rp.gate(box)
-    assert d.decision == "LEGACY_TIP" and d.target == _g(world["dev"], "rev-parse", "HEAD")
+    assert d.decision == "HOLD" and d.target is None
     assert "no production pointer" in d.reason
+
+
+def test_unverifiable_release_diff_never_adopts_the_tip() -> None:
+    class BrokenDiff:
+        def changed(self, before: str, after: str) -> list[str]:
+            raise rp.GitError("object unavailable")
+
+    d = rp.adoption_decision(BrokenDiff(), tip="b" * 40, release_sha="a" * 40,
+                             release_ref="production", head="c" * 40)  # type: ignore[arg-type]
+    assert d.decision == "HOLD" and d.target is None
+    assert "unverified" in d.reason
 
 
 def test_gate_adopts_a_tip_that_is_the_release_plus_state(world: dict[str, Path],
@@ -327,9 +355,9 @@ def test_gate_cli_emits_json_and_exits_3_when_it_cannot_decide(
         box: Path, capsys: pytest.CaptureFixture[str]) -> None:
     cli = _cli()
     assert cli.main(["gate", "--root", str(box)]) == 0
-    assert json.loads(capsys.readouterr().out)["decision"] == "LEGACY_TIP"
+    assert json.loads(capsys.readouterr().out)["decision"] == "HOLD"
     report = box / "desks" / "mt5" / "reports" / "RELEASE_GATE.json"
-    assert json.loads(report.read_text(encoding="utf-8"))["decision"] == "LEGACY_TIP"
+    assert json.loads(report.read_text(encoding="utf-8"))["decision"] == "HOLD"
     assert cli.main(["gate", "--root", str(box), "--remote", "nowhere"]) == 3
     doc = json.loads(capsys.readouterr().out)
     assert doc["decision"] == "ERROR" and doc["adopts"] is False
@@ -346,7 +374,7 @@ def _job(text: str, name: str) -> str:
 def test_ci_promotes_only_green_live_pushes_and_never_forces() -> None:
     ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     promote = _job(ci, "promote")
-    assert "needs: [quality, mt5-money-path, seal]" in promote
+    assert "needs: [quality, mt5-money-path, coverage-floor, seal]" in promote
     assert "github.event_name == 'push'" in promote
     assert f"github.ref == 'refs/heads/{LIVE}'" in promote
     assert "python scripts/release_promotion.py promote" in promote
@@ -356,6 +384,7 @@ def test_ci_promotes_only_green_live_pushes_and_never_forces() -> None:
     assert "needs.mt5-money-path.outputs.suite" in promote
     assert "--force" not in promote and " -f " not in promote
     seal = _job(ci, "seal")
+    assert "needs: [quality, mt5-money-path, coverage-floor]" in seal
     # the seal step is reused, not duplicated, and it now says which commit it released
     assert ci.count("release_manifest.py --seal") == 2           # first seal + retry re-seal
     assert "release_commit=" in seal
@@ -365,7 +394,46 @@ def test_ci_promotes_only_green_live_pushes_and_never_forces() -> None:
         assert "--junitxml=" in body and "release_promotion.py counts" in body, job
 
 
-def test_the_box_adopts_through_the_gate_and_falls_back_rather_than_sticking() -> None:
+def test_shared_coverage_uses_both_complete_suites_without_lowering_floors() -> None:
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    quality, desk = _job(ci, "quality"), _job(ci, "mt5-money-path")
+    combined = _job(ci, "coverage-floor")
+    assert "--cov=libs" in quality and "--cov=libs" in desk
+    for body in (quality, desk):
+        assert "--cov-branch" in body
+        assert "include-hidden-files: true" in body
+        assert "if-no-files-found: error" in body
+    assert "needs: [quality, mt5-money-path]" in combined
+    assert "root-coverage-${{ github.sha }}" in combined
+    assert "desk-coverage-${{ github.sha }}" in combined
+    assert ("coverage combine coverage-input/root/.coverage "
+            "coverage-input/desk/.coverage") in combined
+    assert "coverage json --include='libs/*'" in combined
+    assert "check_coverage_floors.py --report coverage.json" in combined
+    assert "--update" not in combined
+    assert "check_mt5_coverage_floor.py --report mt5cov.json" in desk
+
+
+def test_raw_branch_coverage_artifacts_combine_by_executed_arcs(tmp_path: Path) -> None:
+    from coverage import Coverage, CoverageData
+
+    source = str(ROOT / "libs/ops/release_promotion.py")
+    inputs = []
+    for suite, arcs in (("root", [(-1, 1), (1, 2)]), ("desk", [(-1, 1), (1, 3)])):
+        directory = tmp_path / suite
+        directory.mkdir()
+        path = directory / ".coverage"
+        raw = CoverageData(basename=str(path))
+        raw.add_arcs({source: arcs})
+        raw.write()
+        inputs.append(str(path))
+    combined = Coverage(data_file=str(tmp_path / ".coverage"), config_file=False, branch=True)
+    combined.combine(data_paths=inputs, strict=True)
+    assert combined.get_data().has_arcs()
+    assert set(combined.get_data().arcs(source) or []) == {(-1, 1), (1, 2), (1, 3)}
+
+
+def test_the_box_adopts_only_through_the_release_gate() -> None:
     s = (ROOT / "desks" / "mt5" / "scripts" / "Adopt-And-Seal.ps1").read_text(encoding="utf-8")
     gate_at = s.index("release_promotion.py")
     adopt_at = s.index("@adoptArgs 2>&1")
@@ -373,6 +441,14 @@ def test_the_box_adopts_through_the_gate_and_falls_back_rather_than_sticking() -
     assert '"gate"' in s and "--allow-unreleased" in s
     assert "-Target" in s and "-NoFetch" in s
     assert "held-awaiting-release" in s
-    assert "falling back" in s
+
+
+def test_windows_launcher_never_converts_gate_failure_to_tip_authority() -> None:
+    s = (ROOT / "desks/mt5/scripts/Adopt-And-Seal.ps1").read_text("utf-8")
+    for failure in ("release-gate-error", "release-gate-absent", "release-gate-invalid"):
+        assert f'Done 8 "{failure}"' in s
+    assert '$adoptArgs += @("-Target", $gateTarget, "-NoFetch")' in s
+    assert "falling back to adopting the branch tip" not in s
+    assert '"ADOPT_TIP", "ADOPT_RELEASE", "OVERRIDE_TIP"' in s
     r = (ROOT / "desks" / "mt5" / "scripts" / "Adopt-Release.ps1").read_text(encoding="utf-8")
     assert "[string] $Target" in r

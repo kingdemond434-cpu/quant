@@ -63,6 +63,9 @@ SURFACES = (
 #: Decision-affecting nodes that are CORRECTLY not on a clock, with the reason each is exempt.
 #: An exemption without a reason is not an exemption -- it is an unscheduled organ with a note.
 EVENT_DRIVEN: dict[str, str] = {
+    "alpha_registry": ("a storage library, not a standalone job: miners call its record and "
+                       "enqueue APIs when evidence arrives; scheduled miner_candidate_compiler "
+                       "and hourly intake consume its canonical candidate rows through docket_feed"),
     "immutable_evaluator": ("signs the judge manifest when a judge CHANGES; a clock would re-sign "
                             "drift into legitimacy, which is the opposite of what it is for"),
     "release": ("sealed by CI on a push to a branch the boxes pull -- the event IS the commit, "

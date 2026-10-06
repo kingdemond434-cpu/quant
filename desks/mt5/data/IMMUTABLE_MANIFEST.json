@@ -1,6 +1,6 @@
 {
- "signed_utc": "2026-10-01T11:36:34.336451+00:00",
- "signed_by": "zuck",
+ "signed_utc": "2026-10-04T21:09:49.553374+00:00",
+ "signed_by": "principal",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "d0919bfc921dac2c",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
@@ -19,7 +19,7 @@
   "libs/regime/state_admission.py": "1fc3e4878041db7a",
   "scripts/check_growth_governance.py": "0ea2336e08cd14a9",
   "scripts/check_heat_floor_wiring.py": "e5b3ff5a58848e00",
-  "scripts/check_immutable_evaluator.py": "a9458dee2a70c3d2",
+  "scripts/check_immutable_evaluator.py": "baa4c6b46cb2f3e5",
   "scripts/run_deadman_switch.py": "799db26dadc9c8e3"
  },
  "rule": "these files judge hypotheses; a change must arrive with a re-signed manifest -- research organs may change the hypothesis, never the judge",

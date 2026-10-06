@@ -199,81 +199,81 @@ def main() -> int:
 
     from libs.store.connection import Database
     from libs.store.migrations import run_migrations
-    db = Database(":memory:")
-    run_migrations(db, MIGRATIONS)
-    ctl = AlphaFactoryController(db)
+    with Database(":memory:") as db:
+        run_migrations(db, MIGRATIONS)
+        ctl = AlphaFactoryController(db)
 
-    portfolio_gaps = {c.category: 1.0 for c in cands if c.portfolio_need > 0}
-    crowding = {c.category: c.crowding for c in cands}
-    report = ctl.run(candidates=cands, categories=cats,
-                     portfolio_gaps=portfolio_gaps, crowding=crowding)
+        portfolio_gaps = {c.category: 1.0 for c in cands if c.portfolio_need > 0}
+        crowding = {c.category: c.crowding for c in cands}
+        report = ctl.run(candidates=cands, categories=cats,
+                         portfolio_gaps=portfolio_gaps, crowding=crowding)
 
-    assessments = [ctl.assess(candidate=c, adv_usd=_ADV_FALLBACK_USD) for c in cands]
+        assessments = [ctl.assess(candidate=c, adv_usd=_ADV_FALLBACK_USD) for c in cands]
 
-    # duplication: does any candidate's family already exist in the deployed book?
-    deployed_dna = {f"deployed::{a['alpha']}": _dna_of(a) for a in alphas
-                    if str(a.get("alpha", "")).split("::")[-1] in deployed
-                    or str(a.get("alpha", "")) in deployed}
-    cand_dna = {c.idea_id: build_alpha_dna(signal_type=c.category, market="crypto",
-                                           timeframe="unknown", holding_period="unknown")
-                for c in cands}
-    clusters = [c for c in ctl.duplicates_of(cand_dna, deployed_dna) if len(c) > 1]
+        # duplication: does any candidate's family already exist in the deployed book?
+        deployed_dna = {f"deployed::{a['alpha']}": _dna_of(a) for a in alphas
+                        if str(a.get("alpha", "")).split("::")[-1] in deployed
+                        or str(a.get("alpha", "")) in deployed}
+        cand_dna = {c.idea_id: build_alpha_dna(signal_type=c.category, market="crypto",
+                                               timeframe="unknown", holding_period="unknown")
+                    for c in cands}
+        clusters = [c for c in ctl.duplicates_of(cand_dna, deployed_dna) if len(c) > 1]
 
-    for a in alphas:
-        ctl.record_lineage(str(a.get("alpha", "?")), mutation_type="pipeline",
-                           performance=float(a.get("expected_sharpe", 0.0) or 0.0))
+        for a in alphas:
+            ctl.record_lineage(str(a.get("alpha", "?")), mutation_type="pipeline",
+                               performance=float(a.get("expected_sharpe", 0.0) or 0.0))
 
-    nearest = {}
-    for cid, d in cand_dna.items():
-        if deployed_dna:
-            k, dd = min(((k, dna_distance(d, v)) for k, v in deployed_dna.items()),
-                        key=lambda kv: kv[1])
-            nearest[cid] = {"closest_deployed": k, "dna_distance": round(dd, 4)}
+        nearest = {}
+        for cid, d in cand_dna.items():
+            if deployed_dna:
+                k, dd = min(((k, dna_distance(d, v)) for k, v in deployed_dna.items()),
+                            key=lambda kv: kv[1])
+                nearest[cid] = {"closest_deployed": k, "dna_distance": round(dd, 4)}
 
-    out = {
-        "generated": datetime.now(tz=UTC).isoformat(),
-        "n_candidates": len(cands),
-        "n_categories": len(cats),
-        "unmapped_families": unmapped_families,
-        "n_killed_families_screened": len(killed),
-        "deployed": deployed,
-        "research_priorities": [
-            {"idea_id": p.idea_id, "category": p.category,
-             "priority": round(p.idea_priority_score, 2), "components": p.components}
-            for p in report.research_priorities],
-        "allocation": (report.allocation.allocations if report.allocation else {}),
-        "allocation_rationale": (report.allocation.rationale if report.allocation else {}),
-        "assessments": assessments,
-        "duplicate_clusters": clusters,
-        "nearest_deployed": nearest,
-        "portfolio_gaps": report.portfolio_gaps,
-        "best_lineage": [n.alpha_id for n in ctl.family_tree.best_lineage()],
-        "notes": report.notes,
-    }
-    _OUT.parent.mkdir(parents=True, exist_ok=True)
-    _OUT.write_text(json.dumps(out, indent=2), "utf-8")
+        out = {
+            "generated": datetime.now(tz=UTC).isoformat(),
+            "n_candidates": len(cands),
+            "n_categories": len(cats),
+            "unmapped_families": unmapped_families,
+            "n_killed_families_screened": len(killed),
+            "deployed": deployed,
+            "research_priorities": [
+                {"idea_id": p.idea_id, "category": p.category,
+                 "priority": round(p.idea_priority_score, 2), "components": p.components}
+                for p in report.research_priorities],
+            "allocation": (report.allocation.allocations if report.allocation else {}),
+            "allocation_rationale": (report.allocation.rationale if report.allocation else {}),
+            "assessments": assessments,
+            "duplicate_clusters": clusters,
+            "nearest_deployed": nearest,
+            "portfolio_gaps": report.portfolio_gaps,
+            "best_lineage": [n.alpha_id for n in ctl.family_tree.best_lineage()],
+            "notes": report.notes,
+        }
+        _OUT.parent.mkdir(parents=True, exist_ok=True)
+        _OUT.write_text(json.dumps(out, indent=2), "utf-8")
 
-    top = out["research_priorities"][:3]
-    print(f"alpha factory: {len(cands)} candidates over {len(cats)} categories, "
-          f"screened against {len(killed)} killed families")
-    if unmapped_families:
-        print(f"  UNMAPPED families (budgeted as OTHER, add to _FAMILY_TO_CATEGORY): "
-              f"{', '.join(unmapped_families)}")
-    for p in top:
-        a = next((x for x in assessments if x["idea_id"] == p["idea_id"]), {})
-        print(f"  {p['priority']:5.1f}  {p['idea_id']:<32} "
-              f"research_score={a.get('research_score', 0):.1f} "
-              f"scalability={a.get('scalability_score', 0):.0f}")
-    if clusters:
-        print(f"  DUPLICATE clusters vs deployed: {clusters}")
-    # a display path must never be able to fail the run: _OUT is relocatable (tests, and
-    # any operator who redirects it), and relative_to() raises outside the repo root.
-    try:
-        shown = _OUT.relative_to(_ROOT)
-    except ValueError:
-        shown = _OUT
-    print(f"  -> {shown}")
-    return 0
+        top = out["research_priorities"][:3]
+        print(f"alpha factory: {len(cands)} candidates over {len(cats)} categories, "
+              f"screened against {len(killed)} killed families")
+        if unmapped_families:
+            print(f"  UNMAPPED families (budgeted as OTHER, add to _FAMILY_TO_CATEGORY): "
+                  f"{', '.join(unmapped_families)}")
+        for p in top:
+            a = next((x for x in assessments if x["idea_id"] == p["idea_id"]), {})
+            print(f"  {p['priority']:5.1f}  {p['idea_id']:<32} "
+                  f"research_score={a.get('research_score', 0):.1f} "
+                  f"scalability={a.get('scalability_score', 0):.0f}")
+        if clusters:
+            print(f"  DUPLICATE clusters vs deployed: {clusters}")
+        # a display path must never be able to fail the run: _OUT is relocatable (tests, and
+        # any operator who redirects it), and relative_to() raises outside the repo root.
+        try:
+            shown = _OUT.relative_to(_ROOT)
+        except ValueError:
+            shown = _OUT
+        print(f"  -> {shown}")
+        return 0
 
 
 if __name__ == "__main__":

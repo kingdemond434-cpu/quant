@@ -94,7 +94,8 @@ def _clock_id(key: str, identity: str) -> str:
     return f"{key}|{(identity or '')[:24]}"
 
 
-def stamp(key: str, identity: str, proposed: Any, *, path: Path = LEDGER) -> dict[str, Any]:
+def stamp(key: str, identity: str, proposed: Any, *, path: Path = LEDGER,
+          force_new: bool = False) -> dict[str, Any]:
     """THE WRITER'S DOOR. Returns the start `key` may use, which is never later than the one it
     already had. `shadow_forward` writes exactly what comes back.
 
@@ -112,6 +113,10 @@ def stamp(key: str, identity: str, proposed: Any, *, path: Path = LEDGER) -> dic
     current_id = None
     for cid, row in clocks.items():
         if not isinstance(row, dict) or str(row.get("key")) != key or row.get("closed"):
+            continue
+        # An explicit execution-semantics migration is NOT learning the identity of an old
+        # anonymous clock. Its old trades used a different rule, so it must open a new epoch.
+        if force_new and str(row.get("identity") or "") != ident:
             continue
         if ident and str(row.get("identity") or "") not in ("", ident):
             continue
