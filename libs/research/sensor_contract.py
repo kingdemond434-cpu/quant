@@ -649,6 +649,33 @@ class SensorLedger:
                         break
         return out
 
+    def rows_since(self, day: str, offset: int = 0, max_rows: int | None = None
+                   ) -> tuple[list[dict[str, Any]], int]:
+        """Rows appended to a day shard after byte `offset`, streamed line by line, and the
+        offset to resume from. Only whole lines are consumed, so a row being written is read on
+        the next call; an offset past the end (a rotated shard) restarts at 0."""
+        path = self._shard(day)
+        if not path.is_file():
+            return [], offset
+        size = path.stat().st_size
+        pos = 0 if offset > size else offset
+        out: list[dict[str, Any]] = []
+        with path.open("rb") as fh:
+            fh.seek(pos)
+            for raw in fh:
+                if not raw.endswith(b"\n"):
+                    break
+                pos += len(raw)
+                try:
+                    row = json.loads(raw)
+                except ValueError:
+                    continue
+                if isinstance(row, dict):
+                    out.append(row)
+                    if max_rows is not None and len(out) >= max_rows:
+                        break
+        return out, pos
+
     def clock_rows(self, day: str) -> list[dict[str, Any]]:
         path = self._shard(day, "clocks")
         if not path.exists():
