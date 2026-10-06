@@ -1,5 +1,5 @@
 # SYNTHETIC FIXTURE -- written for desks/mt5/tests/test_cell_emitter.py, not recorded from any site.
-# An exchange-native mechanism: it reads the perpetual funding rate, which no CFD has.
+# An exchange-native mechanism: it reads the venue funding rate, which no CFD has.
 from freqtrade.strategy import IStrategy
 import talib.abstract as ta
 
