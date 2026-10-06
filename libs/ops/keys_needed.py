@@ -111,12 +111,12 @@ def build(*, reports: Path = REPORTS, acquired: Iterable[str] = (),
         if row.get("group") in ASK_GROUPS and not any(is_set(n) for n in names):
             items[name] = {"name": name, "reasons": ["MISSING: not set on this host"]}
     for name, why in reasons.items():
-        row = cat.get(name)
-        if row is None or row.get("group") in NEVER_ASK:
+        hit = cat.get(name)
+        if hit is None or hit.get("group") in NEVER_ASK:
             continue
-        canon = str(row["name"])
+        canon = str(hit["name"])
         rejected = [w for w in why if w.startswith("REJECTED")]
-        if not rejected and any(is_set(n) for n in [canon, *(row.get("aliases") or ())]):
+        if not rejected and any(is_set(n) for n in [canon, *(hit.get("aliases") or ())]):
             continue   # set since the report was written; the next pass will agree
         items.setdefault(canon, {"name": canon, "reasons": []})["reasons"] += why
     out = []
