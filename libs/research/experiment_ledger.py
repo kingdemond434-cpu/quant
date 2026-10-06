@@ -50,6 +50,36 @@ def _graph_counts() -> tuple[int, dict[str, int]]:
     return total, by_fam
 
 
+#: MALFORMED LINES ARE SKIPPED, NEVER A STOP. A reader that aborted at the first bad line left
+#: every trial after it uncharged; each reader now skips the line, counts it here per ledger, and
+#: keeps charging. lifetime() publishes the counts as `malformed_ledger_lines`.
+_MALFORMED: dict[str, int] = {}
+
+
+def _jsonl_rows(path: Path) -> list[dict[str, Any]]:
+    """Every dict row of a JSONL ledger; malformed lines are counted in _MALFORMED, not fatal."""
+    try:
+        text = path.read_text("utf-8", errors="replace")
+    except OSError:
+        return []
+    rows: list[dict[str, Any]] = []
+    bad = 0
+    for ln in text.splitlines():
+        if not ln.strip():
+            continue
+        try:
+            row = json.loads(ln)
+        except ValueError:
+            bad += 1
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+        else:
+            bad += 1
+    _MALFORMED[path.name] = bad
+    return rows
+
+
 def _proposer_counts() -> tuple[int, dict[str, int]]:
     """`tests_run` on every discovery file, attributed to the families it proposed."""
     total = 0
@@ -71,50 +101,38 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             by_fam[fam] = by_fam.get(fam, 0) + n // max(1, len(fams))
     # FACTOR x MODEL PAIRINGS ARE TRIALS TOO. Co-evolution writes no discovery file (a pairing is
     # not a cell), so its ledger is read here and charged to the model_pairing family.
-    try:
-        for ln in (DESK / "data" / "coevolution_trials.jsonl").read_text("utf-8").splitlines():
-            if not ln.strip():
-                continue
-            row = json.loads(ln)
-            k = int(row.get("pairings") or 0) if isinstance(row, dict) else 0
-            total += k
-            by_fam["model_pairing"] = by_fam.get("model_pairing", 0) + k
-    except (OSError, ValueError, TypeError):
-        pass
+    for row in _jsonl_rows(DESK / "data" / "coevolution_trials.jsonl"):
+        try:
+            k = int(row.get("pairings") or 0)
+        except (TypeError, ValueError):
+            continue
+        total += k
+        by_fam["model_pairing"] = by_fam.get("model_pairing", 0) + k
     # NULL PASSES ARE TRIALS TOO. A proposer pass that tested cells and donated none writes no
     # discovery file, so it appends its `tests_run` here instead (alt_proxies._donate). A pass
     # writes one or the other, never both, so nothing is counted twice.
-    try:
-        for ln in (DESK / "data" / "null_pass_trials.jsonl").read_text("utf-8").splitlines():
-            if not ln.strip():
-                continue
-            row = json.loads(ln)
-            if not isinstance(row, dict):
-                continue
-            total += int(row.get("tests_run") or 0)
+    for row in _jsonl_rows(DESK / "data" / "null_pass_trials.jsonl"):
+        try:
+            n_run = int(row.get("tests_run") or 0)
             split = row.get("by_family")
             per: dict[str, Any] = (split if isinstance(split, dict) and split
-                                   else {"?": row.get("tests_run") or 0})
-            for fam, k in per.items():
-                by_fam[str(fam)] = by_fam.get(str(fam), 0) + int(k or 0)
-    except (OSError, ValueError, TypeError):
-        pass
+                                   else {"?": n_run})
+            per_int = {str(fam): int(k or 0) for fam, k in per.items()}
+        except (TypeError, ValueError):
+            continue
+        total += n_run
+        for fam, k in per_int.items():
+            by_fam[fam] = by_fam.get(fam, 0) + k
     # A MINER RUN THAT PROPOSES NOTHING STILL RAN ITS TESTS. `learned_miners` writes one row per
     # (config, symbol, threshold) it tried; a run that donated is already counted through its
     # discovery file's tests_run, so only the runs that donated nothing are charged here -- the
     # null runs that would otherwise leave no trace in the lifetime count.
-    try:
-        for ln in (DESK / "data" / "learned_miners_trials.jsonl").read_text("utf-8").splitlines():
-            if not ln.strip():
-                continue
-            row = json.loads(ln)
-            if not isinstance(row, dict) or row.get("donated"):
-                continue
-            fam = str(row.get("family") or "?").rsplit(":", 1)[-1]
-            total += 1
-            by_fam[fam] = by_fam.get(fam, 0) + 1
-    except (OSError, ValueError, TypeError):
-        pass
+    for row in _jsonl_rows(DESK / "data" / "learned_miners_trials.jsonl"):
+        if row.get("donated"):
+            continue
+        fam = str(row.get("family") or "?").rsplit(":", 1)[-1]
+        total += 1
+        by_fam[fam] = by_fam.get(fam, 0) + 1
     return total, by_fam
 
 
@@ -130,17 +148,10 @@ def _mass_screen_counts(path: Path | None = None) -> tuple[int, dict[str, int]]:
     desk's search and are skipped. Absent ledger: (0, {}) -- nothing was screened."""
     total = 0
     by_fam: dict[str, int] = {}
-    try:
-        lines = (path or MASS_SCREEN_TRIALS).read_text("utf-8").splitlines()
-    except OSError:
-        return 0, {}
-    for ln in lines:
-        if not ln.strip():
+    for row in _jsonl_rows(path or MASS_SCREEN_TRIALS):
+        if row.get("dry_run"):
             continue
         try:
-            row = json.loads(ln)
-            if not isinstance(row, dict) or row.get("dry_run"):
-                continue
             k = int(row.get("cells_screened") or 0)
         except (ValueError, TypeError):
             continue
@@ -182,21 +193,11 @@ def _swarm_counts(judged: set[str] | frozenset[str] = frozenset(),
                   path: Path | None = None) -> tuple[int, dict[str, int], int]:
     """(cells charged, per family, cells skipped as already judged) from the swarm's ledger.
     Dry runs are skipped. Absent ledger: (0, {}, 0)."""
-    try:
-        lines = (path or PRODUCER_SWARM_TRIALS).read_text("utf-8").splitlines()
-    except OSError:
-        return 0, {}, 0
     seen: set[str] = set()
     by_fam: dict[str, int] = {}
     total = skipped = 0
-    for ln in lines:
-        if not ln.strip():
-            continue
-        try:
-            row = json.loads(ln)
-        except ValueError:
-            continue
-        if not isinstance(row, dict) or row.get("dry_run"):
+    for row in _jsonl_rows(path or PRODUCER_SWARM_TRIALS):
+        if row.get("dry_run"):
             continue
         fam = str(row.get("family") or "producer_swarm")
         cells = row.get("cells")
@@ -274,6 +275,7 @@ def lifetime(write: bool = True) -> dict[str, Any]:
            "regime_split_union_cells": r_total,
            "producer_swarm_cells": s_total,
            "producer_swarm_cells_already_judged": s_judged,
+           "malformed_ledger_lines": dict(sorted(_MALFORMED.items())),
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
                     "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl and every "
