@@ -521,17 +521,74 @@ def test_an_absent_metric_fence_reads_unmeasured_and_other_errors_propagate(tmp_
         ens._fence({"url": "x"})
 
 
+def _fake_committee(forensic_unique: bool):
+    """A committee pass with known overlap: every committee's first seat catches subjects only it
+    catches, except forensic, whose catches are a subset of scientific's unless told otherwise."""
+    first = {c: ens.seats_of(c)[0].name for c in ens.COMMITTEES}
+
+    def run_one(name, subjects, traps, examined_all, state, share_s, now_ts, bank):
+        if name == ens.FORENSIC:
+            keys = [f"forensic-{i}" if forensic_unique else f"{ens.SCIENTIFIC}-{i}"
+                    for i in range(5)]
+        else:
+            keys = [f"{name}-{i}" for i in range(10)]
+        rows = [{"committee": name, "key": k, "subject": k, "fingerprint": f"{now_ts}", "keys": {},
+                 "verdict": ce.FAIL, "saved_s": {}, "over_budget": [], "minority": [],
+                 "retired_skipped": [],
+                 "results": [{"specialist": first[name], "verdict": ce.FAIL, "strength": 0.9,
+                              "cost_s": 0.01, "level": 0}]} for k in keys]
+        return rows, {"population": len(rows), "examined": len(rows)}
+    return run_one
+
+
 def test_a_retirement_reached_through_run_is_recorded_and_kept_on_readmission(desk,
                                                                             monkeypatch):
-    calls = []
-
-    def fake_retire(state, seats, day):
-        calls.append(day)
-        state.setdefault("retired", {})["cost_surface"] = {"at": day, "why": "test"}
-        return {"retired": ["cost_surface"], "reopened": []}
-    monkeypatch.setattr(ce, "retire", fake_retire)
-    doc = ens.run(budget_s=60, subjects=_planted(), fates={}, now_ts=1_000_000.0)
-    assert calls, "run() never reached the retirement rule"
+    # The real 14-day rule and the real re-admission, reached through run(): nothing stubbed but
+    # the committees' subject pools.
+    ens.STATE.parent.mkdir(parents=True, exist_ok=True)
+    ens.STATE.write_text(json.dumps(ce.blank_state() | {"shares": {
+        c: (ens.SHARE_FLOOR if c == ens.FORENSIC else 0.2) for c in ens.COMMITTEES}}))
+    t0 = datetime(2026, 9, 1, 12, tzinfo=UTC).timestamp()
+    monkeypatch.setattr(ens, "_run_committee", _fake_committee(False))
+    for d in range(ce.RETIRE_WINDOW_DAYS):
+        doc = ens.run(budget_s=60, fates={}, now_ts=t0 + d * 86400)
+        retired = json.loads(ens.STATE.read_text()).get("retired_committees") or {}
+        assert (ens.FORENSIC in retired) == (d == ce.RETIRE_WINDOW_DAYS - 1), d
+    assert doc["committees"][ens.SCIENTIFIC]["unique"] == 5
+    monkeypatch.setattr(ens, "_run_committee", _fake_committee(True))
+    ens.run(budget_s=60, fates={}, now_ts=t0 + ce.RETIRE_WINDOW_DAYS * 86400)
     state = json.loads(ens.STATE.read_text())
-    assert "cost_surface" in state["retired"]
-    assert doc is not None
+    assert ens.FORENSIC not in state["retired_committees"]
+    kept = state["readmitted_committees"][ens.FORENSIC]
+    assert len(kept) == 1 and kept[0]["unique_in_window"] > 0 and kept[0]["why"]
+
+
+def test_a_survivor_claim_never_settles_alive_on_an_unreadable_graph_or_an_unknown_cell():
+    state = ce.blank_state()
+    ex = {"committee": ens.SCIENTIFIC, "key": "survivor:c3", "fingerprint": "f",
+          "keys": {"cell": "n3"},
+          "results": [{"specialist": "cost_surface", "verdict": ce.FAIL, "strength": 0.9,
+                       "cost_s": 0.0}]}
+    ce.update_state(state, [ex], {})
+    ens._stamp_fates(state, {"n3": {"fate": "CERTIFIED"}}, 0.0)
+    later = ens.SURVIVOR_HORIZON_DAYS * 86400.0 + 1
+    assert ce.settle(state, ens._outcome_fn([], {}, later)) == 0              # graph unreadable
+    assert ce.settle(state, ens._outcome_fn([], {"other": {"fate": "CERTIFIED"}}, later)) == 0
+    assert state["seats"].get("cost_surface", {}).get("brier_sum", 0.0) == 0.0
+
+
+def test_one_committees_error_is_published_and_the_other_five_still_run(desk, monkeypatch):
+    real = _fake_committee(False)
+
+    def flaky(name, *a):
+        if name == ens.FORENSIC:
+            raise ModuleNotFoundError("No module named 'numpy'", name="numpy")
+        return real(name, *a)
+    monkeypatch.setattr(ens, "_run_committee", flaky)
+    doc = ens.run(budget_s=60, fates={}, now_ts=1_000_000.0)
+    row = doc["committees"][ens.FORENSIC]
+    assert row["status"] == "ERROR" and "numpy" in row["error"]
+    assert row["unmeasured"] == ce.UNMEASURED and row["measured"] == 0
+    assert all(doc["committees"][c]["status"] == "RAN" for c in ens.COMMITTEES
+               if c != ens.FORENSIC)
+

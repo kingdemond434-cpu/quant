@@ -1806,6 +1806,9 @@ def _outcome_fn(examined: Sequence[Mapping[str, Any]], fates: Mapping[str, Any],
                         datetime.fromisoformat(str(claim.get("at"))).timestamp()
                 except (TypeError, ValueError):
                     return None
+                if not fates or str(claim.get("cell") or "") not in fates:
+                    return None                 # unreadable graph or unknown cell: UNMEASURED,
+                                                # never "lived" (L1.28a, audit 2026-10-06)
                 age = t_now - made
                 alive = f not in ("FAILED", "BURIED")
                 return False if alive and age >= SURVIVOR_HORIZON_DAYS * 86400 else None
@@ -1889,6 +1892,37 @@ def _reweight(state: dict[str, Any], per: Mapping[str, Mapping[str, Any]], day: 
     return shares
 
 
+def _run_committee(name: str, subjects: Mapping[str, list[ce.Subject]] | None,
+               traps: Any, examined_all: list[dict[str, Any]], state: dict[str, Any],
+               share_s: float, now_ts: float, bank: Any
+               ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """One committee's pass: its subject pool, then its seats. Raises; run() isolates."""
+    if subjects is not None:
+        pool = list(subjects.get(name) or [])
+    elif name == SCIENTIFIC:
+        # Survivors first: a leak in a certified cell costs more than one in the bank.
+        pool = survivor_subjects() + scientific_subjects()
+    elif name == FORENSIC:
+        pool = forensic_subjects()
+    elif name == PORTFOLIO:
+        pool = portfolio_subjects()
+    elif name == EXECUTION:
+        pool = execution_subjects()
+    elif name == DATA:
+        pool = data_subjects()
+    else:
+        ov_now = ce.overlap(examined_all, SEATS)
+        if subjects is None:
+            bank = _bank_census()
+        pool = meta_subjects(traps, ov_now, bank)
+    ex, ints = _examine_committee(name, pool, state, share_s, now_ts)
+    counts: dict[str, Any] = dict(ints)
+    if name == FORENSIC and subjects is None:
+        counts["fenced_impossible_metric"] = len(FENCED) if FENCE_MEASURED[0] \
+            else UNMEASURED
+    return ex, counts
+
+
 def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
         subjects: Mapping[str, list[ce.Subject]] | None = None,
         fates: Mapping[str, Any] | None = None, now_ts: float | None = None
@@ -1910,31 +1944,21 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
         c0 = time.monotonic()
         share = SHARE_FLOOR if name in retired_c else float(shares.get(name, BASE_SHARE[name]))
         share_s = max(1.0, float(budget_s) * share)
-        if subjects is not None:
-            pool = list(subjects.get(name) or [])
-        elif name == SCIENTIFIC:
-            # Survivors first: a leak in a certified cell costs more than one in the bank.
-            pool = survivor_subjects() + scientific_subjects()
-        elif name == FORENSIC:
-            pool = forensic_subjects()
-        elif name == PORTFOLIO:
-            pool = portfolio_subjects()
-        elif name == EXECUTION:
-            pool = execution_subjects()
-        elif name == DATA:
-            pool = data_subjects()
-        else:
-            ov_now = ce.overlap(examined_all, SEATS)
-            if subjects is None:
-                bank = _bank_census()
-            pool = meta_subjects(traps, ov_now, bank)
-        ex, ints = _examine_committee(name, pool, state, share_s, now_ts)
-        counts: dict[str, Any] = dict(ints)
+        try:
+            ex, counts = _run_committee(name, subjects, traps, examined_all, state, share_s,
+                                        now_ts, bank)
+        except Exception as exc:
+            # ONE COMMITTEE'S DEFECT IS NOT SIX COMMITTEES' SILENCE (audit, 2026-10-06). The
+            # error is published on the committee's own row as ERROR -- never a clean zero and
+            # never swallowed -- and the other five still run. An errored pass measures nothing,
+            # so it moves no budget and can never count toward retirement.
+            per[name] = {"status": "ERROR", "error": f"{type(exc).__name__}: {exc}"[:500],
+                         "budget_s": round(share_s, 2), "measured": 0, "fails": 0,
+                         "unmeasured": UNMEASURED,
+                         "seconds": round(time.monotonic() - c0, 3)}
+            continue
         examined_all += ex
         res = [r for e in ex for r in e["results"]]
-        if name == FORENSIC and subjects is None:
-            counts["fenced_impossible_metric"] = len(FENCED) if FENCE_MEASURED[0] \
-                else UNMEASURED
         per[name] = counts | {
             "status": "RETIRED_PROBE" if name in retired_c else "RAN",
             "budget_s": round(share_s, 2),
