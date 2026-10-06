@@ -2019,11 +2019,12 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
               "the freight leg is UNMEASURED and the physical transit count carries the claim"),
     # ---- retail_ecology
     source_class(
-        "ca_retail_investor", "The retail and diaspora discussion ecology: the national "
-                              "open expatriate and investor boards (no roots: fenced) for "
-                              "Panama, Costa Rica, Guatemala and El Salvador",
+        "ca_retail_investor", "The retail and diaspora discussion ecology: the open expatriate "
+                              "and investor boards for Panama, Costa Rica, Guatemala and El "
+                              "Salvador (the platform roots left with the 2026-09-30 terms "
+                              "fence)",
         layer="retail_ecology",
-        roots=(),
+        roots=("https://www.expat.com/forum/",),
         queries=("dónde cambiar dólares mejor tipo de cambio",
                  "invertir en bolsa desde Costa Rica cómo",
                  "cuenta en dólares banco panameño requisitos",

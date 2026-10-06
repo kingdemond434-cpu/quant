@@ -822,17 +822,6 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         notes="the forecast is the SLOW leg and the auction is the FAST one; NZ-D's interesting "
               "cell is the divergence between them, not either alone"),
     source_class(
-        "nz_retail_threads", "NZ personal-finance threads (terms-fenced 2026-09-30: no roots)",
-        layer="retail_ecology",
-        roots=(),
-        queries=("KiwiSaver", "which fund", "switching to conservative", "Sharesies",
-                 "fixing for how long", "breaking a fix", "term deposit", "the OCR call"),
-        languages=("en",), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
-        predictive_state="UNTESTED", licence="public social; API terms govern automated access",
-        notes="KiwiSaver switching is a real flow into and out of offshore equities and this is "
-              "where it is discussed before it shows up in a quarterly statistic; low weight, "
-              "never zero"),
-    source_class(
         "nz_comment_threads", "interest.co.nz and Stuff comment threads", layer="retail_ecology",
         roots=("https://www.interest.co.nz/comments", "https://www.stuff.co.nz/business"),
         queries=("the payout", "farm debt", "rural lending", "the ponzi", "house prices",

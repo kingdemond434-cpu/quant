@@ -32,7 +32,14 @@ from libs.research import access_classifier as ac  # noqa: E402
 LAWS = (ROOT / "docs" / "LAWS.md").read_text("utf-8")
 HOSTS = ("https://www.reddit.com/r/Gold/new.json", "https://old.reddit.com/r/x",
          "https://redd.it/abc", "https://stocktwits.com/symbol/XAUUSD",
-         "https://api.stocktwits.com/api/2/streams/symbol/AAPL.json")
+         "https://api.stocktwits.com/api/2/streams/symbol/AAPL.json",
+         # Reddit's mirrors carry Reddit's data and fall under the same ruling.
+         "https://api.pushshift.io/reddit/search/submission/?subreddit=Gold",
+         "https://api.pullpush.io/reddit/search/comment/",
+         "https://www.photon-reddit.com/r/Forex",
+         # No paid X: every X/Twitter host, API and web alike.
+         "https://x.com/whale_alert", "https://api.twitter.com/2/tweets/search/recent",
+         "https://api.x.com/2/users/by/username/x")
 
 
 def _section_5e() -> str:
