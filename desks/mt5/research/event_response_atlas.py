@@ -641,6 +641,16 @@ def build(days: int = 400, budget_s: float = 240.0, now: datetime | None = None)
                      **stats, "cost_bp": round(cost * 1e4, 3), "cost_source": cost_source,
                      "edge_net_bp": round(net, 3),
                      "verdict": "CLEARS_COST" if net > 0 else "BELOW_COST"})
+    # THE MEASURED RESPONSE PROFILE: the same reaction (kind, symbol, axis, bucket) at every
+    # horizon it was measured at. The donation reads its shape -- where it peaks, how fast it
+    # decays, whether the first hour runs against it -- so each cell's params are its own.
+    profiles: dict[tuple[str, str, str, str], dict[str, float]] = defaultdict(dict)
+    for row in rows:
+        profiles[(row["kind"], row["symbol"], row["axis"], row["bucket"])][row["horizon"]] = (
+            float(row["mean_bp"]))
+    for row in rows:
+        got = profiles[(row["kind"], row["symbol"], row["axis"], row["bucket"])]
+        row["profile_bp"] = {h: got[h] for h in HORIZON_MINUTES if h in got}
     threshold = bonferroni_t(len(rows))
     for row in rows:
         row["clears_bonferroni"] = bool(abs(row["t"]) >= threshold)
@@ -706,19 +716,100 @@ def _donate(candidates: list[dict], tests_run: int) -> Path | None:
     return donate(SOURCE, candidates, tests_run)
 
 
-def donation_params(horizon: str, direction: str) -> dict[str, Any]:
-    """`mt5desk.family_event_reaction` parameters ONLY -- hold in H1 bars, which is its clock.
+def _hours(minutes: float) -> int:
+    return max(1, round(float(minutes) / 60))
+
+
+def measured_shape(profile_bp: dict[str, float] | None, sign: float,
+                   horizons: dict[str, int] | None = None) -> dict[str, Any]:
+    """THE REACTION'S OWN SHAPE, read off the horizons it was measured at (2026-10-06).
+
+    `sign` orients the profile on the cleared direction (+1: the cell's mean is positive). Read:
+
+        peak          the horizon where the oriented mean is largest -- the measured hold
+        half_life_h   hours after the event at which the reaction has given back half of the
+                      peak, linearly between the peak and the next horizon; None when no later
+                      horizon was measured below half the peak (no decay seen)
+        delayed       the 1h oriented mean runs AGAINST a later, positive peak: the first hour
+                      is adverse and the measured move comes after it
+
+    THIS IS WHY A RAISED DONATION CAP NOW BUYS DISTINCT CELLS. Before, a donation's params were
+    a function of (horizon, direction) alone, so two hundred clearing rows on one symbol could
+    only ever be eight different trades; the four horizons of one reaction are now one trade
+    (held to that reaction's peak), and two reactions that peak, decay or open differently are
+    two. Empty when the profile cannot be oriented, and the caller keeps its old params."""
+    horizons = horizons or HORIZON_MINUTES
+    oriented = {h: float(sign) * float(v) for h, v in (profile_bp or {}).items()
+                if h in horizons and math.isfinite(float(v))}
+    if not oriented or max(oriented.values()) <= 0:
+        return {}
+    order = [h for h in horizons if h in oriented]
+    peak = max(order, key=lambda h: oriented[h])
+    top = oriented[peak]
+    half_life: float | None = None
+    for h in order[order.index(peak) + 1:]:
+        if oriented[h] < top / 2:
+            t0, t1 = horizons[peak], horizons[h]
+            half_life = t0 + (t1 - t0) * (top / 2) / max(top - oriented[h], 1e-12)
+            break
+    first = oriented.get("1h")
+    return {"peak": peak, "peak_bp": round(top, 3),
+            "half_life_h": None if half_life is None else round(half_life / 60, 2),
+            "delayed": bool(first is not None and first <= 0 and horizons[peak] > 60)}
+
+
+def donation_params(horizon: str, direction: str, *, profile_bp: dict[str, float] | None = None,
+                    sign: float | None = None, axis: str = "",
+                    bucket: str = "") -> dict[str, Any]:
+    """`mt5desk.family_event_reaction` parameters -- hold in H1 bars, which is its clock -- plus
+    the `cell_modifiers` keys the gauntlet and the forward clock both apply.
 
     `mode` carries the measured claim (continuation -> drift, reversal -> fade). `side` is the
     direction the EVENT implies and the family takes it as a CONSTANT, while this atlas oriented
     every response on the first bar's own sign -- so the donated cell is the weaker, unconditional
     expression of what was measured, and the mechanism line says so rather than implying the
     gauntlet is testing the conditional claim.
+
+    WITH ITS PROFILE (2026-10-06) the cell's own measured response sets the rest, and only
+    through keys the replay EXECUTES:
+        ttl_bars / hold_bars   the peak of the measured reaction (`measured_shape`): the time
+                               exit is where the reaction peaked, not twice the row's horizon
+        cooldown_bars          the measured half-life: an event inside the previous event's
+                               still-live reaction is not a fresh observation
+        entry_timing=delayed   when the first hour measured adverse to a later peak
+        side                   the first bar's sign when the BUCKET fixes it (move_up / move_dn)
+        regime                 high_vol / low_vol when the reaction was measured in that tercile
+                               (the desk's executable mask, `cell_modifiers.VOL_REGIMES`, is
+                               above/below the rolling median -- the gauntlet judges that
+                               definition, and the evidence names the tercile)
+    NOT A THRESHOLD. The surprise bucket and the release kind are not executable: the gauntlet's
+    event_reaction branch hands the family EVERY calendar stamp for the symbol, so a z threshold
+    in params would be a label the replay ignores -- two "different" cells that trade identically.
     """
     hold = max(1, round(HORIZON_MINUTES[horizon] / 60))
-    return {"mode": "drift" if direction == "continuation" else "fade", "side": 1,
-            "hold_bars": hold, "ttl_bars": 2 * hold, "cooldown_bars": hold,
-            "atr_n": 20, "stop_atr": 2.0, "rr": 1.5}
+    params: dict[str, Any] = {"mode": "drift" if direction == "continuation" else "fade",
+                              "side": 1, "hold_bars": hold, "ttl_bars": 2 * hold,
+                              "cooldown_bars": hold, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5}
+    if profile_bp is None:
+        return params
+    orient = sign if sign is not None else (1.0 if direction == "continuation" else -1.0)
+    shape = measured_shape(profile_bp, orient)
+    if shape:
+        peak = _hours(HORIZON_MINUTES[shape["peak"]])
+        params.update(hold_bars=peak, ttl_bars=peak, cooldown_bars=(
+            _hours(shape["half_life_h"] * 60) if shape["half_life_h"] else peak))
+        if shape["delayed"]:
+            params["entry_timing"] = "delayed"
+    if axis == "surprise_proxy" and bucket.startswith(("move_up", "move_dn")):
+        params["side"] = 1 if bucket.startswith("move_up") else -1
+    if axis == "vol_tercile" and bucket in ("high", "low"):
+        params["regime"] = f"{bucket}_vol"
+    return params
+
+
+def executable_identity(symbol: str, family: str, params: dict[str, Any]) -> str:
+    """What the gauntlet would actually run: two donations with this key equal are one trade."""
+    return f"{symbol}|{family}|{json.dumps(params, sort_keys=True, default=str)}"
 
 
 def donate_clearing(payload: dict[str, Any], max_donations: int) -> dict[str, Any]:
@@ -730,12 +821,26 @@ def donate_clearing(payload: dict[str, Any], max_donations: int) -> dict[str, An
         return {"n": 0, "path": None, "cells": [],
                 "status": f"{FAMILY} is not in ORTHOGONAL_FAMILIES on this tree; donated nothing"}
     candidates: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    duplicates = 0
     for row in clearing:
         if len(candidates) >= max_donations:
             break
         if _lane_ok(row["symbol"]) is not True:
             continue
-        params = donation_params(row["horizon"], row["direction"])
+        params = donation_params(row["horizon"], row["direction"],
+                                 profile_bp=row.get("profile_bp"),
+                                 sign=1.0 if float(row.get("mean_bp") or 0) > 0 else -1.0,
+                                 axis=str(row.get("axis") or ""),
+                                 bucket=str(row.get("bucket") or ""))
+        # ONE DONATION PER EXECUTABLE IDENTITY. The clearing list is sorted by |t|, so the
+        # survivor of a duplicate set is its strongest row; the rest would be the same trade
+        # judged twice and charged twice.
+        ident = executable_identity(row["symbol"], FAMILY, params)
+        if ident in seen:
+            duplicates += 1
+            continue
+        seen.add(ident)
         candidates.append({
             "kind": "hypothesis", "symbol": row["symbol"], "symbols": [row["symbol"]],
             "family": FAMILY, "params": params, "cell": row["cell"],
@@ -752,6 +857,7 @@ def donate_clearing(payload: dict[str, Any], max_donations: int) -> dict[str, An
                     "proxy -- a hypothesis for the ten gates, not a claim"),
             "n_events": row["n"], "t": row["t"], "horizon": row["horizon"],
             "conditioner": f"{row['axis']}={row['bucket']}", "event_time": payload.get("at"),
+            "profile_bp": row.get("profile_bp"),
         })
     if not candidates:
         return {"n": 0, "path": None, "cells": [],
@@ -763,6 +869,7 @@ def donate_clearing(payload: dict[str, Any], max_donations: int) -> dict[str, An
                 "status": f"donation refused: {type(exc).__name__}: {exc}"}
     return {"n": len(candidates) if path else 0, "path": str(path) if path else None,
             "cells": [c["cell"] for c in candidates],
+            "duplicates_dropped": duplicates,
             "status": "donated" if path else "the donation door refused every row"}
 
 

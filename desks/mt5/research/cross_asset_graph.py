@@ -16,9 +16,19 @@ BREADTH (2026-10-01). The sweep used to be `book_symbols()[:12]`: the alphabetic
 of the certified book, so AUDCAD..EURUSD were ever measured and USDJPY/XAUUSD never were, and no
 instrument outside the book could lead anything. It now spans the book PLUS every
 hypothesis-lane instrument with H1 bars. All ordered pairs of that set are too many for one
-pass (n^2 at ~0.3 s an edge), so the economic-driver pairs are measured EVERY pass and the
-statistical pairs are walked by a persisted cursor, as many as the graph budget allows, wrapping
-round. Every edge measured on any pass is kept in the graph (refreshed when re-measured), so the
+pass, so the economic-driver pairs are measured EVERY pass and the statistical pairs are walked
+by a persisted cursor, as many as the graph budget (half of 900 s) allows, wrapping round.
+
+WHAT A PAIR COSTS, MEASURED -- and it is not 0.3 s, which this docstring said first. On the
+2026-10-06 build container (4 cores, 32 lane symbols with 50-54k H1 bars, 992 ordered pairs =
+56 causal + 936 statistical) one full pass took 541 s: 858 `lead_lag.edge` calls at 0.52 s each
+filled the 450 s graph half, and the cursor walked 802 of the 936 statistical pairs, so the walk
+completes in 2 hourly passes there. The audit of PR #180 measured 3 to 4.5 s a pair on the
+trading box, where the same 450 s holds 100 to 150 pairs a pass, the 56 causal ones first, so
+the full walk takes about 13 hourly passes at 3.5 s (10 at 3 s, 21 at 4.5 s). Read `coverage`
+in the graph for the figure on the box that ran it; neither number here substitutes for it.
+
+Every edge measured on any pass is kept in the graph (refreshed when re-measured), so the
 published graph is the whole universe's, and `coverage` says how much of the pair space it holds.
 """
 from __future__ import annotations
@@ -45,6 +55,18 @@ SOURCE = "cross_asset_graph"
 GRAPH = _DESK / "reports" / "CROSS_ASSET_GRAPH.json"
 REPORT = _DESK / "reports" / "cross_asset_graph.json"
 CURSOR = _DESK / "reports" / "cross_asset_graph_cursor.json"
+#: THE PAIR LOOKS, CHARGED ONCE OVER THE LIFETIME UNION (2026-10-06). Every pair `lead_lag.edge`
+#: measures is a look: it searches lags 1..MAX_LAG and keeps the best |t|, so a pair that came
+#: back NO_EDGE was still tried. The screen's `tests_run` only counts the (z, hold) rows of the
+#: EDGE pairs, so ~1,000 lag-searched pairs a pass used to reach the lifetime ledger as the few
+#: dozen rows they produced. Each pair IDENTITY -- (ordered pair, lag grid, method) -- is charged
+#: one trial the first pass it is measured, through the side ledger `experiment_ledger.lifetime`
+#: reads (`proposer_common.charge_side_trials`); this set, beside the cursor, is what makes the
+#: charge once-only. A re-measure of a charged pair costs nothing new; a changed lag grid or
+#: method is a new identity and is charged again.
+CHARGED = _DESK / "reports" / "cross_asset_graph_charged.json"
+EDGE_METHOD = "ols_t_nonoverlap"
+FAMILY = "lead_lag"
 #: Share of the pass budget spent measuring edges; the rest sweeps the EDGE ones into cells.
 GRAPH_SHARE = 0.5
 ENTRY_Z = (1.5, 2.0)
@@ -77,6 +99,37 @@ def _read_json(path: Path) -> dict:
     except (OSError, ValueError):
         return {}
     return doc if isinstance(doc, dict) else {}
+
+
+def pair_identity(driver: str, target: str, max_lag: int | None = None) -> str:
+    """(ordered pair, lag grid, method): what one charged look is."""
+    return f"{driver}->{target}|lags=1..{max_lag or lead_lag.MAX_LAG}|{EDGE_METHOD}"
+
+
+def charge_pairs(identities: list[str]) -> tuple[int, int]:
+    """Charge the identities never charged before. Returns (newly charged, lifetime union).
+
+    The ledger row is written BEFORE the union is saved: if the save fails the next pass charges
+    the same pairs again, which over-deflates and never under-deflates."""
+    doc = _read_json(CHARGED)
+    union = doc.get("pairs") if isinstance(doc.get("pairs"), dict) else {}
+    new = sorted({i for i in identities if i not in union})
+    if new:
+        wrote = pc.charge_side_trials(
+            SOURCE, len(new), {FAMILY: len(new)},
+            "lead-lag pair identities lag-searched for the first time; each (ordered pair, lag "
+            "grid, method) is charged once over the lifetime union",
+            kind="pair_identity_union", union_after=len(union) + len(new))
+        if wrote != len(new):
+            return 0, len(union)
+        now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+        union.update(dict.fromkeys(new, now))
+        CHARGED.parent.mkdir(parents=True, exist_ok=True)
+        tmp = CHARGED.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"rule": "each pair identity charged once", "method":
+                                   EDGE_METHOD, "pairs": union}, sort_keys=True), "utf-8")
+        tmp.replace(CHARGED)
+    return len(new), len(union)
 
 
 def _pairs(symbols: list[str], meta: dict, have: set[str]) -> list[tuple[str, str, str | None]]:
@@ -134,6 +187,7 @@ def run(symbols: list[str] | None = None, budget_s: float = 900.0) -> dict:
     started = time.monotonic()
     graph_budget = budget_s * GRAPH_SHARE
     measured: list[dict] = []
+    looked: list[str] = []
     n_stat_done = 0
     for d, t, role in order:
         if role is None and time.monotonic() - started > graph_budget:
@@ -142,8 +196,12 @@ def run(symbols: list[str] | None = None, budget_s: float = 900.0) -> dict:
         if bd is None or bt is None or d == t:
             n_stat_done += role is None
             continue
-        measured.append({"driver": d, "target": t, **lead_lag.edge(bd, bt, plausible_role=role)})
+        e = lead_lag.edge(bd, bt, plausible_role=role)
+        measured.append({"driver": d, "target": t, **e})
+        if e.get("verdict") != "UNMEASURED":       # too few aligned bars: no lag was searched
+            looked.append(pair_identity(d, t))
         n_stat_done += role is None
+    pairs_new, pairs_union = charge_pairs(looked)
     if not symbols:
         CURSOR.parent.mkdir(parents=True, exist_ok=True)
         CURSOR.write_text(json.dumps({"n_stat": len(stat),
@@ -216,12 +274,19 @@ def run(symbols: list[str] | None = None, budget_s: float = 900.0) -> dict:
                                         "n_tests_sweep", "edge_t")}) for r in proposals]
     rep = {"generated_at": datetime.now(tz=UTC).isoformat(), "symbols_swept": len(syms),
            "pairs": g["n_pairs"], "edges": g["n_edges"],
-           "pairs_in_space": len(pairs), "graph_pairs_held": len(whole), "event_chains": len(chains),
+           "pairs_in_space": len(pairs), "graph_pairs_held": len(whole),
+           "event_chains": len(chains),
            "tests_run": len(rows), "cells_proposed": len(proposals), "skipped": skipped,
-           "proposals": proposals}
+           "pairs_looked": len(looked), "pairs_newly_charged": pairs_new,
+           "pairs_lifetime_union": pairs_union, "proposals": proposals}
+    path = pc.donate(SOURCE, cands, len(rows)) if cands else None
+    rep["donated"] = str(path) if path else None
+    if not path:
+        # NO DISCOVERY FILE, SO THE SCREENED ROWS RIDE THE SIDE LEDGER (the null-pass door).
+        rep["null_trials_charged"] = pc.charge_side_trials(
+            SOURCE, len(rows), {FAMILY: len(rows)},
+            "tested cells charged; no discovery file carried them this pass")
     REPORT.write_text(json.dumps(rep, indent=1, default=str), "utf-8")
-    if cands:
-        rep["donated"] = str(pc.donate(SOURCE, cands, len(rows)))
     return rep
 
 

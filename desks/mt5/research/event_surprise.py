@@ -875,6 +875,15 @@ def measure(events: list[dict[str, Any]], *, budget_s: float,
         cost_bp, _why = (_cost_bp(symbol, got[0]["close"]) if got is not None else (0.0, "NONE"))
         cells.extend(cells_for(symbol, rows, cost_bp))
     cells.sort(key=lambda c: -abs(float(c.get("t") or 0.0)))
+    # THE SAME RELEASE BUCKET AT EVERY HORIZON, so the donation reads the reaction's own shape
+    # (`event_response_atlas.measured_shape`) rather than one horizon's row.
+    profiles: dict[tuple[str, str, str, str], dict[str, float]] = defaultdict(dict)
+    for cell in cells:
+        profiles[(cell["symbol"], cell["kind"], cell["bucket"], cell["regime"])][
+            cell["horizon"]] = float(cell["mean_bp"])
+    for cell in cells:
+        got = profiles[(cell["symbol"], cell["kind"], cell["bucket"], cell["regime"])]
+        cell["profile_bp"] = {h: got[h] for h in HORIZONS if h in got}
     threshold = _bonferroni_t(len(cells))
     for cell in cells:
         cell["clears"] = bool(abs(float(cell["t"])) >= threshold
@@ -906,11 +915,29 @@ def _registered(family: str) -> bool:
     return family in ORTHOGONAL_FAMILIES
 
 
-def donation_params(horizon: str, mean_bp: float) -> dict[str, Any]:
-    """`event_reaction` parameters only. `side` is the MEASURED sign, never the sign of z."""
+def donation_params(horizon: str, mean_bp: float,
+                    profile_bp: dict[str, float] | None = None) -> dict[str, Any]:
+    """`event_reaction` parameters only. `side` is the MEASURED sign, never the sign of z.
+
+    WITH ITS PROFILE (2026-10-06) the time exit is the measured reaction's peak, the cooldown its
+    half-life, and a first hour measured against a later peak becomes `entry_timing=delayed` --
+    the atlas's `measured_shape`, one implementation. The surprise BUCKET is not a parameter:
+    the gauntlet hands the family every calendar stamp for the symbol, so a z threshold here
+    would label two cells that trade identically as different."""
     hold = max(1, round(HORIZONS[horizon] / 60))
-    return {"mode": "drift", "side": 1 if mean_bp > 0 else -1, "hold_bars": hold,
-            "ttl_bars": 2 * hold, "cooldown_bars": hold, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5}
+    params: dict[str, Any] = {"mode": "drift", "side": 1 if mean_bp > 0 else -1,
+                              "hold_bars": hold, "ttl_bars": 2 * hold, "cooldown_bars": hold,
+                              "atr_n": 20, "stop_atr": 2.0, "rr": 1.5}
+    atlas = _atlas() if profile_bp else None
+    shape = (atlas.measured_shape(profile_bp, 1.0 if mean_bp > 0 else -1.0, HORIZONS)
+             if atlas is not None and hasattr(atlas, "measured_shape") else {})
+    if shape:
+        peak = max(1, round(HORIZONS[shape["peak"]] / 60))
+        params.update(hold_bars=peak, ttl_bars=peak, cooldown_bars=(
+            max(1, round(float(shape["half_life_h"]))) if shape["half_life_h"] else peak))
+        if shape["delayed"]:
+            params["entry_timing"] = "delayed"
+    return params
 
 
 def donation_rows(clearing: list[dict[str, Any]],
@@ -922,6 +949,7 @@ def donation_rows(clearing: list[dict[str, Any]],
         return [], [{"cell": c["cell"], "why": f"{FAMILY} is not in ORTHOGONAL_FAMILIES on this "
                                                f"tree; nothing donated"} for c in clearing[:5]]
     seen: set[tuple[str, str, str]] = set()
+    executable: set[str] = set()
     for cell in clearing:
         if len(out) >= max(int(limit), 0):
             break
@@ -937,6 +965,18 @@ def donation_rows(clearing: list[dict[str, Any]],
                                    "already donated; four horizons of one reaction is one "
                                    "mechanism with four tickets"})
             continue
+        params = donation_params(cell["horizon"], float(cell["mean_bp"]),
+                                 cell.get("profile_bp"))
+        # ONE DONATION PER EXECUTABLE IDENTITY (2026-10-06). Kind and bucket are not executable
+        # (every calendar stamp reaches the family), so two buckets whose measured reactions
+        # give the same params are the same trade, judged and charged once.
+        ident = f"{cell['symbol']}|{FAMILY}|{json.dumps(params, sort_keys=True)}"
+        if ident in executable:
+            refused.append({"cell": cell["cell"], "symbol": cell["symbol"],
+                            "why": "an executable duplicate: a stronger cell already donated "
+                                   "these exact params on this symbol, and the release kind and "
+                                   "surprise bucket do not change what the replay trades"})
+            continue
         allowed = _may_hypothesise(cell["symbol"])
         if allowed is not True:
             refused.append({"cell": cell["cell"], "symbol": cell["symbol"],
@@ -947,7 +987,7 @@ def donation_rows(clearing: list[dict[str, Any]],
                                     "universe policy unreadable here; absence is not permission")})
             continue
         seen.add(key)
-        params = donation_params(cell["horizon"], float(cell["mean_bp"]))
+        executable.add(ident)
         out.append({"source": SOURCE, "kind": "hypothesis", "symbol": cell["symbol"],
                     "symbols": [cell["symbol"]], "family": FAMILY, "params": params, "url": "",
                     "cell": cell["cell"],
@@ -963,7 +1003,7 @@ def donation_rows(clearing: list[dict[str, Any]],
                     "evidence": {k: cell.get(k) for k in
                                  ("n", "t", "mean_bp", "sd_bp", "hit_rate", "impact_mean_bp",
                                   "cost_bp", "bucket", "horizon", "regime", "direction",
-                                  "tradable_share")} | {"screen": RULE}})
+                                  "tradable_share", "profile_bp")} | {"screen": RULE}})
     return out, refused
 
 

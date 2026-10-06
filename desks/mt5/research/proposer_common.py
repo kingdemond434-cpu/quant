@@ -37,6 +37,33 @@ MIN_TRADES = 30
 SEVERE_WINDOW_BARS = 6
 #: Deflated-t bar for PROPOSING. A proposer's threshold, not a gate.
 PROPOSE_T = 2.0
+#: THE SIDE LEDGER `libs.research.experiment_ledger._proposer_counts` reads for trials that no
+#: discovery file carries (the same file `alt_proxies._donate` writes). One row per charge:
+#: {at, source, tests_run, by_family, why}.
+NULL_PASS_TRIALS = _DESK / "data" / "null_pass_trials.jsonl"
+
+
+def charge_side_trials(source: str, tests_run: int, by_family: dict[str, int], why: str,
+                       **extra: Any) -> int:
+    """Append trials no discovery file will carry to the lifetime ledger's side door.
+
+    Two cases use it. A pass that tested cells and donated nothing writes no discovery file, so
+    its `tests_run` would vanish from the lifetime count; and a look that is not a screened cell
+    (a lead-lag pair searched over its lag grid) is never in any discovery file's `tests_run`.
+    Returns the count written (0 when nothing was due or the write failed)."""
+    n = int(tests_run)
+    if n <= 0:
+        return 0
+    row = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "source": source,
+           "tests_run": n, "by_family": {k: int(v) for k, v in sorted(by_family.items()) if v},
+           "why": why, **extra}
+    try:
+        NULL_PASS_TRIALS.parent.mkdir(parents=True, exist_ok=True)
+        with NULL_PASS_TRIALS.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, sort_keys=True, default=str) + "\n")
+    except OSError:
+        return 0
+    return n
 
 
 def bars(sym: str) -> pd.DataFrame | None:

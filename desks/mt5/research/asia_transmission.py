@@ -315,16 +315,33 @@ def main(argv: list[str] | None = None) -> int:
     rows = measured["rows"]
     proposals: list[dict[str, Any]] = []
     donated: str | None = None
+    null_charged = 0
     if args.propose:
         proposals = pc.best_per_cell(propose(measured, budget_s=args.budget))
+        # `candidate` takes title and evidence too; called with five arguments it raised
+        # TypeError on the first hour a chain survived, so the organ could never donate.
         cands = [pc.candidate("asia_transmission", p["symbol"], "lead_lag", p["params"],
                               next((c["rationale"] for c in CHAINS if c["name"] == p["chain"]),
-                                   "declared Asian transmission chain"))
+                                   "declared Asian transmission chain"),
+                              title=(f"{p['symbol']}.lead_lag.{p['params'].get('driver_symbol')}"
+                                     f".asia lag={p['params'].get('lag')}"),
+                              evidence={k: p.get(k) for k in (
+                                  "chain", "verdict", "edge_t", "n_independent",
+                                  "gross_per_trade", "net_per_trade", "cost_frac", "t_gross",
+                                  "t_deflated_sweep", "n_tests_sweep")})
                  for p in proposals]
+        tests_run = len(CHAINS) * len(ENTRY_Z) * len(HOLDS)
         if cands:
-            path = pc.donate("asia_transmission", cands, tests_run=len(CHAINS) * len(ENTRY_Z)
-                             * len(HOLDS))
+            path = pc.donate("asia_transmission", cands, tests_run=tests_run)
             donated = str(path) if path else None
+        if donated is None:
+            # A PASS THAT DONATES NOTHING STILL RAN ITS TESTS (2026-10-06). The organ is on the
+            # hourly clock now, so a quiet hour is the common case, and with no discovery file
+            # its trials never reached the lifetime ledger. They go through the same null-pass
+            # door `alt_proxies._donate` uses; a pass writes one or the other, never both.
+            null_charged = pc.charge_side_trials(
+                "asia_transmission", tests_run, {"lead_lag": tests_run},
+                "tested cells charged; no discovery file carried them this pass")
 
     census = Counter(str(r.get("verdict")) for r in rows)
     doc = {
@@ -339,6 +356,7 @@ def main(argv: list[str] | None = None) -> int:
                                  "measures as empty in both the traded and certified books",
         "n_proposals": len(proposals),
         "donated_to": donated,
+        "null_trials_charged": null_charged,
         "chains": rows,
         "proposals": proposals,
     }

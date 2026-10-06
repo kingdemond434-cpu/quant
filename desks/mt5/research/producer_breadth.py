@@ -128,14 +128,16 @@ INVENTORY: dict[str, dict[str, Any]] = {
         "change": ("Sealed pass 2 (76895fedc) made lead_lag buildable (0 -> 3,670 signals on "
                    "GBPUSD<-EURUSD); 2026-10-01 lifted book_symbols()[:12] (the alphabetical "
                    "first twelve of the book, never USDJPY/XAUUSD) and the 20-edge event-chain "
-                   "slice, and replaced an O(n^4) pair scan with a set"),
+                   "slice, and replaced an O(n^4) pair scan with a set; 2026-10-06 charges "
+                   "every lag-searched pair identity once over the lifetime union"),
     },
     "asia_transmission": {
         "module": "asia_transmission", "seats": ["asia_transmission"],
         "cap": "every declared chain, measured and proposed each hour (--propose --budget 300)",
         "status": "WIRED",
         "change": ("lead_lag is buildable since 76895fedc; 2026-10-01 put the organ on the "
-                   "hourly clock with --propose, so its chains reach the compiler"),
+                   "hourly clock with --propose, so its chains reach the compiler; a pass "
+                   "that donates nothing charges its tests through the null-pass ledger"),
     },
     "event_surprise": {
         "module": "event_surprise", "seats": ["event_surprise"],
@@ -144,14 +146,18 @@ INVENTORY: dict[str, dict[str, Any]] = {
         "status": "WIDENED",
         "change": ("Sealed pass 2 (76895fedc) made event_reaction cells carry signals; "
                    "2026-10-01 lifted MAX_DONATIONS 10 -> 400: every clearing cell already "
-                   "paid the n_cells trial charge, so the cap discarded paid-for hypotheses"),
+                   "paid the n_cells trial charge, so the cap discarded paid-for hypotheses; "
+                   "2026-10-06 params from each reaction's measured shape, deduplicated on "
+                   "executable identity"),
     },
     "event_response_atlas": {
         "module": "event_response_atlas", "seats": ["event_response_atlas"],
         "cap": "MAX_DONATIONS = MAX_PUBLISHED (300) clearing cells; event_reaction only",
         "status": "WIDENED",
         "change": ("as event_surprise: re-signed event_reaction (76895fedc), then 2026-10-01 "
-                   "lifted max_donations 15 -> 300 at no added trial charge"),
+                   "lifted max_donations 15 -> 300 at no added trial charge; 2026-10-06 "
+                   "params from each reaction's measured shape, deduplicated on executable "
+                   "identity"),
     },
     "edge_search": {
         "module": "edge_search", "artifact": "edge_search_results.json",
