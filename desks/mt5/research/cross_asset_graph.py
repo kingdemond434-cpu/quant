@@ -21,12 +21,14 @@ by a persisted cursor, as many as the graph budget (half of 900 s) allows, wrapp
 
 WHAT A PAIR COSTS, MEASURED -- and it is not 0.3 s, which this docstring said first. On the
 2026-10-06 build container (4 cores, 32 lane symbols with 50-54k H1 bars, 992 ordered pairs =
-56 causal + 936 statistical) one full pass took 541 s: 858 `lead_lag.edge` calls at 0.52 s each
-filled the 450 s graph half, and the cursor walked 802 of the 936 statistical pairs, so the walk
-completes in 2 hourly passes there. The audit of PR #180 measured 3 to 4.5 s a pair on the
-trading box, where the same 450 s holds 100 to 150 pairs a pass, the 56 causal ones first, so
-the full walk takes about 13 hourly passes at 3.5 s (10 at 3 s, 21 at 4.5 s). Read `coverage`
-in the graph for the figure on the box that ran it; neither number here substitutes for it.
+56 causal + 936 statistical) one full pass with the loop `lead_lag.edge` took 541 s: 858 edges
+at 0.52 s filled the 450 s graph half and the cursor walked 802 of 936 statistical pairs. The
+lag sums are now vectorised (bit-identical, pinned): the same pass took 331 s, all 992 edges at
+0.22 s, and the whole statistical space was walked in ONE pass. The audit of PR #180 measured
+3 to 4.5 s a pair on the trading box with the loop, which walks in about 13 hourly passes (10
+at 3 s, 21 at 4.5 s); at the measured 2.3x that is ~1.3 to 2 s and ~3 to 5 passes -- a
+projection, not a box measurement. Read `coverage` in the graph for the figure on the box that
+ran it; neither number here substitutes for it.
 
 Every edge measured on any pass is kept in the graph (refreshed when re-measured), so the
 published graph is the whole universe's, and `coverage` says how much of the pair space it holds.
