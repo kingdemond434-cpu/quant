@@ -5635,6 +5635,11 @@ def main() -> None:
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
+    # LF ON EVERY BOX (2026-10-06). `indent=1` makes this multi-line, and Path.write_text with no
+    # `newline` translates "\n" to os.linesep -- CRLF on the Windows box that runs this cycle,
+    # while desks/mt5/.gitattributes stores *.json as eol=lf. A CRLF write reads as a modified
+    # file on every checkout; that is how desks/mt5/sync_marker.json (the 2026-08-17 copy) became
+    # permanently dirty. Pinned by tests/test_sync_marker_is_written_lf.py.
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,
@@ -5838,7 +5843,7 @@ def main() -> None:
                     "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
-                   indent=1), encoding="utf-8")
+                   indent=1), encoding="utf-8", newline="\n")
     # THE PASS'S OWN ATTENDANCE RECORD, re-published now that the pass is complete: what actually
     # ran, what was rotated out (and therefore leads the next pass), and -- by name -- every leg
     # that has NEVER run. `scripts/check_leg_rotation.py` fences both lists.

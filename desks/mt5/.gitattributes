@@ -7,3 +7,10 @@
 *.json  text eol=lf
 *.jsonl text eol=lf
 *.ps1   text eol=crlf
+# BOX STATE AT THE DESK ROOT, COMMITTED WITH CRLF (2026-10-06). desks/mt5/sync_marker.json is a
+# libs/ops/release.py STATE_FILES path, so its content is the box's and is never rewritten on
+# origin -- not even to renormalise it. Its blob holds CRLF (fd327ca89, 2026-08-17), and under
+# the *.json eol=lf rule above that blob can never match a checkout, so every clone showed it
+# modified. -text stores it byte-for-byte: a CRLF write from the box is not dirty, and nothing
+# is rewritten. The live marker (data/sync_marker.json) stays LF and is written LF.
+/sync_marker.json -text
