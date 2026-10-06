@@ -132,7 +132,7 @@ def _catalog_names() -> tuple[set[str], set[str]] | None:
 
 
 def is_secret_name(name: str,
-                   catalog: tuple[set[str], set[str]] | None | bool = True) -> bool:
+                   catalog: tuple[set[str], set[str]] | bool | None = True) -> bool:
     """A variable a resident should carry to its children. With the catalog: a catalogued name
     that no refused group or terms block covers. Without it: an API-key-shaped name."""
     cat = _catalog_names() if catalog is True else catalog
