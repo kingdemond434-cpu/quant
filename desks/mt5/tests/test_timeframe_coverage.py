@@ -118,6 +118,9 @@ def test_bulk_fill_does_not_spend_the_recovery_window_on_single_name_shares() ->
     assert "def _is_single_name_equity(" in src
     assert "tradable_all =" in src
     assert "not _is_single_name_equity(s.path)" in src
+    # shares are collected (their cross-sectional books and earnings reactions need the ladder,
+    # principal 2026-09-30) but queued after every other class (2026-10-06)
+    assert "tradable = [*_others, *_shares]" in src
 
 
 def test_the_box_census_measures_freshness_gaps_verdicts_and_tape(
