@@ -836,7 +836,10 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/cell_emitter_sources.json", "desks/mt5/data/universe/"),
          writes=("desks/mt5/reports/CELL_EMITTER.json",
                  "desks/mt5/data/intelligence/cell_emitter/",
-                 "desks/mt5/data/cell_emitter_state.json")),
+                 "desks/mt5/data/cell_emitter_state.json"),
+         # Its cells reach a decision only through the compiler that reads its intake glob, so
+         # it is priced there, as alpha_registry and intake_catchup are.
+         billed_as=("miner_candidate_compiler",)),
     # Prices every arm of one decision (veto, sizing, execution, exit, missed trade); the rent
     # ledger already bills two of those arms under their own names, and this node's output is
     # the union of them rather than a new line.
