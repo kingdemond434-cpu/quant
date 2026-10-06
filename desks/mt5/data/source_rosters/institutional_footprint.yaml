@@ -10967,7 +10967,7 @@ sources:
   dataset: dk_major_holdings_oam
   source_class: beneficial_ownership
   role: regulator
-  url: https://oam.finanstilsynet.dk/
+  url: https://www.dfsa.dk/financial-themes/capital-market/company-announcements
   frequency: event
   publication_lag_days: 2
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10997,12 +10997,12 @@ sources:
     failure_mode_hypothesis: declared
     crowding_prior: declared
   url_confidence: dataset
-  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Finanstilsynet OAM, the Danish officially appointed mechanism for company announcements and major-holding notifications. Replaces the shared ESMA register hub'
+  evidence: 'fetched and confirmed 2026-10-06 (WebFetch): Danish FSA company-announcements page: every announcement submitted to its OAM, including major-shareholder notifications. Replaces the shared ESMA register hub'
   access: free_public
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://oam.finanstilsynet.dk/
+    - https://www.dfsa.dk/financial-themes/capital-market/company-announcements
 - id: institutional.dk.esma.dk_pdmr_oam
   name: Danish PDMR transactions and buyback reports (Danish FSA OAM), reached via ESMA national-register links
   jurisdiction: dk
@@ -11430,7 +11430,7 @@ sources:
   dataset: dk_registered_firms
   source_class: adviser_topology
   role: regulator
-  url: https://virksomhedsregister.finanstilsynet.dk/
+  url: https://virksomhedsregister.finanstilsynet.dk/index-en.html
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11464,7 +11464,7 @@ sources:
   found_by: coverage_sweep_2026-09-30
   config:
     pages:
-    - https://virksomhedsregister.finanstilsynet.dk/
+    - https://virksomhedsregister.finanstilsynet.dk/index-en.html
 - id: institutional.dk.finans_danmark.mortgage_statistics
   name: 'Finance Denmark mortgage-lending data: lending by loan type (callable fixed vs adjustable), refinancing and prepayment'
   jurisdiction: dk
