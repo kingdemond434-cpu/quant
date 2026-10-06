@@ -2509,6 +2509,20 @@ FAMILY_INPUTS["kalman_hedge_spread"] = (
 FAMILY_INPUTS["kalman_beta_residual"] = FAMILY_INPUTS["kalman_hedge_spread"]
 del _rm_name
 
+# THREE FX CARRY BOOKS ON THE BROKER'S OWN SWAP HISTORY, FORWARD ONLY (2026-10-06): carry rank,
+# the dollar carry basket and good/bad carry, each reading only swap rows stamped with the
+# instant the terminal reported them. Seeded by `research/elitequant_breadth.py` once that
+# history reaches the lockbox floor.
+from mt5desk.families_carry import CARRY_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(CARRY_FAMILIES)
+for _cy_name in CARRY_FAMILIES:
+    FAMILY_INPUTS[_cy_name] = (
+        "broker swap history (mt5:broker_swaps)", "data/tape/contract_terms/*.parquet and the "
+        "observed_at-stamped rows of data/intelligence/broker_swaps, as of each bar")
+    FAMILY_TIMEFRAMES[_cy_name] = FAMILY_TIMEFRAMES["cross_sectional_class_momentum"]
+del _cy_name
+
 # THE ALPHA ZOO AS CLASS BOOKS (2026-09-30): 317 published alphas (GTJA 191, Qlib 158, Alpha101,
 # academic) vendored from HKUDS/Vibe-Trading (MIT) under mt5desk/alpha_zoo/, each ranked within
 # the cell's peer class on each date. Loads its own class panel keyed by the cell's `symbol`, like
