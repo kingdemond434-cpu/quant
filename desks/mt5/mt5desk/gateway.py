@@ -62,6 +62,7 @@ from mt5desk.decision_core import (
     allocator_rank,
     atr_last,
     bar_already_traded,
+    book_shares,
     basket_lots,
     basket_record,
     book_from_allocation,
@@ -87,6 +88,9 @@ from mt5desk.decision_core import (
     scalp_recipe,
     signal_with_levels,
     sleeve_from_comment,
+    sleeve_from_tag,
+    sleeve_tag,
+    sleeve_tags,
     state_allows,
     stop_distance,
     ttl_expired,
@@ -148,7 +152,14 @@ def order_comment(name: str) -> str:
     truncated differently the desk would open a position it could never afterwards recognise as
     its own -- and would then re-open it on the next pass, forever.
     """
-    return f"DW{name}"[:COMMENT_MAX]
+    return sleeve_tag(name, COMMENT_MAX)
+
+
+def owned_tags(name: str) -> frozenset[str]:
+    """Every tag that marks a position as this sleeve's: `order_comment(name)` and the legacy
+    plain truncation positions opened before 2026-10-06 carry (`decision_core.sleeve_tag`). Every
+    MATCH path reads this; only the SEND path reads `order_comment`."""
+    return sleeve_tags(name, COMMENT_MAX)
 
 #: How far back record_trades looks for closed deals it has not yet written. Deals are deduped
 #: by the venue's own ticket, so a wider window costs a list scan and cannot double-count. It
@@ -1647,8 +1658,9 @@ def scalp_position_tags(sleeves: list[dict]) -> frozenset[str]:
     """The order-comment tags of the scalp lane's positions: the ones the gold book's end-of-day
     close must leave alone. Every lane tags its positions `DW<sleeve name>` (`place_bracket`,
     `run_scalp_sleeves`), so the tag is the lane."""
-    return frozenset(order_comment(s["name"]) for s in sleeves
-                     if s.get("exec") == "scalp_market" and s.get("name"))
+    return frozenset(t for s in sleeves
+                     if s.get("exec") == "scalp_market" and s.get("name")
+                     for t in owned_tags(s["name"]))
 
 
 def family_position_tags(sleeves: list[dict]) -> frozenset[str]:
@@ -1656,8 +1668,9 @@ def family_position_tags(sleeves: list[dict]) -> frozenset[str]:
     end-of-day close must leave alone. Same tag, same reason as `scalp_position_tags`: a family
     sleeve's exit is its certified `ttl_bars`, run by the TTL housekeeping in
     `run_family_sleeves`, never the 19:30 UTC backstop."""
-    return frozenset(order_comment(s["name"]) for s in sleeves
-                     if s.get("exec") == "family_market" and s.get("name"))
+    return frozenset(t for s in sleeves
+                     if s.get("exec") == "family_market" and s.get("name")
+                     for t in owned_tags(s["name"]))
 
 
 def close_positions(st: dict, symbol: str, keep_tags: frozenset[str] = frozenset()) -> None:
@@ -1783,8 +1796,9 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
     this idempotent and acknowledgement-driven rather than merely hopeful.
     """
     symbols = list({s["symbol"] for s in sleeves} | {"XAUUSD"})
-    _fixed_tags = {order_comment(str(s.get("name") or "")): str(s.get("name") or "")
-                   for s in sleeves if s.get("exec") == "family_market" and s.get("name")}
+    _fixed_tags = {t: str(s.get("name") or "")
+                   for s in sleeves if s.get("exec") == "family_market" and s.get("name")
+                   for t in owned_tags(str(s.get("name") or ""))}
     for symbol in symbols:
         positions = mt5.positions_get(symbol=symbol) or []
         if not positions:
@@ -2118,7 +2132,7 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # placed is now recorded whether or not its label survived the round trip; the sleeve
         # name is taken from the comment when it is there and marked unattributed when it is not,
         # which is a recoverable gap, unlike never recording the fill at all.
-        sleeve = sleeve_from_comment(comment, "UNATTRIBUTED")
+        sleeve = sleeve_from_tag(comment, [s.get("name") for s in sleeves], "UNATTRIBUTED")
         sym_info = mt5.symbol_info(d.symbol)
         if sym_info is None:
             continue
@@ -3063,7 +3077,7 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         _deals = mt5.history_deals_get(_from_s, _from_s + _bar_min * 60) or []
     except Exception:
         _deals = []                                  # UNMEASURED: the state mark still stands
-    _traded = bar_already_traded(_deals, order_comment(name))
+    _traded = bar_already_traded(_deals, owned_tags(name))
     if _traded is not None:
         return {"ok": False, "stage": "bar_traded", "considered": True, "sep": " ",
                 "mark": True, "last_bar": last_bar,
@@ -3401,9 +3415,9 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
 
 def _sleeve_positions(symbol: str, name: str) -> list:
     """Open positions this sleeve owns: the order comment is the sleeve's tag."""
-    tag = order_comment(name)
+    tags = owned_tags(name)
     return [p for p in (mt5.positions_get(symbol=symbol) or [])
-            if str(getattr(p, "comment", "") or "") == tag]
+            if str(getattr(p, "comment", "") or "") in tags]
 
 
 def close_retired_positions(st: dict) -> None:
@@ -3426,9 +3440,9 @@ def close_retired_positions(st: dict) -> None:
         return
     remaining: list[str] = []
     for name in names:
-        tag = order_comment(name)
+        tags = owned_tags(name)
         held = [p for p in (mt5.positions_get() or [])
-                if str(getattr(p, "comment", "") or "") == tag]
+                if str(getattr(p, "comment", "") or "") in tags]
         if not held:
             log(f"[{name}] RETIRED: no open position under its tag; dropped from the close queue")
             continue
@@ -4134,6 +4148,9 @@ def main() -> None:
     # legs of the same pass from two different solves if the allocator rewrote it mid-loop.
     _book, _book_why = allocator_book()
     log(f"sizing: {_book_why}")
+    # ONE KEY, ONE FRACTION: rows that reach the same book key through a fallback join split
+    # the optimiser's h for it, so the pass deploys exactly what it solved (`book_shares`).
+    _shares = book_shares((str(_r.get("name") or ""), _book_key(_r, _book)) for _r in sleeves)
     # EACH SLEEVE'S LAST REAL STOP, so the cap prices legs on what they actually traded rather
     # than on a house average. The gateway already records every bracket it places; not reading
     # them back meant the one number that decides how much heat a leg costs was the only number
@@ -4159,8 +4176,12 @@ def main() -> None:
         _key = _book_key(_s, _book)
         from_book = _key is not None
         if from_book:
-            _s["risk_frac"] = float(_book[_key])
+            _n_share = max(1, int(_shares.get(_s["name"], 1)))
+            _s["risk_frac"] = float(_book[_key]) / _n_share
             _s["sized_by"] = "allocator_book"
+            if _n_share > 1:
+                _s["book_key"] = _key
+                _s["book_key_shared_by"] = _n_share
         if _s.get("exec") not in ("family_market", "scalp_market"):
             # EVERY BRACKET-LANE SLEEVE IS BILLED AT THE ORDER IT WILL ACTUALLY SEND -- gold,
             # promoted and fixed-lot alike. Three external audit rounds found the same defect
