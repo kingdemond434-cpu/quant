@@ -161,6 +161,8 @@ GOLD_WINDOWS = [
 #: The bracket leg that would trade against an already directional gold book.  Shared by the
 #: Fusion and E8 venue adapters so one strategy cannot hedge itself on one account while the
 #: other correctly suppresses the redundant leg.
+#: The keys are the desk's side convention (+1 long, -1 short), derived from the sign the book's
+#: net direction is computed in, not a chosen quantity (4f69caef3, 2026-09-28).
 OPPOSING_LEG = {1: "sell_stop", -1: "buy_stop"}
 
 #: EUR put at risk by the venue's smallest tradeable position on gold. Below the equity where
@@ -533,7 +535,9 @@ def min_lot() -> float:
 #: to one end and realised risk misses target by a whole step. 0.02 halves that to 50%.
 #: Applies to the ONE book with forward evidence behind it; every other promoted sleeve
 #: stays at the 0.01 venue floor, which is what "these live sleeves only" means.
-GOLD_MIN_LOT = 0.02
+#: Principal 2026-10-02 supersedes the historical 0.02 exception above:
+#: 0.01 is the baseline; allocator sovereignty and broker volume rules still bind.
+GOLD_MIN_LOT = 0.01
 #: A box may raise the gold floor without a code push. Absent or unreadable -> GOLD_MIN_LOT.
 GOLD_MIN_LOT_FILE = _DESK / "data" / "GOLD_MIN_LOT.json"
 
@@ -2222,6 +2226,10 @@ def family_entry(g: object, side: int, bid: float, ask: float) -> tuple[float, f
 #: stop distance, before the bracket is re-anchored to the actual entry. A quarter: the replay
 #: fills at the next OPEN, which differs from the close by the open-close gap, and a quarter of
 #: the stop is well past any such gap on the charts these families run on.
+#: Measured 2026-09-16 on the live account (072f030e2): nine forex closes with a stop under 10
+#: pips lost a mean -1.05R (-36 EUR) because the executor kept levels certified at 8.4 pips after
+#: the quote had moved, sizing 0.27 lots against a 1.3-pip stop. Re-anchoring past this fraction
+#: is the fix that commit landed.
 ENTRY_DRIFT_TOL_FRAC = 0.25
 
 

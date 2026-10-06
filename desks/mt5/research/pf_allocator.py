@@ -81,6 +81,8 @@ from research.heat_policy import (  # noqa: E402
 )
 
 OUT = BASE / "reports" / "pf_allocation.json"
+#: The constrained book's hourly PROOF SWITCH (research/constrained_book.py). Read, never written.
+CONSTRAINED_SWITCH = BASE / "reports" / "CONSTRAINED_BOOK_SWITCH.json"
 DONE = BASE / "reports" / "DONE_pf_allocation"
 #: THE NAMED STAND-DOWN (2026-09-23). `main` has three paths that end a pass without an
 #: allocation -- not enough memory, the lock held by another clock, and a raised exception -- and
@@ -3941,6 +3943,53 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             posterior = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
             _log(f"posterior book unmeasured: {posterior['why']}")
 
+    # ---------------------------------------------- THE CONSTRAINED BOOK, FED ON ITS PROOF ONLY
+    # Tier-1 #6 (2026-09-29) built the book with every risk clause as a hard constraint inside the
+    # posterior E[log W] solve and published it as a shadow nobody read. It now DECIDES
+    # (2026-09-30): `constrained_book` contests it against the live book every hour and writes a
+    # switch that is ON only while its robust E[log W] beats the traded book's. Here the allocator
+    # re-contests that book against ITS OWN book on ITS OWN paths and adopts it only if it wins
+    # again (CI excluding zero), is no more ruinous, and scores finite. Never by fiat
+    # (`constrained_elog.FEEDS_LIVE` stays False), never below the heat floor, two-sided: when
+    # the constraints are slack the adopted book may carry MORE heat than the incumbent.
+    constrained_feed: dict[str, Any] = {"adopted": False}
+    if funded and worlds is not None:
+        try:
+            from libs.portfolio import constrained_elog as _ce
+            from libs.portfolio.posterior_growth import sample_paths as _cb_paths
+            try:
+                _sw_doc = json.loads(CONSTRAINED_SWITCH.read_text("utf-8"))
+            except (OSError, ValueError):
+                _sw_doc = None
+            _sw = _ce.read_switch(_sw_doc, now_iso=datetime.now(UTC).isoformat())
+            constrained_feed["switch"] = {k: v for k, v in _sw.items() if k != "book"}
+            if _sw.get("feeds"):
+                _cb_prev = current_book()
+                _cbp = _cb_paths(ev, n_paths=400, horizon=max(1, int(NO_TRADE_HORIZON_DAYS)),
+                                 worlds=worlds, seed=seed)
+                _cb_book, constrained_feed = _ce.adopt_if_proven(
+                    _sw, funded, _cbp, floor=float(HEAT_TARGET),
+                    score=lambda b: float(score_book(ev, b, cfg=cfg,
+                                                     worlds=worlds)["mean_log_growth"]),
+                    h_prev=_cb_prev, turnover_cost=TURNOVER_COST_R, seed=seed)
+                if _cb_book:
+                    sc = score_book(ev, _cb_book, cfg=cfg, worlds=worlds)
+                    book = AllocationResult(
+                        heat=dict(_cb_book), total_heat=float(sum(_cb_book.values())),
+                        robust_score=float(sc["robust_score"]),
+                        mean_log_growth=float(sc["mean_log_growth"]),
+                        cvar_log_growth=float(sc["cvar_log_growth"]),
+                        annual_growth_pct=float(sc["annual_growth_pct"]),
+                        prob_annual_loss=float(sc["prob_annual_loss"]),
+                        note=f"constrained book adopted on its proof: {constrained_feed['why']}")
+                    funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
+            _log(f"constrained book: {'ADOPTED' if constrained_feed.get('adopted') else 'not fed'}"
+                 f" -- {constrained_feed.get('why') or _sw.get('why', '')}")
+        except Exception as exc:
+            constrained_feed = {"adopted": False, "status": "UNMEASURED",
+                                "why": f"{type(exc).__name__}: {exc}"}
+            _log(f"constrained book unmeasured: {constrained_feed['why']}")
+
     # A BOOK THE OPTIMISER CANNOT SCORE IS NOT A BOOK. The mandated solve can come back -inf --
     # a book that is wiped out in at least one sampled world -- and publishing that would hand
     # `gateway.allocator_heat()` a total heat with no growth behind it. Measured 2026-09-02: the
@@ -4557,6 +4606,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "floor_fill": fill_note,
         "aggression": aggression,
         "posterior_growth": posterior,
+        "constrained_book": constrained_feed,
         "kelly_surface": ks_doc,
         # THE CRISIS-CONDITIONAL KELLY beside the blended one. `binds` is False on every pass:
         # a comparison a reader can make, not a bar anything sizes against.

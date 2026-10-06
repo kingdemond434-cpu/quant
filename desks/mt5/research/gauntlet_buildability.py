@@ -193,6 +193,15 @@ def cell_verdict(family: str, params: dict[str, Any] | None = None,
     missing = [r for r in _required(str(family)) if r not in p]
     if missing:
         return MISSING_PARAMS, f"{family} requires {missing} and the cell does not carry them"
+    if family == "clock_transition":
+        from mt5desk.family_clock_transition import CATALOGUE, MODES
+        label, hour = p.get("label"), p.get("stamp_hour")
+        if label not in CATALOGUE:
+            return MISSING_PARAMS, "clock_transition requires a named catalogue label"
+        if isinstance(hour, bool) or not isinstance(hour, int) or not 0 <= hour <= 23:
+            return MISSING_PARAMS, "clock_transition requires an explicit broker stamp_hour 0..23"
+        if p.get("mode", "out_of") not in MODES:
+            return MISSING_PARAMS, "clock_transition mode is not in its registered modes"
     return BUILDABLE, why
 
 

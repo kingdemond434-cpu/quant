@@ -48,7 +48,7 @@ def test_uncommitted_here_finds_a_dirty_money_path_file(tmp_path, monkeypatch) -
     probe = ROOT / "desks" / "mt5" / "research" / "_parity_probe_delete_me.py"
     probe.write_text("# transient probe written by test_desk_code_parity\n", "utf-8")
     try:
-        rel = str(probe.relative_to(ROOT))
+        rel = probe.relative_to(ROOT).as_posix()
         assert mod.uncommitted_here([rel]) == [rel]
         # And a file that is genuinely clean must NOT be reported. The clean file is DERIVED at
         # runtime rather than named: any path this test hardcoded could be legitimately dirty in

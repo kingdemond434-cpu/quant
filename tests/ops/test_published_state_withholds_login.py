@@ -70,6 +70,59 @@ def test_publish_account_state_withholds_the_login(tmp_path: Path,
     assert rec["server"] == "FusionMarkets-Live" and rec["equity"] == 101.5
 
 
+@pytest.mark.parametrize("missing", ["history_deals_get", "positions_get"])
+def test_missing_broker_read_does_not_publish_a_fresh_flat_book(tmp_path, monkeypatch, missing):
+    terminal = _fake_mt5()
+    setattr(terminal, missing, lambda *args: None)
+    monkeypatch.setitem(sys.modules, "MetaTrader5", terminal)
+    mod = _load("account_read_failure", ROOT / "ops" / "publish_account_state.py")
+    out = tmp_path / "account_state.json"
+    previous = b'{"updated_at": "old", "open_positions": 2}'
+    out.write_bytes(previous)
+    monkeypatch.setattr(mod, "OUT", out)
+    assert mod.main() == 1
+    assert out.read_bytes() == previous
+    assert list(tmp_path.iterdir()) == [out]
+
+
+def test_position_count_and_floating_pnl_share_one_broker_snapshot(tmp_path, monkeypatch):
+    terminal = _fake_mt5()
+    calls = []
+
+    def positions():
+        calls.append(True)
+        return (types.SimpleNamespace(profit=2.5),) if len(calls) == 1 else ()
+
+    terminal.positions_get = positions
+    monkeypatch.setitem(sys.modules, "MetaTrader5", terminal)
+    mod = _load("account_consistent_snapshot", ROOT / "ops" / "publish_account_state.py")
+    out = tmp_path / "account_state.json"
+    monkeypatch.setattr(mod, "OUT", out)
+    assert mod.main() == 0
+    rec = json.loads(out.read_text())
+    assert rec["open_positions"] == 1
+    assert rec["today_floating_pnl"] == 2.5
+    assert len(calls) == 1
+
+
+def test_account_publisher_cannot_autostart_terminal_in_session_zero(tmp_path, monkeypatch):
+    from research import mt5_session
+
+    terminal = _fake_mt5()
+    calls = []
+    terminal.terminal_info = lambda: None
+    terminal.initialize = lambda **kwargs: calls.append(kwargs)
+    monkeypatch.setitem(sys.modules, "MetaTrader5", terminal)
+    monkeypatch.setattr(mt5_session, "windows_session_id", lambda: 0)
+    mod = _load("account_session_zero", ROOT / "ops" / "publish_account_state.py")
+    out = tmp_path / "account_state.json"
+    out.write_bytes(b"previous")
+    monkeypatch.setattr(mod, "OUT", out)
+    assert mod.main() == 1
+    assert calls == []
+    assert out.read_bytes() == b"previous"
+
+
 def test_cost_truth_snapshot_and_page_withhold_the_login(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "MetaTrader5", _fake_mt5())
     import cost_truth as CT

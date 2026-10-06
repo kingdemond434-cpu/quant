@@ -96,11 +96,38 @@ def test_being_behind_no_longer_exits_before_staging() -> None:
 def test_every_inbound_path_publishes_onto_origin() -> None:
     src = _src()
     assert src.index("function Publish-StateOnto") < src.index("Publish-StateOnto -RepoRoot")
-    assert src.count("Publish-StateOnto -RepoRoot") >= 3, (
-        "the no-change, fresh-commit and push-race paths must each publish when behind")
-    loop = src[src.index("for ($attempt = 1;"):]
-    assert "Publish-StateOnto -RepoRoot" in loop
+    tail = src[src.index("# ONE DELIVERY PATH"):]
+    assert "$ok = Publish-StateOnto -RepoRoot $RepoRoot -Branch $branch -Paths $existing" in tail
 
+
+def _code(src: str) -> str:
+    return "\n".join(ln.split("#", 1)[0] for ln in src.splitlines())
+
+
+def test_the_publisher_never_pushes_the_box_branch() -> None:
+    """MEASURED: the box's unpushed backlog (506 commits of parquet, 2026-09-24) made every
+    `git push origin <branch>` die on HTTP 408, and no automated state commit reached origin
+    after 2026-09-12. The only push left is Publish-StateOnto's one-commit fast-forward."""
+    code = _code(_src())
+    pushes = re.findall(r'@\("push"[^)]*\)', code)
+    assert pushes == ['@("push", $remote, ("{0}:refs/heads/{1}" -f $commit, $Branch)'], pushes
+    assert '"push", "origin", $branch' not in code
+    assert '"push", "origin", "HEAD"' not in code
+
+
+def test_a_refused_push_is_quoted_in_the_log() -> None:
+    src = _src()
+    body = src[src.index("function Push-Logged"):]
+    body = body[:body.index("\n}") + 2]
+    assert "2>&1" in body and "push said:" in body
+    assert "Push-Logged @(\"push\", $remote" in src
+
+
+def test_a_stale_fetch_head_is_never_trusted() -> None:
+    src = _src()
+    assert "$script:FetchHeadFresh = $true" in src[src.index("function Sync-Pull"):]
+    body = src[src.index("function Publish-StateOnto"):]
+    assert "-not $script:FetchHeadFresh" in body[:body.index("rev-parse\", \"FETCH_HEAD")]
 
 def test_the_publisher_never_merges_or_touches_the_real_index() -> None:
     src = _src()

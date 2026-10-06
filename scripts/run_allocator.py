@@ -122,7 +122,7 @@ def _exists(artifact: str) -> bool:
         if not METRICS.exists():
             return False
         try:
-            with sqlite3.connect(f"file:{METRICS}?mode=ro", uri=True) as c:
+            with contextlib.closing(sqlite3.connect(f"file:{METRICS}?mode=ro", uri=True)) as c:
                 return bool(c.execute(f"select count(*) from {table}"  # noqa: S608 -- internal constant
                                       ).fetchone()[0])
         except sqlite3.Error:
@@ -195,7 +195,7 @@ def _writers(artifact: str) -> list[str]:
                     continue
             elif not _writes_path(src, needle):
                 continue
-            out.append(str(f.relative_to(ROOT)))
+            out.append(f.relative_to(ROOT).as_posix())
     return out
 
 

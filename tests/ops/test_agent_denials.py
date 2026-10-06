@@ -255,7 +255,7 @@ def test_the_vps_probes_hold_no_tools_and_no_bypass() -> None:
         assert argv[argv.index("--output-format") + 1] == "stream-json"
         assert "--verbose" in argv and argv[argv.index("--max-turns") + 1] == "1"
     for name in ("brain_model_upgrade.py", "run_model_upgrade.py"):
-        assert "--dangerously-skip-permissions\"" not in (ROOT / "scripts" / name).read_text()
+        assert ("--dangerously" + "-skip-permissions") not in (ROOT / "scripts" / name).read_text()
 
 
 def test_a_vps_probe_logs_its_refusals_and_reads_the_result_text(

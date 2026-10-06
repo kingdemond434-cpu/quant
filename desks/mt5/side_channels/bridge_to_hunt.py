@@ -119,7 +119,11 @@ def save_grid(grid: list[dict]) -> Path:
     """Save test grid for full_hunt."""
     out = HYPO / "test_grid.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(grid, indent=2, default=str), encoding="utf-8")
+    try:
+        from side_channels.discovery_io import write_discoveries
+    except ModuleNotFoundError:
+        from discovery_io import write_discoveries
+    write_discoveries(out, grid)
     print(f"Test grid: {len(grid)} cells from external discoveries")
     return out
 

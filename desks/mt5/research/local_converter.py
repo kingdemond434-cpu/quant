@@ -332,9 +332,18 @@ def feed_docket(cands: list[dict]) -> tuple[int, int]:
     numbers that will ever be attached. Inventing a backtest record here would be a fabricated
     claim wearing a survivor's shape.
     """
+    from research.job_lock import exclusive_job
+
+    with exclusive_job("merge_hypotheses", need_mb=14000) as owned:
+        if not owned:
+            raise RuntimeError("Canonical docket writer lane or memory admission refused")
+        return _feed_docket_locked(cands)
+
+
+def _feed_docket_locked(cands: list[dict]) -> tuple[int, int]:
     try:
         docket = json.loads(DOCKET.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except FileNotFoundError:
         docket = []
     if not isinstance(docket, list):
         return 0, 0
@@ -342,7 +351,8 @@ def feed_docket(cands: list[dict]) -> tuple[int, int]:
     def key(sym: str, fam: str, params: dict) -> str:
         return json.dumps([sym, fam, params], sort_keys=True, default=str)
 
-    seen = {key(str(r.get("symbol") or ""), str(r.get("family") or ""), r.get("params") or {})
+    seen = {key(str(r.get("symbol") or r.get("sym") or ""),
+                str(r.get("family") or ""), r.get("params") or {})
             for r in docket if isinstance(r, dict)}
     now = datetime.now(UTC).isoformat(timespec="seconds")
     added = []
@@ -356,6 +366,7 @@ def feed_docket(cands: list[dict]) -> tuple[int, int]:
         params = {"selector": c["selector"]} if c.get("selector") else {}
         if key(str(sym), str(fam), params) in seen:
             continue
+        seen.add(key(str(sym), str(fam), params))
         added.append({
             "symbol": sym, "family": fam, "params": params,
             "n": 0, "exp_r": None, "max_dd_r": None, "t_stat": None,
@@ -367,10 +378,15 @@ def feed_docket(cands: list[dict]) -> tuple[int, int]:
             "why": "converted deterministically from the mined corpus; no performance claimed",
         })
     if added:
+        from libs.data.pit import stamp_or_refuse
+
+        added, refused = stamp_or_refuse(added, "local_converter")
+        if refused:
+            raise ValueError(f"Local converter refused {len(refused)} unstamped candidates")
         docket.extend(added)
-        tmp = DOCKET.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(docket), encoding="utf-8")
-        tmp.replace(DOCKET)
+        from research.merge_hypotheses import _write_docket_atomically
+
+        _write_docket_atomically(DOCKET, docket)
     return len(added), len(docket)
 
 

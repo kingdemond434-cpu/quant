@@ -637,6 +637,8 @@ STATE_PREFIXES: tuple[str, ...] = (
 #: stop, recurring because a later organ chose the same wrong home. Named here rather than
 #: widened into a prefix, for the reason the paragraph above gives.
 STATE_FILES: frozenset[str] = frozenset({
+    "context/decision_journal.jsonl",
+    "docs/desk_lessons.jsonl",
     "desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
     "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
     "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json", "desks/mt5/mech_split.json",

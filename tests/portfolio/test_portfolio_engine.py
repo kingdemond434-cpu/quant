@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 from migrations import MIGRATIONS
-from tests.portfolio.conftest import constant_correlation, make_alpha, synthetic_returns
 
 from libs.portfolio.analytics import portfolio_analytics
 from libs.portfolio.engine import PortfolioEngine, build_portfolio
@@ -17,6 +16,7 @@ from libs.risk.instruments import Factor
 from libs.store.audit import verify_audit_chain
 from libs.store.connection import Database
 from libs.store.migrations import run_migrations
+from tests.portfolio.conftest import constant_correlation, make_alpha, synthetic_returns
 
 _LOOSE = PortfolioConstraints(max_weight=0.5, max_factor_weight=1.0, max_asset_class_weight=1.0)
 

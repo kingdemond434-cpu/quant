@@ -5,7 +5,7 @@ source state, corpus ledger, mechanism dedupe and downstream artifact across all
 deep-forest protocol and Claude's miners remain untouched.
 
 YouTube caption access is attempted and truthfully classified.  A description is never labelled a
-transcript; datacenter blocking becomes ``UNAVAILABLE`` with the error retained.
+transcript; datacenter blocking becomes ``BLOCKED`` with the error retained.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ import html
 import json
 import re
 import ssl
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -185,12 +186,15 @@ def _refused(exc: BaseException, what: str) -> dict[str, object]:
     a reader that only sees "blocked" cannot pick between them.
     """
     status = getattr(exc, "code", None)
+    reason = (f"{what} refused: HTTP {status}" if status is not None
+              else f"{what} failed at the transport: {type(exc).__name__}: {exc}")
+    if isinstance(exc, urllib.error.HTTPError):
+        exc.close()
     return {
         "transcript_state": TRANSCRIPT_BLOCKED,
         "text": "",
         "http_status": status,
-        "reason": (f"{what} refused: HTTP {status}" if status is not None
-                   else f"{what} failed at the transport: {type(exc).__name__}: {exc}"),
+        "reason": reason,
     }
 
 

@@ -45,7 +45,10 @@ from __future__ import annotations
 
 import json
 import math
-from collections.abc import Callable, Iterable, Mapping, Sequence
+import sqlite3
+import uuid
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -355,10 +358,97 @@ def _count(conn: Any, sql: str, params: Sequence[Any]) -> int | None:
         return None
 
 
+@contextmanager
+def _regional_census(conn: Any, cutoff: str) -> Iterator[dict[str, str] | None]:
+    """One exact SQL census per report, rather than rescanning millions of rows per forest.
+
+    Native SQLite LIKE/IN semantics and missing-table/column UNMEASURED results
+    are retained. Temporary tables live inside a private rolled-back savepoint.
+    """
+    if not isinstance(conn, sqlite3.Connection):
+        yield None
+        return
+    name = "region_census_" + uuid.uuid4().hex
+    conn.execute(f"SAVEPOINT {name}")
+    tables: dict[str, str] = {}
+    try:
+        queries = {
+            "sources": ("SELECT lower(COALESCE(country,'')) country, COUNT(*) n "
+                        "FROM sources WHERE first_seen>=? "
+                        "GROUP BY lower(COALESCE(country,''))", (cutoff,)),
+            "discoveries_total": ("SELECT generator, COUNT(*) n FROM discoveries "
+                                  "GROUP BY generator", ()),
+            "discoveries_window": ("SELECT generator, COUNT(*) n FROM discoveries "
+                                   "WHERE created_at>=? GROUP BY generator", (cutoff,)),
+            "cells": ("SELECT generator, COUNT(*) n FROM discoveries WHERE "
+                      "COALESCE(generated_cells,0)+COALESCE(compiled_cells,0)+"
+                      "COALESCE(queued_cells,0)+COALESCE(tested_cells,0)>0 "
+                      "GROUP BY generator", ()),
+            "candidates": ("SELECT generator, COUNT(*) n FROM research_candidates "
+                           "GROUP BY generator", ()),
+        }
+        # Three discovery metrics share the same grouping population. Scan it
+        # once while keeping absent columns independently UNMEASURED.
+        try:
+            columns = {str(row[1]) for row in conn.execute("PRAGMA table_info(discoveries)")}
+            expressions = {"discoveries_total": "COUNT(*)"}
+            parameters: list[Any] = []
+            if "created_at" in columns:
+                expressions["discoveries_window"] = (
+                    "SUM(CASE WHEN created_at>=? THEN 1 ELSE 0 END)")
+                parameters.append(cutoff)
+            if {"generated_cells", "compiled_cells", "queued_cells", "tested_cells"} <= columns:
+                expressions["cells"] = (
+                    "SUM(CASE WHEN COALESCE(generated_cells,0)+COALESCE(compiled_cells,0)+"
+                    "COALESCE(queued_cells,0)+COALESCE(tested_cells,0)>0 THEN 1 ELSE 0 END)")
+            grouped = name + "_discovery_grouped"
+            selection = ", ".join(f"{expression} AS {metric}"
+                                  for metric, expression in expressions.items())
+            # UUID table names and the expression dictionary above are internal constants.
+            conn.execute(f"CREATE TEMP TABLE {grouped} AS SELECT generator, {selection} "  # noqa: S608
+                         "FROM discoveries GROUP BY generator", parameters)
+            for metric in ("discoveries_total", "discoveries_window", "cells"):
+                queries.pop(metric)
+                if metric in expressions:
+                    table = name + "_" + metric
+                    conn.execute(f"CREATE TEMP VIEW {table} AS "  # noqa: S608
+                                 f"SELECT generator, {metric} AS n FROM {grouped}")
+                    tables[metric] = table
+        except sqlite3.Error:
+            # Preserve independent query failures on incomplete older schemas.
+            pass
+        for metric, (query, params) in queries.items():
+            table = name + "_" + metric
+            try:
+                conn.execute(f"CREATE TEMP TABLE {table} AS {query}", params)
+            except sqlite3.Error:
+                continue
+            tables[metric] = table
+        yield tables
+    finally:
+        conn.execute(f"ROLLBACK TO {name}")
+        conn.execute(f"RELEASE {name}")
+
+
+def _census_count(conn: Any, census: Mapping[str, str], metric: str,
+                  patterns: Sequence[str], column: str = "n") -> int | None:
+    table = census.get(metric)
+    if table is None:
+        return None
+    if metric == "sources":
+        clause = "country IN (" + ",".join("?" for _ in patterns) + ")"
+    else:
+        clause = " OR ".join("generator LIKE ?" for _ in patterns)
+    return _count(conn,  # identifiers are private UUID tables and fixed metric columns
+                  f"SELECT COALESCE(SUM({column}),0) FROM {table} WHERE ({clause})",  # noqa: S608
+                  patterns)
+
+
 def region_signals(forest_id: str, conn: Any = None, *, now: datetime | None = None,
                    window_days: int = DISCOVERY_WINDOW_DAYS,
                    reports_dir: Path | None = None,
-                   stale_hours: float = RESIDENT_STALE_HOURS) -> dict[str, Any]:
+                   stale_hours: float = RESIDENT_STALE_HOURS,
+                   _census: Mapping[str, str] | None = None) -> dict[str, Any]:
     """Resident present? Discovery in the trailing window? Candidates in the lattice?
 
     Every answer is an int or bool when the instrument could be read and None (UNMEASURED) with
@@ -429,22 +519,31 @@ def region_signals(forest_id: str, conn: Any = None, *, now: datetime | None = N
     # Only "?" placeholder lists and the OR-joined `generator LIKE ?` clause are interpolated
     # below; every value travels as a bound parameter, which is what S608 cannot see.
     marks = ",".join("?" for _ in toks)
-    out["sources_window"] = _count(
-        conn, f"SELECT COUNT(*) FROM sources WHERE lower(COALESCE(country,'')) IN ({marks}) "  # noqa: S608
-              f"AND first_seen >= ?", [*toks, cutoff])
     pats = [f"{fid}:%", f"%:{fid}:%", f"%:{fid}"]
-    gen = " OR ".join("generator LIKE ?" for _ in pats)
-    out["discoveries_window"] = _count(
-        conn, f"SELECT COUNT(*) FROM discoveries WHERE ({gen}) AND created_at >= ?",  # noqa: S608
-        [*pats, cutoff])
-    out["discoveries_total"] = _count(
-        conn, f"SELECT COUNT(*) FROM discoveries WHERE ({gen})", pats)  # noqa: S608
-    # ---- the lattice: discoveries that produced cells, plus candidates the forest generated ---
-    cells = _count(
-        conn, f"SELECT COUNT(*) FROM discoveries WHERE ({gen}) AND (COALESCE(generated_cells,0)"  # noqa: S608
-              f" + COALESCE(compiled_cells,0) + COALESCE(queued_cells,0) + "
-              f"COALESCE(tested_cells,0)) > 0", pats)
-    cands = _count(conn, f"SELECT COUNT(*) FROM research_candidates WHERE ({gen})", pats)  # noqa: S608
+    if _census is not None:
+        out["sources_window"] = _census_count(conn, _census, "sources", toks)
+        out["discoveries_window"] = _census_count(
+            conn, _census, "discoveries_window", pats)
+        out["discoveries_total"] = _census_count(conn, _census, "discoveries_total", pats)
+        cells = _census_count(conn, _census, "cells", pats)
+        cands = _census_count(conn, _census, "candidates", pats)
+    else:
+        out["sources_window"] = _count(
+            conn, f"SELECT COUNT(*) FROM sources WHERE lower(COALESCE(country,'')) IN ({marks}) "  # noqa: S608
+                  f"AND first_seen >= ?", [*toks, cutoff])
+        pats = [f"{fid}:%", f"%:{fid}:%", f"%:{fid}"]
+        gen = " OR ".join("generator LIKE ?" for _ in pats)
+        out["discoveries_window"] = _count(
+            conn, f"SELECT COUNT(*) FROM discoveries WHERE ({gen}) AND created_at >= ?",  # noqa: S608
+            [*pats, cutoff])
+        out["discoveries_total"] = _count(
+            conn, f"SELECT COUNT(*) FROM discoveries WHERE ({gen})", pats)  # noqa: S608
+        # Lattice: discoveries that produced cells plus candidates the forest generated.
+        cells = _count(
+            conn, f"SELECT COUNT(*) FROM discoveries WHERE ({gen}) AND (COALESCE(generated_cells,0)"  # noqa: S608
+                  f" + COALESCE(compiled_cells,0) + COALESCE(queued_cells,0) + "
+                  f"COALESCE(tested_cells,0)) > 0", pats)
+        cands = _count(conn, f"SELECT COUNT(*) FROM research_candidates WHERE ({gen})", pats)  # noqa: S608
     if cells is None and cands is None:
         out["unmeasured"].append("lattice")
     else:
@@ -596,9 +695,12 @@ def parity_report(regions: Sequence[str] | None = None, *, conn: Any = None,
     at = now or datetime.now(tz=UTC)
     ids = tuple(F.forest(r).id for r in regions) if regions else tuple(F.FORESTS)
     depths = {fid: region_depth(fid, resolver=resolver, reg=reg) for fid in ids}
-    signals = {fid: region_signals(fid, conn, now=at, window_days=window_days,
-                                   reports_dir=reports_dir, stale_hours=stale_hours)
-               for fid in ids}
+    cutoff = (at - timedelta(days=int(window_days))).isoformat()
+    with _regional_census(conn, cutoff) as census:
+        signals = {fid: region_signals(fid, conn, now=at, window_days=window_days,
+                                       reports_dir=reports_dir, stale_hours=stale_hours,
+                                       _census=census)
+                   for fid in ids}
     debts = {fid: coverage_debt(fid, depth=depths[fid], signals=signals[fid]) for fid in ids}
     med = median(d.score_mean for d in depths.values()
                  if d.kind == "regional" and d.score_mean is not None)
