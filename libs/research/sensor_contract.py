@@ -57,12 +57,14 @@ source diversity and the publication->receipt and receipt->classification latenc
 """
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
 import math
 import os
 import sys
 import threading
+import time
 from collections import Counter
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -379,6 +381,20 @@ def default_root() -> Path:
     return Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / "sensors"
 
 
+class LedgerLockTimeout(RuntimeError):
+    """Another writer held the ledger lock past `LOCK_DEADLINE_S`. Nothing is appended: a hung
+    holder costs this pass its rows (the producer re-sends them next pass), never the cycle."""
+
+
+#: The longest a writer waits for the ledger lock. A normal append holds it for well under a
+#: second; a holder past this is hung, and waiting on it would stall every producer and the
+#: hourly leg behind it.
+LOCK_DEADLINE_S = float(os.environ.get("QUANT_SENSOR_LOCK_DEADLINE_S") or 60.0)
+#: The only errors that mean "someone else holds it, try again": EWOULDBLOCK/EAGAIN from flock,
+#: EACCES/EDEADLK from msvcrt. Anything else (EBADF, ENOLCK, EIO) is permanent and raised.
+_LOCK_BUSY = frozenset({errno.EAGAIN, errno.EWOULDBLOCK, errno.EACCES, errno.EDEADLK})
+
+
 class LedgerIndexCorrupt(RuntimeError):
     """The revision index exists and cannot be read. Nothing is appended and nothing is reset:
     a silently re-created index would re-admit every vintage as new and every revision as a
@@ -427,6 +443,9 @@ class SensorLedger:
         drops the other's rows while its watermark claims their bytes. Each writer has its own
         temp file. A shard cut below its watermark (or removed) rebuilds the whole index from the
         shards, so an index entry never outlives the row it was derived from.
+      * THE WAIT IS BOUNDED (`LOCK_DEADLINE_S`): a writer that cannot get the lock in time gets
+        status LOCK_TIMEOUT and appends nothing, so a hung holder never stalls the producers or
+        the hourly leg; only "busy" errors are retried, a permanent one (EBADF) is raised.
     `as_of` answers what the ledger said a key was worth at any instant -- by default on the
     DESK's clock (the later of world-knowable and received), or on the world clock with
     basis="world"; `latest` the newest.
@@ -467,18 +486,7 @@ class SensorLedger:
             self.root.mkdir(parents=True, exist_ok=True)
             fh = self.lock_path.open("a+b")
             try:
-                if sys.platform.startswith("win"):
-                    import msvcrt
-                    fh.seek(0)
-                    while True:
-                        try:
-                            msvcrt.locking(fh.fileno(), msvcrt.LK_LOCK, 1)
-                            break
-                        except OSError:              # LK_LOCK gives up after ~10s: keep waiting
-                            continue
-                else:
-                    import fcntl
-                    fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+                self._acquire(fh)
                 self._lock_depth = 1
                 try:
                     yield
@@ -493,6 +501,29 @@ class SensorLedger:
                         fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
             finally:
                 fh.close()
+
+    def _acquire(self, fh: Any) -> None:
+        """Non-blocking attempts until `LOCK_DEADLINE_S`: busy is retried, anything else is
+        raised, and the deadline raises `LedgerLockTimeout`."""
+        deadline = time.monotonic() + LOCK_DEADLINE_S
+        pause = 0.005
+        while True:
+            try:
+                if sys.platform.startswith("win"):
+                    import msvcrt
+                    fh.seek(0)
+                    msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return
+            except OSError as exc:
+                if exc.errno not in _LOCK_BUSY:
+                    raise
+            if time.monotonic() >= deadline:
+                raise LedgerLockTimeout(f"{self.lock_path} held past {LOCK_DEADLINE_S:.0f}s")
+            time.sleep(pause)
+            pause = min(pause * 2, 0.25)
 
     @staticmethod
     def _entry(raw: Any) -> dict[str, Any]:
@@ -739,8 +770,13 @@ class SensorLedger:
     def append(self, observations: Iterable[SensorObservation],
                now: datetime | None = None) -> dict[str, Any]:
         """Append what is new; a new vintage becomes a revision row. Returns the census."""
-        with self._locked():
-            return self._append_locked(observations, now)
+        try:
+            with self._locked():
+                return self._append_locked(observations, now)
+        except LedgerLockTimeout as exc:
+            return {"status": "LOCK_TIMEOUT", "why": str(exc), "appended": 0,
+                    "duplicates": 0, "revisions": 0, "conflicts": 0, "refused": 0,
+                    "refusals": [], "shards": []}
 
     def _append_locked(self, observations: Iterable[SensorObservation],
                        now: datetime | None) -> dict[str, Any]:
@@ -1051,6 +1087,8 @@ def digest(ledger: SensorLedger | None = None, now: datetime | None = None,
         index_status = "OK"
     except LedgerIndexCorrupt as exc:
         index, index_status = {}, f"INDEX_CORRUPT: {exc}"
+    except LedgerLockTimeout as exc:
+        index, index_status = {}, f"LOCK_TIMEOUT: {exc}"
     per_day: dict[str, Any] = {}
     for back in range(max(1, days)):
         day = (when - timedelta(days=back)).date().isoformat()
@@ -1062,7 +1100,7 @@ def digest(ledger: SensorLedger | None = None, now: datetime | None = None,
         "schema": "sensor_ledger_digest/1",
         "at": when.isoformat(timespec="seconds"),
         "root": str(led.root),
-        "status": ("INDEX_CORRUPT" if index_status != "OK" else
+        "status": (index_status.split(":", 1)[0] if index_status != "OK" else
                    "MEASURED" if shards else UNMEASURED),
         "why": (index_status if index_status != "OK" else
                 "" if shards else "the ledger has no observation shard on this host yet"),

@@ -449,3 +449,35 @@ def test_rows_since_streams_only_new_whole_lines(tmp_path) -> None:
     more, off2 = led.rows_since(day, off)
     assert [r["value"] for r in more] == [95.0] and off2 > off
     assert led.rows_since(day, 10 ** 9)[0][0]["value"] == 120.0   # rotated: restart
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="holds the lock with flock")
+def test_a_hung_lock_holder_times_out_and_appends_nothing(tmp_path, monkeypatch) -> None:
+    import fcntl
+    monkeypatch.setattr(sc, "LOCK_DEADLINE_S", 0.3)
+    led = sc.SensorLedger(tmp_path)
+    tmp_path.mkdir(exist_ok=True)
+    with led.lock_path.open("a+b") as holder:
+        fcntl.flock(holder.fileno(), fcntl.LOCK_EX)          # a hung writer
+        out = led.append([_series("A", 1.0, T0 + timedelta(seconds=30))])
+        assert out["status"] == "LOCK_TIMEOUT" and out["appended"] == 0
+        assert not led.obs_dir.exists()
+        assert sc.digest(sc.SensorLedger(tmp_path), now=T0)["status"] == "LOCK_TIMEOUT"
+    assert sc.SensorLedger(tmp_path).append(
+        [_series("A", 1.0, T0 + timedelta(seconds=30))])["appended"] == 1
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="patches flock")
+def test_a_permanent_lock_error_is_raised_not_retried_forever(tmp_path, monkeypatch) -> None:
+    import errno
+    import fcntl
+    calls = []
+
+    def bad(fd: int, op: int) -> None:
+        calls.append(op)
+        raise OSError(errno.EBADF, "bad file descriptor")
+
+    monkeypatch.setattr(fcntl, "flock", bad)
+    with pytest.raises(OSError):
+        sc.SensorLedger(tmp_path).append([_series("A", 1.0, T0 + timedelta(seconds=30))])
+    assert len(calls) == 1
