@@ -68,6 +68,8 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 REGISTRY = BASE / "data" / "asia_sources.json"
+from libs.ops import token_refresh as _token_refresh  # noqa: E402
+
 VAULT = BASE / "data" / "lake" / "vault"
 SERIES = BASE / "data" / "lake" / "series"
 STATE = BASE / "data" / "lake" / "collector_state.json"
@@ -146,8 +148,12 @@ def _write_atomic(p: Path, text: str) -> None:
 
 
 def _key_present(src: dict[str, Any]) -> bool:
-    import os
     env = str(src.get("key_env") or "")
+    if env in _token_refresh.MANAGED:
+        # SHORT-LIVED TOKENS (JQUANTS_TOKEN, CDSE_TOKEN, MYFXBOOK_SESSION) come from
+        # libs.ops.token_refresh: a pasted env value still wins, else a cached or freshly minted
+        # token from the long-lived credential. Present means "a valid token is in hand".
+        return _token_refresh.get_token(env).ok
     return bool(env and os.environ.get(env))
 
 
@@ -358,7 +364,13 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                            "access": access,
                            "collected_utc": datetime.now(UTC).isoformat(timespec="seconds")}
 
-    if access in ("key", "paid") and not _key_present(src):
+    key_env = str(src.get("key_env") or "")
+    tok = (_token_refresh.get_token(key_env) if key_env in _token_refresh.MANAGED else None)
+    present = tok.ok if tok is not None else _key_present(src)
+    if access in ("key", "paid") and not present:
+        if tok is not None:
+            rec.update({"token_status": tok.status, "token_http": tok.http,
+                        "token_detail": tok.detail})
         rec.update({"status": "UNCONFIGURED", "key_env": src.get("key_env"),
                     "why": (f"declares {access} access and {src.get('key_env') or 'no key env'} "
                             f"is not set. A named state, never a failure and never a silent "
@@ -393,7 +405,12 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
             headers["If-Modified-Since"] = str(validators["last_modified"])
     headers.update(_declared_headers(src))
     body_out = _declared_form(src)
-    req = urllib.request.Request(url, data=body_out, headers=headers)
+    send_url = url
+    if tok is not None:
+        # The token goes on the request only for the provider's own API host; `url` (what is
+        # recorded in the row and the vault) never carries it.
+        send_url, headers = _token_refresh.apply_to_request(tok, url, headers)
+    req = urllib.request.Request(send_url, data=body_out, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
             status = int(getattr(r, "status", 0) or 0)
@@ -409,13 +426,16 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                                 "GET). The vault's newest blob is still current -- nothing new, "
                                 "which is not the same as nothing fetched.")})
             return rec
+        if code == 401 and key_env in _token_refresh.MANAGED:
+            _token_refresh.invalidate(key_env)  # re-minted on the next pass
         rec.update({"status": "HTTP_ERROR", "http": code,
                     "why": (f"HTTP {code}" if code not in (401, 403)
                             else f"HTTP {code}: authentication or access control, not a route "
                                  f"change")})
         return rec
     except (urllib.error.URLError, TimeoutError, OSError) as e:
-        rec.update({"status": "UNREACHABLE", "why": f"{type(e).__name__}: {str(e)[:90]}"})
+        rec.update({"status": "UNREACHABLE",
+                    "why": _token_refresh.scrub(f"{type(e).__name__}: {str(e)[:90]}")})
         return rec
     except Exception as e:
         rec.update({"status": "UNMEASURED", "why": f"{type(e).__name__}: {str(e)[:90]}"})

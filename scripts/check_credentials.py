@@ -22,12 +22,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 SECRETS = ROOT / "data/secrets"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 @dataclass(frozen=True)
@@ -201,6 +205,20 @@ def _inspect(cred: Credential) -> dict[str, Any]:
     return row
 
 
+def _tokens() -> list[dict[str, Any]]:
+    try:
+        from libs.ops import token_refresh
+        return token_refresh.status_report()
+    except Exception as e:  # an inventory never crashes on one section
+        return [{"error": f"token_refresh unavailable ({type(e).__name__})"}]
+
+
+def _ts(v: Any) -> str:
+    if not isinstance(v, (int, float)):
+        return "-"
+    return datetime.fromtimestamp(float(v), UTC).isoformat(timespec="minutes")
+
+
 def build() -> dict[str, Any]:
     rows = [_inspect(c) for c in CREDENTIALS]
     ok = [r for r in rows if r["status"] == "OK"]
@@ -225,6 +243,10 @@ def build() -> dict[str, Any]:
         "worst_first": [r["file"] for r in broken] + [r["file"] for r in rows
                                                       if r["status"] == "MISSING"],
         "credentials": rows,
+        # SHORT-LIVED TOKENS minted from env credentials by libs.ops.token_refresh: presence of
+        # the long-lived credential, the cached token's expiry and the last refresh status. Never
+        # a value; reading this makes no network call.
+        "short_lived_tokens": _tokens(),
         "note": "presence and shape only -- no key is printed, and none is validated against a "
                 "venue. This output is safe to paste.",
     }
@@ -262,6 +284,20 @@ def main() -> int:
             print(f"       WITHOUT IT: {r['without']}")
             print(f"       HOW:        {r['how']}")
         print()
+
+    print("SHORT-LIVED TOKENS (minted from the long-lived env credential; no values shown):")
+    for t in rep["short_lived_tokens"]:
+        if "error" in t:
+            print(f"  {t['error']}")
+            continue
+        long_ = t["long_lived_set"] or ("ABSENT -- set " + " or ".join(t["long_lived_options"]))
+        print(f"  {t['env']:<18} long-lived: {long_}")
+        print(f"  {'':<18} pasted short-lived: {'yes' if t['short_lived_env_set'] else 'no'}"
+              f"   cached expiry: {_ts(t['cached_expires_at']) if t['cached_token'] else '-'}"
+              f"   last refresh: {t['last_status']}"
+              f"{' HTTP ' + str(t['last_http']) if t['last_http'] else ''}"
+              f" at {_ts(t['last_attempt_at'])}")
+    print()
 
     if not a.missing:
         print("UNLOCKS, for the ones that are absent:")
