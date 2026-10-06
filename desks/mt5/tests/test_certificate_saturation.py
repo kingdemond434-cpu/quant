@@ -507,3 +507,25 @@ def test_breadth_mandate_fences_n_effective_cert() -> None:
     # a floor recorded on the git snapshot is not compared against the box's live set
     snap = {**floor, "n_effective_cert_floor_basis": "git_snapshot"}
     assert fence({"certificates": cert}, snap)["status"] == "BASIS_CHANGED"
+
+
+def test_auction_publishes_separate_breadth_and_quality_scores_per_producer(sat: dict) -> None:
+    rows = _docket()
+    ev = cs.stamp(rows, sat, seconds_per_cell=36.0)
+    x, y = ev["producers"]["miner_x"], ev["producers"]["miner_y"]
+    # duplicates in saturated ground buy less expected k_eff than fresh ground
+    assert y["expected_delta_k_eff"] / y["rows"] > x["expected_delta_k_eff"] / x["rows"]
+    assert x["judge_compute_hours"] == pytest.approx(60 * 36 / 3600)
+    scores = ra.producer_scores({"producers": ev["producers"]}, {"miner_y": "discovery"},
+                                run_hours={"miner_y": 0.5})
+    py = scores["producers"]["miner_y"]
+    assert py["hours_basis"] == "judge + generation"
+    assert py["breadth_per_compute_hour"] == pytest.approx(
+        y["expected_delta_k_eff"] / (y["judge_compute_hours"] + 0.5), rel=1e-3)
+    assert py["quality_per_compute_hour"] is None and "matched_fills" in py["quality_status"]
+    assert scores["producers"]["miner_x"]["department"] == "UNMAPPED"
+    assert scores["departments"]["discovery"]["breadth_per_compute_hour"] == py[
+        "breadth_per_compute_hour"]
+    # the clearing is untouched: bids carry the score but the bid itself is unchanged
+    deps = ("discovery", "validate")
+    assert ra.bids(deps, {}, {}, {}, {}, {})["discovery"]["bid"] == 1.0

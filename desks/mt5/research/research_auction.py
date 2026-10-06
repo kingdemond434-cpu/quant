@@ -52,6 +52,8 @@ BOTTLENECK = R / "BOTTLENECK_LAW.json"
 #: which leaves the auction exactly as it was.
 ATTACK = R / "BOTTLENECK_ATTACK.json"
 REPLENISH = R / "ALPHA_REPLENISHMENT.json"
+#: per-producer docket feedback from the certificate saturation map (judge_coverage leg)
+FEEDBACK = R / "BREADTH_FEEDBACK.json"
 FLOOR, CEIL = 0.5, 2.0          # research_budget.FLOOR / CEIL, the consumer's clip
 WINDOW_DAYS = 7.0
 BOUNTY_WEIGHT = 0.25
@@ -167,6 +169,61 @@ def clear(bid_rows: dict[str, dict[str, Any]]) -> dict[str, float]:
             for d, r in bid_rows.items()}
 
 
+def producer_scores(feedback: dict[str, Any], legs: dict[str, str],
+                    run_hours: dict[str, float] | None = None) -> dict[str, Any]:
+    """Two SEPARATE scores per producer (breadth law 22, multi-objective auction 17):
+
+        breadth_per_compute_hour  expected dk_eff of its docket output (P(survivor) x marginal
+                                  k_eff at the row's coupling to the certified book) per hour of
+                                  judge time its rows cost plus its own generation hours
+        quality_per_compute_hour  UNMEASURED until execution.matched_fills > 0 -- realised edge
+                                  quality is what pays the quality channel, and it has no fills
+
+    Published beside the bids; neither moves the clearing (the bid formula is unchanged)."""
+    if run_hours is None:
+        try:
+            from libs.ops.compute_ledger import cost_by_run
+            run_hours = {str(k): float(v.get("hours") or 0.0)
+                         for k, v in cost_by_run(window_days=int(WINDOW_DAYS)).items()}
+        except Exception:
+            run_hours = {}
+    rows: dict[str, Any] = {}
+    by_dept: dict[str, list[float]] = {}
+    for src, r in _dct(feedback.get("producers")).items():
+        if not isinstance(r, dict):
+            continue
+        edk = r.get("expected_delta_k_eff")
+        judge_h = r.get("judge_compute_hours")
+        gen_h = run_hours.get(str(src))
+        hours = (float(judge_h or 0.0) + float(gen_h or 0.0)) or None
+        per_h = (round(float(edk) / hours, 6)
+                 if isinstance(edk, (int, float)) and hours else None)
+        dept = legs.get(str(src))
+        rows[str(src)] = {
+            "department": dept or "UNMAPPED", "rows": r.get("rows"),
+            "expected_delta_k_eff": edk, "judge_compute_hours": judge_h,
+            "generation_compute_hours": gen_h,
+            "hours_basis": ("judge + generation" if gen_h is not None and judge_h is not None
+                            else "judge only (generation hours: no ledger run of this name)"
+                            if judge_h is not None else "UNMEASURED"),
+            "breadth_per_compute_hour": per_h,
+            "quality_per_compute_hour": None,
+            "quality_status": r.get("quality_status") or "UNMEASURED: matched_fills is 0",
+            "duplicate_share": r.get("duplicate_share"), "state": r.get("state"),
+        }
+        if dept and isinstance(edk, (int, float)) and hours:
+            acc = by_dept.setdefault(dept, [0.0, 0.0])
+            acc[0] += float(edk)
+            acc[1] += hours
+    return {"producers": rows,
+            "departments": {d: {"expected_delta_k_eff": round(a, 6), "hours": round(h, 4),
+                                "breadth_per_compute_hour": round(a / h, 6) if h else None,
+                                "quality_per_compute_hour": None}
+                            for d, (a, h) in by_dept.items()},
+            "status": "MEASURED" if rows else "UNMEASURED",
+            "why": None if rows else "BREADTH_FEEDBACK.json absent or carries no producers"}
+
+
 def build(now: datetime | None = None, conn: Any | None = None,
           bounty: dict[str, Any] | None = None, bottleneck: dict[str, Any] | None = None,
           replenish: dict[str, Any] | None = None, hours: dict[str, float] | None = None,
@@ -210,6 +267,14 @@ def build(now: datetime | None = None, conn: Any | None = None,
             unmeasured.append(f"{name}.json absent: that demand term is 0")
     rows = bids(departments, hours, yields, bounty, bottleneck, replenish)
     factors = clear(rows)
+    scores = producer_scores(_read(FEEDBACK), legs)
+    if scores["status"] != "MEASURED":
+        unmeasured.append(f"producer scores: {scores['why']}")
+    for dept_name, r in rows.items():
+        dep = _dct(scores["departments"].get(dept_name))
+        r["breadth_per_compute_hour"] = dep.get("breadth_per_compute_hour")
+        r["quality_per_compute_hour"] = None
+        r["quality_status"] = "UNMEASURED: execution.matched_fills is 0"
     ranked = sorted(factors.items(), key=lambda kv: -kv[1])
     winners = [d for d, f in ranked if f > 1.0]
     losers = [d for d, f in ranked if f < 1.0]
@@ -227,6 +292,7 @@ def build(now: datetime | None = None, conn: Any | None = None,
         "departments": list(departments), "bids": rows, "factors": factors,
         "winners": winners, "losers": losers, "clip": [FLOOR, CEIL],
         "proposals": proposals, "unmeasured": unmeasured,
+        "producer_scores": scores,
         "consumer": ("research_budget.budget_s (_auction_factor: a leg's seconds x the factor of "
                      "its department while this file is < 3 h old); meta_controller board shape "
                      "under `proposals`; research_dashboard"),

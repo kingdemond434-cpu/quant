@@ -1670,6 +1670,32 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
     if not isinstance(d, Mapping) or d.get("status") != MEASURED:
         return {"status": UNMEASURED, "why": why, "rows": len(rows)}
     sc = Scorer(d)
+    # EXPECTED dk_eff AT GENERATION (breadth law 13, producer law 9): each row's P(survivor) x the
+    # marginal k_eff of admitting it at its effective coupling to the certified book
+    # (rho = 1 - novelty credit). Signed: a duplicate's marginal is negative, which is the point.
+    cert_h = d.get("certificates") if isinstance(d.get("certificates"), Mapping) else {}
+    n_book, k_book = cert_h.get("n_certificates"), cert_h.get("n_effective_certificates")
+    g_yield = d.get("global_survivor_yield")
+    try:
+        from libs.research.breadth_credit import marginal_k_eff
+    except Exception:                                                   # pragma: no cover
+        marginal_k_eff = None  # type: ignore[assignment]
+
+    def expected_dk(row: Mapping[str, Any], credit: float) -> float | None:
+        if marginal_k_eff is None or not isinstance(n_book, (int, float)) \
+                or not isinstance(k_book, (int, float)) or n_book <= 0 or k_book <= 0:
+            return None
+        pre = row.get("premortem") if isinstance(row.get("premortem"), Mapping) else {}
+        ps = _num(pre.get("p_survivor"))
+        if ps is None:
+            ps = _num(g_yield)
+        if ps is None:
+            return None
+        try:
+            return ps * marginal_k_eff(n_book, k_book, max(0.0, min(1.0, 1.0 - credit)))
+        except ValueError:
+            return None
+
     prod: dict[str, dict[str, Any]] = {}
     exc_count: Counter[str] = Counter()
     by_cluster: Counter[str] = Counter()
@@ -1696,12 +1722,16 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
         p = prod.setdefault(src, {"rows": 0, "duplicates": 0, "saturated_ground": 0,
                                   "quality": 0, "credit_sum": 0.0, "clusters": Counter(),
                                   "dup_groups": set(), "new_clusters": set(),
-                                  "method": method_of(src)})
+                                  "method": method_of(src), "exp_dk": 0.0, "exp_n": 0})
         p["rows"] += 1
         p["duplicates"] += row["_dup"]
         p["saturated_ground"] += 1 if s["saturated_ground"] else 0
         p["quality"] += row["_satq"]
         p["credit_sum"] += float(s["breadth_value"])
+        edk = expected_dk(row, float(s["novelty_credit"]))
+        if edk is not None:
+            p["exp_dk"] += edk
+            p["exp_n"] += 1
         p["clusters"][s["cluster"]] += 1
         if s["duplicate"]:
             p["dup_groups"].add(s["nearest_cluster"])
@@ -1726,9 +1756,15 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
             "provisional_breadth_credit": round(len(p["new_clusters"]) * 1.0
                                                 + p["credit_sum"] / max(p["rows"], 1), 4),
             "new_structural_clusters": len(p["new_clusters"]),
-            "delta_k_eff_per_compute_hour": (round(len(p["new_clusters"]) / hours, 6)
-                                             if hours else None),
-            "quality_per_compute_hour": None, "quality_status": UNMEASURED,
+            "expected_delta_k_eff": (round(p["exp_dk"], 6) if p["exp_n"] else None),
+            "expected_delta_k_eff_rows": p["exp_n"],
+            "judge_compute_hours": round(hours, 6) if hours else None,
+            # per JUDGE hour here; research_auction adds the producer's own generation hours
+            "delta_k_eff_per_compute_hour": (round(p["exp_dk"] / hours, 6)
+                                             if hours and p["exp_n"] else None),
+            "quality_per_compute_hour": None,
+            "quality_status": ("UNMEASURED: the quality channel is paid in realised edge, which "
+                               "needs execution.matched_fills > 0"),
             "top_clusters": dict(p["clusters"].most_common(5)),
             "state": ("RETARGET" if (p["rows"] >= RETARGET_MIN_ROWS
                                      and share >= RETARGET_SHARE) else "OK"),
