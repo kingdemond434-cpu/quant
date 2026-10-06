@@ -1,0 +1,557 @@
+{
+ "pit_audits": {
+  "deep_forest_claims": {
+   "n": 217,
+   "pit_ok": 11,
+   "impossible": 0,
+   "unmeasured": 206,
+   "pit_share": 0.05069124423963134,
+   "median_latency_s": 43855.0
+  },
+  "news_captures": {
+   "n": 116,
+   "pit_ok": 0,
+   "impossible": 0,
+   "unmeasured": 116,
+   "pit_share": 0.0,
+   "median_latency_s": null
+  },
+  "hypothesis_graph": {
+   "n": 50000,
+   "pit_ok": 0,
+   "impossible": 0,
+   "unmeasured": 50000,
+   "pit_share": 0.0,
+   "median_latency_s": null
+  },
+  "intelligence": {
+   "n": 1314,
+   "pit_ok": 0,
+   "impossible": 0,
+   "unmeasured": 1314,
+   "pit_share": 0.0,
+   "median_latency_s": null
+  }
+ },
+ "sources": {
+  "records": [
+   {
+    "source": "bis_eer",
+    "registry": {
+     "lifecycle": "DISCOVERED",
+     "source": "BIS stats API"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "macro",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading macro information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "cme_gc",
+    "registry": {
+     "lifecycle": "DISCOVERED",
+     "source": "CME Group public"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "cross_asset",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading cross_asset information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "cot",
+    "registry": {
+     "lifecycle": "CORE",
+     "source": "CFTC public"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "positioning",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading positioning information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "cot_fx",
+    "registry": {
+     "lifecycle": "CORE",
+     "source": "CFTC legacy futures-only (Socrata 6dca-aqww)",
+     "path": "data/cot/*.parquet",
+     "format": "parquet",
+     "ingested": "2026-08-16",
+     "provenance": "publicreporting.cftc.gov"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "positioning",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading positioning information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "eur_cot_blocked",
+    "registry": {
+     "lifecycle": "DISCOVERED",
+     "source": "CFTC"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "positioning",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading positioning information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "fred_macro",
+    "registry": {
+     "lifecycle": "CORE",
+     "source": "FRED API (fredgraph CSV, no key)",
+     "path": "data/lake/fred_*.parquet",
+     "format": "parquet",
+     "ingested": "2026-08-16",
+     "provenance": "fred.stlouisfed.org"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "macro",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading macro information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "gdelt",
+    "registry": {
+     "lifecycle": "DISCOVERED",
+     "source": "GDELT 2.0"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "event",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading event information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "lbma_vaults",
+    "registry": {
+     "lifecycle": "DISCOVERED",
+     "source": "LBMA"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "macro",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading macro information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "mt5_h1_universe",
+    "registry": {
+     "lifecycle": "INGESTED",
+     "source": "Vantage MT5 terminal (execution truth)",
+     "path": "data/universe/*_H1.parquet",
+     "format": "parquet",
+     "ingested": "2026-08-16",
+     "provenance": "MT5 copy_rates_from_pos"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "price_only",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading price_only information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "sge_benchmark",
+    "registry": {
+     "lifecycle": "DISCOVERED",
+     "source": "Shanghai Gold Exchange"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "cross_asset",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading cross_asset information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "shfe_gold",
+    "registry": {
+     "lifecycle": "DISCOVERED",
+     "source": "Shanghai Futures Exchange"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "cross_asset",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading cross_asset information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "spdr_gld_holdings",
+    "registry": {
+     "lifecycle": "DISCOVERED",
+     "source": "spdrgoldshares.com"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "positioning",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading positioning information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "swiss_customs_gold",
+    "registry": {
+     "lifecycle": "DISCOVERED",
+     "source": "Swiss Customs"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "macro",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading macro information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "wgc_goldhub",
+    "registry": {
+     "lifecycle": "DISCOVERED",
+     "source": "World Gold Council Goldhub"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "macro",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading macro information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   },
+   {
+    "source": "xauusd_scalp_bars",
+    "registry": {
+     "lifecycle": "RESEARCH-USEFUL",
+     "source": "Vantage Markets live MT5 terminal, read-only account",
+     "path": "data/universe/XAUUSD_M*.parquet",
+     "format": "parquet",
+     "ingested": "2026-08-22",
+     "provenance": "fetch_gold_scalp.py via MT5 copy_rates_from_pos"
+    },
+    "ingestion": [],
+    "vintage": [],
+    "join": [],
+    "info_class": "microstructure",
+    "gate_yield": {
+     "status": "UNMEASURED",
+     "why": "no gate verdict in the window on a family reading microstructure information"
+    },
+    "ingestion_status": {
+     "status": "UNMEASURED",
+     "why": "no ingestion_ledger unit names this source"
+    },
+    "vintage_status": {
+     "status": "UNMEASURED",
+     "why": "no vintage log: current-vintage reads are unaudited"
+    },
+    "joined": [
+     "registry"
+    ]
+   }
+  ],
+  "n_sources": 15,
+  "fully_joined": 0,
+  "orphans": {
+   "registry_only": [
+    "bis_eer",
+    "cme_gc",
+    "cot",
+    "cot_fx",
+    "eur_cot_blocked",
+    "fred_macro",
+    "gdelt",
+    "lbma_vaults",
+    "mt5_h1_universe",
+    "sge_benchmark",
+    "shfe_gold",
+    "spdr_gld_holdings",
+    "swiss_customs_gold",
+    "wgc_goldhub",
+    "xauusd_scalp_bars"
+   ],
+   "ingestion_only": [],
+   "vintage_only": []
+  },
+  "by_class": {
+   "macro": 5,
+   "cross_asset": 3,
+   "positioning": 4,
+   "event": 1,
+   "price_only": 1,
+   "microstructure": 1
+  },
+  "inputs": {
+   "registry": 15,
+   "ingestion_datasets": "UNMEASURED",
+   "vintage_series": 0
+  }
+ },
+ "gate_yield": {},
+ "acquisition": {
+  "scored_on": {
+   "rankers": "own_metric",
+   "landed": "gate_yield"
+  },
+  "open": 0,
+  "registered_now": 0,
+  "resolved_now": 0,
+  "calibration": {
+   "value_of_data": {
+    "metric": "vod.remaining_value",
+    "unit": "R of posterior sd",
+    "scale": null,
+    "resolved": 0,
+    "open": 0,
+    "status": "UNMEASURED",
+    "calibration": 1.0,
+    "spearman": null
+   },
+   "source_evig": {
+    "metric": "source.u_prior_sd",
+    "unit": "prior sd over targets",
+    "scale": null,
+    "resolved": 0,
+    "open": 0,
+    "status": "UNMEASURED",
+    "calibration": 1.0,
+    "spearman": null
+   },
+   "evig_acquisition": {
+    "metric": "evig.remaining",
+    "unit": "family currency",
+    "scale": null,
+    "resolved": 0,
+    "open": 0,
+    "status": "UNMEASURED",
+    "calibration": 1.0,
+    "spearman": null
+   },
+   "data_acquisition_scientist": {
+    "metric": "dataset.held_share",
+    "unit": "share of the observable held",
+    "scale": null,
+    "resolved": 0,
+    "open": 0,
+    "status": "UNMEASURED",
+    "calibration": 1.0,
+    "spearman": null
+   }
+  },
+  "top": [],
+  "reports_present": {
+   "value_of_data": false,
+   "source_evig": false,
+   "evig_acquisition": false,
+   "data_acquisition_scientist": false
+  },
+  "landed_on_gate_yield": {
+   "n": 0,
+   "retargeted": 0,
+   "baseline_stamped": 0,
+   "resolved_now": 0,
+   "calibration": {}
+  }
+ },
+ "metric": {
+  "pit_share": 0.0,
+  "calibrated_rankers": 0,
+  "sources": 15,
+  "sources_fully_joined": 0,
+  "gate_yield": null
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 1.567
+}

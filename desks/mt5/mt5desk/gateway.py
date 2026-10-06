@@ -33,6 +33,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -42,6 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import MetaTrader5 as mt5
 import pandas as pd
 from mt5desk import account_profile as _acct
+from mt5desk import order_door as _door
 from mt5desk import decision_core as _core
 from mt5desk import position_manager as _pm
 from mt5desk import provenance as _prov
@@ -110,6 +112,14 @@ PAUSED = BASE / "data" / "GATEWAY_PAUSED"
 TERMINAL = terminal_path()
 MAGIC = 341953
 
+#: ONE DOOR FOR MONEY (2026-09-30). Every `mt5.order_send` in this module -- the bracket, the
+#: family and scalp entries, every close, cancel, CLOSE_BY and stop move -- goes through
+#: `order_door.send`: broker `order_check` first, the answer validated (retcode, volume, price),
+#: one ledger row per attempt, an in-doubt send never repeated blind, and an exception logged
+#: and propagated, never swallowed. Bound here, once, so no call site can bypass it by
+#: accident; `log` is late-bound so the door writes to this gateway's own log.
+mt5 = _door.guard(mt5, caller="gateway", log=lambda m: log(m))
+
 #: The longest order comment THIS terminal accepts. MEASURED, not documented.
 #:
 #: MetaTrader documents 31 characters and the gateway truncated to `[:31]` accordingly. The
@@ -158,7 +168,7 @@ LEDGER_LOOKBACK_DAYS = 30
 #: for between 0.01 and 0.02 rounds to one end and realised heat misses target by a whole step.
 #: At 0.02 the same absolute step is 50% of the ticket. A FLOOR on the gold book only -- Q_OPT
 #: below decides the actual size and this never raises it.
-LOT = 0.02
+LOT = 0.01
 # RISK FRACTION OF EQUITY PER TRADE. Was 0.055, and that was not an arbitrary number: measured
 # full Kelly on the 3-leg gold book (E[ln(1+qR)] maximised over the daily portfolio series,
 # 5,728 trades, 2018-2026) is q* = 6.00%, so 5.5% was ~92% of Kelly, chosen deliberately.
@@ -248,6 +258,18 @@ from mt5desk.decision_core import (
 )
 from mt5desk.decision_core import (
     gold_book_lot as gold_book_lot,
+)
+from mt5desk.decision_core import (
+    ALLOCATOR_SOVEREIGN as ALLOCATOR_SOVEREIGN,
+)
+from mt5desk.decision_core import (
+    ALLOCATOR_SOVEREIGN_FILE as ALLOCATOR_SOVEREIGN_FILE,
+)
+from mt5desk.decision_core import (
+    allocator_sovereign as allocator_sovereign,
+)
+from mt5desk.decision_core import (
+    implementable_lot as implementable_lot,
 )
 from mt5desk.decision_core import (
     heat_budget as heat_budget,
@@ -680,8 +702,19 @@ def load_state() -> dict:
 
 
 def save_state(st: dict) -> None:
+    """Persist completely before replacing the last valid restart state."""
     STATE.parent.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps(st, indent=2, default=str), encoding="utf-8")
+    body = json.dumps(st, indent=2, default=str)
+    fd, temporary = tempfile.mkstemp(dir=STATE.parent, prefix=STATE.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(body)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, STATE)
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            os.unlink(temporary)
 
 
 def connect() -> bool:
@@ -731,6 +764,16 @@ def note_placement(st: dict, sleeve: str, orders: list) -> bool:
     # UNAVAILABLE IS NOT REJECTED (see `decision_core.placement_verdict`): a bracket the desk
     # declined to send because price sat inside the broker's freeze band is the strategy having
     # nothing to do today, not the venue refusing us.
+    # A DOOR REFUSAL IS NOT A FAILED PLACEMENT (2026-09-30). When the order door holds back a
+    # send on its own account (a duplicate of an in-doubt order that landed, or an in-doubt key
+    # it could not settle), nothing reached the venue and nothing was rejected; counting it
+    # would let two such refusals auto-pause the desk. Logged here, then left out of the streak.
+    # A refusal carrying the broker's own check retcode is not the door's and still counts.
+    for o in orders:
+        if o.get("door_refused"):
+            log(f"ORDER DOOR REFUSED [{sleeve}] {o.get('side')}: {o.get('door_reason')} -- "
+                f"not counted as a failed placement")
+    orders = [o for o in orders if not o.get("door_refused")]
     attempted, ok, diags = placement_verdict(orders)
     hist = st.setdefault("placement_health", {"consecutive_total_rejections": 0,
                                               "last_ok": None, "last_error": None})
@@ -841,6 +884,9 @@ def _state_vector_id() -> str:
 
 DECISIONS = BASE / "data" / "decision_ledger.jsonl"
 _PROCESS_INSTANCE_ID = f"{os.getpid()}:{datetime.now(UTC).isoformat(timespec='seconds')}"
+#: In-process cache of sleeve -> strategy-state identity, keyed by sleeves.json's mtime
+#: (47b75ca86, 2026-09-27). The -1.0 is a sentinel derived from the stat() contract -- no real
+#: mtime is negative -- so the first pass always reads the file. It sizes nothing.
 _SLEEVE_ID_CACHE: tuple[float, dict[str, str]] = (-1.0, {})
 
 
@@ -937,8 +983,8 @@ def _record_decision(**row) -> None:
         "portfolio": bool(row.get("portfolio_suppressed", False)),
         "risk": str(row.get("reason") or "") == "margin_guard",
         "execution": str(row.get("reason") or "") in {
-            "broker_rejected", "entry_inside_freeze_band", "shadow_not_armed",
-            "release_identity_refused"},
+            "broker_rejected", "entry_inside_freeze_band", "no_quote_at_decision",
+            "shadow_not_armed", "release_identity_refused"},
     })
     row.setdefault("process_quality", process_quality_verdict(
         {
@@ -1130,6 +1176,23 @@ def _record_intent(**row) -> str | None:
         return None
 
 
+def _recent_intents(limit: int = 5000) -> list[dict]:
+    """The last `limit` placement intents (for the restart reconcile's stop lookup). Never
+    raises: an unreadable ledger is an empty one, and the reconcile then names the stopless
+    position instead of restoring it."""
+    try:
+        lines = INTENTS.read_text("utf-8").splitlines()[-limit:]
+    except OSError:
+        return []
+    out: list[dict] = []
+    for ln in lines:
+        with contextlib.suppress(ValueError):
+            row = json.loads(ln)
+            if isinstance(row, dict):
+                out.append(row)
+    return out
+
+
 def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
                   sleeve_row: dict | None = None, blocked_side: str | None = None) -> dict:
     """Send the bracket legs that agree with the current book.
@@ -1189,6 +1252,18 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
         #     buy_stop 4357.47 vs ask 4371.25  (13.78 below)
         # Price had run past the range high between the range completing and the order going out,
         # which is the ordinary behaviour of a breakout, not an anomaly.
+        # NO QUOTE, NO ORDER. With no tick the legality check above cannot run, and this used to
+        # send both legs blind -- a buy_stop under the ask is rejected with 10015 at best and
+        # rests as the wrong order type at worst. Unavailable, same shape as the freeze band.
+        if _t is None:
+            why_noquote = "symbol_info_tick returned None; entry legality cannot be checked"
+            log(f"NOT AVAILABLE [{sleeve}] {side}: {why_noquote}")
+            sent.append({"side": side, "retcode": None, "unavailable": True,
+                         "comment": why_noquote})
+            _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+                             price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
+                             taken=False, reason="no_quote_at_decision", detail=why_noquote)
+            continue
         if _t is not None:
             legal, why_illegal = entry_is_legal(
                 float(s["price"]), side, float(_t.bid), float(_t.ask), _point, _lvl)
@@ -1230,10 +1305,18 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
         # written and nothing ever wrote it -- it is the one execution feature that cannot be
         # reconstructed afterwards. Recorded, never acted on.
         _t0 = time.perf_counter()
-        res = mt5.order_send(req)
+        # A RAISING SEND IS A FAILED LEG, NOT A CRASHED PASS. The exception used to escape before
+        # `note_placement` saved st["brackets"], so the pass forgot a leg the broker may already
+        # hold and could place it again next pass.
+        _send_exc: Exception | None = None
+        try:
+            res = mt5.order_send(req)
+        except Exception as exc:
+            res, _send_exc = None, exc
         _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
         code = res.retcode if res else None
-        why = diagnose(code, getattr(res, "comment", "") or "", _send_error(res))
+        why = (f"order_send raised {type(_send_exc).__name__}: {_send_exc}" if _send_exc is not None
+               else diagnose(code, getattr(res, "comment", "") or "", _send_error(res)))
         if why:
             log(f"ORDER FAILED [{sleeve}] {side}: {why}")
         # THE INTENT, RECORDED AT PLACEMENT. Without this line slippage is unknowable: once the
@@ -1258,7 +1341,11 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
             point=_point, stops_level=_lvl, order_type="pending_stop", latency_ms=_lat_ms,
             **_sleeve_identity(sleeve_row))
         sent.append({"side": side, "retcode": code,
-                     "comment": res.comment if res else None})
+                     "comment": res.comment if res else None,
+                     # the door's OWN refusals only (duplicate / unsettled in-doubt), which
+                     # `note_placement` leaves out of the pause streak; see order_door
+                     "door_refused": getattr(res, "door_own", False) is True,
+                     "door_reason": getattr(res, "door_reason", None)})
         _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
                          price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
                          taken=(not why), reason=("placed" if not why else "broker_rejected"),
@@ -1519,6 +1606,10 @@ def journal_refusal(sleeve: str, symbol: str, side: int, stage: str, why: str,
 #: A stop closer than this many spreads to the entry is inside the quote's own noise. Three:
 #: the entry pays one spread, and a stop two more away is still hit by a normal widening at a
 #: session open without any move in the mid.
+#: Measured 2026-09-16 on the live account (ebd9074cb, `floor_stop_to_spread`): an EURGBP scalp
+#: stop landed 1.8 pips from entry and three stop-outs cost -11.87 EUR, each a slippage loss past
+#: a stop the quote could reach without the mid moving. The floor scales stop AND target by the
+#: same factor, so the certified R:R and risk fraction are unchanged; only the lot moves.
 MIN_STOP_SPREAD_MULT = 3.0
 MIN_STOP_SPREAD_MULT = float(os.environ.get("MIN_STOP_SPREAD_MULT", MIN_STOP_SPREAD_MULT))
 
@@ -1638,8 +1729,8 @@ def _round_trip_per_price_unit(info: object, symbol: str) -> float | None:
     """The round-trip commission expressed in PRICE units, or None if it cannot be derived.
 
     THE UNIT TRAP THIS EXISTS TO AVOID. Commission is quoted in ACCOUNT currency per lot
-    (`fusion_cost.COMMISSION_PER_LOT_PER_SIDE = 2.00`, measured -- p10 = p50 = p90 over all 433
-    deals on 495044); a break-even stop is a PRICE. Converting between them by hand is where a
+    (`fusion_cost.COMMISSION_PER_LOT_PER_SIDE = 2.00`, measured -- p10 = p50 = p90 over all 433 live
+    deals); a break-even stop is a PRICE. Converting between them by hand is where a
     EUR-denominated account trading a USD-quoted instrument quietly books a small loss on every
     scratch. `trade_tick_value / trade_tick_size` is the venue's own answer to "how much account
     currency is one price unit worth, per lot", so the quote-currency conversion is the broker's
@@ -2618,6 +2709,9 @@ def _params_from_certificate(s: dict[str, object]) -> tuple[dict[str, object] | 
         return None, (f"{want!r} names no parameters and the default identity {derived!r} does "
                       f"not extend it; refusing to guess a parameterisation")
 
+    canon = _params_from_canon(s, want)
+    if canon is not None:
+        return canon, ""
     docket = _docket_rows()
     if not docket:
         return None, f"no docket on this box to recover params for cell {want!r}"
@@ -2674,6 +2768,80 @@ def _send_error(res: object) -> object:
         return None
 
 
+def _certified_digest_cell(s: dict) -> str:
+    """The certificate's `<SYM>[@TF].<family>.p=<digest>` identity, or "" when it names none."""
+    cert = s.get("certificate")
+    cell = str(cert.get("cell") or "") if isinstance(cert, dict) else (
+        cert.strip() if isinstance(cert, str) else "")
+    want = cell.split(".", 1)[1] if cell.startswith("external.") else cell
+    return want if re.search(r"\.p=[0-9a-f]{8,}$", want) else ""
+
+
+def _params_match_certificate(s: dict, family: str, params: dict) -> bool:
+    """True unless the certificate names a parameter digest these params do not reproduce.
+
+    A certificate with no digest (bare names, qquant descriptors, forward clocks) has nothing to
+    check against, so the row stands -- that is the pre-existing behaviour for every such sleeve.
+    """
+    want = _certified_digest_cell(s)
+    if not want:
+        return True
+    try:
+        from research.frontier_identity import cell_id
+        got = cell_id({"sym": want.split(".", 1)[0].split("@", 1)[0], "family": family,
+                       "params": params})
+    except Exception:
+        return True
+    return got == want
+
+
+def _canon_rows() -> dict[str, object]:
+    """`UNIVERSAL_SURVIVORS.canon.json` survivors keyed by certificate cell, re-read on change."""
+    global _CANON_CACHE
+    p = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+    try:
+        mtime = p.stat().st_mtime
+    except OSError:
+        return {}
+    if _CANON_CACHE is None or _CANON_CACHE[0] != mtime:
+        try:
+            doc = json.loads(p.read_text("utf-8"))
+            rows = doc.get("survivors") if isinstance(doc, dict) else None
+            _CANON_CACHE = (mtime, rows if isinstance(rows, dict) else {})
+        except (OSError, ValueError):
+            _CANON_CACHE = (mtime, {})
+    return _CANON_CACHE[1]
+
+
+_CANON_CACHE: tuple[float, dict[str, object]] | None = None
+
+
+def _params_from_canon(s: dict, want: str) -> dict[str, object] | None:
+    """The certificate's own `shadow_spec.params` from the sealed canon, VERIFIED by digest.
+
+    The canon is where the certificate was minted, so it is the authoritative copy of what was
+    certified; the docket is a research artifact that may not hold a given symbol's row at all.
+    Accepted only when hashing the params reproduces the certificate's own identity.
+    """
+    cert = s.get("certificate")
+    cell = str(cert.get("cell") or "") if isinstance(cert, dict) else str(cert or "")
+    row = _canon_rows().get(cell) or _canon_rows().get(f"external.{want}")
+    if not isinstance(row, dict):
+        return None
+    spec = row.get("shadow_spec")
+    found = spec.get("params") if isinstance(spec, dict) else None
+    if not isinstance(found, dict):
+        return None
+    try:
+        from research.frontier_identity import cell_id
+        sym_w, fam_w = want.split(".", 2)[:2]
+        ok = cell_id({"sym": sym_w.split("@", 1)[0], "family": fam_w,
+                      "params": found}) == want
+    except Exception:
+        return None
+    return dict(found) if ok else None
+
+
 def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None, str]:
     """The keyword params a non-hunt16 certified cell is called with, or (None, reason).
 
@@ -2698,12 +2866,28 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
         if recovered is None:
             return None, why
         params = dict(recovered)
+    elif not _params_match_certificate(s, family, params):
+        # A LOSSY ROW IS NOT AN EXPLICIT PARAMETERISATION (measured 2026-09-30). Nine LIVE
+        # `xauusd_cross_asset_residual_asia_p_*` rows carry `params: {"timeframe": "M15"}` --
+        # the chart and nothing else -- while their certificate `XAUUSD@M15.cross_asset_residual.
+        # p=e95ea804f8e3f059` was earned with `factor_symbols`, `beta_win`, `entry_z` and four
+        # more. Trusting the row refused every one ("no factor symbols named on the candidate")
+        # and, had the family not needed factors, would have traded defaults under the
+        # certificate's name. When the row does not hash back to the certified digest the
+        # certificate's own parameters are recovered and verified; if they cannot be, the row is
+        # used as before, so no sleeve that traded yesterday is refused today.
+        recovered, _why = _params_from_certificate(s)
+        if recovered is not None:
+            params = dict(recovered)
     try:
-        from mt5desk.family_inputs import resolve, strip_identity_keys
+        from mt5desk.family_inputs import resolve, runtime_call_params
     except Exception as exc:
         return None, f"family_inputs unavailable ({type(exc).__name__}: {exc})"
     try:
-        call_params = strip_identity_keys(family, params)
+        call_params = runtime_call_params(family, params)
+        # `session` is not a family keyword, but family_call.signals consumes it to apply the
+        # exact session filter used by the gauntlet. Stripping it here made Asia/London/NY
+        # certificates execute the unrestricted signal stream on Fusion.
         extra, why = resolve(str(s["symbol"]), family, params, bars)
     except Exception as exc:
         return None, f"input reconstruction raised ({type(exc).__name__}: {exc})"
@@ -3736,8 +3920,8 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
     (`ramped_fraction` charged before the stop was known, `promoted_lot` sized after it).
 
     `"auto"` is the gold book and nothing else -- `decision_core.roster` gives it to the three
-    GOLD_WINDOWS rows alone -- so the principal's 0.02 floor binds inside `gold_book_lot` as
-    `max(allocator, policy, floor)` and never as a replacement for the policy lot.
+    GOLD_WINDOWS rows alone. The principal removed the special 0.02 floor; the
+    allocator's target and the symbol's own venue minimum govern implementability.
     """
     mode = s.get("lot")
     if mode == "auto":
@@ -3826,6 +4010,19 @@ def main() -> None:
         save_state(st)
 
     sleeves = sleeve_set()
+
+    # RESTART HOLDING A POSITION (2026-09-30). Every pass is a fresh process, so every pass is a
+    # restart: before management and before anything new is placed, the venue's own book under
+    # MAGIC is read, the order door's in-doubt sends are settled against it (so a send that
+    # timed out last pass and landed is never sent twice), and a position holding with no stop
+    # gets its placement stop back. Never raises; an unreadable venue is recorded UNMEASURED.
+    try:
+        st["restart_reconcile"] = _door.restart_reconcile(
+            mt5, magic=MAGIC, armed=bool(st.get("armed")), intents=_recent_intents(),
+            log=log)
+    except Exception as exc:
+        log(f"RESTART RECONCILE FAILED ({type(exc).__name__}: {exc}); the lanes' own venue "
+            f"checks still stand")
 
     # MANAGE WHAT IS ALREADY OPEN BEFORE CONSIDERING ANYTHING NEW, and run it on EVERY pass --
     # before the regime filter, before the equity floor, before heat. Those gates decide whether

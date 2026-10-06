@@ -349,6 +349,11 @@ _PAGE_EN = ("<html><head><title>Systems thread</title>"
             "<meta property=\"article:published_time\" content=\"2026-08-30T10:00:00Z\"></head>"
             "<body><p>" + _STORY_EN + "</p><a href='/thread/2'>trading strategy thread</a>"
             "<a href='/data/cot.csv'>download csv</a></body></html>")
+# The Telegram preview answers with its OWN claim. It used to share _PAGE_EN with the Medium
+# article, and the miner's eight workers dedupe a claim to whichever ground reaches it first, so
+# the ru source was queued or not depending on thread order: the test was flaky, not the miner.
+_PAGE_TG = ("<html><head><title>markettwits</title></head><body><p>Silver usually falls for two "
+            "days after the Fed rate decision when positioning is long.</p></body></html>")
 _BING_JA = """<ol id="b_results"><li class="b_algo"><h2><a href="https://note.com/x/n/1">
 ドル円 仲値 手法</a></h2><p>ドル円は五十日の仲値にかけて日中ドル高になりやすく、仲値後に反落する。</p></li></ol>"""
 _BING_YT = """<ol id="b_results"><li class="b_algo"><h2><a href="https://www.youtube.com/watch?v=abcdefghijk">
@@ -376,6 +381,8 @@ _DATA_PAGE = ("<html><title>Statistics</title><body><p>Monthly reserves and inte
 
 def _dispatch(url: str, **kw) -> str:
     """One fake transport for every route: the URL says which fixture answers."""
+    if "t.me/s/" in url:
+        return _PAGE_TG
     if "bing.com" in url:
         return _BING_YT if "youtube" in url else _BING_JA
     if "duckduckgo" in url:

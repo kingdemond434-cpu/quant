@@ -44,6 +44,9 @@ __all__ = ["PROTECTED", "Snapshot", "changed", "restore", "snapshot"]
 #: what the failure message prints, and a guard that fires without saying what was lost gets
 #: switched off by the next person who hits it in a hurry.
 PROTECTED: dict[str, str] = {
+    "context/decision_journal.jsonl": (
+        "the canonical decision receipts across controller handoffs. A stale release or a test "
+        "must not erase completed actions, reset their IDs, or rewrite their substance"),
     "docs/research/next_law_number.txt": (
         "the law-number ALLOCATOR. Recomputed from the laws a host can see, it moves DOWN and "
         "hands the next two laws a number already in use -- the one collision it exists to stop"),
@@ -88,6 +91,12 @@ PROTECTED: dict[str, str] = {
         "the traded universe and its per-symbol cost fields. A dropped column is invisible -- "
         "every symbol is still there -- and prices the whole desk off a denomination it guessed. "
         "`currency_profit` was lost from all 251 rows on 2026-08-29 and `tick_value` before it"),
+    "docs/research/tier_s_constitution.json": (
+        "the Tier S rule set in force. A suite that rewrites it to the code default silently "
+        "reverts a principal-ratified amendment and the file still validates"),
+    "docs/research/tier_s_ratifications.jsonl": (
+        "the principal's ratifications of constitution hashes. A truncated ledger turns a "
+        "lawful amendment into a VIOLATION, or a regenerated one into a permission nobody gave"),
     "docs/GAP_REGISTER.md": (
         "the ranked open-defect list every session reads to choose work. Regenerated from a "
         "partial cycle it drops rows -- and a gap that vanishes reads exactly like a gap closed"),

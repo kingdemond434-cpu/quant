@@ -127,6 +127,36 @@ def test_a_partial_adoption_is_a_critical_defect_that_names_the_paths(tmp_path: 
     assert facts["state"] == "partial"
 
 
+def test_dirty_code_preflight_preserves_current_release_identity_for_the_issue_consumer(
+        tmp_path: Path) -> None:
+    """An early dirty-code refusal must replace, not resemble, the obsolete prior report."""
+    box = _box(
+        tmp_path,
+        state={
+            "measured_at": "2026-10-03T15:00:00Z",
+            "ok": False,
+            "stage": "preflight-dirty-code",
+            "branch": "claude/llm-auto-upgrade-verify-gcjac3",
+            "head": "local4473",
+            "target": "fetched9150",
+            "code_drift": ["desks/mt5/research/engine.py"],
+            "unwritable": [],
+            "counts": {"code_drift": 1, "state_drift": 27},
+        },
+        log=_PARTIAL_LINE.format(t="2026-10-03 15:00:00Z") + "\n")
+
+    rows, facts = pw.check_adoption_partial(box, datetime(2026, 10, 3, 16, 0, tzinfo=UTC))
+
+    assert facts["stage"] == "preflight-dirty-code"
+    assert facts["branch"] == "claude/llm-auto-upgrade-verify-gcjac3"
+    assert facts["head"] == "local4473"
+    assert facts["target"] == "fetched9150"
+    assert facts["counts"]["state_drift"] == 27
+    assert "Stage preflight-dirty-code" in rows[0]["evidence"]
+    assert "local HEAD local4473" in rows[0]["evidence"]
+    assert "fetched target fetched9150" in rows[0]["evidence"]
+
+
 def test_a_clean_adoption_raises_nothing_and_still_publishes_the_facts(tmp_path: Path) -> None:
     box = _box(tmp_path, state={"measured_at": "2026-09-23T05:00:00Z", "ok": True,
                                 "code_drift": [], "unwritable": [], "counts": {}},

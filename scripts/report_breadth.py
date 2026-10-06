@@ -43,7 +43,10 @@ from libs.research import mechanism_census as census
 from libs.validation import family_multiplicity as fm
 from libs.validation.forward_stats import holm_bar
 
-_OUT = Path("web/breadth_ledger.json")
+#: Anchored at the repo root, which is where `daily_research_cycle` already runs this (cwd=ROOT),
+#: so the path is unchanged there -- and absolute, so the component registry can read it as this
+#: organ's own artifact (`components.own_artifact`) for its runtime-attestation row.
+_OUT = Path(__file__).resolve().parent.parent / "web" / "breadth_ledger.json"
 
 #: THE PER-SLEEVE SHARPE USED FOR THE PRICING VIEW, and it is an ASSUMPTION rather than a
 #: measurement -- stated here so it cannot be mistaken for one downstream. No sleeve on this desk

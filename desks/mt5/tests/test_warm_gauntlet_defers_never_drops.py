@@ -18,7 +18,9 @@ import json
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
+import pandas as pd
 import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
@@ -100,11 +102,27 @@ def test_the_deferral_ledger_publishes_ages(tmp_path: Path) -> None:
     assert "NOTHING IS DROPPED" in census["rule"]
     doc = json.loads(W.DEFERRALS.read_text("utf-8"))
     assert doc["rows"]["key0"]["n_failures"] == 2
+    assert census["top_build_failures"] == {"failed": 1}
 
 
 def test_an_empty_ledger_defers_nothing(tmp_path: Path) -> None:
     send, held, rows = W.split_deferred(_cells(6), {}, time.time())
     assert len(send) == 6 and held == [] and rows == {}
+
+
+def test_failed_warm_build_carries_the_judges_exact_refusal(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    frame = pd.DataFrame({"close": [1.0]}, index=pd.date_range("2026-10-01", periods=1, tz="UTC"))
+    judge = SimpleNamespace(
+        CACHE_DIR=tmp_path, LAST_BUILD_FAILURE="factor basket incomplete: no M5 bars for UST10Y",
+        _bars_for=lambda _sym, _tf: frame,
+        build_cell=lambda *_args: None,
+    )
+    monkeypatch.setitem(sys.modules, "external_gauntlet", judge)
+    key, outcome = W._warm_one({"ckey": "candidate", "sym": "EURUSD", "tf": "M5",
+                                "family": "cross_asset_residual", "params": {}})
+    assert key == "candidate"
+    assert outcome == "failed|factor basket incomplete: no M5 bars for UST10Y"
 
 
 def test_the_row_level_timeframe_is_folded_into_the_cell_identity() -> None:

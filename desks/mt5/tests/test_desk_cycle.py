@@ -201,6 +201,18 @@ def test_the_brief_loads_cycle_first_constitution_second_reference_on_demand() -
     assert 'docs\\cro\\CRO_CYCLE.md' in src
 
 
+def test_all_three_cro_documents_are_readable_before_the_agent_starts() -> None:
+    """A missing reference used to be omitted from the launcher's preflight."""
+    src = LAUNCHER.read_text("utf-8")
+    preflight = src[src.index("$Documents = @("):src.index("# ---- THE CHECKPOINT")]
+    for name in ("CRO_CYCLE.md", "QUANT_CONSTITUTION.md", "QUANT_REFERENCE.md"):
+        assert name in preflight
+    assert "Get-Content -LiteralPath $document.Path -Raw -Encoding UTF8" in preflight
+    assert "Get-FileHash -LiteralPath $document.Path -Algorithm SHA256" in preflight
+    assert src.index("$Documents = @(") < src.index("controller_checkpoint.py claim")
+    assert "Verified CRO documents (readable before agent launch" in src
+
+
 def test_one_controller_at_a_time_through_the_canonical_lease() -> None:
     src = LAUNCHER.read_text("utf-8")
     assert "controller_checkpoint.py claim" in src
@@ -248,9 +260,53 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
         "Hypothesis volume", "Breadth of the book", "Machinery gaps to tier-1",
         "Fully wired or it does not count", "No forced or fake work",
         "Every item fully completed this pass",
+        "Every producer maximally broad, unknown-unknowns mined",
+        "Judging rate on target", "UNKNOWN verdicts by cause", "Box state is fresh in git",
+        "No unfed datasets", "Paid-substitute coverage", "Cross-culture orthogonality",
+        "No live code drift", "Decay and markout ran", "Confident kills per day",
+        "Credential coverage", "Desktop pass-2 queue age", "Six-event trend",
     ), start=1):
         assert f"| D{n} | **{duty}** |" in step, duty
     for row in ("Datasets in use", "Wasted verdicts", "Unjudged backlog", "Effective breadth",
                 "Cert to forward", "Deep-forest vectors", "Judged", "Live"):
         assert f"| {row} |" in step, row
     assert "STEP 4B" in LAUNCHER.read_text("utf-8")
+    assert "D15-D26" in LAUNCHER.read_text("utf-8")
+
+
+# ------------------------------------------------------------------ no silent skips
+def _claude_args(src: str) -> str:
+    start = src.index('if ($agentName -eq "claude") {')
+    return src[start:src.index('} elseif ($agentName -eq "codex")', start)]
+
+
+def test_the_claude_lane_speaks_stream_json_and_records_every_refusal() -> None:
+    """In -p mode a refused tool is skipped with no record. stream-json is the only output that
+    names the refusals, and the recorder turns each one into an UNMEASURED = MISSED row."""
+    src = LAUNCHER.read_text("utf-8")
+    args = _claude_args(src)
+    assert '"--output-format", "stream-json", "--verbose"' in args
+    assert '"--output-format", "text"' not in src
+    assert "scripts\\record_agent_denials.py --stream $Stream --ledger $Ledger" in src
+    assert "--review $Review" in src and "--started-at" in src
+    assert "permission_denials = $deniedCount" in src
+    # The stream is teed to its own file; the recorder puts the result text back in the log.
+    assert "Add-Content -LiteralPath $Stream -Value $text -Encoding UTF8" in src
+    assert (REPO / "scripts" / "record_agent_denials.py").is_file()
+
+
+def test_the_lane_widening_is_read_only_and_from_the_one_domain_file() -> None:
+    src = LAUNCHER.read_text("utf-8")
+    args = _claude_args(src)
+    assert 'Join-Path $RepoRoot "ops\\agent_webfetch_domains.json"' in src
+    assert ") + $webFetchRules + @(" in args
+    # No host is hard-coded here: the data file is the one list.
+    assert "go.kr" not in src and "census.gov" not in src
+    for rule in ('"Bash(ls:*)"', '"Bash(pwd)"', '"Bash(date)"', '"Bash(wc:*)"'):
+        assert rule in args
+    allowed = args[args.index('"--allowedTools"'):args.index('"--disallowedTools"')]
+    allowed = "\n".join(ln for ln in allowed.splitlines() if not ln.strip().startswith("#"))
+    for forbidden in ("bypass", "dangerously", "Bash(git push:*)", "Bash(git push --", "rm ",
+                      "Remove-Item", "secrets", "Bash(*)", "Bash(powershell", "Bash(cmd"):
+        assert forbidden not in allowed, forbidden
+    assert '"Read(data/secrets/**)"' in args

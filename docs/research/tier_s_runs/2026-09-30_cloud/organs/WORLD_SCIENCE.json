@@ -1,0 +1,2444 @@
+{
+ "edges": {
+  "DECAYING": 14,
+  "FALSE": 281,
+  "STATE_DEPENDENT": 5
+ },
+ "broken_relationships": [],
+ "listed_graph": {
+  "n_listed": 151,
+  "n_measured": 4,
+  "bonferroni_tests": 4,
+  "census": {
+   "UNMEASURED": 147,
+   "FALSE": 4
+  },
+  "by_origin": {
+   "world_causal_graph": {
+    "UNMEASURED": 147,
+    "FALSE": 4
+   }
+  },
+  "contradicted": 4,
+  "sign_flips": 0,
+  "unmeasured_node_kinds": {
+   "central_bank": 9,
+   "commodity": 12,
+   "country": 10,
+   "currency": 12,
+   "event": 4,
+   "flow": 1,
+   "futures_market": 2,
+   "equity_index": 10,
+   "physical_market": 2,
+   "positioning": 12,
+   "volatility": 2,
+   "yield_curve": 5
+  },
+  "edges": [
+   {
+    "driver": "BTCUSD",
+    "target": "XTIUSD",
+    "lag": 6,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for target XTIUSD on this host"
+   },
+   {
+    "driver": "CHINAH",
+    "target": "HK50",
+    "lag": 5,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver CHINAH on this host"
+   },
+   {
+    "driver": "CHINAH",
+    "target": "XAUUSD",
+    "lag": 3,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver CHINAH on this host"
+   },
+   {
+    "driver": "CORN",
+    "target": "COTTON",
+    "lag": 4,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver CORN on this host"
+   },
+   {
+    "driver": "CORN",
+    "target": "XCUUSD",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver CORN on this host"
+   },
+   {
+    "driver": "CORN",
+    "target": "XZNUSD",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver CORN on this host"
+   },
+   {
+    "driver": "COTTON",
+    "target": "CORN",
+    "lag": 2,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver COTTON on this host"
+   },
+   {
+    "driver": "COTTON",
+    "target": "SUGAR",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver COTTON on this host"
+   },
+   {
+    "driver": "COTTON",
+    "target": "USDTRY",
+    "lag": 4,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver COTTON on this host"
+   },
+   {
+    "driver": "COTTON",
+    "target": "XCUUSD",
+    "lag": 5,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver COTTON on this host"
+   },
+   {
+    "driver": "HK50",
+    "target": "CHINAH",
+    "lag": 5,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver HK50 on this host"
+   },
+   {
+    "driver": "HK50",
+    "target": "XAUUSD",
+    "lag": 3,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver HK50 on this host"
+   },
+   {
+    "driver": "HK50",
+    "target": "XTIUSD",
+    "lag": 3,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver HK50 on this host"
+   },
+   {
+    "driver": "NAS100",
+    "target": "US500",
+    "lag": 3,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver NAS100 on this host"
+   },
+   {
+    "driver": "SUGAR",
+    "target": "COTTON",
+    "lag": 3,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver SUGAR on this host"
+   },
+   {
+    "driver": "SUGAR",
+    "target": "USDTRY",
+    "lag": 4,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver SUGAR on this host"
+   },
+   {
+    "driver": "US500",
+    "target": "NAS100",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver US500 on this host"
+   },
+   {
+    "driver": "US500",
+    "target": "USDCNH",
+    "lag": 2,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver US500 on this host"
+   },
+   {
+    "driver": "US500",
+    "target": "XPTUSD",
+    "lag": 5,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver US500 on this host"
+   },
+   {
+    "driver": "USDCNH",
+    "target": "US500",
+    "lag": 2,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver USDCNH on this host"
+   },
+   {
+    "driver": "USDCNH",
+    "target": "XPTUSD",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver USDCNH on this host"
+   },
+   {
+    "driver": "USDJPY",
+    "target": "XTIUSD",
+    "lag": 4,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for target XTIUSD on this host"
+   },
+   {
+    "driver": "USDNOK",
+    "target": "USDSEK",
+    "lag": 2,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver USDNOK on this host"
+   },
+   {
+    "driver": "USDNOK",
+    "target": "XAUUSD",
+    "lag": 6,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver USDNOK on this host"
+   },
+   {
+    "driver": "USDSEK",
+    "target": "USDNOK",
+    "lag": 2,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver USDSEK on this host"
+   },
+   {
+    "driver": "USDSEK",
+    "target": "USDTRY",
+    "lag": 2,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver USDSEK on this host"
+   },
+   {
+    "driver": "USDSEK",
+    "target": "XAUUSD",
+    "lag": 4,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver USDSEK on this host"
+   },
+   {
+    "driver": "USDTRY",
+    "target": "COTTON",
+    "lag": 5,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver USDTRY on this host"
+   },
+   {
+    "driver": "USDTRY",
+    "target": "SUGAR",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver USDTRY on this host"
+   },
+   {
+    "driver": "USDTRY",
+    "target": "USDSEK",
+    "lag": 6,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver USDTRY on this host"
+   },
+   {
+    "driver": "USDTRY",
+    "target": "XAUUSD",
+    "lag": 5,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver USDTRY on this host"
+   },
+   {
+    "driver": "UST10Y",
+    "target": "XAUUSD",
+    "lag": 5,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver UST10Y on this host"
+   },
+   {
+    "driver": "UST10Y",
+    "target": "XTIUSD",
+    "lag": 5,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver UST10Y on this host"
+   },
+   {
+    "driver": "XAGUSD",
+    "target": "XCUUSD",
+    "lag": 6,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for target XCUUSD on this host"
+   },
+   {
+    "driver": "XAGUSD",
+    "target": "XNIUSD",
+    "lag": 3,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for target XNIUSD on this host"
+   },
+   {
+    "driver": "XALUSD",
+    "target": "XCUUSD",
+    "lag": 3,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XALUSD on this host"
+   },
+   {
+    "driver": "XALUSD",
+    "target": "XPTUSD",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XALUSD on this host"
+   },
+   {
+    "driver": "XAUUSD",
+    "target": "CHINAH",
+    "lag": 2,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for target CHINAH on this host"
+   },
+   {
+    "driver": "XAUUSD",
+    "target": "HK50",
+    "lag": 4,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for target HK50 on this host"
+   },
+   {
+    "driver": "XAUUSD",
+    "target": "USDNOK",
+    "lag": 3,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for target USDNOK on this host"
+   },
+   {
+    "driver": "XAUUSD",
+    "target": "USDSEK",
+    "lag": 5,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for target USDSEK on this host"
+   },
+   {
+    "driver": "XAUUSD",
+    "target": "USDTRY",
+    "lag": 4,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for target USDTRY on this host"
+   },
+   {
+    "driver": "XAUUSD",
+    "target": "UST10Y",
+    "lag": 3,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for target UST10Y on this host"
+   },
+   {
+    "driver": "XAUUSD",
+    "target": "XCUUSD",
+    "lag": 3,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for target XCUUSD on this host"
+   },
+   {
+    "driver": "XAUUSD",
+    "target": "XNIUSD",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for target XNIUSD on this host"
+   },
+   {
+    "driver": "XAUUSD",
+    "target": "XTIUSD",
+    "lag": 6,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for target XTIUSD on this host"
+   },
+   {
+    "driver": "XCUUSD",
+    "target": "CORN",
+    "lag": 3,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XCUUSD on this host"
+   },
+   {
+    "driver": "XCUUSD",
+    "target": "COTTON",
+    "lag": 2,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XCUUSD on this host"
+   },
+   {
+    "driver": "XCUUSD",
+    "target": "XAGUSD",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XCUUSD on this host"
+   },
+   {
+    "driver": "XCUUSD",
+    "target": "XALUSD",
+    "lag": 6,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XCUUSD on this host"
+   },
+   {
+    "driver": "XCUUSD",
+    "target": "XAUUSD",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XCUUSD on this host"
+   },
+   {
+    "driver": "XCUUSD",
+    "target": "XPTUSD",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XCUUSD on this host"
+   },
+   {
+    "driver": "XCUUSD",
+    "target": "XZNUSD",
+    "lag": 3,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XCUUSD on this host"
+   },
+   {
+    "driver": "XNIUSD",
+    "target": "XAGUSD",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XNIUSD on this host"
+   },
+   {
+    "driver": "XNIUSD",
+    "target": "XAUUSD",
+    "lag": 6,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XNIUSD on this host"
+   },
+   {
+    "driver": "XPTUSD",
+    "target": "US500",
+    "lag": 4,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XPTUSD on this host"
+   },
+   {
+    "driver": "XPTUSD",
+    "target": "USDCNH",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XPTUSD on this host"
+   },
+   {
+    "driver": "XPTUSD",
+    "target": "XALUSD",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XPTUSD on this host"
+   },
+   {
+    "driver": "XPTUSD",
+    "target": "XCUUSD",
+    "lag": 5,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XPTUSD on this host"
+   },
+   {
+    "driver": "XTIUSD",
+    "target": "BTCUSD",
+    "lag": 5,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XTIUSD on this host"
+   },
+   {
+    "driver": "XTIUSD",
+    "target": "HK50",
+    "lag": 4,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XTIUSD on this host"
+   },
+   {
+    "driver": "XTIUSD",
+    "target": "USDJPY",
+    "lag": 2,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XTIUSD on this host"
+   },
+   {
+    "driver": "XTIUSD",
+    "target": "UST10Y",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XTIUSD on this host"
+   },
+   {
+    "driver": "XTIUSD",
+    "target": "XAUUSD",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XTIUSD on this host"
+   },
+   {
+    "driver": "XZNUSD",
+    "target": "CORN",
+    "lag": 2,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XZNUSD on this host"
+   },
+   {
+    "driver": "XZNUSD",
+    "target": "XCUUSD",
+    "lag": 3,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "no H1 bars for driver XZNUSD on this host"
+   },
+   {
+    "driver": "cb:BOC",
+    "target": "currency:CAD",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "central_bank",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver cb:BOC is a central_bank node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "cb:BOE",
+    "target": "currency:GBP",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "central_bank",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver cb:BOE is a central_bank node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "cb:BOJ",
+    "target": "USDJPY",
+    "lag": 1,
+    "direction": "unknown",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "central_bank",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver cb:BOJ is a central_bank node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "cb:BOJ",
+    "target": "currency:JPY",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "central_bank",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver cb:BOJ is a central_bank node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "cb:ECB",
+    "target": "currency:EUR",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "central_bank",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver cb:ECB is a central_bank node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "cb:FED",
+    "target": "USDJPY",
+    "lag": 1,
+    "direction": "unknown",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "central_bank",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver cb:FED is a central_bank node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "cb:FED",
+    "target": "yield:US2Y",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "central_bank",
+    "target_kind": "yield_curve",
+    "class": "UNMEASURED",
+    "why": "driver cb:FED is a central_bank node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "cb:PBOC",
+    "target": "currency:CNH",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "central_bank",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver cb:PBOC is a central_bank node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "cb:RBA",
+    "target": "currency:AUD",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "central_bank",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver cb:RBA is a central_bank node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "commodity:brent",
+    "target": "XBRUSD",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "commodity",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver commodity:brent is a commodity node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "commodity:brent",
+    "target": "currency:CAD",
+    "lag": 2,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "commodity",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver commodity:brent is a commodity node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "commodity:brent",
+    "target": "currency:NOK",
+    "lag": 2,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "commodity",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver commodity:brent is a commodity node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "commodity:copper",
+    "target": "XCUUSD",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "commodity",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver commodity:copper is a commodity node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "commodity:copper",
+    "target": "commodity:silver",
+    "lag": 3,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "commodity",
+    "target_kind": "commodity",
+    "class": "UNMEASURED",
+    "why": "driver commodity:copper is a commodity node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "commodity:copper",
+    "target": "currency:AUD",
+    "lag": 4,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "commodity",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver commodity:copper is a commodity node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "commodity:gold",
+    "target": "XAUUSD",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "commodity",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver commodity:gold is a commodity node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "commodity:gold",
+    "target": "commodity:silver",
+    "lag": 2,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "commodity",
+    "target_kind": "commodity",
+    "class": "UNMEASURED",
+    "why": "driver commodity:gold is a commodity node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "commodity:iron_ore",
+    "target": "currency:AUD",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "commodity",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver commodity:iron_ore is a commodity node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "commodity:silver",
+    "target": "XAGUSD",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "commodity",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver commodity:silver is a commodity node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "commodity:wti",
+    "target": "XTIUSD",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "commodity",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver commodity:wti is a commodity node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "commodity:wti",
+    "target": "commodity:brent",
+    "lag": 5,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "commodity",
+    "target_kind": "commodity",
+    "class": "UNMEASURED",
+    "why": "driver commodity:wti is a commodity node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "country:AU",
+    "target": "cb:RBA",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "country",
+    "target_kind": "central_bank",
+    "class": "UNMEASURED",
+    "why": "driver country:AU is a country node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "country:AU",
+    "target": "event:AU_trade_balance",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "country",
+    "target_kind": "event",
+    "class": "UNMEASURED",
+    "why": "driver country:AU is a country node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "country:CN",
+    "target": "cb:PBOC",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "country",
+    "target_kind": "central_bank",
+    "class": "UNMEASURED",
+    "why": "driver country:CN is a country node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "country:CN",
+    "target": "event:CN_PMI",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "country",
+    "target_kind": "event",
+    "class": "UNMEASURED",
+    "why": "driver country:CN is a country node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "country:CN",
+    "target": "physical:CN_gold_demand",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "country",
+    "target_kind": "physical_market",
+    "class": "UNMEASURED",
+    "why": "driver country:CN is a country node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "country:EU",
+    "target": "cb:ECB",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "country",
+    "target_kind": "central_bank",
+    "class": "UNMEASURED",
+    "why": "driver country:EU is a country node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "country:JP",
+    "target": "cb:BOJ",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "country",
+    "target_kind": "central_bank",
+    "class": "UNMEASURED",
+    "why": "driver country:JP is a country node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "country:US",
+    "target": "cb:FED",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "country",
+    "target_kind": "central_bank",
+    "class": "UNMEASURED",
+    "why": "driver country:US is a country node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "country:US",
+    "target": "event:US_CPI",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "country",
+    "target_kind": "event",
+    "class": "UNMEASURED",
+    "why": "driver country:US is a country node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "country:US",
+    "target": "event:US_NFP",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "country",
+    "target_kind": "event",
+    "class": "UNMEASURED",
+    "why": "driver country:US is a country node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "currency:AUD",
+    "target": "AUDJPY",
+    "lag": 2,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "currency",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver currency:AUD is a currency node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "currency:AUD",
+    "target": "AUDUSD",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "currency",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver currency:AUD is a currency node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "currency:CAD",
+    "target": "USDCAD",
+    "lag": 0,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "currency",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver currency:CAD is a currency node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "currency:CHF",
+    "target": "USDCHF",
+    "lag": 0,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "currency",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver currency:CHF is a currency node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "currency:CNH",
+    "target": "USDCNH",
+    "lag": 0,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "currency",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver currency:CNH is a currency node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "currency:EUR",
+    "target": "EURUSD",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "currency",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver currency:EUR is a currency node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "currency:GBP",
+    "target": "GBPUSD",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "currency",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver currency:GBP is a currency node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "currency:JPY",
+    "target": "USDJPY",
+    "lag": 0,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "currency",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver currency:JPY is a currency node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "currency:NOK",
+    "target": "USDNOK",
+    "lag": 0,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "currency",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver currency:NOK is a currency node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "currency:NZD",
+    "target": "NZDUSD",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "currency",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver currency:NZD is a currency node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "currency:USD",
+    "target": "USDX",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "currency",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver currency:USD is a currency node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "currency:USD",
+    "target": "commodity:gold",
+    "lag": 5,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "currency",
+    "target_kind": "commodity",
+    "class": "UNMEASURED",
+    "why": "driver currency:USD is a currency node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "event:AU_trade_balance",
+    "target": "commodity:iron_ore",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "event",
+    "target_kind": "commodity",
+    "class": "UNMEASURED",
+    "why": "driver event:AU_trade_balance is a event node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "event:CN_PMI",
+    "target": "commodity:copper",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "event",
+    "target_kind": "commodity",
+    "class": "UNMEASURED",
+    "why": "driver event:CN_PMI is a event node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "event:US_CPI",
+    "target": "yield:US2Y",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "event",
+    "target_kind": "yield_curve",
+    "class": "UNMEASURED",
+    "why": "driver event:US_CPI is a event node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "event:US_NFP",
+    "target": "yield:US2Y",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "event",
+    "target_kind": "yield_curve",
+    "class": "UNMEASURED",
+    "why": "driver event:US_NFP is a event node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "flow:GLD_ETF",
+    "target": "commodity:gold",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "flow",
+    "target_kind": "commodity",
+    "class": "UNMEASURED",
+    "why": "driver flow:GLD_ETF is a flow node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "futures:COMEX_gold_oi",
+    "target": "commodity:gold",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "futures_market",
+    "target_kind": "commodity",
+    "class": "UNMEASURED",
+    "why": "driver futures:COMEX_gold_oi is a futures_market node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "futures:LME_copper_stocks",
+    "target": "commodity:copper",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "futures_market",
+    "target_kind": "commodity",
+    "class": "UNMEASURED",
+    "why": "driver futures:LME_copper_stocks is a futures_market node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "index:ASX200",
+    "target": "AUS200",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "equity_index",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver index:ASX200 is a equity_index node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "index:HSI",
+    "target": "HK50",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "equity_index",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver index:HSI is a equity_index node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "index:HSI",
+    "target": "currency:AUD",
+    "lag": 5,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "equity_index",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver index:HSI is a equity_index node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "index:NDX",
+    "target": "NAS100",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "equity_index",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver index:NDX is a equity_index node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "index:NKY",
+    "target": "JPN225",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "equity_index",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver index:NKY is a equity_index node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "index:SPX",
+    "target": "US500",
+    "lag": 0,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "equity_index",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver index:SPX is a equity_index node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "index:SPX",
+    "target": "currency:AUD",
+    "lag": 2,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "equity_index",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver index:SPX is a equity_index node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "index:SPX",
+    "target": "index:ASX200",
+    "lag": 5,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "equity_index",
+    "target_kind": "equity_index",
+    "class": "UNMEASURED",
+    "why": "driver index:SPX is a equity_index node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "index:SPX",
+    "target": "index:NKY",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "equity_index",
+    "target_kind": "equity_index",
+    "class": "UNMEASURED",
+    "why": "driver index:SPX is a equity_index node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "index:SPX",
+    "target": "vol:VIX",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "equity_index",
+    "target_kind": "volatility",
+    "class": "UNMEASURED",
+    "why": "driver index:SPX is a equity_index node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "physical:CN_gold_demand",
+    "target": "physical:SGE_premium",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "physical_market",
+    "target_kind": "physical_market",
+    "class": "UNMEASURED",
+    "why": "driver physical:CN_gold_demand is a physical_market node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "physical:SGE_premium",
+    "target": "commodity:gold",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "physical_market",
+    "target_kind": "commodity",
+    "class": "UNMEASURED",
+    "why": "driver physical:SGE_premium is a physical_market node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "positioning:COT_aud",
+    "target": "currency:AUD",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "positioning",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver positioning:COT_aud is a positioning node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "positioning:COT_cad",
+    "target": "currency:CAD",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "positioning",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver positioning:COT_cad is a positioning node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "positioning:COT_chf",
+    "target": "currency:CHF",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "positioning",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver positioning:COT_chf is a positioning node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "positioning:COT_dxy",
+    "target": "currency:USD",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "positioning",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver positioning:COT_dxy is a positioning node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "positioning:COT_eur",
+    "target": "currency:EUR",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "positioning",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver positioning:COT_eur is a positioning node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "positioning:COT_gbp",
+    "target": "currency:GBP",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "positioning",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver positioning:COT_gbp is a positioning node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "positioning:COT_gold",
+    "target": "commodity:gold",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "positioning",
+    "target_kind": "commodity",
+    "class": "UNMEASURED",
+    "why": "driver positioning:COT_gold is a positioning node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "positioning:COT_jpy",
+    "target": "currency:JPY",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "positioning",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver positioning:COT_jpy is a positioning node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "positioning:COT_nasdaq100",
+    "target": "index:NDX",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "positioning",
+    "target_kind": "equity_index",
+    "class": "UNMEASURED",
+    "why": "driver positioning:COT_nasdaq100 is a positioning node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "positioning:COT_nzd",
+    "target": "currency:NZD",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "positioning",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver positioning:COT_nzd is a positioning node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "positioning:COT_silver",
+    "target": "commodity:silver",
+    "lag": 1,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "positioning",
+    "target_kind": "commodity",
+    "class": "UNMEASURED",
+    "why": "driver positioning:COT_silver is a positioning node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "positioning:COT_sp500",
+    "target": "index:SPX",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "positioning",
+    "target_kind": "equity_index",
+    "class": "UNMEASURED",
+    "why": "driver positioning:COT_sp500 is a positioning node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "vol:VIX",
+    "target": "currency:CHF",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "volatility",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver vol:VIX is a volatility node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "vol:VIX",
+    "target": "currency:JPY",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "volatility",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver vol:VIX is a volatility node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "yield:US10Y",
+    "target": "UST10Y",
+    "lag": 0,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "STRUCTURAL",
+    "driver_kind": "yield_curve",
+    "target_kind": "mt5_instrument",
+    "class": "UNMEASURED",
+    "why": "driver yield:US10Y is a yield_curve node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "yield:US10Y",
+    "target": "commodity:gold",
+    "lag": 5,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "yield_curve",
+    "target_kind": "commodity",
+    "class": "UNMEASURED",
+    "why": "driver yield:US10Y is a yield_curve node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "yield:US10Y",
+    "target": "index:NDX",
+    "lag": 2,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "yield_curve",
+    "target_kind": "equity_index",
+    "class": "UNMEASURED",
+    "why": "driver yield:US10Y is a yield_curve node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "yield:US2Y",
+    "target": "currency:USD",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "yield_curve",
+    "target_kind": "currency",
+    "class": "UNMEASURED",
+    "why": "driver yield:US2Y is a yield_curve node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "yield:US2Y",
+    "target": "yield:US10Y",
+    "lag": 1,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "PLAUSIBLE_UNMEASURED",
+    "driver_kind": "yield_curve",
+    "target_kind": "yield_curve",
+    "class": "UNMEASURED",
+    "why": "driver yield:US2Y is a yield_curve node: its series is the macro world's, not a price-only classifier's"
+   },
+   {
+    "driver": "USDJPY",
+    "target": "XAUUSD",
+    "lag": 3,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "FALSE",
+    "beta": 0.003471051580106061,
+    "t": 0.053206883999772546,
+    "bar": 2.497705474412374,
+    "n_joined": 3796,
+    "agrees_with_listing": false,
+    "sign_flip": false
+   },
+   {
+    "driver": "XAGUSD",
+    "target": "XAUUSD",
+    "lag": 6,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "FALSE",
+    "beta": -0.016942660239428302,
+    "t": -2.437589223666894,
+    "bar": 2.497705474412374,
+    "n_joined": 3999,
+    "agrees_with_listing": false,
+    "sign_flip": false
+   },
+   {
+    "driver": "XAUUSD",
+    "target": "USDJPY",
+    "lag": 6,
+    "direction": "same",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "FALSE",
+    "beta": 0.0016862830395072196,
+    "t": 0.4170471281232694,
+    "bar": 2.497705474412374,
+    "n_joined": 3796,
+    "agrees_with_listing": false,
+    "sign_flip": false
+   },
+   {
+    "driver": "XAUUSD",
+    "target": "XAGUSD",
+    "lag": 2,
+    "direction": "opposite",
+    "origin": "world_causal_graph",
+    "listed_status": "RECORDED_NOT_ADMITTED",
+    "driver_kind": "mt5_instrument",
+    "target_kind": "mt5_instrument",
+    "class": "FALSE",
+    "beta": -0.03875254341928059,
+    "t": -1.076775313779934,
+    "bar": 2.497705474412374,
+    "n_joined": 3999,
+    "agrees_with_listing": false,
+    "sign_flip": false
+   }
+  ],
+  "sources": {
+   "world_causal_graph": true,
+   "cross_asset_graph": false
+  }
+ },
+ "macro_world": {
+  "status": "MEASURED",
+  "why": null,
+  "census": {
+   "rates": {
+    "status": "MEASURED",
+    "nodes": 36,
+    "edges": 90,
+    "FALSE": 90
+   },
+   "credit": {
+    "status": "UNMEASURED",
+    "why": "no field of this kind in the catalogue on this host"
+   },
+   "vol": {
+    "status": "UNMEASURED",
+    "why": "no field of this kind in the catalogue on this host"
+   },
+   "dollar": {
+    "status": "MEASURED",
+    "nodes": 1,
+    "edges": 28,
+    "FALSE": 28
+   },
+   "inflation": {
+    "status": "UNMEASURED",
+    "why": "no field of this kind in the catalogue on this host"
+   },
+   "liquidity": {
+    "status": "UNMEASURED",
+    "why": "no field of this kind in the catalogue on this host"
+   },
+   "carry": {
+    "status": "MEASURED",
+    "nodes": 17,
+    "edges": 17,
+    "FALSE": 17
+   },
+   "positioning": {
+    "status": "MEASURED",
+    "nodes": 40,
+    "edges": 40,
+    "FALSE": 40
+   },
+   "flows": {
+    "status": "UNMEASURED",
+    "why": "no field of this kind in the catalogue on this host"
+   }
+  },
+  "n_nodes": 94,
+  "n_edges": 175,
+  "live_edges": [],
+  "kinds_measured": 4,
+  "emitted": {
+   "kind": "macro_world",
+   "emitted": 0
+  }
+ },
+ "labs": {
+  "information": 10,
+  "signal": 5,
+  "control": 10,
+  "ecology": 2,
+  "dynamical": 10,
+  "network": 5,
+  "bayesian": 10,
+  "queueing": 0,
+  "constraint": 10,
+  "gaussian_process": 0,
+  "motif": 7,
+  "operations": 0
+ },
+ "emitted": {
+  "kind": "cross_science",
+  "emitted": 25
+ },
+ "inexpressible": {
+  "constraint": 6,
+  "gaussian_process": 0
+ },
+ "expressions_queued": 0,
+ "expressions_offered": 48,
+ "sample": {
+  "information": [
+   {
+    "kind": "hypothesis",
+    "family": "xsci_information",
+    "mechanism": "cross_science_information",
+    "symbols": [
+     "AUDSGD",
+     "AUDUSD"
+    ],
+    "lab": "information",
+    "statistic": 0.08009,
+    "null": "shuffle 95% 0.00141",
+    "claim": "AUDUSD's sign carries 0.0801 bits about AUDSGD's next sign beyond AUDSGD's own past",
+    "falsifier": "TE falls inside the shuffle null out of sample",
+    "driver": "AUDUSD",
+    "target": "AUDSGD"
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_information",
+    "mechanism": "cross_science_information",
+    "symbols": [
+     "AUDSGD",
+     "AUDCAD"
+    ],
+    "lab": "information",
+    "statistic": 0.07047,
+    "null": "shuffle 95% 0.00158",
+    "claim": "AUDCAD's sign carries 0.0705 bits about AUDSGD's next sign beyond AUDSGD's own past",
+    "falsifier": "TE falls inside the shuffle null out of sample",
+    "driver": "AUDCAD",
+    "target": "AUDSGD"
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_information",
+    "mechanism": "cross_science_information",
+    "symbols": [
+     "AUDSGD",
+     "EURAUD"
+    ],
+    "lab": "information",
+    "statistic": 0.0575,
+    "null": "shuffle 95% 0.00153",
+    "claim": "EURAUD's sign carries 0.0575 bits about AUDSGD's next sign beyond AUDSGD's own past",
+    "falsifier": "TE falls inside the shuffle null out of sample",
+    "driver": "EURAUD",
+    "target": "AUDSGD"
+   }
+  ],
+  "signal": [
+   {
+    "kind": "hypothesis",
+    "family": "xsci_signal",
+    "mechanism": "cross_science_signal",
+    "symbols": [
+     "AUDHUF"
+    ],
+    "lab": "signal",
+    "statistic": 48.10236,
+    "null": "red-noise AR(1) x14.2",
+    "claim": "AUDHUF has a cycle of 4.0 bars at 48.1x red-noise power",
+    "falsifier": "the peak vanishes in the next window",
+    "period": 3.998666666666667
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_signal",
+    "mechanism": "cross_science_signal",
+    "symbols": [
+     "EURCHF"
+    ],
+    "lab": "signal",
+    "statistic": 26.28462,
+    "null": "red-noise AR(1) x14.2",
+    "claim": "EURCHF has a cycle of 3.4 bars at 26.3x red-noise power",
+    "falsifier": "the peak vanishes in the next window",
+    "period": 3.427428571428572
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_signal",
+    "mechanism": "cross_science_signal",
+    "symbols": [
+     "AUDSGD"
+    ],
+    "lab": "signal",
+    "statistic": 24.79775,
+    "null": "red-noise AR(1) x14.2",
+    "claim": "AUDSGD has a cycle of 4.8 bars at 24.8x red-noise power",
+    "falsifier": "the peak vanishes in the next window",
+    "period": 4.798400000000001
+   }
+  ],
+  "control": [
+   {
+    "kind": "hypothesis",
+    "family": "xsci_control",
+    "mechanism": "cross_science_control",
+    "symbols": [
+     "AUDCHF"
+    ],
+    "lab": "control",
+    "statistic": -28.67635,
+    "null": "innovation ac z under white noise",
+    "claim": "AUDCHF: the local-level controller is over-correcting (reversion), innovation ac -0.525",
+    "falsifier": "innovation autocorrelation insignificant next window",
+    "ac": -0.525398331865613
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_control",
+    "mechanism": "cross_science_control",
+    "symbols": [
+     "EURGBP"
+    ],
+    "lab": "control",
+    "statistic": -27.58107,
+    "null": "innovation ac z under white noise",
+    "claim": "EURGBP: the local-level controller is over-correcting (reversion), innovation ac -0.505",
+    "falsifier": "innovation autocorrelation insignificant next window",
+    "ac": -0.5053308187938362
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_control",
+    "mechanism": "cross_science_control",
+    "symbols": [
+     "USDCAD"
+    ],
+    "lab": "control",
+    "statistic": -27.34218,
+    "null": "innovation ac z under white noise",
+    "claim": "USDCAD: the local-level controller is over-correcting (reversion), innovation ac -0.501",
+    "falsifier": "innovation autocorrelation insignificant next window",
+    "ac": -0.5009539867683812
+   }
+  ],
+  "ecology": [
+   {
+    "kind": "hypothesis",
+    "family": "xsci_ecology",
+    "mechanism": "cross_science_ecology",
+    "symbols": [
+     "EURJPY"
+    ],
+    "lab": "ecology",
+    "statistic": -4.5151,
+    "null": "no predator-prey coupling",
+    "claim": "EURJPY: momentum's success in one 20-bar season predicts reversion's next season (corr -0.37) -- crowding cycles between the two",
+    "falsifier": "the coupling disappears out of sample",
+    "coupling": -0.3711391089150733
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_ecology",
+    "mechanism": "cross_science_ecology",
+    "symbols": [
+     "AUDJPY"
+    ],
+    "lab": "ecology",
+    "statistic": 2.95391,
+    "null": "no predator-prey coupling",
+    "claim": "AUDJPY: momentum's success in one 20-bar season predicts reversion's next season (corr +0.24) -- crowding cycles between the two",
+    "falsifier": "the coupling disappears out of sample",
+    "coupling": 0.24281029129336004
+   }
+  ],
+  "dynamical": [
+   {
+    "kind": "hypothesis",
+    "family": "xsci_dynamical",
+    "mechanism": "cross_science_dynamical",
+    "symbols": [
+     "NZDUSD"
+    ],
+    "lab": "dynamical",
+    "statistic": 22.79428,
+    "null": "shuffled-path determinism",
+    "claim": "NZDUSD: its delay-embedded path revisits states deterministically (DET 0.477 vs shuffled 0.446)",
+    "falsifier": "determinism excess vanishes in the next window"
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_dynamical",
+    "mechanism": "cross_science_dynamical",
+    "symbols": [
+     "BTCUSD"
+    ],
+    "lab": "dynamical",
+    "statistic": 13.19104,
+    "null": "shuffled-path determinism",
+    "claim": "BTCUSD: its delay-embedded path revisits states deterministically (DET 0.540 vs shuffled 0.447)",
+    "falsifier": "determinism excess vanishes in the next window"
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_dynamical",
+    "mechanism": "cross_science_dynamical",
+    "symbols": [
+     "EURJPY"
+    ],
+    "lab": "dynamical",
+    "statistic": 10.30883,
+    "null": "shuffled-path determinism",
+    "claim": "EURJPY: its delay-embedded path revisits states deterministically (DET 0.527 vs shuffled 0.442)",
+    "falsifier": "determinism excess vanishes in the next window"
+   }
+  ],
+  "network": [
+   {
+    "kind": "hypothesis",
+    "family": "xsci_network",
+    "mechanism": "cross_science_network",
+    "symbols": [
+     "AUDSGD",
+     "AUDUSD"
+    ],
+    "lab": "network",
+    "statistic": 26.90642,
+    "null": "no hub lead",
+    "claim": "network hub AUDUSD (centrality 0.30) leads AUDSGD by one bar (corr +0.491)",
+    "falsifier": "lead corr insignificant next window",
+    "hub": "AUDUSD",
+    "corr": 0.49141
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_network",
+    "mechanism": "cross_science_network",
+    "symbols": [
+     "AUDCHF",
+     "AUDUSD"
+    ],
+    "lab": "network",
+    "statistic": -4.43046,
+    "null": "no hub lead",
+    "claim": "network hub AUDUSD (centrality 0.30) leads AUDCHF by one bar (corr -0.081)",
+    "falsifier": "lead corr insignificant next window",
+    "hub": "AUDUSD",
+    "corr": -0.08092
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_network",
+    "mechanism": "cross_science_network",
+    "symbols": [
+     "EURCHF",
+     "AUDUSD"
+    ],
+    "lab": "network",
+    "statistic": -3.31006,
+    "null": "no hub lead",
+    "claim": "network hub AUDUSD (centrality 0.30) leads EURCHF by one bar (corr -0.060)",
+    "falsifier": "lead corr insignificant next window",
+    "hub": "AUDUSD",
+    "corr": -0.06045
+   }
+  ],
+  "bayesian": [
+   {
+    "kind": "hypothesis",
+    "family": "xsci_bayesian",
+    "mechanism": "cross_science_bayesian",
+    "symbols": [
+     "AUDCHF"
+    ],
+    "lab": "bayesian",
+    "statistic": -0.12936,
+    "null": "95% credible interval covers 0",
+    "claim": "AUDCHF: posterior AR(1) -0.129 [-0.165, -0.092] -- reversion",
+    "falsifier": "the credible interval covers 0 next window",
+    "posterior": {
+     "mean": -0.12936338712761958,
+     "lo": -0.16459497512456356,
+     "hi": -0.09203156570217998,
+     "p_positive": 0.0,
+     "acceptance": 0.69
+    }
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_bayesian",
+    "mechanism": "cross_science_bayesian",
+    "symbols": [
+     "AUDHUF"
+    ],
+    "lab": "bayesian",
+    "statistic": -0.09735,
+    "null": "95% credible interval covers 0",
+    "claim": "AUDHUF: posterior AR(1) -0.097 [-0.132, -0.060] -- reversion",
+    "falsifier": "the credible interval covers 0 next window",
+    "posterior": {
+     "mean": -0.09734689820700806,
+     "lo": -0.13176801774985167,
+     "hi": -0.05992040299583454,
+     "p_positive": 0.0,
+     "acceptance": 0.6963333333333334
+    }
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_bayesian",
+    "mechanism": "cross_science_bayesian",
+    "symbols": [
+     "AUDSGD"
+    ],
+    "lab": "bayesian",
+    "statistic": -0.08654,
+    "null": "95% credible interval covers 0",
+    "claim": "AUDSGD: posterior AR(1) -0.087 [-0.121, -0.048] -- reversion",
+    "falsifier": "the credible interval covers 0 next window",
+    "posterior": {
+     "mean": -0.08654228859267422,
+     "lo": -0.12067480761061963,
+     "hi": -0.047986472579492206,
+     "p_positive": 0.0,
+     "acceptance": 0.6973333333333334
+    }
+   }
+  ],
+  "queueing": [],
+  "constraint": [
+   {
+    "kind": "hypothesis",
+    "family": "xsci_constraint",
+    "mechanism": "cross_science_constraint",
+    "symbols": [
+     "GBPJPY"
+    ],
+    "lab": "constraint",
+    "statistic": 5.01098,
+    "null": "Bonferroni z 3.7 over 232 clauses",
+    "claim": "GBPJPY: when busy- AND up1- AND wide_range+ the next bar's return is positive in BOTH halves (t +4.43, +2.55; support 189)",
+    "falsifier": "the clause's sign or strength fails a half out of sample",
+    "atoms": [
+     [
+      "busy",
+      -1
+     ],
+     [
+      "up1",
+      -1
+     ],
+     [
+      "wide_range",
+      1
+     ]
+    ],
+    "direction": 1.0,
+    "expr": null,
+    "evaluated": 232
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_constraint",
+    "mechanism": "cross_science_constraint",
+    "symbols": [
+     "NZDCAD"
+    ],
+    "lab": "constraint",
+    "statistic": 4.84828,
+    "null": "Bonferroni z 3.7 over 232 clauses",
+    "claim": "NZDCAD: when busy- AND trend5- AND wide_range+ the next bar's return is positive in BOTH halves (t +3.07, +3.93; support 243)",
+    "falsifier": "the clause's sign or strength fails a half out of sample",
+    "atoms": [
+     [
+      "busy",
+      -1
+     ],
+     [
+      "trend5",
+      -1
+     ],
+     [
+      "wide_range",
+      1
+     ]
+    ],
+    "direction": 1.0,
+    "expr": null,
+    "evaluated": 232
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_constraint",
+    "mechanism": "cross_science_constraint",
+    "symbols": [
+     "CHFJPY"
+    ],
+    "lab": "constraint",
+    "statistic": 4.79381,
+    "null": "Bonferroni z 3.7 over 232 clauses",
+    "claim": "CHFJPY: when busy- AND up1- AND wide_range+ the next bar's return is positive in BOTH halves (t +4.28, +2.38; support 197)",
+    "falsifier": "the clause's sign or strength fails a half out of sample",
+    "atoms": [
+     [
+      "busy",
+      -1
+     ],
+     [
+      "up1",
+      -1
+     ],
+     [
+      "wide_range",
+      1
+     ]
+    ],
+    "direction": 1.0,
+    "expr": null,
+    "evaluated": 232
+   }
+  ],
+  "gaussian_process": [],
+  "motif": [
+   {
+    "kind": "hypothesis",
+    "family": "xsci_motif",
+    "mechanism": "cross_science_motif",
+    "symbols": [
+     "AUDHUF"
+    ],
+    "lab": "motif",
+    "statistic": 5.47302,
+    "null": "Bonferroni |t| 2.73 over 8 motifs",
+    "claim": "AUDHUF: after the motif DD (722 occurrences) the next bar reverses (mean +0.000275)",
+    "falsifier": "the motif's next-bar mean is inside the Bonferroni bar out of sample",
+    "motif": "DD",
+    "length": 2,
+    "up": false,
+    "follow": "reverses",
+    "count": 722
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_motif",
+    "mechanism": "cross_science_motif",
+    "symbols": [
+     "AUDCHF"
+    ],
+    "lab": "motif",
+    "statistic": 4.56283,
+    "null": "Bonferroni |t| 2.73 over 8 motifs",
+    "claim": "AUDCHF: after the motif DD (661 occurrences) the next bar reverses (mean +0.000146)",
+    "falsifier": "the motif's next-bar mean is inside the Bonferroni bar out of sample",
+    "motif": "DD",
+    "length": 2,
+    "up": false,
+    "follow": "reverses",
+    "count": 661
+   },
+   {
+    "kind": "hypothesis",
+    "family": "xsci_motif",
+    "mechanism": "cross_science_motif",
+    "symbols": [
+     "AUDSGD"
+    ],
+    "lab": "motif",
+    "statistic": 4.02111,
+    "null": "Bonferroni |t| 2.73 over 8 motifs",
+    "claim": "AUDSGD: after the motif DD (717 occurrences) the next bar reverses (mean +0.000112)",
+    "falsifier": "the motif's next-bar mean is inside the Bonferroni bar out of sample",
+    "motif": "DD",
+    "length": 2,
+    "up": false,
+    "follow": "reverses",
+    "count": 717
+   }
+  ],
+  "operations": []
+ },
+ "metric": {
+  "stable_edges": 0,
+  "hypotheses": 83,
+  "macro_kinds_measured": 4,
+  "listed_edges_measured": 4,
+  "listed_edges_contradicted": 4,
+  "or_motif_hits": 7,
+  "macro_live_edges": 0
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 274.029
+}

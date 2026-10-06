@@ -535,6 +535,49 @@ def net_of_cost_factors(doc: Mapping[str, Any] | None
                  f"{mean:+.6f}; tilt basis {basis}; heat-neutral, so it reallocates only")
 
 
+#: Tier S's heat-neutral tilts: the opportunity exchange's book and measured execution capture
+#: (`libs/tiers/allocator_tilts.py`, written hourly by `tier_s.organ_exchange`).
+TIER_S_TILTS_REL = ("desks", "mt5", "data", "tier_s", "allocator_tilts.json")
+#: the Tier S tilt's own floor: the exchange may clear a sleeve to nothing (libs/tiers/
+#: allocator_tilts.EXCHANGE_LO), heat-neutrally, so the heat it frees funds the sleeves it holds
+TIER_S_TILT_LO = 0.0
+TIER_S_MAX_AGE_S = 6 * 3600
+
+
+def tier_s_factors(doc: Mapping[str, Any] | None = None, *, now: datetime | None = None
+                   ) -> tuple[dict[str, float], str]:
+    """{book name: tilt} from Tier S's exchange-and-capture tilts, or {} with the reason.
+
+    Each tilt is heat-neutral over the live book and bounded to [TIER_S_TILT_LO, TILT_HI] by its
+    writer and again here, so it REORDERS the book toward the sleeves the exchange's robust E[log W]
+    clearing prefers and the ones whose live fills bank their forward edge; the total is the heat
+    law's. Absent, stale (> 6h) or malformed reads as NOTHING, which the allocator treats as 1.0."""
+    if doc is None:
+        import json
+        from pathlib import Path
+        path = Path(__file__).resolve().parents[2].joinpath(*TIER_S_TILTS_REL)
+        try:
+            doc = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError) as exc:
+            return {}, f"tier_s allocator_tilts.json unreadable ({type(exc).__name__}): neutral"
+    if not isinstance(doc, Mapping) or doc.get("kind") != "tier_s_tilts":
+        return {}, "tier_s allocator_tilts.json is not a tilt document: neutral"
+    age = _age_s(doc, now)
+    if age is None or age > TIER_S_MAX_AGE_S:
+        return {}, "tier_s allocator_tilts.json is stale or undated: neutral"
+    rows = doc.get("sleeves")
+    out: dict[str, float] = {}
+    for name, row in rows.items() if isinstance(rows, Mapping) else []:
+        try:
+            t = float((row or {}).get("tilt", 1.0))
+        except (TypeError, ValueError, AttributeError):
+            continue
+        if math.isfinite(t):
+            out[str(name)] = float(min(TILT_HI, max(TIER_S_TILT_LO, t)))
+    return out, (f"tier_s allocator_tilts.json read: {len(out)} sleeve(s), "
+                 f"{sum(1 for v in out.values() if abs(v - 1.0) > 1e-9)} tilted off 1.0")
+
+
 def net_capacity_rows(doc: Mapping[str, Any] | None) -> dict[str, dict[str, Any]]:
     """Per-sleeve CAPACITY -- the size at which net edge decays to zero -- for the bundle.
 

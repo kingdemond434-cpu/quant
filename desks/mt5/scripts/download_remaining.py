@@ -41,6 +41,9 @@ import pandas as pd
 #: `run_external_backtest.bars`, `external_gauntlet` and `shadow_forward` all read. A literal
 #: path here is what let the downloader and the desk disagree for as long as they did.
 BASE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE))
+from research.parquet_publication import atomic_parquet  # noqa: E402
+
 PARQUET_DIR = BASE / "data" / "universe"
 UNIVERSE_OUT = PARQUET_DIR / "universe.json"
 
@@ -62,7 +65,7 @@ TIMEFRAMES: tuple[str, ...] = (
     "H1", "M15", "M5", "M30", "H4", "D1", "M1",          # the desk's working charts
     "W1", "MN1",                                          # slow horizons: kilobytes, new mechanisms
     "H2", "H3", "H6", "H8", "H12",                        # intraday swing
-    "M2", "M3", "M4", "M6", "M10", "M12", "M20",          # sub-M5: most bytes, least new information
+    "M2", "M3", "M4", "M6", "M10", "M12", "M20",          # smaller charts: most bytes
 )
 
 #: Bars per chart. MT5 caps a single request, and shorter charts need more rows to span the same
@@ -215,7 +218,7 @@ def main(argv: list[str] | None = None) -> int:
             # pyarrow default of snappy, and OHLC bars are the same kind of data -- monotonic
             # timestamps, prices in a narrow band, small repeated volumes. The codec lives in the
             # file's own metadata, so every reader is unchanged: they pass none and get this.
-            df.to_parquet(out, engine="pyarrow", compression="zstd")
+            atomic_parquet(df, out, engine="pyarrow", compression="zstd")
             got += 1
             if i % 50 == 0:
                 print(f"  {tf} [{i}/{len(tradable)}] {got} written, {skipped} present, "

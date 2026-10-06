@@ -1,0 +1,404 @@
+{
+ "score": {
+  "immune_score": 0.9019047619047619,
+  "power": 0.78,
+  "balanced": 0.8409523809523809,
+  "n_cases": 2700,
+  "per_kind": {
+   "cost_fake": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "duplicate_factor": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "impossible_fills": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "information_delay": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "label_randomization": {
+    "n": 150,
+    "accepted": 102,
+    "accept_rate": 0.68
+   },
+   "leakage": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "regime_break": {
+    "n": 150,
+    "accepted": 48,
+    "accept_rate": 0.32
+   },
+   "selection": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "sign_reversal": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "spread_perturbation": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "stale_price": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "survivorship": {
+    "n": 150,
+    "accepted": 56,
+    "accept_rate": 0.37333333333333335
+   },
+   "timestamp_scramble": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "timezone_shift": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "true_seasonal": {
+    "n": 150,
+    "accepted": 120,
+    "accept_rate": 0.8
+   },
+   "true_signal": {
+    "n": 150,
+    "accepted": 135,
+    "accept_rate": 0.9
+   },
+   "true_strong_signal": {
+    "n": 150,
+    "accepted": 150,
+    "accept_rate": 1.0
+   },
+   "true_weak_signal": {
+    "n": 150,
+    "accepted": 63,
+    "accept_rate": 0.42
+   }
+  },
+  "traps_let_through": {
+   "survivorship": 56,
+   "regime_break": 48,
+   "label_randomization": 102
+  }
+ },
+ "production": {
+  "status": "MEASURED",
+  "gauntlet_code": "e8389c8236ddf59d",
+  "judged_now": 2100,
+  "judged_total": 2100,
+  "expressible_cases": 2100,
+  "coverage": 1.0,
+  "inexpressible_kinds": [
+   "duplicate_factor",
+   "impossible_fills",
+   "stale_price",
+   "survivorship"
+  ],
+  "immune_score": 1.0,
+  "power": 0.0,
+  "per_kind": {
+   "cost_fake": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "information_delay": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "label_randomization": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "leakage": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "regime_break": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "selection": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "sign_reversal": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "spread_perturbation": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "timestamp_scramble": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "timezone_shift": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "true_seasonal": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "true_signal": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "true_strong_signal": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "true_weak_signal": {
+    "n": 150,
+    "accepted": 0,
+    "accept_rate": 0.0
+   }
+  },
+  "traps_let_through": {}
+ },
+ "judge": "production:e8389c8236ddf59d",
+ "seal": "49fa2ab0e463725e64772194a1885282558049154621f82b85f683e1825ebe2a",
+ "verdict": {
+  "verdict": "OK",
+  "immune_score": 1.0,
+  "best": null
+ },
+ "power_alarm": "the production certifier accepted 0.0% of 600 genuine positive controls (incl. an AR(0.25) edge): its immunity is uninformative and it is rejecting real edges",
+ "real_episode": {
+  "status": "MEASURED",
+  "seal": "8511f54bd1bc234a2e5a8c33ee79024c7132fa7ec3e0eb59b6fbf7b117f702aa",
+  "immune_score": 0.8976190476190476,
+  "power": 0.7,
+  "balanced": 0.7988095238095239,
+  "n_cases": 540,
+  "per_kind": {
+   "cost_fake": {
+    "n": 30,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "duplicate_factor": {
+    "n": 30,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "impossible_fills": {
+    "n": 30,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "information_delay": {
+    "n": 30,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "label_randomization": {
+    "n": 30,
+    "accepted": 22,
+    "accept_rate": 0.7333333333333333
+   },
+   "leakage": {
+    "n": 30,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "regime_break": {
+    "n": 30,
+    "accepted": 8,
+    "accept_rate": 0.26666666666666666
+   },
+   "selection": {
+    "n": 30,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "sign_reversal": {
+    "n": 30,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "spread_perturbation": {
+    "n": 30,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "stale_price": {
+    "n": 30,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "survivorship": {
+    "n": 30,
+    "accepted": 13,
+    "accept_rate": 0.43333333333333335
+   },
+   "timestamp_scramble": {
+    "n": 30,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "timezone_shift": {
+    "n": 30,
+    "accepted": 0,
+    "accept_rate": 0.0
+   },
+   "true_seasonal": {
+    "n": 30,
+    "accepted": 23,
+    "accept_rate": 0.7666666666666667
+   },
+   "true_signal": {
+    "n": 30,
+    "accepted": 25,
+    "accept_rate": 0.8333333333333334
+   },
+   "true_strong_signal": {
+    "n": 30,
+    "accepted": 30,
+    "accept_rate": 1.0
+   },
+   "true_weak_signal": {
+    "n": 30,
+    "accepted": 6,
+    "accept_rate": 0.2
+   }
+  },
+  "traps_let_through": {
+   "survivorship": 13,
+   "regime_break": 8,
+   "label_randomization": 22
+  },
+  "symbols": [
+   "AUDHUF",
+   "AUDJPY",
+   "AUDUSD",
+   "BCHUSD",
+   "BTCUSD",
+   "CADJPY",
+   "CHFJPY",
+   "ETHUSD",
+   "EURAUD",
+   "EURCHF",
+   "EURJPY",
+   "EURUSD",
+   "GBPAUD",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "episodes": 11880,
+  "drift_verdict": {
+   "verdict": "OK",
+   "immune_score": 0.8976190476190476,
+   "best": 0.8976190476190476
+  },
+  "vs_synthetic": {
+   "accept_rate_gap": {
+    "cost_fake": 0.0,
+    "duplicate_factor": 0.0,
+    "impossible_fills": 0.0,
+    "information_delay": 0.0,
+    "label_randomization": 0.0533,
+    "leakage": 0.0,
+    "regime_break": -0.0533,
+    "selection": 0.0,
+    "sign_reversal": 0.0,
+    "spread_perturbation": 0.0,
+    "stale_price": 0.0,
+    "survivorship": 0.06,
+    "timestamp_scramble": 0.0,
+    "timezone_shift": 0.0,
+    "true_seasonal": -0.0333,
+    "true_signal": -0.0667,
+    "true_strong_signal": 0.0,
+    "true_weak_signal": -0.22
+   },
+   "traps_easier_on_real": {
+    "label_randomization": 0.0533,
+    "survivorship": 0.06
+   },
+   "power_lost_on_real": {
+    "true_seasonal": -0.0333,
+    "true_signal": -0.0667,
+    "true_weak_signal": -0.22
+   },
+   "immune_gap": -0.0043
+  },
+  "note": "real H1 magnitudes, signs randomised: no-edge is true by construction; the drift verdict is published, and the promotion freeze stays the sealed synthetic/production suite's"
+ },
+ "floor": 0.9,
+ "validator": {
+  "lookahead_probes": 40,
+  "lookahead_on": true,
+  "fills_on": true,
+  "fill_tolerance": 1e-09,
+  "dsr_threshold": 0.95,
+  "dsr_on": true,
+  "wf_folds": 4,
+  "wf_min_positive": 3,
+  "wf_last_half_positive": true,
+  "wf_on": true,
+  "factor_corr_max": 0.5,
+  "factor_resid_t": 2.0,
+  "factor_on": true,
+  "survivorship_corr": 0.5,
+  "survivorship_t": 2.0,
+  "survivorship_on": true,
+  "stale_zero_share": 0.2,
+  "stale_on": true,
+  "cost_stress": 1.0,
+  "extra": []
+ },
+ "metric": {
+  "immune_score": 1.0,
+  "power": 0.0,
+  "balanced": 0.8409523809523809,
+  "real_immune": 0.8976190476190476,
+  "real_power": 0.7,
+  "real_balanced": 0.7988095238095239,
+  "production_immune": 1.0,
+  "production_power": 0.0,
+  "production_coverage": 1.0
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 174.919
+}

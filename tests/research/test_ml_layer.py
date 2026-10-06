@@ -134,7 +134,7 @@ def test_the_student_is_scored_against_truth_not_the_teacher(ml) -> None:
 
 
 # --------------------------------------------------------------------------- contract
-def test_nothing_here_owns_a_position(ml) -> None:
+def test_nothing_here_owns_a_position(ml, monkeypatch) -> None:
     """Challenger-only. A route from a research model to capital is the one thing forbidden."""
     src = (_ROOT / "desks" / "mt5" / "research" / "ml_layer.py").read_text("utf-8")
     body = "\n".join(ln for ln in src.splitlines() if not ln.lstrip().startswith("#"))
@@ -142,4 +142,10 @@ def test_nothing_here_owns_a_position(ml) -> None:
         assert f"def {banned}" not in body and f"return {banned}" not in body, (
             f"ml_layer exposes {banned} -- a challenger model has acquired a route to money "
             "without passing the capital allocator")
-    assert ml.run()["challenger_only"] is True
+    # Exercise all actual model stages on an owned measured series. Reading the box's
+    # populated universe here also advances its research cursor and makes this contract
+    # test depend on production data volume.
+    monkeypatch.setattr(ml, "_closes", lambda: ({"fixture": _walk()}, {"source": "test"}))
+    report = ml.run()
+    assert report["series"] == 1
+    assert report["challenger_only"] is True

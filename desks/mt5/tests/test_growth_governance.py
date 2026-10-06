@@ -76,6 +76,7 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     return seed
 
 
+@pytest.mark.usefixtures("legacy_floors")
 def test_the_books_fraction_reaches_the_venue_unshrunk(monkeypatch) -> None:
     # The sizing law lives in the decision core since the split; the gateway's `promoted_lot`
     # is a delegate to it (pinned in test_gateway_adapter). Isolate the fraction law by
@@ -324,3 +325,12 @@ def test_the_governance_fence_passes_on_this_tree() -> None:
     r = subprocess.run([sys.executable, str(_ROOT / "scripts" / "check_growth_governance.py")],
                        capture_output=True, text=True, timeout=120)
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+@pytest.fixture
+def legacy_floors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pins the PRE-2026-09-29 floors, which remain the documented revert path
+    (data/ALLOCATOR_SOVEREIGN.json {"enabled": false}); see test_allocator_sovereignty.py."""
+    import mt5desk.decision_core as _dc
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN", False)
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN_FILE", _dc._DESK / "data" / "__absent__.json")

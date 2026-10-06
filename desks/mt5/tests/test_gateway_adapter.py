@@ -17,7 +17,9 @@ import ast
 import contextlib
 import hashlib
 import json
+import os
 import sys
+import tempfile
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -78,6 +80,7 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     # pure standard-library modules with no venue in them -- `MetaTrader5` is what each test
     # fakes for itself, and seeding it here would hand every test a terminal it did not ask for.
     seed.update({"contextlib": contextlib, "hashlib": hashlib, "json": json, "time": time,
+                 "os": os, "tempfile": tempfile,
                  "datetime": datetime, "UTC": UTC, "timedelta": timedelta, "Path": Path,
                  "pd": pd, "np": np})
     for node in _GW_TREE.body:
