@@ -507,3 +507,128 @@ def test_every_cn_and_dislocation_cell_declares_a_provider_dataset_source(
                           lambda _s: bars, seat=DL.HARD_SEAT,
                           data_source=DL.HARD_PAIRS["kr_gold_london"]["data_source"])
     assert hard is not None and hard["candidate"]["data_source"] == "krx:gold"
+
+
+# ============================================ semantic lane: every builder behind the terms gate
+def _sem_lane(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, frames: dict[str, Any],
+              *, dry_run: bool = True) -> tuple[dict[str, Any], list[str], list[str]]:
+    """Run the semantic lane with frames by builder; record which builders were READ and which
+    sids were SCREENED, so a held builder that touched either fails the test."""
+    read: list[str] = []
+    screened: list[str] = []
+    by_members = {members: b for b, members in PK.SEMANTIC_PACKS.items()}
+
+    def _frame(members: tuple[str, ...]) -> tuple[Any, str]:
+        b = by_members[members]
+        read.append(b)
+        return (frames[b], "test frame") if b in frames else (None, "UNMEASURED: none")
+
+    def _screen(sid: str, sig: str, sym: str, thr: float, side: int, *_a: Any,
+                **_k: Any) -> dict[str, Any]:
+        screened.append(sid)
+        return {"cell": f"{sym}.{sid}.{sig}.{thr}.{side}",
+                "candidate": {"seat": PK.SEM_SEAT, "symbol": sym, "sid": sid}}
+    from research import proposer_common as pc
+    monkeypatch.setattr(PK, "_sem_frame", _frame)
+    monkeypatch.setattr(PK, "_screen_one", _screen)
+    monkeypatch.setattr(PK, "resolve_targets", lambda _raw: ["XAUUSD"])
+    monkeypatch.setattr(PK, "SERIES", tmp_path / "series")
+    monkeypatch.setattr(PK, "SEM_CURSOR", tmp_path / "cursor.json")
+    monkeypatch.setattr(PK, "NULL_TRIALS", tmp_path / "null.jsonl")
+    monkeypatch.setattr(pc, "deflate", lambda rows: rows)
+    monkeypatch.setattr(pc, "best_per_cell", lambda rows: rows)
+    donated: list[Any] = []
+    monkeypatch.setattr(PK, "_sem_donate",
+                        lambda cands, n, **_k: donated.append((list(cands), n))
+                        or {"donated": len(cands), "path": "x"})
+    rep = PK.semantic_lane(budget_s=60.0, dry_run=dry_run)
+    rep["_donated"] = donated
+    return rep, read, screened
+
+
+def _pmi_frame(n: int = 40) -> pd.DataFrame:
+    rng = np.random.default_rng(5)
+    ev = pd.date_range("2023-01-31", periods=n, freq="ME", tz="UTC")
+    df = pd.DataFrame({"event_time": ev, "available_time": ev + pd.Timedelta(hours=25)})
+    for k in ("pmi|制造业", "new_orders|x", "production|x", "employment|x",
+              "finished_goods_inventory|x", "input_prices|x"):
+        df[k] = 50.0 + rng.normal(0, 1.0, n)
+    return df
+
+
+def test_cfets_fix_and_shibor_builders_mint_nothing_on_refused_terms(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    assert A.terms_gate("cn_cfets_chinamoney")[0] == "refused"
+    for b in ("cfets_fix", "shibor"):
+        g = PK.sem_terms(b, {str(p.get("id")): p for p in PK.packs()})
+        assert g["terms"] == "refused" and g["terms_ref"] == "cn_cfets_chinamoney", g
+    # even with a ledger frame on disk, the held builders are never read nor screened
+    rep, read, screened = _sem_lane(monkeypatch, tmp_path,
+                                    {"cfets_fix": _pmi_frame(), "shibor": _pmi_frame()},
+                                    dry_run=False)
+    for b in ("cfets_fix", "shibor"):
+        row = rep["packs"][b]
+        assert row["status"] == "BLOCKED_ON_TERMS:refused" and row["tests"] == 0, row
+        assert b not in read
+        assert "chinamoney" in row["why"]
+    assert not any(s.startswith(("cfets_fix", "shibor")) for s in screened)
+    assert {"cfets_fix", "shibor"} <= set(rep["blocked_on_terms"])
+    # nothing donated and no null trial charged for a refused source
+    for cands, _n in rep["_donated"]:
+        assert not any(str(c.get("sid", "")).startswith(("cfets_fix", "shibor")) for c in cands)
+    assert not (tmp_path / "series" / "cfets_fix__sem.parquet").exists()
+
+
+def test_to_confirm_builders_mint_nothing(tmp_path: Path,
+                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    held = {b: _pmi_frame() for b in ("safe_settlement", "safe_cross_border", "safe_reserves",
+                                       "omo", "customs")}
+    rep, read, screened = _sem_lane(monkeypatch, tmp_path, held)
+    for b in held:
+        row = rep["packs"][b]
+        assert row["status"] == "BLOCKED_ON_TERMS:to_confirm" and row["tests"] == 0, (b, row)
+        assert b not in read
+    assert not any(s.split("__")[0] in held for s in screened)
+    # an id the gate does not know is to_confirm (fail closed), never permission
+    monkeypatch.setitem(PK.SEM_TERMS_REF, "omo", "no_such_terms_row")
+    assert PK.sem_terms("omo")["terms"] == "to_confirm"
+    # and a builder the table does not know at all
+    assert PK.sem_terms("unknown_builder")["terms"] == "to_confirm"
+
+
+def test_stats_gov_cn_builders_still_mint(tmp_path: Path,
+                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    for b in ("pmi_mfg", "pmi_nonmfg", "macro_industrial", "macro_prices"):
+        assert PK.sem_terms(b, {str(p.get("id")): p for p in PK.packs()})["terms"] == "confirmed"
+    rep, read, screened = _sem_lane(monkeypatch, tmp_path, {"pmi_mfg": _pmi_frame()},
+                                    dry_run=False)
+    row = rep["packs"]["pmi_mfg"]
+    assert row["status"] == "BUILT" and row["terms"] == "confirmed" and row["tests"] > 0, row
+    assert "pmi_mfg" in read and any(s == "pmi_mfg__sem" for s in screened)
+    assert (tmp_path / "series" / "pmi_mfg__sem.parquet").exists()
+    assert rep["_donated"] and rep["_donated"][0][0], "a confirmed builder's cells are donated"
+    # the confirmed builders with no ledger read UNMEASURED, not blocked
+    assert rep["packs"]["macro_prices"]["status"] == "UNMEASURED"
+    assert rep["blocked_on_terms"] == sorted(
+        b for b, r in PK.SEM_TERMS_REF.items() if A.terms_gate(r)[0] != "confirmed")
+
+
+def test_usdcnh_fixing_window_studies_read_only_broker_tape_and_still_run() -> None:
+    """The 01:15 and 08:30 UTC window studies are country_lab windows on the broker's own USDCNH
+    tape: no CFETS value is an input, so the CFETS ruling does not hold them."""
+    from libs.research import country_lab as CL
+
+    from research.countries.cn import pack as CN
+    fixes = {f.time_utc: f for f in CN._fixing_rows(CL)}
+    rng = np.random.default_rng(11)
+    t = pd.date_range("2026-01-01", periods=24 * 4 * 60, freq="15min", tz="UTC")
+    close = 7.2 * np.exp(np.cumsum(rng.normal(0, 2e-4, len(t))))
+    bars = CL.Bars(symbol="USDCNH", timeframe="M15",
+                   times=t.tz_convert(None).to_numpy(dtype="datetime64[ns]"), close=close)
+    for hhmm in ("01:15", "08:30"):
+        fx = fixes[hhmm]
+        assert tuple(fx.instruments) == ("USDCNH",)
+        h, m = map(int, hhmm.split(":"))
+        end = h * 60 + m + max(5, int(fx.window_minutes))
+        res = CL.window_effect(bars, hhmm, f"{end // 60:02d}:{end % 60:02d}")
+        assert res["verdict"] == "MEASURED" and res["symbol"] == "USDCNH", res

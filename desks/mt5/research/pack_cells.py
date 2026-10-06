@@ -1232,6 +1232,22 @@ SEM_DATA_SOURCE: dict[str, str] = {
     "macro_industrial": "nbs:industrial", "macro_prices": "nbs:prices",
     "customs": "customs:trade",
 }
+#: THE TERMS EACH SEMANTIC BUILDER'S PUBLISHER IS HELD TO (#229 terms ruling, 2026-10-06), the
+#: ids of `alt_proxies.GATE_TERMS` / `cn_official_tables.ADAPTER_TERMS`. Declared per builder so a
+#: builder whose registry row is missing is still governed; the member rows' own `terms_ref` (or
+#: their adapter's) is read as well, and EVERY id must read `confirmed` or the builder mints
+#: nothing: no frame read, no screen, no donation, no trial charged. Today only the statistics
+#: bureau (stats.gov.cn) is confirmed; CFETS (chinamoney.com.cn, shibor.org: CCPR and SHIBOR)
+#: reads `refused`, and SAFE, the PBOC and customs `to_confirm`. The fixing-TIME window studies
+#: (country_lab's 01:15 / 08:30 UTC USDCNH windows) read only the broker's own tape and are not
+#: builders of this lane, so nothing here holds them.
+SEM_TERMS_REF: dict[str, str] = {
+    "safe_settlement": "cn_safe_official", "safe_cross_border": "cn_safe_official",
+    "safe_reserves": "cn_safe_official", "cfets_fix": "cn_cfets_chinamoney",
+    "shibor": "cn_cfets_chinamoney", "omo": "cn_pboc_official", "pmi_mfg": "cn_nbs_official",
+    "pmi_nonmfg": "cn_nbs_official", "macro_industrial": "cn_nbs_official",
+    "macro_prices": "cn_nbs_official", "customs": "cn_customs_official",
+}
 #: Registry target spellings that are not MT5 symbols, resolved to the universe's own names.
 TARGET_ALIASES: dict[str, str] = {"Copper": "XCUUSD", "CN50": "CHINAH", "CHINA50": "CHINAH",
                                   "A50": "CHINAH"}
@@ -1244,6 +1260,43 @@ SEM_BUDGET_SHARE = 0.35
 #: The fixing model's rolling fit: observations strictly BEFORE the fix being explained.
 FIX_FIT_WINDOW = 120
 FIX_FIT_MIN = 40
+
+
+def sem_terms(builder: str, reg: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
+    """{terms, terms_ref, why} for one semantic builder, FAIL CLOSED.
+
+    `terms` is `confirmed` only when the declared id AND every member row's own terms id read
+    `confirmed` through `alt_proxies.terms_gate`; otherwise the worst of them (`refused` before
+    `to_confirm`). An unknown builder, an unreadable gate or an id the gate does not know is
+    `to_confirm`, never permission."""
+    refs = [SEM_TERMS_REF.get(builder, f"pack_cells_sem:{builder}")]
+    adapter_terms: dict[str, str] = {}
+    try:
+        from research.cn_official_tables import ADAPTER_TERMS
+        adapter_terms = dict(ADAPTER_TERMS)
+    except Exception:
+        pass
+    for pid in SEMANTIC_PACKS.get(builder, ()):
+        row = (reg or {}).get(pid) or {}
+        ref = str(row.get("terms_ref") or adapter_terms.get(str(row.get("adapter") or ""), ""))
+        if ref and ref not in refs:
+            refs.append(ref)
+    try:
+        from research.alt_proxies import terms_gate
+    except Exception as exc:
+        return {"terms": "to_confirm", "terms_ref": refs[0],
+                "why": f"terms gate unimportable ({type(exc).__name__}): fail closed"}
+    worst: tuple[str, str, str] | None = None
+    for ref in refs:
+        state, why = terms_gate(ref)
+        if state == "confirmed":
+            continue
+        state = "refused" if state == "refused" else "to_confirm"
+        if worst is None or (state == "refused" and worst[0] != "refused"):
+            worst = (state, ref, why)
+    if worst is None:
+        return {"terms": "confirmed", "terms_ref": refs[0], "why": ""}
+    return {"terms": worst[0], "terms_ref": worst[1], "why": worst[2]}
 
 
 def _sem_frame(packs_: tuple[str, ...]) -> tuple[Any, str]:
@@ -1586,6 +1639,14 @@ def semantic_lane(budget_s: float = 80.0, *, dry_run: bool = False,
     for builder, members in SEMANTIC_PACKS.items():
         row: dict[str, Any] = {"packs": list(members)}
         out[builder] = row
+        gate = sem_terms(builder, reg)
+        row.update({"terms": gate["terms"], "terms_ref": gate["terms_ref"]})
+        if gate["terms"] != "confirmed":
+            # HELD ON TERMS: a ledger already on disk is not a licence to use it. No frame is
+            # read, no cell screened, nothing donated and no look charged (there was none).
+            row.update({"status": f"BLOCKED_ON_TERMS:{gate['terms']}",
+                        "why": str(gate["why"])[:300], "tests": 0})
+            continue
         df, why = _sem_frame(members)
         if df is None:
             row.update({"status": "UNMEASURED", "why": why})
@@ -1641,6 +1702,8 @@ def semantic_lane(budget_s: float = 80.0, *, dry_run: bool = False,
                      "target's bars net of cost, deflated by every look this pass, donated "
                      "through proposer_common; a null pass is charged to null_pass_trials"),
             "seat": SEM_SEAT, "packs": out, "tests_run": n_tests,
+            "blocked_on_terms": sorted(b for b, r in out.items()
+                                       if str(r.get("status", "")).startswith("BLOCKED_ON_TERMS")),
             "screened_measurable": len(screened),
             "proposed": len(cands_all), "donation": donation,
             "seconds": round(time.monotonic() - t0, 2)}
