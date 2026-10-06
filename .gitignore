@@ -431,6 +431,12 @@ tmp_*.py
 data/alpha_registry.sqlite
 data/alpha_registry.sqlite-wal
 data/alpha_registry.sqlite-shm
+# The two-stage judge's stage-1 record (desks/mt5/research/stage1_record.py): box state, one row
+# per backlog cell (~1.4M on the trading box) plus its ruling history. Its per-run and per-family
+# summaries are the tracked artifacts (data/STAGE1_TRIALS.jsonl, data/stage1/stage1_runs.jsonl).
+desks/mt5/data/stage1/stage1_record.sqlite
+desks/mt5/data/stage1/stage1_record.sqlite-wal
+desks/mt5/data/stage1/stage1_record.sqlite-shm
 
 # The registry's import-reach cache (2026-09-23): content-keyed stems, reconstructible from the
 # tree in one parse. Machine-rewritten on every registry build, so it is a cache by this file's
