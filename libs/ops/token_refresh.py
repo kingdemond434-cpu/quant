@@ -31,8 +31,11 @@ THE PROVIDERS' OWN DOCUMENTED FLOWS (verified 2026-10-06):
 TERMS FENCE (security audit of #218, 2026-10-06). A provider listed in `TERMS` sends NO
 credential -- no login, no mint, no pasted token on a request -- until its terms are recorded as
 "confirmed" with the URL and a verbatim quote in `TERMS_EVIDENCE`. Anything else is
-BLOCKED_ON_TERMS (fail closed), and so is a provider absent from `TERMS`. CDSE is confirmed;
-Myfxbook and J-Quants are not (see the evidence).
+BLOCKED_ON_TERMS (fail closed), and so is a provider absent from `TERMS`. CDSE is confirmed
+(with an attribution duty, `attribution()`); J-Quants is "confirmed_private_use" on the
+principal's 2026-10-06 answer (art. 8: private use by the registered individual), so its every
+result carries `private_use=True` and nothing from it may reach git or a shared output;
+Myfxbook is not confirmed (see the evidence).
 
 CREDENTIALS ARE READ THROUGH `libs.ops.env_keys.read_key` (#201), never straight from
 `os.environ`: a value set with `setx /M` after a resident task started lives only in the machine
@@ -60,6 +63,7 @@ configured, REFRESH_FAILED (with the HTTP status when there was one) when the mi
 from __future__ import annotations
 
 import base64
+import dataclasses
 import json
 import os
 import re
@@ -126,9 +130,10 @@ PROVIDERS: dict[str, Provider] = {
 }
 MANAGED: frozenset[str] = frozenset(PROVIDERS)
 
-#: Terms verdict per terms-fenced provider: "confirmed" | "to_confirm" | "refused". A provider
-#: listed here sends no credential unless its verdict is "confirmed" (fail closed). Same shape as
-#: desks/mt5/research/alt_proxies.TERMS / TERMS_EVIDENCE.
+#: Terms verdict per terms-fenced provider: "confirmed" | "confirmed_private_use" |
+#: "to_confirm" | "refused". A provider listed here sends no credential unless its verdict is in
+#: PERMITTED_VERDICTS (fail closed). Same shape as desks/mt5/research/alt_proxies.TERMS /
+#: TERMS_EVIDENCE.
 TERMS: dict[str, tuple[str, str]] = {
     "cdse": ("confirmed", "CDSE terms: Sentinel data free, full and open, governed by the "
                           "Sentinel Data Legal Notice (reproduction, distribution, adaptation)"),
@@ -136,12 +141,18 @@ TERMS: dict[str, tuple[str, str]] = {
                                "information only'; its Terms say 'Reproduction is prohibited' "
                                "and do not address automated or commercial use of community "
                                "data -- not a clear permission for this desk's use"),
-    "jquants": ("to_confirm", "J-Quants API Terms of Service art. 8: use is limited to the "
-                              "registered (individual) user's private use; commercial or "
-                              "academic use, or making the data usable by third parties, is "
-                              "not private use -- not a clear permission for a trading desk "
-                              "that passes data to automated research seats"),
+    "jquants": ("confirmed_private_use",
+                "J-Quants API Terms of Service art. 8: use is limited to the registered "
+                "(individual) user's private use. The principal confirmed 2026-10-06 that the "
+                "desk trades only their own money, i.e. private use by the registered "
+                "individual. PERMITTED FOR PRIVATE USE ONLY: no redistribution, no sharing -- "
+                "nothing from it reaches git (the repository is public) or any shared output"),
 }
+#: Verdicts under which a provider's credential may be sent. "confirmed_private_use" permits the
+#: fetch ONLY under its private-use condition: every result carries `private_use=True` and every
+#: consumer keeps the data, and anything derived from it, out of git and every shared output.
+PERMITTED_VERDICTS: frozenset[str] = frozenset({"confirmed", "confirmed_private_use"})
+PRIVATE_USE = "confirmed_private_use"
 _TERMS_CHK = "2026-10-06"
 TERMS_EVIDENCE: dict[str, dict[str, str]] = {
     "cdse": {
@@ -180,6 +191,22 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                        "were read through a fetch tool that renders the page for a reader "
                        "(this container cannot reach the host directly); the quotes were "
                        "requested character-for-character and agree across fetches"),
+        # ATTRIBUTION DUTY (audit of #218, 2026-10-06). The Legal Notice's permission comes with
+        # a notice obligation: whoever communicates or distributes the data names its source,
+        # and an adapted or modified product carries the "Contains modified" form. The desk
+        # derives series from what it fetches, so every record the CDSE token path produces
+        # carries `attribution()` -- the modified form with the year filled in.
+        "attribution": "Contains modified Copernicus Sentinel data {year}",
+        "attribution_unmodified": "Copernicus Sentinel data {year}",
+        "attribution_url": ("https://sentinels.copernicus.eu/documents/247904/690755/"
+                            "Sentinel_Data_Legal_Notice"),
+        "attribution_quote": ("Where the user communicates to the public or distributes "
+                              "Copernicus Sentinel Data and Service Information, he/she shall "
+                              "inform the recipients of the source of that Data and Information "
+                              "by using the following notice ... Where the Copernicus Sentinel "
+                              "Data and Service Information have been adapted or modified, the "
+                              "user shall provide the following notice: (1) 'Contains modified "
+                              "Copernicus Sentinel data [Year]'"),
         "checked_at": _TERMS_CHK},
     "myfxbook": {
         "terms_url": "https://www.myfxbook.com/api",
@@ -202,6 +229,20 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                           "しません。"),
         "definition_quote": ("登録ユーザー: 第3条(登録)に基づいて本サービスの利用者としての登録が"
                              "なされた個人"),
+        # THE PRINCIPAL'S ANSWER (2026-10-06): the art. 8 question was put to the principal,
+        # who answered that the desk trades only their own money -- private use by the
+        # registered individual. Recorded verbatim with the message that carries it.
+        "principal_answer": "yes fr j quants",
+        "principal_message_id": "cmsg_012XFUfE12Rvggnu86fDb8pr9aLZ8EJUKTqaxiniyhzvSK",
+        "principal_answered_at": "2026-10-06T21:11:56Z",
+        "principal_basis": ("the desk trades only the principal's own money, so its use is "
+                            "private use by the registered individual under art. 8"),
+        "condition": ("PRIVATE USE ONLY: no redistribution, no sharing. The repository is "
+                      "public, so no J-Quants value, derived value, cached response or cell may "
+                      "be committed to git, written to a report that syncs to git, or put in "
+                      "anything shared. Records carry private_use=True; the collector writes "
+                      "them only under the gitignored desks/mt5/data/lake/private_use/ and its "
+                      "tracked-path-safe report keeps counts and status only"),
         "scope_note": ("Art. 8 confines use to the registered individual's private use and "
                        "excludes commercial use and making the data (or anything derived from "
                        "it) usable by third parties. No clause clearly permits use by an "
@@ -222,8 +263,32 @@ def terms_ok(p: Provider) -> bool:
     FAIL CLOSED: a provider absent from `TERMS` is not ok (BLOCKED_ON_TERMS) -- an unlisted
     provider is an unchecked one, never a permitted one."""
     verdict = TERMS.get(p.name)
-    return (verdict is not None and verdict[0] == "confirmed"
-            and p.name in TERMS_EVIDENCE)
+    if verdict is None or verdict[0] not in PERMITTED_VERDICTS or p.name not in TERMS_EVIDENCE:
+        return False
+    # A private-use permission is only a permission together with its recorded condition.
+    return verdict[0] != PRIVATE_USE or bool(TERMS_EVIDENCE[p.name].get("condition"))
+
+
+def private_use(env_or_name: str) -> bool:
+    """True when the provider's data is permitted for PRIVATE USE ONLY: nothing from it, or
+    derived from it, may reach git or any shared output."""
+    p = PROVIDERS.get(env_or_name)
+    name = p.name if p is not None else str(env_or_name)
+    return TERMS.get(name, ("", ""))[0] == PRIVATE_USE
+
+
+def attribution(env_or_name: str, year: int | None = None) -> str:
+    """The source notice a provider's licence requires on anything derived from its data, with
+    the year filled in (default: the current UTC year), or "" when the provider records none.
+    Accepts the short-lived env var (`CDSE_TOKEN`) or the provider name (`cdse`)."""
+    p = PROVIDERS.get(env_or_name)
+    name = p.name if p is not None else str(env_or_name)
+    template = TERMS_EVIDENCE.get(name, {}).get("attribution", "")
+    if not template:
+        return ""
+    if year is None:
+        year = time.gmtime().tm_year
+    return template.format(year=int(year))
 
 
 def collector_status(res: TokenResult) -> str:
@@ -295,6 +360,8 @@ class TokenResult:
     expires_at: float | None = None
     http: int | None = None
     detail: str = ""
+    attribution: str = ""       #: the licence's source notice, when the provider requires one
+    private_use: bool = False   #: data permitted for private use only: never to git or shared
 
     @property
     def ok(self) -> bool:
@@ -527,11 +594,17 @@ def _long_lived(p: Provider, e: Mapping[str, str]) -> tuple[str, ...] | None:
 def get_token(env: str, *, environ: Mapping[str, str] | None = None,
               timeout: float = 20.0, now: float | None = None) -> TokenResult:
     """A valid token for the short-lived env var `env`, or a typed reason. Never raises."""
+    t = time.time() if now is None else now
     try:
-        return _get_token(env, KeySource() if environ is None else environ, timeout,
-                          time.time() if now is None else now)
+        res = _get_token(env, KeySource() if environ is None else environ, timeout, t)
     except Exception as exc:  # the contract is "never raises into callers"
-        return TokenResult(REFRESH_FAILED, env, detail=f"internal {type(exc).__name__}")
+        res = TokenResult(REFRESH_FAILED, env, detail=f"internal {type(exc).__name__}")
+    note = attribution(env, time.gmtime(t).tm_year)
+    if note:
+        res = dataclasses.replace(res, attribution=note)
+    if private_use(env):
+        res = dataclasses.replace(res, private_use=True)
+    return res
 
 
 def _get_token(env: str, e: Mapping[str, str], timeout: float, now: float) -> TokenResult:
@@ -651,6 +724,8 @@ def status_report(environ: Mapping[str, str] | None = None) -> list[dict[str, An
             "last_attempt_at": c.get("last_attempt_at"),
             "last_detail": str(c.get("last_detail") or ""),
             "docs": p.docs,
+            "attribution": attribution(p.name),
+            "private_use": private_use(p.name),
         })
     return rows
 

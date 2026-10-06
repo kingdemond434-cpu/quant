@@ -313,7 +313,7 @@ def test_terms_evidence_is_recorded_for_every_fenced_provider() -> None:
         assert ev["checked_at"]
         assert T.terms_ok(T.PROVIDERS[{"cdse": "CDSE_TOKEN", "jquants": "JQUANTS_TOKEN",
                                        "myfxbook": "MYFXBOOK_SESSION"}[name]]) == (
-            verdict == "confirmed")
+            verdict in T.PERMITTED_VERDICTS)
     assert T.TERMS["cdse"][0] == "confirmed"
     # the clause that scopes the portal's non-commercial sentence away from Sentinel data
     cdse = T.TERMS_EVIDENCE["cdse"]
@@ -343,17 +343,86 @@ def test_unknown_provider_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     assert not T.terms_ok(p)
 
 
-def test_jquants_is_fenced_on_terms_and_sends_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The user holds a key; the key does not override the terms (art. 8, private use only)."""
-    f = _fake(monkeypatch, [])
-    for env in ({"JQUANTS_API_KEY": "k-123456"}, {"JQUANTS_TOKEN": "opaque"},
-                {"JQUANTS_MAILADDRESS": "me@example.org", "JQUANTS_PASSWORD": PASSWORD}):
-        r = T.get_token("JQUANTS_TOKEN", environ=env, now=NOW)
-        assert r.status == T.BLOCKED_ON_TERMS and r.token is None
-    assert not f.calls and T.TERMS["jquants"][0] != "confirmed"
+def test_jquants_is_permitted_for_private_use_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The principal answered the art. 8 question on 2026-10-06 (private use by the registered
+    individual): J-Quants is permitted, and only under its recorded private-use condition."""
+    assert T.TERMS["jquants"][0] == T.PRIVATE_USE
     ev = T.TERMS_EVIDENCE["jquants"]
     assert ev["terms_url"] == "https://jpx-jquants.com/termsofservice"
     assert "私的使用の目的に限ります" in ev["terms_quote"]
+    assert ev["principal_message_id"].startswith("cmsg_")
+    assert ev["principal_answered_at"] == "2026-10-06T21:11:56Z"
+    assert "no redistribution" in ev["condition"] and "no sharing" in ev["condition"]
+    r = T.get_token("JQUANTS_TOKEN", environ={"JQUANTS_API_KEY": "k-123456"}, now=NOW)
+    assert r.ok and r.private_use and r.apply == "x-api-key"
+    row = {x["env"]: x for x in T.status_report({})}["JQUANTS_TOKEN"]
+    assert row["private_use"] is True and row["terms"] == T.PRIVATE_USE
+    # a private-use verdict without its recorded condition is not a permission
+    monkeypatch.setitem(T.TERMS_EVIDENCE, "jquants", {k: v for k, v in ev.items()
+                                                      if k != "condition"})
+    assert not T.terms_ok(T.PROVIDERS["JQUANTS_TOKEN"])
+    # and no other provider is private-use by accident
+    assert not T.get_token("CDSE_TOKEN", environ={}, now=NOW).private_use
+
+
+def test_cdse_attribution_duty_rides_on_every_record(monkeypatch: pytest.MonkeyPatch,
+                                                      tmp_path: Path) -> None:
+    """The Sentinel Data Legal Notice requires the source notice on anything communicated or
+    distributed; the desk adapts the data, so the 'Contains modified' form is carried."""
+    ev = T.TERMS_EVIDENCE["cdse"]
+    assert ev["attribution"] == "Contains modified Copernicus Sentinel data {year}"
+    assert ev["attribution_unmodified"] == "Copernicus Sentinel data {year}"
+    assert "Contains modified Copernicus Sentinel data [Year]" in ev["attribution_quote"]
+    assert ev["attribution_url"].startswith("https://sentinels.copernicus.eu/")
+    assert T.attribution("CDSE_TOKEN", 2026) == "Contains modified Copernicus Sentinel data 2026"
+    assert T.attribution("cdse", 2025).endswith(" 2025")
+    assert T.attribution("JQUANTS_TOKEN") == "" and T.attribution("MYFXBOOK_SESSION") == ""
+
+    year = __import__("time").gmtime(NOW).tm_year
+    want = f"Contains modified Copernicus Sentinel data {year}"
+    # every TokenResult on the CDSE path carries it -- minted, blocked or failed alike
+    _fake(monkeypatch, [(200, {"access_token": _jwt(NOW + 600), "expires_in": 600})])
+    assert T.get_token("CDSE_TOKEN", environ=CDSE_ENV, now=NOW).attribution == want
+    assert T.get_token("CDSE_TOKEN", environ={}, now=NOW).attribution == want
+    assert T.get_token("JQUANTS_TOKEN", environ={}, now=NOW).attribution == ""
+    assert {x["env"]: x for x in T.status_report({})}["CDSE_TOKEN"]["attribution"]
+
+    # the collector's row and its vault meta carry it on a collected CDSE source
+    C = _collector()
+    monkeypatch.setattr(C, "VAULT", tmp_path / "vault")
+    monkeypatch.setattr(C, "SERIES", tmp_path / "series")
+    monkeypatch.setattr(T, "get_token", lambda e, **k: T.TokenResult(
+        T.OK, e, token="cdse-bearer-abc", source="cache", attribution=want))
+    monkeypatch.setattr(C, "_robots_allows", lambda u, agent="": (True, "stub"))
+    monkeypatch.setattr(urllib.request.OpenerDirector, "open",
+                        lambda self, req, data=None, timeout=0: _Resp(b'{"type": "Catalog"}'))
+    rec = C.collect_one({"id": "copernicus_s5p", "access": "key", "key_env": "CDSE_TOKEN",
+                         "url": "https://catalogue.dataspace.copernicus.eu/stac",
+                         "expect": "json"})
+    assert rec["status"] == "COLLECTED" and rec["attribution"] == want
+    meta = json.loads(next((tmp_path / "vault" / "copernicus_s5p").glob("*.meta.json"))
+                      .read_text(encoding="utf-8"))
+    assert meta["attribution"] == want
+    assert C.report_doc([rec], 1, __import__("collections").Counter())["rows"][0][
+        "attribution"] == want
+
+
+class _Resp:
+    """A minimal urllib response for the collector's fake transport."""
+
+    def __init__(self, body: bytes, ctype: str = "application/json") -> None:
+        self.status = 200
+        self.headers = {"Content-Type": ctype}
+        self._body = body
+
+    def read(self, n: int = -1) -> bytes:
+        return self._body
+
+    def __enter__(self) -> _Resp:
+        return self
+
+    def __exit__(self, *a: Any) -> None:
+        return None
 
 
 def test_credentials_come_from_read_key_not_os_environ(monkeypatch: pytest.MonkeyPatch,

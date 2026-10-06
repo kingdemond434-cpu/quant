@@ -73,6 +73,15 @@ from libs.ops import token_refresh as _token_refresh  # noqa: E402
 VAULT = BASE / "data" / "lake" / "vault"
 SERIES = BASE / "data" / "lake" / "series"
 STATE = BASE / "data" / "lake" / "collector_state.json"
+#: PRIVATE-USE DATA (J-Quants, art. 8; the principal's answer of 2026-10-06) is vaulted and
+#: parsed HERE and nowhere else: gitignored (`lake/`), outside the shared vault/series dirs every
+#: generic lake reader globs, so no value or derived cell reaches git or a shared output. The
+#: repository is public. A tracked-path report carries counts and status only for such a source.
+PRIVATE = BASE / "data" / "lake" / "private_use"
+#: The only fields a private-use row keeps in the collector's report: status and counts, never a
+#: value, a column name, a vault path or a parsed frame.
+PRIVATE_REPORT_KEYS = ("id", "plane", "access", "status", "http", "bytes", "collected_utc",
+                       "key_env", "token_status", "token_http", "private_use", "attribution")
 OUT = BASE / "reports" / "ASIA_COLLECTOR.json"
 
 #: Bytes read per fetch. Generous enough for a daily statistics file, small enough that a
@@ -223,10 +232,11 @@ def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool,
         return True, f"robots.txt unreadable ({type(exc).__name__}); treated as allowing"
 
 
-def _vault(source_id: str, body: bytes, url: str, ctype: str) -> dict[str, Any]:
+def _vault(source_id: str, body: bytes, url: str, ctype: str,
+           attribution: str = "", private: bool = False) -> dict[str, Any]:
     """Write the raw bytes under their content hash. Never overwrites, never deletes."""
     digest = hashlib.sha256(body).hexdigest()
-    d = VAULT / source_id
+    d = (PRIVATE / "vault" if private else VAULT) / source_id
     d.mkdir(parents=True, exist_ok=True)
     blob = d / f"{digest[:16]}.gz"
     fresh = not blob.exists()
@@ -237,26 +247,30 @@ def _vault(source_id: str, body: bytes, url: str, ctype: str) -> dict[str, Any]:
             "content_type": ctype,
             "sha256": digest, "bytes": len(body),
             "fetched_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+            **({"attribution": attribution} if attribution else {}),
+            **({"private_use": True} if private else {}),
         }, indent=1))
     return {"sha256": digest, "blob": str(blob), "bytes": len(body), "new_content": fresh}
 
 
-def _parse(body: bytes, expect: str, source_id: str) -> dict[str, Any]:
+def _parse(body: bytes, expect: str, source_id: str,
+           series: Path | None = None) -> dict[str, Any]:
     """Body -> a stored frame where the declared shape allows one, else NEEDS_PARSER.
 
     NO SHAPE IS GUESSED. A declared `json` that does not parse as JSON is a route change, not a
     parser problem, and calling it one would hide the NOAA failure all over again.
     """
+    out_dir = SERIES if series is None else series
     if expect == "json":
         try:
             doc = json.loads(body.decode("utf-8", errors="replace"))
         except ValueError as exc:
             return {"parsed": False, "why": f"declared json and did not parse: {exc}"}
-        SERIES.mkdir(parents=True, exist_ok=True)
-        _write_atomic(SERIES / f"{source_id}.json", json.dumps(doc, indent=1)[:4_000_000])
+        out_dir.mkdir(parents=True, exist_ok=True)
+        _write_atomic(out_dir / f"{source_id}.json", json.dumps(doc, indent=1)[:4_000_000])
         n = len(doc) if isinstance(doc, (list, dict)) else 1
         return {"parsed": True, "kind": "json", "n": n,
-                "path": str(SERIES / f"{source_id}.json")}
+                "path": str(out_dir / f"{source_id}.json")}
     if expect == "csv":
         try:
             import io
@@ -267,12 +281,12 @@ def _parse(body: bytes, expect: str, source_id: str) -> dict[str, Any]:
             return {"parsed": False, "why": f"declared csv and did not parse: {type(exc).__name__}"}
         if df.empty:
             return {"parsed": False, "why": "csv parsed to zero rows"}
-        SERIES.mkdir(parents=True, exist_ok=True)
-        out = SERIES / f"{source_id}.parquet"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out = out_dir / f"{source_id}.parquet"
         try:
             df.to_parquet(out)
         except Exception:
-            out = SERIES / f"{source_id}.csv"
+            out = out_dir / f"{source_id}.csv"
             df.to_csv(out, index=False)
         return {"parsed": True, "kind": "csv", "n": len(df),
                 "columns": [str(c) for c in df.columns][:20], "path": str(out)}
@@ -416,6 +430,12 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
 
     key_env = str(src.get("key_env") or "")
     tok = (_token_refresh.get_token(key_env) if key_env in _token_refresh.MANAGED else None)
+    if tok is not None and tok.private_use:
+        rec["private_use"] = True
+    if tok is not None and tok.attribution:
+        # The licence's source notice rides on every record this token path produces (CDSE:
+        # "Contains modified Copernicus Sentinel data <year>"), whatever the fetch's outcome.
+        rec["attribution"] = tok.attribution
     if access == "key" and tok is not None and not tok.ok:
         # A MANAGED TOKEN'S REASON IS NAMED, NEVER COLLAPSED (security audit of #218): an absent
         # credential is UNCONFIGURED, a refresh the provider refused is BLOCKED_AUTH, and a
@@ -539,8 +559,9 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     # the next fetch is unconditional -- correct, and never a silent skip.
     rec["validators"] = {k: v for k, v in
                          (("etag", etag), ("last_modified", last_mod)) if v}
-    rec["vault"] = _vault(sid, body, url, ctype)
-    parsed = _parse(body, expect, sid)
+    private = bool(rec.get("private_use"))
+    rec["vault"] = _vault(sid, body, url, ctype, str(rec.get("attribution") or ""), private)
+    parsed = _parse(body, expect, sid, PRIVATE / "series" if private else None)
     rec["parse"] = parsed
     rec["status"] = "COLLECTED" if parsed.get("parsed") else "NEEDS_PARSER"
     return rec
@@ -698,19 +719,45 @@ def main(argv: list[str] | None = None) -> int:
 
     _write_atomic(STATE, json.dumps(state, indent=1))
     census = Counter(str(r.get("status")) for r in rows)
-    doc = {
+    doc = report_doc(rows, len(sources), census)
+    _write_atomic(OUT, json.dumps(doc, indent=1))
+    return _print_summary(rows, sources, census)
+
+
+def public_row(rec: dict[str, Any]) -> dict[str, Any]:
+    """The row as the report may carry it. A private-use row keeps status and counts only (the
+    parsed frame's `n` survives as a count); every other row is unchanged."""
+    if not rec.get("private_use"):
+        return rec
+    out = {k: rec[k] for k in PRIVATE_REPORT_KEYS if k in rec}
+    parse = rec.get("parse")
+    if isinstance(parse, dict):
+        out["parse"] = {k: parse[k] for k in ("parsed", "kind", "n") if k in parse}
+    out["private_use"] = True
+    return out
+
+
+def report_doc(rows: list[dict[str, Any]], n_sources: int,
+               census: Counter[str]) -> dict[str, Any]:
+    """The collector's report. Private-use rows carry counts and status only, and their series
+    paths are never listed: the report must be safe on a tracked path."""
+    return {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "law": ("NO SOURCE IS EVER BLOCKED FOR WANT OF A COLLECTOR. One generic collector is "
                 "driven by the registry, so a source is collected the moment it is declared and "
                 "the 90th source is not blocked on the day it is added."),
-        "n_sources": len(sources), "n_attempted": len(rows),
+        "n_sources": n_sources, "n_attempted": len(rows),
         "census": dict(census),
+        "n_private_use": sum(1 for r in rows if r.get("private_use")),
         "series_written": [r["parse"]["path"] for r in rows
-                           if isinstance(r.get("parse"), dict) and r["parse"].get("path")],
-        "rows": rows,
+                           if not r.get("private_use")
+                           and isinstance(r.get("parse"), dict) and r["parse"].get("path")],
+        "rows": [public_row(r) for r in rows],
     }
-    _write_atomic(OUT, json.dumps(doc, indent=1))
 
+
+def _print_summary(rows: list[dict[str, Any]], sources: list[dict[str, Any]],
+                   census: Counter[str]) -> int:
     print(f"asia collector: {len(rows)} attempted of {len(sources)} -> {dict(census)}")
     for st in ("COLLECTED", "NEEDS_PARSER", "ROUTE_CHANGED", "HTTP_ERROR", "UNREACHABLE",
                "UNCONFIGURED", "BLOCKED_PAID", "BLOCKED_BY_ROBOTS"):
