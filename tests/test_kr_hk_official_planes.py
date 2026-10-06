@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -104,7 +104,7 @@ def test_points_carry_level_change_acceleration_surprise_and_s25_names(tmp_path:
     # a revision is its own stamped fact beside the first value, never back-dated
     later = datetime(2026, 10, 2, tzinfo=UTC)
     A.merge_vintages(store, src, [A.Obs("hibor_1m", date(2026, 8, 27), 9.0)], later)
-    rev = [p for p in A.build_points(src, store)["hibor_1m"] if p["d"] == "2026-08-27"][0]
+    rev = next(p for p in A.build_points(src, store)["hibor_1m"] if p["d"] == "2026-08-27")
     assert rev["value"] != 9.0 and rev["revision_delta"] == pytest.approx(9.0 - rev["value"])
     assert rev["revision_of"]
 
@@ -167,8 +167,14 @@ def test_fixture_pass_publishes_axes_and_never_mints(tmp_path: Path) -> None:
     for sid in PLANE_IDS:
         axis = json.loads((paths.axes / f"alt_{sid}.json").read_text("utf-8"))
         assert any(k.endswith(".delta") for k in axis["series"]), sid
-    intel = json.loads(paths.allocation_intel.read_text("utf-8"))
-    assert intel["instruments"]
+    # allocation intel needs a surprise_z, i.e. enough history: a synthetic 40-day HIBOR path
+    src = A.BY_ID["hk_hkma_hibor_fixing"]
+    store: dict[str, Any] = {}
+    obs = [A.Obs("hibor_1m", date(2026, 8, 1) + timedelta(days=k), 3.0 + 0.1 * ((k * 7) % 5))
+           for k in range(40)]
+    A.merge_vintages(store, src, obs, NOW)
+    intel = A.allocation_intel({src.id: A.build_points(src, store)}, {}, NOW)
+    assert {"HK50", "USDHKD", "USDCNH"} <= set(intel["instruments"])
 
 
 # ---------------------------------------------------------------------------- departments
