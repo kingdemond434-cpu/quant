@@ -948,6 +948,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "axis_registry", "tier1_scorecard", "tier1_gap", "novelty_gate", "forced_flow_calendar",
     "breadth_ladder",
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
+    # TRADABILITY HEALTH (Roman item 28, audit repair #13): a reader of seven organs' artifacts
+    # per LIVE sleeve, seconds each; core so the lifecycle's successor hunt reads it every hour.
+    "tradability_health",
     "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
     "research_api_status", "artifact_chain", "residual_queue", "unseen_frontier",
     "source_registry", "queue_census",
@@ -5252,6 +5255,15 @@ def main() -> None:
     mc = _costed("miner_conversion", lambda: _producer(
         "check_miner_conversion", "scripts/check_miner_conversion.py"))
     _costed("capacity", lambda: _producer("capacity", "research/capacity.py"))
+    # TRADABILITY HEALTH, after `capacity` and `decay_monitor` so it reads this pass's floor and
+    # demotion readings (Roman item 28, completion audit repair #13). Per LIVE sleeve: feature,
+    # parameter, cost and execution drift, regime occupancy, capacity drift and the recent
+    # forward posterior, each read from the organ that owns it or UNMEASURED with the reason,
+    # and a HEALTHY / DEGRADING / BROKEN / UNMEASURED verdict. Its reader is `hazard_engine`,
+    # which queues a successor hunt for DEGRADING / BROKEN sleeves on its next pass. Sizes and
+    # vetoes nothing.
+    thl = _costed("tradability_health", lambda: _producer(
+        "tradability_health", "research/tradability_health.py"))
     _costed("timeframe_coverage", lambda: _producer(
         "timeframe_coverage", "scripts/check_timeframe_coverage.py"))
     _costed("frontier_report", lambda: frontier_report(h))
@@ -5798,7 +5810,7 @@ def main() -> None:
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls,
-                    "decay_monitor": dmo, "fill_markout": fmk,
+                    "decay_monitor": dmo, "tradability_health": thl, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,

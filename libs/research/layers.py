@@ -233,6 +233,9 @@ LEG_LAYER: dict[str, str] = {
     "live_calibration_posterior": "prediction", "constrained_book": "sizing",
     "kelly_survival": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
+    # Per-live-sleeve tradability (feature/parameter/cost/execution drift, regime, capacity,
+    # forward posterior) beside the demotion organ whose roster it reads: portfolio.
+    "tradability_health": "portfolio",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "forward_evidence_tracker": "meta",
     # The box-state freshness fence and the desk health report, hourly before publication.
