@@ -303,14 +303,10 @@ def test_hard_dislocations_measure_publish_and_charge(
         assert row["source"] == DL.HARD_SEAT and row["tests_run"] == 4
 
 
-def test_p6_reads_no_premium_from_a_terms_blocked_report() -> None:
-    ctx = SimpleNamespace(sge={"status": "BLOCKED_ON_TERMS", "rows": 999}, cot={},
-                          cot_gold=None)
-    pts: list[Any] = []
-    orig = DL._cot_series
-    try:
-        DL._cot_series = lambda _c, _s: (pts, "none")   # type: ignore[assignment]
-        r = DL.engine_p6(ctx, "XAUUSD", "h1", pd.DataFrame(), np.array([]))  # type: ignore[arg-type]
-    finally:
-        DL._cot_series = orig                            # type: ignore[assignment]
+def test_p6_reads_no_premium_from_a_terms_blocked_report(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    ctx: Any = SimpleNamespace(sge={"status": "BLOCKED_ON_TERMS", "rows": 999}, cot={},
+                               cot_gold=None)
+    monkeypatch.setattr(DL, "_cot_series", lambda _c, _s: ([], "none"))
+    r = DL.engine_p6(ctx, "XAUUSD", "h1", pd.DataFrame(), np.array([]))
     assert r.status == DL.UNMEASURED and "sge_premium 0 rows" in r.why

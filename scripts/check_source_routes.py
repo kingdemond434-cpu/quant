@@ -93,17 +93,17 @@ def terms_state(route: dict[str, Any]) -> tuple[str, str]:
     gate cannot be read."""
     ref = str(route.get("terms_ref") or "")
     try:
+        import importlib
         import sys
         for p in (str(ROOT / "desks" / "mt5"), str(ROOT / "desks" / "mt5" / "research")):
             if p not in sys.path:
                 sys.path.insert(0, p)
-        from research.alt_proxies import terms_gate
+        terms_gate = importlib.import_module("research.alt_proxies").terms_gate
     except Exception as exc:                                       # pragma: no cover
         return ("to_confirm", f"terms gate unreadable: {type(exc).__name__}") if ref else (
             "ungoverned", "")
-    if ref:
-        return terms_gate(ref)
-    return terms_gate(str(route.get("url") or ""))
+    state, why = terms_gate(ref or str(route.get("url") or ""))
+    return str(state), str(why)
 
 
 def probe(route: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
