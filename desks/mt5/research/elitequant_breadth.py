@@ -72,6 +72,11 @@ ORIGIN = {**dict.fromkeys(eq.ELITEQUANT_FAMILIES, "github.com/EliteQuant/EliteQu
           **dict.fromkeys(qg.QUANTGUILD_FAMILIES,
                           "github.com/romanmichaelpaolucci/Quant-Guild-Library (no licence; "
                           "rewritten)")}
+#: The registry id each family's cells are credited to (`origin_source_id` on the donated row):
+#: the donor repository, rostered in data/source_rosters/elitequant_breadth_origins.json (the
+#: Quant Guild Library is a federation seed row that names this organ in `fetched_by`).
+SOURCE_ID = {fam: "github:" + ORIGIN[fam].split(" ")[0].removeprefix("github.com/")
+             for fam in FAMILIES}
 #: Families that read their own second leg keyed by the cell's `symbol` parameter.
 SYMBOL_KEYED = frozenset({"commodity_fx_residual"})
 
@@ -222,6 +227,8 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
                  "origin": ORIGIN[c["family"]]})
             culture = dict(CULTURE[c["family"]])
             row.update(culture)
+            row["origin_source_id"] = SOURCE_ID[c["family"]]
+            row.setdefault("provenance", {})["source_id"] = SOURCE_ID[c["family"]]
             row["culture_derivation"] = dict.fromkeys(culture, "declared")
             rows.append(row)
         measured = sum(int(v["measured_this_pass"]) for v in by_family.values())

@@ -89,3 +89,12 @@ def test_no_jumps_no_trades():
     rng = np.random.default_rng(9)
     calm = _frame(np.exp(np.cumsum(rng.normal(0, 0.001, 6000))))
     assert qg.family_hawkes_jump_switch(calm, window=4000, min_events=80) == []
+
+
+def test_every_seeded_family_is_credited_to_a_rostered_donor():
+    import json
+    rosters = ("elitequant_breadth_origins.json", "external_federation_seeds.json")
+    ids = {r["id"] for name in rosters for r in json.loads(
+        (_DESK / "data" / "source_rosters" / name).read_text(encoding="utf-8"))["sources"]}
+    assert set(eb.SOURCE_ID.values()) <= ids
+    assert eb.SOURCE_ID["kalman_ou_level"] == "github:romanmichaelpaolucci/Quant-Guild-Library"

@@ -1,0 +1,50 @@
+{
+ "what": "donor repositories whose families research/elitequant_breadth.py seeds; its donated rows carry origin_source_id = one of these ids (SOURCE_ID)",
+ "sources": [
+  {
+   "id": "github:EliteQuant/EliteQuant",
+   "name": "EliteQuant quant map and families",
+   "url": "https://github.com/EliteQuant/EliteQuant",
+   "fetcher": "owned",
+   "owner": "elitequant_breadth",
+   "kind": "code",
+   "consumer": "desks/mt5/research/elitequant_breadth.py",
+   "uses": [
+    "direct_cells"
+   ],
+   "region": "global",
+   "licence": "Apache-2.0",
+   "cadence": "hourly"
+  },
+  {
+   "id": "github:thuquant/awesome-quant",
+   "name": "thuquant awesome-quant (CN futures CTA canon)",
+   "url": "https://github.com/thuquant/awesome-quant",
+   "fetcher": "owned",
+   "owner": "elitequant_breadth",
+   "kind": "code",
+   "consumer": "desks/mt5/research/elitequant_breadth.py",
+   "uses": [
+    "direct_cells"
+   ],
+   "region": "CN",
+   "licence": "MIT",
+   "cadence": "hourly"
+  },
+  {
+   "id": "github:je-suis-tm/quant-trading",
+   "name": "je-suis-tm quant-trading",
+   "url": "https://github.com/je-suis-tm/quant-trading",
+   "fetcher": "owned",
+   "owner": "elitequant_breadth",
+   "kind": "code",
+   "consumer": "desks/mt5/research/elitequant_breadth.py",
+   "uses": [
+    "direct_cells"
+   ],
+   "region": "global",
+   "licence": "Apache-2.0",
+   "cadence": "hourly"
+  }
+ ]
+}

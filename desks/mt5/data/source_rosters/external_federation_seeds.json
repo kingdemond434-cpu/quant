@@ -1,0 +1,2509 @@
+{
+ "what": "federation seeds, generated from libs/research/external_federation.SEEDS by `research/external_federation.py --write-roster`; do not hand-edit",
+ "sources": [
+  {
+   "id": "github:microsoft/RD-Agent",
+   "name": "Microsoft RD-Agent(Q)",
+   "url": "https://github.com/microsoft/RD-Agent",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "rd_agent"
+  },
+  {
+   "id": "github:microsoft/qlib",
+   "name": "Microsoft Qlib",
+   "url": "https://github.com/microsoft/qlib",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "qlib"
+  },
+  {
+   "id": "ext:agonalpha",
+   "name": "AgonAlpha",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "agonalpha"
+  },
+  {
+   "id": "ext:quantaalpha",
+   "name": "QuantaAlpha",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "quantaalpha"
+  },
+  {
+   "id": "ext:alphaagent",
+   "name": "AlphaAgent",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "alphaagent"
+  },
+  {
+   "id": "ext:alphacrafter",
+   "name": "AlphaCrafter",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "alphacrafter"
+  },
+  {
+   "id": "ext:hubble",
+   "name": "Hubble alpha framework",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "hubble"
+  },
+  {
+   "id": "ext:autohypothesis",
+   "name": "AutoHypothesis",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "autohypothesis"
+  },
+  {
+   "id": "ext:inalpha",
+   "name": "inalpha",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "inalpha"
+  },
+  {
+   "id": "ext:nexquant",
+   "name": "NexQuant",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "nexquant"
+  },
+  {
+   "id": "github:TauricResearch/TradingAgents",
+   "name": "TradingAgents (TauricResearch)",
+   "url": "https://github.com/TauricResearch/TradingAgents",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "tradingagents"
+  },
+  {
+   "id": "ext:tradingagents_kr",
+   "name": "TradingAgents-KR",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "kr",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "tradingagents_kr"
+  },
+  {
+   "id": "ext:tradingagents_cn",
+   "name": "TradingAgents-CN",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "tradingagents_cn"
+  },
+  {
+   "id": "ext:ashare_agents",
+   "name": "AShareAgents / TradingAgents-AShare variants",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "ashare_agents"
+  },
+  {
+   "id": "ext:verumtrade",
+   "name": "VerumTrade",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "verumtrade"
+  },
+  {
+   "id": "ext:quantharness",
+   "name": "QuantHarness",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "quantharness"
+  },
+  {
+   "id": "ext:alphaquanter",
+   "name": "AlphaQuanter",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "alphaquanter"
+  },
+  {
+   "id": "ext:contesttrade",
+   "name": "ContestTrade",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "contesttrade"
+  },
+  {
+   "id": "ext:quantagent",
+   "name": "Y-Research QuantAgent",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "quantagent"
+  },
+  {
+   "id": "ext:atlas_gic",
+   "name": "ATLAS / atlas-gic",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "atlas_gic"
+  },
+  {
+   "id": "github:HKUDS/AI-Trader",
+   "name": "HKUDS AI-Trader",
+   "url": "https://github.com/HKUDS/AI-Trader",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "ai_trader"
+  },
+  {
+   "id": "ext:autohedge",
+   "name": "AutoHedge",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "autohedge"
+  },
+  {
+   "id": "github:basantzp/ai-gold-trading-bot",
+   "name": "basantzp/ai-gold-trading-bot",
+   "url": "https://github.com/basantzp/ai-gold-trading-bot",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "ai_gold_trading_bot"
+  },
+  {
+   "id": "github:neil-pan-s/one-quant-doc",
+   "name": "neil-pan-s/one-quant-doc",
+   "url": "https://github.com/neil-pan-s/one-quant-doc",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "one_quant_doc"
+  },
+  {
+   "id": "github:TalaikisInc/Quantrade",
+   "name": "TalaikisInc/Quantrade",
+   "url": "https://github.com/TalaikisInc/Quantrade",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "quantrade"
+  },
+  {
+   "id": "github:SII-WANGZJ/Polymarket_data",
+   "name": "SII Polymarket Data",
+   "url": "https://github.com/SII-WANGZJ/Polymarket_data",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "polymarket_data"
+  },
+  {
+   "id": "github:evan-kolberg/prediction-market-backtesting",
+   "name": "Prediction Market Backtesting",
+   "url": "https://github.com/evan-kolberg/prediction-market-backtesting",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "prediction_market_backtesting"
+  },
+  {
+   "id": "github:lihanyu81/polymarket_lp_tool",
+   "name": "Polymarket LP Tool",
+   "url": "https://github.com/lihanyu81/polymarket_lp_tool",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "polymarket_lp_tool"
+  },
+  {
+   "id": "github:ent0n29/polybot",
+   "name": "Polybot / AWARE",
+   "url": "https://github.com/ent0n29/polybot",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "polybot"
+  },
+  {
+   "id": "github:HarrierOnChain/Prediction-Markets-Trading-Bot-Toolkits",
+   "name": "Prediction Markets Trading Bot Toolkits",
+   "url": "https://github.com/HarrierOnChain/Prediction-Markets-Trading-Bot-Toolkits",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "prediction_market_toolkits"
+  },
+  {
+   "id": "github:alsk1992/CloddsBot",
+   "name": "CloddsBot",
+   "url": "https://github.com/alsk1992/CloddsBot",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "cloddsbot"
+  },
+  {
+   "id": "github:caiovicentino/polymarket-mcp-server",
+   "name": "Polymarket MCP Server",
+   "url": "https://github.com/caiovicentino/polymarket-mcp-server",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "polymarket_mcp_server"
+  },
+  {
+   "id": "github:yangyuan-zhen/PolyWeather",
+   "name": "PolyWeather",
+   "url": "https://github.com/yangyuan-zhen/PolyWeather",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "polyweather"
+  },
+  {
+   "id": "github:pydantic/pydantic-ai",
+   "name": "Pydantic AI",
+   "url": "https://github.com/pydantic/pydantic-ai",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "pydantic_ai"
+  },
+  {
+   "id": "github:aarora4/Awesome-Prediction-Market-Tools",
+   "name": "Awesome Prediction Market Tools",
+   "url": "https://github.com/aarora4/Awesome-Prediction-Market-Tools",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "awesome_prediction_market_tools"
+  },
+  {
+   "id": "github:SkyworkAI/DeepResearchAgent",
+   "name": "Skywork DeepResearchAgent",
+   "url": "https://github.com/SkyworkAI/DeepResearchAgent",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "skywork_deepresearch"
+  },
+  {
+   "id": "github:victordibia/designing-multiagent-systems",
+   "name": "PicoAgents / Designing Multi-Agent Systems",
+   "url": "https://github.com/victordibia/designing-multiagent-systems",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "picoagents"
+  },
+  {
+   "id": "github:zi-yue-1129/DATAGEN",
+   "name": "DATAGEN",
+   "url": "https://github.com/zi-yue-1129/DATAGEN",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "datagen"
+  },
+  {
+   "id": "github:snap-stanford/optimas",
+   "name": "Stanford Optimas",
+   "url": "https://github.com/snap-stanford/optimas",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "optimas"
+  },
+  {
+   "id": "github:virattt/ai-hedge-fund",
+   "name": "virattt/ai-hedge-fund",
+   "url": "https://github.com/virattt/ai-hedge-fund",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "ai_hedge_fund"
+  },
+  {
+   "id": "ext:valuecell",
+   "name": "ValueCell",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "valuecell"
+  },
+  {
+   "id": "github:AI4Finance-Foundation/FinRobot",
+   "name": "FinRobot",
+   "url": "https://github.com/AI4Finance-Foundation/FinRobot",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "finrobot"
+  },
+  {
+   "id": "ext:dexter",
+   "name": "Dexter",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "dexter"
+  },
+  {
+   "id": "github:AI4Finance-Foundation/FinGPT",
+   "name": "FinGPT",
+   "url": "https://github.com/AI4Finance-Foundation/FinGPT",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "fingpt"
+  },
+  {
+   "id": "ext:kronos",
+   "name": "Kronos",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "kronos"
+  },
+  {
+   "id": "github:AI4Finance-Foundation/FinRL",
+   "name": "FinRL / FinRL-X",
+   "url": "https://github.com/AI4Finance-Foundation/FinRL",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "finrl"
+  },
+  {
+   "id": "github:QuantConnect/Lean",
+   "name": "LEAN",
+   "url": "https://github.com/QuantConnect/Lean",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "lean"
+  },
+  {
+   "id": "github:nautechsystems/nautilus_trader",
+   "name": "NautilusTrader",
+   "url": "https://github.com/nautechsystems/nautilus_trader",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "nautilus"
+  },
+  {
+   "id": "github:hummingbot/hummingbot",
+   "name": "Hummingbot",
+   "url": "https://github.com/hummingbot/hummingbot",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "hummingbot"
+  },
+  {
+   "id": "github:vnpy/vnpy",
+   "name": "vn.py",
+   "url": "https://github.com/vnpy/vnpy",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "vnpy"
+  },
+  {
+   "id": "github:akfamily/akshare",
+   "name": "AKShare",
+   "url": "https://github.com/akfamily/akshare",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "akshare"
+  },
+  {
+   "id": "ext:tushare",
+   "name": "TuShare",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "tushare"
+  },
+  {
+   "id": "ext:hithink",
+   "name": "HiThink Financial API",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "hithink"
+  },
+  {
+   "id": "github:OpenBB-finance/OpenBB",
+   "name": "OpenBB",
+   "url": "https://github.com/OpenBB-finance/OpenBB",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "openbb"
+  },
+  {
+   "id": "ext:openfr",
+   "name": "OpenFR",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "openfr"
+  },
+  {
+   "id": "ext:quanti",
+   "name": "Quanti",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "quanti"
+  },
+  {
+   "id": "ext:quantmind",
+   "name": "QuantMind",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "quantmind"
+  },
+  {
+   "id": "ext:ai_quant_agent",
+   "name": "AI Quant Agent",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "ai_quant_agent"
+  },
+  {
+   "id": "ext:astockarena",
+   "name": "AStockArena",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "astockarena"
+  },
+  {
+   "id": "ext:ai_berkshire",
+   "name": "ai-berkshire",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "ai_berkshire"
+  },
+  {
+   "id": "ext:ml_quant_trading",
+   "name": "initial-d/ml-quant-trading",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "ml_quant_trading"
+  },
+  {
+   "id": "github:zvtvz/zvt",
+   "name": "zvt",
+   "url": "https://github.com/zvtvz/zvt",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "zvt"
+  },
+  {
+   "id": "ext:quantsplaybook",
+   "name": "QuantsPlaybook",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "quantsplaybook"
+  },
+  {
+   "id": "ext:vietnam_alpha",
+   "name": "Vietnam self-improving multi-agent alpha project",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "vn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "vietnam_alpha"
+  },
+  {
+   "id": "ext:wq_research_engine",
+   "name": "Ewan Sutherland WorldQuant research engine",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "wq_research_engine"
+  },
+  {
+   "id": "ext:rohonchain",
+   "name": "RohOnChain (public artefacts)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "rohonchain"
+  },
+  {
+   "id": "ext:l1vsun",
+   "name": "L1vsun (public artefacts)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "l1vsun"
+  },
+  {
+   "id": "ext:bl888m",
+   "name": "bl888m (public artefacts)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "bl888m"
+  },
+  {
+   "id": "ext:alpha_search",
+   "name": "Alpha Search",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "alpha_search"
+  },
+  {
+   "id": "ext:quantrocket",
+   "name": "QuantRocket",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "quantrocket"
+  },
+  {
+   "id": "ext:quantconnect_cloud",
+   "name": "QuantConnect research agents (platform)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "quantconnect_cloud"
+  },
+  {
+   "id": "ext:numerai_method",
+   "name": "Numerai pattern (method only)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "numerai_method"
+  },
+  {
+   "id": "ext:quantifact",
+   "name": "Quantifact (PAT-inspired)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "quantifact"
+  },
+  {
+   "id": "ext:bridgewater_pat_aia",
+   "name": "Bridgewater AIA / PAT (public architecture)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "bridgewater_pat_aia"
+  },
+  {
+   "id": "ext:alphagen",
+   "name": "AlphaGen",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "alphagen"
+  },
+  {
+   "id": "ext:dso",
+   "name": "Deep Symbolic Optimization",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "dso"
+  },
+  {
+   "id": "github:MilesCranmer/PySR",
+   "name": "PySR",
+   "url": "https://github.com/MilesCranmer/PySR",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "pysr"
+  },
+  {
+   "id": "github:jakobrunge/tigramite",
+   "name": "Tigramite",
+   "url": "https://github.com/jakobrunge/tigramite",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "tigramite"
+  },
+  {
+   "id": "github:py-why/causal-learn",
+   "name": "causal-learn",
+   "url": "https://github.com/py-why/causal-learn",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "causal_learn"
+  },
+  {
+   "id": "github:py-why/dowhy",
+   "name": "DoWhy",
+   "url": "https://github.com/py-why/dowhy",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "dowhy"
+  },
+  {
+   "id": "ext:chronos2",
+   "name": "Chronos-2",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "chronos2"
+  },
+  {
+   "id": "ext:timesfm",
+   "name": "TimesFM",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "timesfm"
+  },
+  {
+   "id": "ext:moment",
+   "name": "MOMENT",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "moment"
+  },
+  {
+   "id": "ext:abides",
+   "name": "ABIDES",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "abides"
+  },
+  {
+   "id": "ext:ruptures",
+   "name": "ruptures",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "ruptures"
+  },
+  {
+   "id": "ext:tsfresh",
+   "name": "tsfresh",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "tsfresh"
+  },
+  {
+   "id": "ext:featuretools",
+   "name": "Featuretools",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "featuretools"
+  },
+  {
+   "id": "ext:riskfolio",
+   "name": "Riskfolio-Lib",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "riskfolio"
+  },
+  {
+   "id": "ext:cvxportfolio",
+   "name": "cvxportfolio",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "cvxportfolio"
+  },
+  {
+   "id": "ext:botorch",
+   "name": "BoTorch",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "botorch"
+  },
+  {
+   "id": "ext:nevergrad",
+   "name": "Nevergrad",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "nevergrad"
+  },
+  {
+   "id": "ext:pymoo",
+   "name": "pymoo",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "pymoo"
+  },
+  {
+   "id": "ext:pymc",
+   "name": "PyMC",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "pymc"
+  },
+  {
+   "id": "ext:mapie",
+   "name": "MAPIE",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "mapie"
+  },
+  {
+   "id": "ext:river",
+   "name": "River",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "river"
+  },
+  {
+   "id": "ext:neuralforecast",
+   "name": "NeuralForecast",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "neuralforecast"
+  },
+  {
+   "id": "ext:darts",
+   "name": "Darts",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "darts"
+  },
+  {
+   "id": "ext:kats",
+   "name": "Kats",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "kats"
+  },
+  {
+   "id": "ext:merlion",
+   "name": "Merlion",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "merlion"
+  },
+  {
+   "id": "ext:aeon",
+   "name": "aeon",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "aeon"
+  },
+  {
+   "id": "ext:tslearn",
+   "name": "tslearn",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "tslearn"
+  },
+  {
+   "id": "ext:idtxl",
+   "name": "IDTxl",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "idtxl"
+  },
+  {
+   "id": "ext:tpot",
+   "name": "TPOT",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "tpot"
+  },
+  {
+   "id": "ext:openspiel",
+   "name": "OpenSpiel",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "openspiel"
+  },
+  {
+   "id": "ext:pyg_temporal",
+   "name": "PyTorch Geometric Temporal",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "pyg_temporal"
+  },
+  {
+   "id": "ext:ripser",
+   "name": "Ripser.py / scikit-TDA",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "ripser"
+  },
+  {
+   "id": "ext:ray",
+   "name": "Ray RLlib / Tune",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "ray"
+  },
+  {
+   "id": "ext:stumpy",
+   "name": "STUMPY",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "stumpy"
+  },
+  {
+   "id": "ext:pysindy",
+   "name": "PySINDy",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "pysindy"
+  },
+  {
+   "id": "ext:pydmd",
+   "name": "PyDMD",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "pydmd"
+  },
+  {
+   "id": "ext:pyvinecopulib",
+   "name": "pyvinecopulib",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "pyvinecopulib"
+  },
+  {
+   "id": "ext:easytpp",
+   "name": "EasyTPP",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "easytpp"
+  },
+  {
+   "id": "ext:tensorly",
+   "name": "TensorLy",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "tensorly"
+  },
+  {
+   "id": "ext:reservoirpy",
+   "name": "ReservoirPy",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "reservoirpy"
+  },
+  {
+   "id": "ext:kymatio",
+   "name": "Kymatio",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "kymatio"
+  },
+  {
+   "id": "ext:scikit_mine",
+   "name": "scikit-mine",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "scikit_mine"
+  },
+  {
+   "id": "ext:pyextremes",
+   "name": "pyextremes",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "pyextremes"
+  },
+  {
+   "id": "ext:pgmpy",
+   "name": "pgmpy",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "pgmpy"
+  },
+  {
+   "id": "ext:pyrqa",
+   "name": "PyRQA",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "pyrqa"
+  },
+  {
+   "id": "ext:roughpy",
+   "name": "RoughPy",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "roughpy"
+  },
+  {
+   "id": "ext:sbi",
+   "name": "sbi",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "sbi"
+  },
+  {
+   "id": "ext:openevolve",
+   "name": "OpenEvolve (AlphaEvolve-style)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "openevolve"
+  },
+  {
+   "id": "ext:darwin_godel_machine",
+   "name": "Darwin Goedel Machine (public work)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "darwin_godel_machine"
+  },
+  {
+   "id": "ext:ai_scientist",
+   "name": "The AI Scientist v2 (Sakana, open-sourced)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "ai_scientist"
+  },
+  {
+   "id": "ext:pyribs",
+   "name": "pyribs",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "pyribs"
+  },
+  {
+   "id": "ext:dspy",
+   "name": "DSPy",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "dspy"
+  },
+  {
+   "id": "ext:alpha101",
+   "name": "101 Formulaic Alphas (public paper)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "alpha101"
+  },
+  {
+   "id": "ext:worldquant_brain_public",
+   "name": "WorldQuant BRAIN (public operators only)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "worldquant_brain_public"
+  },
+  {
+   "id": "ext:aitradingarena",
+   "name": "AITradingArena (public telemetry)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "aitradingarena"
+  },
+  {
+   "id": "ext:arcticdb",
+   "name": "ArcticDB (Man Group)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "arcticdb"
+  },
+  {
+   "id": "ext:deshaw_tools",
+   "name": "D. E. Shaw open tools (Pyflyby, Versioned HDF5)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "deshaw_tools"
+  },
+  {
+   "id": "ext:inst_renaissance",
+   "name": "Renaissance Technologies (public record)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "inst_renaissance"
+  },
+  {
+   "id": "ext:inst_deshaw",
+   "name": "D. E. Shaw (public record)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "inst_deshaw"
+  },
+  {
+   "id": "ext:inst_two_sigma",
+   "name": "Two Sigma (public record)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "inst_two_sigma"
+  },
+  {
+   "id": "ext:inst_citadel",
+   "name": "Citadel / GQS (public record)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "inst_citadel"
+  },
+  {
+   "id": "ext:inst_xtx",
+   "name": "XTX Markets (public record)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "inst_xtx"
+  },
+  {
+   "id": "ext:inst_optiver_imc_hrt",
+   "name": "Optiver / IMC / HRT / Jane Street (public record)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "inst_optiver_imc_hrt"
+  },
+  {
+   "id": "ext:inst_man_aqr_winton",
+   "name": "Man AHL / AQR / Winton / QRT / Squarepoint (public)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "inst_man_aqr_winton"
+  },
+  {
+   "id": "ext:inst_highflyer",
+   "name": "High-Flyer (public record)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "inst_highflyer"
+  },
+  {
+   "id": "ext:inst_ubiquant_lingjun_minghong",
+   "name": "Ubiquant / Lingjun / Minghong (public)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "cn",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "inst_ubiquant_lingjun_minghong"
+  },
+  {
+   "id": "github:romanmichaelpaolucci/Quant-Guild-Library",
+   "name": "Quant Guild Library (Roman Paolucci)",
+   "url": "https://github.com/romanmichaelpaolucci/Quant-Guild-Library",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "quant_guild_library",
+   "config": {
+    "fetched_by": [
+     "elitequant_breadth"
+    ]
+   }
+  },
+  {
+   "id": "github:romanmichaelpaolucci/AI_Stock_Trading",
+   "name": "AI_Stock_Trading (Roman Paolucci)",
+   "url": "https://github.com/romanmichaelpaolucci/AI_Stock_Trading",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "paolucci_ai_stock_trading"
+  },
+  {
+   "id": "github:romanmichaelpaolucci/Quant_Dev",
+   "name": "Quant_Dev (Roman Paolucci)",
+   "url": "https://github.com/romanmichaelpaolucci/Quant_Dev",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "paolucci_quant_dev"
+  },
+  {
+   "id": "github:romanmichaelpaolucci/Algorithmic_Delta_Hedging",
+   "name": "Algorithmic_Delta_Hedging (Roman Paolucci)",
+   "url": "https://github.com/romanmichaelpaolucci/Algorithmic_Delta_Hedging",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "paolucci_delta_hedging"
+  },
+  {
+   "id": "github:romanmichaelpaolucci/Q-Fin",
+   "name": "Q-Fin (Roman Paolucci)",
+   "url": "https://github.com/romanmichaelpaolucci/Q-Fin",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "paolucci_qfin"
+  },
+  {
+   "id": "github:romanmichaelpaolucci/discourses",
+   "name": "discourses (Roman Paolucci)",
+   "url": "https://github.com/romanmichaelpaolucci/discourses",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "paolucci_discourses"
+  },
+  {
+   "id": "github:ErTasselli/OpenTerminal",
+   "name": "OpenTerminal (ErTasselli)",
+   "url": "https://github.com/ErTasselli/OpenTerminal",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "openterminal"
+  }
+ ]
+}

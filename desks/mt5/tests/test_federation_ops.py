@@ -326,3 +326,30 @@ def test_a_pass_writes_the_resident_miner_file(desk) -> None:
     fo.run_pass(budget_s=30, dry_run=False, no_fetch=True)
     doc = json.loads(fo.RESIDENT_REPORT.read_text(encoding="utf-8"))
     assert doc["duty"] == "CRO D35" and doc["forge_upstreams"] >= 7
+
+
+def test_the_seed_roster_on_disk_is_the_seeds() -> None:
+    """The mining registry reads the seeds from data, never Python: the committed roster must be
+    exactly what `--write-roster` generates from fed.SEEDS, one row per seed, unique ids."""
+    doc = json.loads(xfo.SEED_ROSTER.read_text(encoding="utf-8"))
+    assert doc == json.loads(json.dumps(xfo.seed_roster()))
+    ids = [r["id"] for r in doc["sources"]]
+    assert len(ids) == len(fed.SEEDS) == len(set(ids))
+    row = next(r for r in doc["sources"] if r["system_id"] == "quant_guild_library")
+    assert row["id"] == "github:romanmichaelpaolucci/Quant-Guild-Library"
+    assert row["config"]["fetched_by"] == ["elitequant_breadth"]
+
+
+def test_a_drained_row_names_its_system_by_registry_id(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(xfo, "PACKETS", tmp_path / "packets")
+    monkeypatch.setattr(xfo, "PROCESSED", tmp_path / "packets" / "processed")
+    monkeypatch.setattr(xfo, "DONATIONS", tmp_path / "don")
+    (tmp_path / "packets").mkdir()
+    (tmp_path / "packets" / "p.json").write_text(json.dumps({
+        "system_id": "openterminal", "run_id": "r1", "candidates": [
+            {"symbol": "EURUSD", "family": "jump", "params": {}}]}), encoding="utf-8")
+    xfo.drain_packets({}, apply=True)
+    doc = json.loads(next((tmp_path / "don").glob("*.json")).read_text(encoding="utf-8"))
+    row = doc["discoveries"][0]
+    assert row["origin_source_id"] == "github:ErTasselli/OpenTerminal"
+    assert row["provenance"]["source_id"] == row["origin_source_id"]
