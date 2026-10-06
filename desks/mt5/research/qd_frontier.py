@@ -743,7 +743,10 @@ def _atomic_write(path: Path, text: str) -> None:
 
 def write(report: dict[str, Any], niches: dict[str, dict[str, Any]],
           proposals: list[dict[str, Any]]) -> Path:
-    """Report, persistent map and the intake donation -- all three atomic, in that order."""
+    """Report, persistent map and the intake donation -- all three atomic, in that order.
+    `generated_utc` is the write instant, so a reader (runtime attestation) can tell a leg that
+    ran from one that returned without writing."""
+    report["generated_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
     _atomic_write(OUT_REPORT, json.dumps(report, indent=1, default=str))
     _atomic_write(OUT_MAP, json.dumps({"at": report["at"], "n_niches": len(niches),
                                        "niches": niches}, indent=1, default=str))

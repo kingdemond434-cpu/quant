@@ -380,6 +380,8 @@ def split_factor(leg: str, doc: dict[str, Any]) -> float:
 def write(doc: dict[str, Any], path: Path | None = None) -> Path:
     p = path or OUT
     p.parent.mkdir(parents=True, exist_ok=True)
+    # the write instant, so runtime attestation can tell a run from a return without a write
+    doc["generated_utc"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
     tmp = p.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     os.replace(tmp, p)

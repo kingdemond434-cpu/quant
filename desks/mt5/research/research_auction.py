@@ -30,6 +30,7 @@ import contextlib
 import importlib
 import json
 import math
+import os
 import sys
 import time
 from datetime import UTC, datetime, timedelta
@@ -240,7 +241,12 @@ def build(now: datetime | None = None, conn: Any | None = None,
 
 def publish(doc: dict[str, Any], out: Path = OUT) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    # `generated_utc` is the write instant (runtime attestation reads it); the write is atomic so
+    # a leg killed mid-write never leaves a half file that reads as a run.
+    doc["generated_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
+    tmp = out.with_suffix(out.suffix + ".tmp")
+    tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    os.replace(tmp, out)
     try:
         from libs.moat import registry
         for p in doc["proposals"]:
