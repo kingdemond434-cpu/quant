@@ -592,8 +592,9 @@ NOT_SOURCED_HERE = {
                     "partner and the Hawkes refits would spend the sweep's whole budget"),
     # The FX carry books (mt5desk/families_carry.py) read the broker's stamped swap history and
     # are seeded by research/elitequant_breadth only once that history reaches the lockbox floor.
-    **dict.fromkeys(("fx_swap_carry_rank", "dollar_carry_basket", "good_bad_carry"),
-                    "research/elitequant_breadth seeds these FX carry books once the honest swap "
+    **dict.fromkeys(("fx_swap_carry_rank", "dollar_carry_basket", "good_bad_carry",
+                     "commodity_basis_carry"),
+                    "research/elitequant_breadth seeds these carry books once the honest swap "
                     "history reaches the lockbox floor and charges each look once; swept here "
                     "they would charge trials on a history too short to judge"),
 }

@@ -167,7 +167,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     "macro_release event market": "event_reaction",
     "macro_release cross_asset market": "usd_session_shock",
     "carry_rollover carry market": "carry mass_screen_carry fx_swap_carry_rank"
-                                   " dollar_carry_basket good_bad_carry",
+                                   " dollar_carry_basket good_bad_carry commodity_basis_carry",
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
                                                " cot_comm_follow cot_net_fade cot_positioning"
                                                " retail_overlap_reversal",
@@ -219,7 +219,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     "volatility_shock price_only stop": "d1_inside volatility_squeeze",
     "regime_transition price_only market": "drawdown_conditional regime_split"
                                            " regime_transition vol_transition"
-                                           " sadf_explosive path_state",
+                                           " sadf_explosive path_state total_expectation_state",
     "execution_microstructure microstructure market": "liquidity_regime orderflow_imbalance",
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
                                                      " spread_state",

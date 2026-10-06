@@ -26,13 +26,21 @@ HAWKES (rows 0819-0831), events on the cell's own bars:
                     (signed activity: the bar-level proxy for market buys and sells)
     large           tick_volume above its trailing 95th percentile (large prints)
     depletion       the bar's recorded spread above its trailing 90th percentile (liquidity
-                    depletion; MT5 has no book, so cancellations are not observable and are not
-                    proxied)
+                    depletion)
+    churn           quote count above its 80th percentile with a body below the 20th percentile
+                    of its range share: quotes placed and withdrawn without net progress, the
+                    bar-level proxy for cancellations (0822; MT5 has no book to count them)
+    forced          a bar beyond 3 bipower sigma with the spread above its 90th percentile: the
+                    bar-level proxy for liquidations and stop cascades (0824; no liquidation
+                    tape exists for Fusion CFDs)
     hawkes_flow     mode `accel_depletion` (0828): signed-flow intensity accelerating while the
                     depletion intensity is excited -> follow the flow. Mode `sell_cascade_skew`
                     (0829): sell intensity excited while trailing skew is negative -> short.
                     Mode `arrival_breakout` (0831): a 20-bar breakout taken only while
-                    large-print arrivals cluster.
+                    large-print arrivals cluster. Mode `churn_fade` (0822): a breakout taken
+                    while churn arrivals are excited is faded (the liquidity behind it was
+                    withdrawn). Mode `forced_exhaustion` (0824): once the forced-move intensity
+                    turns down from an excited state, fade the last forced move's direction.
 
 Every threshold is read strictly before the bar it classifies, every intensity counts events at
 or before the decision bar, and the engine fills at the next open.
@@ -44,6 +52,7 @@ import math
 import numpy as np
 import pandas as pd
 
+from libs.research import conditional_expectation as ce
 from libs.research import path_representations as pr
 from libs.research import point_process as pp
 from libs.research import state_space as ss
@@ -251,10 +260,32 @@ def bar_events(h: pd.DataFrame, *, window: int = 500) -> dict[str, np.ndarray]:
         out["buy"] = (vv > q80) & (c > o)
         out["sell"] = (vv > q80) & (c < o)
         out["large"] = vv > q95
+        # ROMAN-0822 proxy: heavy quoting that moves nothing -- a bar whose quote count is above
+        # its 80th percentile while its body is below the 20th percentile of its range share.
+        # Quotes placed and withdrawn without net progress are the bar-level trace of
+        # cancellations; MT5 has no book, so this is a named proxy, never a cancellation count.
+        rng = (h["high"] - h["low"]).to_numpy(dtype=float)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            body = pd.Series(np.where(rng > 0, np.abs(c - o) / rng, np.nan))
+        b20 = body.rolling(window, min_periods=window // 2).quantile(0.20).shift(1).to_numpy()
+        out["churn"] = (vv > q80) & (body.to_numpy() < b20)
     if "spread" in h.columns:
         s = h["spread"].astype(float)
         q90 = s.rolling(window, min_periods=window // 2).quantile(0.90).shift(1).to_numpy()
         out["depletion"] = s.to_numpy() > q90
+    if "spread" in h.columns or "tick_volume" in h.columns:
+        # ROMAN-0824 proxy: a forced move -- a bar beyond 3 bipower sigma that arrives with
+        # withdrawn liquidity (spread above its 90th percentile) or a print burst (quote count
+        # above its 95th). Fusion CFDs carry no liquidation tape (crypto venues are never
+        # hunted), so this is the bar-level trace of stops and margin closes, never a count.
+        r = np.diff(np.log(c), prepend=np.nan)
+        ab = np.abs(r)
+        bip = pd.Series(ab * np.r_[np.nan, ab[:-1]]).rolling(120, min_periods=60).mean()
+        sigma = np.sqrt(math.pi / 2.0 * bip.shift(1).to_numpy())
+        stressed = out.get("depletion", np.zeros(len(c), bool)) | out.get(
+            "large", np.zeros(len(c), bool))
+        with np.errstate(invalid="ignore"):
+            out["forced"] = (ab > 3.0 * sigma) & stressed & (sigma > 0)
     return out
 
 
@@ -290,8 +321,10 @@ def family_hawkes_flow(df: pd.DataFrame, *, mode: str = "accel_depletion", hi: f
                        skew_n: int = 120, breakout_n: int = 20, atr_n: int = 20,
                        stop_atr: float = 1.5, rr: float = 1.5, ttl_bars: int = 8) -> list[Signal]:
     """Trade a bar-event Hawkes state: flow acceleration under depletion, a sell cascade under
-    negative skew, or a breakout under clustered large-print arrivals."""
-    if mode not in ("accel_depletion", "sell_cascade_skew", "arrival_breakout"):
+    negative skew, a breakout under clustered large-print arrivals, a breakout faded under
+    excited quote churn (0822), or a forced-move cascade faded as its intensity turns (0824)."""
+    if mode not in ("accel_depletion", "sell_cascade_skew", "arrival_breakout", "churn_fade",
+                    "forced_exhaustion"):
         return []
     h = _h1(df)
     if len(h) < window + refit + 10:
@@ -317,6 +350,26 @@ def family_hawkes_flow(df: pd.DataFrame, *, mode: str = "accel_depletion", hi: f
         r = pd.Series(np.diff(np.log(c), prepend=np.nan))
         skew = r.rolling(skew_n, min_periods=skew_n).skew().to_numpy()
         side[(q[:, 0] >= hi) & (skew < 0)] = -1
+    elif mode == "churn_fade":
+        if "churn" not in ev:
+            return []
+        q = _ratios([ev["churn"]], n, window, refit, min_events)
+        hh = h["high"].rolling(breakout_n).max().shift(1).to_numpy()
+        ll = h["low"].rolling(breakout_n).min().shift(1).to_numpy()
+        hot = q[:, 0] >= hi
+        side[hot & (c > hh)] = -1
+        side[hot & (c < ll)] = 1
+    elif mode == "forced_exhaustion":
+        if "forced" not in ev:
+            return []
+        # forced moves are rare by construction (~1 bar in 50); the fit's event floor is
+        # lowered for this one process only, never the threshold that defines the event
+        q = _ratios([ev["forced"]], n, window, refit, min(int(min_events), 40))
+        r = np.diff(np.log(c), prepend=np.nan)
+        last_dir = pd.Series(np.where(ev["forced"], np.sign(r), np.nan)).ffill(limit=6)
+        turning = (np.r_[np.nan, q[:-1, 0]] >= hi) & (q[:, 0] < np.r_[np.nan, q[:-1, 0]])
+        side[turning & (last_dir.to_numpy() > 0)] = -1
+        side[turning & (last_dir.to_numpy() < 0)] = 1
     else:
         if "large" not in ev:
             return []
@@ -406,6 +459,74 @@ def family_path_state(df: pd.DataFrame, *, rep: str = "hurst", window: int = 240
     return out
 
 
+# ------------------------------------------------------- conditional expectation ------------
+STATE_KINDS = ("vol_trend", "session_vol", "dow_trend")
+
+
+def bar_states(h: pd.DataFrame, kind: str, *, n: int = 24,
+               window: int = 500) -> tuple[np.ndarray, int]:
+    """(state per bar, number of states), each read from the bar and the bars before it:
+    `vol_trend` = trailing-vol tercile x trend sign (6), `session_vol` = six-hour block x vol
+    above/below its trailing median (8), `dow_trend` = weekday x trend sign (10)."""
+    c = h["close"].to_numpy(dtype=float)
+    r = pd.Series(np.diff(np.log(c), prepend=np.nan))
+    vol = r.rolling(n, min_periods=n).std()
+    lo = vol.rolling(window, min_periods=window // 2).quantile(1 / 3).shift(1).to_numpy()
+    hi = vol.rolling(window, min_periods=window // 2).quantile(2 / 3).shift(1).to_numpy()
+    med = vol.rolling(window, min_periods=window // 2).median().shift(1).to_numpy()
+    v = vol.to_numpy()
+    trend = np.sign(np.log(c) - np.log(np.r_[np.full(n, np.nan), c[:-n]]))
+    ok_v = np.isfinite(v) & np.isfinite(lo) & np.isfinite(hi)
+    up = (trend > 0).astype(int)
+    if kind == "vol_trend":
+        tercile = np.where(v < lo, 0, np.where(v < hi, 1, 2))
+        st = np.where(ok_v & np.isfinite(trend) & (trend != 0), tercile * 2 + up, -1)
+        return st, 6
+    if kind == "session_vol":
+        block = h.index.hour.to_numpy() // 6
+        st = np.where(np.isfinite(v) & np.isfinite(med), block * 2 + (v > med), -1)
+        return st, 8
+    if kind == "dow_trend":
+        dow = h.index.dayofweek.to_numpy()
+        st = np.where((dow < 5) & np.isfinite(trend) & (trend != 0), dow * 2 + up, -1)
+        return st, 10
+    raise ValueError(kind)
+
+
+def family_total_expectation_state(df: pd.DataFrame, *, states: str = "vol_trend",
+                                   h_bars: int = 12, entry_z: float = 2.5, min_n: int = 60,
+                                   atr_n: int = 20, stop_atr: float = 2.0, rr: float = 1.5,
+                                   ) -> list[Signal]:
+    """ROMAN-0997: trade the state whose conditional mean forward return, from outcomes completed
+    before the bar, departs from the total mean by `entry_z` of its own standard error: the
+    residual of E[R | S] against E[R] in the law of total expectation."""
+    if states not in STATE_KINDS or int(h_bars) < 1 or float(entry_z) <= 0:
+        return []
+    h = _h1(df)
+    if len(h) < 1500:
+        return []
+    c = h["close"].to_numpy(dtype=float)
+    hb = int(h_bars)
+    lc = np.log(c)
+    fwd = np.r_[lc[hb:] - lc[:-hb], np.full(hb, np.nan)]
+    st, k = bar_states(h, states)
+    m = ce.causal_state_means(fwd, st, hb, k, int(min_n))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        z = (m.mean - m.total) / m.se
+    atr = _atr(h, atr_n).to_numpy()
+    out: list[Signal] = []
+    busy = -1
+    for i in np.flatnonzero(np.isfinite(z) & (np.abs(z) >= float(entry_z))):
+        if i <= busy or i >= len(h) - 1:
+            continue
+        sig = _sig(h, int(i), 1 if z[i] > 0 else -1, stop_atr * float(atr[i]), rr, hb,
+                   f"total_expectation:{states}")
+        if sig:
+            out.append(sig)
+            busy = int(i) + hb
+    return out
+
+
 ROMAN_FAMILIES = {
     "kalman_hedge_spread": family_kalman_hedge_spread,
     "kalman_beta_residual": family_kalman_beta_residual,
@@ -413,14 +534,16 @@ ROMAN_FAMILIES = {
     "kalman_vol_residual": family_kalman_vol_residual,
     "hawkes_flow": family_hawkes_flow,
     "path_state": family_path_state,
+    "total_expectation_state": family_total_expectation_state,
 }
 
 #: The Roman row each family closes, for the thread's assignment table.
 ROWS = {"kalman_hedge_spread": ["ROMAN-0834", "ROMAN-0836", "ROMAN-0837"],
         "kalman_beta_residual": ["ROMAN-0835"], "kalman_trend": ["ROMAN-0838"],
         "kalman_vol_residual": ["ROMAN-0843"], "path_state": ["ROMAN-1000", "ROMAN-0743"],
-        "hawkes_flow": ["ROMAN-0819", "ROMAN-0820", "ROMAN-0821", "ROMAN-0823", "ROMAN-0828",
-                        "ROMAN-0829", "ROMAN-0831"]}
+        "total_expectation_state": ["ROMAN-0997"],
+        "hawkes_flow": ["ROMAN-0819", "ROMAN-0820", "ROMAN-0821", "ROMAN-0822", "ROMAN-0823",
+                        "ROMAN-0824", "ROMAN-0828", "ROMAN-0829", "ROMAN-0831"]}
 
 #: Families that read a second leg keyed by `pair_symbol` from the bar store. NOT `peer_symbol`:
 #: that is a gauntlet identity key (`family_inputs.IDENTITY_KEYS`), stripped before the call and
@@ -438,8 +561,10 @@ PARAM_GRID: dict[str, dict[str, list]] = {
     "kalman_beta_residual": {"horizon": [12]},
     "kalman_trend": {"entry_k": [0.05, 0.1]},
     "kalman_vol_residual": {"entry_z": [2.0]},
-    "hawkes_flow": {"mode": ["accel_depletion", "sell_cascade_skew", "arrival_breakout"]},
+    "hawkes_flow": {"mode": ["accel_depletion", "sell_cascade_skew", "arrival_breakout",
+                             "churn_fade", "forced_exhaustion"]},
     "path_state": {"rep": ["hurst", "bridge", "rough_vol"]},
+    "total_expectation_state": {"states": list(STATE_KINDS)},
 }
 
 _RM = {"source_culture": "US/en", "participant_structure": "retail_education",
@@ -457,6 +582,9 @@ CULTURE: dict[str, dict[str, str]] = {
     "path_state": {**_RM, "failure_mode_hypothesis": (
         "fails because a roughness estimate on a few hundred bars is noisy enough that the state "
         "flips on sampling error rather than on a change in who is trading")},
+    "total_expectation_state": {**_RM, "failure_mode_hypothesis": (
+        "fails when the state's conditional mean is a past regime that has ended, so a "
+        "significant expanding-window estimate trades a payer who has left")},
     "hawkes_flow": {**_RM, "failure_mode_hypothesis": (
         "fails because bar tick_volume is a quote count, not signed trades, so the 'flow' may "
         "be quoting activity rather than aggression")},

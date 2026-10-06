@@ -84,6 +84,14 @@ def test_no_pair_no_signals():
                                                       "window": 2000, "min_events": 60}),
                                      ("hawkes_flow", {"mode": "arrival_breakout",
                                                       "window": 2000, "min_events": 60}),
+                                     ("hawkes_flow", {"mode": "churn_fade",
+                                                      "window": 2000, "min_events": 60}),
+                                     ("hawkes_flow", {"mode": "forced_exhaustion",
+                                                      "window": 2000, "min_events": 60}),
+                                     ("total_expectation_state", {"states": "vol_trend",
+                                                                  "entry_z": 1.5}),
+                                     ("total_expectation_state", {"states": "session_vol",
+                                                                  "entry_z": 1.5}),
                                      ("path_state", {"rep": "hurst"}),
                                      ("path_state", {"rep": "bridge"}),
                                      ("path_state", {"rep": "rough_vol", "window": 60})])
@@ -99,6 +107,24 @@ def test_fires_with_a_sane_bracket_and_is_causal(pair, name, kw):
     cut = pair.index[4300]
     part = {(s.time, s.side) for s in fn(pair.iloc[:4500], **kw) if s.time < cut}
     assert part == {(s.time, s.side) for s in sigs if s.time < cut}
+
+
+def test_proxy_events_are_named_and_rare():
+    ev = rm.bar_events(_bars())
+    assert {"churn", "forced"} <= set(ev)
+    n = len(ev["forced"])
+    assert 0 < ev["forced"].sum() < 0.05 * n and 0 < ev["churn"].sum() < 0.2 * n
+    for row in ("ROMAN-0822", "ROMAN-0824"):
+        assert row in rm.ROWS["hawkes_flow"]
+    assert rm.ROWS["total_expectation_state"] == ["ROMAN-0997"]
+
+
+def test_bar_states_cover_their_range_and_are_causal():
+    d = _bars()
+    for kind in rm.STATE_KINDS:
+        st, k = rm.bar_states(d, kind)
+        assert st.max() < k and set(np.unique(st[st >= 0])) == set(range(k))
+        assert np.array_equal(st[:3000], rm.bar_states(d.iloc[:3000], kind)[0])
 
 
 def test_bar_events_thresholds_are_read_before_the_bar():

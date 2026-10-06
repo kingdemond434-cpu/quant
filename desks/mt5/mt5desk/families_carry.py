@@ -301,21 +301,61 @@ def family_good_bad_carry(
                        tag=f"{book}_carry:{panel['klass']}")
 
 
+def family_commodity_basis_carry(
+    df: pd.DataFrame, *, symbol: str = "", mode: str = "level", quantile: float = 1 / 3,
+    q: float = 0.05, hold_d: int = 20, max_panel_age_h: float = 48.0, decision_hour: int = 22,
+    max_stale_h: float = 12.0, stop_sd: float = 3.0, rr: float = 2.0,
+) -> list[Signal]:
+    """ROMAN-0842 on the venue's own terms: the swap on a rolling commodity CFD is the broker's
+    pass-through of the futures curve, so its long-minus-short yield is the implied basis (roll
+    yield). `mode="level"` ranks the class on it (Gorton, Hayashi & Rouwenhorst 2013:
+    backwardated contracts earn the premium); `mode="residual"` ranks on the basis minus its
+    adaptive fair value, the one-step Kalman prediction from `state_space.local_level` (each
+    member's filter reads only its own earlier stamped rows), so the cell mines the basis
+    surprise rather than its level."""
+    if not xs._valid_common(quantile, hold_d, stop_sd, rr) or mode not in ("level", "residual"):
+        return []
+    got = _prepare(df, symbol, decision_hour, max_stale_h, ("commodity",))
+    if got is None:
+        return []
+    d, panel = got
+    c = _carry_panel(d, panel, max_panel_age_h)
+    if mode == "residual":
+        from libs.research import state_space as ss
+        score = np.full(c.shape, np.nan)
+        for k in range(c.shape[1]):
+            col = c[:, k]
+            ok = np.isfinite(col)
+            if ok.sum() < 10:
+                continue
+            r = float(np.nanvar(np.diff(col[ok]))) or 1e-8
+            pred = ss.local_level(col, float(q) * r, r).pred
+            score[:, k] = col - pred
+    else:
+        score = c
+    side = xs._rank_sides(score, panel["own"], quantile)
+    return xs._signals(d, panel, side, hold_d=hold_d, stop_sd=stop_sd, rr=rr,
+                       tag=f"basis_carry:{mode}")
+
+
 CARRY_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
     "fx_swap_carry_rank": family_fx_swap_carry_rank,
     "dollar_carry_basket": family_dollar_carry_basket,
     "good_bad_carry": family_good_bad_carry,
+    "commodity_basis_carry": family_commodity_basis_carry,
 }
 
 PARAM_GRID: dict[str, dict[str, list]] = {
     "fx_swap_carry_rank": {"quantile": [0.2, 1 / 3], "hold_d": [5, 20]},
     "dollar_carry_basket": {"min_afd": [0.0, 0.01], "hold_d": [5, 20]},
     "good_bad_carry": {"book": ["good", "bad"], "hold_d": [5, 20]},
+    "commodity_basis_carry": {"mode": ["level", "residual"], "hold_d": [5, 20]},
 }
 
 CLASS_ONLY: dict[str, frozenset[str]] = {
     "fx_swap_carry_rank": frozenset(FX_CLASSES), "good_bad_carry": frozenset(FX_CLASSES),
     "dollar_carry_basket": frozenset({"fx_usd"}),
+    "commodity_basis_carry": frozenset({"commodity"}),
 }
 
 #: The index that lists these strategies (FX carry, dollar carry) and the papers they rest on.
@@ -326,6 +366,7 @@ PAPERS: dict[str, str] = {
     "fx_swap_carry_rank": "Lustig & Verdelhan (2007); Menkhoff, Sarno, Schmeling & Schrimpf (2012)",
     "dollar_carry_basket": "Lustig, Roussanov & Verdelhan (2014)",
     "good_bad_carry": "Bekaert & Panayotov (2020)",
+    "commodity_basis_carry": "Gorton, Hayashi & Rouwenhorst (2013); Roman blueprint row 0842",
 }
 
 _CARRY = {"source_culture": "academic/en", "participant_structure": "institutional_fx",
@@ -340,10 +381,15 @@ CULTURE: dict[str, dict[str, str]] = {
     "good_bad_carry": {**_CARRY, "failure_mode_hypothesis": (
         "fails if trailing skew does not forecast the next crash, so the good and bad books "
         "carry the same crash risk and the split earns nothing")},
+    "commodity_basis_carry": {**_CARRY, "participant_structure": "institutional_futures",
+                              "crowding_prior": "medium", "failure_mode_hypothesis": (
+        "fails when the broker's swap is a flat financing charge rather than a pass-through of "
+        "the curve, so the 'basis' is the broker's markup and ranks nothing")},
 }
 
 
-def history_status(floor_days: int | None = None) -> dict[str, Any]:
+def history_status(floor_days: int | None = None,
+                   classes: tuple[str, ...] = FX_CLASSES) -> dict[str, Any]:
     """Whether the honest swap history has reached the lockbox floor, with the count.
 
     The floor is the gauntlet's own; an unreadable floor is UNMEASURED and seeds nothing."""
@@ -355,13 +401,25 @@ def history_status(floor_days: int | None = None) -> dict[str, Any]:
             return {"status": "UNMEASURED", "ready": False,
                     "why": f"lockbox floor unreadable: {type(exc).__name__}"}
     hist, stats = swap_history()
-    fx = {s: h for s, h in hist.items() if xs.class_of(s) in FX_CLASSES}
+    fx = {s: h for s, h in hist.items() if xs.class_of(s) in classes}
     days = sorted({datetime.fromtimestamp((int(t) - BROKER_LEAD_NS) / 1e9, UTC).date().isoformat()
                    for h in fx.values() for t in h["t"]})
     ready = len(days) >= int(floor_days)
     return {"status": "READY" if ready else "PENDING_HISTORY", "ready": ready,
             "honest_days": len(days), "floor_days": int(floor_days),
             "first_day": days[0] if days else None, "last_day": days[-1] if days else None,
-            "fx_symbols": len(fx), "data_source": DATA_SOURCE, **stats,
+            "symbols": len(fx), "classes": list(classes), "data_source": DATA_SOURCE, **stats,
             "why": ("the cells enter the gauntlet when the honest history reaches the lockbox "
                     "floor; nothing before a row's knowable instant is ever filled")}
+
+
+def _commodity_status() -> dict[str, Any]:
+    return history_status(classes=("commodity",))
+
+
+#: Each family's history gate, read by the seeder before it plans a pass.
+GATES: dict[str, Callable[[], dict[str, Any]]] = {
+    **dict.fromkeys(("fx_swap_carry_rank", "dollar_carry_basket", "good_bad_carry"),
+                    history_status),
+    "commodity_basis_carry": _commodity_status,
+}

@@ -157,7 +157,7 @@ def test_registered_wired_and_gated_in_the_seeder():
     for fam in fc.CARRY_FAMILIES:
         assert fo.ORTHOGONAL_FAMILIES[fam] is fc.CARRY_FAMILIES[fam]
         assert fam in sw.NOT_SOURCED_HERE
-        assert eb.HISTORY_GATED[fam] is fc.history_status
+        assert eb.HISTORY_GATED[fam] is fc.GATES[fam]
         assert fam in eb.SYMBOL_KEYED and eb.CLASS_ONLY[fam]
         assert eb.SOURCE_ID[fam] == "github:paperswithbacktest/awesome-systematic-trading"
         assert eb.grid(fam)

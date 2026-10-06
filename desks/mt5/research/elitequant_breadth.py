@@ -102,7 +102,7 @@ SYMBOL_KEYED = frozenset({"commodity_fx_residual", *cm.CLASS_MOMENT_FAMILIES,
 CLASS_ONLY = {**qr.CLASS_ONLY, **cm.CLASS_ONLY, **cy.CLASS_ONLY}
 #: Families that wait for their own input history to reach the gauntlet's lockbox floor: seeded
 #: (and charged) only from the pass on which the gate reads ready, reported until then.
-HISTORY_GATED = dict.fromkeys(cy.CARRY_FAMILIES, cy.history_status)
+HISTORY_GATED = dict(cy.GATES)
 #: Families that read a partner leg named by `pair_symbol`: screened only on the symbols the
 #: pair table names, each with its partner in the cell's params.
 PAIR_OF = dict.fromkeys(rm.PEER_KEYED, rm.PAIRS)
@@ -351,6 +351,14 @@ def main(argv: list[str] | None = None) -> int:
                                        "path": str(cross_excitation.OUT)}
         except Exception as exc:
             rep["cross_excitation"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}"}
+        # ROMAN-0997: the total-expectation decomposition by bar state, same clock, own budget.
+        try:
+            from research import total_expectation
+            te = total_expectation.run(budget_s=60.0)
+            rep["total_expectation"] = {"status": te["status"], "ran": te["ran"],
+                                        "path": str(total_expectation.OUT)}
+        except Exception as exc:
+            rep["total_expectation"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}"}
     if not a.dry_run:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         tmp = OUT.with_suffix(".tmp")

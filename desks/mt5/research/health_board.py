@@ -54,6 +54,7 @@ READERS = {
     "github_resident_miner": DESK / "reports" / "GITHUB_RESIDENT_MINER.json",
     # ROMAN-0832: who excites whom (bar events per symbol, Treasury -> USD -> gold), hourly.
     "cross_excitation": DESK / "reports" / "CROSS_EXCITATION.json",
+    "total_expectation": DESK / "reports" / "TOTAL_EXPECTATION.json",
 }
 OUT = DESK / "reports" / "HEALTH_BOARD.json"
 OUT_MD = DESK / "reports" / "HEALTH_BOARD.md"
