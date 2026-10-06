@@ -347,6 +347,21 @@ def _declared_headers(src: dict[str, Any]) -> dict[str, str]:
             if str(k).lower() not in banned}
 
 
+def _terms_state(src: dict[str, Any], url: str) -> tuple[str, str]:
+    """(state, why) from the one terms table. A row with a `terms_ref` whose table cannot be read
+    is BLOCKED (fail closed); a row with none is governed only if its host is."""
+    ref = str(src.get("terms_ref") or "")
+    try:
+        from research.alt_proxies import terms_gate
+    except Exception as exc:
+        if ref:
+            return "unreadable", f"terms table unimportable ({type(exc).__name__}); fail closed"
+        return "ungoverned", ""
+    if ref:
+        return terms_gate(ref)
+    return terms_gate(url)
+
+
 def collect_one(src: dict[str, Any], timeout: float = 25.0,
                 validators: dict[str, str] | None = None) -> dict[str, Any]:
     """One source, one verdict. Never raises: an unfetched source is named, never assumed empty."""
@@ -357,6 +372,17 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     rec: dict[str, Any] = {"id": sid, "plane": src.get("plane"), "url": url, "expect": expect,
                            "access": access,
                            "collected_utc": datetime.now(UTC).isoformat(timespec="seconds")}
+
+    # THE TERMS GATE, FAIL CLOSED (audit 2026-10-06 row 8). A row that names a terms decision
+    # (`terms_ref`), or whose host is governed by one, is fetched only when that decision reads
+    # `confirmed`. This is not robots.txt (which stays a label, LAWS 5e): it is a publisher's
+    # written refusal to permit use, and the one place it is recorded is alt_proxies.TERMS, so the
+    # collector, the SGE fetcher and the probes all read the same line.
+    terms_state, terms_why = _terms_state(src, url)
+    if terms_state not in ("confirmed", "ungoverned"):
+        rec.update({"status": "BLOCKED_ON_TERMS", "terms": terms_state,
+                    "why": f"terms {terms_state}: not fetched ({terms_why})"[:400]})
+        return rec
 
     if access in ("key", "paid") and not _key_present(src):
         rec.update({"status": "UNCONFIGURED", "key_env": src.get("key_env"),
@@ -483,7 +509,10 @@ def _derived_sources(sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
             if not isinstance(row, dict) or row.get("kind") != "address":
                 continue
             url = str(row.get("url") or "")
-            parent = str(row.get("route") or "").split(":")[-1]
+            # A GRAND-CHILD resolves to its ROOT row (index -> article -> attachment, the SAFE
+            # walk): `<root>__ep<a>` handed back `<url>`, and the root carries the pit block,
+            # the targets, the adapter and the terms decision the child must inherit.
+            parent = str(row.get("route") or "").split(":")[-1].split("__ep")[0]
             src = by_id.get(parent)
             if not url or src is None or url in seen:
                 continue
@@ -496,7 +525,8 @@ def _derived_sources(sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
                         "plane": src.get("plane"), "name": f"{src.get('name')} :: {low[-60:]}",
                         "url": url, "expect": expect, "access": src.get("access") or "public",
                         "cadence": "daily", "pit": src.get("pit"), "targets": src.get("targets"),
-                        "derived_from": parent, "role": "derived"})
+                        "derived_from": parent, "role": "derived",
+                        **{k: src[k] for k in ("adapter", "country", "terms_ref") if src.get(k)}})
             if len(out) >= MAX_DERIVED:
                 return out
     return out
@@ -625,7 +655,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"asia collector: {len(rows)} attempted of {len(sources)} -> {dict(census)}")
     for st in ("COLLECTED", "NEEDS_PARSER", "ROUTE_CHANGED", "HTTP_ERROR", "UNREACHABLE",
-               "UNCONFIGURED", "BLOCKED_BY_ROBOTS"):
+               "UNCONFIGURED", "BLOCKED_ON_TERMS", "BLOCKED_BY_ROBOTS"):
         rs = [r for r in rows if r.get("status") == st]
         if not rs:
             continue

@@ -1,0 +1,8 @@
+{"head":{"rep_code":"200"},
+ "data":{"showDateCN":"2026-10-06 11:00","showDateEN":"06/10/2026 11:00"},
+ "records":[
+  {"termCode":"O/N","shibor":"1.3150","shibIdUpDown":"-2.10"},
+  {"termCode":"1W","shibor":"1.4420","shibIdUpDown":"0.30"},
+  {"termCode":"3M","shibor":"1.6100","shibIdUpDown":"0.00"},
+  {"termCode":"1Y","shibor":"1.6800","shibIdUpDown":"-0.10"}
+ ]}
