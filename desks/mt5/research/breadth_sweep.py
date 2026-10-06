@@ -381,11 +381,15 @@ def _orthogonal_key() -> Any:
     # the least-judged key), which separates the 41st USD pair of a saturated breakout cluster
     # from the first JPY-cross carry cell inside the SAME family. Absent map: the nominal
     # certified count per family, exactly as before.
-    try:
-        from research.certificate_saturation import scorer
-        sat = scorer()
-    except Exception:
-        sat = None
+    # the map describes the desk's canon: a caller that points CERTIFICATES elsewhere (a test,
+    # a replay) gets the nominal count of THAT canon, never the desk's map
+    sat = None
+    if CERTIFICATES == DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json":
+        try:
+            from research.certificate_saturation import scorer
+            sat = scorer()
+        except Exception:
+            sat = None
 
     def key(r: dict) -> tuple:
         params = r.get("params") or {}

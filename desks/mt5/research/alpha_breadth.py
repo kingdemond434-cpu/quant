@@ -579,7 +579,9 @@ def certificate_saturation_pass() -> dict[str, Any]:
             cert["robust_k_eff_book"] = book.get("robust_k_eff")
             cert["stress_k_eff_book"] = book.get("k_eff_stress")
             cert["tail_k_eff_book"] = book.get("k_eff_tail")
-        path = cs.publish(doc)
+        # beside EFFECTIVE_BREADTH.json, so a caller that redirects this leg's output (a test)
+        # never overwrites the desk's published map
+        path = cs.publish(doc, OUT.parent / cs.REPORT.name)
         return {"status": doc.get("status"), "why": doc.get("why"), "line": doc.get("line"),
                 "at": doc.get("at"), "certificates": doc.get("certificates"),
                 "report": str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)}

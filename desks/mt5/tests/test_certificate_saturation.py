@@ -368,7 +368,7 @@ def test_alpha_breadth_leg_publishes_the_map(sat: dict, tmp_path: Path, monkeypa
 
     from research import certificate_saturation as rcs
     monkeypatch.setattr(rcs, "build", lambda **k: dict(sat))
-    monkeypatch.setattr(rcs, "REPORT", tmp_path / "CERTIFICATE_SATURATION.json")
+    monkeypatch.setattr(ab, "OUT", tmp_path / "EFFECTIVE_BREADTH.json")
     monkeypatch.setattr(ab, "daily_sleeve_returns", lambda: {})
     monkeypatch.setattr(ab, "_daily_panel", lambda syms: ({}, {}))
     out = ab.certificate_saturation_pass()
