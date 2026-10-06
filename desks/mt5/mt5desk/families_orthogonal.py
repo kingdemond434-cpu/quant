@@ -2473,6 +2473,19 @@ for _qg_name in QUANTGUILD_FAMILIES:
     FAMILY_INPUTS[_qg_name] = ("price only", "data/universe/*_H1.parquet")
 del _qg_name
 
+# NINE MECHANISMS FROM THE QUEUED REPOSITORIES (2026-10-06): czsc's Chan-theory structure (TD
+# setup, volume climax, overlap boxes, the false-break reclaim, the quiet grind, the ribbon
+# release), tqsdk's escalator, and two index calendar claims (payday, the rare losing streak).
+# Rewritten from the cards. Seeded by `research/elitequant_breadth.py`.
+from mt5desk.families_queued_repos import QUEUED_REPO_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(QUEUED_REPO_FAMILIES)
+for _qr_name in QUEUED_REPO_FAMILIES:
+    FAMILY_INPUTS[_qr_name] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["volume_climax_fade"] = ("price only, plus the bars' own tick_volume",
+                                       "data/universe/*_H1.parquet")
+del _qr_name
+
 # THE ALPHA ZOO AS CLASS BOOKS (2026-09-30): 317 published alphas (GTJA 191, Qlib 158, Alpha101,
 # academic) vendored from HKUDS/Vibe-Trading (MIT) under mt5desk/alpha_zoo/, each ranked within
 # the cell's peer class on each date. Loads its own class panel keyed by the cell's `symbol`, like

@@ -151,7 +151,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     "trend_persistence price_only market": "anti_three_bar_momentum h4_momentum momentum_volgate"
                                            " multi_speed_trend trend_ma_cross"
                                            " htf_anchor_trend parabolic_sar_flip carver_accel"
-                                           " awesome_saucer",
+                                           " awesome_saucer quiet_grind ribbon_release escalator",
     "trend_persistence price_only stop": "adx_channel_hybrid",
     "trend_persistence price_only limit": "pullback_entry",
     "session_handover price_only market": "asia_momentum clock_transition monday_gap"
@@ -170,7 +170,7 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                " cot_comm_follow cot_net_fade cot_positioning"
                                                " retail_overlap_reversal",
     "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
-                                               " mass_screen_clock",
+                                               " mass_screen_clock payday_dom",
     "relative_value_dislocation cross_asset market": "correlation_regime cross_asset_residual"
                                                      " cross_sectional pca_residual"
                                                      " relative_value style_premia"
@@ -197,7 +197,9 @@ _FAMILY_GROUPS: dict[str, str] = {
                                         " mean_reversion_rsi range_reversion",
     "range_reversion price_only market": "engulfing_reversal pin_bar_reversal"
                                          " heikin_ashi_reversal rsi_head_shoulders bollinger_w"
-                                         " ffd_reversion kalman_ou_level",
+                                         " ffd_reversion kalman_ou_level"
+                                         " td_setup_exhaustion volume_climax_fade"
+                                         " rare_losing_streak",
     "breakout_liquidity price_only stop": "anti_donchian_breakout d1_swing_break level_breakout"
                                           " london_ny_breakout opening_range"
                                           " session_range_breakout",
@@ -239,7 +241,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     # the stops parked beyond the range; R-Breaker's reversal mode is a parameter of one family.
     # The trend, reversion, regime (backward SADF), skew and residual absorptions are listed in
     # their mechanism's own row above.
-    "breakout_liquidity price_only market": "dual_thrust r_breaker king_keltner sky_garden",
+    "breakout_liquidity price_only market": "dual_thrust r_breaker king_keltner sky_garden"
+                                            " range_trap_reclaim overlap_box_breakout",
     # Corwin-Schultz high-low spread: a liquidity shock read off the bar's own range.
     "execution_microstructure price_only market": "hl_spread_shock",
     # A zoo alpha's class book names an expression, not a payer: counted UNKNOWN, never guessed.

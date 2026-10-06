@@ -2873,7 +2873,12 @@
    "region": "cn",
    "licence": "UNVERIFIED",
    "cadence": "hourly",
-   "system_id": "gh_waditu_czsc"
+   "system_id": "gh_waditu_czsc",
+   "config": {
+    "fetched_by": [
+     "elitequant_breadth"
+    ]
+   }
   },
   {
    "id": "github:QuantaAlpha/QuantaAlpha",
@@ -2941,7 +2946,12 @@
    "region": "cn",
    "licence": "UNVERIFIED",
    "cadence": "hourly",
-   "system_id": "gh_shinnytech_tqsdk_python"
+   "system_id": "gh_shinnytech_tqsdk_python",
+   "config": {
+    "fetched_by": [
+     "elitequant_breadth"
+    ]
+   }
   },
   {
    "id": "github:Micro-sheep/efinance",
@@ -3009,7 +3019,12 @@
    "region": "cn",
    "licence": "UNVERIFIED",
    "cadence": "hourly",
-   "system_id": "gh_llmquant_quant_wiki"
+   "system_id": "gh_llmquant_quant_wiki",
+   "config": {
+    "fetched_by": [
+     "elitequant_breadth"
+    ]
+   }
   },
   {
    "id": "github:quant-science/sunday-quant-scientist",
@@ -3026,7 +3041,12 @@
    "region": "global",
    "licence": "UNVERIFIED",
    "cadence": "hourly",
-   "system_id": "gh_quant_science_sunday_quant_scientist"
+   "system_id": "gh_quant_science_sunday_quant_scientist",
+   "config": {
+    "fetched_by": [
+     "elitequant_breadth"
+    ]
+   }
   },
   {
    "id": "github:AI-Efficiency/Awesome-Model-Quantization",
