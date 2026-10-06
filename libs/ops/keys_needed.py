@@ -93,10 +93,14 @@ def _reasons(reports: Path) -> dict[str, list[str]]:
 
 
 def build(*, reports: Path = REPORTS, acquired: Iterable[str] = (),
-          present: Callable[[str], bool] | None = None,
+          requested: Iterable[str] = (), present: Callable[[str], bool] | None = None,
           now: datetime | None = None) -> dict[str, Any]:
+    """`requested`: names the principal has applied for and is waiting on (a provider that
+    answers by email). Listed apart and kept out of the digest, so the alert does not nag about
+    a key nobody can fetch yet; a REJECTED key is never parked this way."""
     cat = _catalog_by_name()
     have = {str(n).strip() for n in acquired if str(n).strip()}
+    waiting = {str(n).strip() for n in requested if str(n).strip()}
 
     def is_set(name: str) -> bool:
         if name in have:
@@ -119,6 +123,11 @@ def build(*, reports: Path = REPORTS, acquired: Iterable[str] = (),
         if not rejected and any(is_set(n) for n in [canon, *(hit.get("aliases") or ())]):
             continue   # set since the report was written; the next pass will agree
         items.setdefault(canon, {"name": canon, "reasons": []})["reasons"] += why
+    parked = sorted(n for n in items
+                    if n in waiting and not any(r.startswith("REJECTED")
+                                                for r in items[n]["reasons"]))
+    for n in parked:
+        items.pop(n)
     out = []
     for name in sorted(items):
         row = cat[name]
@@ -130,7 +139,8 @@ def build(*, reports: Path = REPORTS, acquired: Iterable[str] = (),
     return {"generated_at": (now or datetime.now(tz=UTC)).isoformat(timespec="seconds"),
             "writer": "libs/ops/keys_needed.py",
             "rule": "names, links and reasons only; no value is read into this file",
-            "acquired_names_assumed": sorted(have), "n": len(out), "digest": digest,
+            "acquired_names_assumed": sorted(have), "requested_waiting": parked,
+            "n": len(out), "digest": digest,
             "items": out}
 
 
@@ -150,8 +160,8 @@ def write(doc: Mapping[str, Any], path: Path = OUT) -> None:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--acquired", default="",
-                    help="file of key NAMES (one per line) to treat as set: for a host with no "
-                         "box state")
+                    help="file of key NAMES (one per line) to treat as set, for a host with no "
+                         "box state; a line ~NAME marks a key applied for and still waiting")
     ap.add_argument("--write", action="store_true", help=f"write {OUT.name}")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
@@ -159,7 +169,9 @@ def main(argv: list[str] | None = None) -> int:
     if a.acquired:
         names = [ln.split("#", 1)[0].strip() for ln in
                  Path(a.acquired).read_text("utf-8").splitlines()]
-    doc = build(acquired=names)
+    # A line `~NAME` means applied for and waiting on the provider.
+    doc = build(acquired=[n for n in names if not n.startswith("~")],
+                requested=[n[1:] for n in names if n.startswith("~")])
     if a.write:
         write(doc)
     if a.json:

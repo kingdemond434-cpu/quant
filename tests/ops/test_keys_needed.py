@@ -66,3 +66,11 @@ def test_no_value_reaches_the_artifact(tmp_path: Path, monkeypatch: pytest.Monke
     kn.write(doc, out)
     assert "VALUE-NEVER-WRITTEN" not in out.read_text("utf-8")
     assert all(line.startswith("- `") for line in kn.lines(doc))
+
+
+def test_a_requested_key_is_parked_out_of_the_alert(tmp_path: Path) -> None:
+    every = set(kn.env_keys.key_names()) - {"ENTSOE_API_TOKEN"}
+    a = kn.build(reports=tmp_path, present=lambda n: n in every)
+    b = kn.build(reports=tmp_path, present=lambda n: n in every, requested=["ENTSOE_API_TOKEN"])
+    assert [i["name"] for i in a["items"]] == ["ENTSOE_API_TOKEN"]
+    assert b["items"] == [] and b["requested_waiting"] == ["ENTSOE_API_TOKEN"]
