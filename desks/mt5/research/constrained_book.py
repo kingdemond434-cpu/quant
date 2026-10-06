@@ -20,10 +20,13 @@ inputs from what the allocator already published and writes one artifact:
 
     -> reports/CONSTRAINED_BOOK.json
 
-SWITCH OFF. `constrained_elog.FEEDS_LIVE` is False and no consumer on the money path reads this
-artifact. Feeding the constrained book into live sizing moves heat between sleeves (and possibly
-in total, either direction), so it is the principal's call -- NEEDS-PRINCIPAL-GO -- and the
-artifact carries `feeds_live: false` so no reader can mistake it for the traded book.
+IT DECIDES, EVERY HOUR, ON ITS PROOF (2026-09-30). `constrained_elog.decide` reads this pass's
+paired contest against the LIVE book and switches the feed ON only while the constrained book's
+robust E[log W] beats the traded book's (dE > 0 with the bootstrap interval excluding zero, no
+more ruinous, never below the heat floor, on a fresh world population). The decision is written
+to reports/CONSTRAINED_BOOK_SWITCH.json; `research/pf_allocator.py` reads it and adopts the
+constrained book only after re-contesting it on its own paths (`constrained_elog.adopt_if_proven`).
+There is no hand switch: `constrained_elog.FEEDS_LIVE` is the fiat switch and stays False.
 
     python desks/mt5/research/constrained_book.py
 """
@@ -51,6 +54,7 @@ CAPACITY = BASE / "reports" / "CAPACITY.json"
 SLEEVES = BASE / "data" / "sleeves.json"
 ACCOUNT = BASE / "data" / "account_state.json"
 OUT = BASE / "reports" / "CONSTRAINED_BOOK.json"
+SWITCH = BASE / "reports" / "CONSTRAINED_BOOK_SWITCH.json"
 
 #: Paths cut from the world population, and their length in days. 400 x 5 is the allocator's
 #: own posterior challenger's shape (`posterior_growth.DEFAULT_*`), so the two are comparable.
@@ -161,7 +165,8 @@ def _num(x: Any) -> float | None:
     return v if math.isfinite(v) else None
 
 
-def capacity_inputs(names: list[str], equity: float | None) -> tuple[dict[str, float], dict[str, Any]]:
+def capacity_inputs(names: list[str], equity: float | None
+                    ) -> tuple[dict[str, float], dict[str, Any]]:
     """Measured liquidity ceilings (heat) and the per-sleeve min-lot feasibility floor (heat)."""
     doc = _read(CAPACITY)
     caps: dict[str, float] = {}
@@ -201,12 +206,20 @@ def build(now: datetime | None = None, *, seed: int = 0) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     from libs.portfolio import constrained_elog as ce
     base: dict[str, Any] = {"generated_utc": now.isoformat(timespec="seconds"),
-                            "feeds_live": ce.FEEDS_LIVE,
-                            "switch": ("libs/portfolio/constrained_elog.FEEDS_LIVE (False). No "
-                                       "consumer on the money path reads this artifact; feeding "
-                                       "it into live sizing is NEEDS-PRINCIPAL-GO."),
+                            "feeds_live": False,
+                            "fiat_switch": ce.FEEDS_LIVE,
                             "source": {"worlds": str(WORLDS.relative_to(ROOT)),
                                        "allocation": str(ALLOCATION.relative_to(ROOT))}}
+    doc = _build(base, now, seed=seed, t0=t0)
+    # THE DECISION, on every outcome: an UNMEASURED pass decides OFF by name.
+    switch = ce.decide(doc, now_iso=base["generated_utc"])
+    doc["feeds_live"] = bool(switch["feeds_live"])
+    doc["switch"] = switch
+    return doc
+
+
+def _build(base: dict[str, Any], now: datetime, *, seed: int, t0: float) -> dict[str, Any]:
+    from libs.portfolio import constrained_elog as ce
     art = _read(ALLOCATION)
     if not isinstance(art, dict) or not isinstance(art.get("book"), dict):
         return {**base, "status": "UNMEASURED",
@@ -301,7 +314,9 @@ def main(argv: list[str] | None = None) -> int:
     if not args.dry_run:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(doc, indent=2, default=str), "utf-8")
-    print(f"constrained_book: {doc['status']} -- "
+        SWITCH.write_text(json.dumps(doc["switch"], indent=2, default=str), "utf-8")
+    print(f"constrained_book: {doc['status']} feeds_live={doc['feeds_live']} "
+          f"({doc['switch']['why'][:160]}) -- "
           f"{doc.get('direction') or doc.get('why')}; current violates "
           f"{doc.get('current_violates', [])}")
     return 0

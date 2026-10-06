@@ -156,7 +156,7 @@ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
     sym = str(row.get("symbol") or "").strip().upper()
     if not sym:
         return "row carries no symbol; it cannot be admitted to the live account"
-    if sym not in p.live_symbols:
+    if "*" not in p.live_symbols and sym not in p.live_symbols:
         return (f"{sym} is outside the live sleeve universe {sorted(p.live_symbols)} -- {p.by}")
     tf = str(row.get("timeframe") or row.get("chart") or "").strip().upper()
     banned_tf = p.banned_timeframes.get(sym, frozenset()) | p.banned_timeframes.get(

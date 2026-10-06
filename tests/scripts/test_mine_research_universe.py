@@ -10,6 +10,7 @@ is what we SEARCH FOR, not how we rank what comes back.
 from __future__ import annotations
 
 import scripts.mine_research_queue as m
+
 from libs.research.video_triage import SURFACE_THRESHOLD, score_title
 
 _ALL_QUERY_LISTS = ("BILIBILI_QUERIES", "CN_ARTICLE_QUERIES", "SEARCH_QUERIES")

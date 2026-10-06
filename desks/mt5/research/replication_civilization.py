@@ -63,6 +63,10 @@ STATE_DIR = DESK / "data" / "replication_civilization"
 CURSOR = STATE_DIR / "cursor.json"
 QUARANTINE = STATE_DIR / "quarantine.json"
 REPORT = DESK / "reports" / "REPLICATION.json"
+#: THE VERDICT BOOK (2026-09-30): the last verdict per CERTIFICATE, with the spec fingerprint it
+#: was judged under. `research/admission_integrity.py` reads it: a new certificate starts a
+#: forward clock only when this book says REPLICATED under its current spec.
+VERDICTS_NAME = "verdicts.json"
 
 BUDGET_S = 900.0
 #: Breadth-per-run bound so a pass finishes; the cursor rotates through both lanes so every row
@@ -717,10 +721,31 @@ def judge_forward(ledger: Sequence[Mapping[str, Any]], fills: Sequence[Fill], ba
 
 # -------------------------------------------------------------------------------- the rows
 def certificate_rows(path: Path = SURVIVORS) -> list[dict[str, Any]]:
+    """Every certificate with a spec, each carrying its canon id as `certificate` -- the key the
+    admission door looks its replication verdict up by."""
     doc = _read_json(path, {}) or {}
     rows = doc.get("survivors") if isinstance(doc, dict) else doc
-    items = list(rows.values()) if isinstance(rows, dict) else list(rows or [])
-    return [r for r in items if isinstance(r, dict) and isinstance(r.get("shadow_spec"), dict)]
+    items = (list(rows.items()) if isinstance(rows, dict)
+             else [(None, r) for r in (rows or [])])
+    return [{**r, "certificate": str(name) if name is not None else r.get("certificate")}
+            for name, r in items
+            if isinstance(r, dict) and isinstance(r.get("shadow_spec"), dict)]
+
+
+def certificate_id(row: Mapping[str, Any]) -> str:
+    spec = row.get("shadow_spec") or {}
+    return str(row.get("certificate") or row.get("cell")
+               or f"{spec.get('symbol')} {spec.get('family')}")
+
+
+def certificate_fp(row: Mapping[str, Any]) -> str:
+    """The spec fingerprint, computed by the SAME function the admission door uses. The door is
+    a reader of this lane's output, not an implementation it replicates, so this import does not
+    breach the independence rule (FORBIDDEN_IMPORTS)."""
+    from admission_integrity import spec_fingerprint
+    spec = row.get("shadow_spec") or {}
+    return spec_fingerprint(spec.get("symbol") or row.get("sym"), spec.get("family"),
+                            spec.get("selector"), spec.get("side"), spec.get("params"))
 
 
 def forward_rows(path: Path = SLEEVE_REGISTRY) -> list[dict[str, Any]]:
@@ -754,6 +779,7 @@ def replicate_certificate(row: Mapping[str, Any], *, meta: Mapping[str, Any],
     spec = dict(row.get("shadow_spec") or {})
     fam, sym = str(spec.get("family") or ""), str(spec.get("symbol") or row.get("sym") or "")
     out: dict[str, Any] = {"lane": "certificate", "key": str(row.get("cell") or f"{sym} {fam}"),
+                           "certificate": certificate_id(row), "fp": certificate_fp(row),
                            "symbol": sym, "family": fam, "verdict": UNMEASURED, "why": [],
                            "ours": {}, "theirs": {}}
     p, why = resolve_spec(fam, spec.get("params"), spec.get("selector"), spec.get("side"))
@@ -904,17 +930,28 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
     rows: list[dict[str, Any]] = []
     notes: list[str] = []
     per_lane = max(1, int(max_per_pass) // 2)
-    for k in range(min(per_lane, len(certs))):
+    verdicts_path = cursor_path.parent / VERDICTS_NAME
+    book_doc = _read_json(verdicts_path, {}) or {}
+    book = dict(book_doc.get("certificates") or {}) if isinstance(book_doc, dict) else {}
+    # NEVER-JUDGED FIRST. A certificate the book has no verdict for -- or a verdict under a
+    # different spec -- cannot start a forward clock (the admission door), so it is judged ahead
+    # of the rotation: a new certificate waits about one pass, never a full cycle of the canon.
+    pending = [i for i, r in enumerate(certs)
+               if (book.get(certificate_id(r)) or {}).get("fp") != certificate_fp(r)]
+    rotation = [(ci + k) % len(certs) for k in range(len(certs))] if certs else []
+    order = pending + [i for i in rotation if i not in set(pending)]
+    for n, idx in enumerate(order[:per_lane]):
         if time.monotonic() > deadline:
             notes.append("budget: certificates left for the next pass")
             break
-        row = certs[(ci + k) % len(certs)]
+        row = certs[idx]
         spec = row.get("shadow_spec") or {}
         sym = str(spec.get("symbol") or row.get("sym") or "")
         tf = str((spec.get("params") or {}).get("timeframe") or "H1")
         rows.append(replicate_certificate(row, meta=dict(meta_all.get(sym) or {}),
                                           bars=bars_loader(sym, tf)))
-        cursor["certificates"] = (ci + k + 1) % len(certs)
+        if n >= len(pending):
+            cursor["certificates"] = (idx + 1) % len(certs)
     for k in range(min(per_lane, len(fwd))):
         if time.monotonic() > deadline:
             notes.append("budget: forward rows left for the next pass")
@@ -948,6 +985,14 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
     if not dry_run:
         _write_atomic(cursor_path, {**cursor, "at": _now()})
         _write_atomic(report, doc)
+        for r in rows:
+            if r.get("lane") == "certificate" and r.get("certificate"):
+                book[str(r["certificate"])] = {"verdict": r["verdict"], "fp": r.get("fp"),
+                                               "why": list(r.get("why") or [])[:4],
+                                               "key": r.get("key"), "at": _now()}
+        _write_atomic(verdicts_path, {"at": _now(), "rule": RULE, "certificates": book})
+    doc["verdict_book"] = {"path": str(verdicts_path.name), "n": len(book),
+                           "judged_first_this_pass": min(len(pending), per_lane)}
     return doc
 
 

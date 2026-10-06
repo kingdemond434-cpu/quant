@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from tests.portfolio.conftest import constant_correlation, make_alpha
 
 from libs.portfolio.covariance import covariance_from_alphas
 from libs.portfolio.diversification import (
@@ -16,6 +15,7 @@ from libs.portfolio.diversification import (
 from libs.portfolio.errors import PortfolioError
 from libs.portfolio.optimize import optimize_portfolio
 from libs.portfolio.rebalance import rebalance
+from tests.portfolio.conftest import constant_correlation, make_alpha
 
 
 def test_diversification_ratio_and_effective_bets() -> None:

@@ -49,6 +49,8 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from libs.ops.proctree import run as _checkout_run  # noqa: E402
+
 #: LAW FENCES -- portable. They read the REPO (constitution, doctrine, matrix, prompts, manifest),
 #: so they mean the same thing in CI, in a fresh clone, and on the box. These gate every commit
 #: and every push: a breach here is a breach anywhere.
@@ -152,6 +154,11 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # would have cut. Portable: it reads only tracked files.
     ("check_tier5_audit.py", ()),
     ("check_tier_s_program.py", ()),          # Tier S admission rule: no layer without a contract
+    # THE EXPERIMENT CONTRACT (2026-09-30): the admission rule's metric half, extended to the
+    # whole experiment -- hypothesis, metric, falsifier, budget, owner -- for every registered
+    # hourly leg. A NEW leg without one fails here; the legs that predate the fence are listed
+    # by name and that list may only shrink. Portable: it reads tracked files only.
+    ("check_experiment_contracts.py", ()),
     # THE PLUMBING-INVARIANT HIERARCHY (Tier-1 B26). Not "are the money-path laws tested" --
     # they always were -- but WHAT EACH TEST SPEAKS FOR: one hand-written state (EXAMPLE), a
     # generator's draws (PROPERTY), or the whole finite domain (PROOF). The fence is that the
@@ -802,8 +809,12 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
     tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-", dir=_checkout_base()))
     wt = tmp / "t"
     try:
-        r = subprocess.run(["git", "worktree", "add", "--detach", str(wt), "HEAD"],
-                           cwd=root, capture_output=True, text=True, timeout=300)
+        # HEAD now contains 49,295 files / 3.8GB on the trading host. Parallel
+        # checkout preserves the full tree and the existing 300-second budget.
+        # On timeout, stop git's reset child before removing its private tree.
+        r = _checkout_run(["git", "-c", "checkout.workers=8", "worktree", "add",
+                           "--detach", str(wt), "HEAD"],
+                          cwd=root, capture_output=True, text=True, timeout=300)
         if r.returncode != 0:
             raise OSError((r.stderr or r.stdout).strip()[:200])
     except (OSError, subprocess.SubprocessError) as exc:

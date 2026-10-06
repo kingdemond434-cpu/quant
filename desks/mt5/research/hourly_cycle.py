@@ -886,6 +886,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
     "dsr_inputs",
+    # Capacity planning and the observed verdict rate must run before every judge pass;
+    # the heavy-plan rotation left its report stale while the gauntlet kept running.
+    "judging_throughput",
     # A SILENT HALT COSTS A WINDOW AN HOUR (PR #130 audit): the placement-interlock fence ran only
     # in the law gate's `--rotate` rotation, which reaches a given state fence every few hours.
     # It reads three small files and writes one, so it runs on BOTH plans, every hour.
@@ -925,6 +928,11 @@ CORE_LEGS: frozenset[str] = frozenset({
     "source_evig", "source_drain", "pack_cells", "institutional_footprint", "ground_depth",
     "timeframe_fanout",
     "fill_recorder", "cost_surfaces",
+    # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
+    # why cells never BUILT, the pathology report classifies the live book's bad fills, the
+    # contracts leg reads every leg's declared experiment against its own report, and the health
+    # board rolls every organ into one verdict. It runs last so it reads this pass.
+    "build_failure_bank", "trade_pathology", "experiment_contracts", "health_board",
     "actor_pressure", "destroyer_pool", "quantbench",
     "evidence_chain", "identity_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
@@ -1037,7 +1045,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
-                     "compile_candidates", "merge_docket",
+                     "intake_catchup", "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
@@ -1090,7 +1098,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
-                     "net_edge", "cost_truth", "cost_surfaces"),
+                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
@@ -1137,6 +1145,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # region, stamped at the registry doors. The machine measuring its
                      # own lineage: meta.
                      "attribution_census",
+                     # WHY CELLS NEVER BUILT, WHAT EACH LEG CLAIMS, AND ONE HEALTH VERDICT: the
+                     # machine measuring its own build path, experiments and organs: meta.
+                     "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s",
                      "research_live_identity",
@@ -1941,6 +1952,12 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # here); the contracts join three JSON artifacts. Both caps are generous and never bind.
     "alpha_rank": 240,
     "factory_contracts": 120,
+    # The four rebuilt readers each read a handful of JSON/JSONL files (measured well under a
+    # second on the build box); the caps only guard a damaged file.
+    "build_failure_bank": 120,
+    "trade_pathology": 120,
+    "experiment_contracts": 240,
+    "health_board": 180,
     # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
     # writes SANDBOX_RUNNER.json; the cap sits above it so it is never cut at the same prefix.
     "sandbox_runner": 1_000,
@@ -2831,6 +2848,32 @@ def compile_candidates() -> dict:
                      "--budget-s", "600")
 
 
+def catch_up_intake() -> dict:
+    """Publish already waiting discoveries before spending the pass on new searches.
+
+    The normal mine/compile/deepen/merge chain still runs later for this pass's new
+    production. This bounded catch-up uses the same compiler cursor and merger, so
+    existing discoveries need not wait behind hours of generation to reach the judge.
+    Never merge an old compiler artifact after a failed compilation.
+    """
+    from research.job_lock import exclusive_job
+
+    with exclusive_job("miner_candidate_compiler", need_mb=14000) as acquired:
+        if not acquired:
+            return {"status": "SKIPPED", "why": "canonical compiler lane already owned"}
+        compiled = compile_candidates()
+    if compiled.get("exit_code") != 0:
+        return {"status": "FAILED", "compile": compiled,
+                "why": "fresh compilation failed; catch-up merge withheld"}
+    with exclusive_job("merge_hypotheses", need_mb=14000) as acquired:
+        if not acquired:
+            return {"status": "SKIPPED", "compile": compiled,
+                    "why": "canonical merge lane already owned"}
+        merged = _producer("merge_hypotheses", "research/merge_hypotheses.py")
+    return {"status": "OK" if merged.get("exit_code") == 0 else "FAILED",
+            "compile": compiled, "merge": merged}
+
+
 def placement_interlock() -> dict:
     """`placement_interlock`: has any sleeve been refused in a run with no placement since, or
     has the release identity stopped allowing new risk? `scripts/check_placement_interlock.py`
@@ -3589,6 +3632,7 @@ def refresh_regime() -> dict:
 
 
 def main() -> None:
+    os.environ["QUANT_PIPELINE_STARTED_AT"] = datetime.now(UTC).isoformat()
     _plan_words = {"core": "core legs only", "heavy": "research producers only"}
     if HOURLY_PLAN.startswith("dept:"):
         _plan_words[HOURLY_PLAN] = f"department {HOURLY_PLAN.split(':', 1)[1]} only"
@@ -3599,6 +3643,9 @@ def main() -> None:
     rb = _costed("refresh_bars", refresh_bars)
     smoke = _costed("smoke_release", smoke_release)
     h = _costed("health", health)
+    # Drain existing intake before the long research legs. The later pipeline still
+    # compiles and merges discoveries generated during this pass.
+    _costed("intake_catchup", catch_up_intake)
     t = _costed("record_tape", record_tape)
     s = _costed("state_vector", state_vector)
     rg = _costed("regime_monitor", refresh_regime)
@@ -5448,6 +5495,22 @@ def main() -> None:
         "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
+    # THE REBUILT 25-SEP LANES (2026-09-30), after every leg whose output they read:
+    #   build_failure_bank    compile_candidates, run_external_backtest and the sealed gauntlet's
+    #                         report -> why cells never BUILT, ranked into fix work
+    #   trade_pathology       the ledgers fill_recorder joined -> the live book's bad fills by class
+    #   experiment_contracts  every leg's declared hypothesis/metric/falsifier/budget/owner, read
+    #                         against its own report (the fence half runs in the law gate)
+    #   health_board          runtime attestation + events + acceptance + stall_watch + the three
+    #                         readers above -> one verdict per organ; UNMEASURED is never GREEN
+    bfb = _costed("build_failure_bank", lambda: _producer(
+        "build_failure_bank", "research/build_failure_bank.py", "--once"))
+    tpa = _costed("trade_pathology", lambda: _producer(
+        "trade_pathology", "research/trade_pathology.py", "--once"))
+    exc_ = _costed("experiment_contracts", lambda: _producer(
+        "experiment_contracts", "scripts/check_experiment_contracts.py", "--report"))
+    hbd = _costed("health_board", lambda: _producer(
+        "health_board", "research/health_board.py", "--once"))
     # THE ORGAN CENSUS (2026-09-25). Three external reviews asked one closing question -- does
     # every claimed department run, on real data, into the canonical pipeline, with its compute
     # following its survivor yield -- and the desk could not answer it, because its three
@@ -5480,7 +5543,9 @@ def main() -> None:
     #   live_calibration_posterior  kappa = realised / claimed Sharpe per producer, Bayesian;
     #                               bandit.calibration_credit reads it (research budget, live)
     #   constrained_book            every risk clause as a hard constraint in the E[log W]
-    #                               solve, as a SHADOW (constrained_elog.FEEDS_LIVE = False)
+    #                               solve; decides hourly (CONSTRAINED_BOOK_SWITCH.json):
+    #                               fed to pf_allocator only while its robust E[log W] beats
+    #                               the live book's, re-proven by the allocator at adoption
     #   experimental_budget         the principal's override sleeves in their own ledger/budget
     #   ops_redundancy              journal replay, off-box restore drill, terminal health,
     #                               independent price cross-check, duplicate-position count
@@ -5728,6 +5793,8 @@ def main() -> None:
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
+                    "build_failure_bank": bfb, "trade_pathology": tpa,
+                    "experiment_contracts": exc_, "health_board": hbd,
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,

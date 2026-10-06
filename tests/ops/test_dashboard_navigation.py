@@ -1,4 +1,4 @@
-"""ONE CANONICAL DASHBOARD, AND EVERY OTHER PAGE LEADS TO IT.
+"""ONE CANONICAL PUBLIC DASHBOARD; THE PROTECTED SURVEILLANCE VIEW SHARES ITS STATE.
 
 WHAT THIS TEST USED TO GUARD, and why the guard changed rather than went away. `web/index.html`
 was the landing page and every link in its nav was a `#fragment` inside itself, so
@@ -21,6 +21,7 @@ from pathlib import Path
 
 WEB = Path(__file__).resolve().parent.parent.parent / "web"
 CANONICAL = "desk.html"
+PROTECTED_SURVEILLANCE = "dashboard.html"
 
 
 def test_the_canonical_dashboard_exists() -> None:
@@ -35,6 +36,12 @@ def test_every_other_page_redirects_to_it() -> None:
     assert others, "nothing to check -- the glob is wrong and this test proves nothing"
     for p in others:
         src = p.read_text("utf-8")
+        if p.name == PROTECTED_SURVEILLANCE:
+            # This separately served read-only surveillance view has a token gate and more
+            # provenance detail. It is not a second source of truth or a trading control.
+            assert "desk_state.json" in src and "read-only" in src
+            assert "desk_dashboard_state" in src
+            continue
         assert CANONICAL in src, f"{p.name} does not point at {CANONICAL}"
         assert 'http-equiv="refresh"' in src and "location.replace" in src, (
             f"{p.name} mentions {CANONICAL} but does not actually redirect to it -- a second "

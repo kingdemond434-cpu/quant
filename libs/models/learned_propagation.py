@@ -42,7 +42,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -221,7 +221,7 @@ def design(panel: Panel) -> Design:
     def trail_mean(w: int) -> np.ndarray:
         o = cs.copy()
         o[w:] = cs[w:] - cs[:-w]
-        return o / float(w)
+        return cast(np.ndarray, o / float(w))
 
     x = np.stack([z0, lag(z0, 1), lag(z0, 2), trail_mean(5), trail_mean(20)], axis=-1)
     return Design(z=z, y=y, x=x, sigma=sig)

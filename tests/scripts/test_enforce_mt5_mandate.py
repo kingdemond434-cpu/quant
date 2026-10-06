@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -119,12 +120,18 @@ def test_it_runs_from_a_copy_outside_the_checkout(tmp_path, monkeypatch) -> None
     monkeypatch.setenv("QUANT_ROOT", str(repo))
     assert em._root() == repo
 
-    monkeypatch.setattr(em, "OUT", Path("/proc/version/nope/mandate.json"))
+    blocked_parent = tmp_path / "not_a_directory"
+    blocked_parent.write_text("fixture", encoding="utf-8")
+    monkeypatch.setattr(em, "OUT", blocked_parent / "mandate.json")
     monkeypatch.setattr(em, "installed_units", list)
     monkeypatch.setattr(em, "_procs", lambda: [
         {"pid": 31, "rss_mb": 9.0, "etime_s": 5, "cmd": "python scripts/run_crypto_research.py"}])
     killed: list[int] = []
     monkeypatch.setattr(em.os, "kill", lambda pid, sig: killed.append(pid))
+    if sys.platform == "win32":
+        # This fixture simulates Unix termination; os.kill is already a recording
+        # stub, so provide the Unix constant without signaling a real process.
+        monkeypatch.setattr(em, "signal", SimpleNamespace(SIGTERM=em.signal.SIGTERM, SIGKILL=9))
     monkeypatch.setattr(em, "TERM_GRACE_S", 0.0)
     doc = em.enforce(dry_run=False, top=1)
     # SIGTERM, then the liveness probe, then SIGKILL -- all on the one offending pid

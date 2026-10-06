@@ -6,7 +6,6 @@ extracts mentioned symbols/patterns/logic, and outputs structured alpha candidat
 Uses MQL5 public pages (no API key needed).
 """
 
-import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -93,7 +92,11 @@ def run_and_save() -> list[dict]:
     """Mine codebase and save results."""
     discoveries = mine_codebase()
     out_file = OUT / f"codebase_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
-    out_file.write_text(json.dumps(discoveries, indent=2), encoding="utf-8")
+    try:
+        from side_channels.discovery_io import write_discoveries
+    except ModuleNotFoundError:
+        from discovery_io import write_discoveries
+    discoveries = write_discoveries(out_file, discoveries)
     print(f"mql5_codebase: {len(discoveries)} discoveries saved to {out_file.name}")
     return discoveries
 

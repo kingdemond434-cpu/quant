@@ -171,7 +171,7 @@ def run() -> dict[str, Any]:
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "total": total,
            "per_source": per_source,
            "unstamped_sources": sorted(s for s, c in per_source.items()
-                                       if (c["stamped_frac"] or 0.0) < 0.5),
+                                       if int(c.get("unstamped_rows") or 0) > 0),
            # WHICH TREES THIS CENSUS ACTUALLY READ. A stamped fraction is meaningless without the
            # population it was taken over, and this census read one of the compiler's two trees
            # until 2026-09-09 -- so the number excluded every LLM seat donation while the judge's

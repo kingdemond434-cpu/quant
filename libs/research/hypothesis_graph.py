@@ -316,10 +316,21 @@ class Graph:
         self.path = path
         self._stamp: tuple[float, int] | None = None
         self._rows: list[dict[str, Any]] = []
+        self._snapshot = False
         self._current: dict[str, dict[str, Any]] | None = None
         self._buried: dict[str, list[dict[str, Any]]] | None = None
 
+    def snapshot(self) -> Graph:
+        """A pass-local read view unaffected by concurrent ledger appends."""
+        view = Graph(self.path)
+        view._rows = self.rows()
+        view._stamp = self._stamp
+        view._snapshot = True
+        return view
+
     def append(self, node: Node) -> dict[str, Any]:
+        if self._snapshot:
+            raise RuntimeError("a hypothesis graph snapshot is read-only")
         row = node.to_row()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8") as fh:
@@ -328,6 +339,8 @@ class Graph:
         return row
 
     def rows(self) -> list[dict[str, Any]]:
+        if self._snapshot:
+            return self._rows
         try:
             st = self.path.stat()
             stamp = (st.st_mtime, st.st_size)
@@ -335,8 +348,8 @@ class Graph:
             return []
         if self._stamp != stamp:
             try:
-                self._rows = [json.loads(ln) for ln in self.path.read_text("utf-8").splitlines()
-                              if ln.strip()]
+                with self.path.open(encoding="utf-8") as ledger:
+                    self._rows = [json.loads(ln) for ln in ledger if ln.strip()]
             except (OSError, ValueError):
                 self._rows = []
             self._stamp = stamp

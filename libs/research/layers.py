@@ -63,6 +63,7 @@ LEG_LAYER: dict[str, str] = {
     # "what did the desk NOT test this hour" silently omits it.
     "futures_lead_lag": "information", "tape_features": "information",
     # prediction: turning information into a claim about returns
+    "intake_catchup": "prediction",
     "compile_candidates": "prediction", "merge_docket": "prediction", "search": "prediction",
     "sweep": "prediction", "hunt12": "prediction",
     "backtest": "prediction", "external_gauntlet": "prediction",
@@ -555,6 +556,11 @@ LEG_LAYER: dict[str, str] = {
     # files them as that ground's claims. It mints nothing and predicts nothing.
     "ground_depth": "information",
     "fill_recorder": "execution", "cost_surfaces": "execution",
+    # Classifying the live book's bad fills by cause is EXECUTION; ranking why cells never built,
+    # reading every leg's experiment contract and the health board are the machine measuring
+    # itself: META.
+    "trade_pathology": "execution",
+    "build_failure_bank": "meta", "experiment_contracts": "meta", "health_board": "meta",
     "actor_pressure": "information",
     "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",
     "shortfall_model": "execution",
