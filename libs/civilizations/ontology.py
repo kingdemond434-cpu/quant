@@ -31,6 +31,10 @@ VALIDATION_IDEA = "VALIDATION_IDEA"
 FAILURE_KNOWLEDGE = "FAILURE_KNOWLEDGE"
 RESEARCH_METHOD = "RESEARCH_METHOD"
 INFRASTRUCTURE_PATTERN = "INFRASTRUCTURE_PATTERN"
+#: The ontology is never closed (zuck 2026-10-05): a recurring concept none of the classes above
+#: recognises becomes a class of its own (libs.civilizations.emergent) and items carrying it are
+#: routed here instead of to NO_VALUE.
+EMERGENT_CLASS = "EMERGENT_CLASS"
 NO_VALUE = "NO_VALUE"
 
 #: outcome -> the organ that consumes it. Every outcome has a consumer (the dataset rule: nothing
@@ -47,6 +51,7 @@ CONSUMERS: dict[str, str] = {
     FAILURE_KNOWLEDGE: "negative-knowledge graph + deterministic regression tests",
     RESEARCH_METHOD: "meta-R&D competition (research-engine challengers)",
     INFRASTRUCTURE_PATTERN: "engineering challenger backlog",
+    EMERGENT_CLASS: "ontology frontier: knowledge graph + frontier GitHub search + missions",
     NO_VALUE: "counted and closed (no consumer needed)",
 }
 OUTCOMES: tuple[str, ...] = tuple(CONSUMERS)

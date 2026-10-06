@@ -734,7 +734,11 @@ def fetch_github_search(src: Source, cursor: dict[str, Any], ctx: FetchContext
     if tok:
         hdr["Authorization"] = f"Bearer {tok}"
     marks = dict(cursor.get("since") or {})
-    for q in cfg.get("queries") or []:
+    # a lane's queries are its roster's plus any its owner writes into the cursor at run time
+    # (the civilizations' ontology frontier steers its search this way, as data)
+    queries = list(dict.fromkeys([*(cfg.get("queries") or []),
+                                  *(cursor.get("extra_queries") or [])]))
+    for q in queries:
         if ctx.expired():
             return
         since = str(marks.get(q) or cfg.get("start") or "2015-01-01")

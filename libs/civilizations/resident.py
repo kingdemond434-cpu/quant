@@ -38,6 +38,7 @@ import yaml
 from libs.civilizations import backpressure as BP
 from libs.civilizations import breadth as B
 from libs.civilizations import coverage as CV
+from libs.civilizations import emergent as EM
 from libs.civilizations import expression as E
 from libs.civilizations import fetchers  # noqa: F401  (registers git_mirror / sitemap)
 from libs.civilizations import forward as FW
@@ -53,6 +54,11 @@ JUDGE_COVERAGE = Path("desks/mt5/reports/JUDGE_COVERAGE.json")
 DEFAULT_ITEMS = 200               # libs.mining.acquirer.FetchContext.max_items
 HEARTBEAT_FRESH = timedelta(minutes=20)
 FRONTIER_PER_PASS = 25
+FRONTIER_SEARCH = "civ_ontology_frontier"
+#: holder cursor -> (civilization, lane, lane-id prefix) of the git_mirror lanes it promotes
+FRONTIER_HOLDERS: dict[str, tuple[str, str, str]] = {
+    "wq_repo_frontier": ("worldquant", "wq_repository_civilization", "wqf_"),
+    "civ_frontier_holder": ("frontier", "frontier_repository", "frf_")}
 HANDBACK_SOURCE = "brain_llm_handback"
 CRYPTO_VENUE = re.compile(r"(?<![a-z])(binance|bybit|okx|hyperliquid|kraken|coinbase|bitfinex|"
                           r"gdax|ftx|dydx|kucoin|huobi|deribit|bitmex)", re.I)
@@ -156,6 +162,7 @@ class Resident:
         self.breadth = B.BreadthLedger(self.data / "breadth_ledger.jsonl")
         self.last_screen: dict[str, Any] = {}
         self.bmap: B.BreadthMap | None = None
+        self.emergent = EM.EmergentLexicon(self.data, exclude=CRYPTO_VENUE)
         self.tensor = CV.Tensor()
         self.pass_stats: dict[str, Counter[str]] = defaultdict(Counter)
         self.compute: dict[str, float] = defaultdict(float)
@@ -283,6 +290,14 @@ class Resident:
             outs = [o for o in outs if o.kind != O.ALPHA_MECHANISM] or [
                 O.Outcome(O.RESEARCH_METHOD, O.THRESHOLD, ["methods_only lane"])]
             extra["methods_only"] = True
+        # the ontology is never closed: the residue feeds the frontier lexicon, and an item
+        # the fixed bank cannot name but an emergent class can is routed, not closed
+        self.emergent.observe(text, source_id=sid, uri=uri, topics=rmeta.get("topics") or ())
+        if all(o.kind == O.NO_VALUE for o in outs):
+            hit = self.emergent.match(text)
+            if hit:
+                outs = [O.Outcome(O.EMERGENT_CLASS, O.THRESHOLD, hit[:5])]
+                extra["emergent_classes"] = hit[:5]
         outs = [o for o in outs if o.kind != O.NO_VALUE] or outs
         self._ledger(rec, meta, outs, extra)
         self._tensor_add(civ, meta, rec, outs, extra)
@@ -662,11 +677,12 @@ class Resident:
                  ("breadth", self.breadth_report),
                  ("roi", lambda: self.source_roi(pipeline)),
                  ("coverage", self.coverage),
+                 ("ontology", lambda: self.ontology_frontier(pipeline)),
                  ("fence", lambda: self.feed_fence(pipeline)),
                  ("lanes", lambda: self.lane_status(pipeline, now=now)))
         for name, fn in steps:
-            if time.monotonic() - t0 > budget_s and name not in ("culture", "breadth", "roi",
-                                                                 "coverage", "fence", "lanes"):
+            if time.monotonic() - t0 > budget_s and name not in (
+                    "culture", "breadth", "roi", "coverage", "ontology", "fence", "lanes"):
                 out[name] = {"skipped": "budget"}
                 continue
             try:
@@ -739,23 +755,37 @@ class Resident:
         return {"read": n, "new_records": new}
 
     def promote_frontier(self, pipeline: Any) -> dict[str, Any]:
-        """Repos the WorldQuant/GTJA searches discovered become git_mirror lanes (the source
-        frontier: new ground is added as data, never code)."""
-        cur = pipeline.cursors.get("wq_repo_frontier")
-        found = [str(x) for x in cur.get("discovered") or []]
+        """Repos the WorldQuant/GTJA searches and the ontology frontier search discovered
+        become git_mirror lanes (the source frontier: new ground is added as data, never
+        code)."""
         have = {str(r.get("id")) for r in G.iter_json_rows(self.root / FRONTIER)}
+        out: dict[str, Any] = {"discovered": 0, "promoted": 0}
+        for holder, (civ, lane, prefix) in FRONTIER_HOLDERS.items():
+            r = self._promote_from(pipeline, holder, civ, lane, prefix, have)
+            out["discovered"] += r["discovered"]
+            out["promoted"] += r["promoted"]
+            out[holder] = r
+        out["frontier_lanes"] = len(have)
+        return out
+
+    def _promote_from(self, pipeline: Any, holder: str, civ: str, lane: str, prefix: str,
+                      have: set[str]) -> dict[str, Any]:
+        cur = pipeline.cursors.get(holder)
+        found = [str(x) for x in cur.get("discovered") or []]
         added = 0
-        rows = []
+        rows: list[dict[str, Any]] = []
         for full in found:
-            sid = "wqf_" + re.sub(r"[^\w]", "_", full.lower())[:60]
+            sid = prefix + re.sub(r"[^\w]", "_", full.lower())[:60]
             if sid in have or sid in self.meta or CRYPTO_VENUE.search(full):
                 continue
             rm = self.repo_meta.get(full) or {}
             stars = rm.get("stars")
             crowd = ("UNMEASURED" if not isinstance(stars, int) else "high" if stars >= 1000
                      else "medium" if stars >= 100 else "low")
-            rows.append({"id": sid, "civilization": "worldquant",
-                         "lane": "wq_repository_civilization", "priority": 4,
+            if any(r["id"] == sid for r in rows):
+                continue
+            rows.append({"id": sid, "civilization": civ,
+                         "lane": lane, "priority": 4,
                          "name": f"frontier repo {full}", "kind": "code",
                          "fetcher": "git_mirror", "cadence_minutes": 1440,
                          "cadence_class": "daily", "immutable_time": True,
@@ -779,7 +809,32 @@ class Resident:
             with p.open("a", encoding="utf-8") as fh:
                 for r in rows:
                     fh.write(json.dumps(r) + "\n")
-        return {"discovered": len(found), "promoted": added, "frontier_lanes": len(have) + added}
+            have.update(str(r["id"]) for r in rows)
+        return {"discovered": len(found), "promoted": added}
+
+    def ontology_frontier(self, pipeline: Any) -> dict[str, Any]:
+        """Promote recurring unknown concepts to emergent classes and point the frontier
+        search at them and at the coverage tensor's missions (ONTOLOGY_FRONTIER.json)."""
+        born = self.emergent.promote()
+        pruned = self.emergent.prune()
+        self.emergent.save()
+        try:
+            miss = json.loads((self.reports / "MISSIONS.json").read_text("utf-8")
+                              ).get("missions") or []
+        except (OSError, ValueError):
+            miss = []
+        qs = self.emergent.queries(miss)
+        cur = dict(pipeline.cursors.get(FRONTIER_SEARCH))
+        cur["extra_queries"] = qs
+        pipeline.cursors.save(FRONTIER_SEARCH, cur)
+        doc = self.emergent.report(born, pruned)
+        doc["frontier_search"] = {"lane": FRONTIER_SEARCH, "queries": qs,
+                                  "from_missions": max(0, len(qs) - min(
+                                      len(self.emergent.classes), EM.MAX_QUERIES // 2))}
+        self._write("ONTOLOGY_FRONTIER.json", doc)
+        self.emergent.observed = 0
+        return {"classes": doc["classes"], "born": len(born), "queries": len(qs),
+                "lexicon_terms": doc["lexicon_terms"]}
 
     def forward_lab(self, pipeline: Any) -> dict[str, Any]:
         ids = [s for s, m in self.meta.items() if (m.get("config") or {}).get("forward_track")]

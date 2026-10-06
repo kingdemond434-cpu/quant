@@ -47,7 +47,7 @@ def test_roster_lanes_load_through_the_spine_with_culture_and_known_fetchers() -
     civs = {r["civilization"] for r in rows}
     assert civs == {"quantconnect", "worldquant", "man_ahl", "bridgewater", "aqr", "two_sigma",
                     "deshaw", "winton", "market_makers", "renaissance", "ubiquant", "jpx",
-                    "g_research"}
+                    "g_research", "frontier"}
     lanes = {r["lane"] for r in rows if r["civilization"] == "quantconnect"}
     for lane in ("qc_strategy_library", "qc_shared_strategies", "qc_research", "qc_forum",
                  "lean_algorithms", "lean_framework", "lean_indicators",
@@ -349,6 +349,10 @@ def test_end_to_end_git_lane_routes_parks_releases_and_publishes(tmp_path: Path)
     br = json.loads((rep / "CIVILIZATION_BREADTH.json").read_text())
     assert br["lanes"]["lean_test"]["released"] == metrics["release"]["released"]
     assert "duplicate_share" in br["lanes"]["lean_test"]
+    # the ontology frontier ran: its report is published and the frontier search is steered
+    onto = json.loads((rep / "ONTOLOGY_FRONTIER.json").read_text())
+    assert onto["lexicon_terms"] >= 1 and "frontier_search" in onto
+    assert "extra_queries" in pipe.cursors.get("civ_ontology_frontier")
     roi = json.loads((rep / "SOURCE_ROI.json").read_text())["sources"]["lean_test"]
     assert roi["items_seen"] == 3 and roi["cells_emitted"] >= 1
     assert roi["coverage_depth"] == 1.0 and roi["last_seen_version"]
