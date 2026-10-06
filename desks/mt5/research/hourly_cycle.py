@@ -966,6 +966,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
+    # PAID-DATASET SUBSTITUTES (principal 2026-09-30, "all paid datasets alternatives ...
+    # thousands"): the hunt's queues and the three uses of every enrolled substitute are
+    # refreshed hourly; ~2 s plus a bounded catalogue crawl.
+    "paid_substitute_engine",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
@@ -1164,6 +1168,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     # GLOBAL-LAYER forests (web, academic+code, physical data, market data) -- layers of the
     # world that would be mined seventeen times over if each region hunted them itself.
     **dict.fromkeys(("global_research_os", "acquire_datasets", "source_experiment_census",
+                     "paid_substitute_engine",
                      *GLOBAL_FOREST_LEGS), "regions"),
     # the free stack (2026-09-30): app rankings, CN forums, JP IR, JP patents, trends, congress,
     # CoinPaprika (crypto CFDs only), Reddit/Telegram, AKShare/TuShare/BaoStock, catalogues --
@@ -1725,6 +1730,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
     "acquire_datasets": 1_100,
+    # The paid-substitute engine: a 120 s catalogue crawl (its own deadline) plus ~2-10 s of
+    # scoring, enrolment and queue writes; the cap sits above so the report is always written.
+    "paid_substitute_engine": 300,
     # THE WORLD DATASET HUNTER stops itself at --budget-s 900 and writes its catalog, registry
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
@@ -4497,6 +4505,11 @@ def main() -> None:
     # census named it as owner, but no named cycle leg invoked it; production's registry therefore
     # stayed frozen at 2026-09-24 while every regional pack kept declaring sources. Run it after
     # the OS declares today's needs and before the census measures source-to-experiment closure.
+    # FREE REPLICAS OF PAID DATASETS (principal 2026-09-30). Before the acquirer, so the
+    # endpoints of newly matched substitutes are in this hour's discoveries; every enrolled
+    # substitute feeds direct, exogenous_gate and WORLD_STATE_INPUTS under one dataset_id.
+    pse = _costed("paid_substitute_engine", lambda: _producer(
+        "paid_substitute_engine", "research/paid_substitute_engine.py", "--crawl-budget-s", "120"))
     acq = _costed("acquire_datasets", lambda: _producer(
         "acquire_datasets", "research/acquire_datasets.py"))
     # THE FREE STACK (2026-09-30, asia gap rows 14-17, 20): every free alt source the gap report
@@ -5702,7 +5715,7 @@ def main() -> None:
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
-                    "acquire_datasets": acq, "free_stack_hunt": fsh,
+                    "acquire_datasets": acq, "paid_substitute_engine": pse, "free_stack_hunt": fsh,
                     "free_stack_proposer": fsp, "factory_throughput": fxt,
                     "world_dataset_hunt": wdh,
                     "world_macro_proposer": wmp,

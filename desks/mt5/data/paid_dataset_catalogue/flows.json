@@ -1,0 +1,147 @@
+{
+ "class": "flows",
+ "label": "Fund and capital flows (ETF/mutual fund, cross-border portfolio flows)",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:epfr:fund_flows_and_allocations",
+   "vendor": "EPFR",
+   "dataset": "Fund Flows and Allocations",
+   "class": "flows",
+   "region": "global",
+   "measures": "Mutual fund and ETF flows by fund and country allocation",
+   "frequency": "weekly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:epfr:imoneynet_money_market_fund_flows",
+   "vendor": "EPFR",
+   "dataset": "iMoneyNet money market fund flows",
+   "class": "flows",
+   "region": "US",
+   "measures": "Money market fund assets and flows",
+   "frequency": "weekly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:eurekahedge:hedge_fund_indices",
+   "vendor": "Eurekahedge",
+   "dataset": "Hedge fund indices",
+   "class": "flows",
+   "region": "global",
+   "measures": "Hedge fund performance and flows",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "searched 2026-09-30: headline returns appear only in third-party press, not on a vendor page"
+   }
+  },
+  {
+   "id": "paid:hfr:hfr_industry_reports",
+   "vendor": "HFR",
+   "dataset": "HFR Industry Reports",
+   "class": "flows",
+   "region": "global",
+   "measures": "Hedge fund capital flows",
+   "frequency": "quarterly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "HEADLINE_ONLY",
+    "kind": "vendor_press_release",
+    "url": "https://www.hfr.com/media/performance-notes/hfrx-indices-march-2026-performance-notes/",
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "HFRX index performance notes, monthly"
+   }
+  },
+  {
+   "id": "paid:morningstar:fund_flows",
+   "vendor": "Morningstar",
+   "dataset": "Fund flows",
+   "class": "flows",
+   "region": "global",
+   "measures": "Estimated mutual fund and ETF flows",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "HEADLINE_ONLY",
+    "kind": "vendor_press_release",
+    "url": "https://www.morningstar.com/business/insights/blog/funds/us-fund-flows",
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "monthly US fund-flow article with charts"
+   }
+  },
+  {
+   "id": "paid:refinitiv_lseg:lipper_fund_flows",
+   "vendor": "Refinitiv (LSEG)",
+   "dataset": "Lipper Fund Flows",
+   "class": "flows",
+   "region": "global",
+   "measures": "Weekly fund flows by asset class",
+   "frequency": "weekly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:wind_information:northbound_southbound_connect_flows",
+   "vendor": "Wind Information",
+   "dataset": "Northbound/Southbound Connect flows",
+   "class": "flows",
+   "region": "CN",
+   "measures": "Stock Connect cross-border flows",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "HEADLINE_ONLY",
+    "kind": "public_origin",
+    "url": "https://www.hkex.com.hk/Market-Data/Statistics/Consolidated-Reports/HKEX-Monthly-Market-Highlights?sc_lang=en",
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "HKEX publishes Stock Connect turnover itself (the public origin of the paid series)"
+   }
+  }
+ ]
+}

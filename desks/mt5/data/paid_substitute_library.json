@@ -1,0 +1,5440 @@
+{
+ "note": "Free substitutes for paid dataset classes. auth=none is key-less; free_key rows are used only when the named environment variable is present on the box (the engine reads the NAME only, never the value); ua rows need a declared User-Agent. Paid tiers and login-walled pages are never fetched: rows whose full data is paid say so in `licence` and use only the free headline.",
+ "sources": [
+  {
+   "id": "cftc_cot_legacy",
+   "name": "CFTC Commitments of Traders, legacy futures-only",
+   "publisher_type": "regulator",
+   "url": "https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm",
+   "endpoint": "https://www.cftc.gov/dea/newcot/deafut.txt",
+   "classes": [
+    "positioning"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1986,
+   "latency_days": 3,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "XAUUSD",
+    "XAGUSD",
+    "XTIUSD",
+    "CORN",
+    "WHEAT",
+    "SOYBEAN"
+   ],
+   "participant_structure": "institutional",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "cftc_tff",
+   "name": "CFTC Traders in Financial Futures",
+   "publisher_type": "regulator",
+   "url": "https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm",
+   "endpoint": "https://www.cftc.gov/dea/newcot/FinFutWk.txt",
+   "classes": [
+    "positioning",
+    "fx_order_flow"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 2006,
+   "latency_days": 3,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD",
+    "US500",
+    "UST10Y"
+   ],
+   "participant_structure": "institutional",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "cftc_disagg",
+   "name": "CFTC Disaggregated COT (physical commodities)",
+   "publisher_type": "regulator",
+   "url": "https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm",
+   "endpoint": "https://www.cftc.gov/dea/newcot/f_disagg.txt",
+   "classes": [
+    "positioning",
+    "commodities_physical"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 2006,
+   "latency_days": 3,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XTIUSD",
+    "XNGUSD",
+    "XAUUSD",
+    "XCUUSD",
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "SUGAR",
+    "USCOCOA",
+    "COFARA"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "finra_short_volume",
+   "name": "FINRA Reg SHO daily short sale volume",
+   "publisher_type": "regulator",
+   "url": "https://www.finra.org/finra-data/browse-catalog/short-sale-volume-data",
+   "endpoint": null,
+   "classes": [
+    "positioning",
+    "sentiment"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2009,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "NAS100"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "FINRA public data"
+  },
+  {
+   "id": "fca_short_positions",
+   "name": "FCA disclosed net short positions",
+   "publisher_type": "regulator",
+   "url": "https://www.fca.org.uk/markets/short-selling/notification-disclosure-net-short-positions",
+   "endpoint": null,
+   "classes": [
+    "positioning"
+   ],
+   "region": "GB",
+   "frequency": "daily",
+   "history_start": 2012,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "UK100"
+   ],
+   "participant_structure": "institutional",
+   "licence": "UK public register"
+  },
+  {
+   "id": "jpx_investor_type",
+   "name": "JPX trading by type of investors",
+   "publisher_type": "exchange",
+   "url": "https://www.jpx.co.jp/english/markets/statistics-equities/investor-type/index.html",
+   "endpoint": null,
+   "classes": [
+    "positioning",
+    "flows"
+   ],
+   "region": "JP",
+   "frequency": "weekly",
+   "history_start": 2004,
+   "latency_days": 4,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ja",
+    "en"
+   ],
+   "instruments": [
+    "JPN225",
+    "USDJPY"
+   ],
+   "participant_structure": "mixed",
+   "licence": "JPX public statistics"
+  },
+  {
+   "id": "krx_investor_flows",
+   "name": "KRX trading by investor type",
+   "publisher_type": "exchange",
+   "url": "https://data.krx.co.kr/",
+   "endpoint": null,
+   "classes": [
+    "positioning",
+    "flows"
+   ],
+   "region": "KR",
+   "frequency": "daily",
+   "history_start": 2000,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ko"
+   ],
+   "instruments": [
+    "USDKRW"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "KRX public market data"
+  },
+  {
+   "id": "twse_foreign_investors",
+   "name": "TWSE institutional investors trading (BFI82U)",
+   "publisher_type": "exchange",
+   "url": "https://www.twse.com.tw/en/trading/foreign/bfi82u.html",
+   "endpoint": "https://www.twse.com.tw/fund/BFI82U?response=json",
+   "classes": [
+    "flows",
+    "positioning"
+   ],
+   "region": "TW",
+   "frequency": "daily",
+   "history_start": 2004,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "zh",
+    "en"
+   ],
+   "instruments": [
+    "USDKRW",
+    "TSMC"
+   ],
+   "participant_structure": "institutional",
+   "licence": "TWSE public market data"
+  },
+  {
+   "id": "mof_jp_weekly_securities",
+   "name": "Japan MoF weekly international transactions in securities",
+   "publisher_type": "central_bank",
+   "url": "https://www.mof.go.jp/english/policy/international_policy/reference/itn_transactions_in_securities/index.htm",
+   "endpoint": "https://www.mof.go.jp/english/policy/international_policy/reference/itn_transactions_in_securities/week.csv",
+   "classes": [
+    "flows"
+   ],
+   "region": "JP",
+   "frequency": "weekly",
+   "history_start": 2005,
+   "latency_days": 4,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ja",
+    "en"
+   ],
+   "instruments": [
+    "USDJPY",
+    "JPN225"
+   ],
+   "participant_structure": "institutional",
+   "licence": "Japanese government statistics"
+  },
+  {
+   "id": "ici_fund_flows",
+   "name": "ICI estimated long-term mutual fund and ETF flows",
+   "publisher_type": "statistics_office",
+   "url": "https://www.ici.org/research/stats/flows",
+   "endpoint": null,
+   "classes": [
+    "flows"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 2007,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "UST10Y"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "ICI public statistics"
+  },
+  {
+   "id": "ustreas_tic",
+   "name": "US Treasury International Capital (TIC) data",
+   "publisher_type": "central_bank",
+   "url": "https://home.treasury.gov/data/treasury-international-capital-tic-system",
+   "endpoint": null,
+   "classes": [
+    "flows"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 1977,
+   "latency_days": 45,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "UST10Y"
+   ],
+   "participant_structure": "institutional",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "imf_cofer",
+   "name": "IMF Currency Composition of Official Foreign Exchange Reserves",
+   "publisher_type": "central_bank",
+   "url": "https://data.imf.org/",
+   "endpoint": null,
+   "classes": [
+    "flows",
+    "fx_order_flow"
+   ],
+   "region": "global",
+   "frequency": "quarterly",
+   "history_start": 1999,
+   "latency_days": 90,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "EURUSD",
+    "XAUUSD"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "IMF open data"
+  },
+  {
+   "id": "sge_gold_withdrawals",
+   "name": "Shanghai Gold Exchange monthly withdrawals",
+   "publisher_type": "exchange",
+   "url": "https://en.sge.com.cn/",
+   "endpoint": null,
+   "classes": [
+    "flows",
+    "commodities_physical"
+   ],
+   "region": "CN",
+   "frequency": "monthly",
+   "history_start": 2008,
+   "latency_days": 30,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "zh",
+    "en"
+   ],
+   "instruments": [
+    "XAUUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "SGE public market data"
+  },
+  {
+   "id": "fed_h41_reserves",
+   "name": "Fed H.4.1 reserve balances (WRESBAL)",
+   "publisher_type": "central_bank",
+   "url": "https://www.federalreserve.gov/releases/h41/",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=WRESBAL",
+   "classes": [
+    "flows",
+    "macro"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 2002,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "US500",
+    "UST10Y",
+    "XAUUSD"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "public statistics; publisher terms permit reuse with attribution"
+  },
+  {
+   "id": "naaim_exposure",
+   "name": "NAAIM Exposure Index",
+   "publisher_type": "public_web",
+   "url": "https://www.naaim.org/programs/naaim-exposure-index/",
+   "endpoint": null,
+   "classes": [
+    "sentiment",
+    "positioning"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 2006,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500"
+   ],
+   "participant_structure": "institutional",
+   "licence": "published index; page terms apply"
+  },
+  {
+   "id": "cboe_vix",
+   "name": "Cboe VIX daily history",
+   "publisher_type": "exchange",
+   "url": "https://www.cboe.com/tradable_products/vix/vix_historical_data/",
+   "endpoint": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
+   "classes": [
+    "options_vol",
+    "sentiment"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "NAS100",
+    "USDJPY",
+    "XAUUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "Cboe published index history"
+  },
+  {
+   "id": "cboe_vix9d",
+   "name": "Cboe VIX9D daily history",
+   "publisher_type": "exchange",
+   "url": "https://www.cboe.com/tradable_products/vix/vix_historical_data/",
+   "endpoint": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX9D_History.csv",
+   "classes": [
+    "options_vol",
+    "sentiment"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2008,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "NAS100",
+    "USDJPY",
+    "XAUUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "Cboe published index history"
+  },
+  {
+   "id": "cboe_vix3m",
+   "name": "Cboe VIX3M daily history",
+   "publisher_type": "exchange",
+   "url": "https://www.cboe.com/tradable_products/vix/vix_historical_data/",
+   "endpoint": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX3M_History.csv",
+   "classes": [
+    "options_vol",
+    "sentiment"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2008,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "NAS100",
+    "USDJPY",
+    "XAUUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "Cboe published index history"
+  },
+  {
+   "id": "cboe_vvix",
+   "name": "Cboe VVIX daily history",
+   "publisher_type": "exchange",
+   "url": "https://www.cboe.com/tradable_products/vix/vix_historical_data/",
+   "endpoint": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VVIX_History.csv",
+   "classes": [
+    "options_vol",
+    "sentiment"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2008,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "NAS100",
+    "USDJPY",
+    "XAUUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "Cboe published index history"
+  },
+  {
+   "id": "cboe_skew",
+   "name": "Cboe SKEW daily history",
+   "publisher_type": "exchange",
+   "url": "https://www.cboe.com/tradable_products/vix/vix_historical_data/",
+   "endpoint": "https://cdn.cboe.com/api/global/us_indices/daily_prices/SKEW_History.csv",
+   "classes": [
+    "options_vol",
+    "sentiment"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2008,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "NAS100",
+    "USDJPY",
+    "XAUUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "Cboe published index history"
+  },
+  {
+   "id": "cboe_ovx",
+   "name": "Cboe Crude Oil Volatility (OVX) daily history",
+   "publisher_type": "exchange",
+   "url": "https://www.cboe.com/tradable_products/vix/vix_historical_data/",
+   "endpoint": "https://cdn.cboe.com/api/global/us_indices/daily_prices/OVX_History.csv",
+   "classes": [
+    "options_vol",
+    "sentiment"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2008,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XTIUSD",
+    "XBRUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "Cboe published index history"
+  },
+  {
+   "id": "cboe_gvz",
+   "name": "Cboe Gold Volatility (GVZ) daily history",
+   "publisher_type": "exchange",
+   "url": "https://www.cboe.com/tradable_products/vix/vix_historical_data/",
+   "endpoint": "https://cdn.cboe.com/api/global/us_indices/daily_prices/GVZ_History.csv",
+   "classes": [
+    "options_vol",
+    "sentiment"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2008,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "Cboe published index history"
+  },
+  {
+   "id": "cboe_vxn",
+   "name": "Cboe Nasdaq-100 Volatility (VXN) daily history",
+   "publisher_type": "exchange",
+   "url": "https://www.cboe.com/tradable_products/vix/vix_historical_data/",
+   "endpoint": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VXN_History.csv",
+   "classes": [
+    "options_vol",
+    "sentiment"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2008,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "NAS100"
+   ],
+   "participant_structure": "institutional",
+   "licence": "Cboe published index history"
+  },
+  {
+   "id": "occ_volume",
+   "name": "OCC daily options and futures volume",
+   "publisher_type": "exchange",
+   "url": "https://www.theocc.com/market-data/market-data-reports/volume-and-open-interest",
+   "endpoint": null,
+   "classes": [
+    "options_vol",
+    "positioning"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2000,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "NAS100"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "OCC public statistics"
+  },
+  {
+   "id": "jpx_nikkei_vi",
+   "name": "Nikkei Stock Average Volatility Index",
+   "publisher_type": "exchange",
+   "url": "https://indexes.nikkei.co.jp/en/nkave/index/profile?idx=nk225vi",
+   "endpoint": null,
+   "classes": [
+    "options_vol"
+   ],
+   "region": "JP",
+   "frequency": "daily",
+   "history_start": 2001,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ja",
+    "en"
+   ],
+   "instruments": [
+    "JPN225",
+    "USDJPY"
+   ],
+   "participant_structure": "institutional",
+   "licence": "Nikkei public index page"
+  },
+  {
+   "id": "stoxx_vstoxx",
+   "name": "VSTOXX index history",
+   "publisher_type": "exchange",
+   "url": "https://www.stoxx.com/index-details?symbol=V2TX",
+   "endpoint": null,
+   "classes": [
+    "options_vol"
+   ],
+   "region": "EU",
+   "frequency": "daily",
+   "history_start": 1999,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "de"
+   ],
+   "instruments": [
+    "EUSTX50",
+    "GER40"
+   ],
+   "participant_structure": "institutional",
+   "licence": "STOXX public index page"
+  },
+  {
+   "id": "fred_vixcls",
+   "name": "VIX close via FRED (VIXCLS)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/VIXCLS",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS",
+   "classes": [
+    "options_vol",
+    "sentiment"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "XAUUSD",
+    "USDJPY"
+   ],
+   "participant_structure": "institutional",
+   "licence": "public statistics; publisher terms permit reuse with attribution"
+  },
+  {
+   "id": "fred_dgs10",
+   "name": "US 10y Treasury constant maturity (DGS10)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/DGS10",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10",
+   "classes": [
+    "rates_curves"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "UST10Y",
+    "USDJPY",
+    "XAUUSD",
+    "USDX"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_dgs2",
+   "name": "US 2y Treasury constant maturity (DGS2)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/DGS2",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS2",
+   "classes": [
+    "rates_curves"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "UST05Y",
+    "USDX",
+    "EURUSD"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_t10y2y",
+   "name": "US 10y-2y Treasury spread (T10Y2Y)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/T10Y2Y",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=T10Y2Y",
+   "classes": [
+    "rates_curves"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "UST10Y",
+    "XAUUSD"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_t10y3m",
+   "name": "US 10y-3m Treasury spread (T10Y3M)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/T10Y3M",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=T10Y3M",
+   "classes": [
+    "rates_curves"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "UST10Y"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_dfii10",
+   "name": "US 10y TIPS real yield (DFII10)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/DFII10",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFII10",
+   "classes": [
+    "rates_curves"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XAUUSD",
+    "XAGUSD",
+    "NAS100"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_t5yie",
+   "name": "US 5y breakeven inflation (T5YIE)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/T5YIE",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=T5YIE",
+   "classes": [
+    "pricing"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XAUUSD",
+    "UST05Y",
+    "XTIUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_sofr",
+   "name": "Secured Overnight Financing Rate (SOFR)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/SOFR",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=SOFR",
+   "classes": [
+    "rates_curves"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "UST05Y"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_bamlh0a0hym2",
+   "name": "ICE BofA US High Yield OAS (BAMLH0A0HYM2)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/BAMLH0A0HYM2",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2",
+   "classes": [
+    "credit"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "US2000",
+    "USDJPY"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_bamlc0a0cm",
+   "name": "ICE BofA US Corporate IG OAS (BAMLC0A0CM)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/BAMLC0A0CM",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLC0A0CM",
+   "classes": [
+    "credit"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "UST10Y"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_bamlhe00ehyioas",
+   "name": "ICE BofA Euro High Yield OAS (BAMLHE00EHYIOAS)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/BAMLHE00EHYIOAS",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLHE00EHYIOAS",
+   "classes": [
+    "credit"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "EUSTX50",
+    "EURUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_bamlemcbpioas",
+   "name": "ICE BofA EM Corporate Plus OAS (BAMLEMCBPIOAS)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/BAMLEMCBPIOAS",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLEMCBPIOAS",
+   "classes": [
+    "credit"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDBRL",
+    "USDMXN",
+    "USDZAR",
+    "AUDUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_nfci",
+   "name": "Chicago Fed National Financial Conditions Index (NFCI)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/NFCI",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=NFCI",
+   "classes": [
+    "credit"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "USDX"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_stlfsi4",
+   "name": "St. Louis Fed Financial Stress Index (STLFSI4)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/STLFSI4",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=STLFSI4",
+   "classes": [
+    "credit"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "XAUUSD",
+    "USDJPY"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_dtwexbgs",
+   "name": "Nominal broad US dollar index (DTWEXBGS)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/DTWEXBGS",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTWEXBGS",
+   "classes": [
+    "fx_order_flow"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "EURUSD",
+    "XAUUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_icsa",
+   "name": "US initial jobless claims (ICSA)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/ICSA",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=ICSA",
+   "classes": [
+    "jobs"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "US500",
+    "UST10Y"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_ccsa",
+   "name": "US continuing jobless claims (CCSA)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/CCSA",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CCSA",
+   "classes": [
+    "jobs"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "US500"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_jtsjol",
+   "name": "JOLTS job openings (JTSJOL)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/JTSJOL",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=JTSJOL",
+   "classes": [
+    "jobs"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "US500"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_umcsent",
+   "name": "University of Michigan consumer sentiment (UMCSENT)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/UMCSENT",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=UMCSENT",
+   "classes": [
+    "sentiment"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "USDX"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_rsafs",
+   "name": "US advance retail sales (RSAFS)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/RSAFS",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=RSAFS",
+   "classes": [
+    "card_consumer"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "USDX"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_wei",
+   "name": "NY Fed Weekly Economic Index (WEI)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/WEI",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=WEI",
+   "classes": [
+    "macro"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "USDX",
+    "UST10Y"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_cpiaucsl",
+   "name": "US CPI all items (CPIAUCSL)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/CPIAUCSL",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL",
+   "classes": [
+    "pricing"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "UST10Y",
+    "USDX",
+    "XAUUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_payems",
+   "name": "US nonfarm payrolls (PAYEMS)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/PAYEMS",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=PAYEMS",
+   "classes": [
+    "macro"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "US500",
+    "UST10Y"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_indpro",
+   "name": "US industrial production (INDPRO)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/INDPRO",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=INDPRO",
+   "classes": [
+    "macro"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "USDX"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_dcoilwtico",
+   "name": "WTI spot (EIA via FRED) (DCOILWTICO)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/DCOILWTICO",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILWTICO",
+   "classes": [
+    "commodities_physical"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XTIUSD",
+    "USDCAD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_gasregw",
+   "name": "US regular gasoline retail price (GASREGW)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/GASREGW",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=GASREGW",
+   "classes": [
+    "pricing"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XTIUSD",
+    "UST05Y"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_csushpinsa",
+   "name": "S&P/Case-Shiller US national home price index (CSUSHPINSA)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/CSUSHPINSA",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CSUSHPINSA",
+   "classes": [
+    "real_estate"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "UST10Y"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_mortgage30us",
+   "name": "Freddie Mac 30y mortgage rate (MORTGAGE30US)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/MORTGAGE30US",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=MORTGAGE30US",
+   "classes": [
+    "real_estate"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "UST10Y",
+    "US500"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "fred_totalsa",
+   "name": "US total vehicle sales (TOTALSA)",
+   "publisher_type": "central_bank",
+   "url": "https://fred.stlouisfed.org/series/TOTALSA",
+   "endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=TOTALSA",
+   "classes": [
+    "card_consumer"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "USDX"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FRED graph CSV, keyless; series copyright per source (ICE BofA series: FRED terms)"
+  },
+  {
+   "id": "ustreas_yield_curve",
+   "name": "US Treasury daily par yield curve",
+   "publisher_type": "central_bank",
+   "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_yield_curve",
+   "endpoint": null,
+   "classes": [
+    "rates_curves"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "UST10Y",
+    "UST05Y",
+    "USDX",
+    "USDJPY"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "ecb_yield_curve",
+   "name": "ECB euro area AAA yield curve (10y spot)",
+   "publisher_type": "central_bank",
+   "url": "https://data.ecb.europa.eu/",
+   "endpoint": "https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y?format=csvdata",
+   "classes": [
+    "rates_curves"
+   ],
+   "region": "EU",
+   "frequency": "daily",
+   "history_start": 2004,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "de",
+    "fr"
+   ],
+   "instruments": [
+    "EURUSD",
+    "GER40",
+    "EUSTX50"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "ECB statistics, reuse permitted with source"
+  },
+  {
+   "id": "ecb_ciss",
+   "name": "ECB Composite Indicator of Systemic Stress",
+   "publisher_type": "central_bank",
+   "url": "https://data.ecb.europa.eu/",
+   "endpoint": "https://data-api.ecb.europa.eu/service/data/CISS/D.U2.Z0Z.4F.EC.SS_CIN.IDX?format=csvdata",
+   "classes": [
+    "credit"
+   ],
+   "region": "EU",
+   "frequency": "daily",
+   "history_start": 1999,
+   "latency_days": 2,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "EURUSD",
+    "EUSTX50"
+   ],
+   "participant_structure": "institutional",
+   "licence": "ECB statistics"
+  },
+  {
+   "id": "boe_yield_curves",
+   "name": "Bank of England yield curves",
+   "publisher_type": "central_bank",
+   "url": "https://www.bankofengland.co.uk/statistics/yield-curves",
+   "endpoint": null,
+   "classes": [
+    "rates_curves"
+   ],
+   "region": "GB",
+   "frequency": "daily",
+   "history_start": 1979,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "UKGILT",
+    "GBPUSD"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "BoE statistics, OGL"
+  },
+  {
+   "id": "mof_jp_jgb",
+   "name": "Japan MoF JGB interest rates (historical)",
+   "publisher_type": "central_bank",
+   "url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+   "endpoint": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv",
+   "classes": [
+    "rates_curves"
+   ],
+   "region": "JP",
+   "frequency": "daily",
+   "history_start": 1974,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ja",
+    "en"
+   ],
+   "instruments": [
+    "USDJPY",
+    "JPN225"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "Japanese government statistics"
+  },
+  {
+   "id": "rba_f2",
+   "name": "RBA F2 capital market yields",
+   "publisher_type": "central_bank",
+   "url": "https://www.rba.gov.au/statistics/tables/",
+   "endpoint": null,
+   "classes": [
+    "rates_curves"
+   ],
+   "region": "AU",
+   "frequency": "daily",
+   "history_start": 1995,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "AUDUSD",
+    "AUS200"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "RBA statistics CC BY"
+  },
+  {
+   "id": "bundesbank_term_structure",
+   "name": "Bundesbank term structure of interest rates",
+   "publisher_type": "central_bank",
+   "url": "https://www.bundesbank.de/en/statistics/time-series-databases",
+   "endpoint": null,
+   "classes": [
+    "rates_curves"
+   ],
+   "region": "DE",
+   "frequency": "daily",
+   "history_start": 1997,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "de",
+    "en"
+   ],
+   "instruments": [
+    "EURUSD",
+    "GER40"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "Bundesbank statistics"
+  },
+  {
+   "id": "bcb_sgs",
+   "name": "Banco Central do Brasil SGS time series",
+   "publisher_type": "central_bank",
+   "url": "https://www3.bcb.gov.br/sgspub/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "rates_curves"
+   ],
+   "region": "BR",
+   "frequency": "daily",
+   "history_start": 1986,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "pt"
+   ],
+   "instruments": [
+    "USDBRL"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "BCB open data"
+  },
+  {
+   "id": "bcb_focus",
+   "name": "Banco Central do Brasil Focus market expectations",
+   "publisher_type": "central_bank",
+   "url": "https://www.bcb.gov.br/publicacoes/focus",
+   "endpoint": null,
+   "classes": [
+    "consensus_estimates"
+   ],
+   "region": "BR",
+   "frequency": "weekly",
+   "history_start": 2001,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "pt"
+   ],
+   "instruments": [
+    "USDBRL"
+   ],
+   "participant_structure": "institutional",
+   "licence": "BCB open data (Olinda API)"
+  },
+  {
+   "id": "banxico_sie",
+   "name": "Banxico SIE economic series",
+   "publisher_type": "central_bank",
+   "url": "https://www.banxico.org.mx/SieInternet/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "rates_curves",
+    "consensus_estimates"
+   ],
+   "region": "LATAM",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "free_key",
+   "auth_env": "BANXICO_TOKEN",
+   "languages": [
+    "es"
+   ],
+   "instruments": [
+    "USDMXN"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "Banxico open data"
+  },
+  {
+   "id": "tcmb_evds",
+   "name": "CBRT EVDS electronic data delivery",
+   "publisher_type": "central_bank",
+   "url": "https://evds2.tcmb.gov.tr/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "consensus_estimates"
+   ],
+   "region": "TR",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "free_key",
+   "auth_env": "EVDS_API_KEY",
+   "languages": [
+    "tr",
+    "en"
+   ],
+   "instruments": [
+    "USDTRY",
+    "EURTRY"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "CBRT open data"
+  },
+  {
+   "id": "bok_ecos",
+   "name": "Bank of Korea ECOS",
+   "publisher_type": "central_bank",
+   "url": "https://ecos.bok.or.kr/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "card_consumer",
+    "rates_curves"
+   ],
+   "region": "KR",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "free_key",
+   "auth_env": "ECOS_API_KEY",
+   "languages": [
+    "ko"
+   ],
+   "instruments": [
+    "USDKRW"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "BOK open API"
+  },
+  {
+   "id": "rbi_dbie",
+   "name": "RBI Database on Indian Economy",
+   "publisher_type": "central_bank",
+   "url": "https://data.rbi.org.in/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "rates_curves",
+    "card_consumer"
+   ],
+   "region": "IN",
+   "frequency": "weekly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "instruments": [
+    "USDINR"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "RBI open data"
+  },
+  {
+   "id": "cbr_statistics",
+   "name": "Bank of Russia statistics",
+   "publisher_type": "central_bank",
+   "url": "https://www.cbr.ru/eng/statistics/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "rates_curves"
+   ],
+   "region": "RU",
+   "frequency": "daily",
+   "history_start": 1998,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ru",
+    "en"
+   ],
+   "instruments": [
+    "USDRUB",
+    "EURRUB"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "CBR public statistics"
+  },
+  {
+   "id": "pboc_statistics",
+   "name": "PBoC financial statistics",
+   "publisher_type": "central_bank",
+   "url": "http://www.pbc.gov.cn/diaochatongjisi/116219/index.html",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "flows"
+   ],
+   "region": "CN",
+   "frequency": "monthly",
+   "history_start": 2002,
+   "latency_days": 12,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "zh"
+   ],
+   "instruments": [
+    "USDCNH",
+    "AUDUSD",
+    "CHINAH"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "PBoC public statistics"
+  },
+  {
+   "id": "boj_timeseries",
+   "name": "Bank of Japan time-series data search",
+   "publisher_type": "central_bank",
+   "url": "https://www.stat-search.boj.or.jp/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "expert_surveys",
+    "flows"
+   ],
+   "region": "JP",
+   "frequency": "daily",
+   "history_start": 1970,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ja",
+    "en"
+   ],
+   "instruments": [
+    "USDJPY",
+    "JPN225"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "BoJ statistics"
+  },
+  {
+   "id": "finra_trace_aggregates",
+   "name": "FINRA TRACE corporate bond market aggregates",
+   "publisher_type": "regulator",
+   "url": "https://www.finra.org/finra-data/fixed-income/market-activity",
+   "endpoint": null,
+   "classes": [
+    "credit"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2012,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "UST10Y"
+   ],
+   "participant_structure": "institutional",
+   "licence": "FINRA public data"
+  },
+  {
+   "id": "nyfed_cbmdi",
+   "name": "NY Fed Corporate Bond Market Distress Index",
+   "publisher_type": "central_bank",
+   "url": "https://www.newyorkfed.org/research/policy/cmdi",
+   "endpoint": null,
+   "classes": [
+    "credit"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2005,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500"
+   ],
+   "participant_structure": "institutional",
+   "licence": "NY Fed public data"
+  },
+  {
+   "id": "dbnomics",
+   "name": "DBnomics (aggregated official statistics, 80+ providers)",
+   "publisher_type": "academic_replication",
+   "url": "https://db.nomics.world/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "trade_customs",
+    "expert_surveys",
+    "pricing"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 1950,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "fr"
+   ],
+   "instruments": null,
+   "participant_structure": "policy_driven",
+   "licence": "DBnomics open API; provider licences apply"
+  },
+  {
+   "id": "alfred_vintages",
+   "name": "ALFRED real-time vintages (St. Louis Fed)",
+   "publisher_type": "central_bank",
+   "url": "https://alfred.stlouisfed.org/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "consensus_estimates"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1990,
+   "latency_days": 1,
+   "auth": "free_key",
+   "auth_env": "FRED_API_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "policy_driven",
+   "licence": "FRED API terms"
+  },
+  {
+   "id": "oecd_sdmx",
+   "name": "OECD Data Explorer SDMX API (CLI, MEI)",
+   "publisher_type": "statistics_office",
+   "url": "https://data-explorer.oecd.org/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "expert_surveys"
+   ],
+   "region": "global",
+   "frequency": "monthly",
+   "history_start": 1960,
+   "latency_days": 30,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "fr"
+   ],
+   "instruments": null,
+   "participant_structure": "policy_driven",
+   "licence": "OECD open data"
+  },
+  {
+   "id": "imf_data",
+   "name": "IMF data portal (IFS, DOTS, WEO)",
+   "publisher_type": "central_bank",
+   "url": "https://data.imf.org/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "trade_customs"
+   ],
+   "region": "global",
+   "frequency": "monthly",
+   "history_start": 1950,
+   "latency_days": 60,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "policy_driven",
+   "licence": "IMF open data"
+  },
+  {
+   "id": "worldbank_wdi",
+   "name": "World Bank WDI and commodity prices (Pink Sheet)",
+   "publisher_type": "statistics_office",
+   "url": "https://data.worldbank.org/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "commodities_physical"
+   ],
+   "region": "global",
+   "frequency": "monthly",
+   "history_start": 1960,
+   "latency_days": 30,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "ar",
+    "es",
+    "fr"
+   ],
+   "instruments": null,
+   "participant_structure": "policy_driven",
+   "licence": "CC BY 4.0"
+  },
+  {
+   "id": "eurostat_api",
+   "name": "Eurostat dissemination API",
+   "publisher_type": "statistics_office",
+   "url": "https://ec.europa.eu/eurostat/web/main/data/web-services",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "trade_customs",
+    "pricing",
+    "energy_power"
+   ],
+   "region": "EU",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 30,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "de",
+    "fr"
+   ],
+   "instruments": [
+    "EURUSD",
+    "GER40",
+    "EUSTX50"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "Eurostat reuse policy"
+  },
+  {
+   "id": "bis_stats",
+   "name": "BIS statistics (policy rates, credit, effective FX, triennial FX)",
+   "publisher_type": "central_bank",
+   "url": "https://data.bis.org/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "credit",
+    "fx_order_flow",
+    "rates_curves"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 1946,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "policy_driven",
+   "licence": "BIS terms, reuse with attribution"
+  },
+  {
+   "id": "bis_triennial_fx",
+   "name": "BIS Triennial Survey FX turnover",
+   "publisher_type": "central_bank",
+   "url": "https://www.bis.org/statistics/rpfx22.htm",
+   "endpoint": null,
+   "classes": [
+    "fx_order_flow"
+   ],
+   "region": "global",
+   "frequency": "triennial",
+   "history_start": 1989,
+   "latency_days": 180,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "BIS terms"
+  },
+  {
+   "id": "nyfed_fx_volume",
+   "name": "NY Fed FX Committee semi-annual FX volume survey",
+   "publisher_type": "central_bank",
+   "url": "https://www.newyorkfed.org/fxc/volumesurvey",
+   "endpoint": null,
+   "classes": [
+    "fx_order_flow"
+   ],
+   "region": "US",
+   "frequency": "semiannual",
+   "history_start": 2004,
+   "latency_days": 90,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "EURUSD",
+    "USDJPY",
+    "USDCAD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "NY Fed public data"
+  },
+  {
+   "id": "boe_fxjsc",
+   "name": "BoE FX Joint Standing Committee turnover survey",
+   "publisher_type": "central_bank",
+   "url": "https://www.bankofengland.co.uk/markets/london-foreign-exchange-joint-standing-committee",
+   "endpoint": null,
+   "classes": [
+    "fx_order_flow"
+   ],
+   "region": "GB",
+   "frequency": "semiannual",
+   "history_start": 2004,
+   "latency_days": 90,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "GBPUSD",
+    "EURUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "BoE public data"
+  },
+  {
+   "id": "census_marts",
+   "name": "US Census Advance Monthly Retail Trade (MARTS)",
+   "publisher_type": "statistics_office",
+   "url": "https://www.census.gov/retail/index.html",
+   "endpoint": null,
+   "classes": [
+    "card_consumer",
+    "macro"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 1992,
+   "latency_days": 15,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "USDX"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "census_trade_api",
+   "name": "US Census international trade API",
+   "publisher_type": "statistics_office",
+   "url": "https://www.census.gov/data/developers/data-sets/international-trade.html",
+   "endpoint": null,
+   "classes": [
+    "trade_customs"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 2013,
+   "latency_days": 35,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "USDCNH",
+    "USDMXN"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "bls_api",
+   "name": "BLS public data API v1 (CPI, payrolls, JOLTS)",
+   "publisher_type": "statistics_office",
+   "url": "https://www.bls.gov/developers/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "jobs",
+    "pricing"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 1948,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "US500",
+    "UST10Y",
+    "XAUUSD"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "ons_realtime",
+   "name": "ONS economic activity and social change real-time indicators",
+   "publisher_type": "statistics_office",
+   "url": "https://www.ons.gov.uk/economy/economicoutputandproductivity/output/datasets/economicactivityandsocialchangeintheukrealtimeindicators",
+   "endpoint": null,
+   "classes": [
+    "card_consumer",
+    "foot_traffic",
+    "jobs",
+    "shipping_ais"
+   ],
+   "region": "GB",
+   "frequency": "weekly",
+   "history_start": 2020,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "GBPUSD",
+    "UK100"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "OGL v3"
+  },
+  {
+   "id": "estat_jp",
+   "name": "e-Stat Japan statistics API",
+   "publisher_type": "statistics_office",
+   "url": "https://www.e-stat.go.jp/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "jobs",
+    "card_consumer"
+   ],
+   "region": "JP",
+   "frequency": "monthly",
+   "history_start": 1970,
+   "latency_days": 30,
+   "auth": "free_key",
+   "auth_env": "ESTAT_APP_ID",
+   "languages": [
+    "ja"
+   ],
+   "instruments": [
+    "USDJPY",
+    "JPN225"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "Japanese government statistics"
+  },
+  {
+   "id": "kosis",
+   "name": "KOSIS Korean statistical information",
+   "publisher_type": "statistics_office",
+   "url": "https://kosis.kr/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "card_consumer"
+   ],
+   "region": "KR",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 30,
+   "auth": "free_key",
+   "auth_env": "KOSIS_API_KEY",
+   "languages": [
+    "ko"
+   ],
+   "instruments": [
+    "USDKRW"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "KOSIS open API"
+  },
+  {
+   "id": "nbs_cn",
+   "name": "China NBS national data",
+   "publisher_type": "statistics_office",
+   "url": "https://data.stats.gov.cn/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "expert_surveys"
+   ],
+   "region": "CN",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 15,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "zh"
+   ],
+   "instruments": [
+    "USDCNH",
+    "AUDUSD",
+    "XCUUSD",
+    "CHINAH"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "NBS public statistics"
+  },
+  {
+   "id": "ibge_sidra",
+   "name": "IBGE SIDRA API",
+   "publisher_type": "statistics_office",
+   "url": "https://sidra.ibge.gov.br/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "pricing",
+    "card_consumer"
+   ],
+   "region": "BR",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 30,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "pt"
+   ],
+   "instruments": [
+    "USDBRL"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "IBGE open data"
+  },
+  {
+   "id": "inegi_api",
+   "name": "INEGI BIE API",
+   "publisher_type": "statistics_office",
+   "url": "https://www.inegi.org.mx/servicios/api_indicadores.html",
+   "endpoint": null,
+   "classes": [
+    "macro"
+   ],
+   "region": "LATAM",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 30,
+   "auth": "free_key",
+   "auth_env": "INEGI_TOKEN",
+   "languages": [
+    "es"
+   ],
+   "instruments": [
+    "USDMXN"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "INEGI open data"
+  },
+  {
+   "id": "tuik",
+   "name": "TurkStat data portal",
+   "publisher_type": "statistics_office",
+   "url": "https://data.tuik.gov.tr/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "pricing"
+   ],
+   "region": "TR",
+   "frequency": "monthly",
+   "history_start": 2003,
+   "latency_days": 3,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "tr"
+   ],
+   "instruments": [
+    "USDTRY"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "TurkStat public data"
+  },
+  {
+   "id": "mospi_esankhyiki",
+   "name": "MoSPI eSankhyiki",
+   "publisher_type": "statistics_office",
+   "url": "https://esankhyiki.mospi.gov.in/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "pricing"
+   ],
+   "region": "IN",
+   "frequency": "monthly",
+   "history_start": 2011,
+   "latency_days": 12,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "instruments": [
+    "USDINR"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "Government of India OGD"
+  },
+  {
+   "id": "gastat_sa",
+   "name": "Saudi GASTAT statistics",
+   "publisher_type": "statistics_office",
+   "url": "https://www.stats.gov.sa/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "commodities_physical"
+   ],
+   "region": "SA",
+   "frequency": "monthly",
+   "history_start": 2010,
+   "latency_days": 30,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ar",
+    "en"
+   ],
+   "instruments": [
+    "XTIUSD",
+    "XBRUSD"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "GASTAT public data"
+  },
+  {
+   "id": "rosstat",
+   "name": "Rosstat official statistics",
+   "publisher_type": "statistics_office",
+   "url": "https://rosstat.gov.ru/",
+   "endpoint": null,
+   "classes": [
+    "macro"
+   ],
+   "region": "RU",
+   "frequency": "monthly",
+   "history_start": 1999,
+   "latency_days": 30,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ru"
+   ],
+   "instruments": [
+    "USDRUB"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "Rosstat public statistics"
+  },
+  {
+   "id": "destatis_genesis",
+   "name": "Destatis GENESIS-Online",
+   "publisher_type": "statistics_office",
+   "url": "https://www-genesis.destatis.de/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "trade_customs",
+    "energy_power"
+   ],
+   "region": "DE",
+   "frequency": "monthly",
+   "history_start": 1991,
+   "latency_days": 30,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "de"
+   ],
+   "instruments": [
+    "EURUSD",
+    "GER40"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "dl-de/by-2-0"
+  },
+  {
+   "id": "insee_bdm",
+   "name": "INSEE macro-economic database (BDM)",
+   "publisher_type": "statistics_office",
+   "url": "https://www.insee.fr/fr/statistiques/series",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "expert_surveys"
+   ],
+   "region": "FR",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 30,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "fr"
+   ],
+   "instruments": [
+    "EURUSD",
+    "FRA40"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "Licence Ouverte"
+  },
+  {
+   "id": "ine_es",
+   "name": "INE Spain JSON API",
+   "publisher_type": "statistics_office",
+   "url": "https://www.ine.es/dyngs/DataLab/manual.html?cid=45",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "pricing"
+   ],
+   "region": "EU",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 30,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "es"
+   ],
+   "instruments": [
+    "EURUSD",
+    "E35"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "INE reuse terms"
+  },
+  {
+   "id": "ff_calendar",
+   "name": "Fair Economy (Forex Factory) weekly calendar JSON",
+   "publisher_type": "public_web",
+   "url": "https://www.forexfactory.com/calendar",
+   "endpoint": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
+   "classes": [
+    "calendars",
+    "consensus_estimates"
+   ],
+   "region": "global",
+   "frequency": "weekly",
+   "history_start": 2020,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "retail_heavy",
+   "licence": "published machine-readable weekly feed; attribution; no history beyond the current week"
+  },
+  {
+   "id": "fomc_calendar",
+   "name": "FOMC meeting calendar and statements",
+   "publisher_type": "central_bank",
+   "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+   "endpoint": null,
+   "classes": [
+    "calendars",
+    "news_nlp"
+   ],
+   "region": "US",
+   "frequency": "event",
+   "history_start": 1936,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "US500",
+    "UST10Y",
+    "XAUUSD"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "ecb_calendar",
+   "name": "ECB monetary policy meeting calendar and press releases",
+   "publisher_type": "central_bank",
+   "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html",
+   "endpoint": null,
+   "classes": [
+    "calendars",
+    "news_nlp"
+   ],
+   "region": "EU",
+   "frequency": "event",
+   "history_start": 1999,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "de",
+    "fr"
+   ],
+   "instruments": [
+    "EURUSD",
+    "GER40"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "ECB terms"
+  },
+  {
+   "id": "boj_calendar",
+   "name": "BoJ monetary policy meeting schedule",
+   "publisher_type": "central_bank",
+   "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm",
+   "endpoint": null,
+   "classes": [
+    "calendars"
+   ],
+   "region": "JP",
+   "frequency": "event",
+   "history_start": 1998,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ja",
+    "en"
+   ],
+   "instruments": [
+    "USDJPY",
+    "JPN225"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "BoJ terms"
+  },
+  {
+   "id": "bls_schedule",
+   "name": "BLS release calendar (iCal)",
+   "publisher_type": "statistics_office",
+   "url": "https://www.bls.gov/schedule/news_release/",
+   "endpoint": null,
+   "classes": [
+    "calendars"
+   ],
+   "region": "US",
+   "frequency": "event",
+   "history_start": 2000,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "US500"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "philly_spf",
+   "name": "Philadelphia Fed Survey of Professional Forecasters",
+   "publisher_type": "central_bank",
+   "url": "https://www.philadelphiafed.org/surveys-and-data/real-time-data-research/survey-of-professional-forecasters",
+   "endpoint": null,
+   "classes": [
+    "consensus_estimates",
+    "expert_surveys"
+   ],
+   "region": "US",
+   "frequency": "quarterly",
+   "history_start": 1968,
+   "latency_days": 5,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "UST10Y"
+   ],
+   "participant_structure": "institutional",
+   "licence": "Philadelphia Fed public data"
+  },
+  {
+   "id": "ecb_spf",
+   "name": "ECB Survey of Professional Forecasters",
+   "publisher_type": "central_bank",
+   "url": "https://www.ecb.europa.eu/stats/ecb_surveys/survey_of_professional_forecasters/html/index.en.html",
+   "endpoint": null,
+   "classes": [
+    "consensus_estimates"
+   ],
+   "region": "EU",
+   "frequency": "quarterly",
+   "history_start": 1999,
+   "latency_days": 5,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "EURUSD"
+   ],
+   "participant_structure": "institutional",
+   "licence": "ECB terms"
+  },
+  {
+   "id": "nyfed_sce",
+   "name": "NY Fed Survey of Consumer Expectations",
+   "publisher_type": "central_bank",
+   "url": "https://www.newyorkfed.org/microeconomics/sce",
+   "endpoint": null,
+   "classes": [
+    "sentiment",
+    "consensus_estimates"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 2013,
+   "latency_days": 10,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "UST10Y"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "NY Fed public data"
+  },
+  {
+   "id": "fed_sep",
+   "name": "FOMC Summary of Economic Projections",
+   "publisher_type": "central_bank",
+   "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+   "endpoint": null,
+   "classes": [
+    "consensus_estimates"
+   ],
+   "region": "US",
+   "frequency": "quarterly",
+   "history_start": 2007,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "UST10Y",
+    "US500"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "boj_tankan",
+   "name": "BoJ Tankan short-term economic survey",
+   "publisher_type": "central_bank",
+   "url": "https://www.boj.or.jp/en/statistics/tk/index.htm",
+   "endpoint": null,
+   "classes": [
+    "expert_surveys"
+   ],
+   "region": "JP",
+   "frequency": "quarterly",
+   "history_start": 1974,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ja",
+    "en"
+   ],
+   "instruments": [
+    "USDJPY",
+    "JPN225"
+   ],
+   "participant_structure": "institutional",
+   "licence": "BoJ statistics"
+  },
+  {
+   "id": "ifo_headline",
+   "name": "ifo Business Climate (headline release)",
+   "publisher_type": "academic_replication",
+   "url": "https://www.ifo.de/en/survey/ifo-business-climate-germany",
+   "endpoint": null,
+   "classes": [
+    "expert_surveys"
+   ],
+   "region": "DE",
+   "frequency": "monthly",
+   "history_start": 1991,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "de",
+    "en"
+   ],
+   "instruments": [
+    "EURUSD",
+    "GER40"
+   ],
+   "participant_structure": "institutional",
+   "licence": "ifo published release"
+  },
+  {
+   "id": "zew_headline",
+   "name": "ZEW Indicator of Economic Sentiment (headline)",
+   "publisher_type": "academic_replication",
+   "url": "https://www.zew.de/en/publications/zew-konjunkturerwartungen",
+   "endpoint": null,
+   "classes": [
+    "expert_surveys",
+    "sentiment"
+   ],
+   "region": "DE",
+   "frequency": "monthly",
+   "history_start": 1991,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "de",
+    "en"
+   ],
+   "instruments": [
+    "EURUSD",
+    "GER40"
+   ],
+   "participant_structure": "institutional",
+   "licence": "ZEW published release"
+  },
+  {
+   "id": "ec_bcs",
+   "name": "European Commission business and consumer surveys",
+   "publisher_type": "statistics_office",
+   "url": "https://economy-finance.ec.europa.eu/economic-forecast-and-surveys/business-and-consumer-surveys_en",
+   "endpoint": null,
+   "classes": [
+    "expert_surveys",
+    "sentiment"
+   ],
+   "region": "EU",
+   "frequency": "monthly",
+   "history_start": 1985,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "de",
+    "fr"
+   ],
+   "instruments": [
+    "EURUSD",
+    "EUSTX50"
+   ],
+   "participant_structure": "mixed",
+   "licence": "EC reuse policy"
+  },
+  {
+   "id": "chicagofed_carts",
+   "name": "Chicago Fed Advance Retail Trade Summary (CARTS)",
+   "publisher_type": "central_bank",
+   "url": "https://www.chicagofed.org/research/data/carts/index",
+   "endpoint": null,
+   "classes": [
+    "card_consumer"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 2022,
+   "latency_days": 3,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "USDX"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "Chicago Fed public data"
+  },
+  {
+   "id": "oi_econ_tracker",
+   "name": "Opportunity Insights Economic Tracker (Affinity card spending, Womply, jobs; archive, ended 2024-06)",
+   "publisher_type": "github",
+   "url": "https://github.com/OpportunityInsights/EconomicTracker",
+   "endpoint": "https://raw.githubusercontent.com/OpportunityInsights/EconomicTracker/main/data/Affinity%20-%20National%20-%20Daily.csv",
+   "classes": [
+    "card_consumer",
+    "jobs",
+    "foot_traffic"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 2020,
+   "latency_days": 9999,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "USDX"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "CC BY 4.0 (research release)"
+  },
+  {
+   "id": "sec_edgar_submissions",
+   "name": "SEC EDGAR submissions and XBRL frames API",
+   "publisher_type": "regulator",
+   "url": "https://www.sec.gov/search-filings/edgar-application-programming-interfaces",
+   "endpoint": null,
+   "classes": [
+    "corporate_events",
+    "consensus_estimates"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1994,
+   "latency_days": 0,
+   "auth": "ua",
+   "auth_env": "QUANT_EDGAR_UA",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "NAS100"
+   ],
+   "participant_structure": "institutional",
+   "licence": "US federal public record; SEC fair access with declared User-Agent"
+  },
+  {
+   "id": "sec_ftd",
+   "name": "SEC fails-to-deliver data",
+   "publisher_type": "regulator",
+   "url": "https://www.sec.gov/data-research/sec-markets-data/fails-deliver-data",
+   "endpoint": null,
+   "classes": [
+    "positioning"
+   ],
+   "region": "US",
+   "frequency": "semimonthly",
+   "history_start": 2004,
+   "latency_days": 15,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "NAS100"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "tdnet",
+   "name": "JPX TDnet timely disclosure",
+   "publisher_type": "exchange",
+   "url": "https://www.release.tdnet.info/inbs/I_main_00.html",
+   "endpoint": null,
+   "classes": [
+    "corporate_events",
+    "consensus_estimates"
+   ],
+   "region": "JP",
+   "frequency": "daily",
+   "history_start": 2008,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ja"
+   ],
+   "instruments": [
+    "JPN225",
+    "USDJPY"
+   ],
+   "participant_structure": "institutional",
+   "licence": "TDnet public disclosure; 30-day window"
+  },
+  {
+   "id": "edinet",
+   "name": "FSA EDINET filings API",
+   "publisher_type": "regulator",
+   "url": "https://disclosure2.edinet-fsa.go.jp/",
+   "endpoint": null,
+   "classes": [
+    "corporate_events"
+   ],
+   "region": "JP",
+   "frequency": "daily",
+   "history_start": 2008,
+   "latency_days": 0,
+   "auth": "free_key",
+   "auth_env": "EDINET_API_KEY",
+   "languages": [
+    "ja"
+   ],
+   "instruments": [
+    "JPN225"
+   ],
+   "participant_structure": "institutional",
+   "licence": "Japanese government disclosure"
+  },
+  {
+   "id": "dart_kr",
+   "name": "FSS DART open API",
+   "publisher_type": "regulator",
+   "url": "https://opendart.fss.or.kr/",
+   "endpoint": null,
+   "classes": [
+    "corporate_events",
+    "consensus_estimates"
+   ],
+   "region": "KR",
+   "frequency": "daily",
+   "history_start": 1999,
+   "latency_days": 0,
+   "auth": "free_key",
+   "auth_env": "DART_API_KEY",
+   "languages": [
+    "ko"
+   ],
+   "instruments": [
+    "USDKRW"
+   ],
+   "participant_structure": "institutional",
+   "licence": "DART open API"
+  },
+  {
+   "id": "cninfo",
+   "name": "CNINFO announcements",
+   "publisher_type": "exchange",
+   "url": "http://www.cninfo.com.cn/",
+   "endpoint": null,
+   "classes": [
+    "corporate_events"
+   ],
+   "region": "CN",
+   "frequency": "daily",
+   "history_start": 2000,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "zh"
+   ],
+   "instruments": [
+    "CHINAH",
+    "HK50"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "CSRC-designated disclosure site"
+  },
+  {
+   "id": "hkexnews",
+   "name": "HKEXnews listed company announcements",
+   "publisher_type": "exchange",
+   "url": "https://www.hkexnews.hk/",
+   "endpoint": null,
+   "classes": [
+    "corporate_events"
+   ],
+   "region": "HK",
+   "frequency": "daily",
+   "history_start": 1999,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "zh",
+    "en"
+   ],
+   "instruments": [
+    "HK50",
+    "CHINAH"
+   ],
+   "participant_structure": "mixed",
+   "licence": "HKEX disclosure"
+  },
+  {
+   "id": "kap_tr",
+   "name": "KAP Public Disclosure Platform",
+   "publisher_type": "regulator",
+   "url": "https://www.kap.org.tr/en/",
+   "endpoint": null,
+   "classes": [
+    "corporate_events"
+   ],
+   "region": "TR",
+   "frequency": "daily",
+   "history_start": 2009,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "tr",
+    "en"
+   ],
+   "instruments": [
+    "USDTRY"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "KAP public disclosure"
+  },
+  {
+   "id": "cvm_br",
+   "name": "CVM dados abertos",
+   "publisher_type": "regulator",
+   "url": "https://dados.cvm.gov.br/",
+   "endpoint": null,
+   "classes": [
+    "corporate_events",
+    "flows"
+   ],
+   "region": "BR",
+   "frequency": "daily",
+   "history_start": 2010,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "pt"
+   ],
+   "instruments": [
+    "USDBRL"
+   ],
+   "participant_structure": "mixed",
+   "licence": "dados abertos CVM"
+  },
+  {
+   "id": "eastmoney_reports",
+   "name": "Eastmoney research report list (titles, ratings)",
+   "publisher_type": "public_web",
+   "url": "https://data.eastmoney.com/report/",
+   "endpoint": null,
+   "classes": [
+    "consensus_estimates"
+   ],
+   "region": "CN",
+   "frequency": "daily",
+   "history_start": 2010,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "zh"
+   ],
+   "instruments": [
+    "CHINAH",
+    "HK50"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "public list pages; robots respected"
+  },
+  {
+   "id": "gdelt_events",
+   "name": "GDELT 2.0 event and GKG 15-minute files",
+   "publisher_type": "academic_replication",
+   "url": "https://www.gdeltproject.org/data.html",
+   "endpoint": "http://data.gdeltproject.org/gdeltv2/lastupdate.txt",
+   "classes": [
+    "news_nlp",
+    "sentiment",
+    "esg"
+   ],
+   "region": "global",
+   "frequency": "intraday",
+   "history_start": 2015,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "zh",
+    "ja",
+    "ko",
+    "ru",
+    "pt",
+    "es",
+    "de",
+    "fr",
+    "tr",
+    "ar",
+    "hi"
+   ],
+   "instruments": null,
+   "participant_structure": "mixed",
+   "licence": "GDELT open, attribution"
+  },
+  {
+   "id": "gdelt_doc_api",
+   "name": "GDELT DOC 2.0 timeline API (volume and tone)",
+   "publisher_type": "academic_replication",
+   "url": "https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/",
+   "endpoint": null,
+   "classes": [
+    "news_nlp",
+    "sentiment"
+   ],
+   "region": "global",
+   "frequency": "intraday",
+   "history_start": 2017,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "zh",
+    "ja",
+    "ko",
+    "ru",
+    "pt",
+    "es",
+    "de",
+    "fr",
+    "tr",
+    "ar",
+    "hi"
+   ],
+   "instruments": null,
+   "participant_structure": "mixed",
+   "licence": "GDELT open, attribution"
+  },
+  {
+   "id": "cc_news",
+   "name": "Common Crawl CC-NEWS",
+   "publisher_type": "academic_replication",
+   "url": "https://commoncrawl.org/blog/news-dataset-available",
+   "endpoint": null,
+   "classes": [
+    "news_nlp"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2016,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "zh",
+    "ja",
+    "ko",
+    "ru",
+    "pt",
+    "es",
+    "de",
+    "fr",
+    "tr",
+    "ar",
+    "hi"
+   ],
+   "instruments": null,
+   "participant_structure": "mixed",
+   "licence": "Common Crawl terms of use"
+  },
+  {
+   "id": "bis_speeches",
+   "name": "BIS central bankers' speeches",
+   "publisher_type": "central_bank",
+   "url": "https://www.bis.org/cbspeeches/index.htm",
+   "endpoint": null,
+   "classes": [
+    "news_nlp",
+    "sentiment"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 1997,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "policy_driven",
+   "licence": "BIS terms"
+  },
+  {
+   "id": "wikipedia_pageviews",
+   "name": "Wikimedia pageviews REST API",
+   "publisher_type": "public_web",
+   "url": "https://doc.wikimedia.org/generated-data-platform/aqs/analytics-api/",
+   "endpoint": null,
+   "classes": [
+    "web_traffic",
+    "sentiment",
+    "app_data"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2015,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "zh",
+    "ja",
+    "ko",
+    "ru",
+    "pt",
+    "es",
+    "de",
+    "fr",
+    "tr",
+    "ar",
+    "hi"
+   ],
+   "instruments": null,
+   "participant_structure": "retail_heavy",
+   "licence": "CC0 pageview data; UA required"
+  },
+  {
+   "id": "tranco_list",
+   "name": "Tranco top-sites research ranking",
+   "publisher_type": "academic_replication",
+   "url": "https://tranco-list.eu/",
+   "endpoint": null,
+   "classes": [
+    "web_traffic"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2019,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "mixed",
+   "licence": "research list, free"
+  },
+  {
+   "id": "cloudflare_radar",
+   "name": "Cloudflare Radar API (traffic, domains)",
+   "publisher_type": "public_web",
+   "url": "https://radar.cloudflare.com/",
+   "endpoint": null,
+   "classes": [
+    "web_traffic"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2020,
+   "latency_days": 1,
+   "auth": "free_key",
+   "auth_env": "CLOUDFLARE_API_TOKEN",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "mixed",
+   "licence": "CC BY-NC 4.0"
+  },
+  {
+   "id": "apple_rss_charts",
+   "name": "Apple Marketing Tools RSS top charts",
+   "publisher_type": "public_web",
+   "url": "https://rss.applemarketingtools.com/",
+   "endpoint": "https://rss.applemarketingtools.com/api/v2/us/apps/top-free/100/apps.json",
+   "classes": [
+    "app_data"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2021,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "zh",
+    "ja",
+    "ko",
+    "ru",
+    "pt",
+    "es",
+    "de",
+    "fr",
+    "tr",
+    "ar",
+    "hi"
+   ],
+   "instruments": [
+    "NAS100"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "Apple published RSS feed; snapshot only, history is what the desk archives"
+  },
+  {
+   "id": "aaii_sentiment",
+   "name": "AAII Investor Sentiment Survey (weekly headline)",
+   "publisher_type": "public_web",
+   "url": "https://www.aaii.com/sentimentsurvey",
+   "endpoint": null,
+   "classes": [
+    "sentiment"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1987,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "public headline page; full history is members-only and NOT used"
+  },
+  {
+   "id": "indeed_hiring_lab",
+   "name": "Indeed Hiring Lab job postings index",
+   "publisher_type": "github",
+   "url": "https://github.com/hiring-lab/job_postings_tracker",
+   "endpoint": "https://raw.githubusercontent.com/hiring-lab/job_postings_tracker/master/US/aggregate_job_postings_US.csv",
+   "classes": [
+    "jobs"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2020,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "de",
+    "fr",
+    "ja"
+   ],
+   "instruments": [
+    "USDX",
+    "US500"
+   ],
+   "participant_structure": "mixed",
+   "licence": "CC BY 4.0"
+  },
+  {
+   "id": "usajobs_api",
+   "name": "USAJOBS search API",
+   "publisher_type": "gov_open_data",
+   "url": "https://developer.usajobs.gov/",
+   "endpoint": null,
+   "classes": [
+    "jobs"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2012,
+   "latency_days": 0,
+   "auth": "free_key",
+   "auth_env": "USAJOBS_API_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "policy_driven",
+   "licence": "US federal public data"
+  },
+  {
+   "id": "adzuna_api",
+   "name": "Adzuna job search API (counts by category)",
+   "publisher_type": "public_web",
+   "url": "https://developer.adzuna.com/",
+   "endpoint": null,
+   "classes": [
+    "jobs"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2016,
+   "latency_days": 0,
+   "auth": "free_key",
+   "auth_env": "ADZUNA_APP_KEY",
+   "languages": [
+    "en",
+    "de",
+    "fr",
+    "pt",
+    "es"
+   ],
+   "instruments": null,
+   "participant_structure": "mixed",
+   "licence": "Adzuna API terms (free tier)"
+  },
+  {
+   "id": "uspto_bulk",
+   "name": "USPTO bulk data (grants and applications)",
+   "publisher_type": "gov_open_data",
+   "url": "https://bulkdata.uspto.gov/",
+   "endpoint": null,
+   "classes": [
+    "patents"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1976,
+   "latency_days": 2,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "NAS100"
+   ],
+   "participant_structure": "institutional",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "patentsview",
+   "name": "PatentsView API",
+   "publisher_type": "gov_open_data",
+   "url": "https://patentsview.org/apis/purpose",
+   "endpoint": null,
+   "classes": [
+    "patents"
+   ],
+   "region": "US",
+   "frequency": "quarterly",
+   "history_start": 1976,
+   "latency_days": 90,
+   "auth": "free_key",
+   "auth_env": "PATENTSVIEW_API_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "NAS100"
+   ],
+   "participant_structure": "institutional",
+   "licence": "CC BY 4.0"
+  },
+  {
+   "id": "epo_ops",
+   "name": "EPO Open Patent Services",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.epo.org/en/searching-for-patents/data/web-services/ops",
+   "endpoint": null,
+   "classes": [
+    "patents"
+   ],
+   "region": "EU",
+   "frequency": "weekly",
+   "history_start": 1978,
+   "latency_days": 7,
+   "auth": "free_key",
+   "auth_env": "EPO_OPS_KEY",
+   "languages": [
+    "en",
+    "de",
+    "fr"
+   ],
+   "instruments": null,
+   "participant_structure": "institutional",
+   "licence": "EPO OPS fair use (free tier)"
+  },
+  {
+   "id": "epa_ghgrp",
+   "name": "EPA GHGRP via Envirofacts",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.epa.gov/enviro/envirofacts-data-service-api",
+   "endpoint": null,
+   "classes": [
+    "esg"
+   ],
+   "region": "US",
+   "frequency": "annual",
+   "history_start": 2010,
+   "latency_days": 300,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XNGUSD",
+    "XTIUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "eu_ets_eutl",
+   "name": "EU ETS Union Registry verified emissions",
+   "publisher_type": "gov_open_data",
+   "url": "https://union-registry-data.ec.europa.eu/",
+   "endpoint": null,
+   "classes": [
+    "esg",
+    "energy_power"
+   ],
+   "region": "EU",
+   "frequency": "annual",
+   "history_start": 2005,
+   "latency_days": 120,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "de",
+    "fr"
+   ],
+   "instruments": [
+    "XNGUSD",
+    "EUSTX50"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "EC reuse policy"
+  },
+  {
+   "id": "climate_trace",
+   "name": "Climate TRACE emissions inventory API",
+   "publisher_type": "public_web",
+   "url": "https://climatetrace.org/data",
+   "endpoint": null,
+   "classes": [
+    "esg",
+    "satellite"
+   ],
+   "region": "global",
+   "frequency": "monthly",
+   "history_start": 2015,
+   "latency_days": 60,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "physical_flow",
+   "licence": "CC BY 4.0"
+  },
+  {
+   "id": "nasa_firms",
+   "name": "NASA FIRMS active fire/thermal anomalies",
+   "publisher_type": "gov_open_data",
+   "url": "https://firms.modaps.eosdis.nasa.gov/api/",
+   "endpoint": null,
+   "classes": [
+    "satellite"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2000,
+   "latency_days": 0,
+   "auth": "free_key",
+   "auth_env": "FIRMS_MAP_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDCNH",
+    "XCUUSD",
+    "AUDUSD",
+    "XTIUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "NASA open data"
+  },
+  {
+   "id": "earth_search_stac",
+   "name": "Element84 Earth Search STAC (Sentinel-2, Landsat on AWS)",
+   "publisher_type": "public_web",
+   "url": "https://earth-search.aws.element84.com/v1",
+   "endpoint": null,
+   "classes": [
+    "satellite"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2015,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "physical_flow",
+   "licence": "Copernicus/USGS open data licences"
+  },
+  {
+   "id": "nasa_black_marble",
+   "name": "NASA Black Marble VNP46 nightlights",
+   "publisher_type": "gov_open_data",
+   "url": "https://ladsweb.modaps.eosdis.nasa.gov/",
+   "endpoint": null,
+   "classes": [
+    "satellite"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2012,
+   "latency_days": 3,
+   "auth": "free_key",
+   "auth_env": "EARTHDATA_TOKEN",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDCNH",
+    "USDINR",
+    "XCUUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "NASA open data"
+  },
+  {
+   "id": "sentinel5p_no2",
+   "name": "Sentinel-5P TROPOMI NO2 (Copernicus Data Space)",
+   "publisher_type": "gov_open_data",
+   "url": "https://dataspace.copernicus.eu/",
+   "endpoint": null,
+   "classes": [
+    "satellite",
+    "esg"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2018,
+   "latency_days": 3,
+   "auth": "free_key",
+   "auth_env": "CDSE_TOKEN",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDCNH",
+    "AUDUSD",
+    "GER40"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "Copernicus open licence"
+  },
+  {
+   "id": "noaa_ghcnd",
+   "name": "NOAA GHCN-Daily station observations",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.ncei.noaa.gov/products/land-based-station/global-historical-climatology-network-daily",
+   "endpoint": null,
+   "classes": [
+    "weather"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 1900,
+   "latency_days": 2,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "noaa_cpc_degree_days",
+   "name": "NOAA CPC population-weighted degree days",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/cdus/degree_days/",
+   "endpoint": null,
+   "classes": [
+    "weather",
+    "energy_power"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1981,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XNGUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "noaa_cpc_oni",
+   "name": "NOAA CPC Oceanic Nino Index",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.cpc.ncep.noaa.gov/data/indices/",
+   "endpoint": "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt",
+   "classes": [
+    "weather"
+   ],
+   "region": "global",
+   "frequency": "monthly",
+   "history_start": 1950,
+   "latency_days": 10,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "SUGAR",
+    "COFARA",
+    "USCOCOA",
+    "WHEAT",
+    "AUDUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "open_meteo_archive",
+   "name": "Open-Meteo historical weather API (ERA5-based)",
+   "publisher_type": "public_web",
+   "url": "https://open-meteo.com/en/docs/historical-weather-api",
+   "endpoint": null,
+   "classes": [
+    "weather"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 1940,
+   "latency_days": 5,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "physical_flow",
+   "licence": "CC BY 4.0; free non-commercial tier"
+  },
+  {
+   "id": "ecmwf_open_data",
+   "name": "ECMWF open forecast data",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.ecmwf.int/en/forecasts/datasets/open-data",
+   "endpoint": null,
+   "classes": [
+    "weather"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2022,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "physical_flow",
+   "licence": "CC BY 4.0"
+  },
+  {
+   "id": "copernicus_era5",
+   "name": "Copernicus ERA5 reanalysis (CDS)",
+   "publisher_type": "gov_open_data",
+   "url": "https://cds.climate.copernicus.eu/",
+   "endpoint": null,
+   "classes": [
+    "weather"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 1940,
+   "latency_days": 5,
+   "auth": "free_key",
+   "auth_env": "CDSAPI_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "physical_flow",
+   "licence": "Copernicus licence"
+  },
+  {
+   "id": "jma_data",
+   "name": "JMA past weather data",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.data.jma.go.jp/stats/etrn/index.php",
+   "endpoint": null,
+   "classes": [
+    "weather"
+   ],
+   "region": "JP",
+   "frequency": "daily",
+   "history_start": 1961,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ja"
+   ],
+   "instruments": [
+    "USDJPY"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "JMA terms (attribution)"
+  },
+  {
+   "id": "usda_crop_progress",
+   "name": "USDA NASS Quick Stats (crop progress/condition)",
+   "publisher_type": "gov_open_data",
+   "url": "https://quickstats.nass.usda.gov/api",
+   "endpoint": null,
+   "classes": [
+    "commodities_physical",
+    "weather"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1980,
+   "latency_days": 1,
+   "auth": "free_key",
+   "auth_env": "NASS_API_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "COTTON"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "eia_weekly_crude",
+   "name": "EIA weekly US crude stocks (WCESTUS1) xls",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.eia.gov/petroleum/supply/weekly/",
+   "endpoint": "https://www.eia.gov/dnav/pet/hist_xls/WCESTUS1w.xls",
+   "classes": [
+    "commodities_physical"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1982,
+   "latency_days": 5,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XTIUSD",
+    "XBRUSD",
+    "USDCAD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "eia_api",
+   "name": "EIA open data API v2",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.eia.gov/opendata/",
+   "endpoint": null,
+   "classes": [
+    "commodities_physical",
+    "energy_power"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1980,
+   "latency_days": 5,
+   "auth": "free_key",
+   "auth_env": "EIA_API_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XTIUSD",
+    "XNGUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "eia_ng_storage",
+   "name": "EIA weekly natural gas storage report",
+   "publisher_type": "gov_open_data",
+   "url": "https://ir.eia.gov/ngs/ngs.html",
+   "endpoint": null,
+   "classes": [
+    "commodities_physical"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 2010,
+   "latency_days": 6,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XNGUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "usda_fas_export_sales",
+   "name": "USDA FAS weekly export sales",
+   "publisher_type": "gov_open_data",
+   "url": "https://apps.fas.usda.gov/export-sales/esrd1.html",
+   "endpoint": null,
+   "classes": [
+    "commodities_physical",
+    "trade_customs"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 1990,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "COTTON"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "usda_wasde",
+   "name": "USDA WASDE report",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.usda.gov/oce/commodity/wasde",
+   "endpoint": null,
+   "classes": [
+    "commodities_physical",
+    "consensus_estimates"
+   ],
+   "region": "global",
+   "frequency": "monthly",
+   "history_start": 1973,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "SUGAR",
+    "COTTON"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "jodi_oil",
+   "name": "JODI Oil World Database",
+   "publisher_type": "statistics_office",
+   "url": "https://www.jodidata.org/oil/",
+   "endpoint": null,
+   "classes": [
+    "commodities_physical"
+   ],
+   "region": "global",
+   "frequency": "monthly",
+   "history_start": 2002,
+   "latency_days": 50,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XTIUSD",
+    "XBRUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "JODI terms, free"
+  },
+  {
+   "id": "baker_hughes_rigs",
+   "name": "Baker Hughes rig count",
+   "publisher_type": "public_web",
+   "url": "https://rigcount.bakerhughes.com/",
+   "endpoint": null,
+   "classes": [
+    "commodities_physical"
+   ],
+   "region": "global",
+   "frequency": "weekly",
+   "history_start": 1987,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XTIUSD",
+    "XNGUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "published free rig counts"
+  },
+  {
+   "id": "conab_br",
+   "name": "CONAB crop surveys (Brazil)",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.conab.gov.br/info-agro/safras",
+   "endpoint": null,
+   "classes": [
+    "commodities_physical"
+   ],
+   "region": "BR",
+   "frequency": "monthly",
+   "history_start": 1990,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "pt"
+   ],
+   "instruments": [
+    "SOYBEAN",
+    "CORN",
+    "SUGAR",
+    "COFARA",
+    "USDBRL"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "Brazilian government open data"
+  },
+  {
+   "id": "shfe_warehouse",
+   "name": "SHFE daily warehouse stocks",
+   "publisher_type": "exchange",
+   "url": "https://www.shfe.com.cn/eng/",
+   "endpoint": null,
+   "classes": [
+    "commodities_physical"
+   ],
+   "region": "CN",
+   "frequency": "daily",
+   "history_start": 2008,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "zh",
+    "en"
+   ],
+   "instruments": [
+    "XCUUSD",
+    "XALUSD",
+    "XZNUSD",
+    "XNIUSD",
+    "XAUUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "SHFE public market data"
+  },
+  {
+   "id": "lme_public_stocks",
+   "name": "LME daily stocks headline (public page)",
+   "publisher_type": "exchange",
+   "url": "https://www.lme.com/",
+   "endpoint": null,
+   "classes": [
+    "commodities_physical"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2010,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XCUUSD",
+    "XALUSD",
+    "XZNUSD",
+    "XNIUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "public headline only; full data is paid and NOT used"
+  },
+  {
+   "id": "imf_portwatch",
+   "name": "IMF PortWatch (AIS-derived port calls and chokepoint transits)",
+   "publisher_type": "central_bank",
+   "url": "https://portwatch.imf.org/",
+   "endpoint": null,
+   "classes": [
+    "shipping_ais",
+    "trade_customs",
+    "supply_chain"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2019,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XTIUSD",
+    "XBRUSD",
+    "USDCNH",
+    "AUDUSD",
+    "XCUUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "IMF open data (UN Global Platform AIS)"
+  },
+  {
+   "id": "noaa_marinecadastre_ais",
+   "name": "NOAA/BOEM MarineCadastre AIS vessel traffic",
+   "publisher_type": "gov_open_data",
+   "url": "https://hub.marinecadastre.gov/pages/vesseltraffic",
+   "endpoint": null,
+   "classes": [
+    "shipping_ais"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 2009,
+   "latency_days": 120,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XTIUSD",
+    "XNGUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "global_fishing_watch",
+   "name": "Global Fishing Watch vessel presence API",
+   "publisher_type": "public_web",
+   "url": "https://globalfishingwatch.org/our-apis/",
+   "endpoint": null,
+   "classes": [
+    "shipping_ais"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2012,
+   "latency_days": 3,
+   "auth": "free_key",
+   "auth_env": "GFW_API_TOKEN",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "physical_flow",
+   "licence": "CC BY-NC 4.0 (non-commercial)"
+  },
+  {
+   "id": "sse_scfi",
+   "name": "Shanghai Shipping Exchange SCFI / CCFI",
+   "publisher_type": "exchange",
+   "url": "https://en.sse.net.cn/indices/scfinew.jsp",
+   "endpoint": null,
+   "classes": [
+    "shipping_ais",
+    "supply_chain"
+   ],
+   "region": "CN",
+   "frequency": "weekly",
+   "history_start": 2009,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "zh",
+    "en"
+   ],
+   "instruments": [
+    "USDCNH",
+    "XTIUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "SSE public index page"
+  },
+  {
+   "id": "drewry_wci_headline",
+   "name": "Drewry World Container Index (weekly headline)",
+   "publisher_type": "public_web",
+   "url": "https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry",
+   "endpoint": null,
+   "classes": [
+    "shipping_ais",
+    "supply_chain"
+   ],
+   "region": "global",
+   "frequency": "weekly",
+   "history_start": 2011,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "USDCNH"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "free weekly headline; detailed data is paid and NOT used"
+  },
+  {
+   "id": "freightos_fbx_headline",
+   "name": "Freightos Baltic Index (public headline)",
+   "publisher_type": "public_web",
+   "url": "https://terminal.freightos.com/fbx/",
+   "endpoint": null,
+   "classes": [
+    "shipping_ais",
+    "supply_chain"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2016,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "USDCNH"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "free headline; terminal data is paid and NOT used"
+  },
+  {
+   "id": "nyfed_gscpi",
+   "name": "NY Fed Global Supply Chain Pressure Index",
+   "publisher_type": "central_bank",
+   "url": "https://www.newyorkfed.org/research/policy/gscpi",
+   "endpoint": null,
+   "classes": [
+    "supply_chain"
+   ],
+   "region": "global",
+   "frequency": "monthly",
+   "history_start": 1997,
+   "latency_days": 5,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "XCUUSD",
+    "US500"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "NY Fed public data"
+  },
+  {
+   "id": "aar_rail_traffic",
+   "name": "AAR weekly rail traffic",
+   "publisher_type": "public_web",
+   "url": "https://www.aar.org/data-center/rail-traffic-data/",
+   "endpoint": null,
+   "classes": [
+    "supply_chain",
+    "commodities_physical"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 2010,
+   "latency_days": 4,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "USDCAD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "AAR published weekly data"
+  },
+  {
+   "id": "port_la_teu",
+   "name": "Port of Los Angeles container statistics",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.portoflosangeles.org/business/statistics/container-statistics",
+   "endpoint": null,
+   "classes": [
+    "shipping_ais",
+    "trade_customs"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 1995,
+   "latency_days": 15,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDCNH",
+    "US500"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "public port statistics"
+  },
+  {
+   "id": "panama_canal_transits",
+   "name": "Panama Canal Authority transit statistics",
+   "publisher_type": "gov_open_data",
+   "url": "https://pancanal.com/en/statistics/",
+   "endpoint": null,
+   "classes": [
+    "shipping_ais"
+   ],
+   "region": "LATAM",
+   "frequency": "daily",
+   "history_start": 2015,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "es",
+    "en"
+   ],
+   "instruments": [
+    "XNGUSD",
+    "SOYBEAN",
+    "CORN"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "public statistics"
+  },
+  {
+   "id": "korea_customs_10day",
+   "name": "Korea Customs 10/20-day export statistics",
+   "publisher_type": "regulator",
+   "url": "https://unipass.customs.go.kr/ets/",
+   "endpoint": null,
+   "classes": [
+    "trade_customs"
+   ],
+   "region": "KR",
+   "frequency": "10-day",
+   "history_start": 2000,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ko"
+   ],
+   "instruments": [
+    "USDKRW",
+    "TSMC",
+    "MicronTechnology"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "Korea Customs public statistics"
+  },
+  {
+   "id": "china_customs",
+   "name": "China General Administration of Customs statistics",
+   "publisher_type": "regulator",
+   "url": "http://stats.customs.gov.cn/",
+   "endpoint": null,
+   "classes": [
+    "trade_customs"
+   ],
+   "region": "CN",
+   "frequency": "monthly",
+   "history_start": 2015,
+   "latency_days": 10,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "zh"
+   ],
+   "instruments": [
+    "USDCNH",
+    "AUDUSD",
+    "XCUUSD",
+    "SOYBEAN"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "GACC public statistics"
+  },
+  {
+   "id": "mof_jp_trade",
+   "name": "Japan MoF trade statistics",
+   "publisher_type": "regulator",
+   "url": "https://www.customs.go.jp/toukei/info/index_e.htm",
+   "endpoint": null,
+   "classes": [
+    "trade_customs"
+   ],
+   "region": "JP",
+   "frequency": "10-day",
+   "history_start": 1988,
+   "latency_days": 5,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ja",
+    "en"
+   ],
+   "instruments": [
+    "USDJPY"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "Japanese government statistics"
+  },
+  {
+   "id": "un_comtrade",
+   "name": "UN Comtrade API",
+   "publisher_type": "statistics_office",
+   "url": "https://comtradeplus.un.org/",
+   "endpoint": null,
+   "classes": [
+    "trade_customs"
+   ],
+   "region": "global",
+   "frequency": "monthly",
+   "history_start": 1962,
+   "latency_days": 60,
+   "auth": "free_key",
+   "auth_env": "COMTRADE_API_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "physical_flow",
+   "licence": "UN Comtrade terms (free tier)"
+  },
+  {
+   "id": "entsoe_transparency",
+   "name": "ENTSO-E Transparency Platform",
+   "publisher_type": "gov_open_data",
+   "url": "https://transparency.entsoe.eu/",
+   "endpoint": null,
+   "classes": [
+    "energy_power"
+   ],
+   "region": "EU",
+   "frequency": "hourly",
+   "history_start": 2015,
+   "latency_days": 0,
+   "auth": "free_key",
+   "auth_env": "ENTSOE_API_TOKEN",
+   "languages": [
+    "en",
+    "de",
+    "fr"
+   ],
+   "instruments": [
+    "XNGUSD",
+    "GER40"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "ENTSO-E transparency terms"
+  },
+  {
+   "id": "elexon_bmrs",
+   "name": "Elexon Insights Solution (GB balancing mechanism) API",
+   "publisher_type": "gov_open_data",
+   "url": "https://bmrs.elexon.co.uk/api-documentation",
+   "endpoint": null,
+   "classes": [
+    "energy_power"
+   ],
+   "region": "GB",
+   "frequency": "intraday",
+   "history_start": 2016,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XNGUSD",
+    "GBPUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "Elexon open data licence"
+  },
+  {
+   "id": "jepx_spot",
+   "name": "JEPX spot market prices",
+   "publisher_type": "exchange",
+   "url": "https://www.jepx.jp/electricpower/market-data/spot/",
+   "endpoint": null,
+   "classes": [
+    "energy_power"
+   ],
+   "region": "JP",
+   "frequency": "daily",
+   "history_start": 2005,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ja"
+   ],
+   "instruments": [
+    "USDJPY",
+    "XNGUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "JEPX public data"
+  },
+  {
+   "id": "eia_930",
+   "name": "EIA-930 hourly electric grid monitor",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.eia.gov/electricity/gridmonitor/",
+   "endpoint": null,
+   "classes": [
+    "energy_power"
+   ],
+   "region": "US",
+   "frequency": "hourly",
+   "history_start": 2015,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XNGUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "tsa_throughput",
+   "name": "TSA checkpoint travel numbers",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.tsa.gov/travel/passenger-volumes",
+   "endpoint": null,
+   "classes": [
+    "foot_traffic"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2019,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "XTIUSD"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "mta_ridership",
+   "name": "MTA daily ridership (data.ny.gov)",
+   "publisher_type": "gov_open_data",
+   "url": "https://data.ny.gov/Transportation/MTA-Daily-Ridership-Data-Beginning-2020/vxuj-8kew",
+   "endpoint": null,
+   "classes": [
+    "foot_traffic"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2020,
+   "latency_days": 2,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "NY open data terms"
+  },
+  {
+   "id": "jnto_arrivals",
+   "name": "JNTO visitor arrivals",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.jnto.go.jp/statistics/data/visitors-statistics/",
+   "endpoint": null,
+   "classes": [
+    "foot_traffic"
+   ],
+   "region": "JP",
+   "frequency": "monthly",
+   "history_start": 2003,
+   "latency_days": 20,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ja",
+    "en"
+   ],
+   "instruments": [
+    "JPN225",
+    "USDJPY"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "JNTO public statistics"
+  },
+  {
+   "id": "google_mobility_archive",
+   "name": "Google COVID-19 Community Mobility Reports (archive, ended 2022)",
+   "publisher_type": "public_web",
+   "url": "https://www.google.com/covid19/mobility/",
+   "endpoint": null,
+   "classes": [
+    "foot_traffic"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2020,
+   "latency_days": 9999,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "retail_heavy",
+   "licence": "Google terms; historical archive only"
+  },
+  {
+   "id": "fhfa_hpi",
+   "name": "FHFA House Price Index",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.fhfa.gov/data/hpi",
+   "endpoint": null,
+   "classes": [
+    "real_estate"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 1991,
+   "latency_days": 55,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "UST10Y"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "US federal public record"
+  },
+  {
+   "id": "zillow_research",
+   "name": "Zillow Research public CSVs (ZHVI, ZORI)",
+   "publisher_type": "public_web",
+   "url": "https://www.zillow.com/research/data/",
+   "endpoint": null,
+   "classes": [
+    "real_estate"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "history_start": 2000,
+   "latency_days": 15,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500",
+    "UST10Y"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "Zillow research data terms (free, attribution)"
+  },
+  {
+   "id": "redfin_data_center",
+   "name": "Redfin Data Center market tracker",
+   "publisher_type": "public_web",
+   "url": "https://www.redfin.com/news/data-center/",
+   "endpoint": null,
+   "classes": [
+    "real_estate"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 2012,
+   "latency_days": 7,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "US500"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "Redfin data center terms (free, attribution)"
+  },
+  {
+   "id": "uk_land_registry_ppd",
+   "name": "HM Land Registry price paid data",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads",
+   "endpoint": null,
+   "classes": [
+    "real_estate"
+   ],
+   "region": "GB",
+   "frequency": "monthly",
+   "history_start": 1995,
+   "latency_days": 30,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "GBPUSD",
+    "UK100"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "OGL v3"
+  },
+  {
+   "id": "bpp_mit",
+   "name": "Billion Prices Project archive (MIT/Harvard Dataverse)",
+   "publisher_type": "academic_replication",
+   "url": "https://www.hbs.edu/faculty/Pages/item.aspx?num=50287",
+   "endpoint": null,
+   "classes": [
+    "pricing"
+   ],
+   "region": "global",
+   "frequency": "daily",
+   "history_start": 2008,
+   "latency_days": 9999,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "retail_heavy",
+   "licence": "academic research data (historical)"
+  },
+  {
+   "id": "ons_web_prices",
+   "name": "ONS web-scraped / scanner price research series",
+   "publisher_type": "statistics_office",
+   "url": "https://www.ons.gov.uk/economy/inflationandpriceindices",
+   "endpoint": null,
+   "classes": [
+    "pricing"
+   ],
+   "region": "GB",
+   "frequency": "monthly",
+   "history_start": 2014,
+   "latency_days": 15,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "GBPUSD",
+    "UKGILT"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "OGL v3"
+  },
+  {
+   "id": "cleveland_fed_nowcast",
+   "name": "Cleveland Fed inflation nowcasting",
+   "publisher_type": "central_bank",
+   "url": "https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting",
+   "endpoint": null,
+   "classes": [
+    "pricing",
+    "consensus_estimates"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2014,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "UST10Y",
+    "USDX",
+    "XAUUSD"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "Cleveland Fed public data"
+  },
+  {
+   "id": "atlanta_gdpnow",
+   "name": "Atlanta Fed GDPNow",
+   "publisher_type": "central_bank",
+   "url": "https://www.atlantafed.org/cqer/research/gdpnow",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "consensus_estimates"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 2011,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "US500",
+    "UST10Y"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "Atlanta Fed public data"
+  },
+  {
+   "id": "nyfed_nowcast",
+   "name": "NY Fed Staff Nowcast",
+   "publisher_type": "central_bank",
+   "url": "https://www.newyorkfed.org/research/policy/nowcast",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "consensus_estimates"
+   ],
+   "region": "US",
+   "frequency": "weekly",
+   "history_start": 2016,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "USDX",
+    "US500"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "NY Fed public data"
+  },
+  {
+   "id": "dukascopy_ticks",
+   "name": "Dukascopy historical tick datafeed",
+   "publisher_type": "public_web",
+   "url": "https://www.dukascopy.com/swiss/english/marketwatch/historical/",
+   "endpoint": null,
+   "classes": [
+    "ticks"
+   ],
+   "region": "global",
+   "frequency": "intraday",
+   "history_start": 2003,
+   "latency_days": 1,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "XAUUSD"
+   ],
+   "participant_structure": "broker_specific",
+   "licence": "Dukascopy public historical data (already backfilled by dukascopy_backfill)"
+  },
+  {
+   "id": "dukascopy_swfx_sentiment",
+   "name": "Dukascopy SWFX sentiment index",
+   "publisher_type": "public_web",
+   "url": "https://www.dukascopy.com/swiss/english/marketwatch/sentiment/",
+   "endpoint": null,
+   "classes": [
+    "sentiment",
+    "fx_order_flow",
+    "positioning"
+   ],
+   "region": "global",
+   "frequency": "intraday",
+   "history_start": 2010,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "XAUUSD"
+   ],
+   "participant_structure": "broker_specific",
+   "licence": "public page; robots respected"
+  },
+  {
+   "id": "broker_mt5_ticks",
+   "name": "The desk's own MT5 broker ticks (Fusion)",
+   "publisher_type": "exchange",
+   "url": "internal:mt5_terminal",
+   "endpoint": null,
+   "classes": [
+    "ticks",
+    "fx_order_flow"
+   ],
+   "region": "global",
+   "frequency": "intraday",
+   "history_start": 2024,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "EURUSD",
+    "USDJPY",
+    "XAUUSD",
+    "US500"
+   ],
+   "participant_structure": "broker_specific",
+   "licence": "first-party"
+  },
+  {
+   "id": "myfxbook_outlook",
+   "name": "Myfxbook community outlook (retail positioning)",
+   "publisher_type": "public_web",
+   "url": "https://www.myfxbook.com/community/outlook",
+   "endpoint": null,
+   "classes": [
+    "positioning",
+    "sentiment"
+   ],
+   "region": "global",
+   "frequency": "intraday",
+   "history_start": 2010,
+   "latency_days": 0,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "XAUUSD",
+    "AUDUSD"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "public page; robots respected; no login"
+  },
+  {
+   "id": "kaggle_datasets",
+   "name": "Kaggle datasets (public, CC-licensed)",
+   "publisher_type": "kaggle",
+   "url": "https://www.kaggle.com/datasets",
+   "endpoint": null,
+   "classes": [
+    "web_scraped_corporate",
+    "app_data",
+    "jobs",
+    "real_estate",
+    "pricing",
+    "foot_traffic"
+   ],
+   "region": "global",
+   "frequency": "irregular",
+   "history_start": 2010,
+   "latency_days": 9999,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "mixed",
+   "licence": "per-dataset licence; only CC/ODbL datasets used"
+  },
+  {
+   "id": "zenodo_records",
+   "name": "Zenodo research data records",
+   "publisher_type": "zenodo",
+   "url": "https://zenodo.org/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "news_nlp",
+    "shipping_ais",
+    "esg",
+    "satellite"
+   ],
+   "region": "global",
+   "frequency": "irregular",
+   "history_start": 2013,
+   "latency_days": 9999,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "mixed",
+   "licence": "per-record licence (mostly CC BY)"
+  },
+  {
+   "id": "openicpsr_replications",
+   "name": "openICPSR replication packages (AEA)",
+   "publisher_type": "academic_replication",
+   "url": "https://www.openicpsr.org/openicpsr/aea",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "card_consumer",
+    "positioning",
+    "flows"
+   ],
+   "region": "global",
+   "frequency": "irregular",
+   "history_start": 2019,
+   "latency_days": 9999,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "mixed",
+   "licence": "per-package licence"
+  },
+  {
+   "id": "harvard_dataverse",
+   "name": "Harvard Dataverse",
+   "publisher_type": "academic_replication",
+   "url": "https://dataverse.harvard.edu/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "news_nlp",
+    "pricing"
+   ],
+   "region": "global",
+   "frequency": "irregular",
+   "history_start": 2006,
+   "latency_days": 9999,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "mixed",
+   "licence": "per-dataset licence"
+  },
+  {
+   "id": "github_awesome_public_datasets",
+   "name": "awesome-public-datasets (GitHub)",
+   "publisher_type": "github",
+   "url": "https://github.com/awesomedata/awesome-public-datasets",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "web_traffic",
+    "shipping_ais",
+    "weather",
+    "patents"
+   ],
+   "region": "global",
+   "frequency": "irregular",
+   "history_start": 2014,
+   "latency_days": 9999,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "mixed",
+   "licence": "index of public datasets"
+  },
+  {
+   "id": "data_gov_catalog",
+   "name": "data.gov CKAN catalog API",
+   "publisher_type": "gov_open_data",
+   "url": "https://catalog.data.gov/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "foot_traffic",
+    "energy_power",
+    "esg"
+   ],
+   "region": "US",
+   "frequency": "irregular",
+   "history_start": 2009,
+   "latency_days": 9999,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": null,
+   "participant_structure": "policy_driven",
+   "licence": "US open data"
+  },
+  {
+   "id": "data_europa_eu",
+   "name": "data.europa.eu CKAN/SPARQL catalogue",
+   "publisher_type": "gov_open_data",
+   "url": "https://data.europa.eu/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "energy_power",
+    "esg",
+    "foot_traffic"
+   ],
+   "region": "EU",
+   "frequency": "irregular",
+   "history_start": 2015,
+   "latency_days": 9999,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en",
+    "de",
+    "fr",
+    "es",
+    "pt"
+   ],
+   "instruments": null,
+   "participant_structure": "policy_driven",
+   "licence": "EU open data"
+  },
+  {
+   "id": "data_go_kr",
+   "name": "Korea public data portal",
+   "publisher_type": "gov_open_data",
+   "url": "https://www.data.go.kr/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "foot_traffic",
+    "card_consumer",
+    "trade_customs"
+   ],
+   "region": "KR",
+   "frequency": "irregular",
+   "history_start": 2013,
+   "latency_days": 9999,
+   "auth": "free_key",
+   "auth_env": "DATA_GO_KR_KEY",
+   "languages": [
+    "ko"
+   ],
+   "instruments": null,
+   "participant_structure": "policy_driven",
+   "licence": "KOGL"
+  },
+  {
+   "id": "data_gov_in",
+   "name": "India Open Government Data platform",
+   "publisher_type": "gov_open_data",
+   "url": "https://data.gov.in/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "commodities_physical",
+    "energy_power"
+   ],
+   "region": "IN",
+   "frequency": "irregular",
+   "history_start": 2012,
+   "latency_days": 9999,
+   "auth": "free_key",
+   "auth_env": "DATA_GOV_IN_KEY",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "instruments": null,
+   "participant_structure": "policy_driven",
+   "licence": "GODL-India"
+  },
+  {
+   "id": "dados_gov_br",
+   "name": "dados.gov.br open data portal",
+   "publisher_type": "gov_open_data",
+   "url": "https://dados.gov.br/",
+   "endpoint": null,
+   "classes": [
+    "macro",
+    "commodities_physical",
+    "trade_customs"
+   ],
+   "region": "BR",
+   "frequency": "irregular",
+   "history_start": 2012,
+   "latency_days": 9999,
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "pt"
+   ],
+   "instruments": null,
+   "participant_structure": "policy_driven",
+   "licence": "Brazilian open data"
+  }
+ ]
+}

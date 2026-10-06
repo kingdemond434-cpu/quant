@@ -1,0 +1,207 @@
+{
+ "class": "macro",
+ "label": "Macro and economic statistics (PIT, vintages, nowcasts)",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:bloomberg:bi_economic_surprise_indices",
+   "vendor": "Bloomberg",
+   "dataset": "BI economic surprise indices",
+   "class": "macro",
+   "region": "global",
+   "measures": "Economic data surprises vs consensus",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:bloomberg:point_in_time_macro_eco_allx",
+   "vendor": "Bloomberg",
+   "dataset": "Point-in-time macro (ECO/ALLX)",
+   "class": "macro",
+   "region": "global",
+   "measures": "Point-in-time macro releases and revisions",
+   "frequency": "event",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:ceic_data:ceic_global_china_database",
+   "vendor": "CEIC Data",
+   "dataset": "CEIC Global/China database",
+   "class": "macro",
+   "region": "global",
+   "measures": "Macro time series with emerging-market depth",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:citigroup:citi_economic_surprise_index",
+   "vendor": "Citigroup",
+   "dataset": "Citi Economic Surprise Index",
+   "class": "macro",
+   "region": "global",
+   "measures": "Economic data surprise index",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:cmie:economic_outlook",
+   "vendor": "CMIE",
+   "dataset": "Economic Outlook",
+   "class": "macro",
+   "region": "IN",
+   "measures": "India macro time series",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:conference_board:leading_economic_index",
+   "vendor": "Conference Board",
+   "dataset": "Leading Economic Index",
+   "class": "macro",
+   "region": "global",
+   "measures": "Composite leading indicators",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:haver_analytics:haver_economic_database",
+   "vendor": "Haver Analytics",
+   "dataset": "Haver economic database",
+   "class": "macro",
+   "region": "global",
+   "measures": "Global macro time series database",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:macrobond:macrobond_database",
+   "vendor": "Macrobond",
+   "dataset": "Macrobond database",
+   "class": "macro",
+   "region": "global",
+   "measures": "Global macro time series",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:now_casting_economics:nowcasts",
+   "vendor": "Now-Casting Economics",
+   "dataset": "Nowcasts",
+   "class": "macro",
+   "region": "global",
+   "measures": "GDP and inflation nowcasts",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:wind_information:wind_economic_database_edb",
+   "vendor": "Wind Information",
+   "dataset": "Wind Economic Database (EDB)",
+   "class": "macro",
+   "region": "CN",
+   "measures": "China macro and industry time series",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  }
+ ]
+}

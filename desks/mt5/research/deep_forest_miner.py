@@ -102,6 +102,11 @@ from libs.research import mechanism_claims as mc  # noqa: E402
 SOURCE = "deep_forest"
 KIND = "story_mechanism"
 SOURCES = _DESK / "data" / "deep_forest_sources.json"
+#: Grounds OTHER organs queue for the forest to mine, one JSON file per producer
+#: (`{"grounds": [...]}`), merged after the registered grounds. First, so far, is
+#: research/paid_substitute_engine.py (free substitutes for paid datasets); its grounds carry
+#: their own `cluster`, so the round-robin gives the whole file one fair turn.
+GROUND_QUEUE = _DESK / "data" / "deep_forest_queue"
 CLAIMS = _DESK / "data" / "deep_forest_claims.jsonl"
 DATASETS = _DESK / "data" / "deep_forest_datasets.jsonl"
 SEEN = _DESK / "data" / "deep_forest_seen.json"
@@ -592,9 +597,35 @@ def data_endpoints(page: str, base: str) -> list[str]:
 # ------------------------------------------------------------------------------- ledgers
 def _load_sources() -> dict[str, Any]:
     try:
-        return json.loads(SOURCES.read_text("utf-8"))
+        cfg = json.loads(SOURCES.read_text("utf-8"))
     except (OSError, ValueError):
-        return {"grounds": []}
+        cfg = {"grounds": []}
+    queued = queued_grounds({str(g.get("name")) for g in cfg.get("grounds") or []
+                             if isinstance(g, dict)})
+    if queued:
+        cfg = {**cfg, "grounds": [*(cfg.get("grounds") or []), *queued]}
+    return cfg
+
+
+def queued_grounds(registered: set[str] | None = None,
+                   queue_dir: Path | None = None) -> list[dict[str, Any]]:
+    """Grounds other organs queued in `data/deep_forest_queue/*.json`. A registered ground of
+    the same name wins (the grounds file is the registry); a malformed file is skipped."""
+    seen = set(registered or ())
+    out: list[dict[str, Any]] = []
+    for f in sorted((queue_dir or GROUND_QUEUE).glob("*.json")):
+        try:
+            doc = json.loads(f.read_text("utf-8"))
+        except (OSError, ValueError):
+            continue
+        for g in (doc.get("grounds") if isinstance(doc, dict) else None) or []:
+            if not isinstance(g, dict) or not g.get("name") or not g.get("route"):
+                continue
+            if str(g["name"]) in seen:
+                continue
+            seen.add(str(g["name"]))
+            out.append(g)
+    return out
 
 
 def _load_seen() -> dict[str, Any]:

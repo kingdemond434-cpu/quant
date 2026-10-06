@@ -743,6 +743,11 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
         # top-level `parent` of an arbitrary crawler row is NOT lineage and is not read here.
         **{k: row[k] for k in ("lineage", "operator", "mutated_from", "parent_ids")
            if row.get(k)},
+        # AND THE DONOR'S STANDING (2026-09-30). A moat-exchange donation carries the registry
+        # row's campaign id and source id, and for a paid-substitute cell the validation lane:
+        # a series whose correlation to its paid set is UNMEASURED is `research_unverified`, and
+        # it must reach certification and sizing marked as such, never as an anonymous cell.
+        **{k: row[k] for k in ("campaign_id", "source_id", "validation_lane") if row.get(k)},
     }
 
 

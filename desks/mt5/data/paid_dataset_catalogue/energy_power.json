@@ -1,0 +1,87 @@
+{
+ "class": "energy_power",
+ "label": "Power grid load, generation and electricity prices",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:icis:energy_market_data",
+   "vendor": "ICIS",
+   "dataset": "Energy market data",
+   "class": "energy_power",
+   "region": "EU",
+   "measures": "Gas, power and LNG assessments",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:kpler:refinery_and_power_plant_outage_data",
+   "vendor": "Kpler",
+   "dataset": "Refinery and power plant outage data",
+   "class": "energy_power",
+   "region": "global",
+   "measures": "Plant outage and throughput",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:montel:montel_energy_data",
+   "vendor": "Montel",
+   "dataset": "Montel energy data",
+   "class": "energy_power",
+   "region": "EU",
+   "measures": "European power prices and fundamentals",
+   "frequency": "intraday",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:refinitiv_lseg:power_and_gas_fundamentals",
+   "vendor": "Refinitiv (LSEG)",
+   "dataset": "Power and gas fundamentals",
+   "class": "energy_power",
+   "region": "EU",
+   "measures": "European power and gas fundamentals",
+   "frequency": "hourly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  }
+ ]
+}

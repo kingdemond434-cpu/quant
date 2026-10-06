@@ -1,0 +1,70 @@
+{
+ "class": "real_estate",
+ "label": "Real-estate prices and transactions",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:corelogic:property_data",
+   "vendor": "CoreLogic",
+   "dataset": "Property data",
+   "class": "real_estate",
+   "region": "US",
+   "measures": "Home price index and transactions",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "MACHINE_SERIES",
+    "kind": "vendor_public_release",
+    "url": "https://fred.stlouisfed.org/series/CSUSHPINSA",
+    "endpoints": [
+     "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CSUSHPINSA"
+    ],
+    "series": "CSUSHPINSA",
+    "source": "web_search:2026-09-30",
+    "note": "S&P Cotality (formerly CoreLogic) Case-Shiller national index -- the vendor's own public index, not its property-level data"
+   }
+  },
+  {
+   "id": "paid:rightmove:house_price_index",
+   "vendor": "Rightmove",
+   "dataset": "House price index",
+   "class": "real_estate",
+   "region": "GB",
+   "measures": "Asking price index",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "HEADLINE_ONLY",
+    "kind": "vendor_press_release",
+    "url": "https://www.rightmove.co.uk/news/house-price-index/",
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "monthly HPI release with PDF tables"
+   }
+  },
+  {
+   "id": "paid:zonda:housing_market_data",
+   "vendor": "Zonda",
+   "dataset": "Housing market data",
+   "class": "real_estate",
+   "region": "US",
+   "measures": "New home market data",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  }
+ ]
+}

@@ -920,9 +920,22 @@ def frontier_seeds() -> tuple[str, ...]:
         return ()
 
 
+def paid_substitute_seeds() -> tuple[str, ...]:
+    """Landing pages of the free substitutes research/paid_substitute_engine.py matched to paid
+    datasets (data/paid_substitutes/crawl_seeds.json, rewritten hourly). The crawler walks out
+    from them to the data files they link. Absent or unreadable: no seeds, and the crawl runs."""
+    try:
+        doc = json.loads((BASE / "data" / "paid_substitutes" / "crawl_seeds.json")
+                         .read_text("utf-8"))
+    except (OSError, ValueError):
+        return ()
+    urls = doc.get("urls") if isinstance(doc, dict) else None
+    return tuple(str(u) for u in (urls or []) if str(u).startswith(("http://", "https://")))
+
+
 def seed(sources: dict[str, wf.Source]) -> int:
     added = 0
-    for url in (*SEEDS, *frontier_seeds()):
+    for url in (*SEEDS, *frontier_seeds(), *paid_substitute_seeds()):
         if wf.add(sources, url, via="seed"):
             added += 1
     return added
