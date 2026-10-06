@@ -40,6 +40,8 @@ sources:
     coverage, and when GDELT's source list or translation pipeline changes, which moves tone for no reason
     in the markets
   crowding_prior: medium
+  fetched_by:
+  - news_event_stream
   substitutes_for: RavenPack-style news analytics (event counts, tone, themes per entity)
   fetcher: owned
   owner: asia_gap_thread
@@ -78,6 +80,8 @@ sources:
   failure_mode_hypothesis: fails when translation quality or GDELT's foreign source list changes, and
     when English and local coverage are the same syndicated wire, which makes the two panels collinear
   crowding_prior: low
+  fetched_by:
+  - news_event_stream
   substitutes_for: RavenPack-style news analytics (event counts, tone, themes per entity)
   fetcher: owned
   owner: asia_gap_thread

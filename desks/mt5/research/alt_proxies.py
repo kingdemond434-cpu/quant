@@ -2564,6 +2564,13 @@ BY_ID = {s.id: s for s in SOURCES}
 #: BLOCKED+SUBSTITUTE:<ids> and is counted as substituted, not lost. It is still NEVER fetched.
 #: A blocked source absent from this table has no verified lawful substitute and stays
 #: BLOCKED_ON_TERMS (see NO_SUBSTITUTE for why).
+#: Other organs that READ a row's vaulted bytes (the mining registry credits their donations to
+#: the row only when it is named here). news_event_stream turns each GDELT export blob into
+#: story groups (2026-10-06).
+FETCHED_BY: dict[str, tuple[str, ...]] = {
+    "gdelt_events_country": ("news_event_stream",),
+    "gdelt_translingual_country": ("news_event_stream",),
+}
 SUBSTITUTED_BY: dict[str, tuple[str, ...]] = {
     "jp_jnto_arrivals": ("jp_estat_immigration",),
     "cn_holiday_spend": ("cn_nbs_retail", "hk_immd_passenger"),
@@ -3898,6 +3905,8 @@ def roster_rows(sources: Iterable[Source] = SOURCES,
                      "status": status_of(s, environ), "terms": s.terms, **_meta(s)})
         if s.id in SUBSTITUTED_BY:
             rows[-1]["substituted_by"] = list(SUBSTITUTED_BY[s.id])
+        if s.id in FETCHED_BY:
+            rows[-1]["fetched_by"] = list(FETCHED_BY[s.id])
         if s.substitutes_for:
             rows[-1].update({"substitutes_for": s.substitutes_for, "fetcher": "owned",
                              "owner": "asia_gap_thread"})
