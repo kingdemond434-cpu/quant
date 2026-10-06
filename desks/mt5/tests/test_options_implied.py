@@ -132,7 +132,12 @@ def test_features_have_the_meaning_their_names_claim() -> None:
     assert f["iv_pct_1y"].iloc[:P.MIN_YEAR - 1].isna().all()     # too short to rank: unmeasured
     assert f["iv_pct_1y"].iloc[-1] == pytest.approx(1.0)          # a new high ranks at the top
     assert f["term_inverted"].iloc[-1] == 1.0
-    assert f["term_slope_short"].iloc[-1] < 0                     # 9D above 30D: backwardation
+    assert f["slope_9d_30d"].iloc[-1] < 0                         # 9D above 30D: backwardation
+    assert f["slope_30d_3m"].iloc[-1] < 0                         # 30D above 3M: backwardation
+    assert f["slope_3m_6m"].isna().all()                          # no 6M tenor: UNMEASURED
+    fred_only = P.build_features(iv, term={k: term[k] for k in ("^VIX", "^VIX3M")}, rv=rv)
+    assert fred_only["slope_9d_30d"].isna().all()                 # never filled from 30D->3M
+    assert fred_only["slope_30d_3m"].notna().all()
     assert f["vrp"].iloc[-1] == pytest.approx(f["iv_level"].iloc[-1] - 8.0)
     assert f["iv_chg_5d"].iloc[-1] == pytest.approx(0.25)
 
@@ -153,16 +158,32 @@ def test_reference_history_fresh_cache_fetch_stale_and_unmeasured(tmp_path) -> N
 
 
 def test_the_desks_own_vintage_overrides_the_restated_reference() -> None:
+    ok = {"source_admitted": True}
     rows = [{"observed_at": "2026-10-02T21:40:00+00:00", "value_date": "2026-10-02",
-             "vol_ticker": "^VIX", "implied_vol": 16.4, "term": {"^VIX9D": 15.1}},
+             "vol_ticker": "^VIX", "implied_vol": 16.4, "term": {"^VIX9D": 15.1}, **ok},
             {"observed_at": "2026-10-02T22:40:00+00:00", "value_date": "2026-10-02",
-             "vol_ticker": "^VIX", "implied_vol": 16.5, "term": {}},
+             "vol_ticker": "^VIX", "implied_vol": 16.5, "term": {}, **ok},
             {"observed_at": "2026-10-03T00:40:00+00:00", "value_date": "",
-             "vol_ticker": "^GVZ", "implied_vol": None}]
+             "vol_ticker": "^GVZ", "implied_vol": None, **ok},
+            # A row from before the route stamp (an unadmitted source) is never a vintage.
+            {"observed_at": "2026-10-03T01:40:00+00:00", "value_date": "2026-10-03",
+             "vol_ticker": "^OVX", "implied_vol": 40.0, "term": {}}]
     v = P.desk_vintages(rows)
     assert v["^VIX"] == {"2026-10-02": 16.5}            # the newest read of a date wins
     assert v["^VIX9D"] == {"2026-10-02": 15.1}
     assert "^GVZ" not in v                               # an absence is not a value
+    assert "^OVX" not in v                               # no admitted route, no vintage
+
+
+def test_a_held_source_is_never_asked_and_an_unadmitted_cache_is_never_served(tmp_path) -> None:
+    asked: list[str] = []
+    held = va.FredVolSource(fetch=lambda u, t: asked.append(u) or "")
+    got, prov = P.reference_history("^GVZ", held, cache_dir=tmp_path, now=NOW)
+    assert got == {} and prov["status"] == "HELD_PENDING_TERMS" and asked == []
+    (tmp_path / "GVZ.json").write_text(json.dumps(
+        {"ticker": "^GVZ", "fetched_at": NOW.isoformat(), "series": {"2026-10-02": 19.0}}))
+    got2, prov2 = P.reference_history("^GVZ", None, cache_dir=tmp_path, now=NOW)
+    assert got2 == {} and prov2["status"] == "UNMEASURED"
 
 
 # ------------------------------------------------------------------ the families ----
@@ -329,7 +350,7 @@ def test_one_pass_writes_series_feeds_the_forge_and_donates_each_cell_once(
     for sym in REGISTRY:
         assert (tmp_path / "lake" / "series" / f"oi_{sym}.parquet").exists()
     us500 = pd.read_parquet(tmp_path / "lake" / "series" / "oi_US500.parquet")
-    assert us500["term_slope_short"].notna().sum() > 100       # the VIX curve reached US500
+    assert us500["slope_9d_30d"].notna().sum() > 100           # the VIX curve reached US500
     assert {c["family"] for c in sent[0][1]} == {"implied_vol_state", "implied_vol_conditioned"}
     assert sent[0][0] == "options_implied" and sent[0][2] == len(sent[0][1])
     assert doc["grid"]["by_symbol"]["US500"] > doc["grid"]["by_symbol"]["EURUSD"]
@@ -377,6 +398,21 @@ def test_the_forge_feed_is_read_by_the_world_model(monkeypatch, tmp_path) -> Non
     # The world model's own pad lands the forge on the families' instant, never earlier.
     assert pd.Timestamp(first.available_time) == pd.Timestamp(P.knowable_at(
         first.period_time)[1])
+
+
+def test_with_fred_held_the_pass_is_unmeasured_and_mints_nothing(monkeypatch, tmp_path) -> None:
+    sent = _point(monkeypatch, tmp_path)
+    asked: list[str] = []
+    uni = tmp_path / "universe"
+    _bars(uni, "XAUUSD")
+    doc = P.run(source=va.FredVolSource(fetch=lambda u, t: asked.append(u) or ""),
+                registry=REGISTRY, universe_dir=uni, archive=tmp_path / "no_archive.jsonl",
+                now=NOW)
+    assert asked == [], "a held source sends no request"
+    assert doc["status"] == "UNMEASURED" and doc["grid"]["total"] == 0 and sent == []
+    assert {r["status"] for r in doc["symbols"].values()} == {"UNMEASURED"}
+    assert {p["status"] for p in doc["reference"].values()} == {"HELD_PENDING_TERMS"}
+    assert doc["sources"]["admitted"] is False
 
 
 # ------------------------------------------------------------------ the wiring ----

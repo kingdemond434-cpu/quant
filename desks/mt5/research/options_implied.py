@@ -11,8 +11,9 @@ by venue. This organ is the missing consumer. Per mapped MT5 symbol it publishes
     iv_pct_1y         its percentile within its own trailing 252 observations (min 126)
     iv_chg_1d/5d      change over 1 and 5 observations, in vol points
     iv_chg_5d_z       the 5-observation change z-scored on its own trailing year
-    term_slope_short  VIX 9D->30D slope, vol points per log-tenor   (US500 only. FRED carries
-    term_slope_long   VIX 3M->6M slope                               no 9D/6M: see SOURCES)
+    slope_9d_30d      VIX 9D->30D slope, vol points per log-tenor   (US500 only; each slope is a
+    slope_30d_3m      VIX 30D->3M slope                              NAMED pair -- a missing
+    slope_3m_6m       VIX 3M->6M slope                               tenor leaves it UNMEASURED)
     term_inverted     1 when VIX 30D > VIX 3M on the same as-of date, else 0
     rv_21d            THIS BROKER's 21-day close-to-close realised vol from its own H1 bars
     vrp               iv_level - rv_21d: the variance risk premium this account faces
@@ -47,11 +48,13 @@ judged on that reference history; each row's `vintage` column says which one it 
 report keeps vol_archive's own `backtestable` line -- false until MIN_VINTAGES desk observations
 exist. NOTHING HERE PROMOTES, SIZES OR CONDITIONS CAPITAL. The gauntlet decides.
 
-SOURCES, UNDER THE TERMS FLOOR OF 2026-10-06 (LAWS §5e). History is requested from FRED only
-(`vol_archive.FredVolSource`). Yahoo is fail-closed and never requested; CBOE's own history
-files are held until their terms page is read. FRED carries no VIX9D, so `term_slope_short` is
-UNMEASURED on live data and `term_inverted` (30D vs 3M) stands. Every series row, the reference
-cache, the forge feed and the report carry `terms_note` (CBOE copyright: internal research only).
+SOURCES: HELD AS OF 2026-10-06. History comes only through `vol_archive.FredVolSource`, which
+sends no request while `vol_archive.TERMS_EVIDENCE` holds FRED (and CBOE, and refuses Yahoo):
+the terms read that day contain no clause clearly permitting this use. A source that is not
+admitted is never asked; a reference cache is used only if it was written by an admitted source;
+a desk vintage counts only if its row was served by an admitted route. So until a permitting
+clause is quoted there, every symbol is UNMEASURED and nothing is minted. Every series row, the
+reference cache, the forge feed and the report carry `terms_note`.
 
     python desks/mt5/research/options_implied.py --once [--offline] [--dry-run]
 """
@@ -104,7 +107,7 @@ REFERENCE_MAX_AGE_H = 6.0
 FORGE_POINTS = 1040
 #: The features the forge is fed. The forge mints z, rank, diff and interactions itself, so the
 #: derived columns above would only be the forge's own transforms computed twice.
-FORGE_FEATURES: tuple[str, ...] = ("iv_level", "vrp", "term_slope_short")
+FORGE_FEATURES: tuple[str, ...] = ("iv_level", "vrp", "slope_9d_30d", "slope_30d_3m")
 
 #: (label, feature, op, threshold) -- the implied STATES a cell conditions on. Fixed and declared,
 #: so the grid is the same every hour and the multiplicity charge is the grid's real width.
@@ -210,6 +213,10 @@ def reference_history(ticker: str, source: va.VolSource | None, *, cache_dir: Pa
     now = now or datetime.now(tz=UTC)
     path = (cache_dir or REFERENCE_DIR) / f"{_safe(ticker)}.json"
     cached = _read(path, {})
+    # A CACHE COUNTS ONLY IF AN ADMITTED SOURCE WROTE IT. A file fetched under a route the terms
+    # now hold (or written before the terms were read) is never served as reference history.
+    if cached.get("admitted") is not True:
+        cached = {}
     series = {str(k): float(v) for k, v in (cached.get("series") or {}).items()
               if isinstance(v, (int, float)) and math.isfinite(float(v))}
     fetched_at = str(cached.get("fetched_at") or "")
@@ -222,7 +229,8 @@ def reference_history(ticker: str, source: va.VolSource | None, *, cache_dir: Pa
     if series and age_h is not None and age_h <= max_age_h:
         return series, {"status": "CACHE_FRESH", "fetched_at": fetched_at, "n": len(series)}
     got = None
-    if source is not None:
+    admitted = bool(getattr(source, "admitted", False))
+    if source is not None and admitted:
         try:
             got = source.series(ticker)
         except Exception:
@@ -232,7 +240,8 @@ def reference_history(ticker: str, source: va.VolSource | None, *, cache_dir: Pa
                   if v is not None and math.isfinite(float(v))}
         stamp = now.isoformat(timespec="seconds")
         _atomic(path, json.dumps({"ticker": ticker, "fetched_at": stamp, "series": series,
-                                  "terms_note": va.TERMS_NOTE,
+                                  "terms_note": va.TERMS_NOTE, "admitted": True,
+                                  "source": type(source).__name__,
                                   "what": "public CBOE close history -- REFERENCE, restated "
                                           "by the source, never the desk's own vintage"}))
         return series, {"status": "FETCHED", "fetched_at": stamp, "n": len(series),
@@ -240,6 +249,10 @@ def reference_history(ticker: str, source: va.VolSource | None, *, cache_dir: Pa
     if series:
         return series, {"status": "CACHE_STALE", "fetched_at": fetched_at, "n": len(series),
                         "why": "source did not answer this pass; the last fetch is used"}
+    if source is not None and not admitted:
+        return {}, {"status": "HELD_PENDING_TERMS", "n": 0, "requested": False,
+                    "why": (f"{type(source).__name__} is not admitted by vol_archive."
+                            f"TERMS_EVIDENCE; no request sent and no unadmitted cache used")}
     return {}, {"status": "UNMEASURED", "n": 0,
                 "why": ("no cache and the source did not answer (offline, or no egress from this "
                         "host)"),
@@ -255,7 +268,9 @@ def desk_vintages(rows: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
     out: dict[str, dict[str, float]] = {}
     for r in sorted(rows, key=lambda x: str(x.get("observed_at") or "")):
         vdate = str(r.get("value_date") or "")[:10]
-        if not vdate:
+        # ONLY ROWS AN ADMITTED ROUTE SERVED. Rows before the route stamp (2026-10-06) came
+        # through a source now refused by its terms and are not served as vintages.
+        if not vdate or r.get("source_admitted") is not True:
             continue
         iv = r.get("implied_vol")
         if isinstance(iv, (int, float)) and math.isfinite(float(iv)):
@@ -329,19 +344,18 @@ def build_features(iv: dict[str, float], *, term: dict[str, dict[str, float]] | 
     f["iv_chg_1d"] = s.diff(1)
     f["iv_chg_5d"] = s.diff(5)
     f["iv_chg_5d_z"] = trailing_z(f["iv_chg_5d"])
-    slopes_s: list[float] = []
-    slopes_l: list[float] = []
+    slopes: dict[str, list[float]] = {name: [] for name, _a, _b in va.TERM_PAIRS}
     inverted: list[float] = []
     for d in dates:
         curve = {t: vals[d] for t, vals in (term or {}).items() if d in vals}
-        short, long_, _shape = va.term_metrics(curve) if len(curve) >= 2 else (None, None, "")
-        slopes_s.append(float(short) if short is not None else np.nan)
-        slopes_l.append(float(long_) if long_ is not None else np.nan)
+        named, _missing = va.term_slopes(curve)
+        for name, v in named.items():
+            slopes[name].append(float(v) if v is not None else np.nan)
         thirty, three_m = curve.get("^VIX"), curve.get("^VIX3M")
         inverted.append(float(thirty > three_m) if thirty is not None and three_m is not None
                         else np.nan)
-    f["term_slope_short"] = slopes_s
-    f["term_slope_long"] = slopes_l
+    for name, vals in slopes.items():
+        f[name] = vals
     f["term_inverted"] = inverted
     if rv is not None and len(rv):
         f["rv_21d"] = pd.Series(rv).reindex(dates)
@@ -501,8 +515,8 @@ def run(*, source: va.VolSource | None, dry_run: bool = False,
             "rv": ("MEASURED" if rv is not None else
                    f"UNMEASURED: no {sym}_H1.parquet on this host, so vrp is absent"),
             "latest": {k: (None if pd.isna(last[k]) else round(float(last[k]), 4))
-                       for k in ("iv_level", "iv_pct_1y", "iv_chg_5d", "term_slope_short",
-                                 "term_inverted", "rv_21d", "vrp")},
+                       for k in ("iv_level", "iv_pct_1y", "iv_chg_5d", "slope_9d_30d",
+                                 "slope_30d_3m", "term_inverted", "rv_21d", "vrp")},
         }
 
     cells, skipped = build_cells(frames, desk_n=desk_n)

@@ -72,14 +72,14 @@ HTTP 404 and is therefore not in GROUND at all rather than sitting in it as a pe
 Absences are recorded as absences with the reason -- an unavailable series is a fact about the
 world, and a module that quietly drops it teaches its reader the series was never wanted.
 
-THE SOURCE, SINCE THE TERMS FLOOR OF 2026-10-06 (LAWS §5e). Those 2026-09-05 readings came
-through Yahoo's chart API. Yahoo's terms bar automated access without permission, so that route
-is fail-closed: `YahooVolSource` is now a refusal record that sends nothing. The one route
-requested is FRED's republication of the CBOE indices (`FredVolSource`; FRED is admitted).
-CBOE's own history files are HELD, never requested, until their terms page has been read and
-clearly permits this use. FRED carries no VIX9D, VIX6M or SKEW, so the VIX curve here is 30D and
-3M and the skew proxy is UNMEASURED -- recorded per ticker, not papered over. Every row and report
-carries `terms_note`: the values are CBOE's copyright, used internally, never redistributed.
+THE SOURCE, AS OF 2026-10-06: HELD. Those 2026-09-05 readings came through Yahoo's chart API.
+Yahoo's terms bar automated collection without express prior permission, so that route is
+refused: `YahooVolSource` is a refusal record that sends nothing. FRED's republication of the
+CBOE indices (`FredVolSource`) and CBOE's own history files are HELD_PENDING_TERMS: the terms
+read that day (quoted verbatim in `TERMS_EVIDENCE`) contain no clause that clearly permits
+automated download for this desk's research, and a missing permission is a hold. Until a
+permitting clause is quoted there, every cycle records each ground as HELD_PENDING_TERMS with no
+request sent. Every row and report carries `terms_note` and the route that served (or held) it.
 
 NOTHING HERE IS A SIGNAL. Every row is an observation. The gauntlet decides, this measures, and
 the archive has no promotion authority in any lane.
@@ -129,32 +129,79 @@ RV_WINDOW_D = 21
 ANNUALISE = math.sqrt(252.0)
 
 #: AN HONEST USER-AGENT THAT NAMES THE DESK. No browser prefix: this is an automated collector
-#: and says so (terms floor, 2026-10-06).
+#: and says so.
 UA = "quant-mt5-research-desk/1.0 (point-in-time vol collector; internal research only)"
 
 #: Carried on every series, observation and report built from CBOE index values, whoever serves
 #: them: the values are CBOE's copyright.
 TERMS_NOTE = "CBOE copyright: internal research only, never redistributed"
 
-#: The fail-closed record for the route this module used until 2026-10-06. Never requested.
-YAHOO_REFUSAL: dict[str, Any] = {
-    "source": "Yahoo Finance chart API (query1.finance.yahoo.com)",
-    "status": "FAIL_CLOSED_TERMS",
-    "terms_note": ("Yahoo's terms bar automated access (robots, spiders, scrapers) without "
-                   "permission; fail-closed under the LAWS §5e terms floor of 2026-10-06. No "
-                   "request is sent."),
-    "decided": "2026-10-06",
+#: THE TERMS EVIDENCE, READ 2026-10-06, QUOTED VERBATIM. A source is requested only when its
+#: record carries `permits_use: True` on a quoted clause that clearly permits automated download
+#: for internal research. A missing permission is a HOLD, never an inference.
+TERMS_EVIDENCE: dict[str, dict[str, Any]] = {
+    "fred": {
+        "source": "FRED fredgraph CSV (fred.stlouisfed.org), republishing CBOE indices",
+        "status": "HELD_PENDING_TERMS",
+        "permits_use": False,
+        "read": "2026-10-06",
+        "pages": ["https://fred.stlouisfed.org/legal/",
+                  "https://fred.stlouisfed.org/series/VIXCLS",
+                  "https://fred.stlouisfed.org/series/GVZCLS"],
+        "quotes": [
+            "BEFORE USING DATA SERIES OWNED BY THIRD PARTIES FOR ANYTHING OTHER THAN YOUR OWN "
+            "PERSONAL USE, YOU MUST CONTACT THE DATA OWNER TO OBTAIN PERMISSION.",
+            "download or print a copy of any portion of the FRED® Content to which you have "
+            "properly gained access solely for your personal, non-commercial use",
+            "Series with the following copyright labels—Public Domain: Citation requested and "
+            "Copyrighted: Citation required—may be used for internal commercial uses",
+            "Copyright, 2016, Chicago Board Options Exchange, Inc. Reprinted with permission. "
+            "(the label on VIXCLS and GVZCLS)",
+        ],
+        "why_held": ("the CBOE series carry 'Reprinted with permission', not one of the two "
+                     "labels FRED clears for internal use, and FRED's terms send any use beyond "
+                     "personal use to the data owner for permission. No clause read clearly "
+                     "permits automated download for this desk's research."),
+        "unblocks_when": "CBOE (permissions@cboe.com) grants permission in writing, quoted here",
+    },
+    "cboe": {
+        "source": "CBOE daily history CSVs and CBOE website content",
+        "status": "HELD_PENDING_TERMS",
+        "permits_use": False,
+        "read": "2026-10-06",
+        "pages": ["https://www.cboe.com/use-of-content"],
+        "quotes": [
+            "In order to use any Cboe logo, data, photo/image or other content contained in Cboe "
+            "websites (collectively \"Cboe Content\"), you must receive approval in advance from "
+            "Cboe.",
+            "You are not approved to use Cboe Content until a license agreement has been signed "
+            "by both you and Cboe.",
+        ],
+        "why_held": "CBOE requires advance approval and a signed licence; neither exists",
+        "unblocks_when": "a signed CBOE licence agreement covering this use",
+    },
+    "yahoo": {
+        "source": "Yahoo Finance chart API (query1.finance.yahoo.com)",
+        "status": "FAIL_CLOSED_TERMS",
+        "permits_use": False,
+        "read": "2026-10-06",
+        "pages": ["https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html"],
+        "quotes": [
+            "access or collect data, or attempt to access or collect data, from our Services "
+            "using any automated means, devices, programs, algorithms or methodologies, "
+            "including but not limited to robots, spiders, scrapers, data mining tools, or data "
+            "gathering or extraction tools, for any purpose without our express, prior "
+            "permission. (Terms of Service 2.4(i))",
+        ],
+        "why_held": "an explicit bar on automated collection without express prior permission",
+        "unblocks_when": "Yahoo's express, prior permission",
+    },
 }
 
-#: CBOE's own daily history files: HELD, never requested, until their terms page has been read
-#: and clearly permits this use. Not classed PUBLIC_WITH_TERMS; nothing here unfences them.
-CBOE_HELD: dict[str, Any] = {
-    "source": "CBOE daily history CSVs (cdn.cboe.com/api/global/us_indices/daily_prices/)",
-    "status": "HELD_PENDING_TERMS_READ",
-    "terms_note": ("held until CBOE's terms page has been read and clearly permits this use; "
-                   "no request is sent"),
-    "decided": "2026-10-06",
-}
+#: The fail-closed records reports carry. Never requested.
+YAHOO_REFUSAL: dict[str, Any] = TERMS_EVIDENCE["yahoo"]
+CBOE_HELD: dict[str, Any] = TERMS_EVIDENCE["cboe"]
+FRED_HELD: dict[str, Any] = TERMS_EVIDENCE["fred"]
 
 FRED_CSV = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
 #: Ticker -> FRED series (FRED republishes these CBOE indices). VIX9D, VIX6M and SKEW have none.
@@ -211,35 +258,40 @@ class VolSource(Protocol):
 
 
 class FredVolSource:
-    """FRED's republication of the CBOE volatility indices. The ONE route this module requests.
+    """FRED's republication of the CBOE volatility indices -- HELD, so it requests nothing.
 
-    TERMS FLOOR (LAWS §5e clarification, 2026-10-06). FRED is an admitted source. CBOE's own
-    `<INDEX>_History.csv` files are HELD, not fetched, until their terms page has been read and
-    clearly permits this use: `CBOE_HELD` records that, and no request is sent to them. Yahoo's
-    terms bar automated access without permission, so the Yahoo chart route this class replaced
-    is fail-closed and survives only as `YahooVolSource`, a refusal record that sends nothing.
-    The index values remain CBOE's copyright whoever serves them, so `TERMS_NOTE` rides on every
-    series, observation and report built from them.
+    It fetches ONLY while `TERMS_EVIDENCE["fred"]["permits_use"]` is True, and that flag is set
+    only on a quoted clause that clearly permits this use. As read on 2026-10-06 it is False (see
+    the record's quotes), so every `series` call answers None, records HELD_PENDING_TERMS for the
+    ticker and sends no request. CBOE's own files and Yahoo are held and refused the same way.
 
-    WHAT FRED DOES NOT CARRY IS RECORDED, NOT PAPERED OVER. VIX9D, VIX6M and SKEW have no FRED
-    series: the VIX curve here is 30D and 3M only, the short slope (9D->30D) and the skew proxy
-    are UNMEASURED, and each such ticker's route says why. Which route served each ticker is kept
-    in `routes`. `fetch` is injectable so every test runs on fixtures.
+    Were it admitted: VIX9D, VIX6M and SKEW have no FRED series, so those tickers are recorded
+    UNMEASURED with the reason, never substituted. `fetch` is injectable for fixtures.
     """
 
     def __init__(self, timeout: int = 20,
-                 fetch: Callable[[str, int], str] | None = None) -> None:
+                 fetch: Callable[[str, int], str] | None = None,
+                 evidence: dict[str, Any] | None = None) -> None:
         self.timeout = timeout
         self.fetch = fetch or _http_text
+        self.evidence = evidence if evidence is not None else FRED_HELD
         self._fred_ok = True
         self.routes: dict[str, dict[str, Any]] = {}
 
+    @property
+    def admitted(self) -> bool:
+        return bool(self.evidence.get("permits_use")) and bool(self.evidence.get("quotes"))
+
     def series(self, ticker: str) -> dict[str, float] | None:
+        if not self.admitted:
+            self.routes[ticker] = {"route": "fred_csv", "status": "HELD_PENDING_TERMS",
+                                   "why": self.evidence.get("why_held", "no permitting clause"),
+                                   "requested": False, "terms_note": TERMS_NOTE}
+            return None
         sid = FRED_SERIES.get(ticker)
         if not sid:
             self.routes[ticker] = {"route": "none", "status": "UNMEASURED",
-                                   "why": ("no FRED series for this index; CBOE's own history "
-                                           "file is held pending a read of its terms"),
+                                   "why": "no FRED series for this index", "requested": False,
                                    "terms_note": TERMS_NOTE}
             return None
         url = FRED_CSV.format(sid=sid)
@@ -254,37 +306,41 @@ class FredVolSource:
                 self._fred_ok = False
                 why = f"FRED unreachable: {type(e).__name__}"
         if got:
-            self.routes[ticker] = {"route": "fred_csv", "url": url, "series_id": sid,
-                                   "n": len(got), "last": max(got), "terms_note": TERMS_NOTE}
+            self.routes[ticker] = {"route": "fred_csv", "status": "OBSERVED", "url": url,
+                                   "series_id": sid, "n": len(got), "last": max(got),
+                                   "terms_note": TERMS_NOTE}
             return got
-        self.routes[ticker] = {"route": "none", "status": "UNAVAILABLE", "series_id": sid,
+        self.routes[ticker] = {"route": "fred_csv", "status": "UNAVAILABLE", "series_id": sid,
                                "why": why, "terms_note": TERMS_NOTE}
         return None
 
     def provenance(self) -> dict[str, Any]:
-        return {"order": ["fred_csv"], "user_agent": UA, "terms_note": TERMS_NOTE,
-                "routes": dict(sorted(self.routes.items())),
-                "held": [CBOE_HELD], "refused": [YAHOO_REFUSAL]}
+        return {"order": ["fred_csv"], "admitted": self.admitted, "user_agent": UA,
+                "terms_note": TERMS_NOTE, "routes": dict(sorted(self.routes.items())),
+                "held": [self.evidence, CBOE_HELD], "refused": [YAHOO_REFUSAL]}
 
 
 class YahooVolSource:
-    """REFUSED, KEPT AS A RECORD (terms floor, 2026-10-06). Yahoo's terms bar automated access
-    without permission, so this source is fail-closed: `series` sends NO request, notes the
-    ticker it was asked for and answers None. It exists so a caller that still names it gets a
-    recorded refusal rather than a silent fetch, and so the reason is not lost."""
+    """REFUSED, KEPT AS A RECORD. Yahoo's terms (quoted in `TERMS_EVIDENCE["yahoo"]`) bar
+    automated collection without express prior permission, so `series` sends NO request, notes
+    the ticker it was asked for and answers None."""
 
     refusal: dict[str, Any] = YAHOO_REFUSAL
+    admitted = False
 
     def __init__(self, *_a: Any, **_k: Any) -> None:
         self.refused: list[str] = []
+        self.routes: dict[str, dict[str, Any]] = {}
 
     def series(self, ticker: str) -> dict[str, float] | None:
         self.refused.append(ticker)
+        self.routes[ticker] = {"route": "yahoo_chart", "status": "FAIL_CLOSED_TERMS",
+                               "requested": False}
         return None
 
     def provenance(self) -> dict[str, Any]:
-        return {"refused": [{**YAHOO_REFUSAL, "asked_for": list(self.refused)}],
-                "terms_note": YAHOO_REFUSAL["terms_note"], "routes": {}}
+        return {"admitted": False, "refused": [{**YAHOO_REFUSAL, "asked_for": list(self.refused)}],
+                "terms_note": TERMS_NOTE, "routes": dict(self.routes)}
 
 
 def _http_text(url: str, timeout: int) -> str:
@@ -309,17 +365,31 @@ def parse_fred_csv(text: str) -> dict[str, float]:
     return out
 
 
+def route_of(source: Any, ticker: str) -> dict[str, Any]:
+    """The route a source recorded for `ticker`, stamped onto the observation row."""
+    r = (getattr(source, "routes", None) or {}).get(ticker) or {}
+    return {"source_route": f"{type(source).__name__}:{r.get('route', 'direct')}",
+            "source_status": str(r.get("status", "")),
+            "source_admitted": bool(getattr(source, "admitted", False))}
+
+
 class FakeVolSource:
-    """A deterministic vol source for tests. Holds whatever the test puts in it."""
+    """A deterministic vol source for tests. Holds whatever the test puts in it. It is a fixture,
+    not a network source, so it is `admitted` by construction."""
+
+    admitted = True
 
     def __init__(self, data: dict[str, dict[str, float]] | None = None,
                  missing: set[str] | None = None) -> None:
         self.data = data or {}
         self.missing = missing or set()
         self.asked: list[str] = []
+        self.routes: dict[str, dict[str, Any]] = {}
 
     def series(self, ticker: str) -> dict[str, float] | None:
         self.asked.append(ticker)
+        self.routes[ticker] = {"route": "fixture",
+                               "status": "UNAVAILABLE" if ticker in self.missing else "OBSERVED"}
         if ticker in self.missing:
             return None
         return self.data.get(ticker)
@@ -344,8 +414,12 @@ class Observation:
     #: Days of staleness between `value_date` and `observed_at`. Zero on a live trading day.
     value_age_days: int = 0
     term: dict[str, float] = field(default_factory=dict)
-    term_slope_short: float | None = None
-    term_slope_long: float | None = None
+    #: Slopes by EXPLICITLY NAMED tenor pair (see TERM_PAIRS). A pair with a tenor missing on
+    #: this as-of date is None and named in `term_unmeasured` -- never filled from a neighbour.
+    #: (Rows before 2026-10-06 carry `term_slope_short/long`, whose pairs were positional and
+    #: could shift when a tenor was missing; they are not comparable with these.)
+    term_slopes: dict[str, float | None] = field(default_factory=dict)
+    term_unmeasured: list[str] = field(default_factory=list)
     term_shape: str = ""
     #: WHY the curve is short, when it is. An empty `term` with no reason is an absence rendered
     #: as "no term structure exists", which is a different and false claim.
@@ -362,8 +436,13 @@ class Observation:
     #: BINDING AND ALWAYS TRUE HERE. The desk's own series starts the day this first ran; the
     #: reference history behind it is public and is not this desk's vintage.
     forward_only: bool = True
-    #: The values are CBOE's copyright whoever serves them (terms floor, 2026-10-06).
+    #: The values are CBOE's copyright whoever serves them.
     terms_note: str = TERMS_NOTE
+    #: The route that served (or held) this row's series: `<SourceClass>:<route>`, its status,
+    #: and whether that source was admitted by `TERMS_EVIDENCE` when it was asked.
+    source_route: str = ""
+    source_status: str = ""
+    source_admitted: bool = False
 
 
 def resolve_symbol(candidates: tuple[str, ...], registry: dict[str, Any]) -> str | None:
@@ -423,27 +502,43 @@ def realised_vol(symbol: str, universe_dir: Path, window_d: int = RV_WINDOW_D
     return cc, park, str(idx.max())
 
 
-def term_metrics(term: dict[str, float]) -> tuple[float | None, float | None, str]:
-    """(short slope, long slope, shape) from a tenor curve, in vol points per log-tenor.
+#: EVERY SLOPE IS A NAMED TENOR PAIR. A positional "short" slope (first two points of whatever
+#: curve arrived) silently changed meaning when a tenor was missing: with 9D absent it became the
+#: 30D->3M slope under the 9D->30D name, and both meanings landed in one append-only archive.
+TERM_PAIRS: tuple[tuple[str, str, str], ...] = (
+    ("slope_9d_30d", "^VIX9D", "^VIX"),
+    ("slope_30d_3m", "^VIX", "^VIX3M"),
+    ("slope_3m_6m", "^VIX3M", "^VIX6M"),
+)
 
-    Slope in VOL POINTS PER LOG-TENOR rather than raw difference, because tenors are
-    multiplicative (9d, 30d, 91d, 182d) and a raw difference makes the 3M-to-6M step look four
-    times more informative than the 9D-to-30D one purely because the calendar gap is longer.
+
+def _slope(term: dict[str, float], a: str, b: str) -> float | None:
+    """Vol points per log-tenor between two NAMED tenors, or None if either is missing.
+
+    Per LOG-TENOR rather than raw difference, because tenors are multiplicative (9d, 30d, 91d,
+    182d) and a raw difference makes the 3M-to-6M step look four times more informative than the
+    9D-to-30D one purely because the calendar gap is longer.
     """
-    pts = sorted(((TENOR_DAYS.get(k, 0), v) for k, v in term.items() if TENOR_DAYS.get(k)),
+    if a not in term or b not in term:
+        return None
+    return round((term[b] - term[a]) / (math.log(TENOR_DAYS[b]) - math.log(TENOR_DAYS[a])), 4)
+
+
+def term_slopes(term: dict[str, float]) -> tuple[dict[str, float | None], list[str]]:
+    """({pair_name: slope or None}, [pair names UNMEASURED]) -- one entry per TERM_PAIRS row."""
+    slopes = {name: _slope(term, a, b) for name, a, b in TERM_PAIRS}
+    return slopes, [n for n, v in slopes.items() if v is None]
+
+
+def term_shape(term: dict[str, float]) -> str:
+    """contango / backwardation / mixed over the tenors present, '' under two points."""
+    pts = sorted(((TENOR_DAYS[k], v) for k, v in term.items() if k in TENOR_DAYS),
                  key=lambda kv: kv[0])
     if len(pts) < 2:
-        return None, None, ""
-
-    def slope(a: tuple[int, float], b: tuple[int, float]) -> float:
-        return round((b[1] - a[1]) / (math.log(b[0]) - math.log(a[0])), 4)
-
-    short = slope(pts[0], pts[1])
-    long_ = slope(pts[-2], pts[-1]) if len(pts) >= 3 else None
+        return ""
     rising = all(pts[i][1] <= pts[i + 1][1] for i in range(len(pts) - 1))
     falling = all(pts[i][1] >= pts[i + 1][1] for i in range(len(pts) - 1))
-    shape = "contango" if rising else ("backwardation" if falling else "mixed")
-    return short, long_, shape
+    return "contango" if rising else ("backwardation" if falling else "mixed")
 
 
 def observe(source: VolSource, registry: dict[str, Any], universe_dir: Path,
@@ -457,14 +552,20 @@ def observe(source: VolSource, registry: dict[str, Any], universe_dir: Path,
         base = {"schema": SCHEMA, "observed_at": at, "vol_ticker": g.vol_ticker,
                 "mt5_symbol": sym, "tradeable": sym is not None, "what": g.what}
         s = source.series(g.vol_ticker)
+        route = route_of(source, g.vol_ticker)
         if not s:
-            out.append(Observation(**base, value_date="", status="UNAVAILABLE",
-                                   reason=(f"{g.vol_ticker} returned no series -- recorded as an "
-                                           f"absence, not as a flat or missing value")))
+            held = route["source_status"] in ("HELD_PENDING_TERMS", "FAIL_CLOSED_TERMS")
+            out.append(Observation(
+                **base, **route, value_date="",
+                status=route["source_status"] if held else "UNAVAILABLE",
+                reason=(f"{g.vol_ticker}: source held by its terms, no request sent "
+                        f"(TERMS_EVIDENCE)" if held else
+                        f"{g.vol_ticker} returned no series -- recorded as an absence, not as "
+                        f"a flat or missing value")))
             continue
         vdate = max(s)
         iv = float(s[vdate])
-        obs = Observation(**base, value_date=vdate, implied_vol=round(iv, 4))
+        obs = Observation(**base, **route, value_date=vdate, implied_vol=round(iv, 4))
         obs.value_age_days = max(0, (now.date() - datetime.fromisoformat(vdate).date()).days)
 
         term: dict[str, float] = {}
@@ -485,7 +586,8 @@ def observe(source: VolSource, registry: dict[str, Any], universe_dir: Path,
                 continue
             term[t] = round(float(v), 4)
         obs.term = term
-        obs.term_slope_short, obs.term_slope_long, obs.term_shape = term_metrics(term)
+        obs.term_slopes, obs.term_unmeasured = term_slopes(term) if g.term else ({}, [])
+        obs.term_shape = term_shape(term)
         if stale and len(term) < 2:
             obs.term_reason = (f"no contemporaneous curve on {vdate}: " + ", ".join(stale)
                                + " -- refusing to build a slope across as-of dates")
@@ -552,8 +654,9 @@ def source_record(source: VolSource | None) -> dict[str, Any]:
         got = prov()
         if isinstance(got, dict):
             return got
-    return {"order": ["fred_csv"], "user_agent": UA, "terms_note": TERMS_NOTE, "routes": {},
-            "held": [CBOE_HELD], "refused": [YAHOO_REFUSAL]}
+    return {"order": ["fred_csv"], "admitted": bool(FRED_HELD.get("permits_use")),
+            "user_agent": UA, "terms_note": TERMS_NOTE, "routes": {},
+            "held": [FRED_HELD, CBOE_HELD], "refused": [YAHOO_REFUSAL]}
 
 
 def report(rows: list[dict[str, Any]], cycle: list[Observation],
@@ -602,6 +705,8 @@ def report(rows: list[dict[str, Any]], cycle: list[Observation],
         },
         "cycle": [asdict(o) for o in cycle],
         "unavailable": [o.vol_ticker for o in cycle if o.status == "UNAVAILABLE"],
+        "held_pending_terms": [o.vol_ticker for o in cycle
+                               if o.status in ("HELD_PENDING_TERMS", "FAIL_CLOSED_TERMS")],
         "not_tradeable_here": [o.vol_ticker for o in cycle if o.status == "NOT_TRADEABLE_HERE"],
     }
 

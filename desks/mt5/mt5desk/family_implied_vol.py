@@ -63,7 +63,7 @@ OPS: dict[str, Callable[[Any, Any], Any]] = {"ge": operator.ge, "le": operator.l
 #: The feature columns `research/options_implied.py` publishes. A cell naming anything else is
 #: refused rather than read, so a renamed column cannot silently become an absent condition.
 FEATURES: tuple[str, ...] = ("iv_level", "iv_pct_1y", "iv_chg_1d", "iv_chg_5d", "iv_chg_5d_z",
-                             "term_slope_short", "term_slope_long", "term_inverted",
+                             "slope_9d_30d", "slope_30d_3m", "slope_3m_6m", "term_inverted",
                              "rv_21d", "vrp", "vrp_pct_1y")
 
 #: Feature observations needed before a family will emit anything. Below it: UNMEASURED.
