@@ -42,6 +42,7 @@ revision.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -50,10 +51,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-if str(Path(__file__).resolve().parents[3]) not in sys.path:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from libs.ops.env_keys import read_key  # noqa: E402
 from mt5desk.config import DATA, REPORTS  # noqa: E402
 
 OUT = DATA / "lake" / "alfred"
@@ -85,7 +83,7 @@ SERIES = {
 
 def api_key() -> str | None:
     """Key from the environment or secrets/. Never logged, never written to a report."""
-    env = read_key("FRED_API_KEY")
+    env = os.environ.get("FRED_API_KEY", "").strip()
     if env:
         return env
     for p in (Path(__file__).resolve().parents[3] / "secrets" / "fred_api_key",

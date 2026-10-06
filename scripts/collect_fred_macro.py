@@ -22,6 +22,7 @@ registry's old "blocked" note was the website host, not api.stlouisfed.org).
 from __future__ import annotations
 
 import json
+import os
 import sys
 import urllib.parse
 import urllib.request
@@ -31,7 +32,6 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
-from libs.ops.env_keys import read_key  # noqa: E402
 from libs.research.vintage import record  # noqa: E402
 
 _KEYFILE = Path("data/secrets/fred.json")
@@ -51,7 +51,7 @@ _ARCHIVE_LONG = Path("data/fred_macro_long.json")
 
 
 def _key() -> str | None:
-    k = read_key("FRED_API_KEY")
+    k = os.environ.get("FRED_API_KEY")
     if k:
         return k
     try:

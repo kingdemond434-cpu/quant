@@ -13,20 +13,29 @@ from libs.ops import env_keys
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_process_env_wins(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_process_env_is_used_off_windows(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("QK_TEST_KEY", " abc ")
-    monkeypatch.setattr(env_keys, "registry_sources", lambda name: [("machine", "zzz")])
+    monkeypatch.setattr(env_keys, "registry_sources", lambda name: [])
     assert env_keys.read_key("QK_TEST_KEY") == "abc"
 
 
 def test_registry_value_reaches_a_process_started_before_setx(
         monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("QK_TEST_KEY", raising=False)
-    monkeypatch.setattr(env_keys, "registry_sources", lambda name: [("machine", "fromreg")])
+    from libs.ops import env_secret
+    monkeypatch.setenv("QK_TEST_KEY", "stale")
+    monkeypatch.setattr(env_secret, "_registry",
+                        lambda hive, name: "fromreg" if hive == "machine" else None)
     assert env_keys.read_key("QK_TEST_KEY") == "fromreg"
-    # copied into the process so children inherit it
+    # the registry wins over a stale inherited copy, and children inherit the fresh one
     import os
     assert os.environ["QK_TEST_KEY"] == "fromreg"
+
+
+def test_another_users_hive_is_the_last_resort(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("QK_TEST_KEY", raising=False)
+    monkeypatch.setattr(env_keys, "registry_sources",
+                        lambda name: [("user:S-1-5-21-1", "otheruser")])
+    assert env_keys.read_key("QK_TEST_KEY") == "otheruser"
 
 
 def test_missing_is_default(monkeypatch: pytest.MonkeyPatch) -> None:
