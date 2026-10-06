@@ -26,6 +26,13 @@ from libs.research.trial_ledger import (  # noqa: E402
 from research import effective_trials as et  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def _events_to_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`et.write` emits to the event log; keep it off the tracked desks/mt5/data/events.jsonl."""
+    from libs.ops import events
+    monkeypatch.setattr(events, "PATH", tmp_path / "events.jsonl")
+
+
 def _row(fam: str, sym: str, tf: str, **params: Any) -> dict[str, Any]:
     return {"family": fam, "symbol": sym, "timeframe": tf, "params": dict(params)}
 
