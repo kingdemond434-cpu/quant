@@ -329,8 +329,8 @@ def _steer_weights(max_age_h: float = STEER_MAX_AGE_H) -> tuple[dict[str, float]
     """({leg: weight}, why) from the Tier S scheduler tournament, or ({}, why).
 
     BOUNDED AND NEVER A CUT. A weight is in [0.5, 1.5], and below 1.0 only for a validation-
-    department (judge-side) leg: generation and mining legs are up-only; here it multiplies the leg's rank SCORE, so a leg weighted down runs later and
-    asks for less spare, while the FLOOR (par) and the never-reduced total below still hold. A
+    department (judge-side) leg: generation and mining legs are up-only. It multiplies the leg's
+    rank SCORE, so a judge leg weighted down runs later and asks for less spare, while the FLOOR (par) and the never-reduced total below still hold. A
     stale or absent artifact, or one whose holdout comparison withdrew the steer, moves nothing."""
     doc = _read(STEER)
     if not doc:
