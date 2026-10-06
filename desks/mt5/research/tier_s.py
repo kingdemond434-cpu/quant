@@ -2697,21 +2697,85 @@ def _leg_elogw() -> dict[str, float]:
     return dict(out)
 
 
+#: what cycle_pricing ACTUALLY applied, per steer hour (written by cycle_pricing.build_plan)
+STEER_APPLIED = DESK / "data" / "scheduler_steer_applied.jsonl"
+#: a leg that ran in at least this many of the six hours before a window is an HOURLY leg; if it
+#: then burns under a CPU-second in the window, the run was lost or skipped and scores as harm
+EXPECTED_OF_6 = 4
+
+
+def _applied_by_hour() -> dict[str, dict[str, Any]]:
+    """steer hour -> {first: when cycle_pricing first spent it, weights: what it applied}."""
+    out: dict[str, dict[str, Any]] = {}
+    for r in _jsonl(STEER_APPLIED, 50_000):
+        h, t = str(r.get("steer_hour") or ""), replay.parse_t(r.get("at"))
+        w = r.get("weights")
+        if not h or t is None or not isinstance(w, dict):
+            continue
+        row = out.setdefault(h, {"first": t, "weights": {}})
+        row["first"] = min(row["first"], t)
+        row["weights"].update({str(k): float(v) for k, v in w.items()
+                               if isinstance(v, (int, float))})
+    return out
+
+
+def _leg_forward_r(producer_leg: Mapping[str, str | None], legs: set[str]) -> dict[str, float]:
+    """{leg: cumulative forward R} over the certificates its producers bore: each survivor's
+    forward clock (shadow state, n x exp_r) credited to the leg that runs the producer of its cell.
+    The desk's realised-forward P&L per leg; a leg with no clocked certificate is absent."""
+    shadow = shadow_rows()
+    if not shadow:
+        return {}
+    prod = _producer_of_cell()
+    out: dict[str, float] = defaultdict(float)
+    for row in survivors().values():
+        if not isinstance(row, dict):
+            continue
+        sp = _spec(row)
+        fw = shadow.get(f"{sp.get('symbol')}.{sp.get('selector')}") or {}
+        n, er = fw.get("n"), fw.get("exp_r")
+        if not isinstance(n, (int, float)) or not isinstance(er, (int, float)):
+            continue
+        pr = prod.get(str(row.get("cell") or "")) or _producer(row.get("hunt"))
+        leg = producer_leg.get(pr) or _leg_of(pr, legs)
+        if leg:
+            out[leg] += float(n) * float(er)
+    return dict(out)
+
+
 def _steer_outcomes(pending: list[dict[str, Any]], producer_leg: Mapping[str, str | None],
-                    elogw_now: Mapping[str, float] | None = None) -> None:
-    """Fill `outcomes` on every assignment whose hour has elapsed: per leg, NOVELTY-DEFLATED births
-    per CPU-hour the leg burned in that window. A birth counts only if no verdict had judged its
-    (symbol, family) pair before the window opened, and then only `novelty_credit(k)` =
-    1/sqrt(1 + k) of a birth, k = births of the same pair before it (the breadth law), so cheap
-    near-duplicates cannot game the rate. A leg that burned no CPU has no outcome (never 0)."""
+                    elogw_now: Mapping[str, float] | None = None,
+                    forward_r_now: Mapping[str, float] | None = None) -> None:
+    """Fill the outcomes of every assignment whose APPLIED hour has elapsed.
+
+    WHICH HOUR. The window opens when cycle_pricing first spent this assignment's weights
+    (STEER_APPLIED) and lasts an hour, and each leg's `applied` is overwritten with what was
+    actually spent; an assignment cycle_pricing never spent keeps its window but every leg is
+    re-marked applied 1.0, so it can feed no treated arm.
+
+    THE OUTCOME, per leg: the UNIQUE (symbol, family) pairs it bore in the window, each credited
+    `novelty_credit(k)` (k = births of that pair before the window, any producer; zero if a
+    verdict had judged it before the window), per CPU-hour the leg burned there. A leg that is an
+    hourly leg (ran in EXPECTED_OF_6 of the six prior hours) but burned under a CPU-second in the
+    window LOST its run: that scores as HARM, minus the larger of 1 and the window's mean positive
+    outcome. Secondary channels: the change in the leg's forward R (`pnl_outcomes`) and in its
+    credited dE[log W] (`elogw_outcomes`)."""
     from libs.tiers.scheduler_tournament import novelty_credit
     if not pending:
         return
+    applied = _applied_by_hour()
     windows = []
     for a in pending:
-        t0 = replay.parse_t(a.get("at"))
-        if t0 is not None:
-            windows.append((a, t0, t0 + timedelta(hours=1)))
+        ap = applied.get(str(a.get("hour")))
+        t0 = ap["first"] if ap else replay.parse_t(a.get("at"))
+        if t0 is None or t0 + timedelta(hours=1) > NOW:
+            continue
+        for lg, row in (a.get("legs") or {}).items():
+            if isinstance(row, dict):
+                row.setdefault("planned", row.get("applied"))
+                row["applied"] = float((ap or {}).get("weights", {}).get(lg, 1.0)) if ap else 1.0
+        a["applied_from"] = "cycle_pricing" if ap else "never_spent"
+        windows.append((a, t0, t0 + timedelta(hours=1)))
     if not windows:
         return
     lo = min(w[1] for w in windows)
@@ -2723,21 +2787,24 @@ def _steer_outcomes(pending: list[dict[str, Any]], producer_leg: Mapping[str, st
     legs_all = {lg for a, _s, _e in windows for lg in (a.get("legs") or {})}
     legs_all |= {lg for a, _s, _e in windows for t in (a.get("tilts") or {}).values()
                  for lg in (t or {})}
-    births: list[tuple[datetime, str, str, float]] = []
-    seen: Counter[str] = Counter()          # births of each pair so far, in graph (birth) order
+    born_before: dict[datetime, Counter[str]] = {s: Counter() for _a, s, _e in windows}
+    births: list[tuple[datetime, str, str]] = []
     for r in _jsonl(HGRAPH, 400_000):
         if r.get("fate") not in (None, "", "BORN"):
             continue
         t = replay.parse_t(r.get("at"))
+        if t is None:
+            continue
         pair = f"{r.get('symbol')}.{r.get('family')}"
-        credit = novelty_credit(seen[pair])
-        seen[pair] += 1
-        if t is None or t < lo:
+        for s0, cnt in born_before.items():
+            if t < s0:
+                cnt[pair] += 1
+        if t < lo:
             continue
         pr = _producer(r.get("source"))
         leg = producer_leg.get(pr) or _leg_of(pr, legs_all)
         if leg:
-            births.append((t, leg, pair, credit))
+            births.append((t, leg, pair))
     cpu: list[tuple[datetime, str, float]] = []
     for row in _jsonl(COMPUTE, 200_000):
         name = str(row.get("run") or "")
@@ -2745,24 +2812,40 @@ def _steer_outcomes(pending: list[dict[str, Any]], producer_leg: Mapping[str, st
             continue
         t = replay.parse_t(row.get("at"))
         sec = row.get("cpu_s") or row.get("wall_s") or row.get("seconds")
-        if t is not None and t >= lo and isinstance(sec, (int, float)):
+        if t is not None and t >= lo - timedelta(hours=6) and isinstance(sec, (int, float)):
             cpu.append((t, name, float(sec)))
     for a, s, e in windows:
         sec: dict[str, float] = defaultdict(float)
+        prior: dict[str, set[int]] = defaultdict(set)
         for t, name, v in cpu:
             if s <= t < e:
                 sec[name] += v
-        nov: dict[str, float] = defaultdict(float)
-        for t, leg, pair, credit in births:
+            elif s - timedelta(hours=6) <= t < s:
+                prior[name].add(int((s - t).total_seconds() // 3600))
+        pairs: dict[str, set[str]] = defaultdict(set)
+        for t, leg, pair in births:
             if s <= t < e:
                 fj = first_judged.get(pair)
-                nov[leg] += credit if (fj is None or fj >= s) else 0.0
-        a["outcomes"] = {lg: round(nov[lg] / (sec[lg] / 3600.0), 6)
-                         for lg in sorted(sec) if sec[lg] >= 1.0}
-        then = a.get("elogw_at") if isinstance(a.get("elogw_at"), dict) else {}
-        a["elogw_outcomes"] = {lg: round(float((elogw_now or {})[lg]) - float(v), 9)
-                               for lg, v in then.items()
-                               if lg in (elogw_now or {}) and isinstance(v, (int, float))}
+                if fj is None or fj >= s:
+                    pairs[leg].add(pair)
+        before = born_before[s]
+        out = {lg: round(sum(novelty_credit(before[p]) for p in pairs[lg])
+                         / (sec[lg] / 3600.0), 6)
+               for lg in sorted(sec) if sec[lg] >= 1.0}
+        pos = [v for v in out.values() if v > 0]
+        harm = -max(1.0, (sum(pos) / len(pos)) if pos else 1.0)
+        lost = sorted(lg for lg in (a.get("legs") or {})
+                      if lg not in out and len(prior.get(lg, ())) >= EXPECTED_OF_6)
+        for lg in lost:
+            out[lg] = round(harm, 6)
+        a["outcomes"] = out
+        a["lost_runs"] = lost
+        for key, snap_key, now_map in (("elogw_outcomes", "elogw_at", elogw_now),
+                                       ("pnl_outcomes", "forward_r_at", forward_r_now)):
+            then = a.get(snap_key) if isinstance(a.get(snap_key), dict) else {}
+            cur = now_map or {}
+            a[key] = {lg: round(float(cur[lg]) - float(v), 9) for lg, v in then.items()
+                      if lg in cur and isinstance(v, (int, float))}
         a["scored_at"] = NOW.isoformat()
 
 
@@ -2844,13 +2927,22 @@ def organ_steer() -> dict[str, Any]:
     pending = [a for a in assignments if a.get("outcomes") is None
                and (replay.parse_t(a.get("at")) or NOW) + timedelta(hours=1) <= NOW]
     elogw_now = _leg_elogw()
-    _steer_outcomes(pending, producer_leg, elogw_now)
+    legs_known = {lg for p in proposals.values() for lg in p} | set(producer_leg.values()) - {None}
+    forward_r_now = _leg_forward_r(producer_leg, {str(x) for x in legs_known if x})
+    _steer_outcomes(pending, producer_leg, elogw_now, forward_r_now)
     # BACKPRESSURE GOES TO THE JUDGE ONLY: only the validation department's legs may be weighted
     # below 1.0; every mining / research-generation leg is up-only (the leg departments are
     # hourly_cycle's own classification, never restated here)
+    # The judge legs are also the ones that PAY for the steer's ups (zero-sum, backpressure to the
+    # judge), so only those the pricer actually prices inside a pass count: a leg on its own
+    # clock (OWN_CLOCK_LEGS) is not shortened by a weight here and could pay nothing.
     try:
+        import cycle_pricing as _cp
         import hourly_cycle as _hc
-        judge_legs = sorted(k for k, v in _hc.LEG_DEPARTMENT.items() if v == "validate")
+        priced = set(_cp._bases())
+        own = set(getattr(_hc, "OWN_CLOCK_LEGS", ()))
+        judge_legs = sorted(k for k, v in _hc.LEG_DEPARTMENT.items()
+                            if v == "validate" and k in priced and k not in own)
     except Exception as exc:
         judge_legs, inputs["down_ok"] = [], f"hourly_cycle unavailable ({exc}): every leg up-only"
     doc = tour.steer(proposals, suspended, assignments, hour, down_ok=judge_legs,
@@ -2858,9 +2950,12 @@ def organ_steer() -> dict[str, Any]:
     assignments.append({"hour": hour, "at": NOW.isoformat(),
                         "legs": {lg: {k: r[k] for k in ("due", "applied", "arm")}
                                  for lg, r in doc["legs"].items()},
-                        "tilts": {c: p for c, p in proposals.items()
-                                  if p and not suspended.get(c)},
+                        # every contestant's tilts are SCORED, suspended or not: a suspended
+                        # organ holds no authority but must be able to earn it back
+                        "tilts": {c: p for c, p in proposals.items() if p},
                         "elogw_at": {lg: elogw_now[lg] for lg in doc["legs"] if lg in elogw_now},
+                        "forward_r_at": {lg: forward_r_now[lg] for lg in doc["legs"]
+                                         if lg in forward_r_now},
                         "outcomes": None})
     _save_state("scheduler_steer", {"assignments": assignments, "at": NOW.isoformat(),
                                     "rejected_at": doc["rejected_at"]})
@@ -2882,8 +2977,10 @@ def organ_steer() -> dict[str, Any]:
                            if float(r.get("authority") or 0.0) > 0),
                        "holdout_verdict": cmp_["primary"],
                        "trial_legs": len(doc["trial"]),
-                       "elogw_holdout_delta": cmp_["elogw"].get("delta"),
-                       "holdout_delta": cmp_["up"].get("delta"),
+                       "holdout_e_up": cmp_["up"].get("e_up"),
+                       "holdout_e_down": cmp_["up"].get("e_down"),
+                       "forward_r_block_delta": cmp_["forward_r"].get("mean_block_delta"),
+                       "applied_mean": doc["applied_mean"],
                        "assignments_scored": scored,
                        "authoritative": 1.0 if doc["authoritative"] else 0.0}}
 
@@ -4252,12 +4349,56 @@ def _judge_validators(out: list[dict[str, Any]], challengers: list[dict[str, Any
             unchanged = gauntlet_arena.sealed_fingerprint() == before
             row["adoption"] = "ADOPTED" if unchanged else "ADOPTED_SEALED_FILES_MOVED"
             row["sealed_files_unchanged"] = unchanged
+            # AC13: THE WINNER TAKES OVER THE JUDGING SIDE'S PRE-SCREEN TOO. Its checks that a
+            # real candidate's backtest can express become pre-judge rules, each only after it
+            # survives the sealed trap suite against the validator it replaced.
+            row["prejudge_adoption"] = _adopt_validator_screen(c.get("genome"), inc,
+                                                               str(row["name"]))
+            inc = _genome_cfg(c.get("genome"))
             inc_sc = sc
         else:
             row["adoption"] = "REJECTED_BY_REAL_GAUNTLET"
     _save_state("arena_scores", {"scores": scores})
     return {**status, "incumbent": inc_sc,
             "adopted": [r["name"] for r in rows if r["adoption"] == "ADOPTED"]}
+
+
+def _adopt_validator_screen(genome: Any, replaced: meta_benchmark.ValidatorConfig,
+                            name: str) -> dict[str, Any]:
+    """An ADOPTED validator's `extra` checks, written into the research pre-judge screen
+    (PREJUDGE_RULES.json, source `validator_arena`) -- the screen `run_external_backtest` applies
+    to every backtested candidate and `merge_hypotheses` orders the docket by. A check is adopted
+    only if its feature is one a real candidate yields (`SCREEN_FEATURES`) and it SURVIVES the
+    sealed trap suite against the validator it replaced (`prejudge_screen.sealed_survival`). The
+    screen demotes, never removes. Returns what was adopted and why the rest was not."""
+    from libs.tiers import prejudge_screen as pj
+    cfg = _genome_cfg(genome)
+    doc = pj.load_rules(_prejudge_rules_path())
+    adopted, skipped = [], []
+    sealed: list[Any] | None = None
+    for chk in cfg.extra:
+        check = [str(chk[0]), str(chk[1]), float(chk[2])]
+        rid = pj.rule_id("validator_arena", check)
+        if check[0] not in pj.SCREEN_FEATURES:
+            skipped.append({"check": check, "why": "feature not in SCREEN_FEATURES"})
+            continue
+        if sealed is None:
+            sealed = list(RATIFY_SUITE.cases())
+        surv = pj.sealed_survival(replaced, check, sealed)
+        if not surv["survives"]:
+            skipped.append({"check": check, "why": "did not survive the sealed suite",
+                            "evidence": surv})
+            continue
+        doc, ok = pj.adopt(doc, {"id": rid, "source": "validator_arena", "check": check,
+                                 "validator": name, "adopted_at": NOW.isoformat(),
+                                 "adoption": "the real-gauntlet arena ADOPTED its validator and "
+                                             "the check survived the sealed trap suite",
+                                 "evidence": surv})
+        if ok:
+            adopted.append(rid)
+    if adopted:
+        pj.save_rules(doc, _prejudge_rules_path())
+    return {"adopted": adopted, "skipped": skipped, "n_extra": len(cfg.extra)}
 
 
 def _release_history() -> list[dict[str, Any]]:
@@ -4335,7 +4476,7 @@ def evaluate_contracts(reports: Mapping[str, Any]) -> dict[str, Any]:
         legs_out[lid] = {**contracts.evaluate(c, hist.get(lid, [])), "gain": str(c.gain),
                          "metric": f"{organ}.{c.metric}", "latest": val}
     _save_state("contracts", {"history": hist})
-    auth = authority.compute(ledger, out)
+    auth = authority.compute(ledger, {**out, **legs_out})
     _write(authority.AUTHORITY, auth)
     return {"layers": out, "legs": legs_out, "counts": dict(counts),
             "leg_counts": dict(Counter(v["verdict"] for v in legs_out.values())),

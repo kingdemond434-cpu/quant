@@ -80,6 +80,9 @@ OUT = R / "CYCLE_PRICING.json"
 #: multiplies each leg's price score by its weight. Held-out legs carry 1.0 (the prior allocation).
 STEER = R / "tier_s" / "SCHEDULER_STEER.json"
 STEER_MAX_AGE_H = 3.0
+#: what this pricer ACTUALLY applied from each steer hour, so the tournament credits outcomes to
+#: the weights that were spent rather than to the plan it published (read by tier_s._steer_outcomes)
+STEER_APPLIED = DESK / "data" / "scheduler_steer_applied.jsonl"
 
 #: THE SCOUT FLOOR AND THE WINNER'S CEILING. `FLOOR` is the fraction of its base budget the
 #: lowest-priced leg still gets; `CEIL` the multiple the best-priced leg may reach. Both are
@@ -328,10 +331,11 @@ def _researcher_prices(max_age_h: float = 6.0) -> dict[str, float]:
 def _steer_weights(max_age_h: float = STEER_MAX_AGE_H) -> tuple[dict[str, float], str]:
     """({leg: weight}, why) from the Tier S scheduler tournament, or ({}, why).
 
-    BOUNDED AND NEVER A CUT. A weight is in [0.5, 1.5], and below 1.0 only for a validation-
-    department (judge-side) leg: generation and mining legs are up-only. It multiplies the leg's
-    rank SCORE, so a judge leg weighted down runs later and asks for less spare, while the FLOOR (par) and the never-reduced total below still hold. A
-    stale or absent artifact, or one whose holdout comparison withdrew the steer, moves nothing."""
+    BACKPRESSURE GOES TO THE JUDGE ONLY. A weight is in [0.5, 1.5] and below 1.0 only for a
+    validation-department (judge-side) leg; every mining, information and generation leg is
+    floored at 1.0 here whatever the artifact says. `build_plan` multiplies the weight into the
+    leg's price score (its spare-seconds ask) and lets it move ORDER only to push a down-weighted
+    judge leg later. A stale or absent artifact, or a withdrawn steer, moves nothing."""
     doc = _read(STEER)
     if not doc:
         return {}, "SCHEDULER_STEER.json absent: the tournament has not run"
@@ -355,7 +359,27 @@ def _steer_weights(max_age_h: float = STEER_MAX_AGE_H) -> tuple[dict[str, float]
                        min(1.5, float(v))) for k, v in w.items()
            if isinstance(v, (int, float)) and not isinstance(v, bool)}
     moved = sum(1 for v in out.values() if v != 1.0)
-    return out, f"{moved} leg(s) weighted for hour {doc.get('hour')}"
+    out_hour = str(doc.get("hour") or "")
+    _STEER_HOUR[0] = out_hour
+    return out, f"{moved} leg(s) weighted for hour {out_hour}"
+
+
+#: the steer hour the last `_steer_weights` read came from (for the applied log)
+_STEER_HOUR: list[str] = [""]
+
+
+def _log_applied(weights: dict[str, float]) -> None:
+    """Append what this plan actually applied from the steer. Never raises: a missing log only
+    means the tournament credits nothing to this hour."""
+    if not weights:
+        return
+    try:
+        STEER_APPLIED.parent.mkdir(parents=True, exist_ok=True)
+        with STEER_APPLIED.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": datetime.now(UTC).isoformat(timespec="seconds"),
+                                 "steer_hour": _STEER_HOUR[0], "weights": weights}) + "\n")
+    except OSError:
+        return
 
 
 def _factory_prices() -> tuple[dict[str, float], str]:
@@ -464,8 +488,9 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     # per-hour yield is a stronger claim than a tier prior and weaker than log-wealth per day.
     fac, fac_why = _factory_prices()
     f01 = _rank01(fac)
-    # THE TIER S RESEARCHER MARKET (layer 8): per-producer value, ancestry-discounted, folded
-    # onto legs; its held-out control legs are never repriced by it
+    # THE TIER S RESEARCHER MARKET (layer 8) REACHES COMPUTE ONLY AS A TOURNAMENT CONTESTANT
+    # (audit #235, 2026-10-06). It was also a 0.15 share of this blend, so its prices counted
+    # twice; its blend share is now zero and `_researcher_prices` is published for reference only.
     r01 = _rank01(_researcher_prices())
     # THE NORTH STAR GETS ITS OWN WEIGHT (2026-09-30). Effective independent alpha rank per
     # compute hour was one quarter of the factory's percentile mean; it is the metric the
@@ -473,7 +498,7 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     ar, ar_why = _alpha_rank_prices()
     a01 = _rank01(ar)
     W = {"meta_controller": 0.40, "alpha_rank": 0.25, "research_bandit": 0.20,
-         "evig_acquisition": 0.15, "factory_contracts": 0.15, "researcher_market": 0.15,
+         "evig_acquisition": 0.15, "factory_contracts": 0.15, "researcher_market": 0.0,
          "compute_policy": 0.10}
     legs: dict[str, dict[str, Any]] = {}
     for leg, base in sorted(bases.items()):
@@ -488,7 +513,7 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
             parts.append(("alpha_rank", W["alpha_rank"], a01[leg]))
         if leg in f01:
             parts.append(("factory_contracts", W["factory_contracts"], f01[leg]))
-        if leg in r01:
+        if leg in r01 and W["researcher_market"] > 0:
             parts.append(("researcher_market", W["researcher_market"], r01[leg]))
         if leg in p01:
             parts.append(("compute_policy", W["compute_policy"], p01[leg]))
@@ -509,10 +534,13 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
             v["score"] = round(median, 6)
             v["priced_by"] = ["unpriced:median"]
     # METHOD COMPETITION MOVES THE HOUR (AC13 / I12). The tournament's per-leg weight multiplies
-    # the score AFTER the median anchor is fixed, so a weighted-up leg climbs above the median
-    # (more spare, earlier in the order) and a weighted-down one falls below it (later, no spare);
-    # the factor's par floor below means no leg is cut. A held-out leg's weight is 1.0.
+    # the score AFTER the median anchor is fixed, so a weighted-up leg asks for more of its
+    # department's MEASURED spare and a weighted-down judge leg for less. ORDER is a different
+    # matter: when a pass runs short the tail does not run, so the order key stays the UNSTEERED
+    # score for every leg except a down-weighted judge leg, which may only move LATER. A steer
+    # can therefore never push a generation leg back past a short pass's cut.
     steer, steer_why = _steer_weights()
+    spent: dict[str, float] = {}
     for leg, v in legs.items():
         w = steer.get(leg)
         if w is None or w == 1.0:
@@ -520,7 +548,10 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
         v["steer_weight"] = w
         v["unsteered_score"] = v["score"]
         v["score"] = round(max(0.0, min(1.0, float(v["score"]) * w)), 6)
+        v["order_score"] = v["score"] if w < 1.0 else v["unsteered_score"]
         v["priced_by"] = [*v["priced_by"], "scheduler_steer"]
+        spent[leg] = w
+    _log_applied(spent)
 
     # THE FACTOR: a rank score in [0,1] mapped onto [FLOOR, CEIL], anchored at the median
     # (median score -> 1.0x). With FLOOR = 1.0 the below-median branch is the identity: a
@@ -644,7 +675,8 @@ def declare_spec(leg: str, rec: dict[str, Any]) -> None:
     try:
         base_mb = int(rec.get("base_mb") or 0) or 256
         need, _why = measured_need_mb(str(leg), base_mb)
-        score = rec.get("score")
+        score = rec.get("order_score")
+        score = rec.get("score") if score is None else score
         record_spec(str(leg), mb=int(need), cpu=1,
                     deadline_s=float(rec.get("applied_s") or rec.get("base_s") or 0.0) or None,
                     evsi=float(score) if isinstance(score, (int, float)) else None)
@@ -676,7 +708,9 @@ def order(names: list[str], legs: dict[str, dict[str, Any]] | None = None) -> li
         row = table.get(n) or {}
         st = row.get("stale_h")
         scout = 0 if (st is None or float(st) >= SCOUT_STALE_H) else 1
-        return (scout, -float(row.get("score") or 0.0), declared.get(n, len(names)), n)
+        # the ORDER key: unsteered except a down-weighted judge leg (`order_score`, build_plan)
+        sc = row.get("order_score", row.get("score"))
+        return (scout, -float(sc or 0.0), declared.get(n, len(names)), n)
 
     return sorted(names, key=key)
 
@@ -726,7 +760,8 @@ def applied_budget(leg: str, base: float) -> tuple[int, dict[str, Any]]:
                    "applied_s": applied, "factor": round(factor, 4),
                    "price_factor": row.get("price_factor"), "extra_s": row.get("extra_s"),
                    "department": row.get("department"),
-                   "score": row.get("score"), "priced_by": row.get("priced_by"),
+                   "score": row.get("score"), "order_score": row.get("order_score"),
+                   "priced_by": row.get("priced_by"),
                    "rank": row.get("rank"), "applied": True,
                    "why": (f"rank score {row.get('score')} vs median {p.get('median_score')} "
                            f"-> x{factor:.2f} (priced by {', '.join(row.get('priced_by') or [])})")}

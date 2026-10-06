@@ -1076,6 +1076,19 @@
     "organ": "report:tier_s/SCHEDULER_STEER.json"
    },
    "why": "the method tournament's weights (arena, Red Queen champion, researcher market, meta-benchmark) on treated legs yield more novelty-deflated births per CPU-hour than the seeded random holdout left on the prior allocation (control arm, Welch one-sided 5%, up-weighted legs); the weights reach cycle_pricing only while this is ADMITTED, and generation legs are never weighted below par"
+  },
+  {
+   "leg": "arena",
+   "report": "tier_s/SCHEDULER_STEER.json",
+   "steers": "arena",
+   "contract": {
+    "gain": "INFO_PER_COMPUTE",
+    "metric": "contestants.arena.mean_gain",
+    "better": "up",
+    "bar": 0.5,
+    "organ": "report:tier_s/SCHEDULER_STEER.json"
+   },
+   "why": "the arena's LEADS/TRAILS tilts must point compute at the legs that then realise more (novelty-deflated births per CPU-hour and forward R): its tournament gain at or above 0.5 (no skill) admits it; a gain that stays below and does not rise is REJECTED, and libs.tiers.authority then suspends the arena's proposals until it recovers"
   }
  ]
 }

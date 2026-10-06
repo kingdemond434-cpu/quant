@@ -16,6 +16,8 @@ What "steering" means, per consumer (every one calls `suspended(<organ>)` before
   * `frontier`       -> the market's frontier factor is 1 for every producer;
   * `predictions`    -> the market's honesty term is 1 for every producer;
   * `red_queen`      -> its defenders are not registered as validator challengers;
+  * `arena`          -> its verdicts propose nothing to the scheduler tournament (its contract is
+                        the `leg_contracts` row with `steers: arena`);
   * `twin`           -> a challenger that beats the incumbent is PENDING_AUTHORITY, not ADOPTED;
   * `self_model`     -> the implementer takes no rows from its docket;
   * `online_fdr`, `immune` -> the promotion door (`promotion_authority`) ignores their verdicts.
@@ -48,6 +50,15 @@ def compute(ledger: Mapping[str, Any], verdicts: Mapping[str, Mapping[str, Any]]
         if not organ:
             continue
         lid = str(layer.get("id"))
+        v = str((verdicts.get(lid) or {}).get("verdict") or "UNMEASURED")
+        by_organ.setdefault(organ, []).append((lid, v))
+    # A LEG CONTRACT MAY GOVERN A STEERING ORGAN TOO (`steers`, e.g. the arena's contract, whose
+    # verdicts reach the scheduler only through the tournament): its verdict joins that organ's.
+    for lc in ledger.get("leg_contracts") or []:
+        organ = str(lc.get("steers") or "") if isinstance(lc, Mapping) else ""
+        if not organ:
+            continue
+        lid = f"leg:{lc.get('leg')}"
         v = str((verdicts.get(lid) or {}).get("verdict") or "UNMEASURED")
         by_organ.setdefault(organ, []).append((lid, v))
     organs = {o: {"suspended": all(v == "REJECTED" for _l, v in rows),
