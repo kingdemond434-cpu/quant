@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 from collections import defaultdict
@@ -55,6 +56,12 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 #: its type/region/language; the plaintext lives off the repo (/mnt/project-files/withheld/), so no
 #: seat, miner or session reading the tree can copy a benchmark item into a seed.
 BENCHMARK = DESK / "data" / "discovery_audit" / "benchmark.sealed.json"
+#: THE SALT NEVER TOUCHES THE REPOSITORY. A salt committed beside the hashes lets any reader
+#: re-hash a guessed URL and confirm it, which is no seal at all (audit of #192). It lives on the
+#: box only, in the gitignored secrets directory or the environment; the sealed file carries only
+#: a fingerprint so a wrong salt reads as UNMEASURED, never as zero recall.
+SALT_FILE = DESK / "data" / "secrets" / "discovery_audit_salt"
+SALT_ENV = "QUANT_DISCOVERY_SALT"
 SEALED_KEEP = ("type", "region", "country", "language", "columns", "benchmark_since")
 REPORT = DESK / "reports" / "DISCOVERY_AUDIT.json"
 WORLD = DESK / "data" / "intelligence" / "world"
@@ -147,8 +154,23 @@ def seal(benchmark: Mapping[str, Any], salt: str) -> dict[str, Any]:
         if it.get("dataset_id"):
             row["id_h"] = _h(salt, str(it["dataset_id"]).lower())
         items.append(row)
-    return {k: v for k, v in benchmark.items() if k != "items"} | {
-        "salt": salt, "sealed": True, "items": items}
+    return {k: v for k, v in benchmark.items() if k not in ("items", "salt")} | {
+        "salt_fp": salt_fingerprint(salt), "sealed": True, "items": items}
+
+
+def salt_fingerprint(salt: str) -> str:
+    return hashlib.sha256(f"fp|{salt}".encode()).hexdigest()[:12]
+
+
+def load_salt() -> str:
+    """The box's salt: the environment first, then the gitignored secrets file. "" when absent."""
+    env = os.environ.get(SALT_ENV, "").strip()
+    if env:
+        return env
+    try:
+        return SALT_FILE.read_text("utf-8").strip()
+    except OSError:
+        return ""
 
 
 def _row_hashes(row: dict[str, Any], salt: str) -> tuple[set[str], set[str], set[str]]:
@@ -441,8 +463,9 @@ def recall_by(measured: list[dict[str, Any]], key: str) -> dict[str, dict[str, A
 
 def audit(benchmark: Mapping[str, Any], *, now: datetime, rows: list[dict[str, Any]],
           registry: Mapping[str, Any] | None, sources: Mapping[str, str],
-          missing_sources: list[str], use_dir: Path) -> dict[str, Any]:
-    """The whole audit, from its inputs. Pure apart from reading `use_dir` when it exists."""
+          missing_sources: list[str], use_dir: Path, salt: str = "") -> dict[str, Any]:
+    """The whole audit, from its inputs. Pure apart from reading `use_dir` when it exists.
+    `salt` is required for a sealed benchmark and must match its fingerprint."""
     items = [it for it in benchmark.get("items") or [] if isinstance(it, dict) and it.get("id")]
     base: dict[str, Any] = {"label": LABEL, "generated_at": now.isoformat(timespec="seconds"),
                             "iso_week": iso_week(now), "benchmark_items": len(items),
@@ -450,7 +473,14 @@ def audit(benchmark: Mapping[str, Any], *, now: datetime, rows: list[dict[str, A
                             "seed_sources_unreadable": sorted(missing_sources)}
     if not items:
         return {**base, "verdict": UNMEASURED, "why": "benchmark missing or empty"}
-    salt = str(benchmark.get("salt") or "")
+    if benchmark.get("sealed"):
+        if not salt:
+            return {**base, "verdict": UNMEASURED,
+                    "why": f"the benchmark is sealed and its salt is not on this host "
+                           f"({SALT_ENV} or {SALT_FILE.relative_to(DESK).as_posix()})"}
+        if benchmark.get("salt_fp") and salt_fingerprint(salt) != benchmark["salt_fp"]:
+            return {**base, "verdict": UNMEASURED,
+                    "why": "the salt on this host does not match the seal's fingerprint"}
     hits = contamination(items, sources, salt)
     if hits:
         return {**base, "verdict": "CONTAMINATED", "contamination": hits, "recall": None,
@@ -489,7 +519,7 @@ def run() -> dict[str, Any]:
     sources, missing = seed_sources()
     rep = audit(bench if isinstance(bench, dict) else {}, now=now, rows=load_discoveries(WORLD),
                 registry=reg if isinstance(reg, dict) else None, sources=sources,
-                missing_sources=missing, use_dir=DATASET_USE)
+                missing_sources=missing, use_dir=DATASET_USE, salt=load_salt())
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     tmp = REPORT.with_name(REPORT.name + ".tmp")
     tmp.write_text(json.dumps(rep, indent=1, default=str), encoding="utf-8")
@@ -500,14 +530,16 @@ def run() -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
-    ap.add_argument("--seal", nargs=2, metavar=("PLAINTEXT", "SEALED"),
-                    help="seal a plaintext benchmark (kept off the repo) into the committed form")
+    ap.add_argument("--seal", nargs=3, metavar=("PLAINTEXT", "SEALED", "SALT_OUT"),
+                    help="seal a plaintext benchmark (kept off the repo) into the committed form; "
+                         "the fresh salt is written to SALT_OUT, which must be off the repo too")
     a = ap.parse_args(argv)
     if a.seal:
         import secrets
+        salt = secrets.token_hex(16)
         plain = json.loads(Path(a.seal[0]).read_text("utf-8"))
-        Path(a.seal[1]).write_text(json.dumps(seal(plain, secrets.token_hex(16)), indent=1),
-                                   "utf-8")
+        Path(a.seal[1]).write_text(json.dumps(seal(plain, salt), indent=1), "utf-8")
+        Path(a.seal[2]).write_text(salt + "\n", "utf-8")
         return 0
     r = run()
     print(f"discovery audit ({LABEL}): verdict={r['verdict']} week={r['iso_week']} "

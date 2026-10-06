@@ -155,12 +155,25 @@ def test_the_real_benchmark_is_well_formed_and_withheld_from_every_seed() -> Non
     for i in items:                       # sealed: hashes only, nothing a reader could copy
         assert i["url_h"] and i["id_h"] and "url" not in i and "dataset_id" not in i, i["id"]
         assert "title" not in i and "producer" not in i
-    assert bench["sealed"] is True and bench["salt"]
+    assert bench["sealed"] is True and bench["salt_fp"] and "salt" not in bench
     assert "http" not in da.BENCHMARK.read_text("utf-8")
     sources, _missing = da.seed_sources()
     assert "acquire_datasets._SEED_ENDPOINTS" in sources and "country packs" in sources
-    assert da.contamination(items, sources, bench["salt"]) == [], \
-        "a seed can read the withheld benchmark"
+    salt = da.load_salt()
+    if not salt:
+        pytest.skip("the benchmark salt is box-only: contamination is checked by the hourly leg")
+    assert da.contamination(items, sources, salt) == [], "a seed can read the withheld benchmark"
+
+
+def test_a_sealed_benchmark_without_its_salt_is_unmeasured(tmp_path: Path) -> None:
+    rows = _rows(tmp_path)
+    sealed = da.seal(BENCH, "s4lt")
+    assert "salt" not in sealed and "s4lt" not in json.dumps(sealed)
+    kw = {"now": NOW, "rows": rows, "registry": REGISTRY, "sources": {},
+          "missing_sources": [], "use_dir": tmp_path / "none"}
+    assert da.audit(sealed, **kw)["verdict"] == "UNMEASURED"
+    assert da.audit(sealed, salt="wrong", **kw)["verdict"] == "UNMEASURED"
+    assert da.audit(sealed, salt="s4lt", **kw)["verdict"] == "OK"
 
 
 def test_a_sealed_benchmark_measures_exactly_what_the_plaintext_does(tmp_path: Path) -> None:
@@ -168,10 +181,10 @@ def test_a_sealed_benchmark_measures_exactly_what_the_plaintext_does(tmp_path: P
     plain = da.audit(BENCH, now=NOW, rows=rows, registry=REGISTRY, sources={},
                      missing_sources=[], use_dir=tmp_path / "none")
     sealed = da.audit(da.seal(BENCH, "s4lt"), now=NOW, rows=rows, registry=REGISTRY,
-                      sources={}, missing_sources=[], use_dir=tmp_path / "none")
+                      sources={}, missing_sources=[], use_dir=tmp_path / "none", salt="s4lt")
     assert sealed["recall"] == plain["recall"] and sealed["discovered"] == plain["discovered"]
     assert sealed["ingested"] == plain["ingested"]
     leak = {"seed.json": "https://www.rba.example.au/tables/csv/c1-data.csv"}
     hit = da.audit(da.seal(BENCH, "s4lt"), now=NOW, rows=rows, registry=REGISTRY, sources=leak,
-                   missing_sources=[], use_dir=tmp_path / "none")
+                   missing_sources=[], use_dir=tmp_path / "none", salt="s4lt")
     assert hit["verdict"] == "CONTAMINATED"
