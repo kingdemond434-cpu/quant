@@ -985,14 +985,17 @@ def contract_fields(row: Mapping[str, Any], exch: str, prod: str, metric: str, d
     """The universal sensor contract's names (MANDATE 2026-10-06 s2.5) for one observation."""
     sid = str(row["id"])
     return {"source_id": sid, "dataset_id": f"{exch}.{dataset_of(metric)}",
-            "observation_id": hashlib.sha1(f"{sid}|{prod}_{metric}|{d}".encode()
-                                           ).hexdigest()[:16],
             "entity": f"{exch.upper()}:{prod}", "geography": "CN", "asset_domain": "futures",
             "metric": metric, "unit": UNITS.get(metric, "ratio"),
             "event_time": d.isoformat(), "publication_time": pub.isoformat(),
-            "received_at": received.isoformat(), "licence": str(row.get("licence") or ""),
-            "commercial_rights": str(row.get("terms") or UNMEASURED),
-            "provenance_hash": h, "raw_pointer": raw_pointer}
+            **licence_fields(row), "provenance_hash": h, "raw_pointer": raw_pointer}
+
+
+def licence_fields(row: Mapping[str, Any]) -> dict[str, str]:
+    """Per-observation licence names, kept SHORT (a pointer to the roster row, which holds the
+    full licence text and the verbatim terms evidence): they are written on every vintage."""
+    terms = str(row.get("terms") or "to_confirm")
+    return {"licence": f"free_stack_sources:{row['id']}", "commercial_rights": terms}
 
 
 def fetch_cn_exchange(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
@@ -1016,6 +1019,9 @@ def fetch_cn_exchange(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str,
     brokers = tuple(row.get("tracked_brokers") or STATE_BROKERS)
     hhmm = str(row.get("release_bjt") or DEFAULT_RELEASE_BJT)
     budget = float(row.get("max_seconds") or DEFAULT_MAX_SECONDS)
+    # the observation store holds only products with a transmission path (a row may widen it
+    # with `products`); the raw archive below keeps every product's member tables regardless
+    keep = {str(x) for x in (row.get("products") or PRODUCT_TARGETS)}
     t0 = time.monotonic()
 
     def get(url: str, body: bytes | None) -> bytes | None:
@@ -1038,7 +1044,8 @@ def fetch_cn_exchange(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str,
             break
         f0 = Counter(h.failures)
         day = fetch_day(exch, d, get, urls, varieties)
-        feats = day_features(exch, day, brokers)
+        feats = {p: f for p, f in day_features(exch, day, brokers).items()
+                 if p.lower() in keep or p.upper() in keep}
         if not feats:
             # A weekday with no file. Only a 404 / empty answer is a holiday, and only once the
             # day is two days old; any other failure (proxy, timeout, 5xx) is a RETRY whatever

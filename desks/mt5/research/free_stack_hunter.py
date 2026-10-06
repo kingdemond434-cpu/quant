@@ -530,8 +530,7 @@ def derive_exchange(store: Store, row: dict[str, Any], h: fs.Harvest, now: datet
             pub[k[1]] = max(pub.get(k[1], ""), str(r["publication_time"]))
     rows = cnx.derive(series, pub)
     base = {"source_id": sid, "geography": "CN", "asset_domain": "futures",
-            "licence": str(row.get("licence") or ""),
-            "commercial_rights": str(row.get("terms") or UNMEASURED)}
+            **cnx.licence_fields(row)}
     for o in rows:
         prod, metric = str(o["key"]).split("_", 1)
         o.update({**base, "entity": f"{str(row.get('exchange')).upper()}:{prod}",
