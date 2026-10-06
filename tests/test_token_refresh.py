@@ -11,6 +11,7 @@ import os
 import stat
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -56,6 +57,13 @@ def _cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
             for k in g:
                 monkeypatch.delenv(k, raising=False)
     return d
+
+
+@pytest.fixture
+def myfx_unfenced(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Exercise the Myfxbook code path as it would run AFTER its terms were confirmed, so the
+    secrecy of that path is pinned now, while the shipped fence keeps it closed."""
+    monkeypatch.setitem(T.TERMS, "myfxbook", ("confirmed", "test-only"))
 
 
 def _fake(monkeypatch: pytest.MonkeyPatch, responses: list[tuple[int, dict[str, Any] | None]]
@@ -110,7 +118,8 @@ def test_expiry_remints(monkeypatch: pytest.MonkeyPatch) -> None:
     assert len(f.calls) == 2
 
 
-def test_missing_credential_is_blocked_on_key(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_missing_credential_is_blocked_on_key(monkeypatch: pytest.MonkeyPatch,
+                                              myfx_unfenced: None) -> None:
     f = _fake(monkeypatch, [])
     for env in T.MANAGED:
         r = T.get_token(env, environ={}, now=NOW)
@@ -120,7 +129,8 @@ def test_missing_credential_is_blocked_on_key(monkeypatch: pytest.MonkeyPatch) -
 
 def test_http_401_is_refresh_failed_and_secret_free(monkeypatch: pytest.MonkeyPatch,
                                                     caplog: pytest.LogCaptureFixture,
-                                                    capsys: pytest.CaptureFixture[str]) -> None:
+                                                    capsys: pytest.CaptureFixture[str],
+                                                    myfx_unfenced: None) -> None:
     caplog.set_level(logging.DEBUG)
     _fake(monkeypatch, [(401, None)])
     env = {"MYFXBOOK_EMAIL": "me@example.org", "MYFXBOOK_PASSWORD": PASSWORD}
@@ -131,7 +141,8 @@ def test_http_401_is_refresh_failed_and_secret_free(monkeypatch: pytest.MonkeyPa
     assert PASSWORD not in blob
 
 
-def test_myfxbook_error_true_on_200(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_myfxbook_error_true_on_200(monkeypatch: pytest.MonkeyPatch,
+                                    myfx_unfenced: None) -> None:
     _fake(monkeypatch, [(200, {"error": True, "message": "Invalid login", "session": ""})])
     env = {"MYFXBOOK_EMAIL": "me@example.org", "MYFXBOOK_PASSWORD": PASSWORD}
     r = T.get_token("MYFXBOOK_SESSION", environ=env, now=NOW)
@@ -146,7 +157,7 @@ def test_network_exception_never_raises(monkeypatch: pytest.MonkeyPatch) -> None
     assert r.status == T.REFRESH_FAILED and PASSWORD not in r.detail
 
 
-def test_token_never_in_repr(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_token_never_in_repr(monkeypatch: pytest.MonkeyPatch, myfx_unfenced: None) -> None:
     _fake(monkeypatch, [(200, {"error": False, "session": "SESS%2Bsecret123"})])
     env = {"MYFXBOOK_EMAIL": "me@example.org", "MYFXBOOK_PASSWORD": PASSWORD}
     r = T.get_token("MYFXBOOK_SESSION", environ=env, now=NOW)
@@ -173,7 +184,8 @@ def test_jquants_v1_mint_and_v2_api_key(monkeypatch: pytest.MonkeyPatch) -> None
     assert hdr == {"x-api-key": "k-123456"}
 
 
-def test_pasted_env_wins_and_expired_jwt_falls_through(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_pasted_env_wins_and_expired_jwt_falls_through(monkeypatch: pytest.MonkeyPatch,
+                                                       myfx_unfenced: None) -> None:
     f = _fake(monkeypatch, [(200, {"access_token": "new.x.y", "expires_in": 600})])
     live = _jwt(NOW + 600)
     r = T.get_token("CDSE_TOKEN", environ={"CDSE_TOKEN": live}, now=NOW)
@@ -203,7 +215,7 @@ def test_invalidate_drops_cached_token(monkeypatch: pytest.MonkeyPatch) -> None:
     assert len(f.calls) == 2
 
 
-def test_collector_uses_helper(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_collector_uses_helper(monkeypatch: pytest.MonkeyPatch, myfx_unfenced: None) -> None:
     """asia_collector.collect_one reads the helper, never the env var, for managed keys, and
     never records the session in the row's url."""
     sys.path.insert(0, str(ROOT / "desks" / "mt5"))
@@ -219,11 +231,213 @@ def test_collector_uses_helper(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(C, "_robots_allows", lambda url, agent="": (True, "stub"))
     sent: list[str] = []
 
-    def fake_open(req: Any, timeout: float = 0, context: Any = None) -> Any:
+    def fake_open(self: Any, req: Any, data: Any = None, timeout: float = 0) -> Any:
         sent.append(req.full_url)
         raise urllib.error.HTTPError(req.full_url, 401, "Unauthorized", None, None)  # type: ignore[arg-type]
-    monkeypatch.setattr(urllib.request, "urlopen", fake_open)
+    # a keyed request goes through the credential-safe opener (#201's keyed_opener)
+    monkeypatch.setattr(urllib.request.OpenerDirector, "open", fake_open)
     monkeypatch.setattr(T, "invalidate", lambda env: None)
     rec = C.collect_one(src)
     assert sent and "session=SESSIONSECRET" in sent[0]
     assert rec["status"] == "HTTP_ERROR" and "SESSIONSECRET" not in json.dumps(rec)
+
+
+# ---------------------------------------------------------------------------------------------
+# security audit of #218 (2026-10-06)
+# ---------------------------------------------------------------------------------------------
+
+MYFX_ENV = {"MYFXBOOK_EMAIL": "me@example.org", "MYFXBOOK_PASSWORD": PASSWORD}
+
+
+def _collector() -> Any:
+    sys.path.insert(0, str(ROOT / "desks" / "mt5"))
+    from research import asia_collector as C
+    return C
+
+
+def test_failed_refresh_is_blocked_auth_not_unconfigured(monkeypatch: pytest.MonkeyPatch) -> None:
+    _fake(monkeypatch, [(401, None)])
+    r = T.get_token("CDSE_TOKEN", environ=CDSE_ENV, now=NOW)
+    assert r.status == T.REFRESH_FAILED and T.collector_status(r) == T.BLOCKED_AUTH
+    rep = {row["env"]: row for row in T.status_report(CDSE_ENV)}["CDSE_TOKEN"]
+    assert rep["status"] == T.BLOCKED_AUTH
+    # a truly absent credential, and only that, is UNCONFIGURED
+    absent = T.get_token("JQUANTS_TOKEN", environ={}, now=NOW)
+    assert T.collector_status(absent) == T.UNCONFIGURED
+    assert {row["env"]: row for row in T.status_report({})}["JQUANTS_TOKEN"]["status"] \
+        == T.UNCONFIGURED
+
+    C = _collector()
+    monkeypatch.setattr(T, "get_token", lambda env, **k: T.TokenResult(
+        T.REFRESH_FAILED, env, http=401, detail="CDSE token endpoint answered HTTP 401"))
+    rec = C.collect_one({"id": "copernicus_s5p", "access": "key", "key_env": "CDSE_TOKEN",
+                         "url": "https://catalogue.dataspace.copernicus.eu/stac",
+                         "expect": "json"})
+    assert rec["status"] == "BLOCKED_AUTH" and rec["token_http"] == 401
+
+
+def test_myfxbook_is_fenced_on_terms_and_sends_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    f = _fake(monkeypatch, [])
+    for env in (MYFX_ENV, {"MYFXBOOK_SESSION": "pasted-session"}):
+        r = T.get_token("MYFXBOOK_SESSION", environ=env, now=NOW)
+        assert r.status == T.BLOCKED_ON_TERMS and r.token is None
+    assert f.calls == []
+    assert T.TERMS["myfxbook"][0] != "confirmed"
+    rep = {row["env"]: row for row in T.status_report(MYFX_ENV)}["MYFXBOOK_SESSION"]
+    assert rep["status"] == T.BLOCKED_ON_TERMS
+
+    C = _collector()
+    opened: list[Any] = []
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: opened.append(a))
+    monkeypatch.setattr(urllib.request.OpenerDirector, "open",
+                        lambda *a, **k: opened.append(a))
+    rec = C.collect_one({"id": "myfxbook_outlook", "access": "key",
+                         "key_env": "MYFXBOOK_SESSION", "expect": "json",
+                         "url": "https://www.myfxbook.com/api/get-community-outlook.json"})
+    assert rec["status"] == "BLOCKED_ON_TERMS" and not opened
+
+
+def test_terms_evidence_is_recorded_for_every_fenced_provider() -> None:
+    for name, (verdict, _note) in T.TERMS.items():
+        ev = T.TERMS_EVIDENCE[name]
+        assert ev["terms_url"].startswith("https://") and len(ev["terms_quote"]) > 20
+        assert ev["checked_at"]
+        assert T.terms_ok(T.PROVIDERS[{"cdse": "CDSE_TOKEN",
+                                       "myfxbook": "MYFXBOOK_SESSION"}[name]]) == (
+            verdict == "confirmed")
+    assert T.TERMS["cdse"][0] == "confirmed"
+
+
+def test_credentials_come_from_read_key_not_os_environ(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The default credential source is read_key (#201): a value only the machine registry
+    holds (setx /M after the task started) is seen, and os.environ is never consulted."""
+    from libs.ops import env_secret
+    machine = {"CDSE_USERNAME": "me@example.org", "CDSE_PASSWORD": PASSWORD}
+    monkeypatch.setattr(env_secret, "_registry",
+                        lambda hive, name: machine.get(name) if hive == "machine" else None)
+    monkeypatch.setattr(os, "environ", {"QUANT_TOKEN_CACHE_DIR":
+                                        os.environ["QUANT_TOKEN_CACHE_DIR"]})
+    f = _fake(monkeypatch, [(200, {"access_token": "m.x.y", "expires_in": 600})])
+    r = T.get_token("CDSE_TOKEN", now=NOW)
+    assert r.ok and r.source == "minted"
+    assert f.calls[0][2] is not None and b"me%40example.org" in f.calls[0][2]
+    assert PASSWORD not in T.scrub(f"echo {PASSWORD}")
+
+    # a fake key source through the read_key seam
+    fake = {"JQUANTS_API_KEY": "fake-v2-key"}
+    monkeypatch.setattr(T, "_read_key", lambda name: fake.get(name, ""))
+    k = T.get_token("JQUANTS_TOKEN", now=NOW)
+    assert k.ok and k.source == "api_key" and k.apply == "x-api-key"
+
+
+def test_collector_non_managed_key_uses_read_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.ops import env_keys
+    C = _collector()
+    monkeypatch.delenv("QK_FAKE_KEY", raising=False)
+    monkeypatch.setattr(env_keys, "read_key", lambda name, default="", **k:
+                        "v" if name == "QK_FAKE_KEY" else default)
+    assert C._key_present({"key_env": "QK_FAKE_KEY"})
+    assert not C._key_present({"key_env": "QK_OTHER"})
+
+
+@pytest.mark.parametrize("url", [
+    "https://www.myfxbook.com/api/login.json?email=me%40example.org&password=" + PASSWORD,
+    "https://u:" + PASSWORD + "@host.example/x?a=1",
+    "https://api.example/x?session=" + PASSWORD + "&symbol=EURUSD",
+    "https://api.example/x?refreshtoken=" + PASSWORD,
+])
+def test_recorded_urls_carry_no_query_credential(url: str) -> None:
+    out = T.strip_url_credentials(url)
+    assert PASSWORD not in out and "me%40example.org" not in out
+    assert T.scrub(f"ValueError: unknown url type: {url!r}", env={}).count(PASSWORD) == 0
+
+
+def test_myfxbook_login_url_never_reaches_a_record(monkeypatch: pytest.MonkeyPatch,
+                                                   myfx_unfenced: None, _cache: Path,
+                                                   caplog: pytest.LogCaptureFixture) -> None:
+    """Even unfenced, the GET login URL (password in its query) never reaches a detail, the
+    cache or a log, whatever the transport raises."""
+    caplog.set_level(logging.DEBUG)
+    for exc in (OSError, ValueError, urllib.error.URLError):
+        def boom(method: str, url: str, *a: Any, _e: Any = exc) -> tuple[int, bytes]:
+            raise _e(f"failed {url}")
+        monkeypatch.setattr(T, "_http", boom)
+        r = T.get_token("MYFXBOOK_SESSION", environ=MYFX_ENV, now=NOW)
+        assert r.status == T.REFRESH_FAILED
+        blob = r.detail + repr(r) + caplog.text
+        blob += "".join(p.read_text() for p in _cache.glob("*.json"))
+        assert PASSWORD not in blob and "password=" not in blob
+
+
+def _managed_fetch(monkeypatch: pytest.MonkeyPatch, token: str, fail: Any,
+                   env: str = "JQUANTS_TOKEN", apply: str = "x-api-key",
+                   url: str = "https://api.jquants.com/v2/equities/investor-types"
+                   ) -> tuple[dict[str, Any], list[Any]]:
+    C = _collector()
+    monkeypatch.setattr(T, "get_token", lambda e, **k: T.TokenResult(
+        T.OK, e, token=token, source="api_key", apply=apply))
+    monkeypatch.setattr(C, "_robots_allows", lambda u, agent="": (True, "stub"))
+    seen: list[Any] = []
+
+    def opened(self: Any, req: Any, data: Any = None, timeout: float = 0) -> Any:
+        seen.append(req)
+        raise fail(req)
+    monkeypatch.setattr(urllib.request.OpenerDirector, "open", opened)
+    rec = C.collect_one({"id": "jpx_jquants", "access": "key", "key_env": env,
+                         "url": url, "expect": "json"})
+    return rec, seen
+
+
+TOKEN40 = "TKN" + "abcdefghijklmnopqrstuvwxyz0123456789Q"
+
+
+@pytest.mark.parametrize("pad", [0, 30, 60, 70, 75, 80, 85, 88, 89, 90, 95, 120])
+@pytest.mark.parametrize("kind", [OSError, TimeoutError, RuntimeError, ValueError])
+def test_token_at_any_position_never_survives_the_cut(monkeypatch: pytest.MonkeyPatch,
+                                                      pad: int, kind: Any) -> None:
+    """Scrub first, truncate after: a token at any offset, including one straddling char 90,
+    leaves no fragment in the row (UNREACHABLE and UNMEASURED branches alike)."""
+    rec, _ = _managed_fetch(monkeypatch, TOKEN40, lambda req: kind("x" * pad + TOKEN40 + " tail"))
+    why = rec["why"]
+    assert rec["status"] in ("UNREACHABLE", "UNMEASURED")
+    assert len(why) <= 90
+    for i in range(len(TOKEN40) - 5):
+        assert TOKEN40[i:i + 6] not in why, (pad, why)
+    assert TOKEN40 not in json.dumps(rec)
+
+
+def test_session_in_a_raised_url_never_reaches_the_row(monkeypatch: pytest.MonkeyPatch) -> None:
+    rec, seen = _managed_fetch(
+        monkeypatch, "SESSIONSECRET", lambda req: ValueError(f"unknown url type: {req.full_url}"),
+        env="MYFXBOOK_SESSION", apply="query:session",
+        url="https://www.myfxbook.com/api/get-community-outlook.json")
+    assert "session=SESSIONSECRET" in seen[0].full_url
+    assert "SESSIONSECRET" not in json.dumps(rec)
+
+
+def test_jquants_v2_key_attaches_to_the_real_api_call(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The registry row points at the V2 API (not the landing page), and the API key read from a
+    fake key source rides as `x-api-key` on that call -- never in the url or the row."""
+    rows = json.loads((ROOT / "desks/mt5/data/asia_sources.json").read_text(encoding="utf-8"))
+    row = next(r for r in rows["sources"] if r.get("id") == "jpx_jquants")
+    assert row["url"].startswith("https://api.jquants.com/v2/")
+    fake = {"JQUANTS_API_KEY": "fake-v2-key-123456"}
+    monkeypatch.setattr(T, "_read_key", lambda name: fake.get(name, ""))
+    C = _collector()
+    monkeypatch.setattr(C, "_robots_allows", lambda u, agent="": (True, "stub"))
+    seen: list[Any] = []
+
+    def opened(self: Any, req: Any, data: Any = None, timeout: float = 0) -> Any:
+        seen.append(req)
+        raise urllib.error.HTTPError(req.full_url, 503, "busy", None, None)  # type: ignore[arg-type]
+    monkeypatch.setattr(urllib.request.OpenerDirector, "open", opened)
+    rec = C.collect_one(dict(row))
+    assert seen, "no request was sent"
+    req = seen[0]
+    assert urllib.parse.urlsplit(req.full_url).hostname == "api.jquants.com"
+    assert req.get_header("X-api-key") == "fake-v2-key-123456"
+    assert "fake-v2-key" not in req.full_url and "fake-v2-key" not in json.dumps(rec)
+    assert rec["status"] == "HTTP_ERROR" and rec["http"] == 503
+    # a pasted JQUANTS_TOKEN that is not a JWT is a V2 key too
+    k = T.get_token("JQUANTS_TOKEN", environ={"JQUANTS_TOKEN": "opaque-key"}, now=NOW)
+    assert k.ok and k.apply == "x-api-key"

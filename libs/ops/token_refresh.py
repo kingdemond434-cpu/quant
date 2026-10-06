@@ -28,6 +28,25 @@ THE PROVIDERS' OWN DOCUMENTED FLOWS (verified 2026-10-06):
   Myfxbook   https://www.myfxbook.com/api: `login.json?email=&password=` returns `session`;
              "Sessions are IP-bound and expire after 1 month." Sent as the `session` query param.
 
+TERMS FENCE (security audit of #218, 2026-10-06). A provider listed in `TERMS` sends NO
+credential -- no login, no mint, no pasted token on a request -- until its terms are recorded as
+"confirmed" with the URL and a verbatim quote in `TERMS_EVIDENCE`. Anything else is
+BLOCKED_ON_TERMS (fail closed). CDSE is confirmed; Myfxbook is not (see the evidence).
+
+CREDENTIALS ARE READ THROUGH `libs.ops.env_keys.read_key` (#201), never straight from
+`os.environ`: a value set with `setx /M` after a resident task started lives only in the machine
+registry, and read_key finds it there.
+
+STATUS FOR A READER. `collector_status` maps a result to the row status a consumer records:
+OK; UNCONFIGURED only when no credential is configured at all; BLOCKED_AUTH when a refresh was
+attempted and the provider refused it (a configured credential that does not work is not an
+absent one); BLOCKED_ON_TERMS when the terms fence held.
+
+URLS NEVER CARRY A CREDENTIAL INTO A RECORD. `strip_url_credentials` blanks userinfo and every
+credential-named query parameter; `scrub` applies the same to free text, after removing every
+managed secret value. Myfxbook's documented login takes the password in a GET query; that URL
+exists only inside `_http` and is never put into a detail, a cache field or an exception text.
+
 SECRECY. No token, password, secret or refresh token is ever logged, printed, put in a returned
 `detail`, or recorded in a URL. `TokenResult.token` is excluded from repr. The cache lives under
 the gitignored `data/secrets/token_cache/` (mode 0700 dir, 0600 files on POSIX; on Windows the
@@ -42,12 +61,13 @@ from __future__ import annotations
 import base64
 import json
 import os
+import re
 import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -57,6 +77,11 @@ ROOT = Path(__file__).resolve().parents[2]
 OK = "OK"
 BLOCKED_ON_KEY = "BLOCKED_ON_KEY"
 REFRESH_FAILED = "REFRESH_FAILED"
+BLOCKED_ON_TERMS = "BLOCKED_ON_TERMS"
+
+#: The status a consumer RECORDS for a token result (see `collector_status`).
+UNCONFIGURED = "UNCONFIGURED"
+BLOCKED_AUTH = "BLOCKED_AUTH"
 
 #: Seconds before the stated expiry at which a token is treated as expired, so a token is never
 #: handed to a request that will outlive it.
@@ -99,6 +124,111 @@ PROVIDERS: dict[str, Provider] = {
         docs="https://www.myfxbook.com/api"),
 }
 MANAGED: frozenset[str] = frozenset(PROVIDERS)
+
+#: Terms verdict per terms-fenced provider: "confirmed" | "to_confirm" | "refused". A provider
+#: listed here sends no credential unless its verdict is "confirmed" (fail closed). Same shape as
+#: desks/mt5/research/alt_proxies.TERMS / TERMS_EVIDENCE.
+TERMS: dict[str, tuple[str, str]] = {
+    "cdse": ("confirmed", "CDSE terms: Sentinel data free, full and open, governed by the "
+                          "Sentinel Data Legal Notice (reproduction, distribution, adaptation)"),
+    "myfxbook": ("to_confirm", "Myfxbook API page: 'The API allows access to personal "
+                               "information only'; its Terms say 'Reproduction is prohibited' "
+                               "and do not address automated or commercial use of community "
+                               "data -- not a clear permission for this desk's use"),
+}
+_TERMS_CHK = "2026-10-06"
+TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    "cdse": {
+        "terms_url": "https://dataspace.copernicus.eu/terms-and-conditions",
+        "terms_quote": ("The access and use of Copernicus Sentinel data is available on a free, "
+                        "full and open basis through the Copernicus Data Space Ecosystem and "
+                        "shall be governed by the Legal Notice on the use of Copernicus Sentinel "
+                        "Data and Service"),
+        "licence_url": ("https://sentinels.copernicus.eu/documents/247904/690755/"
+                        "Sentinel_Data_Legal_Notice"),
+        "licence_quote": ("users shall have a free, full and open access to Copernicus Sentinel "
+                          "Data and Service Information ... (a) reproduction; (b) distribution; "
+                          "(c) communication to the public; (d) adaptation, modification and "
+                          "combination with other data and information"),
+        "scope_note": ("the T&C's 'intended for non-commercial use' clause covers 'Any other "
+                       "contents of the ... portal', not Sentinel data; the forum no-automation "
+                       "clause covers the forum only; quotas must not be bypassed with multiple "
+                       "accounts (one account is used)"),
+        "checked_at": _TERMS_CHK},
+    "myfxbook": {
+        "terms_url": "https://www.myfxbook.com/api",
+        "terms_quote": ("The API allows access to personal information only. ... By using the "
+                        "Myfxbook API, you agree to the Terms of use."),
+        "licence_url": "https://www.myfxbook.com/terms",
+        "licence_quote": "Reproduction is prohibited by law.",
+        "scope_note": ("no clause permits automated or commercial use of the community outlook "
+                       "by a trading desk; stays BLOCKED_ON_TERMS until a written permission "
+                       "is recorded here"),
+        "checked_at": _TERMS_CHK},
+}
+
+
+def terms_ok(p: Provider) -> bool:
+    """True when the provider is not terms-fenced, or its terms are recorded as confirmed."""
+    verdict = TERMS.get(p.name)
+    return verdict is None or (verdict[0] == "confirmed" and p.name in TERMS_EVIDENCE)
+
+
+def collector_status(res: TokenResult) -> str:
+    """The status a reader records for this result. UNCONFIGURED only for an absent credential;
+    a refresh the provider refused is BLOCKED_AUTH; the terms fence is BLOCKED_ON_TERMS."""
+    if res.ok:
+        return OK
+    return {BLOCKED_ON_KEY: UNCONFIGURED, REFRESH_FAILED: BLOCKED_AUTH,
+            BLOCKED_ON_TERMS: BLOCKED_ON_TERMS}.get(res.status, BLOCKED_AUTH)
+
+
+# ---------------------------------------------------------------------------------------------
+# credential source: read_key (#201), never os.environ directly
+# ---------------------------------------------------------------------------------------------
+
+def _read_key(name: str) -> str:
+    from libs.ops.env_keys import read_key
+    return read_key(name)
+
+
+class KeySource(Mapping[str, str]):
+    """A read-only mapping that looks each credential up through `read_key` (machine registry,
+    user registry, process env). Not enumerable: it answers only the names it is asked for."""
+
+    def __getitem__(self, name: str) -> str:
+        value = _read_key(name)
+        if not value:
+            raise KeyError(name)
+        return value
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(())
+
+    def __len__(self) -> int:
+        return 0
+
+
+# ---------------------------------------------------------------------------------------------
+# URL credential stripping
+# ---------------------------------------------------------------------------------------------
+
+#: Query parameter names that carry a credential. Their values never reach a record.
+CREDENTIAL_PARAMS = ("password", "passwd", "pass", "pwd", "email", "mailaddress", "session",
+                     "token", "access_token", "id_token", "idtoken", "refresh_token",
+                     "refreshtoken", "api_key", "apikey", "key", "client_secret", "secret",
+                     "authkey", "auth")
+_CRED_QS = re.compile(r"(?i)(?<![A-Za-z0-9_])(" + "|".join(CREDENTIAL_PARAMS)
+                      + r")=([^&\s'\"<>#]*)")
+_USERINFO = re.compile(r"(?i)(https?://)[^/\s@'\"]+@")
+
+
+def strip_url_credentials(text: str) -> str:
+    """`text` (a URL, or free text quoting one) with userinfo and every credential-named query
+    value replaced by `<redacted>`. Other parameters are kept, so the record still names the
+    resource."""
+    out = _USERINFO.sub(r"\1<redacted>@", str(text))
+    return _CRED_QS.sub(r"\1=<redacted>", out)
 
 
 @dataclass(frozen=True)
@@ -239,8 +369,9 @@ def _json(body: bytes) -> dict[str, Any]:
 
 
 def scrub(text: str, env: Mapping[str, str] | None = None) -> str:
-    """Remove every managed secret value (env or cached) from `text`."""
-    e = os.environ if env is None else env
+    """Remove every managed secret value (configured or cached) from `text`, then every
+    credential a quoted URL carries in its query string or userinfo. Scrub BEFORE truncating."""
+    e = KeySource() if env is None else env
     secrets: list[str] = []
     for p in PROVIDERS.values():
         secrets.append(e.get(p.short_env, ""))
@@ -250,10 +381,10 @@ def scrub(text: str, env: Mapping[str, str] | None = None) -> str:
         secrets.extend(str(c.get(k) or "") for k in ("token", "refresh_token"))
     for s in sorted({s for s in secrets if len(s) >= 4}, key=len, reverse=True):
         text = text.replace(s, "<redacted>")
-        q = urllib.parse.quote(s, safe="")
-        if q != s:
-            text = text.replace(q, "<redacted>")
-    return text
+        for q in {urllib.parse.quote(s, safe=""), urllib.parse.quote_plus(s, safe="")}:
+            if q != s:
+                text = text.replace(q, "<redacted>")
+    return strip_url_credentials(text)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -345,7 +476,7 @@ def get_token(env: str, *, environ: Mapping[str, str] | None = None,
               timeout: float = 20.0, now: float | None = None) -> TokenResult:
     """A valid token for the short-lived env var `env`, or a typed reason. Never raises."""
     try:
-        return _get_token(env, os.environ if environ is None else environ, timeout,
+        return _get_token(env, KeySource() if environ is None else environ, timeout,
                           time.time() if now is None else now)
     except Exception as exc:  # the contract is "never raises into callers"
         return TokenResult(REFRESH_FAILED, env, detail=f"internal {type(exc).__name__}")
@@ -358,15 +489,29 @@ def _get_token(env: str, e: Mapping[str, str], timeout: float, now: float) -> To
         return (TokenResult(OK, env, token=val, source="env") if val
                 else TokenResult(BLOCKED_ON_KEY, env, detail=f"{env} is not set"))
 
+    if not terms_ok(p):
+        # FAIL CLOSED: no login, no mint and no pasted token goes anywhere until the provider's
+        # terms are recorded as confirmed. Nothing is read from the credential store either.
+        verdict = TERMS.get(p.name, ("to_confirm", ""))[0]
+        detail = (f"{p.name} terms are {verdict}, not confirmed: no credential is sent "
+                  f"(evidence: libs/ops/token_refresh.TERMS_EVIDENCE['{p.name}'])")
+        return TokenResult(BLOCKED_ON_TERMS, env, apply=p.apply, detail=detail)
+
+    if p.name == "jquants":
+        # J-Quants V2: the long-lived API key IS the credential, sent as `x-api-key` to
+        # https://api.jquants.com/v2/... A pasted JQUANTS_TOKEN that is not a JWT is the same
+        # kind of key (the catalog lists it as JQUANTS_API_KEY's alias); a JWT is a V1 idToken.
+        key = e.get("JQUANTS_API_KEY", "")
+        if key:
+            return TokenResult(OK, env, token=key, source="api_key", apply="x-api-key")
     pasted = e.get(p.short_env, "")
     if pasted:
         exp = jwt_exp(pasted)
+        if p.name == "jquants" and exp is None:
+            return TokenResult(OK, env, token=pasted, source="env", apply="x-api-key")
         if _fresh(exp, now):
             return TokenResult(OK, env, token=pasted, source="env", apply=p.apply,
                                expires_at=exp)
-    if p.name == "jquants" and e.get("JQUANTS_API_KEY"):
-        return TokenResult(OK, env, token=e["JQUANTS_API_KEY"], source="api_key",
-                           apply="x-api-key")
 
     group = _long_lived(p, e)
     with _LOCK:
@@ -425,20 +570,31 @@ def apply_to_request(res: TokenResult, url: str,
 def status_report(environ: Mapping[str, str] | None = None) -> list[dict[str, Any]]:
     """Per provider: is a long-lived credential present, cached expiry, last refresh status.
     Booleans, timestamps and statuses only -- never a value."""
-    e = os.environ if environ is None else environ
+    e = KeySource() if environ is None else environ
     rows = []
     for p in PROVIDERS.values():
         c = _read_cache(p)
         group = _long_lived(p, e)
+        last = str(c.get("last_status") or "NEVER_ATTEMPTED")
+        short = bool(e.get(p.short_env))
+        if not terms_ok(p):
+            status = BLOCKED_ON_TERMS
+        elif last == REFRESH_FAILED:
+            status = BLOCKED_AUTH      # configured, and the provider refused the refresh
+        elif group is None and not short and not c.get("token"):
+            status = UNCONFIGURED      # truly absent: nothing set, nothing cached
+        else:
+            status = OK
         rows.append({
-            "env": p.short_env, "provider": p.name,
-            "short_lived_env_set": bool(e.get(p.short_env)),
+            "env": p.short_env, "provider": p.name, "status": status,
+            "terms": TERMS.get(p.name, ("not_fenced", ""))[0],
+            "short_lived_env_set": short,
             "long_lived_present": group is not None,
             "long_lived_set": "+".join(group) if group else "",
             "long_lived_options": ["+".join(g) for g in p.long_envs],
             "cached_token": bool(c.get("token")),
             "cached_expires_at": c.get("expires_at"),
-            "last_status": c.get("last_status") or "NEVER_ATTEMPTED",
+            "last_status": last,
             "last_http": c.get("last_http"),
             "last_attempt_at": c.get("last_attempt_at"),
             "last_detail": str(c.get("last_detail") or ""),

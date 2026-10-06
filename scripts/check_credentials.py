@@ -329,7 +329,8 @@ def main() -> int:
             print(f"  {t['error']}")
             continue
         long_ = t["long_lived_set"] or ("ABSENT -- set " + " or ".join(t["long_lived_options"]))
-        print(f"  {t['env']:<18} long-lived: {long_}")
+        print(f"  {t['env']:<18} {t.get('status', '-'):<16} terms: {t.get('terms', '-'):<11} "
+              f"long-lived: {long_}")
         print(f"  {'':<18} pasted short-lived: {'yes' if t['short_lived_env_set'] else 'no'}"
               f"   cached expiry: {_ts(t['cached_expires_at']) if t['cached_token'] else '-'}"
               f"   last refresh: {t['last_status']}"

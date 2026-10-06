@@ -109,7 +109,7 @@ _ACCEPT = {
 }
 
 
-def _tls_context():
+def _tls_context() -> Any:
     """A verified TLS context using certifi's CA bundle, or None to keep the default.
 
     THIS IS NOT A VERIFICATION BYPASS AND MUST NEVER BECOME ONE. Measured 2026-09-15: 26 of 85
