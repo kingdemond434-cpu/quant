@@ -242,10 +242,65 @@ def test_as_of_reads_what_the_ledger_held_at_an_instant(tmp_path) -> None:
     led = sc.SensorLedger(tmp_path)
     led.append(_vintages(60))
     key = ("macro:alfred", "US", "PAYEMS_change", "2026-09-30")
-    assert led.as_of(*key, T0 - timedelta(seconds=1)) is None
-    assert led.as_of(*key, T0 + timedelta(days=10))["value"] == 120.0
-    assert led.as_of(*key, T0 + timedelta(days=45))["value"] == 95.0
-    assert led.as_of(*key, T0 + timedelta(days=90))["value"] == 101.0
+    w = {"basis": "world"}
+    assert led.as_of(*key, T0 - timedelta(seconds=1), **w) is None
+    assert led.as_of(*key, T0 + timedelta(days=10), **w)["value"] == 120.0
+    assert led.as_of(*key, T0 + timedelta(days=45), **w)["value"] == 95.0
+    assert led.as_of(*key, T0 + timedelta(days=90), **w)["value"] == 101.0
+    # audit #208 (2): all three were BACKFILLED on day 60 -- the desk held none of them on day
+    # 10, so the default (desk) basis returns nothing until the receipt, then the newest
+    assert led.as_of(*key, T0 + timedelta(days=10)) is None
+    assert led.as_of(*key, T0 + timedelta(days=60, hours=1))["value"] == 101.0
+
+
+def test_a_deleted_index_is_rebuilt_from_the_shards_not_read_as_empty(tmp_path) -> None:
+    """Audit #208 must-fix 1: a deleted index re-appended the history (4 rows, not 2)."""
+    sc.SensorLedger(tmp_path).append(_vintages(30))
+    led = sc.SensorLedger(tmp_path)
+    led.index_path.unlink()
+    out = sc.SensorLedger(tmp_path).append(_vintages(31))
+    assert out["appended"] == 0 and out["duplicates"] == 2
+    n = sum(len(led.rows(p.stem)) for p in led.obs_dir.glob("*.jsonl"))
+    assert n == 2
+    latest = sc.SensorLedger(tmp_path).latest("macro:alfred", "US", "PAYEMS_change",
+                                              "2026-09-30")
+    assert latest is not None and latest["value"] == 95.0
+
+
+def test_a_crash_between_shard_and_index_is_reconciled_on_load(tmp_path) -> None:
+    """Audit #208 must-fix 2: rows on disk that the index never recorded duplicated when the
+    producer re-sent them on a later receipt day."""
+    led = sc.SensorLedger(tmp_path)
+    led.append(_vintages(0))
+    stale = led.index_path.read_text(encoding="utf-8")
+    sc.SensorLedger(tmp_path).append(_vintages(30))           # writes the day-30 vintage
+    led.index_path.write_text(stale, encoding="utf-8")         # ...but the index write was lost
+    out = sc.SensorLedger(tmp_path).append(_vintages(45))      # resent on a later receipt day
+    assert out["appended"] == 0 and out["duplicates"] == 2
+    assert sum(len(led.rows(p.stem)) for p in led.obs_dir.glob("*.jsonl")) == 2
+
+
+def test_a_torn_last_line_is_quarantined_and_its_observation_admitted(tmp_path) -> None:
+    """Audit #208 should-fix: the fragment's id was taken as held, losing the observation."""
+    import json
+    led = sc.SensorLedger(tmp_path)
+    obs = _payrolls(120.0, received=T0 + timedelta(seconds=30))
+    shard = led.obs_dir / f"{T0.date().isoformat()}.jsonl"
+    shard.parent.mkdir(parents=True)
+    whole = json.dumps(obs.to_row(), default=str)
+    shard.write_text(whole[: len(whole) // 2], encoding="utf-8")   # a crash mid-write
+    out = sc.SensorLedger(tmp_path).append([obs])
+    assert out["appended"] == 1
+    rows = led.rows(T0.date().isoformat())
+    assert [r["observation_id"] for r in rows] == [obs.observation_id]
+    assert (led.torn_dir / shard.name).read_text(encoding="utf-8").startswith(whole[:20])
+
+
+def test_the_digest_status_reads_index_corrupt(tmp_path) -> None:
+    led = sc.SensorLedger(tmp_path)
+    led.append([_payrolls(120.0, received=T0 + timedelta(seconds=30))])
+    led.index_path.write_text("{not json", encoding="utf-8")
+    assert sc.digest(sc.SensorLedger(tmp_path), now=T0)["status"] == "INDEX_CORRUPT"
 
 
 def test_a_same_vintage_with_a_different_value_is_a_refused_conflict(tmp_path) -> None:
