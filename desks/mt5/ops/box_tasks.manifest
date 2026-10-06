@@ -122,7 +122,8 @@ TASK name="MT5-Dept-Mathlab" trigger="at startup + every 10 minutes (keep-alive 
 TASK name="MT5-AllocatorPulse" trigger="at startup + every 5 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/allocator_trigger.py" installer="NONE" lane="money"
 # THE WORLD SENSOR'S NEWS RESIDENT (2026-10-06). news_event_stream as a 60 s cursor-driven
 # resident with no item cap, feeding the sensor ledger and the sequenced re-solve request
-# MT5-AllocatorPulse watches. Its own lock keeps it singleton against the hourly --once leg.
+# MT5-AllocatorPulse watches. A singleton lock keeps one resident; EVERY pass (each resident pass
+# and the hourly --once leg) takes the pass lock, so two passes never run at once.
 TASK name="MT5-NewsResident" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/news_event_stream.py" installer="desks/mt5/scripts/install_news_resident_task.ps1" lane="research"
 # THE FOREST FEDERATION (principal 2026-09-17). Eleven regional research civilizations,
 # each a 24/7 resident running the eleven agent roles of libs/research/forests.ROLES in

@@ -52,6 +52,7 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         "PENDING": data / "pending.jsonl", "RESOLVE_QUEUE": data / "resolve_queue.jsonl",
         "INTAKE_REPORT": reports / "WORLD_SENSOR_INTAKE.json",
         "LOCK": data / "locks" / "nes.lock", "SENSOR_ROOT": data / "sensors",
+        "PASS_LOCK": data / "locks" / "nes.pass.lock",
     }
     for name, value in paths.items():
         monkeypatch.setattr(nes, name, value)
@@ -235,3 +236,71 @@ def test_donated_rows_carry_provenance_for_the_mining_registry(
     assert prov == {"organ": "news_event_stream", "use": "deep_lane",
                     "source_id": "gdelt_translingual_country"}
     assert got[0]["payload"]["origin_source_id"] == "gdelt_translingual_country"
+
+
+def test_a_second_concurrent_pass_does_nothing(desk: Path) -> None:
+    """Audit HOLD #204 item 2: the hourly --once and the resident must never run together."""
+    _write_captures([_capture(i) for i in range(5)], nes.NEWS_CAPTURES)
+    held = nes._claim_lock(nes.PASS_LOCK)
+    assert held is not None
+    try:
+        out = nes.run(budget_s=0)
+        assert out["status"] == "LOCKED" and out["items_processed"] == 0
+        assert not nes.CURSOR.exists()
+    finally:
+        nes._release_lock(held)
+    assert nes.run(budget_s=0)["items_processed"] == 5
+
+
+def test_a_crash_mid_pass_keeps_what_was_owed(desk: Path,
+                                              monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit HOLD #204 item 3: the owed file was deleted BEFORE the items were processed."""
+    _write_captures([_capture(i) for i in range(20)], nes.NEWS_CAPTURES)
+    assert nes.run(budget_s=1e-12)["items_spilled"] == 20
+
+    def boom(*_a: Any, **_k: Any) -> Any:
+        raise RuntimeError("crash mid-pass")
+
+    monkeypatch.setattr(nes, "fast_update", boom)
+    with pytest.raises(RuntimeError):
+        nes.run(budget_s=0, now=NOW + timedelta(minutes=1))
+    assert nes.PENDING.exists()                          # still owed
+    monkeypatch.undo()
+    for name, value in {"PENDING": nes.PENDING}.items():
+        monkeypatch.setattr(nes, name, value)
+    again = nes.run(budget_s=0, now=NOW + timedelta(minutes=2))
+    assert again["items_owed_from_last_pass"] == 20 and again["items_processed"] >= 20
+
+
+def test_a_ground_is_streamed_in_bounded_slices_with_nothing_lost(desk: Path) -> None:
+    path = desk / "g.jsonl"
+    _write_captures([{"n": i} for i in range(50)], path)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write('{"n": 999')                             # being written
+    cur: dict[str, Any] = {"offsets": {"g": 0}}
+    got = [nes._jsonl_since(path, "g", cur, max_rows=20) for _ in range(4)]
+    assert [len(g) for g in got] == [20, 20, 10, 0]
+    assert [r["n"] for g in got for r in g] == list(range(50))
+
+
+def test_the_intake_meter_reads_only_new_ledger_rows(desk: Path,
+                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.research import sensor_contract as sc
+    led = sc.SensorLedger(desk / "data" / "sensors")
+    calls: list[int] = []
+    real = led.rows_since
+
+    def spy(day: str, offset: int = 0, max_rows: int | None = None) -> Any:
+        calls.append(offset)
+        return real(day, offset, max_rows)
+
+    monkeypatch.setattr(led, "rows_since", spy)
+    _write_captures([_capture(i) for i in range(3)], nes.NEWS_CAPTURES)
+    nes.run(budget_s=0)
+    day = datetime.now(UTC).date().isoformat()
+    n1 = len(nes._day_rows(led, day))
+    _write_captures([_capture(i, title=f"Another story {i} entirely") for i in range(3, 6)],
+                    nes.NEWS_CAPTURES)
+    nes.run(budget_s=0, now=NOW + timedelta(minutes=1))
+    n2 = len(nes._day_rows(led, day))
+    assert n2 > n1 and calls[-1] > 0                     # the second read resumed past offset 0
