@@ -120,6 +120,8 @@ SURVIVORS_LIVE = REPORTS / "UNIVERSAL_SURVIVORS.json"
 #: a survivor file swept (or written) within this many hours is the box's live set; older is a
 #: snapshot carried by git and is labelled so wherever its counts are printed
 LIVE_BASIS_MAX_AGE_H = 48.0
+#: Certified specs published for the near-duplicate index (the box holds ~850).
+MAX_SPECS_PUBLISHED = 20_000
 SHADOW_STATE = REPORTS / "shadow" / "shadow_state.json"
 SLEEVES = BASE / "data" / "sleeves.json"
 SEEN_CELLS = BASE / "data" / "hypotheses" / "gauntlet_seen_cells.json"
@@ -183,6 +185,15 @@ CHALLENGERS = 3
 RETARGET_SHARE = 0.5
 RETARGET_MIN_ROWS = 50
 RETARGET_PATIENCE = 24
+#: A near-duplicate's breadth value is at most the credit of ONE effective twin (preregistered).
+DUPLICATE_TAX_CREDIT = 1.0 / math.sqrt(2.0)
+#: THE PER-PRODUCER DUPLICATE BUDGET (audit rank 6, 2026-10-06). The share of a producer's next
+#: generation that may be near-duplicates of the certified book before it is told to retarget.
+#: Half the RETARGET share: the budget warns before the retarget fires. Preregistered, never
+#: tuned on which producers passed. A producer over budget loses ORDER (its duplicates go to the
+#: tail and are taxed) and is told so; nothing it produced is dropped, and every judged row is
+#: still charged its trial.
+DUPLICATE_BUDGET_SHARE = 0.25
 #: The map the docket reads must be this fresh; older reads as UNMEASURED (par for every row).
 MAX_AGE_H = 6.0
 #: Empty-cluster prior floor (section 17): an exhausted empty cluster keeps this much priority.
@@ -1274,6 +1285,27 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
     n_eff_status = (MEASURED if cert_syms and not unbarred else
                     f"{UNMEASURED}: {len(unbarred)} of {len(cert_syms)} certified instruments "
                     f"without bars couple at the declared prior")
+    # THE CHAMPION CAP, RESEARCH SIDE ONLY (law 20, producer law 19). Beyond the champion and
+    # its challengers a SATURATED cluster's certificates earn NO breadth credit: the capped
+    # count drops them from the group weights. Nothing about their certification, capital,
+    # sizing, promotion or live status changes -- that side of the cap is REFUSED by growth
+    # governance and never built (`capital_side` below says so in the artifact).
+    counts_cap = np.array([float(sum(1 for k in g["certs"] if k not in dup_keys))
+                           for g in glist])
+    n_eff_capped = (_keff_from(counts_cap, C) if counts_cap.sum() > 0 else 0.0)
+    champion_cap = {
+        "n_certificates_credited": int(counts_cap.sum()),
+        "n_certificates_archived": len(dup_keys),
+        "n_effective_certificates_champion_capped": round(n_eff_capped, 3),
+        "scope": "research priority and breadth counting only",
+        "capital_side": ("REFUSED_BY_GROWTH_GOVERNANCE: the cap never touches capital, sizing, "
+                         "promotion or live status; the promoter only annotates breadth_role"),
+    }
+    try:
+        from research.near_duplicate import structural_key
+    except ImportError:                                                 # pragma: no cover
+        from near_duplicate import structural_key  # type: ignore[import-not-found,no-redef]
+    struct_keys = sorted({structural_key(g["axes"], resid_of) for g in glist})
     headline = {
         **basis,
         "n_certificates": n_cert,
@@ -1294,6 +1326,9 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
         "effective_over_nominal": round(n_eff / n_cert, 4) if n_cert else None,
         "n_saturated_clusters": sum(1 for v in clusters.values() if v["state"] == "SATURATED"),
         "duplicate_survivor_share": duplicate_survivors["share"],
+        "n_certificates_credited": champion_cap["n_certificates_credited"],
+        "n_effective_certificates_champion_capped":
+            champion_cap["n_effective_certificates_champion_capped"],
         "failure_mode_effective_count": round(fm_eff, 3) if fm_eff else None,
         "median_validated_edge_recent": quality.get("median_recent"),
         "median_validated_edge_prior": quality.get("median_prior"),
@@ -1342,6 +1377,12 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
         "family_split_candidates": split, "family_merge_candidates": merge[:100],
         "breadth_debts": debts,
         "duplicate_survivors": duplicate_survivors,
+        "champion_cap": champion_cap,
+        # the certified book as the near-duplicate rules and the cheap structural check read it
+        "certified_specs": [{"key": c["key"], "sym": c["sym"], "family": c["fam"],
+                             "params": c["params"], "tf": c["tf"], "sess": c["sess"],
+                             "src": c["src"]} for c in certs[:MAX_SPECS_PUBLISHED]],
+        "structural_keys": [list(k) for k in struct_keys],
     }
 
 
@@ -1600,6 +1641,20 @@ class Scorer:
         self.raw_cache: dict[tuple[Any, ...], dict[str, Any]] = {}
         self.archive = {k for v in self.clusters.values() for k in (v.get("archive") or [])}
         self.champions = {v.get("champion") for v in self.clusters.values() if v.get("champion")}
+        self.struct_keys = {tuple(k) for k in (doc.get("structural_keys") or [])
+                            if isinstance(k, list)}
+        self._nd_index: Any = None
+
+    def near_dup(self, row: Mapping[str, Any]) -> tuple[str, str] | None:
+        """The near-duplicate rule `row` breaks against the certified book (law §3), or None."""
+        if self._nd_index is None:
+            try:
+                from research import near_duplicate as nd
+            except ImportError:
+                import near_duplicate as nd  # type: ignore[import-not-found,no-redef]
+            self._nd = nd
+            self._nd_index = nd.Index(self.doc.get("certified_specs") or [])
+        return self._nd.near_duplicate(row, self._nd_index)
 
     def _coup(self, sym: str) -> np.ndarray:
         v = self.sym_cache.get(sym)
@@ -1659,7 +1714,12 @@ class Scorer:
             if (ax["economic_factor"] != near.get("economic_factor")
                     or ax["factor_residual"] != near.get("factor_residual")):
                 exc.append("E")
+        try:
+            from research.near_duplicate import structural_key
+        except ImportError:
+            from near_duplicate import structural_key  # type: ignore[import-not-found,no-redef]
         out = {"novelty_credit": round(novelty_credit(local), 6),
+               "structural_duplicate": structural_key(ax, self.resid) in self.struct_keys,
                "effective_local_count": round(local, 4),
                "nearest_sim": round(float(full[j]), 4), "nearest_cluster": near_cluster,
                "saturated_ground": sat_ground, "exceptions": exc,
@@ -1689,7 +1749,10 @@ class Scorer:
         credit = float(base["novelty_credit"])
         if any(e in exc for e in "ABCDEFH"):
             credit = max(credit, EXCEPTION_FLOOR)
-        duplicate = bool(base["saturated_ground"] and not exc)
+        nd = self.near_dup(row) if self.doc.get("certified_specs") else None
+        base["near_duplicate_rule"] = nd[0] if nd else None
+        base["near_duplicate_of"] = nd[1] if nd else None
+        duplicate = bool((base["saturated_ground"] or nd) and not exc)
         parent = str(row.get("parent_certificate") or row.get("challenger_of") or "")
         base.update({"exceptions": exc, "channel": "QUALITY" if quality else "BREADTH",
                      "breadth_value": round(credit, 6), "duplicate": duplicate,
@@ -1741,7 +1804,8 @@ def _default_scorer() -> Scorer | None:
 
 # ------------------------------------------------------------------ docket stamping
 def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
-          seconds_per_cell: float | None = None) -> dict[str, Any]:
+          seconds_per_cell: float | None = None,
+          debt: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """Stamp `_sat` (breadth value), `_satq` (1 = QUALITY channel) and `_dup` (1 = strong
     duplicate in saturated ground) on every row, and return the evidence plus per-producer
     feedback. Never raises, never removes a row; an absent map stamps nothing (par)."""
@@ -1752,6 +1816,19 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
     if not isinstance(d, Mapping) or d.get("status") != MEASURED:
         return {"status": UNMEASURED, "why": why, "rows": len(rows)}
     sc = Scorer(d)
+    # BREADTH-CONSTRAINED MODE (producer law §3): while BREADTH_DEBT.json says ON, a row landing
+    # on an empty payer, an empty information source or a low-occupancy mechanism has its
+    # breadth value raised by breadth_debt.MODE_BOOST. ORDER ONLY; a stale or absent queue is 1.0.
+    try:
+        try:
+            from research import breadth_debt as _bd
+        except ImportError:
+            import breadth_debt as _bd  # type: ignore[import-not-found,no-redef]
+        debt_doc: Any = dict(debt) if debt is not None else _bd.load()
+        boost_for: Any = _bd.boost_for
+    except Exception:
+        debt_doc, boost_for = None, (lambda _c, _d: 1.0)
+    boosted = 0
     # EXPECTED dk_eff AT GENERATION (breadth law 13, producer law 9): each row's P(survivor) x the
     # marginal k_eff of admitting it at its effective coupling to the certified book
     # (rho = 1 - novelty credit). Signed: a duplicate's marginal is negative, which is the point.
@@ -1781,13 +1858,22 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
     prod: dict[str, dict[str, Any]] = {}
     exc_count: Counter[str] = Counter()
     by_cluster: Counter[str] = Counter()
-    dup = quality = sat = 0
+    dup = quality = sat = struct_all = 0
+    near_all: Counter[str] = Counter()
     credit_sum = 0.0
     for row in rows:
         try:
             s = sc.score_row(row)
         except Exception:
             continue
+        b = boost_for(s["cluster"], debt_doc) if not s["duplicate"] else 1.0
+        if b > 1.0:
+            s["breadth_value"] = float(s["breadth_value"]) * b
+            boosted += 1
+        if s.get("near_duplicate_rule") and s["duplicate"]:
+            # THE DUPLICATE TAX (law §3, §22): a near-duplicate has at least one effective twin,
+            # so its breadth value is at most the preregistered credit at local count 1
+            s["breadth_value"] = min(float(s["breadth_value"]), DUPLICATE_TAX_CREDIT)
         row["_sat"] = s["breadth_value"]
         row["_satq"] = 1 if s["channel"] == "QUALITY" else 0
         row["_dup"] = 1 if s["duplicate"] else 0
@@ -1804,7 +1890,8 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
         p = prod.setdefault(src, {"rows": 0, "duplicates": 0, "saturated_ground": 0,
                                   "quality": 0, "credit_sum": 0.0, "clusters": Counter(),
                                   "dup_groups": set(), "new_clusters": set(),
-                                  "method": method_of(src), "exp_dk": 0.0, "exp_n": 0})
+                                  "method": method_of(src), "exp_dk": 0.0, "exp_n": 0,
+                                  "near": Counter(), "struct": 0})
         p["rows"] += 1
         p["duplicates"] += row["_dup"]
         p["saturated_ground"] += 1 if s["saturated_ground"] else 0
@@ -1815,6 +1902,12 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
             p["exp_dk"] += edk
             p["exp_n"] += 1
         p["clusters"][s["cluster"]] += 1
+        if s.get("near_duplicate_rule"):
+            p["near"][s["near_duplicate_rule"]] += 1
+            near_all[s["near_duplicate_rule"]] += 1
+        if s.get("structural_duplicate"):
+            p["struct"] += 1
+            struct_all += 1
         if s["duplicate"]:
             p["dup_groups"].add(s["nearest_cluster"])
         if s["cluster"] not in sc.clusters:
@@ -1848,6 +1941,8 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
             "quality_status": ("UNMEASURED: the quality channel is paid in realised edge, which "
                                "needs execution.matched_fills > 0"),
             "top_clusters": dict(p["clusters"].most_common(5)),
+            "near_duplicates_by_rule": dict(p["near"].most_common()),
+            "structural_duplicates": p["struct"],
             "state": ("RETARGET" if (p["rows"] >= RETARGET_MIN_ROWS
                                      and share >= RETARGET_SHARE) else "OK"),
         }
@@ -1855,6 +1950,11 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
             "saturated_ground_rows": sat,
             "mean_breadth_value": round(credit_sum / n, 6) if n else None,
             "exceptions": dict(exc_count), "rows_by_cluster_top": dict(by_cluster.most_common(20)),
+            "near_duplicates_by_rule": dict(near_all.most_common()),
+            "structural_duplicates": struct_all,
+            "breadth_constrained_mode": (debt_doc or {}).get("breadth_constrained_mode",
+                                                             UNMEASURED),
+            "mode_boosted_rows": boosted,
             "map_at": d.get("at"), "certificates": d.get("certificates"),
             "producers": producers,
             "rule": ("_sat = novelty credit (exception floor where A-F/H holds); _dup = in "
@@ -1901,6 +2001,23 @@ def write_feedback(evidence: Mapping[str, Any], *, path: Path | None = None,
         if streak >= RETARGET_PATIENCE and first_share is not None \
                 and r["duplicate_share"] >= float(first_share):
             r["state"] = "PARK_CANDIDATE"
+        sv = _survivor_share_for(src, (doc_map or {}).get("duplicate_survivors"))
+        if sv is not None:
+            r["duplicate_survivor_share"] = sv
+            r["duplicate_survivor_status"] = MEASURED
+        allowed = math.ceil(DUPLICATE_BUDGET_SHARE * max(int(r.get("rows") or 0), 1))
+        r["duplicate_budget"] = {
+            "max_duplicate_share": DUPLICATE_BUDGET_SHARE,
+            "next_generation_max_duplicates": allowed,
+            "this_generation_duplicates": int(r.get("duplicate_candidates") or 0),
+            "over_budget": float(r.get("duplicate_share") or 0.0) > DUPLICATE_BUDGET_SHARE,
+            "near_duplicates_by_rule": r.get("near_duplicates_by_rule") or {},
+            "avoid_clusters": list((r.get("top_clusters") or {}).keys())[:5],
+            "rule": ("read before the next generation: keep near-duplicates of the certified "
+                     "book at or under this share; over it, duplicates are taxed to the tail and "
+                     "the producer is retargeted to the breadth debts. Nothing is dropped and "
+                     "every judged row is charged its trial"),
+        }
         if r["state"] != "OK":
             r["instruction"] = ("stop producing near-duplicates of the clusters below; the desk "
                                 "already owns them. Retarget to the breadth debts named, or "
@@ -1936,6 +2053,22 @@ def write_feedback(evidence: Mapping[str, Any], *, path: Path | None = None,
     return p
 
 
+def _survivor_share_for(src: str, dup_surv: Any) -> float | None:
+    """This producer's share of certified output archived behind a saturated cluster's champion
+    and challengers, matched on the producer token either way round; None when unmatched."""
+    by = (dup_surv or {}).get("by_producer") if isinstance(dup_surv, Mapping) else None
+    if not isinstance(by, Mapping) or not src:
+        return None
+    s = str(src).lower()
+    tot = dup = 0
+    for k, v in by.items():
+        kl = str(k).lower()
+        if isinstance(v, Mapping) and kl and (kl in s or s in kl):
+            tot += int(v.get("certificates") or 0)
+            dup += int(v.get("duplicates") or 0)
+    return round(dup / tot, 4) if tot else None
+
+
 def producer_brief(source_token: str = "", *, doc: Mapping[str, Any] | None = None,
                    feedback: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """FACTS a generator receives before proposing (producer law 1, 5, 26): what the desk owns,
@@ -1955,19 +2088,84 @@ def producer_brief(source_token: str = "", *, doc: Mapping[str, Any] | None = No
         for src, r in (fb.get("producers") or {}).items():
             if source_token.lower() in str(src).lower() and isinstance(r, Mapping):
                 own[src] = {k: r.get(k) for k in ("rows", "duplicate_share", "state",
-                                                  "top_clusters", "retarget_to")}
+                                                  "top_clusters", "retarget_to",
+                                                  "duplicate_budget",
+                                                  "duplicate_survivor_share")}
     return {
         "desk_owns": d.get("certificates"),
+        "book_context": _book_context(d),
         "saturated_clusters": [{"cluster": k, "certificates": v.get("certificate_count"),
                                 "effective": v.get("effective_certificate_count"),
-                                "families": v.get("families")} for k, v in sat],
+                                "families": v.get("families"),
+                                "effective_trials_spent": v.get("effective_trials_spent"),
+                                "incremental_survivor_yield":
+                                    v.get("incremental_survivor_yield")} for k, v in sat],
         "open_breadth_debts": [{"cluster": x.get("missing_cluster"),
                                 "payer": x.get("economic_rationale"),
                                 "producers": x.get("candidate_producers")}
                                for x in (d.get("breadth_debts") or [])[:10]],
         "failure_modes_the_book_holds_most": (d.get("failure_modes") or {}).get("hurts_book"),
         "own_recent_output": own,
+        "breadth_constrained_mode": _debt_brief(),
     }
+
+
+def _book_context(d: Mapping[str, Any], top: int = 12) -> dict[str, Any]:
+    """The book a producer is adding to, by every cluster level it can aim at (producer law 1):
+    certificates held per information source (L2), economic factor (L4), session/chart/horizon
+    clock (L5) and realised-return cluster (L6), the desk's recent survivor yield, and the
+    effective trials already spent across the map. A level the map cannot read is UNMEASURED."""
+    clusters = d.get("clusters") if isinstance(d.get("clusters"), Mapping) else {}
+    by: dict[str, Counter[str]] = {lv: Counter() for lv in ("L2", "L4", "L5", "L6")}
+    trials = 0.0
+    trials_seen = False
+    for v in (clusters or {}).values():
+        if not isinstance(v, Mapping):
+            continue
+        h = v.get("hierarchy") if isinstance(v.get("hierarchy"), Mapping) else {}
+        n = int(v.get("certificate_count") or 0)
+        for lv in by:
+            by[lv][str((h or {}).get(lv) or UNKNOWN)] += n
+        t = v.get("effective_trials_spent")
+        if isinstance(t, (int, float)) and not isinstance(t, bool):
+            trials += float(t)
+            trials_seen = True
+    l6 = by["L6"]
+    realised: Any = ([{"cluster": k, "certificates": c} for k, c in l6.most_common(top)]
+                     if set(l6) - {UNMEASURED, UNKNOWN} else UNMEASURED)
+    return {
+        "information_source_clusters": [{"cluster": k, "certificates": c}
+                                        for k, c in by["L2"].most_common(top)],
+        "factor_exposures": [{"factor": k, "certificates": c}
+                             for k, c in by["L4"].most_common(top)],
+        "temporal_session_clusters": [{"clock": k, "certificates": c}
+                                      for k, c in by["L5"].most_common(top)],
+        "realised_return_clusters": realised,
+        "recent_survivor_yield": d.get("global_survivor_yield", UNMEASURED),
+        "effective_trials_spent": round(trials, 3) if trials_seen else UNMEASURED,
+        "stress_k_eff_book": (d.get("certificates") or {}).get("stress_k_eff_book")
+        if isinstance(d.get("certificates"), Mapping) else None,
+        "tail_k_eff_book": (d.get("certificates") or {}).get("tail_k_eff_book")
+        if isinstance(d.get("certificates"), Mapping) else None,
+    }
+
+
+def _debt_brief() -> dict[str, Any]:
+    """The mode flag and the priority targets every producer reads (BREADTH_DEBT.json)."""
+    try:
+        try:
+            from research import breadth_debt as bd
+        except ImportError:
+            import breadth_debt as bd  # type: ignore[import-not-found,no-redef]
+        d = bd.load()
+    except Exception:
+        d = {}
+    if not d:
+        return {"mode": UNMEASURED, "why": "BREADTH_DEBT.json absent or stale"}
+    return {"mode": d.get("breadth_constrained_mode"),
+            "fired": (d.get("mode") or {}).get("fired"),
+            "priority_targets": d.get("priority_targets"),
+            "empty_clusters": [e.get("cluster") for e in d.get("empty_clusters") or []]}
 
 
 __all__ = [

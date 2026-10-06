@@ -582,11 +582,43 @@ def certificate_saturation_pass() -> dict[str, Any]:
         # beside EFFECTIVE_BREADTH.json, so a caller that redirects this leg's output (a test)
         # never overwrites the desk's published map
         path = cs.publish(doc, OUT.parent / cs.REPORT.name)
+        debt = breadth_debt_pass(doc)
         return {"status": doc.get("status"), "why": doc.get("why"), "line": doc.get("line"),
                 "at": doc.get("at"), "certificates": doc.get("certificates"),
+                "breadth_constrained_mode": debt.get("breadth_constrained_mode"),
+                "breadth_debt_report": debt.get("report"),
                 "report": str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)}
     except Exception as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
+
+
+def breadth_debt_pass(sat: dict[str, Any]) -> dict[str, Any]:
+    """BREADTH_DEBT.json (research/breadth_debt) from the map this leg just built, beside it, and
+    then the per-row BREADTH_LAW_COVERAGE.json the CRO reads. Never raises."""
+    out: dict[str, Any] = {}
+    try:
+        try:
+            from research import breadth_debt as bd
+        except ImportError:                                           # pragma: no cover
+            import breadth_debt as bd  # type: ignore[import-not-found,no-redef]
+        doc = bd.build(sat=sat if sat.get("status") == MEASURED else
+                       {"status": UNMEASURED, "why": sat.get("why")})
+        path = bd.publish(doc, OUT.parent / bd.OUT.name)
+        out = {"breadth_constrained_mode": doc.get("breadth_constrained_mode"),
+               "report": str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)}
+    except Exception as exc:
+        out = {"breadth_constrained_mode": UNMEASURED,
+               "why": f"{type(exc).__name__}: {exc}"[:300]}
+    try:
+        try:
+            from research import breadth_law_coverage as blc
+        except ImportError:                                           # pragma: no cover
+            import breadth_law_coverage as blc  # type: ignore[import-not-found,no-redef]
+        cov = blc.publish(blc.build(), OUT.parent / blc.OUT.name)
+        out["coverage_report"] = str(cov)
+    except Exception as exc:
+        out["coverage_why"] = f"{type(exc).__name__}: {exc}"[:300]
+    return out
 
 
 def _append_history(doc: dict[str, Any]) -> None:

@@ -142,9 +142,8 @@ def rule_between(cand: Mapping[str, Any], cert: Mapping[str, Any]) -> str | None
     p1, p2 = _params(cand), _params(cert)
     same_clock = c1 == c2 or not c1 or not c2
     if f1 == f2 and s1 == s2 and t1 == t2 and same_clock and _canon(p1) == _canon(p2):
-        src1 = str(cand.get("source") or cand.get("src") or "")
-        src2 = str(cert.get("source") or cert.get("src") or "")
-        return "renamed_source" if src1 != src2 else "renamed_source"
+        # The identical spec, whatever label (producer, source) it arrives under.
+        return "renamed_source"
     if f1 == f2 and s1 != s2 and t1 == t2 and same_clock and _canon(p1) == _canon(p2):
         return "symbol"
     if f1 == f2 and s1 == s2 and t1 == t2 and same_clock and set(p1) == set(p2):
@@ -229,15 +228,26 @@ def structural_key(axes: Mapping[str, Any], cluster_of: Mapping[str, str] | None
     axes do not carry reads UNKNOWN, which matches only another UNKNOWN -- an unmeasured axis
     never makes two rows look different, and never makes them look identical by itself."""
     sym = str(axes.get("instrument") or "").upper()
-    sc = (cluster_of or {}).get(sym) or str(axes.get("economic_factor") or "UNKNOWN")
-    return (str(axes.get("_mechanism") or axes.get("mechanism") or "UNKNOWN"),
-            str(axes.get("mechanism") or "UNKNOWN"),
-            str(axes.get("information_source") or "UNKNOWN"),
-            str(axes.get("economic_factor") or "UNKNOWN"), str(sc),
-            str(axes.get("session") or "UNKNOWN"), str(axes.get("timeframe") or "UNKNOWN"),
-            str(axes.get("horizon") or "UNKNOWN"), str(axes.get("entry") or "UNKNOWN"),
-            str(axes.get("exit") or "UNKNOWN"), str(axes.get("regime") or "UNKNOWN"))
+    sc = (cluster_of or {}).get(sym) or str(axes.get("factor_residual")
+                                            or axes.get("economic_factor") or "UNKNOWN")
+
+    def g(k: str) -> str:
+        return str(axes.get(k) or "UNKNOWN")
+    return (g("_mechanism"), g("payer"), g("information_source"), g("economic_factor"), str(sc),
+            g("session"), g("timeframe"), g("horizon"), g("entry_mechanism"),
+            g("exit_mechanism"), g("regime"))
 
 
-__all__ = ["EQUIVALENT_INDICATORS", "Index", "PARAM_BAND", "RULES", "STOP_BAND", "STRUCTURAL_KEY",
-           "has_evidence", "indicator_class", "near_duplicate", "rule_between", "structural_key"]
+__all__ = [
+    "EQUIVALENT_INDICATORS",
+    "PARAM_BAND",
+    "RULES",
+    "STOP_BAND",
+    "STRUCTURAL_KEY",
+    "Index",
+    "has_evidence",
+    "indicator_class",
+    "near_duplicate",
+    "rule_between",
+    "structural_key",
+]

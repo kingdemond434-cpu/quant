@@ -58,6 +58,42 @@ HOURLY_CYCLE = BASE / "research" / "hourly_cycle.py"
 HOURLY_DISCOVERY = BASE / "research" / "hourly_discovery.py"
 DAILY_CYCLE = BASE / "research" / "daily_cycle.py"
 AUTO_LEGS = BASE / "data" / "auto_legs.json"
+#: Per-source duplicate evidence the docket stamp writes (certificate_saturation.write_feedback).
+FEEDBACK = BASE / "reports" / "BREADTH_FEEDBACK.json"
+
+
+def duplicate_block(name: str, seats: list[str], feedback: Any) -> dict[str, Any]:
+    """THE PER-PRODUCER DUPLICATE BUDGET (audit rank 6): duplicate candidates, compute hours,
+    effective trials, share and survivor share, summed over the feedback sources whose name
+    matches this producer or one of its seats, with the budget the next generation reads.
+    UNMEASURED when no source matches -- never zero (L1.28a)."""
+    fb = feedback.get("producers") if isinstance(feedback, dict) else None
+    if not isinstance(fb, dict):
+        return {"status": UNMEASURED, "why": "BREADTH_FEEDBACK.json absent or unmeasured"}
+    toks = {t.lower() for t in [name, *seats] if t}
+    hits = {src: r for src, r in fb.items() if isinstance(r, dict)
+            and any(t in str(src).lower() or str(src).lower() in t for t in toks)}
+    if not hits:
+        return {"status": UNMEASURED, "why": "no docket rows attributed to this producer"}
+    rows = sum(int(r.get("rows") or 0) for r in hits.values())
+    dup = sum(int(r.get("duplicate_candidates") or 0) for r in hits.values())
+    hours = [r.get("duplicate_compute_hours") for r in hits.values()]
+    surv = [r.get("duplicate_survivor_share") for r in hits.values()
+            if isinstance(r.get("duplicate_survivor_share"), (int, float))]
+    budgets = [r.get("duplicate_budget") for r in hits.values()
+               if isinstance(r.get("duplicate_budget"), dict)]
+    return {"status": "MEASURED", "sources": sorted(hits), "rows": rows,
+            "duplicate_candidates": dup,
+            "duplicate_share": round(dup / rows, 4) if rows else None,
+            "duplicate_compute_hours": (round(sum(float(h) for h in hours), 4)
+                                        if hours and all(isinstance(h, (int, float))
+                                                         for h in hours) else UNMEASURED),
+            "duplicate_effective_trials": sum(int(r.get("duplicate_effective_trials") or 0)
+                                              for r in hits.values()),
+            "duplicate_survivor_share": (max(surv) if surv else UNMEASURED),
+            "over_budget": any(bool(b.get("over_budget")) for b in budgets),
+            "budget": budgets[0] if len(budgets) == 1 else
+            {"per_source": {src: r.get("duplicate_budget") for src, r in hits.items()}}}
 RESEARCH = BASE / "research"
 
 UNMEASURED = "UNMEASURED"
@@ -582,6 +618,7 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         for seat in [name, *(row.get("seats") or [])]:
             generators.setdefault(str(seat).lower(), name)
     reg, reg_why = from_registry(generators, now, db)
+    feedback = _read(FEEDBACK, {}) or {}
     budget = {"left": MAX_SEAT_BYTES_TOTAL}
     rows: dict[str, Any] = {}
     fed: Counter[str] = Counter()
@@ -632,6 +669,7 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
             "verdicts": dict(tally.verdicts),
             "clusters_fed": dict(clusters),
             "cap": row.get("cap"), "status": row.get("status"), "change": row.get("change"),
+            "duplicates": duplicate_block(name, list(row.get("seats") or []), feedback),
         }
     try:
         from libs.research.alpha_clusters import CLUSTERS
@@ -674,6 +712,8 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         "clusters_fed_buildable_7d": dict(sorted(fed.items())),
         "clusters_fed_by": {c: sorted(v) for c, v in sorted(fed_by.items())},
         "empty_clusters_unfed": unfed,
+        "producers_over_duplicate_budget": sorted(
+            n for n, r in rows.items() if (r.get("duplicates") or {}).get("over_budget")),
         "family_buildability": fam_census,
     }
     return {
