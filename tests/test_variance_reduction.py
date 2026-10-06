@@ -35,7 +35,7 @@ def test_antithetic_halves_the_error_of_a_monotone_function():
     rng = np.random.default_rng(2)
     m, se = vr.antithetic_mean(np.exp, 5000, rng)
     plain = np.exp(np.random.default_rng(3).standard_normal(10000))
-    assert abs(m - np.exp(0.5)) < 4 * se and se < plain.std() / 100 ** 1 * 1.0
+    assert abs(m - np.exp(0.5)) < 4 * se and se < plain.std() / np.sqrt(plain.size)
 
 
 def test_inverse_transform_stays_inside_the_sample():
