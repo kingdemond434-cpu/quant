@@ -133,18 +133,18 @@ class Garch(StochasticModel):
         return float(np.mean(hbar + ph ** k * (p.h_next - hbar)))
 
     def vol_forecast(self, horizon_days: float) -> float:
-        n = max(1, int(round(horizon_days * TRADING_YEAR / YEAR_DAYS)))
+        n = max(1, round(horizon_days * TRADING_YEAR / YEAR_DAYS))
         return math.sqrt(self.mean_var(n) * TRADING_YEAR)
 
     def simulate(self, n_paths: int, n_steps: int, horizon: float, seed: int,
                  spot: float = 1.0, rate: float = 0.0, div: float = 0.0,
                  antithetic: bool = False) -> FArr:
-        n_days = max(1, int(round(horizon * TRADING_YEAR)))
+        n_days = max(1, round(horizon * TRADING_YEAR))
         daily = simulate_garch(self.params, n_paths, n_days, seed, rate, div, antithetic)
         return subsample_paths(spot, daily, n_steps)
 
     def price(self, spec: OptionSpec) -> float:
-        n_days = max(1, int(round(spec.expiry_years * TRADING_YEAR)))
+        n_days = max(1, round(spec.expiry_years * TRADING_YEAR))
         return self.mc_price(spec, n_paths=self.mc_paths, n_steps=n_days).price
 
     def has_fast_price(self) -> bool:

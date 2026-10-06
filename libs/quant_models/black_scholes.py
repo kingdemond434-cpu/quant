@@ -17,8 +17,8 @@ from libs.quant_models.numerics import (
     bs_greeks,
     bs_price,
     gbm_paths,
-    normals,
     norm_cdf,
+    normals,
 )
 
 
@@ -29,7 +29,7 @@ class BSParams:
 
 class BlackScholes(StochasticModel):
     name = "black_scholes"
-    measure = "Q"
+    params: BSParams
 
     def __init__(self, params: BSParams | None = None) -> None:
         self.params = params or BSParams()

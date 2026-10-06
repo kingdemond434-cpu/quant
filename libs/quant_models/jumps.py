@@ -87,6 +87,7 @@ class Merton(CFModel):
     name = "merton_jd"
     measure = "Q"
     max_terms = 80
+    params: MertonParams
 
     def __init__(self, params: MertonParams | None = None) -> None:
         self.params = params or MertonParams()

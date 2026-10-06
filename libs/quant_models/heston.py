@@ -123,7 +123,8 @@ def fit_term(points: list[tuple[float, float]], kappa0: float, theta0: float
 
     def resid(x: FArr) -> FArr:
         q = HestonParams(v0=x[0], kappa=x[1], theta=x[2])
-        return np.asarray([heston_expected_var(q, t) for t in ts], dtype=np.float64) - ws
+        model = np.asarray([heston_expected_var(q, t) for t in ts], dtype=np.float64)
+        return np.asarray(model - ws, dtype=np.float64)
     x0 = np.asarray([ws[0], kappa0, max(theta0, 1e-4)])
     lo, hi = np.asarray([1e-6, 0.05, 1e-6]), np.asarray([4.0, 50.0, 4.0])
     sol = least_squares(resid, np.clip(x0, lo * 1.0001, hi * 0.9999), bounds=(lo, hi))

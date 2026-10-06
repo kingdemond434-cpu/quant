@@ -101,7 +101,7 @@ class RegimeHMM(StochasticModel):
         return out
 
     def vol_forecast(self, horizon_days: float) -> float:
-        n = max(1, int(round(horizon_days * TRADING_YEAR / YEAR_DAYS)))
+        n = max(1, round(horizon_days * TRADING_YEAR / YEAR_DAYS))
         mu, var, _, _ = self._arrays()
         probs = self.regime_probs(n)
         m = probs @ mu
@@ -122,7 +122,7 @@ class RegimeHMM(StochasticModel):
 
     def tail_prob(self, threshold_return: float, horizon_days: float) -> float:
         from scipy.special import ndtr
-        n = max(1, int(round(horizon_days * TRADING_YEAR / YEAR_DAYS)))
+        n = max(1, round(horizon_days * TRADING_YEAR / YEAR_DAYS))
         mu, var, _, _ = self._arrays()
         s = self.regime_paths(self.mc_paths, n, self.seed)
         m, v = mu[s].sum(axis=1), var[s].sum(axis=1)
@@ -131,7 +131,7 @@ class RegimeHMM(StochasticModel):
         return float(p.mean())
 
     def price(self, spec: OptionSpec) -> float:
-        n = max(1, int(round(spec.expiry_years * TRADING_YEAR)))
+        n = max(1, round(spec.expiry_years * TRADING_YEAR))
         _, var, _, _ = self._arrays()
         s = self.regime_paths(self.mc_paths, n, self.seed)
         vols = np.sqrt(var[s].sum(axis=1) / spec.expiry_years)
@@ -154,7 +154,7 @@ class RegimeHMM(StochasticModel):
                  antithetic: bool = False) -> FArr:
         """Daily regime-switching log returns under the risk-neutral drift, sampled to n_steps."""
         from libs.quant_models.garch import subsample_paths
-        n_days = max(1, int(round(horizon * TRADING_YEAR)))
+        n_days = max(1, round(horizon * TRADING_YEAR))
         _, var, _, _ = self._arrays()
         s = self.regime_paths(n_paths, n_days, seed)
         z = normals(np.random.default_rng(seed + 1), n_paths, n_days, antithetic)

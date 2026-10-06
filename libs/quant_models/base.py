@@ -25,6 +25,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, fields, replace
 from datetime import datetime
+from itertools import pairwise
 from typing import Any, Literal, TypeVar
 
 import numpy as np
@@ -115,7 +116,7 @@ class MarketData:
             return pts[0][1]
         if tenor_years >= pts[-1][0]:
             return pts[-1][1]
-        for (t0, v0), (t1, v1) in zip(pts, pts[1:], strict=False):
+        for (t0, v0), (t1, v1) in pairwise(pts):
             if t0 <= tenor_years <= t1:
                 w0, w1 = v0 * v0 * t0, v1 * v1 * t1
                 w = w0 + (w1 - w0) * (tenor_years - t0) / (t1 - t0)
@@ -162,7 +163,7 @@ class StochasticModel(ABC):
     def vol_forecast(self, horizon_days: float) -> float:
         """Annualised vol of the log return over `horizon_days` calendar days."""
         t = horizon_days / YEAR_DAYS
-        n_steps = max(1, min(int(round(horizon_days)), 64))
+        n_steps = max(1, min(round(horizon_days), 64))
         paths = self.simulate(self.mc_paths, n_steps, t, self.seed)
         lr = np.log(paths[:, -1] / paths[:, 0])
         return float(lr.std(ddof=1) / math.sqrt(t))
@@ -171,7 +172,7 @@ class StochasticModel(ABC):
         """P(|ln S_{t+h} / S_t| > threshold_return) over `horizon_days` calendar days, under
         this model's own measure (`self.measure`)."""
         t = horizon_days / YEAR_DAYS
-        n_steps = max(1, min(int(round(horizon_days)), 64))
+        n_steps = max(1, min(round(horizon_days), 64))
         paths = self.simulate(self.mc_paths, n_steps, t, self.seed)
         lr = np.log(paths[:, -1] / paths[:, 0])
         return float(np.mean(np.abs(lr) > threshold_return))

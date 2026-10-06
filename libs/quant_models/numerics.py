@@ -235,7 +235,8 @@ def mc_estimate(samples: FArr, controls: Sequence[tuple[FArr, float]] = (),
     yc = y - y.mean()
     beta, *_ = np.linalg.lstsq(xc, yc, rcond=None)
     adj = y - xs @ beta
-    se = float(adj.std(ddof=1 + len(controls)) / math.sqrt(n)) if n > len(controls) + 1 else plain_se
+    dof = 1 + len(controls)
+    se = float(adj.std(ddof=dof) / math.sqrt(n)) if n > dof else plain_se
     return MCResult(float(adj.mean()), se, n, float(y.mean()), plain_se,
                     tuple(float(b) for b in beta))
 
