@@ -101,7 +101,7 @@ def _scout_seats() -> dict[str, str]:
     from research.scout_roster import SCOUTS
     out = {str(seat): str(sc["name"]) for sc in SCOUTS for seat in sc.get("seats") or ()}
     doc = json.loads(PRODUCER_ORGANS.read_text("utf-8"))
-    for seat, path in (doc.get("seats") or {}).items():
+    for seat, path in {**(doc.get("seats") or {}), **(doc.get("landing") or {})}.items():
         out.setdefault(str(seat), Path(str(path)).stem)
     for pre, path in (doc.get("prefixes") or {}).items():
         out.setdefault(f"{pre}*", Path(str(path)).stem)

@@ -1,6 +1,6 @@
 {
  "schema": "producer_organs/1",
- "what": "The docket seats of the desk's INTERNAL producers (organs that are not scouts), each named to the file that stamps it. Read after research/scout_roster.py SCOUTS seats= by mining_supervisor.producer_of, so a judged docket row names the organ that made it. Every path must exist and contain its seat as a literal (tests/test_mining_pipeline.py). A seat in neither map reads unmapped:<seat>, named, never guessed. `retired` names seats whose organ no longer exists (each has a row in the retirements file); their rows read retired:<seat>, named, never unmapped.",
+ "what": "The docket seats of the desk's INTERNAL producers (organs that are not scouts), each named to the file that stamps it. Read after research/scout_roster.py SCOUTS seats= by mining_supervisor.producer_of, so a judged docket row names the organ that made it. Every path must exist and contain its seat as a literal (tests/test_mining_pipeline.py). A seat in neither map reads unmapped:<seat>, named, never guessed. `retired` names seats whose organ no longer exists (each has a row in the retirements file); their rows read retired:<seat>, named, never unmapped. `landing` names seats whose organ arrives in an open PR (#166, EliteQuant): read exactly like `seats`, and checked for the literal the moment the file exists; move a row to `seats` once its organ is on the live branch.",
  "seats": {
   "discovery_compiler": "desks/mt5/research/discovery_compiler.py",
   "video_anchor_exit": "desks/mt5/research/htf_anchor_proposer.py",
@@ -23,7 +23,8 @@
   "net_edge": "desks/mt5/research/net_edge_spine.py",
   "alt_proxies": "desks/mt5/research/alt_proxies.py",
   "alt_proxies_indirect": "desks/mt5/research/alt_proxies.py",
-  "news_event_stream": "desks/mt5/research/news_event_stream.py"
+  "news_event_stream": "desks/mt5/research/news_event_stream.py",
+  "external_federation": "desks/mt5/research/external_federation.py"
  },
  "prefixes": {
   "ext_": "desks/mt5/scripts/_retired/convert_to_hypotheses_v4.py"
@@ -32,5 +33,9 @@
   "mql5_prospector": "docs/research/retirements.jsonl",
   "mql5_catalog": "docs/research/retirements.jsonl",
   "fxmerge": "docs/research/retirements.jsonl"
+ },
+ "landing": {
+  "elitequant_breadth": "desks/mt5/research/elitequant_breadth.py",
+  "zoo_breadth": "desks/mt5/research/zoo_breadth.py"
  }
 }

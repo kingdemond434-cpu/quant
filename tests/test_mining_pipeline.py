@@ -1050,6 +1050,11 @@ def test_the_producer_map_names_real_organs_and_fails_loudly(monkeypatch: Any) -
     for seat, path in {**doc["seats"], **doc["prefixes"], **doc["retired"]}.items():
         text = (ROOT / path).read_text("utf-8")
         assert f'"{seat}' in text or f"'{seat}" in text, (seat, path)
+    for seat, path in (doc.get("landing") or {}).items():       # organ still in an open PR
+        if (ROOT / path).exists():
+            text = (ROOT / path).read_text("utf-8")
+            assert f'"{seat}' in text or f"'{seat}" in text, (seat, path)
+        assert MS.producer_of(seat, MS._scout_seats()) == Path(path).stem
     assert MS.producer_of("mql5_prospector", MS._scout_seats()) == "retired:mql5_prospector"
     organ_of = MS._scout_seats()
     assert MS.producer_of("miner:broker_swaps", organ_of) == "seed_miners"
