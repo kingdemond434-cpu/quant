@@ -616,9 +616,9 @@ def test_stats_gov_cn_builders_still_mint(tmp_path: Path,
 def test_usdcnh_fixing_window_studies_read_only_broker_tape_and_still_run() -> None:
     """The 01:15 and 08:30 UTC window studies are country_lab windows on the broker's own USDCNH
     tape: no CFETS value is an input, so the CFETS ruling does not hold them."""
-    from libs.research import country_lab as CL
-
     from research.countries.cn import pack as CN
+
+    from libs.research import country_lab as CL
     fixes = {f.time_utc: f for f in CN._fixing_rows(CL)}
     rng = np.random.default_rng(11)
     t = pd.date_range("2026-01-01", periods=24 * 4 * 60, freq="15min", tz="UTC")
