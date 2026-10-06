@@ -546,6 +546,23 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     return path
 
 
+def _dataset_links(c: dict) -> dict[str, Any]:
+    """The dataset a cell declares it reads, carried into the registry row (2026-09-30).
+
+    A cell whose family loads its input from a fixed store names nothing in `params` (a dataset
+    key there would reach the family's call and be refused), so the only place a donor can say
+    WHICH dataset fed the cell is the registry row's `required_data` / `lineage` -- which is where
+    the D18 dataset-exploitation census looks. Passed only when the donor wrote them in the
+    shapes that census reads (a list, a dict); nothing else about the row changes, and the rule's
+    content hash does not read either field."""
+    out: dict[str, Any] = {}
+    if isinstance(c.get("required_data"), list) and c["required_data"]:
+        out["required_data"] = [str(x) for x in c["required_data"]]
+    if isinstance(c.get("lineage"), dict) and c["lineage"]:
+        out["lineage"] = dict(c["lineage"])
+    return out
+
+
 def _record_in_registry(source: str, candidates: list[dict]) -> None:
     """EVERY MINER WRITES THE CANONICAL REGISTRY (principal 2026-09-17). Each donated row is
     one DiscoveryObject in state QUEUED (it is compiled and in the docket's intake) and one
@@ -597,7 +614,8 @@ def _record_in_registry(source: str, candidates: list[dict]) -> None:
                         family=family, symbol=symbol, params=params, origin=origin,
                         mechanism=mechanism, status="donated", generator=source, source_id=source,
                         discovery_id=did, transformation="compiled",
-                        chart=str(c.get("chart") or c.get("timeframe") or ""), conn=conn)
+                        chart=str(c.get("chart") or c.get("timeframe") or ""), conn=conn,
+                        **_dataset_links(c))
         finally:
             conn.close()
         el = _time.perf_counter() - t0
