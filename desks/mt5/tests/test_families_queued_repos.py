@@ -36,7 +36,7 @@ def _walk(n: int = 9000, seed: int = 4) -> pd.DataFrame:
 def test_registered_through_the_one_door_seeded_and_mapped():
     for name, fn in qr.QUEUED_REPO_FAMILIES.items():
         assert fo.ORTHOGONAL_FAMILIES[name] is fn
-        assert fo.FAMILY_INPUTS[name][0].startswith("price only")
+        assert fo.FAMILY_INPUTS[name][0] == "price only"
         assert eb.FAMILIES[name] is fn and eb.PARAM_GRID[name]
         assert "rewritten" in eb.ORIGIN[name]
         assert set(qr.CULTURE[name]) == {"source_culture", "participant_structure",

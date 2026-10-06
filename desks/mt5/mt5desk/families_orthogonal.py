@@ -2482,8 +2482,6 @@ from mt5desk.families_queued_repos import QUEUED_REPO_FAMILIES  # noqa: E402
 ORTHOGONAL_FAMILIES.update(QUEUED_REPO_FAMILIES)
 for _qr_name in QUEUED_REPO_FAMILIES:
     FAMILY_INPUTS[_qr_name] = ("price only", "data/universe/*_H1.parquet")
-FAMILY_INPUTS["volume_climax_fade"] = ("price only, plus the bars' own tick_volume",
-                                       "data/universe/*_H1.parquet")
 del _qr_name
 
 # THE ALPHA ZOO AS CLASS BOOKS (2026-09-30): 317 published alphas (GTJA 191, Qlib 158, Alpha101,
