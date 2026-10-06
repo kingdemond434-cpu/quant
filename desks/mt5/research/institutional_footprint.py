@@ -1048,7 +1048,12 @@ def learn_side(source: str, signal: str, transform: str, threshold: float, symbo
     publication-day lag) and goes `side_when_high` when it is above +threshold and the opposite
     below -threshold. So the edge is side_when_high * E[sign(m) * forward return | |m| >= thr];
     its sign on the first TRAIN_FRACTION of the joint history is the side. The span after
-    `train_end` never touches the choice, so the gauntlet's out-of-sample stays out of sample.
+    `train_end` never touches the choice, and `emit_cells` hands `train_end` to the family as
+    `trade_from`, so the gauntlet judges ONLY that later span: every gate, not just the
+    out-of-sample one, scores bars the side choice never saw. (The alternative -- charging the
+    two-way choice as two trials -- has no carrier on this base: the registry has no
+    claim_selection_trials column, the moat donation does not forward one, and
+    effective_trials.charge rebuilds FamilyCharge without selection_trials.)
     None -- no cell this pass -- when the family, the bars or MIN_TRAIN_EVENTS are missing."""
     if cond is None:
         fn = _conditioner_fn()
@@ -1131,7 +1136,8 @@ def emit_cells(plans: list[dict[str, Any]], *, deadline: float, dry_run: bool = 
                     cid, new = enqueue_candidate(
                         family="exogenous_conditioner", symbol=p["symbol"],
                         params={"source": p["source"], "signal": p["signal"],
-                                "transform": tf, "threshold": thr, "side_when_high": side},
+                                "transform": tf, "threshold": thr, "side_when_high": side,
+                                "trade_from": str(learned["train_end"])},
                         origin=LEG, mechanism=mech, chart=chart, horizon=chart,
                         source_id=p["source_id"], generator=LEG, department="information",
                         asset_class="", transformation="institutional_state"
@@ -1244,6 +1250,18 @@ def frame_refreshed_at(r: Mapping[str, Any]) -> datetime | None:
     return datetime.fromtimestamp(max(times), tz=UTC) if times else None
 
 
+def was_fetched(r: Mapping[str, Any], fetch_state: Mapping[str, Any]) -> bool:
+    """True only when the row has actually been read: its fetch landed rows, or its frame (the
+    lake CSV, or an existing lane's parquet) is on disk. A declared row nobody fetched is False."""
+    st = fetch_state.get(str(r["id"])) or {}
+    try:
+        if isinstance(st, Mapping) and int(st.get("rows") or 0) > 0:
+            return True
+    except (TypeError, ValueError):
+        pass
+    return frame_refreshed_at(r) is not None
+
+
 def row_status(r: Mapping[str, Any], fetch_state: Mapping[str, Any],
                watch_state: Mapping[str, Any], credited: Mapping[str, Any] | set[str],
                *, now: datetime | None = None) -> str:
@@ -1263,6 +1281,10 @@ def row_status(r: Mapping[str, Any], fetch_state: Mapping[str, Any],
                     "TESTED_NO_INFORMATION", "NOT_RELEVANT"):
         return declared
     return "DISCOVERED_NOT_INGESTED"
+
+
+def _as_ruling(v: Any) -> Any:
+    return dict(v) if isinstance(v, Mapping) else v
 
 
 def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | None = None,
@@ -1285,6 +1307,7 @@ def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | Non
                                         "BLOCKED_SUBSTITUTE", "WATCH", "NOT_PUBLISHED",
                                         "NOT_RELEVANT"))}
     status_of = {str(r["id"]): row_status(r, fs, ws, em) for r in rows}
+    fetched = {str(r["id"]): was_fetched(r, fs) for r in rows}
     grid: dict[str, dict[str, dict[str, Any]]] = {}
     roles: dict[str, dict[str, list[str]]] = {}
     for j in onto.coverage_jurisdictions():
@@ -1299,7 +1322,8 @@ def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | Non
                 if st == "WATCH":
                     st = "DISCOVERED_NOT_INGESTED"
             elif ruled:
-                st = str(ruled.get("status") if isinstance(ruled, Mapping) else ruled)
+                # A ruling closes its cell only on evidence; an uncited one is UNMEASURED.
+                st = onto.ruled_status(_as_ruling(ruled))
             elif j != "global" and cls in onto.GLOBAL_ONLY_CLASSES:
                 st = "NOT_RELEVANT"
             else:
@@ -1313,9 +1337,20 @@ def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | Non
     for j in grid.values():
         for c in j.values():
             counts[c["status"]] = counts.get(c["status"], 0) + 1
+    def _role_closed(key: str) -> bool:
+        r = role_rul.get(key)
+        return bool(r) and onto.ruled_status(_as_ruling(r)) in onto.CLOSED_STATUSES
+
     queue = []
     for j, cells in grid.items():
         for cls, c in cells.items():
+            if c["status"] == onto.UNMEASURED and not c["sources"]:
+                why = onto.ruling_defect(_as_ruling(rul.get(f"{j}|{cls}")))
+                queue.append({"jurisdiction": j, "source_class": cls, "ruling_defect": why,
+                              "ask": f"the {j} x {cls} ruling stands UNMEASURED ({why}): cite "
+                                     "the page or instrument it rests on, or name its "
+                                     "substitute, else search the class again"})
+                continue
             if c["status"] != onto.UNSEARCHED:
                 continue
             peers = [pid for jj, cc in grid.items() if jj != j for pid in cc[cls]["sources"]][:3]
@@ -1328,23 +1363,34 @@ def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | Non
         if j == "global" or j in onto.REGION_PACKS:
             continue          # region packs owe classes, not a national institution set
         for role, ids in rr.items():
-            if not ids and not role_rul.get(f"{j}|{role}"):
+            if not ids and not _role_closed(f"{j}|{role}"):
+                why = (onto.ruling_defect(_as_ruling(role_rul[f"{j}|{role}"]))
+                       if role_rul.get(f"{j}|{role}") else "")
                 queue.append({"jurisdiction": j, "role": role,
+                              **({"ruling_defect": why} if why else {}),
                               "ask": f"name {j}'s {role.replace('_', ' ')} and its public "
-                                     "datasets, or rule that it publishes none"})
+                                     "datasets, or rule that it publishes none"
+                                     + (f" (the standing ruling is UNMEASURED: {why})"
+                                        if why else "")})
     tri = {}
     for com, views in onto.COMMODITY_TRIANGULATION.items():
         tri[com] = {v: {i: status_of.get(i, "NOT_IN_ATLAS") for i in ids}
                     for v, ids in views.items()}
+        # A view is COVERED only by a row that was actually fetched -- a frame on disk or a
+        # fetch that landed rows. DISCOVERED_NOT_INGESTED is a row nobody has read yet; counting
+        # it resolved an absent reading to a covered view (L1.28a).
         tri[com]["views_covered"] = sum(
-            1 for v, ids in views.items()
-            if any(status_of.get(i) in ("ACTIVE", "DISCOVERED_NOT_INGESTED") for i in ids))
+            1 for v, ids in views.items() if any(fetched.get(i) for i in ids))
     return {"grid": grid, "status_counts": counts, "roles": roles,
             "role_gaps": {j: sorted(k for k, v in rr.items()
-                                    if not v and not role_rul.get(f"{j}|{k}"))
+                                    if not v and not _role_closed(f"{j}|{k}"))
                           for j, rr in roles.items()},
-            "role_rulings": {k: (v.get("status") if isinstance(v, Mapping) else str(v))
-                             for k, v in role_rul.items()},
+            "role_rulings": {k: onto.ruled_status(_as_ruling(v)) for k, v in role_rul.items()},
+            "rulings_unmeasured": {
+                "cells": sum(1 for v in rul.values()
+                             if onto.ruled_status(_as_ruling(v)) == onto.UNMEASURED),
+                "roles": sum(1 for v in role_rul.values()
+                             if onto.ruled_status(_as_ruling(v)) == onto.UNMEASURED)},
             "row_status": status_of, "search_queue": queue, "triangulation": tri,
             "n_cells": sum(len(v) for v in grid.values())}
 
@@ -1471,6 +1517,7 @@ def run(budget_s: float = 300.0, *, offline: bool = False, dry_run: bool = False
                                         and r["id"] not in urls),
                        "broken": broken},
         "role_rulings_n": len(cov["role_rulings"]),
+        "rulings_unmeasured": cov["rulings_unmeasured"],
         "search_queue_by_class": _count_by(cov["search_queue"], "source_class"),
         "search_queue_by_role": _count_by(cov["search_queue"], "role"),
         "search_queue_head": cov["search_queue"][:40],

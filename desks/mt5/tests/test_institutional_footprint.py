@@ -423,8 +423,9 @@ def test_a_role_ruling_closes_the_role_gap(lake: Path) -> None:
     rows = ifp.load_roster()
     open_ = ifp.coverage(rows, rulings={})["role_gaps"]
     j, gaps = next((j, g) for j, g in open_.items() if g and j in onto.JURISDICTION_CODES)
-    ruled = {"cells": {}, "roles": {f"{j}|{gaps[0]}": {"status": "NOT_PUBLISHED",
-                                                       "reason": "none"}}}
+    ruled = {"cells": {}, "roles": {f"{j}|{gaps[0]}": {
+        "status": "NOT_PUBLISHED", "reason": "none",
+        "evidence": "https://www.example.gov/statistics"}}}
     cov = ifp.coverage(rows, rulings=ruled)
     assert gaps[0] not in cov["role_gaps"][j]
     assert not any(q.get("jurisdiction") == j and q.get("role") == gaps[0]
@@ -439,3 +440,120 @@ def test_an_atlas_url_is_verified_on_the_box_and_a_dead_one_is_re_asked(lake: Pa
     assert st[rows[0]["id"]]["status"] == "BROKEN"
     st = ifp.verify_urls(rows, lambda url: (200, b"ok", ""), deadline=1e18)
     assert st[rows[0]["id"]]["status"] == "VERIFIED"
+
+
+# ------------------------------------------------------------------ audit follow-ups (#159 v3)
+def test_the_learned_side_is_judged_only_after_the_span_that_chose_it(
+        lake: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The side is chosen on the first TRAIN_FRACTION; every gate must then score only bars the
+    choice never saw. The cell carries `train_end` as `trade_from`, and the family honours it."""
+    import inspect
+
+    from mt5desk.family_exogenous_conditioner import family_exogenous_conditioner
+    calls: list[dict[str, Any]] = []
+
+    def fake_enqueue(**kw: Any) -> tuple[str, bool]:
+        calls.append(kw)
+        return f"cand{len(calls)}", True
+    import libs.moat.registry as reg
+    monkeypatch.setattr(reg, "enqueue_candidate", fake_enqueue)
+    plans = [{"source": "s", "signal": "p_x", "symbol": "XAUUSD", "source_id": "a",
+              "source_ids": ["a"], "inputs": [], "kind": "state", "culture": {}}]
+    cut = "2024-03-01T00:00:00+00:00"
+    learned = {"side": 1, "train_end": cut, "train_events": 40, "train_edge": 0.001}
+    ifp.emit_cells(plans, deadline=1e18, side_fn=lambda *a, **k: learned)
+    assert calls and all(c["params"]["trade_from"] == cut for c in calls)
+    accepted = set(inspect.signature(family_exogenous_conditioner).parameters)
+    assert all(set(c["params"]) <= accepted for c in calls)       # the gauntlet can call it
+
+    # The family: an always-extreme conditioner fires on every bar, so the cut is the only filter.
+    idx = pd.date_range("2024-01-01", periods=24 * 120, freq="h", tz="UTC")
+    root = tmp_path / "series_fam"
+    root.mkdir()
+    days = pd.date_range("2023-06-01", "2024-05-01", freq="D", tz="UTC")
+    vals = np.where(np.arange(len(days)) % 2 == 0, 1.0, 1.1)
+    pd.DataFrame({"available_time": days.astype(str), "v": vals}).to_csv(
+        root / "s.csv", index=False)
+    px = 100 + np.cumsum(np.full(len(idx), 0.01))
+    bars = pd.DataFrame({"open": px, "high": px + 0.5, "low": px - 0.5, "close": px}, index=idx)
+    every = family_exogenous_conditioner(bars, source="s", signal="v", transform="delta",
+                                         threshold=0.05, series_root=root)
+    later = family_exogenous_conditioner(bars, source="s", signal="v", transform="delta",
+                                         threshold=0.05, series_root=root, trade_from=cut)
+    assert any(s.time <= pd.Timestamp(cut) for s in every)
+    assert later and all(s.time > pd.Timestamp(cut) for s in later)
+    assert len(later) < len(every)
+    # An unreadable cut refuses rather than judging the training span.
+    assert family_exogenous_conditioner(bars, source="s", signal="v", transform="delta",
+                                        threshold=0.05, series_root=root,
+                                        trade_from="not a date") == []
+
+
+def test_triangulation_counts_only_views_that_were_fetched(lake: Path) -> None:
+    """A DISCOVERED_NOT_INGESTED row nobody has read covers no view (L1.28a)."""
+    com, views = next(iter(onto.COMMODITY_TRIANGULATION.items()))
+    ids = [i for v in views.values() for i in v]
+    rows = [{"id": i, "jurisdiction": "global", "source_class": "physical_inventory",
+             "declared_status": "DISCOVERED_NOT_INGESTED"} for i in ids]
+    cov = ifp.coverage(rows, rulings={})
+    assert cov["triangulation"][com]["views_covered"] == 0
+    first_ids = next(iter(views.values()))
+    fs = {first_ids[0]: {"at": "2026-10-01T00:00:00+00:00", "rows": 12, "outcome": "OK"}}
+    cov = ifp.coverage(rows, fetch_state=fs, rulings={})
+    assert cov["triangulation"][com]["views_covered"] == sum(
+        1 for v in views.values() if first_ids[0] in v) >= 1
+    # A fetch that landed nothing is not a reading either.
+    fs = {first_ids[0]: {"at": "2026-10-01T00:00:00+00:00", "rows": 0, "outcome": "EMPTY"}}
+    assert ifp.coverage(rows, fetch_state=fs, rulings={})["triangulation"][com][
+        "views_covered"] == 0
+
+
+def test_an_uncited_ruling_leaves_its_class_unmeasured(lake: Path) -> None:
+    """A ruling that cites nothing, or a BLOCKED_SUBSTITUTE that names no substitute, is an absent
+    reading: the cell stays open as UNMEASURED and is asked for, never closed."""
+    rows = ifp.load_roster()
+    base = ifp.coverage(rows, rulings={})
+    j, cls = next((j, c) for j, cells in base["grid"].items() if j in onto.JURISDICTION_CODES
+                  for c, v in cells.items() if v["status"] == onto.UNSEARCHED)
+    for bad in ({"status": "NOT_PUBLISHED", "reason": "r", "evidence": ""},
+                {"status": "NOT_PUBLISHED", "reason": "r", "evidence": "well-known"},
+                {"status": "NOT_PUBLISHED", "reason": "r",
+                 "evidence": "well-known; not re-fetched (sweep network blocked 2026-10-01)"},
+                {"status": "BLOCKED_SUBSTITUTE", "reason": "r", "substitute": "",
+                 "evidence": "https://example.org/terms"},
+                "NOT_PUBLISHED"):
+        cov = ifp.coverage(rows, rulings={"cells": {f"{j}|{cls}": bad}, "roles": {}})
+        assert cov["grid"][j][cls]["status"] == onto.UNMEASURED, bad
+        assert onto.UNMEASURED not in onto.CLOSED_STATUSES
+        assert any(q.get("jurisdiction") == j and q.get("source_class") == cls
+                   and q.get("ruling_defect") for q in cov["search_queue"]), bad
+    good = {"status": "BLOCKED_SUBSTITUTE", "reason": "r", "substitute": "institutional.x.y.z",
+            "evidence": "https://example.org/terms"}
+    cov = ifp.coverage(rows, rulings={"cells": {f"{j}|{cls}": good}, "roles": {}})
+    assert cov["grid"][j][cls]["status"] == "BLOCKED_SUBSTITUTE"
+    assert onto.evidence_cited("well-known: FCA PS21/20 and PS24/14")
+
+
+def test_an_uncited_role_ruling_leaves_the_role_gap_open(lake: Path) -> None:
+    rows = ifp.load_roster()
+    open_ = ifp.coverage(rows, rulings={})["role_gaps"]
+    j, gaps = next((j, g) for j, g in open_.items() if g and j in onto.JURISDICTION_CODES)
+    ruled = {"cells": {}, "roles": {f"{j}|{gaps[0]}": {"status": "NOT_PUBLISHED",
+                                                       "reason": "none", "evidence": ""}}}
+    cov = ifp.coverage(rows, rulings=ruled)
+    assert gaps[0] in cov["role_gaps"][j]
+    assert cov["role_rulings"][f"{j}|{gaps[0]}"] == onto.UNMEASURED
+    assert cov["rulings_unmeasured"]["roles"] == 1
+
+
+def test_the_committed_rulings_close_only_on_evidence() -> None:
+    """Every committed ruling that closes a class carries a citation, and every substitute status
+    names its substitute -- or it reads UNMEASURED. Pins the rule to the real file."""
+    doc = json.loads((DESK / "data" / "institutional_coverage_rulings.json").read_text("utf-8"))
+    for sec in ("cells", "roles"):
+        for key, r in doc[sec].items():
+            st = onto.ruled_status(r)
+            if st in onto.CLOSED_STATUSES:
+                assert onto.evidence_cited(r.get("evidence")), key
+                if st in onto.SUBSTITUTE_STATUSES:
+                    assert str(r.get("substitute") or "").strip(), key
