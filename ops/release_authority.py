@@ -176,7 +176,7 @@ def check() -> dict[str, Any]:
         ver = {"ok": False, "why": f"{type(exc).__name__}: {exc}"}
     doc["tree_matches_release"] = ver
 
-    # 2. IS THE RECORD AUTHENTIC. An unsigned release is not a release, it is a file -- anything
+    # 2. IS THE RECORD AUTHENTIC. An un-MACed release is not a release, it is a file -- anything
     #    on the box could have written it, which is precisely what "accept only signed artifacts"
     #    exists to prevent.
     rec = None
@@ -209,7 +209,7 @@ def check() -> dict[str, Any]:
     doc["adopt_guard"] = adopt_would_revert(upstream)
 
     # 4. UNCOMMITTED MONEY-PATH EDITS. A file edited on the box after the seal is drift even when
-    #    git agrees about the commit -- it is running code nobody reviewed or signed.
+    #    git agrees about the commit -- it is running code nobody reviewed or sealed.
     try:
         dirty = [p for p in release.dirty_paths(code_only=True)
                  if p in set(release.MONEY_PATH)]
@@ -221,7 +221,7 @@ def check() -> dict[str, Any]:
         or doc["signature"]["state"] in ("UNSIGNED", "INVALID", "ABSENT")
     doc["status"] = "ATTENTION" if bad else "OK"
     doc["what_authority_means"] = (
-        "one canonical lineage, a build pinned to an exact commit/data/config hash, a SIGNED "
+        "one canonical lineage, a build pinned to an exact commit/data/config hash, an HMAC-SEALED "
         "record naming it, and no unattended process able to move the money path backwards. "
         "This verifies all four and blocks none of them -- a verifier that also enforces is both "
         "the decider and the check.")

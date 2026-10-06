@@ -4826,7 +4826,7 @@
     "scripts/check_immutable_evaluator.py:120 (append_only_seal: an append-only path is checked differently from a frozen one -- the existing PREFIX must be unchanged and only new records may appear)",
     "scripts/check_immutable_evaluator.py:253 (generator isolation: a file is a generator if it imports the donation door, AST-confirmed, not grepped)",
     "scripts/check_immutable_evaluator.py:353 (generator_isolation: 49 generators scanned; a proposer that reaches for the lockbox, the sealed vault or a holdout path fails with the offending file and line)",
-    "scripts/check_immutable_evaluator.py:436 (sign: a change to a judge must arrive with a re-signed manifest -- a human act, and the organ never signs itself)",
+    "scripts/check_immutable_evaluator.py:436 (sign: a change to a judge must arrive with a re-sealed (re-hashed) manifest -- a human act, and the organ never seals itself)",
     "scripts/run_law_gate.py:131 (the checker IS on the law gate)",
     "ops/principal_doctrine.txt",
     "libs/validation/lockbox.py",

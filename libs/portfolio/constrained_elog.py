@@ -52,18 +52,31 @@ from libs.portfolio.posterior_growth import (
     solve,
 )
 
-__all__ = ["FEEDS_LIVE", "ConstraintSpec", "adopt_if_proven", "decide", "evaluate",
-           "read_switch", "solve_constrained"]
+__all__ = ["FEEDS_LIVE", "PRINCIPAL_APPROVAL", "ConstraintSpec", "adopt_if_proven", "decide",
+           "evaluate", "read_switch", "solve_constrained"]
 
-#: THE FIAT SWITCH, AND IT STAYS OFF. Nobody turns the constrained book on by hand -- not a
-#: reviewer, not a session, not the principal's "it looks safer" -- because a book fed on
-#: preference is exactly the fiat cap Growth Rule 1 forbids. The ONLY way it feeds is the PROOF
-#: SWITCH below: `decide()` runs hourly against the live book (`research/constrained_book.py`),
-#: and the allocator adopts the constrained book only while that decision says its robust
-#: E[log W] beats the traded book's on the allocator's own posterior worlds, and only after the
-#: allocator re-contests it on its own paths at the moment of adoption (`adopt_if_proven`).
-#: `desks/mt5/tests/test_constrained_book.py` pins this constant False.
-FEEDS_LIVE = False
+#: THE PRINCIPAL'S AUTHORISATION FOR THE PROOF SWITCH TO FEED (2026-10-06). This constant gates
+#: nothing on its own: no money-path module reads it, and setting it True turns no book on by
+#: hand. What it records is the ruling on decision card
+#: `cmsg_012XFUfE12Rvggnu86fDb8prK1fwX89R4zYEM2v8JJ4bJ3` (Allow tapped 2026-10-06T15:50:31Z):
+#: "pf_allocator may adopt the constrained book whenever its robust E[log W] is higher, within
+#: the survival limits." The book still feeds ONLY through the PROOF SWITCH below: `decide()` runs
+#: hourly against the live book (`research/constrained_book.py`), and the allocator adopts the
+#: constrained book only while that decision says its robust E[log W] beats the traded book's on
+#: the allocator's own posterior worlds (survival clauses as hard constraints, never below the
+#: heat floor), and only after re-contesting it on its own paths (`adopt_if_proven`). Until this
+#: ruling the constant read False and was described as a fiat switch that must stay off; the
+#: principal has now approved the proof-switch feed, so it reads True and every published
+#: decision carries the card id in `principal_approval`.
+#: `desks/mt5/tests/test_constrained_book.py` pins the constant and the card id.
+FEEDS_LIVE = True
+PRINCIPAL_APPROVAL = {
+    "card": "cmsg_012XFUfE12Rvggnu86fDb8prK1fwX89R4zYEM2v8JJ4bJ3",
+    "decided_at": "2026-10-06T15:50:31Z",
+    "choice": "Allow",
+    "ruling": ("pf_allocator may adopt the constrained book whenever its robust E[log W] is "
+               "higher, within the survival limits"),
+}
 
 #: A decision older than this no longer describes the live book: the allocator treats it as OFF.
 SWITCH_MAX_AGE_S = 2 * 3600
@@ -110,7 +123,8 @@ def decide(doc: Mapping[str, Any], *, now_iso: str, valid_s: int = SWITCH_MAX_AG
     except ValueError:
         until = now_iso
     return {"feeds_live": feeds, "decided_at": now_iso, "valid_until": until,
-            "fiat_switch": FEEDS_LIVE,
+            "principal_approved": FEEDS_LIVE,
+            "principal_approval": dict(PRINCIPAL_APPROVAL),
             "why": ("robust E[log W] beats the traded book on the allocator's worlds: the "
                     "allocator adopts it after re-contesting on its own paths" if feeds
                     else "; ".join(reasons)),
@@ -119,7 +133,8 @@ def decide(doc: Mapping[str, Any], *, now_iso: str, valid_s: int = SWITCH_MAX_AG
             "total_heat": total, "floor": floor,
             "book": dict(con.get("book") or {}) if feeds else {},
             "rule": ("fed only while its measured robust E[log W] beats the baseline's; never "
-                     "by fiat, never below the floor, re-proven by the allocator at adoption")}
+                     "by fiat, never below the floor, re-proven by the allocator at adoption; "
+                     "principal-approved on card " + PRINCIPAL_APPROVAL["card"] + ")")}
 
 
 def read_switch(doc: Any, *, now_iso: str) -> dict[str, Any]:

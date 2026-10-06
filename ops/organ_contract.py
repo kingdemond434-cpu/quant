@@ -196,7 +196,7 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "whether each live sleeve's symbol still trades in the distribution "
                            "its thresholds were calibrated in"),
     # F1 OF THE 28, and the principal ranks it first of everything remaining. The release and
-    # signing guards both existed and neither had a caller: the box that moves money never
+    # HMAC-seal guards both existed and neither had a caller: the box that moves money never
     # verified which build it was running or whether the record saying so was authentic.
     # THE RECONCILER THAT HAD NEVER RUN ON THE BOX THAT TRADES. forward_reconcile is called from
     # daily_cycle.py:134 and daily_cycle is not scheduled here, so 32 clocks sat ACTIVE and
@@ -209,7 +209,7 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "certificates the enrolment engine can never run, evicted with their "
                            "evidence kept"),
     "MT5-ReleaseAuthority": ("desks/mt5/reports/RELEASE_AUTHORITY.json", 45,
-                             "does the running tree match a SIGNED release, and would the hourly "
+                             "does the running tree match an HMAC-sealed release, would the hourly "
                              "adopter overwrite unpushed money-path work"),
     "MT5-MoatCapture":    ("desks/mt5/reports/MOAT_CAPTURE.json", 90,
                            "per-day capture completeness -- which SYMBOLS a short day is "

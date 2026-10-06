@@ -5,8 +5,8 @@
 disk against `IMMUTABLE_MANIFEST.json`. The adopter needs the same answer about a commit it has
 only FETCHED, before a single byte of it reaches the tree the gateway runs. Measured 2026-09-30:
 origin carried a broken seal for about two minutes (4678fe4f at 515d665e, until fc6c34e5
-re-signed it), and MT5-AdoptRelease checks neither CI nor the seal -- an adoption at :12 inside
-that window would have landed an unsigned judge on the box that trades.
+re-sealed it), and MT5-AdoptRelease checks neither CI nor the seal -- an adoption at :12 inside
+that window would have landed an unsealed judge on the box that trades.
 
     python scripts/check_target_seal.py <rev>          # rc 0 sealed, 1 breach, 2 unmeasurable
 
@@ -15,7 +15,7 @@ box's own state and is not in a fetched commit's gift, so it stays with the work
 
 The frozen list is the UNION of the one this checkout declares and the one the target declares,
 so a target cannot leave the fence by deleting a name from the list in the same commit that
-edits the file. Hashes are over CRLF->LF normalised bytes, exactly as the evaluator signs them.
+edits the file. Hashes are over CRLF->LF normalised bytes, exactly as the evaluator seals them.
 """
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ def digest(raw: bytes) -> str:
 
 
 def judge(rev: str) -> tuple[int, list[str]]:
-    """(rc, reasons): 0 sealed, 1 a frozen file differs from the signed manifest, 2 unmeasurable."""
+    """(rc, reasons): 0 sealed, 1 a frozen file differs from the sealed manifest, 2 unmeasurable."""
     here = ROOT / EVALUATOR
     names: set[str] = set()
     if here.exists():
@@ -85,9 +85,9 @@ def judge(rev: str) -> tuple[int, list[str]]:
         raw = _show(rev, rel)
         now = "<absent>" if raw is None else digest(raw)
         if rel not in signed:
-            out.append(f"{rel}: frozen but not in the signed manifest")
+            out.append(f"{rel}: frozen but not in the sealed manifest")
         elif signed[rel] != now:
-            out.append(f"{rel}: changed since signing ({signed[rel]} -> {now})")
+            out.append(f"{rel}: changed since sealing ({signed[rel]} -> {now})")
     return (1 if out else 0), out
 
 

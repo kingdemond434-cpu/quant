@@ -41,8 +41,20 @@ def _paths(**kw):
     return sample_paths(None, n_paths=300, horizon=5, worlds=_worlds(**kw), seed=1)
 
 
-def test_the_fiat_switch_is_off_and_only_the_proof_switch_reaches_the_allocator():
-    assert ce.FEEDS_LIVE is False
+CARD = "cmsg_012XFUfE12Rvggnu86fDb8prK1fwX89R4zYEM2v8JJ4bJ3"
+
+
+def test_the_feed_is_principal_approved_and_only_the_proof_switch_reaches_the_allocator():
+    # The principal ruled on decision card CARD (Allow, 2026-10-06T15:50:31Z): pf_allocator may
+    # adopt the constrained book whenever its robust E[log W] is higher, within survival limits.
+    assert ce.FEEDS_LIVE is True
+    assert ce.PRINCIPAL_APPROVAL["card"] == CARD
+    assert ce.PRINCIPAL_APPROVAL["decided_at"] == "2026-10-06T15:50:31Z"
+    assert "robust E[log W]" in ce.PRINCIPAL_APPROVAL["ruling"]
+    # the approval turns nothing on by hand: an unproven book is still OFF
+    off = ce.decide(_doc(False), now_iso="2026-10-06T16:00:00+00:00")
+    assert off["feeds_live"] is False and off["principal_approved"] is True
+    assert off["principal_approval"]["card"] == CARD and CARD in off["rule"]
     # the gateway, the decision core and the promoter never read the shadow directly
     for rel in ("desks/mt5/mt5desk/gateway.py", "desks/mt5/mt5desk/decision_core.py",
                 "desks/mt5/research/promoter.py"):
@@ -149,7 +161,8 @@ def test_the_shadow_is_two_sided(tmp_path, monkeypatch):
     doc = cb.build()
     assert doc["status"] == "MEASURED"
     assert doc["feeds_live"] is doc["switch"]["feeds_live"]       # the decision, on the artifact
-    assert doc["fiat_switch"] is False
+    assert doc["principal_approved"] is True and doc["principal_approval"]["card"] == CARD
+    assert "fiat_switch" not in doc
     assert doc["constrained"]["total_heat"] > 0.04          # MORE heat than the traded book
     assert doc["direction"].startswith("MORE")
     assert "contest_constrained_vs_current" in doc

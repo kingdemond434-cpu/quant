@@ -343,7 +343,7 @@ $adoptExit = $LASTEXITCODE
 # EXIT 7 IS A REFUSAL, NOT A PARTIAL ADOPTION: Adopt-Release found the fetched target's judge
 # unsealed and wrote nothing. The running release and its gateway stay as they are.
 if ($adoptExit -eq 7) {
-    foreach ($line in @($adoptOut | Where-Object { $_ -match 'target seal|REFUSING target|changed since signing|not in the signed|unreadable' } | Select-Object -First 16)) {
+    foreach ($line in @($adoptOut | Where-Object { $_ -match 'target seal|REFUSING target|changed since signing|changed since sealing|not in the signed|not in the sealed|unreadable' } | Select-Object -First 16)) {
         Log ("    " + $line.Trim())
     }
     Log "target judge is not sealed; nothing adopted, current release kept"

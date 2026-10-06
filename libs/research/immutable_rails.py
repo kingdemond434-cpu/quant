@@ -11,8 +11,8 @@
     the truth; the evaluator is immutable and separately authorised."      -- LAWS 5m
 
 WHY A SECOND LIST BESIDE THE SEALED EVALUATOR, AND WHY IT IS NOT A SECOND SEAL. The evaluator
-(`scripts/check_immutable_evaluator.py`) HASHES eighteen judge files into a signed manifest and
-goes red when one drifts without a re-signing. That answers "did the judge change?". The boundary
+(`scripts/check_immutable_evaluator.py`) HASHES eighteen judge files into a sealed manifest and
+goes red when one drifts without a re-seal. That answers "did the judge change?". The boundary
 the law draws is wider and asks a different question: "may THIS ORGAN change THIS PATH?" -- a
 mutation proposal from `research_evolution` that reaches for the forward-clock ledger or the
 registry's trial records is refused BEFORE it is applied, by name, whether or not a hash would
@@ -47,7 +47,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 EVALUATOR_SCRIPT = ROOT / "scripts" / "check_immutable_evaluator.py"
 
-#: The category the evaluator's own signed tuple lands in when it is merged into the rails.
+#: The category the evaluator's own sealed tuple lands in when it is merged into the rails.
 SEALED_CATEGORY = "sealed_evaluator"
 
 IMMUTABLE_STATUS = "IMMUTABLE"
@@ -231,7 +231,7 @@ DECLARED_RAILS: tuple[Rail, ...] = (
     Rail("audit_logs", "desks/mt5/data/blind_review_ledger.jsonl", state=True,
          why="every blind review"),
     Rail("audit_logs", "desks/mt5/data/IMMUTABLE_MANIFEST.json", state=True,
-         why="the evaluator's signed manifest"),
+         why="the evaluator's hash-sealed manifest"),
     Rail("audit_logs", "ops/principal_doctrine.txt", why="the sealed doctrine"),
     Rail("audit_logs", "docs/LAWS.md", why="the law compendium"),
     Rail("audit_logs", "libs/tiers/truth_kernel.py",

@@ -1,4 +1,4 @@
-"""Signed release artifacts: a box runs code some authority SEALED, not code that appeared.
+"""HMAC-sealed release artifacts: a box runs code this desk SEALED, not code that appeared.
 
 BLUEPRINT ITEM 1, the part that is mechanically enforceable. "Live boxes should accept only
 signed release artifacts; no healer, sync process or agent should be able to overwrite

@@ -388,7 +388,7 @@ Close every pass in this order, and stop at the first step that cannot be comple
    silently reverted by the next sync.
 4. **Seal alone.** `RELEASE.json` is committed by itself, after the code it describes. A seal
    sharing a commit with the code it seals cannot be checked against it.
-5. **Verify identity, do not assume it.** `running SHA == RELEASE.code_sha == signed money-path
+5. **Verify identity, do not assume it.** `running SHA == RELEASE.code_sha == hash-sealed money-path
    SHA`. Run the check and read its output. If it is not true, the box is executing code that was
    never sealed, and that outranks every other finding on the board.
 6. **Confirm the box can adopt.** A tree that is perfect on the branch and unreachable by the box

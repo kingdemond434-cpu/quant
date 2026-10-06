@@ -6,7 +6,7 @@
     SURVIVOR_REGISTRY_HASH   the canonical survivor file (and CANON_SHA256, the full digest)
     ALLOCATOR_HASH           the allocator, the proof, the heat policy
     MONEY_PATH_HASH          every module that places, sizes or vetoes an order (+ per file)
-    IMMUTABLE_MANIFEST       the signed judge manifest's digest, signer and signing time
+    IMMUTABLE_MANIFEST       the hash-sealed judge manifest's digest, sealer and seal time
     ALLOCATOR_CERTIFICATE    the proof certificate present at seal time, if any
     DEPENDENCY_HASH          pyproject's dependency tables
     DATA_SCHEMA_VERSION      the PIT stamp fields and the feature-store code version
@@ -27,7 +27,7 @@ and the state files the Windows box commits on top of it every fifteen minutes. 
 that diff is code the release never named, and the gateway refuses new risk until a fresh seal
 lands. That is the invariant the principal asked for, stated so a machine can check it:
 
-    running box SHA == RELEASE.code_sha == signed money-path SHA == tested SHA == merged SHA
+    running box SHA == RELEASE.code_sha == hash-sealed money-path SHA == tested SHA == merged SHA
 
 `release_id()` is the short hash the gateway stamps on every intent and every decision;
 `verify()` says whether the working tree the process runs in still matches the sealed release --
@@ -540,7 +540,7 @@ def ensure_signed(*, root: Path | None = None) -> dict[str, Any]:
         doc["signed_via"] = "ensure_signed"
         _write(doc, root)
         return {"signed": True, "state": "SIGNED",
-                "why": f"signed release {doc.get('release_id')} ({why}; {why_sha})"}
+                "why": f"HMAC-sealed release {doc.get('release_id')} ({why}; {why_sha})"}
     except Exception as exc:  # never block the release path
         return {"signed": False, "state": "ERROR", "why": f"{type(exc).__name__}: {exc}"}
 
