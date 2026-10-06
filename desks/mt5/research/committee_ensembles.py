@@ -1928,7 +1928,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
             if subjects is None:
                 bank = _bank_census()
             pool = meta_subjects(traps, ov_now, bank)
-        ex, counts = _examine_committee(name, pool, state, share_s, now_ts)
+        ex, ints = _examine_committee(name, pool, state, share_s, now_ts)
+        counts: dict[str, Any] = dict(ints)
         examined_all += ex
         res = [r for e in ex for r in e["results"]]
         if name == FORENSIC and subjects is None:
