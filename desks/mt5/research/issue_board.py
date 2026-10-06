@@ -40,8 +40,10 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -132,6 +134,10 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/rank_recovery.py"),
     ("cross_sectional_breadth", "desks/mt5/reports/CROSS_SECTIONAL_BREADTH.json", 3600,
      "research/cross_sectional_breadth.py"),
+    # The silent-organ census reads two small JSON files; its own clock here means the fence
+    # still runs when a slow earlier leg ends the hourly pass before it is reached.
+    ("silent_organs", "desks/mt5/reports/SILENT_ORGANS.json", 3600,
+     "scripts/check_silent_organs.py"),
     ("attribution_census", "desks/mt5/reports/ATTRIBUTION_COVERAGE.json", 3600,
      "research/attribution_census.py"),
     ("coverage_tensor", "desks/mt5/reports/COVERAGE_TENSOR.json", 3600,
@@ -390,12 +396,79 @@ def desk_state_issues(root: Path | None = None) -> list[Issue]:
     return out
 
 
+SILENT_ORGANS = "desks/mt5/reports/SILENT_ORGANS.json"
+
+
+def silent_organ_issues(root: Path | None = None) -> list[Issue]:
+    """THE SILENT-ORGAN FENCE, ON THE BOARD (audit R2, 2026-09-30).
+
+    `scripts/check_silent_organs.py` wrote a RED or UNMEASURED fence that nothing read: its exit
+    was a declared verdict and no board, pager or dashboard looked at the artifact. A RED fence
+    (a NEW silent organ, or a watchdog escalation) is STALLED; an UNMEASURED one is BLIND -- the
+    desk cannot say which of its organs are working. Neither is auto-repairable: the fix is the
+    named organ's, and re-running the census would only re-read the same inputs. An absent or
+    stale census is already a `missing:`/`stale:silent_organs` issue from CADENCE.
+    """
+    r = root or ROOT
+    try:
+        doc = json.loads((r / SILENT_ORGANS).read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(doc, dict):
+        return []
+    fence = str(doc.get("fence") or doc.get("status") or "")
+    out: list[Issue] = []
+    if fence == "RED":
+        names = list(doc.get("new_silent") or []) + [
+            e for e in doc.get("escalated") or [] if e not in (doc.get("new_silent") or [])]
+        out.append(Issue(
+            "silent_organs:red", "STALLED",
+            f"{len(names)} organ(s) newly silent or escalated",
+            "Named: " + ", ".join(str(n) for n in names[:8]) + (" ..." if len(names) > 8 else "")
+            + f". Read {SILENT_ORGANS} for each row's verdict and why.",
+            repair=None, auto=False))
+    elif fence == "UNMEASURED":
+        why = "; ".join(f"{u.get('what')}: {u.get('why')}" for u in doc.get("unmeasured") or []
+                        if isinstance(u, dict))
+        out.append(Issue(
+            "silent_organs:unmeasured", "BLIND",
+            f"the silent-organ fence cannot see (floor {doc.get('n_silent_floor')} silent)",
+            (why or "no reason recorded")[:400], repair=None, auto=False))
+    return out
+
+
 def collect(root: Path | None = None) -> list[Issue]:
-    return stale_producers(root) + raised_alarms(root) + desk_state_issues(root)
+    return (stale_producers(root) + raised_alarms(root) + desk_state_issues(root)
+            + silent_organ_issues(root))
+
+
+def repair_budget_s() -> float | None:
+    """Seconds the repairs may spend this pass: the hourly cycle's cap (QUANT_LEG_BUDGET_S) less
+    a write margin, or None when run by hand with no cap.
+
+    WHY (hourly leg `issue_board`, TIMEOUT at 720 s in the 2026-09-16 sync marker). Every stale
+    producer was re-run SERIALLY with a 900 s timeout each, inside a 720 s leg cap, and the board
+    was written only after the last one -- so a pass with two slow stale producers was killed
+    before writing anything, and the board that exists to show stalled organs stalled itself.
+    """
+    try:
+        cap = float(os.environ.get("QUANT_LEG_BUDGET_S") or 0)
+    except ValueError:
+        cap = 0.0
+    return cap - max(60.0, 0.15 * cap) if cap > 0 else None
+
+
+def _rotated(issues: list[Issue]) -> list[Issue]:
+    """The repair ORDER rotates by the hour, so a budget that reaches only a prefix reaches a
+    different prefix next hour and the tail is never starved behind a head that always fails."""
+    if not issues:
+        return issues
+    k = datetime.now(UTC).hour % len(issues)
+    return issues[k:] + issues[:k]
 
 
 def repair(issues: list[Issue], apply: bool = False,
-           timeout_s: int = 900) -> list[dict[str, Any]]:
+           timeout_s: int = 900, budget_s: float | None = None) -> list[dict[str, Any]]:
     """Run the repairs that are safe to automate. REPORTS what it did, never guesses.
 
     Only idempotent, cheap, reversible repairs are automated: rerunning a producer, rebuilding a
@@ -403,7 +476,8 @@ def repair(issues: list[Issue], apply: bool = False,
     an actuator that can quietly fix one of those is an actuator that can quietly break it.
     """
     done: list[dict[str, Any]] = []
-    for i in issues:
+    t0 = time.monotonic()
+    for i in (_rotated(issues) if budget_s is not None else issues):
         protected = next((k for k in NEVER_AUTO
                           if k == i.severity or k == i.key.split(":", 1)[0]), None)
         if protected or not i.auto or not i.repair:
@@ -413,6 +487,12 @@ def repair(issues: list[Issue], apply: bool = False,
             continue
         if not apply:
             done.append({"key": i.key, "action": "WOULD_RUN", "cmd": i.repair})
+            continue
+        left = None if budget_s is None else budget_s - (time.monotonic() - t0)
+        if left is not None and left < 15:
+            done.append({"key": i.key, "action": "NOT_REACHED", "cmd": i.repair,
+                         "why": "this pass's repair budget is spent; the rotation reaches it "
+                                "first on a later pass"})
             continue
         script = i.repair.replace("python ", "", 1)
         for base in (BASE, ROOT):
@@ -424,7 +504,9 @@ def repair(issues: list[Issue], apply: bool = False,
             continue
         try:
             r = subprocess.run([sys.executable, "-u", str(target)], cwd=str(base),
-                               capture_output=True, text=True, timeout=timeout_s, check=False)
+                               capture_output=True, text=True,
+                               timeout=timeout_s if left is None else min(timeout_s, int(left)),
+                               check=False)
             done.append({"key": i.key, "cmd": i.repair,
                          "action": "RAN" if r.returncode == 0 else "FAILED",
                          "exit_code": r.returncode,
@@ -441,7 +523,15 @@ def repair(issues: list[Issue], apply: bool = False,
 def run(apply: bool = False) -> dict[str, Any]:
     issues = collect()
     before_count = len(issues)
-    actions = repair(issues, apply=apply)
+    if apply:
+        # THE BOARD IS WRITTEN BEFORE THE SLOW STEP. Detection is cheap and is the product; the
+        # repairs are subprocesses that may run long. A pass cut inside them still leaves this
+        # hour's issue list on disk, marked as not yet repaired.
+        _write_report({"measured_at": datetime.now(UTC).isoformat(timespec="seconds"),
+                       "issues": [i.as_dict() for i in issues], "count": len(issues),
+                       "phase": "DETECTED -- repairs in progress; this is rewritten when they end",
+                       "applied": apply, "watched_producers": len(CADENCE)})
+    actions = repair(issues, apply=apply, budget_s=repair_budget_s() if apply else None)
     verification_error = None
     if apply:
         try:
@@ -488,11 +578,15 @@ def run(apply: bool = False) -> dict[str, Any]:
     }
 
 
+def _write_report(doc: dict[str, Any]) -> None:
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    REPORT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
     args = argv if argv is not None else sys.argv[1:]
     doc = run(apply="--apply" in args)
-    REPORT.parent.mkdir(parents=True, exist_ok=True)
-    REPORT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    _write_report(doc)
     print(f"issue board: {doc['count']} issue(s) {doc['by_severity']} across "
           f"{doc['watched_producers']} watched producer(s)")
     for i in doc["issues"][:20]:

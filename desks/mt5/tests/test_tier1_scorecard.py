@@ -346,3 +346,34 @@ def test_a_row_builder_that_raises_becomes_UNMEASURED_not_a_crashed_cycle(
     doc = sc.build()
     assert doc["rows"][0]["verdict"] == sc.UNMEASURED
     assert "RuntimeError: something nobody predicted" in doc["rows"][0]["basis"]
+
+
+# ------------------------------------------------ audit v2 (2026-09-30): UNMEASURED is surfaced
+def test_row07_an_unmeasured_census_is_unmeasured_never_the_old_sum(sandbox: Path) -> None:
+    from datetime import UTC, datetime
+    now = datetime.now(UTC).isoformat(timespec="seconds")
+    _write(sandbox, "SILENT_ORGANS", {"measured_at": now, "status": "UNMEASURED",
+                                      "fence": "UNMEASURED", "n_silent": None,
+                                      "n_silent_floor": 4, "unmeasured": [
+                                          {"what": "legs", "why": "sync_marker STALE"}]})
+    _write(sandbox, "PROCESS_HEALTH", {"counts": {"FAILING": 7}, "scheduler": {"read": True}})
+    row = sc._r07_silent_failures()
+    assert row["current"] is None and row["basis"].startswith("UNMEASURED")
+    assert "STALE" in row["basis"] and "floor 4" in row["basis"]
+
+
+def test_row07_a_stale_green_census_is_unmeasured(sandbox: Path) -> None:
+    _write(sandbox, "SILENT_ORGANS", {"measured_at": "2026-09-16T12:00:00+00:00",
+                                      "status": "GREEN", "fence": "GREEN", "n_silent": 0})
+    row = sc._r07_silent_failures()
+    assert row["current"] is None and "old against" in row["basis"]
+
+
+def test_row07_existence_only_scheduler_is_unmeasured(sandbox: Path) -> None:
+    """schtasks timed out and the task directory was listed: FAILING is unmeasurable."""
+    _write(sandbox, "PROCESS_HEALTH", {"at": "2026-09-30T07:15:01+00:00",
+                                       "counts": {"FAILING": 0, "NOT_SCHEDULED": 0},
+                                       "scheduler": {"read": False, "existence_only": True,
+                                                     "why": "schtasks timed out"}})
+    row = sc._r07_silent_failures()
+    assert row["current"] is None and "scheduler unread" in row["basis"]

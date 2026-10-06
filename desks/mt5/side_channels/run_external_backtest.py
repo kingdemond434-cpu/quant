@@ -11,6 +11,10 @@ import sys
 import time
 import warnings
 
+#: When this process started, for the cycle-cap arithmetic in `_budget_s` (grid building and
+#: bar loading happen before the cell loop's own clock starts, and the cap counts them).
+_PROCESS_T0 = time.time()
+
 warnings.filterwarnings("ignore")
 
 from collections import Counter  # noqa: E402
@@ -612,6 +616,28 @@ def hold_uncoverable(grid: list[dict]) -> tuple[list[dict], dict]:
     return testable, coverage
 
 
+def _budget_s() -> float:
+    """The cell loop's wall clock: BACKTEST_BUDGET_MIN, never past the cycle's cap.
+
+    THE DEFECT (hourly leg `backtest`, measured TIMEOUT at 720 s in the 2026-09-16 sync marker and
+    named among the silent legs since): this organ stops itself at 45 minutes, and the hourly
+    cycle kills it at its leg cap, 720 s. The merge-and-write happens AFTER the loop, so every
+    pass was killed mid-loop and wrote nothing -- the cursor never advanced and the gauntlet's
+    feed got no new rows from this stage. The cycle exports its cap as QUANT_LEG_BUDGET_S; the
+    loop now stops early enough to write inside it, keeping the larger of a minute and 15% of the
+    cap for the merge, and counting what the process already spent before the loop began.
+    """
+    own = float(os.environ.get("BACKTEST_BUDGET_MIN", "45")) * 60.0
+    try:
+        cap = float(os.environ.get("QUANT_LEG_BUDGET_S") or 0)
+    except ValueError:
+        cap = 0.0
+    if cap <= 0:
+        return own
+    margin = max(60.0, 0.15 * cap)
+    return max(30.0, min(own, cap - margin - (time.time() - _PROCESS_T0)))
+
+
 def run_all() -> list[dict]:
     raw_grid = _docket_rows()
     if not raw_grid:
@@ -652,7 +678,7 @@ def run_all() -> list[dict]:
     # keys, and everything else survives untouched.
     out = BASE / "data" / "hypotheses" / "external_backtest_results.json"
     cursor_path = BASE / "data" / "hypotheses" / "backtest_cursor.json"
-    budget_s = float(os.environ.get("BACKTEST_BUDGET_MIN", "45")) * 60.0
+    budget_s = _budget_s()
 
     def _cell_key(c: dict) -> str:
         # NO SEPARATE `timeframe` FIELD, deliberately: `expand_timeframes` writes the chart INTO
