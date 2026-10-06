@@ -261,13 +261,12 @@ def test_a_crash_mid_pass_keeps_what_was_owed(desk: Path,
     def boom(*_a: Any, **_k: Any) -> Any:
         raise RuntimeError("crash mid-pass")
 
-    monkeypatch.setattr(nes, "fast_update", boom)
+    real = nes.fingerprint
+    monkeypatch.setattr(nes, "fingerprint", boom)
     with pytest.raises(RuntimeError):
         nes.run(budget_s=0, now=NOW + timedelta(minutes=1))
     assert nes.PENDING.exists()                          # still owed
-    monkeypatch.undo()
-    for name, value in {"PENDING": nes.PENDING}.items():
-        monkeypatch.setattr(nes, name, value)
+    monkeypatch.setattr(nes, "fingerprint", real)
     again = nes.run(budget_s=0, now=NOW + timedelta(minutes=2))
     assert again["items_owed_from_last_pass"] == 20 and again["items_processed"] >= 20
 
