@@ -89,13 +89,13 @@ def lookup(names: Sequence[str], files: Iterable[Path] = ()) -> tuple[str | None
             return v, "process"
     for hive in ("machine", "user"):
         for n in names:
-            v = _registry(hive, n)
-            if v:
-                return v, hive
+            r = _registry(hive, n)
+            if r:
+                return r, hive
     for p in files:
-        v = _from_file(Path(p))
-        if v:
-            return v, f"file:{Path(p).name}"
+        f = _from_file(Path(p))
+        if f:
+            return f, f"file:{Path(p).name}"
     return None, "absent"
 
 
