@@ -144,16 +144,14 @@ def test_two_debts_of_different_dk_eff_bid_differently() -> None:
 
 
 def test_the_queue_reprices_when_a_debt_is_paid(sat: dict[str, Any]) -> None:
-    first = sat["breadth_debts"][0]
+    sym_of = {"forex": "EURJPY", "commodities": "XAUUSD", "indices": "US500"}
+    first = next(d for d in sat["breadth_debts"] if d["asset_class"] in sym_of
+                 and cs.asset_class(sym_of[d["asset_class"]]) == d["asset_class"])
     paid_fam = first["candidate_producers"][0]
-    cls_sym = {"forex": "EURJPY", "commodities": "XAUUSD", "indices": "US500",
-               "energy": "USOIL", "bonds": "US10Y", "soft_commodity": "COFFEE",
-               "forex_exotics": "USDTRY", "crypto": "BTCUSD"}[first["asset_class"]]
-    paid = _build(_canon({"paid": _cert(cls_sym, paid_fam, {"x": 1})}))
+    paid = _build(_canon({"paid": _cert(sym_of[first["asset_class"]], paid_fam, {"x": 1})}))
     before = {d["missing_cluster"]: d for d in sat["breadth_debts"]}
     after = {d["missing_cluster"]: d for d in paid["breadth_debts"]}
-    if first["missing_cluster"] in after:          # the certificate classified elsewhere
-        pytest.skip("synthetic certificate did not occupy the debt's cluster")
+    assert first["missing_cluster"] not in after, "the paid debt is still open"
     moved = [k for k in before.keys() & after.keys()
              if before[k]["expected_delta_k_eff"] != after[k]["expected_delta_k_eff"]]
     assert moved, "paying a debt repriced nothing"
