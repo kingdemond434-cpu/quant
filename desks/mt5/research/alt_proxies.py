@@ -1691,7 +1691,8 @@ MOF_WEEK_COLS: dict[int, str] = {
 
 def parse_mof_securities_weekly(body: bytes, ctx: Ctx) -> list[Obs]:
     """MOF weekly International Transactions in Securities. The period cell is the reporting
-    week, `2005年1月2日～1月8日`; the observation is dated on its LAST day."""
+    week, `2005年1月2日` to `1月8日` (a full-width tilde between them); the observation is
+    dated on its LAST day."""
     out: list[Obs] = []
     for r in _jp_csv_rows(body):
         if not r:
@@ -1837,7 +1838,8 @@ def make_boj_parser(names: dict[str, str], code_env: tuple[str, str] | None = No
             code = str(s.get("SERIES_CODE") or "")
             name = (names_now.get(code) or names_now.get(code.split("'")[-1])
                     or f"boj_{code.lower()}")
-            inner = s.get("VALUES") if isinstance(s.get("VALUES"), dict) else s
+            nested = s.get("VALUES")
+            inner: dict[str, Any] = nested if isinstance(nested, dict) else s
             dates, vals = inner.get("SURVEY_DATES"), inner.get("VALUES")
             if not isinstance(dates, list) or not isinstance(vals, list):
                 continue
@@ -1856,7 +1858,8 @@ def make_boj_parser(names: dict[str, str], code_env: tuple[str, str] | None = No
 #: abbreviations both read; values are thousand yen, net = purchases - sales).
 JQ_INVESTORS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("foreigners", "frgn"), "foreigners"), (("individuals", "ind"), "individuals"),
-    (("trustbanks", "trstbnk"), "trust_banks"), (("investmenttrusts", "invtr"), "investment_trusts"),
+    (("trustbanks", "trstbnk"), "trust_banks"),
+    (("investmenttrusts", "invtr"), "investment_trusts"),
     (("insurancecompanies", "inscos"), "insurers"), (("proprietary", "prop"), "proprietary"))
 
 
@@ -3128,8 +3131,9 @@ _PDL_EV = {"terms_url": "https://www.mof.go.jp/english/about_mof/notice/index.ht
            "terms_quote": ("Public Data License (Version 1.0; PDL 1.0) applies unless any rights "
                            "are indicated."),
            "licence_url": "https://www.digital.go.jp/resources/open_data/public_data_license_v1.0",
-           "licence_quote": ("どなたでも以下の1.1.から1.7.に定める利用ルールに従って、複製、公衆送信、"
-                             "翻訳・変形等の翻案等、自由に利用できます...商用利用も可能です。"),
+           "licence_quote": ("どなたでも以下の1.1.から1.7.に定める利用ルールに従って、"
+                             "複製、公衆送信、翻訳・変形等の翻案等、自由に利用できます..."
+                             "商用利用も可能です。"),
            "robots": "not readable from the authoring container (proxy refuses the host)",
            "checked_at": _CHK_JP}
 _BOJ_API_EV = {"terms_url": "https://www.stat-search.boj.or.jp/info/api_notice_en.pdf",
@@ -3162,7 +3166,7 @@ JP_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                                           "jp_boj_current_account", "jp_boj_jgb_holdings")},
     "jp_estat": {
         "terms_url": "https://www.e-stat.go.jp/terms-of-use",
-        "terms_quote": ("どなたでも以下の１）～６）に従って、複製、公衆送信、翻訳・変形等の翻案等、"
+        "terms_quote": ("どなたでも以下の１）～６）に従って、複製、公衆送信、翻訳・変形等の翻案等、"  # noqa: RUF001
                         "自由に利用できます。商用利用も可能です。"),
         "robots": "api.e-stat.go.jp is the documented API (free appId)",
         "checked_at": _CHK_JP},

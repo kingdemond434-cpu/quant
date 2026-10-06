@@ -136,7 +136,8 @@ StateFn = Callable[[dict[str, dict[str, list[dict[str, Any]]]], datetime], dict[
 
 
 def run(*, code: str, region: str, refused: Iterable[str] = (), events: EventFn | None = None,
-        states: StateFn | None = None, budget_s: float = 300.0, no_fetch: bool = True, dry_run: bool = False,
+        states: StateFn | None = None, budget_s: float = 300.0, no_fetch: bool = True,
+        dry_run: bool = False,
         registry: Any = None, report_default: Path | None = None, paths: Any = None,
         now: datetime | None = None) -> dict[str, Any]:
     """Measure the region's lanes from the factory's stores; write `<CODE>_OFFICIAL_PLANE.json`."""
