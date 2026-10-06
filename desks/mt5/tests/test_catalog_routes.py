@@ -591,3 +591,11 @@ def test_permission_needs_a_quote_and_a_terms_url() -> None:
     allowed = cr.permitted_hosts(ev)
     assert allowed == {"a.org"}
     assert cr.terms_permit("data.a.org", allowed) and not cr.terms_permit("aa.org", allowed)
+
+
+@pytest.mark.parametrize("host", ["www.reddit.com", "redd.it", "api.pushshift.io", "pullpush.io",
+                                  "discord.com", "discord.gg", "cdn.discordapp.com", "x.com",
+                                  "api.twitter.com", "nitter.net", "stocktwits.com"])
+def test_the_real_roster_refuses_every_banned_platform(host: str) -> None:
+    roster = cr.load_roster(cr.ROSTER)
+    assert cr.is_blocked(host, [str(b) for b in roster.get("blocked_hosts") or []])

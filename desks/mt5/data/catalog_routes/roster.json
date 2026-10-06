@@ -39,7 +39,17 @@
   "bitstamp",
   "crypto.com",
   "upbit",
-  "bithumb"
+  "bithumb",
+  "redd.it",
+  "pushshift.io",
+  "pullpush.io",
+  "photon-reddit.com",
+  "discord.com",
+  "discord.gg",
+  "discordapp.com",
+  "discordapp.net",
+  "api.twitter.com",
+  "nitter.net"
  ],
  "portals": [
   {
