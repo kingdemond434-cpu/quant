@@ -114,7 +114,7 @@ class SeriesLoader:
         # Credit the read where it happens, for this series only (libs.data.dataset_use).
         from libs.data.dataset_use import record_reads
         record_reads("global_research_os",
-                     {f"acquired:{self.names.get(self._key(text), text)}": None},
+                     {f"acquired:{getattr(self, 'names', {}).get(self._key(text), text)}": None},
                      use="new_hypotheses")
         try:
             idx = row.index
