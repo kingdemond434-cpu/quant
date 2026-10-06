@@ -285,6 +285,10 @@ function Free-DiskForGit {
 # Keeping those authorities separate makes a timeout recoverable instead of corrupting the next
 # writer's window.
 $script:InboundAdoptionRequired = $false
+# True only once THIS pass fetched origin/<branch> into FETCH_HEAD. Publish-StateOnto builds on
+# FETCH_HEAD, so a pass whose pull failed must fetch before it trusts it: a stale FETCH_HEAD whose
+# tree already holds these blobs would otherwise read as "origin already carries this box state".
+$script:FetchHeadFresh = $false
 function Request-Adoption {
     param([string]$Branch, [string]$Reason)
     $script:InboundAdoptionRequired = $true
@@ -329,12 +333,128 @@ function Sync-Pull {
         # A FAILED FETCH IS NOT A REASON TO ABORT THE SYNC. The local state is still worth
         # committing and pushing, and the push-rejection path fetches again. Degrading to the old
         # behaviour beats trading a delivery bug for an availability one.
-        Write-SyncLog "WARN: fetch failed rc=$rc after retry -- continuing; the push path still fetches on rejection"
+        Write-SyncLog "WARN: fetch failed rc=$rc after retry -- continuing; Publish-StateOnto re-fetches before it builds on FETCH_HEAD"
         return
     }
+    $script:FetchHeadFresh = $true
     $behind = @(& git -C $RepoRoot rev-list --count "HEAD..FETCH_HEAD") | Select-Object -First 1
     if (-not $behind -or [int]$behind -eq 0) { Write-SyncLog "up to date with origin/$Branch"; return }
     Request-Adoption -Branch $Branch -Reason "$behind inbound commit(s)"
+}
+
+# PUBLISH THE BOX'S STATE WITHOUT MERGING CODE (2026-09-30).
+#
+# MEASURED: no box-authored state commit has reached this branch since 2026-09-25, and the
+# shadow lane files on it still carry `updated_at: 2026-09-16`. Since ff281c49b this publisher
+# hands inbound code to MT5-AdoptRelease and EXITS whenever origin is ahead -- before staging
+# anything. Origin takes dozens of commits a day from the other agents, and adoption runs once
+# an hour, so at almost every fifteen-minute slot the box was behind, deferred, and published
+# nothing. Every reader off the box -- the CRO cycle, the audits, the dashboard -- then measured
+# a frozen git copy and reported the forward engine as silent for a week.
+#
+# The fix keeps both authorities exactly where Codex put them. This function never merges,
+# never touches the working tree, HEAD or the real index: it takes the blobs this box has just
+# committed LOCALLY for its own state paths, lays them over FETCH_HEAD's tree in a PRIVATE index
+# file, and pushes one commit whose only parent is origin's tip -- a fast-forward carrying
+# nothing but state. Inbound code still waits for the adopter; the adopter still finds the box's
+# versions of these paths in its own local commits (so its kept-by-box rule keeps them).
+function Git-Lines {
+    param([string[]] $GitArgs)
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $out = @(& git -C $RepoRoot @GitArgs 2>$null | ForEach-Object { "$_" })
+        $script:GitLinesRc = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+    return ,$out
+}
+
+# A PUSH THAT FAILS MUST SAY WHY, IN THIS LOG (2026-10-01). Git-In-Repo discards git's output on
+# purpose, so a push refused by ops/githooks/pre-push (gates.sh + the --laws-only law gate run on
+# every push from a clone with core.hooksPath set, this one included), an HTTP 408 on a large pack,
+# and a non-fast-forward rejection all reached this log as the same bare exit code -- and nobody off
+# the box could tell which one had stopped the state for a week. The last lines go to the log.
+function Push-Logged {
+    param([string[]] $GitArgs)
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $out = @(& git -C $RepoRoot @GitArgs 2>&1 | ForEach-Object { "$_" })
+        $rc = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+    if ($rc -ne 0) {
+        foreach ($l in @($out | Where-Object { $_ -match '\S' } | Select-Object -Last 12)) {
+            Write-SyncLog ("  push said: " + $l.Trim())
+        }
+    }
+    return $rc
+}
+
+function Publish-StateOnto {
+    param([string]$RepoRoot, [string]$Branch, [string[]]$Paths)
+    if (-not $Paths -or $Paths.Count -eq 0) { Write-SyncLog "publish: no state paths"; return $false }
+    $entries = @(Git-Lines (@("ls-tree", "HEAD", "--") + $Paths) | Where-Object { $_ -match '\S' })
+    if ($entries.Count -eq 0) {
+        Write-SyncLog "publish: HEAD carries none of the state paths yet; nothing to publish"
+        return $false
+    }
+    $idx = Join-Path ([System.IO.Path]::GetTempPath()) ("mt5-state-index-{0}" -f $PID)
+    $prevIndex = $env:GIT_INDEX_FILE
+    for ($try = 1; $try -le 3; $try++) {
+        if ($try -gt 1 -or -not $script:FetchHeadFresh) {
+            $rc = Git-In-Repo @("fetch", "origin", $Branch)
+            if ($rc -ne 0) { Write-SyncLog "publish: re-fetch failed rc=$rc"; return $false }
+            $script:FetchHeadFresh = $true
+        }
+        $base = (Git-Lines @("rev-parse", "FETCH_HEAD") | Select-Object -First 1)
+        if (-not $base) { Write-SyncLog "publish: FETCH_HEAD unreadable"; return $false }
+        $base = "$base".Trim()
+        try {
+            $env:GIT_INDEX_FILE = $idx
+            $rc = Git-In-Repo @("read-tree", $base)
+            if ($rc -ne 0) { Write-SyncLog "publish: read-tree $base failed rc=$rc"; return $false }
+            $n = 0
+            foreach ($line in $entries) {
+                # "<mode> blob <sha>`t<path>" -- the blob the box committed, never re-read from
+                # disk, so origin receives byte-for-byte what the box's own history holds.
+                $meta, $rel = $line -split "`t", 2
+                $f = $meta -split '\s+'
+                if ($f.Count -lt 3 -or $f[1] -ne "blob") { continue }
+                $rc = Git-In-Repo @("update-index", "--add", "--cacheinfo", ("{0},{1},{2}" -f $f[0], $f[2], $rel))
+                if ($rc -eq 0) { $n++ }
+            }
+            $tree = (Git-Lines @("write-tree") | Select-Object -First 1)
+        } finally {
+            if ($null -eq $prevIndex) { Remove-Item Env:GIT_INDEX_FILE -ErrorAction SilentlyContinue }
+            else { $env:GIT_INDEX_FILE = $prevIndex }
+            Remove-Item -LiteralPath $idx -Force -ErrorAction SilentlyContinue
+        }
+        if (-not $tree) { Write-SyncLog "publish: write-tree failed"; return $false }
+        $tree = "$tree".Trim()
+        $baseTree = "$(Git-Lines @("rev-parse", "$base^{tree}") | Select-Object -First 1)".Trim()
+        if ($tree -eq $baseTree) {
+            Write-SyncLog "publish: origin/$Branch already carries this box state ($n path(s))"
+            return $true
+        }
+        $stampNow = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd_HHmm")
+        $msg = "mt5 box state $stampNow (published onto origin; inbound code left to MT5-AdoptRelease)"
+        $commit = "$(Git-Lines @("commit-tree", $tree, "-p", $base, "-m", $msg) | Select-Object -First 1)".Trim()
+        if (-not $commit) { Write-SyncLog "publish: commit-tree failed"; return $false }
+        $remote = "origin"
+        $rc = Push-Logged @("push", $remote, ("{0}:refs/heads/{1}" -f $commit, $Branch))
+        if ($rc -eq 0) {
+            Write-SyncLog ("published box state onto origin/{0} as {1} ({2} path(s)) without merging code" -f
+                           $Branch, $commit.Substring(0, 12), $n)
+            return $true
+        }
+        Write-SyncLog "publish: push of $($commit.Substring(0, 12)) failed rc=$rc (attempt $try); re-fetching and re-basing onto origin's tip"
+    }
+    Write-SyncLog "ABORT: box state could not be published after 3 attempts"
+    return $false
 }
 
 # Desk-relative paths of every state file this sync carries. Each MUST already be individually
@@ -350,6 +470,19 @@ $relPaths = @(
     # release, and whether new risk is allowed. It is the one line that answers "is the box
     # running the code that was tested" from any machine that can read this branch.
     "desks/mt5/data/release_identity.json",
+    # WHY CELLS DIE, AND WHETHER THIS WIRE WORKS (2026-09-30). Both written by the hourly
+    # `publish_state` leg just before it runs this script. The digest is the bounded committed
+    # summary of the gitignored gate_verdict_ledger.jsonl + universal_gates_external.json (per-gate
+    # and per-family rejection counts, verbatim stage reasons, the newest verdicts); the flow
+    # meter says whether the box's state is actually reaching origin (STALLED when it is not).
+    "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
+    "desks/mt5/reports/BOX_STATE_FLOW.json",
+    # THE FRESHNESS VERDICT AND THE DESK'S HEALTH, ON THE SAME WIRE (2026-09-30). Both written
+    # by core-plan hourly legs (`box_state_freshness`, `desk_health`) just before `publish_state`:
+    # CRO D17 reads box_state_age_hours from the first, and the second is check_desk_health.py's
+    # plain-English answer to "is the desk running", which until now only a person at the box saw.
+    "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+    "desks/mt5/reports/DESK_HEALTH.json",
     # THE LANE STATE FILES. Until 2026-09-06 the only thing that crossed this wire was the
     # 424-byte health SUMMARY, so no reader on the other side could see a single sleeve: not its
     # status, not its forward n, not its expectancy, not its day count. That is why "are the two
@@ -378,18 +511,109 @@ $relPaths = @(
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    # THE MARKOUT ITSELF (2026-09-30). The daily markout leg writes markout.json beside
+    # attribution_chain.json, but only the chain crossed the wire, so the VPS's desk state read
+    # `execution.matched_fills` off the 2026-09-08 stub committed before the ledger carried any
+    # entry-order key -- "matched_fills 0" for three weeks while the join on the box had moved.
+    "desks/mt5/reports/markout.json",
+    # THE PLACEMENT-INTERLOCK VERDICT (2026-09-30). scripts/check_placement_interlock.py writes it
+    # on the law-gate clock: whether any sleeve has been refused in a run with no placement since.
+    # The halt of 2026-09-07..24 was recorded in the decision ledger 1,200 times and read by no
+    # one; this is its verdict, carried to every reader of the branch. Box-written state.
+    "desks/mt5/data/placement_interlock.json",
+    # THE SEAL THE BOX RUNS (2026-09-30). Adopt-And-Seal commits RELEASE.json locally on every
+    # seal, but it was never on this list, so origin's copy stayed at 2026-09-15 while the box
+    # re-sealed daily: no reader off the box could tell which release the gateway was running.
+    "desks/mt5/data/RELEASE.json",
     # THE TIER S BOX ATTESTATION (2026-09-30). Every tier_s pass writes it: per layer, whether
     # its artifact is fresh on THIS host and its contract not REJECTED, plus digests of TIER_S,
     # ALPHA_RANK, ONLINE_FDR_ROWS, IMMUNE, allocator_tilts, research_budget, the door verdicts
     # and CONTRACTS (all gitignored or box-local where written). A Tier S layer is DONE only on
     # this file as committed from the trading box (scripts/check_tier_s_program.py).
     "desks/mt5/data/tier_s/box_evidence.json",
-    "desks/mt5/data/tier_s/live_door.json"
+    "desks/mt5/data/tier_s/live_door.json",
+    # THE TIER S MEASUREMENT REPORTS (2026-09-30). The independent audit found no committed
+    # artifact for the null lab, the lag lane or the occupancy map: `**/reports/*` is ignored, so
+    # every one of them existed only on the host that wrote it. NULL_LAB (hourly leg null_lab),
+    # KNOWN_BY_DATE + PIT_LAG_CENSUS (leg pit_canaries), OCCUPANCY_MAP + CULTURE_ORTHOGONALITY
+    # (leg occupancy_map), RESEARCH_LIVE_IDENTITY (leg research_live_identity). Outputs of the
+    # running code, each negated in .gitignore and declared NON_CODE in both seal lists.
+    "desks/mt5/reports/NULL_LAB.json",
+    "desks/mt5/reports/KNOWN_BY_DATE.json",
+    "desks/mt5/reports/PIT_LAG_CENSUS.json",
+    # UNKNOWN_SHARE_CENSUS (hourly leg unknown_census, once per UTC day): the judged-denominator UNKNOWN share
+    "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json",
+    # DSR_INPUTS (hourly leg dsr_inputs): measured DSR variance + effective trials, with provenance
+    "desks/mt5/reports/DSR_INPUTS.json",
+    "desks/mt5/reports/OCCUPANCY_MAP.json",
+    "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
+    "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
+    # THE REST OF THE TIER S PROMOTION DOOR'S EVIDENCE (2026-09-30). `promotion_authority` reads
+    # six box-local files to decide whether a candidate may go LIVE: live_door (above), the door
+    # verdicts, the immune system's PROMOTION_FREEZE, the regression stop's RELEASE_STOP, the
+    # online-FDR rows and the replication verdicts. Only live_door and the attestation crossed
+    # the wire, so no reader off the box could say WHY a promotion was withheld. Small JSON, each
+    # declared NON_CODE in both seal lists and (for the two under reports/) negated in
+    # .gitignore; tests/ops/test_tier_s_evidence_publication.py pins all four properties.
+    "desks/mt5/data/tier_s/door_verdicts.json",
+    "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
+    "desks/mt5/data/tier_s/RELEASE_STOP.json",
+    "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json",
+    "desks/mt5/reports/REPLICATION.json",
+    # THE LOCKBOX v4 RE-CERTIFICATION (pass-2 P0, 2026-09-30): the per-certificate lockbox Sharpe
+    # before and after (leg lockbox_recert) and the re-mint's own status (leg attestation_remint,
+    # PR #126; absent until it lands, and an absent path is simply not staged).
+    "desks/mt5/reports/LOCKBOX_RECERT.json",
+    "desks/mt5/reports/REMINT_STATUS.json"
+)
+# THE RESEARCH MEASUREMENTS THE DESK IS JUDGED ON (2026-09-30). The CRO cycle, the audits and the
+# breadth review all read these from the branch, and none had ever been committed from the box:
+# every one was "UNMEASURED" or "GIT-ONLY stale" off the box while fresh on it. Kept apart from
+# $relPaths ON PURPOSE: $relPaths is pinned to release.NON_CODE (a money-path file), while every
+# path here sits under desks/mt5/reports/ or desks/mt5/data/, which `release.is_state_path`
+# already classifies as state -- so the seal is untouched by adding them. Each is allowlisted at
+# the end of .gitignore (tests/scripts/test_box_sync_publishes_what_it_lists.py pins that), and
+# each must stay a small JSON summary: a file over $ReportCapBytes is skipped and said so, never
+# silently truncated and never allowed to turn this wire into a data lake.
+$ReportCapBytes = 4MB
+$reportPaths = @(
+    "desks/mt5/reports/RESEARCH_BUDGET.json",
+    "desks/mt5/data/research_budget.json",
+    "desks/mt5/reports/JUDGING_RATE.json",
+    "desks/mt5/reports/JUDGING_THROUGHPUT.json",
+    "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json",
+    "desks/mt5/reports/JUDGE_COVERAGE.json",
+    "desks/mt5/reports/EFFECTIVE_BREADTH.json",
+    "desks/mt5/reports/BREADTH_MANDATE.json",
+    "desks/mt5/reports/TIER1_SCORECARD.json",
+    "desks/mt5/reports/ALT_DATA_YIELD.json",
+    "desks/mt5/reports/PRODUCER_YIELD.json",
+    "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
+    "desks/mt5/reports/FORWARD_ENROLMENT.json",
+    "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
+    "desks/mt5/reports/FORWARD_CLOCK_LEDGER.json",
+    "desks/mt5/reports/shadow/precert_shadow_state.json",
+    # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
+    # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
+    # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable
+    # only from the box, so the box is the only machine that can refresh it. ~1.5 MB, a daily
+    # frame that changes once a day; the cap above still applies.
+    "desks/mt5/data/cross_asset_anchors.pkl"
 )
 $existing = @()
 foreach ($rel in $relPaths) {
     $full = Join-Path $RepoRoot ($rel -replace "/", "\")
     if (Test-Path $full) { $existing += $rel }
+}
+foreach ($rel in $reportPaths) {
+    $full = Join-Path $RepoRoot ($rel -replace "/", "\")
+    if (-not (Test-Path $full -PathType Leaf)) { continue }
+    $bytes = (Get-Item -LiteralPath $full).Length
+    if ($bytes -gt $ReportCapBytes) {
+        Write-SyncLog ("SKIP report {0}: {1:N0} bytes exceeds the {2:N0}-byte cap for this wire" -f $rel, $bytes, $ReportCapBytes)
+        continue
+    }
+    $existing += $rel
 }
 # PULL FIRST, ALWAYS, BEFORE ANY EARLY EXIT (2026-09-06).
 #
@@ -410,12 +634,10 @@ foreach ($rel in $relPaths) {
 # correct -- an empty commit every fifteen minutes is noise. Delivery is not.
 $branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD).Trim()
 Sync-Pull -RepoRoot $RepoRoot -Branch $branch
-if ($script:InboundAdoptionRequired) {
-    # Exit success: this pass completed its responsibility by handing inbound code to the one
-    # task allowed to adopt and seal it. The next scheduled publisher pass will publish runtime
-    # state after adoption converges.
-    exit 0
-}
+# INBOUND CODE NO LONGER SILENCES THE BOX. This exited here when origin was ahead, which on a
+# branch that moves every few minutes was nearly every pass, so the box's state stopped reaching
+# the branch at all (see Publish-StateOnto). The adopter still owns the code; the state below is
+# committed locally as always and then published onto origin's tip without a merge.
 
 if ($existing.Count -eq 0) {
     Write-SyncLog "SKIP: none of the tracked state files exist yet on this box"
@@ -428,89 +650,40 @@ if ($addRc -ne 0) { Write-SyncLog "ABORT: git add failed rc=$addRc"; exit 1 }
 # Nothing changed since the last cycle -- do not create empty commits every 15 minutes forever.
 & git -C $RepoRoot diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {
-    # NOTHING NEW TO COMMIT IS NOT NOTHING TO DELIVER, and conflating the two is why this script
-    # could publish nothing for eleven days while reporting the truth every fifteen minutes.
-    #
-    # The old path exited here. So a commit that was MADE and then failed to PUSH -- which is what
-    # a full disk does, git dies mid-pack as "the remote end hung up unexpectedly" -- sat local
-    # forever: every later run found the state files unchanged against that local commit, said
-    # "no change since last sync", and never tried the push again. The desk had already recorded
-    # its state; delivery was one retry away and nothing ever retried.
-    #
-    # Delivery must not depend on having something NEW to say. Same principle the pull above
-    # already follows, applied to the push.
-    $ahead = (& git -C $RepoRoot rev-list --count "origin/$branch..HEAD" 2>$null)
-    if ($ahead -and [int]$ahead -gt 0) {
-        Write-SyncLog "no new state, but $ahead local commit(s) have never reached origin -- pushing"
-        $rc = Git-In-Repo @("push", "origin", "HEAD")
-        if ($rc -eq 0) { Write-SyncLog "delivered $ahead previously-unpushed commit(s)"; exit 0 }
-        Write-SyncLog "ABORT: push of $ahead unpushed commit(s) failed rc=$rc -- state is committed here and NOT on the branch"
-        exit 1
-    }
-    Write-SyncLog "no change since last sync"
-    exit 0
+    # NOTHING NEW TO COMMIT IS NOT NOTHING TO DELIVER. A state commit that was made and then
+    # failed to reach origin sits local; delivery must not depend on having something NEW to
+    # say, so this pass still publishes what HEAD carries (Publish-StateOnto is idempotent: when
+    # origin already holds these blobs it says so and succeeds without pushing).
+    Write-SyncLog "no new state since last sync; making sure origin carries the committed state"
+} else {
+    $stamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd_HHmm")
+    $commitRc = Git-In-Repo @("commit", "-m", "mt5 shadow state sync $stamp")
+    if ($commitRc -ne 0) { Write-SyncLog "ABORT: git commit failed rc=$commitRc"; exit 1 }
 }
 
-$stamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd_HHmm")
-$commitRc = Git-In-Repo @("commit", "-m", "mt5 shadow state sync $stamp")
-if ($commitRc -ne 0) { Write-SyncLog "ABORT: git commit failed rc=$commitRc"; exit 1 }
-
+# ONE DELIVERY PATH: THE STATE BLOBS, ONTO ORIGIN'S TIP, NEVER THE BOX'S BRANCH (2026-10-01).
+#
+# Until today two of the three delivery paths pushed the box's LOCAL BRANCH -- `git push origin
+# <branch>` after a fresh commit and `git push origin HEAD` when a commit had been left unpushed --
+# and Publish-StateOnto ran only when origin happened to be ahead. Pushing the branch ships the
+# box's whole unpushed history: every quarter-hourly state commit, every local seal and adoption
+# commit, and whatever large blobs ride in them. Measured 2026-09-24 (Adopt-Release.ps1, step 0):
+# that backlog was 506 commits of parquet and the push died on `RPC failed; HTTP 408` -- every
+# pass, while the log said only "push failed rc=1". The last automated "mt5 shadow state sync"
+# commit on any branch is 2026-09-12; nothing the box committed itself has reached origin since.
+#
+# Publish-StateOnto pushes ONE small commit whose only parent is origin's tip and whose only
+# change is the box's committed state blobs. It cannot carry the backlog, never merges and never
+# touches HEAD, the working tree or the real index; inbound code stays MT5-AdoptRelease's.
+# A push refusal (the pre-push hook, a network error, a race) is now quoted in this log.
+if ($script:InboundAdoptionRequired) {
+    Write-SyncLog "local state commit is safe; inbound code is left to MT5-AdoptRelease"
+}
 $branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD).Trim()
-
-# PULL BEFORE PUSHING, ALWAYS -- NOT ONLY WHEN THE PUSH IS REJECTED (2026-09-06).
-#
-# THIS IS WHY THE BOX RAN CODE NOBODY HAD SHIPPED IT. The loop below fetches only after a push
-# is REJECTED, so the box pulled purely as conflict resolution. When its push SUCCEEDS -- which
-# it does whenever nobody else pushed in that same minute, i.e. almost always -- the box never
-# fetched at all. Delivery to the machine that holds live capital was a side effect of losing a
-# race.
-#
-# MEASURED 2026-09-06: this branch was 41 commits behind desk-sync-clean and the box was still
-# running GATEWAY_FAMILY_POPULATIONS = ("hunt16",) -- 65 of 66 certificates unexecutable -- and a
-# shadow_admission with no CANON_SOURCES, so nothing could enrol at all. Both had been fixed days
-# earlier. The dashboard's CERTIFIED-NOT-ENROLLED rows and its dead certificates were not desk
-# defects; they were a delivery defect wearing their clothes. Five merges landed tonight and none
-# of them could reach the box on their own.
-#
-# The fetch+merge below is the SAME machinery the rejection path already used -- park the dirty
-# files that block the merge, merge FETCH_HEAD, put them back byte-for-byte -- hoisted so it runs
-# first. A conflict still aborts and leaves the work local for a human; nothing here guesses at a
-# resolution on a tree that places trades.
-$pushed = $false
-for ($attempt = 1; $attempt -le 3 -and -not $pushed; $attempt++) {
-    $pushRc = Git-In-Repo @("push", "origin", $branch)
-    if ($pushRc -eq 0) { $pushed = $true; break }
-
-    Write-SyncLog "push rejected (attempt $attempt), checking whether canonical adoption is required"
-    $fetchRc = Git-In-Repo @("fetch", "origin", $branch)
-    if ($fetchRc -ne 0) { Write-SyncLog "ABORT: git fetch failed rc=$fetchRc"; exit 1 }
-
-    # FETCH_HEAD, not origin/$branch: a `git fetch origin <branch>` with an explicit branch
-    # argument does NOT update the origin/<branch> remote-tracking ref unless one already exists
-    # and is configured for it -- confirmed live on Contabo (2026-08-23), where `git log
-    # origin/claude/...` failed with "unknown revision" right after a successful fetch of the
-    # same branch. FETCH_HEAD is always populated by the fetch that just ran, regardless of
-    # tracking-ref configuration, so it is the only reliable target here.
-    # EVERY EXIT FROM THIS LOOP NOW SAYS SO. It used to leave through `exit 1` with no line
-    # written, so the log's last word on a failed pass was "fetch+merge and retry" -- an
-    # announcement of an intention, recorded as though it were an outcome. On the desk box that
-    # exact line was the final entry of roughly 800 consecutive passes between 2026-08-26 and
-    # 2026-09-06 while the box committed locally and published nothing. A silence that reads like
-    # progress is worse than an error: it is the reason nobody looked for eleven days.
-    $behind = @(& git -C $RepoRoot rev-list --count "HEAD..FETCH_HEAD") | Select-Object -First 1
-    if ($behind -and [int]$behind -gt 0) {
-        Request-Adoption -Branch $branch -Reason "push race left $behind inbound commit(s)"
-        Write-SyncLog "local state commit is safe; publication resumes after canonical adoption"
-        exit 0
-    }
-    Write-SyncLog "push failed without an inbound commit; retrying after a short backoff"
-    Start-Sleep -Seconds 2
-}
-
-if (-not $pushed) {
-    Write-SyncLog "ABORT: push still failing after 3 attempts"
+$ok = Publish-StateOnto -RepoRoot $RepoRoot -Branch $branch -Paths $existing
+if (-not $ok) {
+    Write-SyncLog "ABORT: box state did not reach origin/$branch this pass; the next slot retries"
     exit 1
 }
-
-Write-SyncLog ("shadow state synced to git: {0}" -f ($existing -join ", "))
+Write-SyncLog ("shadow state synced to origin/{0} (state blobs onto origin's tip): {1} path(s)" -f $branch, $existing.Count)
 exit 0

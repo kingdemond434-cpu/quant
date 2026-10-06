@@ -421,8 +421,44 @@ def ingest_ecb():
             "series": series}
 
 
+def ingest_gnn_forecast():
+    """The graph-propagation miner's walk-forward next-day forecast, per instrument, as a dated
+    conditioning series (`research/learned_miners.forecast_axis`). Every row is a prediction the
+    desk could have made at its `knowable_at`: the model that produced it was fitted on closes
+    before its `as_of` date, and `knowable_at` is the next broker day's 03:00, after the close
+    the forecast used on either reading of the bar clock."""
+    import learned_miners
+    return learned_miners.forecast_axis("gnn")
+
+
+def ingest_attention_forecast():
+    """The attention miner's walk-forward next-day forecast, same shape and same clock."""
+    import learned_miners
+    return learned_miners.forecast_axis("attention")
+
+
 INGESTERS = {"cot": ingest_cot, "bis": ingest_bis,
-              "fred": ingest_fred, "ecb": ingest_ecb}
+              "fred": ingest_fred, "ecb": ingest_ecb,
+              "gnn_forecast": ingest_gnn_forecast,
+              "attention_forecast": ingest_attention_forecast}
+
+
+def publish(axis: str, doc: dict, out_dir: Path | None = None,
+            report: Path | None = REPORT) -> Path:
+    """Write one ingested axis where `alpha_dsl.axis_fields` and every axis reader find it.
+
+    The ONE write path for `data/axes/<axis>.json`, shared by `--apply` below and by producers
+    that already hold the series in memory (`learned_miners.run`, which passes `report=None` so
+    its hourly publish never overwrites the last manual ingest's summary)."""
+    base = out_dir or OUT_DIR
+    base.mkdir(parents=True, exist_ok=True)
+    out = base / f"{axis}.json"
+    out.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    if report is not None:
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text(json.dumps({k: v for k, v in doc.items() if k != "rows"}, indent=1),
+                          encoding="utf-8")
+    return out
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -454,12 +490,7 @@ def main(argv: list[str] | None = None) -> int:
     if not a.apply:
         print("  --apply not given; nothing written")
         return 0
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    out = OUT_DIR / f"{a.axis}.json"
-    out.write_text(json.dumps(doc, indent=1), encoding="utf-8")
-    REPORT.parent.mkdir(parents=True, exist_ok=True)
-    REPORT.write_text(json.dumps({k: v for k, v in doc.items() if k != "rows"}, indent=1),
-                      encoding="utf-8")
+    out = publish(a.axis, doc)
     print(f"-> {out}")
     return 0
 

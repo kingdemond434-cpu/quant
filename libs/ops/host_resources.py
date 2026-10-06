@@ -164,7 +164,7 @@ def _held_paths(mount: str) -> set[str]:
     read, contributes nothing and must not be recorded as "holding nothing" -- that inversion is
     the whole reason `TmpEntry.held` has a third value.
     """
-    prefix = mount.rstrip("/") + "/"
+    prefix = Path(mount)
     out: set[str] = set()
     try:
         entries = list(_PROC.iterdir())
@@ -176,7 +176,7 @@ def _held_paths(mount: str) -> set[str]:
         try:
             for fd in (p / "fd").iterdir():
                 target = os.path.realpath(fd)
-                if target.startswith(prefix):
+                if Path(target).is_relative_to(prefix):
                     out.add(target)
         except OSError:
             continue  # attrition-ok: an unreadable/vanished pid yields NO evidence either way,
@@ -233,7 +233,7 @@ def tmpfs_top_holders(path: str = "/tmp", *, limit: int = 6,  # noqa: S108 -- re
         if mb < min_mb:
             continue
         target = os.path.realpath(child)
-        is_held = any(h == target or h.startswith(target.rstrip("/") + "/") for h in held)
+        is_held = any(Path(h).is_relative_to(Path(target)) for h in held)
         try:
             age_h = max(0.0, (now - child.lstat().st_mtime) / 3600.0)
         except OSError:

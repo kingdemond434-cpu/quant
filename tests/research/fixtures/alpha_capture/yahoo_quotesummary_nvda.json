@@ -1,0 +1,7 @@
+{"quoteSummary": {"result": [{"upgradeDowngradeHistory": {"history": [
+  {"epochGradeDate": 1727308800, "firm": "Morgan Stanley", "toGrade": "Overweight", "fromGrade": "Equal-Weight", "action": "up", "priceTargetAction": "Raises", "currentPriceTarget": 150.0, "priorPriceTarget": 120.0},
+  {"epochGradeDate": 1727222400, "firm": "Bernstein", "toGrade": "Outperform", "fromGrade": "Outperform", "action": "main", "priceTargetAction": "Raises", "currentPriceTarget": 175.0, "priorPriceTarget": 0},
+  {"epochGradeDate": 1727136000, "firm": "New Street", "toGrade": "Neutral", "fromGrade": "Buy", "action": "down"},
+  {"epochGradeDate": 1727049600, "firm": "Melius", "toGrade": "Buy", "fromGrade": "", "action": "init", "priceTargetAction": "Announces", "currentPriceTarget": 165.0},
+  {"epochGradeDate": 1726963200, "firm": "Mizuho", "toGrade": "Outperform", "fromGrade": "Outperform", "action": "reit"}
+], "maxAge": 86400}}], "error": null}}

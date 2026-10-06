@@ -337,7 +337,10 @@ def main() -> int:
             df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
             df = df.set_index("time").sort_index()
             try:
-                publish_frame(df, UNIVERSE / f"{name}_{tf}.parquet")
+                if not publish_frame(df, UNIVERSE / f"{name}_{tf}.parquet"):
+                    failed.append({"symbol": name, "tf": tf,
+                                   "why": "atomic parquet publication refused; prior chart preserved"})
+                    continue
             except Exception as exc:
                 failed.append({"symbol": name, "tf": tf, "why": f"{type(exc).__name__}: {exc}"})
                 continue

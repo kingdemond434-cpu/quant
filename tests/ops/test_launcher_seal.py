@@ -15,6 +15,7 @@ the group, and a `}` as the file's final line.
 from __future__ import annotations
 
 import pathlib
+import shlex
 import subprocess
 import sys
 
@@ -81,14 +82,15 @@ def test_a_sealed_script_survives_a_real_mid_run_rewrite(tmp_path):
     length change, and require exactly one clean pass. This is the failure verbatim."""
     s = tmp_path / "victim.sh"
     marker = tmp_path / "ran.txt"
+    shell_marker = shlex.quote(marker.as_posix())
     s.write_text(
         "#!/usr/bin/env bash\nset -uo pipefail\n{\n"
-        f"echo start >> {marker}\n"
+        f"echo start >> {shell_marker}\n"
         "sleep 2\n"
         "if true; then\n"
-        f"    echo branch >> {marker}\n"
+        f"    echo branch >> {shell_marker}\n"
         "fi\n"
-        f"echo end >> {marker}\n"
+        f"echo end >> {shell_marker}\n"
         "exit 0\n}\n", "utf-8")
     proc = subprocess.Popen([sys.executable, "-c",
                              f"import subprocess;subprocess.run(['bash',{str(s)!r}])"],

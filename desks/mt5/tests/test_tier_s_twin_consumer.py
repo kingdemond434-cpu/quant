@@ -45,6 +45,8 @@ def _run(name: str, verdict: str, component: str = "config", **kw: Any) -> dict[
 def world(tmp_path: Path, monkeypatch: Any) -> Path:
     monkeypatch.setattr(ts, "STATE", tmp_path / "state")
     monkeypatch.setattr(ts, "TWIN_REPORT", tmp_path / "TWIN.json")
+    # the twin also drives the regression stop: keep its RELEASE_STOP.json out of the checkout
+    monkeypatch.setattr(ts.regression_stop, "_root", lambda root=None: root or tmp_path)
     monkeypatch.setattr(ts, "_release_history", lambda: [{"sha": "a" * 40, "sealed": True},
                                                          {"sha": "c" * 40, "sealed": True}])
     (tmp_path / "state").mkdir()

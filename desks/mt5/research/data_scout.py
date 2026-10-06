@@ -656,13 +656,34 @@ def gather(*, conn: Any = None, axes_dir: Path | None = None,
 
 # ------------------------------------------------------------------------- 2. the catalogue
 
+#: DATASETS FOUND IN OPEN CATALOGUES (awesome-* lists, AltData.wiki, Brickroad's public index),
+#: written by `research/free_stack_hunter.py` in this catalogue's six-field shape. Read beside the
+#: declared CATALOGUE so a need can be served by a dataset the desk did not know existed; an
+#: absent file adds nothing and hides nothing.
+DISCOVERED_CATALOGUE = DESK / "data" / "free_stack" / "discovered_catalogue.json"
+DISCOVERED_LIMIT = 2000
+
+
+def discovered_catalogue(path: Path | None = None) -> list[dict[str, Any]]:
+    doc = _read_json(path or DISCOVERED_CATALOGUE)
+    rows = doc.get("rows") if isinstance(doc, dict) else None
+    out: list[dict[str, Any]] = []
+    for r in (rows or [])[:DISCOVERED_LIMIT]:
+        if isinstance(r, dict) and r.get("source"):
+            out.append({k: r.get(k) for k in (*CATALOGUE_FIELDS, "observable_class",
+                                              "observables", "integration_effort", "url",
+                                              "uses")})
+    return out
+
+
 def validate_catalogue(catalogue: Sequence[Mapping[str, Any]] | None = None
                        ) -> tuple[list[dict[str, Any]], list[str]]:
     """(usable rows, complaints). A row missing one of the six fields is REFUSED and named -- a
     source with no declared PIT status or no declared access is not a source this desk may buy."""
     complaints: list[str] = []
     usable: list[dict[str, Any]] = []
-    for row in (catalogue if catalogue is not None else CATALOGUE):
+    rows = list(catalogue) if catalogue is not None else [*CATALOGUE, *discovered_catalogue()]
+    for row in rows:
         name = str(row.get("source") or "<unnamed>")
         missing = [f for f in CATALOGUE_FIELDS if not str(row.get(f, "")).strip()]
         if missing:

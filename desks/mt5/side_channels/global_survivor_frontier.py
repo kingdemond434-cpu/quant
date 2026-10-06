@@ -243,8 +243,11 @@ def run_and_save() -> dict:
 
     OUT.mkdir(parents=True, exist_ok=True)
     if rows:
-        (OUT / f"discoveries_{now:%Y%m%d_%H%M}.json").write_text(
-            json.dumps(rows, indent=1, default=str), "utf-8")
+        try:
+            from side_channels.discovery_io import write_discoveries
+        except ModuleNotFoundError:
+            from discovery_io import write_discoveries
+        rows = write_discoveries(OUT / f'discoveries_{now:%Y%m%d_%H%M}.json', rows)
     POPULATIONS.write_text(json.dumps(pops, indent=1), "utf-8")
     FRONTIER.write_text(json.dumps(cov, indent=1), "utf-8")
     st["queries_done"][locale] = sorted(set(st["queries_done"][locale]))[-400:]

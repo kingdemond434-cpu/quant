@@ -10,6 +10,12 @@ no. A canary that could not be planted, or a stamp module that cannot be importe
 and the attestation reads it as open, never as green.
 
     python scripts/check_pit_canaries.py     -> desks/mt5/reports/PIT_CENSUS.json
+                                             + KNOWN_BY_DATE.json + PIT_LAG_CENSUS.json
+
+THE LAG LANE RIDES THIS LEG (2026-09-30). The known-by-date reader census and the PIT lag census
+(`scripts/check_known_by_date.publish`) had no clock on the box, so neither report ever existed
+where the sync could publish it. They are written here, on the same hourly pass, each failure
+recorded as UNMEASURED on the PIT_CENSUS document rather than costing the canaries.
 """
 from __future__ import annotations
 
@@ -160,6 +166,23 @@ def ask_consumers(now: datetime) -> dict[str, Any]:
                     if asked else "no lake consumer could be asked: UNMEASURED")}
 
 
+def _known_by_date() -> dict[str, Any]:
+    """Publish KNOWN_BY_DATE.json and PIT_LAG_CENSUS.json; the verdict summary, or UNMEASURED."""
+    try:
+        scripts = str(ROOT / "scripts")
+        if scripts not in sys.path:
+            sys.path.insert(0, scripts)
+        import check_known_by_date as kbd
+        doc = kbd.publish()
+    except Exception as exc:                      # the lag lane never costs the canaries
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
+    return {"status": "MEASURED", "verdict": doc.get("verdict"),
+            "accounting": doc.get("accounting"), "arrived": doc.get("arrived"),
+            "certificate_inputs": (doc.get("certificate_inputs") or {}).get("verdict"),
+            "reports": ["desks/mt5/reports/KNOWN_BY_DATE.json",
+                        "desks/mt5/reports/PIT_LAG_CENSUS.json"]}
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     frame = plant_and_read(now)
@@ -179,6 +202,7 @@ def main() -> int:
            "rule": "green only when the planted future row is invisible at now and the past row "
                    "is visible -- in the stamping library AND in the lake's own consumers; "
                    "unmeasured is never green"}
+    doc["known_by_date"] = _known_by_date()
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     c = doc["canaries"]

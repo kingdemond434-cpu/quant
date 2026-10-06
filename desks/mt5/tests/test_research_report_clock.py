@@ -102,6 +102,26 @@ def test_the_report_is_written_even_when_nothing_is_due(tmp_path: Path) -> None:
         assert row["why"], f"{row['name']} recorded no reason for its verdict"
 
 
+def test_the_board_itself_has_a_clock_and_reads_after_the_producers(tmp_path: Path) -> None:
+    """#104 re-score: `leg:issue_board` had no clock but the long cycle -- the defect this task
+    ends, left standing on the organ that detects it. The board is due when its artifact is
+    absent or past half its cadence, and ALWAYS after a producer was refreshed on the pass."""
+    import os
+    import time
+    report = tmp_path / "ISSUE_BOARD.json"
+    absent = clock.board_due([], report=report)
+    assert absent["due"] and absent["name"] == "issue_board" and absent["why"]
+    report.write_text("{}", "utf-8")
+    assert not clock.board_due([], report=report)["due"]
+    assert clock.board_due([{"name": "research_dashboard", "status": "RAN"}],
+                           report=report)["due"]
+    old = time.time() - clock.BOARD_CADENCE_S
+    os.utime(report, (old, old))
+    assert clock.board_due([], report=report)["due"]
+    assert (BASE / clock.BOARD_PRODUCER).exists()
+    assert clock.BOARD_PRODUCER == "research/issue_board.py"
+
+
 def test_the_installer_registers_the_clock() -> None:
     import re
     text = (BASE / "scripts" / "Install-QuantWindows.ps1").read_text("utf-8")

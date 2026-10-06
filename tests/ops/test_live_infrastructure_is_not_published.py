@@ -68,6 +68,16 @@ ALLOWED: dict[str, str] = {
         "per-fill account stamp; removing it breaks ledger provenance. Untrack this path.",
     "desks/mt5/data/universe/broker_info.json":
         "broker registry snapshot written by the desk. Untrack this path.",
+    # Box-written state: editing the committed copy on origin is reverted by the box's next push
+    # (libs/ops/release.py STATE_PREFIXES), so the WRITER was fixed instead and the stale copy
+    # clears itself. Delete each entry once the box has rewritten the file -- the
+    # stale-exemption test below fails until you do.
+    "desks/mt5/data/account_state.json":
+        "box-written state; writer fixed in ops/publish_account_state.py, clears on the box's "
+        "next write",
+    "desks/mt5/data/cost_truth_quotes.json":
+        "box-written state; writer fixed in desks/mt5/research/cost_truth.py, clears on the "
+        "box's next write",
 }
 
 

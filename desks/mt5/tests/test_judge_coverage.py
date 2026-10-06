@@ -83,6 +83,52 @@ def test_a_not_run_deferral_is_not_a_verdict(tmp_path: Path) -> None:
     assert seen == set() and total == {} and window == {}
 
 
+def test_unknown_and_gate_less_failures_do_not_clear_backlog(tmp_path: Path) -> None:
+    """False on an unmeasured branch is not a rejection of the hypothesis."""
+    from research.judging_burndown import classify
+
+    ledger = tmp_path / "gate.jsonl"
+    rows = [
+        {"cell": "unknown", "passed": False, "terminal_gate": "UNKNOWN"},
+        {"cell": "no_gate", "passed": False, "terminal_gate": None},
+        {"cell": "reject", "passed": False, "terminal_gate": "in_sample_screen"},
+        {"cell": "pass", "passed": True, "terminal_gate": "PASSED"},
+        {"cell": "not_run", "passed": False, "terminal_gate": "in_sample_screen",
+         "downstream_status": "NOT_RUN_BUILD_FAILED"},
+    ]
+    for row in rows:
+        row.update(at=NOW.isoformat(), family="alpha")
+    ledger.write_text("".join(json.dumps(row) + "\n" for row in rows), "utf-8")
+    seen, total, window = jc.judged_index(ledger, now=NOW)
+    assert seen == {row["cell"] for row in rows if classify(row) == "ruled"}
+    assert seen == {"reject", "pass"}
+    assert total == window == {"alpha": 2}
+
+
+def test_unknown_receipt_stays_in_canonical_docket_backlog(tmp_path: Path) -> None:
+    rows = _rows({"alpha": 1})
+    cell = jc._cell_id(rows[0])
+    ledger = tmp_path / "gate.jsonl"
+    ledger.write_text(json.dumps({"at": NOW.isoformat(), "cell": cell,
+        "family": "alpha", "passed": False, "terminal_gate": "UNKNOWN"}) + "\n", "utf-8")
+    doc = jc.build(rows, ledger=ledger, ratchet=tmp_path / "absent.json", now=NOW)
+    assert doc["totals"]["unjudged_total"] == 1
+    assert doc["families"]["alpha"]["queued"] == 1
+
+
+def test_unknown_and_deferred_receipts_do_not_inflate_measured_capacity(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(jc, "CAPACITY_FLOOR", 1)
+    ledger = tmp_path / "gate.jsonl"
+    rows = ([{"passed": False, "terminal_gate": "UNKNOWN"}] * 100
+            + [{"passed": False, "terminal_gate": "in_sample_screen"}] * 3
+            + [{"passed": False, "terminal_gate": "in_sample_screen",
+                "downstream_status": "NOT_RUN_BUILD_FAILED"}] * 100)
+    ledger.write_text("".join(json.dumps({**row, "at": NOW.isoformat()}) + "\n"
+                              for row in rows), "utf-8")
+    assert jc.measured_capacity({"alpha": 3}, ledger, now=NOW) == 3
+
+
 def test_banned_family_gets_no_quota(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """The scarce judge is never allocated to a family that cannot reach the book."""
     monkeypatch.setattr(jc, "banned_from_capital", lambda: frozenset({"discovered"}))
@@ -228,6 +274,34 @@ def test_an_unseen_family_ranks_on_the_optimistic_bound() -> None:
     assert ranking[0]["prior_status"] == "PRIOR"
     assert ranking[0]["p_optimistic"] > ranking[0]["p"]
     assert ranking[0]["ev_per_judge_second"] > 0
+
+
+def test_certified_concentration_steers_the_remainder_to_an_absent_family(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(jc, "certified_family_shares", lambda: ({"saturated": 0.8,
+                                                                   "other": 0.2}, 100))
+    monkeypatch.setattr(jc, "realised_pass_rates", lambda: {})
+    monkeypatch.setattr(jc, "family_priors", lambda fams, realised: {
+        f: {"p": 0.5, "p_optimistic": 0.8, "n": 0, "status": 0} for f in fams})
+    monkeypatch.setattr(jc, "family_value", lambda: ({}, 1.0))
+    monkeypatch.setattr(jc, "family_breadth", lambda: {})
+    monkeypatch.setattr(jc, "producer_signals", lambda: {})
+    monkeypatch.setattr(jc, "_keff_family_factor", lambda rows: {})
+    backlog = {"saturated": 100, "new_family": 100}
+    ranking = jc.rank_by_value(backlog, [{"family": f, "params": {}} for f in backlog], 100)
+    assert [r["family"] for r in ranking] == ["new_family", "saturated"]
+    assert ranking[0]["certified_breadth_factor"] == pytest.approx(2.0)
+    assert ranking[1]["certified_breadth_factor"] == pytest.approx(1.2)
+    quota = jc.allocate(backlog, 80, ranking=ranking)
+    assert quota["new_family"] > quota["saturated"] > 0
+
+
+def test_unreadable_certificates_leave_the_judge_ranking_neutral(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(jc, "certified_family_shares", lambda: ({}, 0))
+    row = jc.rank_by_value({"carry": 1}, [{"family": "carry", "params": {}}], 100)[0]
+    assert row["certified_breadth_status"] == "UNMEASURED"
+    assert row["certified_breadth_factor"] == 1.0
 
 
 def test_bar_cost_makes_the_denominator_real() -> None:

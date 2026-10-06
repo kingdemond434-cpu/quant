@@ -301,7 +301,10 @@ def test_forbidden_ground_is_registered_and_fringe_ground_is_kept() -> None:
     FRINGE source is kept at low weight rather than dropped, because a claim that looks false is
     still a dated, testable claim."""
     coverage = pack_module().source_layer_coverage()
-    assert coverage["machine_use_forbidden"], (
+    # LAWS §5e (2026-09-23): terms-restricted ground is REGISTERED by its access label and mined;
+    # machine_use_allowed=false is a deleted brake, so the label is what proves it was not omitted.
+    from libs.research.country_lab import registered_terms_ground
+    assert registered_terms_ground(pack_module().SOURCE_CLASSES), (
         "no source registered machine_use_allowed=False -- the licensed terminals and the AIS "
         "aggregators both forbid extraction and omitting them loses the fact that they exist")
     creds = {sc["credibility"] for sc in fields()["source_classes"]}

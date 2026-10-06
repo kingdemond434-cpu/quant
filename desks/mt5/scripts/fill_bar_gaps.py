@@ -56,6 +56,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT), str(ROOT / "scripts")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from research.parquet_publication import atomic_parquet  # noqa: E402
+
 UNIVERSE = DESK / "data" / "universe"
 REGISTRY = UNIVERSE / "universe.json"
 VERDICTS = DESK / "data" / "bar_coverage_verdicts.json"
@@ -316,20 +318,12 @@ def _one(mt5: Any, pd: Any, pull: Any, floor_for: Any, sym: str, tf: str,
     frame = pd.DataFrame(rates)
     frame["time"] = pd.to_datetime(frame["time"], unit="s", utc=True)
     frame = frame.set_index("time").sort_index()
-    # PUBLISHED, NEVER WRITTEN IN PLACE (recovered box patch 08): the sealed judge reads these
-    # frames with no error handling, and a truncate-then-refill write is a torn read away from
-    # killing a whole sweep. A rename that loses to an open handle keeps the old frame whole.
-    from mt5desk.universe_registry import publish_frame
     try:
-        published = publish_frame(frame, UNIVERSE / f"{sym}_{tf}.parquet")
+        atomic_parquet(frame, UNIVERSE / f"{sym}_{tf}.parquet")
     except Exception as exc:                             # pragma: no cover - disk-level failure
         return {"verdict": UNMEASURED, "at": at, "bars": int(n), "floor": floor,
                 "why": f"the venue served {n} bars and the write failed: "
                        f"{type(exc).__name__}: {exc}"}
-    if not published:
-        return {"verdict": UNMEASURED, "at": at, "bars": int(n), "floor": floor,
-                "why": (f"the venue served {n} bars and the rename lost to an open handle; "
-                        f"the previous frame stands and the next pass retries")}
     return {"verdict": FILLED, "at": at, "bars": int(n), "floor": floor,
             "gates_floor": gates_floor, "peer_floor": peer, "peer_n": peer_n,
             "span_start": str(frame.index[0]), "span_end": str(frame.index[-1]),

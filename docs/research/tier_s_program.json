@@ -1052,6 +1052,18 @@
     "organ": "report:RESEARCH_DIVERSITY_ARCHIVE.json"
    },
    "why": "occupied niches in the research diversity archive"
+  },
+  {
+   "leg": "research_budget",
+   "report": "RESEARCH_BUDGET.json",
+   "contract": {
+    "gain": "INFO_PER_COMPUTE",
+    "metric": "control_arm.admitted",
+    "better": "up",
+    "bar": 1.0,
+    "organ": "report:RESEARCH_BUDGET.json"
+   },
+   "why": "the budget's uplift above each leg's floor, funded only from measured spare seconds, yields more output per leg-run than held-out leg-hours at the floor (control arm, Welch one-sided 5%); the budget is authoritative only while this is ADMITTED"
   }
  ]
 }
