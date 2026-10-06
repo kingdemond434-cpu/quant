@@ -5498,13 +5498,18 @@
    "status": "PARTIAL",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/alt_proxies.py:1530 make_ecos_parser -- one ECOS StatisticSearch item per row",
-    "desks/mt5/research/alt_proxies.py:1614 parse_hkma_liquidity -- aggregate balance, CU FX leg, HIBOR, TWI",
-    "desks/mt5/research/alt_proxies.py:1642 _hkma_requests -- paged backfill then one page per pass",
-    "desks/mt5/research/alt_proxies.py:2489 KR_HK_PLANE_SOURCES -- the seven rows, instruments routed by universe_policy via may_mint",
-    "desks/mt5/research/alt_proxies.py:2638 KR_HK_TERMS_EVIDENCE -- DATA.GOV.HK and KRX/HKEX terms quoted verbatim, read 2026-10-06",
-    "desks/mt5/research/alt_proxies.py:3192 build_points -- level, delta, acceleration, surprise, revision_delta and the s2.5 clock names on every point of every source",
-    "desks/mt5/research/countries/_official_plane.py:125 run -- the region's lanes read back from the factory's stores, cells judged per lane, refused lanes with their quotes",
+    "desks/mt5/research/alt_proxies.py:1591 make_ecos_parser -- one ECOS StatisticSearch item per row",
+    "desks/mt5/research/alt_proxies.py:1675 parse_hkma_liquidity -- aggregate balance, CU FX leg, HIBOR, TWI",
+    "desks/mt5/research/alt_proxies.py:1703 _hkma_requests -- paged backfill then one page per pass",
+    "desks/mt5/research/alt_proxies.py:289 roll_business_day -- KR/HK release rules rolled past weekends and local holidays (holidays package, else the country packs' sourced tables; no calendar -> never before first seen)",
+    "desks/mt5/research/alt_proxies.py:2550 KR_HK_PLANE_SOURCES -- the seven rows, instruments routed by universe_policy via may_mint",
+    "desks/mt5/research/alt_proxies.py:2739 KR_HK_TERMS_EVIDENCE -- DATA.GOV.HK and KRX/HKEX terms quoted verbatim, the unread ECOS terms recorded as to_confirm, read 2026-10-06",
+    "desks/mt5/research/alt_proxies.py:2766 KR_HK_REFUSED -- KRX/HKEX refused; ASIA-0465/0466/0467 BLOCKED (KRX terms refused, no lawful substitute)",
+    "desks/mt5/research/alt_proxies.py:3081 terms_gate -- one terms decision per id or host, read by asia_collector before any request",
+    "desks/mt5/research/alt_proxies.py:3412 revision_points -- every revision its own vintage, knowable only from its own first-seen instant",
+    "desks/mt5/research/alt_proxies.py:3486 build_points -- level, delta, acceleration, surprise and the s2.5 clock names on every first print",
+    "desks/mt5/research/asia_collector.py:364 _terms_state -- refused / to_confirm rows and keyed rows without confirmed terms are sent nothing",
+    "desks/mt5/research/countries/_official_plane.py:133 run -- the region's lanes read back from the factory's stores, cells judged per lane, refused lanes with their quotes",
     "desks/mt5/research/countries/kr/official_plane.py:53 export_events -- 10/20-day prints RELEASED and SCHEDULED",
     "desks/mt5/research/countries/hk/official_plane.py:44 cu_events -- WEAK_SIDE / STRONG_SIDE CU legs",
     "desks/mt5/research/countries/kr/miners.py:118 NOT_IN_REPO -- the box-built miners are registered only where their files exist, so MISSING is empty",
@@ -5517,8 +5522,13 @@
    "landed": [
     "2026-10-06: seven parsed rows ride the existing alt_proxies leg; fixture pass parses every row, no fixture cell is ever minted; the Korea department registers 1 committed miner and 0 MISSING (16 box-built miners reported NOT_IN_REPO)"
    ],
-   "gap": "Live yield UNMEASURED: the authoring container cannot reach ecos.bok.or.kr or api.hkma.gov.hk, so no row has returned real data; the ECOS rows wait on ECOS_API_KEY on the box (BLOCKED_ON_KEY) and their item codes are verified there against StatisticItemList (ALT_ECOS_*_PATH overrides). KRX investor-type flows, program trading, short selling and KOSPI200 OI, and HKEX Stock Connect flows, are BLOCKED_ON_TERMS:refused with no lawful substitute. No KOSPI CFD exists in universe.json, so Korea maps to USDKRW / AUDUSD.",
-   "next_step": "On the box: set ECOS_API_KEY (or keep BOK_API_KEY), run alt_proxies --once, confirm each ECOS code returns rows, read KR_OFFICIAL_PLANE.json / HK_OFFICIAL_PLANE.json; then restore K1/K2 by committing the box-built agents/lattice/moat/data_plane/nowcast if they still exist there."
+   "gap": "Live yield UNMEASURED: the authoring container cannot reach ecos.bok.or.kr or api.hkma.gov.hk, so no row has returned real data. The four ECOS rows (and kr_bok_card_spend) are BLOCKED_ON_TERMS:to_confirm since 2026-10-06: the ECOS terms of use could not be read and no permitting clause is quoted; once confirmed they wait on ECOS_API_KEY on the box and their item codes are verified there against StatisticItemList (ALT_ECOS_*_PATH overrides). KRX investor-type flows, program trading, short selling and KOSPI200 OI (ASIA-0465/0466/0467), and HKEX Stock Connect flows, are BLOCKED_ON_TERMS:refused with no lawful substitute, and asia_collector sends those hosts nothing. No KOSPI CFD exists in universe.json, so Korea maps to USDKRW / AUDUSD.",
+   "next_step": "On the box: read https://ecos.bok.or.kr/api/ terms of use (이용약관), quote the permitting clause in KR_HK_TERMS_EVIDENCE and only then set the ECOS rows confirmed; then the first live pass measures yield.",
+   "blocked_rows": {
+    "ASIA-0465": "BLOCKED: Korea program trading -- KRX terms refused (Art. 6(2), 11(2)), no lawful substitute",
+    "ASIA-0466": "BLOCKED: Korea short selling -- KRX terms refused (Art. 6(2), 11(2)), no lawful substitute",
+    "ASIA-0467": "BLOCKED: Korea derivatives OI -- KRX terms refused (Art. 6(2), 11(2)), no lawful substitute"
+   }
   },
   {
    "id": "J1",

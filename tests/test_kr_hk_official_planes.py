@@ -101,12 +101,65 @@ def test_points_carry_level_change_acceleration_surprise_and_s25_names(tmp_path:
               "raw_surprise", "percentile", "revision_of", "source_id", "metric"):
         assert k in p2
     assert p2["knowable_at"] == p2["available_time"]
-    # a revision is its own stamped fact beside the first value, never back-dated
+    # the first print revises nothing: no revision_delta and no revision_of on it, ever
     later = datetime(2026, 10, 2, tzinfo=UTC)
     A.merge_vintages(store, src, [A.Obs("hibor_1m", date(2026, 8, 27), 9.0)], later)
-    rev = next(p for p in A.build_points(src, store)["hibor_1m"] if p["d"] == "2026-08-27")
-    assert rev["value"] != 9.0 and rev["revision_delta"] == pytest.approx(9.0 - rev["value"])
-    assert rev["revision_of"]
+    first = next(p for p in A.build_points(src, store)["hibor_1m"] if p["d"] == "2026-08-27")
+    assert first["value"] != 9.0
+    assert first["revision_delta"] is None and first["revision_of"] is None
+    assert first["revision_time"] is None
+    # the revision is its own vintage, knowable only from the instant it was seen
+    (rev,) = A.revision_points(src, store)["hibor_1m"]
+    assert rev["d"] == "2026-08-27" and rev["value"] == 9.0
+    assert rev["knowable_at"] == rev["available_time"] == later.isoformat(timespec="seconds")
+    assert rev["revision_delta"] == pytest.approx(9.0 - first["value"])
+    assert rev["revision_of"] == first["vintage_id"] and rev["vintage_n"] == 1
+
+
+def _jan_store() -> tuple[A.Source, dict[str, Any]]:
+    """One point for 2026-01-05, published and first seen 01-06; a revision first seen 03-01."""
+    src = A.BY_ID["hk_hkma_hibor_fixing"]
+    store: dict[str, Any] = {}
+    A.merge_vintages(store, src, [A.Obs("hibor_1m", date(2026, 1, 5), 3.0)],
+                     datetime(2026, 1, 6, 6, tzinfo=UTC))
+    A.merge_vintages(store, src, [A.Obs("hibor_1m", date(2026, 1, 5), 3.5)],
+                     datetime(2026, 3, 1, tzinfo=UTC))
+    A.merge_vintages(store, src, [A.Obs("hibor_1m", date(2026, 1, 5), 3.25)],
+                     datetime(2026, 4, 1, tzinfo=UTC))
+    return src, store
+
+
+def test_a_revision_first_seen_in_march_is_invisible_in_february() -> None:
+    src, store = _jan_store()
+    pts = A.build_points(src, store)
+    revs = A.revision_points(src, store)
+    feb = datetime(2026, 2, 28, 23, 59, tzinfo=UTC)
+    seen = {**A.as_of(pts, feb), **{f"{k}#rev": v for k, v in A.as_of(revs, feb).items()}}
+    assert seen["hibor_1m"][0]["value"] == 3.0                 # the first print is knowable
+    assert all(p["revision_delta"] is None for p in seen["hibor_1m"])
+    assert "hibor_1m#rev" not in seen                           # the 03-01 revision is not
+    mar = A.as_of(revs, datetime(2026, 3, 1, tzinfo=UTC))["hibor_1m"]
+    assert [p["value"] for p in mar] == [3.5]
+
+
+def test_every_revision_vintage_is_kept_and_differenced_on_its_predecessor() -> None:
+    src, store = _jan_store()
+    (row,) = store.values()
+    assert [v["value"] for v in row["vintages"]] == [3.5, 3.25]          # appended, never lost
+    assert row["value_first"] == 3.0 and row["first_seen_at"].startswith("2026-01-06")
+    r1, r2 = A.revision_points(src, store)["hibor_1m"]
+    assert r1["revision_delta"] == pytest.approx(0.5)
+    assert r1["knowable_at"].startswith("2026-03-01")
+    assert r2["revision_delta"] == pytest.approx(-0.25)
+    assert r2["knowable_at"].startswith("2026-04-01")
+    assert r2["revision_of"] == r1["vintage_id"] and r2["vintage_n"] == 2
+    # a row written before vintages existed keeps its one recorded revision, at its own stamp
+    legacy = {"k": {"series": "hibor_1m", "period": "2026-01-05", "value_first": 3.0,
+                    "value_last": 3.25, "first_seen_at": "2026-01-06T06:00:00+00:00",
+                    "published_time": "2026-01-06T04:00:00+00:00",
+                    "revision_time": "2026-04-01T00:00:00+00:00", "n_revisions": 2}}
+    (lr,) = A.revision_points(src, legacy)["hibor_1m"]
+    assert lr["knowable_at"] == "2026-04-01T00:00:00+00:00" and lr["reconstructed"]
 
 
 def test_release_rules_are_late_biased() -> None:
@@ -116,16 +169,82 @@ def test_release_rules_are_late_biased() -> None:
     assert A.BY_ID["hk_hkma_hibor_fixing"].rule(date(2026, 8, 27)).hour >= 4   # after 11:15 HKT
 
 
-# ---------------------------------------------------------------------------- terms and keys
-def test_plane_rows_are_confirmed_with_evidence_and_refused_hosts_are_not_sources() -> None:
+def test_release_rules_never_land_on_a_weekend_or_a_local_holiday() -> None:
+    # Friday 2026-09-04: a T+1 rule landed on Saturday -- look-ahead for the Sunday FX open.
+    fri = date(2026, 9, 4)
+    for sid in ("hk_hkma_interbank_liquidity", "hk_hkma_monetary_base", "kr_ecos_call_rate"):
+        t = A.BY_ID[sid].rule(fri)
+        assert t.date() == date(2026, 9, 7) and t.weekday() == 0, sid
+    # HK National Day (Thu 2026-10-01): a 09-30 print rolls past it to Friday 10-02
+    assert A.BY_ID["hk_hkma_interbank_liquidity"].rule(date(2026, 9, 30)).date() == date(
+        2026, 10, 2)
+    # Korea: Chuseok (09-24/25) then the weekend -- a 09-23 call-rate print waits for 09-28;
+    # 2026-10-05 is the National Foundation Day substitute, so a Friday 10-02 print waits to 10-06
+    assert A.BY_ID["kr_ecos_call_rate"].rule(date(2026, 9, 23)).date() == date(2026, 9, 28)
+    assert A.BY_ID["kr_ecos_call_rate"].rule(date(2026, 10, 2)).date() == date(2026, 10, 6)
+    # every plane row, every day of a year: never a weekend, never a tabulated holiday
     for sid in PLANE_IDS:
-        assert A.BY_ID[sid].terms == "confirmed" and sid in A.KR_HK_TERMS_EVIDENCE, sid
+        rule = A.BY_ID[sid].rule
+        cal = rule.calendar  # type: ignore[attr-defined]
+        assert cal in ("KR", "HK"), sid
+        d = date(2026, 1, 1)
+        while d.year == 2026:
+            t = rule(d)
+            closed = A._closed_days(cal, t.year) or frozenset()
+            assert t.weekday() < 5 and t.date().isoformat() not in closed, (sid, d)
+            d += timedelta(days=1)
+
+
+def test_without_a_calendar_the_stamp_is_never_before_first_seen(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    src = A.BY_ID["hk_hkma_hibor_fixing"]
+    monkeypatch.setattr(A, "_closed_days", lambda cal, year: None)   # no calendar at all
+    assert not A.release_calendar_known("HK", 2031)
+    seen = datetime(2031, 6, 20, 9, tzinfo=UTC)
+    store: dict[str, Any] = {}
+    A.merge_vintages(store, src, [A.Obs("hibor_1m", date(2031, 6, 2), 4.0)], seen)
+    (row,) = store.values()
+    assert row["published_time"] == seen.isoformat(timespec="seconds")
+    assert row["published_basis"] == "first_seen_no_calendar"
+
+
+# ---------------------------------------------------------------------------- terms and keys
+def test_plane_terms_are_quoted_or_fenced_and_refused_hosts_are_not_sources() -> None:
+    for sid in PLANE_IDS:
         ev = A.KR_HK_TERMS_EVIDENCE[sid]
         assert ev["terms_url"].startswith("https://") and ev["checked_at"] == "2026-10-06"
+        if sid.startswith("kr_ecos_"):
+            # the ECOS terms were never read: fenced, never confirmed without a quoted clause
+            assert A.BY_ID[sid].terms == "to_confirm", sid
+            assert A.status_of(A.BY_ID[sid]) == "BLOCKED_ON_TERMS:to_confirm"
+        else:
+            assert A.BY_ID[sid].terms == "confirmed", sid
+            assert "commercial" in ev["terms_quote"] and ev["listing_url"].startswith(
+                "https://apidocs.hkma.gov.hk/")
+    assert A.BY_ID["kr_bok_card_spend"].terms == "to_confirm"
+    assert A.terms_gate("https://ecos.bok.or.kr/api/StatisticSearch/x")[0] == "to_confirm"
+    # each HKMA row cites its OWN dataset's listing, not the end-of-period rate table
+    listings = {A.KR_HK_TERMS_EVIDENCE[s]["listing_url"] for s in PLANE_IDS
+                if s.startswith("hk_hkma_")}
+    assert len(listings) == 3 and not any("endperiod" in u for u in listings)
     for sid in ("kr_krx_market_data", "hk_hkex_stock_connect"):
         assert sid not in A.BY_ID                              # no fetcher exists to run
         assert A.KR_HK_TERMS_EVIDENCE[sid]["decision"] == "refused"
         assert A.KR_HK_REFUSED[sid]["status"] == "BLOCKED_ON_TERMS:refused"
+        assert A.terms_gate(sid)[0] == "refused"
+    assert set(A.KR_HK_REFUSED["kr_krx_market_data"]["directive_rows"]) == {
+        "ASIA-0465", "ASIA-0466", "ASIA-0467"}
+    assert all(v.startswith("BLOCKED") for v in
+               A.KR_HK_REFUSED["kr_krx_market_data"]["directive_rows"].values())
+
+
+def test_every_confirmed_gate_row_quotes_its_permitting_clause() -> None:
+    for ref, (state, _why) in A.GATE_TERMS.items():
+        ev = A.GATE_TERMS_EVIDENCE[ref]
+        assert ev["decision"] == state and ev["checked_at"], ref
+        if state == "confirmed":
+            assert ev["terms_url"].startswith("https://") and not ev["terms_quote"].startswith(
+                "("), ref
 
 
 def test_one_ecos_key_name_with_the_old_name_as_alias(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -139,14 +258,118 @@ def test_one_ecos_key_name_with_the_old_name_as_alias(monkeypatch: pytest.Monkey
     assert row["key_env"] == "ECOS_API_KEY" and row["key_env_aliases"] == ["BOK_API_KEY"]
     assert {s.key_env for s in A.SOURCES if s.id.startswith("kr_ecos_")} == {"ECOS_API_KEY"}
     monkeypatch.delenv("ECOS_API_KEY", raising=False)
-    assert A.status_of(A.BY_ID["kr_ecos_call_rate"]) == "BLOCKED_ON_KEY:ECOS_API_KEY"
+    # terms come first: fenced on terms even before the key question is asked
+    assert A.status_of(A.BY_ID["kr_ecos_call_rate"]) == "BLOCKED_ON_TERMS:to_confirm"
+    from dataclasses import replace
+    assert A.status_of(replace(A.BY_ID["kr_ecos_call_rate"], terms="confirmed"),
+                       {}) == "BLOCKED_ON_KEY:ECOS_API_KEY"
 
 
-def test_refused_registry_rows_carry_the_terms_label() -> None:
+def test_refused_registry_rows_are_refused_not_relabelled() -> None:
     reg = json.loads((DESK / "data" / "asia_sources.json").read_text("utf-8"))
     rows = {r["id"]: r for r in reg["sources"]}
     for sid in ("krx_open_api", "krx_derivatives_stats", "hkex_data"):
-        assert rows[sid]["access_label"] == "PUBLIC_WITH_TERMS" and rows[sid]["terms_note"]
+        r = rows[sid]
+        assert r["terms"] == "refused" and r["terms_note"] and "access_label" not in r, sid
+        assert A.terms_gate(r["terms_ref"])[0] == "refused"
+        assert A.terms_gate(r["url"])[0] == "refused"          # the host alone is enough
+    for sid in ("krx_open_api", "krx_derivatives_stats"):
+        assert set(rows[sid]["directive_rows"]) == {"ASIA-0465", "ASIA-0466", "ASIA-0467"}
+
+
+# ---------------------------------------------------------------------------- the collector gate
+def _collector() -> Any:
+    from research import asia_collector as C
+    return C
+
+
+class _Resp:
+    status = 200
+
+    def __init__(self) -> None:
+        self.headers = {"Content-Type": "application/json"}
+        self.body = b'{"ok": [1, 2, 3], "padding": "' + b"x" * 80 + b'"}'
+
+    def read(self, n: int = -1) -> bytes:
+        return self.body
+
+    def __enter__(self) -> _Resp:
+        return self
+
+    def __exit__(self, *a: Any) -> None:
+        return None
+
+
+def _patch_net(monkeypatch: pytest.MonkeyPatch, C: Any, tmp_path: Path) -> list[str]:
+    sent: list[str] = []
+
+    def fake_urlopen(req: Any, *a: Any, **k: Any) -> _Resp:
+        url = req.full_url if hasattr(req, "full_url") else str(req)
+        hdrs = dict(getattr(req, "header_items", lambda: [])())
+        sent.append(url + " " + json.dumps(hdrs) + " " + str(getattr(req, "data", b"")))
+        return _Resp()
+
+    monkeypatch.setattr(C.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(C, "_vault", lambda *a, **k: {"path": "x"})
+    monkeypatch.setattr(C, "_parse", lambda *a, **k: {"parsed": False, "why": "test"})
+    monkeypatch.setattr(C, "VAULT", tmp_path / "vault")
+    return sent
+
+
+def test_every_collector_fetch_path_is_behind_the_terms_gate(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    C = _collector()
+    sent = _patch_net(monkeypatch, C, tmp_path)
+    reg = json.loads((DESK / "data" / "asia_sources.json").read_text("utf-8"))
+    rows = [r for r in reg["sources"] if str(r.get("role") or "") != "transport"]
+    for r in rows:
+        state, _ = C._terms_state(r, C._resolve_url(r))
+        before = len(sent)
+        rec = C.collect_one(r)
+        if state not in ("confirmed", "ungoverned"):
+            # robots.txt included: a refused / to_confirm row sends NOTHING at all
+            assert len(sent) == before and rec["status"] == "BLOCKED_ON_TERMS", r["id"]
+    blocked = {r["id"] for r in rows
+               if C._terms_state(r, C._resolve_url(r))[0] not in ("confirmed", "ungoverned")}
+    assert {"krx_open_api", "krx_derivatives_stats", "hkex_data", "bok_ecos",
+            "baidu_index"} <= blocked
+    for host in ("krx.co.kr", "hkex.com.hk", "ecos.bok.or.kr", "index.baidu.com"):
+        assert not any(host in s.split(" ")[0] for s in sent), host
+    # a derived child inherits its parent's terms decision
+    child = {"id": "krx_open_api__ep1", "url": "https://elsewhere.example/x.csv",
+             "terms": "refused", "terms_ref": "kr_krx_market_data", "access": "public"}
+    assert C.collect_one(child)["status"] == "BLOCKED_ON_TERMS"
+
+
+def test_a_keyed_source_without_confirmed_terms_sends_no_credential(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    C = _collector()
+    sent = _patch_net(monkeypatch, C, tmp_path)
+    reg = json.loads((DESK / "data" / "asia_sources.json").read_text("utf-8"))
+    keyed = [r for r in reg["sources"] if C._is_keyed(r)]
+    secrets: dict[str, str] = {}
+    for r in keyed:
+        if r.get("key_env"):
+            secrets[r["key_env"]] = f"SECRET-{r['id']}-{len(secrets)}"
+            monkeypatch.setenv(r["key_env"], secrets[r["key_env"]])
+    verdicts = {}
+    for r in keyed:
+        before = len(sent)
+        rec = C.collect_one(r)
+        state = C._terms_state(r, C._resolve_url(r))[0]
+        verdicts[r["id"]] = state
+        if state != "confirmed":
+            assert rec["status"] == "BLOCKED_ON_TERMS" and len(sent) == before, r["id"]
+    assert not any(v in s for v in secrets.values() for s in sent)
+    assert "ungoverned" not in verdicts.values()               # a keyed row is always judged
+    for sid in ("tushare", "bok_ecos", "collective2", "darwinex", "banxico_series"):
+        assert verdicts[sid] == "to_confirm", sid
+    assert verdicts["baidu_index"] == "refused"
+    for sid in ("eia_energy", "nasa_firms", "estat_jp_customs"):
+        assert verdicts[sid] == "confirmed", sid
+    # an unknown keyed host with no terms_ref is fenced too
+    assert C._terms_state({"access": "key", "key_env": "X"}, "https://new.example/api")[0] \
+        == "to_confirm"
 
 
 # ---------------------------------------------------------------------------- cells and routing
@@ -165,6 +388,10 @@ def test_fixture_pass_publishes_axes_and_never_mints(tmp_path: Path) -> None:
     rep = A.run(paths, fixtures=FIX, donate=False, now=NOW)
     assert rep["direct_cells"]["n"] == 0                     # fixtures never mint
     for sid in PLANE_IDS:
+        if A.BY_ID[sid].terms != "confirmed":                # fenced rows publish nothing
+            assert not (paths.axes / f"alt_{sid}.json").exists(), sid
+            assert rep["sources"][sid]["series"] == {}, sid
+            continue
         axis = json.loads((paths.axes / f"alt_{sid}.json").read_text("utf-8"))
         assert any(k.endswith(".delta") for k in axis["series"]), sid
     # allocation intel needs a surprise_z, i.e. enough history: a synthetic 40-day HIBOR path
@@ -185,9 +412,10 @@ def test_kr_plane_reports_lanes_refusals_and_export_events(tmp_path: Path) -> No
     doc = K.run(paths=paths, report_default=out, now=NOW)
     assert json.loads(out.read_text("utf-8"))["country"] == "kr"
     lanes = {r["dataset"]: r for r in doc["lanes"]}
+    assert lanes["kr_exports_early"]["status"] == "PARSED"
     for sid in ("kr_ecos_base_rate", "kr_ecos_call_rate", "kr_ecos_fx_reserves",
-                "kr_ecos_export_prices", "kr_exports_early"):
-        assert lanes[sid]["status"] == "PARSED", sid
+                "kr_ecos_export_prices"):
+        assert lanes[sid]["status"] == "BLOCKED_ON_TERMS:to_confirm", sid     # fenced
     assert lanes["kr_krx_market_data"]["status"] == "BLOCKED_ON_TERMS:refused"
     assert lanes["kr_krx_market_data"]["terms_quote"]
     kinds = {(e["event"], e["lifecycle"]) for e in doc["events"]}

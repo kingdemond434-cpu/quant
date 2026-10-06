@@ -244,8 +244,66 @@ def _num(s: str) -> float | None:
 
 
 # ============================================================================ release rules
-def _lag_rule(lag_days: int, hour: int = 0, weekday: bool = False) -> Callable[[date], datetime]:
-    """period_end + lag through `pit_stamp.available_at`, the desk's one publication-lag helper."""
+#: RELEASE CALENDARS (audit of PR #239, 2026-10-06). An official publisher in Seoul or Hong Kong
+#: does not publish on a Saturday, a Sunday or a public holiday, so a release rule that lands on
+#: one of those days is LOOK-AHEAD for the Sunday FX open: it is rolled forward to the next
+#: business day of that calendar. The closed days come from the `holidays` package when it is
+#: installed, joined with the country packs' own sourced closure tables
+#: (`countries/<cc>/pack.py` HOLIDAYS_RULE: the public-holiday decree / General Holidays
+#: Ordinance plus the exchange's own closures). A year neither source covers has NO calendar:
+#: `merge_vintages` then stamps the row no earlier than the instant it was first seen.
+_CAL_PACK = {"KR": "kr", "HK": "hk"}
+_CAL_CACHE: dict[tuple[str, int], frozenset[str] | None] = {}
+
+
+def _closed_days(cal: str, year: int) -> frozenset[str] | None:
+    """ISO dates on which `cal`'s publishers are shut in `year` (weekends excluded), or None when
+    no calendar for that year is available here."""
+    key = (cal, year)
+    if key in _CAL_CACHE:
+        return _CAL_CACHE[key]
+    days: set[str] = set()
+    known = False
+    with contextlib.suppress(Exception):
+        import holidays as _holidays  # type: ignore[import-not-found,unused-ignore]
+        for d in getattr(_holidays, cal)(years=year):
+            days.add(d.isoformat())
+        known = True
+    cc = _CAL_PACK.get(cal)
+    if cc:
+        table: dict[str, str] = {}
+        for mod in (f"research.countries.{cc}.pack", f"countries.{cc}.pack"):
+            with contextlib.suppress(Exception):
+                import importlib
+                table = dict(importlib.import_module(mod).holidays(year) or {})
+                break
+        if table:
+            days |= set(table)
+            known = True
+    out = frozenset(days) if known else None
+    _CAL_CACHE[key] = out
+    return out
+
+
+def release_calendar_known(cal: str, year: int) -> bool:
+    return _closed_days(cal, year) is not None
+
+
+def roll_business_day(t: datetime, cal: str) -> datetime:
+    """`t` moved forward, a day at a time with its clock time kept, until it is a weekday that is
+    not a `cal` holiday. An unknown year is rolled over weekends only (merge_vintages adds the
+    first-seen floor for it)."""
+    for _ in range(31):
+        if t.weekday() < 5 and t.date().isoformat() not in (_closed_days(cal, t.year) or ()):
+            return t
+        t += timedelta(days=1)
+    return t
+
+
+def _lag_rule(lag_days: int, hour: int = 0, weekday: bool = False,
+              calendar: str | None = None) -> Callable[[date], datetime]:
+    """period_end + lag through `pit_stamp.available_at`, the desk's one publication-lag helper.
+    `calendar` ("KR"/"HK") rolls the instant past weekends AND that place's public holidays."""
     def rule(period: date) -> datetime:
         try:
             from libs.data.pit_stamp import available_at
@@ -253,7 +311,10 @@ def _lag_rule(lag_days: int, hour: int = 0, weekday: bool = False) -> Callable[[
         except Exception:                                      # pragma: no cover - import guard
             t = _utc(period.year, period.month, period.day) + timedelta(days=lag_days)
         t = t.replace(hour=hour, minute=0, second=0, microsecond=0)
+        if calendar:
+            return roll_business_day(t, calendar)
         return _roll_weekday(t) if weekday else t
+    rule.calendar = calendar  # type: ignore[attr-defined]
     return rule
 
 
@@ -2764,7 +2825,8 @@ KR_HK_PLANE_SOURCES: tuple[Source, ...] = (
     Source(
         id="kr_ecos_base_rate", name="Bank of Korea base rate (ECOS 722Y001, daily)",
         url=ECOS_URL + ECOS_PATHS["kr_ecos_base_rate"], region="KR", language="ko",
-        cadence="daily", parse=make_ecos_parser("base_rate"), rule=_lag_rule(0, 1),
+        cadence="daily", parse=make_ecos_parser("base_rate"),
+        rule=_lag_rule(0, 1, calendar="KR"),
         transform="given", key_env="ECOS_API_KEY", instruments={"USDKRW": -1},
         signal_series=("base_rate",),
         mechanism=("the BOK policy rate is the anchor of KRW carry; a move (or the end of a "
@@ -2778,7 +2840,8 @@ KR_HK_PLANE_SOURCES: tuple[Source, ...] = (
     Source(
         id="kr_ecos_call_rate", name="Korea interbank call rate, overnight (ECOS 817Y002)",
         url=ECOS_URL + ECOS_PATHS["kr_ecos_call_rate"], region="KR", language="ko",
-        cadence="daily", parse=make_ecos_parser("call_rate_1d"), rule=_lag_rule(1, 9),
+        cadence="daily", parse=make_ecos_parser("call_rate_1d"),
+        rule=_lag_rule(1, 9, calendar="KR"),
         transform="given", key_env="ECOS_API_KEY", instruments={"USDKRW": -1},
         signal_series=("call_rate_1d",),
         mechanism=("the KRW interbank call rate against the base rate is onshore won liquidity: "
@@ -2795,7 +2858,8 @@ KR_HK_PLANE_SOURCES: tuple[Source, ...] = (
         id="kr_ecos_fx_reserves", name="Korea official FX reserves (ECOS 732Y001, monthly)",
         url=ECOS_URL + ECOS_PATHS["kr_ecos_fx_reserves"], region="KR", language="ko",
         cadence="monthly", parse=make_ecos_parser("fx_reserves_usd_k"),
-        rule=_lag_rule(7, 0, weekday=True), transform="mom_monthly", key_env="ECOS_API_KEY",
+        rule=_lag_rule(7, 0, weekday=True, calendar="KR"), transform="mom_monthly",
+        key_env="ECOS_API_KEY",
         instruments={"USDKRW": -1}, signal_series=("fx_reserves_usd_k",),
         mechanism=("the monthly change in reserves net of valuation is the footprint of BOK "
                    "smoothing operations: a drawdown is the authority selling dollars into a "
@@ -2810,7 +2874,8 @@ KR_HK_PLANE_SOURCES: tuple[Source, ...] = (
         id="kr_ecos_export_prices", name="Korea export price index, won basis (ECOS 402Y014)",
         url=ECOS_URL + ECOS_PATHS["kr_ecos_export_prices"], region="KR", language="ko",
         cadence="monthly", parse=make_ecos_parser("export_price_index"),
-        rule=_lag_rule(20, 0, weekday=True), transform="yoy_monthly", key_env="ECOS_API_KEY",
+        rule=_lag_rule(20, 0, weekday=True, calendar="KR"), transform="yoy_monthly",
+        key_env="ECOS_API_KEY",
         instruments={"USDKRW": -1, "AUDUSD": 1}, signal_series=("export_price_index",),
         mechanism=("Korean export prices are the pricing power of the Asian manufacturing "
                    "chain (chips, petrochemicals, steel): rising export prices are terms of "
@@ -2827,7 +2892,7 @@ KR_HK_PLANE_SOURCES: tuple[Source, ...] = (
         name="HKMA daily interbank liquidity (aggregate balance, CU FX leg, HIBOR, TWI)",
         url=HKMA_BASE + "daily-monetary-statistics/daily-figures-interbank-liquidity",
         region="HK", language="en", cadence="daily", parse=parse_hkma_liquidity,
-        rule=_lag_rule(1, 1), transform="level_dev",
+        rule=_lag_rule(1, 1, calendar="HK"), transform="level_dev",
         instruments={"HK50": 1, "USDHKD": 1, "AUDUSD": 1},
         series_instruments={"hibor": {"USDHKD": -1, "HK50": -1},
                             "cu_forex": {"USDHKD": 1, "HK50": 1, "USDCNH": -1}},
@@ -2849,7 +2914,7 @@ KR_HK_PLANE_SOURCES: tuple[Source, ...] = (
         url=(HKMA_BASE + "monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily"
              "?segment=hibor.fixing"),
         region="HK", language="en", cadence="daily", parse=parse_hkma_hibor,
-        rule=_lag_rule(0, 4), transform="level_dev",
+        rule=_lag_rule(0, 4, calendar="HK"), transform="level_dev",
         instruments={"USDHKD": -1, "HK50": -1, "USDCNH": -1},
         signal_series=("hibor_1m", "hibor_3m_on_spread"),
         mechanism=("the HIBOR term structure is the price of HKD funding; a rising 1M fixing or "
@@ -2865,7 +2930,7 @@ KR_HK_PLANE_SOURCES: tuple[Source, ...] = (
         id="hk_hkma_monetary_base", name="HKMA daily monetary base (aggregate balance, EFBN)",
         url=HKMA_BASE + "daily-monetary-statistics/daily-figures-monetary-base",
         region="HK", language="en", cadence="daily", parse=parse_hkma_monetary_base,
-        rule=_lag_rule(1, 2), transform="level_dev",
+        rule=_lag_rule(1, 2, calendar="HK"), transform="level_dev",
         instruments={"HK50": -1, "USDHKD": -1},
         series_instruments={"aggregate_balance": {"HK50": 1, "USDHKD": 1}},
         signal_series=("efbn_outstanding_hkd_mn",),
@@ -2882,11 +2947,18 @@ KR_HK_PLANE_SOURCES: tuple[Source, ...] = (
 #: Terms for the plane rows, read 2026-10-06 (TERMS_EVIDENCE for the 2026-09-30 review is
 #: separate and pinned to that review).
 KR_HK_TERMS: dict[str, tuple[str, str]] = {
-    "kr_ecos_base_rate": ("confirmed", "BOK ECOS documented Open API (the desk's 2026-09-30 "
-                          "decision for kr_bok_card_spend, same API and publisher)"),
-    "kr_ecos_call_rate": ("confirmed", "BOK ECOS documented Open API"),
-    "kr_ecos_fx_reserves": ("confirmed", "BOK ECOS documented Open API"),
-    "kr_ecos_export_prices": ("confirmed", "BOK ECOS documented Open API"),
+    # FAIL CLOSED (audit of PR #239, 2026-10-06): the ECOS terms page could not be read (it is a
+    # JavaScript app, and ecos.bok.or.kr / www.bok.or.kr / data.go.kr refuse this container's
+    # proxy), so no clause permitting use has been quoted. A documented free-key API is not a
+    # licence. Fenced until a human reads the 이용약관 and quotes the permitting clause.
+    "kr_ecos_base_rate": ("to_confirm", "BOK ECOS Open API: terms of use not read, no "
+                          "permitting clause quoted (2026-10-06)"),
+    "kr_ecos_call_rate": ("to_confirm", "BOK ECOS Open API: terms of use not read, no "
+                          "permitting clause quoted (2026-10-06)"),
+    "kr_ecos_fx_reserves": ("to_confirm", "BOK ECOS Open API: terms of use not read, no "
+                            "permitting clause quoted (2026-10-06)"),
+    "kr_ecos_export_prices": ("to_confirm", "BOK ECOS Open API: terms of use not read, no "
+                              "permitting clause quoted (2026-10-06)"),
     "hk_hkma_interbank_liquidity": ("confirmed", "DATA.GOV.HK terms: commercial and "
                                     "non-commercial reuse, free, with attribution"),
     "hk_hkma_hibor_fixing": ("confirmed", "DATA.GOV.HK terms: commercial and non-commercial "
@@ -2899,28 +2971,50 @@ _DGH = {"terms_url": "https://data.gov.hk/en/terms-and-conditions",
         "terms_quote": ("You are allowed to browse, download, distribute, reproduce, hyperlink "
                         "to, and print the Data for both commercial and non-commercial purposes "
                         "on a free-of-charge basis"),
-        "listing_url": ("https://data.gov.hk/en-data/dataset/"
-                        "hk-hkma-t06-t060301hk-interbank-ir-endperiod"),
-        "listing_quote": ("Data Provider: Hong Kong Monetary Authority; Resource: "
-                          "https://api.hkma.gov.hk/public/market-data-and-statistics/..."),
         "api_doc_quote": ("No application, registration or certification is required for using "
                           "the Open API offered by the HKMA's website. It is also free of "
                           "charge. (apidocs.hkma.gov.hk/abouthkmasapi)"),
         "robots": "api.hkma.gov.hk is the documented Open API host",
         "checked_at": _CHK_PLANES}
+#: The HKMA's own API documentation page for EACH row's dataset (read 2026-10-06; the earlier
+#: listing cited the end-of-period interbank-rate table, a different dataset).
+_HKMA_DOC = "https://apidocs.hkma.gov.hk/documentation/market-data-and-statistics/"
+_HKMA_LISTING: dict[str, dict[str, str]] = {
+    "hk_hkma_interbank_liquidity": {
+        "listing_url": _HKMA_DOC + "daily-monetary-statistics/daily-figures-interbank-liquidity",
+        "listing_quote": ("Daily Figures of Interbank Liquidity - Hong Kong Monetary Authority; "
+                          "https://api.hkma.gov.hk/public/market-data-and-statistics/"
+                          "daily-monetary-statistics/daily-figures-interbank-liquidity")},
+    "hk_hkma_hibor_fixing": {
+        "listing_url": _HKMA_DOC + "monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily",
+        "listing_quote": ("Hong Kong Interbank Interest Rates - Daily figures - Hong Kong "
+                          "Monetary Authority; HIBOR fixings 'usually released on the website "
+                          "of the HKAB each business day (excluding Saturdays) at 11.15 a.m.'")},
+    "hk_hkma_monetary_base": {
+        "listing_url": _HKMA_DOC + "daily-monetary-statistics/daily-figures-monetary-base",
+        "listing_quote": ("Daily Figures of Monetary Base - Hong Kong Monetary Authority; "
+                          "https://api.hkma.gov.hk/public/market-data-and-statistics/"
+                          "daily-monetary-statistics/daily-figures-monetary-base")},
+}
+#: The ECOS terms attempt, recorded so the next reader knows what was tried.
+_ECOS_TERMS_ATTEMPT = {
+    "terms_url": "https://ecos.bok.or.kr/api/",
+    "terms_quote": ("(not readable: ecos.bok.or.kr/api is a JavaScript app; the page and its "
+                    "terms route returned 404 to the reader and ecos.bok.or.kr, www.bok.or.kr "
+                    "and www.data.go.kr are refused by this container's proxy. Web search "
+                    "found no copy of the ECOS Open API 이용약관. No clause permitting use has "
+                    "been quoted, so the rows stay to_confirm)"),
+    "robots": "not readable from the authoring container",
+    "decision": "to_confirm",
+    "box_action": ("read https://ecos.bok.or.kr/api/ (이용약관 / 이용안내) on the box, quote the "
+                   "clause that permits use of the data, and only then set these rows confirmed"),
+    "checked_at": _CHK_PLANES}
 #: Evidence for the plane rows AND for the two refused hosts no fetcher is built for.
 KR_HK_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
-    **{sid: dict(_DGH) for sid in ("hk_hkma_interbank_liquidity", "hk_hkma_hibor_fixing",
-                                   "hk_hkma_monetary_base")},
-    **{sid: {"terms_url": "https://ecos.bok.or.kr/api/",
-             "terms_quote": ("(the ECOS terms page is a JavaScript app not readable from the "
-                             "authoring container; the desk confirmed ECOS as a documented "
-                             "free-key Open API on 2026-09-30 for kr_bok_card_spend, and these "
-                             "rows read the same API from the same publisher)"),
-             "robots": "ecos.bok.or.kr/api is the documented Open API",
-             "checked_at": _CHK_PLANES}
+    **{sid: {**_DGH, **_HKMA_LISTING[sid]} for sid in _HKMA_LISTING},
+    **{sid: dict(_ECOS_TERMS_ATTEMPT)
        for sid in ("kr_ecos_base_rate", "kr_ecos_call_rate", "kr_ecos_fx_reserves",
-                   "kr_ecos_export_prices")},
+                   "kr_ecos_export_prices", "kr_bok_card_spend")},
     "kr_krx_market_data": {
         "terms_url": "https://openapi.krx.co.kr/contents/OPP/INFO/OPPINFO005.jsp",
         "terms_quote": ("Art. 6(2): API Users may only use the API Service for non-commercial "
@@ -2949,6 +3043,12 @@ KR_HK_REFUSED: dict[str, dict[str, Any]] = {
                         "for KOSPI and KOSDAQ", "program trading (arbitrage / non-arbitrage)",
                         "short-selling balances", "KOSPI200 futures and options open interest"],
         "status": "BLOCKED_ON_TERMS:refused",
+        # The directive's Korea-superplane rows this refusal leaves without a lawful source.
+        "directive_rows": {
+            "ASIA-0465": "BLOCKED: program trading -- KRX terms refused, no lawful substitute",
+            "ASIA-0466": "BLOCKED: short selling -- KRX terms refused, no lawful substitute",
+            "ASIA-0467": "BLOCKED: derivatives OI -- KRX terms refused, no lawful substitute"},
+        # The ECOS rows are themselves to_confirm (2026-10-06): nearest, not yet lawful-confirmed.
         "nearest_lawful": ["kr_ecos_call_rate", "kr_ecos_fx_reserves", "kr_exports_early"],
         "why_not_a_substitute": ("no free public source with commercial reuse publishes "
                                  "investor-type flows or KOSPI200 OI; the nearest lawful series "
@@ -3267,7 +3367,9 @@ TERMS: dict[str, tuple[str, str]] = {
     "gdelt_events_country": ("confirmed", "GDELT: unrestricted use with citation"),
     "wiki_asia_attention": ("confirmed", "Wikimedia pageviews API, CC0"),
     "us_oi_card_spend": ("confirmed", "OI README: 'Anyone is welcome to use this data'"),
-    "kr_bok_card_spend": ("confirmed", "BOK ECOS documented Open API"),
+    "kr_bok_card_spend": ("to_confirm", "BOK ECOS Open API: a documented free-key API is not "
+                          "a licence; the terms of use were never read or quoted (re-audited "
+                          "2026-10-06, see KR_HK_TERMS_EVIDENCE)"),
     "jp_meti_retail": ("confirmed", "Government of Japan Standard Terms of Use (CC BY compatible)"),
     "cn_nbs_retail": ("confirmed", "NBS terms of service: users may download and use NBS "
                       "statistics; reuse welcomed with attribution, except items a-f (third-"
@@ -3458,6 +3560,108 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
 
 TERMS.update(KR_HK_TERMS)
 TERMS.update(JP_TERMS)
+
+#: HOSTS GOVERNED BY A TERMS ROW (the mechanism of PR #229, carried here for the KR/HK hosts and
+#: the asia collector's keyed sources; audit of PR #239, 2026-10-06). One decision binds every
+#: organ that touches the host: `asia_collector` asks `terms_gate` before it sends ANY request
+#: (robots.txt included), so a refused or to_confirm host is sent nothing. Matched on the host's
+#: registrable suffix, so www./data./openapi. sub-hosts are governed together.
+TERMS_HOSTS: dict[str, str] = {
+    "krx.co.kr": "kr_krx_market_data",              # data., openapi., marketdata. -- refused
+    "hkex.com.hk": "hk_hkex_stock_connect",         # refused
+    "ecos.bok.or.kr": "kr_bok_card_spend",          # ECOS Open API -- to_confirm
+    "api.hkma.gov.hk": "hk_hkma_interbank_liquidity",
+    "index.baidu.com": "asia_baidu_index",          # login cookie -- refused
+}
+
+#: GATE-ONLY TERMS ROWS: decisions for feeds that are not alt_proxies sources (so they stay out
+#: of TERMS, whose keys are exactly this organ's sources) but are fetched by another organ
+#: through `terms_gate` -- here the asia collector's rows, named by their `terms_ref`. Same
+#: vocabulary, same fail-closed rule, same evidence shape.
+_KEYED = "a keyed fetch sends a credential, so it waits on a quoted permitting clause"
+GATE_TERMS: dict[str, tuple[str, str]] = {
+    "kr_krx_market_data": ("refused", "KRX OPEN API terms Art. 6(2) non-commercial only, "
+                           "Art. 11(2) no provision to third parties"),
+    "hk_hkex_stock_connect": ("refused", "HKEX Terms of Use: no systematic retrieval, no text "
+                              "or data mining or web scraping"),
+    "asia_baidu_index": ("refused", "Baidu Index is read only through a logged-in account "
+                         "cookie: a private session credential, outside lawful public access"),
+    "asia_tushare": ("to_confirm", "TuShare Pro: the user agreement was not readable (the "
+                     "pricing page names it but does not carry it); " + _KEYED),
+    "asia_collective2": ("to_confirm", "Collective2 API terms not read; " + _KEYED),
+    "asia_darwinex": ("to_confirm", "Darwinex API terms not read; " + _KEYED),
+    "asia_banxico_series": ("to_confirm", "Banxico SIE API terms page not readable (404 / "
+                            "empty to the reader); " + _KEYED),
+    "asia_eia_energy": ("confirmed", "EIA copyrights and reuse: US government publications "
+                        "are public domain; data may be used and distributed"),
+    "asia_nasa_firms": ("confirmed", "NASA Earth science data policy: available fully, "
+                        "openly and without restrictions, including corporate use"),
+}
+GATE_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    "kr_krx_market_data": KR_HK_TERMS_EVIDENCE["kr_krx_market_data"],
+    "hk_hkex_stock_connect": KR_HK_TERMS_EVIDENCE["hk_hkex_stock_connect"],
+    "asia_baidu_index": {
+        "terms_url": "https://index.baidu.com/",
+        "terms_quote": ("(the registry row authenticates with BAIDU_INDEX_COOKIE, a logged-in "
+                        "session cookie; no public, unauthenticated route exists)"),
+        "decision": "refused", "checked_at": _CHK_PLANES},
+    "asia_tushare": {
+        "terms_url": "https://tushare.pro/document/1?doc_id=290",
+        "terms_quote": ("(not a terms page: the permissions/pricing table links a separate "
+                        "User Agreement and Service Agreement, which were not read)"),
+        "decision": "to_confirm", "checked_at": _CHK_PLANES},
+    "asia_collective2": {"terms_url": "https://api.collective2.com/",
+                         "terms_quote": "(not read)", "decision": "to_confirm",
+                         "checked_at": _CHK_PLANES},
+    "asia_darwinex": {"terms_url": "https://api.darwinex.com/",
+                      "terms_quote": "(not read)", "decision": "to_confirm",
+                      "checked_at": _CHK_PLANES},
+    "asia_banxico_series": {
+        "terms_url": "https://www.banxico.org.mx/SieAPIRest/service/v1/?locale=en",
+        "terms_quote": ("(not readable: the API landing page returned no text to the reader and "
+                        "/SieAPIRest/service/v1/doc/terminosUso returned 404)"),
+        "decision": "to_confirm", "checked_at": _CHK_PLANES},
+    "asia_eia_energy": {
+        "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+        "terms_quote": ("U.S. government publications are in the public domain and are not "
+                        "subject to copyright protection. / You may use and/or distribute any "
+                        "of our data, files, databases, reports, graphs, charts, and other "
+                        "information products that are on our website or that you receive "
+                        "through our email distribution service."),
+        "attribution": "Source: U.S. Energy Information Administration (<publication date>)",
+        "decision": "confirmed", "checked_at": _CHK_PLANES},
+    "asia_nasa_firms": {
+        "terms_url": ("https://www.earthdata.nasa.gov/learn/articles/"
+                      "nasa-earth-science-data-yours-use-fully-and-without-restrictions"),
+        "terms_quote": ("NASA's data policy ensures that all NASA data are available fully, "
+                        "openly, and without restrictions. / These data are not just for "
+                        "individual use, but also are freely available for corporate use as "
+                        "well."),
+        "decision": "confirmed", "checked_at": _CHK_PLANES},
+}
+
+
+def terms_gate(ref_or_url: str) -> tuple[str, str]:
+    """(state, why) for a TERMS id or a URL. `confirmed` / `to_confirm` / `refused` for a governed
+    id or host, `ungoverned` for a URL on no governed host. FAIL CLOSED: an id this table does not
+    know is `to_confirm`, never permission."""
+    ref = str(ref_or_url or "")
+    if "://" in ref or ref.startswith("//"):
+        host = urllib.parse.urlsplit(ref if "://" in ref else "https:" + ref).netloc.lower()
+        host = host.split(":")[0]
+        sid = next((v for k, v in TERMS_HOSTS.items() if host == k or host.endswith("." + k)),
+                   None)
+        if sid is None:
+            return "ungoverned", ""
+        ref = sid
+    state, why = TERMS.get(ref) or GATE_TERMS.get(
+        ref, ("to_confirm", f"{ref}: no terms row -- fail closed"))
+    ev = TERMS_EVIDENCE.get(ref) or GATE_TERMS_EVIDENCE.get(ref) or {}
+    if ev.get("terms_url"):
+        why = f"{why} [{ev['terms_url']}, checked {ev.get('checked_at', '?')}]"
+    return state, why
+
+
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
                 for s in (*SOURCES, *SUBSTITUTE_SOURCES, *KR_HK_PLANE_SOURCES,
                           *JP_PLANE_SOURCES))
@@ -3484,7 +3688,12 @@ SUBSTITUTED_BY: dict[str, tuple[str, ...]] = {
 }
 #: Blocked sources with NO verified lawful substitute, and why (each has a box action queued in
 #: /mnt/project-files/patches/DESKTOP_PASS2_STATUS.md).
+_ECOS_NO_SUB = ("the BOK ECOS terms of use could not be read or quoted (2026-10-06), so the row "
+                "is fenced to_confirm; no other free source publishes the same BOK series under "
+                "quoted reuse terms. Box action: read the ECOS 이용약관 and quote the clause")
 NO_SUBSTITUTE: dict[str, str] = {
+    **dict.fromkeys(("kr_bok_card_spend", "kr_ecos_base_rate", "kr_ecos_call_rate",
+                     "kr_ecos_fx_reserves", "kr_ecos_export_prices"), _ECOS_NO_SUB),
     "in_npci_upi": ("RBI payment-system indicators carry '© Reserve Bank of India. All Rights "
                     "Reserved' and no reuse grant; data.gov.in (GODL) pages are robots-disallowed "
                     "to the authoring fetcher, so no licence text could be read"),
@@ -3701,13 +3910,20 @@ def _atomic(p: Path, doc: Any) -> None:
 
 def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
                    seen_at: datetime) -> dict[str, int]:
-    """Append-only: a key's FIRST value and first-seen instant never change; a different later
-    value is recorded as a revision beside it with the instant it was seen."""
+    """Append-only: a key's FIRST value and first-seen instant never change; every different
+    later value is APPENDED to the row's `vintages` as its own vintage, stamped with the instant
+    it was seen (its knowable_at). `value_last` / `revision_time` / `n_revisions` summarise the
+    newest vintage for older readers; nothing is ever overwritten in `vintages`."""
     added = revised = 0
     stamp = seen_at.isoformat(timespec="seconds")
+    cal = getattr(src.rule, "calendar", None)
     for o in obs:
         k = f"{o.series}|{o.period.isoformat()}"
         rule_at = src.rule(o.period)
+        basis = "release_rule"
+        if cal and not release_calendar_known(cal, rule_at.year) and rule_at < seen_at:
+            # No holiday calendar for that year here: the honest floor is the instant we saw it.
+            rule_at, basis = seen_at, "first_seen_no_calendar"
         pub = o.published_at
         # A page stamp far after the period is a LATER document quoting an old value (a release
         # citing last year's figure), not that value's release: the calendar rule governs it.
@@ -3719,20 +3935,98 @@ def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
                         "value_first": o.value, "value_last": o.value,
                         "first_seen_at": stamp, "last_seen_at": stamp,
                         "published_time": (pub or rule_at).isoformat(timespec="seconds"),
-                        "published_basis": "page" if pub else "release_rule",
-                        "revision_time": None, "n_revisions": 0}
+                        "published_basis": "page" if pub else basis,
+                        "revision_time": None, "n_revisions": 0, "vintages": []}
             added += 1
             continue
         row["last_seen_at"] = stamp
         if pub is not None and row.get("published_basis") != "page":
             row["published_time"] = pub.isoformat(timespec="seconds")
             row["published_basis"] = "page"
+        elif row.get("published_basis") == "release_rule" and cal:
+            # A row stamped before its rule learned the calendar is moved LATER, never earlier.
+            old_t = _t(row.get("published_time"))
+            if old_t is not None and rule_at > old_t and basis == "release_rule":
+                row["published_time"] = rule_at.isoformat(timespec="seconds")
         if not math.isclose(float(row["value_last"]), o.value, rel_tol=1e-9, abs_tol=1e-12):
+            vins = row.get("vintages")
+            if not isinstance(vins, list):
+                vins = row["vintages"] = _legacy_vintages(row)
+            vins.append({"value": o.value, "seen_at": stamp})
             row["value_last"] = o.value
             row["revision_time"] = stamp
             row["n_revisions"] = int(row.get("n_revisions") or 0) + 1
             revised += 1
     return {"added": added, "revised": revised}
+
+
+def _legacy_vintages(row: dict[str, Any]) -> list[dict[str, Any]]:
+    """A row written before `vintages` existed kept only its LAST revision: that one is
+    recovered (stamped at its own revision_time, flagged reconstructed); any between are lost."""
+    if row.get("revision_time") and row.get("value_last") is not None:
+        return [{"value": row["value_last"], "seen_at": row["revision_time"],
+                 "reconstructed": True}]
+    return []
+
+
+def row_vintages(row: dict[str, Any]) -> list[dict[str, Any]]:
+    """The revision vintages of one stored row, oldest first (the first print is not one)."""
+    vins = row.get("vintages")
+    if not isinstance(vins, list):
+        vins = _legacy_vintages(row)
+    return sorted((v for v in vins if isinstance(v, dict) and v.get("seen_at")
+                   and v.get("value") is not None), key=lambda v: str(v["seen_at"]))
+
+
+def revision_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    """EVERY REVISION IS ITS OWN VINTAGE (audit of PR #239, 2026-10-06). Per series, one point per
+    revision vintage, knowable ONLY from the instant that vintage was first seen: `knowable_at` =
+    `available_time` = its `received_at`. `revision_delta` is that vintage's value minus the
+    PREVIOUS vintage's (the first print for the first revision); `revision_of` names the
+    previous vintage's id. A revision is never put on the first print's stamp.
+
+    This is the hook for the sensor ledger (PR #208): the asia sensor adapter maps these vintage
+    rows onto it; this organ keeps them in its own vintage store and writes no second store."""
+    out: dict[str, list[dict[str, Any]]] = {}
+    for row in store.values():
+        if not isinstance(row, dict) or not row.get("series"):
+            continue
+        vins = row_vintages(row)
+        if not vins:
+            continue
+        name = str(row["series"])
+        prev_val = float(row["value_first"])
+        prev_id = _vintage(src.id, row.get("first_seen_at"), row["value_first"])
+        for n, v in enumerate(vins, start=1):
+            seen = str(v["seen_at"])
+            vid = _vintage(src.id, seen, v["value"])
+            out.setdefault(name, []).append({
+                "d": str(row["period"]), "event_time": str(row["period"]),
+                "available_time": seen, "knowable_at": seen, "received_at": seen,
+                "first_seen_at": seen, "retrieval_time": seen, "revision_time": seen,
+                "published_time": seen, "publication_time": str(row.get("published_time")),
+                "vintage_id": vid, "vintage_n": n, "revision_of": prev_id,
+                "reconstructed": bool(v.get("reconstructed")), "pit_quality": "live",
+                "value": v["value"],
+                "revision_delta": round(float(v["value"]) - prev_val, 6),
+                "source_id": src.id, "metric": name})
+            prev_val, prev_id = float(v["value"]), vid
+    for pts in out.values():
+        pts.sort(key=lambda p: (p["available_time"], p["d"]))
+    return out
+
+
+def as_of(points: dict[str, list[dict[str, Any]]], t: datetime
+          ) -> dict[str, list[dict[str, Any]]]:
+    """Only the points knowable at `t` (knowable_at, else available_time, <= t)."""
+    out: dict[str, list[dict[str, Any]]] = {}
+    for name, pts in points.items():
+        keep = [p for p in pts
+                if (k := _t(p.get("knowable_at") or p.get("available_time"))) is not None
+                and k <= t]
+        if keep:
+            out[name] = keep
+    return out
 
 
 # ============================================================================ features
@@ -3843,7 +4137,7 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                 "published_basis": r.get("published_basis"),
                 "first_seen_at": r.get("first_seen_at"),
                 "retrieval_time": r.get("first_seen_at"),
-                "revision_time": r.get("revision_time"),
+                "revision_time": None,                 # the first print; see revision_points
                 "vintage_id": _vintage(src.id, r.get("first_seen_at"), r["value_first"]),
                 "pit_quality": quality,
                 "value": r["value_first"],
@@ -3852,9 +4146,9 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                 "surprise_z": None if z is None else round(z, 4),
                 "delta": None if delta is None else round(delta, 6),
                 "acceleration": None if accel is None else round(accel, 6),
-                "revision_delta": (round(float(r["value_last"]) - float(r["value_first"]), 6)
-                                   if r.get("revision_time") and r.get("value_last") is not None
-                                   else None),
+                # The FIRST print revises nothing: a later revision is its own vintage, stamped
+                # at its own first-seen instant, in `revision_points` -- never on this stamp.
+                "revision_delta": None,
                 # MANDATE 2026-10-06 s2.5 names, beside the desk's own (same values, never a
                 # second clock): the sensor ledger and its adapter read these verbatim.
                 "source_id": src.id, "metric": name,
@@ -3864,8 +4158,7 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                 "expected_value": None if exp is None else round(exp, 6),
                 "raw_surprise": None if surprise is None else round(surprise, 6),
                 "percentile": None if pct is None else round(pct, 4),
-                "revision_of": (_vintage(src.id, r.get("first_seen_at"), r["value_first"])
-                                if r.get("revision_time") else None)})
+                "revision_of": None})
         out[name] = pts
     # FIRMS: a total across the declared footprints, per day, from the per-cluster counts.
     if src.id == "cn_firms_industrial":
@@ -4721,6 +5014,8 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                 _atomic(paths.axes / f"alt_{src.id}.json", axis_doc(src, pts, now))
                 rec["lake_series"] = write_lake_series(paths, src, pts)
         rec["series"] = {k: len(v) for k, v in sorted(pts.items())}
+        revs = revision_points(src, store) if store else {}
+        rec["revision_vintages"] = {k: len(v) for k, v in sorted(revs.items())}
         records[src.id] = rec
     gains = gain_tests(paths, points_by_source) if points_by_source else {}
     live = dict(points_by_source) if fixtures is None else {}
