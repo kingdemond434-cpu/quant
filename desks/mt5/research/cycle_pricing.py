@@ -74,6 +74,12 @@ BANDIT = R / "RESEARCH_BANDIT.json"
 POLICY = DESK / "data" / "compute_policy.json"
 LEDGER = DESK / "data" / "compute_ledger.jsonl"
 OUT = R / "CYCLE_PRICING.json"
+#: METHOD COMPETITION'S WEIGHTS (Tier S audit AC13 + I12). `tier_s.organ_steer` scores the arena,
+#: the Red Queen's adopted scheduler champion, the researcher market and the meta-benchmark as a
+#: tournament with a seeded random holdout, and publishes per-leg weights here; `build_plan`
+#: multiplies each leg's price score by its weight. Held-out legs carry 1.0 (the prior allocation).
+STEER = R / "tier_s" / "SCHEDULER_STEER.json"
+STEER_MAX_AGE_H = 3.0
 
 #: THE SCOUT FLOOR AND THE WINNER'S CEILING. `FLOOR` is the fraction of its base budget the
 #: lowest-priced leg still gets; `CEIL` the multiple the best-priced leg may reach. Both are
@@ -319,6 +325,35 @@ def _researcher_prices(max_age_h: float = 6.0) -> dict[str, float]:
             and not in_control(str(k), "market")}
 
 
+def _steer_weights(max_age_h: float = STEER_MAX_AGE_H) -> tuple[dict[str, float], str]:
+    """({leg: weight}, why) from the Tier S scheduler tournament, or ({}, why).
+
+    TWO-SIDED, BOUNDED, AND NEVER A CUT. A weight is in [0.5, 1.5] and the tournament renormalises
+    them to mean 1.0; here it multiplies the leg's rank SCORE, so a leg weighted down runs later and
+    asks for less spare, while the FLOOR (par) and the never-reduced total below still hold. A
+    stale or absent artifact, or one whose holdout comparison withdrew the steer, moves nothing."""
+    doc = _read(STEER)
+    if not doc:
+        return {}, "SCHEDULER_STEER.json absent: the tournament has not run"
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_utc")))
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=UTC)
+        age_h = (datetime.now(UTC) - at).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        return {}, "SCHEDULER_STEER.json carries no readable generated_utc"
+    if age_h > max_age_h:
+        return {}, f"SCHEDULER_STEER.json is {age_h:.1f}h old"
+    if doc.get("withdrawn"):
+        return {}, f"steer withdrawn by its holdout comparison: {str(doc.get('why'))[:100]}"
+    raw = doc.get("weights")
+    w: dict[str, Any] = raw if isinstance(raw, dict) else {}
+    out = {str(k): max(0.5, min(1.5, float(v))) for k, v in w.items()
+           if isinstance(v, (int, float)) and not isinstance(v, bool)}
+    moved = sum(1 for v in out.values() if v != 1.0)
+    return out, f"{moved} leg(s) weighted for hour {doc.get('hour')}"
+
+
 def _factory_prices() -> tuple[dict[str, float], str]:
     """{leg: yield score} from the factory contracts (Tier-1 #11), or {} and why. The score is
     the mean percentile of a producer's measured per-compute-hour yields -- unique cells,
@@ -469,6 +504,19 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
         if not v["priced_by"]:
             v["score"] = round(median, 6)
             v["priced_by"] = ["unpriced:median"]
+    # METHOD COMPETITION MOVES THE HOUR (AC13 / I12). The tournament's per-leg weight multiplies
+    # the score AFTER the median anchor is fixed, so a weighted-up leg climbs above the median
+    # (more spare, earlier in the order) and a weighted-down one falls below it (later, no spare);
+    # the factor's par floor below means no leg is cut. A held-out leg's weight is 1.0.
+    steer, steer_why = _steer_weights()
+    for leg, v in legs.items():
+        w = steer.get(leg)
+        if w is None or w == 1.0:
+            continue
+        v["steer_weight"] = w
+        v["unsteered_score"] = v["score"]
+        v["score"] = round(max(0.0, min(1.0, float(v["score"]) * w)), 6)
+        v["priced_by"] = [*v["priced_by"], "scheduler_steer"]
 
     # THE FACTOR: a rank score in [0,1] mapped onto [FLOOR, CEIL], anchored at the median
     # (median score -> 1.0x). With FLOOR = 1.0 the below-median branch is the identity: a
@@ -538,7 +586,8 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
                     "compute_policy_applied": policy_applied,
                     "evig_acquisition": bool(evig), "evig_why": evig_why,
                     "factory_contracts": bool(fac), "factory_why": fac_why,
-                    "alpha_rank": bool(ar), "alpha_rank_why": ar_why},
+                    "alpha_rank": bool(ar), "alpha_rank_why": ar_why,
+                    "scheduler_steer": bool(steer), "scheduler_steer_why": steer_why},
         "spare": spare,
         "spare_granted_s": sum(int(v["extra_s"]) for v in legs.values()),
         "department_grant_ratio": {d: round(r, 4) for d, r in sorted(grant_ratio.items())},

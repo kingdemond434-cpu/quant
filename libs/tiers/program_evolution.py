@@ -322,6 +322,16 @@ def _allocate(g: Genome, past: Sequence[tuple[int, Mapping[str, Sequence[int]]]]
     return {a: (1 - f) * w[a] + f / len(arms) for a in arms}
 
 
+def current_split(g: Genome, days: Mapping[str, Mapping[str, Sequence[int]]]) -> dict[str, float]:
+    """The split this program would spend TODAY, decided from every judged day so far -- what an
+    adopted scheduler champion hands the real scheduler (`libs/tiers/scheduler_tournament`)."""
+    order = sorted(days)
+    arms = sorted({a for d in days.values() for a in d})
+    if len(arms) < 2 or str(g.get("rule")) == "as_spent":
+        return {}
+    return _allocate(g, [(i, days[d]) for i, d in enumerate(order)], arms, len(order))
+
+
 def bandit_score(g: Genome, days: Mapping[str, Mapping[str, Sequence[int]]], lo_frac: float,
                  hi_frac: float) -> dict[str, Any]:
     """Certified per judged hypothesis the program's daily split would have bought."""

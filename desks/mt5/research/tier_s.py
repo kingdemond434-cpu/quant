@@ -1262,6 +1262,14 @@ def organ_red_queen() -> dict[str, Any]:
                                  "champion": champ, "champion_heldout": held.get("fitness"),
                                  "incumbent_heldout": inc.get("fitness"), "heldout_lift": lift,
                                  "beats_incumbent_heldout": lift is not None and lift > 0}
+            # AC13: AN ADOPTED CHAMPION'S SPLIT REACHES THE REAL SCHEDULER. The split it would
+            # spend today over producers is published here and `organ_steer` folds it onto legs
+            # as the red_queen contestant; a champion that did not beat the incumbent, or a
+            # suspended Red Queen, publishes no split and so moves nothing.
+            if lift is not None and lift > 0 and not authority.suspended("red_queen"):
+                arch["scheduler"]["adopted_split"] = {
+                    k: round(float(v), 6)
+                    for k, v in pe.current_split(champ, data["scheduler"]).items()}
         else:
             arch["scheduler"] = {"status": "UNMEASURED",
                                  "why": "no scheduler champion yet (S05 evolves it)"
@@ -2646,6 +2654,184 @@ def organ_market() -> dict[str, Any]:
                        "blinding_runtime_violations": rt["violations"],
                        "blinding_runtime_output_violators": len(rt["output_violators"]),
                        "blinding_breach": blind.get("breach")}}
+
+
+#: AC13 / I12: the arena's per-arm verdicts (libs/research/arena.py, its own hourly leg)
+ARM_VERDICTS = REPORTS / "ARM_VERDICTS.json"
+#: the tournament's artifact: written by `_run("scheduler_steer", ...)`, READ by
+#: research/cycle_pricing.py build_plan as per-leg weights on the hour's price scores
+SCHEDULER_STEER = OUT_DIR / "SCHEDULER_STEER.json"
+#: an input older than this proposes nothing (a stale verdict is no verdict)
+STEER_INPUT_MAX_AGE_H = 6.0
+
+
+def _fresh(doc: Mapping[str, Any], *keys: str, max_age_h: float = STEER_INPUT_MAX_AGE_H) -> bool:
+    for k in keys:
+        t = replay.parse_t(doc.get(k))
+        if t is not None:
+            return (NOW - t).total_seconds() <= max_age_h * 3600.0
+    return False
+
+
+def _steer_outcomes(pending: list[dict[str, Any]], producer_leg: Mapping[str, str | None]
+                    ) -> None:
+    """Fill `outcomes` on every assignment whose hour has elapsed: per leg, NOVEL hypotheses born
+    (a (symbol, family) pair no verdict had judged before the window opened) per CPU-hour the leg
+    burned in that window. A leg that burned no CPU there has no outcome -- unmeasured, never 0."""
+    if not pending:
+        return
+    windows = []
+    for a in pending:
+        t0 = replay.parse_t(a.get("at"))
+        if t0 is not None:
+            windows.append((a, t0, t0 + timedelta(hours=1)))
+    if not windows:
+        return
+    lo = min(w[1] for w in windows)
+    first_judged: dict[str, datetime] = {}
+    for pair, rows in _gate_by_symfam().items():
+        ts = [t for t in (replay.parse_t(at) for at, _p in rows) if t is not None]
+        if ts:
+            first_judged[pair] = min(ts)
+    legs_all = {lg for a, _s, _e in windows for lg in (a.get("legs") or {})}
+    legs_all |= {lg for a, _s, _e in windows for t in (a.get("tilts") or {}).values()
+                 for lg in (t or {})}
+    births: list[tuple[datetime, str, str]] = []
+    for r in _jsonl(HGRAPH, 400_000):
+        if r.get("fate") not in (None, "", "BORN"):
+            continue
+        t = replay.parse_t(r.get("at"))
+        if t is None or t < lo:
+            continue
+        pr = _producer(r.get("source"))
+        leg = producer_leg.get(pr) or _leg_of(pr, legs_all)
+        if leg:
+            births.append((t, leg, f"{r.get('symbol')}.{r.get('family')}"))
+    cpu: list[tuple[datetime, str, float]] = []
+    for row in _jsonl(COMPUTE, 200_000):
+        name = str(row.get("run") or "")
+        if name not in legs_all:
+            continue
+        t = replay.parse_t(row.get("at"))
+        sec = row.get("cpu_s") or row.get("wall_s") or row.get("seconds")
+        if t is not None and t >= lo and isinstance(sec, (int, float)):
+            cpu.append((t, name, float(sec)))
+    for a, s, e in windows:
+        sec: dict[str, float] = defaultdict(float)
+        for t, name, v in cpu:
+            if s <= t < e:
+                sec[name] += v
+        nov: Counter[str] = Counter()
+        for t, leg, pair in births:
+            if s <= t < e:
+                fj = first_judged.get(pair)
+                nov[leg] += int(fj is None or fj >= s)
+        a["outcomes"] = {lg: round(nov[lg] / (sec[lg] / 3600.0), 6)
+                         for lg in sorted(sec) if sec[lg] >= 1.0}
+        a["scored_at"] = NOW.isoformat()
+
+
+def organ_steer() -> dict[str, Any]:
+    """AC13 + I12: method competition WRITES the real scheduler's weights.
+
+    Four contestants propose per-leg tilts -- the arena's arm verdicts, the Red Queen's ADOPTED
+    scheduler champion, the researcher market's leg prices and the sealed meta-benchmark's immune
+    trend -- a suspended organ's contestant is dropped, and the rest are weighted by a tournament
+    scored on what the legs went on to realise (`libs/tiers/scheduler_tournament`). A seeded
+    random slice of legs stays on the prior allocation each hour as the control, and the
+    holdout-versus-treated comparison is published here. `cycle_pricing.build_plan` reads the
+    `weights` of this report. Research compute only: nothing here touches capital."""
+    from libs.tiers import scheduler_tournament as tour
+    hour = NOW.strftime("%Y-%m-%dT%H")
+    inputs: dict[str, str] = {}
+    proposals: dict[str, dict[str, float]] = {}
+    # arena: per-arm LEADS / TRAILS, onto the legs that serve those arms
+    arena_doc = _read(ARM_VERDICTS) or {}
+    leg_arms: dict[str, tuple[str, ...]] = {}
+    try:
+        import research_budget  # the map is the budget's; never restated
+        leg_arms = dict(research_budget.LEG_ARMS)
+    except Exception as exc:
+        inputs["arena"] = f"research_budget.LEG_ARMS unavailable: {exc}"
+    if isinstance(arena_doc, dict) and _fresh(arena_doc, "at"):
+        proposals["arena"] = tour.arena_tilts(arena_doc.get("arms") or {}, leg_arms)
+        inputs.setdefault("arena", f"ARM_VERDICTS.json at {arena_doc.get('at')}, leader "
+                                   f"{arena_doc.get('leader')}, trails {arena_doc.get('trails')}")
+    else:
+        proposals["arena"] = {}
+        inputs.setdefault("arena", "ARM_VERDICTS.json absent or stale: no proposal")
+    # the market's producer -> leg map is the join every producer-level contestant needs
+    prices = _read(STATE / "researcher_prices.json") or {}
+    prices = prices if isinstance(prices, dict) else {}
+    producer_leg = {str(n): (r.get("leg") or None)
+                    for n, r in (prices.get("researchers") or {}).items() if isinstance(r, dict)}
+    # red_queen: the adopted scheduler champion's split (published only when it beat the
+    # incumbent on held-out days and the Red Queen is not suspended)
+    rq = _read(OUT_DIR / "RED_QUEEN.json") or {}
+    sched = (((rq.get("architecture_challengers") or {}).get("scheduler") or {})
+             if isinstance(rq, dict) else {})
+    split = sched.get("adopted_split") if isinstance(sched, dict) else None
+    if isinstance(split, dict) and split and _fresh(rq, "generated_utc"):
+        proposals["red_queen"] = tour.red_queen_tilts(split, producer_leg)
+        inputs["red_queen"] = (f"scheduler champion adopted (held-out lift "
+                               f"{sched.get('heldout_lift')}), split over {len(split)} producers")
+    else:
+        proposals["red_queen"] = {}
+        inputs["red_queen"] = ("no adopted scheduler champion: "
+                               f"{(sched or {}).get('why') or 'did not beat the incumbent'}")
+    # researcher_market: per-leg prices
+    if _fresh(prices, "generated_utc"):
+        proposals["researcher_market"] = tour.market_tilts(prices.get("leg_prices") or {})
+        inputs["researcher_market"] = f"{len(prices.get('leg_prices') or {})} leg price(s)"
+    else:
+        proposals["researcher_market"] = {}
+        inputs["researcher_market"] = "researcher_prices.json absent or stale: no proposal"
+    # meta_benchmark: the sealed suite's immune trend tilts the validation department
+    hist = [h.get("immune_score") for h in (_state("immune").get("history") or [])
+            if isinstance(h, dict)]
+    try:
+        import hourly_cycle
+        vlegs = sorted(k for k, v in hourly_cycle.LEG_DEPARTMENT.items() if v == "validate")
+    except Exception as exc:
+        vlegs, inputs["meta_benchmark_legs"] = [], f"hourly_cycle unavailable: {exc}"
+    cur = hist[-1] if hist else None
+    proposals["meta_benchmark"] = tour.meta_benchmark_tilts(
+        [h for h in hist[-49:-1] if isinstance(h, (int, float))],
+        float(cur) if isinstance(cur, (int, float)) else None, vlegs)
+    inputs["meta_benchmark"] = (f"immune score {cur} against {len(hist[-49:-1])} prior "
+                                f"reading(s); {len(vlegs)} validation leg(s)")
+    suspended = {c: authority.suspended(tour.CONTESTANT_ORGAN[c]) for c in tour.CONTESTANTS}
+    # the tournament's memory: past assignments, their tilts and (once elapsed) their outcomes
+    st = _state("scheduler_steer")
+    keep_after = NOW - timedelta(hours=tour.WINDOW_H)
+    assignments = [a for a in (st.get("assignments") or []) if isinstance(a, dict)
+                   and (replay.parse_t(a.get("at")) or NOW) >= keep_after and a.get("hour") != hour]
+    pending = [a for a in assignments if a.get("outcomes") is None
+               and (replay.parse_t(a.get("at")) or NOW) + timedelta(hours=1) <= NOW]
+    _steer_outcomes(pending, producer_leg)
+    doc = tour.steer(proposals, suspended, assignments, hour)
+    assignments.append({"hour": hour, "at": NOW.isoformat(),
+                        "legs": {lg: {k: r[k] for k in ("due", "applied", "arm")}
+                                 for lg, r in doc["legs"].items()},
+                        "tilts": {c: p for c, p in proposals.items()
+                                  if p and not suspended.get(c)},
+                        "outcomes": None})
+    _save_state("scheduler_steer", {"assignments": assignments, "at": NOW.isoformat()})
+    cmp_ = doc["comparison"]
+    scored = sum(1 for a in assignments if isinstance(a.get("outcomes"), dict))
+    return {**doc, "inputs": inputs, "assignments_scored": scored,
+            "consumer": "research/cycle_pricing.py build_plan (leg price scores; compute only)",
+            "metric": {"steered_legs": len(doc["weights"]),
+                       "moved_legs": sum(1 for w in doc["weights"].values()
+                                         if abs(w - 1.0) > 1e-9),
+                       "holdout_legs": len(doc["holdout"]),
+                       "contestants_with_authority": sum(
+                           1 for r in doc["contestants"].values()
+                           if float(r.get("authority") or 0.0) > 0),
+                       "holdout_verdict": cmp_["primary"],
+                       "holdout_delta": cmp_["up"].get("delta"),
+                       "assignments_scored": scored,
+                       "authoritative": 1.0 if doc["authoritative"] else 0.0}}
 
 
 #: the runtime window the market reads: a seat that stops carrying outcomes is re-admitted a day
@@ -4450,6 +4636,8 @@ def main(argv: list[str] | None = None) -> int:
         ("topology", organ_topology), ("qd", organ_qd), ("genomes", organ_genomes),
         ("grammar", organ_grammar), ("theory", organ_theory),
         ("predictions", organ_predictions), ("market", organ_market),
+        # after red_queen and market: it reads both of this pass's outputs
+        ("scheduler_steer", organ_steer),
         ("failure_memory", organ_failure_memory), ("formal", organ_formal),
         ("formal_claim", organ_formal_claim), ("chaos", organ_chaos),
         ("replay", organ_replay), ("data_os", organ_data_os),
