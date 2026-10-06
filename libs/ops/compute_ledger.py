@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import sys
 import time
 from collections.abc import Iterator
@@ -175,6 +176,9 @@ def close_run(run: Run, *, outcome: str = "ok", inputs: list[Path] | None = None
         "started_at": datetime.fromtimestamp(started, tz=UTC).isoformat(timespec="seconds"),
         "finished_at": finished.isoformat(timespec="seconds"),
         "commit_sha": commit_sha(),
+        # The ledger is tracked and travels; the host says whose run this was (see
+        # runtime_attestation.run_index -- another machine's run is not this machine's).
+        "host": socket.gethostname(),
         "config_hash": _config_hash(run),
         "input_hash": _sha256_files(inputs),
         "output_hash": _sha256_files(outputs),

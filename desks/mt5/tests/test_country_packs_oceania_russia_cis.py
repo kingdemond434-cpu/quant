@@ -417,7 +417,10 @@ def test_fringe_material_is_kept_and_no_scrape_sources_are_registered(code: str)
     assert coverage["low_weight_kept"], (
         f"{code}: no fringe or unreliable source is kept. A pack whose sources are all "
         f"authoritative has not looked at the retail or app ground")
-    assert coverage["machine_use_forbidden"], (
+    # LAWS §5e (2026-09-23): terms-restricted ground is REGISTERED by its access label and mined;
+    # machine_use_allowed=false is a deleted brake, so the label is what proves it was not omitted.
+    from libs.research.country_lab import registered_terms_ground
+    assert registered_terms_ground(mod.SOURCE_CLASSES), (
         f"{code}: no source is registered machine_use_allowed=False. Every country in this "
         f"region has paywalled or terms-restricted ground that must be named rather than omitted")
     for src in mod.SOURCE_CLASSES:

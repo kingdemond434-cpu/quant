@@ -26,6 +26,11 @@ from pathlib import Path
 
 import pytest
 
+# The Tier S door fails closed on absent verifier inputs; these promoter tests are not about
+# the door, so they run against fresh, clean verifier artifacts (desks/mt5/tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("fresh_tier_s_door")
+
+
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
 for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
@@ -300,7 +305,9 @@ def test_a_retirement_is_ledgered_with_the_promoters_own_reason(desk) -> None:
     obs = desk.observations()
     assert [o["door"] for o in obs] == ["PROMOTED", "RETIRED"]
     r = obs[1]
-    assert r["outcome"] == "LEDGERED" and r["from"] == "LIVE"
+    # retired FROM the row's status on that pass: the same pass's admission reading may already
+    # have parked an unallocated LIVE row at STANDBY (zero heat) before the retirement runs
+    assert r["outcome"] == "LEDGERED" and r["from"] in ("LIVE", "STANDBY")
     assert r["ledger_state_before"] == "DISCOVERED" and r["ledger_state_after"] == "RETIRED"
     assert r["reason"].startswith("roll20 exp") and r["evidence"]["forward_observations"] == "12"
     # the ledger file is real, loadable, and carries the reason, not the generic note

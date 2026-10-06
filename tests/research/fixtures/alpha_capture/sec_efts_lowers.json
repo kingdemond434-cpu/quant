@@ -1,0 +1,4 @@
+{"took": 30, "timed_out": false, "hits": {"total": {"value": 2, "relation": "eq"}, "hits": [
+  {"_id": "0000050863-24-000050:intc-pr.htm", "_source": {"ciks": ["0000050863"], "display_names": ["INTEL CORP  (INTC)  (CIK 0000050863)"], "file_date": "2024-09-24", "form": "8-K", "adsh": "0000050863-24-000050", "items": ["2.02"]}},
+  {"_id": "0000078003-24-000100:ex991.htm", "_source": {"ciks": ["0000078003"], "display_names": ["PFIZER INC  (PFE)  (CIK 0000078003)"], "file_date": "2024-09-25", "form": "8-K", "adsh": "0000078003-24-000100", "items": ["2.02"]}}
+]}}

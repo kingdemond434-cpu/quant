@@ -88,6 +88,13 @@ stats = [
     "statsmodels>=0.14,<1",
     "arch>=6.3,<8",
 ]
+# Free-stack sources (#129). Optional: libs/data/free_stack.py import-guards both and degrades.
+# sentiment_cn falls back to its declared lexicon when snownlp is absent (find_spec check), and
+# fetch_akshare_package falls back to fetch_akshare_direct, which reads the same public upstreams.
+freestack = [
+    "akshare>=1.16,<2",
+    "snownlp>=0.12.3,<1",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["libs", "app"]

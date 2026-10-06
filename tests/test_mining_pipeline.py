@@ -1006,3 +1006,12 @@ def test_archive_captures_config_urls_and_named_seats_on_the_same_site(tmp_path:
         == ("darwinex", "seat+site")
     assert pipe.attribute_source({"source": "miner:darwinex", "source_url":
                                   "https://youtube.com/watch?v=1"}, idx, seats) == ("", "")
+
+
+def test_a_lane_that_describes_its_uses_by_key_keeps_them() -> None:
+    """The free stack writes `uses: {direct: {...}, indirect: {...}, allocation: {...}}`; read
+    as a list it filtered to nothing and every free-stack source served no use."""
+    row = acq.normalise_row({"id": "x", "uses": {"direct": {"families": ["a"]}, "indirect": {},
+                                                  "allocation": {"organ": "o"}}},
+                            origin="t", defaults={"fetcher": "owned", "kind": "text"})
+    assert row is not None and row.uses == ["direct_cells", "allocation_intel"]

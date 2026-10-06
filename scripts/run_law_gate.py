@@ -309,6 +309,11 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # is fenced at zero so it cannot regress, while the 25 pre-existing DONATION findings stay
     # reported rather than dumped red into another lane (L1.43).
     ("check_bare_excepts.py", ("--file-writes-only",)),
+    # KNOWN BY DATE (2026-09-30): no research reader joins an external dataset by the date it
+    # describes without routing through its declared publication lag (data_os.PUBLICATION_LAGS).
+    # Portable -- it reads the code -- and a ratchet: today's offenders are the committed floor
+    # (docs/research/known_by_date_floor.json), only a NEW one fails, healed ones drop out.
+    ("check_known_by_date.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that

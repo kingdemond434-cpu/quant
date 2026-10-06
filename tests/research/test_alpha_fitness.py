@@ -184,9 +184,10 @@ def test_multiplicity_is_the_gauntlets_own_deflation() -> None:
     assert wider > got                                     # a wider haystack costs more
     assert af.multiplicity_term(1, variance_of_sharpes=0.25)[0] == 0.0
     measured, why = af.multiplicity_term(100, sharpes=[0.1, 0.5, -0.3, 0.9])
-    assert measured > 0 and ("dispersion" in why or "gate_policy" in why)
+    assert measured > 0 and ("dispersion" in why or "gate_policy" in why
+                             or "DSR_INPUTS" in why)
     got, why = af.multiplicity_term(100)
-    assert (got == 0.0 and "unmeasured" in why) or "gate_policy" in why
+    assert (got == 0.0 and "unmeasured" in why) or "gate_policy" in why or "DSR_INPUTS" in why
 
 
 # --------------------------------------------------------------------------- the vector

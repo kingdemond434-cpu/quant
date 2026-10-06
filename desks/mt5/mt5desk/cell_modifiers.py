@@ -34,7 +34,10 @@ built as something other than what it claims to be.
 from __future__ import annotations
 
 import inspect
+import operator
+from collections.abc import Callable
 from dataclasses import replace
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -62,6 +65,51 @@ CALENDAR_REGIMES = frozenset({"month_end", "quarter_end"})
 NO_OP_REGIMES = frozenset({"", "unconditional", "all", "any"})
 
 SIDE_MODES = frozenset({"", "follow", "revert", "long", "short"})
+
+#: THE ONE CONDITIONER FORM THAT IS APPLIED, NOT REFUSED (2026-09-30). A second information axis
+#: is measurable only when a point-in-time series stands behind it. `research/alt_proxies.py`
+#: writes such series under `data/lake/series/<file>.csv` in the lake's PIT envelope and names
+#: them `alt:<file>:<column>:<op>:<threshold>`. The series is read through
+#: `family_exogenous_conditioner.conditioner` -- the same loader, the same `available_time` join
+#: and the same publication-day lag that family already uses -- forward-filled onto the bars, and
+#: a signal survives only where the condition held AT ITS OWN BAR. Every other conditioner value
+#: ("carry", "macro", "positioning") has no series behind it and is refused exactly as before.
+ALT_CONDITIONER_PREFIX = "alt:"
+ALT_OPS: dict[str, Callable[[Any, Any], Any]] = {
+    "gt": operator.gt, "ge": operator.ge, "lt": operator.lt, "le": operator.le}
+_ALT_CACHE: dict[tuple[str, str, float], Any] = {}
+
+
+def alt_conditioner(value: Any) -> tuple[str, str, str, float] | None:
+    """`alt:<file>:<column>:<op>:<threshold>` -> (file, column, op, threshold), else None."""
+    text = str(value if value is not None else "").strip()
+    if not text.startswith(ALT_CONDITIONER_PREFIX):
+        return None
+    parts = text[len(ALT_CONDITIONER_PREFIX):].split(":")
+    if len(parts) != 4 or not parts[0] or not parts[1] or parts[2] not in ALT_OPS:
+        return None
+    if any(c in parts[0] for c in ("/", "\\", "..")):
+        return None
+    try:
+        thr = float(parts[3])
+    except ValueError:
+        return None
+    return parts[0], parts[1], parts[2], thr
+
+
+def _alt_series(file: str, column: str, root: Path | None = None) -> Any:
+    """The PIT conditioning series (lagged, on its availability clock), or None when absent."""
+    from mt5desk.family_exogenous_conditioner import SERIES_DIR, conditioner, series_path
+
+    path = series_path(file, root)
+    if path is None:
+        return None
+    key = (f"{root or SERIES_DIR}/{file}", column, path.stat().st_mtime)
+    if key not in _ALT_CACHE:
+        if len(_ALT_CACHE) > 64:
+            _ALT_CACHE.clear()
+        _ALT_CACHE[key] = conditioner(file, column, "raw", root=root)
+    return _ALT_CACHE[key]
 ENTRY_TIMINGS = frozenset({"", "instant", "delayed"})
 MARKET_STYLES = frozenset({"", "market"})
 
@@ -96,8 +144,13 @@ def refusal(mods: dict[str, Any]) -> str | None:
             return (f"{key}={mods[key]!r}: this family does not residualise its input, and "
                     "building it un-residualised would test the parent under the child's name")
     if "conditioner" in mods:
-        return (f"conditioner={mods['conditioner']!r}: no conditioning series is wired for a "
-                "second information axis, so the interaction cannot be measured")
+        spec = alt_conditioner(mods["conditioner"])
+        if spec is None:
+            return (f"conditioner={mods['conditioner']!r}: no conditioning series is wired for a "
+                    "second information axis, so the interaction cannot be measured")
+        if _alt_series(spec[0], spec[1]) is None:
+            return (f"conditioner={mods['conditioner']!r}: the series {spec[0]}.{spec[1]} is not "
+                    "on this box (UNMEASURED), so the interaction cannot be measured here")
     if "macro_axis" in mods or "macro_state" in mods:
         return (f"macro condition {mods.get('macro_axis')!r}={mods.get('macro_state')!r}: no "
                 "point-in-time macro state series is wired into the replay")
@@ -161,6 +214,9 @@ def apply(sigs: list, bars: pd.DataFrame, mods: dict[str, Any]) -> list:
     if regime in VOL_REGIMES or regime in CALENDAR_REGIMES:
         mask = _regime_mask(bars, regime)
         out = [s for s in out if bool(mask.get(s.time, False))]
+    spec = alt_conditioner(mods.get("conditioner")) if "conditioner" in mods else None
+    if spec is not None:
+        out = _alt_filter(out, bars, spec)
     side = _s(mods.get("side_mode"))
     if side == "revert":
         out = [f for f in (_flip(s, bars) for s in out) if f is not None]
@@ -179,3 +235,19 @@ def apply(sigs: list, bars: pd.DataFrame, mods: dict[str, Any]) -> list:
                 delayed.append(replace(s, time=bars.index[i + 1]))
         out = delayed
     return out
+
+
+def _alt_filter(sigs: list[Any], bars: pd.DataFrame, spec: tuple[str, str, str, float],
+                root: Path | None = None) -> list[Any]:
+    """Keep a signal only where the PIT series, as last known at its bar, meets the condition.
+    A bar before the series' first availability knows nothing and keeps nothing."""
+    series = _alt_series(spec[0], spec[1], root)
+    if series is None or len(series) == 0:
+        return []
+    try:
+        known = series.reindex(series.index.union(bars.index)).ffill().reindex(bars.index)
+    except (TypeError, ValueError):
+        return []
+    # A NaN (no value known yet) compares False under every operator, so it keeps nothing.
+    keep = ALT_OPS[spec[2]](known.astype(float), spec[3]).astype(bool)
+    return [s for s in sigs if bool(keep.get(s.time, False))]
