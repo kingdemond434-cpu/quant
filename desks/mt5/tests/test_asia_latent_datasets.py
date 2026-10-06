@@ -345,7 +345,8 @@ def test_a_passing_latent_cell_is_donated_with_the_whole_pass_charged(
     spec = mse.LATENT_BY_ID["asia_export"]
     ledgers = {spec.id: [{"level": 0.1}] * mse.MIN_CELL_VINTAGES}
     row = {"cell": "AUDUSD.exogenous_conditioner.latent_asia_export.level", "symbol": "AUDUSD",
-           "params": {"signal": "level", "side_when_high": 1}, "dataset": spec.id,
+           "params": {"source": "latent_asia_export", "signal": "level",
+                      "side_when_high": 1}, "dataset": spec.id,
            "t_gross": 9.0, "clears_cost": True, "n_independent": 400}
     monkeypatch.setattr(mse, "direct_latent_cells", lambda s, r, n: ([dict(row)], 7))
     monkeypatch.setattr(mse, "regime_children", lambda specs, root, state: ([], 0, [], {}))
