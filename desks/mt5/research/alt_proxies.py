@@ -262,7 +262,7 @@ def _closed_days(cal: str, year: int) -> frozenset[str] | None:
     days: set[str] = set()
     known = False
     with contextlib.suppress(Exception):
-        import holidays as _holidays  # optional dependency
+        import holidays as _holidays  # type: ignore[import-not-found,unused-ignore]
         for d in getattr(_holidays, cal)(years=year):
             days.add(d.isoformat())
         known = True
