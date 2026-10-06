@@ -74,3 +74,20 @@ def test_a_requested_key_is_parked_out_of_the_alert(tmp_path: Path) -> None:
     b = kn.build(reports=tmp_path, present=lambda n: n in every, requested=["ENTSOE_API_TOKEN"])
     assert [i["name"] for i in a["items"]] == ["ENTSOE_API_TOKEN"]
     assert b["items"] == [] and b["requested_waiting"] == ["ENTSOE_API_TOKEN"]
+
+
+def test_a_failed_build_writes_an_unmeasured_stub(tmp_path: Path,
+                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+    sys.path[:0] = [str(Path(__file__).resolve().parents[2] / "desks" / "mt5")]
+    from research import credential_coverage as cc
+
+    out = tmp_path / "KEYS_NEEDED.json"
+    out.write_text('{"digest": "stale", "items": [{"name": "OLD"}]}', "utf-8")
+    monkeypatch.setattr(cc, "REPORT", tmp_path / "CREDENTIAL_COVERAGE.json")
+    monkeypatch.setattr(kn, "OUT", out)
+    monkeypatch.setattr(kn, "write", lambda doc, path=out: path.write_text(json.dumps(doc)))
+    monkeypatch.setattr(kn, "build", lambda **_: (_ for _ in ()).throw(RuntimeError("x")))
+    assert cc.main([]) == 0
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["status"] == "UNMEASURED" and doc["items"] == []
