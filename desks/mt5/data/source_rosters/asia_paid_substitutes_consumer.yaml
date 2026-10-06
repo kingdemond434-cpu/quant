@@ -3,8 +3,9 @@
 # every row itself (fetcher: owned). Generated from alt_proxies.roster_file_rows()
 # (python desks/mt5/research/alt_proxies.py --write-rosters); regenerate rather than
 # hand-edit. status is as declared with no keys set; live yield is UNMEASURED except
-# where the status says otherwise. A BLOCKED+SUBSTITUTE:<ids> row is never fetched: its
-# terms block it and the named confirmed rows stand in for it.
+# where the status says otherwise. A terms-blocked row is never fetched. It reads
+# BLOCKED+SUBSTITUTE:<ids> only when a named confirmed row's correlation with it was
+# MEASURED >= 0.5 with n reported; else BLOCKED_NO_SUBSTITUTE:UNVERIFIED=<candidates>.
 sources:
 - id: gdelt_events_country
   name: 'GDELT 2.0 Events: country x day x theme tone panel'
@@ -236,7 +237,7 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: BLOCKED+SUBSTITUTE:cn_nbs_retail,hk_immd_passenger
+  status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=cn_nbs_retail,hk_immd_passenger
   terms: refused
   mechanism: the Golden Week and Spring Festival tallies (trips and spend, YoY) are the only same-week
     read of Chinese discretionary spending; spend PER TRIP is consumer confidence net of the travel-count
@@ -250,9 +251,16 @@ sources:
   failure_mode_hypothesis: fails when holiday length changes (the calendar is set by the State Council
     each year) and when official tallies are managed upward
   crowding_prior: medium
-  substituted_by:
-  - cn_nbs_retail
-  - hk_immd_passenger
+  substituted_by: []
+  substitute_candidates:
+  - substitute: cn_nbs_retail
+    verdict: UNVERIFIED
+    corr: UNMEASURED
+    n: UNMEASURED
+  - substitute: hk_immd_passenger
+    verdict: UNVERIFIED
+    corr: UNMEASURED
+    n: UNMEASURED
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
   owner: asia_gap_thread
@@ -274,7 +282,7 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: BLOCKED+SUBSTITUTE:in_dgi_iip_consumer
+  status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=in_dgi_iip_consumer
   terms: refused
   mechanism: UPI carries most Indian retail payments; its monthly value is a card-panel substitute for
     the whole economy, out on day one of the next month
@@ -287,8 +295,12 @@ sources:
   failure_mode_hypothesis: fails because structural adoption growth dominates YoY; a surprise is small
     against the trend and festivals shift it
   crowding_prior: low
-  substituted_by:
-  - in_dgi_iip_consumer
+  substituted_by: []
+  substitute_candidates:
+  - substitute: in_dgi_iip_consumer
+    verdict: UNVERIFIED
+    corr: UNMEASURED
+    n: UNMEASURED
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
   owner: asia_gap_thread
@@ -310,7 +322,7 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: BLOCKED+SUBSTITUTE:tr_tuik_retail
+  status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=tr_tuik_retail
   terms: refused
   mechanism: Turkish card spend in nominal lira is inflation plus demand; a hot print is pressure on the
     CBRT and the lira before CPI prints
@@ -323,8 +335,12 @@ sources:
   failure_mode_hypothesis: 'fails because nominal growth is mostly inflation: the surprise is dominated
     by CPI, not demand'
   crowding_prior: low
-  substituted_by:
-  - tr_tuik_retail
+  substituted_by: []
+  substitute_candidates:
+  - substitute: tr_tuik_retail
+    verdict: UNVERIFIED
+    corr: UNMEASURED
+    n: UNMEASURED
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
   owner: asia_gap_thread
@@ -346,7 +362,7 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: BLOCKED+SUBSTITUTE:br_bcb_payments
+  status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=br_bcb_payments
   terms: refused
   mechanism: 'Cielo''s acquirer data is Brazil''s card panel: deflated retail card sales YoY, out weeks
     before IBGE''s PMC retail survey'
@@ -359,8 +375,12 @@ sources:
   failure_mode_hypothesis: fails when calendar (working-day) effects and Black Friday timing dominate
     the month
   crowding_prior: low
-  substituted_by:
-  - br_bcb_payments
+  substituted_by: []
+  substitute_candidates:
+  - substitute: br_bcb_payments
+    verdict: UNVERIFIED
+    corr: UNMEASURED
+    n: UNMEASURED
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
   owner: asia_gap_thread
@@ -382,7 +402,7 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: BLOCKED+SUBSTITUTE:mx_inegi_emec
+  status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=mx_inegi_emec
   terms: refused
   mechanism: the retailers' association prints same-store sales two weeks after month end, a month before
     INEGI retail; Walmex dominates the panel
@@ -394,8 +414,12 @@ sources:
   - institutional
   failure_mode_hypothesis: fails around Easter and El Buen Fin timing shifts
   crowding_prior: low
-  substituted_by:
-  - mx_inegi_emec
+  substituted_by: []
+  substitute_candidates:
+  - substitute: mx_inegi_emec
+    verdict: UNVERIFIED
+    corr: UNMEASURED
+    n: UNMEASURED
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
   owner: asia_gap_thread
@@ -417,7 +441,7 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: BLOCKED+SUBSTITUTE:za_statssa_retail
+  status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=za_statssa_retail
   terms: to_confirm
   mechanism: the interbank clearing house's count and value of electronic transactions is South African
     activity read from the payments rail, weeks before Stats SA
@@ -429,8 +453,12 @@ sources:
   - physical_flow
   failure_mode_hypothesis: fails under load-shedding months and payday-calendar shifts
   crowding_prior: low
-  substituted_by:
-  - za_statssa_retail
+  substituted_by: []
+  substitute_candidates:
+  - substitute: za_statssa_retail
+    verdict: UNVERIFIED
+    corr: UNMEASURED
+    n: UNMEASURED
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
   owner: asia_gap_thread
@@ -557,7 +585,7 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: BLOCKED+SUBSTITUTE:hk_immd_passenger
+  status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=hk_immd_passenger
   terms: refused
   mechanism: China's national box office by day is discretionary spending read from the ticketing platform,
     weeks before NBS retail
@@ -569,8 +597,12 @@ sources:
   failure_mode_hypothesis: fails when release-slate timing (Spring Festival films) dominates, and when
     the dashboard's anti-scraping changes the response
   crowding_prior: low
-  substituted_by:
-  - hk_immd_passenger
+  substituted_by: []
+  substitute_candidates:
+  - substitute: hk_immd_passenger
+    verdict: UNVERIFIED
+    corr: UNMEASURED
+    n: UNMEASURED
   substitutes_for: foot-traffic / location panels (SafeGraph, Placer.ai)
   fetcher: owned
   owner: asia_gap_thread
@@ -592,7 +624,7 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: BLOCKED+SUBSTITUTE:hk_immd_passenger
+  status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=hk_immd_passenger
   terms: to_confirm
   mechanism: phone-location migration into China's tier-1 cities is the return-to-work and travel pulse
     after holidays, the location panel no Western vendor sells
@@ -605,8 +637,12 @@ sources:
   failure_mode_hypothesis: fails around the lunar calendar (Spring Festival moves each year) and when
     Baidu suspends the map, as it has before
   crowding_prior: low
-  substituted_by:
-  - hk_immd_passenger
+  substituted_by: []
+  substitute_candidates:
+  - substitute: hk_immd_passenger
+    verdict: UNVERIFIED
+    corr: UNMEASURED
+    n: UNMEASURED
   substitutes_for: foot-traffic / location panels (SafeGraph, Placer.ai)
   fetcher: owned
   owner: asia_gap_thread
@@ -628,7 +664,7 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: BLOCKED+SUBSTITUTE:kr_mof_container_teu,imf_portwatch_ports
+  status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=kr_mof_container_teu,imf_portwatch_ports
   terms: to_confirm
   mechanism: 'Busan is the world''s second transhipment hub: its monthly boxes are North Asian trade volume
     counted at the quay, the AIS/satellite port panel''s output as an official number'
@@ -640,9 +676,16 @@ sources:
   failure_mode_hypothesis: fails when transhipment re-routing (Red Sea, US tariffs) moves Busan's share
     rather than total trade
   crowding_prior: low
-  substituted_by:
-  - kr_mof_container_teu
-  - imf_portwatch_ports
+  substituted_by: []
+  substitute_candidates:
+  - substitute: kr_mof_container_teu
+    verdict: UNVERIFIED
+    corr: UNMEASURED
+    n: UNMEASURED
+  - substitute: imf_portwatch_ports
+    verdict: UNVERIFIED
+    corr: UNMEASURED
+    n: UNMEASURED
   substitutes_for: satellite / AIS activity panels (Orbital Insight, SpaceKnow)
   fetcher: owned
   owner: asia_gap_thread
@@ -697,7 +740,7 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: BLOCKED+SUBSTITUTE:imf_portwatch_ports
+  status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=imf_portwatch_ports
   terms: to_confirm
   mechanism: 'the transport ministry''s weekly national port tally is China''s trade volume a month before
     customs: the port-activity reading a satellite panel sells'
@@ -709,8 +752,12 @@ sources:
   - policy_driven
   failure_mode_hypothesis: fails around Spring Festival and typhoon port closures
   crowding_prior: low
-  substituted_by:
-  - imf_portwatch_ports
+  substituted_by: []
+  substitute_candidates:
+  - substitute: imf_portwatch_ports
+    verdict: UNVERIFIED
+    corr: UNMEASURED
+    n: UNMEASURED
   substitutes_for: satellite / AIS activity panels (Orbital Insight, SpaceKnow)
   fetcher: owned
   owner: asia_gap_thread
@@ -968,6 +1015,7 @@ sources:
   crowding_prior: low
   credit: 'Ministry of Statistics and Programme Implementation, Index of Industrial Production (use-based),
     data.gov.in. Published under the Government Open Data License - India: https://data.gov.in/government-open-data-license-india'
+  vintage: current
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
   owner: asia_gap_thread
@@ -990,8 +1038,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: UNCONFIGURED:ALT_STATSSA_RETAIL_URL
-  terms: confirmed
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   mechanism: the statistics office's monthly survey of retail sales at constant prices is South African
     household spending, the consumer half of what the payments clearing house's transaction index reads
     from the rail

@@ -379,7 +379,7 @@ def test_a_to_confirm_source_is_never_fetched(tmp_path: Path) -> None:
         if src.terms == "confirmed":
             continue
         assert A.status_of(src).startswith(("BLOCKED_ON_TERMS:", "BLOCKED+SUBSTITUTE:",
-                                            "DEAD:")), src.id
+                                            "BLOCKED_NO_SUBSTITUTE:", "DEAD:")), src.id
         for fixtures in (None, FIX):
             rec = A.collect(paths, src, {}, NOW, fetch=True, fixtures=fixtures,
                             deadline=1e18, getter=boom)
@@ -569,20 +569,62 @@ BLOCKED = ("jp_jnto_arrivals", "cn_holiday_spend", "tr_bkm_card", "br_cielo_icva
            "za_beti", "kr_busan_port", "cn_mot_port_weekly")
 
 
-def test_every_blocked_source_is_substituted_or_says_why_not() -> None:
+def test_every_blocked_source_has_candidates_or_says_why_not() -> None:
     blocked = {s.id for s in A.SOURCES if s.terms != "confirmed"}
-    assert blocked == set(BLOCKED)
-    assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) == blocked
-    assert not set(A.SUBSTITUTED_BY) & set(A.NO_SUBSTITUTE)
+    assert blocked == {*BLOCKED, "za_statssa_retail"}       # a mirror-only candidate fails closed
+    assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) == set(BLOCKED)
+    assert set(A.NO_SUBSTITUTE) == {"in_npci_upi", "za_beti"}
     for sid, subs in A.SUBSTITUTED_BY.items():
         assert subs and len(subs) == len(set(subs)), sid
         for x in subs:
-            sub = A.BY_ID[x]
-            assert sub.terms == "confirmed" and not sub.archive_until, (sid, x)
+            assert not A.BY_ID[x].archive_until, (sid, x)
             assert x not in A.SUBSTITUTED_BY, x                     # never a blocked stand-in
-        assert A.status_of(A.BY_ID[sid]) == "BLOCKED+SUBSTITUTE:" + ",".join(subs)
+        # nothing is measured against an original yet: every candidate is UNVERIFIED
+        assert A.status_of(A.BY_ID[sid]) == "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=" + ",".join(subs)
     for sid, why in A.NO_SUBSTITUTE.items():
-        assert why and A.status_of(A.BY_ID[sid]) == f"BLOCKED_ON_TERMS:{A.BY_ID[sid].terms}"
+        assert "UNVERIFIED" in why and "0.5" in why, sid
+    assert A.status_of(A.BY_ID["za_statssa_retail"]) == "BLOCKED_ON_TERMS:to_confirm"
+
+
+# ---- the #152 law: a substitute is COVERED only on a measured corr >= 0.5 with n
+def _m(corr: Any, n: Any, sid: str = "in_npci_upi", sub: str = "in_dgi_iip_consumer"
+       ) -> dict[str, dict[str, dict[str, Any]]]:
+    return {sid: {sub: {"corr": corr, "n": n, "basis": "monthly YoY changes"}}}
+
+
+def test_no_measured_correlation_is_not_covered() -> None:
+    src = A.BY_ID["in_npci_upi"]
+    assert A.SUBSTITUTE_VS_ORIGINAL == {}                   # nothing measured: nothing claimed
+    for m in (None, {}, _m(None, 24), _m(0.9, None), _m("0.9", 24), _m(float("nan"), 24)):
+        assert A.status_of(src, {}, m) == "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=in_dgi_iip_consumer"
+        assert A.verified_substitutes("in_npci_upi", m) == ()
+    chk = A.substitute_check("in_npci_upi", "in_dgi_iip_consumer")
+    assert chk["verdict"] == "UNVERIFIED" and chk["corr"] == chk["n"] == "UNMEASURED"
+    assert "in_npci_upi" in A.unsubstituted() and "za_beti" in A.unsubstituted()
+
+
+def test_measured_correlation_0_6_with_n_is_covered() -> None:
+    m = _m(0.6, 24)
+    assert A.status_of(A.BY_ID["in_npci_upi"], {}, m) == "BLOCKED+SUBSTITUTE:in_dgi_iip_consumer"
+    chk = A.substitute_check("in_npci_upi", "in_dgi_iip_consumer", m)
+    assert chk["verdict"] == "VERIFIED" and chk["corr"] == 0.6 and chk["n"] == 24
+    assert "in_npci_upi" not in A.unsubstituted(m)
+    assert A.status_of(A.BY_ID["in_npci_upi"], {}, _m(0.6, 6)).startswith(
+        "BLOCKED_NO_SUBSTITUTE:")                            # n too small to be a measurement
+
+
+def test_measured_correlation_0_3_is_not_covered() -> None:
+    m = _m(0.3, 60)
+    assert A.status_of(A.BY_ID["in_npci_upi"], {}, m) == (
+        "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=in_dgi_iip_consumer")
+    assert "0.300 < 0.5" in A.substitute_check("in_npci_upi", "in_dgi_iip_consumer", m)["why"]
+
+
+def test_a_candidate_with_unconfirmed_terms_never_covers_even_when_correlated() -> None:
+    m = _m(0.95, 120, "za_beti", "za_statssa_retail")
+    assert A.BY_ID["za_statssa_retail"].terms == "to_confirm"
+    assert A.status_of(A.BY_ID["za_beti"], {}, m) == (
+        "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=za_statssa_retail")
 
 
 def test_a_substituted_source_is_still_never_fetched(tmp_path: Path) -> None:
@@ -594,19 +636,27 @@ def test_a_substituted_source_is_still_never_fetched(tmp_path: Path) -> None:
                      ("za_beti", "za_statssa_retail")):
         rec = A.collect(paths, A.BY_ID[sid], {}, NOW, fetch=True, fixtures=None,
                         deadline=1e18, getter=boom)
-        assert rec == {**rec, "status": f"BLOCKED+SUBSTITUTE:{sub}", "requests": 0}, sid
+        assert rec == {**rec, "status": f"BLOCKED_NO_SUBSTITUTE:UNVERIFIED={sub}",
+                       "requests": 0}, sid
+    rec = A.collect(paths, A.BY_ID["za_statssa_retail"], {}, NOW, fetch=True, fixtures=FIX,
+                    deadline=1e18, getter=boom)                   # gate fails closed for it too
+    assert rec["status"] == "BLOCKED_ON_TERMS:to_confirm" and rec["requests"] == 0
     rep = A.run(paths, fixtures=FIX, donate=False, now=NOW)
-    assert rep["blocked_substituted"]["kr_busan_port"] == ["kr_mof_container_teu",
-                                                           "imf_portwatch_ports"]
-    assert set(rep["blocked_unsubstituted"]) == set() and A.NO_SUBSTITUTE == {}
-    assert rep["blocked_substituted"]["in_npci_upi"] == ["in_dgi_iip_consumer"]
-    assert rep["blocked_substituted"]["za_beti"] == ["za_statssa_retail"]
-    assert rep["sources"]["tr_bkm_card"]["status"].startswith("BLOCKED+SUBSTITUTE:")
+    assert rep["blocked_substituted"] == {}                   # nothing measured, nothing covered
+    assert set(rep["blocked_unsubstituted"]) == set(BLOCKED)
+    assert rep["sources"]["za_statssa_retail"]["series"] == {}
+    cands = rep["substitute_candidates"]["kr_busan_port"]
+    assert [c["substitute"] for c in cands] == ["kr_mof_container_teu", "imf_portwatch_ports"]
+    assert all(c["verdict"] == "UNVERIFIED" for c in cands)
+    sa = rep["substitute_agreement"]["substitute_vs_original"]["in_npci_upi"]
+    assert sa[0]["corr"] == "UNMEASURED" and sa[0]["min_corr"] == 0.5
     rows = {r["id"]: r for r in A.roster_rows()}
-    assert rows["jp_jnto_arrivals"]["substituted_by"] == ["jp_estat_immigration"]
-    assert rows["in_npci_upi"]["substituted_by"] == ["in_dgi_iip_consumer"]
-    assert rows["za_beti"]["substituted_by"] == ["za_statssa_retail"]
-    for sid in ("in_npci_upi", "za_beti"):                      # how each gap was closed
+    for sid, sub in (("jp_jnto_arrivals", "jp_estat_immigration"),
+                     ("in_npci_upi", "in_dgi_iip_consumer"), ("za_beti", "za_statssa_retail")):
+        assert rows[sid]["substituted_by"] == [], sid
+        assert rows[sid]["substitute_candidates"][0] == {
+            "substitute": sub, "verdict": "UNVERIFIED", "corr": "UNMEASURED", "n": "UNMEASURED"}
+    for sid in ("in_npci_upi", "za_beti"):                      # how each candidate was found
         assert any(why.startswith("TAKEN") for _, _, why in A.SUBSTITUTE_SEARCH[sid]), sid
 
 
@@ -615,7 +665,8 @@ def test_new_substitute_rows_carry_schema_terms_and_evidence() -> None:
     for sid in NEW_SUBSTITUTES:
         s = A.BY_ID[sid]
         assert s in A.SUBSTITUTE_SOURCES and s.substitutes_for, sid
-        assert s.terms == A.TERMS[sid][0] == "confirmed", sid
+        want = "to_confirm" if sid == "za_statssa_retail" else "confirmed"   # mirror-only read
+        assert s.terms == A.TERMS[sid][0] == want, sid
         ev = A.TERMS_EVIDENCE[sid]
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"].strip("( "), sid
         assert not ev["terms_quote"].startswith("(not"), sid     # a verbatim quote, not a gap
@@ -693,6 +744,47 @@ def test_release_rules_are_never_before_the_recorded_release_instants() -> None:
     assert A.rule_estat_immig(date(2026, 1, 31)) == datetime(2026, 4, 1, tzinfo=UTC)   # +60
 
 
+def test_pre_2025_iip_is_never_knowable_before_mospi_printed_it() -> None:
+    """MoSPI printed January 2024 on 2024-03-12 (IIP_PR_12mar24.pdf); the old 28th-of-M+1 rule
+    stamped it 2024-03-06, a PIT leak. Every recorded instant is honoured, and every month uses
+    the 12th-of-M+2 practice until March 2025 (first 28-day release: 28 April 2025)."""
+    iip = A.rule_in_iip
+    assert iip(date(2024, 1, 31)) >= datetime(2024, 3, 12, 12, tzinfo=UTC)
+    assert A.iip_press_release(date(2024, 1, 31)) == datetime(2024, 3, 12, 12, tzinfo=UTC)
+    assert A.iip_press_release(date(2024, 3, 31)) == datetime(2024, 5, 10, 12, tzinfo=UTC)
+    assert A.iip_press_release(date(2025, 2, 28)) == datetime(2025, 4, 11, 10, 30, tzinfo=UTC)
+    assert A.iip_press_release(date(2025, 3, 31)) == datetime(2025, 4, 28, 10, 30, tzinfo=UTC)
+    for k, (t, ev) in A.IIP_RELEASES.items():
+        y, m = int(k[:4]), int(k[5:])
+        pub = datetime.fromisoformat(t)
+        assert iip(A._month_end(y, m)) >= pub + A.IIP_OGD_SLACK, k
+        assert ev.startswith(("press https://", "arc https://", "announced in https://")), k
+        assert (12 if (y, m) < (2025, 3) else 28) >= pub.day >= 10, k
+    for y in range(2015, 2025):                   # unrecorded months: the 12th-of-M+2 bound
+        for m in range(1, 13):
+            if f"{y:04d}-{m:02d}" in A.IIP_RELEASES:
+                continue
+            t = A.iip_press_release(A._month_end(y, m))
+            mm = (m + 1) % 12 + 1
+            assert (t.year, t.month) == (y + (m >= 11), mm) and t.day >= 12, (y, m)
+    assert iip(date(2026, 3, 31)) >= datetime(2026, 4, 28, 10, 30, tzinfo=UTC)
+
+
+def test_iip_history_is_the_current_vintage_and_marked_backfill() -> None:
+    src = A.BY_ID["in_dgi_iip_consumer"]
+    assert src.vintage == A.BY_ID["mx_inegi_emec"].vintage == "current"
+    assert {r["id"]: r for r in A.roster_rows()}["in_dgi_iip_consumer"]["vintage"] == "current"
+    obs = [A.Obs("consumer_durables_index", A._month_end(2023, m), 100.0 + m)
+           for m in range(1, 13)]
+    store: dict[str, Any] = {}
+    A.merge_vintages(store, src, obs, NOW)              # a first (history) fetch, 2026
+    pts = A.build_points(src, store)["consumer_durables_index"]
+    assert pts and all(p["pit_quality"] == "backfill" for p in pts)
+    assert all(p["available_time"] >= "2023-03-" for p in pts)
+    doc = A.axis_doc(src, A.build_points(src, store), NOW)
+    assert doc.get("vintage") == "current"
+
+
 def test_configured_substitutes_never_request_on_a_placeholder(
         monkeypatch: pytest.MonkeyPatch) -> None:
     for env in ("ALT_ESTAT_IMMIG_STATS_ID", "ALT_ESTAT_IMMIG_CAT01", "ALT_INEGI_EMEC_ID",
@@ -700,11 +792,12 @@ def test_configured_substitutes_never_request_on_a_placeholder(
         monkeypatch.delenv(env, raising=False)
     for env in ("ESTAT_APP_ID", "INEGI_TOKEN", "DATA_GOV_IN_KEY"):
         monkeypatch.setenv(env, "k")
-    for sid in ("jp_estat_immigration", "mx_inegi_emec", "tr_tuik_retail", "in_dgi_iip_consumer",
-                "za_statssa_retail"):
+    for sid in ("jp_estat_immigration", "mx_inegi_emec", "tr_tuik_retail", "in_dgi_iip_consumer"):
         src = A.BY_ID[sid]
         assert A.status_of(src).startswith("UNCONFIGURED:"), sid
         assert A.requests_for(src, NOW, {}) == [], sid
+    monkeypatch.setenv("ALT_STATSSA_RETAIL_URL", "https://example.invalid/p6242")
+    assert A.status_of(A.BY_ID["za_statssa_retail"]) == "BLOCKED_ON_TERMS:to_confirm"
 
 
 def test_nbs_terms_were_rejudged_against_the_listed_exclusions() -> None:
@@ -730,5 +823,10 @@ def test_engine_rows_file_matches_the_code_and_the_engine_can_read_it() -> None:
         assert r["status"] == A.status_of(A.BY_ID[sid], {}), sid
         assert list(r)[:3] == ["class", "paid", "free"]      # the engine finds columns by word
         assert bool(r["free"]) == (sid in A.SUBSTITUTED_BY), sid
+        assert r["status"].startswith("BLOCKED_NO_SUBSTITUTE:UNVERIFIED="), sid
+        assert "UNVERIFIED" in r["substitute_check"] and r["unsubstituted_because"], sid
+    assert "za_statssa_retail" not in rows["za_beti"]["evidence"]   # unconfirmed: no evidence
     lib = {r["id"] for r in doc["library_rows"]}
-    assert lib == {f"asia_{x}" for v in A.SUBSTITUTED_BY.values() for x in v}
+    assert lib == {f"asia_{x}" for v in A.SUBSTITUTED_BY.values() for x in v
+                   if A.BY_ID[x].terms == "confirmed"}
+    assert "asia_za_statssa_retail" not in lib

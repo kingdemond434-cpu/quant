@@ -1,5 +1,9 @@
 {"note": "REAL release instants, read 2026-09-30, used to test each rule is never early. Where only a date or a later report was found, the instant given is that report (an upper bound on the true release), so a rule at or after it is safe.",
  "in_dgi_iip_consumer": [
+  {"period": "2023-12-31", "released": "2024-02-12T12:00:00+00:00", "evidence": "https://www.mospi.gov.in/sites/default/files/iip/IIP_PR_12feb24.pdf ('Dated: February 12th, 2024'; 17:30 IST until Nov 2024)"},
+  {"period": "2024-01-31", "released": "2024-03-12T12:00:00+00:00", "evidence": "https://www.mospi.gov.in/sites/default/files/iip/IIP_PR_12mar24.pdf ('Dated: March 12th, 2024')"},
+  {"period": "2024-03-31", "released": "2024-05-10T12:00:00+00:00", "evidence": "https://www.mospi.gov.in/sites/default/files/iip/IIP_PR_10may24.pdf ('Dated: May 10th, 2024')"},
+  {"period": "2025-02-28", "released": "2025-04-11T10:30:00+00:00", "evidence": "https://mospi.gov.in/sites/default/files/press_release/IIP_PR_11Apr25.pdf ('Dated: April 11th, 2025'; embargo to 4.00 PM IST)"},
   {"period": "2025-07-31", "released": "2025-08-28T15:56:00+00:00", "evidence": "https://www.newsonair.gov.in/indias-industrial-production-growth-records-four-month-high-of-3-5-per-cent-in-july-this-year (28 Aug 2025 9:26 PM IST)"},
   {"period": "2026-03-31", "released": "2026-04-28T10:30:00+00:00", "evidence": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2256241&reg=3&lang=2 (28 APR 2026 4:00PM IST)"}],
  "za_statssa_retail": [

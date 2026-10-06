@@ -8,10 +8,11 @@
    "region": "BR",
    "measure": "icva_deflated_yoy",
    "frequency": "monthly",
-   "status": "BLOCKED+SUBSTITUTE:br_bcb_payments",
+   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=br_bcb_payments",
    "terms": "refused",
    "blocked_because": "Cielo terms: copying, reproduction or any other use of content is forbidden; content only by the means made available",
-   "unsubstituted_because": "",
+   "unsubstituted_because": "candidate(s) br_bcb_payments UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
+   "substitute_check": "br_bcb_payments: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "br_bcb_payments: https://dadosabertos.bcb.gov.br/dataset/estatisticas-meios-pagamentos"
   },
   {
@@ -21,10 +22,11 @@
    "region": "CN",
    "measure": "beijing_move_in",
    "frequency": "daily",
-   "status": "BLOCKED+SUBSTITUTE:hk_immd_passenger",
+   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=hk_immd_passenger",
    "terms": "to_confirm",
    "blocked_because": "Baidu terms (baidu.com/duty) blocked by robots.txt, so unread; huiyan has no robots.txt",
-   "unsubstituted_because": "",
+   "unsubstituted_because": "candidate(s) hk_immd_passenger UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
+   "substitute_check": "hk_immd_passenger: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "hk_immd_passenger: https://data.gov.hk/en/terms-and-conditions"
   },
   {
@@ -34,10 +36,11 @@
    "region": "CN",
    "measure": "spend_per_trip_yoy",
    "frequency": "event",
-   "status": "BLOCKED+SUBSTITUTE:cn_nbs_retail,hk_immd_passenger",
+   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=cn_nbs_retail,hk_immd_passenger",
    "terms": "refused",
    "blocked_because": "MCT disclaimer: no reprint, link or other copying without written authorisation from the MCT Information Centre",
-   "unsubstituted_because": "",
+   "unsubstituted_because": "candidate(s) cn_nbs_retail, hk_immd_passenger UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
+   "substitute_check": "cn_nbs_retail: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED); hk_immd_passenger: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "cn_nbs_retail: https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html; hk_immd_passenger: https://data.gov.hk/en/terms-and-conditions"
   },
   {
@@ -47,10 +50,11 @@
    "region": "CN",
    "measure": "box_office_cny_10k",
    "frequency": "daily",
-   "status": "BLOCKED+SUBSTITUTE:hk_immd_passenger",
+   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=hk_immd_passenger",
    "terms": "refused",
    "blocked_because": "piaofang.maoyan.com robots.txt disallows automated agents on the dashboard-ajax endpoint",
-   "unsubstituted_because": "",
+   "unsubstituted_because": "candidate(s) hk_immd_passenger UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
+   "substitute_check": "hk_immd_passenger: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "hk_immd_passenger: https://data.gov.hk/en/terms-and-conditions"
   },
   {
@@ -60,10 +64,11 @@
    "region": "CN",
    "measure": "container_10k_teu",
    "frequency": "weekly",
-   "status": "BLOCKED+SUBSTITUTE:imf_portwatch_ports",
+   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=imf_portwatch_ports",
    "terms": "to_confirm",
    "blocked_because": "MOT disclaimer bars commercial verbatim reprint but grants no reuse licence; no robots.txt",
-   "unsubstituted_because": "",
+   "unsubstituted_because": "candidate(s) imf_portwatch_ports UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
+   "substitute_check": "imf_portwatch_ports: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "imf_portwatch_ports: https://www.imf.org/external/terms.htm"
   },
   {
@@ -73,10 +78,11 @@
    "region": "CN",
    "measure": "premium_pct",
    "frequency": "daily",
-   "status": "BLOCKED+SUBSTITUTE:in_gold_imports",
+   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=in_gold_imports",
    "terms": "to_confirm",
    "blocked_because": "SGE site shows only 'All Right Reserved'; no terms or licence page found, no robots.txt",
-   "unsubstituted_because": "",
+   "unsubstituted_because": "candidate(s) in_gold_imports UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
+   "substitute_check": "in_gold_imports: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "in_gold_imports: https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1"
   },
   {
@@ -86,10 +92,11 @@
    "region": "IN",
    "measure": "upi_value_cr",
    "frequency": "monthly",
-   "status": "BLOCKED+SUBSTITUTE:in_dgi_iip_consumer",
+   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=in_dgi_iip_consumer",
    "terms": "refused",
    "blocked_because": "npci.org.in robots.txt disallows automated agents on the statistics path and the disclaimer page",
-   "unsubstituted_because": "",
+   "unsubstituted_because": "candidate in_dgi_iip_consumer is UNVERIFIED: use-based IIP consumer goods is factory OUTPUT, not the UPI payments flow, and no correlation against NPCI's monthly UPI volume/value has been measured (NPCI is robots-refused, RBI tables are 'All Rights Reserved'); COVERED only at corr >= 0.5 with n reported",
+   "substitute_check": "in_dgi_iip_consumer: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "in_dgi_iip_consumer: https://smartcities.data.gov.in/government-open-data-license-india"
   },
   {
@@ -99,10 +106,11 @@
    "region": "JP",
    "measure": "arrivals_yoy",
    "frequency": "monthly",
-   "status": "BLOCKED+SUBSTITUTE:jp_estat_immigration",
+   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=jp_estat_immigration",
    "terms": "refused",
    "blocked_because": "JNTO site policy: unauthorised duplication or transmission of published works (incl. databases) is copyright infringement",
-   "unsubstituted_because": "",
+   "unsubstituted_because": "candidate(s) jp_estat_immigration UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
+   "substitute_check": "jp_estat_immigration: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "jp_estat_immigration: https://www.e-stat.go.jp/terms-of-use"
   },
   {
@@ -112,10 +120,11 @@
    "region": "KR",
    "measure": "container_yoy",
    "frequency": "monthly",
-   "status": "BLOCKED+SUBSTITUTE:kr_mof_container_teu,imf_portwatch_ports",
+   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=kr_mof_container_teu,imf_portwatch_ports",
    "terms": "to_confirm",
    "blocked_because": "BPA copyright policy / KOGL mark not found; robots.txt only names Yeti and Googlebot",
-   "unsubstituted_because": "",
+   "unsubstituted_because": "candidate(s) kr_mof_container_teu, imf_portwatch_ports UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
+   "substitute_check": "kr_mof_container_teu: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED); imf_portwatch_ports: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "kr_mof_container_teu: https://www.data.go.kr/data/15059131/openapi.do; imf_portwatch_ports: https://www.imf.org/external/terms.htm"
   },
   {
@@ -125,10 +134,11 @@
    "region": "MX",
    "measure": "same_store_sales_yoy",
    "frequency": "monthly",
-   "status": "BLOCKED+SUBSTITUTE:mx_inegi_emec",
+   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=mx_inegi_emec",
    "terms": "refused",
    "blocked_because": "ANTAD terms: copy only for personal use; electronic reproduction, publication or distribution prohibited",
-   "unsubstituted_because": "",
+   "unsubstituted_because": "candidate(s) mx_inegi_emec UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
+   "substitute_check": "mx_inegi_emec: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "mx_inegi_emec: https://www.inegi.org.mx/inegi/terminos.html"
   },
   {
@@ -138,10 +148,11 @@
    "region": "TR",
    "measure": "card_payments_nominal_yoy",
    "frequency": "monthly",
-   "status": "BLOCKED+SUBSTITUTE:tr_tuik_retail",
+   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=tr_tuik_retail",
    "terms": "refused",
    "blocked_because": "BKM legal notice: no copying or reproduction without prior written permission; no commercial use",
-   "unsubstituted_because": "",
+   "unsubstituted_because": "candidate(s) tr_tuik_retail UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
+   "substitute_check": "tr_tuik_retail: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "tr_tuik_retail: https://www.tuik.gov.tr/Kurumsal/Yasal_Uyari"
   },
   {
@@ -151,11 +162,12 @@
    "region": "ZA",
    "measure": "beti_mom",
    "frequency": "monthly",
-   "status": "BLOCKED+SUBSTITUTE:za_statssa_retail",
+   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=za_statssa_retail",
    "terms": "to_confirm",
    "blocked_because": "PayInc site is a JS app; no terms page or robots.txt could be read",
-   "unsubstituted_because": "",
-   "evidence": "za_statssa_retail: https://nationalgovernment.co.za/department_annual/531/2024-statistics-south-africa-(stats-sa)-annual-report.pdf"
+   "unsubstituted_because": "candidate za_statssa_retail is UNVERIFIED: its own terms are to_confirm (only a mirror of the Stats SA notice was read, statssa.gov.za is behind Incapsula) and no correlation against BETI has been measured (PayInc terms unreadable; SARB requires written permission); COVERED only at corr >= 0.5 with n reported",
+   "substitute_check": "za_statssa_retail: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
+   "evidence": ""
   }
  ],
  "library_rows": [
@@ -472,37 +484,6 @@
    "owner": "asia_gap_thread",
    "substitutes_for_blocked": [
     "tr_bkm_card"
-   ]
-  },
-  {
-   "id": "asia_za_statssa_retail",
-   "name": "Stats SA P6242.1 retail trade sales, constant prices, YoY (South Africa)",
-   "publisher_type": "statistics_office_or_central_bank",
-   "url": "https://nationalgovernment.co.za/department_annual/531/2024-statistics-south-africa-(stats-sa)-annual-report.pdf",
-   "endpoint": "https://www.statssa.gov.za/?page_id=1854&PPN=P6242.1",
-   "classes": [
-    "card_consumer"
-   ],
-   "region": "ZA",
-   "frequency": "monthly",
-   "auth": "none",
-   "auth_env": "",
-   "languages": [
-    "en"
-   ],
-   "instruments": [
-    "USDZAR",
-    "ZARJPY"
-   ],
-   "participant_structure": "retail_heavy",
-   "licence": "Stats SA publication notice: users may apply or process the data with Stats SA acknowledged as the source; the data may not be sold without permission",
-   "terms": "confirmed",
-   "terms_quote": "Users may apply or process this data, provided Statistics South Africa (Stats SA) is acknowledged as the original source of the data; that it is specified that the application and/or analysis is the result of the user's independent processing of the data; and that neither the basic data nor any reprocessed version or application thereof may be sold or offered for sale in any form whatsoever without prior permission from Stats SA.",
-   "credit": "Source: Statistics South Africa (Stats SA), P6242.1 Retail trade sales. The analysis is the result of the user's independent processing of the data.",
-   "consumer": "desks/mt5/research/alt_proxies.py",
-   "owner": "asia_gap_thread",
-   "substitutes_for_blocked": [
-    "za_beti"
    ]
   }
  ]

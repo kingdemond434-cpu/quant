@@ -8,13 +8,16 @@ migration) and satellite/AIS (Busan, SingStat, China MOT ports). Each row names 
 `substitutes_for`; `substitute_agreement` measures each against an overlapping free series on the
 same keys (the paid originals are not held). They ride this organ's hourly clock unchanged.
 
-BLOCKED+SUBSTITUTE. A source the terms gate blocks is never fetched, but coverage does not shrink:
-SUBSTITUTED_BY names the confirmed-terms rows standing in for it (e-Stat immigration for JNTO,
-HK Immigration crossings for Baidu migration / Maoyan / the holiday tallies, TÜİK for BKM, BCB
-Open Data for Cielo, INEGI EMEC for ANTAD, data.go.kr MOF containers and PortWatch for the port
-boards, India's gold imports for the SGE premium, MoSPI's use-based IIP consumer goods on
-data.gov.in (GODL) for NPCI UPI, Stats SA retail trade sales for BETI), and its status reads
-BLOCKED+SUBSTITUTE:<ids>. NO_SUBSTITUTE is empty; SUBSTITUTE_SEARCH keeps how the last two closed.
+BLOCKED+SUBSTITUTE. A source the terms gate blocks is never fetched. SUBSTITUTED_BY names the
+CANDIDATE lawful rows that may stand in for it (e-Stat immigration for JNTO, HK Immigration
+crossings for Baidu migration / Maoyan / the holiday tallies, TÜİK for BKM, BCB Open Data for
+Cielo, INEGI EMEC for ANTAD, data.go.kr MOF containers and PortWatch for the port boards, India's
+gold imports for the SGE premium, MoSPI's use-based IIP consumer goods for NPCI UPI, Stats SA
+retail trade sales for BETI). Under the #152 law a candidate counts as COVERED only with confirmed
+terms AND a measured correlation >= 0.5 against the original, n reported (SUBSTITUTE_VS_ORIGINAL,
+read by `substitute_check`); only then does the status read BLOCKED+SUBSTITUTE:<ids>. Until then
+it reads BLOCKED_NO_SUBSTITUTE:UNVERIFIED=<candidates>. NO_SUBSTITUTE says why NPCI UPI and BETI
+are weak; SUBSTITUTE_SEARCH keeps how their candidates were found.
 `--write-rosters` regenerates the committed roster YAML and the paid-substitute engine's rows.
 
 WHAT THIS IS. Ten public (keyless or free-key) alternative-data sources, each parsed into a
@@ -1581,13 +1584,71 @@ def parse_statssa_retail(body: bytes, ctx: Ctx) -> list[Obs]:
     return _first_per_key(out)
 
 
-def rule_in_iip(period: date) -> datetime:
-    """MoSPI's IIP quick estimate for month M prints on the 28th of M+1 at 16:00 IST (10:30 UTC)
-    on PIB (e.g. March 2026 on 28 Apr 2026, July 2025 on 28 Aug 2025); the data.gov.in upload
-    follows it. Stamped the 28th of M+1 plus 7 days, 00:00 UTC, rolled to a weekday: a week of
-    slack for the OGD upload and for a 28th that falls on a holiday. Late, never early."""
+#: MoSPI's ACTUAL IIP quick-estimate release instants before the 28-day timeline, reference month
+#: -> (UTC instant, evidence). Read 2026-10-06. MoSPI's own notice (17.04.2025, cited below) says
+#: IIP was released "on the 12th of every month (previous working day if 12th is a holiday) within
+#: 42 days" and moved to "28th of every month at 4:00 PM" from the release of 28 April 2025
+#: (reference month March 2025). Time of day: 17:30 IST (12:00 UTC) until the October-2024 CPI /
+#: September-2024 IIP release of 12 Nov 2024, 16:00 IST (10:30 UTC) from it (Business Standard,
+#: 5 Nov 2024). `press` rows are the dated MoSPI press release itself; `arc` rows are MoSPI's
+#: Advance Release Calendar (dated 30 Apr 2024 and 1 Jul 2024, "expected dates ... subject to
+#: change"), for months whose own press release was not fetched; the 7-day OGD slack in the rule
+#: covers a slip. A month absent here falls back to 12th-of-M+2 (pre-2025) or 28th-of-M+1, which
+#: is never earlier than MoSPI's documented practice.
+_IIP_PR = "https://www.mospi.gov.in/sites/default/files/iip/IIP_PR_{}.pdf"
+_IIP_PR25 = "https://mospi.gov.in/sites/default/files/press_release/IIP_PR_{}.pdf"
+_IIP_ARC = ("https://www.Mospi.gov.in/sites/default/files//main_menu/nsdp_sdds/"
+            "ARC_april24_IIP30042024.pdf; https://mospi.gov.in/sites/default/files//main_menu/"
+            "nsdp_sdds/ARC_July24_IIP01072024.pdf")
+IIP_TIMELINE_NOTICE = ("https://mospi.gov.in/sites/default/files/press_release/"
+                       "NEW_timeline_IIP_press_release_17.04.25.pdf")
+IIP_RELEASES: dict[str, tuple[str, str]] = {
+    "2023-12": ("2024-02-12T12:00:00+00:00", "press " + _IIP_PR.format("12feb24")),
+    "2024-01": ("2024-03-12T12:00:00+00:00", "press " + _IIP_PR.format("12mar24")),
+    "2024-02": ("2024-04-12T12:00:00+00:00", "press " + _IIP_PR.format("12apr24")),
+    "2024-03": ("2024-05-10T12:00:00+00:00", "press " + _IIP_PR.format("10may24")),
+    "2024-04": ("2024-06-12T12:00:00+00:00", "arc " + _IIP_ARC + " (and announced in "
+                + _IIP_PR.format("10may24") + ")"),
+    "2024-05": ("2024-07-12T12:00:00+00:00", "arc " + _IIP_ARC),
+    "2024-06": ("2024-08-12T12:00:00+00:00", "arc " + _IIP_ARC),
+    "2024-07": ("2024-09-12T12:00:00+00:00", "arc " + _IIP_ARC),
+    "2024-08": ("2024-10-11T12:00:00+00:00", "arc " + _IIP_ARC),
+    "2024-09": ("2024-11-12T10:30:00+00:00", "arc " + _IIP_ARC),
+    "2024-10": ("2024-12-12T10:30:00+00:00", "arc " + _IIP_ARC),
+    "2024-11": ("2025-01-10T10:30:00+00:00", "arc " + _IIP_ARC),
+    "2024-12": ("2025-02-12T10:30:00+00:00", "arc " + _IIP_ARC),
+    "2025-01": ("2025-03-12T10:30:00+00:00", "press " + _IIP_PR25.format("12Mar25")),
+    "2025-02": ("2025-04-11T10:30:00+00:00", "press " + _IIP_PR25.format("11Apr25")
+                + " (embargo to 4.00 PM 11th April 2025)"),
+    "2025-03": ("2025-04-28T10:30:00+00:00", "announced in " + _IIP_PR25.format("11Apr25")
+                + " and " + IIP_TIMELINE_NOTICE),
+}
+#: The OGD (data.gov.in) upload follows the press release; a week of slack, then weekday-rolled.
+IIP_OGD_SLACK = timedelta(days=7)
+
+
+def iip_press_release(period: date) -> datetime:
+    """The MoSPI press-release instant for reference month `period` (never early): the recorded
+    instant if held; else, before March 2025, the 12th of M+2 at 17:30 IST (releases were on the
+    12th or the previous working day, so the 12th is never early); else the 28th of M+1 at
+    16:00 IST."""
+    rec = IIP_RELEASES.get(f"{period.year:04d}-{period.month:02d}")
+    if rec:
+        return datetime.fromisoformat(rec[0])
+    if (period.year, period.month) < (2025, 3):
+        y, m = period.year + (period.month >= 11), (period.month + 1) % 12 + 1
+        return _roll_weekday(_utc(y, m, 12, 12, 0))
     y, m = period.year + (period.month == 12), 1 if period.month == 12 else period.month + 1
-    return _roll_weekday(_utc(y, m, 28) + timedelta(days=7))
+    return _utc(y, m, 28, 10, 30)
+
+
+def rule_in_iip(period: date) -> datetime:
+    """When month M of the use-based IIP is knowable from data.gov.in: MoSPI's press release
+    (iip_press_release: the recorded instant, else MoSPI's documented 12th-of-M+2 / 28th-of-M+1
+    practice) plus IIP_OGD_SLACK for the OGD upload, rolled to a weekday. Late, never early: the
+    old 28th-of-M+1 rule applied to pre-2025 months stamped January 2024 at 2024-03-06, six days
+    BEFORE MoSPI printed it on 2024-03-12 (audit 2026-10-06)."""
+    return _roll_weekday(iip_press_release(period) + IIP_OGD_SLACK)
 
 
 def rule_za_retail(period: date) -> datetime:
@@ -2475,11 +2536,16 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
                                  "moves production between months, and on a base-year revision "
                                  "(2011-12 to 2022-23) that breaks the YoY comparison"),
         crowding_prior="low", substitutes_for=_CARD,
-        note=("stands in for in_npci_upi (NPCI robots-refused; RBI 'All Rights Reserved'). "
+        vintage="current",
+        note=("CANDIDATE for in_npci_upi (NPCI robots-refused; RBI 'All Rights Reserved'), "
+              "UNVERIFIED until its correlation with NPCI UPI is measured >= 0.5 with n. "
               "Production, not payments: it measures the goods households buy, not the payment "
               "flow. NO DEFAULT CODE: the use-based monthly IIP resource id comes only from "
               "ALT_DGI_IIP_RESOURCE (catalog: data.gov.in/catalog/monthly-time-series-use-based-"
-              "indices-and-growth); confirm it carries the 2022-23 base on the box. Credit line "
+              "indices-and-growth); confirm it carries the 2022-23 base on the box. The OGD "
+              "resource serves the CURRENT (revised, final) vintage only, so history rows are "
+              "stamped vintage=current and pit_quality=backfill: never a first-release value. "
+              "Release instants: IIP_RELEASES / rule_in_iip. Credit line "
               "when published: 'Ministry of Statistics and Programme Implementation, Index of "
               "Industrial Production, data.gov.in. Published under GODL-India'")),
     Source(
@@ -2504,7 +2570,9 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
                                  "SASSA grant-payment calendar shifts, and it prints about seven "
                                  "weeks after the month, later than BETI"),
         crowding_prior="low", substitutes_for=_CARD,
-        note=("stands in for za_beti (PayInc terms unreadable; SARB requires written permission). "
+        note=("CANDIDATE for za_beti (PayInc terms unreadable; SARB requires written permission), "
+              "UNVERIFIED; its own terms are to_confirm (the Stats SA notice was read only on a "
+              "mirror), so it is BLOCKED_ON_TERMS and never fetched until confirmed. "
               "Stats SA pages sit behind an Incapsula check, so the release URL (an HTML release "
               "page carrying the headline sentence) comes only from ALT_STATSSA_RETAIL_URL; unset "
               "the row is UNCONFIGURED and nothing is requested. Internal research use only: the "
@@ -2578,8 +2646,9 @@ TERMS: dict[str, tuple[str, str]] = {
     "in_dgi_iip_consumer": ("confirmed", "GODL-India: worldwide, royalty-free licence for "
                             "commercial and non-commercial use, with attribution; data.gov.in "
                             "documented OGD API (free key)"),
-    "za_statssa_retail": ("confirmed", "Stats SA publication notice: users may apply or process "
-                          "the data with Stats SA acknowledged; no sale without permission"),
+    "za_statssa_retail": ("to_confirm", "Stats SA publication notice read ONLY on a third-party "
+                          "mirror (statssa.gov.za serves an Incapsula check); not confirmed until "
+                          "read on a Stats SA page (audit 2026-10-06)"),
 }
 TERMS_VALUES = ("confirmed", "to_confirm", "refused")
 
@@ -2798,11 +2867,13 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                         "data nor any reprocessed version or application thereof may be sold or "
                         "offered for sale in any form whatsoever without prior permission from "
                         "Stats SA."),
-        "judgement": ("Stats SA's standard imprint notice, read from a mirror of its 2023/24 "
-                      "Annual Report because statssa.gov.za serves an Incapsula check to "
-                      "fetchers; the same notice is printed in its statistical releases. The "
-                      "desk applies and processes the data for its own trading research and "
-                      "never sells it: allowed, with the acknowledgement below"),
+        "judgement": ("TO_CONFIRM (audit 2026-10-06). Stats SA's standard imprint notice was "
+                      "read only from a third-party MIRROR of its 2023/24 Annual Report "
+                      "(nationalgovernment.co.za), because statssa.gov.za serves an Incapsula "
+                      "check to fetchers. A mirror cannot confirm the publisher's own terms, so "
+                      "the row fails closed (BLOCKED_ON_TERMS) until the notice is read on a "
+                      "statssa.gov.za page or release PDF; if confirmed there, the desk's use "
+                      "(own research, never sold) fits it, with the acknowledgement below"),
         "robots": "statssa.gov.za serves an Incapsula challenge to fetchers (not a robots rule)",
         "credit": ("Source: Statistics South Africa (Stats SA), P6242.1 Retail trade sales. The "
                    "analysis is the result of the user's independent processing of the data."),
@@ -2920,12 +2991,14 @@ SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
 BY_ID = {s.id: s for s in SOURCES}
 
-#: COVERAGE DOES NOT SHRINK WHEN TERMS BLOCK A SOURCE. Each blocked source (terms refused or
-#: to_confirm) names the lawful source(s) standing in for it: every id here is a `confirmed`
-#: source of this organ, verified from its own terms page (TERMS_EVIDENCE). Such a source reports
-#: BLOCKED+SUBSTITUTE:<ids> and is counted as substituted, not lost. It is still NEVER fetched.
-#: A blocked source absent from this table has no verified lawful substitute and stays
-#: BLOCKED_ON_TERMS (see NO_SUBSTITUTE for why).
+#: CANDIDATE SUBSTITUTES FOR EACH TERMS-BLOCKED SOURCE (terms refused or to_confirm). A candidate
+#: is a lawful source of this organ that MAY stand in for the blocked one; it is NOT coverage by
+#: being listed. Under the paid-substitute law (#152, MIN_CORRELATION 0.50) a substitute counts
+#: as COVERED only when (a) its own terms are `confirmed` (TERMS_EVIDENCE) and (b) a correlation
+#: >= SUBSTITUTE_MIN_CORR against the ORIGINAL, on at least SUBSTITUTE_MIN_N reported points, is
+#: recorded in SUBSTITUTE_VS_ORIGINAL. Then the source reports BLOCKED+SUBSTITUTE:<ids>; until
+#: then it reports BLOCKED_NO_SUBSTITUTE:UNVERIFIED=<ids> (the candidates named, none counted).
+#: A blocked source with no candidate stays BLOCKED_ON_TERMS. A blocked source is NEVER fetched.
 SUBSTITUTED_BY: dict[str, tuple[str, ...]] = {
     "jp_jnto_arrivals": ("jp_estat_immigration",),
     "in_npci_upi": ("in_dgi_iip_consumer",),
@@ -2940,12 +3013,87 @@ SUBSTITUTED_BY: dict[str, tuple[str, ...]] = {
     "kr_busan_port": ("kr_mof_container_teu", "imf_portwatch_ports"),
     "cn_mot_port_weekly": ("imf_portwatch_ports",),
 }
-#: Blocked sources with NO verified lawful substitute, and why (each has a box action queued in
-#: /mnt/project-files/patches/DESKTOP_PASS2_STATUS.md).
-NO_SUBSTITUTE: dict[str, str] = {}
-#: How the last two gaps (NPCI UPI, BETI) were closed on 2026-09-30: every candidate searched, its
-#: URL and why it was taken or rejected. Kept as the closing evidence (report: /mnt/project-files/
-#: reports/asia_source_terms_2026-09-30.md).
+#: The #152 engine's MIN_CORRELATION, applied here to every blocked -> substitute pair.
+SUBSTITUTE_MIN_CORR = 0.50
+#: A correlation on fewer points than a year of monthly changes is not a measurement.
+SUBSTITUTE_MIN_N = 12
+#: MEASURED substitute-vs-original correlations, {blocked_id: {substitute_id: {"corr": float,
+#: "n": int, "basis": str, "measured_at": iso, "evidence": str}}}. An entry is written ONLY from
+#: a computation on data this desk held (the original's own public outputs on the same keys);
+#: nothing is entered from a guess. EMPTY on 2026-10-06: no original is held (each is blocked by
+#: its terms) and no original's public monthly outputs have been aligned yet, so every pair is
+#: UNMEASURED and no blocked source counts as covered.
+SUBSTITUTE_VS_ORIGINAL: dict[str, dict[str, dict[str, Any]]] = {}
+#: Blocked sources whose candidate substitute is known to be WEAK on mechanism, and why: they
+#: read BLOCKED_NO_SUBSTITUTE until the candidate's correlation with the original is measured.
+NO_SUBSTITUTE: dict[str, str] = {
+    "in_npci_upi": ("candidate in_dgi_iip_consumer is UNVERIFIED: use-based IIP consumer goods "
+                    "is factory OUTPUT, not the UPI payments flow, and no correlation against "
+                    "NPCI's monthly UPI volume/value has been measured (NPCI is robots-refused, "
+                    "RBI tables are 'All Rights Reserved'); COVERED only at corr >= 0.5 with n "
+                    "reported"),
+    "za_beti": ("candidate za_statssa_retail is UNVERIFIED: its own terms are to_confirm (only a "
+                "mirror of the Stats SA notice was read, statssa.gov.za is behind Incapsula) and "
+                "no correlation against BETI has been measured (PayInc terms unreadable; SARB "
+                "requires written permission); COVERED only at corr >= 0.5 with n reported"),
+}
+
+
+def substitute_check(blocked: str, sub: str,
+                     measured: dict[str, dict[str, dict[str, Any]]] | None = None
+                     ) -> dict[str, Any]:
+    """One blocked -> candidate pair against the #152 law. VERIFIED only with confirmed terms and
+    a recorded corr >= SUBSTITUTE_MIN_CORR on n >= SUBSTITUTE_MIN_N; anything else is named."""
+    table = SUBSTITUTE_VS_ORIGINAL if measured is None else measured
+    m = (table.get(blocked) or {}).get(sub) or {}
+    corr, n = m.get("corr"), m.get("n")
+    out: dict[str, Any] = {"substitute": sub, "corr": corr if corr is not None else UNMEASURED,
+                           "n": n if n is not None else UNMEASURED,
+                           "min_corr": SUBSTITUTE_MIN_CORR, "min_n": SUBSTITUTE_MIN_N}
+    src = BY_ID.get(sub)
+    if src is None or src.terms != "confirmed" or src.archive_until:
+        return {**out, "verdict": "UNVERIFIED",
+                "why": f"candidate terms {src.terms if src else 'unknown'}: not a lawful source"
+                       if not (src and src.archive_until) else "candidate is DEAD"}
+    ok_corr = isinstance(corr, (int, float)) and not isinstance(corr, bool) and math.isfinite(corr)
+    ok_n = isinstance(n, int) and not isinstance(n, bool)
+    if not (ok_corr and ok_n) or corr is None or n is None:
+        return {**out, "verdict": "UNVERIFIED",
+                "why": "no measured correlation against the original (with n) is recorded"}
+    if n < SUBSTITUTE_MIN_N:
+        return {**out, "verdict": "UNVERIFIED", "why": f"n={n} < {SUBSTITUTE_MIN_N}"}
+    if corr < SUBSTITUTE_MIN_CORR:
+        return {**out, "verdict": "UNVERIFIED",
+                "why": f"corr={corr:.3f} < {SUBSTITUTE_MIN_CORR} on n={n}"}
+    return {**out, "verdict": "VERIFIED", "basis": m.get("basis", ""),
+            "measured_at": m.get("measured_at", ""), "evidence": m.get("evidence", "")}
+
+
+def verified_substitutes(sid: str, measured: dict[str, dict[str, dict[str, Any]]] | None = None
+                         ) -> tuple[str, ...]:
+    return tuple(x for x in SUBSTITUTED_BY.get(sid, ())
+                 if substitute_check(sid, x, measured)["verdict"] == "VERIFIED")
+
+
+def unsubstituted(measured: dict[str, dict[str, dict[str, Any]]] | None = None
+                  ) -> dict[str, str]:
+    """Every blocked paid original with no VERIFIED substitute, and why."""
+    out: dict[str, str] = {}
+    for sid in sorted({*SUBSTITUTED_BY, *NO_SUBSTITUTE}):
+        if verified_substitutes(sid, measured):
+            continue
+        cands = SUBSTITUTED_BY.get(sid, ())
+        out[sid] = NO_SUBSTITUTE.get(sid) or (
+            f"candidate(s) {', '.join(cands)} UNVERIFIED: no measured correlation >= "
+            f"{SUBSTITUTE_MIN_CORR} against the original with n >= {SUBSTITUTE_MIN_N}"
+            if cands else "no candidate substitute")
+    return out
+
+
+#: How the candidates for NPCI UPI and BETI were found on 2026-09-30: every candidate searched,
+#: its URL and why it was taken as a CANDIDATE or rejected. A TAKEN row is a candidate only, never
+#: coverage: it counts when SUBSTITUTE_VS_ORIGINAL records corr >= 0.5 with n (audit 2026-10-06;
+#: report: /mnt/project-files/reports/asia_source_terms_2026-09-30.md).
 SUBSTITUTE_SEARCH: dict[str, tuple[tuple[str, str, str], ...]] = {
     "in_npci_upi": (
         ("data.gov.in use-based IIP (GODL)", "https://smartcities.data.gov.in/government-open-"
@@ -2967,9 +3115,10 @@ SUBSTITUTE_SEARCH: dict[str, tuple[tuple[str, str, str], ...]] = {
     ),
     "za_beti": (
         ("Stats SA P6242.1 retail trade sales", "https://nationalgovernment.co.za/department_"
-         "annual/531/2024-statistics-south-africa-(stats-sa)-annual-report.pdf", "TAKEN: Stats "
-         "SA's own publication notice (mirrored; statssa.gov.za is behind Incapsula) lets users "
-         "apply or process the data with acknowledgement, no sale"),
+         "annual/531/2024-statistics-south-africa-(stats-sa)-annual-report.pdf", "TAKEN as "
+         "candidate: Stats SA's publication notice (read only on a MIRROR; statssa.gov.za is "
+         "behind Incapsula) lets users apply or process the data with acknowledgement, no "
+         "sale; terms stay to_confirm until read on a Stats SA page"),
         ("SARB statistics", "https://www.resbank.co.za/", "rejected: IP 'cannot be used without "
          "written permission'"),
         ("PayInc/BankservAfrica BETI", "https://www.payinc.co.za/", "rejected: JS-only site, no "
@@ -3018,16 +3167,22 @@ def config_value(name: str, environ: Any = None) -> str:
     return str(env.get(name) or "").strip() or CONFIG_DEFAULTS.get(name, "")
 
 
-def status_of(src: Source, environ: dict[str, str] | None = None) -> str:
+def status_of(src: Source, environ: dict[str, str] | None = None,
+              measured: dict[str, dict[str, dict[str, Any]]] | None = None) -> str:
     """One named state per source. Nothing here claims live yield: a source that has not returned
     real data on the box is UNMEASURED_LIVE_YIELD, and the pass report says what it parsed.
-    `environ` replaces os.environ (the committed roster uses {} -- its status as declared)."""
+    `environ` replaces os.environ (the committed roster uses {} -- its status as declared).
+    `measured` replaces SUBSTITUTE_VS_ORIGINAL: a blocked source is BLOCKED+SUBSTITUTE only for
+    candidates whose measured correlation with the original clears the #152 law."""
     env: Any = os.environ if environ is None else environ
     if src.archive_until:
         return f"DEAD:{src.archive_until}"
     if src.terms != "confirmed":
-        subs = SUBSTITUTED_BY.get(src.id)
-        return (f"BLOCKED+SUBSTITUTE:{','.join(subs)}" if subs
+        subs = verified_substitutes(src.id, measured)
+        if subs:
+            return f"BLOCKED+SUBSTITUTE:{','.join(subs)}"
+        cands = SUBSTITUTED_BY.get(src.id)
+        return (f"BLOCKED_NO_SUBSTITUTE:UNVERIFIED={','.join(cands)}" if cands
                 else f"BLOCKED_ON_TERMS:{src.terms}")
     if src.key_env and not env.get(src.key_env):
         return f"BLOCKED_ON_KEY:{src.key_env}"
@@ -4177,6 +4332,10 @@ def substitute_agreement(paths: Paths, pts: dict[str, dict[str, list[dict[str, A
                                  "to the authoring container)" if not theirs else
                                  "no nlp_events_<CC>.parquet tagger panel on this box")})}
     out["paid_original_agreement"] = PAID_ORIGINAL_AGREEMENT
+    # 4. the #152 law per blocked source: each candidate against the ORIGINAL, as recorded.
+    out["substitute_vs_original"] = {
+        sid: [substitute_check(sid, x) for x in SUBSTITUTED_BY[sid]]
+        for sid in sorted(SUBSTITUTED_BY)}
     return out
 
 
@@ -4237,8 +4396,11 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                            "rule": handoff["rule"]},
         "dead_sources": sorted(s.id for s in SOURCES if is_dead(s)),
         "blocked_on_terms": sorted(s.id for s in SOURCES if s.terms != "confirmed"),
-        "blocked_substituted": {sid: list(SUBSTITUTED_BY[sid]) for sid in sorted(SUBSTITUTED_BY)},
-        "blocked_unsubstituted": {sid: NO_SUBSTITUTE[sid] for sid in sorted(NO_SUBSTITUTE)},
+        "blocked_substituted": {sid: list(v) for sid in sorted(SUBSTITUTED_BY)
+                                if (v := verified_substitutes(sid))},
+        "blocked_unsubstituted": unsubstituted(),
+        "substitute_candidates": {sid: [substitute_check(sid, x) for x in SUBSTITUTED_BY[sid]]
+                                  for sid in sorted(SUBSTITUTED_BY)},
         "direct_cells": {"n": len(direct), "donation": donations["direct"],
                          "rule": ("an exogenous_conditioner cell is donated only after its gain "
                                   "test PASSED on this box; every tested cell is charged")},
@@ -4334,7 +4496,10 @@ def roster_rows(sources: Iterable[Source] = SOURCES,
         if s.vintage:
             rows[-1]["vintage"] = s.vintage
         if s.id in SUBSTITUTED_BY:
-            rows[-1]["substituted_by"] = list(SUBSTITUTED_BY[s.id])
+            rows[-1]["substituted_by"] = list(verified_substitutes(s.id))
+            rows[-1]["substitute_candidates"] = [
+                {k: c[k] for k in ("substitute", "verdict", "corr", "n")}
+                for c in (substitute_check(s.id, x) for x in SUBSTITUTED_BY[s.id])]
         if s.substitutes_for:
             rows[-1].update({"substitutes_for": s.substitutes_for, "fetcher": "owned",
                              "owner": "asia_gap_thread"})
@@ -4354,8 +4519,9 @@ ROSTER_HEADER = (
     "# every row itself (fetcher: owned). Generated from alt_proxies.roster_file_rows()\n"
     "# (python desks/mt5/research/alt_proxies.py --write-rosters); regenerate rather than\n"
     "# hand-edit. status is as declared with no keys set; live yield is UNMEASURED except\n"
-    "# where the status says otherwise. A BLOCKED+SUBSTITUTE:<ids> row is never fetched: its\n"
-    "# terms block it and the named confirmed rows stand in for it.\n")
+    "# where the status says otherwise. A terms-blocked row is never fetched. It reads\n"
+    "# BLOCKED+SUBSTITUTE:<ids> only when a named confirmed row's correlation with it was\n"
+    "# MEASURED >= 0.5 with n reported; else BLOCKED_NO_SUBSTITUTE:UNVERIFIED=<candidates>.\n")
 
 
 def roster_file_rows() -> list[dict[str, Any]]:
@@ -4385,7 +4551,9 @@ def engine_rows() -> dict[str, Any]:
     Asia-thread table it parses from data/paid_data_substitutes_*.json (class / paid / free /
     region / measure / frequency, found by header words), and `library_rows`, the shape of its
     free-source library (data/paid_substitute_library.json), ready to merge once #152 lands.
-    Every blocked source is marked BLOCKED+SUBSTITUTE:<ids> or BLOCKED_ON_TERMS (unsubstituted)."""
+    Every blocked source is marked BLOCKED+SUBSTITUTE:<ids> (a measured corr >= 0.5 with n),
+    BLOCKED_NO_SUBSTITUTE:UNVERIFIED=<candidates> or BLOCKED_ON_TERMS. `free` names the
+    candidates so the engine can measure them; `substitute_check` says which, if any, count."""
     klass = {_CARD: "card", _FOOT: "foot traffic", _SAT: "satellite (port / AIS activity)",
              _NEWS: "news", _TRAVEL: "foot traffic (travel arrivals)", _GOLD: "gold premium"}
     blocked_class = {"jp_jnto_arrivals": _TRAVEL, "cn_sge_premium": _GOLD}
@@ -4404,12 +4572,16 @@ def engine_rows() -> dict[str, Any]:
             "status": status_of(src, {}),
             "terms": src.terms,
             "blocked_because": TERMS.get(sid, ("", ""))[1],
-            "unsubstituted_because": NO_SUBSTITUTE.get(sid, ""),
+            "unsubstituted_because": unsubstituted().get(sid, ""),
+            "substitute_check": "; ".join(
+                f"{c['substitute']}: {c['verdict']} (corr={c['corr']}, n={c['n']})"
+                for c in (substitute_check(sid, x) for x in subs)),
             "evidence": "; ".join(f"{x}: {TERMS_EVIDENCE[x]['terms_url']}" for x in subs
-                                  if x in TERMS_EVIDENCE),
+                                  if x in TERMS_EVIDENCE and BY_ID[x].terms == "confirmed"),
         })
     lib: list[dict[str, Any]] = []
-    for x in sorted({x for v in SUBSTITUTED_BY.values() for x in v}):
+    for x in sorted({x for v in SUBSTITUTED_BY.values() for x in v
+                     if BY_ID[x].terms == "confirmed"}):        # a blocked candidate: no row
         s = BY_ID[x]
         ev = TERMS_EVIDENCE.get(x, {})
         lib.append({
