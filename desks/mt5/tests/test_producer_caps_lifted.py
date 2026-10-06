@@ -278,7 +278,7 @@ def _clearing(symbol: str, kind: str, axis: str, bucket: str,
 
 def test_the_atlas_donates_one_cell_per_executable_identity(
         monkeypatch: pytest.MonkeyPatch) -> None:
-    """Three horizons of one reaction are one trade; two kinds with the same shape are one; a
+    """Four horizons of one reaction are one trade; two kinds with the same shape are one; a
     reaction with a different shape is a second cell."""
     clearing = (_clearing("EURUSD", "cpi", "all", "all", _PROFILE_UP)
                 + _clearing("EURUSD", "nfp", "all", "all", _PROFILE_UP)
@@ -288,8 +288,8 @@ def test_the_atlas_donates_one_cell_per_executable_identity(
     monkeypatch.setattr(era, "_lane_ok", lambda s: True)
     monkeypatch.setattr(era, "_donate", lambda c, n: sent.extend(c) or Path("x.json"))
     out = era.donate_clearing({"clearing": clearing, "n_cells": 500}, 300)
-    assert len(clearing) == 8
-    assert out["n"] == 2 and out["duplicates_dropped"] == 6
+    assert len(clearing) == 10
+    assert out["n"] == 2 and out["duplicates_dropped"] == 8
     idents = {era.executable_identity(c["symbol"], c["family"], c["params"]) for c in sent}
     assert len(idents) == 2
 
