@@ -171,5 +171,19 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "SKcbcs9nuhs",
+  "published": "2026-10-06T18:04:26Z",
+  "title": "I Lost A $12K Payout In Days!",
+  "description": "He felt like a king after a $12,000 payout, and a couple of days later it was all gone. \ud83d\udcb8",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]

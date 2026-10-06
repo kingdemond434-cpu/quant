@@ -1,0 +1,445 @@
+[
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How do you implement effective market data quality controls in a risk management environment?",
+  "url": "https://quant.stackexchange.com/questions/85874/how-do-you-implement-effective-market-data-quality-controls-in-a-risk-management",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 1,
+  "tags": [
+   "derivatives",
+   "market-data",
+   "risk-management",
+   "sabr",
+   "frtb"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Does the regulatory feedback loop between PD and Asset Correlation under CRR imply a unique fixed-point MoC?",
+  "url": "https://quant.stackexchange.com/questions/85862/does-the-regulatory-feedback-loop-between-pd-and-asset-correlation-under-crr-imp",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "credit-risk"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Flexible horizon in Triple Barrier Method",
+  "url": "https://quant.stackexchange.com/questions/49314/flexible-horizon-in-triple-barrier-method",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 2,
+  "tags": [
+   "machine-learning",
+   "quants"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How Do Professional Quants Turn a Research Idea Into a Strategy Ready to Code?",
+  "url": "https://quant.stackexchange.com/questions/85872/how-do-professional-quants-turn-a-research-idea-into-a-strategy-ready-to-code",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "research",
+   "quants"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Estimating distribution of rate of return",
+  "url": "https://quant.stackexchange.com/questions/63480/estimating-distribution-of-rate-of-return",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "time-series",
+   "returns",
+   "distribution",
+   "auto-correlation",
+   "rolling"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Combining Mulitple Forecasts? Budged Constraints?",
+  "url": "https://quant.stackexchange.com/questions/4521/combining-mulitple-forecasts-budged-constraints",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 2,
+  "tags": [
+   "forecasting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "combining forecasts at different time horizons",
+  "url": "https://quant.stackexchange.com/questions/73669/combining-forecasts-at-different-time-horizons",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "time-series",
+   "returns",
+   "prediction"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Why is Europe still using EURIBOR?",
+  "url": "https://quant.stackexchange.com/questions/85867/why-is-europe-still-using-euribor",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "rates",
+   "european",
+   "rfr"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Has anyone actually built a robust sub-1h trading model?",
+  "url": "https://quant.stackexchange.com/questions/85868/has-anyone-actually-built-a-robust-sub-1h-trading-model",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "time-series",
+   "quant-trading-strategies",
+   "algorithmic-trading",
+   "backtesting",
+   "high-frequency"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Replicating the EIOPA equity index for the symmetric adjustment of the equity capital charge in Solvency 2",
+  "url": "https://quant.stackexchange.com/questions/44336/replicating-the-eiopa-equity-index-for-the-symmetric-adjustment-of-the-equity-ca",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 2,
+  "tags": [
+   "equities",
+   "index",
+   "solvency-ii"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Statistical properties of stochastic processes for moving average trading to work",
+  "url": "https://quant.stackexchange.com/questions/348/statistical-properties-of-stochastic-processes-for-moving-average-trading-to-wor",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 21,
+  "tags": [
+   "trading",
+   "stochastic-processes",
+   "moving-average"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How is VaR calculated for a pension company?",
+  "url": "https://quant.stackexchange.com/questions/85784/how-is-var-calculated-for-a-pension-company",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 1,
+  "tags": [
+   "risk",
+   "value-at-risk",
+   "banks",
+   "insurance",
+   "solvency-ii"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Classifying stocks by industry (free)",
+  "url": "https://quant.stackexchange.com/questions/40455/classifying-stocks-by-industry-free",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 2,
+  "tags": [
+   "equities",
+   "data"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "QLIKE loss function to evaluate forecasting model of log(realized volatility)",
+  "url": "https://quant.stackexchange.com/questions/31367/qlike-loss-function-to-evaluate-forecasting-model-of-logrealized-volatility",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 5,
+  "tags": [
+   "volatility",
+   "forecasting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Backtesting with L3 data in very low-liquidity market",
+  "url": "https://quant.stackexchange.com/questions/85863/backtesting-with-l3-data-in-very-low-liquidity-market",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "backtesting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Derivative of the Basel Risk-Weight Function with Respect to MoC C",
+  "url": "https://quant.stackexchange.com/questions/85861/derivative-of-the-basel-risk-weight-function-with-respect-to-moc-c",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "credit-risk",
+   "default-probability"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Presuming a Market Maker must delta-hedge, how can it still earn money?",
+  "url": "https://quant.stackexchange.com/questions/60733/presuming-a-market-maker-must-delta-hedge-how-can-it-still-earn-money",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 2,
+  "tags": [
+   "market-making"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "CDS vs Corps recovery rates",
+  "url": "https://quant.stackexchange.com/questions/85858/cds-vs-corps-recovery-rates",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "credit-risk",
+   "credit-derivatives"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Is there another data download program available like Q Collector Expert For DTN IQ Feed or from any other data source?",
+  "url": "https://quant.stackexchange.com/questions/85345/is-there-another-data-download-program-available-like-q-collector-expert-for-dtn",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "market-data",
+   "database"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Why couldn\u2019t outside investors arbitrage away the Treasury mispricings during the LTCM crisis?",
+  "url": "https://quant.stackexchange.com/questions/85848/why-couldn-t-outside-investors-arbitrage-away-the-treasury-mispricings-during-th",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "arbitrage",
+   "spread",
+   "treasuries",
+   "fed"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How to obtain yahoo finance ticker data for stocks that are no longer listed (etc. merge, bankruptcy, etc.)?",
+  "url": "https://quant.stackexchange.com/questions/69363/how-to-obtain-yahoo-finance-ticker-data-for-stocks-that-are-no-longer-listed-et",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "programming",
+   "yahoofinance"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Looking for free historical EOD prices of stocks from S&amp;P 500",
+  "url": "https://quant.stackexchange.com/questions/34605/looking-for-free-historical-eod-prices-of-stocks-from-sp-500",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "data",
+   "quant-trading-strategies",
+   "historical-data"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Market making in prediction markets (Kalshi/Polymarket): what changes in the CLOB stochastic control problem?",
+  "url": "https://quant.stackexchange.com/questions/85852/market-making-in-prediction-markets-kalshi-polymarket-what-changes-in-the-clo",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": -1,
+  "tags": [
+   "option-pricing",
+   "stochastic-processes",
+   "market-microstructure",
+   "market-making",
+   "stochastic-control"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "SPX Volatility Surface: Sticky Moneyness vs. Constant Delta",
+  "url": "https://quant.stackexchange.com/questions/85380/spx-volatility-surface-sticky-moneyness-vs-constant-delta",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 1,
+  "tags": [
+   "options",
+   "vix",
+   "skew-stickiness"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Calculate implied volatility of american option on interest rate futures",
+  "url": "https://quant.stackexchange.com/questions/80125/calculate-implied-volatility-of-american-option-on-interest-rate-futures",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "option-pricing",
+   "interest-rates",
+   "modeling"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Degrees of freedom in moving average crossover strategies with varying parameters",
+  "url": "https://quant.stackexchange.com/questions/80601/degrees-of-freedom-in-moving-average-crossover-strategies-with-varying-parameter",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "quant-trading-strategies",
+   "statistics",
+   "backtesting",
+   "optimization",
+   "moving-average"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Fourier transform for stock price forecasting",
+  "url": "https://quant.stackexchange.com/questions/61565/fourier-transform-for-stock-price-forecasting",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 3,
+  "tags": [
+   "equities",
+   "fourier-transform"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Treasury futures Net Basis / Implied Repo Rate",
+  "url": "https://quant.stackexchange.com/questions/85840/treasury-futures-net-basis-implied-repo-rate",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "futures",
+   "treasuries",
+   "basis"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "INR OIS CURVE for valuation",
+  "url": "https://quant.stackexchange.com/questions/85849/inr-ois-curve-for-valuation",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "fixed-income"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "What is the correct interpretation of IRR?",
+  "url": "https://quant.stackexchange.com/questions/85316/what-is-the-correct-interpretation-of-irr",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-06T18:27:53+00:00",
+  "score": 0,
+  "tags": [
+   "finance",
+   "investment"
+  ]
+ }
+]
