@@ -227,7 +227,7 @@ def kalman_filter(y: Sequence[float] | np.ndarray, model: StateSpace) -> FilterR
 def rts_smoother(result: FilterResult, model: StateSpace) -> tuple[np.ndarray, np.ndarray]:
     """Rauch-Tung-Striebel smoothed (a_{t|n}, P_{t|n}). RESEARCH ONLY -- never a PIT series:
     the value at t is computed from observations after t."""
-    n, m = result.a_filt.shape
+    n = result.a_filt.shape[0]
     a_s = result.a_filt.copy()
     P_s = result.P_filt.copy()
     for t in range(n - 2, -1, -1):
@@ -274,7 +274,8 @@ def tvp_regression(y: Sequence[float] | np.ndarray, X: Sequence[Sequence[float]]
     if Xa.ndim == 1:
         Xa = Xa[:, None]
     k = Xa.shape[1]
-    qv = np.full(k, float(q)) if np.ndim(q) == 0 else np.asarray(q, dtype=float)
+    qv = (np.full(k, float(q)) if isinstance(q, int | float)
+          else np.asarray(q, dtype=float).reshape(-1) * np.ones(k))
     Xc = np.where(np.isfinite(Xa), Xa, 0.0)
     p0 = np.eye(k) * _diffuse_scale(ya) if P0 is None else np.asarray(P0, dtype=float)
     return StateSpace(Z=Xc[:, None, :], H=np.array([[float(sigma2_eps)]]), T=np.eye(k),
