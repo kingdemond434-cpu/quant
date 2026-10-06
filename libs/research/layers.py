@@ -80,6 +80,7 @@ LEG_LAYER: dict[str, str] = {
     # places an order, neither sizes one, and both exist only so the prediction layer's verdict
     # is fed the right population and published the moment it exists.
     "fast_admission": "prediction", "canon_publication": "prediction",
+    "attestation_remint": "prediction",
     "lockbox_recert": "prediction",
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
@@ -234,6 +235,7 @@ LEG_LAYER: dict[str, str] = {
     "kelly_survival": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
+    "recovery_drills": "meta",
     "forward_evidence_tracker": "meta",
     # The box-state freshness fence and the desk health report, hourly before publication.
     "box_state_freshness": "meta", "desk_health": "meta",

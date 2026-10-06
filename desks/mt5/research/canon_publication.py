@@ -686,8 +686,45 @@ def recover_from_gate_output(gates: Path = GATE_OUTPUT, report: Path = REPORT,
     return out
 
 
+#: `research/attestation_remint.py`'s status: the attestation in force and WHEN it came into force.
+#: Resolved beside the seal (`<desk>/reports/REMINT_STATUS.json`) so a seal in another tree never
+#: reads this desk's floor.
+REMINT_STATUS_NAME = "REMINT_STATUS.json"
+
+
+def attestation_floor(status_path: Path, attestation: dict[str, Any]) -> datetime | None:
+    """When the attestation in force came into force, or None when that is not established.
+
+    Read from the remint organ's artifact and used only when its fingerprint is the CURRENT
+    attestation's -- a status written under another attestation dates nothing here.
+    """
+    try:
+        from attestation_remint import fingerprint
+    except ImportError:                                  # pragma: no cover - import-context dep
+        from research.attestation_remint import fingerprint  # type: ignore[no-redef]
+    doc = _read(status_path)
+    if doc.get("attestation_fingerprint") != fingerprint(attestation):
+        return None
+    try:
+        t = datetime.fromisoformat(str(doc.get("in_force_since") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def predates(row: dict[str, Any], floor: datetime) -> bool:
+    """True when the row's gates were evaluated before `floor` (or carry no date at all)."""
+    try:
+        from attestation_remint import row_evidence_time
+    except ImportError:                                  # pragma: no cover - import-context dep
+        from research.attestation_remint import row_evidence_time  # type: ignore[no-redef]
+    t = row_evidence_time(row)
+    return t is None or t < floor
+
+
 def publish(report: Path = REPORT, seal: Path = SEAL,
-            recovered: dict[str, Any] | None = None) -> dict[str, Any]:
+            recovered: dict[str, Any] | None = None,
+            remint_status: Path | None = None) -> dict[str, Any]:
     """Seal the judge's latest completed sweep into the canonical store, atomically.
 
     Returns the publication record. The seal is written only when the report carries the exact
@@ -757,6 +794,31 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
     survivors = doc_report.get("survivors") if attested_report else {}
     survivors = survivors if isinstance(survivors, dict) else {}
     merged = dict(seal_before)
+
+    # RE-JUDGED, NEVER RE-STAMPED (2026-09-30, lockbox v4). This organ writes the seal under the
+    # REPORT's attestation, and `merged` starts as every row the seal already held -- so on the
+    # first publication after an attestation change every old row was carried under the new
+    # header without a gate being re-run, and the sealed judge's own writer does the same to the
+    # report. A row whose gates were evaluated before the attestation in force came into force
+    # (`attestation_remint`'s `in_force_since`), or any row of a seal whose own attestation is a
+    # different one, is PARKED in `pending_rejudge` -- kept whole, out of the survivor set -- and
+    # returns only when the judge re-mints it under the attestation in force. `attestation_remint`
+    # puts exactly those cells on the docket.
+    floor = attestation_floor(remint_status or (seal.parent.parent / "reports"
+                                                / REMINT_STATUS_NAME), ATTESTATION)
+    seal_policy = doc_seal.get("gate_policy")
+    seal_other_attestation = isinstance(seal_policy, dict) and not is_exact_policy(seal_policy)
+    _pend = doc_seal.get("pending_rejudge")
+    parked: dict[str, Any] = dict(_pend) if isinstance(_pend, dict) else {}
+    parked_now: list[str] = []
+    if attested_report or recovered:
+        for key in list(merged):
+            row = merged[key]
+            if seal_other_attestation or (floor is not None and isinstance(row, dict)
+                                          and predates(row, floor)):
+                parked[key] = merged.pop(key)
+                parked_now.append(key)
+    record["attestation_floor"] = floor.isoformat() if floor else None
     admitted: list[str] = []
     admitted_recovered: list[str] = []
     refused_rows: Counter[str] = Counter()
@@ -781,6 +843,12 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
         if not all_ten_pass(row.get("gates")):
             refused_rows["not_all_ten_pass"] += 1
             continue
+        if floor is not None and predates(row, floor):
+            # The report can carry a stale row under the current header (the sealed writer
+            # merges then re-stamps). It waits for its re-judge like the seal's own.
+            refused_rows["predates_attestation"] += 1
+            parked.setdefault(key, row)
+            continue
         why_unrunnable = unrunnable_reason(row)
         if why_unrunnable:
             # THE SHARED JUDGE, NOT A LIST LOOKUP. `unrunnable_evicted` is the RECORD of past
@@ -795,6 +863,7 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
             if key in recovered:
                 admitted_recovered.append(key)
         merged[key] = row
+        parked.pop(key, None)
 
     # ONE EXECUTABLE IDENTITY, ONE CERTIFICATE ROW.  Keeping aliases in the survivor mapping does
     # not create more evidence; it makes one clock oscillate between two equivalent certificate
@@ -811,7 +880,7 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
     # that refused every row and says only "REFUSED_EMPTY" is the shape that hides a judge quietly
     # emitting rows the seal cannot take -- the count, by named reason, is the thing that says so.
     record["refused_rows"] = dict(refused_rows)
-    accounted_keys = set(merged) | set(certificate_aliases)
+    accounted_keys = set(merged) | set(certificate_aliases) | set(parked)
     if not set(seal_before).issubset(accounted_keys):
         # Unreachable by construction (merged starts as a copy of the seal) and asserted anyway:
         # the never-shrink law is the one this desk has actually lost certificates to.
@@ -837,6 +906,21 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
     for key in CARRIED:
         if key in doc_seal:
             doc_new[key] = doc_seal[key]
+    doc_new.pop("pending_rejudge", None)
+    if parked:
+        doc_new["pending_rejudge"] = parked
+    if parked_now:
+        # A revocation must SAY it revoked (check_authority_ratchet.REVOCATION_KEYS).
+        doc_new["revocation"] = {
+            "at": now.isoformat(), "by": "research/canon_publication.py",
+            "kind": "pending_rejudge_under_attestation_in_force",
+            "attestation_floor": record["attestation_floor"],
+            "seal_attestation_differed": seal_other_attestation,
+            "parked": len(parked_now), "keys": sorted(parked_now)[:50],
+            "why": ("gates evaluated before the attestation in force; parked until the judge "
+                    "re-mints them, never carried under the new header")}
+    record["pending_rejudge"] = len(parked)
+    record["parked_this_pass"] = len(parked_now)
     doc_new.update({
         "n": len(merged),
         "survivors": merged,
