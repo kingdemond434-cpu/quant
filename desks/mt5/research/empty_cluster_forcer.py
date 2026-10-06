@@ -17,11 +17,12 @@ problems that were being treated as one:
                                     Nothing mints them. That is a pure wiring gap and it is what
                                     this file closes.
 
-    STRUCTURALLY UNREACHABLE        execution_entry, news_reaction and options_implied have NO
-                                    registered family that classifies into them at all. The desk
-                                    declared fifteen clusters and built families for eleven.
-                                    No amount of search reaches these: the missing artifact is a
-                                    FAMILY MODULE, and saying so is the remedy.
+    STRUCTURALLY UNREACHABLE        execution_entry and news_reaction have NO registered family
+                                    that classifies into them at all. The desk declared fifteen
+                                    clusters and built families for eleven. No amount of search
+                                    reaches these: the missing artifact is a FAMILY MODULE, and
+                                    saying so is the remedy. (options_implied stood here until
+                                    2026-10-06 -- see MISSING_ARTIFACT's history note below.)
 
 The third case is why this file refuses to fake anything. Minting `event_reaction` cells and
 calling them news_reaction would make the register green and change nothing about the book -- the
@@ -79,13 +80,22 @@ MISSING_ARTIFACT = {
                       "whose arrival time is itself the signal. The 3,854 STRUCTURED_CB_SPEECH "
                       "cells minted on 2026-09-15 are its input and currently route to "
                       "event_reaction, which is the wrong clock."),
-    "options_implied": ("NO ARTIFACT MAKES THIS REACHABLE ON THIS ACCOUNT. Fusion quotes no "
-                        "options on any instrument in the universe registry, so there is no "
-                        "implied surface to trade and no implied series to condition on. This "
-                        "cluster is UNREACHABLE BY VENUE, not unattempted, and the honest "
-                        "disposition is to say so rather than to leave it looking like a gap "
-                        "somebody forgot. Reaching it needs a venue change, which is the "
-                        "principal's decision and not a research task."),
+    # HISTORY, KEPT BECAUSE IT WAS WRONG IN AN INSTRUCTIVE WAY. Until 2026-10-06 this entry read
+    # "NO ARTIFACT MAKES THIS REACHABLE ON THIS ACCOUNT. Fusion quotes no options ... so there is
+    # no implied surface to trade and no implied series to condition on ... Reaching it needs a
+    # venue change." The first half is true and the conclusion does not follow from it. The
+    # cluster's payer (alpha_clusters: dealers short gamma, the implied-realised premium) acts on
+    # the UNDERLYING, and the underlyings are on this account: universe.json lists XAUUSD,
+    # US500, NAS100, US30, EURUSD and XTIUSD, and recorders/vol_archive.py has archived the CBOE
+    # implied series for exactly those (GVZ, VIX + 9D/3M/6M, VXN, VXD, EVZ, OVX) hourly since
+    # 2026-09-05 -- an implied series to condition on, on this desk, the whole time. The family
+    # module now exists (mt5desk/family_implied_vol.py) and the cluster is PROPOSER_OWNED below;
+    # this entry is reported only if no registered family classifies here again.
+    "options_implied": ("desks/mt5/mt5desk/family_implied_vol.py -- implied-vol-CONDITIONED "
+                        "trades on the underlying (no options venue needed), fed by "
+                        "research/options_implied.py from recorders/vol_archive.py. If this "
+                        "text is reported, the two families were unregistered: restore them in "
+                        "families_orthogonal.ORTHOGONAL_FAMILIES."),
 }
 
 
@@ -110,6 +120,10 @@ CLUSTER_PROPOSER = {
     "positioning_flow": "the COT families (cot_positioning, cot_change_fade, cot_net_fade), which "
                         "need a COT print per bar",
     "event_surprise": "event_reaction, fed by the calendar -- 113 cells already built",
+    "options_implied": "research/options_implied.py (hourly leg `options_implied`) -- "
+                       "implied_vol_state / implied_vol_conditioned on every instrument whose "
+                       "CBOE implied series vol_archive maps, read from "
+                       "data/lake/series/oi_<SYMBOL>.parquet",
 }
 
 

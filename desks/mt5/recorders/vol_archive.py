@@ -51,7 +51,7 @@ node is a node the desk cannot trade. A vol series whose MT5 instrument is not o
 recorded as NOT_TRADEABLE_HERE with the candidate names that were tried, rather than dropped.
 
     ^GVZ   gold vol            -> XAUUSD
-    ^OVX   crude vol           -> USOIL / WTI / UKOIL, whichever this broker lists
+    ^OVX   crude vol           -> USOIL / WTI / UKOIL / XTIUSD, whichever this broker lists
     ^VIX   S&P 500 30-day vol  -> US500 / SPX500 / USA500, with the 9D/30D/3M/6M term curve
     ^VXN   Nasdaq-100 vol      -> USTEC / NAS100 / NDX
     ^VXD   Dow vol             -> US30 / DJ30
@@ -138,7 +138,11 @@ class Ground:
 
 GROUND: tuple[Ground, ...] = (
     Ground("^GVZ", ("XAUUSD", "GOLD", "XAUUSD.", "XAUUSDx"), "gold 30-day implied vol"),
-    Ground("^OVX", ("USOIL", "WTI", "UKOIL", "BRENT", "CRUDE", "OIL"),
+    # XTIUSD / XBRUSD ARE FUSION'S OWN NAMES FOR WTI AND BRENT (universe.json, asset class
+    # Energy). The first cycle recorded ^OVX NOT_TRADEABLE_HERE because none of the generic
+    # spellings matched; the instrument was on the account the whole time. The WTI CFD wins: OVX
+    # is struck on USO options, a WTI vehicle.
+    Ground("^OVX", ("USOIL", "WTI", "UKOIL", "BRENT", "CRUDE", "OIL", "XTIUSD", "XBRUSD"),
            "crude oil 30-day implied vol"),
     Ground("^VIX", ("US500", "SPX500", "USA500", "SP500", "US500.cash"),
            "S&P 500 30-day implied vol",
