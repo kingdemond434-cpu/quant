@@ -242,3 +242,10 @@ def test_pack_names_a_department_that_exists() -> None:
     from countries.jp import pack
     mod = importlib.import_module(pack.DEPARTMENT_MODULE)
     assert callable(mod.run)
+
+
+def test_refused_registry_rows_carry_the_terms_label() -> None:
+    reg = json.loads((DESK / "data" / "asia_sources.json").read_text("utf-8"))
+    rows = {r["id"]: r for r in reg["sources"]}
+    for sid in ("jp_tocom_settlements", "jp_boj_decisions"):
+        assert rows[sid]["access_label"] == "PUBLIC_WITH_TERMS" and rows[sid]["terms_note"]
