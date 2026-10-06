@@ -34,7 +34,7 @@ def test_one_belief_per_tilt_date_and_bounded_probability(tmp_path, monkeypatch)
     again = F.run(tmp_path, _intel(9.0, "2026-10-01"), lambda s: None,
                   now=now + timedelta(hours=1), register=reg)
     assert again["published_this_pass"]["accepted"] == 0
-    assert "alt_proxies:kr_exports:exports" in U.census()
+    assert "axis:alt_kr_exports" in U.census()
     assert again["skill"]["status"] == "UNMEASURED"
 
 

@@ -1164,6 +1164,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     # GLOBAL-LAYER forests (web, academic+code, physical data, market data) -- layers of the
     # world that would be mined seventeen times over if each region hunted them itself.
     **dict.fromkeys(("global_research_os", "acquire_datasets", "source_experiment_census",
+                     "dataset_use_census",
                      *GLOBAL_FOREST_LEGS), "regions"),
     # the free stack (2026-09-30): app rankings, CN forums, JP IR, JP patents, trends, congress,
     # CoinPaprika (crypto CFDs only), Reddit/Telegram, AKShare/TuShare/BaoStock, catalogues --
@@ -5206,6 +5207,11 @@ def main() -> None:
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
     ms = _costed("model_skill", model_skill)
+    # CRO D18 MEASURED ON READS (2026-10-06): every dataset on disk (acquired series, axes, lake
+    # packs) against the consumer reads recorded this window (libs/data/dataset_use). Late in the
+    # pass so the hour's readers have recorded; reports/DATASET_USE.json + a committed digest.
+    duc = _costed("dataset_use_census", lambda: _producer(
+        "dataset_use_census", "research/dataset_use_census.py"))
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
     ad = _costed("adversaries", adversaries)
@@ -5707,6 +5713,7 @@ def main() -> None:
                     "world_dataset_hunt": wdh,
                     "world_macro_proposer": wmp,
                     "source_experiment_census": sxc,
+                    "dataset_use_census": duc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
                     "coevolution": cev, "model_search": mds, "cross_asset_graph": cag,

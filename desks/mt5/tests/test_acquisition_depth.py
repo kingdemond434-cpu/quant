@@ -160,10 +160,36 @@ def test_acquired_series_reach_the_world_model_with_a_late_pit_stamp(desk, monke
     first = series.points[0]
     lag = datetime.fromisoformat(first.available_time) - datetime.fromisoformat(first.period_time)
     assert lag == timedelta(days=3, hours=WM.CLOCK_PAD_H)        # weekly cadence default + pad
-    assert series.series_id in U.census()                        # the read was recorded
+    monkeypatch.setattr(WM, "AXES", tmp_path / "no_axes")
+    monkeypatch.setattr(WM, "FRED", tmp_path / "no_fred.json")
+    monkeypatch.setattr(WM, "REPRESENTATIONS", tmp_path / "no_reps")
+    kept = WM.load_inputs()
+    assert [s.series_id for s in kept.series] == [series.series_id]
+    assert series.series_id in U.census()                        # the kept read was recorded
     reg = json.loads(A.REGISTRY.read_text())
     for meta in reg["series"].values():
         meta["pit_authority"] = False
     A.REGISTRY.write_text(json.dumps(reg))
     assert WM._acquired_inputs(unmeasured) == []
     assert any(u["name"] == "acquired:uncertified" for u in unmeasured)
+
+
+def test_d18_census_counts_unfed_on_reads(tmp_path):
+    from research import dataset_use_census as C
+    (tmp_path / "axes").mkdir()
+    (tmp_path / "axes" / "alt_kr.json").write_text("{}")
+    (tmp_path / "axes" / "macro.json").write_text("{}")
+    (tmp_path / "lake").mkdir()
+    (tmp_path / "lake" / "pack_x.csv").write_text("a\n")
+    (tmp_path / "reg.json").write_text(json.dumps({"series": {"s1": {}}}))
+    now = datetime(2026, 10, 6, tzinfo=UTC)
+    U.record_reads("world_model", {"axis:alt_kr": "v"}, use="regime_state",
+                   root=tmp_path / "use", now=now)
+    U.record_reads("old", {"lake:pack_x": "v"}, use="conditioning", root=tmp_path / "use",
+                   now=now - timedelta(days=9))
+    doc = C.build(now, use_root=tmp_path / "use", acquired=tmp_path / "reg.json",
+                  axes=tmp_path / "axes", lake=tmp_path / "lake")
+    assert doc["datasets_held"] == 4 and doc["fed"] == 1 and doc["unfed_datasets"] == 3
+    status = {r["dataset"]: r["status"] for r in doc["unfed"]}
+    assert status == {"acquired:s1": "UNFED", "axis:macro": "UNFED", "lake:pack_x": "STALE"}
+    assert doc["fed_by_use"]["regime_state"] == 1 and doc["target"] == 0

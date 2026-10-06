@@ -368,19 +368,7 @@ def _acquired_inputs(unmeasured: list[dict[str, str]]) -> list[R.Series]:
         unmeasured.append({"name": "acquired:uncertified",
                            "why": f"{withheld} acquired series retained without PIT authority",
                            "measured_by": "a certificate whose seven questions all PASS"})
-    if out:
-        try:
-            from libs.data.dataset_use import record_reads
-            record_reads("world_model", {s.series_id: str(meta_ver(reg, s.series_id))
-                                         for s in out}, use="regime_state")
-        except Exception:                                      # noqa: BLE001 -- never blocks
-            pass
     return out
-
-
-def meta_ver(reg: dict[str, Any], series_id: str) -> str:
-    meta = (reg.get("series") or {}).get(series_id.split(":", 1)[-1]) or {}
-    return str(meta.get("refreshed_at") or meta.get("acquired_at") or "")
 
 
 def load_inputs(*, max_series: int = 240) -> Inputs:
@@ -392,6 +380,7 @@ def load_inputs(*, max_series: int = 240) -> Inputs:
     series: list[R.Series] = []
     unmeasured: list[dict[str, str]] = []
 
+    axis_files: dict[str, str] = {}
     for path in sorted(AXES.glob("*.json")) if AXES.exists() else []:
         doc = _read_json(path)
         if not isinstance(doc, dict):
@@ -399,6 +388,7 @@ def load_inputs(*, max_series: int = 240) -> Inputs:
                                "measured_by": "re-run the axis collector for this file"})
             continue
         axis_id = str(doc.get("id") or path.stem)
+        axis_files[axis_id] = path.stem
         region = _axis_region(axis_id)
         info = str(doc.get("axis") or "macro_state")
         sub = doc.get("series")
@@ -504,6 +494,18 @@ def load_inputs(*, max_series: int = 240) -> Inputs:
                                   f"{max_series}, shortest first: "
                                   + ", ".join(s.series_id for s in series[max_series:][:12]),
                            "measured_by": "a wider max_series or a longer history"})
+
+    # CRO D18 counts a dataset as fed only on a recorded read: every axis file and acquired series
+    # this pass actually kept as a model input is recorded (libs/data/dataset_use).
+    axis_reads = {f"axis:{axis_files.get(s.dataset.split(':', 1)[1], s.dataset)}": ""
+                  for s in kept if s.dataset.startswith("axis:")}
+    axis_reads.update({s.series_id: "" for s in kept if s.series_id.startswith("acquired:")})
+    if axis_reads:
+        try:
+            from libs.data.dataset_use import record_reads
+            record_reads("world_model", axis_reads, use="regime_state")
+        except Exception:                                      # noqa: BLE001 -- never blocks
+            pass
     return Inputs(series=kept, unmeasured=unmeasured, arrays=_prepare(kept))
 
 

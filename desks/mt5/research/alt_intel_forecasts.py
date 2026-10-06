@@ -197,7 +197,7 @@ def run(desk: Path, intel: dict[str, Any], bars: Callable[[str], Any],
     _atomic(state_path, state)
     try:
         from libs.data.dataset_use import record_reads
-        comps = {f"alt_proxies:{c.get('source')}:{c.get('series')}": str(c.get("available_time"))
+        comps = {f"axis:alt_{c.get('source')}": str(c.get("available_time"))
                  for row in (intel.get("instruments") or {}).values() if isinstance(row, dict)
                  for c in row.get("components") or [] if isinstance(c, dict)}
         if comps:
