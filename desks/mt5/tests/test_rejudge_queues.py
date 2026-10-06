@@ -107,9 +107,13 @@ def test_the_zero_spread_list_waits_for_the_patch_then_queues_once(tmp_path: Pat
     lst = tmp_path / "priority_rejudge_zero_spread.json"
     con = REC.connect(tmp_path / "r.sqlite")
 
+    # A stand-in for external_gauntlet, not a Costs construction: the only fact the queue reads
+    # is whether the 3x arm costs more than the 1x arm, so any positive base spread will do.
+    stub_spread = 0.05
+
     def _G(landed: bool):
         def costs_for(sym, meta_, mult=1.0):
-            return types.SimpleNamespace(spread_per_lot=0.05 * (mult if landed else 1.0))
+            return types.SimpleNamespace(spread_per_lot=stub_spread * (mult if landed else 1.0))
         return types.SimpleNamespace(costs_for=costs_for, COST_SCENARIO=3.0)
     kw = {"list_path": lst, "canon": canon, "report": tmp_path / "none.json", "ledger": ledger}
     doc = ZR.run(con, _G(False), meta, **kw)
