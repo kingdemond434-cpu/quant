@@ -588,9 +588,11 @@ def cert_fields(key: str, cert: Mapping[str, Any]) -> tuple[str, str, dict[str, 
     return sym, fam, params, tf, sess, reg, spec
 
 
-def survivor_basis(path: Path, doc: Any, *, now: datetime | None = None) -> dict[str, Any]:
-    """Where an N_CERT came from: path, mtime, swept_at, rows, and `basis` -- `box_live` when
-    swept (or written) within LIVE_BASIS_MAX_AGE_H, else `git_snapshot`."""
+def survivor_basis(path: Path, doc: Any, *, now: datetime | None = None,
+                   live: bool = True) -> dict[str, Any]:
+    """Where an N_CERT came from: path, mtime, swept_at, rows, and `basis` -- `box_live` for the
+    live survivor file swept (or written) within LIVE_BASIS_MAX_AGE_H, else `git_snapshot` (the
+    sealed canon fallback is always `git_snapshot`)."""
     try:
         mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
     except OSError:
@@ -607,7 +609,7 @@ def survivor_basis(path: Path, doc: Any, *, now: datetime | None = None) -> dict
         rel = str(path.relative_to(BASE.parents[1]))
     except ValueError:
         rel = str(path)
-    return {"basis": ("box_live" if age is not None and age <= LIVE_BASIS_MAX_AGE_H
+    return {"basis": ("box_live" if live and age is not None and age <= LIVE_BASIS_MAX_AGE_H
                       else "git_snapshot"),
             "source": rel, "source_mtime": mtime.isoformat(timespec="seconds") if mtime else None,
             "swept_at": swept, "age_h": round(age, 2) if age is not None else None,
@@ -621,7 +623,7 @@ def load_survivors(*, now: datetime | None = None) -> tuple[Any, dict[str, Any]]
         doc = _read(path)
         sv = doc.get("survivors") if isinstance(doc, dict) else None
         if isinstance(sv, dict) and sv:
-            return doc, survivor_basis(path, doc, now=now)
+            return doc, survivor_basis(path, doc, now=now, live=path == SURVIVORS_LIVE)
     return None, {"basis": UNMEASURED, "source": None,
                   "why": f"neither {SURVIVORS_LIVE.name} nor {CANON.name} holds survivors"}
 
