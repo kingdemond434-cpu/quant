@@ -6,12 +6,17 @@ on the same days, crash together, trade the same sessions, earn in the same regi
 other. Each of those is a way the book holds ONE bet while counting two. This module measures six
 of them from the daily P&L series the desk already keeps (`alpha_breadth.daily_sleeve_returns`):
 
-    signal     Jaccard of the days each stream is ACTIVE (non-zero P&L): do they trade together
-    drawdown   Jaccard of the days each stream sits below its running P&L peak
-    co_crash   P(b in its worst decile | a in its worst decile), averaged both ways
-    event      Jaccard of the scheduled-EVENT days on which both are active (calendar required)
-    regime     cosine of the two streams' mean P&L per volatility regime (lagged, no look-ahead)
-    lead_lag   the largest lower-95% |rho| between a(t) and b(t+k), k in +-1..LEAD_LAG_MAX
+    signal     association of the days each stream is ACTIVE (non-zero P&L)
+    drawdown   association of the days each stream sits below its running P&L peak
+    co_crash   association of each stream's worst-decile loss days
+    event      |rho| of the two streams on scheduled-EVENT days (calendar required)
+    regime     the largest |rho| inside one lagged-volatility regime (no look-ahead)
+    lead_lag   the largest |rho| between a(t) and b(t+k), k in +-1..LEAD_LAG_MAX
+
+EVERY TERM IS A LOWER 95% BOUND and is zero in expectation for independent streams. Indicator
+terms use the phi association on an n discounted by the mean run length, because a drawdown that
+lasts a month is one observation; a raw Jaccard would score two always-active or two random-walk
+streams near 1 by construction.
 
 Every term has a sample floor. Below it the term is UNMEASURED -- never zero, never "independent"
 (L1.28a, breadth law §25). `overlap_score` is the LARGEST measured term: one shared failure is
@@ -54,9 +59,30 @@ OVERLAP_LINK = 0.5
 OVERLAP_INDEPENDENT = 0.3
 
 
-def _jaccard(a: np.ndarray, b: np.ndarray) -> float | None:
-    u = int((a | b).sum())
-    return float((a & b).sum()) / u if u else None
+def _runs(x: np.ndarray) -> float:
+    """Mean run length of a boolean series (>= 1): the autocorrelation discount on its n."""
+    if x.size == 0:
+        return 1.0
+    changes = int((x[1:] != x[:-1]).sum()) + 1
+    return max(1.0, x.size / changes)
+
+
+def _assoc_lo(a: np.ndarray, b: np.ndarray, min_true: int) -> float | None:
+    """Lower 95% bound of the phi association of two day-indicators, on an n discounted by the
+    longer mean run (a drawdown lasting weeks is one observation, not twenty). Zero in
+    expectation for independent streams, unlike a raw Jaccard, which a pair of always-active or
+    always-underwater streams would max out by construction. None below the floors."""
+    if int(a.sum()) < min_true or int(b.sum()) < min_true \
+            or int((~a).sum()) < min_true or int((~b).sum()) < min_true:
+        return None
+    x, y = a.astype(float), b.astype(float)
+    if x.std() <= 0 or y.std() <= 0:
+        return None
+    phi = float(np.corrcoef(x, y)[0, 1])
+    if not math.isfinite(phi) or phi <= 0:
+        return 0.0
+    n_eff = int(a.size / max(_runs(a), _runs(b)))
+    return _fisher_lo(phi, n_eff)
 
 
 def _fisher_lo(rho: float, n: int) -> float:
@@ -117,24 +143,19 @@ def pair_overlap(a: Mapping[str, float], b: Mapping[str, float], *,
     y = np.array([float(b[d]) for d in days])
     why: dict[str, str] = {}
     ax, ay = x != 0, y != 0
-    out["signal"] = (round(j, 4) if (j := _jaccard(ax, ay)) is not None
-                     and ax.sum() >= MIN_ACTIVE and ay.sum() >= MIN_ACTIVE else None)
+    out["signal"] = _assoc_lo(ax, ay, MIN_ACTIVE)
     if out["signal"] is None:
-        why["signal"] = f"fewer than {MIN_ACTIVE} active days"
+        why["signal"] = (f"fewer than {MIN_ACTIVE} active AND {MIN_ACTIVE} idle days on a side "
+                         "(an always-active stream carries no timing information)")
     cx, cy = np.cumsum(x), np.cumsum(y)
     ddx, ddy = cx < np.maximum.accumulate(cx), cy < np.maximum.accumulate(cy)
-    out["drawdown"] = (round(j, 4) if (j := _jaccard(ddx, ddy)) is not None
-                       and ddx.sum() >= MIN_ACTIVE and ddy.sum() >= MIN_ACTIVE else None)
+    out["drawdown"] = _assoc_lo(ddx, ddy, MIN_ACTIVE)
     if out["drawdown"] is None:
-        why["drawdown"] = f"fewer than {MIN_ACTIVE} drawdown days"
-    tx, ty = x <= np.quantile(x, 0.1), y <= np.quantile(y, 0.1)
-    tx &= x < 0
-    ty &= y < 0
-    if tx.sum() >= MIN_TAIL and ty.sum() >= MIN_TAIL:
-        out["co_crash"] = round(0.5 * (float((tx & ty).sum()) / tx.sum()
-                                       + float((tx & ty).sum()) / ty.sum()), 4)
-    else:
-        out["co_crash"] = None
+        why["drawdown"] = f"fewer than {MIN_ACTIVE} days in and out of drawdown on a side"
+    tx = (x <= np.quantile(x, 0.1)) & (x < 0)
+    ty = (y <= np.quantile(y, 0.1)) & (y < 0)
+    out["co_crash"] = _assoc_lo(tx, ty, MIN_TAIL)
+    if out["co_crash"] is None:
         why["co_crash"] = f"fewer than {MIN_TAIL} loss days in a worst decile"
     if events is None:
         out["event"] = None
@@ -142,29 +163,32 @@ def pair_overlap(a: Mapping[str, float], b: Mapping[str, float], *,
     else:
         ev = np.array([d in events for d in days])
         if ev.sum() >= MIN_EVENT_DAYS:
-            j = _jaccard(ax & ev, ay & ev)
-            out["event"] = round(j, 4) if j is not None else 0.0
+            xe, ye = x[ev], y[ev]
+            if len(xe) > 3 and xe.std() > 0 and ye.std() > 0:
+                out["event"] = round(_fisher_lo(float(np.corrcoef(xe, ye)[0, 1]), len(xe)), 4)
+            else:
+                out["event"] = None
+                why["event"] = "a constant stream on event days"
         else:
             out["event"] = None
             why["event"] = f"{int(ev.sum())} event days in the overlap < {MIN_EVENT_DAYS}"
     if regimes:
         lab = [regimes.get(d) for d in days]
-        va, vb = [], []
+        best_r: float | None = None
         for k in ("low", "mid", "high"):
             m = np.array([v == k for v in lab])
-            if m.sum() >= MIN_ACTIVE:
-                va.append(float(x[m].mean()))
-                vb.append(float(y[m].mean()))
-        na, nb = math.sqrt(sum(v * v for v in va)), math.sqrt(sum(v * v for v in vb))
-        if len(va) >= 2 and na > 0 and nb > 0:
-            out["regime"] = round(max(0.0, sum(p * q for p, q in zip(va, vb, strict=True))
-                                      / (na * nb)), 4)
-        else:
-            out["regime"] = None
-            why["regime"] = "fewer than two populated regimes"
+            if m.sum() >= MIN_DAYS // 2 and x[m].std() > 0 and y[m].std() > 0:
+                lo = _fisher_lo(float(np.corrcoef(x[m], y[m])[0, 1]), int(m.sum()))
+                best_r = lo if best_r is None else max(best_r, lo)
+        out["regime"] = round(best_r, 4) if best_r is not None else None
+        if best_r is None:
+            why["regime"] = f"no regime with {MIN_DAYS // 2} overlapping days"
     else:
         out["regime"] = None
         why["regime"] = "no regime labels"
+    for t in ("signal", "drawdown", "co_crash"):
+        if out[t] is not None:
+            out[t] = round(float(out[t]), 4)
     best, lag_at = 0.0, None
     for k in range(1, LEAD_LAG_MAX + 1):
         for p, q, sign in ((x[:-k], y[k:], k), (y[:-k], x[k:], -k)):
