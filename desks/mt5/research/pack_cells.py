@@ -1222,6 +1222,16 @@ SEMANTIC_PACKS: dict[str, tuple[str, ...]] = {
     "macro_prices": ("nbs_prices",),
     "customs": ("china_customs", "cn_customs_detail"),
 }
+#: THE DATA SOURCE EACH SEMANTIC BUILDER'S CELLS DECLARE, `<provider>:<dataset>` -- the shape the
+#: world-sensor cell contract (#211, emit_conditioner_cells) requires so a terms hold can be
+#: matched to a cell. Carried on every candidate row this lane donates.
+SEM_DATA_SOURCE: dict[str, str] = {
+    "safe_settlement": "safe:fx_settlement", "safe_cross_border": "safe:cross_border",
+    "safe_reserves": "safe:reserves", "cfets_fix": "cfets:ccpr", "shibor": "cfets:shibor",
+    "omo": "pboc:omo", "pmi_mfg": "nbs:pmi", "pmi_nonmfg": "nbs:pmi_nonmfg",
+    "macro_industrial": "nbs:industrial", "macro_prices": "nbs:prices",
+    "customs": "customs:trade",
+}
 #: Registry target spellings that are not MT5 symbols, resolved to the universe's own names.
 TARGET_ALIASES: dict[str, str] = {"Copper": "XCUUSD", "CN50": "CHINAH", "CHINA50": "CHINAH",
                                   "A50": "CHINAH"}
@@ -1638,7 +1648,8 @@ def semantic_lane(budget_s: float = 80.0, *, dry_run: bool = False,
 
 def _screen_one(sid: str, sig: str, sym: str, thr: float, side: int,
                 bars_fn: Any = None, *, seat: str = SEM_SEAT, series_root: Path | None = None,
-                mechanism: str | None = None) -> dict[str, Any] | None:
+                mechanism: str | None = None, data_source: str | None = None
+                ) -> dict[str, Any] | None:
     """One cell through `proposer_common.screen`. None = not measurable (too few trades).
 
     `seat` / `series_root` / `mechanism` let another organ (the dislocation lab's hard-series
@@ -1670,6 +1681,9 @@ def _screen_one(sid: str, sig: str, sym: str, thr: float, side: int,
                         f"exogenous_conditioner {sid}.{sig} -> {sym} thr {thr} side {side}",
                         dict(res))
     cand["required_data"] = [f"desks/mt5/data/lake/series/{sid}.parquet"]
+    # `<provider>:<dataset>`: the caller's, else the semantic builder's; never left blank.
+    cand["data_source"] = (data_source or SEM_DATA_SOURCE.get(sid.split("__")[0])
+                           or f"desk:{sid}")
     cand["falsifier"] = (f"{sid}.{sig} at |z| >= {thr} carries no measurable relation to "
                          f"{sym}'s forward return out of sample")
     return {**res, "cell": cell, "candidate": cand}

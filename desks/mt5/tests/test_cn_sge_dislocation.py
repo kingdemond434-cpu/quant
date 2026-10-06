@@ -477,3 +477,33 @@ def test_a_confirmed_physical_market_reaches_a_series_and_the_lab_screens_it(
     assert pair["status"] == DL.MEASURED and pair["tests"] == 4, pair
     assert lab["pairs"]["kr_gold_london"]["status"] == "BLOCKED_ON_TERMS"
     assert "exogenous_conditioner" in ORTHOGONAL_FAMILIES     # the judge builds this family
+
+
+# ============================================================ cell contract: data_source
+def test_every_cn_and_dislocation_cell_declares_a_provider_dataset_source(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """The world-sensor cell contract (#211) needs `data_source="<provider>:<dataset>"` on every
+    cell so a terms hold can be matched to it; this lane's cells carry it before that lands."""
+    import re
+
+    from mt5desk import family_exogenous_conditioner as FX
+
+    from research import proposer_common as pc
+    shape = re.compile(r"^[a-z0-9_]+:[a-z0-9_]+$")
+    assert set(PK.SEM_DATA_SOURCE) == set(PK.SEMANTIC_PACKS)
+    for builder, ds in PK.SEM_DATA_SOURCE.items():
+        assert shape.match(ds), builder
+    for name, spec in DL.HARD_PAIRS.items():
+        assert shape.match(str(spec.get("data_source") or "")), name
+
+    bars = _bars("2026-05-01", 30, 2400.0, seed=3)
+    monkeypatch.setattr(FX, "family_exogenous_conditioner", lambda *_a, **_k: [])
+    monkeypatch.setattr(pc, "cost_frac", lambda *_a, **_k: 0.0001)
+    monkeypatch.setattr(pc, "universe_meta", lambda: {})
+    monkeypatch.setattr(pc, "screen", lambda *_a, **_k: {"n": 50, "mean": 0.001})
+    sem = PK._screen_one("omo__sem", "net_injection", "USDCNH", 1.0, 1, lambda _s: bars)
+    assert sem is not None and sem["candidate"]["data_source"] == "pboc:omo"
+    hard = PK._screen_one("dislocation_kr_gold_london", "basis", "XAUUSD", 1.0, 1,
+                          lambda _s: bars, seat=DL.HARD_SEAT,
+                          data_source=DL.HARD_PAIRS["kr_gold_london"]["data_source"])
+    assert hard is not None and hard["candidate"]["data_source"] == "krx:gold"

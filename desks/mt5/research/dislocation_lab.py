@@ -1330,31 +1330,32 @@ HARD_PAIRS: dict[str, dict[str, Any]] = {
     # own `machine_use_allowed` and licence by `_input_terms`.
     "shfe_gold_london": {"kind": "return_basis", "onshore": "shfe_au_ret",
                          "offshore": "XAUUSD", "targets": ("XAUUSD",),
-                         "terms_ref": "free_stack:akshare"},
+                         "terms_ref": "free_stack:akshare", "data_source": "akshare:shfe_au"},
     "shfe_silver_london": {"kind": "return_basis", "onshore": "shfe_ag_ret",
                            "offshore": "XAGUSD", "targets": ("XAGUSD",),
-                           "terms_ref": "free_stack:akshare"},
+                           "terms_ref": "free_stack:akshare", "data_source": "akshare:shfe_ag"},
     "ine_brent": {"kind": "return_basis", "onshore": "ine_sc_ret", "offshore": "XBRUSD",
-                  "targets": ("XBRUSD", "XTIUSD"), "terms_ref": "free_stack:akshare"},
+                  "targets": ("XBRUSD", "XTIUSD"), "terms_ref": "free_stack:akshare",
+                  "data_source": "akshare:ine_sc"},
     # The CFETS central parity is CFETS market data: its terms read `refused` (2026-10-06,
     # alt_proxies.GATE_TERMS["cn_cfets_chinamoney"]), so this pair is BLOCKED_ON_TERMS by name.
     "cny_fix_cnh": {"kind": "level", "series": "cfets_fix__sem",
                     "column": "fix_vs_cnh_gap_pips", "targets": ("USDCNH",),
-                    "terms_ref": "cn_cfets_chinamoney"},
+                    "terms_ref": "cn_cfets_chinamoney", "data_source": "cfets:ccpr"},
     "sge_london": {"kind": "level", "series": "sge_premium_features",
                    "column": "premium_usd_oz", "targets": ("XAUUSD",),
-                   "terms_ref": "cn_sge_premium"},
+                   "terms_ref": "cn_sge_premium", "data_source": "sge:benchmark"},
     # The physical premiums of research/physical_gold_premium.py: local price over the landed
     # parity (India: import duty applied), each behind its own gate-only terms row.
     "kr_gold_london": {"kind": "level", "series": "physical_premium_kr_krx_gold",
                        "column": "premium_pct", "targets": ("XAUUSD",),
-                       "terms_ref": "kr_krx_gold"},
+                       "terms_ref": "kr_krx_gold", "data_source": "krx:gold"},
     "in_gold_london": {"kind": "level", "series": "physical_premium_in_ibja_gold",
                        "column": "premium_pct", "targets": ("XAUUSD",),
-                       "terms_ref": "in_ibja_gold"},
+                       "terms_ref": "in_ibja_gold", "data_source": "ibja:gold"},
     "tr_gold_london": {"kind": "level", "series": "physical_premium_tr_borsa_gold",
                        "column": "premium_pct", "targets": ("XAUUSD",),
-                       "terms_ref": "tr_borsa_gold"},
+                       "terms_ref": "tr_borsa_gold", "data_source": "borsa_istanbul:gold"},
 }
 
 
@@ -1524,6 +1525,7 @@ def hard_dislocations(paths: Paths, *, dry_run: bool = False, budget_s: float = 
                     res = PK._screen_one(
                         sid, "basis", sym, float(thr), int(side), bars_fn,
                         seat=HARD_SEAT, series_root=series_dir,
+                        data_source=str(spec["data_source"]),
                         mechanism=(f"{name}: onshore/offshore basis at an extreme reverts or "
                                    f"transmits into {sym}"))
                     tests_here += 1
