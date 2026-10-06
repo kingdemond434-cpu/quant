@@ -173,7 +173,7 @@ def _block_bootstrap_p(d: np.ndarray, block: int, n_boot: int, seed: int) -> flo
     rng = np.random.default_rng(seed)
     centred = d - d.mean()
     obs = d.mean()
-    nb = int(math.ceil(n / block))
+    nb = math.ceil(n / block)
     hits = 0
     for _ in range(n_boot):
         starts = rng.integers(0, n - block + 1, size=nb)
@@ -272,7 +272,7 @@ def write_lake_series(series_id: str, rows: Sequence[Mapping[str, Any]], *,
     tmp = path.with_suffix(".tmp")
     df.to_csv(tmp, index=False)
     os.replace(tmp, path)
-    out.update({"status": "WRITTEN", "path": str(path), "rows": int(len(df)),
+    out.update({"status": "WRITTEN", "path": str(path), "rows": len(df),
                 "columns": [c for c in df.columns if c not in STAMP]})
     return out
 
