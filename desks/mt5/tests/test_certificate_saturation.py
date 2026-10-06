@@ -181,10 +181,10 @@ def test_docket_keff_absent_map_leaves_every_bonus_whole() -> None:
 # ------------------------------------------------------------------ docket order
 def _docket() -> list[dict]:
     rows = []
-    for i in range(30):
+    for i in range(60):
         rows.append({"_cell": f"dup{i}", "family": "session_range_breakout", "symbol": USD[i % 5],
                      "params": {"rr": 1 + i}, "selector": "london", "source": "miner_x",
-                     "premortem": {"p_survivor": 0.5}, "first_seen": f"2026-10-01T00:{i:02d}"})
+                     "premortem": {"p_survivor": 0.5}, "first_seen": f"2026-10-01T{i // 60:02d}:{i % 60:02d}"})
     for i in range(10):
         rows.append({"_cell": f"q{i}", "family": "session_range_breakout", "symbol": "EURUSD",
                      "params": {"rr": 50 + i}, "selector": "london", "source": "execution_cost",
@@ -279,7 +279,7 @@ def test_bandit_duplicate_tax_lowers_the_arms_credit() -> None:
     assert bc.book_state(doc)["status"] == bc.MEASURED
     taxed = bc.credits(["arm_a", "arm_b"], doc=doc, duplicates=dups)
     plain = bc.credits(["arm_a", "arm_b"], doc=doc)
-    assert taxed["rows"]["arm_a"]["rho_to_book"] > plain["rows"]["arm_a"]["rho_to_book"]
+    assert taxed["arms"]["arm_a"]["rho_to_book"] > plain["arms"]["arm_a"]["rho_to_book"]
     assert taxed["credit"]["arm_a"] <= plain["credit"]["arm_a"]
 
 
