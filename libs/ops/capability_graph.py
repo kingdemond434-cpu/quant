@@ -954,6 +954,10 @@ HUMAN_READ = frozenset({
     # The release-identity verdict and the box smoke test: read by every brain through the
     # box's git sync and by the dashboard; the gateway consumes the verdict in-process.
     "desks/mt5/data/release_identity.json", "desks/mt5/reports/release_smoke.json",
+    # The Asia directive's completion audit: a grade of the desk's own organs, read by a person
+    # through the ASIA INTELLIGENCE panel and the law gate's summary. It sizes and gates nothing,
+    # so human-read is its honest terminal state, not a placeholder.
+    "desks/mt5/reports/ASIA_COMPLETION_AUDIT.json",
     # The hourly discovery pass's own bookkeeping: per-organ status for the fence and a person,
     # and the staleness order the next pass reads. The organs' donations reach decisions through
     # the compiler; this pass only schedules them.
