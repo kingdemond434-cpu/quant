@@ -1,0 +1,690 @@
+{
+ "system_id": "quant_guild_library",
+ "run_id": "cards_2026-10-06_quant_guild_library",
+ "commit": "d6f43bae",
+ "candidates": [
+  {
+   "symbol": "US500",
+   "family": "world_macro_state",
+   "params": {
+    "series_key": "VIXCLS",
+    "z_obs": 250,
+    "z_lo": 1.5,
+    "z_hi": 99.0,
+    "direction": "long",
+    "hold_bars": 120,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Buy the equity index when implied vol (VIX) crosses a high threshold (lump sum at VIX > 30) or scale in progressively as the index falls during a vol spike ('buy the way down'); hold for the vol to mean-revert.",
+   "title": "US500 world_macro_state (QG25-03)",
+   "card_id": "QG25-03",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Expectancy net of swap <= 0 over walk-forward, or no improvement over random long entries of equal duration."
+  },
+  {
+   "symbol": "NAS100",
+   "family": "world_macro_state",
+   "params": {
+    "series_key": "VIXCLS",
+    "z_obs": 250,
+    "z_lo": 1.5,
+    "z_hi": 99.0,
+    "direction": "long",
+    "hold_bars": 120,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Buy the equity index when implied vol (VIX) crosses a high threshold (lump sum at VIX > 30) or scale in progressively as the index falls during a vol spike ('buy the way down'); hold for the vol to mean-revert.",
+   "title": "NAS100 world_macro_state (QG25-03)",
+   "card_id": "QG25-03",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Expectancy net of swap <= 0 over walk-forward, or no improvement over random long entries of equal duration."
+  },
+  {
+   "symbol": "US30",
+   "family": "world_macro_state",
+   "params": {
+    "series_key": "VIXCLS",
+    "z_obs": 250,
+    "z_lo": 1.5,
+    "z_hi": 99.0,
+    "direction": "long",
+    "hold_bars": 120,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Buy the equity index when implied vol (VIX) crosses a high threshold (lump sum at VIX > 30) or scale in progressively as the index falls during a vol spike ('buy the way down'); hold for the vol to mean-revert.",
+   "title": "US30 world_macro_state (QG25-03)",
+   "card_id": "QG25-03",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Expectancy net of swap <= 0 over walk-forward, or no improvement over random long entries of equal duration."
+  },
+  {
+   "symbol": "GER40",
+   "family": "world_macro_state",
+   "params": {
+    "series_key": "VIXCLS",
+    "z_obs": 250,
+    "z_lo": 1.5,
+    "z_hi": 99.0,
+    "direction": "long",
+    "hold_bars": 120,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Buy the equity index when implied vol (VIX) crosses a high threshold (lump sum at VIX > 30) or scale in progressively as the index falls during a vol spike ('buy the way down'); hold for the vol to mean-revert.",
+   "title": "GER40 world_macro_state (QG25-03)",
+   "card_id": "QG25-03",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Expectancy net of swap <= 0 over walk-forward, or no improvement over random long entries of equal duration."
+  },
+  {
+   "symbol": "US500",
+   "family": "regime_split",
+   "params": {
+    "base_family": "drawdown_conditional",
+    "vol": "high",
+    "dd_pct": 0.05,
+    "lookback": 480,
+    "stop_atr": 2.5,
+    "rr": 2.0,
+    "ttl_bars": 120
+   },
+   "mechanism": "Same fear-premium claim as QG25-03 expressed without VIX: take drawdown entries on the index only when the instrument's own realized-vol tercile (vs its trailing year) is 'high'.",
+   "title": "US500 regime_split (QG25-04)",
+   "card_id": "QG25-04",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "High-vol subset expectancy not above the unconditioned family at p<0.05 after the trial charge."
+  },
+  {
+   "symbol": "NAS100",
+   "family": "regime_split",
+   "params": {
+    "base_family": "drawdown_conditional",
+    "vol": "high",
+    "dd_pct": 0.05,
+    "lookback": 480,
+    "stop_atr": 2.5,
+    "rr": 2.0,
+    "ttl_bars": 120
+   },
+   "mechanism": "Same fear-premium claim as QG25-03 expressed without VIX: take drawdown entries on the index only when the instrument's own realized-vol tercile (vs its trailing year) is 'high'.",
+   "title": "NAS100 regime_split (QG25-04)",
+   "card_id": "QG25-04",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "High-vol subset expectancy not above the unconditioned family at p<0.05 after the trial charge."
+  },
+  {
+   "symbol": "GER40",
+   "family": "regime_split",
+   "params": {
+    "base_family": "drawdown_conditional",
+    "vol": "high",
+    "dd_pct": 0.05,
+    "lookback": 480,
+    "stop_atr": 2.5,
+    "rr": 2.0,
+    "ttl_bars": 120
+   },
+   "mechanism": "Same fear-premium claim as QG25-03 expressed without VIX: take drawdown entries on the index only when the instrument's own realized-vol tercile (vs its trailing year) is 'high'.",
+   "title": "GER40 regime_split (QG25-04)",
+   "card_id": "QG25-04",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "High-vol subset expectancy not above the unconditioned family at p<0.05 after the trial charge."
+  },
+  {
+   "symbol": "JPN225",
+   "family": "regime_split",
+   "params": {
+    "base_family": "drawdown_conditional",
+    "vol": "high",
+    "dd_pct": 0.05,
+    "lookback": 480,
+    "stop_atr": 2.5,
+    "rr": 2.0,
+    "ttl_bars": 120
+   },
+   "mechanism": "Same fear-premium claim as QG25-03 expressed without VIX: take drawdown entries on the index only when the instrument's own realized-vol tercile (vs its trailing year) is 'high'.",
+   "title": "JPN225 regime_split (QG25-04)",
+   "card_id": "QG25-04",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "High-vol subset expectancy not above the unconditioned family at p<0.05 after the trial charge."
+  },
+  {
+   "symbol": "US500",
+   "family": "event_reaction",
+   "params": {
+    "ttl_bars": 120,
+    "stop_atr": 3.0,
+    "rr": 1.5,
+    "events": "truth_social_miner tariff-class first_seen_at",
+    "mode": "fade",
+    "hold_bars": 120
+   },
+   "mechanism": "A policy shock (tariffs) knocks equity prices down quickly; firms re-optimise around the constraint so fundamental value recovers or exceeds the old path, leaving a multi-week value gap after the overreaction.",
+   "title": "US500 event_reaction (QG25-07)",
+   "card_id": "QG25-07",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Expectancy <= 0 or not above random down-bar fades after clustering by episode."
+  },
+  {
+   "symbol": "NAS100",
+   "family": "event_reaction",
+   "params": {
+    "ttl_bars": 120,
+    "stop_atr": 3.0,
+    "rr": 1.5,
+    "events": "truth_social_miner tariff-class first_seen_at",
+    "mode": "fade",
+    "hold_bars": 120
+   },
+   "mechanism": "A policy shock (tariffs) knocks equity prices down quickly; firms re-optimise around the constraint so fundamental value recovers or exceeds the old path, leaving a multi-week value gap after the overreaction.",
+   "title": "NAS100 event_reaction (QG25-07)",
+   "card_id": "QG25-07",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Expectancy <= 0 or not above random down-bar fades after clustering by episode."
+  },
+  {
+   "symbol": "GER40",
+   "family": "event_reaction",
+   "params": {
+    "ttl_bars": 120,
+    "stop_atr": 3.0,
+    "rr": 1.5,
+    "events": "truth_social_miner tariff-class first_seen_at",
+    "mode": "fade",
+    "hold_bars": 120
+   },
+   "mechanism": "A policy shock (tariffs) knocks equity prices down quickly; firms re-optimise around the constraint so fundamental value recovers or exceeds the old path, leaving a multi-week value gap after the overreaction.",
+   "title": "GER40 event_reaction (QG25-07)",
+   "card_id": "QG25-07",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Expectancy <= 0 or not above random down-bar fades after clustering by episode."
+  },
+  {
+   "symbol": "USDCNH",
+   "family": "event_reaction",
+   "params": {
+    "ttl_bars": 120,
+    "stop_atr": 3.0,
+    "rr": 1.5,
+    "events": "truth_social_miner tariff-class first_seen_at",
+    "mode": "fade",
+    "hold_bars": 120
+   },
+   "mechanism": "A policy shock (tariffs) knocks equity prices down quickly; firms re-optimise around the constraint so fundamental value recovers or exceeds the old path, leaving a multi-week value gap after the overreaction.",
+   "title": "USDCNH event_reaction (QG25-07)",
+   "card_id": "QG25-07",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Expectancy <= 0 or not above random down-bar fades after clustering by episode."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "pca_residual",
+   "params": {
+    "entry_z": 2.0
+   },
+   "mechanism": "Standardise returns of a basket, take PCA; PC1 is the market, PC2/PC3 sector/idiosyncratic; trade a portfolio weighted by PC3 loadings as an exposure uncorrelated with the market; rolling 60-day PCA shows loadings are non-stationary.",
+   "title": "EURUSD pca_residual (QG25-08)",
+   "card_id": "QG25-08",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "desk family's own"
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "pca_residual",
+   "params": {
+    "entry_z": 2.0
+   },
+   "mechanism": "Standardise returns of a basket, take PCA; PC1 is the market, PC2/PC3 sector/idiosyncratic; trade a portfolio weighted by PC3 loadings as an exposure uncorrelated with the market; rolling 60-day PCA shows loadings are non-stationary.",
+   "title": "GBPUSD pca_residual (QG25-08)",
+   "card_id": "QG25-08",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "desk family's own"
+  },
+  {
+   "symbol": "AUDUSD",
+   "family": "pca_residual",
+   "params": {
+    "entry_z": 2.0
+   },
+   "mechanism": "Standardise returns of a basket, take PCA; PC1 is the market, PC2/PC3 sector/idiosyncratic; trade a portfolio weighted by PC3 loadings as an exposure uncorrelated with the market; rolling 60-day PCA shows loadings are non-stationary.",
+   "title": "AUDUSD pca_residual (QG25-08)",
+   "card_id": "QG25-08",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "desk family's own"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "pca_residual",
+   "params": {
+    "entry_z": 2.0
+   },
+   "mechanism": "Standardise returns of a basket, take PCA; PC1 is the market, PC2/PC3 sector/idiosyncratic; trade a portfolio weighted by PC3 loadings as an exposure uncorrelated with the market; rolling 60-day PCA shows loadings are non-stationary.",
+   "title": "XAUUSD pca_residual (QG25-08)",
+   "card_id": "QG25-08",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "desk family's own"
+  },
+  {
+   "symbol": "US500",
+   "family": "pca_residual",
+   "params": {
+    "entry_z": 2.0
+   },
+   "mechanism": "Standardise returns of a basket, take PCA; PC1 is the market, PC2/PC3 sector/idiosyncratic; trade a portfolio weighted by PC3 loadings as an exposure uncorrelated with the market; rolling 60-day PCA shows loadings are non-stationary.",
+   "title": "US500 pca_residual (QG25-08)",
+   "card_id": "QG25-08",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "desk family's own"
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "regime_split",
+   "params": {
+    "vol": "high"
+   },
+   "mechanism": "Three volatility states with Gaussian emissions on bar range (high-low)/close; calibrate emission means/stds by tercile hard assignment of recent bars and the transition matrix by counted transitions with additive smoothing; each new bar runs one forward-filter step (prior = P' * belief, posterior proportional to prior x likelihood) and labels the bar LOW/MED/HIGH. Lecture 51 fits regime-conditional Gaussians and a 3-state HMM to NVDA; lecture 49 derives transition-matrix MLE.",
+   "title": "EURUSD regime_split (QG25-22)",
+   "card_id": "QG25-22",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "n/a"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "regime_split",
+   "params": {
+    "vol": "high"
+   },
+   "mechanism": "Three volatility states with Gaussian emissions on bar range (high-low)/close; calibrate emission means/stds by tercile hard assignment of recent bars and the transition matrix by counted transitions with additive smoothing; each new bar runs one forward-filter step (prior = P' * belief, posterior proportional to prior x likelihood) and labels the bar LOW/MED/HIGH. Lecture 51 fits regime-conditional Gaussians and a 3-state HMM to NVDA; lecture 49 derives transition-matrix MLE.",
+   "title": "XAUUSD regime_split (QG25-22)",
+   "card_id": "QG25-22",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "n/a"
+  },
+  {
+   "symbol": "US500",
+   "family": "regime_split",
+   "params": {
+    "vol": "high"
+   },
+   "mechanism": "Three volatility states with Gaussian emissions on bar range (high-low)/close; calibrate emission means/stds by tercile hard assignment of recent bars and the transition matrix by counted transitions with additive smoothing; each new bar runs one forward-filter step (prior = P' * belief, posterior proportional to prior x likelihood) and labels the bar LOW/MED/HIGH. Lecture 51 fits regime-conditional Gaussians and a 3-state HMM to NVDA; lecture 49 derives transition-matrix MLE.",
+   "title": "US500 regime_split (QG25-22)",
+   "card_id": "QG25-22",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "n/a"
+  },
+  {
+   "symbol": "US500",
+   "family": "regime_split",
+   "params": {
+    "base_family": "trend_ma_cross",
+    "vol": "low"
+   },
+   "mechanism": "Label each day low/medium/high volatility by ranking 20-day realised vol against its own trailing 252-day 33rd/67th percentiles, estimate the 3x3 regime transition matrix by counting, and trade a base rule (5/9 MA crossover with 4% TP / 2% SL in the donor) only in the low-vol regime. The donor's point is the CONTROL: the filtered rule's return is mostly market beta, so the regime filter must be judged against exposure, not against zero.",
+   "title": "US500 regime_split (QG26-05)",
+   "card_id": "QG26-05",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "partition_return timing share <= 0 or monkey beat-rate < 0.9 on the gated cell."
+  },
+  {
+   "symbol": "NAS100",
+   "family": "regime_split",
+   "params": {
+    "base_family": "trend_ma_cross",
+    "vol": "low"
+   },
+   "mechanism": "Label each day low/medium/high volatility by ranking 20-day realised vol against its own trailing 252-day 33rd/67th percentiles, estimate the 3x3 regime transition matrix by counting, and trade a base rule (5/9 MA crossover with 4% TP / 2% SL in the donor) only in the low-vol regime. The donor's point is the CONTROL: the filtered rule's return is mostly market beta, so the regime filter must be judged against exposure, not against zero.",
+   "title": "NAS100 regime_split (QG26-05)",
+   "card_id": "QG26-05",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "partition_return timing share <= 0 or monkey beat-rate < 0.9 on the gated cell."
+  },
+  {
+   "symbol": "GER40",
+   "family": "regime_split",
+   "params": {
+    "base_family": "trend_ma_cross",
+    "vol": "low"
+   },
+   "mechanism": "Label each day low/medium/high volatility by ranking 20-day realised vol against its own trailing 252-day 33rd/67th percentiles, estimate the 3x3 regime transition matrix by counting, and trade a base rule (5/9 MA crossover with 4% TP / 2% SL in the donor) only in the low-vol regime. The donor's point is the CONTROL: the filtered rule's return is mostly market beta, so the regime filter must be judged against exposure, not against zero.",
+   "title": "GER40 regime_split (QG26-05)",
+   "card_id": "QG26-05",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "partition_return timing share <= 0 or monkey beat-rate < 0.9 on the gated cell."
+  },
+  {
+   "symbol": "US500",
+   "family": "drawdown_conditional",
+   "params": {
+    "lookback": 1449,
+    "dd_pct": 0.1,
+    "stop_atr": 2.5,
+    "rr": 2.0,
+    "ttl_bars": 460
+   },
+   "mechanism": "Hold a long core; every 63 trading days set a downside floor 10% below and an upside give-up 28% above the reset price (a zero-cost collar in the donor). When a reset period closes 5% or more down, the floor's payoff is redeployed into more of the core at the depressed price; rallies above the cap are funded by trimming. The 'good volatility drag' claim: buying the fire sale with hedge proceeds turns a drawdown into extra exposure at a low basis.",
+   "title": "US500 drawdown_conditional (QG26-16)",
+   "card_id": "QG26-16",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Timing share <= 0 or monkey beat-rate < 0.9."
+  },
+  {
+   "symbol": "NAS100",
+   "family": "drawdown_conditional",
+   "params": {
+    "lookback": 1449,
+    "dd_pct": 0.1,
+    "stop_atr": 2.5,
+    "rr": 2.0,
+    "ttl_bars": 460
+   },
+   "mechanism": "Hold a long core; every 63 trading days set a downside floor 10% below and an upside give-up 28% above the reset price (a zero-cost collar in the donor). When a reset period closes 5% or more down, the floor's payoff is redeployed into more of the core at the depressed price; rallies above the cap are funded by trimming. The 'good volatility drag' claim: buying the fire sale with hedge proceeds turns a drawdown into extra exposure at a low basis.",
+   "title": "NAS100 drawdown_conditional (QG26-16)",
+   "card_id": "QG26-16",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Timing share <= 0 or monkey beat-rate < 0.9."
+  },
+  {
+   "symbol": "GER40",
+   "family": "drawdown_conditional",
+   "params": {
+    "lookback": 1449,
+    "dd_pct": 0.1,
+    "stop_atr": 2.5,
+    "rr": 2.0,
+    "ttl_bars": 460
+   },
+   "mechanism": "Hold a long core; every 63 trading days set a downside floor 10% below and an upside give-up 28% above the reset price (a zero-cost collar in the donor). When a reset period closes 5% or more down, the floor's payoff is redeployed into more of the core at the depressed price; rallies above the cap are funded by trimming. The 'good volatility drag' claim: buying the fire sale with hedge proceeds turns a drawdown into extra exposure at a low basis.",
+   "title": "GER40 drawdown_conditional (QG26-16)",
+   "card_id": "QG26-16",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Timing share <= 0 or monkey beat-rate < 0.9."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "pca_residual",
+   "params": {
+    "entry_z": 2.0
+   },
+   "mechanism": "Spectral decomposition of a stock panel: the first components are market and sector; alpha and other priced risk live in what is left after removing them.",
+   "title": "EURUSD pca_residual (QG26-19)",
+   "card_id": "QG26-19",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Gauntlet rejection."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "pca_residual",
+   "params": {
+    "entry_z": 2.0
+   },
+   "mechanism": "Spectral decomposition of a stock panel: the first components are market and sector; alpha and other priced risk live in what is left after removing them.",
+   "title": "GBPUSD pca_residual (QG26-19)",
+   "card_id": "QG26-19",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Gauntlet rejection."
+  },
+  {
+   "symbol": "AUDUSD",
+   "family": "pca_residual",
+   "params": {
+    "entry_z": 2.0
+   },
+   "mechanism": "Spectral decomposition of a stock panel: the first components are market and sector; alpha and other priced risk live in what is left after removing them.",
+   "title": "AUDUSD pca_residual (QG26-19)",
+   "card_id": "QG26-19",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Gauntlet rejection."
+  },
+  {
+   "symbol": "USDCAD",
+   "family": "pca_residual",
+   "params": {
+    "entry_z": 2.0
+   },
+   "mechanism": "Spectral decomposition of a stock panel: the first components are market and sector; alpha and other priced risk live in what is left after removing them.",
+   "title": "USDCAD pca_residual (QG26-19)",
+   "card_id": "QG26-19",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Gauntlet rejection."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "pca_residual",
+   "params": {
+    "entry_z": 2.0
+   },
+   "mechanism": "Spectral decomposition of a stock panel: the first components are market and sector; alpha and other priced risk live in what is left after removing them.",
+   "title": "XAUUSD pca_residual (QG26-19)",
+   "card_id": "QG26-19",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Gauntlet rejection."
+  },
+  {
+   "symbol": "US500",
+   "family": "multi_speed_trend",
+   "params": {
+    "crisis_only": true
+   },
+   "mechanism": "Pair a main return engine (2x SPY) with a roughly uncorrelated managed-futures replicator (DBMF) 50/50; the hedge leg lowers max drawdown enough that leverage on the core becomes safe, raising CAGR.",
+   "title": "US500 multi_speed_trend (QG26-20)",
+   "card_id": "QG26-20",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "No tail-period return or gauntlet rejection."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "multi_speed_trend",
+   "params": {
+    "crisis_only": true
+   },
+   "mechanism": "Pair a main return engine (2x SPY) with a roughly uncorrelated managed-futures replicator (DBMF) 50/50; the hedge leg lowers max drawdown enough that leverage on the core becomes safe, raising CAGR.",
+   "title": "XAUUSD multi_speed_trend (QG26-20)",
+   "card_id": "QG26-20",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "No tail-period return or gauntlet rejection."
+  },
+  {
+   "symbol": "XTIUSD",
+   "family": "multi_speed_trend",
+   "params": {
+    "crisis_only": true
+   },
+   "mechanism": "Pair a main return engine (2x SPY) with a roughly uncorrelated managed-futures replicator (DBMF) 50/50; the hedge leg lowers max drawdown enough that leverage on the core becomes safe, raising CAGR.",
+   "title": "XTIUSD multi_speed_trend (QG26-20)",
+   "card_id": "QG26-20",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "No tail-period return or gauntlet rejection."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "multi_speed_trend",
+   "params": {
+    "crisis_only": true
+   },
+   "mechanism": "Pair a main return engine (2x SPY) with a roughly uncorrelated managed-futures replicator (DBMF) 50/50; the hedge leg lowers max drawdown enough that leverage on the core becomes safe, raising CAGR.",
+   "title": "EURUSD multi_speed_trend (QG26-20)",
+   "card_id": "QG26-20",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "No tail-period return or gauntlet rejection."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "multi_speed_trend",
+   "params": {
+    "crisis_only": true
+   },
+   "mechanism": "Pair a main return engine (2x SPY) with a roughly uncorrelated managed-futures replicator (DBMF) 50/50; the hedge leg lowers max drawdown enough that leverage on the core becomes safe, raising CAGR.",
+   "title": "USDJPY multi_speed_trend (QG26-20)",
+   "card_id": "QG26-20",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "No tail-period return or gauntlet rejection."
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "multi_speed_trend",
+   "params": {
+    "crisis_only": true
+   },
+   "mechanism": "Pair a main return engine (2x SPY) with a roughly uncorrelated managed-futures replicator (DBMF) 50/50; the hedge leg lowers max drawdown enough that leverage on the core becomes safe, raising CAGR.",
+   "title": "UST10Y multi_speed_trend (QG26-20)",
+   "card_id": "QG26-20",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "No tail-period return or gauntlet rejection."
+  },
+  {
+   "symbol": "NVIDIA",
+   "family": "analyst_revision_drift",
+   "params": {},
+   "mechanism": "An LLM agent maintains per-name THESES (narrative, optimistic target strictly above last, cost basis, conviction) and on a schedule classifies each holding into risk-trim / target-hit exit / invalidation exit / hold-or-add / new idea, executing through tools; conviction scales size (0.4/0.7/1.0 of a max-single-name weight), with stop-distance risk budgeting.",
+   "title": "NVIDIA analyst_revision_drift (QG26-27)",
+   "card_id": "QG26-27",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Forward hit-rate/expectancy not above the random-direction control after 100 views."
+  },
+  {
+   "symbol": "Apple",
+   "family": "analyst_revision_drift",
+   "params": {},
+   "mechanism": "An LLM agent maintains per-name THESES (narrative, optimistic target strictly above last, cost basis, conviction) and on a schedule classifies each holding into risk-trim / target-hit exit / invalidation exit / hold-or-add / new idea, executing through tools; conviction scales size (0.4/0.7/1.0 of a max-single-name weight), with stop-distance risk budgeting.",
+   "title": "Apple analyst_revision_drift (QG26-27)",
+   "card_id": "QG26-27",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Forward hit-rate/expectancy not above the random-direction control after 100 views."
+  },
+  {
+   "symbol": "Microsoft",
+   "family": "analyst_revision_drift",
+   "params": {},
+   "mechanism": "An LLM agent maintains per-name THESES (narrative, optimistic target strictly above last, cost basis, conviction) and on a schedule classifies each holding into risk-trim / target-hit exit / invalidation exit / hold-or-add / new idea, executing through tools; conviction scales size (0.4/0.7/1.0 of a max-single-name weight), with stop-distance risk budgeting.",
+   "title": "Microsoft analyst_revision_drift (QG26-27)",
+   "card_id": "QG26-27",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Forward hit-rate/expectancy not above the random-direction control after 100 views."
+  },
+  {
+   "symbol": "Broadcom",
+   "family": "analyst_revision_drift",
+   "params": {},
+   "mechanism": "An LLM agent maintains per-name THESES (narrative, optimistic target strictly above last, cost basis, conviction) and on a schedule classifies each holding into risk-trim / target-hit exit / invalidation exit / hold-or-add / new idea, executing through tools; conviction scales size (0.4/0.7/1.0 of a max-single-name weight), with stop-distance risk budgeting.",
+   "title": "Broadcom analyst_revision_drift (QG26-27)",
+   "card_id": "QG26-27",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Forward hit-rate/expectancy not above the random-direction control after 100 views."
+  },
+  {
+   "symbol": "Tesla",
+   "family": "analyst_revision_drift",
+   "params": {},
+   "mechanism": "An LLM agent maintains per-name THESES (narrative, optimistic target strictly above last, cost basis, conviction) and on a schedule classifies each holding into risk-trim / target-hit exit / invalidation exit / hold-or-add / new idea, executing through tools; conviction scales size (0.4/0.7/1.0 of a max-single-name weight), with stop-distance risk budgeting.",
+   "title": "Tesla analyst_revision_drift (QG26-27)",
+   "card_id": "QG26-27",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Forward hit-rate/expectancy not above the random-direction control after 100 views."
+  },
+  {
+   "symbol": "Meta",
+   "family": "analyst_revision_drift",
+   "params": {},
+   "mechanism": "An LLM agent maintains per-name THESES (narrative, optimistic target strictly above last, cost basis, conviction) and on a schedule classifies each holding into risk-trim / target-hit exit / invalidation exit / hold-or-add / new idea, executing through tools; conviction scales size (0.4/0.7/1.0 of a max-single-name weight), with stop-distance risk budgeting.",
+   "title": "Meta analyst_revision_drift (QG26-27)",
+   "card_id": "QG26-27",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "Forward hit-rate/expectancy not above the random-direction control after 100 views."
+  }
+ ],
+ "trials_charged": 43,
+ "provenance": {
+  "cards": "/mnt/project-files/mining/quant_guild/",
+  "translated_by": "thread Mine the EliteQuant list",
+  "licence_note": "ideas only where upstream has no licence; no code copied"
+ }
+}

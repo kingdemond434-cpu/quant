@@ -1,0 +1,109 @@
+{
+ "system_id": "paolucci_ai_stock_trading",
+ "run_id": "cards_2026-10-06_paolucci_ai_stock_trading",
+ "commit": "card_translation",
+ "candidates": [
+  {
+   "symbol": "IBM",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 5,
+    "hold_d": 3,
+    "dispersion": "any"
+   },
+   "mechanism": "Weekly close-to-close change of one stock mapped by a tiny tanh MLP to a buy/sell/hold label; the label set is reversal-consistent on 192 of 261 rows (labels -1/0/1), i.e. the net learns a noisy weekly short-term-reversal rule.",
+   "title": "IBM cross_sectional_class_reversal (QG-AIST-001)",
+   "card_id": "QG-AIST-001",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "no positive net expectancy across the existing grid {lookback_d 1,3,5} x {hold_d 1,3}"
+  },
+  {
+   "symbol": "Apple",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 5,
+    "hold_d": 3,
+    "dispersion": "any"
+   },
+   "mechanism": "Weekly close-to-close change of one stock mapped by a tiny tanh MLP to a buy/sell/hold label; the label set is reversal-consistent on 192 of 261 rows (labels -1/0/1), i.e. the net learns a noisy weekly short-term-reversal rule.",
+   "title": "Apple cross_sectional_class_reversal (QG-AIST-001)",
+   "card_id": "QG-AIST-001",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "no positive net expectancy across the existing grid {lookback_d 1,3,5} x {hold_d 1,3}"
+  },
+  {
+   "symbol": "Microsoft",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 5,
+    "hold_d": 3,
+    "dispersion": "any"
+   },
+   "mechanism": "Weekly close-to-close change of one stock mapped by a tiny tanh MLP to a buy/sell/hold label; the label set is reversal-consistent on 192 of 261 rows (labels -1/0/1), i.e. the net learns a noisy weekly short-term-reversal rule.",
+   "title": "Microsoft cross_sectional_class_reversal (QG-AIST-001)",
+   "card_id": "QG-AIST-001",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "no positive net expectancy across the existing grid {lookback_d 1,3,5} x {hold_d 1,3}"
+  },
+  {
+   "symbol": "NVIDIA",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 5,
+    "hold_d": 3,
+    "dispersion": "any"
+   },
+   "mechanism": "Weekly close-to-close change of one stock mapped by a tiny tanh MLP to a buy/sell/hold label; the label set is reversal-consistent on 192 of 261 rows (labels -1/0/1), i.e. the net learns a noisy weekly short-term-reversal rule.",
+   "title": "NVIDIA cross_sectional_class_reversal (QG-AIST-001)",
+   "card_id": "QG-AIST-001",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "no positive net expectancy across the existing grid {lookback_d 1,3,5} x {hold_d 1,3}"
+  },
+  {
+   "symbol": "Amazon",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 5,
+    "hold_d": 3,
+    "dispersion": "any"
+   },
+   "mechanism": "Weekly close-to-close change of one stock mapped by a tiny tanh MLP to a buy/sell/hold label; the label set is reversal-consistent on 192 of 261 rows (labels -1/0/1), i.e. the net learns a noisy weekly short-term-reversal rule.",
+   "title": "Amazon cross_sectional_class_reversal (QG-AIST-001)",
+   "card_id": "QG-AIST-001",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "no positive net expectancy across the existing grid {lookback_d 1,3,5} x {hold_d 1,3}"
+  },
+  {
+   "symbol": "Meta",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 5,
+    "hold_d": 3,
+    "dispersion": "any"
+   },
+   "mechanism": "Weekly close-to-close change of one stock mapped by a tiny tanh MLP to a buy/sell/hold label; the label set is reversal-consistent on 192 of 261 rows (labels -1/0/1), i.e. the net learns a noisy weekly short-term-reversal rule.",
+   "title": "Meta cross_sectional_class_reversal (QG-AIST-001)",
+   "card_id": "QG-AIST-001",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "no positive net expectancy across the existing grid {lookback_d 1,3,5} x {hold_d 1,3}"
+  }
+ ],
+ "trials_charged": 6,
+ "provenance": {
+  "cards": "/mnt/project-files/mining/quant_guild/",
+  "translated_by": "thread Mine the EliteQuant list",
+  "licence_note": "ideas only where upstream has no licence; no code copied"
+ }
+}
