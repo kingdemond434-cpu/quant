@@ -322,8 +322,8 @@ def test_physical_tables_parse_in_their_own_conventions() -> None:
                      "price_local": 152340.0}
     assert ind[0]["session_date"] == "2026-10-05" and ind[0]["price_local"] == 78450.0
     assert tr[0]["price_local"] == 4120.5                       # "4.120,50", decimal comma
-    assert P.duty_at(P.MARKETS["in_ibja_gold"], datetime(2024, 7, 1).date()) == 0.15
-    assert P.duty_at(P.MARKETS["in_ibja_gold"], datetime(2026, 7, 1).date()) == 0.06
+    assert P.duty_at(P.MARKETS["in_ibja_gold"], datetime(2024, 7, 1, tzinfo=UTC).date()) == 0.15
+    assert P.duty_at(P.MARKETS["in_ibja_gold"], datetime(2026, 7, 1, tzinfo=UTC).date()) == 0.06
 
 
 def test_physical_markets_fetch_nothing_until_their_terms_are_confirmed(tmp_path: Path) -> None:
