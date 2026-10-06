@@ -55,7 +55,8 @@ def _arena(verdicts: dict[str, str]) -> dict[str, Any]:
             "arms": {a: {"verdict": v} for a, v in verdicts.items()}}
 
 
-def _isolate_pricing(tmp_path: Path, monkeypatch: Any, steer_doc: dict[str, Any] | None) -> None:
+def _isolate_pricing(tmp_path: Path, monkeypatch: Any, steer_doc: dict[str, Any] | None
+                     ) -> None:
     for name in ("META", "BANDIT", "POLICY"):
         monkeypatch.setattr(cp, name, tmp_path / f"{name}.json")
     ledger = tmp_path / "compute_ledger.jsonl"
@@ -74,10 +75,13 @@ def _isolate_pricing(tmp_path: Path, monkeypatch: Any, steer_doc: dict[str, Any]
     monkeypatch.setattr(cp, "_bandit_prices", dict)
     monkeypatch.setattr(cp, "_researcher_prices", dict)
     monkeypatch.setattr(cp, "_policy_factors", lambda: ({}, False))
-    monkeypatch.setattr(cp, "_department_of", lambda leg: "rest")
+    # judge0 is a validation (judge-side) leg; every other leg is generation / rest
+    monkeypatch.setattr(cp, "_department_of",
+                        lambda leg: "validate" if leg.startswith("judge") else "rest")
 
 
-BASES = {"alpha_evolution": 600, "deepen": 600, **{f"leg{i}": 600 for i in range(6)}}
+BASES = {"alpha_evolution": 600, "deepen": 600, "judge0": 600,
+         **{f"leg{i}": 600 for i in range(6)}}
 
 
 # ------------------------------------------------------------------------------------- AC13
@@ -89,11 +93,13 @@ def test_an_arena_verdict_changes_the_weights_both_ways(tmp_path: Path, monkeypa
     rep = ts.organ_steer()
     legs = rep["legs"]
     assert legs["alpha_evolution"]["due"] > 1.0, "the LEADS arm's leg did not gain weight"
-    assert legs["deepen"]["due"] < 1.0, "the TRAILS arm's leg did not lose weight (two-sided)"
+    # deepen is a GENERATION leg (discovery department): a TRAILS verdict may not take it below
+    # 1.0 -- backpressure goes to the judge only
+    assert legs["deepen"]["due"] == 1.0
     assert rep["contestants"]["arena"]["authority"] > 0
-    # the artifact the scheduler reads carries the APPLIED weights (held-out legs at 1.0)
-    for leg, row in legs.items():
-        assert rep["weights"][leg] == (1.0 if row["arm"] == "holdout" else row["due"])
+    # no held-out comparison has ADMITTED the steer yet, so the scheduler sees NEUTRAL weights
+    assert rep["comparison"]["primary"] == "UNMEASURED" and rep["withdrawn"]
+    assert set(rep["weights"].values()) == {1.0}
     # and it was remembered for the tournament to score next hour
     st = json.loads((tmp_path / "state" / "scheduler_steer.json").read_text("utf-8"))
     assert st["assignments"][-1]["tilts"]["arena"]["alpha_evolution"] > 1.0
@@ -116,7 +122,8 @@ def test_a_red_queen_adoption_changes_the_weights(tmp_path: Path, monkeypatch: A
                         "miner:gamma": {"leg": "leg2"}}}), encoding="utf-8")
     rep = ts.organ_steer()
     due = {lg: r["due"] for lg, r in rep["legs"].items()}
-    assert due["leg0"] > 1.0 > due["leg2"], due
+    assert due["leg0"] > 1.0, due
+    assert due["leg2"] == 1.0, "a generation leg was weighted below par"
     assert "adopted" in rep["inputs"]["red_queen"]
 
 
@@ -148,19 +155,39 @@ def test_the_weights_reach_the_real_scheduler_two_sided_and_never_cut(
     _isolate_pricing(tmp_path, monkeypatch, None)
     base = cp.build_plan(dict(BASES))
     doc = {"generated_utc": datetime.now(UTC).isoformat(), "hour": "h",
-           "weights": {"leg0": 1.5, "leg1": 0.5}, "withdrawn": False}
+           "weights": {"leg0": 1.5, "judge0": 0.5}, "withdrawn": False}
     _isolate_pricing(tmp_path, monkeypatch, doc)
     steered = cp.build_plan(dict(BASES))
     b, s = base["legs"], steered["legs"]
     assert s["leg0"]["score"] > b["leg0"]["score"], "a weighted-up leg's price did not rise"
-    assert s["leg1"]["score"] < b["leg1"]["score"], "a weighted-down leg's price did not fall"
+    assert s["judge0"]["score"] < b["judge0"]["score"], "a down-weighted judge leg did not fall"
     assert "scheduler_steer" in s["leg0"]["priced_by"]
-    assert steered["order"].index("leg0") < steered["order"].index("leg1")
+    assert steered["order"].index("leg0") < steered["order"].index("judge0")
     assert s["leg0"]["price_factor"] > 1.0
     # NEVER A CUT: every leg keeps its base and the hour's total never falls
     assert all(v["planned_s"] >= v["base_s"] for v in s.values())
     assert steered["totals"]["never_reduced"]
     assert steered["sources"]["scheduler_steer"] is True
+
+
+def test_a_generation_leg_at_the_minimum_weight_keeps_its_slot_and_seconds(
+        tmp_path: Path, monkeypatch: Any) -> None:
+    """BACKPRESSURE GOES TO THE JUDGE ONLY: a 0.5 weight on a mining / generation leg must not run
+    it later or shorter -- the consumer floors it at 1.0 whatever the artifact says."""
+    _isolate_pricing(tmp_path, monkeypatch, None)
+    base = cp.build_plan(dict(BASES))
+    doc = {"generated_utc": datetime.now(UTC).isoformat(), "hour": "h",
+           "weights": {"leg3": 0.5, "deepen": 0.5}, "withdrawn": False}
+    _isolate_pricing(tmp_path, monkeypatch, doc)
+    steered = cp.build_plan(dict(BASES))
+    for leg in ("leg3", "deepen"):
+        assert steered["order"].index(leg) == base["order"].index(leg), "order slot moved"
+        assert steered["legs"][leg]["planned_s"] == base["legs"][leg]["planned_s"]
+        assert steered["legs"][leg]["score"] == base["legs"][leg]["score"]
+    # and the tournament itself never proposes one below par
+    doc2 = tour.steer({"researcher_market": {"gen": 0.5, "judge": 0.5, "other": 1.5}}, {}, [],
+                      "h", down_ok=["judge"])
+    assert doc2["legs"]["gen"]["due"] == 1.0 and doc2["legs"]["judge"]["due"] < 1.0
 
 
 def test_a_withdrawn_or_stale_steer_moves_nothing(tmp_path: Path, monkeypatch: Any) -> None:
@@ -183,7 +210,7 @@ def test_the_holdout_is_a_seeded_random_slice_on_the_prior_allocation() -> None:
         "the slice is not re-drawn each hour"
     doc = tour.steer({"researcher_market": {lg: 1.4 if i % 2 else 0.6
                                             for i, lg in enumerate(legs)}},
-                     {}, [], "2026-10-06T12")
+                     {}, [], "2026-10-06T12", down_ok=legs)
     for lg in doc["holdout"]:
         assert doc["weights"][lg] == 1.0 and doc["legs"][lg]["due"] != 1.0
     assert doc["comparison"]["primary"] == "UNMEASURED"
@@ -214,6 +241,25 @@ def test_the_tournament_moves_authority_both_ways() -> None:
                      _history("researcher_market", "meta_benchmark"), "h9")
     assert sus["contestants"]["researcher_market"]["authority"] == 0.0
     assert "leg0" not in sus["weights"]
+
+
+def _arms(treated: float, holdout: float, n: int = 6) -> list[dict[str, Any]]:
+    return [{"outcomes": {"a": treated + 0.01 * h, "b": holdout + 0.01 * h},
+             "legs": {"a": {"due": 1.3, "arm": "treated"}, "b": {"due": 1.3, "arm": "holdout"}}}
+            for h in range(n)]
+
+
+def test_an_inconclusive_comparison_defaults_to_neutral() -> None:
+    props = {"researcher_market": {"x": 1.4, "y": 0.6}}
+    for hist in ([], _arms(5.0, 5.0, n=2), _arms(5.0, 5.0)):   # unmeasured, too few, undecided
+        doc = tour.steer(props, {}, hist, "h9", down_ok=["x", "y"])
+        assert doc["comparison"]["primary"] in ("UNMEASURED", "UNDECIDED")
+        assert doc["withdrawn"] and not doc["authoritative"]
+        assert set(doc["weights"].values()) == {1.0}
+    admitted = tour.steer(props, {}, _arms(9.0, 1.0), "h9", down_ok=["x", "y"])
+    assert admitted["comparison"]["primary"] == "ADMITTED" and not admitted["withdrawn"]
+    treated = [lg for lg, r in admitted["legs"].items() if r["arm"] == "treated"]
+    assert treated and all(admitted["weights"][lg] != 1.0 for lg in treated)
 
 
 def test_a_rejected_holdout_comparison_withdraws_the_steer() -> None:
@@ -256,3 +302,40 @@ def test_elapsed_hours_are_scored_from_births_per_cpu_hour(
     old = next(a for a in st["assignments"] if a["hour"] == "old")
     assert old["outcomes"] == {"alpha_evolution": 6.0}   # 3 novel births in half a CPU-hour
     assert rep["assignments_scored"] == 1
+
+
+def test_duplicate_births_do_not_raise_the_score(tmp_path: Path, monkeypatch: Any) -> None:
+    """Novelty-deflated: three copies of one (symbol, family) earn 1 + 1/sqrt2 + 1/sqrt3, less
+    than three distinct births in the same CPU, and a pair born before earns less again."""
+    def score(families: list[str], prior: int = 0) -> float:
+        sub = tmp_path / f"run{len(list(tmp_path.iterdir()))}"
+        sub.mkdir()
+        _isolate_tier_s(sub, monkeypatch, arena=_arena({"mutate_survivor": "LEADS"}))
+        t0 = NOW - timedelta(hours=2)
+        (sub / "state" / "scheduler_steer.json").write_text(json.dumps({"assignments": [{
+            "hour": "old", "at": t0.isoformat(), "outcomes": None,
+            "legs": {"alpha_evolution": {"due": 1.1, "applied": 1.1, "arm": "treated"}},
+            "tilts": {}}]}), encoding="utf-8")
+        (sub / "state" / "researcher_prices.json").write_text(json.dumps({
+            "generated_utc": NOW.isoformat(),
+            "researchers": {"miner:alpha_evolution": {"leg": "alpha_evolution"}}}),
+            encoding="utf-8")
+        rows = [{"at": (t0 - timedelta(hours=5)).isoformat(), "source": "miner:other",
+                 "symbol": "EURUSD", "family": families[0], "fate": "BORN"}] * prior
+        rows += [{"at": (t0 + timedelta(minutes=10 + i)).isoformat(),
+                  "source": "miner:alpha_evolution", "symbol": "EURUSD", "family": f,
+                  "fate": "BORN"} for i, f in enumerate(families)]
+        ts.HGRAPH.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+        ts.COMPUTE.write_text(json.dumps({"at": (t0 + timedelta(minutes=30)).isoformat(),
+                                          "run": "alpha_evolution", "cpu_s": 1800.0}) + "\n",
+                              encoding="utf-8")
+        ts.organ_steer()
+        st = json.loads((sub / "state" / "scheduler_steer.json").read_text("utf-8"))
+        old = next(a for a in st["assignments"] if a["hour"] == "old")
+        return float(old["outcomes"]["alpha_evolution"])
+    distinct = score(["f1", "f2", "f3"])
+    dupes = score(["f1", "f1", "f1"])
+    assert distinct == 6.0
+    assert dupes < distinct
+    assert abs(dupes - 2.0 * (1 + 2 ** -0.5 + 3 ** -0.5)) < 1e-4
+    assert score(["f1"], prior=3) < score(["f1"])     # a pair born before is worth less

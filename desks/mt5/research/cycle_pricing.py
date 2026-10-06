@@ -328,8 +328,8 @@ def _researcher_prices(max_age_h: float = 6.0) -> dict[str, float]:
 def _steer_weights(max_age_h: float = STEER_MAX_AGE_H) -> tuple[dict[str, float], str]:
     """({leg: weight}, why) from the Tier S scheduler tournament, or ({}, why).
 
-    TWO-SIDED, BOUNDED, AND NEVER A CUT. A weight is in [0.5, 1.5] and the tournament renormalises
-    them to mean 1.0; here it multiplies the leg's rank SCORE, so a leg weighted down runs later and
+    BOUNDED AND NEVER A CUT. A weight is in [0.5, 1.5], and below 1.0 only for a validation-
+    department (judge-side) leg: generation and mining legs are up-only; here it multiplies the leg's rank SCORE, so a leg weighted down runs later and
     asks for less spare, while the FLOOR (par) and the never-reduced total below still hold. A
     stale or absent artifact, or one whose holdout comparison withdrew the steer, moves nothing."""
     doc = _read(STEER)
@@ -348,7 +348,11 @@ def _steer_weights(max_age_h: float = STEER_MAX_AGE_H) -> tuple[dict[str, float]
         return {}, f"steer withdrawn by its holdout comparison: {str(doc.get('why'))[:100]}"
     raw = doc.get("weights")
     w: dict[str, Any] = raw if isinstance(raw, dict) else {}
-    out = {str(k): max(0.5, min(1.5, float(v))) for k, v in w.items()
+    # BACKPRESSURE GOES TO THE JUDGE ONLY, enforced again where the weight is spent: a leg
+    # outside the validation department (mining, research generation, everything else) never
+    # takes a weight below 1.0, whatever the artifact says.
+    out = {str(k): max(0.5 if _department_of(str(k)) == "validate" else 1.0,
+                       min(1.5, float(v))) for k, v in w.items()
            if isinstance(v, (int, float)) and not isinstance(v, bool)}
     moved = sum(1 for v in out.values() if v != 1.0)
     return out, f"{moved} leg(s) weighted for hour {doc.get('hour')}"

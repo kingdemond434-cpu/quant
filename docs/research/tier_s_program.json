@@ -1064,6 +1064,18 @@
     "organ": "report:RESEARCH_BUDGET.json"
    },
    "why": "the budget's uplift above each leg's floor, funded only from measured spare seconds, yields more output per leg-run than held-out leg-hours at the floor (control arm, Welch one-sided 5%); the budget is authoritative only while this is ADMITTED"
+  },
+  {
+   "leg": "scheduler_steer",
+   "report": "tier_s/SCHEDULER_STEER.json",
+   "contract": {
+    "gain": "INFO_PER_COMPUTE",
+    "metric": "control_arm.admitted",
+    "better": "up",
+    "bar": 1.0,
+    "organ": "report:tier_s/SCHEDULER_STEER.json"
+   },
+   "why": "the method tournament's weights (arena, Red Queen champion, researcher market, meta-benchmark) on treated legs yield more novelty-deflated births per CPU-hour than the seeded random holdout left on the prior allocation (control arm, Welch one-sided 5%, up-weighted legs); the weights reach cycle_pricing only while this is ADMITTED, and generation legs are never weighted below par"
   }
  ]
 }

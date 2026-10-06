@@ -2679,9 +2679,12 @@ def _fresh(doc: Mapping[str, Any], *keys: str, max_age_h: float = STEER_INPUT_MA
 
 def _steer_outcomes(pending: list[dict[str, Any]], producer_leg: Mapping[str, str | None]
                     ) -> None:
-    """Fill `outcomes` on every assignment whose hour has elapsed: per leg, NOVEL hypotheses born
-    (a (symbol, family) pair no verdict had judged before the window opened) per CPU-hour the leg
-    burned in that window. A leg that burned no CPU there has no outcome -- unmeasured, never 0."""
+    """Fill `outcomes` on every assignment whose hour has elapsed: per leg, NOVELTY-DEFLATED births
+    per CPU-hour the leg burned in that window. A birth counts only if no verdict had judged its
+    (symbol, family) pair before the window opened, and then only `novelty_credit(k)` =
+    1/sqrt(1 + k) of a birth, k = births of the same pair before it (the breadth law), so cheap
+    near-duplicates cannot game the rate. A leg that burned no CPU has no outcome (never 0)."""
+    from libs.tiers.scheduler_tournament import novelty_credit
     if not pending:
         return
     windows = []
@@ -2700,17 +2703,21 @@ def _steer_outcomes(pending: list[dict[str, Any]], producer_leg: Mapping[str, st
     legs_all = {lg for a, _s, _e in windows for lg in (a.get("legs") or {})}
     legs_all |= {lg for a, _s, _e in windows for t in (a.get("tilts") or {}).values()
                  for lg in (t or {})}
-    births: list[tuple[datetime, str, str]] = []
+    births: list[tuple[datetime, str, str, float]] = []
+    seen: Counter[str] = Counter()          # births of each pair so far, in graph (birth) order
     for r in _jsonl(HGRAPH, 400_000):
         if r.get("fate") not in (None, "", "BORN"):
             continue
         t = replay.parse_t(r.get("at"))
+        pair = f"{r.get('symbol')}.{r.get('family')}"
+        credit = novelty_credit(seen[pair])
+        seen[pair] += 1
         if t is None or t < lo:
             continue
         pr = _producer(r.get("source"))
         leg = producer_leg.get(pr) or _leg_of(pr, legs_all)
         if leg:
-            births.append((t, leg, f"{r.get('symbol')}.{r.get('family')}"))
+            births.append((t, leg, pair, credit))
     cpu: list[tuple[datetime, str, float]] = []
     for row in _jsonl(COMPUTE, 200_000):
         name = str(row.get("run") or "")
@@ -2725,11 +2732,11 @@ def _steer_outcomes(pending: list[dict[str, Any]], producer_leg: Mapping[str, st
         for t, name, v in cpu:
             if s <= t < e:
                 sec[name] += v
-        nov: Counter[str] = Counter()
-        for t, leg, pair in births:
+        nov: dict[str, float] = defaultdict(float)
+        for t, leg, pair, credit in births:
             if s <= t < e:
                 fj = first_judged.get(pair)
-                nov[leg] += int(fj is None or fj >= s)
+                nov[leg] += credit if (fj is None or fj >= s) else 0.0
         a["outcomes"] = {lg: round(nov[lg] / (sec[lg] / 3600.0), 6)
                          for lg in sorted(sec) if sec[lg] >= 1.0}
         a["scored_at"] = NOW.isoformat()
@@ -2813,7 +2820,15 @@ def organ_steer() -> dict[str, Any]:
     pending = [a for a in assignments if a.get("outcomes") is None
                and (replay.parse_t(a.get("at")) or NOW) + timedelta(hours=1) <= NOW]
     _steer_outcomes(pending, producer_leg)
-    doc = tour.steer(proposals, suspended, assignments, hour)
+    # BACKPRESSURE GOES TO THE JUDGE ONLY: only the validation department's legs may be weighted
+    # below 1.0; every mining / research-generation leg is up-only (the leg departments are
+    # hourly_cycle's own classification, never restated here)
+    try:
+        import hourly_cycle as _hc
+        judge_legs = sorted(k for k, v in _hc.LEG_DEPARTMENT.items() if v == "validate")
+    except Exception as exc:
+        judge_legs, inputs["down_ok"] = [], f"hourly_cycle unavailable ({exc}): every leg up-only"
+    doc = tour.steer(proposals, suspended, assignments, hour, down_ok=judge_legs)
     assignments.append({"hour": hour, "at": NOW.isoformat(),
                         "legs": {lg: {k: r[k] for k in ("due", "applied", "arm")}
                                  for lg, r in doc["legs"].items()},
@@ -2824,6 +2839,11 @@ def organ_steer() -> dict[str, Any]:
     cmp_ = doc["comparison"]
     scored = sum(1 for a in assignments if isinstance(a.get("outcomes"), dict))
     return {**doc, "inputs": inputs, "assignments_scored": scored,
+            # THE CONTRACT'S METRIC (tier_s_program.json leg_contracts "scheduler_steer"): 1.0
+            # only while the held-out comparison ADMITS the steer -- the same shape and the same
+            # bar as research_budget's control arm
+            "control_arm": {"admitted": 1.0 if cmp_["primary"] == "ADMITTED" else 0.0,
+                            "verdict": cmp_["primary"], "up": cmp_["up"]},
             "consumer": "research/cycle_pricing.py build_plan (leg price scores; compute only)",
             "metric": {"steered_legs": len(doc["weights"]),
                        "moved_legs": sum(1 for w in doc["weights"].values()

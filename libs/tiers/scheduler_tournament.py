@@ -28,13 +28,17 @@ and the order the legs run in. This module produces the per-leg WEIGHTS it now r
     holdout       a SEEDED RANDOM slice (`HOLDOUT_SHARE`, re-drawn every hour from
                   sha256(salt|hour)) of the legs stays on the PRIOR allocation (weight 1.0) as a
                   control. The rest are treated. The holdout-versus-treated comparison
-                  (`control_arm.compare`, Welch one-sided 5%) is published in the artifact; a
-                  REJECTED comparison withdraws the steer (every weight back to 1.0) until the
-                  verdict ages out of the rolling window -- authority earned, never assumed.
+                  (`control_arm.compare`, Welch one-sided 5%) is published in the artifact. ONLY
+                  an ADMITTED comparison lets the weights reach the scheduler: REJECTED,
+                  UNDECIDED and UNMEASURED (too few legs) all default to NEUTRAL -- every weight
+                  back to 1.0 -- authority earned, never assumed (verifier pre-check, #235).
 
 THE LAWS IT KEEPS, by construction and pinned by tests:
 
-  * TWO-SIDED. A weight lives in [1 - MAX_TILT, 1 + MAX_TILT]: an arm can gain or lose.
+  * TWO-SIDED, BUT BACKPRESSURE GOES TO THE JUDGE ONLY. A weight lives in
+    [1 - MAX_TILT, 1 + MAX_TILT], and only a leg in `down_ok` (the judge / validation side, by the
+    repo's own leg departments) may sit below 1.0. Every mining / research-generation leg is
+    UP-ONLY: its weight is floored at 1.0, so a tournament can fund it more and never less.
   * NEVER A CUT. The weights are renormalised to mean 1.0 over the steered legs, and
     `cycle_pricing` applies them to the leg's PRICE SCORE, whose factor is floored at par (1.0x
     base) with a never-reduced total. A down-weighted leg runs later and wins less spare; it keeps
@@ -272,13 +276,23 @@ def _mean(xs: Sequence[float]) -> float | None:
     return round(sum(xs) / len(xs), 6) if xs else None
 
 
+def novelty_credit(local_count: int) -> float:
+    """The breadth law's deflator: a birth whose (symbol, family) pair has already been born
+    `local_count` times before it is worth 1/sqrt(1 + local_count) of a new one, so cheap
+    near-duplicates cannot buy births per CPU-hour."""
+    return 1.0 / math.sqrt(1.0 + max(0, int(local_count)))
+
+
 def steer(proposals: Mapping[str, Mapping[str, float]],
           suspended: Mapping[str, bool],
           history: Sequence[Mapping[str, Any]],
-          hour_key: str) -> dict[str, Any]:
+          hour_key: str, down_ok: Iterable[str] = ()) -> dict[str, Any]:
     """One hour's steer: drop suspended contestants, score the rest on `history` (past assignments
     carrying `tilts` and `outcomes`), weight them, combine, draw the holdout, and withdraw
-    everything if the holdout comparison REJECTED the steer. Returns the artifact body."""
+    everything unless the holdout comparison ADMITTED the steer. `down_ok` names the only legs
+    (judge / validation) whose weight may fall below 1.0; every other leg is up-only. Returns the
+    artifact body."""
+    may_fall = set(down_ok)
     dropped = sorted(c for c in proposals if suspended.get(c))
     live = {c: dict(p) for c, p in proposals.items() if not suspended.get(c)}
     present = sorted(c for c, p in live.items() if p)
@@ -293,10 +307,11 @@ def steer(proposals: Mapping[str, Mapping[str, float]],
                 scores.setdefault(c, []).append(s)
     board = authorities(scores, present)
     auth = {c: float(r["authority"]) for c, r in board.items()}
-    due = combine({c: live[c] for c in present}, auth)
+    due = {lg: (w if lg in may_fall else max(1.0, w))
+           for lg, w in combine({c: live[c] for c in present}, auth).items()}
     held = holdout(due, hour_key)
     comparison = holdout_comparison(history)
-    withdrawn = comparison["primary"] == "REJECTED"
+    withdrawn = comparison["primary"] != "ADMITTED"
     legs: dict[str, dict[str, Any]] = {}
     for lg, w in sorted(due.items()):
         arm = "holdout" if lg in held else "treated"
@@ -315,10 +330,12 @@ def steer(proposals: Mapping[str, Mapping[str, float]],
         "authoritative": bool(legs) and not withdrawn and any(
             abs(r["applied"] - 1.0) > EPS for r in legs.values()),
         "withdrawn": withdrawn,
-        "why": ("holdout comparison REJECTED the steer: every leg runs on the prior allocation "
-                "until the verdict ages out of the window" if withdrawn else
+        "why": (f"holdout comparison is {comparison['primary']}, not ADMITTED: every leg runs on "
+                "the prior allocation (neutral) until a held-out comparison admits the steer"
+                if withdrawn else
                 "treated legs carry the tournament's weights; the held-out slice runs on the prior "
                 "allocation as the control"),
         "parameters": {"max_tilt": MAX_TILT, "arena_step": ARENA_STEP, "eta": ETA,
-                       "min_hours": MIN_HOURS, "window_h": WINDOW_H},
+                       "min_hours": MIN_HOURS, "window_h": WINDOW_H,
+                       "down_ok_legs": len(may_fall)},
     }
