@@ -288,6 +288,24 @@ def test_fetch_order_records_its_decision(tmp_path: Path, monkeypatch: pytest.Mo
     assert rec["moved"] == 3 and rec["evig_at"] == "x"
 
 
+def test_an_unranked_order_records_nothing(tmp_path: Path,
+                                           monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import source_evig as se
+    monkeypatch.setattr(se, "OUT", tmp_path / "absent.json")
+    monkeypatch.setattr(se, "DECISIONS", tmp_path / "evig_order_decisions.jsonl")
+    assert se.fetch_order(["a", "b"], record=True) == ["a", "b"]
+    assert not (tmp_path / "evig_order_decisions.jsonl").exists()
+
+
+def test_roi_decision_ledger_follows_the_allocation_file(tmp_path: Path,
+                                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import research_roi as rr
+    monkeypatch.setattr(rr, "FOREST_OUT", tmp_path / "forest_allocation.json")
+    assert rr.budget_decisions_path() == tmp_path / "roi_budget_decisions.jsonl"
+    rr._append_budget_decision({"at": "t", "forests": {}})
+    assert (tmp_path / "roi_budget_decisions.jsonl").read_text("utf-8").count("\n") == 1
+
+
 def test_evig_terms_parsing_relevance_and_licence() -> None:
     from research import source_evig as se
     src = [{"id": "parsed", "targets": ["XAUUSD"], "cadence": "daily"},

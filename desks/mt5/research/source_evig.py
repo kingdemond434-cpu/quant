@@ -73,7 +73,7 @@ UNIVERSE = DESK / "data" / "universe" / "universe.json"
 #: (the order handed back); `scripts/check_asia_directive.py` joins it with the collector's own
 #: report to name the sources fetched only because of the ranking.
 DECISIONS = DESK / "data" / "evig_order_decisions.jsonl"
-DECISIONS_KEEP_BYTES = 8 * 1024 * 1024
+DECISIONS_KEEP_BYTES = 2 * 1024 * 1024
 
 #: Declared cadence -> the seconds of desk attention one attempt costs, before measured seconds
 #: replace it. A daily portal is attempted thirty times more often than a monthly one, so the
@@ -345,10 +345,10 @@ def fetch_order(ids: list[str], *, record: bool = False) -> list[str]:
     `record=True` (the collector's call) appends the decision to DECISIONS so the completion
     audit can prove the ranking changed what was fetched, not only the order of a list."""
     out = _order(ids)
-    if record:
-        doc = _read(OUT, {})
-        _record_decision(decision_record(list(ids), out,
-                                         doc.get("at") if isinstance(doc, dict) else None))
+    doc = _read(OUT, {}) if record else {}
+    if record and isinstance(doc, dict) and doc.get("rows"):
+        # no ranking, no decision: an unranked pass keeps the registry order and proves nothing
+        _record_decision(decision_record(list(ids), out, doc.get("at")))
     return out
 
 

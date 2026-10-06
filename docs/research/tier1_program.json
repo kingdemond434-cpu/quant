@@ -9037,6 +9037,40 @@
    "landed": [
     "mass screen 2026-09-30"
    ]
+  },
+  {
+   "id": "AS1",
+   "item": "Asia directive completion audit (PART XXXVII), ASIA INTELLIGENCE dashboard (PART XXXIX) and the XLIV feedback-loop proofs (EVIG -> collection order, ROI -> research budget, native-language forest rotation)",
+   "domain": "U",
+   "phase": "U",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "scripts/check_asia_directive.py:259 (static_rung: code lifts a row at most to SCHEDULED)",
+    "scripts/check_asia_directive.py:627 (judge: every higher rung read from a runtime artifact; absent -> UNMEASURED; failed XLIV verification held at RUNNING)",
+    "scripts/check_asia_directive.py:438 (proof_evig_order: decision ledger joined with the collector's DEFERRED set)",
+    "scripts/check_asia_directive.py:494 (proof_roi_budget: roi-only vs flat budget, adequate sample, the forest ran on it)",
+    "scripts/check_asia_directive.py:544 (proof_forest_rotation: per-language attempts over a trailing window)",
+    "desks/mt5/data/asia_directive_requirements.json:1 (55 requirements as data, each naming its evidence artifacts)",
+    "desks/mt5/research/source_evig.py:337 (fetch_order(record=True): before/after decision ledger)",
+    "desks/mt5/research/source_evig.py:206 (parsing-cost and MT5-relevance EVIG terms)",
+    "desks/mt5/research/asia_collector.py:548 (the collector records the decision it fetches by)",
+    "desks/mt5/research/research_roi.py:1012 (budget_decision: before/after/roi_only/flat per forest)",
+    "desks/mt5/research/deep_forest_miner.py:1888 (rotation_record: per-language attempts per run)",
+    "desks/mt5/research/desk_dashboard_state.py:1178 (_asia_intelligence: the panel's joined section)",
+    "web/dashboard.html:872 (the ASIA INTELLIGENCE panel)",
+    "desks/mt5/research/hourly_cycle.py:5400 (leg asia_completion_audit, before desk_dashboard_state)",
+    "scripts/run_law_gate.py:275 (portable fence: requirement-file schema + the CRO summary)",
+    "desks/mt5/tests/test_asia_completion_audit.py:72 (ladder, proofs, decision writers and the dashboard consumer on fixtures)"
+   ],
+   "scheduled_by": "hourly_cycle:asia_completion_audit",
+   "artifact": "desks/mt5/reports/ASIA_COMPLETION_AUDIT.json + desks/mt5/data/evig_order_decisions.jsonl + desks/mt5/data/roi_budget_decisions.jsonl + desks/mt5/data/deep_forest_rotation.jsonl",
+   "consumer": "desks/mt5/research/desk_dashboard_state.py (sections.asia_intelligence -> web/dashboard.html) + scripts/run_law_gate.py (check_asia_directive --fence prints the summary)",
+   "gap": "runtime UNMEASURED off the box: every Asia artifact the audit reads is written on the trading box; on the authoring host 35 of 55 rows read UNMEASURED and the three proofs read UNMEASURED until the decision ledgers accumulate. Forward/live per requirement stay UNMEASURED until source-to-clock lineage is published.",
+   "next_step": "box: let one hourly pass write the three decision ledgers and ASIA_COMPLETION_AUDIT.json; read the census and the XLIV proof verdicts; the rows the other Asia packages (P1-P6, P8) land move up the ladder without a code change here",
+   "landed": [
+    "completion audit + dashboard + decision ledgers 2026-10-06"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

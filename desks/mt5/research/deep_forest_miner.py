@@ -1877,7 +1877,7 @@ def _runs_path() -> Path:
 #: Grounds that were scheduled and not worked this run: not an attempt in any language.
 NOT_ATTEMPTED = frozenset({"SKIPPED", "BUDGET_EXHAUSTED", "UNMEASURED"})
 ROTATION_NAME = "deep_forest_rotation.jsonl"
-ROTATION_KEEP_BYTES = 8 * 1024 * 1024
+ROTATION_KEEP_BYTES = 2 * 1024 * 1024
 
 
 def _rotation_path() -> Path:

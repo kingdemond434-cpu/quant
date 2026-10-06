@@ -89,7 +89,7 @@ CAPITAL_OUT = DATA / "roi_capital_evidence.json"
 #: one it wrote (after, what `libs/research/forests.py` reads), the ROI-only allocation and the
 #: FLAT-ROI counterfactual; `scripts/check_asia_directive.py` joins it with data/forest_runs.jsonl.
 BUDGET_DECISIONS = DATA / "roi_budget_decisions.jsonl"
-BUDGET_DECISIONS_KEEP_BYTES = 8 * 1024 * 1024
+BUDGET_DECISIONS_KEEP_BYTES = 2 * 1024 * 1024
 REPORT = REPORTS / "RESEARCH_ROI.json"
 #: The meta-evolution layer's population: each research-machinery variant names the host
 #: generator it configured and when it was activated; its fitness is that host's delayed
@@ -1045,14 +1045,21 @@ def budget_decision(regions: dict[str, Any], roi_only: dict[str, Any],
                      "trials is the adequate-sample basis")}
 
 
+def budget_decisions_path() -> Path:
+    """Beside FOREST_OUT, so whatever redirects the allocation (a test's tmp dir) redirects its
+    decision ledger with it."""
+    return FOREST_OUT.with_name(BUDGET_DECISIONS.name)
+
+
 def _append_budget_decision(rec: dict[str, Any]) -> None:
+    path = budget_decisions_path()
     try:
-        BUDGET_DECISIONS.parent.mkdir(parents=True, exist_ok=True)
-        with BUDGET_DECISIONS.open("a", encoding="utf-8") as fh:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(rec, default=str) + "\n")
-        if BUDGET_DECISIONS.stat().st_size > BUDGET_DECISIONS_KEEP_BYTES:
-            lines = BUDGET_DECISIONS.read_text("utf-8", errors="replace").splitlines()
-            _atomic_write_text(BUDGET_DECISIONS, "\n".join(lines[len(lines) // 2:]) + "\n")
+        if path.stat().st_size > BUDGET_DECISIONS_KEEP_BYTES:
+            lines = path.read_text("utf-8", errors="replace").splitlines()
+            _atomic_write_text(path, "\n".join(lines[len(lines) // 2:]) + "\n")
     except OSError as exc:
         print(f"research roi: budget decision not recorded ({type(exc).__name__}: {exc})")
 
@@ -1290,7 +1297,7 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
         "n_negative_families": len(negative),
         "budget_decision": {"moved_by_roi": decision["moved_by_roi"],
                             "changed_since_before": decision["changed_since_before"],
-                            "ledger": str(BUDGET_DECISIONS)},
+                            "ledger": str(budget_decisions_path())},
         "reallocation": {"departments": depts, "forest": forest,
                          "trial_budget_by_family": trials, "forward_slot_weights": slots,
                          "capital": {"file": str(CAPITAL_OUT),
