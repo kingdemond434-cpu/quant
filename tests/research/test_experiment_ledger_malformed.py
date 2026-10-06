@@ -1,4 +1,4 @@
-"""A malformed line in a trial ledger is skipped and counted; every line after it is still charged."""
+"""A malformed trial-ledger line is skipped and counted; every line after it is charged."""
 from __future__ import annotations
 
 import json
@@ -39,10 +39,12 @@ def test_side_ledgers_charge_every_line_after_a_bad_one(desk) -> None:
 
 def test_mass_screen_and_swarm_skip_bad_lines(desk, tmp_path) -> None:
     ms = tmp_path / "ms.jsonl"
-    _write(ms, [{"family": "f", "cells_screened": 10}, b"oops", {"family": "f", "cells_screened": 5}])
+    _write(ms, [{"family": "f", "cells_screened": 10}, b"oops",
+                {"family": "f", "cells_screened": 5}])
     assert el._mass_screen_counts(ms) == (15, {"f": 15})
     sw = tmp_path / "sw.jsonl"
-    _write(sw, [{"family": "g", "cells": ["n1", "n2"]}, b"\x00bad", {"family": "g", "cells": ["n3"]}])
+    _write(sw, [{"family": "g", "cells": ["n1", "n2"]}, b"\x00bad",
+                {"family": "g", "cells": ["n3"]}])
     total, fam, skipped = el._swarm_counts(frozenset({"n2"}), sw)
     assert (total, fam, skipped) == (2, {"g": 2}, 1)
     assert el._MALFORMED["ms.jsonl"] == 1 and el._MALFORMED["sw.jsonl"] == 1
