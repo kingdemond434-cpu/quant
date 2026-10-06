@@ -1516,8 +1516,17 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # without this its evidence froze with nothing on the row saying it was not measured.
             st["forward_evidence"] = {"status": "UNMEASURED", "why": detail,
                                       "at": st["last_error_at"]}
-            if not _is_terminal(st.get("status")):
+            # A PROMOTION CANDIDATE IS NOT KEPT THROUGH A FAILED EVALUATION (audit 2026-10-06).
+            # The promoter writes LIVE on that status alone, so a candidate whose pass raised --
+            # a session-window migration among them -- would go live on evidence this pass could
+            # not confirm. It is blocked like any non-final row and re-earns the status on the
+            # next clean pass (the block clears itself when the sleeve evaluates). Final verdicts
+            # (KILL, PROMOTED, RETIRED...) are still never overwritten.
+            _cand = str(st.get("status") or "").upper().replace("_", " ").startswith(
+                "PROMOTION CANDIDATE")
+            if _cand or not _is_terminal(st.get("status")):
                 st["status"] = "BLOCKED_SLEEVE_ERROR"
+                st["promotion_authority"] = False
             state[key] = st
             slog(f"{key}: SLEEVE BLOCKED -- {detail}; this row is not evaluated this pass and "
                  f"every other sleeve continues")
