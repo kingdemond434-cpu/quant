@@ -61,6 +61,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk.markout import echo_join, position_direction  # noqa: E402
+
 from libs.execution import fill_corpus as fc  # noqa: E402
 
 INTENTS = DESK / "data" / "order_intents.jsonl"
@@ -174,37 +176,61 @@ def match(intents: list[dict[str, Any]], deals: list[dict[str, Any]],
         if pid is not None:
             by_pos.setdefault(pid, d)
     used: set[int] = set()
-    pairs: list[tuple[dict[str, Any], dict[str, Any], str]] = []
-    unfilled: list[dict[str, Any]] = []
-    census: dict[str, int] = {"entry_order": 0, "position_id": 0, "symbol_minute": 0}
+    census: dict[str, int] = {"entry_order": 0, "position_id": 0, "sl_tp_echo": 0,
+                              "symbol_minute": 0}
+    hits: dict[int, tuple[dict[str, Any], str]] = {}
+    # PASS 1 -- THE TICKET BRIDGES, for every intent, before any weaker tier may claim a deal.
     for it in intents:
         t = _i(it.get("ticket"))
-        hit, how = None, ""
-        if t is not None and t in by_entry:
-            hit, how = by_entry[t], "entry_order"
-        elif t is not None and t in by_pos:
-            hit, how = by_pos[t], "position_id"
-        else:
-            t0 = _epoch(it.get("time"))
-            sym, dirn = str(it.get("symbol") or ""), _direction(it.get("side"))
-            if t0 is not None and sym:
-                for d in deals:
-                    if str(d.get("symbol") or "") != sym or _direction(d.get("side")) != dirn:
-                        continue
-                    if _i(d.get("deal")) in used:
-                        continue
-                    td = _epoch(d.get("time"))
-                    if td is not None and abs(td - t0) <= PAIR_WINDOW_S:
-                        hit, how = d, "symbol_minute"
-                        break
-        if hit is None:
+        if not t:
+            continue
+        for key, table in (("entry_order", by_entry), ("position_id", by_pos)):
+            d = table.get(t)
+            if d is not None and _i(d.get("deal")) not in used:
+                hits[id(it)] = (d, key)
+                dk = _i(d.get("deal"))
+                if dk is not None:
+                    used.add(dk)
+                break
+    # PASS 2 -- THE STOP/TARGET ECHO, for deals that carry no entry-order key at all (every row
+    # recorded before 2026-09-08). `mt5desk.markout.echo_join` is the one implementation.
+    used_ids = set(hits)
+    for it, d in echo_join(intents, deals, used_ids, used):
+        hits[id(it)] = (d, "sl_tp_echo")
+    # PASS 3 -- SAME SYMBOL, SAME POSITION DIRECTION, THE INTENT WITHIN A MINUTE OF THE POSITION'S
+    # OPENING. Two defects made this tier dead on every row it was ever offered: it compared the
+    # intent's side with the ledger's `side`, which is the CLOSING deal's type (opposite on 151 of
+    # 151 committed rows), and the intent's placement time with the ledger's `time`, which is when
+    # the gateway RECORDED the close. It now reads `position_direction` and `entry_time` only;
+    # a row without `entry_time` is not offered, because no clock on it says when it opened.
+    for it in intents:
+        if id(it) in hits or (_i(it.get("ticket")) or 0) <= 0:
+            continue
+        t0 = _epoch(it.get("time"))
+        sym, dirn = str(it.get("symbol") or ""), _direction(it.get("side"))
+        if t0 is None or not sym:
+            continue
+        for d in deals:
+            if str(d.get("symbol") or "") != sym or position_direction(d) != dirn:
+                continue
+            if _i(d.get("deal")) in used:
+                continue
+            td = _epoch(d.get("entry_time"))
+            if td is not None and abs(td - t0) <= PAIR_WINDOW_S:
+                hits[id(it)] = (d, "symbol_minute")
+                dk = _i(d.get("deal"))
+                if dk is not None:
+                    used.add(dk)
+                break
+    pairs: list[tuple[dict[str, Any], dict[str, Any], str]] = []
+    unfilled: list[dict[str, Any]] = []
+    for it in intents:
+        got = hits.get(id(it))
+        if got is None:
             unfilled.append(it)
             continue
-        dk = _i(hit.get("deal"))
-        if dk is not None:
-            used.add(dk)
-        census[how] = census.get(how, 0) + 1
-        pairs.append((it, hit, how))
+        census[got[1]] = census.get(got[1], 0) + 1
+        pairs.append((it, got[0], got[1]))
     matched_deals = {_i(d.get("deal")) for _it, d, _h in pairs}
     unmatched = [d for d in deals if _i(d.get("deal")) not in matched_deals]
     return pairs, unfilled, unmatched, census
@@ -469,7 +495,11 @@ def deal_row(deal: dict[str, Any]) -> dict[str, Any]:
         "sources": ["live_ledger.jsonl"],
         "symbol": str(deal.get("symbol") or ""), "sleeve": str(deal.get("sleeve") or ""),
         "decided_at": "", "sent_at": "", "filled_at": stamp, "exit_at": stamp,
-        "side": str(deal.get("side") or ""), "direction": _direction(deal.get("side")),
+        # THE POSITION'S SIDE. The ledger's `side` is the closing deal's type -- a closing buy is
+        # a short -- so it is kept under its own name and never read as the trade's direction.
+        "side": {1: "buy", -1: "sell"}.get(position_direction(deal), ""),
+        "direction": position_direction(deal),
+        "closing_side": str(deal.get("side") if deal.get("side") is not None else ""),
         "order_type": "market", "execution_style": "market",
         "lots": lots, "requested_price": None,
         "quote_bid": None, "quote_ask": None, "quote_mid_at_decision": None,
@@ -482,6 +512,23 @@ def deal_row(deal: dict[str, Any]) -> dict[str, Any]:
         "realized_r": realized_r(deal, denom),
         "status": "FILLED" if entry is not None else "UNRESOLVED",
     }
+
+
+def supersede_rows(pairs: list[tuple[dict[str, Any], dict[str, Any], str]],
+                   existing: dict[str, str]) -> list[dict[str, Any]]:
+    """A SUPERSEDED marker for every deal_only key an earlier pass wrote for a deal now joined."""
+    out: list[dict[str, Any]] = []
+    for it, deal, how in pairs:
+        old = f"deal:{deal.get('deal')}|{deal.get('time') or ''}"
+        if old not in existing or existing[old].startswith("SUPERSEDED|"):
+            continue
+        new = f"{it.get('intent_id') or it.get('ticket')}|{deal.get('time') or ''}"
+        out.append({"record_id": old, "intent_id": "", "deal": _i(deal.get("deal")),
+                    "schema_version": fc.SCHEMA_VERSION,
+                    "join_keys": {"basis": "superseded", "superseded_by": new, "join": how},
+                    "sources": ["live_ledger.jsonl"], "symbol": str(deal.get("symbol") or ""),
+                    "sleeve": str(deal.get("sleeve") or ""), "status": "SUPERSEDED"})
+    return out
 
 
 def e8_intents(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -613,12 +660,23 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
 
     existing = {fc.record_from_row(r).key: fc.record_from_row(r).resolution
                 for r in fc.read_rows(CORPUS)}
+    # A DEAL THE JOIN NOW REACHES WAS RECORDED EARLIER AS `deal_only` UNDER ITS OWN KEY. The
+    # corpus keeps the last row per key, so without this the same fill would read twice -- once
+    # joined, once bare. The old key is re-appended as SUPERSEDED, naming the row that replaces
+    # it; nothing is deleted from the append-only file.
+    rows += supersede_rows(pairs, existing)
     fresh = [r for r in rows
              if fc.record_from_row(r).key not in existing
              or existing[fc.record_from_row(r).key] != fc.record_from_row(r).resolution]
     appended = 0 if dry_run else fc.append_rows(CORPUS, fresh)
 
     filled = [r for r in rows if r["status"] == "FILLED"]
+    # MATCHED MEANS JOINED TO THE ORDER THE DESK SENT. This counted every FILLED row, deal_only
+    # included, so it read 151 on the committed ledgers while three fills carried a slippage: the
+    # number named a join that had not happened. `realised_fills` keeps the wider count.
+    joined = [r for r in filled
+              if str((r.get("join_keys") or {}).get("basis") or "")
+              in ("entry_order", "position_id", "sl_tp_echo", "symbol_minute", "intent_fill")]
     completeness = {
         f: {"n": sum(1 for r in filled if r.get(f) is not None),
             "share": (round(sum(1 for r in filled if r.get(f) is not None) / len(filled), 3)
@@ -630,13 +688,19 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
     return {
         "at": now,
         "status": "OK",
-        "matched_fills": len(filled),
+        "matched_fills": len(joined),
+        "realised_fills": len(filled),
+        "joined_share_of_deals": (round(len(pairs) / len(deals), 4) if deals else None),
         "n_intents": len(intents), "n_deals": len(deals),
         "n_unfilled_intents": len(unfilled), "n_unmatched_deals": len(unmatched),
         "join_census": census,
         "join_rule": ("ticket == entry_order first (the bridge MT5 offers), then "
-                      "ticket == position_id, then same symbol / same direction within "
-                      f"{PAIR_WINDOW_S:.0f}s -- the tier is stamped on every row's join_keys. "
+                      "ticket == position_id, then (for key-less legacy deals) the exact "
+                      "stop/target echo on the same symbol and POSITION direction, then same "
+                      "symbol / same position direction with the intent within "
+                      f"{PAIR_WINDOW_S:.0f}s of the position's entry_time -- the tier is "
+                      "stamped on every row's join_keys. The ledger's `side` is the CLOSING "
+                      "deal's type and is never read as the trade's direction. "
                       "A DEAL WITH NO SURVIVING INTENT IS STILL A REALISED FILL and is recorded "
                       "from the ledger alone (basis deal_only) with slippage None, never zero: "
                       "that is the 121 rows the intent-keyed walk used to drop."),

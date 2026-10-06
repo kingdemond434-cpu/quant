@@ -164,18 +164,23 @@ _FAMILY_GROUPS: dict[str, str] = {
     "macro_release macro market": "macro_conditional macro_gold_yield",
     "macro_release event market": "event_reaction",
     "macro_release cross_asset market": "usd_session_shock",
-    "carry_rollover carry market": "carry",
+    "carry_rollover carry market": "carry mass_screen_carry",
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
                                                " cot_comm_follow cot_net_fade cot_positioning"
                                                " retail_overlap_reversal",
-    "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month",
+    "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
+                                               " mass_screen_clock",
     "relative_value_dislocation cross_asset market": "correlation_regime cross_asset_residual"
                                                      " cross_sectional pca_residual"
                                                      " relative_value style_premia"
                                                      " cross_sectional_class_value"
                                                      " cross_sectional_class_low_vol",
     "relative_value_dislocation microstructure limit": "triangle",
-    "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup",
+    "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
+                                            " gnn_propagation mass_screen_lead",
+    # The learned attention forecast (2026-09-30, research/learned_miners): whether a move is a
+    # concession that reverts or information that continues, read off the recent path.
+    "inventory_shock price_only market": "attention_ts",
     # The Alpha Capture substitute (2026-09-30): a dated public view ABOUT the instrument drifts
     # because holders under-react (trend_persistence's payer); another market's view leads the
     # instrument because the slow venue reprices late (cross_market_lead's payer).
@@ -195,8 +200,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     "breakout_liquidity price_only limit": "failed_breakout",
     "volatility_shock price_only market": "jump vol_mean_reversion",
     "volatility_shock price_only stop": "d1_inside volatility_squeeze",
-    "regime_transition price_only market": "drawdown_conditional regime_transition"
-                                           " vol_transition",
+    "regime_transition price_only market": "drawdown_conditional regime_split"
+                                           " regime_transition vol_transition",
     "execution_microstructure microstructure market": "liquidity_regime orderflow_imbalance",
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
                                                      " spread_state",
@@ -205,14 +210,22 @@ _FAMILY_GROUPS: dict[str, str] = {
     # NO MECHANISM NAMED, AND THAT IS THE MEASUREMENT. `discovered` is the desk's own generated
     # family and dominates the docket; `generic`/`formula`/`ensemble`/`joint_genome` are spec
     # constructors. All map to UNKNOWN so the count is visible rather than assumed away.
-    f"{UNKNOWN} price_only market": "discovered",
-    f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated",
+    # `mass_screen_thresh` / `_cond` are statistical finds of the mass screen (2026-09-30): a
+    # feature-threshold rule names no payer, so the mechanism is UNKNOWN and counted, not guessed.
+    f"{UNKNOWN} price_only market": "discovered mass_screen_cond mass_screen_thresh",
+    f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated"
+                                       " alt_conditioned",
     # Registered 2026-09-23/24 in `families_orthogonal`. `exit_operated` is an OPERATOR over any
     # base family's entries, so its mechanism and style are its base's and no single row names
     # them. `exogenous_conditioner` bets on a data pack's own published series (a market-order
     # entry, `trigger=None`); each cell names its series, not a payer, so the mechanism is UNKNOWN
     # and counted rather than guessed.
-    f"{UNKNOWN} macro market": "exogenous_conditioner",
+    # `alt_series_momentum` (2026-09-30, free-stack) bets on the CHANGE of a named alt series
+    # (app rank, forum tone, search attention, patents) -- the series is named, the payer is not.
+    # `alt_conditioned` is an operator over a base family's entries, like `exit_operated`.
+    # `world_macro_state` (2026-09-30) conditions on one hunted world series named on the recipe,
+    # the same shape as `exogenous_conditioner`: the series is named, the payer is not.
+    f"{UNKNOWN} macro market": "exogenous_conditioner world_macro_state alt_series_momentum",
 }
 FAMILY_TABLE: dict[str, tuple[str, str, str]] = {}
 for _key, _fams in _FAMILY_GROUPS.items():
@@ -221,7 +234,11 @@ for _key, _fams in _FAMILY_GROUPS.items():
         FAMILY_TABLE[_fam] = (_mech, _info, _style)
 
 #: Constructors that build families from a spec rather than being one -- never proposed.
-NOT_A_FAMILY = frozenset({"generic", "formula", "ensemble", "cross_sectional", "joint_genome"})
+#: `gnn_propagation` / `attention_ts` are built from a recipe (a peer panel and a model
+#: configuration) that only research/learned_miners names and charges; proposed bare they would
+#: carry no panel and fire nothing.
+NOT_A_FAMILY = frozenset({"generic", "formula", "ensemble", "cross_sectional", "joint_genome",
+                          "gnn_propagation", "attention_ts"})
 
 RULE = ("a cell is UNMEASURED until a source says otherwise, the strongest source wins "
         "(LIVE>FORWARD>CERTIFIED>MEASURED_FAIL>UNMEASURED), an unmapped family is UNKNOWN and "
@@ -696,11 +713,23 @@ def _proposal(region: dict[str, str], mode: str, why: str, families: frozenset[s
         params["timeframe"] = region["chart"]
     if region["session"] != "all":
         params["session"] = region["session"]
-    return {"kind": "hypothesis", "family": fam, "symbols": symbols, "params": params,
-            "timeframe": region["chart"], "session": region["session"],
-            "source": "axis_registry", "why": why,
-            "axis_cell": axis_cell(symbols[0], fam, params, region["chart"], region["session"]),
-            "selector_mode": mode, "rank_score": round(float(rank_score), 5)}
+    # A WINDOW THIS FAMILY NEVER FIRES IN IS PROPOSED AS THE CELL THAT CAN (2026-09-30):
+    # `family_firing.live_session` re-anchors an hour parameter to the session's open, or re-homes
+    # a fixed-hour family to where it fires. One row either way; UNMEASURED changes nothing.
+    sess, remap = region["session"], None
+    try:
+        from libs.research.family_firing import live_session
+        params, sess, remap = live_session(fam, params, sess, symbols[0] if symbols else None)
+    except ImportError:
+        pass
+    row = {"kind": "hypothesis", "family": fam, "symbols": symbols, "params": params,
+           "timeframe": region["chart"], "session": sess,
+           "source": "axis_registry", "why": why,
+           "axis_cell": axis_cell(symbols[0], fam, params, region["chart"], sess),
+           "selector_mode": mode, "rank_score": round(float(rank_score), 5)}
+    if remap:
+        row["session_remap"] = remap
+    return row
 
 
 def select(cells: dict[str, dict[str, Any]], model: dict[str, Any], regions: list[dict[str, Any]],

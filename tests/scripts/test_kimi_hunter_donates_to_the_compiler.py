@@ -63,7 +63,11 @@ class TestTheDonationContract:
         monkeypatch.setattr(K, "DONATE_DIR", tmp_path / "kimi")
         a = json.loads(K._donate([_finding()]).read_text("utf-8"))["discoveries"][0]
         b = json.loads(K._donate([_finding()]).read_text("utf-8"))["discoveries"][0]
-        assert a == b
+        from libs.data.pit import is_stamped, payload_hash
+
+        assert is_stamped(a) and is_stamped(b)
+        assert payload_hash(a) == payload_hash(b)
+        assert a["url"] == b["url"]
 
     def test_a_mock_finding_never_enters_the_intelligence_tree(self, tmp_path, monkeypatch):
         """`--mock` proves the chain on synthetic rows tagged mock=true. A synthetic finding in

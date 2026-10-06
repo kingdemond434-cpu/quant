@@ -19,6 +19,7 @@ WHAT MUST NOT REGRESS, in order of what it would cost:
 from __future__ import annotations
 
 import json
+import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -352,7 +353,7 @@ class TestSingleFlight:
         import json as _json
         import time as _time
         p = self._lock_at(tmp_path, monkeypatch)
-        p.write_text(_json.dumps({"pid": 1, "at": _time.time() - dw.RUN_BUDGET_SEC * 2 - 60}))
+        p.write_text(_json.dumps({"pid": 2000000000, "at": _time.time() - dw.RUN_BUDGET_SEC * 2 - 60}))
         assert dw._single_flight() is not None, "a stale lock was not taken over"
 
     def test_a_lock_inside_its_budget_is_respected(self, tmp_path, monkeypatch) -> None:
@@ -377,13 +378,12 @@ class TestSingleFlight:
             dw.main([])
         assert not p.exists(), "a crashed run left its lock behind"
 
-    def test_a_lock_that_cannot_be_written_does_not_stop_the_work(self, tmp_path,
+    def test_a_lock_that_cannot_be_written_prevents_duplicate_work(self, tmp_path,
                                                                   monkeypatch) -> None:
-        """The race it prevents is wasteful, not dangerous -- the worked-ledger still stops double
-        billing -- so an unwritable path degrades to the previous behaviour, never to silence."""
+        """Duplicate whole-graph readers exhausted memory and crashed the real judge."""
         monkeypatch.setattr(dw, "LOCK", tmp_path / "nope" / "deep" / ".lock")
         monkeypatch.setattr(Path, "mkdir", lambda *a, **k: (_ for _ in ()).throw(OSError("ro")))
-        assert dw._single_flight() is not None
+        assert dw._single_flight() is None
 
 
 # ---------------------------------- 6. the seat is scarce: route by what the row CONTAINS
@@ -675,3 +675,74 @@ class TestAnOutageNeverEmptiesTheBacklog:
     def test_an_absent_ledger_is_empty_never_an_error(self, tmp_path, monkeypatch) -> None:
         monkeypatch.setattr(dw, "WORKED", tmp_path / "nothing.jsonl")
         assert dw.ledger_ids() == (set(), set())
+
+
+def test_simultaneous_stale_takeovers_have_exactly_one_owner(tmp_path, monkeypatch):
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+
+    lock = tmp_path / ".deepening.lock"
+    lock.write_text(json.dumps({"pid": 2000000000, "at": 0}), encoding="utf-8")
+    monkeypatch.setattr(dw, "LOCK", lock)
+    monkeypatch.setattr(dw, "dlog", lambda message: None)
+    barrier = threading.Barrier(8)
+
+    def claim():
+        barrier.wait(timeout=10)
+        return dw._single_flight()
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(lambda _: claim(), range(8)))
+    assert sum(result is not None for result in results) == 1
+    assert json.loads(lock.read_text())["pid"] == os.getpid()
+    dw._release(lock)
+    assert not lock.exists()
+
+
+def test_old_timestamp_does_not_steal_a_live_process_lock(tmp_path, monkeypatch):
+    lock = tmp_path / ".deepening.lock"
+    lock.write_text(json.dumps({"pid": os.getpid(), "at": 0}), encoding="utf-8")
+    monkeypatch.setattr(dw, "LOCK", lock)
+    monkeypatch.setattr(dw, "dlog", lambda message: None)
+    assert dw._single_flight() is None
+    assert json.loads(lock.read_text())["pid"] == os.getpid()
+
+
+def test_release_retains_another_process_lock(tmp_path):
+    lock = tmp_path / ".deepening.lock"
+    lock.write_text(json.dumps({"pid": 2000000000, "at": 0}), encoding="utf-8")
+    dw._release(lock)
+    assert lock.exists()
+
+
+def test_claim_guard_is_released_by_kernel_after_claimant_crashes(tmp_path, monkeypatch):
+    import subprocess
+
+    lock = tmp_path / ".deepening.lock"
+    guard = lock.with_name(lock.name + ".claim")
+    monkeypatch.setattr(dw, "LOCK", lock)
+    monkeypatch.setattr(dw, "dlog", lambda message: None)
+    code = "\n".join([
+        "import os,sys,time", "from pathlib import Path",
+        "f=Path(sys.argv[1]).open('a+b')", "f.write(b'0'); f.flush(); f.seek(0)",
+        "if os.name == 'nt':",
+        " import msvcrt; msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)",
+        "else:", " import fcntl; fcntl.flock(f.fileno(), fcntl.LOCK_EX)",
+        "print('ready',flush=True)", "time.sleep(30)",
+    ])
+    child = subprocess.Popen([sys._base_executable, "-u", "-c", code, str(guard)],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        assert child.stdout.readline().strip() == "ready"
+        assert dw._single_flight() is None
+        child.terminate()
+        child.wait(timeout=10)
+        assert dw._single_flight() == lock
+        dw._release(lock)
+        assert not lock.exists()
+    finally:
+        if child.poll() is None:
+            child.kill()
+            child.wait(timeout=10)
+        child.stdout.close()
+        child.stderr.close()

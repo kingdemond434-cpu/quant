@@ -8,6 +8,13 @@ migration) and satellite/AIS (Busan, SingStat, China MOT ports). Each row names 
 `substitutes_for`; `substitute_agreement` measures each against an overlapping free series on the
 same keys (the paid originals are not held). They ride this organ's hourly clock unchanged.
 
+BLOCKED+SUBSTITUTE. A source the terms gate blocks is never fetched, but coverage does not shrink:
+SUBSTITUTED_BY names the confirmed-terms rows standing in for it (e-Stat immigration for JNTO,
+HK Immigration crossings for Baidu migration / Maoyan / the holiday tallies, TÜİK for BKM, BCB
+Open Data for Cielo, INEGI EMEC for ANTAD, data.go.kr MOF containers and PortWatch for the port
+boards, India's gold imports for the SGE premium), and its status reads BLOCKED+SUBSTITUTE:<ids>.
+`--write-rosters` regenerates the committed roster YAML and the paid-substitute engine's rows.
+
 WHAT THIS IS. Ten public (keyless or free-key) alternative-data sources, each parsed into a
 point-in-time series and published through the doors the desk already has, so the same series
 feeds all three uses at once:
@@ -65,6 +72,7 @@ import os
 import re
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Callable, Iterable
@@ -664,8 +672,9 @@ def parse_gdelt_events(body: bytes, ctx: Ctx) -> list[Obs]:
         if art <= 0 or tone is None or gold is None:
             continue
         quad = c[29].strip()
+        country: str = iso
 
-        def add(k: str, v: float, iso: str = iso, d: date = d) -> None:
+        def add(k: str, v: float, iso: str = country, d: date = d) -> None:
             sums[(f"{iso}|{k}", d)] = sums.get((f"{iso}|{k}", d), 0.0) + v
 
         add("n", 1.0)
@@ -1272,6 +1281,223 @@ def parse_mot_port(body: bytes, ctx: Ctx) -> list[Obs]:
     return out
 
 
+# ------------------------------------------------ lawful substitutes for BLOCKED sources
+def parse_estat_level(body: bytes, ctx: Ctx) -> list[Obs]:
+    """e-Stat getStatsData JSON for a LEVEL table (the immigration statistics' foreign entries).
+    The request filters to one category; if the table still carries sub-rows per month (ports,
+    nationalities), the month's LARGEST cell is taken, because a total row is never smaller than
+    its parts and a partial sum is never invented. A non-zero RESULT.STATUS is an error."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    root = (doc or {}).get("GET_STATS_DATA") if isinstance(doc, dict) else None
+    if not isinstance(root, dict):
+        return []
+    if str(((root.get("RESULT") or {}).get("STATUS")) or "0") not in ("0", "1"):
+        return []
+    values = (((root.get("STATISTICAL_DATA") or {}).get("DATA_INF") or {}).get("VALUE") or [])
+    if isinstance(values, dict):
+        values = [values]
+    best: dict[date, float] = {}
+    for v in values if isinstance(values, list) else []:
+        if not isinstance(v, dict):
+            continue
+        tcode, x = str(v.get("@time") or ""), _num(str(v.get("$") or ""))
+        if len(tcode) != 10 or x is None or not tcode[:4].isdigit() or not tcode[6:8].isdigit():
+            continue
+        y, m = int(tcode[:4]), int(tcode[6:8])
+        if 1 <= m <= 12:
+            d = _month_end(y, m)
+            best[d] = max(best.get(d, x), x)
+    return [Obs("foreign_entries", d, v) for d, v in sorted(best.items())]
+
+
+_HK_DATE = re.compile(r"^(\d{1,2})-(\d{1,2})-(\d{4})$")
+
+
+def parse_hk_immd(body: bytes, ctx: Ctx) -> list[Obs]:
+    """HK Immigration Department daily passenger traffic CSV (DATA.GOV.HK). Columns: Date
+    (DD-MM-YYYY), Control Point, Arrival / Departure, Hong Kong Residents, Mainland Visitors,
+    Other Visitors, Total. Summed over every control point per day: mainland visitor ARRIVALS
+    (Chinese outbound travel and spend) and HK resident DEPARTURES (northbound spending). The
+    fetch day itself is never emitted -- a day still being filled would freeze a false low."""
+    import csv as _csv
+    text = body.decode("utf-8-sig", errors="replace")
+    rdr = _csv.reader(io.StringIO(text))
+    head = next(rdr, None)
+    if not head:
+        return []
+    cols = [h.strip().lower() for h in head]
+
+    def idx(*words: str) -> int | None:
+        for i, h in enumerate(cols):
+            if all(w in h for w in words):
+                return i
+        return None
+
+    i_d, i_ad = idx("date"), idx("arrival")
+    i_hk, i_ml = idx("hong kong resident"), idx("mainland")
+    if None in (i_d, i_ad, i_hk, i_ml):
+        return []
+    assert i_d is not None and i_ad is not None and i_hk is not None and i_ml is not None
+    arr: dict[date, float] = {}
+    dep: dict[date, float] = {}
+    today = ctx.fetched_at.date()
+    for r in rdr:
+        if len(r) <= max(i_d, i_ad, i_hk, i_ml):
+            continue
+        m = _HK_DATE.match(r[i_d].strip())
+        ml, hk = _num(r[i_ml]), _num(r[i_hk])
+        if not m or ml is None or hk is None:
+            continue
+        try:
+            d = date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        except ValueError:
+            continue
+        if d >= today:
+            continue
+        way = r[i_ad].strip().lower()
+        if way.startswith("arr"):
+            arr[d] = arr.get(d, 0.0) + ml
+        elif way.startswith("dep"):
+            dep[d] = dep.get(d, 0.0) + hk
+    return ([Obs("mainland_visitor_arrivals", d, v) for d, v in sorted(arr.items())]
+            + [Obs("hk_resident_departures", d, v) for d, v in sorted(dep.items())])
+
+
+_BR_PERIOD_KEYS = ("anomes", "ano_mes", "datames", "data_mes", "mes", "data", "database")
+_BR_VALUE_WORDS = ("cartao", "cartoes", "credito", "debito", "prepago", "pix", "boleto")
+
+
+def _br_period(v: Any) -> date | None:
+    s = str(v or "").strip().replace("-", "").replace("/", "")[:6]
+    if len(s) != 6 or not s.isdigit():
+        return None
+    y, m = int(s[:4]), int(s[4:])
+    return _month_end(y, m) if 1 <= m <= 12 and y > 1990 else None
+
+
+def parse_bcb_mpv(body: bytes, ctx: Ctx) -> list[Obs]:
+    """BCB Olinda `MPV_DadosAbertos` monthly payments (ODbL). OData `{"value": [...]}`. The period
+    is the row's year-month field; the value is the sum of every `valor*` field naming a retail
+    instrument (card, Pix, boleto) -- field names are matched, never assumed by position, and a
+    reply with no such field parses to nothing. Values are BRL, summed per month."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    rows = doc.get("value") if isinstance(doc, dict) else None
+    tot: dict[date, float] = {}
+    for r in rows if isinstance(rows, list) else []:
+        if not isinstance(r, dict):
+            continue
+        low = {str(k).lower(): v for k, v in r.items()}
+        d = next((p for k in _BR_PERIOD_KEYS if k in low
+                  and (p := _br_period(low[k])) is not None), None)
+        if d is None:
+            continue
+        vals = [x for k, v in low.items() if k.startswith("valor")
+                and any(w in k for w in _BR_VALUE_WORDS)
+                and (x := _num(str(v))) is not None]
+        if vals:
+            tot[d] = tot.get(d, 0.0) + sum(vals)
+    return [Obs("retail_payments_value_brl", d, v) for d, v in sorted(tot.items())]
+
+
+def parse_inegi_bie(body: bytes, ctx: Ctx) -> list[Obs]:
+    """INEGI Banco de Indicadores API v2.0 JSON for ONE configured EMEC indicator:
+    `Series[0].OBSERVATIONS[].{TIME_PERIOD "YYYY/MM", OBS_VALUE}`. An error reply is nothing."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    series = doc.get("Series") if isinstance(doc, dict) else None
+    if not isinstance(series, list) or not series or not isinstance(series[0], dict):
+        return []
+    out: list[Obs] = []
+    for o in series[0].get("OBSERVATIONS") or []:
+        if not isinstance(o, dict):
+            continue
+        tp, x = str(o.get("TIME_PERIOD") or ""), _num(str(o.get("OBS_VALUE") or ""))
+        parts = tp.split("/")
+        if x is None or len(parts) != 2 or not all(p.isdigit() for p in parts):
+            continue
+        y, m = int(parts[0]), int(parts[1])
+        if 1 <= m <= 12:
+            out.append(Obs("retail_index", _month_end(y, m), x))
+    return out
+
+
+_TUIK_TITLE = re.compile(r"Perakende\s+Satış\s+Endeksleri\s*,\s*(Ocak|Şubat|Mart|Nisan|Mayıs|"  # noqa: RUF001
+                         r"Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)\s+(20\d{2})",  # noqa: RUF001
+                         re.IGNORECASE)
+_TUIK_YOY = re.compile(r"perakende\s+satış\s+hacmi[^%]{0,120}?yıllık\s*%\s*([\d]+(?:,\d+)?)\s*"  # noqa: RUF001
+                       r"(arttı|azaldı)", re.IGNORECASE)  # noqa: RUF001
+
+
+def parse_tuik_retail(body: bytes, ctx: Ctx) -> list[Obs]:
+    """TÜİK retail sales index bulletin: constant-price retail sales volume, year-on-year %.
+    The month comes from the bulletin title; the release stamp is the bulletin's own date when
+    it prints one after the period. Turkish decimals use a comma."""
+    text = _text(body)
+    t, y = _TUIK_TITLE.search(text), _TUIK_YOY.search(text)
+    if not t or not y:
+        return []
+    mon = _TR_MONTHS.get(t.group(1).lower())
+    v = _num(y.group(1).replace(",", "."))
+    if mon is None or v is None:
+        return []
+    period = _month_end(int(t.group(2)), mon)
+    pub = None
+    for dm in _TR_DATE.finditer(text):
+        with contextlib.suppress(ValueError):
+            cand = _utc(int(dm.group(3)), int(dm.group(2)), int(dm.group(1)), 10)
+            if period < cand.date() <= period + timedelta(days=MAX_PUB_LAG_D):
+                pub = cand
+                break
+    return [Obs("retail_volume_yoy", period, -v if y.group(2).lower() == "azaldı" else v, pub)]  # noqa: RUF001
+
+
+_KR_MOF_ITEM = re.compile(r"<item>(.*?)</item>", re.S)
+_KR_MOF_TAG = re.compile(r"<(useYm|eContnTeuTotal|tContnTeuTotal)>\s*([^<]*?)\s*</\1>")
+
+
+def parse_kr_mof_container(body: bytes, ctx: Ctx) -> list[Obs]:
+    """data.go.kr MOF `SsopCargContnImxprt2`: import (eContnTeuTotal) plus export
+    (tContnTeuTotal) container TEU per `useYm`, summed over every row of the month (the reply is
+    per region/port). JSON (`response.body.items.item`) or XML (`<item>`) replies both read; a
+    page that does not hold every row (totalCount) emits nothing: a partial month is a false
+    low."""
+    raw = body.decode("utf-8", errors="replace")
+    items: list[dict[str, Any]] = []
+    total = 0
+    try:
+        doc = json.loads(raw)
+        bd = ((doc or {}).get("response") or {}).get("body") or {}
+        it = (bd.get("items") or {}).get("item") if isinstance(bd.get("items"), dict) else None
+        items = [it] if isinstance(it, dict) else [x for x in (it or []) if isinstance(x, dict)]
+        total = int(_num(str(bd.get("totalCount") or "")) or 0)
+    except (ValueError, AttributeError):
+        for blk in _KR_MOF_ITEM.findall(raw):
+            items.append(dict(_KR_MOF_TAG.findall(blk)))
+        tc = re.search(r"<totalCount>\s*(\d+)\s*</totalCount>", raw)
+        total = int(tc.group(1)) if tc else 0
+    if not items or (total and len(items) < total):
+        return []
+    tot: dict[date, float] = {}
+    for r in items:
+        ym = str(r.get("useYm") or "")
+        e, t = _num(str(r.get("eContnTeuTotal") or "")), _num(str(r.get("tContnTeuTotal") or ""))
+        if len(ym) != 6 or not ym.isdigit() or e is None or t is None:
+            continue
+        m = int(ym[4:])
+        if 1 <= m <= 12:
+            d = _month_end(int(ym[:4]), m)
+            tot[d] = tot.get(d, 0.0) + e + t
+    return [Obs("container_teu", d, v) for d, v in sorted(tot.items())]
+
+
 # ============================================================================ the sources
 @dataclass(frozen=True)
 class Source:
@@ -1551,6 +1777,8 @@ _NEWS = "RavenPack-style news analytics (event counts, tone, themes per entity)"
 _CARD = "card-spend panels (Second Measure, Earnest, Bank of America card data)"
 _FOOT = "foot-traffic / location panels (SafeGraph, Placer.ai)"
 _SAT = "satellite / AIS activity panels (Orbital Insight, SpaceKnow)"
+_TRAVEL = "travel-arrival panels (JNTO estimates, ForwardKeys / OAG arrivals)"
+_GOLD = "physical gold-demand panels (SGE premium feeds, Metals Focus / GFMS flows)"
 
 SUBSTITUTE_SOURCES: tuple[Source, ...] = (
     Source(
@@ -1873,7 +2101,8 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
         crowding_prior="low", substitutes_for=_FOOT),
     Source(
         id="kr_busan_port", name="Busan Port Authority monthly container throughput",
-        url=os.environ.get("ALT_BUSAN_PORT_URL", "https://www.busanpa.com/kor/Board.do?mCode=MN1003"),
+        url=os.environ.get("ALT_BUSAN_PORT_URL",
+                           "https://www.busanpa.com/index.bpa?menuCd=DOM_000000105005001003"),
         region="KR", language="ko", cadence="monthly", parse=parse_busan_port,
         rule=_lag_rule(20, 0, weekday=True), transform="given",
         instruments={"USDKRW": -1, "XCUUSD": 1, "CHINAH": 1},
@@ -1888,7 +2117,11 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
         failure_mode_hypothesis=("fails when transhipment re-routing (Red Sea, US tariffs) moves "
                                  "Busan's share rather than total trade"),
         crowding_prior="low", substitutes_for=_SAT,
-        note="board URL overridable (ALT_BUSAN_PORT_URL); confirm route on the box"),
+        note=("URL moved 2026-09-30: the old Board.do?mCode=MN1003 is 404; the current page is "
+              "부산항 통계 > 항만운영 통계 > 부두별 컨테이너 처리실적 "
+              "(index.bpa, table loaded by JS, so the parser may read nothing from the "
+              "served HTML). Overridable "
+              "(ALT_BUSAN_PORT_URL); confirm the route on the box")),
     Source(
         id="sg_port_throughput", name="SingStat sea cargo: Singapore container throughput",
         url=("https://tablebuilder.singstat.gov.sg/api/table/tabledata/"
@@ -1909,7 +2142,8 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
         note="table id overridable (ALT_SINGSTAT_PORT_TABLE); confirm the id on the box"),
     Source(
         id="cn_mot_port_weekly", name="China MOT weekly port cargo and container throughput",
-        url=os.environ.get("ALT_CN_MOT_PORT_URL", "https://www.mot.gov.cn/tongjishuju/"),
+        url=os.environ.get("ALT_CN_MOT_PORT_URL",
+                           "https://xxgk.mot.gov.cn/zhengceapp/863/868/list_7234.html"),
         region="CN", language="zh", cadence="weekly", parse=parse_mot_port,
         rule=_lag_rule(3, 0, weekday=True), transform="anomaly_monthly",
         instruments={"AUDUSD": 1, "XCUUSD": 1, "CHINAH": 1, "USDCNH": -1},
@@ -1922,7 +2156,157 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
         source_culture="CN/zh", participant_structure=("physical_flow", "policy_driven"),
         failure_mode_hypothesis="fails around Spring Festival and typhoon port closures",
         crowding_prior="low", substitutes_for=_SAT,
-        note="bulletin URL overridable (ALT_CN_MOT_PORT_URL); confirm route on the box"),
+        note=("URL moved 2026-09-30: www.mot.gov.cn/tongjishuju/ is 404; MOT statistics now "
+              "sit on the government-information list xxgk.mot.gov.cn/zhengceapp/863/868/"
+              "list_7234.html, which carries the MONTHLY 港口货物、集装箱吞吐量 "
+              "release (an .xlsx); "
+              "no weekly bulletin was found there. Overridable (ALT_CN_MOT_PORT_URL)")),
+    # ---- lawful substitutes for the BLOCKED sources (SUBSTITUTED_BY below): government open
+    # data or an explicit reuse licence, each verified on 2026-09-30 (TERMS_EVIDENCE).
+    Source(
+        id="jp_estat_immigration",
+        name="Immigration Services Agency entries of foreign nationals (e-Stat, monthly)",
+        url=("https://api.e-stat.go.jp/rest/3.0/app/json/getStatsData?appId={key}"
+             "&statsDataId={ALT_ESTAT_IMMIG_STATS_ID}&cdCat01={ALT_ESTAT_IMMIG_CAT01}"),
+        region="JP", language="ja", cadence="monthly", parse=parse_estat_level,
+        rule=_lag_rule(45, 0, weekday=True), transform="yoy_monthly", key_env="ESTAT_APP_ID",
+        config_env=("ALT_ESTAT_IMMIG_STATS_ID", "ALT_ESTAT_IMMIG_CAT01"),
+        instruments={"USDJPY": -1, "EURJPY": -1, "JPN225": 1},
+        signal_series=("foreign_entries",),
+        mechanism=("foreign nationals counted through Japanese immigration are the arrivals JNTO "
+                   "estimates, from the border record itself: inbound visitors convert foreign "
+                   "currency into yen at the till, a services-export flow the goods balance hides"),
+        payer="yen shorts funding carry who ignore services-account flows",
+        constraint="carry books are sized on rate differentials, not border counts",
+        licence=("e-Stat (Government of Japan statistics): Government Standard Terms of Use, CC "
+                 "BY 4.0 compatible; free application ID"),
+        source_culture="JP/ja", participant_structure=("physical_flow", "retail_heavy"),
+        failure_mode_hypothesis=("fails when visa policy or a China group-tour ban moves "
+                                 "arrivals for reasons the yen already priced, and it prints "
+                                 "later than JNTO's estimate"),
+        crowding_prior="low", substitutes_for=_TRAVEL,
+        note=("stands in for jp_jnto_arrivals (JNTO site policy refuses reuse). NO DEFAULT "
+              "CODES: statsDataId and cdCat01 of the 出入国管理統計 foreign-entries "
+              "table come only "
+              "from ALT_ESTAT_IMMIG_STATS_ID / ALT_ESTAT_IMMIG_CAT01 (candidate table: statdisp "
+              "0003287527, 港別 出入国者 月次); reuses jp_tokyo_cpi's e-Stat key")),
+    Source(
+        id="hk_immd_passenger",
+        name="HK Immigration daily passenger traffic: mainland visitor arrivals (DATA.GOV.HK)",
+        url=("https://www.immd.gov.hk/opendata/eng/transport/immigration_clearance/"
+             "statistics_on_daily_passenger_traffic.csv"),
+        region="HK", language="en", cadence="daily", parse=parse_hk_immd,
+        rule=_lag_rule(2, 0), transform="yoy_daily",
+        instruments={"HK50": 1, "CHINAH": 1},
+        series_instruments={"hk_resident_departures": {"HK50": -1}},
+        signal_series=("mainland_visitor_arrivals", "hk_resident_departures"),
+        mechanism=("every crossing at every Hong Kong control point, by day: mainland visitor "
+                   "arrivals are Chinese outbound discretionary travel and spend (Golden Week and "
+                   "Spring Festival read the day after), the mobility pulse Baidu's migration map "
+                   "and the holiday tallies sell; HK residents heading north is spend leaving HK"),
+        payer="HK equity and China-consumer holders waiting for NBS retail and HK retail sales",
+        constraint="onshore consumption and HK retail data are monthly and weeks late",
+        licence=("DATA.GOV.HK Terms and Conditions: browse, download, distribute, reproduce for "
+                 "commercial and non-commercial purposes free of charge, with attribution"),
+        source_culture="HK/en", participant_structure=("retail_heavy", "physical_flow"),
+        failure_mode_hypothesis=("fails when border policy (visa schemes, quarantine) or a new "
+                                 "crossing moves the count mechanically, and on lunar-calendar "
+                                 "holiday shifts against the 364-day comparison"),
+        crowding_prior="low", substitutes_for=_FOOT,
+        note=("stands in for cn_baidu_migration, cn_holiday_spend (with cn_nbs_retail) and, at "
+              "class level only, cn_maoyan_box_office; one CSV, whole history, keyless")),
+    Source(
+        id="br_bcb_payments", name="BCB monthly retail payments (Pix, cards, boletos), Brazil",
+        url=("https://olinda.bcb.gov.br/olinda/servico/MPV_DadosAbertos/versao/v1/odata/"
+             "MeiosdePagamentosMensalDA?$format=json&$top=10000"),
+        region="BR", language="pt", cadence="monthly", parse=parse_bcb_mpv,
+        rule=_lag_rule(20, 0, weekday=True), transform="yoy_monthly",
+        instruments={"USDBRL": -1},
+        signal_series=("retail_payments_value_brl",),
+        mechanism=("the central bank's own count of retail payment value (Pix, cards, boletos) "
+                   "is Brazil's card panel from the payments rail, out on the 17th of the next "
+                   "month, weeks before IBGE's PMC retail survey"),
+        payer="BRL carry holders waiting for IBGE retail and Copom",
+        constraint="Copom and BRL positioning reprice on official data dates",
+        licence="BCB Open Data portal: Open Data Commons Open Database License (ODbL)",
+        source_culture="BR/pt", participant_structure=("retail_heavy", "institutional"),
+        failure_mode_hypothesis=("fails because Pix adoption growth dominates the nominal "
+                                 "value, and on working-day and Black Friday calendar shifts"),
+        crowding_prior="low", substitutes_for=_CARD,
+        note=("stands in for br_cielo_icva (Cielo terms refuse reuse). Same host and no-key "
+              "rule as the Brazil lane's bcb_olinda provider (research/countries/br/"
+              "data_plane.py), which carries no payments series. Field names UNCONFIRMED "
+              "against a live reply; the parser emits nothing on a miss")),
+    Source(
+        id="mx_inegi_emec", name="INEGI EMEC retail trade index (Mexico, one configured series)",
+        url=("https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/"
+             "{ALT_INEGI_EMEC_ID}/es/0700/false/BIE/2.0/{key}?type=json"),
+        region="MX", language="es", cadence="monthly", parse=parse_inegi_bie,
+        rule=_lag_rule(55, 0, weekday=True), transform="yoy_monthly", key_env="INEGI_TOKEN",
+        config_env=("ALT_INEGI_EMEC_ID",),
+        instruments={"USDMXN": -1, "MXNJPY": 1},
+        signal_series=("retail_index",),
+        mechanism=("INEGI's monthly survey of retail businesses is the official read of Mexican "
+                   "store sales that ANTAD's same-store print front-runs; against its own run-rate "
+                   "it reprices the Banxico path"),
+        payer="MXN carry holders waiting for Banxico",
+        constraint="Banxico-path positioning reprices at data dates",
+        licence=("INEGI Términos de Libre Uso: copy, distribute, adapt and exploit commercially "
+                 "with credit to INEGI; free API token"),
+        source_culture="MX/es", participant_structure=("retail_heavy", "institutional"),
+        failure_mode_hypothesis=("fails around Easter and El Buen Fin timing shifts, and it "
+                                 "prints about seven weeks after the month"),
+        crowding_prior="low", substitutes_for=_CARD,
+        note=("stands in for mx_antad_sss (ANTAD terms refuse reuse). NO DEFAULT CODE: the BIE "
+              "indicator id comes only from ALT_INEGI_EMEC_ID. The desk's Banxico SIE rows "
+              "(research/countries/br/data_plane.py) carry no retail series, so none is reused")),
+    Source(
+        id="tr_tuik_retail", name="TÜİK retail sales volume index, YoY (Turkey)",
+        url=os.environ.get("ALT_TUIK_RETAIL_URL", "https://veriportali.tuik.gov.tr/"),
+        region="TR", language="tr", cadence="monthly", parse=parse_tuik_retail,
+        rule=_lag_rule(42, 0, weekday=True), transform="given",
+        config_env=("ALT_TUIK_RETAIL_URL",),
+        instruments={"USDTRY": 1, "EURTRY": 1},
+        signal_series=("retail_volume_yoy",),
+        mechanism=("the statistics office's constant-price retail volume is Turkish demand net "
+                   "of inflation, the part of a card-spend print the CPI does not explain; a hot "
+                   "print is pressure on the CBRT and the lira"),
+        payer="lira carry holders who price on the policy rate alone",
+        constraint="CBRT-managed lira and capital-flow rules slow the repricing",
+        licence=("TÜİK legal notice: data may be reused without permission provided the source "
+                 "is cited"),
+        source_culture="TR/tr", participant_structure=("retail_heavy", "policy_driven"),
+        failure_mode_hypothesis=("fails when a minimum-wage step or a tax change moves volume "
+                                 "mechanically, and it prints later than BKM"),
+        crowding_prior="low", substitutes_for=_CARD,
+        note=("stands in for tr_bkm_card (BKM refuses reuse). CBRT EVDS card spending "
+              "(TP.KKHARTUT) is NOT used: the CBRT terms put commercial use under written "
+              "permission. The TÜİK data portal is a JS app, so the bulletin URL comes only from "
+              "ALT_TUIK_RETAIL_URL; unset, the row is UNCONFIGURED and nothing is requested")),
+    Source(
+        id="kr_mof_container_teu",
+        name="MOF import/export container TEU by month (Korea, data.go.kr)",
+        url=os.environ.get("ALT_KR_MOF_CONTAINER_URL",
+                           "https://apis.data.go.kr/1192000/SsopCargContnImxprt2?serviceKey={key}"
+                           "&sym=201801&eym={yyyymm}&pageNo=1&numOfRows=5000&type=json"),
+        region="KR", language="ko", cadence="monthly", parse=parse_kr_mof_container,
+        rule=_lag_rule(30, 0, weekday=True), transform="yoy_monthly", key_env="DATA_GO_KR_KEY",
+        instruments={"USDKRW": -1, "XCUUSD": 1, "CHINAH": 1},
+        signal_series=("container_teu",),
+        mechanism=("the ministry's monthly count of import and export boxes through Korean ports "
+                   "(Busan carries three quarters of them) is North Asian trade volume at the "
+                   "quay, the AIS/satellite port panel's output as an official number"),
+        payer="trade-cycle holders waiting for customs totals",
+        constraint="official trade data is value-based and late",
+        licence=("data.go.kr (Ministry of Oceans and Fisheries): 이용허락범위 제한 없음 "
+                 "(unrestricted use); free service key"),
+        source_culture="KR/ko", participant_structure=("physical_flow",),
+        failure_mode_hypothesis=("fails when transhipment re-routing (Red Sea, US tariffs) moves "
+                                 "Korean ports' share rather than total trade"),
+        crowding_prior="low", substitutes_for=_SAT,
+        note=("stands in for kr_busan_port (BPA shows no KOGL mark). Endpoint as listed on "
+              "data.go.kr/data/15059131; the operation path is overridable "
+              "(ALT_KR_MOF_CONTAINER_URL); confirm the route on the box")),
 )
 
 #: THE TERMS GATE, FAIL CLOSED. `confirmed` only where the licence is plainly open: government
@@ -1949,7 +2333,11 @@ TERMS: dict[str, tuple[str, str]] = {
     "kr_bok_card_spend": ("confirmed", "BOK ECOS documented Open API"),
     "jp_meti_retail": ("confirmed", "Government of Japan Standard Terms of Use (CC BY compatible)"),
     "cn_nbs_retail": ("confirmed", "NBS terms of service: users may download and use NBS "
-                      "statistics; reuse welcomed with attribution; no robots.txt"),
+                      "statistics; reuse welcomed with attribution, except items a-f (third-"
+                      "party links and works, marked no-reprint content, site graphics and "
+                      "programs, registered-user content, content barred by law or deemed "
+                      "unsuitable) -- NBS's own public retail-sales release falls under none; "
+                      "no robots.txt"),
     "cn_holiday_spend": ("refused", "MCT disclaimer: no reprint, link or other copying without "
                          "written authorisation from the MCT Information Centre"),
     "in_npci_upi": ("refused", "npci.org.in robots.txt disallows automated agents on the "
@@ -1974,6 +2362,15 @@ TERMS: dict[str, tuple[str, str]] = {
     "sg_port_throughput": ("confirmed", "SingStat Table Builder API, Singapore Open Data Licence"),
     "cn_mot_port_weekly": ("to_confirm", "MOT disclaimer bars commercial verbatim reprint but "
                            "grants no reuse licence; no robots.txt"),
+    "jp_estat_immigration": ("confirmed", "e-Stat terms: free reuse incl. commercial, CC BY 4.0 "
+                             "compatible"),
+    "hk_immd_passenger": ("confirmed", "DATA.GOV.HK terms: commercial and non-commercial reuse, "
+                          "free, with attribution"),
+    "br_bcb_payments": ("confirmed", "BCB Open Data portal, ODbL"),
+    "mx_inegi_emec": ("confirmed", "INEGI Términos de Libre Uso: commercial exploitation "
+                      "allowed with credit"),
+    "tr_tuik_retail": ("confirmed", "TÜİK legal notice: reuse without permission, source cited"),
+    "kr_mof_container_teu": ("confirmed", "data.go.kr: 이용허락범위 제한 없음 (unrestricted)"),
 }
 TERMS_VALUES = ("confirmed", "to_confirm", "refused")
 
@@ -2008,8 +2405,17 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "checked_at": _CHK},
     "cn_nbs_retail": {
         "terms_url": "https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
-        "terms_quote": "用户可以在本网站下载和使用国家统计局发布的统计数据 / "
-                       "欢迎转载或引用本网所载内容，但以下内容除外",  # noqa: RUF001
+        "terms_quote": ("用户可以在本网站下载和使用国家统计局发布的统计数据 / "
+                        "欢迎转载或引用本网所载内容，但以下内容除外：a.本网所指向的非本网内容的相关"  # noqa: RUF001
+                        "链接内容；b.已作出不得转载或未经许可不得转载声明的内容；c.未由本网署名或本网"  # noqa: RUF001
+                        "引用、转载的他人作品等非本网版权内容；d.本网中特有的图形、标志、页面风格、"  # noqa: RUF001
+                        "编排方式、程序等；e.本网中必须具有特别授权或具有注册用户资格方可知晓的内容；"  # noqa: RUF001
+                        "f.其他法律不允许或本网认为不适合转载的内容。"),
+        "judgement": ("re-read 2026-09-30 with the exclusions: the monthly retail-sales release is "
+                      "NBS's own signed, public statistics -- not a link (a), not marked "
+                      "no-reprint (b), not a third-party work (c), not site design (d), not "
+                      "registered-user content (e); (f) is discretionary and names nothing. "
+                      "Stays confirmed"),
         "robots": "www.stats.gov.cn/robots.txt 404 (no rules); terms name no crawler clause",
         "checked_at": _CHK},
     "cn_holiday_spend": {
@@ -2053,8 +2459,9 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "robots": "not readable: robots.txt URL returned the JS shell, not a robots file",
         "checked_at": _CHK},
     "kr_busan_port": {
-        "terms_url": "https://www.busanpa.com/",
-        "terms_quote": "(not found: no 저작권정책 or 공공누리 mark in served HTML; board URL 404)",
+        "terms_url": "https://www.busanpa.com/index.bpa?menuCd=DOM_000000105005001003",
+        "terms_quote": ("(not found: no 저작권정책 or 공공누리 mark in the served HTML of the "
+                        "home page or of the current statistics page; old board URL 404)"),
         "robots": "rules only for Yeti and Googlebot (Disallow /iam/, /cms/, /board/download.*); "
                   "none for other agents",
         "checked_at": _CHK},
@@ -2062,7 +2469,53 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "terms_url": "https://www.mot.gov.cn/wangzhangongneng/202512/t20251216_4181727.html",
         "terms_quote": ("任何媒体、互联网站和商业机构不得利用本网站发布的内容"
                         "进行商业性的原版原式地转载"),
-        "robots": "www.mot.gov.cn/robots.txt 404 (no rules)",
+        "robots": "www.mot.gov.cn/robots.txt 404 (no rules); xxgk.mot.gov.cn list read "
+                  "2026-09-30 shows no statement beyond the site disclaimer",
+        "checked_at": _CHK},
+    # ---- the lawful substitutes (terms verified by fetching the terms page, 2026-09-30)
+    "jp_estat_immigration": {
+        "terms_url": "https://www.e-stat.go.jp/terms-of-use",
+        "terms_quote": ("複製、公衆送信、翻訳・変形等の翻案等、自由に利用できます / "
+                        "本利用ルールはクリエイティブ・コモンズ・ライセンスの表示 4.0 国際"
+                        "...と互換性があり"),
+        "robots": "api.e-stat.go.jp is the documented API (free appId)",
+        "checked_at": _CHK},
+    "hk_immd_passenger": {
+        "terms_url": "https://data.gov.hk/en/terms-and-conditions",
+        "terms_quote": ("You are allowed to browse, download, distribute, reproduce, hyperlink "
+                        "to, and print the Data for both commercial and non-commercial purposes "
+                        "on a free-of-charge basis"),
+        "robots": ("dataset page data.gov.hk/en-data/dataset/hk-immd-set5-statistics-daily-"
+                   "passenger-traffic names the CSV and these terms"),
+        "checked_at": _CHK},
+    "br_bcb_payments": {
+        "terms_url": "https://dadosabertos.bcb.gov.br/dataset/estatisticas-meios-pagamentos",
+        "terms_quote": "Open Data Commons Open Database License (ODbL)",
+        "robots": "olinda documentation page robots-unreadable from the authoring box; the "
+                  "OData endpoint is the portal's own listed resource",
+        "checked_at": _CHK},
+    "mx_inegi_emec": {
+        "terms_url": "https://www.inegi.org.mx/inegi/terminos.html",
+        "terms_quote": ("Puede explotar comercialmente la información, utilizándola como insumo "
+                        "para generar otros productos o servicios. / Debe otorgar los créditos "
+                        "correspondientes al INEGI como autor"),
+        "robots": "the BIE API is INEGI's documented developer API (free token)",
+        "checked_at": _CHK},
+    "tr_tuik_retail": {
+        "terms_url": "https://www.tuik.gov.tr/Kurumsal/Yasal_Uyari",
+        "terms_quote": ("İnternet sitemizden, yayınlarımızdan veya veri "  # noqa: RUF001
+                        "tabanlarımızdan elde edilen verilerin, kaynak gösterilmek "  # noqa: RUF001
+                        "suretiyle herhangi bir izine gerek duymaksızın yeniden "  # noqa: RUF001
+                        "kullanımı mümkündür."),  # noqa: RUF001
+        "robots": "veriportali.tuik.gov.tr is a JS app; bulletin URL configured on the box",
+        "checked_at": _CHK},
+    "kr_mof_container_teu": {
+        "terms_url": "https://www.data.go.kr/data/15059131/openapi.do",
+        "terms_quote": "이용허락범위 제한 없음",
+        "policy_url": "https://www.data.go.kr/ugs/selectPortalPolicyView.do",
+        "policy_quote": ("공공데이터포털을 통해 제공 중인 공공데이터는 "
+                         "별도의 신청절차 없이 이용 가능"),
+        "robots": "apis.data.go.kr is the portal's documented Open API (free service key)",
         "checked_at": _CHK},
 }
 
@@ -2071,17 +2524,54 @@ SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
 BY_ID = {s.id: s for s in SOURCES}
 
+#: COVERAGE DOES NOT SHRINK WHEN TERMS BLOCK A SOURCE. Each blocked source (terms refused or
+#: to_confirm) names the lawful source(s) standing in for it: every id here is a `confirmed`
+#: source of this organ, verified from its own terms page (TERMS_EVIDENCE). Such a source reports
+#: BLOCKED+SUBSTITUTE:<ids> and is counted as substituted, not lost. It is still NEVER fetched.
+#: A blocked source absent from this table has no verified lawful substitute and stays
+#: BLOCKED_ON_TERMS (see NO_SUBSTITUTE for why).
+SUBSTITUTED_BY: dict[str, tuple[str, ...]] = {
+    "jp_jnto_arrivals": ("jp_estat_immigration",),
+    "cn_holiday_spend": ("cn_nbs_retail", "hk_immd_passenger"),
+    "tr_bkm_card": ("tr_tuik_retail",),
+    "br_cielo_icva": ("br_bcb_payments",),
+    "mx_antad_sss": ("mx_inegi_emec",),
+    "cn_maoyan_box_office": ("hk_immd_passenger",),
+    "cn_sge_premium": ("in_gold_imports",),
+    "cn_baidu_migration": ("hk_immd_passenger",),
+    "kr_busan_port": ("kr_mof_container_teu", "imf_portwatch_ports"),
+    "cn_mot_port_weekly": ("imf_portwatch_ports",),
+}
+#: Blocked sources with NO verified lawful substitute, and why (each has a box action queued in
+#: /mnt/project-files/patches/DESKTOP_PASS2_STATUS.md).
+NO_SUBSTITUTE: dict[str, str] = {
+    "in_npci_upi": ("RBI payment-system indicators carry '© Reserve Bank of India. All Rights "
+                    "Reserved' and no reuse grant; data.gov.in (GODL) pages are robots-disallowed "
+                    "to the authoring fetcher, so no licence text could be read"),
+    "za_beti": ("SARB disclaimer: IP 'cannot be used without written permission'; Stats SA's "
+                "copyright page and PDFs are behind an Incapsula wall, so no reuse text could be "
+                "read"),
+}
+#: The paid-substitute engine (#152) reads Asia-thread rows from
+#: data/paid_data_substitutes_*.json; this is that file (regenerate with --write-rosters).
+ENGINE_ROWS_FILE = DESK / "data" / "paid_data_substitutes_asia_blocked.json"
+ROSTER_FILE = DESK / "data" / "source_rosters" / "asia_paid_substitutes_consumer.yaml"
 
-def status_of(src: Source) -> str:
+
+def status_of(src: Source, environ: dict[str, str] | None = None) -> str:
     """One named state per source. Nothing here claims live yield: a source that has not returned
-    real data on the box is UNMEASURED_LIVE_YIELD, and the pass report says what it parsed."""
+    real data on the box is UNMEASURED_LIVE_YIELD, and the pass report says what it parsed.
+    `environ` replaces os.environ (the committed roster uses {} -- its status as declared)."""
+    env: Any = os.environ if environ is None else environ
     if src.archive_until:
         return f"DEAD:{src.archive_until}"
     if src.terms != "confirmed":
-        return f"BLOCKED_ON_TERMS:{src.terms}"
-    if src.key_env and not os.environ.get(src.key_env):
+        subs = SUBSTITUTED_BY.get(src.id)
+        return (f"BLOCKED+SUBSTITUTE:{','.join(subs)}" if subs
+                else f"BLOCKED_ON_TERMS:{src.terms}")
+    if src.key_env and not env.get(src.key_env):
         return f"BLOCKED_ON_KEY:{src.key_env}"
-    missing = [e for e in src.config_env if not os.environ.get(e)]
+    missing = [e for e in src.config_env if not env.get(e)]
     if missing:
         return "UNCONFIGURED:" + ",".join(missing)
     return "UNMEASURED_LIVE_YIELD"
@@ -2905,7 +3395,7 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
     store_p = paths.obs_dir / f"{src.id}.json"
     store = _read_json(store_p, {})
     if src.terms != "confirmed":
-        rec.update({"status": f"BLOCKED_ON_TERMS:{src.terms}", "requests": 0,
+        rec.update({"status": status_of(src), "requests": 0,
                     "why": (f"terms {src.terms}: not fetched until a human confirms the "
                             f"licence ({TERMS.get(src.id, ('', 'unknown'))[1]})"),
                     "store_rows": len(store)})
@@ -3017,11 +3507,15 @@ def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
             obs2: list[Obs] | None = parse_gdelt_events(body, req.ctx)
             parsed += len(obs2 or [])
         except Exception as exc:
-            if getattr(exc, "code", None) != 404:
-                errors.append(f"{slot}: {type(exc).__name__}: {str(exc)[:100]}")
-                stopped.add(direction)
-                continue
-            obs2 = None
+            try:
+                if getattr(exc, "code", None) != 404:
+                    errors.append(f"{slot}: {type(exc).__name__}: {str(exc)[:100]}")
+                    stopped.add(direction)
+                    continue
+                obs2 = None
+            finally:
+                if isinstance(exc, urllib.error.HTTPError):
+                    exc.close()
         gdelt_accumulate(acc, slot, obs2)
         if direction == "fwd":
             sst["fwd"] = (_slot_time(slot) + timedelta(minutes=15)).isoformat()
@@ -3275,6 +3769,8 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                            "rule": handoff["rule"]},
         "dead_sources": sorted(s.id for s in SOURCES if is_dead(s)),
         "blocked_on_terms": sorted(s.id for s in SOURCES if s.terms != "confirmed"),
+        "blocked_substituted": {sid: list(SUBSTITUTED_BY[sid]) for sid in sorted(SUBSTITUTED_BY)},
+        "blocked_unsubstituted": {sid: NO_SUBSTITUTE[sid] for sid in sorted(NO_SUBSTITUTE)},
         "direct_cells": {"n": len(direct), "donation": donations["direct"],
                          "rule": ("an exogenous_conditioner cell is donated only after its gain "
                                   "test PASSED on this box; every tested cell is charged")},
@@ -3349,7 +3845,8 @@ def _cursor(s: Source) -> str:
     return "vintage store keyed series|period (append-only)"
 
 
-def roster_rows(sources: Iterable[Source] = SOURCES) -> list[dict[str, Any]]:
+def roster_rows(sources: Iterable[Source] = SOURCES,
+                environ: dict[str, str] | None = None) -> list[dict[str, Any]]:
     """One roster row per source, for the mining roster (the same metadata the cells carry)."""
     rows = []
     for s in sources:
@@ -3363,16 +3860,118 @@ def roster_rows(sources: Iterable[Source] = SOURCES) -> list[dict[str, Any]]:
                      "pit": ("available_time = page publication stamp else release-calendar rule "
                              "(late-biased); first_seen_at = vault fetch instant"),
                      "uses": uses, "consumer": "desks/mt5/research/alt_proxies.py",
-                     "status": status_of(s), "terms": s.terms, **_meta(s)})
+                     "status": status_of(s, environ), "terms": s.terms, **_meta(s)})
+        if s.id in SUBSTITUTED_BY:
+            rows[-1]["substituted_by"] = list(SUBSTITUTED_BY[s.id])
         if s.substitutes_for:
             rows[-1].update({"substitutes_for": s.substitutes_for, "fetcher": "owned",
                              "owner": "asia_gap_thread"})
     return rows
 
 
-def substitute_roster_rows() -> list[dict[str, Any]]:
+def substitute_roster_rows(environ: dict[str, str] | None = None) -> list[dict[str, Any]]:
     """Roster rows for the paid-substitute sources only (the repo roster file's content)."""
-    return roster_rows(SUBSTITUTE_SOURCES)
+    return roster_rows(SUBSTITUTE_SOURCES, environ)
+
+
+_CADENCE_MIN = {"daily": 1440, "event": 1440, "weekly": 10080, "10-daily": 14400,
+                "monthly": 43200}
+ROSTER_HEADER = (
+    "# Paid-dataset substitutes (RavenPack / card-spend / foot-traffic / satellite panels),\n"
+    "# built by the asia_gap_thread in desks/mt5/research/alt_proxies.py, which FETCHES\n"
+    "# every row itself (fetcher: owned). Generated from alt_proxies.roster_file_rows()\n"
+    "# (python desks/mt5/research/alt_proxies.py --write-rosters); regenerate rather than\n"
+    "# hand-edit. status is as declared with no keys set; live yield is UNMEASURED except\n"
+    "# where the status says otherwise. A BLOCKED+SUBSTITUTE:<ids> row is never fetched: its\n"
+    "# terms block it and the named confirmed rows stand in for it.\n")
+
+
+def roster_file_rows() -> list[dict[str, Any]]:
+    """The committed roster file's rows: substitute_roster_rows() with the status taken as
+    declared (no keys), the auth in the roster's none|key form and the cadence in minutes."""
+    out = []
+    for r in substitute_roster_rows(environ={}):
+        row: dict[str, Any] = {}
+        for k, v in r.items():
+            if k == "auth":
+                key = str(v).removeprefix("free_key:") if v != "none" else ""
+                row["auth"] = "key" if key else "none"
+                if key:
+                    row["auth_env"] = key
+            elif k == "participant_structure":
+                row[k] = list(v)
+            else:
+                row[k] = v
+        row["cadence_minutes"] = _CADENCE_MIN.get(str(r["cadence"]), 1440)
+        row["kind"] = "mechanics"
+        out.append(row)
+    return out
+
+
+def engine_rows() -> dict[str, Any]:
+    """Rows for the paid-substitute engine (#152), in the two shapes it reads: `rows`, the
+    Asia-thread table it parses from data/paid_data_substitutes_*.json (class / paid / free /
+    region / measure / frequency, found by header words), and `library_rows`, the shape of its
+    free-source library (data/paid_substitute_library.json), ready to merge once #152 lands.
+    Every blocked source is marked BLOCKED+SUBSTITUTE:<ids> or BLOCKED_ON_TERMS (unsubstituted)."""
+    klass = {_CARD: "card", _FOOT: "foot traffic", _SAT: "satellite (port / AIS activity)",
+             _NEWS: "news", _TRAVEL: "foot traffic (travel arrivals)", _GOLD: "gold premium"}
+    blocked_class = {"jp_jnto_arrivals": _TRAVEL, "cn_sge_premium": _GOLD}
+    rows: list[dict[str, str]] = []
+    for sid in sorted({*SUBSTITUTED_BY, *NO_SUBSTITUTE}):
+        src = BY_ID[sid]
+        paid_cls = src.substitutes_for or blocked_class.get(sid, "")
+        subs = SUBSTITUTED_BY.get(sid, ())
+        rows.append({
+            "class": klass.get(paid_cls, paid_cls),
+            "paid": f"{src.name} [{sid}]",
+            "free": "; ".join(f"{BY_ID[x].name} [{x}]" for x in subs),
+            "region": src.region,
+            "measure": src.signal_series[0] if src.signal_series else "",
+            "frequency": src.cadence,
+            "status": status_of(src, {}),
+            "terms": src.terms,
+            "blocked_because": TERMS.get(sid, ("", ""))[1],
+            "unsubstituted_because": NO_SUBSTITUTE.get(sid, ""),
+            "evidence": "; ".join(f"{x}: {TERMS_EVIDENCE[x]['terms_url']}" for x in subs
+                                  if x in TERMS_EVIDENCE),
+        })
+    lib: list[dict[str, Any]] = []
+    for x in sorted({x for v in SUBSTITUTED_BY.values() for x in v}):
+        s = BY_ID[x]
+        ev = TERMS_EVIDENCE.get(x, {})
+        lib.append({
+            "id": f"asia_{x}", "name": s.name,
+            "publisher_type": "statistics_office_or_central_bank",
+            "url": ev.get("terms_url") or s.url.split("?")[0],
+            "endpoint": None if "{" in s.url else s.url,
+            "classes": [{_CARD: "card_consumer", _FOOT: "foot_traffic", _SAT: "shipping_ais",
+                         _TRAVEL: "foot_traffic", _GOLD: "commodities_physical"}.get(
+                             s.substitutes_for, "macro")],
+            "region": s.region, "frequency": s.cadence,
+            "auth": "free_key" if s.key_env else "none", "auth_env": s.key_env or "",
+            "languages": [s.language], "instruments": sorted(s.instruments),
+            "participant_structure": s.participant_structure[0], "licence": s.licence,
+            "terms": s.terms, "terms_quote": ev.get("terms_quote", ""),
+            "consumer": "desks/mt5/research/alt_proxies.py", "owner": "asia_gap_thread",
+            "substitutes_for_blocked": sorted(k for k, v in SUBSTITUTED_BY.items() if x in v),
+        })
+    return {"note": ("Asia gap thread: lawful substitutes for sources the terms gate blocks. "
+                     "Generated by desks/mt5/research/alt_proxies.py --write-rosters; the "
+                     "paid-substitute engine reads `rows` as an Asia-thread table. alt_proxies "
+                     "fetches every substitute itself; nothing here is fetched twice."),
+            "rows": rows, "library_rows": lib}
+
+
+def write_rosters() -> list[Path]:
+    """Regenerate the committed roster YAML and the engine rows file from the code."""
+    import yaml  # type: ignore[import-untyped,unused-ignore]
+    body = yaml.safe_dump({"sources": roster_file_rows()}, sort_keys=False, allow_unicode=True,
+                          width=100)
+    ROSTER_FILE.write_text(ROSTER_HEADER + body, "utf-8")
+    ENGINE_ROWS_FILE.write_text(json.dumps(engine_rows(), indent=1, ensure_ascii=False) + "\n",
+                                "utf-8")
+    return [ROSTER_FILE, ENGINE_ROWS_FILE]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -3383,7 +3982,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-fetch", action="store_true")
     ap.add_argument("--fixtures", type=Path, default=None)
     ap.add_argument("--no-donate", action="store_true")
+    ap.add_argument("--write-rosters", action="store_true",
+                    help="regenerate the committed roster YAML and engine rows, then exit")
     a = ap.parse_args(argv)
+    if a.write_rosters:
+        for fp in write_rosters():
+            print(f"wrote {fp}")
+        return 0
     rep = run(budget_s=a.budget_s, fetch=not a.no_fetch, fixtures=a.fixtures,
               dry_run=a.dry_run, donate=not a.no_donate)
     print(f"alt_proxies ({rep['mode']}): {len(rep['sources'])} sources, "

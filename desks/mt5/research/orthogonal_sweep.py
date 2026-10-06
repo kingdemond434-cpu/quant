@@ -494,6 +494,10 @@ def _factor_symbols(symbols: list[str], meta: dict) -> list[str]:
 #: this organ's to resolve -- not that the family is dead. Anything NOT listed and not wired is a
 #: defect, and `test_every_family_needing_an_input_is_wired_to_one` fails on it.
 NOT_SOURCED_HERE = {
+    "regime_split": "the base family and the regime are named by regime_split_miner, which "
+                    "deflates over every family x regime cell it tried and kills with purged "
+                    "walk-forward; a sweep that enumerated the split here would be a second "
+                    "uncharged search over the same cells",
     "discovered": "the primitive is named by edge_search at search time; this sweep enumerates "
                   "families, it does not run the search that would name one",
     "ensemble": "its members are named on the candidate by weak_signal_compiler, which chooses "
@@ -506,6 +510,19 @@ NOT_SOURCED_HERE = {
     "lead_lag": "the driver and the lag are measured by cross_asset_graph on the information "
                 "graph; a sweep that paired every symbol with every other would be an uncharged "
                 "search over pairs",
+    "world_macro_state": "the world series is named on the recipe by world_macro_proposer, which "
+                         "reads the world dataset hunter's per-symbol exposure and charges its own "
+                         "band x direction x hold grid; a sweep that paired every symbol with "
+                         "every ingested series would be an uncharged search over thousands",
+    "gnn_propagation": "the peer panel and the model configuration are named by "
+                       "research/learned_miners, which walk-forwards every configuration once "
+                       "per panel and charges configurations x symbols x thresholds as trials; "
+                       "enumerating it here would refit the same panel model per symbol and "
+                       "charge the same search twice",
+    "attention_ts": "the peer panel and the (heads, lookback) configuration are named by "
+                    "research/learned_miners, which trains each configuration once per panel "
+                    "and charges its whole grid; a per-symbol sweep here would be an uncharged "
+                    "second search and a full attention training per symbol",
     "style_premia": "style_premia_sweep supplies the instrument's own rollover (broker_swaps) and "
                     "the risk driver and charges the whole style x instrument grid itself",
     "event_reaction": "its events are DATED FACTS FROM OUTSIDE THE TAPE -- an insider cluster's "
@@ -539,6 +556,14 @@ NOT_SOURCED_HERE = {
                          "hand-off (research/alt_equity_handoff.py), which mints and charges "
                          "each (series, share) cell; called blind it has no series and returns "
                          "[] on every symbol",
+    # The free-stack alt families (mt5desk/family_alt_series.py). Their series and column are
+    # named by research/free_stack_proposer from what the hunter published and the instruments it
+    # mapped, and that proposer charges its own grid through `tests_run`.
+    **dict.fromkeys(("alt_series_momentum", "alt_conditioned"),
+                    "the series, column and mapped instrument are named by "
+                    "research/free_stack_proposer from the hunter's published columns, and it "
+                    "charges its own grid; called blind here it has no source and returns [] on "
+                    "every symbol"),
     # The within-class rank legs (mt5desk/families_cross_sectional.py). Each loads its own class
     # panel from `symbol`, so nothing is unsuppliable -- but the grid is (class member x family x
     # params) and research/cross_sectional_breadth enumerates it, measures every cell's firing

@@ -69,13 +69,20 @@ def test_empty_queue_is_idle_unexplained_not_saturated(at: Path) -> None:
     assert c.status == "IDLE-UNEXPLAINED"
 
 
-def test_empty_queue_makes_the_whole_fence_exit_nonzero(at: Path) -> None:
+def test_empty_queue_makes_the_whole_fence_exit_nonzero(
+        at: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """End-to-end: the report must carry the ceiling and main() must fail on it.
 
     Asserted through `build()` rather than the dataclass so a ceiling dropped from `collect()`
     fails here too -- the built-never-wired failure, one layer up.
     """
     _queues(at, n_candidates=0, queued=0)
+    # Exercise the real collection and report wiring without auditing unrelated live
+    # organs or traversing the host's research registry from a queue fixture.
+    for name in ("_capital", "_forward_slots", "_capability", "_data_assets",
+                 "_organs", "_mutation", "_test_suites_runnable", "_brain_seat", "_book_vol"):
+        monkeypatch.setattr(fence, name, lambda: fence.Ceiling(
+            "unrelated", 1.0, 1.0, "fixture", True, "", ""))
     rep = fence.build()
 
     assert "forward_queue_depth" in [r["name"] for r in rep["ceilings"]]

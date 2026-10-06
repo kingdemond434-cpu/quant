@@ -194,7 +194,7 @@ class TestComparison:
     def test_substring_criterion_names_do_not_cross_match(self, tmp_path: Path) -> None:
         """`symbol_count` must not match inside `symbol_count_4_5`."""
         _write(tmp_path, "data/live_guard.json", _guard("symbol_count_4_5=False"))
-        doc = json.loads((tmp_path / "data/live_guard.json").read_text())
+        doc = json.loads((tmp_path / "data/live_guard.json").read_text(encoding="utf-8"))
         assert _guard_criterion("symbol_count")(doc).resolved is False
         assert _guard_criterion("symbol_count_4_5")(doc).value is False
 
@@ -221,7 +221,7 @@ class TestFenceWiring:
     def test_fence_script_exists_and_declares_its_denominator(self) -> None:
         src = Path(__file__).resolve().parents[2] / "scripts/check_claim_consistency.py"
         assert src.exists()
-        body = src.read_text()
+        body = src.read_text(encoding="utf-8")
         assert "fence_exit(" in body, "the fence must exit through fence_exit (L1.41)"
         assert "scanned=report[\"n_compared\"]" in body, "denominator must be the measured count"
         assert "_law_guard()" in body, "every entry point passes the laws (L1.42)"
@@ -230,10 +230,10 @@ class TestFenceWiring:
                                       "libs/ops/claim_registry.py"])
     def test_law_is_mapped_in_the_enforcement_matrix(self, path: str) -> None:
         root = Path(__file__).resolve().parents[2]
-        body = (root / "scripts/build_enforcement_matrix.py").read_text()
+        body = (root / "scripts/build_enforcement_matrix.py").read_text(encoding="utf-8")
         assert path in body, f"{path} must be mapped to L1.61 in the enforcement matrix"
 
     def test_fence_is_scheduled(self) -> None:
         root = Path(__file__).resolve().parents[2]
-        manifest = (root / "ops/crontab.manifest").read_text()
+        manifest = (root / "ops/crontab.manifest").read_text(encoding="utf-8")
         assert "check_claim_consistency.py" in manifest, "an unscheduled fence never runs (L1.28c)"

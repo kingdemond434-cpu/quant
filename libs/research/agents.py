@@ -171,6 +171,9 @@ def falsify(hyp: Hypothesis,
             return FalsifierReport(hyp.hypothesis_id, tuple(ran), False, control,
                                    f"control raised {type(exc).__name__}: {str(exc)[:100]} -- a "
                                    f"control that errors has not been passed")
+        if not isinstance(survived, bool):
+            return FalsifierReport(hyp.hypothesis_id, tuple(ran), False, control,
+                                   "control returned no Boolean verdict -- UNMEASURED, not passed")
         ran.append(control)
         if not survived:
             return FalsifierReport(hyp.hypothesis_id, tuple(ran), False, control,
@@ -188,7 +191,9 @@ def to_artifact(hyp: Hypothesis, report: FalsifierReport) -> ResearchArtifact:
     not all run -- promoting an unfalsified idea into the funnel spends gauntlet compute on
     something a free check would have killed.
     """
-    if not report.survived:
+    if report.hypothesis_id != hyp.hypothesis_id:
+        raise RoleViolation("falsifier receipt identity does not match the hypothesis")
+    if report.survived is not True:
         raise RoleViolation(
             f"{hyp.hypothesis_id} was killed by {report.killed_by}; it may not become an "
             f"artifact. {report.detail}")

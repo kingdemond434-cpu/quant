@@ -26,6 +26,11 @@ from pathlib import Path
 
 import pytest
 
+# The Tier S door fails closed on absent verifier inputs; these promoter tests are not about
+# the door, so they run against fresh, clean verifier artifacts (desks/mt5/tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("fresh_tier_s_door")
+
+
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
 for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
@@ -77,6 +82,22 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "SLEEVE_REGISTRY", tmp_path / "data" / "sleeve_registry.json")
     monkeypatch.setattr(promoter.provenance, "current_account", lambda _acc: _ACC)
     monkeypatch.setattr(promoter, "clock_identities", dict)
+    # THE TIER S DOOR IS GRANTED HERE, as the gate authority and the allocator are. Since
+    # 7de6ccca7 it withholds with DOOR_ERROR whenever REPLICATION.json is absent or stale, which it
+    # always is in a checkout; that fail-closed rule is pinned in test_tier_s_door.py, and this
+    # file is about identity and the alpha-state ledger.
+    monkeypatch.setattr(promoter, "tier_s_block", lambda _name: None)
+    # A MEASURED COST BASIS for every fixture symbol. #53 (b8f53cd03) writes a LIVE row with no
+    # cost basis STANDBY in save_sleeves; read against the repository's registry, USDJPY's quoted
+    # 0.0 spread is not a basis, so its row was demoted before the retirement under test ran.
+    # Cost-basis demotion itself is pinned in test_live_rows_need_a_cost_basis.py.
+    uni = tmp_path / "data" / "universe.json"
+    uni.write_text(json.dumps({sym: {"median_spread_pts": 10.0, "tick_size": 0.001,
+                                     "tick_value": 0.6, "contract_size": 100000.0,
+                                     "swap_long": -1.0, "swap_short": -1.0}
+                               for sym in ("CADJPY", "USDJPY", "EURJPY", "GBPJPY", "XAUUSD",
+                                           "AUDNZD", "EURZAR")}), encoding="utf-8")
+    monkeypatch.setattr(promoter, "UNIVERSE_FILE", uni)
 
     def _authority_from_shadow(base=None):
         try:
@@ -284,7 +305,9 @@ def test_a_retirement_is_ledgered_with_the_promoters_own_reason(desk) -> None:
     obs = desk.observations()
     assert [o["door"] for o in obs] == ["PROMOTED", "RETIRED"]
     r = obs[1]
-    assert r["outcome"] == "LEDGERED" and r["from"] == "LIVE"
+    # retired FROM the row's status on that pass: the same pass's admission reading may already
+    # have parked an unallocated LIVE row at STANDBY (zero heat) before the retirement runs
+    assert r["outcome"] == "LEDGERED" and r["from"] in ("LIVE", "STANDBY")
     assert r["ledger_state_before"] == "DISCOVERED" and r["ledger_state_after"] == "RETIRED"
     assert r["reason"].startswith("roll20 exp") and r["evidence"]["forward_observations"] == "12"
     # the ledger file is real, loadable, and carries the reason, not the generic note

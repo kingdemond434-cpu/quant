@@ -207,6 +207,7 @@ class HourlySurvivorAcquisition:
     def _phase_discover(self) -> dict:
         """Phase 1: Run all 11 external discovery channels (real data)."""
         start = time.time()
+        self._discovered = None          # never let a later phase read the previous cycle
         import sys as _sys
         _side = "/home/quant/quant-platform/desks/mt5/side_channels"
         if _side not in _sys.path:
@@ -222,17 +223,22 @@ class HourlySurvivorAcquisition:
                 if isinstance(data, dict) and "count" in data:
                     discoveries[name] = data["count"]
             total = summary.get("total_discoveries", 0)
+            # The phases below read THESE real results; until 2026-09-30 they returned invented
+            # constants (8 hypotheses, 5 cards, 3 queued) and credited fake output to youtube /
+            # github_code / trump_truth_social in the research economics every hour.
+            self._discovered = {"discoveries": discoveries, "total": total,
+                                "hypotheses": hypotheses}
             # Save hypotheses for downstream phases
             import json as _json
             from pathlib import Path as _P
             hyp_file = _P("/home/quant/quant-platform/desks/mt5/data/hypotheses/latest_external.json")
             hyp_file.parent.mkdir(parents=True, exist_ok=True)
             hyp_file.write_text(_json.dumps(hypotheses, indent=2, default=str), encoding="utf-8")
-            # Update economics
+            # Update economics. OUTPUT only: the per-source cost used to be an invented
+            # $0.01 / 0.01 CPU-hour per discovery; no per-source cost is measured here, so none
+            # is recorded (UNMEASURED, never a made-up price).
             for source, count in discoveries.items():
                 if count > 0:
-                    self.economics.record_cost(source, "source",
-                        ResearchCost(llm_cost_usd=0.01 * count, cpu_hours=0.01 * count))
                     self.economics.record_output(source, "source",
                         ResearchOutput(hypotheses_produced=count))
             elapsed = time.time() - start
@@ -241,95 +247,62 @@ class HourlySurvivorAcquisition:
         except Exception as e:
             print(f"  Discovery FAILED: {e}")
             return {"discoveries": {}, "total": 0, "hypotheses": 0, "error": str(e), "duration_seconds": time.time() - start}
+    def _unmeasured(self, phase: str, why: str, start: float) -> dict:
+        """A phase this controller does not perform: an explicit UNMEASURED verdict, never an
+        invented count (L1.28a). Until 2026-09-30 these phases returned constants -- 8
+        hypotheses, 6 refined, 5 cards, 4 unique, 3 passed, 3 queued -- every hour, whatever
+        happened, and the cycle log reported them as work done."""
+        return {"status": "UNMEASURED", "phase": phase, "why": why,
+                "duration_seconds": time.time() - start}
+
     def _phase_acquire(self) -> dict:
-        """Phase 2: Retrieve evidence."""
+        """Phase 2: Retrieve evidence. The miners fetch as they discover, so acquisition IS the
+        discover phase's per-source counts; nothing separate is fetched here."""
         start = time.time()
-        # Mock: would actually download transcripts, code, papers, data
-        acquired = {"youtube": 5, "github_code": 3, "trump_truth_social": 1}
-        return {"acquired": acquired, "duration_seconds": time.time() - start}
+        d = getattr(self, "_discovered", None)
+        if not d:
+            return self._unmeasured("acquire", "discover produced no result this cycle", start)
+        return {"acquired": dict(d["discoveries"]), "source": "run_all_miners (fetch inside "
+                "each miner)", "duration_seconds": time.time() - start}
+
     def _phase_extract(self) -> dict:
-        """Phase 3: Convert to structured observations."""
+        """Phase 3: the structured hypotheses convert_discoveries actually produced."""
         start = time.time()
-        # Mock: extract mechanisms from acquired items
-        hypotheses = 8  # Mock number
-        for source in ["youtube", "github_code", "trump_truth_social"]:
-            self.economics.record_output(source, "source",
-                ResearchOutput(hypotheses_produced=2, unique_hypotheses=1))
-        return {"hypotheses": hypotheses, "duration_seconds": time.time() - start}
+        d = getattr(self, "_discovered", None)
+        if not d:
+            return self._unmeasured("extract", "discover produced no result this cycle", start)
+        return {"hypotheses": len(d["hypotheses"]),
+                "artifact": "desks/mt5/data/hypotheses/latest_external.json",
+                "duration_seconds": time.time() - start}
+
     def _phase_reverse_engineer(self) -> dict:
-        """Phase 4: Infer testable mechanisms."""
-        start = time.time()
-        # Mock: would run extractors (transcript→rules, code→rules, etc.)
-        refined = 6
-        return {"refined": refined, "duration_seconds": time.time() - start}
+        """Phase 4: not performed here -- rule recovery runs downstream in the deepening worker
+        and miner_candidate_compiler, which read data/intelligence/**."""
+        return self._unmeasured("reverse_engineer", "no rule-recovery stage runs in this "
+                                "controller; the deepening worker and the miner compiler do it",
+                                time.time())
+
     def _phase_translate(self) -> dict:
-        """Phase 5: Convert to MT5 hypotheses."""
-        start = time.time()
-        # Mock: compile mechanisms to hypothesis cards
-        cards = 5
-        # Save hypothesis cards
-        for i in range(cards):
-            card = HypothesisCard(
-                id=f"H-{datetime.now(UTC).strftime('%Y%m%d')}-{i:03d}",
-                origin=Origin(
-                    region="global",
-                    language="en",
-                    source_type="youtube",
-                    source_id="channel_123",
-                    evidence_tier=EvidenceTier.PRACTITIONER_CLAIM,
-                ),
-                mechanism=Mechanism(
-                    mechanism_class=MechanismClass.INFORMATION_SHOCK,
-                    participant="retail",
-                    constraint="technical_pattern",
-                    information_source="youtube_technical_analysis",
-                    why_edge_should_exist="Pattern exploits retail behavior at session open",
-                ),
-                market=MarketContext(
-                    symbols=["XAUUSD"],
-                    primary_symbol="XAUUSD",
-                    session="london_am",
-                ),
-                rule=Rule(
-                    inputs=["XAUUSD_H1"],
-                    trigger="breakout_above_asia_high",
-                    direction=1,
-                    holding_horizon="4h",
-                    exit="tp_2r_or_sl_1r",
-                    stop="atr_1.5",
-                ),
-                economics=Economics(
-                    expected_edge_bps_per_trade=5.0,
-                    expected_trades_per_month=20,
-                    expected_capacity_lots=10,
-                    expected_capacity_category="small",
-                ),
-                falsifier=Falsifier(
-                    condition="exp_r < 0.05R over 100 forward trades",
-                    horizon="100_trades",
-                    threshold=0.05,
-                    data_source="shadow_forward",
-                ),
-            )
-            card.save(self.base_path / "data" / "intelligence" / "hypotheses" / f"{card.id}.yaml")
-        return {"cards_created": 5, "duration_seconds": time.time() - start}
+        """Phase 5: no card is fabricated. This phase wrote five identical placeholder cards
+        (source_id `channel_123`, XAUUSD london_am breakout) into data/intelligence/hypotheses/
+        every hour; the real hypotheses are the discover phase's output."""
+        return self._unmeasured("translate", "no card translation runs in this controller; the "
+                                "real hypotheses are in latest_external.json", time.time())
+
     def _phase_dedupe(self) -> dict:
-        """Phase 6: Check against registry, graveyard, live strategies."""
-        start = time.time()
-        unique = 4
-        duplicates = 1
-        return {"unique": unique, "duplicates": duplicates, "duration_seconds": time.time() - start}
+        """Phase 6: dedup is content-addressed downstream (miner_candidate_compiler)."""
+        return self._unmeasured("dedupe", "deduplication is done by the miner compiler's "
+                                "content hash, not here", time.time())
+
     def _phase_score(self) -> dict:
-        """Phase 7: Score by novelty, economics, independence, capacity, etc."""
-        start = time.time()
-        scored = 4
-        return {"scored": scored, "duration_seconds": time.time() - start}
+        """Phase 7: scoring is the compiler's net-edge ranking, not here."""
+        return self._unmeasured("score", "ranking is done by the miner compiler (net edge), "
+                                "not here", time.time())
+
     def _phase_cheap_falsify(self) -> dict:
-        """Phase 8: Basic economics, timing/leakage, costs, minimum sample, placebo."""
-        start = time.time()
-        passed = 3
-        killed = 1
-        return {"passed": passed, "killed": killed, "duration_seconds": time.time() - start}
+        """Phase 8: falsification is the gauntlet's, not here."""
+        return self._unmeasured("cheap_falsify", "falsification is the gauntlet's job; nothing "
+                                "is killed here", time.time())
     def _phase_recombine(self) -> dict:
         """Phase 9: Orthogonal alpha recombination."""
         start = time.time()
@@ -337,10 +310,9 @@ class HourlySurvivorAcquisition:
         recombinants = run_recombination_pipeline(self.base_path)
         return {"recombinants": len(recombinants), "duration_seconds": time.time() - start}
     def _phase_queue(self) -> dict:
-        """Phase 10: Push to research queue."""
-        start = time.time()
-        queued = 3
-        return {"queued": queued, "duration_seconds": time.time() - start}
+        """Phase 10: nothing is queued here; the docket is fed by the miner compiler."""
+        return self._unmeasured("queue", "the docket is fed by miner_candidate_compiler and "
+                                "merge_docket, not by this controller", time.time())
     def _phase_attribute(self) -> dict:
         """Phase 11: Attribution & budget adaptation."""
         start = time.time()

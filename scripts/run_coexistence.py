@@ -30,6 +30,7 @@ record -- so nobody has to remember.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import sqlite3
 import sys
@@ -69,7 +70,8 @@ def _families() -> dict[str, list[float]]:
         return {}
     out: dict[str, list[float]] = {}
     try:
-        with sqlite3.connect(f"file:{METRICS}?mode=ro", uri=True) as c:
+        uri = METRICS.resolve().as_uri() + "?mode=ro"
+        with contextlib.closing(sqlite3.connect(uri, uri=True)) as c:
             cols = {r[1] for r in c.execute("pragma table_info(alpha_performance)")}
             if not cols:
                 return {}

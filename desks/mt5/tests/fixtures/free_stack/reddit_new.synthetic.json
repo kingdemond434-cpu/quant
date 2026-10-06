@@ -1,0 +1,34 @@
+{
+"kind": "Listing",
+"data": {
+"children": [
+{
+"data": {
+"name": "t3_a1",
+"author": "u1",
+"title": "Gold rally is strong",
+"selftext": "$NVDA beat too",
+"created_utc": 1789866000
+}
+},
+{
+"data": {
+"name": "t3_a2",
+"author": "AutoModerator",
+"title": "Daily thread",
+"selftext": "",
+"created_utc": 1789866000
+}
+},
+{
+"data": {
+"name": "t3_a3",
+"author": "u2",
+"title": "Oil crash incoming, bearish",
+"selftext": "",
+"created_utc": 1789952400
+}
+}
+]
+}
+}

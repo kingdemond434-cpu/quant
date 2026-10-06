@@ -248,6 +248,8 @@ desks/mt5/data/daily_cycle_state.json
 # container's dead workers and refuse to hand out work nobody is doing. `queue_cycle` publishes the
 # FOLD to desks/mt5/reports/QUEUE.json, which is what a reader elsewhere should be looking at.
 desks/mt5/data/task_queue.jsonl
+# box-local append-only ledger behind reports/DSR_INPUTS.json (its sha256 is in the report)
+desks/mt5/data/dsr_trial_sharpes.jsonl
 desks/mt5/data/task_queue.subs.json
 desks/mt5/data/task_queue.watermark
 
@@ -369,6 +371,29 @@ desks/mt5/data/digests/*.tmp
 !desks/mt5/data/order_intents.jsonl
 !desks/mt5/data/live_ledger.jsonl
 !desks/mt5/reports/attribution_chain.json
+# THE TIER S MEASUREMENT REPORTS (2026-09-30), published by sync_shadow_to_git.ps1's $relPaths:
+# the null lab, the lag lane (known-by-date census + PIT lag census), the occupancy map and its
+# culture-orthogonality pairs, and the research/live identity. `**/reports/*` hid all six.
+!desks/mt5/reports/NULL_LAB.json
+!desks/mt5/reports/KNOWN_BY_DATE.json
+!desks/mt5/reports/PIT_LAG_CENSUS.json
+!desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json
+!desks/mt5/reports/DSR_INPUTS.json
+!desks/mt5/reports/OCCUPANCY_MAP.json
+!desks/mt5/reports/CULTURE_ORTHOGONALITY.json
+!desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json
+# THE TIER S PROMOTION DOOR'S REPORT-SIDE EVIDENCE (2026-09-30), published by $relPaths.
+# `**/reports/*` excludes the DIRECTORY reports/tier_s itself, and git cannot re-include a file
+# under an excluded directory -- so the directory is re-included, its contents re-excluded, and
+# the one file negated. Same shape as reports/shadow/ above.
+!desks/mt5/reports/REPLICATION.json
+!desks/mt5/reports/tier_s/
+desks/mt5/reports/tier_s/*
+!desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json
+# THE LOCKBOX v4 RE-CERTIFICATION (2026-09-30), published by $relPaths: the before/after ledger
+# and the re-mint's status.
+!desks/mt5/reports/LOCKBOX_RECERT.json
+!desks/mt5/reports/REMINT_STATUS.json
 
 # CONSOLE LOGS ARE NEVER TRACKED (2026-09-06). Seventeen of them were, and they are append-only
 # files that RUNNING hunt processes hold open. Every merge on the trading box therefore tried to
@@ -389,6 +414,13 @@ desks/mt5/logs/
 # them made both hosts unpullable while the desk was running, which is always.
 desks/mt5/data/.job_locks/
 desks/mt5/data/free_data_cache/
+# free_stack_hunter store: PIT observations, raw archive, cursors, column map, catalogue finds and
+# the bulk-file inbox are box-local; reports/FREE_STACK_YIELD.json is the record of what it holds.
+desks/mt5/data/free_stack/
+# world_dataset_hunter store: parquet observations, per-dataset meta, catalog, exposure and
+# key index are box-local and regenerated; data_registry.json + reports/DATASET_HUNT.json
+# are the tracked record of what it holds.
+desks/mt5/data/world_datasets/
 
 # Session scratch: throwaway measurement one-liners written to answer one question.
 # Excluded from ruff too (pyproject [tool.ruff] exclude) -- 32 of these once held the trading
@@ -404,3 +436,33 @@ data/alpha_registry.sqlite-shm
 # tree in one parse. Machine-rewritten on every registry build, so it is a cache by this file's
 # own definition above and belongs nowhere near git.
 desks/mt5/data/import_stems_cache.json
+# THE GATE VERDICT DIGEST AND THE STATE-FLOW METER (2026-09-30), published by
+# sync_shadow_to_git.ps1's $relPaths. `**/reports/*` above ignores both; the digest is the small
+# committed summary of the gitignored gate_verdict_ledger.jsonl and universal_gates_external.json.
+!desks/mt5/reports/GATE_VERDICT_DIGEST.json
+!desks/mt5/reports/BOX_STATE_FLOW.json
+# THE FRESHNESS FENCE'S REPORT AND THE DESK HEALTH REPORT (2026-09-30), published by the same
+# $relPaths: CRO D17 reads box_state_age_hours off the branch, and the plain-English desk health
+# check had no reader off the box at all.
+!desks/mt5/reports/BOX_STATE_FRESHNESS.json
+!desks/mt5/reports/DESK_HEALTH.json
+# THE RESEARCH MEASUREMENTS THE BOX PUBLISHES (2026-09-30). `sync_shadow_to_git.ps1` lists these
+# in $reportPaths; each is a small JSON summary the CRO cycle, the audits and the breadth review
+# read from the branch, and none had ever crossed the wire -- `**/reports/*` above ignored them,
+# so every reader off the box saw UNMEASURED or a stale copy. Last match wins, so they sit here.
+!desks/mt5/reports/RESEARCH_BUDGET.json
+!desks/mt5/data/research_budget.json
+!desks/mt5/reports/JUDGING_RATE.json
+!desks/mt5/reports/JUDGING_THROUGHPUT.json
+!desks/mt5/reports/GAUNTLET_BACKPRESSURE.json
+!desks/mt5/reports/JUDGE_COVERAGE.json
+!desks/mt5/reports/EFFECTIVE_BREADTH.json
+!desks/mt5/reports/BREADTH_MANDATE.json
+!desks/mt5/reports/TIER1_SCORECARD.json
+!desks/mt5/reports/ALT_DATA_YIELD.json
+!desks/mt5/reports/PRODUCER_YIELD.json
+!desks/mt5/reports/RESEARCH_PRODUCTIVITY.json
+!desks/mt5/reports/FORWARD_ENROLMENT.json
+!desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json
+!desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
+!desks/mt5/reports/shadow/precert_shadow_state.json

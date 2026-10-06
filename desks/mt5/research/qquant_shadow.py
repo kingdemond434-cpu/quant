@@ -66,6 +66,16 @@ def main() -> int:
     rows = certs.get("survivors", {})
     certified = 0
     processed = 0
+    # THE RESEARCH-INTEGRITY DOOR (research/admission_integrity.py, 2026-09-30): a certificate
+    # with no clock here yet starts one only when the placebo audit caught every planted trap
+    # and an independent rebuild under the same spec is REPLICATED. Existing rows are untouched.
+    held: list[dict] = []
+    try:
+        from admission_integrity import IntegrityGate
+        gate = IntegrityGate.load()
+        gate_why = ""
+    except Exception as exc:              # fail closed for NEW clocks only
+        gate, gate_why = None, f"integrity door unreadable: {type(exc).__name__}: {exc}"
     for key, cert in rows.items():
         if not str(key).startswith("qquant.") or not isinstance(cert, dict):
             continue
@@ -81,6 +91,14 @@ def main() -> int:
             state[key] = {"status": "WIRING_ERROR", "promotion_authority": False,
                           "why": "certified family/selector has no exact executable"}
             continue
+        if not isinstance(state.get(key), dict):
+            reason = (gate.hold(str(key), symbol=spec.get("symbol"), family=family,
+                                selector=selector, side=spec.get("side"),
+                                params=spec.get("params"))
+                      if gate is not None else f"HELD_INTEGRITY_UNREADABLE: {gate_why}")
+            if reason:
+                held.append({"certificate": key, "reason": reason})
+                continue
         frozen_at = pd.Timestamp(cert.get("gated_at"))
         if frozen_at.tzinfo is None:
             frozen_at = frozen_at.tz_localize("UTC")
@@ -180,6 +198,7 @@ def main() -> int:
     state["updated_at"] = now.isoformat()
     state["certified_qquant_sleeves"] = certified
     state["processed_qquant_sleeves"] = processed
+    state["integrity_held"] = held            # a LIST: never mistaken for a clock row
     SHADOW.mkdir(parents=True, exist_ok=True)
     STATE.write_text(json.dumps(state, indent=2), encoding="utf-8")
     print(f"qquant shadow: {processed}/{certified} exact certificate(s) processed")
