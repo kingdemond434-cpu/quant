@@ -883,6 +883,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries", "sensor_ledger",
     "ws_vol_conditioner", "ws_option_chains", "ws_priced_in", "ws_name_sentiment",
+    "ws_model_disagreement",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -2906,6 +2907,9 @@ WORLD_SENSOR_LEGS: dict[str, tuple[str, tuple[str, ...], float, str]] = {
     "ws_priced_in": ("research/priced_in.py", ("--days", "1200"), 6.0, "PRICED_IN.json"),
     "ws_name_sentiment": ("research/name_sentiment.py", ("--days", "400"), 20.0,
                           "NAME_SENTIMENT.json"),
+    "ws_model_disagreement": ("macro/model_disagreement.py",
+                              ("--budget-s", "900", "--heavy-every", "5", "--days", "750"), 20.0,
+                              "MODEL_DISAGREEMENT.json"),
 }
 
 
@@ -3814,7 +3818,9 @@ def main() -> None:
                                        lambda: world_sensor("ws_option_chains")),
            "ws_priced_in": _costed("ws_priced_in", lambda: world_sensor("ws_priced_in")),
            "ws_name_sentiment": _costed("ws_name_sentiment",
-                                        lambda: world_sensor("ws_name_sentiment"))}
+                                        lambda: world_sensor("ws_name_sentiment")),
+           "ws_model_disagreement": _costed("ws_model_disagreement",
+                                            lambda: world_sensor("ws_model_disagreement"))}
     pil = _costed("placement_interlock", placement_interlock)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back

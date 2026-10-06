@@ -604,6 +604,7 @@ $reportPaths = @(
     "desks/mt5/reports/OPTION_CHAINS.json",
     "desks/mt5/reports/PRICED_IN.json",
     "desks/mt5/reports/NAME_SENTIMENT.json",
+    "desks/mt5/reports/MODEL_DISAGREEMENT.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable

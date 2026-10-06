@@ -209,6 +209,7 @@ LEG_LAYER: dict[str, str] = {
     "ws_option_chains": "information",
     "ws_priced_in": "information",
     "ws_name_sentiment": "information",
+    "ws_model_disagreement": "information",
     # Whether the desk has stopped placing without saying so is a measurement of its own
     # execution wiring, not an act on the book: meta.
     "placement_interlock": "meta",

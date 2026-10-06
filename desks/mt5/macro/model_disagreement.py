@@ -148,8 +148,10 @@ FALSIFIER = ("disagreement adds no QLIKE reduction over market IV for next-21d r
 
 # ============================================================================== PIT stamps
 def available_at(day: date) -> datetime:
-    """The declared lag: a daily value of day d is knowable at d+1 01:00 UTC."""
-    return datetime(day.year, day.month, day.day, 1, 0, tzinfo=UTC) + timedelta(days=1)
+    """The declared lag: a daily value of day d is knowable at d+1 14:00 UTC -- FRED posts the
+    CBOE index closes it republishes by d+1 09:00 ET (13:00 or 14:00 UTC), and the IV leg is
+    the binding clock (the broker's close is known earlier)."""
+    return datetime(day.year, day.month, day.day, 14, 0, tzinfo=UTC) + timedelta(days=1)
 
 
 # ============================================================================== data
@@ -247,6 +249,28 @@ def load_iv(ticker: str, term_tickers: Sequence[str], vol_dir: Path = VOL_DIR
             if TENOR_DAYS.get(t) and v is not None:
                 terms.setdefault(d, {})[TENOR_DAYS[t] / 365.0] = float(v) / 100.0
     return level, terms
+
+
+def load_iv_sourced(ticker: str, term_tickers: Sequence[str], vol_dir: Path = VOL_DIR,
+                    fred: Mapping[str, Sequence[tuple[str, float]]] | None = None
+                    ) -> tuple[dict[date, float], dict[date, dict[float, float]], str]:
+    """FRED's republished CBOE series first (terms-admitted, coordinator 2026-10-06), with the
+    data_source the cells declare; the Yahoo-held reference only where FRED has no series."""
+    from macro.vol_conditioner import FRED_IDS, fred_history, fred_series
+    from recorders.vol_archive import TENOR_DAYS
+    series = fred_series() if fred is None else fred
+    lv = fred_history(ticker, series)
+    if lv:
+        level = {date.fromisoformat(k): v / 100.0 for k, v in lv.items()}
+        terms: dict[date, dict[float, float]] = {}
+        for t in term_tickers:
+            tenor = TENOR_DAYS.get(t)
+            if tenor and t in FRED_IDS:
+                for k, v in fred_history(t, series).items():
+                    terms.setdefault(date.fromisoformat(k), {})[tenor / 365.0] = v / 100.0
+        return level, terms, f"fred:{FRED_IDS[ticker]}"
+    level, terms = load_iv(ticker, term_tickers, vol_dir)
+    return level, terms, DATA_SOURCE
 
 
 def symbol_map(registry: Mapping[str, Any], universe_dir: Path = UNIVERSE
@@ -700,7 +724,7 @@ def sensor_rows(rows: Sequence[Mapping[str, Any]], symbol: str, series_id: str,
                         value=float(v), percentile=pct, surprise_z=z, unit="ratio",
                         asset_domain="vol", licence="public index + own broker bars",
                         measure="P/Q mixed",
-                        declared_lag="daily close of day d knowable at d+1 01:00 UTC"))
+                        declared_lag="daily close of day d knowable at d+1 14:00 UTC (FRED's clock)"))
     return obs
 
 
@@ -730,20 +754,21 @@ def frame_for_contracts(rows: Sequence[Mapping[str, Any]], d: Daily) -> pd.DataF
 #: the fallback), joined to the broker's own bars. The IV leg is the binding licence, so the
 #: cells name it: a terms hold on Yahoo/CBOE-derived inputs HOLDS these cells, and that is the
 #: correct outcome, never something to route around.
-DATA_SOURCE = "yahoo:cboe_vol_index"
+DATA_SOURCE = "yahoo:cboe_vol_index"            # the held fallback; FRED wins when present
 
 
-def emit_cells(series_id: str, symbol: str, dry_run: bool = False) -> dict[str, Any]:
+def emit_cells(series_id: str, symbol: str, dry_run: bool = False,
+               data_source: str = DATA_SOURCE) -> dict[str, Any]:
     """The conditioner cells for one symbol, through the one door. A spine that predates the
     `data_source` argument refuses the call, and the refusal is reported -- never retried
     without the provenance."""
     try:
         return se.emit_conditioner_cells(  # type: ignore[call-arg]
             series_id, list(FEATURES), [symbol], mechanism=MECHANISM, falsifier=FALSIFIER,
-            generator=ENGINE, sides=(1, -1), data_source=DATA_SOURCE, dry_run=dry_run)
+            generator=ENGINE, sides=(1, -1), data_source=data_source, dry_run=dry_run)
     except TypeError as exc:
         return {"series_id": series_id, "emitted": 0, "created": 0,
-                "data_source": DATA_SOURCE,
+                "data_source": data_source,
                 "error": f"cell door refused data_source ({str(exc)[:80]}); no cell emitted"}
 
 
@@ -752,7 +777,8 @@ def run_symbol(ticker: str, symbol: str, terms: Sequence[str], *, now: datetime,
                universe_dir: Path = UNIVERSE, vol_dir: Path = VOL_DIR) -> dict[str, Any]:
     series_id = f"ws_model_disagreement_{symbol}"
     out: dict[str, Any] = {"symbol": symbol, "vol_ticker": ticker, "series_id": series_id}
-    iv, term = load_iv(ticker, terms, vol_dir)
+    iv, term, data_source = load_iv_sourced(ticker, terms, vol_dir)
+    out["data_source"] = data_source
     if not iv:
         return {**out, "status": UNMEASURED,
                 "why": f"no implied-vol history for {ticker} under {vol_dir} (reference or "
@@ -789,7 +815,7 @@ def run_symbol(ticker: str, symbol: str, terms: Sequence[str], *, now: datetime,
     for r in lake_rows:
         r["source_id"] = series_id
     out["lake"] = se.write_lake_series(series_id, lake_rows, root=lake)
-    out["cells"] = emit_cells(series_id, symbol)
+    out["cells"] = emit_cells(series_id, symbol, data_source=data_source)
     from libs.research.sensor_contract import SensorLedger
     out["sensor"] = SensorLedger().append(sensor_rows(rows, symbol, series_id, now), now=now)
     return out
