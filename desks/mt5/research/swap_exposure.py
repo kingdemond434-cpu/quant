@@ -17,6 +17,7 @@ It answers two questions and refuses the third:
     python desks/mt5/research/swap_exposure.py
     python desks/mt5/research/swap_exposure.py --swap-per-lot XAUUSD=12.5 --swap-per-lot AUDCAD=0.4
 
+Reads reports/portfolio_projection.json (UNMEASURED when absent, STALE past a week).
 Writes desks/mt5/swap_exposure.json. Wired by `run_hunt11.py`'s cadence and safe to run alone --
 it reads bars and writes one artifact, and places no orders.
 """
@@ -67,13 +68,60 @@ WINDOWS = {
 #: windows show NEGATIVE expectancy, because the cell the desk deploys is the conditioned subset
 #: and the unconditioned parent is a different sleeve wearing the same name. Measuring exposure on
 #: the parent and labelling it with the child's name is the error this constant exists to prevent.
-PROJECTION = BASE / "portfolio_projection.json"
+#:
+#: THE LIVE WRITER'S PATH, NOT THE DESK ROOT (2026-10-06). This read `BASE /
+#: "portfolio_projection.json"`, a copy the retired Dell sync committed on 2026-08-17 and nothing
+#: has written since: `portfolio_projection.py` writes `reports/portfolio_projection.json`. So every
+#: swap verdict was measured against an August book. A missing live file is UNMEASURED and an old
+#: one is STALE, each named in the artifact; neither falls back to the desk-root copy.
+PROJECTION = BASE / "reports" / "portfolio_projection.json"
+
+#: How old the projection may be before the book it names is no longer the deployed one. One week,
+#: the cadence `hourly_cycle.HUNT12_MAX_AGE_S` re-sweeps the hunt12 survivors the projection is
+#: built from: a projection older than its own input's refresh describes a book already replaced.
+PROJECTION_MAX_AGE_S = 7 * 24 * 3600.0
 
 #: How far a rebuilt sleeve's expectancy may sit from the published one before the row is refused.
 #: 0.002R is tight on purpose: the three gold cells that DO reproduce match to four decimals, so
 #: anything looser would admit a sleeve that merely resembles the deployed one. Widening this to
 #: make rows appear is the exact move that turns a refusal into a false measurement.
 REPRO_TOLERANCE_R = 0.002
+
+
+def projection_status(path: Path | None = None, now: float | None = None) -> dict:
+    """Read the deployed book, or say by name why it cannot be read.
+
+    Returns {"state": "OK" | "UNMEASURED" | "STALE", "path", "why", "age_hours", "cells"}.
+    `cells` is the projection's rows only when the state is OK. The age is the file's mtime: the
+    report is gitignored, so it exists only where `portfolio_projection.py` wrote it, and its
+    mtime is that write.
+    """
+    import time  # noqa: PLC0415
+
+    path = PROJECTION if path is None else path
+    rel = "reports/portfolio_projection.json"
+    out: dict = {"state": "UNMEASURED", "path": rel, "age_hours": None, "cells": None}
+    try:
+        age_s = (time.time() if now is None else now) - path.stat().st_mtime
+    except OSError:
+        out["why"] = (f"{rel} absent -- the deployed sleeve list is UNMEASURED on this host, and "
+                      "the desk-root portfolio_projection.json is a stale 2026-08-17 record that "
+                      "is not read in its place")
+        return out
+    out["age_hours"] = round(age_s / 3600.0, 2)
+    if age_s > PROJECTION_MAX_AGE_S:
+        out["state"] = "STALE"
+        out["why"] = (f"{rel} is {age_s / 3600.0:.1f}h old, past the "
+                      f"{PROJECTION_MAX_AGE_S / 3600.0:.0f}h limit -- it describes a book the "
+                      "desk may no longer run, so swap exposure is not measured against it")
+        return out
+    try:
+        cells = json.loads(path.read_text(encoding="utf-8"))["rows"]
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        out["why"] = f"{rel} unreadable ({type(exc).__name__}) -- deployed book UNMEASURED"
+        return out
+    out.update(state="OK", why=None, cells=cells)
+    return out
 
 
 def _projection_costs(sym: str, meta: dict) -> Costs:
@@ -131,11 +179,18 @@ def main() -> int:
             return 2
         rates[sym.strip().upper()] = float(val)
 
-    if not PROJECTION.exists():
-        print(f"{PROJECTION.name} absent -- the deployed sleeve list is UNKNOWN on this clone, "
-              "and guessing it would measure a book nobody runs", file=sys.stderr)
-        return 3
-    cells = json.loads(PROJECTION.read_text(encoding="utf-8"))["rows"]
+    proj = projection_status()
+    if proj["state"] != "OK":
+        # NAMED IN THE ARTIFACT, NOT ONLY ON STDERR: a reader of swap_exposure.json sees why there
+        # are no rows instead of an empty book that reads as "nothing is exposed".
+        OUT.write_text(json.dumps({
+            "version": FINANCING_VERSION, "stamp": stamp_provenance(),
+            "state": proj["state"], "why": proj["why"], "projection": proj["path"],
+            "projection_age_hours": proj["age_hours"], "rows": [], "most_exposed": None},
+            indent=1), encoding="utf-8")
+        print(f"{proj['state']}: {proj['why']}", file=sys.stderr)
+        return 3 if proj["state"] == "UNMEASURED" else 4
+    cells = proj["cells"]
 
     from research.run_hunt12 import day_states                            # noqa: PLC0415
 
@@ -209,6 +264,9 @@ def main() -> int:
             worst = row
 
     art = {
+        "state": "OK",
+        "projection": proj["path"],
+        "projection_age_hours": proj["age_hours"],
         "version": FINANCING_VERSION,
         "stamp": stamp_provenance(),
         "rates_supplied": rates or None,

@@ -34,6 +34,8 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 DATA = BASE / "data"
+#: The gateway's own state file, written by `gateway.save_state`. Never the desk-root copy.
+GATEWAY_STATE = DATA / "gateway_state.json"
 sys.path.insert(0, str(BASE))
 
 OK, BAD, INFO = "OK  ", "STOP", "    "
@@ -103,8 +105,19 @@ def main(argv: list[str] | None = None) -> int:
         say(INFO, f"     {kill.read_text('utf-8', errors='replace').strip()[:120]}")
         blocking.append("deadman kill switch fired")
 
-    state = _read(BASE / "gateway_state.json") or _read(DATA / "gateway_state.json") or {}
-    if bool(state.get("armed")):
+    # THE LIVE STATE ONLY (2026-10-06). This read `BASE / "gateway_state.json"` FIRST -- the
+    # desk-root copy the retired Dell sync committed on 2026-08-17 and nothing has written since
+    # -- and fell back to the gateway's real file only when that stale copy was missing. On every
+    # clone the stale copy exists, so `armed` was answered from August. The gateway writes
+    # data/gateway_state.json (gateway.save_state); absent or unreadable is UNMEASURED, said so
+    # by name, and never resolved by reading the stale copy.
+    state = _read(GATEWAY_STATE)
+    if state is None:
+        say(BAD, "data/gateway_state.json absent or unreadable -- armed is UNMEASURED, not false "
+                 "and not true (the desk-root copy is a stale 2026-08-17 record and is not read)")
+        blocking.append("gateway_state armed UNMEASURED")
+        state = {}
+    elif bool(state.get("armed")):
         say(OK, "gateway_state.json armed=true -- the GOLD lane places real orders")
     else:
         say(BAD, "gateway_state.json armed is NOT true -- every lane logs SHADOW and places "
