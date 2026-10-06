@@ -721,6 +721,35 @@ def warmer_resident(now: datetime | None = None, path: Path | None = None) -> bo
     return 0 <= age <= WARMER_FRESH_S
 
 
+def warmer_state(now: datetime | None = None, path: Path | None = None) -> dict[str, Any]:
+    """The cache warmer's staleness AS A MEASUREMENT (published in JUDGING_QUEUE_AGE.json).
+
+    THE FALLBACK IT EXPOSES: while `MT5-CacheWarm` has reported within WARMER_FRESH_S (2 h) the
+    judge's fresh-build budget is the sealed 2700 s; once WARM_GAUNTLET.json is older than that
+    (or absent) the warmer is NOT resident and `fresh_budget_s` raises the budget toward the task
+    limit again -- the 8,640 s figure that drove the 7,800 s pre-warm of 2026-10-06. A stale
+    warmer is therefore a judging-throughput defect, and this row is how a reader sees it."""
+    t = _now(now)
+    doc = _read_json(path or WARM_REPORT, {}) or {}
+    raw = doc.get("at") if isinstance(doc, dict) else None
+    age_h: Any = UNMEASURED
+    try:
+        at = datetime.fromisoformat(str(raw or "").replace("Z", "+00:00"))
+        if at.tzinfo is not None:
+            age_h = round((t - at).total_seconds() / 3600.0, 2)
+    except (ValueError, TypeError):
+        pass
+    resident = warmer_resident(t, path)
+    return {"report": str(path or WARM_REPORT), "report_at": raw or UNMEASURED,
+            "age_h": age_h, "fresh_limit_h": round(WARMER_FRESH_S / 3600.0, 2),
+            "resident": resident,
+            "status": ("RESIDENT" if resident else "STALE" if isinstance(age_h, float)
+                       else "ABSENT"),
+            "consequence": ("fresh-build budget held at the sealed 2700 s" if resident else
+                            "NOT resident: the fresh-build budget is raised toward the task "
+                            "limit (up to 8,640 s) and the judge pre-warms in-process again")}
+
+
 def fresh_budget_s(limit_s: float | None,
                    current_budget_s: float | None = None, *,
                    warmer: bool = False) -> tuple[float | None, str]:
@@ -1056,7 +1085,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
         applied["process_env"] = apply_env()
         _write_atomic(RATE_OUT, payload["rate"])
         try:
-            qa = queue_age(payload["rate"], now)
+            qa = queue_age(payload["rate"], now, decision=decision)
             _write_atomic(QUEUE_AGE_OUT, qa)
             payload["queue_age"] = {"path": str(QUEUE_AGE_OUT), **qa["targets"],
                                     "oldest_h": qa["age"].get("oldest_h")}
@@ -1441,9 +1470,13 @@ def _latency_row(lat: dict[str, Any], key: str) -> dict[str, Any]:
 
 def queue_age(rate: dict[str, Any], now: datetime | None = None, *,
               registry: Path | None = None, funnel: Path | None = None,
-              prior_path: Path | None = None) -> dict[str, Any]:
+              prior_path: Path | None = None, warm_path: Path | None = None,
+              decision: dict[str, Any] | None = None) -> dict[str, Any]:
     """The judging backlog's age, its flow and its verdict -> certificate -> clock latency."""
     t = _now(now)
+    warm = warmer_state(t, warm_path)
+    if isinstance(decision, dict):
+        warm["fresh_budget_s_in_force"] = decision.get("fresh_budget_s", UNMEASURED)
     ages = registry_queue_ages(t, registry)
     cov = _read_json(JUDGE_COVERAGE, {}) or {}
     cov_oldest = ((cov.get("totals") or {}).get("oldest_unjudged_age_h")
@@ -1488,9 +1521,11 @@ def queue_age(rate: dict[str, Any], now: datetime | None = None, *,
         "latency_h": {"queue_to_first_verdict": q2v, "verdict_to_certificate": v2c,
                       "certificate_to_clock": c2k, "same_day_p50": same_day,
                       "source": CONVERSION_FUNNEL.name},
+        "warmer": warm,
         "targets": {"judged_well_above_created": flow == "ABOVE_TARGET",
                     "oldest_age_falling": trend == "FALLING",
-                    "verdict_to_clock_same_day": same_day is True},
+                    "verdict_to_clock_same_day": same_day is True,
+                    "warmer_resident": warm["resident"] is True},
         "why": ("written hourly by research/judging_throughput.py (leg judging_throughput); the "
                 "CRO cycle's queue_age row. UNMEASURED is a reading, never zero."),
     }

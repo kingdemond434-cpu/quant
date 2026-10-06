@@ -293,7 +293,8 @@ def test_queue_age_publishes_oldest_quantiles_flow_latency_and_trend(tmp_path) -
     assert age["oldest_trend"] == "FALLING"
     assert doc["flow"]["judged_over_created"] == 1.5 and doc["flow"]["status"] == "ABOVE_TARGET"
     assert doc["latency_h"]["same_day_p50"] is True
-    assert doc["targets"] == {"judged_well_above_created": True, "oldest_age_falling": True,
+    targets = {k: v for k, v in doc["targets"].items() if k != "warmer_resident"}
+    assert targets == {"judged_well_above_created": True, "oldest_age_falling": True,
                               "verdict_to_clock_same_day": True}
     assert doc["at"] == now.isoformat(timespec="seconds")
 
@@ -305,3 +306,34 @@ def test_queue_age_is_unmeasured_never_zero_without_its_inputs(tmp_path) -> None
     assert doc["flow"]["status"] == UNMEASURED
     assert doc["latency_h"]["same_day_p50"] == UNMEASURED
     assert doc["targets"]["oldest_age_falling"] is False
+
+
+def test_queue_age_publishes_the_warmer_staleness_and_its_fallback(tmp_path) -> None:
+    """Claim 2's fallback, measured: a WARM_GAUNTLET.json older than 2 h means the warmer is NOT
+    resident and the raised fresh-build budget returns; the artifact says so."""
+    from datetime import UTC, datetime, timedelta
+    now = datetime(2026, 10, 6, 12, 0, tzinfo=UTC)
+    warm = tmp_path / "WARM_GAUNTLET.json"
+    kw = {"registry": tmp_path / "none.sqlite", "funnel": tmp_path / "none.json",
+          "prior_path": tmp_path / "none2.json", "warm_path": warm}
+    warm.write_text(json.dumps({"at": (now - timedelta(minutes=30)).isoformat()}), "utf-8")
+    fresh = jt.queue_age({}, now, decision={"fresh_budget_s": 2700.0}, **kw)
+    assert fresh["warmer"]["status"] == "RESIDENT" and fresh["targets"]["warmer_resident"]
+    assert fresh["warmer"]["fresh_budget_s_in_force"] == 2700.0
+    warm.write_text(json.dumps({"at": (now - timedelta(hours=3)).isoformat()}), "utf-8")
+    stale = jt.queue_age({}, now, **kw)
+    assert stale["warmer"]["status"] == "STALE" and stale["warmer"]["age_h"] == 3.0
+    assert not stale["targets"]["warmer_resident"]
+    assert "8,640" in stale["warmer"]["consequence"]
+    assert jt.fresh_budget_s(14400.0, None, warmer=False)[0] != jt.SEALED_FRESH_BUDGET_SEC
+    warm.unlink()
+    assert jt.queue_age({}, now, **kw)["warmer"]["status"] == "ABSENT"
+
+
+def test_the_cro_cycle_reads_the_queue_age_artifact_in_step_4() -> None:
+    doc = (Path(jt.__file__).resolve().parents[3] / "docs" / "cro" / "CRO_CYCLE.md").read_text(
+        "utf-8")
+    step4 = doc[doc.index("## STEP 4 — RESEARCH FUNNEL HEALTH"):doc.index("## STEP 4B")]
+    rel = jt.QUEUE_AGE_OUT.relative_to(Path(jt.__file__).resolve().parents[3]).as_posix()
+    assert rel == "desks/mt5/reports/JUDGING_QUEUE_AGE.json" and rel in step4
+    assert "D34" in step4 and "D38" in step4

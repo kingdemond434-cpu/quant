@@ -150,6 +150,18 @@ For each stage inspect:
 - completed work;
 - current capacity.
 
+**The GAUNTLET stage's backlog age and flow are read, never estimated, from
+`desks/mt5/reports/JUDGING_QUEUE_AGE.json`** (written hourly by the `judging_throughput` leg,
+`desks/mt5/research/judging_throughput.py`): `age` (oldest / p50 / p90 unjudged-cell age and its
+trend against the previous hour), `flow` (first-terminal judged/day against created/day, target
+ratio 1.25), `latency_h` (queue → first verdict, verdict → certificate, certificate → clock, and
+whether the p50 path is same-day), and `warmer` (whether `MT5-CacheWarm` is resident; a stale
+warmer re-raises the judge's fresh-build budget and is a throughput defect). It is the evidence
+for duty rows **D34** (backpressure: judged ≥ created) and **D38** (judge efficiency: no repeated
+pre-warm, verdict → certificate → clock the same day) of the CRO duties table; record its
+`at` stamp with the reading. An absent or stale artifact is UNMEASURED for both rows, never a
+clean reading.
+
 Identify the current binding constraint.
 
 Examples:
