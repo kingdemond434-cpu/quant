@@ -744,10 +744,10 @@ def build_census(*, now: datetime | None = None) -> dict[str, Any]:
     at = now or _now_utc()
     try:
         root = str(DESK.parents[1])
-        for pth in (str(DESK), root):
-            if pth not in sys.path:
-                sys.path.insert(0, pth)
-        from ops import components as comp
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        # Fully qualified: a bare `ops` resolves to the repo root's ops/ when the root leads.
+        from desks.mt5.ops import components as comp
         hc = comp._hourly_module()
         legs = list(comp.leg_names())
         depts = list(comp.department_names())
