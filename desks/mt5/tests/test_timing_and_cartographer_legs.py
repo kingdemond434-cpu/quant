@@ -30,6 +30,20 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 LEGS = ("hour_surface", "hour_prior", "alpha_periodic_table")
 
 
+def _research_leg(monkeypatch: pytest.MonkeyPatch):
+    """`alpha_periodic_table` resolved the way `daily_cycle` resolves it: BASE/research first.
+
+    Under `-n auto --dist loadfile` another file on the same worker may already have imported
+    the side_channels implementation under the same bare name (with side_channels on sys.path),
+    and a bare `import` would then return that cached module -- the CI failure of 2026-09-30,
+    `'side_channels' == 'research'`. The cycle's own process never holds that entry, so the
+    test drops it and puts the cycle's directory first, for this test only."""
+    import importlib
+    monkeypatch.delitem(sys.modules, "alpha_periodic_table", raising=False)
+    monkeypatch.syspath_prepend(str(_DESK / "research"))
+    return importlib.import_module("alpha_periodic_table")
+
+
 def _feedback_list() -> list[str]:
     """The module names `_state_research_feedback` iterates, read from the source."""
     tree = ast.parse((_DESK / "research" / "daily_cycle.py").read_text("utf-8"))
@@ -136,7 +150,7 @@ def test_hour_prior_turns_a_surface_into_a_bounded_prior(tmp_path, monkeypatch) 
 def test_the_periodic_table_writes_the_map_and_refuses_to_flatter_its_coverage(tmp_path,
                                                                               monkeypatch
                                                                               ) -> None:
-    import alpha_periodic_table as leg
+    leg = _research_leg(monkeypatch)
     from side_channels import alpha_periodic_table as impl
 
     monkeypatch.setattr(impl, "REPORT", tmp_path / "ALPHA_PERIODIC_TABLE.json")
@@ -154,10 +168,10 @@ def test_the_periodic_table_writes_the_map_and_refuses_to_flatter_its_coverage(t
     assert (tmp_path / "matrix" / "mechanism_matrix.csv").exists()
 
 
-def test_the_bare_name_resolves_to_the_leg_on_the_cycles_own_path() -> None:
+def test_the_bare_name_resolves_to_the_leg_on_the_cycles_own_path(monkeypatch) -> None:
     """`daily_cycle` imports by bare name off BASE/research; the implementation must not shadow
     the leg there, or the cycle would run a module it never meant to."""
-    import alpha_periodic_table as leg
+    leg = _research_leg(monkeypatch)
     assert Path(leg.__file__).parent.name == "research"
     assert callable(leg.run) and callable(leg.main)
 

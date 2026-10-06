@@ -130,6 +130,38 @@ def replay(tests: Iterable[Test], alpha: float = DEFAULT_ALPHA) -> dict[str, Any
             "rows": rows}
 
 
+def charge_null_fpr(tests: Iterable[Test], charges: Mapping[str, float]
+                    ) -> tuple[list[Test], dict[str, Any]]:
+    """Each test's p multiplied by its FAMILY's measured null false-positive charge.
+
+    THE HONEST PRICE OF AN EASY GATE. `desks/mt5/research/null_lab.py` runs every hunted family's
+    own cell builder on block-shuffled, random-walk and sign-permuted data and measures how often
+    the deflated-Sharpe gate passes where no edge can exist. A family that passes its null at 15%
+    against a nominal 5% has a p-value that is three times too small, so its p is multiplied by
+    `charge` = posterior null rate / nominal (never below 1, capped at p = 1) BEFORE the lifetime
+    replay -- it spends more alpha-wealth per test and a certificate that could no longer afford
+    its level reads `over_budget`. A test that already carries an e-value is divided by the same
+    charge (an e-value is a likelihood ratio against the null the lab just showed is easier).
+
+    A family with no charge (unmeasured, or at or below nominal) is untouched, so this can only
+    tighten the stream it is given."""
+    out: list[Test] = []
+    touched: dict[str, int] = {}
+    for t in tests:
+        c = float(charges.get(t.family, 1.0) or 1.0)
+        if c <= 1.0 or not t.family:
+            out.append(t)
+            continue
+        p = None if t.p is None else min(1.0, float(t.p) * c)
+        e = None if t.e is None else float(t.e) / c
+        out.append(Test(test_id=t.test_id, at=t.at, p=p, e=e, family=t.family,
+                        certified=t.certified))
+        touched[t.family] = touched.get(t.family, 0) + 1
+    return out, {"families_charged": dict(sorted(touched.items())),
+                 "tests_charged": sum(touched.values()),
+                 "charges": {f: float(charges[f]) for f in sorted(touched)}}
+
+
 def tests_from_survivors(survivors: Mapping[str, Any]) -> list[Test]:
     """Certificates in UNIVERSAL_SURVIVORS carry their gates; draw a p per certificate from the
     reality-check p when present, else 1 - DSR (the DSR is a probability the Sharpe exceeds the

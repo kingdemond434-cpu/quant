@@ -52,7 +52,15 @@ def current_identity(row: dict) -> dict | None:
     as it is: a clock that cannot be evaluated is not a clock that may be revived.
     """
     frozen = dict(row.get("identity") or {})
-    if not frozen:
+    # A compiler/roster spec is NOT a frozen execution identity. Older versions of this
+    # healer froze {symbol, family, selector, params, side}, then compared that incomplete
+    # dict with itself and repeatedly declared it restored. The real engine correctly saw
+    # direction/timeframe/cost/venue drift. Measured 2026-10-03: three GBPMXN clocks had been
+    # falsely "restored" 77 times. Missing fields cannot prove an intact forward window.
+    if not frozen or any(field not in frozen for field in reg.IDENTITY_FIELDS):
+        return None
+    if not all(frozen.get(field) for field in
+               ("direction", "timeframe", "code_hash", "cost_hash", "data_venue")):
         return None
     # THE SAME RESOLUTION THE FORWARD ENGINE USES, not a narrower one. `get_family_func` only
     # searches FAMILY_REGISTRY, and the desk's most numerous family -- `discovered`, the one
@@ -98,9 +106,9 @@ def backfill_behaviour(registry_path: Path, *, apply: bool) -> int:
     that row the current behaviour is NOT known to be the frozen behaviour, and guessing would be
     the laundering this whole mechanism exists to prevent.
     """
-    reg = json.loads(registry_path.read_text("utf-8"))
+    document = json.loads(registry_path.read_text("utf-8"))
     changed = 0
-    for _key, row in (reg.get("sleeves") or {}).items():
+    for _key, row in (document.get("sleeves") or {}).items():
         frozen = row.get("identity") or {}
         if not frozen or frozen.get("behaviour_hash"):
             continue
@@ -117,9 +125,9 @@ def backfill_behaviour(registry_path: Path, *, apply: bool) -> int:
             row["behaviour_backfilled_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
         changed += 1
     if changed and apply:
-        reg["updated_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+        document["updated_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
         tmp = registry_path.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(reg, indent=1), "utf-8")
+        tmp.write_text(json.dumps(document, indent=1), "utf-8")
         reg._replace_with_retry(tmp, registry_path)
     return changed
 
@@ -236,6 +244,41 @@ def engine_identities() -> dict[str, dict]:
         return {}
 
 
+def execution_identity(spec: dict, fields: dict | None) -> dict | None:
+    """Resolve a roster spec through the SAME identity constructor as the forward engine.
+
+    Never bless a spec missing its executable code, measured costs or evidence venue. The
+    ordinary forward pass remains the owner when those prerequisites cannot be measured.
+    This only freezes previously unfrozen rows; it never rewrites a malformed old identity
+    or inherits its window. Such a migration needs an archived, new evidence epoch.
+    """
+    if fields is None:
+        return None
+    try:
+        from mt5desk.engine import Costs
+        from mt5desk.family_inputs import timeframe_of
+        from research.h1_source import from_cache
+        from shadow_forward import _family_fn
+
+        family = str(spec.get("family") or "")
+        symbol = str(spec.get("symbol") or "")
+        params = dict(spec.get("params") or {})
+        timeframe = str(spec.get("timeframe") or timeframe_of(params))
+        fn = _family_fn(family)
+        bars = from_cache(symbol, datetime.now(UTC), timeframe)
+        if fn is None or bars is None or bars.evidence_venue == "UNKNOWN-VENUE":
+            return None
+        return reg.identity(
+            family=family, symbol=symbol,
+            direction=str(spec.get("direction") or spec.get("side") or "LONG"),
+            timeframe=timeframe, selector=str(spec.get("selector") or ""),
+            condition=spec.get("condition"), params=params,
+            code=reg.code_hash(fn), behaviour=reg.behaviour_hash(fn),
+            cost=reg.cost_hash(Costs(**fields)), data_venue=bars.evidence_venue)
+    except (ImportError, TypeError, ValueError, KeyError, OSError):
+        return None
+
+
 def freeze_unfrozen(registry: dict, *, apply: bool, identities: dict | None = None) -> int:
     """Freeze every running main-lane clock that has no frozen identity. Returns the count.
 
@@ -263,13 +306,17 @@ def freeze_unfrozen(registry: dict, *, apply: bool, identities: dict | None = No
             ident = dict(engine.get(key) or {}) or None
         if ident is None:
             continue
+        fields = cost_fields_for(str(ident.get("symbol") or ""))
+        ident = execution_identity(ident, fields)
+        if ident is None:
+            print(f"  FREEZE BLOCKED {key}: execution identity unmeasured; engine must freeze it")
+            continue
         n += 1
         if apply:
             try:
                 # THE COST BASIS IS PART OF THE CLOCK, NOT AN EXTRA. `shadow_forward` has always
                 # passed `cost_fields=vars(costs)` here; this caller did not, and every LIVE row
                 # it minted was born with a null cost on the money path.
-                fields = cost_fields_for(str(ident.get("symbol") or ""))
                 reg.freeze(key, ident, forward_start=row.get("forward_start"),
                            cost_fields=fields)
                 print(f"  FROZEN {key}: {ident.get('symbol')} {ident.get('selector')} "

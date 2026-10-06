@@ -132,7 +132,7 @@ class TestOneReaderNotTwo:
             assert not (_ROOT / rel).exists(), (
                 f"{rel} is back -- it must use the shared Gate-0 reader (gate0_evidence)")
         readers = sorted(
-            str(p.relative_to(_ROOT)) for d in ("scripts", "libs", "desks")
+            p.relative_to(_ROOT).as_posix() for d in ("scripts", "libs", "desks")
             for p in (_ROOT / d).rglob("*.py")
             if "__pycache__" not in p.parts and "gate0_signoff.json" in p.read_text(
                 "utf-8", errors="ignore"))

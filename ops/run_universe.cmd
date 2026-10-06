@@ -61,6 +61,10 @@ rem when it is most worth running; chaining it behind `&&` meant it had never ru
 set RC2=%ERRORLEVEL%
 echo repair_universe_registry rc=%RC2%>>"%LOG%"
 
-if not "%RCR%"=="0" if not "%RCR%"=="2" exit /b %RCR%
+rem This is the interactive TRADING BOX collector, not the terminal-less VPS daily cycle.
+rem refresh_tail rc=2 means no authenticated terminal and therefore no fresh broker bars.
+rem Reporting a zero task result after that was the false-green state that let forward clocks
+rem age into BLOCKED_NO_BARS while the hourly task appeared healthy.
+if not "%RCR%"=="0" exit /b %RCR%
 if not "%RC1%"=="0" exit /b %RC1%
 exit /b %RC2%

@@ -248,15 +248,36 @@ def _class_of(fam: str) -> str:
         return "UNCLASSIFIED"
 
 
+def culture_block(culture: Any = None, *, read_artifacts: bool = True) -> dict[str, Any]:
+    """The survivor k_eff with every cross-culture SAME_EDGE merge group counted ONCE, and the
+    (family|symbol) keys each group spans (research/culture_orthogonality.py). Two names of one
+    edge are one bet: a JP and a CN survivor that lose on the same days add 1, not 2, to the
+    count the CRO reads beside k_eff. An absent or stale artifact is UNMEASURED, never a merge."""
+    try:
+        try:
+            from research import culture_orthogonality as co
+        except ImportError:                                           # pragma: no cover
+            import culture_orthogonality as co  # type: ignore[import-not-found,no-redef]
+    except Exception as exc:                                          # pragma: no cover
+        return {"status": "UNMEASURED", "why": f"culture module: {type(exc).__name__}",
+                "key_groups": {}}
+    why = "culture artifact supplied by caller"
+    if culture is None:
+        culture, why = co.load() if read_artifacts else (None, "artifacts not read")
+    return co.docket_culture(culture, why)
+
+
 # ------------------------------------------------------------------------------ the whole score
 def score(rows: list[dict[str, Any]], *, breadth: Any = None, canon: Any = None,
           loader: Callable[[str], Any] | None = None, key: str = "_keff",
-          read_artifacts: bool = True) -> dict[str, Any]:
+          read_artifacts: bool = True, culture: Any = None) -> dict[str, Any]:
     """Stamp `row[key]` = priority on every row and return the evidence. Removes nothing."""
     loader = loader or daily_returns
     if read_artifacts:
         breadth = breadth if breadth is not None else _read(BREADTH)
         canon = canon if canon is not None else _read(CANON)
+    cult = culture_block(culture, read_artifacts=read_artifacts)
+    key_groups: dict[str, str] = cult.get("key_groups") or {}
     at = datetime.now(tz=UTC).isoformat(timespec="seconds")
     fams = sorted({_fam(r) for r in rows})
     syms = sorted({_sym(r) for r in rows} - {""})
@@ -304,7 +325,8 @@ def score(rows: list[dict[str, Any]], *, breadth: Any = None, canon: Any = None,
                  "delta_k": round(inst_v, 6),
                  "delta_k_status": "MEASURED" if inst is not None else "PAR",
                  "empty_cluster_bonus": cb, "vacant_class_bonus": ob,
-                 "priority": round(inst_v + cb + ob, 6), "cells": 0}
+                 "priority": round(inst_v + cb + ob, 6), "cells": 0,
+                 "culture_merge_group": key_groups.get(k)}
             terms[k] = t
         t["cells"] += 1
         row[key] = t["priority"]
@@ -346,6 +368,8 @@ def score(rows: list[dict[str, Any]], *, breadth: Any = None, canon: Any = None,
         "cluster_targets": clusters,
         "vacant_class_targets": classes,
         "family_priority": family_priority,
+        "culture": {**{k: v for k, v in cult.items() if k != "key_groups"},
+                    "keys_in_merge_groups": len(key_groups)},
         "rows_scored": len(rows),
         "_terms": terms,
         "_deltas": deltas,

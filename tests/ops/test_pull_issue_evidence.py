@@ -27,7 +27,9 @@ def test_issue_reports_cross_pull_without_restamping_or_losing_valid_copy(tmp_pa
             os.utime(source / name, (1789171200, 1789171200))
     venv = tmp_path / '.venv/bin'
     venv.mkdir(parents=True)
-    (venv / 'python').symlink_to(sys.executable)
+    # A Windows venv launcher requires its adjacent pyvenv.cfg. This harness
+    # needs the interpreter itself when installing a temporary executable link.
+    (venv / 'python').symlink_to(getattr(sys, '_base_executable', sys.executable))
     script = (ROOT / 'ops/pull_desk_state.sh').read_text()
     block = script.split('# ISSUE_EVIDENCE_PULL_BEGIN\n', 1)[1].split(
         '# ISSUE_EVIDENCE_PULL_END', 1)[0]

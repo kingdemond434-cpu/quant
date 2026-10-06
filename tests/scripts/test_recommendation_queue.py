@@ -6,31 +6,40 @@ class TestLedgerLockSerializesWriters:
 
     def test_parallel_adds_both_land(self, tmp_path, monkeypatch):
         import json
-        import multiprocessing as mp
+        import subprocess
         import sys
+        from pathlib import Path
 
-
+        root = Path(__file__).resolve().parents[2]
         ledger = tmp_path / "ledger.json"
         ledger.write_text(json.dumps({"recommendations": []}), "utf-8")
-
-        def worker(n: int) -> None:
-            from scripts import recommendations as r
-            r.LEDGER = ledger
-            r._LOCK = tmp_path / ".lock"
-            r.SWEEPS = tmp_path / "sweeps.jsonl"
-            sys.argv = ["recommendations.py", "add", "--source", "cycle",
-                        "--summary", f"concurrency probe row {n} " + "x" * 30]
-            try:
-                r.main()
-            except SystemExit as e:
-                if e.code not in (None, 0):
-                    raise
-
-        procs = [mp.Process(target=worker, args=(i,)) for i in range(4)]
-        for p in procs:
-            p.start()
-        for p in procs:
-            p.join(30)
+        driver = (
+            "import sys;from pathlib import Path;"
+            f"sys.path.insert(0,{str(root)!r});"
+            "from scripts import recommendations as r;"
+            f"r.LEDGER=Path({str(ledger)!r});"
+            f"r._LOCK=Path({str(tmp_path / '.lock')!r});"
+            f"r.SWEEPS=Path({str(tmp_path / 'sweeps.jsonl')!r});"
+            "r._forecast_add=lambda *a:None;r._settle_forecasts=lambda *a:None;"
+            "sys.argv=['recommendations.py','add','--source','cycle','--summary',"
+            "'concurrency probe row '+sys.argv[1]+' '+'x'*30];r.main()"
+        )
+        procs = [subprocess.Popen([sys.executable, "-c", driver, str(i)],
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                 text=True, cwd=root) for i in range(4)]
+        try:
+            for proc in procs:
+                out, err = proc.communicate(timeout=30)
+                assert proc.returncode == 0, out + err
+        finally:
+            for proc in procs:
+                if proc.poll() is None:
+                    proc.kill()
+                    proc.wait(timeout=10)
+                if proc.stdout is not None:
+                    proc.stdout.close()
+                if proc.stderr is not None:
+                    proc.stderr.close()
         rows = json.loads(ledger.read_text("utf-8"))["recommendations"]
         assert len(rows) == 4, (
             f"{len(rows)}/4 adds survived -- a lost row is the exact last-writer-wins "
@@ -38,15 +47,13 @@ class TestLedgerLockSerializesWriters:
         assert len({r["id"] for r in rows}) == 4, "duplicate ids: the id race is back"
 
     def test_lock_refuses_loudly_when_wedged(self, tmp_path, monkeypatch):
-        import fcntl
-
         import pytest as _pytest
 
         from scripts import recommendations as reco
 
         monkeypatch.setattr(reco, "_LOCK", tmp_path / ".lock")
         holder = (tmp_path / ".lock").open("w")
-        fcntl.flock(holder, fcntl.LOCK_EX)
+        reco._flock_exclusive(holder)
         try:
             with _pytest.raises(SystemExit, match="REFUSING: could not lock"):
                 reco._locked(timeout_s=0.3)

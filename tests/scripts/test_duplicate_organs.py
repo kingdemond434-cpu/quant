@@ -99,6 +99,26 @@ def test_rows_come_from_all_four_planes(tmp_path: Path) -> None:
     assert planes["hourly_cycle"].endswith("5 _costed leg(s)")
 
 
+def test_a_box_launcher_can_name_the_underlying_shared_organ(tmp_path: Path) -> None:
+    root = _tree(
+        tmp_path,
+        _MANIFEST,
+        box=(
+            'TASK name="MT5-Gauntlet" trigger="loop" '
+            'runs="desks/mt5/scripts/run_sharded_gauntlet.py" '
+            'organ="desks/mt5/scripts/external_gauntlet.py" lane="research"\n'
+        ),
+        scripts={
+            **_SCRIPTS,
+            "desks/mt5/scripts/run_sharded_gauntlet.py": "print('launch')\n",
+            "desks/mt5/scripts/external_gauntlet.py": "print('judge')\n",
+        },
+    )
+    rows, _ = c.schedule_rows(root, c.parse_manifest(root / "ops/crontab.manifest"))
+    box = [row for row in rows if row.plane == "box_task"]
+    assert [row.script for row in box] == ["desks/mt5/scripts/external_gauntlet.py"]
+
+
 def test_verdicts_name_one_lock_or_a_self_lock_and_nothing_else(tmp_path: Path) -> None:
     root = _tree(tmp_path, _MANIFEST, box=_BOX, hourly=_HOURLY, scripts=_SCRIPTS)
     man = c.parse_manifest(root / "ops/crontab.manifest")

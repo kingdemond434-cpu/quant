@@ -68,6 +68,9 @@ class Trial:
     params: Mapping[str, Any] = field(default_factory=dict)
     declared_width: int = 1
     lineage: str = ""
+    #: Trials the SOURCE spent selecting this claim before the desk saw it ("best of ~200
+    #: variations"). Charged ONCE per mechanism by `family_charge`, never once per row.
+    selection_trials: int = 0
 
     @property
     def group(self) -> str:
@@ -331,8 +334,14 @@ def trial_from_record(rec: Mapping[str, Any] | Any, *, index: int = 0) -> Trial:
         width_i = max(1, int(width))
     except (TypeError, ValueError):
         width_i = 1
+    # A CLAIM FAMILY OUTRANKS EVERY OTHER GROUPING (libs.research.claim_selection): the cells a
+    # single searched claim was swept into are one mechanism, whatever strategy family built them.
+    try:
+        sel = max(0, int(get("claim_selection_trials") or 0))
+    except (TypeError, ValueError):
+        sel = 0
     return Trial(tid, str(get("family") or get("trial_family") or ""), desc, params, width_i,
-                 str(get("lineage") or get("family_id") or ""))
+                 str(get("claim_family") or get("lineage") or get("family_id") or ""), sel)
 
 
 def effective_count_of_records(records: Iterable[Mapping[str, Any] | Any]) -> float:
@@ -376,7 +385,12 @@ def grid_key(trial: Trial) -> str:
     """(family, symbol, horizon) -- where a test was pointed. Missing axes are `?`, never
     invented: two rows that both fail to name a symbol are not thereby the same symbol, but they
     ARE the same state of knowledge, and charging them apart would reward not writing it down."""
-    parts = [trial.group or "?"]
+    # A CLAIM FAMILY COLLAPSES THE MECHANISM, NEVER THE GRID. Grouping the cells a searched claim
+    # was swept into under one `claim_family` must not also merge an htf_anchor_trend cell and an
+    # exit_operated cell on the same chart into one grid cell -- measured on the bank 2026-09-30,
+    # that merge alone took 211 effective tests off the video's mechanism, more than its 200-trial
+    # selection charge put back. So a claim-family row keeps its strategy family on the grid axis.
+    parts = [(trial.family if trial.selection_trials and trial.family else trial.group) or "?"]
     for axis in ("symbol", "horizon"):
         val = ""
         for src in _GRID_SOURCES[axis]:
@@ -413,12 +427,15 @@ class FamilyCharge:
     n_identities: int
     ratio: float
     basis: str
+    #: The source's own selection, charged once and included in both counts above.
+    selection_trials: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return {"family": self.family, "n_nominal": self.n_nominal,
                 "n_effective": round(self.n_effective, 3),
                 "n_grid_cells": self.n_grid_cells, "n_identities": self.n_identities,
-                "ratio": round(self.ratio, 4), "basis": self.basis}
+                "ratio": round(self.ratio, 4), "basis": self.basis,
+                "selection_trials": self.selection_trials}
 
 
 @dataclass(frozen=True)
@@ -478,14 +495,23 @@ def family_charge(members: Sequence[Trial]) -> FamilyCharge:
         cells.setdefault(g, []).append(t)
         identities.add((g, content_key(t)))
     n_eff = float(sum(_grid_cell_effective(ms) for ms in cells.values()))
-    n_raw = len(members)
-    n_eff = max(1.0, min(n_eff, float(n_raw)))
+    n_rows = len(members)
+    n_eff = max(1.0, min(n_eff, float(n_rows)))
+    # THE SOURCE'S SELECTION IS CHARGED ONCE, ON TOP (claim_selection). A claim reported as the
+    # best of N searched variations arrives with N trials already spent; they are trials in both
+    # the nominal and the effective count, and they are charged to the mechanism exactly once --
+    # the largest N any member states -- however many cells the desk sweeps it into.
+    sel = max((int(t.selection_trials) for t in members), default=0)
+    n_raw = n_rows + sel
+    n_eff += float(sel)
     ratio = n_raw / n_eff if n_eff > 0 else 1.0
     biggest = max(len(ms) for ms in cells.values())
-    basis = (f"{n_raw} row(s) over {len(cells)} grid cell(s) and {len(identities)} "
+    basis = (f"{n_rows} row(s) over {len(cells)} grid cell(s) and {len(identities)} "
              f"(grid, content) identit(ies); sum of within-cell participation ratios "
-             f"{n_eff:.2f}; largest grid cell holds {biggest} row(s)")
-    return FamilyCharge(fam, n_raw, n_eff, len(cells), len(identities), ratio, basis)
+             f"{n_eff - sel:.2f}; largest grid cell holds {biggest} row(s)"
+             + (f"; plus the source's own selection of {sel} trial(s), charged once" if sel
+                else ""))
+    return FamilyCharge(fam, n_raw, n_eff, len(cells), len(identities), ratio, basis, sel)
 
 
 def effective_independent_tests(

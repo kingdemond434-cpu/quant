@@ -13,7 +13,6 @@ import sys
 from pathlib import Path
 
 import pytest
-
 import scripts.run_research_review as RR
 
 _BOX = {

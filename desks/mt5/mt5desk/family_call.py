@@ -83,6 +83,16 @@ def session_window(session: Any) -> tuple[int, int] | None:
     return SESSIONS.get(key)
 
 
+def certified_session(sleeve: dict[str, Any]) -> Any:
+    """Read the certified session from flat or legacy nested parameter envelopes."""
+    raw = sleeve.get("params") or {}
+    if not isinstance(raw, dict):
+        return None
+    inner = raw.get("params")
+    params = inner if isinstance(inner, dict) else raw
+    return params.get("session")
+
+
 def session_filter(sigs: list, session: Any) -> list:
     """Only the signals whose bar hour falls inside the session window; every signal when the
     session is `all` or unknown. A signal with no readable time is kept: absence is not a
@@ -98,6 +108,11 @@ def session_filter(sigs: list, session: Any) -> list:
         if h is None or lo <= int(h) < hi:
             out.append(g)
     return out
+
+
+def certified_session_filter(sigs: list, sleeve: dict[str, Any]) -> list:
+    """Apply a sleeve's frozen session, including the legacy nested E8 envelope."""
+    return session_filter(sigs, certified_session(sleeve))
 
 
 def signals(fn: Any, bars: Any, *, side: int, params: dict[str, Any] | None = None) -> list:

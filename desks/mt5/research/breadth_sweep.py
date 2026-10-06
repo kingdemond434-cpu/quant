@@ -44,6 +44,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 
 DOCKET = DESK / "data" / "hypotheses" / "external_survivors.json"
 UNIVERSE = DESK / "data" / "universe"
+CERTIFICATES = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 
 #: FAMILIES WHOSE INPUTS THE DESK ALREADY HOLDS, with the grid each is swept over.
 #:
@@ -207,6 +208,27 @@ def _sessions_for(tf: str) -> tuple[str, ...]:
     return ("all",) if tf == "D1" else SESSION_AXIS
 
 
+def _session_slots(family: str, base: dict, tf: str,
+                   symbol: str) -> list[tuple[dict, dict | None]]:
+    """(params, remap note) per session slot on chart `tf`. A slot whose window the family can
+    never fire in is minted as the firing-hours oracle's stand-in (re-anchored hour params, or
+    re-homed to where it fires) -- one cell per slot, so the sweep mints exactly as many cells as
+    before; an UNMEASURED family keeps the plain axis (`libs/research/family_firing.py`)."""
+    axis = _sessions_for(tf)
+    try:
+        from libs.research import family_firing
+        return [(p, remap) for _s, p, remap in
+                family_firing.session_cells(family, base, axis, symbol=symbol)]
+    except Exception:
+        return [({**base, **({"session": s} if s != "all" else {})}, None) for s in axis]
+
+
+def _remapped(cell: dict, remap: dict | None) -> dict:
+    if remap:
+        cell["session_remap"] = remap
+    return cell
+
+
 def _banned(family: str) -> bool:
     try:
         from research.family_policy import family_banned
@@ -321,21 +343,44 @@ def _testable(fam: str, p: dict) -> bool:
     return False
 
 
+def _certified_family_counts() -> dict[str, int]:
+    """Actual canonical certificates, never miner claims or raw candidate counts."""
+    try:
+        doc = json.loads(CERTIFICATES.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = doc.get("survivors") if isinstance(doc, dict) else None
+    if not isinstance(rows, dict):
+        return {}
+    counts: dict[str, int] = {}
+    for cert in rows.values():
+        if not isinstance(cert, dict):
+            continue
+        fam = str((cert.get("shadow_spec") or {}).get("family") or cert.get("family") or "")
+        if fam:
+            counts[fam] = counts.get(fam, 0) + 1
+    return counts
+
+
 def _orthogonal_key() -> Any:
-    """Sort key: most-intraday chart first (the principal's ranking, unchanged), then the
-    (symbol, family) pairs the sealed gauntlet has judged FEWEST cells on, then name. A capped
-    merge used to take the alphabetically-first symbols on every family; it now takes the least
-    covered ground first. `breadth_rotation.judged_counts` reads the judge's own seen-cells file,
-    and an unreadable one leaves the old name order."""
+    """Spend a capped merge on intraday, under-certified families, then least-judged pairs.
+
+    No family is banned: a genuinely distinct variant may still pass the full unchanged gates.
+    This only prevents a cap from being exhausted by another copy of a saturated mechanism
+    before an uncultivated family reaches the same evaluator.
+    """
     try:
         from research.breadth_rotation import judged_counts
         _by_sym, by_pair = judged_counts()
     except Exception:
         by_pair = {}
+    certified = _certified_family_counts()
 
     def key(r: dict) -> tuple:
         tf = str((r.get("params") or {}).get("timeframe") or "H1")
-        return (_tf_rank(tf), by_pair.get((str(r["symbol"]).upper(), str(r["family"])), 0),
+        fam = str(r["family"])
+        return (_tf_rank(tf), certified.get(fam, 0),
+                by_pair.get((str(r["symbol"]).upper(), fam), 0),
                 r["symbol"], r["family"])
     return key
 
@@ -353,15 +398,13 @@ def cells(only: str | None = None) -> list[dict]:
         for sym, extra in _targets(fam, spec, syms):
             for params in spec["grid"]:
                 for tf in _charts_for(sym) or ["H1"]:
-                    for sess in _sessions_for(tf):
-                        p = dict(params)
-                        p.update(extra)
-                        if tf != "H1":
-                            p["timeframe"] = tf
-                        if sess != "all":
-                            p["session"] = sess
+                    base = dict(params)
+                    base.update(extra)
+                    if tf != "H1":
+                        base["timeframe"] = tf
+                    for p, remap in _session_slots(fam, base, tf, sym):
                         if _testable(fam, p):
-                            out.append(_cell(sym, fam, p, spec, now))
+                            out.append(_remapped(_cell(sym, fam, p, spec, now), remap))
     sweepable, _blocked = default_families()
     for fam, why in sweepable.items():
         if only and fam != only:
@@ -374,16 +417,14 @@ def cells(only: str | None = None) -> list[dict]:
             needs_symbol = False
         for sym in syms:
             for tf in _charts_for(sym) or ["H1"]:
-                for sess in _sessions_for(tf):
-                    # A class book reads its peer class from `symbol`, which the sealed
-                    # build_cell never supplies: the cell carries its own, or builds nothing.
-                    p: dict = {"symbol": sym} if needs_symbol else {}
-                    if tf != "H1":
-                        p["timeframe"] = tf
-                    if sess != "all":
-                        p["session"] = sess
+                # A class book reads its peer class from `symbol`, which the sealed build_cell
+                # never supplies: the cell carries its own, or builds nothing.
+                base: dict = {"symbol": sym} if needs_symbol else {}
+                if tf != "H1":
+                    base["timeframe"] = tf
+                for p, remap in _session_slots(fam, base, tf, sym):
                     if _testable(fam, p):
-                        out.append(_cell(sym, fam, p, spec, now))
+                        out.append(_remapped(_cell(sym, fam, p, spec, now), remap))
     # Most intraday first, so a capped merge reaches the charts the principal ranked highest; then
     # least-judged (symbol, family) first, so the cap spends itself on orthogonal ground.
     out.sort(key=_orthogonal_key())
@@ -393,6 +434,43 @@ def cells(only: str | None = None) -> list[dict]:
     FAILURE_MEMORY_STATS.clear()
     FAILURE_MEMORY_STATS.update(stats)
     return out
+
+
+def write_report(new: list[dict], syms: list[str], added: int | None, total: int | None) -> dict:
+    """reports/BREADTH_SWEEP.json: what this pass minted, over what, and what it set aside.
+
+    The sweep writes the docket directly rather than donating through the intake, so without
+    this file no reader (`producer_breadth` first) could say which symbols, charts, sessions and
+    families it covered -- a producer whose breadth cannot be read is UNMEASURED, not wide."""
+    from collections import Counter
+    doc = {
+        "generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "producer": "desks/mt5/research/breadth_sweep.py",
+        "instruments_with_bars": len(syms),
+        "cells_built": len(new),
+        "cells_merged": added, "docket_rows": total, "max_new_per_run": MAX_NEW_PER_RUN,
+        "symbols": sorted({str(r["symbol"]) for r in new}),
+        "families": dict(sorted(Counter(str(r["family"]) for r in new).items())),
+        "charts": dict(sorted(Counter(str((r.get("params") or {}).get("timeframe") or "H1")
+                                      for r in new).items())),
+        "sessions": dict(sorted(Counter(str((r.get("params") or {}).get("session") or "all")
+                                        for r in new).items())),
+        "set_aside_untestable": sorted(LAST_SET_ASIDE.values(),
+                                       key=lambda r: (-int(r["cells"]), r["family"])),
+        "set_aside_cells": sum(int(r["cells"]) for r in LAST_SET_ASIDE.values()),
+        "rule": ("a cell the sealed gauntlet cannot build with its inputs, or on a chart its "
+                 "family "
+                 "declares it cannot express, is set aside BY NAME and counted here -- never "
+                 "minted to be judged as a market 'no' the market never gave"),
+    }
+    try:
+        REPORT.parent.mkdir(parents=True, exist_ok=True)
+        tmp = REPORT.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        tmp.replace(REPORT)
+    except OSError as exc:
+        doc["write_error"] = f"{type(exc).__name__}: {exc}"
+    return doc
 
 
 #: what the last `cells()` call did with the failure memory (printed by `main`)
@@ -448,46 +526,11 @@ def order_by_failure_memory(rows: list[dict], memory: dict | None = None) -> tup
     return fm.prioritise(rows, mem, desc_of, rank=_cell_tf_rank)
 
 
-def write_report(new: list[dict], syms: list[str], added: int | None, total: int | None) -> dict:
-    """reports/BREADTH_SWEEP.json: what this pass minted, over what, and what it set aside.
-
-    The sweep writes the docket directly rather than donating through the intake, so without
-    this file no reader (`producer_breadth` first) could say which symbols, charts, sessions and
-    families it covered -- a producer whose breadth cannot be read is UNMEASURED, not wide."""
-    from collections import Counter
-    doc = {
-        "generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-        "producer": "desks/mt5/research/breadth_sweep.py",
-        "instruments_with_bars": len(syms),
-        "cells_built": len(new),
-        "cells_merged": added, "docket_rows": total, "max_new_per_run": MAX_NEW_PER_RUN,
-        "symbols": sorted({str(r["symbol"]) for r in new}),
-        "families": dict(sorted(Counter(str(r["family"]) for r in new).items())),
-        "charts": dict(sorted(Counter(str((r.get("params") or {}).get("timeframe") or "H1")
-                                      for r in new).items())),
-        "sessions": dict(sorted(Counter(str((r.get("params") or {}).get("session") or "all")
-                                        for r in new).items())),
-        "set_aside_untestable": sorted(LAST_SET_ASIDE.values(),
-                                       key=lambda r: (-int(r["cells"]), r["family"])),
-        "set_aside_cells": sum(int(r["cells"]) for r in LAST_SET_ASIDE.values()),
-        "rule": ("a cell the sealed gauntlet cannot build with its inputs, or on a chart its "
-                 "family "
-                 "declares it cannot express, is set aside BY NAME and counted here -- never "
-                 "minted to be judged as a market 'no' the market never gave"),
-    }
-    try:
-        REPORT.parent.mkdir(parents=True, exist_ok=True)
-        tmp = REPORT.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
-        tmp.replace(REPORT)
-    except OSError as exc:
-        doc["write_error"] = f"{type(exc).__name__}: {exc}"
-    return doc
-
-
 def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
     """One docket row: the executable spec and nothing claimed about it."""
-    return {
+    from libs.data.pit import stamp
+
+    return stamp({
         "symbol": sym, "family": fam, "params": p,
         "n": 0, "exp_r": None, "max_dd_r": None, "t_stat": None,
         "profit_factor": None, "win_rate": None,
@@ -497,31 +540,49 @@ def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
         "first_seen": now, "pit_stamp": now,
         "why": (f"closing a NAMED breadth gap: {spec['why']}. No performance is "
                 f"claimed -- the gauntlet attaches the only numbers that attach."),
-    }
+    }, "breadth_sweep", now=datetime.fromisoformat(now))
 
 
 def apply(new: list[dict], max_new: int = MAX_NEW_PER_RUN) -> tuple[int, int]:
     """Merge, deduped on the executable spec, at most `max_new` per run (the input order is
     most-intraday-first), so a daily clock cannot grow the docket without bound and one run
     never hands the gauntlet a docket it has to load whole."""
+    from research.job_lock import exclusive_job
+
+    with exclusive_job("merge_hypotheses", need_mb=14000) as owned:
+        if not owned:
+            raise RuntimeError("Canonical docket writer lane or memory admission refused")
+        return _apply_locked(new, max_new)
+
+
+def _apply_locked(new: list[dict], max_new: int) -> tuple[int, int]:
     try:
         docket = json.loads(DOCKET.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except FileNotFoundError:
         docket = []
     if not isinstance(docket, list):
         raise SystemExit(f"{DOCKET} is not a list; refusing to overwrite a docket I cannot read")
 
     def key(r: dict) -> str:
-        return json.dumps([r.get("symbol"), r.get("family"), r.get("params") or {}],
+        return json.dumps([r.get("symbol") or r.get("sym"), r.get("family"), r.get("params") or {}],
                           sort_keys=True, default=str)
 
     seen = {key(r) for r in docket if isinstance(r, dict)}
-    add = [r for r in new if key(r) not in seen][:max(0, int(max_new))]
+    add = []
+    for row in new:
+        ident = key(row)
+        if ident not in seen and len(add) < max(0, int(max_new)):
+            add.append(row)
+            seen.add(ident)
     if add:
+        from libs.data.pit import stamp_or_refuse
+        from research.merge_hypotheses import _write_docket_atomically
+
+        add, refused = stamp_or_refuse(add, "breadth_sweep")
+        if refused:
+            raise ValueError(f"Breadth sweep refused {len(refused)} unstamped candidates")
         docket.extend(add)
-        tmp = DOCKET.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(docket), encoding="utf-8")
-        tmp.replace(DOCKET)
+        _write_docket_atomically(DOCKET, docket)
     return len(add), len(docket)
 
 
