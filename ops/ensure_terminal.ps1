@@ -15,12 +15,16 @@ if ($session -eq 0) {
 }
 
 # Get-Process, never the CIM cmdlets: CIM has hung on the trading box (CLAUDE.md), and a
-# watchdog that hangs is no watchdog. A terminal64 whose Path this account cannot read (another
-# user's session) is COUNTED as ours: dropping it would let the launch below start a second
-# terminal on the same data directory, which is the failure this script exists to prevent.
+# watchdog that hangs is no watchdog. A terminal64 whose Path this account cannot read belongs
+# to another account; it is NOT ours (counting it made any foreign MT5 refuse forever), so it is
+# logged by session and left out.
 function Get-FusionTerminals {
     @(Get-Process -Name 'terminal64' -ErrorAction SilentlyContinue |
-        Where-Object { -not $_.Path -or $_.Path -eq $exe })
+        Where-Object { $_.Path -eq $exe })
+}
+foreach ($u in @(Get-Process -Name 'terminal64' -ErrorAction SilentlyContinue |
+        Where-Object { -not $_.Path })) {
+    Add-Content -LiteralPath $log -Value "$stamp unreadable-path terminal in session $($u.SessionId) (pid $($u.Id)); not counted as Fusion"
 }
 $terminals = Get-FusionTerminals
 $local = @($terminals | Where-Object { $_.SessionId -eq $session })
@@ -56,8 +60,10 @@ if ($local.Count -eq 0) {
 }
 
 # The existing probe uses MT5 initialize/account_info only; no order permission.
-# THE INTERPRETER IS RESOLVED, NEVER ASSUMED (as Seal-IfClean.ps1): a hard-coded path that is
-# absent on this box reads "probe unavailable" forever and the watchdog can never pass.
+# THE INTERPRETER IS RESOLVED, NEVER ASSUMED: a hard-coded path that is absent on this box reads
+# "probe unavailable" forever and the watchdog can never pass. Order: the repo .venv, the per-user
+# Python314 (Seal-IfClean.ps1's two candidates), then the machine-wide Program Files Python314
+# (the path this script used to hard-code), then whatever `python` is on PATH.
 $python = $null
 foreach ($cand in @(
     (Join-Path $root '.venv\Scripts\python.exe'),
@@ -88,4 +94,9 @@ if ($probeCode -ne 0) {
 }
 
 Add-Content -LiteralPath $log -Value "$stamp Fusion IPC/account probe passed in session $session (pid $($local[0].Id))"
+# THE HEALTH FILE IS WRITTEN ON A PASSED PROBE ONLY. Every refusal above appends to the log, so the
+# log's age says the task ran, not that the terminal is usable; organ_contract grades this file.
+$okPath = Join-Path $root 'desks\mt5\data\terminal_boot_ok.json'
+@{ at = (Get-Date).ToUniversalTime().ToString('o'); session = $session; pid = $local[0].Id;
+   python = $python } | ConvertTo-Json -Compress | Set-Content -LiteralPath $okPath -Encoding UTF8
 exit 0
