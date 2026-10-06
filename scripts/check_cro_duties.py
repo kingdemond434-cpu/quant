@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
@@ -93,13 +94,28 @@ def _load(path: Path) -> tuple[Any, str | None]:
         return None, "not JSON"
 
 
-def _stamp(doc: Any, path: Path) -> datetime:
+def _git_time(path: Path, root: Path) -> datetime | None:
+    """When `path` was last committed. Adoption rewrites files in place on the box, so a file's
+    mtime there says when it was LANDED, not when it was measured; a commit time cannot move."""
+    try:
+        out = subprocess.run(["git", "-C", str(root), "log", "-1", "--format=%cI", "--",
+                              str(path.relative_to(root))], capture_output=True, text=True,
+                             timeout=10, check=False).stdout.strip()
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+    return _parse_ts(out)
+
+
+def _stamp(doc: Any, path: Path, root: Path = ROOT) -> tuple[datetime | None, str]:
+    """The artifact's own measurement time, else its last commit time, else None (UNSTAMPED).
+    Never the file's mtime: that is reset whenever the box adopts a release."""
     if isinstance(doc, Mapping):
-        for k in ("at", "generated_at", "generated_utc", "measured_at", "updated"):
+        for k in ("at", "generated_at", "generated_utc", "measured_at", "updated", "swept_at"):
             ts = _parse_ts(doc.get(k))
             if ts is not None:
-                return ts
-    return datetime.fromtimestamp(path.stat().st_mtime, UTC)
+                return ts, k
+    ts = _git_time(path, root)
+    return (ts, "git_commit") if ts is not None else (None, "none")
 
 
 def find_key(doc: Any, key: str, depth: int = 6) -> tuple[bool, Any]:
@@ -163,9 +179,15 @@ def measure(rows: Mapping[str, Mapping[str, Any]], spec: Mapping[str, Any],
             if err:
                 arts[rel] = {"status": "UNMEASURED", "why": err}
                 continue
-            age_h = (now - _stamp(doc, path)).total_seconds() / 3600
+            stamp, basis = _stamp(doc, path, root)
+            if stamp is None:
+                arts[rel] = {"status": "UNSTAMPED",
+                             "why": "no measurement time in the artifact and no commit of it; "
+                                    "its mtime is reset by adoption and proves nothing"}
+                continue
+            age_h = (now - stamp).total_seconds() / 3600
             arts[rel] = {"status": "STALE" if age_h > max_age else "FRESH",
-                         "age_h": round(age_h, 2), "max_age_h": max_age}
+                         "age_h": round(age_h, 2), "max_age_h": max_age, "stamp_basis": basis}
             if age_h <= max_age:
                 docs.append(doc)
         metrics: dict[str, Any] = {}

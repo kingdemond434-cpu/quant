@@ -4,6 +4,33 @@
  "default_max_age_h": 26,
  "artifact_backed_from": 15,
  "duties": {
+  "D17": {
+   "max_age_h": 3,
+   "metrics": [
+    "box_state_age_hours"
+   ],
+   "targets": [
+    {
+     "metric": "box_state_age_hours",
+     "op": "<",
+     "value": 6
+    }
+   ]
+  },
+  "D21": {
+   "max_age_h": 3,
+   "metrics": [
+    "live_code_hash_mismatch",
+    "live_code_hash_unmeasured"
+   ],
+   "targets": [
+    {
+     "metric": "live_code_hash_mismatch",
+     "op": "==",
+     "value": 0
+    }
+   ]
+  },
   "D37": {
    "max_age_h": 3,
    "metrics": [

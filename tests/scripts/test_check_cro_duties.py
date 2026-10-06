@@ -25,11 +25,16 @@ SPEC = {"default_max_age_h": 26, "duties": {
     "D44": {"metrics": ["machinery_improvements"]}}}
 
 
-def _write(root: Path, rel: str, doc: object, age_h: float = 0.0) -> Path:
+def _write(root: Path, rel: str, doc: object, age_h: float = 0.0,
+           stamped: bool = True) -> Path:
+    """The artifact carries its own `at`, as the desk's reports do; mtime is set to NOW so a
+    test passing on mtime would be caught (adoption resets mtime on the box)."""
     p = root / "desks" / "mt5" / rel
     p.parent.mkdir(parents=True, exist_ok=True)
+    if stamped and isinstance(doc, dict):
+        doc = {"at": (datetime.now(UTC) - timedelta(hours=age_h)).isoformat(), **doc}
     p.write_text(json.dumps(doc), "utf-8")
-    t = time.time() - age_h * 3600
+    t = time.time()
     os.utime(p, (t, t))
     return p
 
@@ -134,3 +139,16 @@ def test_a_measured_target_that_failed_cannot_be_claimed_met(tmp_path: Path) -> 
     d41 = json.loads(review.read_text())["latest"]["duties"]["D41"]
     assert d41["status"] == "MISSED" and d41["status_claimed"] == "MET"
     assert d41["verdict"] == "NOT_MET" and d41["reason"] == "measured_target_not_met"
+
+
+def test_an_unstamped_artifact_is_never_fresh_by_mtime(tmp_path: Path) -> None:
+    _write(tmp_path, "reports/dead_architecture.json", {"unreached": []}, stamped=False)
+    d = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)["duties"]["D41"]
+    assert d["artifacts"]["reports/dead_architecture.json"]["status"] == "UNSTAMPED"
+    assert d["status"] == "UNMEASURED" and d["counts_as"] == "MISSED"
+
+
+def test_d17_and_d21_name_their_publishing_artifacts() -> None:
+    rows = ccd.duty_rows(ccd.CYCLE.read_text("utf-8"))
+    assert rows["D17"]["artifacts"] == ["reports/BOX_STATE_FRESHNESS.json"]
+    assert rows["D21"]["artifacts"] == ["reports/RESEARCH_LIVE_IDENTITY.json"]
