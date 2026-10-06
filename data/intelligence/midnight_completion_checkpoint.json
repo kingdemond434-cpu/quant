@@ -3,88 +3,83 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-06T14:05:34.968499+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-06T14:50:31.921782+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-06T12:52:43.278015+00:00",
+   "finished_at": "2026-10-06T14:53:12.391739+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "finished_at": "2026-10-06T13:43:24.227219+00:00",
+   "finished_at": "2026-10-06T15:36:33.437119+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-06T12:51:18.527010+00:00",
+   "finished_at": "2026-10-06T14:51:31.461760+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-06T12:52:19.223805+00:00",
+   "finished_at": "2026-10-06T14:52:52.437966+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-10-06T13:43:37.744964+00:00",
+   "finished_at": "2026-10-06T15:36:59.157884+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-10-06T13:41:53.224459+00:00",
+   "finished_at": "2026-10-06T15:34:32.625349+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-10-06T13:41:27.714136+00:00",
+   "finished_at": "2026-10-06T15:34:06.464557+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-10-06T13:42:17.810480+00:00",
+   "finished_at": "2026-10-06T15:34:56.394954+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-10-06T13:40:54.047320+00:00",
+   "finished_at": "2026-10-06T15:33:41.017232+00:00",
    "passes_completed": 1,
    "returncode": 124,
    "status": "FAILED"
   },
   "mechanism_independence": {
-   "finished_at": "2026-10-06T13:42:56.625273+00:00",
+   "finished_at": "2026-10-06T15:35:50.139034+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-10-06T13:43:09.495921+00:00",
+   "finished_at": "2026-10-06T15:36:10.483633+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-10-06T13:42:42.560536+00:00",
+   "finished_at": "2026-10-06T15:35:26.112418+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-06T14:05:34.968499+00:00"
+ "updated_at": "2026-10-06T15:36:59.157884+00:00"
 }
