@@ -48,7 +48,8 @@ UNI = BASE / "data" / "universe"
 def load_fred(name: str) -> pd.DataFrame:
     p = LAKE / f"fred_{name}.parquet"
     if not p.exists():
-        return pd.DataFrame(columns=["value"])
+        return pd.DataFrame({"value": pd.Series(dtype=float)},
+                            index=pd.DatetimeIndex([], tz="UTC").as_unit("ms"))
     df = pd.read_parquet(p)
     col = name if name in df.columns else df.columns[0]
     df = df[[col]].rename(columns={col: "value"})
@@ -121,6 +122,15 @@ def main() -> None:
           ["DGS2", "DFII10", "T10YIE", "VIXCLS", "BAMLH0A0HYM2", "DTWEXBGS",
            "DEXUSAL", "DEXCAUS", "DEXUSNZ", "PCOPPUSDM", "WALCL",
            "IR3TIB01JPM156N", "DEXJPUS"]}
+    # AN ABSENT INPUT IS NOT A ZERO (2026-10-06). `gold_risk_off_z` and `gold_macro_stress`
+    # fill their warm-up with 0.0, so a build with a FRED series missing would publish "risk
+    # neutral, no stress" for every bar -- a measured-looking answer made of nothing (WS-005),
+    # which `cell_modifiers` would then trade on as fresh. Refuse the build instead: the previous
+    # file stands, and its consumers stop reading it once it is older than their freshness window.
+    missing = sorted(n for n, df in fr.items() if df.empty)
+    if missing:
+        raise RuntimeError(f"FRED input(s) absent from {LAKE}: {', '.join(missing)}; "
+                           "free_states.parquet NOT rebuilt (UNMEASURED past its last bar)")
 
     s = {}
 

@@ -543,13 +543,17 @@ def family_lvc_asia_london(
             -1: {"seen": False, "pos": -1, "extreme": np.nan, "atr": np.nan},
         }
 
-        def bias_active(side: int, bars_from_start: int) -> bool:
+        # The day's ages are BOUND as defaults (B023): a closure reading the loop variables
+        # would see whatever day the loop last reached if it were ever called after it moved on.
+        def bias_active(side: int, bars_from_start: int, *,
+                        _src_hi: int = source_high_age, _src_lo: int = source_low_age,
+                        _ses_hi: int = session_high_age, _ses_lo: int = session_low_age) -> bool:
             if bias_mode == "off" or bars_from_start > bias_block_bars:
                 return False
             if bias_mode == "source_shift":
-                age = source_high_age if side > 0 else source_low_age
+                age = _src_hi if side > 0 else _src_lo
             else:
-                age = session_high_age if side > 0 else session_low_age
+                age = _ses_hi if side > 0 else _ses_lo
             return age <= recent_extreme_bars
 
         consumed = False

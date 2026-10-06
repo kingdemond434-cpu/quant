@@ -171,6 +171,27 @@ def resolve(sym: str, family: str, params: dict[str, Any],
         except ImportError:
             return None, "orthogonal_sweep unavailable to rebuild runtime inputs"
 
+    # THE RESIDUAL VARIANT'S FACTOR, FOR THE FORWARD CLOCK AND THE LIVE EXECUTOR (2026-10-06).
+    # A family that does not residualise its own input is judged on the factor-residual path
+    # (`cell_modifiers.residual_frame`, the sealed `build_cell` patch); `family_call.signals`
+    # rebuilds that path from `residual_factor_bars`. Loaded here, on the cell's own chart, by the
+    # same reader the judge uses, so the clock trades the signals that were certified. Only for a
+    # family WITHOUT a native `residual` argument: one that takes it residualises itself and must
+    # be called exactly as before. A missing factor is a gap (None), never an un-residualised run.
+    if call.get("residual") is not None:
+        from mt5desk import cell_modifiers
+        from mt5desk.executables import resolve_family
+
+        fn = resolve_family(family)
+        if fn is not None and "residual" not in cell_modifiers._accepts(fn)[0]:
+            fsym = cell_modifiers.RESIDUAL_FACTOR_SYMBOLS.get(str(call["residual"]).lower())
+            if fsym is None:
+                return None, f"residual={call['residual']!r} names no factor symbol"
+            fbars = _runtime_bars(inputs, fsym, tf, h1)
+            if fbars is None:
+                return None, f"residual factor bars unavailable for {fsym} on {tf}"
+            extra["residual_factor_bars"] = fbars
+
     try:
         if family == "carry":
             # The gauntlet passes the SYMBOL and lets the family read its own recorded terms.

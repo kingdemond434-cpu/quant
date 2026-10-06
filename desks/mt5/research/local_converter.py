@@ -332,12 +332,17 @@ def feed_docket(cands: list[dict]) -> tuple[int, int]:
     numbers that will ever be attached. Inventing a backtest record here would be a fabricated
     claim wearing a survivor's shape.
     """
-    from research.job_lock import exclusive_job
+    from research.merge_hypotheses import merge_or_defer
 
-    with exclusive_job("merge_hypotheses", need_mb=14000) as owned:
-        if not owned:
-            raise RuntimeError("Canonical docket writer lane or memory admission refused")
-        return _feed_docket_locked(cands)
+    # DEFER, NEVER DROP: a refused writer lane or memory admission is retried with backoff and
+    # then persisted for the next pass (`merge_or_defer`); (0, -1) means deferred, not lost.
+    return merge_or_defer("local_converter", list(cands), _feed_docket_locked, _cand_key)
+
+
+def _cand_key(c: dict) -> str:
+    """The executable identity `_feed_docket_locked` dedupes on: (symbol, family, selector)."""
+    return json.dumps([(c.get("symbols") or [None])[0], c.get("family"), c.get("selector")],
+                      sort_keys=True, default=str)
 
 
 def _feed_docket_locked(cands: list[dict]) -> tuple[int, int]:
@@ -421,6 +426,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"wrote {OUT}")
     if not a.no_feed:
         added, total = feed_docket(cands)
+        if total < 0:
+            print("docket: writer lane refused after retries; candidates DEFERRED to the next "
+                  "pass (not lost)")
+            return 0
         print(f"docket: +{added} new cell(s), now {total} row(s) -> {DOCKET.name}")
         if not added:
             print("  (every candidate already in the docket -- the feed is idempotent)")

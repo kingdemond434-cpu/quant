@@ -236,6 +236,17 @@ class Signal:
     # every add, which is how a pyramid turns into the thing it is not supposed
     # to be. Set False only to MEASURE that difference, never to trade it.
     add_ratchets_stop: bool = True
+    # --- DECLARED order type for a resting `trigger` (2026-10-06). "auto" keeps the inferred
+    # behaviour every older family relies on: limit when the trigger sits on the far side of the
+    # next open, else stop. "limit" is a real limit order and NEVER a stop: a buy fills only on a
+    # bar whose low reaches the trigger, at min(that bar's open, trigger) -- a gap through the
+    # level fills at the better open, never above the limit; sells mirror it. Untouched for
+    # `wait_bars` bars = no trade.
+    order_type: str = "auto"
+
+
+#: The order types `Signal.order_type` may declare.
+ORDER_TYPES = frozenset({"auto", "limit"})
 
 
 @dataclass
@@ -380,7 +391,21 @@ def run_backtest(
         # intrabar trigger fill: a resting stop order that lives `wait_bars` bars
         fill_bar = i
         limit_entry = False
-        if sig.trigger is not None:
+        if sig.trigger is not None and sig.order_type == "limit":
+            tgt = float(sig.trigger)
+            limit_entry = True
+            hit = -1
+            for j in range(i, min(i + sig.wait_bars, len(idx))):
+                if (sig.side > 0 and float(lows[j]) <= tgt) or \
+                        (sig.side < 0 and float(h[j]) >= tgt):
+                    hit = j
+                    break
+            if hit < 0:
+                continue
+            fill_bar = hit
+            op = float(o[hit])
+            entry = min(op, tgt) if sig.side > 0 else max(op, tgt)
+        elif sig.trigger is not None:
             tgt = sig.trigger
             # A LIMIT entry sits on the far side of the market from the trade's
             # direction (buy below, sell above); a STOP entry sits beyond it.

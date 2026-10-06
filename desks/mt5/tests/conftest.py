@@ -159,3 +159,12 @@ def _order_door_writes_to_tmp(tmp_path_factory, monkeypatch):
     evidence. Every test that drives a lane through a fake venue goes through that door."""
     monkeypatch.setenv("MT5_ORDER_DOOR_DIR", str(tmp_path_factory.mktemp("order_door")))
     yield
+
+
+@pytest.fixture(autouse=True)
+def _discovery_quarantine_to_tmp(tmp_path_factory, monkeypatch):
+    """The discovery door's quarantine and write receipts are box state; a test that drives a
+    miner through `write_discoveries` must never append to the checkout's copies."""
+    monkeypatch.setenv("QUANT_DISCOVERY_QUARANTINE_DIR",
+                       str(tmp_path_factory.mktemp("discovery_quarantine")))
+    yield

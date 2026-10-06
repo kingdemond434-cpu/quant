@@ -15,7 +15,7 @@ against is a scoreboard, not an economy.
 DELAYED CREDIT IS A WALK, NOT A JOIN. A survivor's value belongs to the SOURCE that suggested the
 mechanism, which may be two or three provenance hops upstream of the cell that survived
 (source -> discovery -> cell -> trial -> verdict). `registry.provenance_of` is that walk, and the
-credit reaches every ancestor node it passes, which is what makes a slow, hard-to-crawl Ã¤Â¸Æ’Ã§Â¦Â¾Ã§Â½â€˜
+credit reaches every ancestor node it passes, which is what makes a slow, hard-to-crawl 七禾网
 interview fundable at all: the cell it eventually produced is months downstream of the crawl.
 
     THE FIVE ROIs, all (value / cost), all published with their components:

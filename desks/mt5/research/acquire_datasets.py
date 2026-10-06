@@ -366,10 +366,11 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
         tried += 1
         attempt_at = datetime.now(UTC).isoformat(timespec="seconds")
 
-        def _refuse_url(why: str) -> None:
+        def _refuse_url(why: str, _url: str = url, _host: str = host,
+                        _at: str = attempt_at) -> None:
             _refuse(why)
-            reg["by_url"][url] = {"host": host, "series": [], "at": attempt_at,
-                                  "status": "REFUSED", "refusal": why}
+            reg["by_url"][_url] = {"host": _host, "series": [], "at": _at,
+                                   "status": "REFUSED", "refusal": why}
 
         raw, ctype = _fetch(url)
         if raw is None:

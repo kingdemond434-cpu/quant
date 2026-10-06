@@ -110,8 +110,203 @@ def _alt_series(file: str, column: str, root: Path | None = None) -> Any:
             _ALT_CACHE.clear()
         _ALT_CACHE[key] = conditioner(file, column, "raw", root=root)
     return _ALT_CACHE[key]
+#: RISK REGIMES AND STATE CONDITIONERS THE DESK ALREADY COMPUTES (2026-10-06). These were
+#: refused as "no desk definition" while `research/free_shadows.py` publishes, point-in-time,
+#: `data/states/free_states.parquet`: `gold_risk_off_z` (z(VIX) + z(HY credit spread), FRED lag
+#: applied) and `gold_macro_stress` (the VIX / credit / real-yield / dollar composite). Despite the
+#: names both are GLOBAL risk states; `run_hunt10.GATES` already trades `risk_off` as
+#: `gold_risk_off_z > 0` and macro stress as `|gold_macro_stress| > 0.5` (its hi and lo gates).
+#: These are those definitions, unchanged, with `risk_on` the other side of the same z.
+#: A state is used only while FRESH (`STATE_MAX_AGE`): a bar the file does not reach keeps no
+#: signal -- an unknown state is not a state.
+STATE_FILE = Path(__file__).resolve().parents[1] / "data" / "states" / "free_states.parquet"
+STATE_MAX_AGE = pd.Timedelta(days=4)
+RISK_REGIMES: dict[str, tuple[str, str, float]] = {
+    "risk_off": ("gold_risk_off_z", "gt", 0.0),
+    "risk_on": ("gold_risk_off_z", "lt", 0.0),
+}
+STATE_CONDITIONERS: dict[str, tuple[str, str, float]] = {
+    "macro": ("gold_macro_stress", "abs_gt", 0.5),
+}
+#: Conditioners that ARE a `family_generic._CONTEXTS` mask: the second participant "pressed" is
+#: the month-end window for seasonality (the calendar regime this module already applies) and
+#: the wide-range (thin book) state for microstructure.
+CONTEXT_CONDITIONERS: dict[str, str] = {"seasonality": "month_end",
+                                        "microstructure": "low_liquidity"}
+_STATE_CACHE: dict[tuple[str, float], Any] = {}
+
+
+def _states(path: Path | None = None) -> Any:
+    p = path or STATE_FILE
+    try:
+        key = (str(p), p.stat().st_mtime)
+    except OSError:
+        return None
+    if key not in _STATE_CACHE:
+        _STATE_CACHE.clear()
+        try:
+            frame = pd.read_parquet(p)
+        except Exception:
+            return None
+        idx = pd.DatetimeIndex(frame.index)
+        frame.index = idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
+        _STATE_CACHE[key] = frame.sort_index()
+    return _STATE_CACHE[key]
+
+
+def _state_rule(name: str, op: str, thr: float, sigs: list[Any],
+                path: Path | None = None) -> list[Any]:
+    """Keep a signal only where the state, as last published at or before its bar (and no older
+    than STATE_MAX_AGE), meets the rule."""
+    frame = _states(path)
+    if frame is None or name not in frame.columns or not sigs:
+        return []
+    col = frame[name].dropna()
+    if col.empty:
+        return []
+    out = []
+    for sig in sigs:
+        t = pd.Timestamp(sig.time)
+        t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
+        i = col.index.searchsorted(t, side="right") - 1
+        if i < 0 or t - col.index[i] > STATE_MAX_AGE:
+            continue
+        v = float(col.iloc[i])
+        ok = abs(v) > thr if op == "abs_gt" else ALT_OPS[op](v, thr)
+        if ok:
+            out.append(sig)
+    return out
+
+
+def _state_refusal(name: str, path: Path | None = None) -> str | None:
+    frame = _states(path)
+    if frame is None:
+        return (f"the state file {(path or STATE_FILE).name} is not on this box (UNMEASURED), so "
+                "the state cannot be measured here")
+    if name not in frame.columns:
+        return f"state {name!r} is absent from {(path or STATE_FILE).name} (UNMEASURED)"
+    return None
+
+
+#: PER-SYMBOL POINT-IN-TIME CONDITIONERS (2026-10-06). `pit:<axis>:<SYMBOL>` -- the interaction
+#: miner names the symbol, because "is the second participant pressed?" is a question about THIS
+#: instrument's positioning, carry, event calendar or factor. `research/pit_conditioners.py`
+#: publishes the series (COT, BIS policy rates, the FOMC calendar, the residual factors' bars)
+#: with `knowable_at` and `stale_after` per row; a signal reads the last row known at its bar and
+#: keeps nothing once it is stale. A key with no series is refused UNMEASURED by name.
+PIT_PREFIX = "pit:"
+PIT_AXES = frozenset({"positioning", "carry", "event", "cross_asset"})
+PIT_FILE = Path(__file__).resolve().parents[1] / "data" / "states" / "pit_conditioners.parquet"
+_PIT_CACHE: dict[tuple[str, float], Any] = {}
+_METALS = ("XAU", "XAG", "XPT", "XPD", "XCU")
+_US_INDICES = frozenset({"US500", "US30", "NAS100", "US2000", "USTEC", "SPX500", "DJ30"})
+
+
+def _legs(symbol: str) -> tuple[str, str] | None:
+    s = symbol.upper()
+    return (s[:3], s[3:6]) if len(s) == 6 and s.isalpha() else None
+
+
+def pit_key(axis: str, symbol: str) -> str | None:
+    """The series key `symbol` reads on `axis`, or None when the axis cannot speak for it."""
+    sym = str(symbol or "").strip().upper()
+    legs = _legs(sym)
+    if axis in ("positioning", "carry"):
+        return sym or None
+    if axis == "event":
+        usd = (legs is not None and "USD" in legs) or sym in _US_INDICES or sym == "USDX"
+        return "USD" if usd else None
+    if axis == "cross_asset":
+        if sym == "XAUUSD" or sym == "US500":
+            return "usd"
+        if legs is not None and legs[0] in _METALS:
+            return "gold"
+        if legs is not None:
+            return "usd" if "USD" in legs else "equity"
+        if sym == "USDX":
+            return "equity"
+        if sym in _US_INDICES or sym.endswith(("40", "50", "100", "200", "225")):
+            return "equity"
+        return None
+    return None
+
+
+def pit_conditioner(value: Any) -> tuple[str, str] | None:
+    """`pit:<axis>:<SYMBOL>` -> (axis, symbol), else None."""
+    text = str(value if value is not None else "").strip()
+    if not text.lower().startswith(PIT_PREFIX):
+        return None
+    parts = text[len(PIT_PREFIX):].split(":")
+    if len(parts) != 2 or parts[0].lower() not in PIT_AXES or not parts[1]:
+        return None
+    return parts[0].lower(), parts[1].upper()
+
+
+def _pit_frame(path: Path | None = None) -> Any:
+    p = path or PIT_FILE
+    try:
+        key = (str(p), p.stat().st_mtime)
+    except OSError:
+        return None
+    if key not in _PIT_CACHE:
+        _PIT_CACHE.clear()
+        try:
+            frame = pd.read_parquet(p)
+        except Exception:
+            return None
+        for col in ("knowable_at", "stale_after"):
+            t = pd.to_datetime(frame[col], utc=True)
+            frame[col] = t
+        _PIT_CACHE[key] = {k: g.sort_values("knowable_at").reset_index(drop=True)
+                           for k, g in frame.groupby(["axis", "key"])}
+    return _PIT_CACHE[key]
+
+
+def _pit_refusal(axis: str, symbol: str, path: Path | None = None) -> str | None:
+    key = pit_key(axis, symbol)
+    if key is None:
+        return (f"no {axis} series can speak for {symbol} (UNMEASURED): the desk holds no "
+                "source for that instrument on this axis")
+    frames = _pit_frame(path)
+    if frames is None:
+        return (f"the PIT conditioner file {(path or PIT_FILE).name} is not on this box "
+                "(UNMEASURED)")
+    if (axis, key) not in frames:
+        return f"no point-in-time {axis} series for {key} in {(path or PIT_FILE).name} (UNMEASURED)"
+    return None
+
+
+def _pit_rule(axis: str, symbol: str, sigs: list[Any], path: Path | None = None) -> list[Any]:
+    key = pit_key(axis, symbol)
+    frames = _pit_frame(path)
+    if key is None or frames is None or (axis, key) not in frames or not sigs:
+        return []
+    g = frames[(axis, key)]
+    known = pd.DatetimeIndex(g["knowable_at"])
+    out = []
+    for sig in sigs:
+        t = pd.Timestamp(sig.time)
+        t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
+        i = known.searchsorted(t, side="right") - 1
+        if i < 0 or t > g["stale_after"].iloc[i]:
+            continue                       # nothing known yet, or the series stopped arriving
+        if bool(g["pressed"].iloc[i]):
+            out.append(sig)
+    return out
+
+
 ENTRY_TIMINGS = frozenset({"", "instant", "delayed"})
 MARKET_STYLES = frozenset({"", "market"})
+#: A LIMIT VARIANT IS A DECLARED LIMIT ORDER (2026-10-06, audit of #222). The first cut set
+#: `trigger` to the signal close and let `mt5desk.engine` INFER limit-vs-stop from the next open:
+#: after a gap down a "limit" buy filled as a STOP above the market, and when the next open equals
+#: the close (22% of XAUUSD M5 bars, 63% of EURUSD H1) it filled exactly like market. The engine
+#: now has `Signal.order_type == "limit"`: a buy rests at the signal bar's close for one bar and
+#: fills only if the low reaches it, at min(open, limit) -- never above the limit, never as a stop;
+#: sells mirror it. A signal that already rests on its own trigger is a STOP entry by the family's
+#: design; it has no limit expression, so the limit variant drops it rather than re-labelling the
+#: parent's order as the child's.
+LIMIT_STYLES = frozenset({"limit"})
 
 
 def _accepts(fn: Any) -> tuple[frozenset[str], bool]:
@@ -143,7 +338,18 @@ def refusal(mods: dict[str, Any]) -> str | None:
         if key in mods:
             return (f"{key}={mods[key]!r}: this family does not residualise its input, and "
                     "building it un-residualised would test the parent under the child's name")
-    if "conditioner" in mods:
+    cond = _s(mods.get("conditioner")) if "conditioner" in mods else ""
+    if cond in STATE_CONDITIONERS:
+        why = _state_refusal(STATE_CONDITIONERS[cond][0])
+        if why:
+            return f"conditioner={mods['conditioner']!r}: {why}"
+    elif cond in CONTEXT_CONDITIONERS:
+        pass
+    elif pit_conditioner(mods.get("conditioner")) is not None:
+        why = _pit_refusal(*pit_conditioner(mods.get("conditioner")))  # type: ignore[misc]
+        if why:
+            return f"conditioner={mods['conditioner']!r}: {why}"
+    elif "conditioner" in mods:
         spec = alt_conditioner(mods["conditioner"])
         if spec is None:
             return (f"conditioner={mods['conditioner']!r}: no conditioning series is wired for a "
@@ -164,7 +370,11 @@ def refusal(mods: dict[str, Any]) -> str | None:
             return (f"selector={mods.get('selector')!r}: no declared session window; refusing "
                     "rather than running the cell across all hours")
     regime = _s(mods.get("regime"))
-    if regime not in NO_OP_REGIMES and regime not in VOL_REGIMES \
+    if regime in RISK_REGIMES:
+        why = _state_refusal(RISK_REGIMES[regime][0])
+        if why:
+            return f"regime={mods.get('regime')!r}: {why}"
+    elif regime not in NO_OP_REGIMES and regime not in VOL_REGIMES \
             and regime not in CALENDAR_REGIMES:
         return (f"regime={mods.get('regime')!r} has no desk definition (volatility and month/"
                 "quarter-end are defined; a risk-on/off state needs a named risk series first)")
@@ -176,7 +386,7 @@ def refusal(mods: dict[str, Any]) -> str | None:
         return f"entry_timing={mods.get('entry_timing')!r} has no declared meaning"
     for key in ("execution_style", "entry_style"):
         style = _s(mods.get(key))
-        if style not in MARKET_STYLES:
+        if style not in MARKET_STYLES and style not in LIMIT_STYLES:
             return (f"{key}={mods.get(key)!r}: the replay fills at the next open; a {style} "
                     "fill needs a queue/fill model this desk does not have yet")
     return None
@@ -221,6 +431,20 @@ def apply(sigs: list, bars: pd.DataFrame, mods: dict[str, Any]) -> list:
     if regime in VOL_REGIMES or regime in CALENDAR_REGIMES:
         mask = _regime_mask(bars, regime)
         out = [s for s in out if bool(mask.get(s.time, False))]
+    elif regime in RISK_REGIMES:
+        out = _state_rule(*RISK_REGIMES[regime], out)
+    cond = _s(mods.get("conditioner")) if "conditioner" in mods else ""
+    if cond in STATE_CONDITIONERS:
+        out = _state_rule(*STATE_CONDITIONERS[cond], out)
+    elif cond in CONTEXT_CONDITIONERS:
+        from mt5desk.family_generic import _CONTEXTS
+
+        cmask = pd.Series(_CONTEXTS[CONTEXT_CONDITIONERS[cond]](bars),
+                          index=bars.index).fillna(False).astype(bool)
+        out = [s for s in out if bool(cmask.get(s.time, False))]
+    pit = pit_conditioner(mods.get("conditioner")) if "conditioner" in mods else None
+    if pit is not None:
+        out = _pit_rule(pit[0], pit[1], out)
     spec = alt_conditioner(mods.get("conditioner")) if "conditioner" in mods else None
     if spec is not None:
         out = _alt_filter(out, bars, spec)
@@ -235,6 +459,17 @@ def apply(sigs: list, bars: pd.DataFrame, mods: dict[str, Any]) -> list:
         out = [s for s in out if int(s.side) > 0]
     elif side == "short":
         out = [s for s in out if int(s.side) < 0]
+    if any(_s(mods.get(k)) in LIMIT_STYLES for k in ("execution_style", "entry_style")):
+        closes = bars["close"]
+        rested = []
+        for s in out:
+            if s.trigger is not None:
+                continue
+            ref = closes.get(s.time)
+            if ref is None or not (float(ref) == float(ref)):
+                continue
+            rested.append(replace(s, trigger=float(ref), wait_bars=1, order_type="limit"))
+        out = rested
     if _s(mods.get("entry_timing")) == "delayed":
         # One bar later: the signal moves to the next bar, so the engine fills a bar after it
         # would have. A signal on the last bar has no next bar and is dropped, not kept early.
@@ -262,3 +497,58 @@ def _alt_filter(sigs: list[Any], bars: pd.DataFrame, spec: tuple[str, str, str, 
     # A NaN (no value known yet) compares False under every operator, so it keeps nothing.
     keep = ALT_OPS[spec[2]](known.astype(float), spec[3]).astype(bool)
     return [s for s in sigs if bool(keep.get(s.time, False))]
+
+
+#: THE RESIDUAL VARIANT'S INPUT, built from the desk's existing causal residual
+#: (`mt5desk.causal_residual`, betas fitted strictly before the bar they price). INERT ON THIS
+#: TREE: `refusal` still refuses `residual=` because applying it means handing the family
+#: different BARS, and the gauntlet's `build_cell` (sealed) loads the bars. The sealed patch
+#: `/mnt/project-files/patches/residual_modifier_build_cell.patch` calls this from `build_cell`
+#: and `family_call.signals`; until it is applied nothing here runs.
+RESIDUAL_FACTOR_SYMBOLS: dict[str, str] = {"usd": "USDX", "gold": "XAUUSD", "equity": "US500"}
+RESIDUAL_WINDOW = 240
+
+
+def residual_frame(bars: pd.DataFrame, factor_bars: pd.DataFrame,
+                   win: int = RESIDUAL_WINDOW) -> pd.DataFrame | None:
+    """`bars` with the factor's move removed: close follows exp(cumsum(causal residual log
+    return)) from the first close, and open/high/low keep their distance from close in RATIO,
+    so a family reads the same bar geometry on the residual path. None when the two series do
+    not overlap for longer than the beta window."""
+    import numpy as np
+
+    from mt5desk.causal_residual import causal_residual
+
+    y = np.log(bars["close"].astype(float)).diff()
+    fx = np.log(factor_bars["close"].astype(float)).diff().reindex(bars.index).ffill()
+    ok = y.notna() & fx.notna()
+    if int(ok.sum()) <= win + 1:
+        return None
+    eps = pd.Series(np.nan, index=bars.index)
+    eps[ok] = causal_residual(y[ok].to_numpy(), fx[ok].to_numpy().reshape(-1, 1), win)
+    eps = eps.fillna(0.0)
+    eps.iloc[: int(np.argmax(ok.to_numpy())) + win] = 0.0      # no beta yet: no residual move
+    close0 = float(bars["close"].iloc[0])
+    new_close = close0 * np.exp(eps.cumsum())
+    scale = new_close / bars["close"].astype(float)
+    out = bars.copy()
+    for col in ("open", "high", "low", "close"):
+        out[col] = bars[col].astype(float) * scale
+    return out
+
+
+def residual_signals_to_real(sigs: list[Any], bars: pd.DataFrame,
+                             rbars: pd.DataFrame) -> list[Any]:
+    """Signals decided on the residual path, priced back onto the REAL bars the engine trades:
+    every price level is divided by that bar's residual/real scale, so the stop and target keep
+    their distance from the entry reference in ratio. A signal off the bar index is dropped."""
+    scale = (rbars["close"].astype(float) / bars["close"].astype(float))
+    out = []
+    for s in sigs:
+        k = scale.get(s.time)
+        if k is None or not (float(k) > 0):
+            continue
+        k = float(k)
+        out.append(replace(s, stop=float(s.stop) / k, target=float(s.target) / k,
+                           trigger=None if s.trigger is None else float(s.trigger) / k))
+    return out

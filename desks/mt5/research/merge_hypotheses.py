@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -75,6 +76,256 @@ def _chart_local_order(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return str(row.get("sym") or row.get("symbol") or ""), chart
 
     return sorted(rows, key=key)
+
+
+# ------------------------------------------------------------------ deferred docket merges
+#: DEFER, NEVER DROP (2026-10-06). The docket's other writers (`breadth_sweep.apply`,
+#: `local_converter.feed_docket`) take this lane's lock and memory admission. Since 03dad3864 they
+#: RAISED when either was refused, and the rows of that pass were gone: the hourly caller died and
+#: the next pass only re-minted what its own generator happened to re-mint. Now a refusal is
+#: retried inside the pass (bounded, with backoff), and if the lane is still refused the rows are
+#: PERSISTED here, per writer, and the next pass merges them FIRST. The lock and the memory
+#: admission are untouched -- a merge still never runs without both.
+DEFERRED_DIR = BASE / "data" / "deferred"
+DEFER_ATTEMPTS = 3
+DEFER_BACKOFF_S = 20.0
+
+
+def deferred_path(writer: str) -> Path:
+    return DEFERRED_DIR / f"docket_merge_{writer}.jsonl"
+
+
+#: A claim older than this is an orphan of a pass that died mid-merge (the rename happened, the
+#: merge never finished), and the next claim takes it back. Far above any merge's wall time.
+CLAIM_STALE_S = 3600.0
+
+
+def _parse_lines(path: Path) -> list[tuple[dict[str, Any], str | None]]:
+    """(row, deferred_at) per readable line. Lines are `{"deferred_at", "row"}` envelopes; a
+    bare row (the first format) is still read, with no age."""
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return []
+    out: list[tuple[dict[str, Any], str | None]] = []
+    for line in lines:
+        try:
+            obj = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(obj, dict) and set(obj) == {"deferred_at", "row"} \
+                and isinstance(obj["row"], dict):
+            out.append((obj["row"], str(obj["deferred_at"])))
+        elif isinstance(obj, dict):
+            out.append((obj, None))
+    return out
+
+
+def _claims(writer: str) -> list[Path]:
+    return sorted(DEFERRED_DIR.glob(f"{deferred_path(writer).name}.claimed.*"))
+
+
+def read_deferred(writer: str) -> list[dict[str, Any]]:
+    """Rows waiting for this writer (unclaimed, plus orphaned claims), oldest first. Read-only."""
+    paths = [deferred_path(writer), *_claims(writer)]
+    return [row for p in paths for row, _at in _parse_lines(p)]
+
+
+def _append_deferred(writer: str, rows: list[dict[str, Any]],
+                     at: list[str | None] | None = None) -> None:
+    """APPEND, never replace: a concurrent claim renamed the old file away, so appending can
+    only ever add to what is waiting. Each line keeps the time its row was first deferred."""
+    if not rows:
+        return
+    path = deferred_path(writer)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    stamps = at or [None] * len(rows)
+    with path.open("a", encoding="utf-8") as stream:
+        for row, stamp in zip(rows, stamps, strict=True):
+            stream.write(json.dumps({"deferred_at": stamp or now, "row": row},
+                                    default=str, ensure_ascii=False) + "\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def _write_deferred(writer: str, rows: list[dict[str, Any]]) -> None:
+    """Replace this writer's waiting rows (tests and repair only; the merge path appends)."""
+    deferred_path(writer).unlink(missing_ok=True)
+    for c in _claims(writer):
+        c.unlink(missing_ok=True)
+    _append_deferred(writer, rows)
+
+
+def _claim(writer: str) -> tuple[list[tuple[dict[str, Any], str | None]], list[Path]]:
+    """CLAIM BY ATOMIC RENAME (audit of #222): the waiting file is renamed to a unique
+    `.claimed.<pid>.<nonce>` name before it is read, so two drainers can never both read -- and
+    both merge -- the same rows. A claim left by a pass that died is taken back once it is older
+    than CLAIM_STALE_S. Returns the claimed rows (with their deferral time) and the claim files,
+    which the caller deletes on success or hands to `_unclaim` on failure."""
+    import uuid
+
+    taken: list[Path] = []
+    src = deferred_path(writer)
+    dst = src.with_name(f"{src.name}.claimed.{os.getpid()}.{uuid.uuid4().hex[:12]}")
+    try:
+        os.replace(src, dst)
+        taken.append(dst)
+    except FileNotFoundError:
+        pass
+    now = time.time()
+    for orphan in _claims(writer):
+        if orphan in taken:
+            continue
+        try:
+            if now - orphan.stat().st_mtime < CLAIM_STALE_S:
+                continue                     # another drainer holds it right now
+            again = orphan.with_name(f"{src.name}.claimed.{os.getpid()}."
+                                     f"{uuid.uuid4().hex[:12]}")
+            os.replace(orphan, again)
+            taken.append(again)
+        except FileNotFoundError:
+            continue
+    rows = [item for p in taken for item in _parse_lines(p)]
+    return rows, taken
+
+
+def _unclaim(writer: str, rows: list[tuple[dict[str, Any], str | None]],
+             claims: list[Path]) -> None:
+    """A merge that failed returns its claimed rows to the waiting file (appended, with their
+    original deferral times), and only then drops the claim files: nothing is lost."""
+    _append_deferred(writer, [r for r, _ in rows], [a for _, a in rows])
+    for c in claims:
+        c.unlink(missing_ok=True)
+
+
+def _drop(claims: list[Path]) -> None:
+    for c in claims:
+        c.unlink(missing_ok=True)
+
+
+def deferral_status(now: datetime | None = None) -> dict[str, Any]:
+    """Per writer: rows waiting (depth), files holding them, and the oldest row's age.
+    Published by `producer_breadth` so a lane that keeps refusing is visible as a growing age."""
+    at = now or datetime.now(tz=UTC)
+    out: dict[str, Any] = {}
+    for writer in sorted(DRAINERS):
+        paths = [p for p in (deferred_path(writer), *_claims(writer)) if p.exists()]
+        items = [it for p in paths for it in _parse_lines(p)]
+        ages = []
+        for _row, stamp in items:
+            try:
+                t = datetime.fromisoformat(str(stamp))
+                ages.append((at - (t if t.tzinfo else t.replace(tzinfo=UTC))).total_seconds())
+            except (TypeError, ValueError):
+                continue
+        out[writer] = {"depth": len(items), "files": len(paths),
+                       "oldest_age_s": round(max(ages), 1) if ages else None,
+                       "unaged_rows": len(items) - len(ages)}
+    return out
+
+
+#: What the last `merge_or_defer` call did, per writer: {"merged": n, "deferred": n, "path": str}.
+LAST_MERGE: dict[str, dict[str, Any]] = {}
+
+#: EVERY WRITER'S LOCKED MERGE, by name, so whichever writer next holds the lane drains the
+#: others' deferrals too. `local_converter` runs only from `intel_ship_adopt.ps1`; without this
+#: its deferred candidates would wait for that script while `breadth_sweep` held the lane hourly.
+DRAINERS: dict[str, tuple[str, str]] = {
+    "breadth_sweep": ("research.breadth_sweep", "_drain_locked"),
+    "local_converter": ("research.local_converter", "_feed_docket_locked"),
+    "session_chart_equivalents": ("research.session_chart_equivalents", "_merge_locked"),
+}
+
+
+def _drain_others(writer: str) -> dict[str, Any]:
+    """Under the lane the caller holds: claim every OTHER writer's deferred rows and merge them
+    with that writer's own locked merge. A drain that raises returns its rows to the waiting file
+    (nothing is lost) and is named in the result."""
+    import importlib
+
+    out: dict[str, Any] = {}
+    for other, (module, fn_name) in sorted(DRAINERS.items()):
+        if other == writer:
+            continue
+        items, claims = _claim(other)
+        if not claims:
+            continue
+        rows = [r for r, _ in items]
+        if not rows:
+            _drop(claims)
+            continue
+        try:
+            fn = getattr(importlib.import_module(module), fn_name)
+            added, _total = fn(rows)
+        except Exception as exc:                       # back to the waiting file
+            _unclaim(other, items, claims)
+            out[other] = {"drained": 0, "kept": len(rows),
+                          "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
+            continue
+        _drop(claims)
+        out[other] = {"drained": len(rows), "added": int(added)}
+    return out
+
+
+def merge_or_defer(writer: str, rows: list[dict[str, Any]],
+                   locked_merge: Any, identity: Any, *,
+                   need_mb: int = 14000, attempts: int | None = None,
+                   backoff_s: float | None = None, sleep: Any = None) -> tuple[int, int]:
+    """Run `locked_merge(rows)` under the canonical docket lane; defer instead of raising.
+
+    Under the lane, this writer's waiting rows are CLAIMED (atomic rename) and put first, deduped
+    on `identity(row)`. Returns `locked_merge`'s (added, docket size) on success; returns (0, -1)
+    when the lane stayed refused, with this pass's rows APPENDED to the waiting file.
+    """
+    from research.job_lock import exclusive_job
+
+    tries = max(1, int(DEFER_ATTEMPTS if attempts is None else attempts))
+    wait = float(DEFER_BACKOFF_S if backoff_s is None else backoff_s)
+    nap = sleep if sleep is not None else time.sleep
+    for i in range(tries):
+        with exclusive_job("merge_hypotheses", need_mb=need_mb) as owned:
+            if owned:
+                items, claims = _claim(writer)
+                combined: list[dict[str, Any]] = []
+                seen: set[str] = set()
+                for row in [*(r for r, _ in items), *rows]:
+                    key = identity(row)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    combined.append(row)
+                try:
+                    result: tuple[int, int] = locked_merge(combined)
+                except BaseException:
+                    # The merge itself failed (an unreadable docket, an interrupted replace):
+                    # the docket is left as it was, so every row goes back to the waiting file.
+                    _unclaim(writer, items, claims)
+                    _append_deferred(writer, rows)
+                    raise
+                _drop(claims)
+                LAST_MERGE[writer] = {"merged": len(combined), "deferred": 0,
+                                      "from_deferral": len(items), "path": None,
+                                      "drained_for_others": _drain_others(writer),
+                                      "deferrals": deferral_status()}
+                return result
+        if i + 1 < tries:
+            nap(wait * (2 ** i))
+    # The same cell minted again next pass is ONE waiting row: append only what is not waiting.
+    held = {identity(r) for r in read_deferred(writer)}
+    fresh: list[dict[str, Any]] = []
+    for row in rows:
+        key = identity(row)
+        if key not in held:
+            held.add(key)
+            fresh.append(row)
+    _append_deferred(writer, fresh)
+    waiting = len(held)
+    LAST_MERGE[writer] = {"merged": 0, "deferred": len(fresh), "waiting": waiting,
+                          "path": str(deferred_path(writer)), "deferrals": deferral_status()}
+    print(f"{writer}: canonical docket lane or memory admission refused {tries}x; "
+          f"{len(rows)} row(s) deferred to {deferred_path(writer)} ({waiting} waiting)")
+    return 0, -1
 
 
 #: THE STUDY BANK. Rows of a family that is BANNED FROM LIVE CAPITAL keep existing here -- they
