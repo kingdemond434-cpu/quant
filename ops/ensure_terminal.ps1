@@ -14,9 +14,15 @@ if ($session -eq 0) {
     exit 2
 }
 
-$terminals = @(Get-CimInstance Win32_Process -Filter "Name='terminal64.exe'" |
-    Where-Object { $_.ExecutablePath -eq $exe } |
-    Sort-Object CreationDate)
+# Get-Process, never the CIM cmdlets: CIM has hung on the trading box (CLAUDE.md), and a
+# watchdog that hangs is no watchdog. A terminal64 whose Path this account cannot read (another
+# user's session) is COUNTED as ours: dropping it would let the launch below start a second
+# terminal on the same data directory, which is the failure this script exists to prevent.
+function Get-FusionTerminals {
+    @(Get-Process -Name 'terminal64' -ErrorAction SilentlyContinue |
+        Where-Object { -not $_.Path -or $_.Path -eq $exe })
+}
+$terminals = Get-FusionTerminals
 $local = @($terminals | Where-Object { $_.SessionId -eq $session })
 
 # A terminal in another session may own live state. Refuse to kill it or launch
@@ -42,8 +48,7 @@ if ($local.Count -eq 0) {
     }
     Start-Process -FilePath $exe -WindowStyle Hidden
     Start-Sleep -Seconds 8
-    $local = @(Get-CimInstance Win32_Process -Filter "Name='terminal64.exe'" |
-        Where-Object { $_.ExecutablePath -eq $exe -and $_.SessionId -eq $session })
+    $local = @(Get-FusionTerminals | Where-Object { $_.SessionId -eq $session })
     if ($local.Count -ne 1) {
         Add-Content -LiteralPath $log -Value "$stamp launch did not establish exactly one terminal in interactive session $session"
         exit 2
@@ -51,9 +56,20 @@ if ($local.Count -eq 0) {
 }
 
 # The existing probe uses MT5 initialize/account_info only; no order permission.
-$python = 'C:\Program Files\Python314\python.exe'
+# THE INTERPRETER IS RESOLVED, NEVER ASSUMED (as Seal-IfClean.ps1): a hard-coded path that is
+# absent on this box reads "probe unavailable" forever and the watchdog can never pass.
+$python = $null
+foreach ($cand in @(
+    (Join-Path $root '.venv\Scripts\python.exe'),
+    "$env:LOCALAPPDATA\Programs\Python\Python314\python.exe",
+    'C:\Program Files\Python314\python.exe'
+)) { if (Test-Path -LiteralPath $cand) { $python = $cand; break } }
+if (-not $python) {
+    $cmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($cmd) { $python = $cmd.Source }
+}
 $probe = Join-Path $root 'desks\mt5\research\probe_terminal.py'
-if (-not (Test-Path -LiteralPath $python) -or -not (Test-Path -LiteralPath $probe)) {
+if (-not $python -or -not (Test-Path -LiteralPath $probe)) {
     Add-Content -LiteralPath $log -Value "$stamp read-only Fusion IPC probe unavailable"
     exit 2
 }
@@ -71,5 +87,5 @@ if ($probeCode -ne 0) {
     exit 2
 }
 
-Add-Content -LiteralPath $log -Value "$stamp Fusion IPC/account probe passed in session $session (pid $($local[0].ProcessId))"
+Add-Content -LiteralPath $log -Value "$stamp Fusion IPC/account probe passed in session $session (pid $($local[0].Id))"
 exit 0
