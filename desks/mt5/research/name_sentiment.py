@@ -2,8 +2,9 @@
 """PER-SHARE NEWS SENTIMENT -- a daily, PIT, cross-sectionally ranked score per share CFD (QG25-25).
 
 WHAT EXISTED. `nlp_event_factors` scores text per COUNTRY (macro and policy tone); `libs/data/
-free_stack.py` carries a bull/bear word count for forum posts. Nothing scored NEWS per SHARE, nothing
-handled negation, and nothing mapped a mention to a share CFD (card diff_first: EXISTS_INCOMPLETE).
+free_stack.py` carries a bull/bear word count for forum posts. Nothing scored NEWS per SHARE,
+nothing handled negation, and nothing mapped a mention to a share CFD (card diff_first:
+EXISTS_INCOMPLETE).
 
 THE TEXT. Only news the desk already holds: `document` rows in the sensor ledger (news_event_stream
 writes them) and `data/news_captures.jsonl`. NEVER Reddit, StockTwits, X/Twitter or Discord: a row
@@ -118,7 +119,8 @@ WORDS: dict[str, float] = {
     "delay": -1.0, "delays": -1.0, "delayed": -1.0, "halt": -1.5, "halts": -1.5,
     "fraud": -2.5, "bankruptcy": -3.0, "default": -2.0, "slash": -1.5, "slashes": -1.5,
     "cuts": -0.5, "cut": -0.5, "fined": -1.5, "resigns": -1.0, "downbeat": -1.5,
-    "pessimistic": -1.0, "disappointing": -1.5, "disappoint": -1.5, "disappoints": -1.5, "shortfall": -1.5,
+    "pessimistic": -1.0, "disappointing": -1.5, "disappoint": -1.5, "disappoints": -1.5,
+    "shortfall": -1.5,
 }
 #: N-grams outrank their words (longest match wins, and its tokens are consumed).
 PHRASES: dict[tuple[str, ...], float] = {
@@ -294,7 +296,7 @@ def build_aliases(symbols: Iterable[str]) -> AliasTable:
 
 
 def tickers_in(toks: Sequence[str], table: AliasTable) -> set[str]:
-    """Symbols whose ticker appears as $TICKER, or as a bare upper-case ticker not in TICKER_STOP."""
+    """Symbols whose ticker appears as $TICKER, or bare upper-case and not in TICKER_STOP."""
     out = set()
     for t in toks:
         bare = t.lstrip("$")

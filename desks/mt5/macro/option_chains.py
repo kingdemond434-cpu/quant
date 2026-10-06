@@ -73,6 +73,7 @@ from __future__ import annotations
 import argparse
 import bisect
 import gzip
+import itertools
 import json
 import math
 import os
@@ -455,7 +456,7 @@ def _tenor_iv(points: Sequence[tuple[float, float]], days: float) -> float | Non
     """ATM IV at `days`, linear in total variance between the bracketing expiries."""
     t = days / 365.0
     pts = sorted(points)
-    for (t1, v1), (t2, v2) in zip(pts, pts[1:], strict=False):
+    for (t1, v1), (t2, v2) in itertools.pairwise(pts):
         if t1 <= t <= t2 and t2 > t1:
             w = v1 * v1 * t1 + (v2 * v2 * t2 - v1 * v1 * t1) * (t - t1) / (t2 - t1)
             return math.sqrt(w / t) if w > 0 else None

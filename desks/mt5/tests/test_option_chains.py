@@ -20,9 +20,10 @@ for _p in (str(_DESK), str(_DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from macro import option_chains as oc  # noqa: E402
+
 from libs.research import sensor_contract as sc  # noqa: E402
 from libs.research import sensor_engines as se  # noqa: E402
-from macro import option_chains as oc  # noqa: E402
 
 FIXTURE = _DESK / "tests" / "fixtures" / "cboe_delayed_options_SPY.json"
 RECEIVED = datetime(2026, 10, 5, 20, 5, tzinfo=UTC)
@@ -155,11 +156,11 @@ def test_run_budget_lake_ledger_and_unmeasured_contracts(tmp_path: Path) -> None
     reg = {"US500": {"symbol": "US500"}, "XAUUSD": {"symbol": "XAUUSD"}}
     closes = [(d.isoformat(), 100.0 + i) for i, d in enumerate(_business_days(30))]
     ledger = sc.SensorLedger(tmp_path / "sensors")
-    kw: dict[str, Any] = dict(fetcher=fetcher, etfs=["SPY", "GLD", "TLT"],
-                              data_dir=tmp_path / "oc", registry=reg,
-                              closes_fn=lambda s, n: closes, vol_index_fn=lambda t: {},
-                              lake_root=tmp_path / "lake", contracts_root=tmp_path / "c",
-                              ledger=ledger, report=tmp_path / "R.json", emit_cells=False)
+    kw: dict[str, Any] = {"fetcher": fetcher, "etfs": ["SPY", "GLD", "TLT"],
+                          "data_dir": tmp_path / "oc", "registry": reg,
+                          "closes_fn": lambda s, n: closes, "vol_index_fn": lambda t: {},
+                          "lake_root": tmp_path / "lake", "contracts_root": tmp_path / "c",
+                          "ledger": ledger, "report": tmp_path / "R.json", "emit_cells": False}
     doc = oc.run(now=RECEIVED, **kw)
     assert calls == ["SPY", "GLD", "TLT"]
     spy = doc["symbols"]["SPY"]
