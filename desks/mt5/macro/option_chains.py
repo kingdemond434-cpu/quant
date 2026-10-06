@@ -153,10 +153,6 @@ SOURCE: dict[str, Any] = {
 #: chains stay TERMS-HELD until desks/mt5/data/terms_clearances.json records CLEARED for it: this
 #: organ measures and stores state regardless, and its cells are HELD. Never renamed to dodge it.
 DATA_SOURCE = "cboe_delayed:options"
-TERMS_CLEARANCES = DESK / "data" / "terms_clearances.json"
-#: Mirrors the keys terms_hold holds (coordinator, 2026-10-06), used only when that module is
-#: absent from this tree -- so the fallback fails closed exactly where the shared gate would.
-HELD_KEYS: tuple[str, ...] = ("cboe", "yahoo", "ff_calendar", "tradingeconomics")
 
 CARD_ADH001_FALSIFIER = ("no difference in continuation rate between GEX<0 and GEX>0 days "
                          "(two-sided, n>=250 days)")
@@ -663,40 +659,20 @@ def feature_row(chain: Mapping[str, Any], feats: Mapping[str, Any], mt5: str | N
 
 # ============================================================================== terms gate
 def terms_status(data_source: str = DATA_SOURCE, path: Path | None = None) -> dict[str, Any]:
-    """CLEARED or HELD for `data_source`, as this tree can read it. The shared gate inside
-    `emit_conditioner_cells` is authoritative; this is what the report shows."""
-    held_key = any(k in data_source.lower() for k in HELD_KEYS)
-    rec: Any = None
-    try:
-        doc = json.loads((path or TERMS_CLEARANCES).read_text("utf-8"))
-        rows = doc.get("clearances", doc) if isinstance(doc, dict) else {}
-        rec = rows.get(data_source) if isinstance(rows, dict) else None
-    except (OSError, ValueError, AttributeError):
-        rec = None
-    cleared = (rec == "CLEARED" or (isinstance(rec, dict)
-                                    and str(rec.get("status", "")).upper() == "CLEARED"))
-    status = "CLEARED" if (cleared or not held_key) else "HELD"
-    return {"data_source": data_source, "status": status,
-            "why": ("" if status == "CLEARED" else
-                    "per-strike chains are terms-gated: cells are HELD until "
-                    "desks/mt5/data/terms_clearances.json records CLEARED for this key; state "
-                    "is still measured and stored"),
-            "clearance_record": rec}
+    """CLEARED or HELD for `data_source`, from the one terms gate (`libs.data.terms_hold`) that
+    `emit_conditioner_cells` itself applies, so the report and the cell door cannot drift."""
+    from libs.data.terms_hold import gauntlet_terms
+    ok, why = gauntlet_terms(data_source, path)
+    return {"data_source": data_source, "status": "CLEARED" if ok else "HELD",
+            "why": why if not ok else (why or "no terms hold on this source"),
+            "clearance_file": str(path) if path else "desks/mt5/data/terms_clearances.json"}
 
 
 def emit_gated(series: str, signals: Sequence[str], symbols: Sequence[str], *, data_source: str,
                **kw: Any) -> dict[str, Any]:
-    """`emit_conditioner_cells` with `data_source`. In a tree whose cell door predates the terms
-    gate, a held source is NOT emitted (fail closed) rather than emitted ungated."""
-    import inspect
-    if "data_source" in inspect.signature(se.emit_conditioner_cells).parameters:
-        return dict(se.emit_conditioner_cells(series, signals, symbols, data_source=data_source,
-                                              **kw))
-    if any(k in data_source.lower() for k in HELD_KEYS):
-        return {"series_id": series, "data_source": data_source, "emitted": 0, "created": 0,
-                "status": "HELD", "why": "terms-held source and this cell door has no gate: "
-                                         "failing closed"}
-    return dict(se.emit_conditioner_cells(series, signals, symbols, **kw))
+    """`emit_conditioner_cells` with its `data_source`: the shared gate holds or admits."""
+    return dict(se.emit_conditioner_cells(series, signals, symbols, data_source=data_source,
+                                          **kw))
 
 
 # ============================================================================== contracts
