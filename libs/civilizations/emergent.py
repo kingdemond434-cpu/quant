@@ -69,9 +69,22 @@ def _known(term: str) -> bool:
     return any(rx.search(term) for _k, _n, _w, rx in O.SIGNALS)
 
 
+#: a sentence counts only when it is about markets: a concept is unknown to a TRADING ontology,
+#: not merely unknown (otherwise every library name in a README would be born a class)
+MARKET = re.compile(r"\b(market|price|pric(e|ing)|trad(e|er|ing)|futures?|stocks?|equit(y|ies)|"
+                    r"forex|fx|currenc(y|ies)|commodit(y|ies)|volatility|returns?|alpha|factor|"
+                    r"hedg(e|ing)|yields?|spreads?|index|indices|bonds?|rates?|portfolio|"
+                    r"liquidity|flows?|carry|momentum|arbitrage|options?|gold|oil|metals?)\b")
+_SENT = re.compile(r"[.!?;\n]+")
+
+
 def terms(text: str, *, topics: Iterable[str] = (), cap_chars: int = 20_000) -> set[str]:
-    words = [w for w in _WORD.findall(str(text or "")[:cap_chars].lower()) if w not in STOP]
-    out = {f"{a} {b}" for a, b in pairwise(words) if a != b}
+    out: set[str] = set()
+    for sent in _SENT.split(str(text or "")[:cap_chars].lower()):
+        if not MARKET.search(sent):
+            continue
+        words = [w for w in _WORD.findall(sent) if w not in STOP]
+        out.update(f"{a} {b}" for a, b in pairwise(words) if a != b)
     out.update(str(t).lower().replace("-", " ") for t in topics if t)
     return {t for t in out if not _known(t)}
 

@@ -15,6 +15,8 @@ def test_terms_skip_known_vocabulary_and_stopwords() -> None:
     assert "monsoon rainfall" in t and "rainfall index" in t and "weather alpha" in t
     assert not any(w.startswith("the ") for w in t)
     assert all(not EM._known(x) for x in t)
+    # a sentence about nothing market-related contributes nothing
+    assert EM.terms("pandas dataframe helpers. numpy array tricks") == set()
 
 
 def test_recurring_concept_is_born_and_routes_the_residue(tmp_path: Path) -> None:
@@ -25,7 +27,7 @@ def test_recurring_concept_is_born_and_routes_the_residue(tmp_path: Path) -> Non
     born = lex.promote()
     assert "monsoon rainfall" in born
     assert not any("binance" in b for b in born)
-    lex.observe("only one lane says glacier melt", source_id="lane0", uri="u")
+    lex.observe("only one lane says glacier melt moves oil", source_id="lane0", uri="u")
     assert "glacier melt" not in lex.promote()
     assert lex.match("A new monsoon rainfall study") == ["monsoon rainfall"]
     lex.save()
