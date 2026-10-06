@@ -156,11 +156,11 @@ For each stage inspect:
 trend against the previous hour), `flow` (first-terminal judged/day against created/day, target
 ratio 1.25), `latency_h` (queue → first verdict, verdict → certificate, certificate → clock, and
 whether the p50 path is same-day), and `warmer` (whether `MT5-CacheWarm` is resident; a stale
-warmer re-raises the judge's fresh-build budget and is a throughput defect). It is the evidence
-for duty rows **D34** (backpressure: judged ≥ created) and **D38** (judge efficiency: no repeated
-pre-warm, verdict → certificate → clock the same day) of the CRO duties table; record its
-`at` stamp with the reading. An absent or stale artifact is UNMEASURED for both rows, never a
-clean reading.
+warmer re-raises the judge's fresh-build budget and is a throughput defect). It is a source for
+three duty rows of THE DUTIES table below: **D3** (`flow`: judged/day against created/day),
+**D4** (`age`: the oldest unjudged cell getting younger) and **D5** (`latency_h`: verdict →
+certificate → clock the same day). Record its `at` stamp with the reading. An absent or stale
+artifact is UNMEASURED for those readings, never a clean reading.
 
 Identify the current binding constraint.
 

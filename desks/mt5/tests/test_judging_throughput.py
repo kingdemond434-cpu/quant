@@ -336,4 +336,9 @@ def test_the_cro_cycle_reads_the_queue_age_artifact_in_step_4() -> None:
     step4 = doc[doc.index("## STEP 4 — RESEARCH FUNNEL HEALTH"):doc.index("## STEP 4B")]
     rel = jt.QUEUE_AGE_OUT.relative_to(Path(jt.__file__).resolve().parents[3]).as_posix()
     assert rel == "desks/mt5/reports/JUDGING_QUEUE_AGE.json" and rel in step4
-    assert "D34" in step4 and "D38" in step4
+    # every duty row it cites is a row of THE DUTIES table in this same file (audit M2)
+    import re
+    cited = set(re.findall(r"\*\*(D\d+)\*\*", step4[step4.index("JUDGING_QUEUE_AGE.json"):]))
+    assert cited == {"D3", "D4", "D5"}
+    rows = set(re.findall(r"^\| (D\d+) \|", doc, re.M))
+    assert cited <= rows
