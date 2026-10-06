@@ -59,8 +59,10 @@ def _isolate_pricing(tmp_path: Path, monkeypatch: Any, steer_doc: dict[str, Any]
     for name in ("META", "BANDIT", "POLICY"):
         monkeypatch.setattr(cp, name, tmp_path / f"{name}.json")
     ledger = tmp_path / "compute_ledger.jsonl"
-    ledger.write_text(json.dumps({"at": datetime.now(UTC).isoformat(timespec="seconds"),
-                                  "run": "leg0", "wall_s": 30.0}) + "\n", encoding="utf-8")
+    # every leg ran recently, so none is pulled forward as a scout and order follows price
+    ledger.write_text("".join(json.dumps({"at": datetime.now(UTC).isoformat(timespec="seconds"),
+                                          "run": leg, "wall_s": 30.0}) + "\n" for leg in BASES),
+                      encoding="utf-8")
     monkeypatch.setattr(cp, "LEDGER", ledger)
     monkeypatch.setattr(cp, "OUT", tmp_path / "CYCLE_PRICING.json")
     steer = tmp_path / "SCHEDULER_STEER.json"
