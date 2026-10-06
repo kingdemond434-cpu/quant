@@ -66,6 +66,39 @@ def charge_side_trials(source: str, tests_run: int, by_family: dict[str, int], w
     return n
 
 
+def charge_union(source: str, identities: list[str], charged: Path, family: str, why: str,
+                 kind: str) -> tuple[int, int]:
+    """Charge each look identity ONCE over the lifetime union. Returns (newly charged, union).
+
+    `charged` persists the union ({"pairs": {identity: first_charged_utc}}); only identities not
+    already in it are charged, through `charge_side_trials`. The ledger row is written BEFORE the
+    union is saved: if the save fails the next pass charges the same looks again, which
+    over-deflates and never under-deflates."""
+    try:
+        doc = json.loads(charged.read_text("utf-8"))
+    except (OSError, ValueError):
+        doc = {}
+    union = doc.get("pairs") if isinstance(doc, dict) and isinstance(doc.get("pairs"), dict) \
+        else {}
+    new = sorted({i for i in identities if i not in union})
+    if not new:
+        return 0, len(union)
+    wrote = charge_side_trials(source, len(new), {family: len(new)}, why, kind=kind,
+                               union_after=len(union) + len(new))
+    if wrote != len(new):
+        return 0, len(union)
+    union.update(dict.fromkeys(new, datetime.now(tz=UTC).isoformat(timespec="seconds")))
+    try:
+        charged.parent.mkdir(parents=True, exist_ok=True)
+        tmp = charged.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"rule": "each look identity charged once", "kind": kind,
+                                   "pairs": union}, sort_keys=True), "utf-8")
+        tmp.replace(charged)
+    except OSError:
+        pass
+    return len(new), len(union)
+
+
 def bars(sym: str) -> pd.DataFrame | None:
     path = UNI / f"{sym}_H1.parquet"
     if not path.exists():

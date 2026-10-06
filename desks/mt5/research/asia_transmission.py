@@ -55,6 +55,13 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 OUT = BASE / "reports" / "ASIA_TRANSMISSION.json"
+#: THE CHAIN MEASUREMENTS ARE LOOKS TOO (2026-10-06). Each declared chain is lag-searched twice
+#: by `lead_lag.edge` -- pooled and Asia-hours only -- before anything is proposed, and an edge
+#: that came back NO_EDGE was still tried. Each (chain, ordered pair, window, lag grid, method)
+#: identity is charged one `lead_lag` trial the first pass it is measured, once over the
+#: lifetime, through the same union door `cross_asset_graph` uses for its pairs.
+CHARGED = BASE / "reports" / "asia_transmission_charged.json"
+EDGE_METHOD = "ols_t_nonoverlap"
 
 #: Asian trading hours in UTC. Tokyo opens 00:00 UTC and Shanghai's afternoon session ends around
 #: 07:00; London's pre-open begins to dominate by 08:00. The window is deliberately generous at
@@ -201,6 +208,7 @@ def measure(budget_s: float = 600.0) -> dict[str, Any]:
     have = {p.stem.removesuffix("_H1") for p in pc.UNI.glob("*_H1.parquet")}
     bars: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
+    looked: list[str] = []
 
     for ch in CHAINS:
         d, t = str(ch["driver"]), str(ch["target"])
@@ -232,6 +240,9 @@ def measure(budget_s: float = 600.0) -> dict[str, Any]:
                              plausible_role=ch["name"])
         rec["pooled"] = pooled
         rec["asia_hours"] = asia
+        for window, got in (("pooled", pooled), ("asia_hours", asia)):
+            if got.get("verdict") != "UNMEASURED":        # too few aligned bars: no lag search
+                looked.append(chain_identity(ch["name"], d, t, window, lead_lag.MAX_LAG))
 
         sign_ok = str(asia.get("direction") or "") == str(ch["expected"])
         if asia.get("verdict") == "EDGE" and sign_ok:
@@ -259,7 +270,18 @@ def measure(budget_s: float = 600.0) -> dict[str, Any]:
         if time.monotonic() - started > budget_s:
             break
 
-    return {"rows": rows, "bars": bars, "meta": meta}
+    new, union = pc.charge_union(
+        "asia_transmission", looked, CHARGED, "lead_lag",
+        "declared chain edges lag-searched for the first time (pooled and Asia-hours); each "
+        "(chain, ordered pair, window, lag grid, method) is charged once over the lifetime union",
+        kind="chain_identity_union")
+    return {"rows": rows, "bars": bars, "meta": meta,
+            "chain_looks": {"looked": len(looked), "newly_charged": new, "lifetime_union": union}}
+
+
+def chain_identity(name: str, driver: str, target: str, window: str, max_lag: int) -> str:
+    """(chain, ordered pair, window, lag grid, method): what one charged chain look is."""
+    return f"{name}|{driver}->{target}|{window}|lags=1..{max_lag}|{EDGE_METHOD}"
 
 
 def propose(measured: dict[str, Any], budget_s: float = 600.0) -> list[dict[str, Any]]:
@@ -357,6 +379,7 @@ def main(argv: list[str] | None = None) -> int:
         "n_proposals": len(proposals),
         "donated_to": donated,
         "null_trials_charged": null_charged,
+        "chain_looks": measured.get("chain_looks"),
         "chains": rows,
         "proposals": proposals,
     }

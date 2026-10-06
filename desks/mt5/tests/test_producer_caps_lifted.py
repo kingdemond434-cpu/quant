@@ -310,3 +310,47 @@ def test_event_surprise_drops_executable_duplicates(monkeypatch: pytest.MonkeyPa
     assert len(out) == 2
     assert [r["why"].startswith("an executable duplicate") for r in refused] == [True]
     assert out[1]["params"]["entry_timing"] == "delayed" and out[1]["params"]["ttl_bars"] == 24
+
+
+def test_asia_chain_measurements_are_charged_once_per_chain_identity(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Each chain's pooled and Asia-hours lag searches are looks: charged the first pass, never
+    again; a new chain adds its two; an UNMEASURED window ran no search and is not charged."""
+    import asia_transmission as atx
+
+    from libs.research import lead_lag
+    from research import proposer_common as pc
+    null = tmp_path / "null.jsonl"
+    monkeypatch.setattr(pc, "NULL_PASS_TRIALS", null)
+    monkeypatch.setattr(atx, "CHARGED", tmp_path / "asia_charged.json")
+    monkeypatch.setattr(pc, "universe_meta", lambda: {})
+    monkeypatch.setattr(pc, "UNI", tmp_path)
+    for s in ("D1", "T1", "D2", "T2"):
+        (tmp_path / f"{s}_H1.parquet").write_bytes(b"")
+    monkeypatch.setattr(pc, "bars", lambda s: _bars(50, 1))
+    monkeypatch.setattr(lead_lag, "edge",
+                        lambda d, t, plausible_role=None: {"verdict": "NO_EDGE", "t": 0.1})
+
+    def chain(name: str, d: str, t: str) -> dict:
+        return {"name": name, "hops": [], "driver": d, "target": t, "expected": "same",
+                "rationale": "r", "falsifier": "f"}
+    one = (chain("c1", "D1", "T1"),)
+    monkeypatch.setattr(atx, "CHAINS", one)
+
+    def charges() -> list[int]:
+        return [json.loads(x)["tests_run"] for x in null.read_text("utf-8").splitlines()
+                if json.loads(x).get("kind") == "chain_identity_union"]
+    assert atx.measure(budget_s=1e6)["chain_looks"]["newly_charged"] == 2
+    assert atx.measure(budget_s=1e6)["chain_looks"] == {"looked": 2, "newly_charged": 0,
+                                                        "lifetime_union": 2}
+    assert charges() == [2]
+    monkeypatch.setattr(atx, "CHAINS", (*one, chain("c2", "D2", "T2")))
+    assert atx.measure(budget_s=1e6)["chain_looks"]["lifetime_union"] == 4
+    assert charges() == [2, 2]
+    union = json.loads((tmp_path / "asia_charged.json").read_text("utf-8"))["pairs"]
+    assert atx.chain_identity("c1", "D1", "T1", "asia_hours", lead_lag.MAX_LAG) in union
+    monkeypatch.setattr(atx, "CHAINS", (chain("c3", "D1", "T2"),))
+    monkeypatch.setattr(lead_lag, "edge",
+                        lambda d, t, plausible_role=None: {"verdict": "UNMEASURED", "n": 3})
+    assert atx.measure(budget_s=1e6)["chain_looks"]["newly_charged"] == 0
+    assert charges() == [2, 2]

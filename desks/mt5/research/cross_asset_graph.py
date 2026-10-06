@@ -107,29 +107,11 @@ def pair_identity(driver: str, target: str, max_lag: int | None = None) -> str:
 
 
 def charge_pairs(identities: list[str]) -> tuple[int, int]:
-    """Charge the identities never charged before. Returns (newly charged, lifetime union).
-
-    The ledger row is written BEFORE the union is saved: if the save fails the next pass charges
-    the same pairs again, which over-deflates and never under-deflates."""
-    doc = _read_json(CHARGED)
-    union = doc.get("pairs") if isinstance(doc.get("pairs"), dict) else {}
-    new = sorted({i for i in identities if i not in union})
-    if new:
-        wrote = pc.charge_side_trials(
-            SOURCE, len(new), {FAMILY: len(new)},
-            "lead-lag pair identities lag-searched for the first time; each (ordered pair, lag "
-            "grid, method) is charged once over the lifetime union",
-            kind="pair_identity_union", union_after=len(union) + len(new))
-        if wrote != len(new):
-            return 0, len(union)
-        now = datetime.now(tz=UTC).isoformat(timespec="seconds")
-        union.update(dict.fromkeys(new, now))
-        CHARGED.parent.mkdir(parents=True, exist_ok=True)
-        tmp = CHARGED.with_suffix(".tmp")
-        tmp.write_text(json.dumps({"rule": "each pair identity charged once", "method":
-                                   EDGE_METHOD, "pairs": union}, sort_keys=True), "utf-8")
-        tmp.replace(CHARGED)
-    return len(new), len(union)
+    """Charge the identities never charged before. Returns (newly charged, lifetime union)."""
+    return pc.charge_union(
+        SOURCE, identities, CHARGED, FAMILY,
+        "lead-lag pair identities lag-searched for the first time; each (ordered pair, lag "
+        "grid, method) is charged once over the lifetime union", kind="pair_identity_union")
 
 
 def _pairs(symbols: list[str], meta: dict, have: set[str]) -> list[tuple[str, str, str | None]]:
