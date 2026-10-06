@@ -21,6 +21,7 @@ from __future__ import annotations
 import importlib.util
 import subprocess
 import sys
+from functools import partial
 from pathlib import Path
 from types import ModuleType
 
@@ -38,6 +39,8 @@ def _load() -> ModuleType:
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
+    # The fixture index is isolated from the live Windows desk's writer mutex.
+    mod.git_writer_lock = partial(mod.git_writer_lock, mechanism="file")
     return mod
 
 
@@ -67,6 +70,11 @@ def repo(tmp_path: Path) -> Path:
 @pytest.fixture()
 def mod(repo: Path, monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     m = _load()
+    # This fixture owns a separate repository. Exercise the real repository-scoped
+    # file lock so a live VPS writer cannot hold this throwaway test's mutex.
+    from libs.ops.git_writer_lock import git_writer_lock
+    monkeypatch.setattr(m, "git_writer_lock", lambda root, **kw:
+                        git_writer_lock(root, mechanism="file", **kw))
     monkeypatch.setattr(m, "ROOT", repo)
     monkeypatch.setattr(m, "OUT", repo / "data" / "doc_replay_fence.json")
     monkeypatch.setattr(m, "LOG", repo / "data" / "doc_replay_fence.log")

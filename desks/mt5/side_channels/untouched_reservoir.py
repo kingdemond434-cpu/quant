@@ -239,10 +239,31 @@ class UntouchedReservoir:
         return latest
     
     def _count_observations(self, start: datetime, end: datetime) -> int:
-        """Count observations in date range (simplified)."""
-        # In production, this would query actual data
-        days = (end - start).days
-        return max(0, days * 20)  # ~20 trading hours per day
+        """H1 bars actually on disk in [start, end), read from the reference series.
+
+        Until 2026-09-30 this returned `days * 20` -- an invented "~20 trading hours per day"
+        that the reservoir's minimum-size check (`min_reservoir_months * 20 * 30`) then compared
+        against itself, so the check could never fail. The count is now the bars that exist:
+        XAUUSD H1 (the desk's densest traded series), else the first H1 file on disk; 0 when no
+        series exists, which the size check reads as too small rather than as enough."""
+        universe_dir = self.base_path / "desks" / "mt5" / "data" / "universe"
+        ref = universe_dir / "XAUUSD_H1.parquet"
+        if not ref.exists():
+            ref = next(iter(sorted(universe_dir.glob("*_H1.parquet"))), ref)
+        try:
+            idx = pd.read_parquet(ref).index
+        except Exception:
+            return 0
+        try:
+            lo, hi = pd.Timestamp(start), pd.Timestamp(end)
+            if getattr(idx, "tz", None) is not None:
+                lo = lo.tz_localize("UTC") if lo.tzinfo is None else lo.tz_convert(idx.tz)
+                hi = hi.tz_localize("UTC") if hi.tzinfo is None else hi.tz_convert(idx.tz)
+            else:
+                lo, hi = lo.tz_localize(None), hi.tz_localize(None)
+            return int(((idx >= lo) & (idx < hi)).sum())
+        except (TypeError, ValueError):
+            return 0
     
     def get_training_data(self, symbol: str, frequency: str = "H1") -> pd.DataFrame:
         """Get training data (excludes reservoir)."""

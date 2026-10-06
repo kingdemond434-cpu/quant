@@ -58,11 +58,11 @@ MIN_BRIEF_BYTES = 1500
 
 
 def _sh(script: str, *args: str, dry: bool = True) -> subprocess.CompletedProcess:
-    env = dict(os.environ, _BRAIN_ROOT=str(ROOT))
+    env = dict(os.environ, _BRAIN_ROOT=ROOT.as_posix(), PYTHONUTF8="1")
     if dry:
         env["BRAIN_DRY_RUN"] = "1"
     return subprocess.run(["bash", script, *args], cwd=ROOT, env=env,
-                          capture_output=True, text=True, timeout=180, check=False)
+                          capture_output=True, text=True, encoding="utf-8", timeout=180, check=False)
 
 
 def check(label: str, runner: str, brief: str) -> dict:
@@ -71,7 +71,7 @@ def check(label: str, runner: str, brief: str) -> dict:
 
     if not rp.exists():
         fails.append(f"runner {runner} is missing")
-    elif subprocess.run(["bash", "-n", str(rp)], capture_output=True,
+    elif subprocess.run(["bash", "-n", rp.as_posix()], capture_output=True,
                         text=True, check=False).returncode != 0:
         fails.append(f"runner {runner} does not parse")
 

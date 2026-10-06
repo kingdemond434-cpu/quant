@@ -117,6 +117,121 @@ def _join_ticket(deal: dict, by_ticket: dict) -> Any:
     return None
 
 
+def _num(x: Any) -> float | None:
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return None
+    return v if v == v and abs(v) != float("inf") else None
+
+
+def position_direction(deal: dict) -> int:
+    """+1 / -1 for the POSITION a live-ledger row closed. 0 when nothing on the row says.
+
+    THE LEDGER'S `side` IS THE CLOSING DEAL'S TYPE, NOT THE POSITION'S (measured 2026-09-30 on
+    the 151 committed live deals: 112 closing BUYS whose stop sits above the entry -- shorts -- and
+    39 closing SELLS whose stop sits below it -- longs; 151 of 151 opposite). Every reader that
+    took `side` as the trade's direction inverted it: the symbol/minute fallback could never pair
+    an intent with its own fill, and the slippage sign below flipped on every short.
+
+    Order of trust: `entry_side` (the opening deal's own type, on rows written since the gateway
+    started recording it), then the stop/target geometry around the entry, then the closing side
+    inverted.
+    """
+    es = deal.get("entry_side")
+    if es is not None:
+        d = _direction(es)
+        if d:
+            return d
+    entry, sl, tp = _num(deal.get("entry_price")), _num(deal.get("sl")), _num(deal.get("tp"))
+    if entry and entry > 0:
+        if sl and sl > 0 and sl != entry:
+            return 1 if sl < entry else -1
+        if tp and tp > 0 and tp != entry:
+            return 1 if tp > entry else -1
+    closing = _direction(deal.get("side"))
+    return -closing
+
+
+def _echo(sent: Any, held: Any) -> bool:
+    """True when `held` (the position's stop or target, as the venue stores it) is `sent` (the
+    number the gateway asked for) rounded to the venue's digits.
+
+    The venue rounds: the gateway sent 4339.891681552983 and the position holds 4339.89. The
+    tolerance is half a point of the HELD value's own printed precision, so 4339.89 accepts
+    anything within 0.005 and 0.85669 anything within 0.000005 -- read off the row, never assumed.
+    """
+    x, y = _num(sent), _num(held)
+    if x is None or y is None or x <= 0 or y <= 0:
+        return False
+    txt = f"{y:.8f}".rstrip("0")
+    dec = len(txt.split(".")[1]) if "." in txt else 0
+    tol = 0.5 * (10.0 ** -max(dec, 1)) + 1e-9 * abs(y)
+    return abs(x - y) <= tol
+
+
+def _stamp(x: Any) -> float | None:
+    from datetime import datetime
+    try:
+        return datetime.fromisoformat(str(x).replace("Z", "+00:00")).timestamp()
+    except (TypeError, ValueError):
+        return None
+
+
+def echo_join(intents: list[dict], deals: list[dict], used_intents: set[int],
+              used_deals: set[Any]) -> list[tuple[dict, dict]]:
+    """Pair a deal that carries NO entry-order key with the intent whose stop and target the
+    position still holds.
+
+    THE LEGACY ROWS. Deals recorded before 2026-09-08 carry only `order`, which on a closing deal
+    is the server's own stop/target order -- a ticket the desk never saw -- so no ticket join can
+    ever reach them. What they DO carry is the position's stop and target, and the gateway wrote
+    the same two numbers onto the intent it sent: an exact echo (to half a point), on the same
+    symbol, in the same POSITION direction, from an intent that the venue accepted (ticket > 0)
+    and was sent no later than the row was recorded. Measured on the committed ledgers: 13 of 13
+    key-less deals find exactly one such intent (two of them share one stop/target pair across two
+    tickets and take them one each, in time order). A position whose stop was moved no longer
+    echoes and stays unjoined, which is the conservative outcome.
+
+    `used_intents` holds `id()` of intents already consumed; `used_deals` the deal tickets. Both
+    are updated in place. One-to-one; each deal takes the LATEST qualifying intent before it.
+    """
+    out: list[tuple[dict, dict]] = []
+    for d in deals:
+        if d.get("entry_order") is not None or d.get("position_id") is not None:
+            continue
+        if d.get("deal") in used_deals:
+            continue
+        dirn = position_direction(d)
+        t_deal = _stamp(d.get("entry_time")) or _stamp(d.get("time"))
+        best, best_t = None, None
+        for it in intents:
+            if id(it) in used_intents:
+                continue
+            try:
+                if int(it.get("ticket") or 0) <= 0:
+                    continue
+            except (TypeError, ValueError):
+                continue
+            if str(it.get("symbol") or "") != str(d.get("symbol") or ""):
+                continue
+            if dirn and _direction(it.get("side")) != dirn:
+                continue
+            if not (_echo(it.get("sl"), d.get("sl")) and _echo(it.get("tp"), d.get("tp"))):
+                continue
+            ti = _stamp(it.get("time"))
+            if t_deal is not None and ti is not None and ti > t_deal:
+                continue
+            if best is None or (ti is not None and (best_t is None or ti > best_t)):
+                best, best_t = it, ti
+        if best is None:
+            continue
+        used_intents.add(id(best))
+        used_deals.add(d.get("deal"))
+        out.append((best, d))
+    return out
+
+
 def _entry_fill(deal: dict) -> Any:
     """The price the ENTRY executed at. A closing deal's `fill_price` is the exit; slippage
     against the intended entry must use the position's opening deal."""
@@ -178,6 +293,15 @@ def compute(intents: list[dict], deals: list[dict],
 
     rows, chain, unmatched = [], [], 0
     matched_tickets = set()
+    # THE LEGACY ROWS, JOINED ON THE STOP/TARGET ECHO (2026-09-30). A deal with no entry-order key
+    # can never reach an intent by ticket; `echo_join` pairs it with the one intent whose stop and
+    # target the position still carries. Intents a ticket already claims are excluded first.
+    keyed: set[int] = set()
+    for d in deals:
+        kt = _join_ticket(d, by_ticket)
+        if kt is not None and d.get("entry_order") is not None:
+            keyed.add(id(by_ticket[kt]))
+    echoed = {id(d): it for it, d in echo_join(intents, deals, keyed, set())}
     for d in deals:
         # THE JOIN (2026-09-08). It was `d["order"]` against the intent's ticket: a closing
         # deal's order is the server's stop/target order, so nothing ever matched and the
@@ -185,6 +309,9 @@ def compute(intents: list[dict], deals: list[dict],
         # offers, and the gateway now writes it beside the entry order and entry deal.
         t = _join_ticket(d, by_ticket)
         intent = by_ticket.get(t) if t is not None else None
+        if intent is None and id(d) in echoed:
+            intent = echoed[id(d)]
+            t = intent.get("ticket")
         if intent is None:
             unmatched += 1
             continue
@@ -204,7 +331,10 @@ def compute(intents: list[dict], deals: list[dict],
         chain.append(link)
         if want is None or got is None:
             continue
-        dirn = _direction(d.get("side", intent.get("side")))
+        # THE INTENT'S SIDE, THEN THE POSITION'S. The ledger's `side` is the CLOSING deal's type
+        # (opposite to the position on 151 of 151 committed rows), so reading it first flipped
+        # the sign of every short's slippage.
+        dirn = _direction(intent.get("side")) or position_direction(d)
         if dirn == 0:
             continue
         slip_quote = (float(got) - float(want)) * dirn
@@ -241,8 +371,10 @@ def compute(intents: list[dict], deals: list[dict],
         mean_slip_r=mean_r,
         edge_share=(mean_r / book_edge_r) if book_edge_r else None,
         rows=rows,
-        why=("matched on the position id (entry order == intent ticket); slip against the ENTRY "
-             "fill, signed so a bad buy and a bad sell do not cancel"),
+        why=("matched on the position id (entry order == intent ticket), and legacy key-less "
+             "deals on the exact stop/target echo; slip against the ENTRY fill, signed by the "
+             "intent's side (the ledger's `side` is the closing deal's) so a bad buy and a bad "
+             "sell do not cancel"),
         account_kind=kind, attributed_deals=len(chain), chain=chain)
 
 

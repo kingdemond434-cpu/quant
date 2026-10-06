@@ -1,0 +1,401 @@
+{
+ "generated_utc": "2026-09-30T16:16:33+00:00",
+ "publication_lags": {
+  "bis_eer": {
+   "lag_s": 1728000,
+   "valid": "reference month end",
+   "basis": "monthly official statistic; pit_stamp.DEFAULT_LAG_DAYS['monthly']"
+  },
+  "cme_gc": {
+   "lag_s": 86400,
+   "valid": "trade date",
+   "basis": "daily settlement"
+  },
+  "contract_terms": {
+   "lag_s": 0,
+   "valid": "observation time",
+   "basis": "recorded by mt5desk.tape.record_contract_terms at `observed_at`: the stamp IS when the desk knew it",
+   "knowledge_column": "observed_at"
+  },
+  "cot": {
+   "lag_s": 345600,
+   "valid": "report date (Tuesday)",
+   "basis": "the same CFTC release as cot_fx"
+  },
+  "cot_fx": {
+   "lag_s": 345600,
+   "valid": "report date (Tuesday)",
+   "basis": "owned_data._COT_PUBLICATION_LAG_DAYS = 4: Friday release, Saturday under every DST/broker-clock combination"
+  },
+  "cross_asset_anchors": {
+   "lag_s": 97200,
+   "valid": "the market day the print refers to",
+   "basis": "run_edges_macro_fusion_sweep.MACRO_KNOWABLE_AFTER: 1 day + the 3h broker offset"
+  },
+  "eur_cot_blocked": {
+   "lag_s": 345600,
+   "valid": "report date (Tuesday)",
+   "basis": "the same CFTC release as cot_fx"
+  },
+  "event_calendar": {
+   "lag_s": 0,
+   "valid": "scheduled event time",
+   "basis": "assumed, conservative: a calendar is published ahead of the event, so the schedule is known before it; a DAY-precision `event_date` anchors the reaction window at 00:00 and is the flagged risk",
+   "assumed": true,
+   "knowledge_column": "event_date"
+  },
+  "fred_macro": {
+   "lag_s": 97200,
+   "valid": "observation date (daily market series only)",
+   "basis": "orthogonal_sweep.MACRO_PUBLICATION_LAG_D = 1 day, plus the broker offset; monthly releases are admissible only through data/vintages"
+  },
+  "gdelt": {
+   "lag_s": 3600,
+   "valid": "event time",
+   "basis": "15-minute update cadence; one bar is conservative",
+   "knowledge_column": "published_time"
+  },
+  "lbma_vaults": {
+   "lag_s": 3456000,
+   "valid": "reference month end",
+   "basis": "LBMA publishes vault holdings with a one-month lag on the 5th business day"
+  },
+  "macro_state": {
+   "lag_s": 0,
+   "valid": "the snapshot's `updated` stamp",
+   "basis": "assumed, conservative: a snapshot is known when it was written, so it is admissible ONLY from its own `updated` stamp forward and never broadcast onto earlier bars",
+   "assumed": true,
+   "knowledge_column": "updated"
+  },
+  "microstructure_surface": {
+   "lag_s": 0,
+   "valid": "the surface report's build time",
+   "basis": "assumed, conservative: a per-symbol spread/activity surface summarised from the tape up to its build time; conditioning earlier bars on it reads a summary that includes later ticks -- a cost-shape input, flagged until it is rebuilt per-bar",
+   "assumed": true
+  },
+  "mt5_h1_universe": {
+   "lag_s": 3600,
+   "valid": "H1 bar open (broker time under UTC tzinfo)",
+   "basis": "known at the bar's close, one bar after its stamp"
+  },
+  "sge_benchmark": {
+   "lag_s": 86400,
+   "valid": "fixing date",
+   "basis": "the PM fix prints 15:30 CST; next day is unambiguous"
+  },
+  "shfe_gold": {
+   "lag_s": 86400,
+   "valid": "trade date",
+   "basis": "daily settlement"
+  },
+  "spdr_gld_holdings": {
+   "lag_s": 86400,
+   "valid": "holdings date",
+   "basis": "published the same US evening: usable next day"
+  },
+  "swiss_customs_gold": {
+   "lag_s": 2160000,
+   "valid": "reference month end",
+   "basis": "FOCBS monthly trade data, about three weeks after month end"
+  },
+  "tick_tape": {
+   "lag_s": 0,
+   "valid": "tick time",
+   "basis": "the venue's own ticks, stamped on receipt (`ts`); a resampled hour is labelled at its open and read by families on closed bars",
+   "knowledge_column": "ts"
+  },
+  "wgc_goldhub": {
+   "lag_s": 1728000,
+   "valid": "reference month end",
+   "basis": "monthly ETF/flow tables; pit_stamp.DEFAULT_LAG_DAYS['monthly']"
+  },
+  "xauusd_scalp_bars": {
+   "lag_s": 300,
+   "valid": "M5 bar open",
+   "basis": "known at bar close"
+  }
+ },
+ "fred_series_lags": {
+  "IR3TIB01JPM156N": {
+   "lag_s": 6480000,
+   "valid": "first day of the reference month",
+   "basis": "assumed, conservative: OECD MEI monthly, month-start stamp, released one to two months later",
+   "assumed": true
+  },
+  "PCOPPUSDM": {
+   "lag_s": 5184000,
+   "valid": "first day of the reference month",
+   "basis": "assumed, conservative: IMF primary commodity prices, monthly, stamped at month START and released the following month",
+   "assumed": true
+  },
+  "WALCL": {
+   "lag_s": 172800,
+   "valid": "Wednesday level (H.4.1)",
+   "basis": "assumed, conservative: H.4.1 prints Thursday 16:30 ET for Wednesday",
+   "assumed": true
+  }
+ },
+ "assumed_flagged": {
+  "event_calendar": "assumed, conservative: a calendar is published ahead of the event, so the schedule is known before it; a DAY-precision `event_date` anchors the reaction window at 00:00 and is the flagged risk",
+  "fred:IR3TIB01JPM156N": "assumed, conservative: OECD MEI monthly, month-start stamp, released one to two months later",
+  "fred:PCOPPUSDM": "assumed, conservative: IMF primary commodity prices, monthly, stamped at month START and released the following month",
+  "fred:WALCL": "assumed, conservative: H.4.1 prints Thursday 16:30 ET for Wednesday",
+  "macro_state": "assumed, conservative: a snapshot is known when it was written, so it is admissible ONLY from its own `updated` stamp forward and never broadcast onto earlier bars",
+  "microstructure_surface": "assumed, conservative: a per-symbol spread/activity surface summarised from the tape up to its build time; conditioning earlier bars on it reads a summary that includes later ticks -- a cost-shape input, flagged until it is rebuilt per-bar"
+ },
+ "registries": {
+  "desks/mt5/data/data_registry.json": {
+   "n": 15,
+   "declared": [
+    "bis_eer",
+    "cme_gc",
+    "cot",
+    "cot_fx",
+    "eur_cot_blocked",
+    "fred_macro",
+    "gdelt",
+    "lbma_vaults",
+    "mt5_h1_universe",
+    "sge_benchmark",
+    "shfe_gold",
+    "spdr_gld_holdings",
+    "swiss_customs_gold",
+    "wgc_goldhub",
+    "xauusd_scalp_bars"
+   ],
+   "undeclared": [],
+   "basis": {
+    "bis_eer": "monthly official statistic; pit_stamp.DEFAULT_LAG_DAYS['monthly']",
+    "cme_gc": "daily settlement",
+    "cot": "the same CFTC release as cot_fx",
+    "cot_fx": "owned_data._COT_PUBLICATION_LAG_DAYS = 4: Friday release, Saturday under every DST/broker-clock combination",
+    "eur_cot_blocked": "the same CFTC release as cot_fx",
+    "fred_macro": "orthogonal_sweep.MACRO_PUBLICATION_LAG_D = 1 day, plus the broker offset; monthly releases are admissible only through data/vintages",
+    "gdelt": "15-minute update cadence; one bar is conservative",
+    "lbma_vaults": "LBMA publishes vault holdings with a one-month lag on the 5th business day",
+    "mt5_h1_universe": "known at the bar's close, one bar after its stamp",
+    "sge_benchmark": "the PM fix prints 15:30 CST; next day is unambiguous",
+    "shfe_gold": "daily settlement",
+    "spdr_gld_holdings": "published the same US evening: usable next day",
+    "swiss_customs_gold": "FOCBS monthly trade data, about three weeks after month end",
+    "wgc_goldhub": "monthly ETF/flow tables; pit_stamp.DEFAULT_LAG_DAYS['monthly']",
+    "xauusd_scalp_bars": "known at bar close"
+   }
+  },
+  "desks/mt5/data_registry.json": {
+   "n": 14,
+   "declared": [
+    "bis_eer",
+    "cme_gc",
+    "cot",
+    "cot_fx",
+    "eur_cot_blocked",
+    "fred_macro",
+    "gdelt",
+    "lbma_vaults",
+    "mt5_h1_universe",
+    "sge_benchmark",
+    "shfe_gold",
+    "spdr_gld_holdings",
+    "swiss_customs_gold",
+    "wgc_goldhub"
+   ],
+   "undeclared": [],
+   "basis": {
+    "bis_eer": "monthly official statistic; pit_stamp.DEFAULT_LAG_DAYS['monthly']",
+    "cme_gc": "daily settlement",
+    "cot": "the same CFTC release as cot_fx",
+    "cot_fx": "owned_data._COT_PUBLICATION_LAG_DAYS = 4: Friday release, Saturday under every DST/broker-clock combination",
+    "eur_cot_blocked": "the same CFTC release as cot_fx",
+    "fred_macro": "orthogonal_sweep.MACRO_PUBLICATION_LAG_D = 1 day, plus the broker offset; monthly releases are admissible only through data/vintages",
+    "gdelt": "15-minute update cadence; one bar is conservative",
+    "lbma_vaults": "LBMA publishes vault holdings with a one-month lag on the 5th business day",
+    "mt5_h1_universe": "known at the bar's close, one bar after its stamp",
+    "sge_benchmark": "the PM fix prints 15:30 CST; next day is unambiguous",
+    "shfe_gold": "daily settlement",
+    "spdr_gld_holdings": "published the same US evening: usable next day",
+    "swiss_customs_gold": "FOCBS monthly trade data, about three weeks after month end",
+    "wgc_goldhub": "monthly ETF/flow tables; pit_stamp.DEFAULT_LAG_DAYS['monthly']"
+   }
+  }
+ },
+ "certificate_inputs": {
+  "providers": {
+   "_bars": {
+    "called_by": [
+     "desks/mt5/scripts/external_gauntlet.py",
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/orthogonal_sweep.py",
+    "families": [
+     "relative_value",
+     "correlation_regime",
+     "cross_asset_residual",
+     "pca_residual"
+    ],
+    "route": "closed broker bars",
+    "sources": {
+     "mt5_h1_universe": {
+      "lag_s": 3600.0,
+      "assumed": false
+     }
+    },
+    "applies_lag": true,
+    "assumed": [],
+    "verdict": "OK"
+   },
+   "_cot_frame": {
+    "called_by": [
+     "desks/mt5/scripts/external_gauntlet.py",
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/orthogonal_sweep.py",
+    "families": [
+     "cot_positioning"
+    ],
+    "route": "orthogonal_sweep.COT_RELEASE_LAG_DAYS past the W-FRI label",
+    "sources": {
+     "cot_fx": {
+      "lag_s": 345600.0,
+      "assumed": false
+     },
+     "cot": {
+      "lag_s": 345600.0,
+      "assumed": false
+     }
+    },
+    "applies_lag": true,
+    "assumed": [],
+    "verdict": "OK"
+   },
+   "_event_index": {
+    "called_by": [
+     "desks/mt5/scripts/external_gauntlet.py",
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/orthogonal_sweep.py",
+    "families": [
+     "event_reaction"
+    ],
+    "route": "scheduled event time (knowledge column `event_date`)",
+    "sources": {
+     "event_calendar": {
+      "lag_s": 0.0,
+      "assumed": true
+     }
+    },
+    "applies_lag": true,
+    "assumed": [
+     "event_calendar"
+    ],
+    "verdict": "OK"
+   },
+   "_macro_series": {
+    "called_by": [
+     "desks/mt5/scripts/external_gauntlet.py",
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/orthogonal_sweep.py",
+    "families": [
+     "macro_conditional"
+    ],
+    "route": "orthogonal_sweep.MACRO_PUBLICATION_LAG_D shift before the ffill",
+    "sources": {
+     "fred_macro": {
+      "lag_s": 97200.0,
+      "assumed": false
+     }
+    },
+    "applies_lag": true,
+    "assumed": [],
+    "verdict": "OK"
+   },
+   "_surface_for": {
+    "called_by": [
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/orthogonal_sweep.py",
+    "families": [
+     "execution_state"
+    ],
+    "route": "the surface report as built; flagged `assumed`",
+    "sources": {
+     "microstructure_surface": {
+      "lag_s": 0.0,
+      "assumed": true
+     }
+    },
+    "applies_lag": true,
+    "assumed": [
+     "microstructure_surface"
+    ],
+    "verdict": "OK"
+   },
+   "_tape_series": {
+    "called_by": [
+     "desks/mt5/scripts/external_gauntlet.py",
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/orthogonal_sweep.py",
+    "families": [
+     "liquidity_regime",
+     "orderflow_imbalance"
+    ],
+    "route": "tick stamps are knowledge stamps",
+    "sources": {
+     "tick_tape": {
+      "lag_s": 0.0,
+      "assumed": false
+     }
+    },
+    "applies_lag": true,
+    "assumed": [],
+    "verdict": "OK"
+   },
+   "resolve_inputs": {
+    "called_by": [
+     "desks/mt5/scripts/external_gauntlet.py",
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/edge_search.py",
+    "families": [
+     "discovered"
+    ],
+    "route": "edge_search.resolve_inputs: COT re-indexed through data_os.known_series; macro_state admitted from its `updated` stamp only; tape and swap terms on their receipt stamps",
+    "sources": {
+     "mt5_h1_universe": {
+      "lag_s": 3600.0,
+      "assumed": false
+     },
+     "tick_tape": {
+      "lag_s": 0.0,
+      "assumed": false
+     },
+     "contract_terms": {
+      "lag_s": 0.0,
+      "assumed": false
+     },
+     "macro_state": {
+      "lag_s": 0.0,
+      "assumed": true
+     },
+     "cot_fx": {
+      "lag_s": 345600.0,
+      "assumed": false
+     },
+     "cot": {
+      "lag_s": 345600.0,
+      "assumed": false
+     }
+    },
+    "applies_lag": true,
+    "assumed": [
+     "macro_state"
+    ],
+    "verdict": "OK"
+   }
+  },
+  "failures": [],
+  "verdict": "OK"
+ }
+}

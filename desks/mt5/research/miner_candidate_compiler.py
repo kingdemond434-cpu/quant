@@ -15,12 +15,15 @@ import json
 import os
 import pathlib
 import sys
+import tempfile
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 if str(BASE) not in sys.path:
     # The hourly service executes this file by path. Python then adds ``research/`` rather than
     # ``desks/mt5/`` to sys.path, so exact recipes otherwise cannot see the family registry and
@@ -367,12 +370,27 @@ def _park_cursor_at(path: Path, row_index: int, deferred_files: int, why: str) -
                          "cursor_prefix_sha256": prefix})
 
 
+def _atomic_json(path: Path, document: dict) -> None:
+    """Publish complete compiler artifacts; interrupted writes preserve the last version."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
+                                         suffix=".tmp", delete=False) as handle:
+            temporary = Path(handle.name)
+            json.dump(document, handle, indent=1, default=str)
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
 def _save_cursor() -> None:
     nxt = _LAST_INTAKE.get("cursor_next")
     if not nxt:
         return
     CURSOR.parent.mkdir(parents=True, exist_ok=True)
-    CURSOR.write_text(json.dumps({
+    _atomic_json(CURSOR, {
         "updated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "next_path": nxt,
         "row_offset": int(_LAST_INTAKE.get("cursor_row_offset") or 0),
@@ -380,7 +398,7 @@ def _save_cursor() -> None:
         "prefix_sha256": _LAST_INTAKE.get("cursor_prefix_sha256"),
         "cycle_cutoff_utc": _LAST_INTAKE.get("cycle_cutoff_utc"),
         "rule": "resume the bounded compiler pass; never restart the corpus at newest row zero",
-    }, indent=1) + "\n", encoding="utf-8")
+    })
 
 #: Artifacts under the intelligence roots that are a miner's OWN BOOKKEEPING, not evidence:
 #: cursors, coverage registries, denylists, run checkpoints, population counts. They are matched
@@ -500,8 +518,10 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                 return found
             if isinstance(row, dict):
                 row = _BLIND.filter(_seat_of(path, row), row)
-            payload = json.dumps(row, sort_keys=True, default=str, separators=(",", ":"))
-            digest = hashlib.sha256(payload.encode()).hexdigest()
+            from libs.data.pit import payload_hash
+
+            # A new ingestion receipt is not a new finding or another search trial.
+            digest = payload_hash(row)
             if digest in seen:
                 continue
             seen.add(digest)
@@ -669,10 +689,33 @@ def _genome_id(symbol: str, family: str, params: dict) -> str | None:
         return None
 
 
+def _claim_lineage(row: dict, mechanism: str, source: str) -> dict:
+    """The claim family a searched claim's cells share (libs.research.claim_selection).
+
+    A row whose words say its result was the best of N searched variations -- or a producer that
+    declares `claim_selection_trials` itself -- stamps every candidate minted from it with ONE
+    `claim_family`, `breadth_unit` and N. {} for every other row."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.research import claim_selection as cs
+    probe = {k: row.get(k) for k in cs.TEXT_FIELDS if isinstance(row.get(k), str)}
+    probe["mechanism_note"] = mechanism
+    probe["source"] = f"miner:{source}"
+    for k in ("claim_family", "claim_selection_trials"):
+        if row.get(k):
+            probe[k] = row[k]
+    if not cs.stamp(probe):
+        return {}
+    return {k: probe[k] for k in ("claim_family", "breadth_unit", "claim_selection_trials")}
+
+
 def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
                mechanism: str) -> dict:
     gid = _genome_id(symbol, family, params)
     return {
+        # ONE SEARCHED CLAIM IS ONE BREADTH UNIT, CHARGED ITS SOURCE'S SELECTION ONCE (2026-09-30:
+        # 25,520 bank cells from one video's "best of ~200 variations" counted as 25,520).
+        **_claim_lineage(row, mechanism, source),
         **({"genome_id": gid} if gid else {}),
         # THE FEATURE GENOME RIDES ONTO THE CANDIDATE (LAWS 5m), guarded: a donated row built on
         # a forged representation carries its chain, and the candidate keeps it as lineage_json
@@ -743,6 +786,19 @@ def _invariance(symbol: str, family: str) -> dict | None:
         return None
 
 
+def _session_slots(family: str, base: dict, symbol: str) -> list[tuple[str, dict, dict | None]]:
+    """(session, params, remap note) for every slot of `SESSION_AXIS` -- the oracle's door
+    (`libs/research/family_firing.session_cells`), or the plain axis when it is unreachable."""
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.research import family_firing
+        return family_firing.session_cells(family, base, SESSION_AXIS, symbol=symbol)
+    except Exception:
+        return [(s, {**base, **({"session": s} if s != "all" else {})}, None)
+                for s in SESSION_AXIS]
+
+
 def expand_axes(cands: list[dict]) -> list[dict]:
     """Every candidate on every intraday chart with bars, in every session; H1 kept, ranked
     last (`priority` 1 against 0). A candidate whose params already name a chart or a session
@@ -771,18 +827,23 @@ def expand_axes(cands: list[dict]) -> list[dict]:
         except Exception:
             pass
         for tf in [*_charts, "H1"]:
-            for sess in SESSION_AXIS:
-                p = dict(base)
-                if tf != "H1":
-                    p["timeframe"] = tf
-                if sess != "all":
-                    p["session"] = sess
+            chart_base = dict(base)
+            if tf != "H1":
+                chart_base["timeframe"] = tf
+            # A DEAD SESSION IS NEVER MINTED AS ITSELF (2026-09-30): the firing-hours oracle
+            # names the windows this family's signals can land in, and a slot whose window holds
+            # none is minted as the cell that CAN fire there (hour params re-anchored to the
+            # session's open) or at the hours it does fire (re-homed). One cell per slot, so the
+            # count never falls; UNMEASURED leaves the slot exactly as it was.
+            for sess, p, remap in _session_slots(fam, chart_base, sym):
                 v = dict(c)
                 v["params"] = p
                 gid = _genome_id(sym, fam, p)
                 if gid:
                     v["genome_id"] = gid
                 v["axis"] = {"chart": tf, "session": sess}
+                if remap:
+                    v["session_remap"] = remap
                 v["priority"] = (1 if tf == "H1" else 0) + demote
                 if inv:
                     v["causal_invariance"] = {"verdict": inv.get("verdict"),
@@ -1151,6 +1212,15 @@ def compile_from_text(source: str, row: dict, universe: set[str]) -> tuple[list[
     return (out, "TEXT_EXTRACTED") if out else ([], "NEEDS_EXACT_RULE_EXTRACTION")
 
 
+def _metric_fence(row: dict) -> list[str]:
+    """The shared bounds fence's reasons for this row. The box runs this file by path, so the
+    repository root is put on the path first rather than letting an ImportError pass rows."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.research.metric_fence import fence_row
+    return fence_row(row)
+
+
 def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict], str]:
     """Return executable candidates and the exact disposition for one evidence row."""
     symbols = resolve_symbols(row, universe)
@@ -1165,6 +1235,13 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
         from research.family_policy import family_banned
     if family_banned(row.get("family")):
         return [], "BANNED_FAMILY"
+
+    # AN IMPOSSIBLE NUMBER NEVER BECOMES A CELL (libs/research/metric_fence.py, 2026-09-30). A
+    # 2,296% "win rate" was an MQL5 win COUNT parsed into the percent field, and 2,985 of 3,154
+    # committed mql5_survivors rows carried one. The fence runs before any family is read, for
+    # every seat, and the refusal is counted by reason in `impossible_metrics` -- never silent.
+    if _metric_fence(row):
+        return [], "IMPOSSIBLE_METRIC"
 
     # Direct recipes from any present or future miner are admitted only when the family and
     # executable parameters are explicit. The gauntlet remains the arbiter of profitability.
@@ -1444,6 +1521,28 @@ def _lineage(out: Path) -> None:
         print(f"compiler lineage not recorded (non-fatal): {type(exc).__name__}: {exc}")
 
 
+def _graph_snapshot(path: Path | None = None):
+    """Use one coherent history for this batch's annotations.
+
+    The live judge appends while compilation runs. Rechecking its ledger per
+    candidate can repeatedly parse gigabytes and prevent publication altogether.
+    Only the annotations are frozen; record_candidates still appends to the
+    canonical ledger, and the next compiler pass reads the new history.
+    """
+    from libs.research.hypothesis_graph import Graph
+
+    class PassGraph(Graph):
+        _loaded = False
+
+        def rows(self):
+            if not self._loaded:
+                self._snapshot_rows = super().rows()
+                self._loaded = True
+            return self._snapshot_rows
+
+    return PassGraph(path) if path is not None else PassGraph()
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     universe = known_symbols()
@@ -1453,6 +1552,18 @@ def main() -> int:
     source_candidates: dict[str, set[str]] = {}
     factory_receipts: list[dict[str, object]] = []
     terminal_deepening, recovered_deepening = _deepening_state()
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.research.metric_fence import FenceTally
+    fence_tally = FenceTally()
+    # THE BUILD-FAILURE BANK (Defect 4): a compiled candidate that is not a buildable spec was
+    # `continue`d past with only a tally. Each one is now recorded with WHICH field it lacked,
+    # and the hourly leg `build_failure_bank` ranks the causes into fix work. Guarded.
+    try:
+        from research.build_failure_bank import Bank as _Bank
+        bank = _Bank("miner_candidate_compiler")
+    except Exception:                                  # pragma: no cover - host-dependent
+        bank = None
     untestable = structurally_untestable_families()
     if untestable:
         print("families routed to DEEPENING (measured untestable at current parameters): "
@@ -1485,7 +1596,7 @@ def main() -> int:
         task_identity = _deepening_task_id(source, row)
         produced, disposition = compile_row(source, row, universe)
         recovered_for_row = recovered_deepening.get(task_identity, [])
-        if not produced and recovered_for_row:
+        if not produced and recovered_for_row and disposition != "IMPOSSIBLE_METRIC":
             produced = [dict(candidate) for candidate in recovered_for_row]
             disposition = "RECOVERED_BY_DEEPENING"
         produced = expand_axes(produced)
@@ -1498,7 +1609,11 @@ def main() -> int:
         deepening_disposition = terminal_deepening.get(task_identity, "")
         terminal_refusal = (not produced and bool(deepening_disposition)
                             and not deepening_disposition.startswith("ERROR:"))
-        refusal = (disposition in {"OPERATIONAL_ROW", "EMPTY_CAPTURE", "BANNED_FAMILY"}
+        impossible = disposition == "IMPOSSIBLE_METRIC"
+        fence_tally.add(source, _metric_fence(row) if impossible else [],
+                        str(row.get("url") or row.get("title") or ""))
+        refusal = (disposition in {"OPERATIONAL_ROW", "EMPTY_CAPTURE", "BANNED_FAMILY",
+                                   "IMPOSSIBLE_METRIC"}
                    or terminal_refusal)
         if refusal:
             stats["valid_refusals"] = int(stats["valid_refusals"]) + 1
@@ -1517,13 +1632,23 @@ def main() -> int:
             stats["deepening_recovered"] = int(stats["deepening_recovered"]) + 1
         row_reached_docket = False
         for candidate in produced:
-            valid = (bool(str(candidate.get("symbol") or "").strip())
-                     and bool(str(candidate.get("family") or "").strip())
-                     and isinstance(candidate.get("params"), dict)
-                     and str(candidate.get("mechanism_status") or "").upper() == "NAMED"
-                     and len(str(candidate.get("mechanism_note") or "").strip()) >= 12)
+            lacking = [name for name, ok in (
+                ("symbol", bool(str(candidate.get("symbol") or "").strip())),
+                ("family", bool(str(candidate.get("family") or "").strip())),
+                ("params", isinstance(candidate.get("params"), dict)),
+                ("mechanism_status=NAMED",
+                 str(candidate.get("mechanism_status") or "").upper() == "NAMED"),
+                ("mechanism_note>=12ch",
+                 len(str(candidate.get("mechanism_note") or "").strip()) >= 12)) if not ok]
+            valid = not lacking
+            if bank is not None:
+                bank.attempt()
             if not valid:
                 stats["invalid_cells"] = int(stats["invalid_cells"]) + 1
+                if bank is not None:
+                    bank.record("SPEC_INVALID", "lacks " + ", ".join(lacking),
+                                source=source, symbol=candidate.get("symbol"),
+                                family=candidate.get("family"))
                 continue
             identity = json.dumps({k: candidate[k] for k in ("symbol", "family", "params")},
                                   sort_keys=True, default=str)
@@ -1548,7 +1673,9 @@ def main() -> int:
                 stats["candidates"] = int(stats["candidates"]) + 1
         if produced and row_reached_docket:
             stats["converted_rows"] = int(stats["converted_rows"]) + 1
-        if not produced and not terminal_refusal:
+        # An impossible-metric row is REFUSED, not deepened: deepening would re-extract a cell
+        # from the very row the fence refused. It is counted in `impossible_metrics`.
+        if not produced and not terminal_refusal and not impossible:
             compact = {
                 "source": source,
                 "disposition": disposition,
@@ -1669,8 +1796,8 @@ def main() -> int:
     # it look like a graph with nothing to say.
     graph_note: dict = {"updated": False, "premortem": False}
     try:
-        from libs.research.hypothesis_graph import Graph, record_candidates
-        g = Graph()
+        from libs.research.hypothesis_graph import record_candidates
+        g = _graph_snapshot()
         for c in candidates.values():
             pf = g.prior_failures(str(c.get("symbol")), str(c.get("family")),
                                   dict(c.get("params") or {}))
@@ -1692,13 +1819,14 @@ def main() -> int:
         # delete a candidate would make the desk's own history a cage (L1.25).
         try:
             from research.failure_prior import multiplier_for
+            prior_table = json.loads((BASE / "data" / "failure_prior.json")
+                                     .read_text("utf-8-sig"))
             reopen_levels = {
                 (str(r.get("feature")), str(r.get("level")))
-                for r in (json.loads((BASE / "data" / "failure_prior.json")
-                                     .read_text("utf-8-sig")).get("reopen") or [])
+                for r in (prior_table.get("reopen") or [])
                 if isinstance(r, dict)}
             for c in candidates.values():
-                mult, why = multiplier_for(c)
+                mult, why = multiplier_for(c, table=prior_table)
                 c["failure_prior"] = mult
                 c["failure_prior_why"] = why
                 c["reopen"] = bool(reopen_levels & {("family", str(c.get("family"))),
@@ -1776,9 +1904,23 @@ def main() -> int:
     disposition_total = converted_total + refusal_total
     producer_debt = [s for s, v in sorted(per_source.items())
                      if int(v["owes_convertible_rows"]) > 0]
-    OUT.write_text(json.dumps({
+    from libs.data.pit import stamp_or_refuse
+
+    # These rules were compiled in this pass; source event dates cannot backdate a rule.
+    candidate_time = datetime.now(UTC).isoformat()
+    emitted, provenance_refused = stamp_or_refuse(
+        [{**candidate, "available_time": candidate_time, "ingested_time": candidate_time}
+         for candidate in ordered], "miner_candidate_compiler")
+    if provenance_refused:
+        raise ValueError(f"Compiler refused {len(provenance_refused)} unstamped rules")
+    emitted_tasks, refused_tasks = stamp_or_refuse(
+        [{**task, "available_time": candidate_time, "ingested_time": candidate_time}
+         for task in deepening.values()], "miner_deepening_queue")
+    if refused_tasks:
+        raise ValueError(f"Compiler refused {len(refused_tasks)} unstamped deepening tasks")
+    _atomic_json(OUT, {
         "compiled_at": now.isoformat(timespec="seconds"),
-        "hypotheses": ordered,
+        "hypotheses": emitted,
         "net_ranking": net_note,
         "per_source": per_source,
         "seats": seats,
@@ -1790,6 +1932,7 @@ def main() -> int:
         | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
                                    if d.get("rows_with_outcomes")}},
         "graph": graph_note,
+        "impossible_metrics": fence_tally.to_dict(),
         "rows_accounted": rows_total,
         "executable_candidates": len(candidates),
         "deepening_tasks": len(deepening),
@@ -1816,13 +1959,13 @@ def main() -> int:
                      "deepening stays UNRESOLVED and is never forged into strategy yield"),
         },
         "rule": "exact recipe or structured causal data only; no prose-to-family guessing",
-    }, indent=1, default=str), "utf-8")
+    })
     _lineage(OUT)
-    DEEPEN.write_text(json.dumps({
+    _atomic_json(DEEPEN, {
         "built_at": now.isoformat(timespec="seconds"),
-        "tasks": list(deepening.values()),
+        "tasks": emitted_tasks,
         "consumer": "hourly/daily research brains must recover a falsifiable rule or reject",
-    }, indent=1, default=str), "utf-8")
+    })
     # Consumer-owned receipts are emitted only after both canonical output artifacts are durable.
     # The factory producer reconciles these on its next pass; it may never assert its own ACK.
     if factory_receipts:
@@ -1833,6 +1976,8 @@ def main() -> int:
             tmp.write_text(json.dumps(receipt, indent=1) + "\n", "utf-8")
             os.replace(tmp, target)
     _save_cursor()
+    if bank is not None:
+        bank.flush()
     print(f"miner compiler: {sum(int(v['rows']) for v in per_source.values())} row(s) accounted; "
           f"{len(candidates)} executable candidate(s); {len(deepening)} exact-rule task(s)")
     return 0

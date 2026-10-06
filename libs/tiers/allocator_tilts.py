@@ -66,6 +66,71 @@ def heat_neutral(raw: Mapping[str, float], heat: Mapping[str, float], *,
     return out
 
 
+def renormalise_clipped(tilt: Mapping[str, float], heat: Mapping[str, float], *,
+                        held: frozenset[str] = frozenset(), lo: float = EXCHANGE_LO,
+                        hi: float = TILT_HI) -> tuple[dict[str, float], dict[str, Any]]:
+    """Make a CLIPPED tilt heat-neutral again (pass the UNCLIPPED product; the clip happens
+    here, inside the solve, so the solver knows which sleeves the bounds pinned): the
+    heat-weighted mean over the funded treated book is restored to exactly 1.0 after the bounds
+    bite (verifier 2026-09-30: the combined exchange x capture x freeze tilt was clipped to
+    [0, 2] and never renormalised, so a clip at 2.0 silently REMOVED heat from the book and a
+    clip at the floor silently ADDED it).
+
+    Water-filling: sleeves pinned at a bound keep it, and ONLY the unclipped remainder is scaled
+    by one common factor until sum(heat x tilt) == sum(heat); a scale that pushes a further sleeve
+    across a bound pins it there and the remainder is solved again (one common scale moves every
+    free sleeve the same way, so this ends in at most one pass per sleeve). A zero (the exchange's
+    ZERO / EXIT / DEFER) stays zero: scaling nothing leaves nothing. Held-out sleeves stay 1.0.
+
+    The book's total is therefore never pushed below what the heat law resolved (the 20% floor
+    and above), nor levered above it -- the tilt REORDERS. When the bounds make the target
+    unreachable (every unclipped sleeve already at the ceiling) the residual is REPORTED as
+    `heat_shortfall`, never hidden: pf_allocator's exchange_zero refill and the heat law's floor
+    fill own that heat downstream."""
+    out = {k: float(v) for k, v in tilt.items()}
+    for k in held:
+        if k in out:
+            out[k] = 1.0
+    funded = [k for k in out if k not in held and float(heat.get(k, 0.0)) > 0]
+    target = sum(float(heat[k]) for k in funded)
+    pinned: set[str] = set()
+    scale = 1.0
+    for _ in range(len(funded) + 1):
+        free = [k for k in funded if k not in pinned]
+        fixed = sum(float(heat[k]) * out[k] for k in pinned)
+        mass = sum(float(heat[k]) * out[k] for k in free)
+        if mass <= 0 or not free:
+            break
+        s = (target - fixed) / mass
+        if not math.isfinite(s) or s <= 0:
+            break
+        crossed = False
+        for k in free:
+            v = out[k] * s
+            if v > hi + 1e-12:
+                out[k] = hi
+                pinned.add(k)
+                crossed = True
+            elif v < lo - 1e-12:
+                out[k] = lo
+                pinned.add(k)
+                crossed = True
+        if not crossed:
+            for k in free:
+                out[k] = out[k] * s
+            scale = s
+            break
+    # unfunded treated sleeves move with the book's common scale, inside the bounds
+    for k in out:
+        if k not in held and k not in funded:
+            out[k] = float(min(hi, max(lo, out[k] * scale)))
+    got = sum(float(heat[k]) * out[k] for k in funded)
+    return out, {"target_heat_mass": round(target, 9), "heat_mass": round(got, 9),
+                 "heat_shortfall": round(max(0.0, target - got), 9),
+                 "heat_excess": round(max(0.0, got - target), 9),
+                 "n_pinned_at_bound": len(pinned), "common_scale": round(scale, 9)}
+
+
 def exchange_raw(exchange_w: float, live_w: float) -> float:
     if max(0.0, exchange_w) <= 0.0 < abs(live_w):
         return 0.0
@@ -115,10 +180,17 @@ def build(live_book: Mapping[str, float], group_of: Mapping[str, str],
     oos = oos_n_by_group or {}
     fz = heat_neutral({k: freeze_raw(int(oos.get(group_of.get(k, k), 0))) if freeze else 1.0
                        for k in live_book}, heat, held=held)
+    # THE COMBINED TILT: a product of three heat-neutral factors is not heat-neutral, and its clip
+    # to [EXCHANGE_LO, TILT_HI] is not either -- renormalise the unclipped part so the book's heat
+    # is exactly what the heat law resolved (`renormalise_clipped`)
+    product = {k: (1.0 if k in held else max(EXCHANGE_LO, ex[k] * cap[k] * fz[k]))
+               for k in live_book}
+    raw_combined = {k: min(TILT_HI, v) for k, v in product.items()}
+    combined, _ = renormalise_clipped(product, heat, held=held)
     return {name: {"group": group_of.get(name, name), "exchange_factor": round(ex[name], 6),
                    "capture_factor": round(cap[name], 6), "freeze_factor": round(fz[name], 6),
-                   "tilt": (1.0 if name in held else
-                            round(min(TILT_HI, max(EXCHANGE_LO, ex[name] * cap[name] * fz[name])),
-                                  6)),
+                   "tilt": 1.0 if name in held else round(combined[name], 6),
+                   "tilt_clipped_raw": round(raw_combined[name], 6),
+                   "heat": heat[name],
                    "held_out": name in held}
             for name in live_book}

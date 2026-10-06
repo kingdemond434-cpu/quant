@@ -48,6 +48,10 @@ import hashlib
 import re
 from typing import Any
 
+from libs.research.claim_selection import selection_trials
+from libs.research.metric_fence import check_metrics as fence_metrics
+from libs.research.metric_fence import reason_class
+
 # ============================================================================== vocabulary
 # One (QUANTITY, DIRECTION, HORIZON) triple per language. Chinese and English first because they
 # were first; the rest at the same depth, in the vocabulary each community actually uses (a
@@ -1585,7 +1589,8 @@ def extract(text: str, *, max_claims: int = 40,
     `dropped_unmappable` (no MT5 analogue, no indirect target, no transfer note -- a summary
     nobody can test), and `duplicate_mechanisms` (a second sentence with the same key)."""
     out: list[dict[str, Any]] = []
-    dropped_venue = dropped_unmappable = duplicates = 0
+    dropped_venue = dropped_unmappable = duplicates = dropped_impossible = 0
+    impossible_reasons: dict[str, int] = {}
     seen: set[str] = set()
     keys: set[str] = set()
     # THE DOCUMENT NAMES THE INSTRUMENT ONCE. "I have traded Shanghai gold for seven years" is
@@ -1629,6 +1634,16 @@ def extract(text: str, *, max_claims: int = 40,
         if not (inst["analogues"] or inst["transfer_only"] or inst["indirect"]):
             dropped_unmappable += 1                     # a summary nobody can test
             continue
+        # AN IMPOSSIBLE STATED NUMBER IS A PARSE OR A LIE, never a claim (metric_fence): a
+        # "win rate 2296%" is refused here, counted by reason, before it can be scored or keyed.
+        perf = performance(s)
+        bad = fence_metrics(perf)
+        if bad:
+            dropped_impossible += 1
+            for r in bad:
+                cls = reason_class(r)
+                impossible_reasons[cls] = impossible_reasons.get(cls, 0) + 1
+            continue
         channel = "direct" if inst["analogues"] else "indirect"
         cls = mechanism_class(low)
         key = mechanism_key(inst, cls, d[:2], h[:2])
@@ -1641,11 +1656,15 @@ def extract(text: str, *, max_claims: int = 40,
                     "instrument_from_context": inherited, "channel": channel,
                     "mechanism_class": cls, "mechanism_key": key,
                     "event_time": stated_date(s),
-                    "claimed_performance": performance(s), "claim_hash": digest})
+                    "claimed_performance": perf,
+                    **({"claim_selection_trials": sel} if (sel := selection_trials(s)) else {}),
+                    "claim_hash": digest})
         if len(out) >= max_claims:
             break
     return {"claims": out, "dropped_venue": dropped_venue,
-            "dropped_unmappable": dropped_unmappable, "duplicate_mechanisms": duplicates}
+            "dropped_unmappable": dropped_unmappable, "duplicate_mechanisms": duplicates,
+            "dropped_impossible_metric": dropped_impossible,
+            "impossible_metric_reasons": impossible_reasons}
 
 
 def claim_score(c: dict[str, Any]) -> float:

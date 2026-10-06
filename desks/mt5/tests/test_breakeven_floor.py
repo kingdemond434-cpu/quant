@@ -10,7 +10,7 @@ Four ways to get that wrong, all pinned below:
 
   1. PARKING THE STOP ON THE ENTRY PRICE. On Fusion, commission is 2.00 per lot per side
      (`fusion_cost.COMMISSION_PER_LOT_PER_SIDE`, measured p10 = p50 = p90 over 433 deals on
-     495044). A stop at `price_open` therefore books a small LOSS on every scratch, on every
+     the live acct). A stop at `price_open` therefore books a small LOSS on every scratch, on every
      trade, scaling linearly with size -- the mechanism inverted while looking correct.
   2. CHARGING THE SPREAD TWICE. MetaTrader compares a long's stop to the BID and a short's to
      the ASK. A long filled at the ask has already paid the spread; adding it to the level again

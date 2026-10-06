@@ -72,12 +72,22 @@ def test_generic_filenames_are_not_organs(tmp_path: Path) -> None:
         "config.json identifies no organ"
 
 
-def test_strict_exits_one_only_on_a_contested_artifact(tmp_path: Path) -> None:
+def test_strict_exits_one_only_on_a_contested_artifact(tmp_path: Path, monkeypatch) -> None:
+    # Exercise the actual census and CLI on an owned graph. Scanning the populated
+    # VPS twice makes this CLI contract depend on the size of unrelated research data.
+    repo = _repo(tmp_path)
+    census = da.census
+    monkeypatch.setattr(da, "census", lambda: census(repo))
     out = tmp_path / "dead.json"
     rc = da.main(["--out", str(out)])
     assert rc == 0
     doc = json.loads(out.read_text("utf-8"))
-    assert doc["n_organs"] > 100, "the real repo has hundreds of organs that write something"
+    assert doc["n_organs"] == 2
     assert set(doc["counts"]) <= {da.LIVE, da.BURNING, da.NO_CLOCK, da.UNREACHED}
     rc_strict = da.main(["--strict", "--out", str(out)])
     assert rc_strict == (1 if doc["contested_artifacts"] else 0)
+    (repo / "desks" / "mt5" / "research" / "rival.py").write_text(
+        'OUT = BASE / "reports" / "burner_out.json"\n'
+        'def main():\n    OUT.write_text("{}")\n', "utf-8")
+    assert da.main(["--strict", "--out", str(out)]) == 1
+    assert "burner_out.json" in json.loads(out.read_text("utf-8"))["contested_artifacts"]

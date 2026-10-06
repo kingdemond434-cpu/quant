@@ -201,9 +201,11 @@ def main() -> int:
         else:
             finding["outcome"] = "HEALED"
             healed.append(finding)
-        line = (f"{now} REPLAY HEALED {rel}: working tree held the blob committed "
+        outcome = "HEALED" if finding["outcome"] == "HEALED" else "HEAL FAILED"
+        restoration = "restored from HEAD" if outcome == "HEALED" else "not restored from HEAD"
+        line = (f"{now} REPLAY {outcome} {rel}: working tree held the blob committed "
                 f"{finding['committed_at']} ({finding['replayed_from'][:8]} "
-                f"\"{finding['subject'][:60]}\"); restored from HEAD")
+                f"\"{finding['subject'][:60]}\"); {restoration}")
         print(line)
         with LOG.open("a", encoding="utf-8") as f:
             f.write(line + "\n")

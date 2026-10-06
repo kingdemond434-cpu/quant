@@ -161,6 +161,7 @@ def test_the_env_carries_exactly_what_the_sealed_file_reads(tmp_path) -> None:
     decision = jt.plan(BIG_BOX, DEEP_QUEUE, COSTS)
     env = jt.env_for(decision)
     assert env["GAUNTLET_WORKERS"] == str(decision["workers"])
+    assert env["GAUNTLET_SHARDS"] == str(decision["workers"])
     assert int(env["GAUNTLET_MEMORY_BUDGET_MB"]) >= decision["workers"] * 768
     assert int(env["GAUNTLET_HEADROOM_CAP_MB"]) >= decision["workers"] * 768
     assert "WARM_WORKERS" not in env, "the warmer sizes itself from psutil; nothing pins it"
@@ -170,6 +171,7 @@ def test_the_env_carries_exactly_what_the_sealed_file_reads(tmp_path) -> None:
     applied = jt.apply_env(path, target)
     assert applied == env
     assert target["GAUNTLET_WORKERS"] == env["GAUNTLET_WORKERS"]
+    assert target["GAUNTLET_SHARDS"] == env["GAUNTLET_SHARDS"]
 
 
 def test_an_operators_own_export_outranks_the_organ(tmp_path) -> None:

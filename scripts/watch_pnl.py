@@ -24,6 +24,7 @@ those paths belong to the risk rails, which are Tier-3 and never driven by an an
 """
 from __future__ import annotations
 
+import contextlib
 import itertools
 import json
 import sys
@@ -90,7 +91,8 @@ def _has_fills() -> bool:
         return False
     try:
         import sqlite3
-        with sqlite3.connect(f"file:{METRICS}?mode=ro", uri=True) as c:
+        uri = METRICS.resolve().as_uri() + "?mode=ro"
+        with contextlib.closing(sqlite3.connect(uri, uri=True)) as c:
             return bool(c.execute("select count(*) from fills").fetchone()[0])
     except Exception:
         return False
