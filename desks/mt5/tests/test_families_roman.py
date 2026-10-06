@@ -104,3 +104,20 @@ def test_bar_events_thresholds_are_read_before_the_bar():
     part = rm.bar_events(d.iloc[:3000])
     for k in full:
         assert np.array_equal(full[k][:3000], part[k])
+
+
+def test_cross_excitation_report_names_every_set_and_why(monkeypatch, tmp_path):
+    from research import cross_excitation as ce
+    from research import proposer_common as pc
+
+    bars = _bars()
+    monkeypatch.setattr(pc, "bars", lambda s: bars if s == "XAUUSD" else None)
+    monkeypatch.setattr(ce, "OUT", tmp_path / "CROSS_EXCITATION.json")
+    monkeypatch.setattr(ce, "WINDOW", 3000)
+    rep = ce.run(budget_s=60.0)
+    assert rep["status"] == "RAN" and rep["ran"] == ["XAUUSD"]
+    x = rep["sets"]["XAUUSD"]
+    assert set(x["branching"]) <= {"buy", "sell", "large", "depletion", "vshock"}
+    assert all(v["status"] == "UNMEASURED" and v["why"] for k, v in rep["sets"].items()
+               if k != "XAUUSD")
+    assert (tmp_path / "CROSS_EXCITATION.json").exists()

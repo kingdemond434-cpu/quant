@@ -322,6 +322,15 @@ def main(argv: list[str] | None = None) -> int:
     rep = {"generated_at": _now(), "source": SOURCE,
            **seed(budget_s=a.budget_s, dry_run=a.dry_run, only=a.symbols)}
     if not a.dry_run:
+        # ROMAN-0832: the cross-event excitation matrix rides this leg's clock in its own budget.
+        try:
+            from research import cross_excitation
+            ce = cross_excitation.run(budget_s=120.0)
+            rep["cross_excitation"] = {"status": ce["status"], "ran": ce["ran"],
+                                       "path": str(cross_excitation.OUT)}
+        except Exception as exc:
+            rep["cross_excitation"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}"}
+    if not a.dry_run:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         tmp = OUT.with_suffix(".tmp")
         tmp.write_text(json.dumps(rep, indent=1, sort_keys=True, default=str), "utf-8")
