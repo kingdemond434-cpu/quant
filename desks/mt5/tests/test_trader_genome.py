@@ -217,6 +217,7 @@ def test_competition_table_keeps_the_blown(tmp_path: Path,
 def test_miner_appends_competition_rows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(dfm, "COMPETITION_LEDGER", tmp_path / "comp.jsonl")
     monkeypatch.setattr(dfm, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dfm, "SEEN", tmp_path / "seen.json")       # _xlock locks beside SEEN
     run = dfm._Run.__new__(dfm._Run)
     import threading
     run._lock = threading.Lock()
