@@ -35,11 +35,6 @@ box is never written down as this one's -- the exact trap CLAUDE.md warns about)
 
     python -m libs.ops.host_identity --record
     python -m libs.ops.host_identity          # print this machine's verdict
-
-or, from ANY checkout once the box's evidence file has reached git (it carries the id the box
-measured, written by the box itself):
-
-    python -m libs.ops.host_identity --from-evidence
 """
 from __future__ import annotations
 
@@ -196,57 +191,12 @@ def record(config_path: Path | None = None, *,
     return cfg
 
 
-#: the box's own attestation, which carries the id it measured and reaches git through the box's
-#: sync (`libs/tiers/box_evidence.SYNCED`)
-EVIDENCE_REL = "desks/mt5/data/tier_s/box_evidence.json"
-
-
-def record_from_evidence(evidence_path: Path | None = None,
-                         config_path: Path | None = None) -> dict[str, Any]:
-    """Fill the config from the id the BOX ITSELF wrote into its committed evidence file, so the
-    id is recorded from git and nobody has to read the box (2026-10-06: the box's evidence read
-    `counts_toward_done: false` only because this config's id was null).
-
-    The same guard as `record`, applied to the box's own write: the evidence must name the trading
-    hostname and carry a readable id. It fills an EMPTY slot only; a recorded id that differs is
-    refused, never overwritten -- re-recording is `--record` on the box."""
-    path = Path(config_path or CONFIG)
-    cfg = load_config(path)
-    try:
-        doc = json.loads(Path(evidence_path or ROOT / EVIDENCE_REL).read_text("utf-8"))
-    except (OSError, ValueError) as exc:
-        raise SystemExit(f"refused: {EVIDENCE_REL} unreadable ({type(exc).__name__})") from exc
-    thost = trading_hostname(cfg)
-    host = str((doc or {}).get("host") or "")
-    mid = str((doc or {}).get("machine_id") or "").strip().lower()
-    if host.lower().split(".")[0] != thost.lower():
-        raise SystemExit(f"refused: the evidence was written on {host!r}, not {thost}")
-    if not mid or mid == UNMEASURED.lower():
-        raise SystemExit("refused: the evidence carries no readable machine id")
-    recorded = recorded_machine_id(cfg)
-    if recorded and recorded != mid:
-        raise SystemExit("refused: a different trading-box id is already recorded; "
-                         "re-record with --record on the box itself")
-    cfg.update(hostname=thost, machine_id=mid,
-               recorded_at=datetime.now(UTC).isoformat(timespec="seconds"),
-               recorded_on=f"{host} (its own {EVIDENCE_REL}, "
-                           f"generated {doc.get('generated_utc') or '?'})")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(cfg, indent=2) + "\n", encoding="utf-8")
-    return cfg
-
-
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Which machine is this? (TRADING / OFF_BOX / UNMEASURED)")
     ap.add_argument("--record", action="store_true",
                     help="record this machine's id as the trading box's (trading box only)")
-    ap.add_argument("--from-evidence", action="store_true",
-                    help=f"record the id the box wrote into the committed {EVIDENCE_REL}")
     args = ap.parse_args(argv)
-    if args.from_evidence:
-        print(json.dumps(record_from_evidence(), indent=2))
-        return 0
     if args.record:
         print(json.dumps(record(), indent=2))
         return 0
