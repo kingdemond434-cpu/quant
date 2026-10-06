@@ -111,28 +111,37 @@ def ortho(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     osw._cot_frame.cache_clear()
 
 
-def _write_fred(root: Path, key: str, days: pd.DatetimeIndex) -> None:
-    rows = [[d.strftime("%Y-%m-%d"), float(i)] for i, d in enumerate(days)]
+def _write_fred(root: Path, key: str, days: pd.DatetimeIndex) -> pd.Series:
+    """Writes a wandering series and returns the trailing rank `_macro_series` builds from it."""
+    vals = np.random.default_rng(7).normal(size=len(days)).cumsum()
+    rows = [[d.strftime("%Y-%m-%d"), float(v)] for d, v in zip(days, vals, strict=True)]
     (root / "data" / "fred_macro.json").write_text(json.dumps({"series": {key: rows}}), "utf-8")
+    s = pd.Series(vals, index=days)
+    return s.expanding(min_periods=250).rank(pct=True)
 
 
 def test_macro_series_waits_the_declared_lag_not_the_constant(ortho) -> None:
     osw, root = ortho
     days = pd.date_range("2024-01-01", periods=400, freq="D", tz="UTC")
-    _write_fred(root, "DGS10", days)
+    rank = _write_fred(root, "DGS10", days)
     bars = pd.date_range("2024-01-01", periods=400 * 24, freq="h", tz="UTC")
     got = osw._macro_series(bars, "DGS10")
     assert got is not None
-    last = days[-2]
-    # 25h after its valid day the old 24h shift had already admitted it; the declaration has not
-    assert got.loc[last + pd.Timedelta(hours=25)] != got.loc[last + pd.Timedelta(hours=27)]
-    assert got.loc[last + pd.Timedelta(hours=26)] == got.loc[last + pd.Timedelta(hours=24)]
+    hour = pd.Timedelta(hours=1)
+    for prev, last in zip(days[300:-2], days[301:-1], strict=True):
+        if rank[prev] == rank[last]:
+            continue
+        # 24-26h after its valid day the old 24h shift had already admitted it; the declared
+        # 27h has not -- the bar still reads the previous print
+        for h in (24, 25, 26):
+            assert got.loc[last + h * hour] == rank[prev]
+        assert got.loc[last + 27 * hour] == rank[last]
 
 
 def test_macro_series_uses_a_slow_series_own_cadence(ortho) -> None:
     osw, root = ortho
     days = pd.date_range("2024-01-01", periods=400, freq="D", tz="UTC")
-    _write_fred(root, "DTWEXBGS", days)
+    _ = _write_fred(root, "DTWEXBGS", days)
     bars = pd.date_range("2024-01-01", periods=400 * 24, freq="h", tz="UTC")
     got = osw._macro_series(bars, "DTWEXBGS")
     assert got is not None
