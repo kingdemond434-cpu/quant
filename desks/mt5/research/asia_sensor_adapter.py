@@ -4,9 +4,10 @@ contract observations appended to the ONE sensor ledger (MANDATE 2026-10-06 s2.5
 WHAT THIS IS, AND WHAT IT IS NOT. A MAPPING. It fetches nothing, parses no page, and owns no
 store: it reads the stores the Asia organs already write and hands each stored value to
 `libs.research.sensor_contract.SensorLedger.append`, which is the only writer of the ledger and
-owns dedup and revision detection. It forks nothing of the contract; where the contract lacks
-something this adapter needs, the gap is named in `CONTRACT_GAPS` below (read by the report) and
-worked around here without editing the contract.
+owns dedup, revision detection and idempotency. It forks nothing of the contract and reads the
+ledger only through its public accessors (`latest`, `latest_index`), never its index file. Where
+the contract lacks something this adapter needs, the gap is named in `CONTRACT_GAPS` below (read
+by the report); today there is none.
 
 THE STORES IT READS, one mapping function per record type (the hook points):
 
@@ -47,17 +48,23 @@ THE PIT RULES (s2.7), mechanically:
                 calendar (late-biased), else the producer's declared lag -- and NEVER later than
                 the instant this desk first held the value (the world demonstrably knew it then).
                 Never the fetch time when an earlier publication is known.
+  knowable_basis  the contract field saying which of those set knowable_at: `printed_stamp`,
+                `calendar`, `declared_lag`, or `bounded_by_receipt` when first sight was the
+                earlier instant (or the only one); then knowable_at IS received_at, exactly.
   received_at   when the desk first read the value (the store's first-seen / vintage stamp),
                 never the time this adapter ran.
   a revision    knowable no earlier than the instant the desk first saw the revised value; the
                 revision's own publication instant is not stored, so it is not invented.
   an absent clock is UNMEASURED (the contract's own rule) and is never filled from a neighbour.
 
-IDEMPOTENT. Re-running appends nothing. The ledger already drops a repeated value; what it cannot
-tell is that a re-submitted FIRST print is older than the revision it already holds (it would
-book it as a new revision). So each observation carries its ordinal within its key's vintage
-chain, and an observation whose ordinal the ledger's index already passed is not resubmitted.
-That is stateless: the ledger's own index is the cursor.
+IDEMPOTENT. Re-running appends nothing, and that is the CONTRACT's guarantee, not this adapter's:
+`SensorLedger.append` drops any observation id it ever admitted under a key, so a first print
+re-sent after its revision stays a duplicate. The `stores_seen` cursor in the report only saves
+the cost of re-mapping a store whose bytes did not change.
+
+THE LEDGER'S CLOCK AND ARTIFACT are #208's hourly `sensor_ledger` leg and
+`reports/SENSOR_LEDGER.json`: the observations this adapter appends are counted there. This
+organ's own report is only the pass census (hooks, stores, refusals).
 
 NO AUTHORITY. Every observation carries the contract's constant authority NONE. Nothing here
 sizes, routes capital or mints a cell; the hypothesis doors stay where they are.
@@ -115,20 +122,12 @@ MAX_ROWS_PER_FRAME = 5_000
 SNIFF_LINES = 50
 
 #: What the contract does not give this adapter, for the World sensor thread (the contract is not
-#: forked here; each is worked around locally and the work-around is named).
-CONTRACT_GAPS: tuple[str, ...] = (
-    "SensorLedger has no public read of its latest-value index (`latest(key)` / `known(key)`): "
-    "this adapter reads `index_path` directly to decide what is already held.",
-    "SensorLedger.append is not idempotent under REPLAY of a superseded vintage: a first print "
-    "re-submitted after its revision is booked as a new revision of the revised value. Worked "
-    "around with a per-key vintage ordinal checked against the index's revision_n.",
-    "The ledger names no clock and no artifact of its own (interface only), so it has no "
-    "scheduled writer and no registered output; this adapter runs on the alt_proxies leg.",
-    "No `knowable_basis` field: how the world-knowable instant was derived (printed stamp, "
-    "release calendar, declared lag, receipt bound) travels in attributes.knowable_basis.",
-    "desks/mt5/data/sensors/ is not gitignored, so the ledger's day shards are untracked state "
-    "under a STATE_PREFIX the box could commit.",
-)
+#: forked here). The five gaps first named here (no public index read, replay not idempotent, no
+#: clock or artifact for the ledger, no knowable_basis field, shards not gitignored) were closed
+#: in the contract itself by #208; none is open.
+CONTRACT_GAPS: tuple[str, ...] = ()
+#: Where the ledger's observations are published each hour (#208's `sensor_ledger` leg).
+LEDGER_DIGEST = "desks/mt5/reports/SENSOR_LEDGER.json"
 
 #: The hook points: record type -> (store, mapping function name, the branch that writes it).
 HOOKS: dict[str, dict[str, str]] = {
@@ -170,12 +169,6 @@ def _f(v: Any) -> float | None:
     return out if math.isfinite(out) else None
 
 
-def _earliest(*stamps: Any) -> str:
-    """The earliest of the measured stamps, ISO; UNMEASURED when none is a time."""
-    ts = [t for t in (sc.parse_time(s) for s in stamps) if t is not None]
-    return min(ts).isoformat(timespec="seconds") if ts else UNMEASURED
-
-
 def _region(v: Any) -> str:
     return str(v or "").strip().upper()
 
@@ -193,10 +186,46 @@ def _sensor(family: str, source_id: str) -> str:
     return f"asia.{family}:{source_id}"
 
 
-def _with_ordinal(obs: sc.SensorObservation, ordinal: int | None) -> sc.SensorObservation:
-    if ordinal is None:
-        return obs
-    return sc.make(**{**obs.__dict__, "attributes": {**obs.attributes, "vintage_ordinal": ordinal}})
+def _bounded(stamp: Any, basis: str, received: Any) -> tuple[str, str]:
+    """(knowable_at, knowable_basis): the world stamp with its basis, unless first sight came
+    earlier or is the only instant -- then knowable_at is received_at itself and the basis is
+    `bounded_by_receipt`. No instant at all is UNMEASURED for both, never a guess."""
+    t, rx = sc.parse_time(stamp), sc.parse_time(received)
+    if t is not None and (rx is None or t <= rx):
+        return sc.iso(stamp), basis
+    if rx is not None:
+        return sc.iso(received), "bounded_by_receipt"
+    return UNMEASURED, UNMEASURED
+
+
+#: A producer's free-text basis, read into the contract's vocabulary (first match wins).
+_BASIS_WORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("bounded_by_receipt", ("receipt", "first_seen", "first sight", "fetch", "retriev")),
+    ("calendar", ("calendar", "schedul", "release_rule")),
+    ("declared_lag", ("lag",)),
+    ("printed_stamp", ("print", "stamp", "publication", "published", "page")),
+)
+
+
+def _basis_of(kw: Mapping[str, Any], producer: Any) -> str:
+    """How a producer's knowable_at was set: its own contract word, else its free text read into
+    the vocabulary, else the clock knowable_at equals. UNMEASURED when none says (the contract
+    then refuses the row as a DEFECT, which is the honest outcome)."""
+    word = str(producer or "").strip()
+    if word in sc.KNOWABLE_BASES:
+        return word
+    low = word.lower()
+    for basis, keys in _BASIS_WORDS:
+        if low and any(k in low for k in keys):
+            return basis
+    k = sc.parse_time(kw.get("knowable_at"))
+    if k is None:
+        return UNMEASURED
+    for clock, basis in (("publication_time", "printed_stamp"), ("scheduled_time", "calendar"),
+                         ("received_at", "bounded_by_receipt")):
+        if sc.parse_time(kw.get(clock)) == k:
+            return basis
+    return UNMEASURED
 
 
 # ============================================================================== hook: alt_proxies
@@ -229,10 +258,9 @@ def map_alt_proxies_row(source: Mapping[str, Any], row: Mapping[str, Any],
         "raw_pointer": f"{store_ref or sid}#{series}|{period}",
     }
     page = basis == "page"
+    knowable, kbasis = _bounded(published, "printed_stamp" if page else "calendar", first_seen)
     first_attrs: dict[str, Any] = {
         "vintage": "first", "published_basis": basis or UNMEASURED,
-        "knowable_basis": ("publication stamp printed by the source, bounded by first sight"
-                           if page else "release calendar (late-biased), bounded by first sight"),
         "cadence": source.get("cadence"), "pit_quality": (point or {}).get("pit_quality")}
     if point:
         first_attrs.update({"pace": point.get("pace"), "pace_surprise": point.get("surprise"),
@@ -241,22 +269,21 @@ def map_alt_proxies_row(source: Mapping[str, Any], row: Mapping[str, Any],
     out = [sc.make(**common, kind="state", value=v0,
                    publication_time=published if page else None,
                    scheduled_time=None if page else published,
-                   knowable_at=_earliest(published, first_seen), received_at=first_seen,
+                   knowable_at=knowable, knowable_basis=kbasis, received_at=first_seen,
                    surprise_z=(point or {}).get("surprise_z"),
                    provenance_hash=_hash([sid, series, period, v0, first_seen]),
-                   attributes={**first_attrs, "vintage_ordinal": 0})]
+                   attributes=first_attrs)]
     v1 = _f(row.get("value_last"))
     n_rev = int(_f(row.get("n_revisions")) or 0)
     rev_at = row.get("revision_time")
     if v1 is not None and n_rev > 0 and rev_at and not math.isclose(v1, v0, rel_tol=1e-9,
                                                                     abs_tol=1e-12):
         out.append(sc.make(
+            # the revision's own publication instant is not stored: first sight bounds it
             **common, kind="state", value=v1, knowable_at=rev_at, received_at=rev_at,
+            knowable_basis="bounded_by_receipt",
             provenance_hash=_hash([sid, series, period, v1, rev_at]),
-            attributes={"vintage": "revision", "n_revisions_in_store": n_rev,
-                        "knowable_basis": "first sight of the revised value (its own "
-                                          "publication instant is not stored)",
-                        "vintage_ordinal": n_rev}))
+            attributes={"vintage": "revision", "n_revisions_in_store": n_rev}))
     return out
 
 
@@ -275,6 +302,8 @@ def map_asia_frame_row(source: Mapping[str, Any], record: Mapping[str, Any],
     if sc.parse_time(event) is None:
         return []
     snapshot = sc.iso(event) == sc.iso(received) or sc.iso(avail) == sc.iso(received)
+    # a cross-section snapshot's available_time IS the fetch: only receipt bounds it
+    knowable, kbasis = _bounded(None if snapshot else avail, "declared_lag", received)
     labels = [str(record.get(c)).strip() for c in label_columns
               if str(record.get(c, "")).strip() not in ("", "nan", "None", "NaT")]
     entity = (" | ".join(labels)[:120]) or _region(source.get("country"))
@@ -289,15 +318,12 @@ def map_asia_frame_row(source: Mapping[str, Any], record: Mapping[str, Any],
             sensor_class=SENSOR_CLASS, kind="state", entity=entity,
             geography=_region(source.get("country")), asset_domain=str(source.get("plane") or ""),
             metric=str(col)[:80], value=v, event_time=event,
-            knowable_at=_earliest(avail, received), received_at=received,
+            knowable_at=knowable, knowable_basis=kbasis, received_at=received,
             licence=f"asia_sources:{sid} access={access}",
             commercial_rights=UNMEASURED,
             provenance_hash=_hash([sid, record.get("vintage_id"), entity, col, v, sc.iso(event)]),
             raw_pointer=frame_ref or sid,
-            attributes={"knowable_basis": ("fetch instant: a cross-section snapshot" if snapshot
-                                           else "registry's declared publication lag, bounded "
-                                                "by the fetch"),
-                        "modelled_available_time": sc.iso(avail),
+            attributes={"snapshot": snapshot, "modelled_available_time": sc.iso(avail),
                         "vintage_id": record.get("vintage_id"), "cadence": source.get("cadence"),
                         "url": source.get("url")}))
     return out
@@ -322,18 +348,23 @@ def map_contract_record(record: Mapping[str, Any], *, family: str,
     attrs: dict[str, Any] = {f"producer_{k}": record[k] for k in _MINTED
                              if k in ("observation_id", "revision_of", "revision_delta",
                                       "sensor_id") and record.get(k) is not None}
-    for k in ("knowable_basis", "vintage", "vintage_id", "revision_number", "time_basis",
+    for k in ("vintage", "vintage_id", "revision_number", "time_basis",
               "period", "key", "period_end", "first_seen_utc", "producer_id", "pit_quality",
               "consensus_status", "model"):
         if record.get(k) is not None:
             attrs[k] = record[k]
     if "event_time" not in kw and record.get("period_end"):
         kw["event_time"] = record["period_end"]
+    producer_basis = record.get("knowable_basis")
+    if producer_basis is not None and producer_basis not in sc.KNOWABLE_BASES:
+        attrs["producer_knowable_basis"] = producer_basis
     if not kw.get("knowable_at") and record.get("available_time"):
         kw["knowable_at"] = record["available_time"]
-        attrs.setdefault("knowable_basis", "producer available_time")
+        # a producer's available_time is its own release rule (period end + declared lag)
+        producer_basis = producer_basis or "declared_lag"
     if not kw.get("received_at") and record.get("first_seen_utc"):
         kw["received_at"] = record["first_seen_utc"]
+    kw["knowable_basis"] = _basis_of(kw, producer_basis)
     kw.update({"sensor_id": _sensor(family, sid), "source_id": sid, "metric": metric,
                "value": value, "sensor_class": SENSOR_CLASS,
                "kind": "event" if record.get("kind") == "event" else "state"})
@@ -385,17 +416,6 @@ def _jsonl(path: Path) -> Iterator[dict[str, Any]]:
                     yield row
     except OSError:
         return
-
-
-def _chain_ordinals(obs: list[sc.SensorObservation]) -> list[sc.SensorObservation]:
-    """Ordinal of each observation within its key's chain, in producer append order."""
-    seen: Counter[str] = Counter()
-    out = []
-    for o in obs:
-        k = sc.SensorLedger.revision_key(o)
-        out.append(_with_ordinal(o, seen[k]))
-        seen[k] += 1
-    return out
 
 
 def _alt_proxy_sources() -> list[Any]:
@@ -476,7 +496,7 @@ def collect_asia_parser(desk: Path) -> Iterator[tuple[str, Path, Callable[[], li
         if hist.exists():
             def load_h(hist: Path = hist) -> list[sc.SensorObservation]:
                 got = [map_asia_history_record(r) for r in _jsonl(hist)]
-                return _chain_ordinals([o for o in got if o is not None])
+                return [o for o in got if o is not None]
             yield f"asia_parser_history:{sid}", hist, load_h
             continue
         frame = next((series / f"{sid}{ext}" for ext in (".parquet", ".csv")
@@ -510,13 +530,13 @@ def collect_contract_stores(desk: Path) -> Iterator[tuple[str, Path, Callable[[]
             if not _carries_contract(path):
                 return []
             got = [map_cn_exchange_record(r) for r in _jsonl(path) if is_asia(r.get("geography"))]
-            return _chain_ordinals([o for o in got if o is not None])
+            return [o for o in got if o is not None]
         yield f"cn_exchange:{path.stem}", path, load_c
     latent = desk / "data" / "latent"
     for path in sorted(latent.glob("*.vintages.jsonl")) if latent.is_dir() else []:
         def load_l(path: Path = path) -> list[sc.SensorObservation]:
             got = [map_latent_record(r) for r in _jsonl(path)]
-            return _chain_ordinals([o for o in got if o is not None])
+            return [o for o in got if o is not None]
         yield f"latent:{path.name.split('.')[0]}", path, load_l
 
 
@@ -525,30 +545,6 @@ COLLECTORS: tuple[Callable[[Path], Iterator[tuple[str, Path, Callable[[], list[A
 
 
 # ============================================================================== the pass
-def _index(ledger: sc.SensorLedger) -> dict[str, Any]:
-    try:
-        doc = json.loads(ledger.index_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    return doc if isinstance(doc, dict) else {}
-
-
-def pending(obs: Iterable[sc.SensorObservation], index: Mapping[str, Any]
-            ) -> list[sc.SensorObservation]:
-    """What the ledger does not already hold: drop a vintage whose ordinal the key's chain in the
-    index has already reached (a replayed older print), keep everything else (the ledger itself
-    drops an unchanged value)."""
-    out = []
-    for o in obs:
-        prior = index.get(sc.SensorLedger.revision_key(o))
-        ordinal = o.attributes.get("vintage_ordinal")
-        if (prior is not None and isinstance(ordinal, int) and isinstance(prior, list)
-                and len(prior) >= 3 and ordinal <= int(prior[2] or 0)):
-            continue
-        out.append(o)
-    return out
-
-
 def _sig(path: Path) -> str:
     try:
         st = path.stat()
@@ -569,8 +565,7 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
     except (OSError, ValueError):
         prev = {}
     seen: dict[str, str] = dict(prev.get("stores_seen") or {}) if isinstance(prev, dict) else {}
-    index = _index(ledger)
-    if not index:
+    if not ledger.latest_index():
         seen = {}          # an empty or reset ledger is re-filled, whatever the cursor says
     stores: dict[str, Any] = {}
     totals: Counter[str] = Counter()
@@ -596,16 +591,13 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
                 stores[name] = {"status": "ERROR",
                                 "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
                 continue
-            todo = pending(obs, index)
-            res: dict[str, Any] = ledger.append(todo, now=now) if todo else {
+            # the contract owns idempotency: a re-sent print (first or revised) is a duplicate
+            res: dict[str, Any] = ledger.append(obs, now=now) if obs else {
                 "appended": 0, "duplicates": 0, "revisions": 0, "refused": 0, "refusals": []}
-            index = _index(ledger) if res.get("appended") else index
             for k in ("appended", "duplicates", "revisions", "refused"):
                 totals[k] += int(res.get(k) or 0)
             totals["mapped"] += len(obs)
-            totals["already_held"] += len(obs) - len(todo)
             stores[name] = {"status": "MAPPED", "mapped": len(obs),
-                            "already_held": len(obs) - len(todo),
                             **{k: res.get(k) for k in ("appended", "duplicates", "revisions",
                                                        "refused")},
                             "refusals": (res.get("refusals") or [])[:3]}
@@ -617,9 +609,10 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
     doc = {
         "generated_at": now.isoformat(timespec="seconds"),
         "rule": ("pure mapping of stored Asia observations into the universal sensor ledger; "
-                 "knowable_at = publication (bounded by first sight), received_at = first "
-                 "sight, revisions append, authority NONE"),
+                 "knowable_at = publication (bounded by first sight) with its knowable_basis, "
+                 "received_at = first sight, revisions append, authority NONE"),
         "ledger_root": str(ledger.root),
+        "ledger_digest": LEDGER_DIGEST,
         "totals": dict(totals) if totals else {"mapped": UNMEASURED},
         "deferred_over_budget": deferred,
         "hooks": hooks,
@@ -644,7 +637,7 @@ def main(argv: list[str] | None = None) -> int:
     t = doc["totals"]
     print(f"asia_sensor_adapter: mapped {t.get('mapped')} appended {t.get('appended', 0)} "
           f"revisions {t.get('revisions', 0)} refused {t.get('refused', 0)} "
-          f"already held {t.get('already_held', 0)}; deferred {len(doc['deferred_over_budget'])}")
+          f"duplicates {t.get('duplicates', 0)}; deferred {len(doc['deferred_over_budget'])}")
     return 0
 
 

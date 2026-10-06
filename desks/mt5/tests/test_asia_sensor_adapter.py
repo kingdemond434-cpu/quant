@@ -116,6 +116,8 @@ def test_alt_proxies_row_keeps_publication_and_receipt_apart() -> None:
     # the desk held it before the (late-biased) calendar instant: the world knew it by then
     assert obs.knowable_at == "2026-10-01T01:00:00+00:00"
     assert obs.received_at == "2026-10-01T01:00:00+00:00"
+    assert obs.knowable_basis == "bounded_by_receipt" and obs.knowable_at == obs.received_at
+    assert "knowable_basis" not in obs.attributes
     assert obs.geography == "JP" and obs.licence == "e-Stat"
     assert obs.commercial_rights.startswith("terms=confirmed")
     assert obs.authority == "NONE" and sc.defects(obs) == []
@@ -183,8 +185,11 @@ def test_rerun_appends_nothing_even_without_the_cursor(tmp_path: Path) -> None:
     assert again["totals"].get("appended", 0) == 0
     rep.unlink()                       # the stores_seen cursor is gone: only the index guards
     third = ad.run(desk, ledger_root=root, report=rep, now=NOW + timedelta(hours=2))
+    # the CONTRACT keeps it idempotent: replayed first prints (older than the revisions the
+    # ledger holds) are duplicates, never new revisions back to the first print
     assert third["totals"]["appended"] == 0 and third["totals"]["revisions"] == 0
-    assert third["totals"]["already_held"] >= 2        # replayed first prints were not re-booked
+    assert third["totals"]["duplicates"] == third["totals"]["mapped"] == n
+    assert not hasattr(ad, "pending") and not hasattr(ad, "_index")
     assert len(_all_rows(root)) == n
 
 
@@ -194,3 +199,84 @@ def test_alt_proxies_leg_runs_the_adapter(tmp_path: Path) -> None:
     out = A.sensor_adapter_pass(A.Paths(desk), ledger_root=tmp_path / "sensors")
     assert out["appended"] == 7
     assert (desk / "reports" / ad.REPORT_NAME).exists()
+
+
+def test_each_knowable_basis_is_set_from_how_knowable_at_was_derived(tmp_path: Path) -> None:
+    src = {"id": "kr_exports_early", "region": "KR", "licence": "x", "terms": "confirmed"}
+    base = {"series": "exports", "period": "2026-09-10", "value_first": 1.0, "value_last": 1.0,
+            "first_seen_at": "2026-09-11T02:00:00+00:00", "n_revisions": 0}
+    # printed_stamp: the page's own stamp, earlier than first sight
+    (o,) = ad.map_alt_proxies_row(src, {**base, "published_time": "2026-09-11T00:00:00+00:00",
+                                        "published_basis": "page"})
+    assert (o.knowable_basis, o.knowable_at) == ("printed_stamp", "2026-09-11T00:00:00+00:00")
+    # calendar: the release rule's instant, earlier than first sight
+    (o,) = ad.map_alt_proxies_row(src, {**base, "published_time": "2026-09-11T01:00:00+00:00",
+                                        "published_basis": "release_rule"})
+    assert (o.knowable_basis, o.scheduled_time) == ("calendar", "2026-09-11T01:00:00+00:00")
+    assert o.knowable_at == "2026-09-11T01:00:00+00:00"
+    # bounded_by_receipt: no publication instant at all -> knowable_at IS received_at
+    (o,) = ad.map_alt_proxies_row(src, {**base, "published_time": None})
+    assert o.knowable_basis == "bounded_by_receipt" and o.knowable_at == o.received_at
+    # declared_lag: a registry frame's modelled available_time, earlier than the fetch
+    reg = {"id": "cn_test_stat", "country": "cn"}
+    rec = {"event_time": "2026-07-31", "available_time": "2026-08-20T00:00:00+00:00",
+           "ingested_time": "2026-09-01T00:00:00+00:00", "level": 10.5}
+    (o,) = ad.map_asia_frame_row(reg, rec, ["level"])
+    assert (o.knowable_basis, o.knowable_at) == ("declared_lag", "2026-08-20T00:00:00+00:00")
+    (o,) = ad.map_asia_frame_row(reg, {**rec, "available_time": "2026-09-20T00:00:00+00:00"},
+                                 ["level"])
+    assert o.knowable_basis == "bounded_by_receipt" and o.knowable_at == o.received_at
+    # s2.5 producer rows: the contract word is kept, free text is read into the vocabulary
+    # (and kept as producer_knowable_basis), and with no word the matching clock decides
+    row = {"source_id": "cnx_shfe", "metric": "wr", "value": 1.0, "geography": "CN",
+           "event_time": "2026-09-30", "publication_time": "2026-09-30T12:00:00+00:00",
+           "knowable_at": "2026-09-30T12:00:00+00:00", "received_at": "2026-10-01T01:00:00+00:00"}
+    assert ad.map_cn_exchange_record(row).knowable_basis == "printed_stamp"
+    o = ad.map_cn_exchange_record({**row, "knowable_basis": "release calendar hour"})
+    assert o.knowable_basis == "calendar"
+    assert o.attributes["producer_knowable_basis"] == "release calendar hour"
+    assert ad.map_cn_exchange_record({**row, "knowable_basis": "declared_lag"}
+                                     ).knowable_basis == "declared_lag"
+    lag = {k: v for k, v in row.items() if k not in ("knowable_at", "publication_time")}
+    o = ad.map_cn_exchange_record({**lag, "available_time": "2026-09-30T15:00:00+00:00"})
+    assert (o.knowable_basis, o.knowable_at) == ("declared_lag", "2026-09-30T15:00:00+00:00")
+    assert sc.defects(ad.map_cn_exchange_record(row)) == []
+
+    # every row the pass lands carries a contract basis, as a field and never an attribute
+    desk = _desk(tmp_path)
+    root = tmp_path / "sensors"
+    doc = ad.run(desk, ledger_root=root, report=tmp_path / "rep.json", now=NOW)
+    assert doc["totals"]["refused"] == 0 and doc["contract_gaps"] == []
+    rows = _all_rows(root)
+    assert {r["knowable_basis"] for r in rows} == {
+        "printed_stamp", "declared_lag", "bounded_by_receipt"}
+    assert all(r["knowable_basis"] in sc.KNOWABLE_BASES for r in rows)
+    assert not any("knowable_basis" in (r["attributes"] or {}) for r in rows)
+    assert all(r["knowable_at"] == r["received_at"] for r in rows
+               if r["knowable_basis"] == "bounded_by_receipt")
+
+
+def test_adapter_rows_show_up_in_the_hourly_sensor_ledger_digest(
+        tmp_path: Path, monkeypatch: Any) -> None:
+    """#208's `sensor_ledger` leg (research/sensor_ledger_digest.py -> reports/SENSOR_LEDGER.json)
+    is the ledger's clock and artifact: the adapter's observations are counted there."""
+    from research import sensor_ledger_digest as dg
+    desk = _desk(tmp_path)
+    root = tmp_path / "sensors"
+    ad.run(desk, ledger_root=root, report=tmp_path / "rep.json", now=NOW)
+    held = sc.SensorLedger(root).latest_index()
+    monkeypatch.setenv("QUANT_SENSOR_LEDGER", str(root))
+    out = tmp_path / "SENSOR_LEDGER.json"
+    assert dg.main(["--out", str(out), "--days", "400"]) == 0
+    digest = json.loads(out.read_text(encoding="utf-8"))
+    assert digest["status"] == "MEASURED" and digest["root"] == str(root)
+    assert digest["index_keys"] == len(held) and digest["revised_keys"] == 2
+    days = [d for d in digest["days"].values() if d.get("rows")]
+    assert sum(d["rows"] for d in days) == 7
+    classes: dict[str, int] = {}
+    for d in days:
+        for k, v in d["sensor_classes"].items():
+            classes[k] = classes.get(k, 0) + v
+    assert classes == {ad.SENSOR_CLASS: 7}
+    assert ad.LEDGER_DIGEST == "desks/mt5/reports/SENSOR_LEDGER.json" == \
+        str(dg.REPORT.relative_to(ROOT)).replace("\\", "/")
