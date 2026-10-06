@@ -282,8 +282,21 @@ def emit_conditioner_cells(series_id: str, signals: Sequence[str], symbols: Sequ
                            mechanism: str, falsifier: str, generator: str,
                            sides: Sequence[int] = (1,), transforms: Sequence[str] = ("level_z",),
                            charts: Sequence[str] = ("H1", "H4", "D1"),
-                           threshold: float = 1.0, dry_run: bool = False) -> dict[str, Any]:
-    """One `exogenous_conditioner` cell per (signal x transform x symbol x chart x side)."""
+                           threshold: float = 1.0, dry_run: bool = False,
+                           data_source: str | None = None) -> dict[str, Any]:
+    """One `exogenous_conditioner` cell per (signal x transform x symbol x chart x side).
+
+    `data_source` names where the series' numbers come from (e.g. "fred:DGS10",
+    "yahoo:cboe_indices:^VIX", "mt5:bars"). The terms hold (`libs.data.terms_hold`) is checked
+    first and fails closed: an undeclared or held source emits no cell and says why."""
+    from libs.data.terms_hold import gauntlet_terms
+    if not data_source:
+        return {"series_id": series_id, "emitted": 0, "created": 0, "status": "HELD_TERMS",
+                "why": "no data_source declared: the terms gate cannot clear an unnamed source"}
+    ok, why = gauntlet_terms(data_source)
+    if not ok:
+        return {"series_id": series_id, "emitted": 0, "created": 0, "status": "HELD_TERMS",
+                "data_source": data_source, "why": why}
     made = created = 0
     errors: list[str] = []
     did = ""

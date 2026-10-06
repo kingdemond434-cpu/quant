@@ -96,13 +96,37 @@ def test_curve_regime_and_ledger() -> None:
     assert gc["slope_10y3m"] == pytest.approx(4.1 - 4.5, abs=1e-6)
     assert gc["inverted_10y3m"] is True
     assert gc["curvature"] == pytest.approx(2 * 3.9 - 4.0 - 4.1, abs=1e-6)
-    assert rep["regime"] == "vol_backwardation_high"
+    # the vol indices come through Yahoo's chart API: held from conditioning until cleared
+    assert rep["regime"].startswith("HELD_TERMS") and rep["terms"]["vol"]["gauntlet"] == "HELD"
+    assert rep["terms"]["curve"]["gauntlet"] == "admitted"
     assert rep["option_chains"]["status"] == "EXTERNALLY_BLOCKED"
     obs = ms.observations(rep, NOW)
     assert obs and all(sc.defects(o) == [] for o in obs)
     assert {o.sensor_id for o in obs} >= {"market:implied_vol", "market:vrp",
                                           "market:vol_term", "market:ust_curve"}
     assert all(o.authority == "NONE" for o in obs)
+    src = {o.sensor_id: o.source_id for o in obs}
+    assert src["market:implied_vol"] == ms.VOL_SOURCE and src["market:ust_curve"] == "fred:h15"
+
+
+def test_terms_gate_on_vol_sources_and_chains_routed_to_discovery(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit #211 should-fix: the J sources pass the terms gate; chains go to discovery."""
+    from macro import release_vintages as rv
+    monkeypatch.setattr(rv, "CLEARANCES", tmp_path / "clear.json")
+    assert ms.terms(ms.VOL_SOURCE)["gauntlet"] == "HELD"
+    (tmp_path / "clear.json").write_text(json.dumps(
+        {"yahoo": {"status": "CLEARED", "by": "t"}, "cboe": {"status": "CLEARED", "by": "t"}}))
+    rep = ms.build(now=NOW, series=_series(), charts={}, vol_rows=_vol_rows())
+    assert rep["regime"] == "vol_backwardation_high"
+    req = tmp_path / "endpoints_world_sensor.json"
+    req.write_text(json.dumps({"endpoints": [{"id": "other", "url": "u"}]}))
+    got = ms.route_chains_to_discovery(req)
+    assert got["routed"] == "discovery" and got["candidate_id"] == "option_chains_per_strike"
+    ms.route_chains_to_discovery(req)                    # idempotent: one row, others kept
+    rows = json.loads(req.read_text())["endpoints"]
+    assert [r["id"] for r in rows] == ["other", "option_chains_per_strike"]
+    assert rows[1]["machine_use_allowed"] is None and "UNCONFIRMED" in rows[1]["terms"]
 
 
 def _weekly(years: int, bump: float) -> list[tuple[str, float]]:

@@ -75,8 +75,15 @@ def test_lake_series_keeps_the_pit_stamp_and_the_conditioner_reads_it(tmp_path) 
 
 def test_cell_door_dry_run_and_rollup(tmp_path) -> None:
     got = se.emit_conditioner_cells("ws_test", ["a", "b"], ["US500"], mechanism="m",
-                                    falsifier="f", generator="g", sides=(1, -1), dry_run=True)
+                                    falsifier="f", generator="g", sides=(1, -1), dry_run=True,
+                                    data_source="fred:DGS10")
     assert got["emitted"] == 2 * 1 * 3 * 2
+    # the terms gate fails closed: an unnamed source and a held source emit nothing
+    for src in (None, "yahoo:cboe_indices:^VIX"):
+        held = se.emit_conditioner_cells("ws_test", ["a"], ["US500"], mechanism="m",
+                                         falsifier="f", generator="g", dry_run=True,
+                                         data_source=src)
+        assert held["emitted"] == 0 and held["status"] == "HELD_TERMS"
     se.publish("eng", [se.contract(engine="eng", cards=["QG1"], metric="m", baseline="b",
                                    falsifier="f", value=None, baseline_value=None, n=0)],
                root=tmp_path)

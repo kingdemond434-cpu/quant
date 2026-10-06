@@ -59,6 +59,9 @@ for _p in (str(ROOT), str(DESK)):
 from libs.research import sensor_engines as se  # noqa: E402
 
 REPORT = DESK / "reports" / "VOL_CONDITIONER.json"
+#: vol_archive reads the CBOE indices through Yahoo's chart API: the terms gate holds both until
+#: cleared, so the states are measured and kept and no cell is emitted (audit #211, J sources)
+VOL_SOURCE = "yahoo:cboe_indices"
 REFERENCE = DESK / "data" / "vol_archive" / "reference"
 UNIVERSE_DIR = DESK / "data" / "universe"
 UNIVERSE = UNIVERSE_DIR / "universe.json"
@@ -448,7 +451,12 @@ def run(*, dry_run: bool = False, reference: Path = REFERENCE,
                                   f"skew) conditions {sym}: the insurance premium is richest "
                                   f"when fear is high and vol mean-reverts"),
                 falsifier="gate effect indistinguishable from the shuffled-state gate across "
-                          "the judged cells", generator=ENGINE, sides=sides)
+                          "the judged cells", generator=ENGINE, sides=sides,
+                data_source=f"{VOL_SOURCE}:{ticker}")
+            info["terms"] = {"data_source": f"{VOL_SOURCE}:{ticker}",
+                             "gauntlet": ("HELD" if info["cells"].get("status") == "HELD_TERMS"
+                                          else "admitted"),
+                             "why": info["cells"].get("why", "")}
             obs.extend(observations(ticker, sym, rows[-1], when))
         grounds[ticker] = info
     report: dict[str, Any] = {"at": when.isoformat(timespec="seconds"), "engine": ENGINE,

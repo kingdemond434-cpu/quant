@@ -50,10 +50,59 @@ BETA_DAYS = 63
 CURVE = ("DGS3MO", "DGS2", "DGS5", "DGS10", "DGS30")
 BETA_SYMBOLS = ("XAUUSD", "XAGUSD", "USOIL", "UKOIL", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD",
                 "USDCAD", "USDCHF", "NAS100", "US30", "GER40", "JP225")
+#: Where each state comes from, for the terms gate (audit #211: a terms gate on the J sources).
+#: The vol indices are CBOE values read through Yahoo's chart API by `recorders/vol_archive.py`;
+#: the curve is the Federal Reserve's H.15 via FRED (public domain); betas are the desk's own bars.
+VOL_SOURCE = "yahoo:cboe_indices"
+CURVE_SOURCE = "fred:h15"
+#: The discovery request for per-strike chains: written into the acquisition organ's candidate
+#: folder (`source_evig` prices every row there and proposes the next ground to acquire).
+CHAIN_REQUEST = DESK / "data" / "intelligence" / "asia_endpoints" / "endpoints_world_sensor.json"
+CHAIN_TARGETS = ("US500", "NAS100", "US30", "XAUUSD", "USOIL", "EURUSD", "USDJPY")
 CHAINS_BLOCKED = ("no per-strike option chain source is cleared by the terms gate on this desk "
                   "(free delayed chains exist but their machine-use terms are unconfirmed); "
                   "OMST/OMON per-strike skew and open interest are an acquisition target, never "
                   "approximated from an index")
+
+
+def terms(source_id: str) -> dict[str, Any]:
+    """The terms gate's verdict for one source: admitted to cells/conditioning or HELD."""
+    try:
+        from macro.release_vintages import gauntlet_terms
+    except Exception as exc:                             # pragma: no cover - import-context only
+        return {"gauntlet": "HELD", "why": f"terms gate unavailable: {type(exc).__name__}"}
+    ok, why = gauntlet_terms(source_id)
+    return {"gauntlet": "admitted" if ok else "HELD", "why": why or "no terms hold on this source"}
+
+
+def route_chains_to_discovery(path: Path | None = None) -> dict[str, Any]:
+    """Per-strike option chains are an ACQUISITION TARGET, routed to discovery as a candidate row
+    with its terms unconfirmed: `source_evig` prices it among the proposals, the terms review
+    decides machine use, and nothing here fetches it or approximates it from an index."""
+    target = path or CHAIN_REQUEST
+    row = {"id": "option_chains_per_strike", "url": None, "targets": list(CHAIN_TARGETS),
+           "cadence": "daily", "plane": "options", "access": "public",
+           "observable": "per-strike implied vol, open interest and volume",
+           "mechanism": "dealer gamma, skew and positioning states for the underlying CFD",
+           "machine_use_allowed": None, "terms": "UNCONFIRMED: needs a terms review",
+           "requested_by": "macro/market_state.py (OMST/OMON)"}
+    try:
+        doc = json.loads(target.read_text("utf-8"))
+    except (OSError, ValueError):
+        doc = {}
+    rows = [r for r in (doc.get("endpoints") or []) if isinstance(r, dict)
+            and r.get("id") != row["id"]] if isinstance(doc, dict) else []
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"endpoints": [*rows, row]}, indent=1), "utf-8")
+        tmp.replace(target)
+    except OSError as exc:
+        return {"status": "EXTERNALLY_BLOCKED", "why": CHAINS_BLOCKED,
+                "routed": UNMEASURED, "route_error": type(exc).__name__}
+    return {"status": "EXTERNALLY_BLOCKED", "why": CHAINS_BLOCKED,
+            "routed": "discovery", "request": str(target.relative_to(DESK))
+            if target.is_relative_to(DESK) else str(target), "candidate_id": row["id"]}
 
 
 # ============================================================================== series and PIT
@@ -277,16 +326,23 @@ def build(*, now: datetime | None = None, series: Mapping[str, list[tuple[str, f
     vol = vol_state(read_vol_archive() if vol_rows is None else vol_rows, when)
     gc = curve(ser, when)
     bt = betas(charts, when)
+    vol_terms = terms(VOL_SOURCE)
     return {"at": when.isoformat(timespec="seconds"), "source": "market_state",
             "vol": vol, "curve": gc, "beta": bt,
             "option_chains": {"status": "EXTERNALLY_BLOCKED", "why": CHAINS_BLOCKED},
-            "regime": regime_from(vol),
+            "terms": {"vol": vol_terms, "curve": terms(CURVE_SOURCE),
+                      "beta": {"gauntlet": "admitted", "why": "the desk's own MT5 bars"}},
+            # a held source's states stay stored and in the ledger, never a conditioning key
+            "regime": (regime_from(vol) if vol_terms["gauntlet"] == "admitted"
+                       else f"HELD_TERMS: {vol_terms['why']}"),
             "series_present": sorted(ser),
             "rule": "states, never directions; every number PIT as of its knowable instant"}
 
 
 def regime_label(now: datetime | None = None) -> str:
     """The conditioning key `event_surprise` buckets on. UNMEASURED when nothing is read."""
+    if terms(VOL_SOURCE)["gauntlet"] != "admitted":
+        return UNMEASURED                                # held by the terms gate, never a key
     try:
         return regime_from(vol_state(read_vol_archive(), now or datetime.now(UTC)))
     except Exception:
@@ -297,10 +353,14 @@ def regime_label(now: datetime | None = None) -> str:
 def observations(report: Mapping[str, Any], received_at: datetime) -> list[Any]:
     from libs.research import sensor_contract as sc
     out: list[Any] = []
-    common = {"source_id": "fred:cboe+h15", "sensor_class": "market_state", "kind": "state",
-              "received_at": received_at, "parse_complete_at": received_at,
-              "licence": "FRED: public data; CBOE index values redistributed by FRED",
-              "commercial_rights": UNMEASURED}
+    common = {"sensor_class": "market_state", "kind": "state",
+              "received_at": received_at, "parse_complete_at": received_at}
+    provenance = {
+        "vol": {"source_id": VOL_SOURCE, "commercial_rights": UNMEASURED,
+                "licence": "CBOE index values via Yahoo's chart API: terms UNCLEARED, held from "
+                           "the gauntlet by the terms gate"},
+        "rates": {"source_id": CURVE_SOURCE, "commercial_rights": "public domain",
+                  "licence": "Federal Reserve H.15 via FRED: public domain"}}
 
     def add(sensor: str, metric: str, value: Any, row: Mapping[str, Any], entity: str,
             **kw: Any) -> None:
@@ -308,7 +368,7 @@ def observations(report: Mapping[str, Any], received_at: datetime) -> list[Any]:
             return
         domain = kw.pop("domain", "vol")
         basis = kw.pop("basis", "declared_lag")
-        clocks = dict(common)
+        clocks = {**common, **provenance[domain]}
         if basis == "bounded_by_receipt":
             # vol_archive's own observation instant IS the receipt: the desk read the index then.
             clocks.update(received_at=row.get("knowable_at"),
@@ -339,6 +399,7 @@ def observations(report: Mapping[str, Any], received_at: datetime) -> list[Any]:
 
 def main(argv: list[str] | None = None) -> int:
     rep = build()
+    rep["option_chains"] = route_chains_to_discovery()
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(rep, indent=1, default=str), "utf-8")
     try:
