@@ -346,6 +346,11 @@ LEG_LAYER: dict[str, str] = {
     # the same question `source_routes`, `value_of_data` and `unseen_frontier` are information for
     # -- even though the frontier rows it writes become research work downstream. LAWS 5f.
     "coverage_tensor": "information",
+    # REGIONAL PARITY BY EQUIVALENCE. Which country holds which local functional equivalent of
+    # each information class (directive CORE LAW / PART III), disposed against a frozen ontology
+    # and projected from the tensor above: a question about the desk's INPUTS, asked before any
+    # signal exists, so information by the same reading as `coverage_tensor`.
+    "regional_parity": "information",
     # THE COVERAGE DRAIN. The tensor above says which inputs EXIST; this leg spends its hour
     # turning ground the desk already owns and has never read into ground it has actually
     # fetched -- registering every root the country packs declare, resolving the rows that were

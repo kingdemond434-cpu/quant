@@ -1,0 +1,598 @@
+{
+ "artifact": "desks/mt5/reports/REGIONAL_PARITY.json",
+ "at": "2026-10-06T20:08:00+00:00",
+ "by_group": {
+  "Business": {
+   "ABSENT_KNOWN_EQUIVALENT": 36,
+   "COVERED": 0,
+   "DECLARED": 14,
+   "NO_EQUIVALENT": 0,
+   "UNMEASURED": 838
+  },
+  "Commodities": {
+   "ABSENT_KNOWN_EQUIVALENT": 20,
+   "COVERED": 0,
+   "DECLARED": 162,
+   "NO_EQUIVALENT": 0,
+   "UNMEASURED": 1002
+  },
+  "Consumer": {
+   "ABSENT_KNOWN_EQUIVALENT": 158,
+   "COVERED": 0,
+   "DECLARED": 31,
+   "NO_EQUIVALENT": 0,
+   "UNMEASURED": 699
+  },
+  "Credit": {
+   "ABSENT_KNOWN_EQUIVALENT": 91,
+   "COVERED": 0,
+   "DECLARED": 8,
+   "NO_EQUIVALENT": 0,
+   "UNMEASURED": 641
+  },
+  "FX": {
+   "ABSENT_KNOWN_EQUIVALENT": 110,
+   "COVERED": 0,
+   "DECLARED": 212,
+   "NO_EQUIVALENT": 33,
+   "UNMEASURED": 1273
+  },
+  "Fiscal": {
+   "ABSENT_KNOWN_EQUIVALENT": 0,
+   "COVERED": 0,
+   "DECLARED": 81,
+   "NO_EQUIVALENT": 0,
+   "UNMEASURED": 955
+  },
+  "Growth": {
+   "ABSENT_KNOWN_EQUIVALENT": 27,
+   "COVERED": 0,
+   "DECLARED": 56,
+   "NO_EQUIVALENT": 0,
+   "UNMEASURED": 953
+  },
+  "Housing": {
+   "ABSENT_KNOWN_EQUIVALENT": 42,
+   "COVERED": 0,
+   "DECLARED": 10,
+   "NO_EQUIVALENT": 0,
+   "UNMEASURED": 836
+  },
+  "Inflation": {
+   "ABSENT_KNOWN_EQUIVALENT": 27,
+   "COVERED": 0,
+   "DECLARED": 83,
+   "NO_EQUIVALENT": 0,
+   "UNMEASURED": 778
+  },
+  "Labour": {
+   "ABSENT_KNOWN_EQUIVALENT": 75,
+   "COVERED": 0,
+   "DECLARED": 10,
+   "NO_EQUIVALENT": 0,
+   "UNMEASURED": 803
+  },
+  "Monetary / rates": {
+   "ABSENT_KNOWN_EQUIVALENT": 137,
+   "COVERED": 0,
+   "DECLARED": 162,
+   "NO_EQUIVALENT": 5,
+   "UNMEASURED": 1176
+  },
+  "Part III": {
+   "ABSENT_KNOWN_EQUIVALENT": 97,
+   "COVERED": 0,
+   "DECLARED": 134,
+   "NO_EQUIVALENT": 15,
+   "UNMEASURED": 494
+  },
+  "Trade": {
+   "ABSENT_KNOWN_EQUIVALENT": 52,
+   "COVERED": 0,
+   "DECLARED": 270,
+   "NO_EQUIVALENT": 0,
+   "UNMEASURED": 862
+  }
+ },
+ "by_region": {
+  "UNASSIGNED": {
+   "counts": {
+    "ABSENT_KNOWN_EQUIVALENT": 49,
+    "COVERED": 0,
+    "DECLARED": 30,
+    "NO_EQUIVALENT": 9,
+    "UNMEASURED": 1095
+   },
+   "n_countries": 13,
+   "parity": 0.025554
+  },
+  "africa": {
+   "counts": {
+    "ABSENT_KNOWN_EQUIVALENT": 52,
+    "COVERED": 0,
+    "DECLARED": 217,
+    "NO_EQUIVALENT": 7,
+    "UNMEASURED": 2272
+   },
+   "n_countries": 28,
+   "parity": 0.085399
+  },
+  "asean": {
+   "counts": {
+    "ABSENT_KNOWN_EQUIVALENT": 73,
+    "COVERED": 0,
+    "DECLARED": 126,
+    "NO_EQUIVALENT": 0,
+    "UNMEASURED": 802
+   },
+   "n_countries": 11,
+   "parity": 0.125874
+  },
+  "china": {
+   "counts": {
+    "ABSENT_KNOWN_EQUIVALENT": 39,
+    "COVERED": 0,
+    "DECLARED": 73,
+    "NO_EQUIVALENT": 0,
+    "UNMEASURED": 343
+   },
+   "n_countries": 5,
+   "parity": 0.16044
+  },
+  "europe": {
+   "counts": {
+    "ABSENT_KNOWN_EQUIVALENT": 312,
+    "COVERED": 0,
+    "DECLARED": 161,
+    "NO_EQUIVALENT": 12,
+    "UNMEASURED": 1608
+   },
+   "n_countries": 23,
+   "parity": 0.077367
+  },
+  "japan": {
+   "counts": {
+    "ABSENT_KNOWN_EQUIVALENT": 31,
+    "COVERED": 0,
+    "DECLARED": 0,
+    "NO_EQUIVALENT": 0,
+    "UNMEASURED": 60
+   },
+   "n_countries": 1,
+   "parity": 0.0
+  },
+  "korea": {
+   "counts": {
+    "ABSENT_KNOWN_EQUIVALENT": 13,
+    "COVERED": 0,
+    "DECLARED": 14,
+    "NO_EQUIVALENT": 0,
+    "UNMEASURED": 64
+   },
+   "n_countries": 1,
+   "parity": 0.153846
+  },
+  "latam": {
+   "counts": {
+    "ABSENT_KNOWN_EQUIVALENT": 104,
+    "COVERED": 0,
+    "DECLARED": 152,
+    "NO_EQUIVALENT": 17,
+    "UNMEASURED": 1365
+   },
+   "n_countries": 18,
+   "parity": 0.093769
+  },
+  "mena": {
+   "counts": {
+    "ABSENT_KNOWN_EQUIVALENT": 71,
+    "COVERED": 0,
+    "DECLARED": 199,
+    "NO_EQUIVALENT": 0,
+    "UNMEASURED": 1823
+   },
+   "n_countries": 23,
+   "parity": 0.095079
+  },
+  "north_america": {
+   "counts": {
+    "ABSENT_KNOWN_EQUIVALENT": 34,
+    "COVERED": 0,
+    "DECLARED": 42,
+    "NO_EQUIVALENT": 0,
+    "UNMEASURED": 106
+   },
+   "n_countries": 2,
+   "parity": 0.230769
+  },
+  "oceania": {
+   "counts": {
+    "ABSENT_KNOWN_EQUIVALENT": 39,
+    "COVERED": 0,
+    "DECLARED": 30,
+    "NO_EQUIVALENT": 0,
+    "UNMEASURED": 295
+   },
+   "n_countries": 4,
+   "parity": 0.082418
+  },
+  "russia_cis": {
+   "counts": {
+    "ABSENT_KNOWN_EQUIVALENT": 25,
+    "COVERED": 0,
+    "DECLARED": 100,
+    "NO_EQUIVALENT": 5,
+    "UNMEASURED": 871
+   },
+   "n_countries": 11,
+   "parity": 0.100402
+  },
+  "south_asia": {
+   "counts": {
+    "ABSENT_KNOWN_EQUIVALENT": 30,
+    "COVERED": 0,
+    "DECLARED": 89,
+    "NO_EQUIVALENT": 3,
+    "UNMEASURED": 606
+   },
+   "n_countries": 8,
+   "parity": 0.122759
+  }
+ },
+ "class_source": "ASIA_CHINA_FIRST_DIRECTIVE_2026-10-05.md, GLOBAL directive PART II (full global hard-data taxonomy, 12 classes / 86 sub-classes, completion-audit rows ASIA-1207..ASIA-1292) and PART III (country equivalence engine, 13 functions, ASIA-1294 and ASIA-1304..ASIA-1315)",
+ "discoveries": 80,
+ "discoveries_file": "discoveries_parity_20261006.json",
+ "n_cells": 13468,
+ "n_classes": 91,
+ "n_countries": 148,
+ "organ": "regional_parity",
+ "parity_spread": {
+  "max": 0.230769,
+  "median": 0.097741,
+  "min": 0.0,
+  "regions_below_median": [
+   "africa",
+   "europe",
+   "japan",
+   "latam",
+   "mena",
+   "oceania"
+  ]
+ },
+ "proof": {
+  "measured_tokens": 0,
+  "readable": false,
+  "states": [
+   "CANDIDATE_INPUT",
+   "EXECUTION_INPUT",
+   "INTERACTION_INPUT",
+   "NEGATIVE_KNOWLEDGE",
+   "PORTFOLIO_INPUT",
+   "RETIRED_WITH_EVIDENCE",
+   "WORLD_MODEL_INPUT"
+  ]
+ },
+ "rule": "for every country and every information class, name the LOCAL functional equivalent; COVERED only with proof of source -> measured outcome, never by default, and UNMEASURED is a verdict, never zero",
+ "totals": {
+  "counts": {
+   "ABSENT_KNOWN_EQUIVALENT": 872,
+   "COVERED": 0,
+   "DECLARED": 1233,
+   "NO_EQUIVALENT": 53,
+   "UNMEASURED": 11310
+  },
+  "covered_share": 0.0,
+  "known_gap": 872,
+  "n": 13468,
+  "parity": 0.091912,
+  "unmeasured_share": 0.839768
+ },
+ "unattributed_declarations": {
+  "atlantic_energy": 11,
+  "black_sea": 23,
+  "caucasus_central_asia": 9,
+  "cee_balkans": 22,
+  "central_america": 24,
+  "copperbelt": 13,
+  "ea": 10,
+  "east_africa": 9,
+  "gulf": 7,
+  "maghreb_energy": 9,
+  "maritime_asia": 2,
+  "mekong": 15,
+  "opec_north": 14,
+  "pacific": 17,
+  "red_sea": 22,
+  "sahel_coast": 15,
+  "southern_africa": 8,
+  "west_africa": 30
+ },
+ "unmeasured": [
+  "COVERAGE_TENSOR.json: absent or carries no coverage.by_country -- the per-country source-layer states are UNMEASURED",
+  "ingestion ledger: neither INGESTION_EXPLOITATION.json nor ingestion_ledger.jsonl was readable -- no cell can be COVERED and every DECLARED cell carries proof_state UNMEASURED",
+  "pack jp: did not resolve, its declarations are UNMEASURED"
+ ],
+ "work_queue_head": [
+  {
+   "class": "Part III:FX positioning",
+   "country": "au",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.7,
+   "source_id": "cftc_tff_currency"
+  },
+  {
+   "class": "Part III:FX positioning",
+   "country": "br",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.7,
+   "source_id": "cftc_tff_currency"
+  },
+  {
+   "class": "Part III:FX positioning",
+   "country": "ch",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.7,
+   "source_id": "cftc_tff_currency"
+  },
+  {
+   "class": "Part III:FX positioning",
+   "country": "gb",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.7,
+   "source_id": "cftc_tff_currency"
+  },
+  {
+   "class": "Part III:FX positioning",
+   "country": "jp",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.7,
+   "source_id": "cftc_tff_currency"
+  },
+  {
+   "class": "Part III:FX positioning",
+   "country": "mx",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.7,
+   "source_id": "cftc_tff_currency"
+  },
+  {
+   "class": "Part III:FX positioning",
+   "country": "nz",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.7,
+   "source_id": "cftc_tff_currency"
+  },
+  {
+   "class": "FX:carry",
+   "country": "ar",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "at",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "au",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "be",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:official fixes",
+   "country": "bg",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "ecb_reference_rates"
+  },
+  {
+   "class": "FX:carry",
+   "country": "cz",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "de",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "dk",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "es",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "fi",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "fr",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "gb",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "gr",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "hu",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "ie",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "il",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "is",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "it",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "jp",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "nl",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "no",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "nz",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "pe",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "pl",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "pt",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "ro",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "sa",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "se",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "FX:carry",
+   "country": "tr",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "Monetary / rates:yield curves",
+   "country": "us",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "treasury_daily_par_curve"
+  },
+  {
+   "class": "FX:carry",
+   "country": "za",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.65,
+   "source_id": "bis_cbpol"
+  },
+  {
+   "class": "Monetary / rates:central-bank assets",
+   "country": "ar",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.6,
+   "source_id": "bis_cbta"
+  },
+  {
+   "class": "Monetary / rates:central-bank assets",
+   "country": "at",
+   "disposition": "ABSENT_KNOWN_EQUIVALENT",
+   "score": 3.6,
+   "source_id": "bis_cbta"
+  }
+ ],
+ "work_queue_total": 13415
+}
