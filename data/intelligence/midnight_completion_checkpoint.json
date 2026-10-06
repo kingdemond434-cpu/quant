@@ -15,7 +15,7 @@
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "finished_at": "2026-10-05T21:01:51.840066+00:00",
+   "finished_at": "2026-10-06T00:27:52.000808+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -33,25 +33,25 @@
    "status": "DONE"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-10-05T21:02:15.838192+00:00",
+   "finished_at": "2026-10-06T00:28:07.336606+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-10-05T21:00:09.373691+00:00",
+   "finished_at": "2026-10-05T23:57:43.231756+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-10-05T20:59:55.742557+00:00",
+   "finished_at": "2026-10-05T23:57:26.786043+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-10-05T21:00:31.773742+00:00",
+   "finished_at": "2026-10-05T23:59:07.315904+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
@@ -63,23 +63,23 @@
    "status": "FAILED"
   },
   "mechanism_independence": {
-   "finished_at": "2026-10-05T21:01:13.013812+00:00",
+   "finished_at": "2026-10-06T00:27:09.949627+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-10-05T21:01:29.513587+00:00",
+   "finished_at": "2026-10-06T00:27:34.686473+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-10-05T21:00:52.201182+00:00",
+   "finished_at": "2026-10-06T00:26:39.778715+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-05T23:48:10.051376+00:00"
+ "updated_at": "2026-10-06T00:28:07.336606+00:00"
 }
