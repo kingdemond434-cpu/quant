@@ -57,12 +57,24 @@ MAX_BLOB_BYTES = 2_000_000
 #: case-insensitive), and a path origin's .gitignore covers is denied too.
 DENY_GLOBS: tuple[str, ...] = ("*.ini", "*.env", ".env*", "*secret*", "*credential*", "*token*",
                                "*.pem", "*.key", "*.pfx", "*.p12", "data/secrets/*")
-#: Content that looks like a credential. ANY hit refuses the WHOLE push; only path names are
-#: recorded, never the matching text.
-SECRET_PATTERNS: tuple[re.Pattern[str], ...] = tuple(re.compile(p, re.IGNORECASE) for p in (
-    r"ghp_[A-Za-z0-9]{20,}", r"github_pat_[A-Za-z0-9_]{20,}", r"gho_[A-Za-z0-9]{20,}",
-    r"\bsk-[A-Za-z0-9_-]{16,}", r"\bAKIA[0-9A-Z]{16}\b", r"-----BEGIN [A-Z ]*PRIVATE KEY",
-    r"-----BEGIN", r"\bpassword\s*[=:]", r"\btoken\s*[=:]",
+#: Content that looks like a credential, in two strengths, and only path names are ever recorded.
+#:
+#: STRONG -- a real credential FORMAT (a GitHub/OpenAI/AWS token shape, a private key block). One
+#: hit refuses the WHOLE push: a tree that holds a credential is not drained in part. These are
+#: anchored shapes, so ordinary prose does not trip them (`\bsk-` needs a word boundary, so
+#: "task-" and "desk-" never match; the token bodies need 16-36+ characters of the right alphabet).
+#:
+#: WEAK -- a credential-ish assignment (`password=`, `token:`) or a bare PEM header. Code reads
+#: tokens from the environment all the time (`token = os.environ[...]`), so a weak hit WITHHOLDS
+#: THAT FILE (listed in `withheld_paths` for a human) and the rest still drains: a false positive
+#: costs one named file, never the whole drain forever (audit D2, third condition).
+STRONG_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = tuple(re.compile(p) for p in (
+    r"\bghp_[A-Za-z0-9]{36}\b", r"\bgithub_pat_[A-Za-z0-9_]{60,}", r"\bgh[ousr]_[A-Za-z0-9]{36}\b",
+    r"\bsk-(?:proj-|ant-)?[A-Za-z0-9_-]{20,}", r"\bAKIA[0-9A-Z]{16}\b",
+    r"-----BEGIN (?:RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY-----",
+))
+WEAK_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = tuple(re.compile(p, re.IGNORECASE) for p in (
+    r"\b(?:password|passwd|pwd|token|secret|api_?key)\s*[=:]", r"-----BEGIN [A-Z ]+-----",
 ))
 
 #: Refs this module may never write, whatever it is asked.
@@ -192,9 +204,23 @@ def _denied_name(rel: str) -> bool:
     return any(fnmatch.fnmatch(base, g) or fnmatch.fnmatch(low, g) for g in DENY_GLOBS)
 
 
+def secret_strength(text: str) -> str | None:
+    """'strong', 'weak' or None for a blob's text (or a commit message)."""
+    if any(p.search(text) for p in STRONG_SECRET_PATTERNS):
+        return "strong"
+    if any(p.search(text) for p in WEAK_SECRET_PATTERNS):
+        return "weak"
+    return None
+
+
 def screen_secrets(root: Path, upstream: str,
-                   blobs: list[Blob]) -> tuple[list[Blob], list[str], list[str]]:
-    """AUDIT D2: (kept, denied-by-name-or-ignore, content-hits). Path names only, never text."""
+                   blobs: list[Blob]) -> tuple[list[Blob], list[str], list[str], list[str]]:
+    """AUDIT D2: (kept, denied-by-name-or-ignore, strong hits, weak-withheld). Path names only.
+
+    WHAT IS SCANNED IS EVERYTHING THAT IS PUSHED. The review branch is ONE commit whose parent is
+    origin's own tip (already public) and whose tree is origin's tree plus exactly these blobs; no
+    box commit, box history or box commit message is ever in the pushed range. So scanning each
+    kept blob (and the one commit message, in push_review) covers every byte the push adds."""
     denied = [b[2] for b in blobs if _denied_name(b[2])]
     rest = [b for b in blobs if b[2] not in denied]
     if rest:
@@ -204,12 +230,17 @@ def screen_secrets(root: Path, upstream: str,
         ignored = {ln.strip() for ln in out.splitlines() if ln.strip()}
         denied += [b[2] for b in rest if b[2] in ignored]
         rest = [b for b in rest if b[2] not in ignored]
-    hits: list[str] = []
+    strong: list[str] = []
+    weak: list[str] = []
     for _mode, sha, rel in rest:
         rc, text, _ = _git(root, "cat-file", "-p", sha)
-        if rc != 0 or any(p.search(text) for p in SECRET_PATTERNS):
-            hits.append(rel)
-    return rest, denied, hits
+        level = "strong" if rc != 0 else secret_strength(text)   # unreadable is not clean
+        if level == "strong":
+            strong.append(rel)
+        elif level == "weak":
+            weak.append(rel)
+    kept = [b for b in rest if b[2] not in weak]
+    return kept, denied, strong, weak
 
 
 def push_review(root: Path, upstream: str, blobs: list[tuple[str, str, str]], branch: str,
@@ -238,6 +269,8 @@ def push_review(root: Path, upstream: str, blobs: list[tuple[str, str, str]], br
     msg = (f"box backlog for review: {len(blobs)} code path(s) the box changed and origin lacks\n\n"
            f"Built by libs/ops/box_backlog.py on origin's tip {base[:12]}. Review branch only; "
            "it never lands on the live branch by itself.")
+    if secret_strength(msg):
+        return {"pushed": False, "why": "REFUSED: the commit message failed the secret screen"}
     rc, commit, err = _git(root, "commit-tree", tree.strip(), "-p", base, "-m", msg)
     if rc != 0:
         return {"pushed": False, "why": f"commit-tree failed: {err.strip()[:300]}"}
@@ -271,10 +304,10 @@ def run(root: Path, *, upstream: str, push: bool, now: datetime | None = None,
     if doc.get("verdict") != "MEASURED":
         return doc
     blobs, skipped = differing_blobs(root, upstream, code_paths)
-    blobs, denied, hits = screen_secrets(root, upstream, blobs)
+    blobs, denied, hits, withheld = screen_secrets(root, upstream, blobs)
     doc.update(code_paths_differing=len(blobs), code_paths=[b[2] for b in blobs][:500],
                skipped=skipped, denied_paths=denied, secret_screen_hits=hits,
-               blob_digest=_digest(blobs))
+               withheld_paths=withheld, blob_digest=_digest(blobs))
     prev = _previous(out) if out else {}
     raw_push = prev.get("push")
     prev_push: dict[str, Any] = raw_push if isinstance(raw_push, dict) else {}

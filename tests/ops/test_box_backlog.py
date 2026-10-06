@@ -184,3 +184,44 @@ def test_denied_names(rel: str) -> None:
 
 def test_ordinary_code_is_not_denied() -> None:
     assert not bb._denied_name("libs/ops/box_backlog.py")
+
+
+def test_a_weak_hit_withholds_one_file_and_never_wedges_the_drain(box: tuple[Path, Path]) -> None:
+    """Audit D2, third condition: code that merely READS a token must not block every drain."""
+    repo, remote = box
+    _write(repo, "libs/c.py", 'token = os.environ.get("GITHUB_TOKEN")\n')
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-qm", "box code that reads a token")
+    doc = bb.run(repo, upstream="origin/live", push=True)
+    assert doc["withheld_paths"] == ["libs/c.py"] and doc["secret_screen_hits"] == []
+    assert doc["push"]["pushed"] is True, doc
+    branch = doc["push"]["branch"]
+    files = _git(remote, "ls-tree", "-r", "--name-only", branch)
+    assert "libs/a.py" in files and "libs/c.py" not in files
+
+
+@pytest.mark.parametrize("text", [
+    "run the task-scheduler and the desk-sync job", "risk-free rate", "the sk-learn wrapper",
+    "-----BEGIN CERTIFICATE-----",
+])
+def test_ordinary_text_is_never_a_strong_hit(text: str) -> None:
+    assert bb.secret_strength(text) != "strong"
+
+
+@pytest.mark.parametrize("text", [
+    "ghp_" + "A" * 36, "github_pat_" + "a" * 70, "sk-proj-" + "x" * 30, "AKIA" + "Q" * 16,
+    "-----BEGIN OPENSSH PRIVATE KEY-----",
+])
+def test_real_credential_shapes_are_strong(text: str) -> None:
+    assert bb.secret_strength(text) == "strong"
+
+
+def test_the_pushed_range_is_one_commit_on_origins_tip(box: tuple[Path, Path]) -> None:
+    """Only scanned blobs and our own message are added: no box commit reaches the remote."""
+    repo, remote = box
+    doc = bb.run(repo, upstream="origin/live", push=True)
+    branch = doc["push"]["branch"]
+    added = _git(remote, "rev-list", f"live..{branch}").split()
+    assert len(added) == 1
+    box_shas = set(_git(repo, "rev-list", "origin/live..HEAD").split())
+    assert not box_shas & set(added)
