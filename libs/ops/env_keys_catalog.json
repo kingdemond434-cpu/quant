@@ -70,8 +70,8 @@
   },
   {
    "name": "JQ_USER",
-   "group": "free_data",
-   "cost": "free trial",
+   "group": "blocked_region",
+   "cost": "free trial, BLOCKED_REGION (JoinQuant requires a Chinese IP)",
    "machine": "box",
    "signup": "https://www.joinquant.com/default/index/sdk",
    "unlocks": "JoinQuant jqdatasdk (with JQ_PASS)",
@@ -79,12 +79,12 @@
     "libs/data/free_stack.py"
    ],
    "owner": "Asian quant practices gap check",
-   "note": "your JoinQuant login phone/username"
+   "note": "unavailable from the operator's region; free_stack reads NEEDS_CREDENTIAL and BaoStock + TuShare substitute"
   },
   {
    "name": "JQ_PASS",
-   "group": "free_data",
-   "cost": "free trial",
+   "group": "blocked_region",
+   "cost": "free trial, BLOCKED_REGION (JoinQuant requires a Chinese IP)",
    "machine": "box",
    "signup": "https://www.joinquant.com/default/index/sdk",
    "unlocks": "JoinQuant jqdatasdk (with JQ_USER)",
@@ -92,7 +92,7 @@
     "libs/data/free_stack.py"
    ],
    "owner": "Asian quant practices gap check",
-   "note": "your JoinQuant password"
+   "note": "unavailable from the operator's region; free_stack reads NEEDS_CREDENTIAL and BaoStock + TuShare substitute"
   },
   {
    "name": "ESTAT_APP_ID",
