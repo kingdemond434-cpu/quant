@@ -130,18 +130,21 @@ def test_signals_do_not_change_when_the_future_changes(name: str) -> None:
 
 def test_the_spread_of_the_fill_bar_never_decides_its_own_entry() -> None:
     """The defect to avoid: admitting an entry on the spread of the bar it FILLS in, which has
-    not closed when the order is sent. Widening only the bar after each decision must not move
-    any decision."""
+    not closed when the order is sent. Widening only the fill bar of a decision must leave that
+    decision, and every one before it, exactly as it was."""
     d = _bars()
-    base = fee.family_entry_alpha_spread_session_median(d, base_family="failed_breakout")
-    assert base
-    poked = d.copy()
-    pos = d.index.get_indexer([s.time for s in base])
-    nxt = pos[pos + 1 < len(d)] + 1
-    poked.iloc[nxt, poked.columns.get_loc("spread")] = 500.0
-    again = fee.family_entry_alpha_spread_session_median(poked, base_family="failed_breakout")
-    kept = {s.time for s in again}
-    assert all(s.time in kept for s in base if d.index.get_loc(s.time) + 1 < len(d))
+    fn = fee.family_entry_alpha_spread_session_median
+    base = fn(d, base_family="failed_breakout")
+    assert len(base) > 20
+    for s in base[:: max(1, len(base) // 20)]:
+        j = d.index.get_loc(s.time)
+        if j + 1 >= len(d):
+            continue
+        poked = d.copy()
+        poked.iloc[j + 1, poked.columns.get_loc("spread")] = 500.0
+        before = [g for g in base if g.time <= s.time]
+        after = [g for g in fn(poked, base_family="failed_breakout") if g.time <= s.time]
+        assert _key(before) == _key(after), f"the fill bar after {s.time} moved a decision"
 
 
 def test_a_session_threshold_never_includes_the_bar_it_judges() -> None:
