@@ -46,14 +46,19 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
     """`tests_run` on every discovery file, attributed to the families it proposed."""
     total = 0
     by_fam: dict[str, int] = {}
+    llm_files: list[tuple[str, Any]] = []
     intel = DESK / "data" / "intelligence"
     # No early return when there is no intelligence dir: the side ledgers below still count.
     for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
+        if Path(f).parent.name in UNION_CHARGED_SEATS:
+            continue                       # charged once from its own lifetime union, below
         try:
             doc = json.loads(Path(f).read_text("utf-8"))
         except (OSError, ValueError):
             continue
         if not isinstance(doc, dict) or not isinstance(doc.get("tests_run"), (int, float)):
+            if Path(f).parent.name in LLM_IDEA_SEATS:
+                llm_files.append((Path(f).parent.name, doc))
             continue
         n = int(doc["tests_run"])
         total += n
@@ -107,7 +112,52 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             by_fam[fam] = by_fam.get(fam, 0) + 1
     except (OSError, ValueError, TypeError):
         pass
+    # EVERY LLM IDEA IS A TRIAL (audit, 2026-10-06). An LLM seat's donation carries no
+    # `tests_run`: the seat looked at the world and kept these ideas out of everything it
+    # considered, so each idea is charged once at donation -- identity-deduplicated across files,
+    # so a re-donated idea is not charged twice. (The analyst panel's own side ledger is #166's.)
+    seen: set[str] = set()
+    for seat, doc in llm_files:
+        rows = doc.get("discoveries") if isinstance(doc, dict) else doc
+        for r in rows if isinstance(rows, list) else []:
+            if not isinstance(r, dict):
+                continue
+            ident = seat + "|" + str(r.get("url") or r.get("id") or r.get("title")
+                                     or json.dumps(r, sort_keys=True, default=str))
+            if ident in seen:
+                continue
+            seen.add(ident)
+            fam = str(r.get("family") or "llm_idea")
+            total += 1
+            by_fam[fam] = by_fam.get(fam, 0) + 1
+    # EVERY COMMITTEE FALSIFIER LOOK IS A TRIAL. The committees keep the lifetime union of
+    # (cell, seat) looks at return data; each distinct line is charged exactly once here, and the
+    # committees' discovery files are skipped above so nothing is counted twice.
+    try:
+        looks = {ln.strip() for ln in (DESK / COMMITTEE_UNION).read_text("utf-8").splitlines()
+                 if ln.strip()}
+    except OSError:
+        looks = set()
+    total += len(looks)
+    if looks:
+        by_fam["committee_falsifier"] = by_fam.get("committee_falsifier", 0) + len(looks)
+    # THE METHOD TRIAL'S EVALUATIONS (factor_model_coevolution.challenger): both arms' pairings.
+    try:
+        for ln in (DESK / "data" / "coevolution_h2h.jsonl").read_text("utf-8").splitlines():
+            row = json.loads(ln) if ln.strip() else None
+            k = int(row.get("trials") or 0) if isinstance(row, dict) else 0
+            total += k
+            by_fam["model_pairing"] = by_fam.get("model_pairing", 0) + k
+    except (OSError, ValueError, TypeError):
+        pass
     return total, by_fam
+
+
+#: LLM seats whose donation rows are ideas, each charged once (scout_roster names the seats).
+LLM_IDEA_SEATS = frozenset({"kimi", "deepseek", "scheduled_chatgpt", "committees", "openrouter"})
+#: Seats charged from a lifetime union file instead of their discovery files' tests_run.
+UNION_CHARGED_SEATS = frozenset({"committee_ensembles"})
+COMMITTEE_UNION = Path("data") / "committees" / "trial_union.txt"     # under DESK
 
 
 #: THE MASS SCREEN'S TRIAL LEDGER (desks/mt5/research/mass_screen.py). Every rule cell it screens
