@@ -225,3 +225,115 @@ def test_an_env_measured_on_another_machine_is_refused(tmp_path) -> None:
     target: dict[str, str] = {}
     assert jt.apply_env(path, target) == {}
     assert target == {}, "an env from a box of another shape is ignored, never applied"
+
+
+# ------------------------------------------------- the restart loop (2026-10-06) and queue age
+def test_a_resident_warmer_publishes_the_sealed_build_budget_explicitly(tmp_path) -> None:
+    """With the warmer building the docket, the judge keeps the sealed pre-warm and commits what
+    is warm; the 2700 s figure is WRITTEN so a stale machine-scope raise is overwritten."""
+    from datetime import UTC, datetime
+    warm = tmp_path / "WARM_GAUNTLET.json"
+    now = datetime(2026, 10, 6, 12, 0, tzinfo=UTC)
+    warm.write_text(json.dumps({"at": "2026-10-06T11:30:00Z"}), "utf-8")
+    assert jt.warmer_resident(now, warm) is True
+    warm.write_text(json.dumps({"at": "2026-10-06T06:00:00Z"}), "utf-8")
+    assert jt.warmer_resident(now, warm) is False
+    assert jt.warmer_resident(now, tmp_path / "absent.json") is False
+
+    fresh, why = jt.fresh_budget_s(14_400.0, warmer=True)
+    assert fresh == jt.SEALED_FRESH_BUDGET_SEC and "warmer" in why
+    assert jt.fresh_budget_s(14_400.0, warmer=False)[0] == 14_400.0 * 0.6
+    decision = {**jt.plan(BIG_BOX, DEEP_QUEUE, COSTS), "fresh_budget_s": fresh,
+                "warmer_resident": True, "raised_by": 0}
+    env = jt.env_for(decision)
+    assert env["GAUNTLET_FRESH_BUDGET_SEC"] == "2700"
+    doc = jt.write_env(decision, tmp_path / "env.json")
+    assert doc["env"]["GAUNTLET_FRESH_BUDGET_SEC"] == "2700"
+
+
+def test_shard_concurrency_is_published_apart_from_the_shard_count() -> None:
+    decision = jt.plan(BIG_BOX, DEEP_QUEUE, COSTS)
+    env = jt.env_for(decision)
+    assert env["GAUNTLET_SHARD_CONCURRENCY"] == str(decision["shard_concurrency"])
+    assert "GAUNTLET_SHARD_CONCURRENCY" in jt.ENV_KEYS
+    starved = jt.plan(_box(free_phys_mb=1000), DEEP_QUEUE, COSTS)
+    assert starved["shard_concurrency"] == 1
+
+
+def _registry(path: Path, rows: list[tuple[str, str | None]]) -> None:
+    import sqlite3
+    c = sqlite3.connect(path)
+    c.execute("CREATE TABLE research_candidates (seq INTEGER PRIMARY KEY, id TEXT, "
+              "created_at TEXT, judged_at TEXT)")
+    c.executemany("INSERT INTO research_candidates (id, created_at, judged_at) VALUES (?,?,?)",
+                  [(f"c{i}", a, b) for i, (a, b) in enumerate(rows)])
+    c.commit()
+    c.close()
+
+
+def test_queue_age_publishes_oldest_quantiles_flow_latency_and_trend(tmp_path) -> None:
+    from datetime import UTC, datetime, timedelta
+    now = datetime(2026, 10, 6, 12, 0, tzinfo=UTC)
+    rows = [((now - timedelta(hours=h)).isoformat(), None) for h in range(1, 101)]
+    rows += [((now - timedelta(hours=500)).isoformat(), now.isoformat())]   # judged: not queue
+    reg = tmp_path / "alpha_registry.sqlite"
+    _registry(reg, rows)
+    funnel = tmp_path / "CONVERSION_FUNNEL.json"
+    funnel.write_text(json.dumps({"latency": {
+        "pass_to_certificate": {"status": "MEASURED", "n": 4, "p50_h": 2.0, "p90_h": 5.0},
+        "certificate_to_clock": {"status": "MEASURED", "n": 4, "p50_h": 3.0, "p90_h": 9.0},
+        "docket_to_first_verdict": {"status": "MEASURED", "n": 9, "p50_h": 30.0}}}), "utf-8")
+    prior = tmp_path / "JUDGING_QUEUE_AGE.json"
+    prior.write_text(json.dumps({"age": {"oldest_h": 140.0}}), "utf-8")
+    rate = {"first_judged_per_day": 9000.0, "created_per_day": 6000.0, "backlog": 100}
+    doc = jt.queue_age(rate, now, registry=reg, funnel=funnel, prior_path=prior)
+    age = doc["age"]
+    assert age["unjudged"] == 100 and age["oldest_h"] == 100.0
+    assert age["p50_h"] == 51.0 and age["p90_h"] == 91.0      # nearest rank from the oldest end
+    assert age["oldest_trend"] == "FALLING"
+    assert doc["flow"]["judged_over_created"] == 1.5 and doc["flow"]["status"] == "ABOVE_TARGET"
+    assert doc["latency_h"]["same_day_p50"] is True
+    targets = {k: v for k, v in doc["targets"].items() if k != "warmer_resident"}
+    assert targets == {"judged_well_above_created": True, "oldest_age_falling": True,
+                              "verdict_to_clock_same_day": True}
+    assert doc["at"] == now.isoformat(timespec="seconds")
+
+
+def test_queue_age_is_unmeasured_never_zero_without_its_inputs(tmp_path) -> None:
+    doc = jt.queue_age({}, None, registry=tmp_path / "none.sqlite",
+                       funnel=tmp_path / "none.json", prior_path=tmp_path / "none2.json")
+    assert doc["age"]["status"] == UNMEASURED
+    assert doc["flow"]["status"] == UNMEASURED
+    assert doc["latency_h"]["same_day_p50"] == UNMEASURED
+    assert doc["targets"]["oldest_age_falling"] is False
+
+
+def test_queue_age_publishes_the_warmer_staleness_and_its_fallback(tmp_path) -> None:
+    """Claim 2's fallback, measured: a WARM_GAUNTLET.json older than 2 h means the warmer is NOT
+    resident and the raised fresh-build budget returns; the artifact says so."""
+    from datetime import UTC, datetime, timedelta
+    now = datetime(2026, 10, 6, 12, 0, tzinfo=UTC)
+    warm = tmp_path / "WARM_GAUNTLET.json"
+    kw = {"registry": tmp_path / "none.sqlite", "funnel": tmp_path / "none.json",
+          "prior_path": tmp_path / "none2.json", "warm_path": warm}
+    warm.write_text(json.dumps({"at": (now - timedelta(minutes=30)).isoformat()}), "utf-8")
+    fresh = jt.queue_age({}, now, decision={"fresh_budget_s": 2700.0}, **kw)
+    assert fresh["warmer"]["status"] == "RESIDENT" and fresh["targets"]["warmer_resident"]
+    assert fresh["warmer"]["fresh_budget_s_in_force"] == 2700.0
+    warm.write_text(json.dumps({"at": (now - timedelta(hours=3)).isoformat()}), "utf-8")
+    stale = jt.queue_age({}, now, **kw)
+    assert stale["warmer"]["status"] == "STALE" and stale["warmer"]["age_h"] == 3.0
+    assert not stale["targets"]["warmer_resident"]
+    assert "8,640" in stale["warmer"]["consequence"]
+    assert jt.fresh_budget_s(14400.0, None, warmer=False)[0] != jt.SEALED_FRESH_BUDGET_SEC
+    warm.unlink()
+    assert jt.queue_age({}, now, **kw)["warmer"]["status"] == "ABSENT"
+
+
+def test_the_cro_cycle_reads_the_queue_age_artifact_in_step_4() -> None:
+    doc = (Path(jt.__file__).resolve().parents[3] / "docs" / "cro" / "CRO_CYCLE.md").read_text(
+        "utf-8")
+    step4 = doc[doc.index("## STEP 4 — RESEARCH FUNNEL HEALTH"):doc.index("## STEP 4B")]
+    rel = jt.QUEUE_AGE_OUT.relative_to(Path(jt.__file__).resolve().parents[3]).as_posix()
+    assert rel == "desks/mt5/reports/JUDGING_QUEUE_AGE.json" and rel in step4
+    assert "D34" in step4 and "D38" in step4

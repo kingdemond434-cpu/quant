@@ -1,0 +1,12 @@
+{
+ "cells_timed": 40,
+ "tried": 445,
+ "full_cpu_s_per_cell_median": 0.37036477949999913,
+ "full_cpu_s_per_cell_mean": 0.4323480671249998,
+ "rule_cpu_s_per_cell_median": 0.002187064999999322,
+ "measured_at": "2026-10-06",
+ "what": "sealed judge per-cell CPU (build + both cost arms + every cell-local gate), process_time, stratified sample of local docket cells that BUILD here",
+ "stage1_core_s_per_tested_cell": 0.668,
+ "projection_18c_50pct_full_cells_per_day": 2099551,
+ "conclusion": "stage 1 is not cheaper per built cell than the full judge; its value is ORDER and the preflight of unbuildable cells"
+}

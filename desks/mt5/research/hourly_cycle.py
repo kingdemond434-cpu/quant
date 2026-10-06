@@ -1068,6 +1068,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
+                     "stage1_judge",
                      "lockbox_recert",
                      # each hunted family's own pipeline on null data: the gates' real
                      # false-positive rate, per family
@@ -1812,6 +1813,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # a second; the trading box's million-row docket and ledger scale that linearly. The cap is
     # an order of magnitude above, so a doubled docket is never truncated at the same prefix.
     "judging_burndown": 600,
+    # THE TWO-STAGE JUDGE'S FIRST STAGE stops starting batches at its own --budget-s 600 and always
+    # writes JUDGING_TWO_STAGE.json; the cap sits above it so the cycle never kills it mid-write.
+    "stage1_judge": 780,
     # REJECTION THROUGHPUT streams the same gate ledger once more and the compute ledger once, and
     # decodes each row; the burn-down's measurement scales to it. Same order-of-magnitude cap.
     "rejection_throughput": 600,
@@ -4872,6 +4876,15 @@ def main() -> None:
     # the environment `_producer` hands the gauntlet subprocess. The plan is floored at what the
     # sealed file would pick unaided, so this can never throttle the judge, and the live terminal
     # always wins (it stands down to that floor, never below it).
+    # THE TWO-STAGE JUDGE, STAGE 1 (principal 2026-09-30: "we need judging like 100-500k a day";
+    # ported from PR #143 into the judge lane, 2026-10-06). A charged first ruling on EVERY
+    # never-judged docket cell from its training window only (before the sealed walk-forward
+    # region and the lockbox), BH at q=0.05 over the run and the 3x spread stress; every
+    # evaluated cell is charged ONCE in the screened ledger the lifetime census reads. It ORDERS
+    # and DEFERS, never certifies: survivors go to the front of the sealed order. AFTER the docket
+    # merge so it sees this hour's cells, BEFORE `judging_throughput`, which embeds its summary.
+    s1j = _costed("stage1_judge", lambda: _producer(
+        "stage1_judge", "research/stage1_judge.py", "--once", "--budget-s", "600"))
     jth = _costed("judging_throughput", lambda: _producer(
         "judging_throughput", "research/judging_throughput.py", "--once", "--budget-s", "300"))
     try:
@@ -5814,7 +5827,8 @@ def main() -> None:
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
-                    "canon_publication": cpub, "judging_burndown": jbd, "lockbox_recert": lrc,
+                    "canon_publication": cpub, "judging_burndown": jbd, "stage1_judge": s1j,
+                    "lockbox_recert": lrc,
                     "rejection_throughput": rjt,
                     "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,

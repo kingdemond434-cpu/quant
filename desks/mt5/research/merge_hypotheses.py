@@ -350,6 +350,59 @@ def _fresh_for_run(path: Path, started_at: datetime | None) -> bool:
     return modified.timestamp() >= started_at.timestamp() - 2.0
 
 
+#: THE SCREENED TRIAL LEDGER, stage `buildability` (one JSON line per distinct cell ever held out
+#: of the docket as unbuildable). Lives beside the hypothesis graph and is shared with stage 1 of
+#: the two-stage judge; `libs/research/experiment_ledger.py` counts it into the lifetime census.
+SCREENED_REFUSED_NAME = "SCREENED_TRIALS.jsonl"
+
+
+def _cell_digest(cell: str) -> bytes:
+    import hashlib
+    return hashlib.blake2b(cell.encode("utf-8", "replace"), digest_size=8).digest()
+
+
+def record_screened_refusals(rows: list[dict[str, Any]], path: Path,
+                             stamp: str) -> dict[str, Any]:
+    """Append each NEW refused cell once (by executed identity) and report the counts. Only this
+    stage's rows are read back, as 8-byte digests: the shared ledger also holds stage 1's cells."""
+    seen: set[bytes] = set()
+    try:
+        with path.open("r", encoding="utf-8", errors="replace") as fh:
+            for ln in fh:
+                if '"stage": "stage1"' in ln:
+                    continue
+                try:
+                    cell = json.loads(ln).get("cell")
+                except (ValueError, AttributeError):
+                    continue
+                if cell:
+                    seen.add(_cell_digest(str(cell)))
+    except OSError:
+        pass
+    by_verdict: dict[str, int] = {}
+    new: list[str] = []
+    for row in rows:
+        v = str(row.get("refusal_verdict") or "?")
+        by_verdict[v] = by_verdict.get(v, 0) + 1
+        cell = _identity(row)
+        d = _cell_digest(cell)
+        if d in seen:
+            continue
+        seen.add(d)
+        new.append(json.dumps({
+            "cell": cell, "symbol": row.get("symbol"), "family": row.get("family"),
+            "params": row.get("params"), "source": row.get("source"), "verdict": v,
+            "stage": "buildability",
+            "reason": str(row.get("refusal_reason") or "")[:300], "at": stamp,
+        }, sort_keys=True, default=str))
+    if new:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write("\n".join(new) + "\n")
+    return {"status": "APPLIED", "held": len(rows), "new_cells": len(new),
+            "ledger_cells": len(seen), "by_verdict": by_verdict, "path": str(path)}
+
+
 def _identity(row: dict) -> str:
     """Dedup by what would actually be EXECUTED, not by label.
 
@@ -951,6 +1004,28 @@ def main() -> int:
               f"{sorted(banned_families)} routed OUT of the judging docket (kept, never "
               f"deleted) -> {STUDY_BANK.name}")
 
+    # THE JUDGE IS NEVER HANDED A CELL IT CANNOT BUILD (2026-10-06). The docket probe measured
+    # 2,284 of 57,538 rows (4.0%) that `gauntlet_buildability.cell_verdict` -- the judge's own
+    # lookups and build branches, read from its source -- says cannot be built as written: each
+    # one took a pre-warm slot and a shard's memory and came back NOT_RUN_BUILD_FAILED, every
+    # pass. They leave the docket here and are KEPT AND CHARGED: one row per distinct cell in
+    # the screened-refused ledger, which `experiment_ledger.lifetime()` counts exactly as it
+    # counts the mass screen's, so the program trial census never falls. A verdict that cannot
+    # be read refuses nothing (L1.28a); the producers' own repair (`repair_cell`) is the fix.
+    screened: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        from research.gauntlet_buildability import screen_rows
+        rows_out, refused_rows = screen_rows(rows_out)
+        screened = record_screened_refusals(refused_rows, HYP.parent / SCREENED_REFUSED_NAME,
+                                            stamp)
+        if refused_rows:
+            print(f"   buildability screen: {len(refused_rows)} row(s) the judge cannot build "
+                  f"held out of the docket and charged ({screened['new_cells']} new to the "
+                  f"ledger) {screened['by_verdict']}")
+    except Exception as exc:
+        screened = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   buildability screen unavailable ({type(exc).__name__}: {exc}); nothing held")
+
     # ORDER IS SELECTION: the gauntlet takes this file in order under a bar budget, so a family
     # at the tail is not "lower priority", it is never judged at all.
     #
@@ -1142,6 +1217,7 @@ def main() -> int:
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
         "prejudge": prejudge,
+        "buildability_screen": screened,
         "preregistration": prereg,
         "triangle_legs": {k: triangle_legs.get(k) for k in
                           ("status", "legless_before", "filled", "unfilled",

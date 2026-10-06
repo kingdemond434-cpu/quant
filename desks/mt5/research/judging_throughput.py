@@ -602,6 +602,12 @@ def plan(box: dict[str, Any], queue: dict[str, Any], costs: dict[str, float]) ->
         # dispatcher therefore uses the same measured core allocation as the build pool. A
         # stood-down box remains serial so the live terminal keeps the machine.
         "shards": 1 if stood_down else int(workers),
+        # HOW MANY SHARDS RUN AT ONCE, published apart from how many there are (2026-10-06).
+        # The launcher cuts the plan into as many shards as the measured MB per planned cell
+        # requires (`scripts/run_sharded_gauntlet.py`, `data/judging_shard_memory.json`) and runs
+        # at most this many together, each admitted by measured free memory. The shard count
+        # above is its FLOOR, never its ceiling.
+        "shard_concurrency": 1 if stood_down else int(workers),
         "shards_why": ("serial because live-terminal admission stood the plan down"
                        if stood_down else
                        "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work "
@@ -649,7 +655,7 @@ def _sub_timeout() -> float:
 
 ENV_KEYS = ("GAUNTLET_WORKERS", "GAUNTLET_SHARDS", "GAUNTLET_MEMORY_BUDGET_MB",
             "GAUNTLET_HEADROOM_CAP_MB", "GAUNTLET_PER_WORKER_MB",
-            "GAUNTLET_FRESH_BUDGET_SEC")
+            "GAUNTLET_FRESH_BUDGET_SEC", "GAUNTLET_SHARD_CONCURRENCY")
 
 #: Machine-scope variables this organ once published and now RETIRES. `apply_machine_env` deletes
 #: them so a stale value stops reaching the scheduled tasks (`WARM_WORKERS=1` pinned the warmer).
@@ -696,10 +702,75 @@ def task_time_limit_s(task: str = GAUNTLET_TASK) -> float | None:
     return total
 
 
+#: The cache warmer's own artifact. While it is fresh, the warmer builds the docket continuously
+#: on every idle core, and the judge's in-sweep pre-warm only duplicates it.
+WARM_REPORT = BASE / "reports" / "WARM_GAUNTLET.json"
+WARMER_FRESH_S = 2 * 3600.0
+
+
+def warmer_resident(now: datetime | None = None, path: Path | None = None) -> bool:
+    """True when `MT5-CacheWarm` reported within WARMER_FRESH_S. Absent or unreadable: False."""
+    doc = _read_json(path or WARM_REPORT, {}) or {}
+    try:
+        at = datetime.fromisoformat(str(doc.get("at") or "").replace("Z", "+00:00"))
+    except (ValueError, TypeError, AttributeError):
+        return False
+    if at.tzinfo is None:
+        return False
+    age = (_now(now) - at).total_seconds()
+    return 0 <= age <= WARMER_FRESH_S
+
+
+def warmer_state(now: datetime | None = None, path: Path | None = None) -> dict[str, Any]:
+    """The cache warmer's staleness AS A MEASUREMENT (published in JUDGING_QUEUE_AGE.json).
+
+    THE FALLBACK IT EXPOSES: while `MT5-CacheWarm` has reported within WARMER_FRESH_S (2 h) the
+    judge's fresh-build budget is the sealed 2700 s; once WARM_GAUNTLET.json is older than that
+    (or absent) the warmer is NOT resident and `fresh_budget_s` raises the budget toward the task
+    limit again -- the 8,640 s figure that drove the 7,800 s pre-warm of 2026-10-06. A stale
+    warmer is therefore a judging-throughput defect, and this row is how a reader sees it."""
+    t = _now(now)
+    doc = _read_json(path or WARM_REPORT, {}) or {}
+    raw = doc.get("at") if isinstance(doc, dict) else None
+    age_h: Any = UNMEASURED
+    try:
+        at = datetime.fromisoformat(str(raw or "").replace("Z", "+00:00"))
+        if at.tzinfo is not None:
+            age_h = round((t - at).total_seconds() / 3600.0, 2)
+    except (ValueError, TypeError):
+        pass
+    resident = warmer_resident(t, path)
+    return {"report": str(path or WARM_REPORT), "report_at": raw or UNMEASURED,
+            "age_h": age_h, "fresh_limit_h": round(WARMER_FRESH_S / 3600.0, 2),
+            "resident": resident,
+            "status": ("RESIDENT" if resident else "STALE" if isinstance(age_h, float)
+                       else "ABSENT"),
+            "consequence": ("fresh-build budget held at the sealed 2700 s" if resident else
+                            "NOT resident: the fresh-build budget is raised toward the task "
+                            "limit (up to 8,640 s) and the judge pre-warms in-process again")}
+
+
 def fresh_budget_s(limit_s: float | None,
-                   current_budget_s: float | None = None) -> tuple[float | None, str]:
-    """The build seconds to publish, or None to leave the sealed default alone. ONE WAY: the
-    figure is floored at the sealed default, so this can only ever give the judge MORE time."""
+                   current_budget_s: float | None = None, *,
+                   warmer: bool = False) -> tuple[float | None, str]:
+    """The build seconds to publish, or None to leave the sealed default alone. The figure is
+    never below the sealed default.
+
+    THE RAISE STOPS WHILE THE WARMER IS RESIDENT (2026-10-06). Measured on the trading box: with
+    the raise retained at ~8,640 s, every MT5-Gauntlet attempt spent 7,800-8,000 s inside its
+    own pre-warm before a single shard ran, then failed in the shard phase and published
+    nothing. The series cache is cumulative and content-addressed, and `MT5-CacheWarm` builds
+    the same docket, in the same order, on every idle core, between sweeps and during them. So
+    every second of in-sweep pre-warm beyond the sealed default is build work the warmer would
+    do anyway, bought by delaying the commit of everything already warm. With a fresh warmer
+    the sealed default is published EXPLICITLY (2700 s), so a stale machine-scope raise is
+    overwritten rather than left in force. Without a warmer, the task-limit rule below stands.
+    """
+    if warmer:
+        return SEALED_FRESH_BUDGET_SEC, (
+            f"the cache warmer is resident ({WARM_REPORT.name} < {WARMER_FRESH_S:.0f}s old), so "
+            f"the judge keeps the sealed {SEALED_FRESH_BUDGET_SEC:.0f}s pre-warm and commits "
+            "what is warm instead of out-building the warmer")
     if limit_s is None:
         return None, ("the judge task's ExecutionTimeLimit is unreadable, so the sealed "
                       f"{SEALED_FRESH_BUDGET_SEC:.0f}s build budget stands unchanged")
@@ -730,8 +801,13 @@ def env_for(decision: dict[str, Any]) -> dict[str, str]:
         "GAUNTLET_PER_WORKER_MB": str(int(decision["per_worker_mb"])),
     }
     fresh = decision.get("fresh_budget_s")
-    if isinstance(fresh, (int, float)) and float(fresh) > SEALED_FRESH_BUDGET_SEC:
+    if isinstance(fresh, (int, float)) and float(fresh) >= SEALED_FRESH_BUDGET_SEC:
         env["GAUNTLET_FRESH_BUDGET_SEC"] = str(int(fresh))
+    # CONCURRENCY IS NOT THE SHARD COUNT (2026-10-06). The launcher runs at most this many shards
+    # at once, each admitted by measured free memory; the shard count itself it derives from the
+    # measured MB per planned cell (`scripts/run_sharded_gauntlet.py`).
+    env["GAUNTLET_SHARD_CONCURRENCY"] = str(int(decision.get("shard_concurrency",
+                                                             decision["workers"])))
     return env
 
 
@@ -752,7 +828,9 @@ def write_env(decision: dict[str, Any], path: Path | None = None,
     fresh = decision.get("fresh_budget_s")
     raising = (int(decision.get("raised_by", 0)) > 0
                or (isinstance(fresh, (int, float))
-                   and float(fresh) > SEALED_FRESH_BUDGET_SEC))
+                   and float(fresh) > SEALED_FRESH_BUDGET_SEC)
+               # The explicit sealed default overrides a stale machine-scope raise.
+               or (isinstance(fresh, (int, float)) and bool(decision.get("warmer_resident"))))
     payload = {"at": _now().isoformat(timespec="seconds"),
                "env": env_for(decision) if raising else {},
                "raised_by": int(decision.get("raised_by", 0)),
@@ -962,7 +1040,9 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
             with contextlib.suppress(TypeError, ValueError):
                 _current_budget = float((previous_env.get("env") or {}).get(
                     "GAUNTLET_FRESH_BUDGET_SEC"))
-    _fresh, _fresh_why = fresh_budget_s(_limit, _current_budget)
+    _warmer = warmer_resident(now)
+    _fresh, _fresh_why = fresh_budget_s(_limit, _current_budget, warmer=_warmer)
+    decision["warmer_resident"] = _warmer
     decision["fresh_budget_s"] = _fresh
     decision["fresh_budget_why"] = _fresh_why
     decision["task_time_limit_s"] = _limit if _limit is not None else UNMEASURED
@@ -983,6 +1063,18 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
                  "judge; the live terminal always wins and standing down means returning to that "
                  "baseline, not below it"),
     }
+    # THE TWO-STAGE JUDGE (2026-09-30), embedded from its own small artifact -- read, never
+    # recomputed: `research/stage1_judge.py` owns JUDGING_TWO_STAGE.json and its numbers
+    # (stage-1/stage-2 per day, backlog, oldest age, UNBUILDABLE by cause, days to clear, fence).
+    try:
+        from research.stage1_judge import summary as _two_stage
+        payload["two_stage"] = _two_stage()
+    except Exception as exc:
+        payload["two_stage"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    # the stage-1 window's ordering bias: TRUE once the backlog has not cleared for 24h
+    _ts = payload["two_stage"] if isinstance(payload["two_stage"], dict) else {}
+    payload["ordering_bias_warning"] = _ts.get("ordering_bias_warning", UNMEASURED)
+    payload["stage1_window"] = _ts.get("window", UNMEASURED)
     try:
         payload["rate"] = measure_rate(queue, decision, now)
     except Exception as exc:     # a broken rate read must never cost the sizing decision
@@ -992,6 +1084,13 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
         applied["env_file"] = str(ENV_FILE)
         applied["process_env"] = apply_env()
         _write_atomic(RATE_OUT, payload["rate"])
+        try:
+            qa = queue_age(payload["rate"], now, decision=decision)
+            _write_atomic(QUEUE_AGE_OUT, qa)
+            payload["queue_age"] = {"path": str(QUEUE_AGE_OUT), **qa["targets"],
+                                    "oldest_h": qa["age"].get("oldest_h")}
+        except Exception as exc:   # the age must never cost the sizing decision
+            payload["queue_age"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
         payload["measure_seconds"] = round(_time.monotonic() - t0, 1)
         _write_atomic(OUT, payload)
     if apply:
@@ -1024,11 +1123,88 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
 _AT = re.compile(r'"at"\s*:\s*"([^"]+)"')
 
 
+#: Hashes held in memory at once by the distinct-cell count before a sorted chunk is spilled to
+#: disk (8 bytes each). The count stays exact; only this many are ever resident.
+VERDICT_HASH_CHUNK = 1 << 20
+
+
+def _cell_hash(cell: str) -> int:
+    """A 64-bit digest of a cell id: 8 bytes in place of the id string (~200 bytes as a str)."""
+    import hashlib
+    return int.from_bytes(hashlib.blake2b(cell.encode("utf-8", "replace"),
+                                          digest_size=8).digest(), "little")
+
+
+class _DistinctCounter:
+    """Exact distinct count of 64-bit hashes in bounded memory: sorted-unique chunks spilled to
+    disk, merged once at the end. Resident memory is one chunk, never the whole history."""
+
+    def __init__(self, chunk: int | None = None) -> None:
+        from array import array
+        self._array = array
+        self.chunk = max(1, int(VERDICT_HASH_CHUNK if chunk is None else chunk))
+        self.buf = array("Q")
+        self.spills: list[str] = []
+        self._dir: Any = None
+
+    def add(self, h: int) -> None:
+        self.buf.append(h)
+        if len(self.buf) >= self.chunk:
+            self._spill()
+
+    def _spill(self) -> None:
+        import tempfile
+        if self._dir is None:
+            self._dir = tempfile.TemporaryDirectory(prefix="verdict_counts_")
+        path = f"{self._dir.name}/{len(self.spills)}.bin"
+        uniq = self._array("Q", sorted(set(self.buf)))
+        with open(path, "wb") as fh:
+            uniq.tofile(fh)
+        self.spills.append(path)
+        self.buf = self._array("Q")
+
+    def _iter(self, path: str, block: int = 1 << 16):
+        with open(path, "rb") as fh:
+            while True:
+                part = self._array("Q")
+                with contextlib.suppress(EOFError):   # a short last block is still read
+                    part.fromfile(fh, block)
+                if not part:
+                    return
+                yield from part
+
+    def count(self) -> int:
+        import heapq
+        try:
+            if not self.spills:
+                return len(set(self.buf))
+            if self.buf:
+                self._spill()
+            # The merge's read buffers share ONE chunk between them, so its memory does not
+            # grow with the number of spills (i.e. with the history).
+            block = max(64, self.chunk // len(self.spills))
+            n, prev = 0, None
+            for h in heapq.merge(*(self._iter(p, block) for p in self.spills)):
+                if h != prev:
+                    n += 1
+                    prev = h
+            return n
+        finally:
+            if self._dir is not None:
+                self._dir.cleanup()
+                self._dir = None
+
+
 def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
     """Verdict rows the judge appended in the last 1h / 24h / 7d, from its own ledger.
 
-    Streams the file and reads only each row's `at` stamp, so a multi-million-row ledger costs
-    one pass and constant memory. An absent ledger is UNMEASURED -- never zero verdicts."""
+    Streams the file and never holds the history in memory. Raw event counts are one pass of
+    constant memory. FIRST-terminal counts (a cell's first ruled row, the backlog actually
+    cleared) are exact in two passes whose memory is bounded by the 7d WINDOW, never the history:
+    pass 1 keeps the first in-window ruled row per cell (a 64-bit hash, not the id); pass 2
+    disqualifies any of those that a ruled row EARLIER in the file already judged. The all-time
+    distinct count is a sorted-unique pass over spilled hash chunks (`_DistinctCounter`).
+    An absent ledger is UNMEASURED -- never zero verdicts."""
     from research.judging_burndown import classify
 
     p = GATE_LEDGER if path is None else path
@@ -1038,11 +1214,26 @@ def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
             for w, h in (("1h", 1), ("24h", 24), ("7d", 168))}
     counts = dict.fromkeys(cuts, 0)
     first_counts = dict.fromkeys(cuts, 0)
-    first_terminal_cells: set[str] = set()
+    distinct = _DistinctCounter()
+    # hash -> (line index of its first in-window ruled row, its stamp); window-bounded.
+    cand: dict[int, tuple[int, str]] = {}
     total, unstamped, last = 0, 0, ""
+
+    def _ruled_hash(line: str) -> int | None:
+        try:
+            row = json.loads(line)
+        except ValueError:
+            return None
+        if not isinstance(row, dict):
+            return None
+        cell = str(row.get("cell", ""))
+        if not cell or classify(row) != "ruled":
+            return None
+        return _cell_hash(cell)
+
     try:
         with p.open("r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
+            for idx, line in enumerate(fh):
                 if not line.strip():
                     continue
                 total += 1
@@ -1066,28 +1257,43 @@ def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
                 # The writer appends only when a terminal verdict changes. Repeated cells
                 # are retests, not backlog cleared. UNKNOWN/build/data refusals are not
                 # completed evidence judgements either. Preserve the raw event count above.
-                try:
-                    row = json.loads(line)
-                except ValueError:
+                h = _ruled_hash(line)
+                if h is None:
                     continue
-                if not isinstance(row, dict):
-                    continue
-                cell = str(row.get("cell", ""))
-                if not cell or classify(row) != "ruled":
-                    continue
-                if cell in first_terminal_cells:
-                    continue
-                first_terminal_cells.add(cell)
-                for w, cut in cuts.items():
-                    if at >= cut:
-                        first_counts[w] += 1
+                distinct.add(h)
+                if at >= cuts["7d"] and h not in cand:
+                    cand[h] = (idx, at)
+        if cand:
+            # Pass 2: a candidate is a FIRST terminal only if no stamped ruled row for the same
+            # cell came earlier in the file -- the same rule the in-memory set applied.
+            with p.open("r", encoding="utf-8", errors="replace") as fh:
+                for idx, line in enumerate(fh):
+                    if not cand or not line.strip() or not _AT.search(line):
+                        continue
+                    h = _ruled_hash(line)
+                    if h is None or h not in cand or idx >= cand[h][0]:
+                        continue
+                    m = _AT.search(line)
+                    try:
+                        stamp = datetime.fromisoformat(
+                            m.group(1).replace("Z", "+00:00")) if m else None
+                    except ValueError:
+                        continue
+                    if stamp is None or stamp.tzinfo is None or stamp > now:
+                        continue
+                    del cand[h]
+        for _idx, at in cand.values():
+            for w, cut in cuts.items():
+                if at >= cut:
+                    first_counts[w] += 1
+        n_distinct = distinct.count()
     except OSError as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     return {"status": "MEASURED", "rows_total": total, "rows_unstamped": unstamped,
             "last_verdict_at": last or None, "counts": counts,
             "count_basis": "changed verdict events; unchanged retests do not append",
             "first_terminal_counts": first_counts,
-            "first_terminal_cells": len(first_terminal_cells),
+            "first_terminal_cells": n_distinct,
             "first_terminal_per_hour": {
                 "1h": float(first_counts["1h"]),
                 "24h": round(first_counts["24h"] / 24.0, 3),
@@ -1194,6 +1400,134 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
         "workers_planned": decision.get("workers"),
         "workers_last_sweep": queue.get("workers_last_sweep", UNMEASURED),
         "cores_basis": decision.get("cores_basis", UNMEASURED),
+    }
+
+
+#: THE JUDGING QUEUE'S AGE, the CRO cycle's `queue_age` row (2026-10-06): one timestamped artifact
+#: on this leg's hourly clock, so "is the backlog getting OLDER" has an answer and not just "is
+#: it getting BIGGER". Read by the CRO cycle (STEP 4, backlog age) and by the next pass of this
+#: organ itself (the oldest age's trend).
+QUEUE_AGE_OUT = BASE / "reports" / "JUDGING_QUEUE_AGE.json"
+CONVERSION_FUNNEL = BASE / "reports" / "CONVERSION_FUNNEL.json"
+#: "Judged a day WELL above created a day": the desk's target ratio for the burn-down.
+JUDGED_OVER_CREATED_TARGET = 1.25
+SAME_DAY_H = 24.0
+
+
+def registry_queue_ages(now: datetime, path: Path | None = None) -> dict[str, Any]:
+    """Oldest / p50 / p90 age (hours) of the registry's UNJUDGED queue (`judged_at IS NULL`).
+
+    Read from the registry's own indexed `created_at`, never by loading the ~440 MB docket file:
+    an OFFSET into the index gives each quantile with one bounded scan. Absent or unreadable is
+    UNMEASURED, never an empty queue.
+    """
+    import sqlite3
+
+    p = REGISTRY if path is None else path
+    if not p.exists():
+        return {"status": UNMEASURED, "why": f"{p.name} absent: queue age is UNMEASURED"}
+    try:
+        c = sqlite3.connect(f"file:{p.as_posix()}?mode=ro", uri=True, timeout=30)
+    except sqlite3.Error as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    try:
+        base_sql = ("FROM research_candidates WHERE judged_at IS NULL "
+                    "AND created_at IS NOT NULL AND created_at != ''")
+        n = int(c.execute(f"SELECT COUNT(*) {base_sql}").fetchone()[0])
+        if n == 0:
+            return {"status": "MEASURED", "unjudged": 0, "oldest_h": 0.0, "p50_h": 0.0,
+                    "p90_h": 0.0}
+
+        def at_rank(frac_oldest: float) -> float | None:
+            off = min(n - 1, max(0, int(frac_oldest * (n - 1))))
+            row = c.execute(f"SELECT created_at {base_sql} ORDER BY created_at "
+                            "LIMIT 1 OFFSET ?", (off,)).fetchone()
+            try:
+                ts = datetime.fromisoformat(str(row[0]).replace("Z", "+00:00"))
+            except (TypeError, ValueError):
+                return None
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=UTC)
+            return round(max(0.0, (now - ts).total_seconds() / 3600.0), 2)
+
+        # Age p90 is the cell 10% of the way in from the OLDEST end; p50 is the median.
+        return {"status": "MEASURED", "unjudged": n, "oldest_h": at_rank(0.0),
+                "p90_h": at_rank(0.10), "p50_h": at_rank(0.50),
+                "basis": "alpha_registry research_candidates: created_at of rows with no "
+                         "judged_at (synced from the judge's ledger by libs/moat/registry)"}
+    except sqlite3.Error as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    finally:
+        c.close()
+
+
+def _latency_row(lat: dict[str, Any], key: str) -> dict[str, Any]:
+    row = lat.get(key) if isinstance(lat, dict) else None
+    if not isinstance(row, dict):
+        return {"status": UNMEASURED, "why": f"{CONVERSION_FUNNEL.name} carries no {key}"}
+    return {k: row.get(k) for k in ("status", "n", "p50_h", "p90_h", "max_h", "why") if k in row}
+
+
+def queue_age(rate: dict[str, Any], now: datetime | None = None, *,
+              registry: Path | None = None, funnel: Path | None = None,
+              prior_path: Path | None = None, warm_path: Path | None = None,
+              decision: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The judging backlog's age, its flow and its verdict -> certificate -> clock latency."""
+    t = _now(now)
+    warm = warmer_state(t, warm_path)
+    if isinstance(decision, dict):
+        warm["fresh_budget_s_in_force"] = decision.get("fresh_budget_s", UNMEASURED)
+    ages = registry_queue_ages(t, registry)
+    cov = _read_json(JUDGE_COVERAGE, {}) or {}
+    cov_oldest = ((cov.get("totals") or {}).get("oldest_unjudged_age_h")
+                  if isinstance(cov, dict) else None)
+    prior = _read_json(prior_path or QUEUE_AGE_OUT, {}) or {}
+    prior_oldest = ((prior.get("age") or {}).get("oldest_h") if isinstance(prior, dict) else None)
+    oldest = ages.get("oldest_h")
+    trend: Any = UNMEASURED
+    if isinstance(oldest, (int, float)) and isinstance(prior_oldest, (int, float)):
+        trend = ("FALLING" if oldest < prior_oldest
+                 else "FLAT" if oldest == prior_oldest else "RISING")
+    judged = rate.get("first_judged_per_day")
+    created = rate.get("created_per_day")
+    ratio: Any = UNMEASURED
+    flow: Any = UNMEASURED
+    if isinstance(judged, (int, float)) and isinstance(created, (int, float)):
+        ratio = round(float(judged) / float(created), 3) if created > 0 else None
+        flow = ("ABOVE_TARGET" if (created == 0 or float(judged) >= JUDGED_OVER_CREATED_TARGET
+                                   * float(created))
+                else "ABOVE_CREATION" if judged > created else "BELOW_CREATION")
+    fdoc = _read_json(funnel or CONVERSION_FUNNEL, {}) or {}
+    lat = fdoc.get("latency") if isinstance(fdoc, dict) else None
+    lat = lat if isinstance(lat, dict) else {}
+    v2c = _latency_row(lat, "pass_to_certificate")
+    c2k = _latency_row(lat, "certificate_to_clock")
+    q2v = _latency_row(lat, "docket_to_first_verdict")
+    same_day: Any = UNMEASURED
+    if isinstance(v2c.get("p50_h"), (int, float)) and isinstance(c2k.get("p50_h"), (int, float)):
+        same_day = bool(float(v2c["p50_h"]) + float(c2k["p50_h"]) <= SAME_DAY_H)
+    return {
+        "at": t.isoformat(timespec="seconds"),
+        "age": {**ages, "judge_coverage_oldest_h": cov_oldest
+                if isinstance(cov_oldest, (int, float)) else UNMEASURED,
+                "prior_oldest_h": prior_oldest if isinstance(prior_oldest, (int, float))
+                else UNMEASURED, "oldest_trend": trend},
+        "flow": {"judged_per_day": judged if judged is not None else UNMEASURED,
+                 "judged_basis": "first terminal ruling per cell (gate ledger)",
+                 "created_per_day": created if created is not None else UNMEASURED,
+                 "judged_over_created": ratio, "target_ratio": JUDGED_OVER_CREATED_TARGET,
+                 "status": flow, "backlog": rate.get("backlog", UNMEASURED),
+                 "eta_to_drain": rate.get("eta_to_drain", UNMEASURED)},
+        "latency_h": {"queue_to_first_verdict": q2v, "verdict_to_certificate": v2c,
+                      "certificate_to_clock": c2k, "same_day_p50": same_day,
+                      "source": CONVERSION_FUNNEL.name},
+        "warmer": warm,
+        "targets": {"judged_well_above_created": flow == "ABOVE_TARGET",
+                    "oldest_age_falling": trend == "FALLING",
+                    "verdict_to_clock_same_day": same_day is True,
+                    "warmer_resident": warm["resident"] is True},
+        "why": ("written hourly by research/judging_throughput.py (leg judging_throughput); the "
+                "CRO cycle's queue_age row. UNMEASURED is a reading, never zero."),
     }
 
 

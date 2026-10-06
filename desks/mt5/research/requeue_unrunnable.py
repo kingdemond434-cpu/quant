@@ -125,11 +125,29 @@ def _candidate(row: dict, why: str) -> dict:
     stored params are the thing that is missing.
     """
     symbol, family = _identity(row)
+    # THE ONE PARAMETER THE KEY ITSELF STATES. A qquant key names its direction in words
+    # (`qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY`) and a hunt16
+    # family takes `side` as a REQUIRED argument, so a cell with no side can never build (measured
+    # 2026-10-06). Reading the stated word is not a guess; nothing else is supplied.
+    params: dict = {}
+    try:
+        from gauntlet_buildability import _requires_side, normalise_side
+    except ImportError:                                    # pragma: no cover
+        from research.gauntlet_buildability import _requires_side, normalise_side
+    try:
+        if _requires_side(family):
+            words = str(row.get("_key") or "").replace(".", " ").split()
+            side = next((normalise_side(w) for w in words if normalise_side(w) in (1, -1)
+                         and not w.lstrip("+-").isdigit()), None)
+            if side is not None:
+                params["side"] = side
+    except Exception:
+        pass
     return {
         "symbol": symbol,
         "family": family,
         "certificate_key": str(row.get("_key") or ""),
-        "params": {},
+        "params": params,
         "source": "requeue_unrunnable",
         "why": why,
         "requeued_utc": datetime.now(UTC).isoformat(timespec="seconds"),
