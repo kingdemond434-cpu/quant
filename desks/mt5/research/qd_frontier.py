@@ -477,8 +477,114 @@ def exploiter_targets(niches: dict[str, dict[str, Any]], now: datetime,
         if stamp is not None and row["elite"] and now - stamp <= timedelta(hours=window_h):
             fresh.append((BASIS_RANK.get(row["elite_evidence_basis"], 0),
                           float(row["elite_score"]), key, row))
-    fresh.sort(key=lambda t: (-t[0], -t[1], t[2]))
+    # inside an evidence rank, the elite FURTHEST from the certified book compounds first
+    # (behavioural distance, breadth law section 4); unmeasured reads 0 and keeps the old order
+    fresh.sort(key=lambda t: (-t[0], -_distance_rank(t[3]), -t[1], t[2]))
     return [(key, row) for _rank, _score, key, row in fresh]
+
+
+# ------------------------------------------------------------------ behavioural distance
+#: The breadth law's behavioural-distance vector (section 4: "no single correlation coefficient
+#: defines independence"). Each component is the elite's distance from what the CERTIFIED book
+#: already owns, read from reports/CERTIFICATE_SATURATION.json:
+#:   structural components  1 - (certificates sharing the elite's value on that axis) / all
+#:   pnl_correlation        1 - max |rho| of the elite's forward sleeve against any other,
+#:                          at the map's Fisher-bounded sample floor
+#: and a component the desk cannot yet measure per elite is UNMEASURED, never 0 or 1.
+BEHAVIOUR_AXES: dict[str, tuple[str, ...]] = {
+    "factor_residual_exposure": ("factor_residual", "economic_factor"),
+    "position_time_overlap": ("session", "horizon"),
+    "regime_dependence": ("regime",),
+    "event_dependence": ("event_dependence",),
+    "holding_time": ("horizon",),
+    "asset_exposure": ("asset_class", "currency_exposure"),
+    "information_source_exposure": ("information_source",),
+    "economic_mechanism": ("payer",),
+}
+BEHAVIOUR_UNMEASURED: dict[str, str] = {
+    "stress_correlation": "the map measures stress k_eff for the book, not per elite",
+    "tail_dependence": "the map measures tail co-exceedance for the book, not per elite",
+    "drawdown_overlap": "no per-elite drawdown windows are published",
+    "signal_overlap": "no per-elite signal series is published",
+    "turnover": "no per-elite turnover is published",
+}
+
+
+def _saturation_map() -> dict[str, Any] | None:
+    try:
+        try:
+            from research import certificate_saturation as cs
+        except ImportError:                                         # pragma: no cover
+            import certificate_saturation as cs  # type: ignore[import-not-found,no-redef]
+        doc, _why = cs.load(max_age_h=48.0)
+        return doc
+    except Exception:
+        return None
+
+
+def behavioural_distance(elite: dict[str, Any], sat: dict[str, Any] | None) -> dict[str, Any]:
+    """The vector for one elite, against the certified book in `sat` (the saturation map)."""
+    if not sat or not elite:
+        return {"status": "UNMEASURED", "why": "no fresh certificate saturation map"}
+    try:
+        from research import certificate_saturation as cs
+    except ImportError:                                             # pragma: no cover
+        import certificate_saturation as cs  # type: ignore[import-not-found,no-redef]
+    groups = [g for g in (sat.get("groups") or []) if isinstance(g, dict) and g.get("sig")]
+    total = float(sum(int(g.get("n") or 1) for g in groups))
+    if not total:
+        return {"status": "UNMEASURED", "why": "the map carries no certified groups"}
+    ix = {a: i for i, a in enumerate(cs.SIG_AXES)}
+    ax = cs.axes_of(str(elite.get("instrument") or ""), str(elite.get("family") or ""), {},
+                    timeframe=elite.get("chart"), session=elite.get("session"))
+    comps: dict[str, Any] = {}
+    for name, axes in BEHAVIOUR_AXES.items():
+        use = [a for a in axes if a in ix and ax.get(a, cs.UNKNOWN) != cs.UNKNOWN]
+        if not use:
+            comps[name] = {"value": None, "basis": "UNMEASURED: the elite's axis is UNKNOWN"}
+            continue
+        shared = sum(int(g.get("n") or 1) for g in groups
+                     if all(str(g["sig"][ix[a]]) == str(ax[a]) for a in use))
+        comps[name] = {"value": round(1.0 - shared / total, 4),
+                       "basis": f"structural: {'+'.join(use)} vs {int(total)} certificates"}
+    sym, fam = str(elite.get("instrument") or "").upper(), str(elite.get("family") or "")
+    rhos = []
+    for pr in (sat.get("forward_independence") or {}).get("pairs") or []:
+        if pr.get("state") == "UNMEASURED":
+            continue
+        ids = [cs.sleeve_identity(str(pr.get(k))) for k in ("a", "b")]
+        if any(i[0] == sym and i[1] == fam for i in ids):
+            rhos.append(abs(float(pr.get("rho") or 0.0)))
+    comps["pnl_correlation"] = ({"value": round(1.0 - max(rhos), 4),
+                                 "basis": f"forward: {len(rhos)} measured pair(s)"}
+                                if rhos else
+                                {"value": None, "basis": "UNMEASURED: no forward pair at the "
+                                                         "sample floor"})
+    for name, why in BEHAVIOUR_UNMEASURED.items():
+        comps[name] = {"value": None, "basis": f"UNMEASURED: {why}"}
+    vals = [c["value"] for c in comps.values() if isinstance(c.get("value"), (int, float))]
+    return {"status": "MEASURED" if vals else "UNMEASURED", "components": comps,
+            "n_measured": len(vals), "n_components": len(comps),
+            "mean_distance": round(sum(vals) / len(vals), 4) if vals else None,
+            "binding_distance": round(min(vals), 4) if vals else None}
+
+
+def attach_behavioural_distance(niches: dict[str, dict[str, Any]],
+                                sat: dict[str, Any] | None) -> int:
+    """Stamp `behavioural_distance` on every niche with an elite; returns how many measured."""
+    n = 0
+    for row in niches.values():
+        if row.get("elite"):
+            bd = behavioural_distance(row["elite"], sat)
+            row["behavioural_distance"] = bd
+            n += int(bd.get("status") == "MEASURED")
+    return n
+
+
+def _distance_rank(row: dict[str, Any]) -> float:
+    """Coarse (one decimal) mean distance, so evidence still orders inside a band; 0 unmeasured."""
+    v = (row.get("behavioural_distance") or {}).get("mean_distance")
+    return round(float(v), 1) if isinstance(v, (int, float)) else 0.0
 
 
 def connector_pairs(niches: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
@@ -711,6 +817,9 @@ def build(max_proposals: int = DEFAULT_PROPOSALS, previous: dict[str, Any] | Non
             doc = ar._read_json(OUT_MAP, note)
             previous = doc if isinstance(doc, dict) else {}
         merge_map(niches, previous, now.isoformat())
+        n_bd = attach_behavioural_distance(niches, _saturation_map())
+        if not n_bd:
+            why.append("behavioural distance UNMEASURED: no fresh certificate saturation map")
         families, by_class = ar.registered_families(), ar.instruments_by_class()
         space = candidate_niches(families, by_class)
         if not families:

@@ -529,3 +529,26 @@ def test_auction_publishes_separate_breadth_and_quality_scores_per_producer(sat:
     # the clearing is untouched: bids carry the score but the bid itself is unchanged
     deps = ("discovery", "validate")
     assert ra.bids(deps, {}, {}, {}, {}, {})["discovery"]["bid"] == 1.0
+
+
+def test_qd_frontier_behavioural_distance_vector(sat: dict) -> None:
+    import qd_frontier as qd
+    crowded = qd.behavioural_distance({"instrument": "EURUSD", "family": "session_range_breakout",
+                                       "chart": "H1", "session": "london"}, sat)
+    apart = qd.behavioural_distance({"instrument": "UKOIL", "family": "overnight_gap_decay",
+                                     "chart": "D1", "session": "all"}, sat)
+    assert crowded["status"] == apart["status"] == "MEASURED"
+    assert apart["mean_distance"] > crowded["mean_distance"]
+    comps = crowded["components"]
+    # no single coefficient: many components, and the ones the desk cannot measure say so
+    assert crowded["n_components"] >= 14
+    assert comps["tail_dependence"]["value"] is None
+    assert comps["pnl_correlation"]["basis"].startswith("UNMEASURED")
+    assert qd.behavioural_distance({"instrument": "X"}, None)["status"] == "UNMEASURED"
+    # the exploiter compounds the more distant elite first inside one evidence rank
+    now = datetime.now(UTC)
+    row = {"elite_evidence_basis": "in_sample_t", "elite_score": 1.0,
+           "last_improved_at": now.isoformat()}
+    niches = {"near": {**row, "elite": {"x": 1}, "behavioural_distance": crowded},
+              "far": {**row, "elite": {"x": 1}, "behavioural_distance": apart}}
+    assert [k for k, _ in qd.exploiter_targets(niches, now)] == ["far", "near"]
