@@ -168,10 +168,21 @@ def desk_fetch(url: str) -> tuple[str, int, str]:
     return mc.fetch_text(url)
 
 
+#: `forge:owner/repo` -> the forge's host, for the roster ids that name an upstream that way.
+_FORGE_HOSTS = {"github": "github.com", "gitlab": "gitlab.com", "gitee": "gitee.com",
+                "codeberg": "codeberg.org", "bitbucket": "bitbucket.org"}
+
+
 def surfaces_for(upstream: str) -> dict[str, str]:
     """surface -> url for one upstream. GitHub gets the API record, the commit feed, the release
     feed and the README; another forge or a website gets its page as `websites`."""
     url = str(upstream or "")
+    # THE ROSTER'S OWN SPELLING (2026-10-06). 36 seeds name their upstream `github:owner/repo`
+    # (the registry id form), which has no scheme and no dot, so every one of them was refused
+    # here as "not a URL a delta scan can hash" and no seed repository was ever delta-watched.
+    forge, _, rest = url.partition(":")
+    if rest and "://" not in url and forge in _FORGE_HOSTS and rest.count("/") >= 1:
+        url = f"https://{_FORGE_HOSTS[forge]}/{rest.strip('/')}"
     if not url or url == UNMEASURED or ("://" not in url and "." not in url):
         return {}
     full = url if "://" in url else "https://" + url

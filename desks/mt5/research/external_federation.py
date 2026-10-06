@@ -283,6 +283,7 @@ def drain_packets(state: dict[str, Any], apply: bool) -> dict[str, Any]:
         out["unmeasured"].append(f"{PACKETS} does not exist: no sandbox has produced a packet yet")
         return out
     rows: list[dict[str, Any]] = []
+    charged = 0
     for p in sorted(PACKETS.glob("*.json")):
         doc = _read(p, None)
         if not isinstance(doc, dict):
@@ -308,6 +309,9 @@ def drain_packets(state: dict[str, Any], apply: bool) -> dict[str, Any]:
             continue
         out["files"] += 1
         seen.add(key)
+        # THE SEARCH BURDEN IS CHARGED, at least one trial per candidate it proposes: a packet that
+        # declares fewer trials than candidates has still put that many cells in front of a judge.
+        charged += max(packet.trials_charged, len(packet.candidates))
         for cand in packet.candidates:
             row = dict(cand)
             row.setdefault("kind", "hypothesis")
@@ -324,8 +328,14 @@ def drain_packets(state: dict[str, Any], apply: bool) -> dict[str, Any]:
                 os.replace(p, PROCESSED / p.name)
     if rows and apply:
         DONATIONS.mkdir(parents=True, exist_ok=True)
-        _write(DONATIONS / f"discoveries_{int(time.time())}.json", rows)
+        # THE DISCOVERY CONTRACT, with `tests_run` on it (2026-10-06). This file was a bare list,
+        # which the compiler reads but `experiment_ledger` cannot charge (it reads `tests_run` off
+        # a contract object), so every external packet's trials stayed out of the lifetime union.
+        _write(DONATIONS / f"discoveries_{int(time.time())}.json",
+               {"source": "external_federation", "generated_at": now(),
+                "tests_run": charged, "discoveries": rows})
     out["donated"] = len(rows)
+    out["trials_charged"] = charged
     state["packets_seen"] = sorted(seen)[-500:]
     return out
 

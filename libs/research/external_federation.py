@@ -747,6 +747,55 @@ SEEDS: tuple[ExternalSystem, ...] = (
                    "public:cn-quant", "Data Lab / AI Lab / systems lab split, data breadth",
                    "REBUILT", _s("institutional_capability",), _s("research_workflow",),
                    region="cn", languages=_s("zh",)),
+    # ---- Roman Paolucci / Quant Guild (principal 2026-10-05, upload abbb18fd): a public research
+    # DONOR civilization, mined into translator cards (/mnt/project-files/mining/quant_guild/) and
+    # delta-watched here, so a new lecture or commit reopens the fingerprint. No exemptions: every
+    # card compiles through the same door. Repos with no licence are REBUILT (ideas only).
+    ExternalSystem("quant_guild_library", "Quant Guild Library (Roman Paolucci)",
+                   "github:romanmichaelpaolucci/Quant-Guild-Library",
+                   "143 lecture notebooks: regime-switching bots, IV surface, variance swaps, "
+                   "Kalman, Hawkes, GARCH, Black-Litterman, crisis alpha, market making",
+                   "REBUILT", _s("regime_selection", "portfolio_research", "point_process",
+                                 "microstructure", "research_reproduction"),
+                   _s("mathematical_method", "model_family", "execution_method"),
+                   licence="NONE", discovery_source="principal_upload_2026-10-05",
+                   notes="no licence file: ideas only, never copied"),
+    ExternalSystem("paolucci_ai_stock_trading", "AI_Stock_Trading (Roman Paolucci)",
+                   "github:romanmichaelpaolucci/AI_Stock_Trading",
+                   "early AI equity framework; the semantic-alpha donor", "REBUILT",
+                   _s("financial_nlp", "forecast_zoo"), _s("representation", "data"),
+                   licence="NONE", discovery_source="principal_upload_2026-10-05",
+                   lineage_parent="quant_guild_library"),
+    ExternalSystem("paolucci_quant_dev", "Quant_Dev (Roman Paolucci)",
+                   "github:romanmichaelpaolucci/Quant_Dev",
+                   "old execution architecture: level/ladder bot, persistent policy state, order "
+                   "dedup", "REBUILT", _s("execution_engine",), _s("execution_method",),
+                   licence="NONE", discovery_source="principal_upload_2026-10-05",
+                   lineage_parent="quant_guild_library"),
+    ExternalSystem("paolucci_delta_hedging", "Algorithmic_Delta_Hedging (Roman Paolucci)",
+                   "github:romanmichaelpaolucci/Algorithmic_Delta_Hedging",
+                   "discrete delta hedging and hedge-error states", "REBUILT",
+                   _s("market_simulation",), _s("simulation_world", "mathematical_method"),
+                   licence="MIT", discovery_source="principal_upload_2026-10-05",
+                   lineage_parent="quant_guild_library"),
+    ExternalSystem("paolucci_qfin", "Q-Fin (Roman Paolucci)", "github:romanmichaelpaolucci/Q-Fin",
+                   "shared stochastic-model interface: GBM, Heston, jumps, Monte Carlo pricing",
+                   "REBUILT", _s("market_simulation", "simulation_based_inference"),
+                   _s("simulation_world", "model_family"), licence="MIT",
+                   discovery_source="principal_upload_2026-10-05",
+                   lineage_parent="quant_guild_library"),
+    ExternalSystem("paolucci_discourses", "discourses (Roman Paolucci)",
+                   "github:romanmichaelpaolucci/discourses",
+                   "semantic drift, language-era drift and user cohorts in public discourse",
+                   "REBUILT", _s("financial_nlp", "information_acquisition"),
+                   _s("representation", "data"), licence="MIT",
+                   discovery_source="principal_upload_2026-10-05",
+                   lineage_parent="quant_guild_library"),
+    ExternalSystem("openterminal", "OpenTerminal (ErTasselli)", "github:ErTasselli/OpenTerminal",
+                   "open Bloomberg-style terminal: a provider and function catalogue mined for "
+                   "free sources and terminal analytics", "REBUILT",
+                   _s("data_source", "information_acquisition"), _s("data",), licence="MIT",
+                   discovery_source="principal_header_2026-10-05"),
 )
 
 SEED_BY_ID: dict[str, ExternalSystem] = {s.system_id: s for s in SEEDS}

@@ -258,3 +258,38 @@ def test_seat_consumption_reads_the_path_the_compiler_actually_writes() -> None:
     assert FO.MINER_CANDIDATES == COMPILER_OUT, (
         "the reader and the compiler must name ONE path; a second spelling is a second truth")
     assert FO.MINER_CANDIDATES.parts[-2:] == ("hypotheses", "miner_candidates.json")
+
+
+def test_a_roster_id_upstream_is_delta_scannable() -> None:
+    """`github:owner/repo` is how 36+ seeds name their upstream; it used to resolve to no surface,
+    so no seed repository was ever delta-watched."""
+    got = fo.surfaces_for("github:romanmichaelpaolucci/Quant-Guild-Library")
+    assert got["repos"] == "https://api.github.com/repos/romanmichaelpaolucci/Quant-Guild-Library"
+    assert got["commits"].endswith("/commits.atom")
+    assert fo.surfaces_for("gitee:owner/repo") == {"repos": "https://gitee.com/owner/repo"}
+    assert fo.surfaces_for("public:agonalpha") == {}
+    seeded = {s.upstream for s in fed.SEEDS if s.upstream.startswith("github:")}
+    assert seeded and all(fo.surfaces_for(u) for u in seeded)
+
+
+def test_the_quant_guild_civilization_is_seeded() -> None:
+    ids = {s.system_id for s in fed.SEEDS}
+    assert {"quant_guild_library", "paolucci_qfin", "openterminal"} <= ids
+    assert fed.SEED_BY_ID["quant_guild_library"].licence == "NONE"
+
+
+def test_a_drained_packet_charges_its_trials_on_the_contract(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(xfo, "PACKETS", tmp_path / "packets")
+    monkeypatch.setattr(xfo, "PROCESSED", tmp_path / "packets" / "processed")
+    monkeypatch.setattr(xfo, "DONATIONS", tmp_path / "intel")
+    xfo.PACKETS.mkdir()
+    (xfo.PACKETS / "a.json").write_text(json.dumps({
+        "system_id": "quant_guild_library", "run_id": "r1", "commit": "abc",
+        "trials_charged": 1,
+        "candidates": [{"family": "dual_thrust", "symbols": ["EURUSD"]},
+                       {"family": "king_keltner", "symbols": ["XAUUSD"]}]}))
+    out = xfo.drain_packets({}, apply=True)
+    assert out["donated"] == 2 and out["trials_charged"] == 2     # at least one per candidate
+    doc = json.loads(next(xfo.DONATIONS.glob("discoveries_*.json")).read_text())
+    assert doc["tests_run"] == 2 and len(doc["discoveries"]) == 2
+    assert doc["discoveries"][0]["generator"] == "ext:quant_guild_library"
