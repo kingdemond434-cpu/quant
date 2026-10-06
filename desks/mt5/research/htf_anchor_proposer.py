@@ -59,11 +59,22 @@ HYP = BASE / "data" / "hypotheses"
 CENSUS = HYP / "exit_operator_bind_census.json"
 MINT = HYP / "htf_anchor_mint.json"
 SEAT = "video_anchor_exit"
+#: The video's own search: its Sharpe 1.87 was the best of ~200 variations. Declared on every row
+#: so the whole grid is ONE claim family charged these trials ONCE (libs.research.claim_selection)
+#: -- the 25,520 cells this proposer put in the bank were one breadth unit, not 25,520.
+SOURCE_SELECTION_TRIALS = 200
 
 #: The charts the mechanism is minted on. Declaring `timeframe` in params SUPPRESSES the
 #: compiler's 16-way (chart x session) fan-out, which is deliberate: this conversion declares its
 #: own breadth and does not want it silently multiplied by sixteen on top.
 CHARTS: tuple[str, ...] = ("H1", "H4", "D1")
+#: THE FINE CHARTS, minted wherever the instrument's own bars exist (principal 2026-09-30: every
+#: timeframe the family supports). `htf_anchor_trend` declares no chart bound in
+#: `families_orthogonal.FAMILY_TIMEFRAMES`, and its anchor is a MULTIPLE of the entry chart, so
+#: M15 at anchor_mult=4 is the hourly anchor gating a fifteen-minute entry -- the same claim one
+#: rung finer, not a different one. Minted only where `<SYM>_<chart>.parquet` exists: a fine
+#: chart the desk does not hold is a cell the judge cannot replay off this checkout.
+FINE_CHARTS: tuple[str, ...] = ("M15", "M30")
 
 #: Arm A. The mechanism's own degrees of freedom. `(0.0, False)` is the CONTROL ARM -- the anchor
 #: gate and ATR stop with the desk's ordinary stop/target/time exit -- without which the two exit
@@ -246,6 +257,7 @@ def _row(sym: str, family: str, params: dict[str, Any], note: str) -> dict[str, 
         "title": f"{family} on {sym} {params.get('timeframe', 'H1')} -- video-derived anchor/exit",
         "url": "",
         "source": SEAT,
+        "claim_selection_trials": SOURCE_SELECTION_TRIALS,
         "event_time": None,
     }
 
@@ -261,18 +273,38 @@ MINT_ROWS_PER_PASS = 1200
 CURSOR = HYP / "htf_anchor_cursor.json"
 
 
+def charts_for(sym: str) -> list[str]:
+    """The fixed ladder plus every fine chart this instrument's bars exist for."""
+    uni = BASE / "data" / "universe"
+    return list(CHARTS) + [c for c in FINE_CHARTS if (uni / f"{sym}_{c}.parquet").exists()]
+
+
 def build_candidates(census: dict[str, Any], symbols: list[str]) -> list[dict[str, Any]]:
-    """Arm A across the whole legal universe; arm B only where the operator was measured to bind."""
+    """Arm A across the whole legal universe; arm B only where the operator was measured to bind.
+
+    The instruments are walked LEAST-JUDGED FIRST (`breadth_rotation.orthogonal_ring` over the
+    judge's own seen-cells file, for this family), so the rotating mint slice below reaches the
+    ground the desk has tested least before it returns to the ground it has tested most. An
+    unreadable coverage file leaves the name order. The judge's counts move between passes, so an
+    instrument can shift across the cursor: a repeat is deduplicated by the merge on the
+    executable spec, and one that shifts behind the cursor is by construction among the least
+    judged, so it sits near the front of the ring the cursor wraps back to."""
+    try:
+        from breadth_rotation import orthogonal_ring
+        symbols = orthogonal_ring(symbols, "htf_anchor_trend")
+    except Exception:
+        symbols = list(symbols)
     out: list[dict[str, Any]] = []
-    for sym, chart in product(symbols, CHARTS):
-        for amult, (xmult, flip) in product(ANCHOR_MULTS, EXIT_ARMS):
-            arm = ("control" if (xmult <= 0 and not flip)
-                   else "flip" if xmult <= 0
-                   else f"vol{xmult}" + ("+flip" if flip else ""))
-            out.append(_row(sym, "htf_anchor_trend", {
-                "timeframe": chart, "anchor_mult": amult,
-                "expansion_mult": xmult, "exit_on_anchor_flip": flip,
-            }, f"arm={arm}; anchor is {amult}x the entry chart"))
+    for sym in symbols:
+        for chart in charts_for(sym):
+            for amult, (xmult, flip) in product(ANCHOR_MULTS, EXIT_ARMS):
+                arm = ("control" if (xmult <= 0 and not flip)
+                       else "flip" if xmult <= 0
+                       else f"vol{xmult}" + ("+flip" if flip else ""))
+                out.append(_row(sym, "htf_anchor_trend", {
+                    "timeframe": chart, "anchor_mult": amult,
+                    "expansion_mult": xmult, "exit_on_anchor_flip": flip,
+                }, f"arm={arm}; anchor is {amult}x the entry chart"))
     for b in census.get("binding", []):
         fam, chart, mult = b["family"], b["chart"], b["expansion_mult"]
         for sym in symbols:
@@ -310,6 +342,17 @@ def main(argv: list[str] | None = None) -> int:
     CURSOR.write_text(json.dumps({"at": nxt, "of": len(every),
                                   "written": time.strftime("%Y-%m-%dT%H:%M:%SZ",
                                                            time.gmtime())}), "utf-8")
+    # THE WHOLE GRID IS ONE CLAIM FAMILY, REGISTERED WHOLE (libs.research.claim_selection). Every
+    # cell of `every` -- including the ones judged on earlier passes and long gone from the docket
+    # -- is entered under one claim_family with its genome id, and the family is charged the
+    # video's ~200-trial selection ONCE in the lifetime ledger. A fault here costs the lineage
+    # record and is printed; it never costs the mint.
+    try:
+        from libs.research.claim_selection import register_grid
+        lineage = register_grid(every)
+    except Exception as exc:
+        lineage = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"htf_anchor_proposer: claim-family registration failed: {lineage['status']}")
     path = donate(source=SEAT, candidates=cands, tests_run=len(census.get("rows", [])))
     counts = donation_counts()
     doc = {
@@ -325,6 +368,7 @@ def main(argv: list[str] | None = None) -> int:
         "refused_unstamped": counts.get("refused_unstamped", 0),
         "contract": str(path) if path else None,
         "census": str(CENSUS),
+        "claim_lineage": lineage,
         "prior": ("the source video reported Sharpe 1.87 as the MAXIMUM of ~200 searched "
                   "variations with no multiplicity charge, on one single-name equity; its own "
                   "Monte Carlo median was ~1.30. Recorded so the 1.87 is never read as evidence."),

@@ -10,6 +10,7 @@ economic value/cost evidence earns a bounded change.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sqlite3
 import sys
@@ -53,7 +54,8 @@ def _candidate_counts(db_path: Path) -> tuple[int | None, int | None, int | None
     if not db_path.is_file():
         return None, None, None
     try:
-        with sqlite3.connect(db_path) as db:
+        uri = db_path.resolve().as_uri() + "?mode=ro"
+        with contextlib.closing(sqlite3.connect(uri, uri=True)) as db:
             tested = int(db.execute("SELECT COUNT(*) FROM research_candidates").fetchone()[0])
             screened = int(db.execute(
                 "SELECT COUNT(*) FROM research_candidates WHERE survived = 1 "

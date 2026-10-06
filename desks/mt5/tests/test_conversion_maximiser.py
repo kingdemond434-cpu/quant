@@ -747,12 +747,11 @@ def test_every_debt_component_names_the_organ_that_drains_it(desk) -> None:
         assert "discovery_compiler" in debt["component_owner"][name]
 
 
-def test_the_tail_reserve_is_derived_from_the_last_measured_tail() -> None:
+def test_the_convert_loop_always_leaves_a_tail_reserve() -> None:
     """Silent-organ census: the loop ran to 5 s before its budget and the unbudgeted tail
-    (trial charge, after-measures, the artifact write) was killed by the cycle cap."""
-    r, why = cm.tail_reserve_s({}, 900)
-    assert r == 180 and "no measured tail" in why
-    r, _ = cm.tail_reserve_s({"tail_s": 100}, 900)
-    assert r == 150
-    r, why = cm.tail_reserve_s({"tail_s": 1000}, 900)
-    assert r == cm.TAIL_MAX_SHARE * 900 and "capped" in why
+    (trial charge, after-measures, the artifact write) was killed by the cycle cap. LIVE's
+    fixed reserve (merged over this branch's prior-tail estimate) must keep that room."""
+    for seconds in (60.0, 240.0, 900.0, 3600.0):
+        r = cm.tail_reserve_s(cm.Budget(seconds))
+        assert 0 < r <= 0.5 * seconds
+        assert r >= min(cm.TAIL_RESERVE_MIN_S, 0.5 * seconds)

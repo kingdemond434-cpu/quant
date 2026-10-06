@@ -60,6 +60,27 @@ $procsOut = @{}
 # one snapshot of every python process, so child CPU can be attributed to its parent's tree
 $allProcs = @(Get-CimInstance Win32_Process -Filter "Name like 'py%'")
 
+function Get-ResearchTreeCpuSeconds {
+  param([int]$RootProcessId, [object[]]$Snapshot)
+  # Windows' py launcher inserts a parent between the judge and its pool. Count
+  # every descendant, otherwise 16 busy grandchildren look like an idle judge.
+  $pendingIds = [System.Collections.Generic.Queue[int]]::new()
+  $seenIds = [System.Collections.Generic.HashSet[int]]::new()
+  $pendingIds.Enqueue($RootProcessId)
+  $totalCpu = 0.0
+  while ($pendingIds.Count -gt 0) {
+    $processId = $pendingIds.Dequeue()
+    if (-not $seenIds.Add($processId)) { continue }
+    $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
+    if (-not $process) { return $null }
+    $totalCpu += $process.TotalProcessorTime.TotalSeconds
+    foreach ($child in ($Snapshot | Where-Object { $_.ParentProcessId -eq $processId })) {
+      $pendingIds.Enqueue([int]$child.ProcessId)
+    }
+  }
+  return $totalCpu
+}
+
 foreach ($pat in $patterns) {
   $procs = Get-CimInstance Win32_Process -Filter "Name like 'py%'" |
            Where-Object { $_.CommandLine -match $pat } | Sort-Object CreationDate
@@ -82,20 +103,22 @@ foreach ($pat in $patterns) {
   # is working, so children's CPU counts toward the parent's liveness.
   $gp = Get-Process -Id $keeper.ProcessId
   if ($gp) {
-    $cpu = $gp.TotalProcessorTime.TotalSeconds
-    $kids = @($allProcs | Where-Object { $_.ParentProcessId -eq $keeper.ProcessId })
-    foreach ($k in $kids) {
-      $kp = Get-Process -Id $k.ProcessId -ErrorAction SilentlyContinue
-      if ($kp) { $cpu += $kp.TotalProcessorTime.TotalSeconds }
+    $cpu = Get-ResearchTreeCpuSeconds -RootProcessId $keeper.ProcessId -Snapshot $allProcs
+    if ($null -eq $cpu) {
+      $actions += "CPU UNMEASURED ${pat}: process tree changed or was unreadable; no stall inferred"
+      continue
     }
-    $key = "$pat.$($keeper.ProcessId)"
+    # A new measurement basis needs a new baseline, not a delta against direct-child CPU.
+    $key = "$pat.tree2.$($keeper.ProcessId)"
     $ageMin = ($now - $keeper.CreationDate).TotalMinutes
     if ($prev.ContainsKey($key)) {
       $delta = $cpu - [double]$prev[$key].cpu
       $sinceMin = ($now - [datetime]$prev[$key].at).TotalMinutes
       # 40-minute floor and a 25-minute quiet window: the measured searches run 20-30 minutes,
       # so anything tighter kills real work. A truly hung job still dies, just not a slow one.
-      if ($ageMin -gt 40 -and $sinceMin -ge 25 -and $delta -lt 5) {
+      # Completed pool workers disappear from the snapshot. Their accumulated CPU
+      # disappears too; a negative delta requires a fresh baseline, not a stall kill.
+      if ($ageMin -gt 40 -and $sinceMin -ge 25 -and $delta -ge 0 -and $delta -lt 5) {
         Stop-Process -Id $keeper.ProcessId -Force
         # children die with the parent or become the next pass's STACKED kill
         $actions += "STALLED ${pat}: pid $($keeper.ProcessId) alive $([math]::Round($ageMin))m, TREE CPU +$([math]::Round($delta,1))s in $([math]::Round($sinceMin))m -- killed; next trigger resumes"
@@ -264,17 +287,11 @@ try {
         # signal is a single point of failure.
         $cpuRate = $null
         try {
-          $treeCpu = 0.0
-          $gpNow = Get-Process -Id $oldest.ProcessId -ErrorAction SilentlyContinue
-          if ($gpNow) { $treeCpu = $gpNow.TotalProcessorTime.TotalSeconds }
-          foreach ($kid in ($allProcs | Where-Object { $_.ParentProcessId -eq $oldest.ProcessId })) {
-            $kp = Get-Process -Id $kid.ProcessId -ErrorAction SilentlyContinue
-            if ($kp) { $treeCpu += $kp.TotalProcessorTime.TotalSeconds }
-          }
-          $pk = "external_gauntlet.$($oldest.ProcessId)"
-          if ($prev.ContainsKey($pk)) {
+          $treeCpu = Get-ResearchTreeCpuSeconds -RootProcessId $oldest.ProcessId -Snapshot $allProcs
+          $pk = "external_gauntlet.tree2.$($oldest.ProcessId)"
+          if ($null -ne $treeCpu -and $prev.ContainsKey($pk)) {
             $elapsed = ($now - [datetime]$prev[$pk].at).TotalSeconds
-            if ($elapsed -gt 60) {
+            if ($elapsed -gt 60 -and $treeCpu -ge [double]$prev[$pk].cpu) {
               $cpuRate = ($treeCpu - [double]$prev[$pk].cpu) / $elapsed
             }
           }
@@ -282,6 +299,8 @@ try {
 
         if ($cpuRate -ne $null -and $cpuRate -ge 0.15) {
           $actions += "NO-PROGRESS check on external_gauntlet: silent for 20m but working at $([math]::Round($cpuRate,2)) core(s) -- a fully-cached sweep writes nothing while it computes gates. Left alone."
+        } elseif ($null -eq $cpuRate) {
+          $actions += "NO-PROGRESS external_gauntlet: tree CPU rate unmeasured; awaiting a comparable sample"
         } else {
           Stop-Process -Id $oldest.ProcessId -Force -ErrorAction SilentlyContinue
           $rateTxt = if ($cpuRate -eq $null) { "cpu rate unknown" } else { "$([math]::Round($cpuRate,2)) core(s)" }

@@ -214,11 +214,13 @@ $tasks = @(
        # says "terminal is up but not feeding" when nothing is wrong except this cadence.
        Desc = "Rebuild web/desk_state.json -- the file every dashboard reads." },
     @{ Name = "MT5-Gauntlet"
-       Script = "scripts\\external_gauntlet.py"
+       Script = "scripts\\run_sharded_gauntlet.py"
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
                      -RepetitionInterval (New-TimeSpan -Hours 1) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
-       # The ten gates. Also a leg of the hourly cycle, and deliberately BOTH: the cycle can be
+       # The launcher invokes the sealed judge's fail-closed shard protocol; the judge still owns
+       # every verdict and the one union merge. Also a leg of the hourly cycle, deliberately BOTH:
+       # the cycle can be
        # long, and a judged docket is what every downstream stage waits on. Its own job lock
        # makes the overlap a wait, not a race.
        Desc = "The ten statistical gates, hourly, over every newly backtested cell." },

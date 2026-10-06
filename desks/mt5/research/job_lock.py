@@ -56,6 +56,16 @@ def peak_rss_mb() -> int | None:
     The high-water mark, not the current reading: a job that touched 4.9GB and released it still
     needed 4.9GB, and admitting the next one on the trough is how the box gets starved.
     """
+    if sys.platform == "win32":
+        try:
+            import psutil
+
+            # Windows has neither /proc nor resource. Its native working-set
+            # high-water counter survives deallocation; current RSS does not.
+            peak = int(psutil.Process().memory_info().peak_wset)
+            return max(1, peak // (1024 * 1024)) if peak > 0 else None
+        except Exception:
+            return None
     try:
         for line in Path("/proc/self/status").read_text("utf-8").splitlines():
             if line.startswith("VmHWM:"):
@@ -268,6 +278,16 @@ def measured_need_mb(name: str, declared: int) -> tuple[int, str]:
                      f"{typical}MB -- admitting on what it typically uses{tail}")
 
 
+def _pid_exists(pid: int) -> bool:
+    """Read liveness without sending a signal; Windows kill(pid, 0) terminates."""
+    if sys.platform == "win32":
+        import psutil
+
+        return psutil.pid_exists(pid)
+    os.kill(pid, 0)
+    return True
+
+
 def _owner_state(path: Path) -> str:
     """"DEAD", "ALIVE" or "UNKNOWN" for the process named in the lock.
 
@@ -298,23 +318,15 @@ def _owner_state(path: Path) -> str:
     if not isinstance(pid, int) or pid <= 0:
         return "UNKNOWN"
     try:
-        os.kill(pid, 0)                   # signal 0: existence check, never delivers a signal
+        if not _pid_exists(pid):
+            return "DEAD"
     except ProcessLookupError:
         return "DEAD"
     except PermissionError:
         return "ALIVE"                    # running under another user is still running
     except OSError as exc:
-        # WINDOWS NEVER RAISES ProcessLookupError HERE, so on the box this whole function could
-        # only ever return False and the liveness path -- the entire reason it exists -- was dead
-        # code. MEASURED on the desk box (win32) 2026-08-27: `os.kill(<nonexistent pid>, 0)`
-        # raises plain `OSError` with `winerror=87` (ERROR_INVALID_PARAMETER), errno 22, and a
-        # LIVE pid raises nothing. So on Windows the age rule was the only recovery there has
-        # ever been, and the docstring's promise -- that live work never waits 45 minutes on a
-        # corpse -- was true on Linux and false where the searcher actually runs.
-        # Narrow on purpose: only the documented not-a-process signature counts as dead. Any
-        # other OSError is still UNKNOWN and falls back to the age rule, because reclaiming a
-        # lock from a process that is merely unreachable would let two writers run at once, which
-        # is worse than waiting.
+        # Retain the narrow Windows missing-process classification for a probe failure.
+        # Other failures stay UNKNOWN; unreadability never proves the owner is gone.
         if sys.platform == "win32" and getattr(exc, "winerror", None) == 87:
             return "DEAD"
         return "UNKNOWN"

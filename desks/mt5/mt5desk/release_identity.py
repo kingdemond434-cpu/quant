@@ -79,10 +79,31 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    "desks/mt5/reports/markout.json",
+    "desks/mt5/data/placement_interlock.json",
     "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
     "desks/mt5/reports/BOX_STATE_FLOW.json",
+    "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+    "desks/mt5/reports/DESK_HEALTH.json",
     "desks/mt5/data/tier_s/box_evidence.json",
     "desks/mt5/data/tier_s/live_door.json",
+    "desks/mt5/reports/NULL_LAB.json",
+    "desks/mt5/reports/KNOWN_BY_DATE.json",
+    "desks/mt5/reports/PIT_LAG_CENSUS.json",
+    "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json",
+    "desks/mt5/reports/DSR_INPUTS.json",
+    "desks/mt5/reports/OCCUPANCY_MAP.json",
+    "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
+    "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
+    # The rest of the Tier S promotion door's evidence, on the same sync (2026-09-30).
+    "desks/mt5/data/tier_s/door_verdicts.json",
+    "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
+    "desks/mt5/data/tier_s/RELEASE_STOP.json",
+    "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json",
+    "desks/mt5/reports/REPLICATION.json",
+    # The lockbox v4 re-certification ledger and the re-mint status (2026-09-30).
+    "desks/mt5/reports/LOCKBOX_RECERT.json",
+    "desks/mt5/reports/REMINT_STATUS.json",
 })
 
 #: STATE DIRECTORIES, verbatim from libs/ops/release.STATE_PREFIXES (mirrored, not imported --
@@ -107,11 +128,40 @@ STATE_PREFIXES: tuple[str, ...] = (
     "data/", "reports/", "logs/", "web/", "docs/",
 )
 
+#: STATE ARTIFACTS THAT SIT AT THE DESK ROOT INSTEAD OF UNDER data/, verbatim from
+#: libs/ops/release.STATE_FILES (mirrored, not imported -- see PURE ON PURPOSE above).
+#:
+#: THE MIRROR HAD NO EQUIVALENT OF THIS LIST AT ALL (measured on the box 2026-09-24, recovered
+#: box commit fe09b89b, ported 2026-09-30). `desks/mt5/swap_exposure.json` -- a file the box's
+#: swap organ rewrites every hour, named in `release.STATE_FILES` precisely because it kept
+#: refusing seals -- was classified CODE by the verdict the GATEWAY reads, and sat in
+#: `changed_paths` on the live box while the gold book placed nothing. Every entry is an organ's
+#: output; none is an input the gateway executes. The money path, the judge manifest and the
+#: survivor canon are held to their own per-file digests in step 2 of `verdict`, so naming these
+#: as state loses nothing. `test_hash_and_allowlist_mirror_the_seal` now pins EVERY list this
+#: module mirrors, and the classification itself, against libs/ops/release.
+STATE_FILES: frozenset[str] = frozenset({
+    "context/decision_journal.jsonl",
+    "docs/desk_lessons.jsonl",
+    "desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
+    "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
+    "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json", "desks/mt5/mech_split.json",
+    "desks/mt5/swap_exposure.json",
+    "desks/mt5/docs/TRADE_PATH_REPORT.md",
+})
+
+#: Regenerated build output, verbatim from libs/ops/release.BUILD_PREFIXES: neither code the
+#: gateway executes nor state it carries.
+BUILD_PREFIXES: tuple[str, ...] = ("dist/",)
+
 
 def _is_state_path(rel: str) -> bool:
-    """A repo-relative path that is evidence/record/rendering rather than code."""
+    """A repo-relative path that is evidence/record/rendering (or regenerated build output)
+    rather than code: the same answer as `release.is_state_path(p) or
+    release.is_build_artifact(p)`, which the parity test pins."""
     p = str(rel).replace("\\", "/").lstrip("./")
-    return any(p.startswith(prefix) for prefix in STATE_PREFIXES)
+    return (p in STATE_FILES or any(p.startswith(prefix) for prefix in STATE_PREFIXES)
+            or any(p.startswith(prefix) for prefix in BUILD_PREFIXES))
 
 
 _SHA = re.compile(r"[0-9a-f]{40}")
