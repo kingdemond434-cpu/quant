@@ -238,3 +238,98 @@ def test_terms_only_entry_point_exists() -> None:
     """The financing leg is seconds of work and the tick pull is minutes; binding them meant the
     cheap perishable stream could only be scheduled at the expensive one's cadence."""
     assert "--terms-only" in (_DESK / "mt5desk" / "tape.py").read_text("utf-8")
+
+
+# ============================================================ edge hazard by CAUSE (2026-10-06)
+def _p(name: str, v: float | None, n: int = 50, **detail):
+    from libs.research.perishability import Pressure
+    return Pressure(name, v, n, "", detail)
+
+
+def test_only_mechanism_channels_move_the_decay_hazard() -> None:
+    """Cost, fill, crowding and regime channels used to average into the decay hazard; now a
+    blow-out on every one of them leaves it exactly where the mechanism channels put it."""
+    from libs.research import perishability as ph
+    mech = [_p("prediction_decay", 0.2), _p("pnl_decay", 0.2)]
+    quiet = mech + [_p(c, 0.0) for c in ("cost_drift", "fill_drift", "crowding", "state_decay",
+                                          "feature_drift", "factor_drift", "relationship_drift")]
+    loud = mech + [_p("cost_drift", 1.0, now=3.0, baseline=1.0)] + \
+        [_p(c, 1.0) for c in ("fill_drift", "crowding", "state_decay", "feature_drift",
+                              "factor_drift", "relationship_drift")]
+    a, b = ph.hazard_by_cause(quiet), ph.hazard_by_cause(loud)
+    assert a["hazard"] == b["hazard"] == pytest.approx(ph.hazard_probability(0.2))
+    assert b["causes"]["execution_cost_decay"]["pressure"] == 1.0
+    assert b["causes"]["execution_cost_decay"]["slip_ratio"] == pytest.approx(3.0)
+    assert b["causes"]["execution_cost_decay"]["routes_to"] == "cost_bias_r"
+    assert b["causes"]["regime_mismatch"]["transient"] is True
+    assert "state_decay" in b["causes"]["regime_mismatch"]["channels"], "book conditioning"
+    assert b["n_measured"] == 9, "every channel is still reported"
+    assert set(b["causes"]) == set(ph.CAUSES)
+
+
+def test_signal_expiry_joins_the_mechanism_as_a_union_on_its_own_clock() -> None:
+    from libs.research import perishability as ph
+    mech = [_p("prediction_decay", 0.2), _p("pnl_decay", 0.2)]
+    m = ph.hazard_by_cause(mech)["hazard"]
+    # 60 days old, 90-day lifetime: two thirds of the 90-day horizon is past expiry.
+    out = ph.hazard_by_cause(mech, expiry=(60.0, 90.0))
+    e = out["causes"]["signal_expiry"]["hazard"]
+    assert e == pytest.approx(60.0 / 90.0)
+    assert out["hazard"] == pytest.approx(1 - (1 - m) * (1 - e), abs=1e-6)
+    assert ph.signal_expiry_hazard(None, 90.0) is None, "undeclared is unknown, never zero"
+    # One own channel is one symptom: None (the blanket), whatever a book channel or the expiry
+    # says -- a book-level state decay at 1.0 must not make a per-edge hazard.
+    assert ph.hazard_by_cause([_p("pnl_decay", 0.2), _p("state_decay", 1.0)])["hazard"] is None
+    assert ph.hazard_by_cause([_p("pnl_decay", 0.2)], expiry=(200.0, 90.0))["hazard"] is None
+
+
+def test_data_failure_and_displacement_are_named_and_never_a_hazard() -> None:
+    from libs.research import perishability as ph
+    mech = [_p("prediction_decay", 0.0), _p("pnl_decay", 0.0)]
+    out = ph.hazard_by_cause(mech, stale_why="clock stopped")
+    assert out["hazard"] == 0.0
+    assert out["causes"]["data_failure"]["flag"] is True
+    assert "never decay" in out["causes"]["data_failure"]["routes_to"]
+    assert "book comparison" in out["causes"]["displacement"]["routes_to"]
+
+
+def test_calibration_prior_stands_without_decay_exits_and_says_it_is_thin() -> None:
+    from libs.research.perishability import (
+        DATA_FAILURE,
+        MECHANISM_DECAY,
+        ExitRecord,
+        calibrate_scale,
+    )
+    recs = [ExitRecord("a", 100.0, None, "t"), ExitRecord("b", 50.0, DATA_FAILURE, "t"),
+            ExitRecord("c", 900.0, None, "t", detectable=False)]
+    out = calibrate_scale(recs)
+    assert out["status"] == "PRIOR_STANDS" and out["scale_days"] == 120.0
+    assert out["n_decay_exits"] == 0 and out["days_at_risk"] == 150.0
+    assert out["days_blind"] == 900.0, "blind exposure is reported, never counted as survival"
+    assert out["posterior_scale_days"] == pytest.approx(270.0)
+    assert out["thin"] is True and "THIN" in out["why"]
+    # Many quick mechanism deaths shorten the scale -- the data overrule the prior.
+    quick = [ExitRecord(f"m{i}", 20.0, MECHANISM_DECAY, "t") for i in range(9)]
+    fit = calibrate_scale(quick)
+    assert fit["status"] == "FITTED"
+    assert fit["scale_days"] == pytest.approx((120.0 + 180.0) / 10.0)
+
+
+def test_calibration_censors_competing_exits_and_keeps_out_of_mandate_aside() -> None:
+    from libs.research.perishability import MECHANISM_DECAY, POLICY, ExitRecord, calibrate_scale
+    recs = [ExitRecord("a", 60.0, POLICY, "t"),
+            ExitRecord("crypto", 40.0, MECHANISM_DECAY, "t", in_mandate=False)]
+    primary = calibrate_scale(recs)
+    assert primary["n_decay_exits"] == 0 and primary["days_at_risk"] == 60.0
+    wide = calibrate_scale(recs, include_out_of_mandate=True)
+    assert wide["n_decay_exits"] == 1
+    assert wide["scale_days"] == pytest.approx((120.0 + 100.0) / 2.0)
+
+
+def test_the_desk_history_is_read_with_every_exit_labelled() -> None:
+    from libs.research import perishability as ph
+    recs, _notes = ph.retirement_history()
+    assert all(r.cause in (None, "unclassified", ph.POLICY, *ph.CAUSES) for r in recs)
+    out = ph.calibrate_from_history()
+    assert out["scale_days"] <= ph.HAZARD_SCALE_DAYS, "history can only shorten the scale"
+    assert "sensitivity_with_out_of_mandate" in out and isinstance(out["notes"], list)

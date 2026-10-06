@@ -70,8 +70,48 @@ not multiplied, for the reason `crowding_hazard.microstructure_pressure` gives: 
 one unchanged component silence five that moved. The mean pressure then becomes a probability
 through the SAME exponential hazard and the SAME declared 120-day scale that
 `libs.research.crowding_hazard` already uses, so the desk carries one decay scale rather than
-two that can disagree. The scale is DECLARED, not fitted: this desk has no retired-edge history
-to fit it to, and an invented fit would look more precise while being no better founded.
+two that can disagree.
+
+THE SCALE IS A LABELLED PRIOR THE RETIREMENT HISTORY UPDATES (2026-10-06). Until this date the
+120 days were DECLARED and never confronted with the desk's own record. `retirement_history`
+now reads every record the desk keeps of a sleeve or clock leaving (the shadow ledger's
+RETIRED_* rows, GOLD_RETIRED and its voids, decay_monitor's append-only actions, the clock
+retirement file, the identity-broken registry archive, the roster's STANDBY parking), labels
+each exit with its CAUSE, and `calibrate_scale` fits a censored exponential survival model to
+the MECHANISM-DECAY exits alone -- every other exit is censored at its own date (competing
+risks), because a clock that stopped when its data source vanished tells you nothing about how
+long the edge would have lasted. The fit is a conjugate Gamma update whose prior IS the declared
+scale, worth `HAZARD_SCALE_PRIOR_EVENTS` pseudo-events, so a thin history moves it a little and a
+long one overrules it -- never silently: the published block carries d, the exposure, the prior's
+weight and both scales.
+
+WHY THE HISTORY CAN ONLY SHORTEN THE SCALE. What a survival fit measures is the POPULATION break
+rate, lambda_bar = E[pressure] / scale. Mean pressure is at most 1, so scale <= 1 / lambda_bar:
+the history bounds the full-pressure scale from ABOVE. A history in which edges die faster than
+120 days says the declared scale is too long and replaces it; a history in which they live
+longer is consistent with any scale up to that bound and cannot lengthen it. That is the
+arithmetic of the bound, not a thumb on the scale.
+
+CAUSES ARE SEPARATE CHANNELS, AND ONLY ONE OF THEM IS DECAY (2026-10-06). An edge stops paying
+for six different reasons and they cost the book in different currencies. `hazard_by_cause`
+splits the nine channels into labelled causes and names where each is allowed to go:
+
+  mechanism_decay       prediction decay and P&L decay -- THIS sleeve's own forward evidence
+                        against its certificate and its own past. The world-level decay draw.
+  signal_expiry         a declared signal lifetime running out, on its OWN horizon. Joins the
+                        decay draw as a separate event: P = 1 - (1 - mech)(1 - expiry).
+  regime_mismatch       feature, factor, relationship and state drift. TEMPORARY: it reverts,
+                        so it must not erase the edge; the regime posterior already prices it.
+  execution_cost_decay  cost drift, fill drift, crowding (built from the same spread/fill/slip
+                        ratios). Flows to the COST the sleeve is charged, never to its decay.
+  data_failure          a stale or absent ledger. An integrity condition -- no NEW risk on a
+                        number the desk cannot see -- never a decay verdict.
+  displacement          a better eligible sleeve exists. Not decay of the displaced sleeve at
+                        all: the allocator settles it by comparing feasible BOOKS.
+
+ONE FACT ENTERS ONCE. Before this split every one of the nine channels averaged into the one
+hazard that became `decay_prob_i`, while cost drift was ALSO priced through the cost surface and
+regime drift through the regime posterior -- the same measurement charged two or three times.
 
 AN UNMEASURED COMPONENT IS NOT A ZERO. A channel with no ledger on this host contributes nothing
 to the mean and is listed by name in `unmeasured` with its reason (L1.28a). A sleeve where every
@@ -407,10 +447,17 @@ HAZARD_COMPONENTS: tuple[str, ...] = (
     "factor_drift", "feature_drift", "relationship_drift", "crowding",
 )
 
-#: Days at FULL pressure for one e-folding of the edge. Taken verbatim from
+#: Days at FULL pressure for one e-folding of the edge -- THE PRIOR. Taken verbatim from
 #: `crowding_hazard.hazard` (rate = pressure / 120.0) so the desk has ONE decay scale: a second
 #: scale here would let two organs disagree about the same edge and be equally defensible.
+#: Since 2026-10-06 this is the PRIOR of `calibrate_scale`, not the answer: the drift monitor
+#: publishes the history-updated scale beside it and uses that one. Kept at 120 because the
+#: crowding channel inverts `crowding_hazard`'s own probability through exactly this number.
 HAZARD_SCALE_DAYS = 120.0
+#: What the prior is WORTH, in pseudo-retirements. One: the declared scale counts as one edge
+#: observed to break after 120 full-pressure days -- enough to stand when the desk has no
+#: history, little enough that three real mechanism retirements outvote it.
+HAZARD_SCALE_PRIOR_EVENTS = 1.0
 #: The horizon the question is asked over. "Next horizon" in the principal's sentence -- one
 #: quarter, the shortest window over which a forward clock can carry a verdict at all.
 HAZARD_HORIZON_DAYS = 90.0
@@ -629,3 +676,386 @@ def edge_hazard(components: list[Pressure], *, horizon_days: float = HAZARD_HORI
             "why": (f"{len(measured)} of {len(components)} channel(s) measured ({len(own)} this "
                     f"sleeve's own), mean pressure {mean:.3f}, led by {lead.name}; P(break "
                     f"within {horizon_days:g}d) = {p:.1%}")}
+
+
+# =========================================================================== CAUSES (2026-10-06)
+#: The six reasons an edge stops paying, as labelled channels. See the module docstring: only the
+#: first two are DECAY, and each of the others has its own destination in the allocator.
+MECHANISM_DECAY = "mechanism_decay"
+SIGNAL_EXPIRY = "signal_expiry"
+REGIME_MISMATCH = "regime_mismatch"
+EXECUTION_COST_DECAY = "execution_cost_decay"
+DATA_FAILURE = "data_failure"
+DISPLACEMENT = "displacement"
+#: An exit that is none of the six -- a universe, jurisdiction or venue refusal. Recorded so the
+#: history accounts for every exit, censored for the fit like every other non-decay exit.
+POLICY = "policy"
+CAUSES: tuple[str, ...] = (MECHANISM_DECAY, SIGNAL_EXPIRY, REGIME_MISMATCH,
+                           EXECUTION_COST_DECAY, DATA_FAILURE, DISPLACEMENT)
+#: The causes that may become the world-level edge-decay draw. Nothing else may.
+DECAY_CAUSES: tuple[str, ...] = (MECHANISM_DECAY, SIGNAL_EXPIRY)
+
+#: Which cause each of the nine monitored channels is evidence OF.
+#:
+#: CROWDING IS COST, NOT MECHANISM, and that is the one-fact-once rule rather than a taxonomy
+#: preference: `crowding_hazard` is built from the SAME spread, fill and slip ratios that
+#: cost_drift and fill_drift read off the execution twin. Putting it in the decay group while
+#: cost goes to cost_bias_r would charge one slip measurement twice in two currencies.
+#: RELATIONSHIP DRIFT IS REGIME: the driver graph's signs flipping is the world around the edge
+#: moving, which reverts, not the edge's own mechanism failing.
+#: STATE DECAY IS REGIME TOO, and this one was measured: it is the BOOK's conditioning (which
+#: admission dimensions still predict), one number for every sleeve. Left in the mechanism group
+#: on 2026-10-06 it read 1.0 off-box and put every sleeve with one own channel at P = 31% and any
+#: with a weak own channel into BREAKING -- the 2026-09-05 book-fact-in-per-edge-costumes defect
+#: again, now able to charge MORE than the blanket. The state gauntlet already re-judges the
+#: dimensions it conditions on; this sleeve's mechanism is what its own ledger says.
+CAUSE_OF_CHANNEL: dict[str, str] = {
+    "prediction_decay": MECHANISM_DECAY,
+    "pnl_decay": MECHANISM_DECAY,
+    "state_decay": REGIME_MISMATCH,
+    "cost_drift": EXECUTION_COST_DECAY,
+    "fill_drift": EXECUTION_COST_DECAY,
+    "crowding": EXECUTION_COST_DECAY,
+    "feature_drift": REGIME_MISMATCH,
+    "factor_drift": REGIME_MISMATCH,
+    "relationship_drift": REGIME_MISMATCH,
+}
+#: Where each cause is allowed to reach the allocator. One destination each, so one fact is
+#: charged once: a cause routed to `cost_bias_r` never also shrinks the mean or the decay draw.
+ROUTE_OF_CAUSE: dict[str, str] = {
+    MECHANISM_DECAY: "decay_prob_i",
+    SIGNAL_EXPIRY: "decay_prob_i",
+    REGIME_MISMATCH: "none -- transient; the regime posterior and crisis overlay already price it",
+    EXECUTION_COST_DECAY: "cost_bias_r",
+    DATA_FAILURE: "integrity -- no new risk on an unseen number; never decay",
+    DISPLACEMENT: "book comparison (robust_elog.score_book / marginal_delta_elog); never decay",
+}
+#: Measured channels before the MECHANISM mean is a hazard: BOTH of its two, which are this
+#: sleeve's own (forward against the certificate, recent against its own past). One of them alone
+#: is one symptom; the old three-of-nine bar cannot apply to a group two wide.
+MECHANISM_MIN_CHANNELS = 2
+
+
+def signal_expiry_hazard(age_days: float | None, ttl_days: float | None, *,
+                         horizon_days: float = HAZARD_HORIZON_DAYS) -> float | None:
+    """P(the signal's declared lifetime ends inside the horizon), on the signal's OWN clock.
+
+    A signal with a declared lifetime (an event study valid for N days after the event, a
+    certificate dated to a regime) does not decay -- it EXPIRES, deterministically, and the share
+    of the horizon that lies past its expiry is the share of the horizon it is gone for. That is
+    what joins the decay draw. No declared lifetime is None, never 0: an undeclared expiry is
+    unknown, not infinite.
+    """
+    if age_days is None or ttl_days is None:
+        return None
+    try:
+        age, ttl = float(age_days), float(ttl_days)
+    except (TypeError, ValueError):
+        return None
+    if not (math.isfinite(age) and math.isfinite(ttl)) or ttl <= 0.0:
+        return None
+    return _clip01((age + horizon_days - ttl) / max(horizon_days, 1e-9))
+
+
+def _side_cause(parts: list[Pressure], cause: str, **extra: Any) -> dict[str, Any]:
+    """A non-decay cause: its pressure and evidence, and where it is routed. Never a hazard."""
+    measured = [float(c.value) for c in parts if c.value is not None]
+    mean = statistics.fmean(measured) if measured else None
+    return {"routes_to": ROUTE_OF_CAUSE[cause],
+            "pressure": None if mean is None else round(mean, 6),
+            "n_measured": len(measured), "channels": [c.name for c in parts],
+            "unmeasured": [c.name for c in parts if c.value is None], **extra}
+
+
+def hazard_by_cause(components: list[Pressure], *, expiry: tuple[float, float] | None = None,
+                    stale_why: str = "", horizon_days: float = HAZARD_HORIZON_DAYS,
+                    scale_days: float = HAZARD_SCALE_DAYS) -> dict[str, Any]:
+    """hazard_i(t) split by CAUSE: only mechanism decay and signal expiry become the decay hazard.
+
+    The row keeps the shape every consumer already reads -- `hazard`, `verdict`, `components`,
+    `n_measured`, `unmeasured` over all nine channels -- with one change of meaning: `hazard` is
+    now P(the edge's MECHANISM breaks, or its signal expires, within the horizon), and `causes`
+    carries the other four with their destinations. The two decay events are distinct, so they
+    combine as a union, 1 - (1 - mech)(1 - expiry), not as a product of penalties. An unmeasured
+    mechanism is a None hazard (the blanket covers it) whatever the expiry says -- the expiry is
+    still published, and an expiry with no mechanism reading is a reason to measure the
+    mechanism, not a licence to call the rest of the edge sound.
+    """
+    every = edge_hazard(components, horizon_days=horizon_days, scale_days=scale_days)
+    by = {cause: [c for c in components if CAUSE_OF_CHANNEL.get(c.name) == cause]
+          for cause in (MECHANISM_DECAY, EXECUTION_COST_DECAY, REGIME_MISMATCH)}
+    mech = edge_hazard(by[MECHANISM_DECAY], horizon_days=horizon_days, scale_days=scale_days,
+                       min_channels=MECHANISM_MIN_CHANNELS)
+    age, ttl = expiry if expiry is not None else (None, None)
+    e = signal_expiry_hazard(age, ttl, horizon_days=horizon_days)
+    m = mech["hazard"]
+    hazard = None if m is None else 1.0 - (1.0 - float(m)) * (1.0 - (e or 0.0))
+    cost_part = next((c for c in by[EXECUTION_COST_DECAY]
+                      if c.name == "cost_drift" and c.value is not None), None)
+    slip_ratio = None
+    if cost_part is not None:
+        now, base = cost_part.detail.get("now"), cost_part.detail.get("baseline")
+        if isinstance(now, (int, float)) and isinstance(base, (int, float)) and base:
+            slip_ratio = round(float(now) / float(base), 6)
+    causes: dict[str, Any] = {
+        MECHANISM_DECAY: {"routes_to": ROUTE_OF_CAUSE[MECHANISM_DECAY], "hazard": m,
+                          "verdict": mech["verdict"], "mean_pressure": mech["mean_pressure"],
+                          "n_measured": mech["n_measured"],
+                          "channels": [c.name for c in by[MECHANISM_DECAY]],
+                          "unmeasured": mech["unmeasured"], "why": mech["why"]},
+        SIGNAL_EXPIRY: {"routes_to": ROUTE_OF_CAUSE[SIGNAL_EXPIRY], "hazard": e,
+                        "age_days": age, "ttl_days": ttl,
+                        "why": ("" if e is not None else
+                                "no declared signal lifetime for this sleeve: unknown, not "
+                                "infinite, and never a zero")},
+        REGIME_MISMATCH: _side_cause(
+            by[REGIME_MISMATCH], REGIME_MISMATCH, transient=True,
+            why=("the market around the edge moved; it reverts, so it does not erase the edge "
+                 "and does not enter the decay draw")),
+        EXECUTION_COST_DECAY: _side_cause(
+            by[EXECUTION_COST_DECAY], EXECUTION_COST_DECAY, slip_ratio=slip_ratio,
+            slip_n=(cost_part.n if cost_part is not None else 0),
+            why=("realised execution against what the certificate was priced at; charged as "
+                 "cost, once, never as decay")),
+        DATA_FAILURE: {"routes_to": ROUTE_OF_CAUSE[DATA_FAILURE], "flag": bool(stale_why),
+                       "why": stale_why or "ledger fresh on this host"},
+        DISPLACEMENT: {"routes_to": ROUTE_OF_CAUSE[DISPLACEMENT], "flag": None,
+                       "why": ("not measured here by design: whether a better eligible sleeve "
+                               "exists is a property of the BOOK, settled by the allocator")},
+    }
+    verdict = (UNMEASURED if hazard is None else
+               BREAKING if hazard >= HAZARD_BREAKING else
+               AT_RISK if hazard >= HAZARD_AT_RISK else HOLDING)
+    return {**every, "hazard": None if hazard is None else round(hazard, 6),
+            "verdict": verdict, "mean_pressure": mech["mean_pressure"],
+            "leading_channel": mech.get("leading_channel"),
+            "lines": {**every["lines"], "min_channels": MECHANISM_MIN_CHANNELS},
+            "decay_causes": list(DECAY_CAUSES), "causes": causes,
+            "why": (mech["why"] if e is None else
+                    f"{mech['why']}; signal expiry P={e:.1%} on its own clock")}
+
+
+# =========================================================================== CALIBRATION
+#: Trades before decay_monitor can retire a sleeve on evidence (`decay_monitor.N_MIN_VERDICT`,
+#: mirrored rather than imported: that organ edits the roster). Exposure accrued below it could
+#: not have ENDED in a mechanism retirement, so counting it as survival would credit the edge
+#: with days on which the desk was blind -- the scale would lengthen on the desk's own deafness.
+DETECT_MIN_N = 20
+
+
+@dataclass(frozen=True)
+class ExitRecord:
+    """One sleeve or clock's life in the desk's record: how long it was watched, how it ended.
+
+    `cause` None means it is still running (right-censored). Every non-decay exit is ALSO
+    censored for the decay fit, at its own date (competing risks). `detectable` is False for
+    exposure on which no decay retirement could have fired (under DETECT_MIN_N trades).
+    """
+
+    name: str
+    exposure_days: float
+    cause: str | None
+    source: str
+    in_mandate: bool = True
+    detectable: bool = True
+    at: str = ""
+    why: str = ""
+
+
+def _read(path: Path) -> Any:
+    try:
+        return json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _shadow_cause(status: str) -> str | None:
+    """The CAUSE a shadow-ledger status records. Unknown retirements are named, never guessed."""
+    s = status.upper()
+    if s in ("ACTIVE", "PROMOTION CANDIDATE", "LIVE", ""):
+        return None
+    if "UNIVERSE" in s or "POLICY" in s or "JURISDICTION" in s:
+        return POLICY
+    if ("ORPHAN" in s or "UNRECONSTRUCT" in s or "NO_BARS" in s or "QUARANTIN" in s
+            or "STALE" in s or "IDENTITY" in s):
+        return DATA_FAILURE
+    if "KILL" in s or "REFUTED" in s or "FAILING" in s or "DECAY" in s or s == "RETIRED":
+        return MECHANISM_DECAY
+    return "unclassified"
+
+
+def retirement_history(root: Path = _ROOT) -> tuple[list[ExitRecord], list[str]]:
+    """Every exit the desk has recorded, labelled by CAUSE. Read-only; the sources are append-only.
+
+    Returns (records, notes). A source absent on this host is a NOTE, never a silent zero: the
+    count of mechanism retirements is only as complete as the files this host can see. A voided
+    retirement stays in the record as what it was found to be (a data failure); a recovered
+    sleeve's past exit is never removed.
+    """
+    desk = root / "desks" / "mt5"
+    out: list[ExitRecord] = []
+    notes: list[str] = []
+
+    shadow = _read(desk / "reports" / "shadow" / "shadow_state.json")
+    if isinstance(shadow, dict):
+        for k, v in shadow.items():
+            if not isinstance(v, dict) or "status" not in v:
+                continue
+            try:
+                days = max(0.0, float(v.get("days_active") or 0.0))
+                n = int(v.get("n") or 0)
+            except (TypeError, ValueError):
+                continue
+            st = str(v.get("status") or "")
+            out.append(ExitRecord(str(k), days, _shadow_cause(st), "shadow_state",
+                                  detectable=n >= DETECT_MIN_N,
+                                  at=str(v.get("retired_at") or ""),
+                                  why=str(v.get("retire_reason") or st)[:160]))
+    else:
+        notes.append("reports/shadow/shadow_state.json unreadable: no exposure on this host")
+
+    voided_doc = _read(desk / "data" / "GOLD_RETIRED_VOIDED.json")
+    voided: dict[str, Any] = voided_doc if isinstance(voided_doc, dict) else {}
+    for k, v in voided.items():
+        row = v if isinstance(v, dict) else {}
+        out.append(ExitRecord(str(k), 0.0, DATA_FAILURE, "GOLD_RETIRED_VOIDED",
+                              at=str(row.get("retired_at") or ""),
+                              why=str(row.get("voided_why") or "")[:160]))
+    gold = _read(desk / "data" / "GOLD_RETIRED.json")
+    for k, v in (gold if isinstance(gold, dict) else {}).items():
+        if k in voided:
+            continue
+        row = v if isinstance(v, dict) else {}
+        out.append(ExitRecord(str(k), 0.0, MECHANISM_DECAY, "GOLD_RETIRED",
+                              at=str(row.get("retired_at") or ""),
+                              why=str(row.get("reason") or "")[:160]))
+
+    try:
+        lines = (desk / "data" / "decay_actions.jsonl").read_text("utf-8").splitlines()
+    except OSError:
+        lines = []
+        notes.append("data/decay_actions.jsonl absent on this host: decay_monitor's retirements "
+                     "(including the 2026-09-16 pooled `discovered` retirement, if it acted) "
+                     "are not visible here")
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        act = str(row.get("action") or row.get("verdict") or "").upper()
+        if "RETIRE" in act:
+            out.append(ExitRecord(str(row.get("sleeve") or row.get("name") or "?"), 0.0,
+                                  MECHANISM_DECAY, "decay_actions", at=str(row.get("at") or ""),
+                                  why=str(row.get("why") or act)[:160]))
+
+    clocks = _read(root / "docs" / "research" / "CLOCK_RETIREMENTS.json")
+    for row in ((clocks.get("retirements") or []) if isinstance(clocks, dict) else []):
+        if not isinstance(row, dict) or row.get("reversed"):
+            continue
+        v = str(row.get("verdict") or "").upper()
+        cause = (MECHANISM_DECAY if "FAILING FORWARD" in v else
+                 POLICY if "JURISDICTION" in v else DATA_FAILURE)
+        try:
+            obs = float(row.get("observations") or 0.0)
+        except (TypeError, ValueError):
+            obs = 0.0
+        # Crypto-exchange era (closed 2026-08-18): OUT OF MANDATE, and `observations` is taken
+        # as days -- an assumption, said here, which is why these never enter the primary fit.
+        out.append(ExitRecord(str(row.get("clock")), obs, cause, "CLOCK_RETIREMENTS",
+                              in_mandate=False, at=str(row.get("retired_at") or ""),
+                              why=str(row.get("verdict") or "")[:160]))
+
+    arch = _read(desk / "data" / "sleeve_registry_archive.json")
+    arch_rows = (arch.get("rows") or {}) if isinstance(arch, dict) else {}
+    for row in (arch_rows.values() if isinstance(arch_rows, dict) else arch_rows):
+        if isinstance(row, dict) and str(row.get("status") or "") == "IDENTITY_BROKEN":
+            ident = row.get("identity") or {}
+            out.append(ExitRecord(str(ident.get("sleeve_id") or "?"), 0.0, DATA_FAILURE,
+                                  "sleeve_registry_archive", at=str(row.get("archived_at") or ""),
+                                  why=str(row.get("status_why") or "")[:160]))
+
+    roster = _read(desk / "data" / "sleeves.json")
+    for row in ((roster.get("sleeves") or []) if isinstance(roster, dict) else []):
+        if isinstance(row, dict) and str(row.get("status") or "") == "STANDBY":
+            # Parked by the allocator's own solve: DISPLACEMENT, never decay. No exposure here --
+            # the sleeve's clock keeps running in shadow and is counted there, once.
+            out.append(ExitRecord(str(row.get("name")), 0.0, DISPLACEMENT, "sleeves.json",
+                                  at=str(row.get("demoted_at") or ""),
+                                  why=str(row.get("demote_reason") or "")[:160]))
+    return out, notes
+
+
+def calibrate_scale(records: list[ExitRecord], *, prior_scale_days: float = HAZARD_SCALE_DAYS,
+                    prior_events: float = HAZARD_SCALE_PRIOR_EVENTS,
+                    include_out_of_mandate: bool = False,
+                    horizon_days: float = HAZARD_HORIZON_DAYS) -> dict[str, Any]:
+    """The decay scale, updated by the desk's own retirement history. Never silently the prior.
+
+    Censored exponential survival on DECAY exits: d decay exits over T detectable days at risk
+    (every other exit censored at its date). Conjugate Gamma: the prior is `prior_events`
+    pseudo-exits over `prior_events x prior_scale_days` days, so the posterior mean time-scale is
+    (prior_events x prior_scale + T) / (prior_events + d) -- the declared scale shrunk toward the
+    history by exactly as much evidence as the history holds.
+
+    The scale USED is min(prior, posterior): the history measures E[pressure] / scale, mean
+    pressure is at most 1, so the history bounds the full-pressure scale from above and can
+    shorten it but never lengthen it (module docstring).
+    """
+    use = [r for r in records if r.in_mandate or include_out_of_mandate]
+    d = sum(1 for r in use if r.cause in DECAY_CAUSES)
+    t_at_risk = sum(r.exposure_days for r in use if r.detectable)
+    t_blind = sum(r.exposure_days for r in use if not r.detectable)
+    a = prior_events + d
+    b = prior_events * prior_scale_days + t_at_risk
+    posterior_scale = b / a
+    rate = a / b
+    scale = min(prior_scale_days, posterior_scale)
+    counts: dict[str, int] = {}
+    for r in use:
+        key = r.cause or "censored_live"
+        counts[key] = counts.get(key, 0) + 1
+    status = "FITTED" if posterior_scale < prior_scale_days else "PRIOR_STANDS"
+    prior_weight = 1.0 - t_at_risk / (t_at_risk + prior_events * prior_scale_days)
+    thin = d < 3
+    verdict_txt = (f"FITTED: the history says edges break faster than declared; using "
+                   f"{scale:.1f}d" if status == "FITTED" else
+                   f"PRIOR STANDS: the history bounds the scale at {posterior_scale:.1f}d, above "
+                   "the prior, and a bound from above cannot lengthen it")
+    return {
+        "status": status, "scale_days": round(scale, 4),
+        "prior_scale_days": prior_scale_days, "prior_events": prior_events,
+        "posterior_scale_days": round(posterior_scale, 4),
+        "posterior_shape": a, "posterior_rate_per_day": round(rate, 8),
+        "n_decay_exits": d, "days_at_risk": round(t_at_risk, 2),
+        "days_blind": round(t_blind, 2), "n_records": len(use),
+        "exits_by_cause": dict(sorted(counts.items())),
+        "prior_weight": round(prior_weight, 4),
+        "base_rate_hazard": round(1.0 - math.exp(-rate * horizon_days), 6),
+        "horizon_days": horizon_days, "include_out_of_mandate": include_out_of_mandate,
+        "thin": thin,
+        "why": (f"{d} decay exit(s) over {t_at_risk:.0f} detectable day(s) at risk "
+                f"({t_blind:.0f} day(s) watched below {DETECT_MIN_N} trades, where no decay "
+                f"retirement could fire, are not counted as survival); posterior scale "
+                f"{posterior_scale:.1f}d against the {prior_scale_days:g}d prior -> {verdict_txt}"
+                + (f". THIN: {d} decay exit(s), under three; the prior carries "
+                   f"{prior_weight:.0%} of the weight" if thin else "")),
+    }
+
+
+def calibrate_from_history(root: Path = _ROOT) -> dict[str, Any]:
+    """The primary (in-mandate) calibration, with the out-of-mandate fit beside it as sensitivity.
+
+    The PRIMARY fit uses MT5/Fusion records only: the crypto-era clocks are a different universe
+    and their exposure unit is assumed. They are fitted beside it so a reader sees how far the
+    one real record of edges failing forward would move the scale.
+    """
+    records, notes = retirement_history(root)
+    primary = calibrate_scale(records)
+    primary["notes"] = notes
+    primary["sensitivity_with_out_of_mandate"] = {
+        k: v for k, v in calibrate_scale(records, include_out_of_mandate=True).items()
+        if k in ("status", "scale_days", "posterior_scale_days", "n_decay_exits",
+                 "days_at_risk", "base_rate_hazard", "why")}
+    return primary

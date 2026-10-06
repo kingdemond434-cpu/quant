@@ -37,6 +37,7 @@ import tempfile
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -542,6 +543,17 @@ def _book_key(s: dict, book: dict[str, float] | None) -> str | None:
     return folded.get(derived.lower())
 
 
+#: WHICH ALLOCATOR DECISION THIS PASS SIZED FROM (trace, 2026-10-06). `allocator_book` records
+#: on itself, as `allocator_book.consumed`, the `decision_id` of the `pf_allocation.json` it
+#: actually parsed -- the same bytes it sized from, not a second read that could land on a newer
+#: solve -- and `main` copies it into state as `consumed_decision_id` / `consumed_decision_at`,
+#: so a fill walks back to the exact allocation that sized it. An artifact without the field, or
+#: a pass that never reached the artifact, records None WITH the reason; absence is a fact to
+#: report, never an error. On the function rather than a module global because several test
+#: harnesses slice `allocator_book` out of this file by name, and a function can always reach
+#: itself where a module global would be a NameError.
+
+
 def allocator_book() -> tuple[dict[str, float] | None, str]:
     """The optimiser's PER-SLEEVE target risk fractions, or None with the reason.
 
@@ -561,18 +573,30 @@ def allocator_book() -> tuple[dict[str, float] | None, str]:
     dynamic allocator in this state is sized as a FALLBACK book (`certified=False`): it is a
     real book with real evidence behind it, and it is not the thing the global proof certified.
     """
+    def _note_consumed_allocation(art: object, why: str = "") -> None:
+        # Nested for the same slicing reason as the attribute (see the comment above the def).
+        did = art.get("decision_id") if isinstance(art, dict) else None
+        allocator_book.__dict__["consumed"] = {
+            "decision_id": str(did) if did not in (None, "") else None,
+            "why": why or ("" if did not in (None, "") else
+                           "pf_allocation.json carries no decision_id")}
+
     total, why = allocator_heat()
     if total is None:
+        _note_consumed_allocation(None, f"no allocator book: {why}")
         return None, f"no allocator book: {why}"
     try:
         from libs.portfolio.allocator_proof import read_certificate, select
         cert, cwhy = read_certificate(BASE.parent.parent)
     except Exception as exc:
+        _note_consumed_allocation(None, f"proof unreadable ({type(exc).__name__})")
         return None, f"proof unreadable ({type(exc).__name__}: {exc})"
     try:
         art = json.loads((BASE / "reports" / "pf_allocation.json").read_text(encoding="utf-8"))
     except Exception as exc:
+        _note_consumed_allocation(None, f"pf_allocation unreadable ({type(exc).__name__})")
         return None, f"pf_allocation unreadable ({type(exc).__name__})"
+    _note_consumed_allocation(art)
     # `heat.state` is the id pf_allocator solved under and the certificate's `by_state` is keyed
     # the same way; a state with no bucket falls back to the global verdict INSIDE `select`.
     state = str((art.get("heat") or {}).get("state") or "")
@@ -1693,6 +1717,42 @@ def close_positions(st: dict, symbol: str, keep_tags: frozenset[str] = frozenset
         res = mt5.order_send(req)
         log(f"CLOSE ticket {p.ticket} ({symbol}) -> retcode={res.retcode if res else None} "
             f"{res.comment if res else ''}")
+        if res is not None and (getattr(res, "retcode", None) == 10010
+                                or 0.0 < float(getattr(res, "volume", 0.0) or 0.0)
+                                < float(getattr(p, "volume", 0.0) or 0.0)):
+            _note_close_residual(st, p, res)
+
+
+def _note_close_residual(st: dict[str, Any], p: object, res: object) -> None:
+    """A close the venue filled only in part is RECORDED, never resent in the same pass.
+
+    PARTIAL FILLS ON THE CLOSE PATH (recovery drills, 2026-10-06). Retcode 10010 (DONE_PARTIAL),
+    or a reported volume below the position's, means part of the position is still on. The
+    close loop here logged the retcode and moved on, so nothing said the book was not flat. The
+    position is re-read by ticket and what is left is written to `st["close_residual"]`; the
+    next pass's close loop picks the position up again from the venue's own list. Re-sending
+    inside the pass would be a blind resubmission of an outcome this pass has not settled, so
+    it is deliberately not done. Never raises: a residual that cannot be read is recorded as
+    the venue's own unfilled volume, or as None when even that is absent.
+    """
+    try:
+        rc = getattr(res, "retcode", None) if res else None
+        asked = float(getattr(p, "volume", 0.0) or 0.0)
+        got = float(getattr(res, "volume", 0.0) or 0.0) if res else 0.0
+        if rc != RETCODE_DONE_PARTIAL and not (rc in FILL_RETCODES and 0 < got < asked):
+            return
+        ticket = int(getattr(p, "ticket", 0) or 0)
+        try:
+            left = mt5.positions_get(ticket=ticket) or ()
+            residual: float | None = (float(sum(float(x.volume) for x in left)) if left
+                                      else 0.0)
+        except Exception:
+            residual = round(asked - got, 8) if got else None
+        st.setdefault("close_residual", {})[str(ticket)] = residual
+        log(f"CLOSE PARTIAL ticket {ticket} residual={residual} (asked {asked}, filled {got}); "
+            f"not resent this pass, the next pass's close loop takes it")
+    except Exception as exc:
+        log(f"CLOSE PARTIAL check failed ({type(exc).__name__}: {exc})")
 
 
 def _original_stop_distance(st: dict, ticket: int, price_open: float, sl: float) -> float | None:
@@ -1963,6 +2023,12 @@ def reconcile(st: dict) -> dict:
     ] if pos else None
     st["pending"] = [{"ticket": o.ticket, "type": o.type, "price": o.price_open,
                       "symbol": o.symbol} for o in pend] if pend else None
+    # WHEN THE TERMINAL LAST SAW THIS BOOK (2026-10-06). A positions list carries no read time of
+    # its own; the newest `time_update_msc` on it is the closest the venue offers, and with
+    # `last_deal_msc` (record_trades) it lets a reader see a book that trails its own deals.
+    # 0 for an empty book. `book_order_check` is what acts on disorder; this is the trace.
+    st["position_snapshot_msc"] = max(
+        (int(getattr(p, "time_update_msc", 0) or 0) for p in pos), default=0)
     st["last_reconcile"] = now()
     return st
 
@@ -2070,6 +2136,13 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
     except Exception as exc:
         log(f"ledger: history unreadable ({type(exc).__name__}: {exc}); nothing recorded")
         return
+    # THE NEWEST DEAL THE TERMINAL HAS SHOWN THIS DESK (2026-10-06), kept monotone so a lagging
+    # read never moves it backwards. Trace only, beside `position_snapshot_msc`; the per-pass
+    # `closed_position_ids` is `book_order_check`'s, which reads it fresh before any new risk
+    # and counts a position closed only when its OUT volume covers its IN volume (a ledger-wide
+    # list of OUT deals here would include every partial close and mean something different).
+    st["last_deal_msc"] = max([int(st.get("last_deal_msc") or 0),
+                               *(int(getattr(d, "time_msc", 0) or 0) for d in deals)])
     written = 0
     for d in deals:
         if d.entry not in (mt5.DEAL_ENTRY_OUT, getattr(mt5, "DEAL_ENTRY_OUT_BY", 3)):
@@ -2244,6 +2317,152 @@ def unarmed_why(st: dict[str, object]) -> str:
 #: sites read it. Unmeasured is not a licence, so the default before the first measurement
 #: is a refusal.
 NEW_RISK_OK: bool = False
+
+#: `order_door.SUCCESS` and `order_door.RETCODE_DONE_PARTIAL` as literals, bound to the door's
+#: own values by the assertions below so they cannot drift. The send and close sites write the
+#: same numbers out inline (10010; 10008/10009/10010) because several test harnesses slice
+#: single functions out of this file over the decision core alone, where neither `_door` nor a
+#: gateway constant exists; these assertions are what ties those inline numbers to the door.
+FILL_RETCODES: tuple[int, ...] = (10008, 10009, 10010)
+RETCODE_DONE_PARTIAL: int = 10010
+assert frozenset(FILL_RETCODES) == _door.SUCCESS, "gateway FILL_RETCODES drifted from order_door"
+assert RETCODE_DONE_PARTIAL == _door.RETCODE_DONE_PARTIAL
+
+
+def new_risk_gate(release_ok: bool, release_why: str, reconcile: dict[str, Any] | None,
+                  terminal: object) -> tuple[bool, str]:
+    """May this pass open NEW exposure? Management of open positions never asks.
+
+    RECONCILE BEFORE EXPOSURE (recovery drills, 2026-10-06). The gateway drill ran this file
+    against a faulty MT5 double and found two ways a pass opened new risk on a broker state it
+    had never read: a terminal that is RUNNING but DISCONNECTED from the broker (`connect()`
+    only asks whether `terminal_info()` exists, so it answered True), and a restart reconcile
+    that could not read the venue (`positions_get` raised, the report said UNMEASURED, and the
+    pass went on to place orders on top of a book nobody had looked at). An unread book, an
+    in-doubt send the venue could not settle, and a disconnected terminal now refuse new risk
+    for the pass exactly as a release mismatch does. A MISSING reconcile report is a refusal,
+    never a licence: the default before the first measurement is "no", as for NEW_RISK_OK.
+
+    This sizes nothing smaller and touches no stop, heat or floor: a pass whose reconcile is
+    clean and whose terminal is connected is unchanged, and every refused pass still manages,
+    ratchets and closes what is already open.
+    """
+    if not release_ok:
+        return False, f"release identity: {release_why}"
+    if terminal is None or not bool(getattr(terminal, "connected", False)):
+        return False, "broker terminal is not connected"
+    rr = reconcile if isinstance(reconcile, dict) else {}
+    if rr.get("verdict") != "OK":
+        return False, (f"restart reconcile {rr.get('verdict') or 'MISSING'}: "
+                       f"{rr.get('why') or 'broker state not read this pass'}")
+    unread = [k.get("key") for k in rr.get("in_doubt") or []
+              if isinstance(k, dict) and k.get("unreadable")]
+    if unread:
+        return False, f"{len(unread)} in-doubt send(s) could not be settled at the venue"
+    return True, release_why
+
+
+#: How far back the pre-exposure book check reads deals. The lag it guards against is a
+#: terminal whose position list trails its deal history by seconds to minutes; a day covers
+#: every realistic lag and keeps the read cheap. Deals older than this are `record_trades`'s
+#: business (it dedupes by ticket, so a late deal is never lost to the ledger).
+BOOK_CHECK_LOOKBACK = timedelta(days=1)
+#: At most this many single-ticket confirmations per read, so a pathological history cannot turn
+#: one pass into hundreds of terminal round trips.
+BOOK_CHECK_MAX_PROBES = 20
+
+
+def _book_read(st: dict[str, Any]) -> dict[str, Any]:
+    """ONE read of the venue's book under MAGIC, deals and positions side by side. Pure read.
+
+    Returns {"positions": set of tickets, "position_snapshot_msc", "last_deal_msc",
+    "closed_position_ids", "inconsistent": [why, ...]}. Raises only what the terminal raises,
+    so the caller decides what an unreadable venue means.
+
+    CLOSED MEANS FULLY CLOSED. The spec this implements (gateway_partial_fill_and_ordering.md)
+    reads "a ticket in the book that has a DEAL_ENTRY_OUT" as inconsistent. Taken literally that
+    flags every PARTIAL close -- the close path's own 10010 residual, a broker partial stop --
+    as a lagging terminal, and would refuse new risk after every one of them. A position id is
+    therefore counted closed only when the OUT volume read for it covers the IN volume read for
+    it inside the window; a position whose opening deal is older than the window is never
+    called closed here, because the evidence to say so was not read.
+    """
+    pos = [p for p in (mt5.positions_get() or [])
+           if int(getattr(p, "magic", MAGIC) or 0) == MAGIC]
+    tickets = {int(p.ticket) for p in pos}
+    snap = max((int(getattr(p, "time_update_msc", 0) or 0) for p in pos), default=0)
+    since = datetime.now(tz=UTC) - BOOK_CHECK_LOOKBACK
+    deals = [d for d in (mt5.history_deals_get(since, datetime.now(tz=UTC)) or [])
+             if int(getattr(d, "magic", 0) or 0) == MAGIC]
+    out_kinds = (mt5.DEAL_ENTRY_OUT, getattr(mt5, "DEAL_ENTRY_OUT_BY", 3))
+    vin: dict[int, float] = {}
+    vout: dict[int, float] = {}
+    for d in deals:
+        pid = int(getattr(d, "position_id", 0) or 0)
+        if not pid:
+            continue
+        vol = float(getattr(d, "volume", 0.0) or 0.0)
+        if d.entry == mt5.DEAL_ENTRY_IN:
+            vin[pid] = vin.get(pid, 0.0) + vol
+        elif d.entry in out_kinds:
+            vout[pid] = vout.get(pid, 0.0) + vol
+    closed = sorted(pid for pid, v in vout.items() if pid in vin and v >= vin[pid] - 1e-9)
+    why: list[str] = []
+    ghosts = sorted(set(closed) & tickets)
+    if ghosts:
+        why.append(f"position(s) {ghosts[:5]} listed open after their closing deal")
+    for pid in sorted(set(vin) - set(closed) - tickets)[:BOOK_CHECK_MAX_PROBES]:
+        if mt5.positions_get(ticket=pid):
+            why.append(f"position {pid} open at the venue but missing from the book read")
+    return {"positions": tickets, "position_snapshot_msc": snap,
+            "last_deal_msc": max((int(getattr(d, "time_msc", 0) or 0) for d in deals), default=0),
+            "closed_position_ids": closed, "inconsistent": why}
+
+
+def book_order_check(st: dict[str, Any]) -> dict[str, Any] | None:
+    """OUT-OF-ORDER BROKER READS: None when the book agrees with the deals, else a reconcile-
+    shaped refusal {"verdict": "UNMEASURED", "why": "book_inconsistent: ..."} for
+    `new_risk_gate`. Read only; never sends, never raises.
+
+    A terminal that lags can list a position as still open after its closing deal has arrived,
+    or miss a position its own opening deal proves is on. `record_trades` already dedupes deals
+    by ticket, so the LEDGER side is safe; the OPEN-BOOK side is not -- the pass would size new
+    risk against a book that no longer exists. When the two disagree the book is read ONCE more
+    (a lag measured in milliseconds usually clears), and if it still disagrees the pass opens
+    nothing new. Managing open positions continues either way: this decides entries only.
+    A blind resend loop is not a cure for an uncertain read, so there is no third read.
+    """
+    try:
+        first = _book_read(st)
+    except Exception as exc:
+        # The positions half of this read is the restart reconcile's too, and an unreadable venue
+        # there already refuses new risk; an unreadable HISTORY is no evidence of disorder.
+        log(f"BOOK CHECK unreadable ({type(exc).__name__}: {exc}); left to the reconcile verdict")
+        return None
+    rec = first
+    if first["inconsistent"]:
+        st["book_inconsistent"] = {"why": "; ".join(first["inconsistent"])[:300], "at": now(),
+                                   "position_snapshot_msc": first["position_snapshot_msc"],
+                                   "last_deal_msc": first["last_deal_msc"]}
+        log(f"BOOK INCONSISTENT ({st['book_inconsistent']['why']}); re-reading once")
+        try:
+            rec = _book_read(st)
+        except Exception as exc:
+            rec = {**first, "inconsistent": [*first["inconsistent"],
+                                             f"re-read failed ({type(exc).__name__})"]}
+    st["position_snapshot_msc"] = rec["position_snapshot_msc"]
+    st["last_deal_msc"] = max(int(st.get("last_deal_msc") or 0), rec["last_deal_msc"])
+    st["closed_position_ids"] = rec["closed_position_ids"]
+    if rec["inconsistent"]:
+        why = "; ".join(rec["inconsistent"])[:300]
+        st["book_inconsistent"] = {"why": why, "at": now(), "persisted": True,
+                                   "position_snapshot_msc": rec["position_snapshot_msc"],
+                                   "last_deal_msc": rec["last_deal_msc"]}
+        return {"verdict": "UNMEASURED", "why": f"book_inconsistent: {why}"}
+    if first["inconsistent"]:
+        st["book_inconsistent"] = {**st["book_inconsistent"], "cleared_on_reread": True}
+        log("BOOK CHECK: consistent on re-read; new risk allowed by this check")
+    return None
 
 
 def _policy_advice(symbol: str, side: int, entry_ref: float, tick, sym, dist: float, g,
@@ -3452,6 +3671,10 @@ def close_retired_positions(st: dict) -> None:
             })
             log(f"[{name}] RETIRED: CLOSE ticket {p.ticket} ({p.symbol} {p.volume}) -> "
                 f"retcode={res.retcode if res else None}")
+            if res is not None and (getattr(res, "retcode", None) == 10010
+                                    or 0.0 < float(getattr(res, "volume", 0.0) or 0.0)
+                                    < float(getattr(p, "volume", 0.0) or 0.0)):
+                _note_close_residual(st, p, res)   # partial: recorded, never resent
     with contextlib.suppress(OSError):
         RETIRED_CLOSE_QUEUE.write_text(json.dumps(
             {"names": remaining,
@@ -3481,6 +3704,10 @@ def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
             "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
         })
         log(f"[{name}] CLOSE ticket {p.ticket} -> retcode={res.retcode if res else None}")
+        if res is not None and (getattr(res, "retcode", None) == 10010
+                                or 0.0 < float(getattr(res, "volume", 0.0) or 0.0)
+                                < float(getattr(p, "volume", 0.0) or 0.0)):
+            _note_close_residual(st, p, res)       # partial: recorded, never resent
 
 
 def _retarget_sleeve_positions(symbol: str, name: str, sl: float, tp: float) -> None:
@@ -3803,25 +4030,52 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        **_sleeve_identity(s))
         log(f"[{name}] SCALP-EXEC {'ADD-ON' if is_addon else 'ORDER'} -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} | {desc}")
-        if rc not in (10008, 10009):
+        # A PARTIAL FILL IS A POSITION (recovery drills, 2026-10-06). Retcode 10010
+        # (DONE_PARTIAL) means the broker filled part of the slice and the position EXISTS; this
+        # read `rc not in (10008, 10009)` and skipped the basket record, so the filled part ran
+        # with no lane stop management and no time exit, and the next pass could open a second
+        # entry on top of a basket it did not know it held. The set below is `order_door.SUCCESS`
+        # (PLACED, DONE, DONE_PARTIAL; `FILL_RETCODES` is asserted equal to it at import), and
+        # `order_door.validate` already labels the fill `partial`; this is the lane acting on
+        # that label. Written out, not named, for the same reason as the 10010 on the close
+        # paths: the executor is sliced into test harnesses that seed no gateway constants.
+        if rc not in (10008, 10009, 10010):
             continue
+        # THE BASKET HOLDS WHAT WAS FILLED, NOT WHAT WAS ASKED. The venue's `volume` is the
+        # filled lots. A full fill that reports no volume (some servers leave it 0 on 10009) is
+        # recorded at the asked size, as before; only a reported volume BELOW the ask is taken
+        # as a partial. The residual is written on the basket and NEVER re-sent in this pass:
+        # the next pass re-decides size against the position the broker reports.
+        _vol = float(getattr(res, "volume", 0.0) or 0.0)
+        filled = _vol if 0.0 < _vol < per else per
+        residual = round(per - filled, 8) if filled < per else 0.0
+        if residual:
+            log(f"[{name}] SCALP-EXEC PARTIAL {filled}/{per} lots filled; residual {residual} "
+                f"recorded, not resent this pass")
         fill_px = float(getattr(res, "price", 0.0) or price)
         if is_addon:
             basket = srec.get("basket") or {}
-            basket["entries"] = [[p, u] for p, u in plan["entries"]]
+            entries = [[p, u] for p, u in plan["entries"]]
+            if residual and entries:
+                entries[-1] = [entries[-1][0], filled]        # the slice just sent, as filled
+            basket["entries"] = entries
             basket["target"] = tp
+            if residual:
+                basket["residual"] = residual
             srec["basket"] = basket
-            _book_fill(name, s["symbol"], side * per, fill_px)
-            _book_target(name, s["symbol"], side * basket_lots(plan["entries"]),
+            _book_fill(name, s["symbol"], side * filled, fill_px)
+            _book_target(name, s["symbol"], side * basket_lots(entries),
                          "scalp_market/add-on", price=price)
             _retarget_sleeve_positions(s["symbol"], name, stop, tp)
         else:
             srec["open_ttl_until"] = plan["plan"].ttl_until
-            _book_fill(name, s["symbol"], side * per, fill_px)
-            _record_exec_outcome(s["symbol"], side, per, price, tick, float(plan["dist"]),
+            _book_fill(name, s["symbol"], side * filled, fill_px)
+            _record_exec_outcome(s["symbol"], side, filled, price, tick, float(plan["dist"]),
                                  plan["plan"], fill_px)
-            srec["basket"] = basket_record(plan["plan"], per, str(plan["mode"]),
+            srec["basket"] = basket_record(plan["plan"], filled, str(plan["mode"]),
                                            float(plan["target_atr"]))
+            if residual:
+                srec["basket"]["residual"] = residual
 
 
 def resolve_pending_bracket(s: dict, hour: float, today) -> dict:
@@ -4021,8 +4275,14 @@ def main() -> None:
             mt5, magic=MAGIC, armed=bool(st.get("armed")), intents=_recent_intents(),
             log=log)
     except Exception as exc:
-        log(f"RESTART RECONCILE FAILED ({type(exc).__name__}: {exc}); the lanes' own venue "
-            f"checks still stand")
+        # A RECONCILE THAT RAISED IS A REFUSAL, NOT A SHRUG (recovery drills, 2026-10-06). This
+        # used to log "the lanes' own venue checks still stand" and leave no report, and the pass
+        # went on to open new risk on a book it never read. The failure is recorded so
+        # `new_risk_gate` below refuses new exposure; management still runs.
+        st["restart_reconcile"] = {"verdict": "FAILED",
+                                   "why": f"{type(exc).__name__}: {exc}"[:200]}
+        log(f"RESTART RECONCILE FAILED ({type(exc).__name__}: {exc}); managing open positions "
+            f"only this pass")
 
     # MANAGE WHAT IS ALREADY OPEN BEFORE CONSIDERING ANYTHING NEW, and run it on EVERY pass --
     # before the regime filter, before the equity floor, before heat. Those gates decide whether
@@ -4055,10 +4315,26 @@ def main() -> None:
     # RELEASE IDENTITY: measured after management and before anything that could open a
     # position, so a refusal costs new entries only. The verdict file travels with the box's
     # git sync; the reason is logged every pass it refuses so it never reads as a quiet day.
+    #
+    # RECONCILE AND CONNECTIVITY BEFORE EXPOSURE (2026-10-06): the same verdict now also asks
+    # whether the terminal is connected to the broker, whether this pass's restart reconcile
+    # actually read the venue and settled every in-doubt send, and whether the open book agrees
+    # with the deal history (`book_order_check`: a lagging terminal that still lists a closed
+    # position, read twice). Any "no" refuses NEW risk for the pass; see `new_risk_gate`.
     global NEW_RISK_OK
-    NEW_RISK_OK, _ident_why = release_gate()
+    try:
+        _terminal = mt5.terminal_info()
+    except Exception:
+        _terminal = None
+    _reconcile = st.get("restart_reconcile")
+    _book_order = book_order_check(st)
+    if _book_order is not None:
+        _reconcile = _book_order
+    _release_ok, _release_why = release_gate()
+    NEW_RISK_OK, _ident_why = new_risk_gate(_release_ok, _release_why, _reconcile, _terminal)
+    st["new_risk"] = {"ok": bool(NEW_RISK_OK), "why": str(_ident_why)[:300], "at": now()}
     if not NEW_RISK_OK:
-        log(f"RELEASE IDENTITY refuses NEW risk: {_ident_why} -- managing open positions only")
+        log(f"NEW RISK REFUSED: {_ident_why} -- managing open positions only")
 
     # THE SCALP LANE'S OWN MANAGEMENT, HERE AND NOT INSIDE ITS EXECUTOR (2026-09-09). A basket
     # the broker has closed and a basket past its time exit are POSITIONS, and this desk's
@@ -4134,6 +4410,11 @@ def main() -> None:
     # legs of the same pass from two different solves if the allocator rewrote it mid-loop.
     _book, _book_why = allocator_book()
     log(f"sizing: {_book_why}")
+    _consumed = getattr(allocator_book, "consumed", None) or {
+        "decision_id": None, "why": "allocator_book recorded no consumption this pass"}
+    st["consumed_decision_id"] = _consumed.get("decision_id")
+    st["consumed_decision_at"] = now()
+    st["consumed_decision_why"] = _consumed.get("why") or None
     # EACH SLEEVE'S LAST REAL STOP, so the cap prices legs on what they actually traded rather
     # than on a house average. The gateway already records every bracket it places; not reading
     # them back meant the one number that decides how much heat a leg costs was the only number

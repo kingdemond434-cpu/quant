@@ -1094,6 +1094,15 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
         "scalp_position_tags": lambda sleeves: frozenset(),
         "record_trades": lambda st, sleeves: None,
         "reconcile": lambda st: {**st, "position": [], "pending": []},
+        # RECONCILE BEFORE EXPOSURE (2026-10-06): `main` now refuses new risk on a pass whose
+        # restart reconcile did not read the venue. This slice used to leave `_door` unbound, so
+        # the reconcile raised NameError, was logged and ignored -- the very defect the gate
+        # closes. The venue here is the test's own terminal, read clean; the gate itself and
+        # the book check are pinned in test_gateway_new_risk_gate.py.
+        "_door": SimpleNamespace(
+            restart_reconcile=lambda *a, **k: {"verdict": "OK", "in_doubt": []}),
+        "_recent_intents": lambda: [],
+        "book_order_check": lambda st: None,
         "_logs": logs, "_decisions": decisions, "_intents": intents, "_calls": calls,
         "_state_file": state_file,
     }
@@ -1119,7 +1128,8 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     return _exec(("main", "_past_cancel_hour", "place_bracket", "note_placement",
                   "_rejection_streak_expired", "load_state", "save_state", "now",
                   "_sleeve_identity", "resolve_pending_bracket", "bracket_lane_lot",
-                  "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error"), ns)
+                  "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error",
+                  "new_risk_gate"), ns)
 
 
 def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(
