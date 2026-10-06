@@ -268,3 +268,70 @@ def test_the_ground_only_names_instruments_this_desk_could_trade() -> None:
         assert g.what and g.vol_ticker.startswith("^")
         for tenor in g.term:
             assert tenor in va.TENOR_DAYS, f"{tenor} has no declared tenor"
+
+
+# ------------------------------------------------- the terms floor (2026-10-06) --
+FRED_FIXTURE = "observation_date,GVZCLS\n2026-10-01,18.20\n2026-10-02,.\n2026-10-05,19.05\n"
+
+
+def test_fred_is_the_one_route_requested_and_cboe_and_yahoo_never_are() -> None:
+    asked: list[str] = []
+
+    def fetch(url: str, timeout: int) -> str:
+        asked.append(url)
+        return FRED_FIXTURE
+
+    src = va.FredVolSource(fetch=fetch)
+    got = src.series("^GVZ")
+    assert got == {"2026-10-01": 18.2, "2026-10-05": 19.05}, "'.' is a missing day, not a zero"
+    assert src.series("^VIX9D") is None and src.series("^SKEW") is None
+    assert asked == ["https://fred.stlouisfed.org/graph/fredgraph.csv?id=GVZCLS"], (
+        "an index FRED does not carry is recorded UNMEASURED, never fetched from CBOE or Yahoo")
+    prov = src.provenance()
+    assert prov["routes"]["^GVZ"]["route"] == "fred_csv"
+    assert prov["routes"]["^VIX9D"]["status"] == "UNMEASURED"
+    assert prov["held"][0]["status"] == "HELD_PENDING_TERMS_READ"
+    assert prov["refused"][0]["status"] == "FAIL_CLOSED_TERMS"
+    assert prov["terms_note"] == va.TERMS_NOTE
+
+
+def test_an_unreachable_fred_is_an_absence_and_is_not_retried_per_ticker() -> None:
+    calls: list[str] = []
+
+    def down(url: str, timeout: int) -> str:
+        calls.append(url)
+        raise OSError("no egress")
+
+    src = va.FredVolSource(fetch=down)
+    assert src.series("^GVZ") is None and src.series("^VIX") is None
+    assert len(calls) == 1
+    assert src.routes["^VIX"]["status"] == "UNAVAILABLE"
+
+
+def test_yahoo_is_a_refusal_that_sends_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    def no_network(*_a: object, **_k: object) -> None:
+        raise AssertionError("the Yahoo refusal opened a connection")
+
+    monkeypatch.setattr(va.urllib.request, "urlopen", no_network)
+    y = va.YahooVolSource()
+    assert y.series("^VIX") is None
+    rec = y.provenance()["refused"][0]
+    assert rec["status"] == "FAIL_CLOSED_TERMS" and rec["asked_for"] == ["^VIX"]
+    src = (_DESK / "recorders" / "vol_archive.py").read_text("utf-8")
+    assert "finance.yahoo.com/v8" not in src, "no Yahoo request URL survives in the module"
+    assert "cdn.cboe.com/api/global/us_indices/daily_prices/{" not in src, (
+        "CBOE's own files are held, so no request template for them exists")
+
+
+def test_the_user_agent_names_the_desk_and_claims_no_browser() -> None:
+    assert not va.UA.startswith("Mozilla") and "research-desk" in va.UA
+
+
+def test_terms_note_rides_on_every_row_and_the_report(tmp_path: Path) -> None:
+    obs = va.observe(_full_source(), REGISTRY, tmp_path)
+    assert all(o.terms_note == va.TERMS_NOTE for o in obs)
+    rep = va.report([], obs, sources=va.FredVolSource(fetch=lambda u, t: "").provenance())
+    assert rep["terms_note"] == va.TERMS_NOTE
+    assert rep["sources"]["refused"][0]["status"] == "FAIL_CLOSED_TERMS"
+    assert rep["sources"]["held"][0]["status"] == "HELD_PENDING_TERMS_READ"
+    assert va.report([], obs)["sources"]["order"] == ["fred_csv"]

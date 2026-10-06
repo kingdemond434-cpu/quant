@@ -333,8 +333,13 @@ def test_one_pass_writes_series_feeds_the_forge_and_donates_each_cell_once(
     assert {c["family"] for c in sent[0][1]} == {"implied_vol_state", "implied_vol_conditioned"}
     assert sent[0][0] == "options_implied" and sent[0][2] == len(sent[0][1])
     assert doc["grid"]["by_symbol"]["US500"] > doc["grid"]["by_symbol"]["EURUSD"]
-    assert json.loads((tmp_path / "reports" / "OPTIONS_IMPLIED.json").read_text())["seat"] \
-        == "options_implied"
+    rep = json.loads((tmp_path / "reports" / "OPTIONS_IMPLIED.json").read_text())
+    assert rep["seat"] == "options_implied"
+    # Terms floor 2026-10-06: the note rides on the series, the feed and the report.
+    assert rep["terms_note"] == va.TERMS_NOTE and set(us500["terms_note"]) == {va.TERMS_NOTE}
+    assert rep["sources"]["refused"][0]["status"] == "FAIL_CLOSED_TERMS"
+    feed = json.loads((tmp_path / "lake" / "axes" / "options_implied.json").read_text())
+    assert feed["terms_note"] == va.TERMS_NOTE
 
     again = P.run(source=_source(), registry=REGISTRY, universe_dir=uni,
                   archive=tmp_path / "no_archive.jsonl", now=NOW)

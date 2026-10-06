@@ -72,19 +72,30 @@ HTTP 404 and is therefore not in GROUND at all rather than sitting in it as a pe
 Absences are recorded as absences with the reason -- an unavailable series is a fact about the
 world, and a module that quietly drops it teaches its reader the series was never wanted.
 
+THE SOURCE, SINCE THE TERMS FLOOR OF 2026-10-06 (LAWS §5e). Those 2026-09-05 readings came
+through Yahoo's chart API. Yahoo's terms bar automated access without permission, so that route
+is fail-closed: `YahooVolSource` is now a refusal record that sends nothing. The one route
+requested is FRED's republication of the CBOE indices (`FredVolSource`; FRED is admitted).
+CBOE's own history files are HELD, never requested, until their terms page has been read and
+clearly permits this use. FRED carries no VIX9D, VIX6M or SKEW, so the VIX curve here is 30D and
+3M and the skew proxy is UNMEASURED -- recorded per ticker, not papered over. Every row and report
+carries `terms_note`: the values are CBOE's copyright, used internally, never redistributed.
+
 NOTHING HERE IS A SIGNAL. Every row is an observation. The gauntlet decides, this measures, and
 the archive has no promotion authority in any lane.
 """
 from __future__ import annotations
 
 import argparse
+import csv
+import io
 import json
 import math
 import sys
-import urllib.parse
 import urllib.request
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -117,7 +128,39 @@ MIN_VINTAGES = 60
 RV_WINDOW_D = 21
 ANNUALISE = math.sqrt(252.0)
 
-UA = "Mozilla/5.0 (MT5 research desk; point-in-time vol collector)"
+#: AN HONEST USER-AGENT THAT NAMES THE DESK. No browser prefix: this is an automated collector
+#: and says so (terms floor, 2026-10-06).
+UA = "quant-mt5-research-desk/1.0 (point-in-time vol collector; internal research only)"
+
+#: Carried on every series, observation and report built from CBOE index values, whoever serves
+#: them: the values are CBOE's copyright.
+TERMS_NOTE = "CBOE copyright: internal research only, never redistributed"
+
+#: The fail-closed record for the route this module used until 2026-10-06. Never requested.
+YAHOO_REFUSAL: dict[str, Any] = {
+    "source": "Yahoo Finance chart API (query1.finance.yahoo.com)",
+    "status": "FAIL_CLOSED_TERMS",
+    "terms_note": ("Yahoo's terms bar automated access (robots, spiders, scrapers) without "
+                   "permission; fail-closed under the LAWS §5e terms floor of 2026-10-06. No "
+                   "request is sent."),
+    "decided": "2026-10-06",
+}
+
+#: CBOE's own daily history files: HELD, never requested, until their terms page has been read
+#: and clearly permits this use. Not classed PUBLIC_WITH_TERMS; nothing here unfences them.
+CBOE_HELD: dict[str, Any] = {
+    "source": "CBOE daily history CSVs (cdn.cboe.com/api/global/us_indices/daily_prices/)",
+    "status": "HELD_PENDING_TERMS_READ",
+    "terms_note": ("held until CBOE's terms page has been read and clearly permits this use; "
+                   "no request is sent"),
+    "decided": "2026-10-06",
+}
+
+FRED_CSV = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+#: Ticker -> FRED series (FRED republishes these CBOE indices). VIX9D, VIX6M and SKEW have none.
+FRED_SERIES: dict[str, str] = {"^VIX": "VIXCLS", "^VIX3M": "VXVCLS", "^VXN": "VXNCLS",
+                               "^VXD": "VXDCLS", "^GVZ": "GVZCLS", "^OVX": "OVXCLS",
+                               "^EVZ": "EVZCLS", "^RVX": "RVXCLS"}
 
 
 @dataclass(frozen=True)
@@ -167,99 +210,103 @@ class VolSource(Protocol):
         an unreachable endpoint and an index with no history are different facts."""
 
 
-class YahooVolSource:
-    """Keyless CBOE volatility indices through the public chart API.
+class FredVolSource:
+    """FRED's republication of the CBOE volatility indices. The ONE route this module requests.
 
-    TWO RANGES ARE FETCHED AND MERGED, AND THE REASON IS A MEASURED DEFECT IN THE SOURCE, not
-    caution. Measured 2026-09-05 against the live endpoint:
+    TERMS FLOOR (LAWS §5e clarification, 2026-10-06). FRED is an admitted source. CBOE's own
+    `<INDEX>_History.csv` files are HELD, not fetched, until their terms page has been read and
+    clearly permits this use: `CBOE_HELD` records that, and no request is sent to them. Yahoo's
+    terms bar automated access without permission, so the Yahoo chart route this class replaced
+    is fail-closed and survives only as `YahooVolSource`, a refusal record that sends nothing.
+    The index values remain CBOE's copyright whoever serves them, so `TERMS_NOTE` rides on every
+    series, observation and report built from them.
 
-        ^VIX     range=10y -> 2,515 points ending 2026-09-04   (current)
-        ^VIX9D   range=10y -> 2,479 points ending 2026-07-17   (SEVEN WEEKS STALE)
-        ^VIX9D   range=1mo ->     1 point  ending 2026-09-04   (current, no history)
-        ^VIX3M, ^VIX6M: identical split
-
-    The long-range endpoint carries the history and is stale for the term indices; the short-range
-    endpoint is current and carries nothing behind it. A collector using either one alone gets a
-    term curve that is either seven weeks out of date or one point long -- and the first failure
-    is the dangerous one, because a stale 9-day tenor beside a fresh 30-day one manufactures a
-    term slope out of a publication lag, and a term-structure signal would fire on exactly that.
-
-    This also sharpens the archive's own justification. A public endpoint that cannot reproduce
-    its own recent history means a desk that snapshots daily ends up holding a series the source
-    itself will not serve -- which is the accumulation argument in its strongest form.
-
-    Order of preference: the merged Yahoo pair, then `research/free_data.yahoo_daily` (the desk's
-    declared keyless collector, with its own cache), then FRED. FRED is last because it was
-    measured UNREACHABLE from this desk's research container on 2026-09-05 while Yahoo answered;
-    on the trading box the order may well be worth reversing, and the fallback chain is the point
-    rather than any one member of it.
+    WHAT FRED DOES NOT CARRY IS RECORDED, NOT PAPERED OVER. VIX9D, VIX6M and SKEW have no FRED
+    series: the VIX curve here is 30D and 3M only, the short slope (9D->30D) and the skew proxy
+    are UNMEASURED, and each such ticker's route says why. Which route served each ticker is kept
+    in `routes`. `fetch` is injectable so every test runs on fixtures.
     """
 
-    def __init__(self, timeout: int = 20, range_: str = "10y", fresh_range: str = "1mo") -> None:
+    def __init__(self, timeout: int = 20,
+                 fetch: Callable[[str, int], str] | None = None) -> None:
         self.timeout = timeout
-        self.range = range_
-        self.fresh_range = fresh_range
+        self.fetch = fetch or _http_text
         self._fred_ok = True
+        self.routes: dict[str, dict[str, Any]] = {}
 
     def series(self, ticker: str) -> dict[str, float] | None:
-        history = self._chart(ticker, self.range)
-        if history is None:
+        sid = FRED_SERIES.get(ticker)
+        if not sid:
+            self.routes[ticker] = {"route": "none", "status": "UNMEASURED",
+                                   "why": ("no FRED series for this index; CBOE's own history "
+                                           "file is held pending a read of its terms"),
+                                   "terms_note": TERMS_NOTE}
+            return None
+        url = FRED_CSV.format(sid=sid)
+        got: dict[str, float] | None = None
+        why = "FRED unreachable earlier this pass"
+        if self._fred_ok:
             try:
-                from research import free_data as fd
-                got = fd.yahoo_daily(ticker)
-                history = {str(k): float(v) for k, v in got.items()} if got else None
-            except Exception:
-                history = None
-        fresh = self._chart(ticker, self.fresh_range)
-        if history is None and fresh is None:
-            return self._fred(ticker)
-        merged: dict[str, float] = dict(history or {})
-        # THE FRESH TAIL WINS ON OVERLAP. It is the endpoint that is current, and where the two
-        # disagree on a shared date the disagreement is the source restating itself -- which is
-        # the very thing this archive's vintage claim is about.
-        merged.update(fresh or {})
-        return merged or None
+                got = parse_fred_csv(self.fetch(url, self.timeout)) or None
+                why = "FRED answered with no values"
+            except Exception as e:
+                # One unreachable FRED is unreachable for the pass; do not wait on it per ticker.
+                self._fred_ok = False
+                why = f"FRED unreachable: {type(e).__name__}"
+        if got:
+            self.routes[ticker] = {"route": "fred_csv", "url": url, "series_id": sid,
+                                   "n": len(got), "last": max(got), "terms_note": TERMS_NOTE}
+            return got
+        self.routes[ticker] = {"route": "none", "status": "UNAVAILABLE", "series_id": sid,
+                               "why": why, "terms_note": TERMS_NOTE}
+        return None
 
-    def _chart(self, ticker: str, range_: str) -> dict[str, float] | None:
-        url = ("https://query1.finance.yahoo.com/v8/finance/chart/"
-               + urllib.parse.quote(ticker) + f"?range={range_}&interval=1d")
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=self.timeout) as r:
-                doc = json.loads(r.read())
-        except Exception:
-            return None
-        res = (doc.get("chart") or {}).get("result")
-        if not res:
-            return None
-        node = res[0]
-        stamps = node.get("timestamp") or []
-        try:
-            closes = node["indicators"]["quote"][0]["close"]
-        except (KeyError, IndexError, TypeError):
-            # A REAL AND MEANINGFUL ABSENCE. ^EVZ answers with a result block carrying no close
-            # series, which is not the same as a 404 and not the same as a zero. Returning None
-            # here makes the caller record it as an unavailable series rather than a flat one.
-            return None
-        out: dict[str, float] = {}
-        for t, c in zip(stamps, closes, strict=False):
-            if c is None:
-                continue
-            out[datetime.fromtimestamp(int(t), tz=UTC).date().isoformat()] = float(c)
-        return out or None
+    def provenance(self) -> dict[str, Any]:
+        return {"order": ["fred_csv"], "user_agent": UA, "terms_note": TERMS_NOTE,
+                "routes": dict(sorted(self.routes.items())),
+                "held": [CBOE_HELD], "refused": [YAHOO_REFUSAL]}
 
-    def _fred(self, ticker: str) -> dict[str, float] | None:
-        sid = {"^VIX": "VIXCLS", "^GVZ": "GVZCLS", "^OVX": "OVXCLS", "^VXN": "VXNCLS",
-               "^VXD": "VXDCLS", "^EVZ": "EVZCLS", "^VIX3M": "VXVCLS"}.get(ticker)
-        if not sid or not self._fred_ok:
-            return None
+
+class YahooVolSource:
+    """REFUSED, KEPT AS A RECORD (terms floor, 2026-10-06). Yahoo's terms bar automated access
+    without permission, so this source is fail-closed: `series` sends NO request, notes the
+    ticker it was asked for and answers None. It exists so a caller that still names it gets a
+    recorded refusal rather than a silent fetch, and so the reason is not lost."""
+
+    refusal: dict[str, Any] = YAHOO_REFUSAL
+
+    def __init__(self, *_a: Any, **_k: Any) -> None:
+        self.refused: list[str] = []
+
+    def series(self, ticker: str) -> dict[str, float] | None:
+        self.refused.append(ticker)
+        return None
+
+    def provenance(self) -> dict[str, Any]:
+        return {"refused": [{**YAHOO_REFUSAL, "asked_for": list(self.refused)}],
+                "terms_note": YAHOO_REFUSAL["terms_note"], "routes": {}}
+
+
+def _http_text(url: str, timeout: int) -> str:
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return str(r.read().decode("utf-8", "replace"))
+
+
+def parse_fred_csv(text: str) -> dict[str, float]:
+    """FRED fredgraph CSV: a date column and one value column; '.' is a missing day."""
+    out: dict[str, float] = {}
+    for row in list(csv.reader(io.StringIO(text)))[1:]:
+        if len(row) < 2:
+            continue
         try:
-            from research import free_data as fd
-            got = fd.fred_series(sid, start="2015-01-01")
-        except Exception:
-            self._fred_ok = False
-            return None
-        return {str(k): float(v) for k, v in got.items()} if got else None
+            d = date.fromisoformat(row[0].strip()[:10]).isoformat()
+            v = float(row[1])
+        except ValueError:
+            continue
+        if math.isfinite(v) and v > 0:
+            out[d] = v
+    return out
 
 
 class FakeVolSource:
@@ -315,6 +362,8 @@ class Observation:
     #: BINDING AND ALWAYS TRUE HERE. The desk's own series starts the day this first ran; the
     #: reference history behind it is public and is not this desk's vintage.
     forward_only: bool = True
+    #: The values are CBOE's copyright whoever serves them (terms floor, 2026-10-06).
+    terms_note: str = TERMS_NOTE
 
 
 def resolve_symbol(candidates: tuple[str, ...], registry: dict[str, Any]) -> str | None:
@@ -496,7 +545,19 @@ def read_archive(path: Path = ARCHIVE) -> list[dict[str, Any]]:
     return rows
 
 
-def report(rows: list[dict[str, Any]], cycle: list[Observation]) -> dict[str, Any]:
+def source_record(source: VolSource | None) -> dict[str, Any]:
+    """The source's own provenance (routes, held, refused) or the standing record."""
+    prov = getattr(source, "provenance", None)
+    if callable(prov):
+        got = prov()
+        if isinstance(got, dict):
+            return got
+    return {"order": ["fred_csv"], "user_agent": UA, "terms_note": TERMS_NOTE, "routes": {},
+            "held": [CBOE_HELD], "refused": [YAHOO_REFUSAL]}
+
+
+def report(rows: list[dict[str, Any]], cycle: list[Observation],
+           sources: dict[str, Any] | None = None) -> dict[str, Any]:
     """What the archive holds, and what it is and is not yet entitled to claim."""
     vintages: dict[str, set[str]] = {}
     for r in rows:
@@ -520,10 +581,12 @@ def report(rows: list[dict[str, Any]], cycle: list[Observation]) -> dict[str, An
         "backtestable": bool(least >= MIN_VINTAGES),
         "promotion_authority": False,
         "forward_only": True,
+        "terms_note": TERMS_NOTE,
+        "sources": sources if sources is not None else source_record(None),
         "moat_claim": {
             "not_proprietary": ("the level of any CBOE volatility index on any past date -- "
-                                "public, keyless, downloadable this afternoon. Used as reference "
-                                "context and never claimed as an asset."),
+                                "public, republished by FRED, available to anyone. Used as "
+                                "reference context and never claimed as an asset."),
             "proprietary_vintage": ("the desk's own dated snapshot of what each series READ at "
                                     "the moment it was observed. These series are restated and "
                                     "nobody publishes an as-of view, so this record cannot be "
@@ -560,12 +623,13 @@ def main(argv: list[str] | None = None) -> int:
               "instrument id this desk cannot confirm it trades (that is how a foreign alias "
               "becomes a node). Observing WITHOUT the join.")
 
-    cycle = observe(YahooVolSource(), registry, args.universe)
+    source = FredVolSource()
+    cycle = observe(source, registry, args.universe)
     rows = read_archive(args.archive)
     if not args.dry_run:
         append(cycle, args.archive)
         rows = rows + [asdict(o) for o in cycle]
-    rep = report(rows, cycle)
+    rep = report(rows, cycle, sources=source_record(source))
     if not args.dry_run:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n", "utf-8")

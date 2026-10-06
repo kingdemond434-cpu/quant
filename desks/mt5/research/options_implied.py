@@ -11,8 +11,8 @@ by venue. This organ is the missing consumer. Per mapped MT5 symbol it publishes
     iv_pct_1y         its percentile within its own trailing 252 observations (min 126)
     iv_chg_1d/5d      change over 1 and 5 observations, in vol points
     iv_chg_5d_z       the 5-observation change z-scored on its own trailing year
-    term_slope_short  VIX 9D->30D slope, vol points per log-tenor   (US500 only: the one curve
-    term_slope_long   VIX 3M->6M slope                               CBOE publishes keylessly)
+    term_slope_short  VIX 9D->30D slope, vol points per log-tenor   (US500 only. FRED carries
+    term_slope_long   VIX 3M->6M slope                               no 9D/6M: see SOURCES)
     term_inverted     1 when VIX 30D > VIX 3M on the same as-of date, else 0
     rv_21d            THIS BROKER's 21-day close-to-close realised vol from its own H1 bars
     vrp               iv_level - rv_21d: the variance risk premium this account faces
@@ -42,10 +42,16 @@ before its own date. `tests/research/test_options_implied.py` corrupts the futur
 
 HISTORY, LABELLED HONESTLY. The desk's own vintages (what each index READ when vol_archive looked)
 start 2026-09-05 and override the public series on every date they cover; behind them sits the
-public, restated CBOE reference history from the source's 10-year range. Research cells may be
+public, restated CBOE reference history as FRED republishes it. Research cells may be
 judged on that reference history; each row's `vintage` column says which one it is, and the
 report keeps vol_archive's own `backtestable` line -- false until MIN_VINTAGES desk observations
 exist. NOTHING HERE PROMOTES, SIZES OR CONDITIONS CAPITAL. The gauntlet decides.
+
+SOURCES, UNDER THE TERMS FLOOR OF 2026-10-06 (LAWS §5e). History is requested from FRED only
+(`vol_archive.FredVolSource`). Yahoo is fail-closed and never requested; CBOE's own history
+files are held until their terms page is read. FRED carries no VIX9D, so `term_slope_short` is
+UNMEASURED on live data and `term_inverted` (30D vs 3M) stands. Every series row, the reference
+cache, the forge feed and the report carry `terms_note` (CBOE copyright: internal research only).
 
     python desks/mt5/research/options_implied.py --once [--offline] [--dry-run]
 """
@@ -226,9 +232,11 @@ def reference_history(ticker: str, source: va.VolSource | None, *, cache_dir: Pa
                   if v is not None and math.isfinite(float(v))}
         stamp = now.isoformat(timespec="seconds")
         _atomic(path, json.dumps({"ticker": ticker, "fetched_at": stamp, "series": series,
+                                  "terms_note": va.TERMS_NOTE,
                                   "what": "public CBOE close history -- REFERENCE, restated "
                                           "by the source, never the desk's own vintage"}))
-        return series, {"status": "FETCHED", "fetched_at": stamp, "n": len(series)}
+        return series, {"status": "FETCHED", "fetched_at": stamp, "n": len(series),
+                        "terms_note": va.TERMS_NOTE}
     if series:
         return series, {"status": "CACHE_STALE", "fetched_at": fetched_at, "n": len(series),
                         "why": "source did not answer this pass; the last fetch is used"}
@@ -349,6 +357,7 @@ def build_features(iv: dict[str, float], *, term: dict[str, dict[str, float]] | 
     desk = desk_dates or set()
     f["vintage"] = ["desk" if d in desk else "reference" for d in dates]
     f["source_id"] = f"cboe:{ticker}" if ticker else "cboe"
+    f["terms_note"] = va.TERMS_NOTE
     f["symbol"] = symbol
     return f.reset_index(drop=True)
 
@@ -389,6 +398,7 @@ def forge_feed(frames: dict[str, pd.DataFrame], path: Path | None = None) -> dic
     doc = {"id": "options_implied", "axis": "options_implied", "at": now_iso(),
            "source": "research/options_implied.py over recorders/vol_archive.py",
            "shape": "series[name].points of available_time (publication bound), d, v",
+           "terms_note": va.TERMS_NOTE,
            "series": series}
     out = path or FORGE_FEED
     _atomic(out, json.dumps(doc, separators=(",", ":")))
@@ -535,6 +545,8 @@ def run(*, source: va.VolSource | None, dry_run: bool = False,
         "symbols": per_symbol,
         "not_tradeable_here": unmapped,
         "reference": provenance,
+        "terms_note": va.TERMS_NOTE,
+        "sources": va.source_record(source),
         "desk_vintages_min": least,
         "min_vintages_for_backtestable": va.MIN_VINTAGES,
         "backtestable_on_desk_vintages": bool(desk_n) and least >= va.MIN_VINTAGES,
@@ -563,7 +575,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--offline", action="store_true",
                     help="never fetch; use the reference cache and the desk's own vintages")
     a = ap.parse_args(argv)
-    doc = run(source=None if a.offline else va.YahooVolSource(), dry_run=a.dry_run)
+    doc = run(source=None if a.offline else va.FredVolSource(), dry_run=a.dry_run)
     print(f"options_implied: {doc['status']} -- {len(doc['symbols'])} mapped symbol(s), "
           f"grid {doc['grid']['total']}, fresh {doc['donated']['fresh']}, minted "
           f"{doc['donated']['minted']}, desk vintages min {doc['desk_vintages_min']}")
