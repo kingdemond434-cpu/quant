@@ -195,8 +195,8 @@ def forecast_gain(y: Sequence[float], model: Sequence[float], base: Sequence[flo
 
     def L(fc: np.ndarray) -> np.ndarray:
         if loss == "qlike":
-            return a / fc - np.log(a / fc) - 1.0
-        return (a - fc) ** 2
+            return np.asarray(a / fc - np.log(a / fc) - 1.0, dtype=float)
+        return np.asarray((a - fc) ** 2, dtype=float)
 
     n = int(a.size)
     if n < 2:
