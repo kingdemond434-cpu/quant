@@ -87,7 +87,8 @@ USD_PAIRS: dict[str, int] = {"EURUSD": -1, "GBPUSD": -1, "AUDUSD": -1, "USDJPY":
                              "USDCAD": 1, "USDCHF": 1}
 METALS = ("XAUUSD", "XAGUSD")
 TRAIN_DAYS = 750
-MIN_DAYS = TRAIN_DAYS + 260
+#: Days beyond the training window before any contract can reach the spine's min_n.
+POST_TRAIN_DAYS = 260
 GATE_Z = 1.0
 RESID_EWMA = 20
 CPI_MIN_N = 60
@@ -431,8 +432,8 @@ def build(now: datetime, *, closes: Mapping[str, list[tuple[str, float]]] | None
     gold = cl.get("XAUUSD") or []
     dates = [date.fromisoformat(d[:10]) for d, _ in gold if avail(date.fromisoformat(d[:10]))
              <= now]
-    if len(dates) < MIN_DAYS:
-        why = f"{len(dates)} XAUUSD days < {MIN_DAYS}"
+    if len(dates) < train + POST_TRAIN_DAYS:
+        why = f"{len(dates)} XAUUSD days < {train + POST_TRAIN_DAYS}"
         rep.update({"status": UNMEASURED, "why": why, "series": {}, "contracts": [
             se.contract(engine=ENGINE, cards=[c], metric=m, baseline=b, falsifier=f,
                         value=None, baseline_value=None, n=len(dates), why=why) | {"label": lb}
