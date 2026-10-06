@@ -817,7 +817,8 @@ def build_census(*, now: datetime | None = None) -> dict[str, Any]:
                     "owned_by_resident": owned, "owned_why": owned_why,
                     "events": list(spec.get("events") or ()),
                     "inputs": list(spec.get("inputs") or ())}
-    modes: dict[str, int] = {}
+    modes: dict[str, int] = dict.fromkeys(("resident_work_seeking", "resident_pass",
+                                           "timer_only", "own_task"), 0)
     for o in organs.values():
         modes[o["mode"]] = modes.get(o["mode"], 0) + 1
     timer_only = sorted(n for n, o in organs.items() if o["mode"] == "timer_only")
