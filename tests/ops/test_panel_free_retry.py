@@ -26,8 +26,18 @@ class _Flaky:
         return "substantive answer"
 
 
-def _http(code: int) -> urllib.error.HTTPError:
-    return urllib.error.HTTPError("u", code, "msg", hdrs=None, fp=None)  # type: ignore[arg-type]
+@pytest.fixture
+def http_error():
+    errors = []
+
+    def make(code: int) -> urllib.error.HTTPError:
+        error = urllib.error.HTTPError("u", code, "msg", hdrs=None, fp=None)  # type: ignore[arg-type]
+        errors.append(error)
+        return error
+
+    yield make
+    for error in errors:
+        error.close()  # propagated responses are owned by the test caller
 
 
 @pytest.fixture(autouse=True)
@@ -35,8 +45,8 @@ def _no_sleep(monkeypatch):
     monkeypatch.setattr(panel._time, "sleep", lambda s: None)
 
 
-def test_free_seat_retries_through_transient_400(monkeypatch):
-    flaky = _Flaky(2, _http(400))
+def test_free_seat_retries_through_transient_400(monkeypatch, http_error):
+    flaky = _Flaky(2, http_error(400))
     monkeypatch.setattr(panel, "_ask_once", flaky)
     assert panel._ask("https://x", "k", "poolside/laguna-s-2.1:free", []) == \
         "substantive answer"
@@ -49,24 +59,24 @@ def test_free_seat_retries_choices_null_envelope(monkeypatch):
     assert panel._ask("https://x", "k", "openai/gpt-oss-20b:free", []) == "substantive answer"
 
 
-def test_free_seat_gives_up_after_bounded_retries(monkeypatch):
-    flaky = _Flaky(99, _http(429))
+def test_free_seat_gives_up_after_bounded_retries(monkeypatch, http_error):
+    flaky = _Flaky(99, http_error(429))
     monkeypatch.setattr(panel, "_ask_once", flaky)
     with pytest.raises(urllib.error.HTTPError):
         panel._ask("https://x", "k", "m:free", [])
     assert flaky.calls == 1 + panel._FREE_RETRIES        # bounded, never a hot loop
 
 
-def test_paid_seat_is_never_retried(monkeypatch):
-    flaky = _Flaky(1, _http(400))
+def test_paid_seat_is_never_retried(monkeypatch, http_error):
+    flaky = _Flaky(1, http_error(400))
     monkeypatch.setattr(panel, "_ask_once", flaky)
     with pytest.raises(urllib.error.HTTPError):
         panel._ask("https://x", "k", "anthropic/claude-fable-5", [])
     assert flaky.calls == 1                              # a paid bad request re-bills nothing
 
 
-def test_non_transient_code_raises_immediately(monkeypatch):
-    flaky = _Flaky(1, _http(401))                        # auth is NOT pool saturation
+def test_non_transient_code_raises_immediately(monkeypatch, http_error):
+    flaky = _Flaky(1, http_error(401))                   # auth is NOT pool saturation
     monkeypatch.setattr(panel, "_ask_once", flaky)
     with pytest.raises(urllib.error.HTTPError):
         panel._ask("https://x", "k", "m:free", [])

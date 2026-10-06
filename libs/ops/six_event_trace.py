@@ -415,7 +415,13 @@ def e6_decay_retirement(root: str) -> dict[str, Any]:
             }
         )
     for a in (load(root, f"{DATA}/decay_live.json") or {}).get("actions_taken") or []:
-        if isinstance(a, dict):
+        if isinstance(a, dict) and str(a.get("action") or "").upper() == "RETIRE":
+            out.append({"at": a.get("at"), "decay_action": a})
+    # The current monitor report replaces its action list each pass. The append-only
+    # ledger preserves actual retirements after a later healthy pass reports none.
+    for a in jsonl(root, f"{DATA}/decay_actions.jsonl"):
+        if (str(a.get("action") or "").upper() == "RETIRE"
+                and not a.get("voided") and not a.get("voided_at")):
             out.append({"at": a.get("at"), "decay_action": a})
     for k, r in (load(root, f"{REP}/shadow/shadow_state.json") or {}).items():
         if isinstance(r, dict) and r.get("e_kill_supported") is True and r.get("retired_at"):
@@ -428,6 +434,7 @@ def e6_decay_retirement(root: str) -> dict[str, Any]:
             f"{DATA}/GOLD_RETIRED.json",
             f"{DATA}/GOLD_RETIRED_VOIDED.json",
             f"{DATA}/decay_live.json",
+            f"{DATA}/decay_actions.jsonl",
             f"{REP}/shadow/shadow_state.json",
         ],
         f"voided retirements: {voided}; decay_live.json checked_at {d.get('checked_at')} "

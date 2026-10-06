@@ -197,7 +197,8 @@ def since(stamp: str | datetime | None, kinds: tuple[str, ...] | None = None,
 
 
 def latest(kind: str, path: Path | None = None) -> dict[str, Any] | None:
-    for r in reversed(_tail_rows(path or PATH)):
+    # A typed list slice keeps the row contract visible to strict mypy on the CI runner.
+    for r in _tail_rows(path or PATH)[::-1]:
         if r.get("kind") == kind:
             return r
     return None

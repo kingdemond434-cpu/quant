@@ -128,6 +128,10 @@ def test_a_cell_is_refused_on_a_chart_its_family_declares_inexpressible() -> Non
     assert gb.cell_verdict("relative_value", {"timeframe": "H4"})[0] == gb.BUILDABLE
     assert gb.cell_verdict("calendar_month", {})[0] == gb.MISSING_PARAMS
     assert gb.cell_verdict("session_range_breakout", {"timeframe": "M15"})[0] == gb.BUILDABLE
+    missing_hour = gb.cell_verdict("clock_transition", {"label": "london_fix", "stamp_hour": None})
+    valid_hour = gb.cell_verdict("clock_transition", {"label": "london_fix", "stamp_hour": 18})
+    assert missing_hour[0] == gb.MISSING_PARAMS
+    assert valid_hour[0] == gb.BUILDABLE
 
 
 # ------------------------------------------------------------------ breadth_sweep
@@ -161,6 +165,25 @@ def test_breadth_sweep_spends_its_cap_on_the_least_judged_pairs_first(
     monkeypatch.setattr(bs, "_charts_for", lambda sym: ["H1"])
     rows = bs.cells("vol_transition")
     assert rows[0]["symbol"] == "ZARJPY", "the unjudged instrument leads, not the alphabet"
+
+
+def test_breadth_sweep_prefers_under_certified_mechanisms_without_banning_others(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import breadth_sweep as bs
+    canon = tmp_path / "UNIVERSAL_SURVIVORS.canon.json"
+    canon.write_text(json.dumps({"survivors": {
+        "a": {"shadow_spec": {"family": "carry"}},
+        "b": {"shadow_spec": {"family": "carry"}},
+    }}), "utf-8")
+    monkeypatch.setattr(bs, "CERTIFICATES", canon)
+    _seen(tmp_path, monkeypatch, [])
+    key = bs._orthogonal_key()
+    unseen = {"symbol": "EURUSD", "family": "vol_transition",
+              "params": {"timeframe": "M5"}}
+    saturated = {"symbol": "EURUSD", "family": "carry",
+                 "params": {"timeframe": "M5"}}
+    assert key(unseen) < key(saturated)
+    assert bs._certified_family_counts() == {"carry": 2}
 
 
 # ------------------------------------------------------------------ htf_anchor_proposer

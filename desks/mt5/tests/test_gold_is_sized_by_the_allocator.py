@@ -117,11 +117,12 @@ def test_the_gateway_routes_the_gold_branch_through_it() -> None:
     assert "sizing basis" in src, "the log must say which term set the size"
 
 
-def test_the_floor_and_the_envelope_constants_are_untouched() -> None:
+def test_the_authorized_baseline_keeps_the_allocator_floor(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(dc, "GOLD_MIN_LOT_FILE", tmp_path / "GOLD_MIN_LOT.json")
     src = (_DESK / "mt5desk" / "decision_core.py").read_text("utf-8")
     assert "max(auto_lot(equity, dist_usd, GOLD_SYMBOL, info), gold_min_lot())" in src, \
         "gold_lot must still floor at the principal's minimum"
-    assert dc.gold_min_lot() >= 0.02 - 1e-12
+    assert dc.gold_min_lot() == pytest.approx(0.01)
 
 
 # ------------------------------------------------------ the charge must equal what is sent

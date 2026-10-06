@@ -8,11 +8,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from research.parquet_publication import atomic_parquet
 
 
 def _paged_rates(mt5, symbol: str, timeframe: int, bars: int):  # type: ignore[no-untyped-def]
@@ -36,7 +40,6 @@ def _paged_rates(mt5, symbol: str, timeframe: int, bars: int):  # type: ignore[n
 
 def fetch(terminal: str, symbol: str, out_dir: Path, bars: int = 90_000) -> dict[str, int]:
     import MetaTrader5 as mt5
-
     from mt5_session import attach_or_initialize
     if not attach_or_initialize(mt5, path=terminal, timeout=15_000):
         raise RuntimeError(f"MT5 initialize failed: {mt5.last_error()}")
@@ -70,7 +73,7 @@ def fetch(terminal: str, symbol: str, out_dir: Path, bars: int = 90_000) -> dict
             frame = pd.DataFrame(rates)
             frame.index = pd.to_datetime(frame.pop("time"), unit="s", utc=True)
             frame.index.name = "timestamp"
-            frame.to_parquet(out_dir / f"XAUUSD_{label}.parquet")
+            atomic_parquet(frame, out_dir / f"XAUUSD_{label}.parquet")
             result[label] = len(frame)
         terminal_info = mt5.terminal_info()
         (out_dir / "XAUUSD_scalp_source.json").write_text(json.dumps({

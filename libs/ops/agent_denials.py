@@ -412,3 +412,84 @@ def score_review(review_path: Path, rows: list[dict[str, Any]],
     write_text_resilient(review_path, json.dumps(doc, indent=1, ensure_ascii=False))
     out["applied"] = True
     return out
+
+
+# ------------------------------------------------------------------ scoped VPS agent calls
+#: Read-only rules every scoped VPS agent may use to look around. Nothing here writes a file,
+#: pushes, or reads a secret; `Read` rules also govern Grep and Glob, so the deny below covers them.
+READ_ONLY_RULES: tuple[str, ...] = (
+    "Read", "Glob", "Grep",
+    "Bash(git log:*)", "Bash(git show:*)", "Bash(git diff:*)", "Bash(git grep:*)",
+    "Bash(git status:*)", "Bash(git ls-files:*)", "Bash(git blame:*)", "Bash(git rev-parse:*)",
+    "Bash(ls:*)", "Bash(wc:*)", "Bash(head:*)", "Bash(tail:*)", "Bash(grep:*)", "Bash(stat:*)",
+    "Bash(du:*)", "Bash(df:*)", "Bash(date:*)", "Bash(jq:*)",
+    "Bash(systemctl --user status:*)", "Bash(systemctl --user list-timers:*)",
+    "Bash(journalctl --user:*)", "Bash(crontab -l)",
+    "Bash(.venv/bin/python scripts/vault_search.py:*)",
+    "Bash(.venv/bin/python scripts/lessons.py:*)",
+)
+
+#: Refused for every scoped VPS agent, whatever its allowlist says: secrets never leave the box,
+#: the Tier-3 deadman rail is never modified autonomously, the sealed doctrine is never edited by
+#: an agent, and no history is rewritten.
+NEVER_RULES: tuple[str, ...] = (
+    "Read(data/secrets/**)", "Edit(data/secrets/**)", "Write(data/secrets/**)",
+    "Edit(scripts/run_deadman_switch.py)", "Write(scripts/run_deadman_switch.py)",
+    "Edit(ops/principal_doctrine.txt)", "Write(ops/principal_doctrine.txt)",
+    "Bash(git push --force:*)", "Bash(git push -f:*)", "Bash(git reset --hard:*)",
+    "Bash(git stash:*)", "Bash(git commit -a:*)",
+)
+
+
+def write_rules(*paths: str) -> list[str]:
+    """`Edit(p)` and `Write(p)` for each repo-relative path or glob: the agent's own output only."""
+    out: list[str] = []
+    for p in paths:
+        out += [f"Edit({p})", f"Write({p})"]
+    return out
+
+
+def scoped_claude_args(prompt: str, *, allowed: Iterable[str], effort: str | None = None,
+                       denied: Iterable[str] = NEVER_RULES,
+                       max_turns: int | None = None) -> list[str]:
+    """The arguments after `claude` for one scoped, unattended `-p` call.
+
+    stream-json (with the --verbose the CLI requires for it under -p) is the only output that
+    names a refused call, so every caller parses it with `parse_stream`. The prompt comes first:
+    --allowedTools and --disallowedTools are variadic and would swallow a trailing positional.
+    An empty `allowed` becomes `--allowedTools ""`: no tools at all. No permission bypass and no
+    acceptEdits are ever emitted here; an edit is allowed only by an explicit path rule.
+    """
+    rules = [r for r in allowed if r]
+    args = ["-p", prompt, "--output-format", "stream-json", "--verbose"]
+    if effort:
+        args += ["--effort", effort]
+    if max_turns is not None:
+        args += ["--max-turns", str(max_turns)]
+    args += ["--allowedTools", *(rules or [""])]
+    deny = list(denied)
+    if deny and rules:
+        args += ["--disallowedTools", *deny]
+    return args
+
+
+#: The brain wrapper every VPS organ runs claude through: auth + model chain from brain_env.sh,
+#: the doctrine as the appended system prompt, then the scoped arguments as "$@". Exit 90 is the
+#: organs' own auth sentinel.
+BRAIN_WRAPPER = (
+    'source ops/brain_env.sh && '
+    'brain_auth_check || { echo "BRAIN_AUTH_FAILED: no model in _BRAIN_MODEL_CHAIN answered '
+    '-- pool drained or session limit"; exit 90; } && '
+    'claude --append-system-prompt "$_DOCTRINE" "$@"'
+)
+
+
+def brain_argv(organ: str, claude_args: list[str]) -> list[str]:
+    """`bash -c BRAIN_WRAPPER <organ> <claude args...>` (the organ name lands in $0)."""
+    return ["bash", "-c", BRAIN_WRAPPER, organ, *claude_args]
+
+
+def denial_log_lines(rows: Iterable[Mapping[str, Any]]) -> list[str]:
+    """One human log line per refused call, in record_agent_denials.py's wording."""
+    return [f"PERMISSION DENIED (counts as MISSED; verdict UNMEASURED): "
+            f"{r.get('tool')}: {r.get('input_summary')}" for r in rows]

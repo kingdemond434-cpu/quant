@@ -5,7 +5,7 @@ increase judging -- give it tons of headroom possible for maximum throughput").
 
 `desks/mt5/scripts/external_gauntlet.py` is sealed and may never be edited. Its `_worker_count()`
 already derives workers from measured cores and a per-worker memory budget, and it already honours
-`GAUNTLET_WORKERS` / `GAUNTLET_MEMORY_BUDGET_MB` / `GAUNTLET_PER_WORKER_MB` /
+`GAUNTLET_WORKERS` / `GAUNTLET_SHARDS` / `GAUNTLET_MEMORY_BUDGET_MB` / `GAUNTLET_PER_WORKER_MB` /
 `GAUNTLET_HEADROOM_CAP_MB` from the ENVIRONMENT. So throughput is raised from OUTSIDE the sealed
 file, by measuring the box and writing those variables where the gauntlet's launchers read them.
 
@@ -59,6 +59,7 @@ next `capacity.measured.workers`, which is how the raise is verified rather than
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import re
@@ -77,7 +78,7 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
 OUT = BASE / "reports" / "JUDGING_THROUGHPUT.json"
 #: The judge's RATE against its BACKLOG, hourly: verdicts/hour, backlog, creation rate, ETA.
 RATE_OUT = BASE / "reports" / "JUDGING_RATE.json"
-#: One row per judged cell, stamped `at` -- the sealed judge's own output. Read, never written.
+#: One row per CHANGED verdict, not every completed test. Read, never written.
 GATE_LEDGER = BASE / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
 #: The canonical registry; `research_candidates.created_at` is the creation clock. Read-only.
 REGISTRY = ROOT / "data" / "alpha_registry.sqlite"
@@ -379,7 +380,7 @@ def measure_queue() -> dict[str, Any]:
     per_hour = (win.get("testing") or {}).get("per_hour")
     if isinstance(disc, int) and isinstance(judged, int):
         out.update(status="MEASURED", depth=max(0, disc - judged), discovered=disc,
-                   judged_last_sweep=judged)
+                   depth_scope="sweep", judged_last_sweep=judged)
     deferred_build = meas.get("n_cells_deferred_build_budget")
     deferred_mem = meas.get("n_cells_deferred_memory_budget")
     out.update(
@@ -596,10 +597,16 @@ def plan(box: dict[str, Any], queue: dict[str, Any], costs: dict[str, float]) ->
         # every few seconds and runs its workers at IDLE priority; nothing is published for it.
         "warm_workers": "SELF_SIZED",
         "cadence_minutes": int(cadence),
-        "shards": 1,
-        "shards_why": ("the sealed file exposes no partition key -- `--only` is a filter, not a "
-                       "shard -- so throughput is raised by WORKERS and CADENCE, never by "
-                       "splitting a docket the judge cannot be told to split"),
+        # The sealed judge now exposes SHARD_PROTOCOL=2: one stable ownership hash per cell,
+        # a union-derived lockbox cut, fail-closed collection and one program-level merge. The
+        # dispatcher therefore uses the same measured core allocation as the build pool. A
+        # stood-down box remains serial so the live terminal keeps the machine.
+        "shards": 1 if stood_down else int(workers),
+        "shards_why": ("serial because live-terminal admission stood the plan down"
+                       if stood_down else
+                       "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work "
+                       "across the measured worker allocation and computes program-level gates "
+                       "once on the union"),
         "limiting_resource": limiting,
         "stood_down": stood_down,
         "why": why_down or (
@@ -640,8 +647,9 @@ def _sub_timeout() -> float:
     return min(SUBPROCESS_TIMEOUT_S, left)
 
 
-ENV_KEYS = ("GAUNTLET_WORKERS", "GAUNTLET_MEMORY_BUDGET_MB", "GAUNTLET_HEADROOM_CAP_MB",
-            "GAUNTLET_PER_WORKER_MB", "GAUNTLET_FRESH_BUDGET_SEC")
+ENV_KEYS = ("GAUNTLET_WORKERS", "GAUNTLET_SHARDS", "GAUNTLET_MEMORY_BUDGET_MB",
+            "GAUNTLET_HEADROOM_CAP_MB", "GAUNTLET_PER_WORKER_MB",
+            "GAUNTLET_FRESH_BUDGET_SEC")
 
 #: Machine-scope variables this organ once published and now RETIRES. `apply_machine_env` deletes
 #: them so a stale value stops reaching the scheduled tasks (`WARM_WORKERS=1` pinned the warmer).
@@ -683,15 +691,26 @@ def task_time_limit_s(task: str = GAUNTLET_TASK) -> float | None:
         return None
     h, mi, s = (float(g or 0) for g in m.groups())
     total = h * 3600.0 + mi * 60.0 + s
-    return total or None
+    # PT0S means unlimited execution, not a failed measurement. Conflating the two
+    # resurrected the previous four-hour limit after the operator removed it.
+    return total
 
 
-def fresh_budget_s(limit_s: float | None) -> tuple[float | None, str]:
+def fresh_budget_s(limit_s: float | None,
+                   current_budget_s: float | None = None) -> tuple[float | None, str]:
     """The build seconds to publish, or None to leave the sealed default alone. ONE WAY: the
     figure is floored at the sealed default, so this can only ever give the judge MORE time."""
     if limit_s is None:
         return None, ("the judge task's ExecutionTimeLimit is unreadable, so the sealed "
                       f"{SEALED_FRESH_BUDGET_SEC:.0f}s build budget stands unchanged")
+    if limit_s == 0:
+        import math
+        prior = current_budget_s
+        want = (max(SEALED_FRESH_BUDGET_SEC, prior)
+                if isinstance(prior, (int, float)) and math.isfinite(prior)
+                else SEALED_FRESH_BUDGET_SEC)
+        return (want if want > SEALED_FRESH_BUDGET_SEC else None,
+                f"task execution is unlimited; retain the bounded {want:.0f}s build budget")
     want = max(SEALED_FRESH_BUDGET_SEC, limit_s * FRESH_BUDGET_SHARE_OF_LIMIT)
     if want <= SEALED_FRESH_BUDGET_SEC:
         return None, (f"{FRESH_BUDGET_SHARE_OF_LIMIT:.0%} of the task's {limit_s:.0f}s limit is "
@@ -705,6 +724,7 @@ def env_for(decision: dict[str, Any]) -> dict[str, str]:
     """The environment the sealed gauntlet and the cache warmer read, as strings."""
     env = {
         "GAUNTLET_WORKERS": str(int(decision["workers"])),
+        "GAUNTLET_SHARDS": str(int(decision.get("shards", 1))),
         "GAUNTLET_MEMORY_BUDGET_MB": str(int(decision["memory_budget_mb"])),
         "GAUNTLET_HEADROOM_CAP_MB": str(int(decision["headroom_cap_mb"])),
         "GAUNTLET_PER_WORKER_MB": str(int(decision["per_worker_mb"])),
@@ -933,7 +953,16 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
         prev = ((_read_json(OUT, {}) or {}).get("decision") or {}).get("task_time_limit_s")
         if isinstance(prev, (int, float)) and prev > 0:
             _limit, _limit_basis = float(prev), "previous_pass (schtasks query unanswered)"
-    _fresh, _fresh_why = fresh_budget_s(_limit)
+    _current_budget = None
+    if _limit == 0:
+        previous_env = _read_json(ENV_FILE, {}) or {}
+        stamp = previous_env.get("measured_on") or {}
+        if (stamp.get("cores") == box.get("cores")
+                and stamp.get("total_phys_mb") == box.get("total_phys_mb")):
+            with contextlib.suppress(TypeError, ValueError):
+                _current_budget = float((previous_env.get("env") or {}).get(
+                    "GAUNTLET_FRESH_BUDGET_SEC"))
+    _fresh, _fresh_why = fresh_budget_s(_limit, _current_budget)
     decision["fresh_budget_s"] = _fresh
     decision["fresh_budget_why"] = _fresh_why
     decision["task_time_limit_s"] = _limit if _limit is not None else UNMEASURED
@@ -1000,12 +1029,16 @@ def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
 
     Streams the file and reads only each row's `at` stamp, so a multi-million-row ledger costs
     one pass and constant memory. An absent ledger is UNMEASURED -- never zero verdicts."""
+    from research.judging_burndown import classify
+
     p = GATE_LEDGER if path is None else path
     if not p.exists():
         return {"status": UNMEASURED, "why": f"{p.name} absent: verdicts/hour is UNMEASURED"}
     cuts = {w: (now - timedelta(hours=h)).isoformat(timespec="seconds")
             for w, h in (("1h", 1), ("24h", 24), ("7d", 168))}
     counts = dict.fromkeys(cuts, 0)
+    first_counts = dict.fromkeys(cuts, 0)
+    first_terminal_cells: set[str] = set()
     total, unstamped, last = 0, 0, ""
     try:
         with p.open("r", encoding="utf-8", errors="replace") as fh:
@@ -1017,15 +1050,48 @@ def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
                 if not m:
                     unstamped += 1
                     continue
-                at = m.group(1)
+                try:
+                    stamp = datetime.fromisoformat(m.group(1).replace("Z", "+00:00"))
+                    if stamp.tzinfo is None or stamp > now:
+                        unstamped += 1
+                        continue
+                    at = stamp.astimezone(UTC).isoformat(timespec="seconds")
+                except ValueError:
+                    unstamped += 1
+                    continue
                 last = max(last, at)
                 for w, cut in cuts.items():
                     if at >= cut:
                         counts[w] += 1
+                # The writer appends only when a terminal verdict changes. Repeated cells
+                # are retests, not backlog cleared. UNKNOWN/build/data refusals are not
+                # completed evidence judgements either. Preserve the raw event count above.
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if not isinstance(row, dict):
+                    continue
+                cell = str(row.get("cell", ""))
+                if not cell or classify(row) != "ruled":
+                    continue
+                if cell in first_terminal_cells:
+                    continue
+                first_terminal_cells.add(cell)
+                for w, cut in cuts.items():
+                    if at >= cut:
+                        first_counts[w] += 1
     except OSError as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     return {"status": "MEASURED", "rows_total": total, "rows_unstamped": unstamped,
             "last_verdict_at": last or None, "counts": counts,
+            "count_basis": "changed verdict events; unchanged retests do not append",
+            "first_terminal_counts": first_counts,
+            "first_terminal_cells": len(first_terminal_cells),
+            "first_terminal_per_hour": {
+                "1h": float(first_counts["1h"]),
+                "24h": round(first_counts["24h"] / 24.0, 3),
+                "7d": round(first_counts["7d"] / 168.0, 3)},
             "per_hour": {"1h": float(counts["1h"]), "24h": round(counts["24h"] / 24.0, 3),
                          "7d": round(counts["7d"] / 168.0, 3)}}
 
@@ -1042,11 +1108,16 @@ def _creation_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
     except sqlite3.Error as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     try:
-        out: dict[str, int] = {}
-        for w, h in (("24h", 24), ("7d", 168)):
-            cut = (now - timedelta(hours=h)).isoformat(timespec="seconds")
-            out[w] = int(c.execute("SELECT COUNT(*) FROM research_candidates "
-                                   "WHERE created_at >= ?", (cut,)).fetchone()[0])
+        cut_24h = (now - timedelta(hours=24)).isoformat(timespec="seconds")
+        cut_7d = (now - timedelta(hours=168)).isoformat(timespec="seconds")
+        # Both windows are in the same indexed range. One bounded scan also keeps
+        # the two rates on one SQLite snapshot while the intake is writing.
+        n_24h, n_7d = c.execute(
+            "SELECT COALESCE(SUM(created_at >= ?), 0), COUNT(*) "
+            "FROM research_candidates WHERE created_at >= ?",
+            (cut_24h, cut_7d),
+        ).fetchone()
+        out = {"24h": int(n_24h), "7d": int(n_7d)}
     except sqlite3.Error as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     finally:
@@ -1066,7 +1137,10 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
     t = _now(now)
     ver = _verdict_counts(t, ledger)
     cre = _creation_counts(t, registry)
-    backlog = queue.get("depth")
+    # One sweep can cover only a prefix of the full docket. Its remainder is not
+    # the institutional backlog and must never drive a claim of full clearance.
+    backlog = (UNMEASURED if queue.get("depth_scope") == "sweep"
+               else queue.get("depth"))
     backlog_source = queue.get("source", UNMEASURED)
     # THE DOCKET IS THE BACKLOG. GAUNTLET_BACKPRESSURE counts one sweep's discovered-minus-judged
     # and went unwritten from 2026-09-25, which left this ETA UNMEASURED for five days while
@@ -1075,13 +1149,21 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
     _cov = _read_json(JUDGE_COVERAGE, {}) or {}
     _unj = ((_cov.get("totals") or {}).get("unjudged_total")
             if isinstance(_cov, dict) else None)
-    if isinstance(_unj, int):
+    # Require a timezone-aware content timestamp; touching the file is not freshness.
+    try:
+        cov_at = datetime.fromisoformat(str(_cov.get("at") or "").replace("Z", "+00:00"))
+        coverage_fresh = cov_at.tzinfo is not None and 0 <= (t - cov_at).total_seconds() <= 7200
+    except (ValueError, TypeError, AttributeError):
+        coverage_fresh = False
+    if isinstance(_unj, int) and coverage_fresh:
         backlog, backlog_source = _unj, f"{JUDGE_COVERAGE} totals.unjudged_total"
     vph = ((ver.get("per_hour") or {}).get("24h") if ver.get("status") == "MEASURED" else None)
+    first_vph = ((ver.get("first_terminal_per_hour") or {}).get("24h")
+                 if ver.get("status") == "MEASURED" else None)
     cph = ((cre.get("per_hour") or {}).get("24h") if cre.get("status") == "MEASURED" else None)
     eta: dict[str, Any] = {"status": UNMEASURED}
-    if isinstance(backlog, int) and isinstance(vph, float) and isinstance(cph, float):
-        net = vph - cph
+    if isinstance(backlog, int) and isinstance(first_vph, float) and isinstance(cph, float):
+        net = first_vph - cph
         if backlog == 0:
             eta = {"status": "DRAINED", "hours": 0.0}
         elif net > 0:
@@ -1100,6 +1182,11 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
         "verdicts": ver, "created": cre,
         "verdicts_per_hour": vph if vph is not None else UNMEASURED,
         "verdicts_per_day": round(vph * 24.0, 1) if vph is not None else UNMEASURED,
+        "verdict_rate_basis": "changed verdict events, not total completed tests",
+        "first_judged_per_day": (round(first_vph * 24.0, 1)
+                                 if first_vph is not None else UNMEASURED),
+        "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
+        "coverage_backlog_fresh": coverage_fresh,
         "created_per_day": round(cph * 24.0, 1) if cph is not None else UNMEASURED,
         "backlog": backlog if backlog is not None else UNMEASURED,
         "backlog_source": backlog_source,

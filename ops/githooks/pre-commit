@@ -10,7 +10,21 @@
 #    enforcer was the pytest conftest, which an automated snapshot commit from another box never
 #    runs. On 2026-08-29 such a commit deleted 87 gap rows. Override with
 #    ALLOW_PROTECTED_RECORD_LOSS=1 when a retirement is deliberate.
-PY=.venv/bin/python
-[ -x "$PY" ] || PY=python3
+# Both repository layouts must run the same guards on the actual interpreter.
+PY=""
+for cand in .venv/bin/python .venv/Scripts/python.exe; do
+    [ -x "$cand" ] && { PY="$cand"; break; }
+done
+if [ -z "$PY" ]; then
+    for cand in python3 python; do
+        if command -v "$cand" >/dev/null 2>&1 && "$cand" -c "import sys" >/dev/null 2>&1; then
+            PY="$cand"; break
+        fi
+    done
+fi
+if [ -z "$PY" ]; then
+    echo "COMMIT REFUSED: no working Python interpreter for the guards." >&2
+    exit 1
+fi
 "$PY" scripts/moneypath_precommit_guard.py || exit $?
 exec "$PY" scripts/check_protected_records.py

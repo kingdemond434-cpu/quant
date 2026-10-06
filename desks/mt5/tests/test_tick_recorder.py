@@ -25,6 +25,40 @@ T0 = 1_780_000_000_000
 HOUR = 3_600_000
 
 
+def test_slow_completed_cycle_does_not_create_a_repeating_outage(tmp_path, monkeypatch):
+    from recorders import tick_recorder as recorder_module
+
+    source, recorder, store = _rig(tmp_path, symbols=["EURUSD"], cold_start_days=0)
+    recorder.config.cycle_s = 60
+    elapsed = [0.0]
+    monkeypatch.setattr(recorder_module.time, "monotonic", lambda: elapsed[0])
+    alive = source.alive
+
+    def slow_start_once():
+        elapsed[0] += 200
+        source.alive = alive
+        return alive()
+
+    source.alive = slow_start_once
+    first = recorder.run_once(T0)
+    assert first.budget_exhausted
+    state = store.read_state("recorder")
+    assert state["last_cycle_finished_ms"] == T0 + 200_000
+    assert state["last_cycle_end_ms"] == T0 - recorder.config.settle_ms
+    heartbeat = store.read_state("heartbeat")
+    assert heartbeat["at"] == first.completed_at
+    assert heartbeat["capture_started_at"] == first.at
+    assert heartbeat["at"] > heartbeat["capture_started_at"]
+
+    second = recorder.run_once(T0 + 260_000)
+    assert ts.GAP_RECORDER_DOWN not in _reasons(store, "EURUSD")
+    assert second.symbols_pulled == 1
+    assert second.ticks > 0
+
+    recorder.run_once(T0 + 600_000)
+    assert ts.GAP_RECORDER_DOWN in _reasons(store, "EURUSD")
+
+
 def _rig(tmp_path: Path, symbols: list[str] | None = None, cold_start_days: int = 1
          ) -> tuple[FakeTickSource, TickRecorder, ts.TapeStore]:
     src = FakeTickSource(symbols or ["EURUSD", "XAUUSD"], ticks_per_day=40_000)

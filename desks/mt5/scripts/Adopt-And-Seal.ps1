@@ -258,11 +258,11 @@ Write-GitWriterWitness -Script "Adopt-And-Seal.ps1" -Name $mutexHandle.Name
 #                  own quarter-hourly pushes sit on top of the release) -> adopt the tip
 #   ADOPT_RELEASE  the tip carries code no green run has released -> adopt the release instead
 #   HOLD           ... and this box already runs that release -> nothing to adopt; wait for CI
-#   LEGACY_TIP     no production pointer and no release/* tag exist yet -> today's behaviour
+#   HOLD           no verifiable tested release exists -> keep the running code
 #   OVERRIDE_TIP   -AllowUnreleased / ADOPT_UNRELEASED / QUANT_ADOPT_UNRELEASED -> the tip
 #
-# NEVER STUCK: a gate that cannot decide (exit 3: fetch failed, git missing) is logged and the
-# adoption falls back to exactly what it did before -- Adopt-Release fetching the branch tip.
+# FAIL CLOSED: a missing, failed, malformed or unrecognised gate never becomes permission
+# to adopt an untested branch tip. Retry through the scheduled path after the defect clears.
 $script:ReleaseGate = $null
 $gateTarget = $null
 $gateScript = Join-Path $RepoRoot "scripts\release_promotion.py"
@@ -285,15 +285,21 @@ if (Test-Path $gateScript) {
                  ((@($gate.unreleased_code) | Select-Object -First 6) -join ', '))
             Done 0 "held-awaiting-release"
         }
-        if ($gate.target) { $gateTarget = [string]$gate.target }
+        if ($gate.decision -notin @("ADOPT_TIP", "ADOPT_RELEASE", "OVERRIDE_TIP") -or -not $gate.target) {
+            Log "release gate returned no recognised adoption authority; keeping the running release"
+            Done 8 "release-gate-invalid"
+        }
+        $gateTarget = [string]$gate.target
     } else {
         $why = if ($gate -and $gate.reason) { [string]$gate.reason } else { ($gateOut | Select-Object -Last 3) -join ' | ' }
         $script:ReleaseGate = @{ decision = "ERROR"; reason = $why }
-        Log ("release gate could not decide (exit {0}): {1} -- falling back to adopting the branch tip as before the gate" -f $gateExit, $why)
+        Log ("release gate could not decide (exit {0}): {1} -- keeping the running release" -f $gateExit, $why)
+        Done 8 "release-gate-error"
     }
 } else {
     $script:ReleaseGate = @{ decision = "ABSENT"; reason = "scripts\release_promotion.py not in this tree" }
-    Log "release gate absent in this tree (scripts\release_promotion.py); falling back to adopting the branch tip"
+    Log "release gate absent in this tree (scripts\release_promotion.py); keeping the running release"
+    Done 8 "release-gate-absent"
 }
 
 # ---------------------------------------------------------------- 1. adopt the branch's tree
@@ -322,10 +328,9 @@ try {
     Set-Content -Path $adoptConsole -Encoding utf8 -ErrorAction Stop `
         -Value ("{0} Adopt-Release start branch={1}" -f (Get-Date).ToUniversalTime().ToString('o'), $Branch)
 } catch { $adoptConsole = $null }
-# The gate's choice is passed as -Target with -NoFetch (the gate already fetched it); with no
-# choice (gate absent or undecided) Adopt-Release fetches and adopts the tip exactly as before.
+# The verified gate choice is mandatory; it already fetched the immutable target.
 $adoptArgs = @("-RepoRoot", $RepoRoot, "-Branch", $Branch)
-if ($gateTarget) { $adoptArgs += @("-Target", $gateTarget, "-NoFetch") }
+$adoptArgs += @("-Target", $gateTarget, "-NoFetch")
 if ($adoptConsole) {
     $adoptOut = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $adoptScript `
         @adoptArgs 2>&1 |
