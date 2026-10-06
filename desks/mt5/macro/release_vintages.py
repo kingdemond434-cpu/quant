@@ -60,6 +60,20 @@ ALFRED = DESK / "data" / "lake" / "alfred"
 FETCH_ALFRED = DESK / "research" / "fetch_alfred.py"
 UNMEASURED = "UNMEASURED"
 SOURCE = "release_vintages"
+#: Sources whose numbers are measured and kept but may NOT reach the gauntlet until the terms
+#: gate clears them (audit #204 item 4). Forex Factory's survey median is a third party's
+#: compilation whose machine-use terms are UNMEASURED; Trading Economics' are commercial. A
+#: pair built on one is HELD_TERMS: stored, counted, never donated. The ALFRED first print against
+#: the desk's own nowcast_ewm12 expectation ships alone until then.
+TERMS_HELD: dict[str, str] = {
+    "ff_calendar": "Forex Factory survey median: machine-use terms UNMEASURED",
+    "forexfactory": "Forex Factory survey median: machine-use terms UNMEASURED",
+    "faireconomy": "Forex Factory survey median (faireconomy mirror): terms UNMEASURED",
+    "tradingeconomics": "Trading Economics calendar: commercial terms, machine use not cleared",
+}
+#: Where a cleared source is recorded: {"<held key>": {"status": "CLEARED", "by": ..., "why": ...}}
+#: written by whoever clears the terms (the global data thread's terms work, #162).
+CLEARANCES = DESK / "data" / "terms_clearances.json"
 ET = ZoneInfo("America/New_York")
 #: ALFRED files older than this are re-fetched (a release lands at most daily per series).
 ALFRED_MAX_AGE_H = 20.0
@@ -335,6 +349,31 @@ def _round(x: float | None, decimals: int) -> float | None:
 
 
 # ============================================================================== ALFRED refresh
+def gauntlet_terms(source_id: str, clearances: Path | None = None) -> tuple[bool, str]:
+    """(may this source's pairs reach the gauntlet?, why). The terms fence (libs.data.terms_fence,
+    #162) blocks first when it is present; a TERMS_HELD source passes only on a recorded
+    clearance. Unknown sources pass: this is a hold on named terms, not a whitelist."""
+    sid = str(source_id or "").lower()
+    try:
+        from libs.data import terms_fence as tf
+        fenced = tf.fenced_source(sid)
+        if fenced:
+            return False, f"terms fence: {fenced}"
+    except Exception:
+        pass
+    for key, why in TERMS_HELD.items():
+        if key in sid:
+            try:
+                doc = json.loads((clearances or CLEARANCES).read_text("utf-8"))
+            except (OSError, ValueError):
+                doc = {}
+            row = doc.get(key) if isinstance(doc, dict) else None
+            if isinstance(row, dict) and str(row.get("status")) == "CLEARED":
+                return True, f"cleared: {row.get('why') or row.get('by') or 'recorded'}"
+            return False, f"HELD_TERMS: {why}"
+    return True, ""
+
+
 def alfred_key_present() -> bool:
     try:
         sys.path.insert(0, str(DESK / "research"))
@@ -397,6 +436,7 @@ def build(*, now: datetime | None = None, vintages: Path = VINTAGES, alfred: Pat
     refreshed = (refresh_alfred(refresh_budget_s, folder=alfred) if refresh_budget_s > 0
                  else {"status": "skipped"})
     cons = consensus_vintages(vintages)
+    ff_ok, ff_why = gauntlet_terms("ff_calendar_vintage")
     rows: list[dict[str, Any]] = []
     sensors: list[dict[str, Any]] = []
     census: dict[str, Any] = {"releases": {}, "consensus_vintages": len(cons),
@@ -460,6 +500,10 @@ def build(*, now: datetime | None = None, vintages: Path = VINTAGES, alfred: Pat
                              "source_id": f"alfred:{spec.series}"})
                 stat["nowcast_pairs"] += 1
             if consensus is not None:
+                # stored and counted whatever the terms say; event_surprise.terms_filter is the
+                # gate that keeps a held pair out of the gauntlet (audit #204 item 4)
+                if not ff_ok:
+                    stat["held_terms"] = int(stat.get("held_terms", 0)) + 1
                 rows.append({**base, "release": spec.title, "actual": actual,
                              "consensus": consensus, "provides": "both",
                              "expectation_kind": "consensus_median",
@@ -496,6 +540,9 @@ def build(*, now: datetime | None = None, vintages: Path = VINTAGES, alfred: Pat
     census["composites"] = len([c for c in composites.values()
                                 if c.get("value") != UNMEASURED])
     census["rows"] = len(rows)
+    census["terms"] = {"ff_calendar_vintage": ff_why or "admitted",
+                       "gauntlet": "HELD" if not ff_ok else "admitted",
+                       "nowcast_ewm12": "admitted (ALFRED + the desk's own model)"}
     census["status"] = ("present" if any(r.get("actual") is not None for r in rows) else
                         ("BLOCKED_AUTH" if not alfred_key_present() else UNMEASURED))
     return {"rows": rows, "sensor_inputs": sensors, "composites": composites,
