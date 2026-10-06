@@ -105,3 +105,26 @@ def test_birth_obligations_judges_by_the_helper(monkeypatch: pytest.MonkeyPatch,
     assert birth._is_trading_host(tmp_path) is False
     monkeypatch.setattr(hi, "identify", lambda config_path=None: hi.classify(BOX, "vm", CFG))
     assert birth._is_trading_host(tmp_path) is True
+
+
+def test_the_id_is_filled_from_the_boxs_own_evidence(tmp_path: Path) -> None:
+    cfg = tmp_path / "trading_host.json"
+    cfg.write_text(json.dumps({"hostname": "vmi3571445", "machine_id": None}), "utf-8")
+    ev = tmp_path / "box_evidence.json"
+
+    def write(host: str, mid: str | None) -> None:
+        ev.write_text(json.dumps({"host": host, "machine_id": mid,
+                                  "generated_utc": "2026-10-06T16:00:00+00:00"}), "utf-8")
+
+    for host, mid in (("vmi3500897", BOX), ("vmi3571445", None), ("vmi3571445", "UNMEASURED")):
+        write(host, mid)
+        with pytest.raises(SystemExit):
+            hi.record_from_evidence(ev, cfg)
+    assert hi.recorded_machine_id(hi.load_config(cfg)) is None
+    write("vmi3571445", BOX.upper())
+    hi.record_from_evidence(ev, cfg)
+    assert hi.classify(BOX, "renamed", hi.load_config(cfg)).verdict == hi.TRADING
+    write("vmi3571445", OTHER)
+    with pytest.raises(SystemExit, match="already recorded"):
+        hi.record_from_evidence(ev, cfg)
+    assert hi.recorded_machine_id(hi.load_config(cfg)) == BOX
