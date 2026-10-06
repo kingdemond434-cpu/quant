@@ -881,7 +881,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
     "forward_reconcile", "clock_liveness", "certificate_clock_law",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
-    "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    "closed_loop", "acceptance", "candidate_conservation", "pit_canaries", "sensor_ledger",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -2888,6 +2888,13 @@ def pit_canaries() -> dict:
     return _producer("pit_canaries", "scripts/check_pit_canaries.py")
 
 
+def sensor_ledger() -> dict:
+    """`sensor_ledger`: the universal sensor ledger's clock and declared artifact. Its day shards
+    are box-local and gitignored; this publishes reports/SENSOR_LEDGER.json (intake, PIT
+    completeness, latency incl. the downstream clock joins, revision index) every hour."""
+    return _producer("sensor_ledger", "research/sensor_ledger_digest.py")
+
+
 def mutation_yield() -> dict:
     """`mutation_yield`: certification fate joined back to the generator and operator that
     proposed each cell, rewriting data/generator_weights.json -- the compute reallocation the
@@ -3773,6 +3780,7 @@ def main() -> None:
         "--budget-s", "240"))
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
+    sld = _costed("sensor_ledger", sensor_ledger)
     pil = _costed("placement_interlock", placement_interlock)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back
@@ -5648,7 +5656,7 @@ def main() -> None:
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
                     "session_variant_remap": svr, "candidate_conservation": ccv,
-                    "pit_canaries": pcn, "placement_interlock": pil,
+                    "pit_canaries": pcn, "sensor_ledger": sld, "placement_interlock": pil,
                     "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
