@@ -638,10 +638,19 @@ def store_pairs(days: int, now: datetime) -> tuple[list[dict[str, Any]], dict[st
                     "why": "no collected pair has ever been stored; the collector has produced "
                            "nothing yet, which is a state and not a zero"}
     cutoff = now - timedelta(days=int(days))
+    try:
+        from macro.physical_state import CLOCK as inventory_clock
+    except Exception:                                    # pragma: no cover - import-context only
+        inventory_clock = None
     live = []
+    superseded = 0
     for row in rows:
         when = _parse_time(row.get("at"))
         if when is None or not (cutoff <= when <= now):
+            continue
+        if (row.get("kind") == "inventory_surprise" and inventory_clock is not None
+                and row.get("clock") != inventory_clock):
+            superseded += 1                              # stamped by an earlier EIA clock
             continue
         live.append({**row, "at": when.isoformat(timespec="seconds"),
                      "actual": _f(row.get("actual")), "consensus": _f(row.get("consensus")),
@@ -650,6 +659,7 @@ def store_pairs(days: int, now: datetime) -> tuple[list[dict[str, Any]], dict[st
     out = join_sides(live)
     return out, {"status": "present", "path": str(STORE), "rows": len(rows),
                  "in_window": len(live), "joined_pairs": len(out),
+                 "superseded_clock": superseded,
                  "unpaired_halves": max(0, len(live) - sum(
                      1 if p.get("joined") == "single_document" else 2 for p in out))}
 

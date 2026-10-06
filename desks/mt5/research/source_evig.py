@@ -85,6 +85,7 @@ FOUND = DESK / "data" / "intelligence" / "asia_endpoints"
 DONORS = DESK / "data" / "intelligence" / "provider_donors"
 POSTERIOR = DESK / "reports" / "POSTERIOR_ALPHA.json"
 OUT = DESK / "reports" / "SOURCE_EVIG.json"
+UNMEASURED = "UNMEASURED"
 
 #: Declared cadence -> the seconds of desk attention one attempt costs, before measured seconds
 #: replace it. A daily portal is attempted thirty times more often than a monthly one, so the
@@ -155,6 +156,50 @@ def _derived() -> list[dict[str, Any]]:
                         "derived": True, "donor": f.parent.name,
                         "machine_use_allowed": r.get("machine_use_allowed")})
     return out
+
+
+def provider_cards() -> dict[str, Any]:
+    """Whether the donor provider cards were read at all (audit #211 item 2). No folder, no card
+    file, or no readable provider is UNMEASURED with its reason, never an empty success."""
+    try:
+        files = sorted(DONORS.glob("*/providers_*.json"))
+    except OSError as exc:
+        return {"status": UNMEASURED, "why": f"donor folder unreadable: {type(exc).__name__}",
+                "files": 0, "providers": 0}
+    if not files:
+        return {"status": UNMEASURED, "files": 0, "providers": 0,
+                "why": f"no provider card under {DONORS.name}/*/providers_*.json: the donor "
+                       "terminals' provider lists have not been written on this host"}
+    n, bad = 0, []
+    for f in files:
+        doc = _read(f, None)
+        rows = doc.get("providers") if isinstance(doc, dict) else doc
+        if not isinstance(rows, list):
+            bad.append(f.name)
+            continue
+        n += sum(1 for r in rows if isinstance(r, dict))
+    if n == 0:
+        return {"status": UNMEASURED, "files": len(files), "providers": 0, "unreadable": bad,
+                "why": "provider card files hold no readable provider"}
+    return {"status": "MEASURED", "files": len(files), "providers": n, "unreadable": bad}
+
+
+def acquisition_gate(row: dict[str, Any]) -> str | None:
+    """Why a source may NOT be proposed for acquisition, or None. Paid ground, a declared
+    `machine_use_allowed: false`, and a source the terms fence blocks are never proposed: they
+    stay priced and visible, but the collector is never pointed at them."""
+    if str(row.get("access") or "").lower() == "paid":
+        return "paid access: blocked by the data-access rule (public or licensed only)"
+    if row.get("machine_use_allowed") is False:
+        return "machine_use_allowed: false on its card"
+    try:
+        from libs.data import terms_fence as tf
+        fenced = tf.fenced_source(str(row.get("id") or ""))
+        if fenced:
+            return f"terms fence: {fenced}"
+    except Exception:
+        pass
+    return None
 
 
 def _posterior_sd() -> tuple[dict[str, float], str]:
@@ -327,6 +372,8 @@ def price(sources: list[dict[str, Any]], state: dict[str, Any],
         rows.append({
             "id": sid, "plane": s.get("plane"), "cadence": s.get("cadence"),
             "access": s.get("access"), "donor": s.get("donor"), "role": s.get("role") or "mechanism",
+            "machine_use_allowed": s.get("machine_use_allowed"),
+            "acquisition_gate": acquisition_gate(s),
             "derived": bool(s.get("derived")),
             "targets": targets, "novel_targets": novel,
             "u_prior_sd": round(u, 6), "u_status": ("MEASURED" if prior
@@ -377,12 +424,16 @@ def build(budget_s: float = 120.0) -> dict[str, Any]:
     sd, sd_why = _posterior_sd()
     sources = [*_sources(), *_derived()]
     rows = price(sources, state, sd)
-    proposals = [r for r in rows if r["never_collected"]][:20]
+    proposals = [r for r in rows if r["never_collected"] and not r["acquisition_gate"]][:20]
+    cards = provider_cards()
     return {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "status": "OK" if rows else "UNMEASURED",
         "n_sources": len(rows), "n_registered": len(_sources()),
         "n_derived": sum(1 for r in rows if r["derived"]),
+        "provider_cards": cards,
+        "n_gated_from_proposals": sum(1 for r in rows if r["never_collected"]
+                                      and r["acquisition_gate"]),
         "n_never_collected": sum(1 for r in rows if r["never_collected"]),
         "prior_basis": ("POSTERIOR_ALPHA mean mu_sd per symbol" if sd
                         else f"flat prior 1.0: {sd_why}"),

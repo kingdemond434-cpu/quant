@@ -6,6 +6,7 @@ import json
 import sys
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -116,7 +117,7 @@ def _weekly(years: int, bump: float) -> list[tuple[str, float]]:
 
 
 def test_physical_state_seasonal_surprise_and_clock() -> None:
-    assert ps.knowable("2026-10-02") == datetime(2026, 10, 8, 14, 30, tzinfo=UTC)
+    assert ps.knowable("2026-10-02") == datetime(2026, 10, 7, 14, 30, tzinfo=UTC)
     rep = ps.build(now=datetime(2026, 10, 9, tzinfo=UTC),
                    series={"WCESTUS1": _weekly(7, 4000.0)})
     crude = rep["series"]["WCESTUS1"]
@@ -127,9 +128,10 @@ def test_physical_state_seasonal_surprise_and_clock() -> None:
     rows = [r for r in rep["store_rows"] if r["reference_period"] == "2026-10-02"]
     assert rows[0]["actual"] == 4.0 and rows[0]["consensus"] == 1.0
     assert rows[0]["instruments"] == ["USOIL", "UKOIL"]
-    assert rows[0]["at"] == "2026-10-08T14:30:00+00:00"
+    assert rows[0]["at"] == "2026-10-07T14:30:00+00:00"
+    assert rows[0]["clock"] == ps.CLOCK
     # not yet knowable: the week is invisible
-    early = ps.build(now=datetime(2026, 10, 8, 14, 0, tzinfo=UTC),
+    early = ps.build(now=datetime(2026, 10, 7, 14, 0, tzinfo=UTC),
                      series={"WCESTUS1": _weekly(7, 4000.0)})
     assert early["series"]["WCESTUS1"]["week_end"] == "2026-09-25"
     joined = es.join_sides(rep["store_rows"])
@@ -137,6 +139,47 @@ def test_physical_state_seasonal_surprise_and_clock() -> None:
     obs = ps.observations(rep, datetime(2026, 10, 9, tzinfo=UTC))
     assert len(obs) == 1 and sc.defects(obs[0]) == []
     assert obs[0].seasonal_expected == pytest.approx(1000.0)
+
+
+
+def test_eia_clock_follows_the_release_calendar_and_holiday_shifts() -> None:
+    """Audit #211 item 1: Wednesday 10:30 ET, Thursday 11:00 ET after a Mon-Wed federal holiday,
+    Friday 12:00 ET after a Christmas Wednesday; never the old blanket +1 day."""
+    et = ZoneInfo("America/New_York")
+
+    def at(y: int, m: int, d: int, hh: int, mm: int) -> datetime:
+        return datetime(y, m, d, hh, mm, tzinfo=et).astimezone(UTC)
+
+    assert ps.knowable("2026-09-25") == at(2026, 9, 30, 10, 30)          # ordinary week
+    assert ps.knowable("2026-09-04") == at(2026, 9, 10, 11, 0)           # Labor Day Monday
+    assert ps.knowable("2026-05-22") == at(2026, 5, 28, 11, 0)           # Memorial Day
+    assert ps.knowable("2026-10-09") == at(2026, 10, 15, 11, 0)          # Columbus Day
+    assert ps.knowable("2024-12-20") == at(2024, 12, 27, 12, 0)          # Christmas Wednesday
+    assert ps.knowable("2024-06-14") == at(2024, 6, 20, 11, 0)           # Juneteenth Wednesday
+    assert ps.knowable("2026-11-20") == at(2026, 11, 25, 10, 30)         # Thanksgiving week
+    # DST: the same 10:30 ET is 14:30 UTC in summer and 15:30 UTC in winter
+    assert ps.knowable("2026-01-09").hour == 15 and ps.knowable("2026-07-10").hour == 14
+    ps.RELEASE_OVERRIDES["2026-07-10"] = "2026-07-16T12:00"
+    try:
+        assert ps.release_at("2026-07-10") == (at(2026, 7, 16, 12, 0), "announced override")
+    finally:
+        ps.RELEASE_OVERRIDES.pop("2026-07-10")
+
+
+def test_seasonal_norm_wraps_the_year_and_gives_iso_week_53_a_norm() -> None:
+    """Audit #211 should-fix: week 1 neighbours week 52, and ISO week 53 (2026-12-31 ends one)
+    finds its same-date neighbours in every prior year."""
+    start = date(2019, 1, 4)
+    rows, level = [], 400_000.0
+    d = start
+    while d <= date(2027, 1, 8):
+        level += 1000.0
+        rows.append((d.isoformat(), level))
+        d += timedelta(weeks=1)
+    wk = {w["week_end"]: w for w in ps.weeks(rows)}
+    assert date(2027, 1, 1).isocalendar()[1] == 53
+    for day in ("2027-01-01", "2026-01-02", "2025-12-26"):
+        assert wk[day]["seasonal_expected"] == pytest.approx(1000.0), day
 
 
 def test_donor_terminal_provider_cards_are_priced(tmp_path: Path,
@@ -154,3 +197,53 @@ def test_donor_terminal_provider_cards_are_priced(tmp_path: Path,
     assert {"donor:openterminal:cboe_vix", "donor:openterminal:paid_feed"} <= set(rows)
     assert rows["donor:openterminal:cboe_vix"]["donor"] == "openterminal"
     assert rows["donor:openterminal:paid_feed"]["access"] == "paid"
+
+
+def test_absent_provider_cards_are_unmeasured_and_gated_cards_never_proposed(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit #211 item 2: no card file is UNMEASURED (never an empty success); paid and
+    machine_use_allowed:false cards stay priced but are never proposed for acquisition."""
+    monkeypatch.setattr(se, "DONORS", tmp_path / "provider_donors")
+    monkeypatch.setattr(se, "FOUND", tmp_path / "none")
+    monkeypatch.setattr(se, "REGISTRY", tmp_path / "none.json")
+    monkeypatch.setattr(se, "STATE", tmp_path / "state.json")
+    absent = se.provider_cards()
+    assert absent["status"] == "UNMEASURED" and "no provider card" in absent["why"]
+    assert se.build()["provider_cards"]["status"] == "UNMEASURED"
+    donors = tmp_path / "provider_donors" / "openterminal"
+    donors.mkdir(parents=True)
+    (donors / "providers_20261006.json").write_text("{not json")
+    assert se.provider_cards()["status"] == "UNMEASURED"
+    (donors / "providers_20261007.json").write_text(json.dumps({"providers": [
+        {"id": "open", "targets": ["US500"], "access": "public"},
+        {"id": "paid_feed", "targets": ["US500"], "access": "paid"},
+        {"id": "no_machine", "targets": ["XAUUSD"], "access": "public",
+         "machine_use_allowed": False}]}))
+    cards = se.provider_cards()
+    assert cards["status"] == "MEASURED" and cards["providers"] == 3
+    rep = se.build()
+    ids = {r["id"] for r in rep["proposals"]}
+    assert "donor:openterminal:open" in ids
+    assert not ids & {"donor:openterminal:paid_feed", "donor:openterminal:no_machine"}
+    assert rep["n_gated_from_proposals"] == 2
+    gated = {r["id"]: r["acquisition_gate"] for r in rep["rows"]}
+    assert "paid" in gated["donor:openterminal:paid_feed"]
+    assert "machine_use_allowed" in gated["donor:openterminal:no_machine"]
+
+
+def test_store_reads_only_the_current_eia_clock(tmp_path: Path,
+                                                monkeypatch: pytest.MonkeyPatch) -> None:
+    """Rows written under the old +1 day clock are superseded, not double counted."""
+    monkeypatch.setattr(es, "STORE", tmp_path / "store.jsonl")
+    base = {"release": "EIA crude oil stocks ex SPR w/w|seasonal5y", "actual": 4.0,
+            "consensus": 1.0, "provides": "both", "kind": "inventory_surprise",
+            "instruments": ["USOIL"], "source_id": "fred:WCESTUS1",
+            "reference_period": "2026-09-25"}
+    old = {**base, "period": "2026-10-01", "at": "2026-10-01T14:30:00+00:00"}
+    new = {**base, "period": "2026-09-30", "at": "2026-09-30T14:30:00+00:00",
+           "clock": ps.CLOCK}
+    stored, _ = es.merge_store([old, new], now=datetime(2026, 10, 6, tzinfo=UTC))
+    es.STORE.write_text("".join(json.dumps(r) + "\n" for r in stored))
+    pairs, status = es.store_pairs(30, datetime(2026, 10, 6, tzinfo=UTC))
+    assert [p["at"] for p in pairs] == ["2026-09-30T14:30:00+00:00"]
+    assert status["superseded_clock"] == 1

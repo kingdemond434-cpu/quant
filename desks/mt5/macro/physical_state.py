@@ -17,10 +17,12 @@ a level):
 A licensed analyst consensus for the weekly print is not free; it is UNMEASURED and the
 seasonal expectation is written under its own release id so the two can never be mixed.
 
-THE CLOCK. FRED dates a week by its END (Friday); the EIA publishes it the following Wednesday at
-10:30 ET. Holiday weeks slip a day; the clock here is the declared Wednesday and a holiday shift
-makes it at worst a day EARLY in knowledge terms -- so every pair is stamped one day later than
-the schedule, which can only make a measured reaction later, never earlier.
+THE CLOCK (audit #211 item 1). FRED dates a week by its END (Friday); the EIA publishes it the
+following Wednesday at 10:30 ET. A federal holiday on the Monday, Tuesday or Wednesday of the
+release week moves the report to Thursday 11:00 ET; a Christmas-week Wednesday holiday has moved it
+to Friday, stamped Friday 12:00 ET. Holidays are computed by rule (`us_federal_holidays`), and a
+publication the EIA made earlier than this stamp only makes a measured reaction later, never
+earlier. `RELEASE_OVERRIDES` records any irregular week the EIA announces, by week-end date.
 
 THE CONSUMER. `store_rows` hands (actual change, seasonal expectation) pairs to `event_surprise`,
 which standardises each release on its OWN history and measures the USOIL/UKOIL reaction per
@@ -28,6 +30,7 @@ bucket through the gauntlet's door. Nothing here has a direction.
 """
 from __future__ import annotations
 
+import bisect
 import json
 import math
 import sys
@@ -56,12 +59,79 @@ SERIES: dict[str, tuple[str, str, list[str], bool]] = {
 }
 
 
-def knowable(week_end: str) -> datetime:
-    """Wednesday after the week-ending date, 10:30 ET, plus the declared one-day holiday margin."""
+#: week-end date -> the EIA's announced release instant in ET ("YYYY-MM-DDTHH:MM"), for weeks the
+#: rule below does not describe. Empty until the EIA announces one.
+RELEASE_OVERRIDES: dict[str, str] = {}
+#: Stamped on every store row. Rows written under an earlier clock (the +1 day stamp, the ISO-week
+#: norm) are superseded: `event_surprise.store_pairs` reads only this clock's inventory rows, and
+#: every week is regenerated from FRED on each pass, so nothing is lost.
+CLOCK = "eia_wpsr_calendar_v2"
+
+
+def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
+    first = date(year, month, 1)
+    return first + timedelta(days=(weekday - first.weekday()) % 7 + 7 * (n - 1))
+
+
+def _last_monday(year: int, month: int) -> date:
+    nxt = date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1)
+    return nxt - timedelta(days=nxt.weekday())
+
+
+def _observed(d: date) -> date:
+    return d - timedelta(days=1) if d.weekday() == 5 else (
+        d + timedelta(days=1) if d.weekday() == 6 else d)
+
+
+def us_federal_holidays(year: int) -> dict[date, str]:
+    """The eleven US federal holidays (5 U.S.C. 6103), observed Fri/Mon when on a weekend."""
+    out = {
+        _observed(date(year, 1, 1)): "New Year's Day",
+        _nth_weekday(year, 1, 0, 3): "Martin Luther King Jr. Day",
+        _nth_weekday(year, 2, 0, 3): "Washington's Birthday",
+        _last_monday(year, 5): "Memorial Day",
+        _observed(date(year, 7, 4)): "Independence Day",
+        _nth_weekday(year, 9, 0, 1): "Labor Day",
+        _nth_weekday(year, 10, 0, 2): "Columbus Day",
+        _observed(date(year, 11, 11)): "Veterans Day",
+        _nth_weekday(year, 11, 3, 4): "Thanksgiving Day",
+        _observed(date(year, 12, 25)): "Christmas Day",
+    }
+    if year >= 2021:
+        out[_observed(date(year, 6, 19))] = "Juneteenth"
+    # New Year's Day of next year observed on Friday 31 December belongs to this year
+    nxt = date(year + 1, 1, 1)
+    if nxt.weekday() == 5:
+        out[date(year, 12, 31)] = "New Year's Day (observed)"
+    return out
+
+
+def release_at(week_end: str) -> tuple[datetime, str]:
+    """(the EIA WPSR release instant for the week ending `week_end`, why)."""
     d = date.fromisoformat(week_end[:10])
     wed = d + timedelta(days=(2 - d.weekday()) % 7 or 7)
-    return (datetime(wed.year, wed.month, wed.day, 10, 30, tzinfo=ET).astimezone(UTC)
-            + timedelta(days=1))
+    if week_end[:10] in RELEASE_OVERRIDES:
+        at = datetime.fromisoformat(RELEASE_OVERRIDES[week_end[:10]]).replace(tzinfo=ET)
+        return at.astimezone(UTC), "announced override"
+    mon = wed - timedelta(days=2)
+    hol = {**us_federal_holidays(mon.year), **us_federal_holidays(wed.year)}
+    hit = [(day, hol[day]) for day in (mon, mon + timedelta(days=1), wed) if day in hol]
+    if not hit:
+        return datetime(wed.year, wed.month, wed.day, 10, 30, tzinfo=ET).astimezone(UTC), \
+            "Wednesday 10:30 ET"
+    day, name = hit[-1]
+    if day == wed and name.startswith("Christmas"):
+        fri = wed + timedelta(days=2)
+        return datetime(fri.year, fri.month, fri.day, 12, 0, tzinfo=ET).astimezone(UTC), \
+            f"{name} on Wednesday: Friday 12:00 ET"
+    thu = wed + timedelta(days=1)
+    return datetime(thu.year, thu.month, thu.day, 11, 0, tzinfo=ET).astimezone(UTC), \
+        f"{name} ({day.isoformat()}): Thursday 11:00 ET"
+
+
+def knowable(week_end: str) -> datetime:
+    """The instant the week ending `week_end` is public: the EIA release calendar."""
+    return release_at(week_end)[0]
 
 
 def load(path: Path = ARCHIVE) -> dict[str, list[tuple[str, float]]]:
@@ -85,27 +155,32 @@ def load(path: Path = ARCHIVE) -> dict[str, list[tuple[str, float]]]:
     return out
 
 
-def _week(d: str) -> tuple[int, int]:
-    iso = date.fromisoformat(d).isocalendar()
-    return iso[0], iso[1]
+#: a prior year's "same week" is every weekly print within this many days of the same calendar
+#: date that year: +/-1 week, by date, so week 1 neighbours week 52 and ISO week 53 has a norm
+NEAR_DAYS = 10
 
 
-def _near_week(a: int, b: int) -> bool:
-    diff = abs(a - b)
-    return min(diff, 52 - diff) <= 1
+def _same_date(d: date, back: int) -> date:
+    try:
+        return d.replace(year=d.year - back)
+    except ValueError:                                   # 29 February
+        return d.replace(year=d.year - back, day=28)
 
 
 def weeks(rows: Sequence[tuple[str, float]]) -> list[dict[str, Any]]:
     """Every week with its change, seasonal expectation, surprise and level vs norm."""
-    changes = [(rows[i][0], rows[i][1] - rows[i - 1][1], rows[i][1], *_week(rows[i][0]))
+    changes = [(date.fromisoformat(rows[i][0][:10]), rows[i][1] - rows[i - 1][1], rows[i][1])
                for i in range(1, len(rows))]
-    by_year: dict[int, list[tuple[int, float, float]]] = {}
-    for _d, c, lv, y, w in changes:
-        by_year.setdefault(y, []).append((w, c, lv))
+    days = [c[0] for c in changes]
     out: list[dict[str, Any]] = []
-    for d, chg, level, y, w in changes:
-        prior = [(c, lv, yy) for yy in range(y - SEASON_YEARS, y)
-                 for ww, c, lv in by_year.get(yy, []) if _near_week(ww, w)]
+    for day, chg, level in changes:
+        d = day.isoformat()
+        prior: list[tuple[float, float, int]] = []
+        for back in range(1, SEASON_YEARS + 1):
+            target = _same_date(day, back)
+            lo = bisect.bisect_left(days, target - timedelta(days=NEAR_DAYS))
+            hi = bisect.bisect_right(days, target + timedelta(days=NEAR_DAYS))
+            prior += [(changes[j][1], changes[j][2], back) for j in range(lo, hi)]
         row: dict[str, Any] = {"week_end": d, "level": level, "change": chg,
                                "knowable_at": knowable(d).isoformat()}
         if len({yy for _c, _lv, yy in prior}) < SEASON_YEARS:
@@ -160,7 +235,8 @@ def build(*, now: datetime | None = None,
                 "consensus": round(w["seasonal_expected"] / 1000.0, 4),
                 "provides": "both", "kind": "inventory_surprise", "instruments": instruments,
                 "expectation_kind": f"seasonal_{SEASON_YEARS}y", "unit": "mbbl",
-                "source_id": f"fred:{sid}", "consensus_median": UNMEASURED})
+                "source_id": f"fred:{sid}", "consensus_median": UNMEASURED,
+                "clock": CLOCK, "clock_why": release_at(w["week_end"])[1]})
     measured = [s for s in report["series"].values() if s.get("status") == "MEASURED"]
     report["status"] = "present" if measured else UNMEASURED
     return report
@@ -191,7 +267,7 @@ def observations(report: Mapping[str, Any], received_at: datetime) -> list[Any]:
             sensor_class="physical_commodity", kind="state", value=row["level"],
             unit=row["unit"], event_time=row["week_end"], scheduled_time=row["knowable_at"],
             publication_time=row["knowable_at"], knowable_at=row["knowable_at"],
-            knowable_basis="declared_lag",
+            knowable_basis="calendar",
             received_at=max(received_at, datetime.fromisoformat(row["knowable_at"])),
             parse_complete_at=max(received_at, datetime.fromisoformat(row["knowable_at"])),
             delta=row["change"], seasonal_expected=exp,
