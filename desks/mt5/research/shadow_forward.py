@@ -1313,6 +1313,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     st["identity_reason"] = _reason
                     slog(f"{key}: IDENTITY BROKEN -- {_reason}; evidence preserved, clock "
                          f"stopped. Restarting requires a NEW frozen identity and a NEW window.")
+                    _unmeasured(st, f"IDENTITY_BROKEN: {_reason}")
                     state[key] = st
                     continue
                 # THE DRIFT VERDICT MUST CLEAR ITSELF WHEN THE IDENTITY COMES BACK. Reaching this
