@@ -602,6 +602,12 @@ def plan(box: dict[str, Any], queue: dict[str, Any], costs: dict[str, float]) ->
         # dispatcher therefore uses the same measured core allocation as the build pool. A
         # stood-down box remains serial so the live terminal keeps the machine.
         "shards": 1 if stood_down else int(workers),
+        # HOW MANY SHARDS RUN AT ONCE, published apart from how many there are (2026-10-06).
+        # The launcher cuts the plan into as many shards as the measured MB per planned cell
+        # requires (`scripts/run_sharded_gauntlet.py`, `data/judging_shard_memory.json`) and runs
+        # at most this many together, each admitted by measured free memory. The shard count
+        # above is its FLOOR, never its ceiling.
+        "shard_concurrency": 1 if stood_down else int(workers),
         "shards_why": ("serial because live-terminal admission stood the plan down"
                        if stood_down else
                        "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work "
@@ -649,7 +655,7 @@ def _sub_timeout() -> float:
 
 ENV_KEYS = ("GAUNTLET_WORKERS", "GAUNTLET_SHARDS", "GAUNTLET_MEMORY_BUDGET_MB",
             "GAUNTLET_HEADROOM_CAP_MB", "GAUNTLET_PER_WORKER_MB",
-            "GAUNTLET_FRESH_BUDGET_SEC")
+            "GAUNTLET_FRESH_BUDGET_SEC", "GAUNTLET_SHARD_CONCURRENCY")
 
 #: Machine-scope variables this organ once published and now RETIRES. `apply_machine_env` deletes
 #: them so a stale value stops reaching the scheduled tasks (`WARM_WORKERS=1` pinned the warmer).
@@ -696,10 +702,46 @@ def task_time_limit_s(task: str = GAUNTLET_TASK) -> float | None:
     return total
 
 
+#: The cache warmer's own artifact. While it is fresh, the warmer builds the docket continuously
+#: on every idle core, and the judge's in-sweep pre-warm only duplicates it.
+WARM_REPORT = BASE / "reports" / "WARM_GAUNTLET.json"
+WARMER_FRESH_S = 2 * 3600.0
+
+
+def warmer_resident(now: datetime | None = None, path: Path | None = None) -> bool:
+    """True when `MT5-CacheWarm` reported within WARMER_FRESH_S. Absent or unreadable: False."""
+    doc = _read_json(path or WARM_REPORT, {}) or {}
+    try:
+        at = datetime.fromisoformat(str(doc.get("at") or "").replace("Z", "+00:00"))
+    except (ValueError, TypeError, AttributeError):
+        return False
+    if at.tzinfo is None:
+        return False
+    age = (_now(now) - at).total_seconds()
+    return 0 <= age <= WARMER_FRESH_S
+
+
 def fresh_budget_s(limit_s: float | None,
-                   current_budget_s: float | None = None) -> tuple[float | None, str]:
-    """The build seconds to publish, or None to leave the sealed default alone. ONE WAY: the
-    figure is floored at the sealed default, so this can only ever give the judge MORE time."""
+                   current_budget_s: float | None = None, *,
+                   warmer: bool = False) -> tuple[float | None, str]:
+    """The build seconds to publish, or None to leave the sealed default alone. The figure is
+    never below the sealed default.
+
+    THE RAISE STOPS WHILE THE WARMER IS RESIDENT (2026-10-06). Measured on the trading box: with
+    the raise retained at ~8,640 s, every MT5-Gauntlet attempt spent 7,800-8,000 s inside its
+    own pre-warm before a single shard ran, then failed in the shard phase and published
+    nothing. The series cache is cumulative and content-addressed, and `MT5-CacheWarm` builds
+    the same docket, in the same order, on every idle core, between sweeps and during them. So
+    every second of in-sweep pre-warm beyond the sealed default is build work the warmer would
+    do anyway, bought by delaying the commit of everything already warm. With a fresh warmer
+    the sealed default is published EXPLICITLY (2700 s), so a stale machine-scope raise is
+    overwritten rather than left in force. Without a warmer, the task-limit rule below stands.
+    """
+    if warmer:
+        return SEALED_FRESH_BUDGET_SEC, (
+            f"the cache warmer is resident ({WARM_REPORT.name} < {WARMER_FRESH_S:.0f}s old), so "
+            f"the judge keeps the sealed {SEALED_FRESH_BUDGET_SEC:.0f}s pre-warm and commits "
+            "what is warm instead of out-building the warmer")
     if limit_s is None:
         return None, ("the judge task's ExecutionTimeLimit is unreadable, so the sealed "
                       f"{SEALED_FRESH_BUDGET_SEC:.0f}s build budget stands unchanged")
@@ -730,8 +772,13 @@ def env_for(decision: dict[str, Any]) -> dict[str, str]:
         "GAUNTLET_PER_WORKER_MB": str(int(decision["per_worker_mb"])),
     }
     fresh = decision.get("fresh_budget_s")
-    if isinstance(fresh, (int, float)) and float(fresh) > SEALED_FRESH_BUDGET_SEC:
+    if isinstance(fresh, (int, float)) and float(fresh) >= SEALED_FRESH_BUDGET_SEC:
         env["GAUNTLET_FRESH_BUDGET_SEC"] = str(int(fresh))
+    # CONCURRENCY IS NOT THE SHARD COUNT (2026-10-06). The launcher runs at most this many shards
+    # at once, each admitted by measured free memory; the shard count itself it derives from the
+    # measured MB per planned cell (`scripts/run_sharded_gauntlet.py`).
+    env["GAUNTLET_SHARD_CONCURRENCY"] = str(int(decision.get("shard_concurrency",
+                                                             decision["workers"])))
     return env
 
 
@@ -752,7 +799,9 @@ def write_env(decision: dict[str, Any], path: Path | None = None,
     fresh = decision.get("fresh_budget_s")
     raising = (int(decision.get("raised_by", 0)) > 0
                or (isinstance(fresh, (int, float))
-                   and float(fresh) > SEALED_FRESH_BUDGET_SEC))
+                   and float(fresh) > SEALED_FRESH_BUDGET_SEC)
+               # The explicit sealed default overrides a stale machine-scope raise.
+               or (isinstance(fresh, (int, float)) and bool(decision.get("warmer_resident"))))
     payload = {"at": _now().isoformat(timespec="seconds"),
                "env": env_for(decision) if raising else {},
                "raised_by": int(decision.get("raised_by", 0)),
@@ -962,7 +1011,9 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
             with contextlib.suppress(TypeError, ValueError):
                 _current_budget = float((previous_env.get("env") or {}).get(
                     "GAUNTLET_FRESH_BUDGET_SEC"))
-    _fresh, _fresh_why = fresh_budget_s(_limit, _current_budget)
+    _warmer = warmer_resident(now)
+    _fresh, _fresh_why = fresh_budget_s(_limit, _current_budget, warmer=_warmer)
+    decision["warmer_resident"] = _warmer
     decision["fresh_budget_s"] = _fresh
     decision["fresh_budget_why"] = _fresh_why
     decision["task_time_limit_s"] = _limit if _limit is not None else UNMEASURED
@@ -992,6 +1043,13 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
         applied["env_file"] = str(ENV_FILE)
         applied["process_env"] = apply_env()
         _write_atomic(RATE_OUT, payload["rate"])
+        try:
+            qa = queue_age(payload["rate"], now)
+            _write_atomic(QUEUE_AGE_OUT, qa)
+            payload["queue_age"] = {"path": str(QUEUE_AGE_OUT), **qa["targets"],
+                                    "oldest_h": qa["age"].get("oldest_h")}
+        except Exception as exc:   # the age must never cost the sizing decision
+            payload["queue_age"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
         payload["measure_seconds"] = round(_time.monotonic() - t0, 1)
         _write_atomic(OUT, payload)
     if apply:
@@ -1194,6 +1252,128 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
         "workers_planned": decision.get("workers"),
         "workers_last_sweep": queue.get("workers_last_sweep", UNMEASURED),
         "cores_basis": decision.get("cores_basis", UNMEASURED),
+    }
+
+
+#: THE JUDGING QUEUE'S AGE, the CRO cycle's `queue_age` row (2026-10-06): one timestamped artifact
+#: on this leg's hourly clock, so "is the backlog getting OLDER" has an answer and not just "is
+#: it getting BIGGER". Read by the CRO cycle (STEP 4, backlog age) and by the next pass of this
+#: organ itself (the oldest age's trend).
+QUEUE_AGE_OUT = BASE / "reports" / "JUDGING_QUEUE_AGE.json"
+CONVERSION_FUNNEL = BASE / "reports" / "CONVERSION_FUNNEL.json"
+#: "Judged a day WELL above created a day": the desk's target ratio for the burn-down.
+JUDGED_OVER_CREATED_TARGET = 1.25
+SAME_DAY_H = 24.0
+
+
+def registry_queue_ages(now: datetime, path: Path | None = None) -> dict[str, Any]:
+    """Oldest / p50 / p90 age (hours) of the registry's UNJUDGED queue (`judged_at IS NULL`).
+
+    Read from the registry's own indexed `created_at`, never by loading the ~440 MB docket file:
+    an OFFSET into the index gives each quantile with one bounded scan. Absent or unreadable is
+    UNMEASURED, never an empty queue.
+    """
+    import sqlite3
+
+    p = REGISTRY if path is None else path
+    if not p.exists():
+        return {"status": UNMEASURED, "why": f"{p.name} absent: queue age is UNMEASURED"}
+    try:
+        c = sqlite3.connect(f"file:{p.as_posix()}?mode=ro", uri=True, timeout=30)
+    except sqlite3.Error as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    try:
+        base_sql = ("FROM research_candidates WHERE judged_at IS NULL "
+                    "AND created_at IS NOT NULL AND created_at != ''")
+        n = int(c.execute(f"SELECT COUNT(*) {base_sql}").fetchone()[0])
+        if n == 0:
+            return {"status": "MEASURED", "unjudged": 0, "oldest_h": 0.0, "p50_h": 0.0,
+                    "p90_h": 0.0}
+
+        def at_rank(frac_oldest: float) -> float | None:
+            off = min(n - 1, max(0, int(frac_oldest * (n - 1))))
+            row = c.execute(f"SELECT created_at {base_sql} ORDER BY created_at "
+                            "LIMIT 1 OFFSET ?", (off,)).fetchone()
+            try:
+                ts = datetime.fromisoformat(str(row[0]).replace("Z", "+00:00"))
+            except (TypeError, ValueError):
+                return None
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=UTC)
+            return round(max(0.0, (now - ts).total_seconds() / 3600.0), 2)
+
+        # Age p90 is the cell 10% of the way in from the OLDEST end; p50 is the median.
+        return {"status": "MEASURED", "unjudged": n, "oldest_h": at_rank(0.0),
+                "p90_h": at_rank(0.10), "p50_h": at_rank(0.50),
+                "basis": "alpha_registry research_candidates: created_at of rows with no "
+                         "judged_at (synced from the judge's ledger by libs/moat/registry)"}
+    except sqlite3.Error as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    finally:
+        c.close()
+
+
+def _latency_row(lat: dict[str, Any], key: str) -> dict[str, Any]:
+    row = lat.get(key) if isinstance(lat, dict) else None
+    if not isinstance(row, dict):
+        return {"status": UNMEASURED, "why": f"{CONVERSION_FUNNEL.name} carries no {key}"}
+    return {k: row.get(k) for k in ("status", "n", "p50_h", "p90_h", "max_h", "why") if k in row}
+
+
+def queue_age(rate: dict[str, Any], now: datetime | None = None, *,
+              registry: Path | None = None, funnel: Path | None = None,
+              prior_path: Path | None = None) -> dict[str, Any]:
+    """The judging backlog's age, its flow and its verdict -> certificate -> clock latency."""
+    t = _now(now)
+    ages = registry_queue_ages(t, registry)
+    cov = _read_json(JUDGE_COVERAGE, {}) or {}
+    cov_oldest = ((cov.get("totals") or {}).get("oldest_unjudged_age_h")
+                  if isinstance(cov, dict) else None)
+    prior = _read_json(prior_path or QUEUE_AGE_OUT, {}) or {}
+    prior_oldest = ((prior.get("age") or {}).get("oldest_h") if isinstance(prior, dict) else None)
+    oldest = ages.get("oldest_h")
+    trend: Any = UNMEASURED
+    if isinstance(oldest, (int, float)) and isinstance(prior_oldest, (int, float)):
+        trend = ("FALLING" if oldest < prior_oldest
+                 else "FLAT" if oldest == prior_oldest else "RISING")
+    judged = rate.get("first_judged_per_day")
+    created = rate.get("created_per_day")
+    ratio: Any = UNMEASURED
+    flow: Any = UNMEASURED
+    if isinstance(judged, (int, float)) and isinstance(created, (int, float)):
+        ratio = round(float(judged) / float(created), 3) if created > 0 else None
+        flow = ("ABOVE_TARGET" if (created == 0 or float(judged) >= JUDGED_OVER_CREATED_TARGET
+                                   * float(created))
+                else "ABOVE_CREATION" if judged > created else "BELOW_CREATION")
+    fdoc = _read_json(funnel or CONVERSION_FUNNEL, {}) or {}
+    lat = fdoc.get("latency") if isinstance(fdoc, dict) else None
+    lat = lat if isinstance(lat, dict) else {}
+    v2c = _latency_row(lat, "pass_to_certificate")
+    c2k = _latency_row(lat, "certificate_to_clock")
+    q2v = _latency_row(lat, "docket_to_first_verdict")
+    same_day: Any = UNMEASURED
+    if isinstance(v2c.get("p50_h"), (int, float)) and isinstance(c2k.get("p50_h"), (int, float)):
+        same_day = bool(float(v2c["p50_h"]) + float(c2k["p50_h"]) <= SAME_DAY_H)
+    return {
+        "at": t.isoformat(timespec="seconds"),
+        "age": {**ages, "judge_coverage_oldest_h": cov_oldest
+                if isinstance(cov_oldest, (int, float)) else UNMEASURED,
+                "prior_oldest_h": prior_oldest if isinstance(prior_oldest, (int, float))
+                else UNMEASURED, "oldest_trend": trend},
+        "flow": {"judged_per_day": judged if judged is not None else UNMEASURED,
+                 "judged_basis": "first terminal ruling per cell (gate ledger)",
+                 "created_per_day": created if created is not None else UNMEASURED,
+                 "judged_over_created": ratio, "target_ratio": JUDGED_OVER_CREATED_TARGET,
+                 "status": flow, "backlog": rate.get("backlog", UNMEASURED),
+                 "eta_to_drain": rate.get("eta_to_drain", UNMEASURED)},
+        "latency_h": {"queue_to_first_verdict": q2v, "verdict_to_certificate": v2c,
+                      "certificate_to_clock": c2k, "same_day_p50": same_day,
+                      "source": CONVERSION_FUNNEL.name},
+        "targets": {"judged_well_above_created": flow == "ABOVE_TARGET",
+                    "oldest_age_falling": trend == "FALLING",
+                    "verdict_to_clock_same_day": same_day is True},
+        "why": ("written hourly by research/judging_throughput.py (leg judging_throughput); the "
+                "CRO cycle's queue_age row. UNMEASURED is a reading, never zero."),
     }
 
 
