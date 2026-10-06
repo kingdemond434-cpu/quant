@@ -128,3 +128,25 @@ def test_the_fence_is_wired_into_the_law_gate_both_ways() -> None:
     src = (_ROOT / "scripts" / "run_law_gate.py").read_text("utf-8")
     assert '("check_recommendation_flow.py", ())' in src
     assert '("check_recommendation_flow.py", ("--require-state",))' in src
+
+
+def test_absent_ledger_is_unmeasured_not_a_keyerror(tmp_path: Path, monkeypatch: Any,
+                                                    capsys: Any) -> None:
+    """LIVE 2026-10-06: an absent ledger raised KeyError 'n_open' in main(); the verdict was a
+    traceback. It must read UNMEASURED with its reason, and never exit as a pass."""
+    rep = F.build_report(tmp_path)
+    assert rep["status"] == "UNMEASURED" and rep["ledger_absent"] is True
+    assert rep["n_open"] is None and rep["unmeasured"]
+    monkeypatch.setattr(F, "ROOT", tmp_path)
+    assert F.main([]) == F.FAIL
+    out = capsys.readouterr().out
+    assert "UNMEASURED" in out and "absent" in out
+    assert F.main(["--report-only"]) == F.OK
+
+
+def test_unreadable_ledger_still_prints_and_fails(tmp_path: Path, monkeypatch: Any) -> None:
+    p = tmp_path / "docs" / "research" / "recommendation_ledger.json"
+    p.parent.mkdir(parents=True)
+    p.write_text("{broken", "utf-8")
+    monkeypatch.setattr(F, "ROOT", tmp_path)
+    assert F.main([]) == F.FAIL

@@ -19,6 +19,11 @@ This joins them on the organ's name and publishes ONE verdict per organ:
     AMBER        fresh but its last reading is a failure verdict, or stale with no run record
     UNMEASURED   nothing on this host proves it either way -- NEVER GREEN (L1.28a)
 
+A READER (the three reports above) is GREEN only when its artifact is fresh (inside
+READER_LEASE_H), parses, carries its declared counter (READER_COUNTERS) and does not state a
+failure, PARTIAL or UNMEASURED status; anything less is UNMEASURED or AMBER. Failure words are
+matched as whole tokens, never substrings ("RED" is inside "MEASURED").
+
 and a desk-level verdict that can only be GREEN when every source was read and no organ is RED.
 A source that is absent or older than its lease makes the board UNMEASURED on that axis, with the
 reason, rather than silently shrinking what it judges.
@@ -34,6 +39,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from collections import Counter
 from datetime import UTC, datetime
@@ -51,6 +57,16 @@ READERS = {
     "trade_pathology": DESK / "reports" / "TRADE_PATHOLOGY.json",
     "experiment_contracts": DESK / "reports" / "EXPERIMENT_CONTRACTS.json",
 }
+#: The counter each reader's artifact must carry for its reading to count (audit 2026-10-06: the
+#: board scored a reader GREEN on any parseable file, whatever its age or content -- including
+#: EXPERIMENT_CONTRACTS.json, which states no `status` at all).
+READER_COUNTERS = {
+    "build_failure_bank": "n_passes",
+    "trade_pathology": "n_trades",
+    "experiment_contracts": "registered",
+}
+#: The readers are hourly legs; one older than this is a statement about an earlier desk.
+READER_LEASE_H = 3.0
 OUT = DESK / "reports" / "HEALTH_BOARD.json"
 OUT_MD = DESK / "reports" / "HEALTH_BOARD.md"
 
@@ -60,8 +76,20 @@ GREEN, AMBER, RED, UNMEASURED = "GREEN", "AMBER", "RED", "UNMEASURED"
 SOURCE_LEASE_H = {"runtime_attestation": 3.0, "events": 3.0, "acceptance": 3.0,
                   "stall_watch": 1.0}
 EVENT_TAIL_BYTES = 4 * 1024 * 1024
-#: Words that mark an artifact's own last reading as a failure.
-_FAIL_WORDS = ("FAIL", "BREACH", "RED", "ERROR", "BROKEN", "FALSIFIED", "REJECTED")
+#: Words that mark an artifact's own last reading as a failure. Matched as WHOLE TOKENS (audit
+#: 2026-10-06): a substring match found "RED" inside "MEASURED" and "UNMEASURED", so every organ
+#: whose artifact read MEASURED was scored AMBER.
+_FAIL_WORDS = frozenset({"FAIL", "FAILED", "FAILING", "FAILS", "FAILURE", "BREACH", "BREACHED",
+                         "RED", "ERROR", "ERRORS", "BROKEN", "FALSIFIED", "REJECTED"})
+
+
+def _tokens(text: str) -> set[str]:
+    return {t for t in re.split(r"[^A-Z0-9]+", text.upper()) if t}
+
+
+def is_failure_reading(text: str) -> bool:
+    """True when a status string names a failure as a whole word, never as a substring."""
+    return bool(_tokens(text) & _FAIL_WORDS)
 
 
 def _now() -> datetime:
@@ -158,7 +186,7 @@ def judge(organ: dict[str, Any], event: dict[str, Any] | None) -> tuple[str, str
         return RED, f"last run FAILED at {event.get('at')} ({event.get('outcome') or 'no outcome'})"
     if state == "LIVE":
         last = str(organ.get("last_reading") or "")
-        if last and any(w in last.upper() for w in _FAIL_WORDS):
+        if last and is_failure_reading(last):
             return AMBER, f"fresh, but its own last reading is {last!r}"
         if event is None and str(organ.get("kind")) == "leg":
             return AMBER, "fresh artifact, but no LEG_DONE in the event log's tail"
@@ -169,6 +197,43 @@ def judge(organ: dict[str, Any], event: dict[str, Any] | None) -> tuple[str, str
                         f"{'old' if state == 'STALE' else 'absent'}"
         return (RED if state == "MISSING" else AMBER), str(organ.get("why") or state)
     return UNMEASURED, str(organ.get("why") or f"{state}: nothing on this host proves it")
+
+
+def judge_reader(name: str, p: Path, counter: str | None = None) -> dict[str, Any]:
+    """A reader is GREEN only on a FRESH, PARSEABLE artifact that CARRIES ITS COUNTER and whose
+    own status is not a failure, PARTIAL or UNMEASURED. Existence alone proves nothing."""
+    counter = counter or READER_COUNTERS.get(name)
+    d = _json(p)
+    st = str(d.get("status") or "") if isinstance(d, dict) else ""
+    age = _age_h(_ts(d.get("at") or d.get("generated_at"))) if isinstance(d, dict) else None
+    n = d.get(counter) if isinstance(d, dict) and counter else None
+    has_n = isinstance(n, (int, float)) and not isinstance(n, bool)
+    if not p.exists():
+        state, verdict, why = "NEVER", UNMEASURED, f"{p.name} absent on this host"
+    elif not isinstance(d, dict):
+        state, verdict, why = "UNREADABLE", UNMEASURED, f"{p.name} does not parse as an object"
+    elif age is None:
+        state, verdict, why = "UNMEASURED", UNMEASURED, f"{p.name} carries no timestamp"
+    elif age > READER_LEASE_H:
+        state, verdict, why = ("STALE", UNMEASURED,
+                               f"{p.name} is {age:.1f}h old against a {READER_LEASE_H:g}h lease")
+    elif counter is None:
+        state, verdict, why = "LIVE", UNMEASURED, f"no counter is declared for reader {name}"
+    elif not has_n:
+        state, verdict, why = ("LIVE", UNMEASURED,
+                               f"{p.name} does not carry its counter `{counter}`")
+    elif st.upper() == UNMEASURED:
+        state, verdict, why = "LIVE", UNMEASURED, f"its own status is {st}"
+    elif st.upper() == "PARTIAL" or is_failure_reading(st):
+        state, verdict, why = "LIVE", AMBER, f"fresh, but its own status is {st!r}"
+    else:
+        state, verdict, why = ("LIVE", GREEN, f"fresh ({age:.2f}h), {counter}={n}, "
+                               f"status {st or 'unstated'}")
+    return {"organ": f"reader:{name}", "kind": "reader",
+            "artifact": str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p),
+            "state": state, "artifact_age_h": age, "counter": counter,
+            "counter_value": n if has_n else None, "last_reading": st or None,
+            "verdict": verdict, "verdict_why": why}
 
 
 def build(runtime: Path | None = None, events: Path | None = None,
@@ -205,16 +270,7 @@ def build(runtime: Path | None = None, events: Path | None = None,
                                    if ev else None)})
         organs.append(row)
     for name, p in (READERS if readers is None else readers).items():
-        d = _json(p)
-        st = str((d or {}).get("status") or "")
-        organs.append({
-            "organ": f"reader:{name}", "kind": "reader", "artifact": str(p.relative_to(ROOT))
-            if p.is_relative_to(ROOT) else str(p),
-            "state": "LIVE" if isinstance(d, dict) else "NEVER",
-            "last_reading": st or None,
-            "verdict": (UNMEASURED if not isinstance(d, dict) or st == UNMEASURED else GREEN),
-            "verdict_why": (f"{p.name} absent on this host" if not isinstance(d, dict)
-                            else f"its own status is {st or 'unstated'}")})
+        organs.append(judge_reader(name, p))
     counts = Counter(o["verdict"] for o in organs)
     reported_failing = [a for a in ((sw or {}).get("actions") or [])
                         if isinstance(a, str) and a.upper().startswith(("FAILING", "TASK MISSING",

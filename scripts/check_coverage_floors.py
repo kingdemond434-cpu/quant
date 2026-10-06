@@ -98,10 +98,57 @@ MONEY_PATH_RETIRED = (
     "libs/execution/binance_spot_testnet.py",
 )
 
-#: Slack below the measured high-water mark, in percentage points. Coverage moves a little with
-#: test ordering and optional-dependency skips, and a floor that fires on noise gets deleted --
-#: which is worse than a floor set one point low.
-SLACK = 1.0
+#: Tolerance below the floor before a reading is a breach, in percentage points. It WAS 1.0, and
+#: audit 2026-10-06 measured what that bought: the combined suites read libs at 86.43% against an
+#: 86.48% floor and passed on slack alone, while no floor had risen in 58 days (L1.50). A floor
+#: you may sit under is not a floor. Noise is now absorbed on the way UP instead -- the automatic
+#: raise below leaves RAISE_HEADROOM under the measurement -- so a reading under the floor fails.
+SLACK = 0.0
+
+#: THE AUTOMATIC RATCHET (2026-10-06). A floor only rose when someone remembered `--update`, and
+#: for 58 days nobody did. Now every run that measures a floor exceeded by at least RAISE_MARGIN
+#: raises it -- to the measurement less RAISE_HEADROOM, which is the noise band test ordering and
+#: optional-dependency skips move coverage by -- and writes the record. Floors still never fall.
+RAISE_MARGIN = 0.5
+RAISE_HEADROOM = 0.25
+
+
+def breaches_for(now: dict[str, Any], floors: dict[str, Any], *,
+                 population_changed: bool = False) -> list[str]:
+    """The floor comparisons, strict: a reading below its floor is a breach (SLACK is 0)."""
+    out: list[str] = []
+    repo_floor = float(floors.get("repo_pct", 0.0))
+    money_floor = float(floors.get("money_path_pct", 0.0))
+    if now["repo_pct"] < repo_floor - SLACK:
+        out.append(f"repo coverage {now['repo_pct']}% fell below its {repo_floor}% mark")
+    if not population_changed and now["money_path_pct"] < money_floor - SLACK:
+        out.append(
+            f"MONEY PATH coverage {now['money_path_pct']}% fell below its {money_floor}% mark -- "
+            "this is the code that places orders, and it is the one number a repo-wide average "
+            "would have hidden"
+        )
+    return out
+
+
+def auto_ratchet(floors: dict[str, Any], now: dict[str, Any], *,
+                 population_changed: bool = False) -> tuple[dict[str, Any], list[str]]:
+    """Raise each floor the measurement beats by RAISE_MARGIN to (measured - RAISE_HEADROOM).
+    Returns (new floors, what rose). Never lowers; never raises the money floor over a changed
+    or partial population (a floor earned by fewer files is a permanent error)."""
+    out = dict(floors)
+    rose: list[str] = []
+    keys = ["repo_pct"]
+    if not population_changed and not now.get("money_path_missing"):
+        keys.append("money_path_pct")
+    for k in keys:
+        floor = float(out.get(k, 0.0))
+        measured = float(now[k])
+        if measured - floor >= RAISE_MARGIN:
+            target = round(measured - RAISE_HEADROOM, 2)
+            if target > floor:
+                out[k] = target
+                rose.append(f"{k} {floor} -> {target} (measured {measured})")
+    return out, rose
 
 #: L1.50. Past this many days with no floor RAISED, the ratchet is reported as STALLED.
 #:
@@ -239,6 +286,43 @@ def load_record() -> dict[str, Any]:
         return {}
 
 
+def _write_record(floors: dict[str, Any], last_raised: Any, now: dict[str, Any],
+                  files: list[str] | None = None) -> None:
+    RECORD.write_text(
+        json.dumps(
+            {
+                "_": (
+                    "HIGH-WATER MARKS for test coverage. Raised by --update and by the automatic "
+                    "ratchet (RAISE_MARGIN), NEVER lowered by code. "
+                    "The money path is tracked separately because a repo-wide average lets order-"
+                    "path coverage fall while research tests keep the aggregate up -- the average "
+                    "hides exactly the number worth watching."
+                ),
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "last_raised": last_raised,
+                "high_water": floors,
+                "measured": now,
+                "money_path_files": list(MONEY_PATH) if files is None else files,
+                "slack_pp": SLACK,
+                "next_ceiling": (
+                    "STILL money-path parity, and the gap is still the point. 41.6% -> 70.45% "
+                    "(2026-08-06) against 92.46% repo-wide: the direction is right and the inversion "
+                    "is not fixed. ~221 uncovered statements remain on the code that can place orders "
+                    "and move funds, and the three defects found writing those tests -- a flatten leg "
+                    "that could sell through zero, and GAP #49 wired into only one leg of a two-leg "
+                    "trade -- were all in the untested part, which is the whole argument. Parity is "
+                    "not the end either: the ceiling after it is the FAILURE branches specifically, "
+                    "since every incident this desk has had came from an error path, not a happy one. "
+                    "Per L1.50 the floor is the minimum and 100% is the target; the residue above is "
+                    "named so it cannot be mistaken for work already done."
+                ),
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--report", default="coverage.json", help="coverage.py JSON report")
@@ -320,14 +404,7 @@ def main() -> int:
             "together, so this number rises as the order path goes dark. Run pytest over the "
             "whole tree, or fix the path in MONEY_PATH if a module moved."
         )
-    if now["repo_pct"] < repo_floor - SLACK:
-        breaches.append(f"repo coverage {now['repo_pct']}% fell below its {repo_floor}% mark")
-    if not population_changed and now["money_path_pct"] < money_floor - SLACK:
-        breaches.append(
-            f"MONEY PATH coverage {now['money_path_pct']}% fell below its {money_floor}% mark -- "
-            "this is the code that places orders, and it is the one number a repo-wide average "
-            "would have hidden"
-        )
+    breaches += breaches_for(now, floors, population_changed=population_changed)
 
     if a.update and now["money_path_missing"]:
         # The ratchet is permanent, so a floor raised from a partial measurement is a permanent
@@ -368,38 +445,7 @@ def main() -> int:
             not population_changed and floors["money_path_pct"] > money_floor
         )
         last_raised = datetime.now(tz=UTC).isoformat() if rose else rec.get("last_raised")
-        RECORD.write_text(
-            json.dumps(
-                {
-                    "_": (
-                        "HIGH-WATER MARKS for test coverage. Raised by --update, NEVER lowered by code. "
-                        "The money path is tracked separately because a repo-wide average lets order-"
-                        "path coverage fall while research tests keep the aggregate up -- the average "
-                        "hides exactly the number worth watching."
-                    ),
-                    "updated": datetime.now(tz=UTC).isoformat(),
-                    "last_raised": last_raised,
-                    "high_water": floors,
-                    "measured": now,
-                    "money_path_files": list(MONEY_PATH),
-                    "slack_pp": SLACK,
-                    "next_ceiling": (
-                        "STILL money-path parity, and the gap is still the point. 41.6% -> 70.45% "
-                        "(2026-08-06) against 92.46% repo-wide: the direction is right and the inversion "
-                        "is not fixed. ~221 uncovered statements remain on the code that can place orders "
-                        "and move funds, and the three defects found writing those tests -- a flatten leg "
-                        "that could sell through zero, and GAP #49 wired into only one leg of a two-leg "
-                        "trade -- were all in the untested part, which is the whole argument. Parity is "
-                        "not the end either: the ceiling after it is the FAILURE branches specifically, "
-                        "since every incident this desk has had came from an error path, not a happy one. "
-                        "Per L1.50 the floor is the minimum and 100% is the target; the residue above is "
-                        "named so it cannot be mistaken for work already done."
-                    ),
-                },
-                indent=1,
-            ),
-            "utf-8",
-        )
+        _write_record(floors, last_raised, now)
         print(
             f"  floors updated -> repo {floors['repo_pct']}% | "
             f"money path {floors['money_path_pct']}%"
@@ -407,6 +453,13 @@ def main() -> int:
         )
         return 0
 
+    # THE AUTOMATIC RAISE: no --update needed. A floor the measurement beats by RAISE_MARGIN rises.
+    raised, rose = auto_ratchet(floors, now, population_changed=population_changed)
+    if rose:
+        # A changed population is migrated only by --update, never as a side effect of a raise.
+        _write_record(raised, datetime.now(tz=UTC).isoformat(), now,
+                      files=recorded_pop if population_changed else None)
+        print(f"  RATCHET RAISED: {'; '.join(rose)} -> {RECORD.name} (commit it)")
     if breaches:
         for b in breaches:
             print(f"  BREACH: {b}")

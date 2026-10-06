@@ -29,7 +29,9 @@ THE CLASSES, each with the threshold it uses written into the artifact:
     SPREAD_SPIKE        the spread at decision was more than 3x the symbol's median spread
 
 UNMEASURED IS A VERDICT (L1.28a): a class whose inputs are absent for every trade (no joined
-intent, no stop, no spread) reads UNMEASURED with its reason and its n, never zero.
+intent, no stop, no spread) reads UNMEASURED with its reason and its n, never zero. Below
+MIN_JOIN_COVERAGE (half the deals joined to their intent) the reading is PARTIAL, with the join
+rate published, and a book with no join at all is UNMEASURED.
 
 REPORT ONLY. It vetoes, sizes and routes nothing; the fixes it points at are for the execution
 owners to make on evidence.
@@ -58,6 +60,17 @@ OUT = DESK / "reports" / "TRADE_PATHOLOGY.json"
 SCHEMA = "trade-pathology/1"
 UNMEASURED = "UNMEASURED"
 MEASURED = "MEASURED"
+PARTIAL = "PARTIAL"
+
+#: MINIMUM JOIN COVERAGE (audit 2026-10-06). Five of the six classes need the deal joined to its
+#: intent; a book where 3 of 151 deals joined (2%) was published as MEASURED, so "0 SPREAD_SPIKE"
+#: there described three trades and silently stood in for the other 148. Below this share of
+#: deals joined, the reading -- and every join-dependent class -- is PARTIAL with the join rate
+#: published; with nothing joined at all it is UNMEASURED. Never a clean MEASURED on a sliver.
+MIN_JOIN_COVERAGE = 0.5
+#: The classes whose inputs come only through the deal->intent join.
+JOIN_DEPENDENT = frozenset({"SLIPPAGE_OUTLIER", "FAR_FROM_SIGNAL", "EARLY_STOPOUT",
+                            "WEEKEND_GAP", "SPREAD_SPIKE"})
 
 #: Thresholds, published in the artifact so a reader can re-derive every flag.
 EARLY_BARS = 3
@@ -265,6 +278,7 @@ def build(ledger: Path | None = None, intents_p: Path | None = None,
                     "fill_corpus": "desks/mt5/data/fill_corpus.jsonl",
                     "universe": "desks/mt5/data/universe/universe.json"},
         "thresholds": {"early_bars": early_bars, "bar_seconds": BAR_SECONDS,
+                       "min_join_coverage": MIN_JOIN_COVERAGE,
                        "far_from_signal_r": FAR_FROM_SIGNAL_R,
                        "stop_overshoot_r": STOP_OVERSHOOT_R, "spread_spike_x": SPREAD_SPIKE_X,
                        "slip_mad_z": SLIP_MAD_Z, "slip_spread_x": SLIP_SPREAD_X},
@@ -301,8 +315,11 @@ def build(ledger: Path | None = None, intents_p: Path | None = None,
             classes[c] = {"status": UNMEASURED, "n_measured": 0,
                           "why": f"no trade carried the inputs: {NEEDS[c]}"}
             continue
+        coverage = len(measured) / len(rows)
+        partial = c in JOIN_DEPENDENT and coverage < MIN_JOIN_COVERAGE
         classes[c] = {
-            "status": MEASURED, "n_measured": len(measured), "count": len(hit),
+            "status": PARTIAL if partial else MEASURED, "n_measured": len(measured),
+            "coverage": round(coverage, 6), "count": len(hit),
             "rate": round(len(hit) / len(measured), 6),
             "r_lost": round(sum(min(0.0, r.get("r_multiple") or r.get("price_r") or 0.0)
                                 for r in hit), 4),
@@ -316,6 +333,10 @@ def build(ledger: Path | None = None, intents_p: Path | None = None,
         }
         if c == "SLIPPAGE_OUTLIER":
             classes[c]["bar_r"] = round(bar, 5) if bar is not None else None
+        if partial:
+            classes[c]["why"] = (f"only {len(measured)} of {len(rows)} trades carried the inputs "
+                                 f"({coverage:.1%} < the {MIN_JOIN_COVERAGE:.0%} minimum): the "
+                                 "count describes those trades, not the book")
     # Order-level pathologies the fill corpus already knows: rejects and unfilled orders.
     status = Counter(str(f.get("status")) for f in fills)
     retcodes = Counter(str(f.get("retcode")) for f in fills if f.get("rejected"))
@@ -324,9 +345,18 @@ def build(ledger: Path | None = None, intents_p: Path | None = None,
     for r in flagged:
         for c in r["flags"]:
             by_account[str(r.get("account_kind"))][c] += 1
+    join_rate = len(joined) / len(rows)
+    if not joined:
+        verdict, why = UNMEASURED, (f"none of {len(rows)} deals joined to an intent: the "
+                                   "join-dependent classes cannot be read")
+    elif join_rate < MIN_JOIN_COVERAGE:
+        verdict, why = PARTIAL, (f"{len(joined)} of {len(rows)} deals joined ({join_rate:.1%}), "
+                                f"below the {MIN_JOIN_COVERAGE:.0%} minimum join coverage")
+    else:
+        verdict, why = MEASURED, f"{join_rate:.1%} of deals joined to their intent"
     doc.update({
-        "status": MEASURED, "n_trades": len(rows), "n_joined": len(joined),
-        "join_rate": round(len(joined) / len(rows), 6),
+        "status": verdict, "why": why, "n_trades": len(rows), "n_joined": len(joined),
+        "join_rate": round(join_rate, 6), "min_join_coverage": MIN_JOIN_COVERAGE,
         "n_flagged": len(flagged),
         "flag_rate": round(len(flagged) / len(rows), 6),
         "classes": classes,

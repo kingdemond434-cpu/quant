@@ -36,7 +36,7 @@ import pandas as pd
 # joins the path instead of the repo root shadowing it with untracked drift.
 import sys as _sys
 _sys.path.insert(0, "/home/quant/quant-platform/desks/mt5/side_channels")
-from gate_calibration import run_full_calibration_suite, CalibrationConfig
+from gate_calibration import run_full_calibration_suite, run_calibration, save_calibration, CalibrationConfig
 from untouched_reservoir import UntouchedReservoir, ReservoirConfig, lockbox_evaluator
 from portfolio_gap import PortfolioGapAnalyzer, PortfolioGapConfig, compute_portfolio_gap_budget
 from alpha_recombination import run_recombination_pipeline, AtomLibrary, RecombinationEngine
@@ -47,6 +47,18 @@ from hypothesis_schema import HypothesisCard, Origin, Mechanism, MarketContext, 
 import sys
 sys.path.insert(0, "/home/quant/quant-platform/desks/mt5")
 from research.qquant_shadow import main as run_qquant_shadow
+UNMEASURED = "UNMEASURED"
+
+
+def phase_count(phases: dict, phase: str, key: str) -> int | str:
+    """A phase's count, or UNMEASURED when the phase did not measure it -- never a 0 (L1.28a)."""
+    d = phases.get(phase)
+    if not isinstance(d, dict) or d.get("status") == UNMEASURED or d.get("error"):
+        return UNMEASURED
+    v = d.get(key)
+    return v if isinstance(v, int) and not isinstance(v, bool) else UNMEASURED
+
+
 @dataclass
 class HourlyConfig:
     """Configuration for the hourly cycle."""
@@ -146,8 +158,8 @@ class HourlySurvivorAcquisition:
             "cycle_id": cycle_id,
             "start_time": self.cycle_start.isoformat(),
             "phases": {},
-            "hypotheses_discovered": 0,
-            "hypotheses_queued": 0,
+            "hypotheses_discovered": UNMEASURED,
+            "hypotheses_queued": UNMEASURED,
             "budget_used_usd": 0.0,
             "errors": [],
         }
@@ -187,8 +199,11 @@ class HourlySurvivorAcquisition:
             results["phases"]["attribute"] = self._phase_attribute()
             # Background tasks (async)
             self._run_background_tasks()
-            results["hypotheses_discovered"] = results["phases"].get("extract", {}).get("hypotheses", 0)
-            results["hypotheses_queued"] = results["phases"].get("queue", {}).get("queued", 0)
+            # UNMEASURED STAYS UNMEASURED END TO END (audit 2026-10-06). `.get(..., 0)` turned
+            # the queue phase's explicit UNMEASURED into "0 queued" in the cycle log every hour.
+            results["hypotheses_discovered"] = phase_count(results["phases"], "extract",
+                                                           "hypotheses")
+            results["hypotheses_queued"] = phase_count(results["phases"], "queue", "queued")
         except Exception as e:
             error = {"phase": "controller", "error": str(e), "traceback": traceback.format_exc()}
             results["errors"].append(error)
@@ -200,7 +215,7 @@ class HourlySurvivorAcquisition:
         self._save_state()
         # Log cycle
         self._log_cycle(results)
-        print(f"\nCYCLE COMPLETE: {results.get('hypotheses_discovered', 0)} hypotheses, {results.get('hypotheses_queued', 0)} queued")
+        print(f"\nCYCLE COMPLETE: {results.get('hypotheses_discovered', UNMEASURED)} hypotheses, {results.get('hypotheses_queued', UNMEASURED)} queued")
         print(f"Duration: {results['duration_seconds']:.1f}s")
         return results
     # ==================== PHASE IMPLEMENTATIONS ====================
@@ -246,7 +261,9 @@ class HourlySurvivorAcquisition:
             return {"discoveries": discoveries, "total": total, "hypotheses": len(hypotheses), "duration_seconds": elapsed}
         except Exception as e:
             print(f"  Discovery FAILED: {e}")
-            return {"discoveries": {}, "total": 0, "hypotheses": 0, "error": str(e), "duration_seconds": time.time() - start}
+            return {"status": UNMEASURED, "discoveries": {}, "total": UNMEASURED,
+                    "hypotheses": UNMEASURED, "error": f"{type(e).__name__}: {e}",
+                    "duration_seconds": time.time() - start}
     def _unmeasured(self, phase: str, why: str, start: float) -> dict:
         """A phase this controller does not perform: an explicit UNMEASURED verdict, never an
         invented count (L1.28a). Until 2026-09-30 these phases returned constants -- 8
@@ -337,14 +354,22 @@ class HourlySurvivorAcquisition:
         """Run heavy background tasks (async)."""
         # Gate calibration (daily/weekly)
         if self.cycle_count % 24 == 0 and self.config.run_calibration_hourly:
+            # `run_calibration` was called here with no import (its import was dropped when the
+            # path shim replaced the root-level copies), so the first cycle with the flag on
+            # raised NameError. Wired back to gate_calibration's own per-effect-size runner, as
+            # the canonical side_channels controller does, and the result is now kept.
             print("Running gate power calibration...")
+            calibration = {}
             for sr in self.config.calibration_effect_sizes:
                 config = CalibrationConfig(
                     true_sharpe=sr,
                     n_days=1000,
                     n_simulations=self.config.calibration_n_sims,
                 )
-                run_calibration(config)
+                calibration[f"sharpe_{sr}"] = run_calibration(config)
+            out = self.base_path / "logs" / "gate_calibration.json"
+            out.parent.mkdir(parents=True, exist_ok=True)
+            save_calibration(calibration, out)
         # Counterfactual analysis (daily)
         if self.cycle_count % 24 == 1:
             self.counterfactual_lab.compute_policy_analytics()

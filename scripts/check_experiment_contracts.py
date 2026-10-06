@@ -12,6 +12,12 @@ THE FENCE fails when
   * the grandfather list names a leg that is no longer registered, or GREW -- it may only shrink,
     so the uncontracted backlog is a number that can only be driven down.
 
+THE UNCONTRACTED RATCHET (2026-10-06, supersedes the paragraph below where a baseline is
+committed). The registry's `uncontracted_baseline` names every leg that was uncontracted when the
+ratchet landed and `uncontracted_max` caps their count. A leg uncontracted that the baseline does
+not name, or a count above the cap, FAILS the fence; when the count falls the fence lowers both
+(and the grandfather ceiling) in the committed registry itself, so the floor only ever moves down.
+
 A NEW UNCONTRACTED LEG IS AN OBLIGATION, NOT A BREACH (2026-09-30). A registered hourly leg
 (every `_costed("<leg>", ...)` in hourly_cycle.py) that is neither contracted nor grandfathered
 is NAMED -- printed, and published as `uncontracted_new` in the summary and the hourly report --
@@ -105,12 +111,64 @@ def check(registry: dict[str, Any], legs: list[str],
     if isinstance(ceiling, int) and len(grand) > ceiling:
         problems.append(f"grandfather list grew to {len(grand)} above its ratchet {ceiling}: "
                         "the uncontracted backlog may only shrink")
+    # THE UNCONTRACTED RATCHET (audit 2026-10-06). The fence exited 0 with 26 legs uncontracted
+    # and 354 grandfathered, and nothing stopped the 26 becoming 50. When the registry carries a
+    # committed baseline (`uncontracted_baseline`, the NAMES, and `uncontracted_max`), the
+    # uncontracted set may only shrink: a leg uncontracted that the baseline does not name, or a
+    # count above the ceiling, is a breach. `tighten()` lowers both ceilings when counts fall.
+    baseline = registry.get("uncontracted_baseline")
+    if isinstance(baseline, list):
+        known = set(baseline)
+        arrived = [leg for leg in uncontracted_new if leg not in known]
+        if arrived:
+            problems.append(
+                f"{len(arrived)} leg(s) registered with no experiment contract and not in the "
+                f"committed uncontracted baseline: {', '.join(arrived[:8])}"
+                + ("..." if len(arrived) > 8 else "")
+                + " -- declare a contract in experiment_contracts.json")
+        u_max = registry.get("uncontracted_max")
+        if isinstance(u_max, int) and len(uncontracted_new) > u_max:
+            problems.append(f"uncontracted legs rose to {len(uncontracted_new)} above the "
+                            f"ratchet {u_max}: the uncontracted count may only fall")
     healed = sorted(grand & valid)
     summary = {"registered": len(legs), "contracted": len(valid & set(legs)),
                "grandfathered": len(grand), "healed_awaiting_update": healed,
                "uncontracted_new": uncontracted_new,
                "coverage": round(len(valid & set(legs)) / len(legs), 6) if legs else None}
     return problems, summary
+
+
+def tighten(registry: dict[str, Any], summary: dict[str, Any]) -> list[str]:
+    """Lower the committed ceilings to what was just measured -- never raise them. Returns what
+    moved (empty when nothing fell). Healed legs leave the grandfather list; legs that gained a
+    contract or were unregistered leave the uncontracted baseline."""
+    moved: list[str] = []
+    grand = list(registry.get("grandfathered") or [])
+    healed = set(summary.get("healed_awaiting_update") or [])
+    kept = sorted(g for g in grand if g not in healed)
+    g_max = registry.get("grandfathered_max")
+    if len(kept) < len(grand):
+        registry["grandfathered"] = kept
+        moved.append(f"grandfathered {len(grand)} -> {len(kept)}")
+    if isinstance(g_max, int) and len(kept) < g_max:
+        registry["grandfathered_max"] = len(kept)
+        moved.append(f"grandfathered_max {g_max} -> {len(kept)}")
+    now = sorted(summary.get("uncontracted_new") or [])
+    base = registry.get("uncontracted_baseline")
+    if isinstance(base, list):
+        narrowed = sorted(set(base) & set(now))
+        if narrowed != sorted(base):
+            registry["uncontracted_baseline"] = narrowed
+            moved.append(f"uncontracted_baseline {len(base)} -> {len(narrowed)}")
+        u_max = registry.get("uncontracted_max")
+        if not isinstance(u_max, int) or len(narrowed) < u_max:
+            registry["uncontracted_max"] = len(narrowed)
+            moved.append(f"uncontracted_max {u_max} -> {len(narrowed)}")
+    return moved
+
+
+def _write_registry(path: Path, registry: dict[str, Any]) -> None:
+    path.write_text(json.dumps(registry, indent=1, ensure_ascii=False) + "\n", "utf-8")
 
 
 def _history(path: Path) -> dict[str, list[float]]:
@@ -194,7 +252,7 @@ def main(argv: list[str] | None = None) -> int:
                         - set(summary["healed_awaiting_update"])) & set(legs))
         registry["grandfathered"] = grand
         registry["grandfathered_max"] = len(grand)
-        a.registry.write_text(json.dumps(registry, indent=1, ensure_ascii=False) + "\n", "utf-8")
+        _write_registry(a.registry, registry)
         print(f"experiment contracts: grandfather list now {len(grand)}")
         problems, summary = check(registry, legs, resolved)
     print(f"experiment contracts: {summary['registered']} registered legs, "
@@ -205,6 +263,12 @@ def main(argv: list[str] | None = None) -> int:
               f"{a.registry.name}")
     for p in problems:
         print(f"  BREACH: {p}")
+    if not a.report and not problems:
+        # The ratchet only ever tightens, and only on a clean reading.
+        moved = tighten(registry, summary)
+        if moved:
+            _write_registry(a.registry, registry)
+            print(f"  RATCHET tightened: {'; '.join(moved)}")
     if a.report:
         doc = report(resolved, summary, problems)
         a.out.parent.mkdir(parents=True, exist_ok=True)

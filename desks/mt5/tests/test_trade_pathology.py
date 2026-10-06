@@ -65,3 +65,41 @@ def test_main_writes_artifact(tmp_path: Path) -> None:
     out = tmp_path / "TRADE_PATHOLOGY.json"
     assert tp.main(["--once", "--out", str(out)]) == 0
     assert json.loads(out.read_text("utf-8"))["schema"] == tp.SCHEMA
+
+
+def _book(n_deals: int, n_joined: int) -> tuple[list[dict], list[dict]]:
+    deals, intents = [], []
+    for k in range(n_deals):
+        d = {"deal": k, "symbol": "XAUUSD", "sleeve": "g", "entry_price": 100.0, "sl": 99.0,
+             "fill_price": 101.0, "time": "2026-09-29T12:00:00+00:00", "r_multiple": 1.0}
+        if k < n_joined:
+            d["entry_order"] = 1000 + k
+            intents.append({"ticket": 1000 + k, "time": "2026-09-29T10:00:00+00:00",
+                            "intended": 100.0, "spread_at_decision": 0.1, "point": 0.01})
+        deals.append(d)
+    return deals, intents
+
+
+def _run_book(tmp_path: Path, n_deals: int, n_joined: int) -> dict:
+    deals, intents = _book(n_deals, n_joined)
+    (tmp_path / "u.json").write_text(json.dumps({"XAUUSD": {"point": 0.01,
+                                                            "median_spread_pts": 10}}), "utf-8")
+    return tp.build(ledger=_jsonl(tmp_path / "l.jsonl", deals),
+                    intents_p=_jsonl(tmp_path / "i.jsonl", intents),
+                    corpus=tmp_path / "c.jsonl", universe=tmp_path / "u.json")
+
+
+def test_a_two_percent_join_is_partial_never_measured(tmp_path: Path) -> None:
+    """LIVE 2026-10-06: 3 of 151 deals joined and the reading said MEASURED."""
+    doc = _run_book(tmp_path, 151, 3)
+    assert doc["status"] == tp.PARTIAL
+    assert doc["join_rate"] == round(3 / 151, 6) and doc["min_join_coverage"] == 0.5
+    assert "below" in doc["why"]
+    assert doc["classes"]["SPREAD_SPIKE"]["status"] == tp.PARTIAL
+    assert doc["classes"]["STOP_SLIPPAGE"]["status"] == tp.MEASURED   # needs no join
+
+
+def test_no_join_at_all_is_unmeasured_and_full_join_measured(tmp_path: Path) -> None:
+    assert _run_book(tmp_path, 10, 0)["status"] == tp.UNMEASURED
+    doc = _run_book(tmp_path, 10, 10)
+    assert doc["status"] == tp.MEASURED and doc["join_rate"] == 1.0
