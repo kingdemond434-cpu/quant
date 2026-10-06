@@ -190,7 +190,12 @@ _FAMILY_GROUPS: dict[str, str] = {
     "cross_market_lead event market": "analyst_cross_market_lead",
     # The class books of 2026-09-30 (`mt5desk.families_cross_sectional`): each leg is ranked
     # against its own peer class on the same date.
-    "trend_persistence cross_asset market": "cross_sectional_class_momentum",
+    "trend_persistence cross_asset market": "cross_sectional_class_momentum"
+                                            " cross_sectional_class_corr_momentum",
+    # The paperswithbacktest skew books (2026-10-06): the lottery-seeking speculator overpays for
+    # the class's positively skewed members.
+    "positioning_crowding cross_asset market": "cross_sectional_class_skew"
+                                               " cross_sectional_class_asymmetry",
     "range_reversion cross_asset market": "cross_sectional_class_reversal",
     "forced_liquidation cross_asset market": "crisis_only_class_defensive",
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"

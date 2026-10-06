@@ -2676,7 +2676,12 @@
    "region": "global",
    "licence": "UNVERIFIED",
    "cadence": "hourly",
-   "system_id": "gh_paperswithbacktest_awesome_systematic_trading"
+   "system_id": "gh_paperswithbacktest_awesome_systematic_trading",
+   "config": {
+    "fetched_by": [
+     "elitequant_breadth"
+    ]
+   }
   },
   {
    "id": "github:asavinov/intelligent-trading-bot",

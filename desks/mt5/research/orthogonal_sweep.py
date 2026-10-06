@@ -576,6 +576,13 @@ NOT_SOURCED_HERE = {
                     "research/cross_sectional_breadth enumerates the class x family x params "
                     "grid, measures each cell's firing against the gauntlet's 60-day floor and "
                     "charges its own trials; sweeping it here would charge them twice"),
+    # The paperswithbacktest commodity class books (mt5desk/families_class_moments.py): seeded on
+    # commodity legs only by research/elitequant_breadth, which charges each look once.
+    **dict.fromkeys(("cross_sectional_class_skew", "cross_sectional_class_asymmetry",
+                     "cross_sectional_class_corr_momentum"),
+                    "research/elitequant_breadth seeds these commodity class books on commodity "
+                    "legs and charges each look once by identity; sweeping them here would "
+                    "charge them twice and spend trials on classes the papers never named"),
 }
 
 

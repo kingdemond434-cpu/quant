@@ -2484,6 +2484,17 @@ for _qr_name in QUEUED_REPO_FAMILIES:
     FAMILY_INPUTS[_qr_name] = ("price only", "data/universe/*_H1.parquet")
 del _qr_name
 
+# THREE COMMODITY CLASS BOOKS FROM THE PAPERSWITHBACKTEST LIST (2026-10-06): skew, tail-day
+# asymmetry and correlation-gated momentum, ranked on the class panel `families_cross_sectional`
+# loads. Seeded on commodity legs by `research/elitequant_breadth.py`.
+from mt5desk.families_class_moments import CLASS_MOMENT_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(CLASS_MOMENT_FAMILIES)
+for _cm_name in CLASS_MOMENT_FAMILIES:
+    FAMILY_INPUTS[_cm_name] = FAMILY_INPUTS["cross_sectional_class_momentum"]
+    FAMILY_TIMEFRAMES[_cm_name] = FAMILY_TIMEFRAMES["cross_sectional_class_momentum"]
+del _cm_name
+
 # THE ALPHA ZOO AS CLASS BOOKS (2026-09-30): 317 published alphas (GTJA 191, Qlib 158, Alpha101,
 # academic) vendored from HKUDS/Vibe-Trading (MIT) under mt5desk/alpha_zoo/, each ranked within
 # the cell's peer class on each date. Loads its own class panel keyed by the cell's `symbol`, like

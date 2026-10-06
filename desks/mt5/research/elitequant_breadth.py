@@ -51,6 +51,7 @@ for _p in (str(BASE), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk import families_class_moments as cm  # noqa: E402
 from mt5desk import families_cn_cta as cn  # noqa: E402
 from mt5desk import families_elitequant as eq  # noqa: E402
 from mt5desk import families_quantguild as qg  # noqa: E402
@@ -61,10 +62,11 @@ from mt5desk import families_quanttrading as qt  # noqa: E402
 #: EliteQuant (Western canon), thuquant/awesome-quant (the CN futures CTA canon) and
 #: je-suis-tm/quant-trading (retail chart patterns and the Oil Money commodity-FX residual).
 FAMILIES = {**eq.ELITEQUANT_FAMILIES, **cn.CN_CTA_FAMILIES, **qt.QUANTTRADING_FAMILIES,
-            **qg.QUANTGUILD_FAMILIES, **qr.QUEUED_REPO_FAMILIES}
+            **qg.QUANTGUILD_FAMILIES, **qr.QUEUED_REPO_FAMILIES, **cm.CLASS_MOMENT_FAMILIES}
 PARAM_GRID = {**eq.PARAM_GRID, **cn.PARAM_GRID, **qt.PARAM_GRID, **qg.PARAM_GRID,
-              **qr.PARAM_GRID}
-CULTURE = {**eq.CULTURE, **cn.CULTURE, **qt.CULTURE, **qg.CULTURE, **qr.CULTURE}
+              **qr.PARAM_GRID, **cm.PARAM_GRID}
+CULTURE = {**eq.CULTURE, **cn.CULTURE, **qt.CULTURE, **qg.CULTURE, **qr.CULTURE,
+           **cm.CULTURE}
 #: Where each family came from, for the donated row's provenance.
 ORIGIN = {**dict.fromkeys(eq.ELITEQUANT_FAMILIES, "github.com/EliteQuant/EliteQuant (Apache-2.0)"),
           **dict.fromkeys(cn.CN_CTA_FAMILIES, "github.com/thuquant/awesome-quant (MIT)"),
@@ -75,17 +77,19 @@ ORIGIN = {**dict.fromkeys(eq.ELITEQUANT_FAMILIES, "github.com/EliteQuant/EliteQu
                           "github.com/romanmichaelpaolucci/Quant-Guild-Library (no licence; "
                           "rewritten)"),
           # The queued repositories (czsc, tqsdk, quant-wiki, sunday-quant-scientist), rewritten.
-          **qr.ORIGIN}
+          **qr.ORIGIN,
+          # The paperswithbacktest commodity class books, rewritten from the papers it indexes.
+          **cm.ORIGIN}
 #: The registry id each family's cells are credited to (`origin_source_id` on the donated row):
 #: the donor repository, a federation seed (`external_federation.ABSORBED_REPOS`) whose roster
 #: row in data/source_rosters/external_federation_seeds.json names this organ in `fetched_by`.
 SOURCE_ID = {fam: "github:" + ORIGIN[fam].split(" ")[0].removeprefix("github.com/")
              for fam in FAMILIES}
 #: Families that read their own second leg keyed by the cell's `symbol` parameter.
-SYMBOL_KEYED = frozenset({"commodity_fx_residual"})
+SYMBOL_KEYED = frozenset({"commodity_fx_residual", *cm.CLASS_MOMENT_FAMILIES})
 #: Families whose claim names one peer class (`universe_policy.peer_class`): the index calendar
 #: anomalies. Screened only there, so no trial is spent on a mechanism nobody proposed elsewhere.
-CLASS_ONLY = dict(qr.CLASS_ONLY)
+CLASS_ONLY = {**qr.CLASS_ONLY, **cm.CLASS_ONLY}
 
 SOURCE = "elitequant_breadth"
 OUT = BASE / "reports" / "ELITEQUANT_BREADTH.json"
