@@ -205,9 +205,13 @@ def _r01_effective_breadth() -> dict[str, Any]:
         field = f"{_rel(BREADTH_MANDATE)} ratchet.n_eff"
     if value is None:
         return _gone("effective_breadth_n_eff", [EFFECTIVE_BREADTH, BREADTH_MANDATE])
+    cert = _dict(doc, "certificates")
     return _mk("effective_breadth_n_eff", value,
                f"{_rel(EFFECTIVE_BREADTH)} {field} (n_nominal={eff.get('n_nominal')}, "
-               f"binding={eff.get('binding_reading')})", _stamp(doc))
+               f"binding={eff.get('binding_reading')}, "
+               f"N_CERT={cert.get('n_certificates', 'UNMEASURED')}, "
+               f"N_EFFECTIVE_CERT={cert.get('n_effective_certificates', 'UNMEASURED')})",
+               _stamp(doc))
 
 
 def _r02_certified_chart_session_axes() -> dict[str, Any]:
