@@ -342,11 +342,224 @@ def solve(*, seed: int = 0) -> dict[str, Any]:
     return doc
 
 
+# ====================================================================== THE WHOLE CERTIFIED BOOK
+#: The same rule over every certified sleeve the desk may trade, not only the gold windows
+#: (principal 2026-10-06: "all promising max uncorrelated pf sleeves out of current certis ... put
+#: them on mt5 n e8 early, the max growth n promising sleeve book"). Same objective, same death
+#: line, same EPS_DEATH, on the allocator's own worlds. Two additions, both from measurement:
+#:
+#: SURVIVAL MUST SURVIVE BEING WRONG. The worlds' levels read high (shrunk but in-sample means), so
+#: the death constraint is held on the as-estimated worlds AND on worlds whose positive edges are
+#: halved; growth is maximised on the as-estimated ones. A book that only survives if its edges are
+#: exactly right is not inside survival.
+#:
+#: AN EXACT SEARCH, NOT A GRADIENT. The smooth projected-gradient solve stalled 4x below the exact
+#: optimum on this roster (measured 2026-10-06), and the allocator's own robust_elog can report
+#: converged at a worse point while its redundancy penalty is non-PSD. The book is therefore found
+#: by multi-start pattern search on the exact ruin-counted objective (coordinate steps plus pairwise
+#: heat transfers, which escape the coordinate traps), and its P(death) is re-measured on an
+#: independent path sample before it is published.
+CERT_CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+BOOK_HAIRCUT = 0.5
+BOOK_MARGIN = 0.04            # solve against 4% so an independent sample still reads <= EPS_DEATH
+BOOK_STEPS = (0.04, 0.02, 0.01, 0.005, 0.0025)
+BOOK_STARTS = 6
+BOOK_PATHS = 2000
+
+
+def _world_column(cell: str, sym: str, family: str, selector: str, names: list[str]) -> str | None:
+    """The worlds column a certificate trades: `<SYM>_<family>_<selector>`, the allocator's own
+    naming. rr/wait variants of one cell share the column -- they are one bet bought twice."""
+    col = f"{sym}_{family}_{selector}"
+    return col if col in names else None
+
+
+def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]:
+    """(world columns, one screening row per certificate) for the non-banned certified sleeves."""
+    doc = _read_json(CERT_CANON) or {}
+    try:
+        from family_policy import family_banned
+    except ImportError:                                   # pragma: no cover - box path only
+        def family_banned(_f: str) -> bool:
+            return _f == "discovered"
+    cols: list[str] = []
+    rows: list[dict[str, Any]] = []
+    policy = str((doc.get("gate_policy") or {}).get("version") or "")
+    for key, c in (doc.get("survivors") or {}).items():
+        spec = c.get("shadow_spec") or {}
+        fam, sym = str(spec.get("family") or ""), str(c.get("sym") or spec.get("symbol") or "")
+        sel = str(spec.get("selector") or "")
+        tf = str(spec.get("timeframe") or "H1").upper()
+        g = c.get("gates") or {}
+        row = {"certificate": key, "symbol": sym, "family": fam, "selector": sel,
+               "policy": policy, "v4": "v4" in policy,
+               "edge_x3_costs": (g.get("stress_costs") or {}).get("exp_x3"),
+               "wf_oos_sharpe": (g.get("walk_forward") or {}).get("oos_sharpe"),
+               "dsr": (g.get("deflated_sharpe") or {}).get("dsr")}
+        if family_banned(fam):
+            row["excluded"] = "banned family"
+        elif tf == "M15":
+            row["excluded"] = "M15 banned"
+        else:
+            col = _world_column(str(c.get("cell") or ""), sym, fam, sel, names)
+            row["column"] = col
+            if col is None:
+                row["excluded"] = "no worlds column (allocator has not priced it)"
+            elif col not in cols:
+                cols.append(col)
+        rows.append(row)
+    return cols, rows
+
+
+def _book_eval(paths: np.ndarray, h: np.ndarray) -> dict[str, float]:
+    el, p_dead, p_dd = ruin_counted_elog(paths, h)
+    return {"elog_per_day": round(el, 6), "p_death": round(p_dead, 4), "p_dd35": round(p_dd, 4)}
+
+
+def _pattern_search(paths: np.ndarray, paths_h: np.ndarray, mask: np.ndarray, cap: float,
+                    rng: np.random.Generator, starts: int | None = None
+                    ) -> tuple[np.ndarray, float]:
+    starts = BOOK_STARTS if starts is None else starts
+    n = mask.size
+    idx = np.flatnonzero(mask)
+
+    def val(h: np.ndarray) -> float:
+        if np.any(h[~mask] > 0) or np.any(h > cap + 1e-12):
+            return -math.inf
+        el, p_dead, _ = ruin_counted_elog(paths, h)
+        if p_dead > BOOK_MARGIN or ruin_counted_elog(paths_h, h)[1] > BOOK_MARGIN:
+            return -math.inf
+        return el
+
+    best_h, best_v = np.zeros(n), val(np.zeros(n))
+    for s in range(starts):
+        h = np.zeros(n)
+        h[idx] = 0.01 if s == 0 else rng.dirichlet(np.ones(idx.size)) * rng.uniform(0.1, 0.8)
+        h = np.minimum(h, cap)
+        while val(h) == -math.inf and h.sum() > 1e-4:
+            h *= 0.9
+        cur = val(h)
+        for step in BOOK_STEPS:
+            moved = True
+            while moved:
+                moved = False
+                for i in idx:
+                    for d in (step, -step):
+                        t = h.copy()
+                        t[i] = max(0.0, t[i] + d)
+                        v = val(t)
+                        if v > cur + 1e-9:
+                            h, cur, moved = t, v, True
+                for i in idx:
+                    for j in idx:
+                        if i != j and h[i] >= step:
+                            t = h.copy()
+                            t[i] -= step
+                            t[j] += step
+                            v = val(t)
+                            if v > cur + 1e-9:
+                                h, cur, moved = t, v, True
+        if cur > best_v:
+            best_h, best_v = h, cur
+    return best_h, best_v
+
+
+def solve_book(*, seed: int = 0) -> dict[str, Any]:
+    """The max-growth book over the certified roster, per venue, inside survival (see above)."""
+    out: dict[str, Any] = {"status": "OK", "haircut_for_survival": BOOK_HAIRCUT,
+                           "margin": BOOK_MARGIN}
+    try:
+        z = np.load(WORLDS, allow_pickle=True)
+    except (OSError, ValueError) as exc:
+        return {"status": f"UNMEASURED: worlds unreadable ({type(exc).__name__})"}
+    names = [str(x) for x in z["names"]]
+    gold = [f"gold_{w}" for w in WINDOWS if f"gold_{w}" in names]
+    cert_cols, screen = certified_roster(names)
+    cols = gold + [c for c in cert_cols if c not in gold]
+    if not cols:
+        return {"status": "UNMEASURED: no certified sleeve has a worlds column"}
+    r = np.asarray(z["r"], dtype=float)[:, :, [names.index(c) for c in cols]]
+    deals: list[dict[str, Any]] = []
+    try:
+        with LEDGER.open(encoding="utf-8") as fh:
+            deals = [json.loads(t) for t in (ln.strip() for ln in fh) if t.startswith("{")]
+    except (OSError, ValueError):
+        deals = []
+    ev = live_evidence(deals)
+    post: dict[str, Any] = {}
+    for k, c in enumerate(cols):
+        if c.startswith("gold_"):
+            live_r = ev.get(c[len("gold_"):], {}).get("r", [])
+        else:
+            pre = "_".join(c.lower().split("_")[:-1])           # the column minus its selector
+            live_r = [x for d in deals if str(d.get("sleeve") or "").lower().startswith(pre)
+                      and str(d.get("account_kind") or "live") == "live"
+                      for x in [deal_r(d)] if x is not None]
+        prior = float(r[:, :, k].mean())
+        mean, weight = posterior_shift(prior, live_r)
+        r[:, :, k] += mean - prior
+        post[c] = {"prior_r": round(prior, 4), "live_n": len(live_r),
+                   "posterior_r": round(mean, 4), "live_weight": round(weight, 3)}
+    mu = r.mean(axis=(0, 1))
+    r_h = r - BOOK_HAIRCUT * np.maximum(mu, 0.0)
+    rng = np.random.default_rng(seed)
+
+    def draw(t: np.ndarray, m: int, g: np.random.Generator) -> np.ndarray:
+        wi = g.integers(0, t.shape[0], m)
+        st = g.integers(0, t.shape[1] - HORIZON + 1, m)
+        return t[wi[:, None], st[:, None] + np.arange(HORIZON)[None, :], :]
+
+    g1, g2 = np.random.default_rng(seed + 1), np.random.default_rng(seed + 2)
+    p_s, ph_s = draw(r, BOOK_PATHS, g1), draw(r_h, BOOK_PATHS, np.random.default_rng(seed + 1))
+    p_v = draw(r, 2 * BOOK_PATHS, g2)
+    ph_v = draw(r_h, 2 * BOOK_PATHS, np.random.default_rng(seed + 2))
+    flat = r.reshape(-1, len(cols))
+    corr = np.corrcoef(flat.T)
+    sd = flat.std(0)
+
+    def k_eff(h: np.ndarray) -> float:
+        x = h * sd
+        v = float(x @ corr @ x)
+        return round(float(x.sum()) ** 2 / v, 3) if v > 0 else 0.0
+
+    from mt5desk.sizing import MAX_RISK_FRAC
+    live_mix = flat[:, :len(gold)].sum(1) if gold else np.zeros(flat.shape[0])
+    out.update({"columns": cols, "posterior": post, "screen": screen,
+                "per_sleeve_cap": MAX_RISK_FRAC,
+                "corr_to_live_gold": {c: round(float(np.corrcoef(live_mix, flat[:, i])[0, 1]), 3)
+                                      for i, c in enumerate(cols)} if gold else {}})
+    try:
+        from prop.e8_book import _cached_catalogue
+        e8_symbols = _cached_catalogue()
+    except Exception:                                     # optional on any host
+        e8_symbols = None
+    venues = {"fusion": np.ones(len(cols), dtype=bool)}
+    if e8_symbols:
+        venues["e8"] = np.array([c.startswith("gold_") or c.split("_")[0] in e8_symbols
+                                 for c in cols])
+    for venue, mask in venues.items():
+        h, v = _pattern_search(p_s, ph_s, mask, MAX_RISK_FRAC, rng)
+        out[venue] = {"status": "OK" if v > -math.inf else "NO_SURVIVING_BOOK",
+                      "heat": {c: round(float(h[i]), 4) for i, c in enumerate(cols) if h[i] > 0},
+                      "total_heat": round(float(h.sum()), 4), "k_eff": k_eff(h),
+                      "as_estimated": _book_eval(p_v, h), "edges_halved": _book_eval(ph_v, h)}
+        if out[venue]["as_estimated"]["p_death"] > EPS_DEATH:
+            out[venue]["status"] = "VALIDATION_FAILED: independent sample breaches EPS_DEATH"
+    if "e8" not in venues:
+        out["e8"] = {"status": "UNMEASURED: no cached E8 catalogue (prop/e8_book.py)"}
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=OUT)
+    ap.add_argument("--book", action="store_true",
+                    help="also solve the whole certified book (the `book` block; readers that "
+                         "size the gold windows ignore it)")
     a = ap.parse_args(argv)
     doc = solve()
+    if a.book:
+        doc["book"] = solve_book()
     a.out.parent.mkdir(parents=True, exist_ok=True)
     tmp = a.out.with_suffix(".tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=float), encoding="utf-8")
