@@ -183,10 +183,11 @@ def vol_tercile(r: np.ndarray, window: int = 20) -> list[Any]:
 
 # ============================================================================== data intake
 def load_closes(symbols: Sequence[str], now: datetime) -> dict[str, list[tuple[str, float]]]:
-    from macro.market_state import _chart, daily_closes
+    from macro.market_state import daily_closes
+    from macro.news_hawkes import bar_frame
     out = {}
     for s in symbols:
-        rows = daily_closes(_chart(s), now)
+        rows = daily_closes(bar_frame(s), now)
         if rows:
             out[s] = rows
     return out

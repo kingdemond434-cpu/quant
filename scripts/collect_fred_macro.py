@@ -46,8 +46,12 @@ _SERIES = ("DGS10", "T10Y2Y", "VIXCLS", "DTWEXBGS", "WALCL", "M2SL", "DFII10")
 #:   Treasury curve:   DGS3MO DGS2 DGS5 DGS10 DGS30
 #:   EIA weekly petroleum: WCESTUS1 (crude ex SPR) WCSSTUS1 (SPR) WGTSTUS1 (gasoline)
 #:                         WDISTUS1 (distillate) WPULEUS3 (refinery utilisation %)
+#:   Inflation (2026-10-06, desks/mt5/macro/latent_states.py, ROMAN-0839/0841): T5YIE T10YIE
+#:                     (breakevens, daily) CPIAUCSL PCEPI (monthly, REVISED -- the engine
+#:                     prefers ALFRED first prints and uses these only at a declared lag)
 _STATE_SERIES = ("DGS3MO", "DGS2", "DGS5", "DGS10", "DGS30",
-                 "WCESTUS1", "WCSSTUS1", "WGTSTUS1", "WDISTUS1", "WPULEUS3")
+                 "WCESTUS1", "WCSSTUS1", "WGTSTUS1", "WDISTUS1", "WPULEUS3",
+                 "T5YIE", "T10YIE", "CPIAUCSL", "PCEPI")
 _STATE_ARCHIVE = Path("data/fred_market_state.json")
 #: ~11.5y fetched: the allocator's regime kernel (`libs.portfolio.macro_state`) ranks each day's
 #: state against its trailing year and needs that state on EVERY day of the backtest matrix

@@ -333,15 +333,36 @@ def daily_ohlc(frame: Any, now: datetime) -> Any:
     return out[(out["low"] > 0) & (out["high"] >= out["low"])]
 
 
+def bar_frame(symbol: str, universe: Path | None = None) -> Any:
+    """The LONGEST-history intraday chart the desk holds (H1 first, then M15), broker stamps
+    under a UTC label as stored. `event_response_atlas.chart` prefers the FINEST chart, whose
+    history is months where H1's is years -- the wrong trade for daily states."""
+    import pandas as pd
+    base = universe or DESK / "data" / "universe"
+    for tf in ("H1", "M15"):
+        path = base / f"{symbol}_{tf}.parquet"
+        if not path.exists():
+            continue
+        try:
+            frame = pd.read_parquet(path)
+        except (OSError, ValueError, ImportError):
+            continue
+        if frame.empty or not {"open", "high", "low", "close"} <= set(frame.columns):
+            continue
+        frame.index = pd.DatetimeIndex(pd.to_datetime(frame.index, utc=True, errors="coerce"))
+        frame = frame[~frame.index.isna()].sort_index()
+        if len(frame) > 10:
+            return frame
+    return None
+
+
 def load_bars(symbols: Sequence[str], now: datetime) -> tuple[dict[str, Any], dict[str, Any]]:
     """(daily OHLC by broker date, hourly frame with a true-UTC index) per symbol held."""
-    from macro.market_state import _chart
-
     from libs.regime.session_clock import server_to_utc
     daily: dict[str, Any] = {}
     hourly: dict[str, Any] = {}
     for s in symbols:
-        frame = _chart(s)
+        frame = bar_frame(s)
         d = daily_ohlc(frame, now)
         if d is None or len(d) < 30:
             continue
