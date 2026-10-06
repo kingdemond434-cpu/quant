@@ -348,3 +348,31 @@ def test_saturation_map_round_trips_through_publish_and_load(sat: dict, tmp_path
     assert doc["certificates"]["n_certificates"] == 840
     stale, why = cs.load(path, now=datetime(2030, 1, 1, tzinfo=UTC))
     assert stale is None and "old" in why
+
+
+# ------------------------------------------------------------------ the clock and the hurdle
+def test_alpha_fitness_exposure_reads_the_saturation_map(sat: dict, monkeypatch) -> None:
+    from libs.research import alpha_fitness as af
+    from research import certificate_saturation as rcs
+    monkeypatch.setattr(rcs, "_DEFAULT", [rcs.Scorer(sat)])
+    crowded = af._saturation_exposure("session_range_breakout", {"instrument": "EURUSD"})
+    empty = af._saturation_exposure("overnight_gap_decay", {"instrument": "UKOIL"})
+    assert crowded is not None and empty is not None
+    assert crowded[0] > 0.5 and empty[0] == 0.0
+    assert af._saturation_exposure("session_range_breakout", {}) is None
+
+
+def test_alpha_breadth_leg_publishes_the_map(sat: dict, tmp_path: Path, monkeypatch) -> None:
+    import alpha_breadth as ab
+
+    from research import certificate_saturation as rcs
+    monkeypatch.setattr(rcs, "build", lambda **k: dict(sat))
+    monkeypatch.setattr(rcs, "REPORT", tmp_path / "CERTIFICATE_SATURATION.json")
+    monkeypatch.setattr(ab, "daily_sleeve_returns", lambda: {})
+    monkeypatch.setattr(ab, "_daily_panel", lambda syms: ({}, {}))
+    out = ab.certificate_saturation_pass()
+    assert out["status"] == cs.MEASURED
+    assert out["certificates"]["n_certificates"] == 840
+    published = json.loads((tmp_path / "CERTIFICATE_SATURATION.json").read_text("utf-8"))
+    assert published["certificates"]["n_effective_certificates"] is not None
+    assert "book_breadth" in published
