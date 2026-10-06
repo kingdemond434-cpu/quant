@@ -7,8 +7,11 @@ The cloud cannot make this change. The edit to the live sizing path was refused 
 Deploy), so it runs here, behind the principal's Allow. This file is the spec. Nothing in it is applied yet.
 
 ## 0. First, on the box
-1. Restore `C:\opt\quant\.venv`. The MT5 tasks call `.venv\Scripts\python.exe`, so without it the
-   promoter, the heavy scans and pf_allocator do not run, and the box has 0 LIVE sleeves.
+1. Check, and restore if it is missing, `C:\opt\quant\.venv`. The MT5 tasks call
+   `.venv\Scripts\python.exe`, so without it the promoter, the heavy scans and pf_allocator do
+   not run. UNVERIFIED: one report says the venv is missing and LIVE is 0, but it cites no artifact,
+   and the last committed sleeves.json (09-28) reads LIVE 40 / STANDBY 26. Read the box's own
+   sleeves.json and do not assume any sleeve's current status.
 2. Run `python desks/mt5/research/kelly_survival.py --book` and read `reports/KELLY_SURVIVAL.json` -> `book`.
    On the box it reads the canonical store (847 certificates on 10-06). Any certificate the allocator
    never priced is replayed through `pf_allocator.certified_evidence` (cached a day), and up to 24
