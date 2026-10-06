@@ -4032,7 +4032,7 @@ def data_source_of(src: Source) -> str:
 
 
 def _meta(src: Source) -> dict[str, Any]:
-    return {"data_source": data_source_of(src), "mechanism": src.mechanism, "payer": src.payer, "constraint": src.constraint,
+    return {"mechanism": src.mechanism, "payer": src.payer, "constraint": src.constraint,
             "source_culture": src.source_culture,
             "participant_structure": list(src.participant_structure),
             "failure_mode_hypothesis": src.failure_mode_hypothesis,
@@ -4130,6 +4130,7 @@ def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[s
         out.append({
             "source": SOURCE, "kind": "hypothesis", "symbol": sym, "symbols": [sym],
             "family": "exogenous_conditioner", "params": params, "url": "",
+            "data_source": data_source_of(src),
             "cell": f"{sym}.exogenous_conditioner.{lake_file(src, series)}",
             "title": f"{src.name}: {series} surprise -> {sym} ({'+' if side > 0 else '-'})"[:120],
             "available_time": now.isoformat(timespec="seconds"),
@@ -4262,6 +4263,7 @@ def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict
             out.append({
                 "source": INDIRECT_SOURCE, "kind": "hypothesis", "symbol": sym, "symbols": [sym],
                 "family": str(par["family"]), "params": params, "url": "",
+                "data_source": data_source_of(src),
                 "cell": f"{par['name']}|{params['conditioner']}",
                 "title": (f"{par['family']} on {sym} only while {series} pace "
                           f"{'>' if op == 'gt' else '<'} 0")[:120],
