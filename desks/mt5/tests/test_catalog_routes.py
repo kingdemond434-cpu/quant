@@ -438,13 +438,15 @@ def test_stac_collections_paginate_and_tabular_items_are_searched(box: Path) -> 
             "links": [{"rel": "next", "href": f"https://{base}/collections?token=2"}]})
 
     def search(url: str, headers: Mapping[str, str]) -> cr.Response:
+        page = int(_q(url).get("page") or 1)
         return _json({"type": "FeatureCollection", "numberMatched": 3, "features": [
-            {"id": "i1", "collection": "climate-tabular", "properties": {"datetime": "2020"},
-             "assets": {"data": {"href": "https://blob.example/i1.parquet",
+            {"id": f"i{page}", "collection": "climate-tabular", "properties": {"datetime": "2020"},
+             "assets": {"data": {"href": f"https://blob.example/i{page}.parquet",
                                  "type": "application/x-parquet", "roles": ["data"]},
                         "thumb": {"href": "https://blob.example/i1.png",
                                   "type": "image/png", "roles": ["thumbnail"]}}}],
-            "links": [{"rel": "next", "href": f"https://{base}/search?collections=x&page=2"}]})
+            "links": [{"rel": "next",
+                       "href": f"https://{base}/search?collections=x&page={page + 1}"}]})
 
     portal = {**CKAN, "id": "stac_x", "route": "stac", "base": f"https://{base}"}
     net = Net({f"{base}/collections": cols, f"{base}/search": search})
@@ -455,6 +457,7 @@ def test_stac_collections_paginate_and_tabular_items_are_searched(box: Path) -> 
     assert by_id["s2-l2a"]["observation_class"] is True and by_id["s2-l2a"]["endpoints"] == []
     assert by_id["climate-tabular"]["endpoints"] == ["https://blob.example/items.parquet"]
     assert by_id["climate-tabular/i1"]["endpoints"] == ["https://blob.example/i1.parquet"]
+    assert by_id["climate-tabular/i2"]["endpoints"] == ["https://blob.example/i2.parquet"]
     assert r["portals"]["stac_x"]["remainder"] == 0
     assert r["portals"]["stac_x"]["search_remainder_items"]["climate-tabular"] == 1
 
