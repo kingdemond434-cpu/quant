@@ -2275,15 +2275,17 @@ def _fixing_rows(lab: Any) -> tuple[Any, ...]:
     return (
         lab.Fixing(name="人民币汇率中间价 (CFETS central parity)", time_utc="01:15",
                    dst_rule="none", instruments=("USDCNH",), window_minutes=25,
-                   notes=(f"{terms_text('cn_cfets_chinamoney')}. "
-                          f"{FIXING_CONVENTIONS['central_parity']['note']}")),
+                   notes=(f"{FIXING_CONVENTIONS['central_parity']['note']} Window study only: it reads the "
+                          f"broker's own USDCNH tape around the public publication time and "
+                          f"never a CFETS value, which stays held ({TERMS_RULING}).")),
         lab.Fixing(name="CNH HIBOR (TMA, Hong Kong)", time_utc="03:15", dst_rule="none",
                    instruments=("USDCNH", "HK50"), window_minutes=60,
                    notes=str(FIXING_CONVENTIONS["cnh_hibor"]["note"])),
         lab.Fixing(name="CFETS 收盘价 (the 16:30 Beijing reference close)", time_utc="08:30",
                    dst_rule="none", instruments=("USDCNH",), window_minutes=45,
-                   notes=(f"{terms_text('cn_cfets_chinamoney')}. "
-                          f"{FIXING_CONVENTIONS['onshore_close']['note']}")),
+                   notes=(f"{FIXING_CONVENTIONS['onshore_close']['note']} Window study only: it reads the "
+                          f"broker's own USDCNH tape around the public publication time and "
+                          f"never a CFETS value, which stays held ({TERMS_RULING}).")),
     )
 
 

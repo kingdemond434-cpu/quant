@@ -59,9 +59,11 @@ def test_the_typed_pack_still_carries_the_hold_and_every_row() -> None:
         if state:
             assert CLAUSE_WORDS in why and "#229" in why
     fixes = {f.name: TF.row_hold(f)[0] for f in pk.fixing_conventions}
-    assert fixes["人民币汇率中间价 (CFETS central parity)"] == "refused"
-    assert fixes["CFETS 收盘价 (the 16:30 Beijing reference close)"] == "refused"
-    assert fixes["CNH HIBOR (TMA, Hong Kong)"] == ""        # not a CFETS reference
+    # The fixing WINDOWS read only the broker's USDCNH tape at the public times, never a CFETS
+    # value, so they are not held; the CFETS values themselves are (the datasets above).
+    assert fixes["人民币汇率中间价 (CFETS central parity)"] == ""
+    assert fixes["CFETS 收盘价 (the 16:30 Beijing reference close)"] == ""
+    assert fixes["CNH HIBOR (TMA, Hong Kong)"] == ""
     assert CL.validate_pack(pk) == []
 
 
@@ -149,15 +151,14 @@ def _typed_pack() -> Any:
     return pk
 
 
-def test_the_fixing_lab_counts_the_cfets_fixings_blocked_and_measures_nothing_from_them() -> None:
+def test_the_fixing_lab_studies_the_cfets_windows_from_the_broker_tape_only() -> None:
     pk = _typed_pack()
     ctx = _Ctx()
     out = CL.generic_calendar_settlement(pk, ctx)  # type: ignore[arg-type]
-    held = {r["fixing"] for r in out["blocked_on_terms"]}
-    assert held == {"人民币汇率中间价 (CFETS central parity)",
-                    "CFETS 收盘价 (the 16:30 Beijing reference close)"}
-    assert all(r["status"] == "BLOCKED_ON_TERMS:refused" for r in out["blocked_on_terms"])
-    assert not any("CFETS" in str(r.get("fixing")) for r in out.get("readings") or [])
+    assert out["blocked_on_terms"] == []
+    for f in pk.fixing_conventions:
+        if "CFETS" in f.name:
+            assert "never a CFETS value" in f.notes and "#229" in f.notes
 
 
 def test_positioning_and_institutional_miners_mint_no_lead_from_safe() -> None:
