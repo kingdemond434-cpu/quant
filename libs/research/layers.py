@@ -92,6 +92,9 @@ LEG_LAYER: dict[str, str] = {
     # Every producer's reach against what it minted, and the share the sealed judge can build:
     # the machine measuring its own breadth, which is meta.
     "producer_breadth": "meta",
+    # Which organs a 24/7 process drives and which still ride a timer: the machine measuring
+    # its own scheduling, which is meta.
+    "resident_census": "meta",
     # The video-derived anchor/exit grid mints claims about returns: prediction, like
     # `empty_cluster_forcer`, which it runs beside.
     "htf_anchor": "prediction",

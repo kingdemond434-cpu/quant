@@ -51,6 +51,23 @@ REPORT = DESK / "reports" / "FREE_STACK_PROPOSER.json"
 #: proposer_common._record_in_registry).
 MINT_ROWS_PER_PASS = 1500
 CHARTS: tuple[str, ...] = ("H1", "H4")
+#: THE REST OF THE LADDER, minted wherever the instrument's own bars for that chart exist
+#: (principal 2026-10-06: "all timeframes ... not just h1 fully, so we can get intraday
+#: mechanisms"). The three families declare every chart expressible
+#: (`families_orthogonal.FAMILY_TIMEFRAMES` names none of them), and the conditioned price-only
+#: bases -- session_range_breakout, overnight_drift, volatility_squeeze -- are intraday
+#: mechanisms in their own right. M1 and M5 are LEFT: a free-stack column updates hourly at the
+#: fastest, so below fifteen minutes the conditioner re-emits one reading many times and only
+#: multiplies the trial count; that is the same reasoning the daily-panel families declare.
+EXTRA_CHARTS: tuple[str, ...] = ("M15", "M30", "D1")
+UNIVERSE = DESK / "data" / "universe"
+
+
+def charts_for(sym: str) -> list[str]:
+    """H1 and H4 always (the grid's historical charts), plus every extra chart whose bars this
+    instrument holds -- a chart the desk holds no bars for is a cell the judge cannot replay."""
+    return list(CHARTS) + [c for c in EXTRA_CHARTS
+                           if (UNIVERSE / f"{sym}_{c}.parquet").exists()]
 EXO_GRID = {"transform": ("level_z", "delta_z"), "threshold": (1.0, 1.5), "side_when_high": (1, -1)}
 MOM_GRID = {"lookback": (1, 4), "threshold": (1.0, 1.5), "side_when_up": (1, -1)}
 #: Price-only base families the INDIRECT arm conditions, each at its registered defaults. The
@@ -109,7 +126,8 @@ def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]]
             continue
         for col in sorted(columns[sid]):
             meta = columns[sid][col] or {}
-            for sym, chart in product(meta.get("hypothesis") or [], CHARTS):
+            for sym, chart in ((hs, c) for hs in (meta.get("hypothesis") or [])
+                               for c in charts_for(str(hs))):
                 base = {"source": f"fs_{sid}", "signal": col}
                 for t, thr, side in product(*EXO_GRID.values()):
                     out.append(_row(sid, src, col, meta, sym, chart, "exogenous_conditioner",

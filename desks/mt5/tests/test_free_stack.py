@@ -360,7 +360,8 @@ def test_proposer_grid_has_direct_and_indirect_arms_with_culture(monkeypatch, tm
     assert not skipped
     fams = {c["family"] for c in grid}
     assert fams == {"exogenous_conditioner", "alt_series_momentum", "alt_conditioned"}
-    assert len(grid) == len(P.CHARTS) * (8 + 8 + len(P.BASES) * len(P.REGIMES))
+    assert len(grid) == len(P.charts_for("XAUUSD")) * (8 + 8 + len(P.BASES) * len(P.REGIMES))
+    assert set(P.CHARTS) <= {c["chart"] for c in grid}
     for c in grid:
         assert c["source_culture"] == "US" and c["participant_structure"] == "retail_heavy"
         assert c["failure_mode_hypothesis"]

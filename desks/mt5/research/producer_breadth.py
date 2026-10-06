@@ -676,6 +676,7 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         "empty_clusters_unfed": unfed,
         "family_buildability": fam_census,
     }
+    tf_session = timeframe_session_block({**totals, "_rows": rows})
     return {
         "generated_at": now.isoformat(timespec="seconds"),
         "rule": ("per producer: on a clock or not, last production, cells in 24h and 7d, the "
@@ -687,7 +688,52 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         "wall_s": round(time.monotonic() - t0, 2),
         "totals": totals,
         "producers": rows,
+        # THE DESK-LEVEL CHART x SESSION SPLIT (principal 2026-10-06: "all timeframes ... its fr
+        # sessions too ... basically all breadths targetted"), published here so one hourly
+        # artifact carries both per-producer breadth and the split every orderer targets.
+        "timeframe_session": tf_session,
     }
+
+
+def timeframe_session_block(totals: dict[str, Any], prev_path: Path | None = None
+                            ) -> dict[str, Any]:
+    """`breadth_rotation.tf_session_census` plus the producers' 7d minted split and the move
+    since the last publication. Never raises: a failure is UNMEASURED with its reason."""
+    try:
+        from research.breadth_rotation import CENSUS_KEY, tf_session_census
+        block = tf_session_census()
+    except Exception as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
+    # MINTED IN 7 DAYS, summed over every measured producer (marginals: the producers report
+    # charts and sessions separately, so their joint split is not claimed).
+    charts: Counter[str] = Counter()
+    sessions: Counter[str] = Counter()
+    for r in (totals.get("_rows") or {}).values():
+        cov = r.get("covered") or {}
+        charts.update({str(k): int(v) for k, v in (cov.get("charts") or {}).items()})
+        sessions.update({str(k): int(v) for k, v in (cov.get("sessions") or {}).items()})
+    tc, ts = sum(charts.values()), sum(sessions.values())
+    block["minted_7d"] = {
+        "charts": {k: round(v / tc, 4) for k, v in sorted(charts.items())} if tc else UNMEASURED,
+        "sessions": ({k: round(v / ts, 4) for k, v in sorted(sessions.items())}
+                     if ts else UNMEASURED),
+        "cells": tc}
+    # DID THE SHARE MOVE? The previous publication's H1 shares and per-chart shares, beside now.
+    prev = _read(prev_path or OUT, {}) or {}
+    old = prev.get(CENSUS_KEY) if isinstance(prev, dict) else None
+    if isinstance(old, dict) and isinstance(old.get("charts"), dict):
+        move: dict[str, Any] = {"since": old.get("generated_at")}
+        for tf, cell in (block.get("charts") or {}).items():
+            o = (old["charts"].get(tf) or {})
+            for side in ("discovery", "judged"):
+                a, b = o.get(side), cell.get(side)
+                if isinstance(a, dict) and isinstance(b, dict):
+                    move.setdefault(tf, {})[side] = round(float(b["share"]) - float(a["share"]),
+                                                          4)
+        block["moved_since_previous"] = move
+    else:
+        block["moved_since_previous"] = UNMEASURED
+    return block
 
 
 def write(doc: dict[str, Any], out: Path | None = None) -> Path:
@@ -714,6 +760,12 @@ def main(argv: list[str] | None = None) -> int:
               f"unfed clusters {[u['cluster'] for u in t['empty_clusters_unfed']]}")
         if t["unscheduled"]:
             print(f"  ON NO CLOCK: {', '.join(t['unscheduled'][:30])}")
+        tsb = doc.get("timeframe_session") or {}
+        h1 = tsb.get("h1_share") or {}
+        print(f"  timeframe x session: H1 share discovery {h1.get('discovery')} judged "
+              f"{h1.get('judged')}; target per chart {(tsb.get('targets') or {}).get('per_chart')};"
+              f" under target {len(tsb.get('under_target') or [])} bucket(s), first "
+              f"{(tsb.get('priority') or [])[:4]}")
         print(f"  -> {path}")
     return 0
 

@@ -413,6 +413,10 @@ desks/mt5/logs/
 # cache is by definition reconstructible from its source. Neither belongs in git, and tracking
 # them made both hosts unpullable while the desk was running, which is always.
 desks/mt5/data/.job_locks/
+# THE RESIDENT LANES' LEASES, CHECKPOINTS AND HEARTBEATS (2026-10-06): pids, lease deadlines and
+# input watermarks of THIS machine's processes. reports/RESIDENT_ORGANS.json is the published
+# record of them.
+desks/mt5/data/resident/
 desks/mt5/data/free_data_cache/
 # free_stack_hunter store: PIT observations, raw archive, cursors, column map, catalogue finds and
 # the bulk-file inbox are box-local; reports/FREE_STACK_YIELD.json is the record of what it holds.

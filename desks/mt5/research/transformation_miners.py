@@ -69,15 +69,22 @@ __all__ = [
 #: Charts shortest-first. THE LADDER IS THE ADJACENCY: a horizon child is a NEIGHBOUR, never a
 #: jump, because "the same mechanism one step slower" is an economic question and "the same
 #: mechanism at any of five frequencies" is a sweep.
-CHART_LADDER: tuple[str, ...] = ("M5", "M15", "H1", "H4", "D1")
+#: M1 JOINED THE FOOT OF THE LADDER 2026-10-06 (principal: "all timeframes, m1 m15 m30 ... so we
+#: can get intraday mechanisms"): an M1 discovery had no neighbour at all ("not on the chart
+#: ladder") and an M5 one could never step down. M30 stays OFF the ladder so H1's faster neighbour
+#: is still M15 -- one step, not a half-step sweep -- but an M30 parent is no longer orphaned: its
+#: neighbours are the two ladder charts either side of it (`OFF_LADDER_NEIGHBOURS`).
+CHART_LADDER: tuple[str, ...] = ("M1", "M5", "M15", "H1", "H4", "D1")
+OFF_LADDER_NEIGHBOURS: dict[str, tuple[str, str]] = {"M30": ("M15", "H1")}
 CHART_MINUTES: dict[str, int] = {"M1": 1, "M5": 5, "M15": 15, "M30": 30, "H1": 60, "H4": 240,
                                  "D1": 1440}
 #: Horizon bucket per chart, in `mechanism_ontology.HORIZONS` vocabulary, so a contract's declared
 #: span prunes charts without a second list to keep in step.
-CHART_HORIZON: dict[str, str] = {"M5": "MINUTES", "M15": "MINUTES", "H1": "HOURLY",
-                                 "H4": "HOURLY", "D1": "DAILY"}
+CHART_HORIZON: dict[str, str] = {"M1": "MINUTES", "M5": "MINUTES", "M15": "MINUTES",
+                                 "M30": "MINUTES", "H1": "HOURLY", "H4": "HOURLY", "D1": "DAILY"}
 #: The desk's own horizon axis (`axis_registry.HORIZONS`), for the breadth grid cell.
-CHART_GRID_HORIZON: dict[str, str] = {"M5": "intrabar", "M15": "intrabar", "H1": "sub_4h",
+CHART_GRID_HORIZON: dict[str, str] = {"M1": "intrabar", "M5": "intrabar", "M15": "intrabar",
+                                      "M30": "intrabar", "H1": "sub_4h",
                                       "H4": "sub_1d", "D1": "multi_day"}
 
 #: Session windows as the FORWARD CLOCK reads them (`mt5desk.family_call.SESSIONS`), imported when
@@ -156,7 +163,7 @@ class Contract:
 
 
 _ANY: tuple[str, ...] = ("*",)
-_ALL_CHARTS = CHART_LADDER
+_ALL_CHARTS = (*CHART_LADDER, *OFF_LADDER_NEIGHBOURS)
 _SESSION_ALL: tuple[str, ...] = ("all", *SESSION_LADDER)
 
 
@@ -320,7 +327,7 @@ def compatible(contract: Contract | None, *, chart: str = "", session: str = "",
     if contract is None:
         # UNKNOWN is a recorded verdict, not a refusal: an uninterpreted discovery still gets its
         # closure, it just gets the conservative one (price-only charts, no regime claim).
-        if chart and chart.upper() not in CHART_LADDER:
+        if chart and chart.upper() not in _ALL_CHARTS:
             return False, f"{chart} is not a chart this desk keeps bars for"
         if session and not chart_admits_session(chart, session):
             return False, f"a {chart} bar spans more than the {session} window"
@@ -499,29 +506,33 @@ def mine_asset_transfer(parent: Mapping[str, Any], ctx: Context) -> list[dict[st
 
 
 def mine_horizon(parent: Mapping[str, Any], ctx: Context) -> list[dict[str, Any]]:
-    """The ADJACENT charts only (M5 < M15 < H1 < H4 < D1), pruned by the contract's span."""
+    """The ADJACENT charts only (M1 < M5 < M15 < H1 < H4 < D1; M30 between M15 and H1), pruned
+    by the contract's span."""
     pid = str(parent.get("discovery_id") or "")
     chart = str(parent.get("chart") or "").upper()
     if not chart:
         ctx.note("horizon", pid, "UNMEASURED: the parent names no chart, so adjacency cannot "
                  "be defined without silently substituting H1")
         return []
-    if chart not in CHART_LADDER:
+    if chart not in CHART_LADDER and chart not in OFF_LADDER_NEIGHBOURS:
         ctx.note("horizon", pid, f"{chart!r} is not on the chart ladder; no neighbour is defined")
         return []
-    i = CHART_LADDER.index(chart)
+    if chart in OFF_LADDER_NEIGHBOURS:
+        lo, hi = OFF_LADDER_NEIGHBOURS[chart]
+        steps = [(CHART_LADDER.index(lo), False), (CHART_LADDER.index(hi), True)]
+    else:
+        i = CHART_LADDER.index(chart)
+        steps = [(j, j > i) for j in (i - 1, i + 1) if 0 <= j < len(CHART_LADDER)]
     contract = ctx.contract(parent.get("mechanism_id"))
     out: list[dict[str, Any]] = []
-    for j in (i - 1, i + 1):
-        if not 0 <= j < len(CHART_LADDER):
-            continue
+    for j, slower in steps:
         nxt = CHART_LADDER[j]
         ok, why = compatible(contract, chart=nxt, session=str(parent.get("session") or "all"))
         if not ok:
             ctx.note("horizon", pid, f"{nxt}: {why}")
             continue
         out.append(_child(parent, transformation="horizon", axis="chart", chart=nxt,
-                          why=(f"one step {'slower' if j > i else 'faster'} than {chart}: if the "
+                          why=(f"one step {'slower' if slower else 'faster'} than {chart}: if the "
                                "mechanism is real it survives a neighbouring frequency, and if it "
                                "only exists at one it is a fitted parameter")))
     if not out:
