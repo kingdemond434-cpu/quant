@@ -572,6 +572,11 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
                        "last_attempt": _iso(now)})
             continue
         s0 = time.monotonic()
+        if row.get("kind") == "cn_exchange":
+            # a multi-day exchange walk stops inside what is left of the pass, keeping the leg
+            # under the cycle's cap; its cursor resumes the walk next pass
+            row = {**row, "max_seconds": max(5.0, min(float(row.get("max_seconds") or 150),
+                                                      budget_s - spent - 30.0))}
         h, extra = run_source(row, store, fetch, st, now)
         secs = round(time.monotonic() - s0, 2)
         cad = CADENCE_H.get(str(row.get("cadence")), 24.0)
