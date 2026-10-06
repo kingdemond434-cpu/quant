@@ -565,7 +565,8 @@ LIMITATIONS: tuple[dict[str, Any], ...] = (
      "research/orthogonality_yield.py",
      "limit": "a new representation is credited by drop-one explained variance, with no "
               "interval and no comparison between representation methods",
-     "artifacts": ("REPRESENTATION_FORGE.json", "ORTHOGONALITY_YIELD.json"), "challenger": None,
+     "artifacts": ("REPRESENTATION_FORGE.json", "ORTHOGONALITY_YIELD.json"),
+     "challenger": "representation_methods",
      "resources": "the forge's own matrices; bootstrap over days",
      "next": "bootstrap CI on each family's incremental R^2 over the existing factor set, and "
              "a head-to-head of representation methods at equal feature count"},
@@ -649,6 +650,25 @@ def _challenger_result(cid: str, arts: dict[str, dict[str, Any]],
                 "verdicts": {k: (r or {}).get("verdict") for k, r in v.items()},
                 "uncertainty": "posterior P(worse than leader) per arm; mean and SE of the "
                                "out-of-sample net-gain gap"}
+    if cid == "representation_methods":
+        rows = (((arts.get("REPRESENTATION_FORGE.json", {}).get("doc") or {}).get("roi") or {})
+                .get("rows") or [])
+        fam = {str(r.get("family")): r for r in rows if isinstance(r, dict) and r.get("family")}
+        arms = {}
+        for name, r in fam.items():
+            born = int(float(r.get("used_by_candidates") or 0))
+            won = min(int(float(r.get("survivors") or 0)), born)
+            arms[name] = {"born": born, "certified": won, "alpha": 1.0 + won,
+                          "beta": 1.0 + born - won, "group": "representation_method",
+                          "cost_basis": "candidates built on the family's representations"}
+        if not arms:
+            return {"status": "UNMEASURED", "why": "no ROI rows on REPRESENTATION_FORGE.json"}
+        v = arena.judge(arms)
+        judged = {k: r["verdict"] for k, r in (v.get("arms") or {}).items()}
+        return {"status": "MEASURED" if any(x != "UNMEASURED" for x in judged.values())
+                else "UNMEASURED", "verdicts": judged, "leader": v.get("leader"),
+                "uncertainty": "Beta posterior survivor rate per representation family; "
+                               "P(worse than leader) decides TRAILS"}
     if cid in ("cadence", "bound"):
         st = meta.get("cadence_and_bound") or {}
         if st.get("status") != "MEASURED":

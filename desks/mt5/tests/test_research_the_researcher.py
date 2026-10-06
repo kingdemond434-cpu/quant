@@ -199,3 +199,19 @@ def test_the_frontier_reports_the_cadence_and_bound_rows_when_measured(tmp_path,
     assert rows["allocator_speed_vs_turnover"]["status"] == "MEASURED"
     assert rows["optimality_gap"]["status"] == "MEASURED"
     assert rows["optimality_gap"]["result"]["gap"] >= -1e-9
+
+
+def test_representation_methods_compete_on_what_their_candidates_survived(tmp_path,
+                                                                        monkeypatch):
+    monkeypatch.setattr(meta_rnd, "DESK", tmp_path)
+    (tmp_path / "reports").mkdir()
+    rows = [{"family": "surprise", "used_by_candidates": 400, "survivors": 40},
+            {"family": "pace", "used_by_candidates": 400, "survivors": 2},
+            {"family": "fresh", "used_by_candidates": 1, "survivors": 0}]
+    (tmp_path / "reports" / "REPRESENTATION_FORGE.json").write_text(
+        json.dumps({"roi": {"rows": rows}}))
+    fr = meta_rnd.frontier({"ordering": {}})
+    r = {x["id"]: x for x in fr["limitations"]}["representation_novelty"]
+    assert r["status"] == "MEASURED" and r["result"]["leader"] == "surprise"
+    assert r["result"]["verdicts"]["fresh"] == "UNMEASURED"
+    assert r["result"]["verdicts"]["pace"] == "TRAILS"
