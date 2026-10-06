@@ -190,6 +190,21 @@
     "threshold": 20,
     "after": "30 days in which 20 or more of the drill rows stay UNMEASURED on the box: the scorecard grades nothing and the drills it reads are not running"
    }
+  },
+  "mandate_audit": {
+   "hypothesis": "Re-grading every audited mandate row hourly from the tree and the box's own artifacts makes progress and regressions on the three standing mandates visible without a hand re-audit, so owners close ABSENT and CODED rows faster and a deleted module is caught the hour it goes.",
+   "metric": {
+    "gain": "COVERAGE",
+    "metric": "share_at_least_scheduled",
+    "better": "up",
+    "organ": "report:MANDATE_AUDIT.json"
+   },
+   "falsifier": {
+    "metric": "running",
+    "op": "<=",
+    "threshold": 0,
+    "after": "30 days in which no mandate row reads RUNNING on the box: the audit grades nothing that runs, and either the box's artifacts never reach it or the rows name no output artifacts"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
