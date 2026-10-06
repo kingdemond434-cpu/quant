@@ -11,7 +11,7 @@ def _fbm_like(h: float, n: int, seed: int) -> np.ndarray:
     rng = np.random.default_rng(seed)
     d = h - 0.5
     k = np.arange(1, 200)
-    w = np.r_[1.0, np.cumprod((k - 1 - d) / k)]
+    w = np.r_[1.0, np.cumprod((k - 1 + d) / k)]          # (1 - L)^-d
     e = rng.normal(0, 1, n + w.size)
     inc = np.convolve(e, w, mode="valid")[:n]
     return np.cumsum(inc)
