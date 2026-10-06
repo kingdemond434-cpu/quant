@@ -319,6 +319,19 @@ def _acquired_lag_days(stamps: list[datetime]) -> int:
     return DEFAULT_LAG_DAYS.get(cadence, FALLBACK_LAG_DAYS)
 
 
+#: How late after its estimated publication a first sighting still counts as a live capture.
+LIVE_CAPTURE_SLACK = timedelta(days=3)
+
+
+def _first_seen(frame: Any, index: Any) -> list[datetime | None]:
+    """Per point, when the desk first saw it (the acquirer's `first_seen_at`), else None."""
+    import pandas as pd
+    if "first_seen_at" not in getattr(frame, "columns", ()):
+        return [None] * len(index)
+    raw = pd.to_datetime(frame["first_seen_at"].reindex(index), errors="coerce", utc=True)
+    return [None if pd.isna(x) else x.to_pydatetime() for x in raw]
+
+
 def _acquired_inputs(unmeasured: list[dict[str, str]]) -> list[R.Series]:
     """Every PIT-AUTHORITATIVE acquired series as a representation input.
 
@@ -336,6 +349,7 @@ def _acquired_inputs(unmeasured: list[dict[str, str]]) -> list[R.Series]:
         return []
     out: list[R.Series] = []
     withheld = 0
+    live_pts = backfilled_pts = 0
     for name, meta in sorted(reg["series"].items()):
         if not isinstance(meta, dict):
             continue
@@ -354,16 +368,37 @@ def _acquired_inputs(unmeasured: list[dict[str, str]]) -> list[R.Series]:
         stamps = [ts.to_pydatetime() for ts in pd.DatetimeIndex(vals.index)]
         stamps = [t if t.tzinfo else t.replace(tzinfo=UTC) for t in stamps]
         lag = timedelta(days=_acquired_lag_days(stamps), hours=CLOCK_PAD_H)
-        pts = [R.Point(available_time=(t + lag).isoformat(), period_time=t.isoformat(),
-                       value=float(v))
-               for t, v in zip(stamps[-MAX_POINTS_PER_SERIES:],
-                               vals.to_numpy()[-MAX_POINTS_PER_SERIES:], strict=False)
-               if math.isfinite(float(v))]
+        seen = _first_seen(frame, vals.index)
+        pts = []
+        for t, v, s_at in zip(stamps[-MAX_POINTS_PER_SERIES:],
+                              vals.to_numpy()[-MAX_POINTS_PER_SERIES:],
+                              seen[-MAX_POINTS_PER_SERIES:], strict=False):
+            if not math.isfinite(float(v)):
+                continue
+            avail = t + lag
+            # THE VINTAGE BINDS WHEN IT IS A LIVE CAPTURE. A point the desk first saw within
+            # LIVE_CAPTURE_SLACK of its estimated publication was captured as it was published,
+            # and is available no earlier than the moment the desk actually saw it. A point first
+            # seen long after (a history backfill) has no vintage of its own: it is stamped by the
+            # cadence lag and counted as reference history, never presented as a live capture.
+            if s_at is not None and s_at <= avail + LIVE_CAPTURE_SLACK:
+                avail = max(avail, s_at)
+                live_pts += 1
+            elif s_at is not None:
+                backfilled_pts += 1
+            pts.append(R.Point(available_time=avail.isoformat(), period_time=t.isoformat(),
+                               value=float(v)))
         if len(pts) >= R.MIN_PRIOR:
             host = str(meta.get("host") or "acquired")
             out.append(R.Series(series_id=f"acquired:{name}", points=tuple(pts),
                                 dataset=f"acquired:{host}", region="GLOBAL",
                                 information_type="acquired_dataset"))
+    if backfilled_pts:
+        unmeasured.append({"name": "acquired:backfilled_reference",
+                           "why": (f"{backfilled_pts} acquired points were backfilled from a "
+                                   f"publisher's history ({live_pts} were live captures): they are "
+                                   "stamped by cadence lag, their vintage is not observed"),
+                           "measured_by": "forward accumulation of first_seen_at"})
     if withheld:
         unmeasured.append({"name": "acquired:uncertified",
                            "why": f"{withheld} acquired series retained without PIT authority",

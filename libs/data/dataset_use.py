@@ -45,8 +45,10 @@ USE_DIR = ROOT / "desks" / "mt5" / "data" / "dataset_use"
 USES: tuple[str, ...] = ("new_hypotheses", "conditioning", "nowcast", "regime_state", "risk",
                          "execution", "verification", "research_priority")
 
-#: A read older than this no longer demonstrates CURRENT use; the census marks it STALE.
-STALE_AFTER_S = 3 * 86400
+#: A read older than this no longer demonstrates CURRENT use; the census marks it STALE. The
+#: principal's dataset rule (2026-09-30) is 24h: every dataset feeds cells, conditioners and
+#: allocator inputs within 24h and keeps producing daily.
+STALE_AFTER_S = 86400
 
 _SAFE = re.compile(r"[^A-Za-z0-9_.-]+")
 

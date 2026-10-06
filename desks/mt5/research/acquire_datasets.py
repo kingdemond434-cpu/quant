@@ -211,9 +211,10 @@ def _parse(raw: bytes, url: str) -> pd.DataFrame | None:
             # `_parse` keeps its one-frame contract (the largest member); `_tables` is what the
             # acquirer calls, and it enumerates EVERY member.
             members = _archive_members(raw)
-            if not members:
+            body = _read_member(raw, members[0]) if members else None
+            if body is None:
                 return None
-            raw = members[0][1]
+            raw = body
         elif raw[:2] == b"\x1f\x8b":
             import gzip
             raw = gzip.decompress(raw)
@@ -230,26 +231,33 @@ def _parse(raw: bytes, url: str) -> pd.DataFrame | None:
 _TABULAR_MEMBER = (".csv", ".txt", ".tsv", ".json", ".xls")
 
 
-def _archive_members(raw: bytes) -> list[tuple[str, bytes]]:
-    """Every tabular member of a zip archive, largest first, each bounded by `MAX_BYTES`.
+def _archive_members(raw: bytes) -> list[str]:
+    """Every tabular member NAME of a zip archive, largest first, each bounded by `MAX_BYTES`.
 
     The former reader kept only the single largest member, so a statistical bulk archive that
-    ships one file per table (BIS, Eurostat, JPX) silently became one dataset. A member larger
-    than the per-file cap is skipped by name, not read into memory.
+    ships one file per table (BIS, Eurostat, JPX) silently became one dataset. Only the central
+    directory is read here: member bytes are read lazily, for the cursor's window alone, so an
+    archive of many large members never sits in memory whole. A member larger than the per-file
+    cap is skipped by name.
     """
     import zipfile
-    out: list[tuple[str, bytes]] = []
     try:
         with zipfile.ZipFile(io.BytesIO(raw)) as z:
             infos = [i for i in z.infolist()
-                     if not i.is_dir() and i.filename.lower().endswith(_TABULAR_MEMBER)]
-            for info in sorted(infos, key=lambda i: (-i.file_size, i.filename)):
-                if info.file_size > MAX_BYTES:
-                    continue
-                out.append((info.filename, z.read(info.filename)))
+                     if not i.is_dir() and i.filename.lower().endswith(_TABULAR_MEMBER)
+                     and i.file_size <= MAX_BYTES]
     except (zipfile.BadZipFile, OSError, ValueError):
         return []
-    return out
+    return [i.filename for i in sorted(infos, key=lambda i: (-i.file_size, i.filename))]
+
+
+def _read_member(raw: bytes, name: str) -> bytes | None:
+    import zipfile
+    try:
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
+            return z.read(name)
+    except (zipfile.BadZipFile, OSError, ValueError, KeyError):
+        return None
 
 
 def _tables(raw: bytes, url: str, *, start: int = 0, budget: int = MEMBERS_PER_RUN
@@ -267,7 +275,10 @@ def _tables(raw: bytes, url: str, *, start: int = 0, budget: int = MEMBERS_PER_R
     members = _archive_members(raw)
     window = members[start:start + max(budget, 1)]
     out: list[tuple[str, pd.DataFrame]] = []
-    for name, body in window:
+    for name in window:
+        body = _read_member(raw, name)
+        if body is None:
+            continue
         df = _parse(body, f"{url}#{name}")
         if df is not None and not df.empty:
             out.append((name, df))
@@ -568,6 +579,21 @@ def _accumulate(path: Path, s: pd.Series, seen_at: str,
     a = old.loc[common, "value"].astype(float)
     b = fresh.loc[common, "value"].astype(float)
     revised = int(((a - b).abs() > 1e-9 * (1.0 + a.abs())).sum())
+    # EVERY PRINT IS KEPT, not only the first and the latest: a print that differs from the
+    # current `value_latest` is appended to the series' revision log before it is overwritten,
+    # so an intermediate vintage (first -> second -> third estimate) is never lost.
+    prev_latest = pd.to_numeric(old.loc[common, "value_latest"], errors="coerce").astype(float)
+    moved = (prev_latest - b).abs() > 1e-9 * (1.0 + prev_latest.abs())
+    if bool(moved.any()):
+        log = pd.DataFrame({"period": common[moved.to_numpy()],
+                            "value": b[moved].to_numpy(), "seen_at": seen_at})
+        rev_path = path.with_name(path.stem + ".revisions.parquet")
+        try:
+            if rev_path.exists():
+                log = pd.concat([pd.read_parquet(rev_path), log], ignore_index=True)
+            log.to_parquet(rev_path)
+        except Exception:                                               # noqa: BLE001
+            pass
     old.loc[common, "value_latest"] = b
     added = fresh.loc[fresh.index.difference(old.index)]
     merged = pd.concat([old, added]).sort_index()

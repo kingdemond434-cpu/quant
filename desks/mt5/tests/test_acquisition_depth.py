@@ -238,3 +238,44 @@ def test_information_value_prices_novelty_per_fetch_second_without_reading_a_ret
                   axes=tmp_path / "none", lake=tmp_path / "none", research_roi=tmp_path / "x")
     assert doc["unfed"][0]["dataset"] == "acquired:orth"          # most novel unfed first
     assert doc["information_value"]["near_duplicates"] == 2
+
+
+def test_every_intermediate_print_is_kept_in_the_revision_log(desk):
+    url = "https://example.test/rev3.csv"
+    desk["urls"] = [url]
+    desk["served"][url] = _csv(20, 1)
+    A.acquire()
+    for v in (500.0, 600.0):
+        frame = pd.read_csv(io.BytesIO(_csv(20, 1)))
+        frame.loc[3, "c0"] = v
+        desk["served"][url] = frame.to_csv(index=False).encode()
+        A.acquire()
+    reg = json.loads(A.REGISTRY.read_text())
+    (name,) = reg["by_url"][url]["series"]
+    path = Path(reg["series"][name]["path"])
+    log = pd.read_parquet(path.with_name(path.stem + ".revisions.parquet"))
+    assert list(log["value"]) == [500.0, 600.0]                  # the second print survives
+    stored = pd.read_parquet(path)
+    assert float(stored["value"].iloc[3]) == 3.0 and float(stored["value_latest"].iloc[3]) == 600.0
+
+
+def test_a_live_capture_is_available_no_earlier_than_the_desk_saw_it(tmp_path, monkeypatch):
+    from research import world_model as WM
+    idx = pd.date_range("2025-01-05", periods=60, freq="W", tz="UTC")
+    seen = [(t + timedelta(days=1)).isoformat() for t in idx]          # backfill-free, live
+    seen[-1] = (idx[-1] + timedelta(days=5)).isoformat()                 # seen late but live
+    seen[0] = "2026-10-06T00:00:00+00:00"                                # a backfilled point
+    pd.DataFrame({"value": range(60), "value_latest": range(60), "first_seen_at": seen},
+                 index=idx).to_parquet(tmp_path / "s.parquet")
+    reg = tmp_path / "reg.json"
+    reg.write_text(json.dumps({"series": {"s": {"path": str(tmp_path / "s.parquet"),
+                                                "pit_authority": True}}}))
+    monkeypatch.setattr(WM, "ACQUIRED", reg)
+    unmeasured: list[dict[str, str]] = []
+    (series,) = WM._acquired_inputs(unmeasured)
+    last = series.points[-1]
+    assert datetime.fromisoformat(last.available_time) == idx[-1] + timedelta(days=5)
+    first = series.points[0]
+    assert datetime.fromisoformat(first.available_time) == idx[0] + timedelta(
+        days=3, hours=WM.CLOCK_PAD_H)                                    # reference, by lag
+    assert any(u["name"] == "acquired:backfilled_reference" for u in unmeasured)

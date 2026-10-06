@@ -368,12 +368,19 @@ def test_blocked_portals_and_endpoints_are_never_touched(box: Path) -> None:
     assert row["n_blocked_resources"] == 1
 
 
-def test_robots_disallow_is_obeyed(box: Path) -> None:
+def test_robots_disallow_is_a_label_never_a_refusal(box: Path) -> None:
+    """LAWS §5e: a robots Disallow is carried on the row, it does not stop discovery."""
     net = Net({"portal.example.org/api/3/action/package_search": ckan_handler(3)})
     net.robots["portal.example.org"] = "User-agent: *\nDisallow: /api/\n"
     r = _run(box, _roster(box, [CKAN]), net)
-    assert r["portals"]["xx_ckan"]["status"] == "ROBOTS_DISALLOWED"
-    assert net.api_calls() == []
+    assert r["portals"]["xx_ckan"]["status"] != "ROBOTS_DISALLOWED"
+    assert net.api_calls() != []
+    assert r["labels"]["ROBOTS_DISALLOW_LABELLED"] >= 1
+    assert "portal.example.org" in r["robots_disallow_hosts"]
+
+
+def test_the_ua_names_the_desk_and_is_not_a_browser() -> None:
+    assert "Mozilla" not in cr.UA and "quant-desk" in cr.UA
 
 
 # ---------------------------------------------------------------------- dcat / stac / cdx ----
@@ -535,3 +542,19 @@ def test_the_real_roster_is_diverse_and_well_formed() -> None:
 def test_the_discovery_code_never_reads_the_withheld_benchmark() -> None:
     src = (_DESK / "research" / "catalog_routes.py").read_text()
     assert "discovery_audit" not in src and "benchmark" not in src.lower()
+
+
+def test_source_frontier_publishes_yield_by_discovery_method() -> None:
+    import sqlite3
+
+    import source_frontier as SF
+    c = sqlite3.connect(":memory:")
+    c.execute("CREATE TABLE sources (source_id TEXT, discovered_via TEXT)")
+    c.execute("CREATE TABLE source_yield (source_id TEXT, candidates INTEGER, compute_s REAL)")
+    c.executemany("INSERT INTO sources VALUES (?,?)", [("a", "seed"), ("b", "seed"),
+                                                      ("catalog:x", "catalog_route:ckan")])
+    c.execute("INSERT INTO source_yield VALUES ('a', 4, 7200)")
+    rows = {r["method"]: r for r in SF.by_discovery_method(c)}
+    assert rows["seed"] == {"method": "seed", "sources": 2, "sources_with_yield": 1,
+                            "testable": 4, "compute_h": 2.0}
+    assert rows["catalog_route:ckan"]["testable"] == SF.UNMEASURED      # no yield row yet

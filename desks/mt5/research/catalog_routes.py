@@ -35,13 +35,14 @@ waits `relist_days` and then re-lists with conditional requests.
 
 NEVER REFETCH AN UNCHANGED PAGE. ETag/Last-Modified are stored per page with what that page
 yielded (its next link and item count), and sent back as If-None-Match / If-Modified-Since; a 304
-advances the cursor without re-reading anything. Bounded timeouts, the acquirer's browser UA (a
-default urllib UA draws 403s that read as dead sources), a per-host minimum gap, a per-run
-request cap and a wall-clock budget.
+advances the cursor without re-reading anything. Bounded timeouts, an HONEST UA that names the
+desk (never a browser string), a per-host minimum gap, a per-run request cap and a wall-clock
+budget.
 
-ROBOTS, TERMS, MANDATE. robots.txt is read once a week per host and obeyed. Social hosts
-(reddit, stocktwits, X/Twitter) and every crypto-exchange host are refused at the request and at
-the endpoint (the 2026-08-18 MT5 mandate). No credential is ever sent: a keyed portal or resource
+ROBOTS, TERMS, MANDATE. robots.txt is read once a week per host and carried as a `terms_note`
+LABEL on rows from that host; under LAWS §5e a Disallow is never read as a refusal. Platforms
+under the shared terms fence (libs/data/terms_fence.py: Reddit, StockTwits, ...) and every
+crypto-exchange host are refused at the request and at the endpoint (the 2026-08-18 MT5 mandate). No credential is ever sent: a keyed portal or resource
 is recorded with access NEEDS_KEY, so the desk can see what a key would buy.
 
 DEDUP WITHOUT DOUBLE COUNTING. A URL already discovered is never a new endpoint; a dataset whose
@@ -97,19 +98,27 @@ MAX_PAGE_BYTES = 64 * 1024 * 1024
 ROBOTS_REFRESH_D = 7
 HTTP_META_KEEP_D = 45
 
-# The acquirer's UA and credential pattern, so a URL this organ calls keyed is exactly a URL the
-# acquirer would skip. Imported rather than copied; the fallback only exists so a transient
-# import failure in that module (it is edited by other sessions) cannot stop discovery.
+# The acquirer's credential pattern, so a URL this organ calls keyed is exactly a URL the acquirer
+# would skip. Imported rather than copied; the fallback only exists so a transient import failure
+# in that module (it is edited by other sessions) cannot stop discovery.
 try:
     from acquire_datasets import _KEYED as _ACQ_KEYED
-    from acquire_datasets import _UA as _ACQ_UA
 except Exception:  # noqa: BLE001  # pragma: no cover - only when the acquirer cannot import
-    _ACQ_UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
-               "Chrome/124.0 Safari/537.36")
     _ACQ_KEYED = re.compile(r"(api[_-]?key|apikey|token=|access_key|client_id|subscription)",
                             re.IGNORECASE)
-UA: str = _ACQ_UA
+#: AN HONEST USER-AGENT. The desk names itself; it never presents as a browser to a catalogue.
+UA: str = "quant-desk-catalog-routes/1.0 (public open-data catalogue discovery; research use)"
 KEYED: re.Pattern[str] = _ACQ_KEYED
+
+
+def _terms_platform(host: str) -> str | None:
+    """The shared platform terms fence (libs/data/terms_fence.py) when it is importable. Its
+    absence falls back to the roster's own social entries, which stay refused: fail closed."""
+    try:
+        from libs.data import terms_fence as _tf
+    except Exception:  # noqa: BLE001
+        return None
+    return _tf.platform_of_url(f"https://{host}/")
 
 # ----------------------------------------------------------------------------- formats ----
 #: Formats the acquirer can parse (delimited text, workbooks, JSON, archives of CSV, parquet).
@@ -200,9 +209,12 @@ def host_of(url: str) -> str:
 
 
 def is_blocked(host: str, blocked: Iterable[str]) -> bool:
-    """Social and crypto-exchange hosts. A dotted entry is a domain (and its subdomains); a bare
-    name matches any host label containing it, so `data.binance.vision` is refused too."""
+    """Terms-fenced platforms (the shared fence) and crypto-exchange hosts (the 2026-08-18 MT5
+    mandate, from the roster). A dotted entry is a domain (and its subdomains); a bare name
+    matches any host label containing it, so `data.binance.vision` is refused too."""
     h = host.lower().split(":")[0].rstrip(".")
+    if h and _terms_platform(h):
+        return True
     labels = h.split(".")
     for b in blocked:
         b = str(b).lower().strip()
@@ -300,6 +312,8 @@ class Session:
         self.requests = 0
         self.not_modified = 0
         self.refusals: Counter[str] = Counter()
+        self.labels: Counter[str] = Counter()
+        self.robots_disallow: set[str] = set()
         self._last: dict[str, float] = {}
         self.http: dict[str, Any] = state.setdefault("http", {})
         self.robots: dict[str, Any] = state.setdefault("robots", {})
@@ -364,15 +378,16 @@ class Session:
         if is_blocked(host, self.blocked):
             self.refusals["BLOCKED_HOST"] += 1
             return Response(-1, error="BLOCKED_HOST")
+        # ROBOTS IS A LABEL, NEVER A REFUSAL (LAWS §5e names "robots.txt Disallow read as a
+        # refusal" among the deleted brakes). It is read under the desk's own honest UA, recorded
+        # per host, and carried on every row from that host as `terms_note`; an unreadable
+        # robots.txt stops nothing.
         robots, why = self.allowed_by_robots(url, gap_s, timeout)
-        if robots is None:
-            if why == "BUDGET":
-                return None
-            self.refusals[why] += 1
-            return Response(0 if why == "UNREACHABLE" else -1, error=why)
-        if not robots:
-            self.refusals["ROBOTS_DISALLOWED"] += 1
-            return Response(-1, error="ROBOTS_DISALLOWED")
+        if robots is None and why == "BUDGET":
+            return None
+        if robots is False:
+            self.robots_disallow.add(host)
+            self.labels["ROBOTS_DISALLOW_LABELLED"] += 1
         headers = {"User-Agent": UA,
                    "Accept": accept or "application/json, application/ld+json;q=0.9, "
                                        "application/xml;q=0.8, */*;q=0.5"}
@@ -1450,6 +1465,30 @@ def _cfg(roster: Mapping[str, Any], portal: Mapping[str, Any]) -> dict[str, Any]
     return cfg
 
 
+def _register_portals(table: dict[str, Any], portals: list[dict[str, Any]]) -> int:
+    """Every portal that answered becomes a source in the source frontier with
+    `discovered_via="catalog_route:<route>"`, so discovery yield can be compared by METHOD
+    (catalogue route vs crawl vs seed). Never stops the pass."""
+    try:
+        import source_frontier as SF
+    except Exception:  # noqa: BLE001
+        return 0
+    by_id = {str(p.get("id")): p for p in portals}
+    n = 0
+    for pid, row in table.items():
+        if int(row.get("rows") or 0) <= 0:
+            continue
+        p = by_id.get(pid) or {}
+        try:
+            n += int(SF.register_source(f"catalog:{pid}", url=str(p.get("base") or ""),
+                                        kind=f"catalog_{row.get('route')}",
+                                        country=str(p.get("country") or ""),
+                                        discovered_via=f"catalog_route:{row.get('route')}"))
+        except Exception:  # noqa: BLE001
+            return n
+    return n
+
+
 def run(budget_s: float = DEFAULT_BUDGET_S, *, fetch: Fetch | None = None,
         now: datetime | None = None, roster_path: Path | None = None,
         only_routes: set[str] | None = None, max_requests: int = MAX_REQUESTS_PER_RUN,
@@ -1499,6 +1538,12 @@ def run(budget_s: float = DEFAULT_BUDGET_S, *, fetch: Fetch | None = None,
                       "status": v.status, "pages": v.pages, "rows": len(v.rows),
                       "total": v.total, "remainder": v.remainder, "unit": v.unit,
                       "passes": int((st.get("cursor") or {}).get("passes") or 0), **v.detail}
+    if fetch is None:                     # live passes only; a test's fake transport registers nothing
+        _register_portals(table, portals)
+    for r in rows_all:
+        hosts = {host_of(u) for u in [*r.get("endpoints", []), str(r.get("url") or "")] if u}
+        if hosts & sess.robots_disallow:
+            r["terms_note"] = "robots Disallow on this host (a label, never a refusal: LAWS 5e)"
     kept, stats = dedup(rows_all, index)
     by_route: dict[str, dict[str, Any]] = {}
     for pid, row in table.items():
@@ -1531,6 +1576,7 @@ def run(budget_s: float = DEFAULT_BUDGET_S, *, fetch: Fetch | None = None,
         "access": dict(access),
         "requests": sess.requests, "not_modified": sess.not_modified,
         "refusals": dict(sess.refusals),
+        "labels": dict(sess.labels), "robots_disallow_hosts": sorted(sess.robots_disallow),
         "budget_s": budget_s, "spent_s": round(sess.clock() - sess.started, 1),
         "remainder_total": sum(int(r["remainder"]) for r in table.values()
                                if isinstance(r.get("remainder"), int)),

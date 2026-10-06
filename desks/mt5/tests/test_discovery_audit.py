@@ -152,8 +152,26 @@ def test_the_real_benchmark_is_well_formed_and_withheld_from_every_seed() -> Non
             "procurement"} <= types
     assert len({i["region"] for i in items}) >= 5
     assert len({i["language"] for i in items}) >= 8
-    for i in items:
-        assert i["url"].startswith("https://") and i["dataset_id"], i["id"]
+    for i in items:                       # sealed: hashes only, nothing a reader could copy
+        assert i["url_h"] and i["id_h"] and "url" not in i and "dataset_id" not in i, i["id"]
+        assert "title" not in i and "producer" not in i
+    assert bench["sealed"] is True and bench["salt"]
+    assert "http" not in da.BENCHMARK.read_text("utf-8")
     sources, _missing = da.seed_sources()
     assert "acquire_datasets._SEED_ENDPOINTS" in sources and "country packs" in sources
-    assert da.contamination(items, sources) == [], "a seed can read the withheld benchmark"
+    assert da.contamination(items, sources, bench["salt"]) == [], \
+        "a seed can read the withheld benchmark"
+
+
+def test_a_sealed_benchmark_measures_exactly_what_the_plaintext_does(tmp_path: Path) -> None:
+    rows = _rows(tmp_path)
+    plain = da.audit(BENCH, now=NOW, rows=rows, registry=REGISTRY, sources={},
+                     missing_sources=[], use_dir=tmp_path / "none")
+    sealed = da.audit(da.seal(BENCH, "s4lt"), now=NOW, rows=rows, registry=REGISTRY,
+                      sources={}, missing_sources=[], use_dir=tmp_path / "none")
+    assert sealed["recall"] == plain["recall"] and sealed["discovered"] == plain["discovered"]
+    assert sealed["ingested"] == plain["ingested"]
+    leak = {"seed.json": "https://www.rba.example.au/tables/csv/c1-data.csv"}
+    hit = da.audit(da.seal(BENCH, "s4lt"), now=NOW, rows=rows, registry=REGISTRY, sources=leak,
+                   missing_sources=[], use_dir=tmp_path / "none")
+    assert hit["verdict"] == "CONTAMINATED"

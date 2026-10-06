@@ -8,7 +8,9 @@ energy, agriculture, labour, prices, trade, satellite-derived numerics, payments
 What this measures is BENCHMARK COVERAGE, NOT WORLD COVERAGE, and the report says so in its
 first field.
 
-WITHHELD MEANS WITHHELD. A benchmark the seeds can read measures the seeds, not discovery: copy
+WITHHELD MEANS WITHHELD, TWICE. The committed benchmark is SEALED: salted hashes of each URL and
+dataset id plus its type/region/language, nothing a reader could copy (`--seal`); the plaintext
+is kept off the repository. And a benchmark the seeds can read measures the seeds, not discovery: copy
 one URL into a roster and recall rises without discovering anything. So the audit first checks
 every seed the discovery path starts from -- the catalog-routes roster, the deep-forest, free-
 stack, Asia and event rosters, the acquirer's `_SEED_ENDPOINTS`, every country pack's declared
@@ -49,7 +51,11 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-BENCHMARK = DESK / "data" / "discovery_audit" / "benchmark.json"
+#: THE SEALED BENCHMARK. Only salted hashes of each item's URL and dataset id are committed, with
+#: its type/region/language; the plaintext lives off the repo (/mnt/project-files/withheld/), so no
+#: seat, miner or session reading the tree can copy a benchmark item into a seed.
+BENCHMARK = DESK / "data" / "discovery_audit" / "benchmark.sealed.json"
+SEALED_KEEP = ("type", "region", "country", "language", "columns", "benchmark_since")
 REPORT = DESK / "reports" / "DISCOVERY_AUDIT.json"
 WORLD = DESK / "data" / "intelligence" / "world"
 REGISTRY = DESK / "data" / "acquired" / "registry.json"
@@ -102,6 +108,57 @@ def id_pattern(dataset_id: str) -> re.Pattern[str]:
     """The exact id as a token: not preceded or followed by a letter or digit."""
     return re.compile(r"(?<![A-Za-z0-9])" + re.escape(dataset_id) + r"(?![A-Za-z0-9])",
                       re.IGNORECASE)
+
+
+# ------------------------------------------------------------------------------- sealing ----
+def _h(salt: str, text: str) -> str:
+    return hashlib.sha256(f"{salt}|{text}".encode()).hexdigest()[:32]
+
+
+def _sealed(item: Mapping[str, Any]) -> bool:
+    return "url_h" in item or "id_h" in item
+
+
+_ALNUM = re.compile(r"[A-Za-z0-9]+")
+
+
+def id_candidates(text: str, *, max_runs: int = 6, max_len: int = 64) -> set[str]:
+    """Every substring `id_pattern` could match: bounded by non-alphanumerics at both ends,
+    spanning at most `max_runs` alphanumeric runs. Lower-cased, so the match is case-blind."""
+    runs = [(m.start(), m.end()) for m in _ALNUM.finditer(text)]
+    out: set[str] = set()
+    for i, (a, _) in enumerate(runs):
+        for j in range(i, min(i + max_runs, len(runs))):
+            b = runs[j][1]
+            if b - a > max_len:
+                break
+            out.add(text[a:b].lower())
+    return out
+
+
+def seal(benchmark: Mapping[str, Any], salt: str) -> dict[str, Any]:
+    """The committed form of a plaintext benchmark: opaque ids, salted hashes, no URL or title."""
+    items = []
+    for k, it in enumerate(benchmark.get("items") or []):
+        row: dict[str, Any] = {"id": f"b{k:03d}"}
+        row.update({f: it[f] for f in SEALED_KEEP if f in it})
+        if it.get("url"):
+            row["url_h"] = _h(salt, norm_url(str(it["url"])).lower())
+        if it.get("dataset_id"):
+            row["id_h"] = _h(salt, str(it["dataset_id"]).lower())
+        items.append(row)
+    return {k: v for k, v in benchmark.items() if k != "items"} | {
+        "salt": salt, "sealed": True, "items": items}
+
+
+def _row_hashes(row: dict[str, Any], salt: str) -> tuple[set[str], set[str], set[str]]:
+    """(all-url hashes, endpoint hashes, id-candidate hashes) of a discovery row, cached on it."""
+    key = f"_h:{salt}"
+    if key not in row:
+        row[key] = ({_h(salt, u) for u in row["all_urls"]},
+                    {_h(salt, u) for u in row["endpoints"]},
+                    {_h(salt, c) for c in id_candidates(row["blob"])})
+    return row[key]
 
 
 # ------------------------------------------------------------------------ contamination ----
@@ -167,11 +224,23 @@ def seed_sources() -> tuple[dict[str, str], list[str]]:
 
 
 def contamination(items: Iterable[Mapping[str, Any]],
-                  sources: Mapping[str, str]) -> list[dict[str, Any]]:
+                  sources: Mapping[str, str], salt: str = "") -> list[dict[str, Any]]:
     """Every benchmark item whose URL or exact dataset id a seed source contains. Pure."""
     lowered = {k: v.lower() for k, v in sources.items()}
     hits: list[dict[str, Any]] = []
+    hashed: dict[str, tuple[set[str], set[str]]] = {}
     for it in items:
+        if _sealed(it):
+            for label, text in sources.items():
+                if label not in hashed:
+                    hashed[label] = ({_h(salt, norm_url(u).lower()) for u in _URL.findall(text)},
+                                     {_h(salt, c) for c in id_candidates(text)})
+                urls, ids = hashed[label]
+                if it.get("url_h") and it["url_h"] in urls:
+                    hits.append({"id": it.get("id"), "by": "url", "in": label})
+                elif it.get("id_h") and it["id_h"] in ids:
+                    hits.append({"id": it.get("id"), "by": "dataset_id", "in": label})
+            continue
         url = str(it.get("url") or "")
         core = norm_url(url).lower()
         did = str(it.get("dataset_id") or "")
@@ -246,8 +315,21 @@ def load_discoveries(world: Path) -> list[dict[str, Any]]:
     return out
 
 
-def match(item: Mapping[str, Any], rows: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
-    """Rows naming the item, by exact URL or by its exact dataset id as a token. Pure."""
+def match(item: Mapping[str, Any], rows: Iterable[dict[str, Any]],
+          salt: str = "") -> list[dict[str, Any]]:
+    """Rows naming the item, by exact URL or by its exact dataset id as a token."""
+    if _sealed(item):
+        out = []
+        for r in rows:
+            urls, eps, ids = _row_hashes(r, salt)
+            by = ("url" if item.get("url_h") in urls else
+                  "dataset_id" if item.get("id_h") in ids else None)
+            if by:
+                out.append({"route": r["route"], "at": r["at"], "by": by,
+                            "endpoint": bool(r["endpoints"]),
+                            "endpoint_urls": sorted(r["endpoints"]),
+                            "observation_class": r.get("observation_class", False)})
+        return sorted(out, key=lambda h: h["at"] or "9999")
     core = norm_url(str(item.get("url") or "")).lower()
     did = str(item.get("dataset_id") or "")
     pat = id_pattern(did) if did else None
@@ -288,13 +370,17 @@ def downstream_use(series: list[str], reg: Mapping[str, Any] | None,
 
 
 def measure_item(item: Mapping[str, Any], rows: list[dict[str, Any]],
-                 reg: Mapping[str, Any] | None, use_dir: Path) -> dict[str, Any]:
-    hits = match(item, rows)
+                 reg: Mapping[str, Any] | None, use_dir: Path, salt: str = "") -> dict[str, Any]:
+    hits = match(item, rows, salt)
     core = norm_url(str(item.get("url") or "")).lower()
     view = _registry_view(reg)
-    candidate_urls = {core} | {u for h in hits for u in h.get("endpoint_urls", [])} | \
-        {core for h in hits if h["by"] == "url"}
+    candidate_urls = {u for h in hits for u in h.get("endpoint_urls", [])}
+    if core:
+        candidate_urls.add(core)
     reg_meta = [view["by_url"][u] for u in candidate_urls if view and u in view["by_url"]]
+    if view and item.get("url_h"):
+        reg_meta += [m for u, m in view["by_url"].items()
+                     if _h(salt, u) == item["url_h"] and u not in candidate_urls]
     routes = sorted({h["route"] for h in hits})
     if not hits and reg_meta:
         routes = ["acquire_registry"]
@@ -364,15 +450,16 @@ def audit(benchmark: Mapping[str, Any], *, now: datetime, rows: list[dict[str, A
                             "seed_sources_unreadable": sorted(missing_sources)}
     if not items:
         return {**base, "verdict": UNMEASURED, "why": "benchmark missing or empty"}
-    hits = contamination(items, sources)
+    salt = str(benchmark.get("salt") or "")
+    hits = contamination(items, sources, salt)
     if hits:
         return {**base, "verdict": "CONTAMINATED", "contamination": hits, "recall": None,
                 "why": ("a benchmark URL or dataset id is readable by the discovery seeds, so "
                         "recall would measure the seeds; replace the item or the seed")}
     rotation = weekly_subset(items, now, float(benchmark.get("weekly_share")
                                                or DEFAULT_WEEKLY_SHARE))
-    measured = [measure_item(it, rows, registry, use_dir) for it in rotation]
-    every = [measure_item(it, rows, registry, use_dir) for it in items]
+    measured = [measure_item(it, rows, registry, use_dir, salt) for it in rotation]
+    every = [measure_item(it, rows, registry, use_dir, salt) for it in items]
     n = len(measured)
     found = sum(1 for m in measured if m["discovered"])
     return {
@@ -413,7 +500,15 @@ def run() -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
-    ap.parse_args(argv)
+    ap.add_argument("--seal", nargs=2, metavar=("PLAINTEXT", "SEALED"),
+                    help="seal a plaintext benchmark (kept off the repo) into the committed form")
+    a = ap.parse_args(argv)
+    if a.seal:
+        import secrets
+        plain = json.loads(Path(a.seal[0]).read_text("utf-8"))
+        Path(a.seal[1]).write_text(json.dumps(seal(plain, secrets.token_hex(16)), indent=1),
+                                   "utf-8")
+        return 0
     r = run()
     print(f"discovery audit ({LABEL}): verdict={r['verdict']} week={r['iso_week']} "
           f"recall={r.get('recall')} ({r.get('discovered')}/{r.get('measured')}) "
