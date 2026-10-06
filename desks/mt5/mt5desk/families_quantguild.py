@@ -9,7 +9,8 @@ copied: both rules are re-derived from the published mechanism (cards QG26-01 an
                       bars an AR(1) on the trailing `window` log closes (past only) gives phi, the
                       long-run mean mu and the residual variance; the filter's transition is the
                       OU step and its observation the log close, with R = r_mult x residual
-                      variance. The filtered level's distance from mu in stationary standard
+                      variance; a window that cannot reject a unit root (Dickey-Fuller 5%)
+                      is not fitted. The filtered level's distance from mu in stationary standard
                       deviations is z; fade |z| >= entry_z towards mu, out by 3 half-lives. The
                       desk's Kalman code works on returns and model scores, never on the level.
     hawkes_jump_switch  Jumps cluster: a self-exciting (exponential Hawkes) intensity, refit on
@@ -31,8 +32,14 @@ from mt5desk.engine import Signal
 from mt5desk.families import _atr, _h1
 
 
+#: Dickey-Fuller 5% critical value (constant, no trend). A window whose AR(1) cannot reject a unit
+#: root has no mean to revert to: on a trending walk the biased phi < 1 puts "fair value" far off.
+DF_CRIT = -2.86
+
+
 def _ar1(y: np.ndarray) -> tuple[float, float, float] | None:
-    """phi, mu, residual variance of y[t] = c + phi y[t-1] + e, by least squares."""
+    """phi, mu, residual variance of y[t] = c + phi y[t-1] + e, by least squares; None unless
+    the Dickey-Fuller statistic rejects a unit root."""
     x, z = y[:-1], y[1:]
     xm, zm = x.mean(), z.mean()
     vx = float(((x - xm) ** 2).sum())
@@ -45,6 +52,8 @@ def _ar1(y: np.ndarray) -> tuple[float, float, float] | None:
     resid = z - c - phi * x
     var = float(resid.var(ddof=2))
     if not (var > 0 and math.isfinite(var)):
+        return None
+    if (phi - 1.0) / math.sqrt(var / vx) > DF_CRIT:
         return None
     return phi, c / (1.0 - phi), var
 

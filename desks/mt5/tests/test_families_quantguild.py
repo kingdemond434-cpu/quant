@@ -27,7 +27,7 @@ def _frame(close: np.ndarray, seed: int = 3) -> pd.DataFrame:
                          "low": np.minimum(open_, close) - wick, "close": close}, index=idx)
 
 
-def _ou(n: int = 6000, phi: float = 0.995, seed: int = 1) -> pd.DataFrame:
+def _ou(n: int = 6000, phi: float = 0.98, seed: int = 1) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
     x = np.zeros(n)
     for i in range(1, n):
@@ -67,10 +67,11 @@ def test_kalman_ou_fades_towards_the_mean_and_is_causal():
     assert part == {(s.time, s.side) for s in sigs if s.time < early}
 
 
-def test_a_random_walk_without_mean_reversion_rarely_fits():
+def test_a_trending_walk_has_no_mean_to_revert_to():
     rng = np.random.default_rng(5)
     trend = _frame(np.exp(np.cumsum(rng.normal(0.0004, 0.001, 6000))))
-    assert len(qg.family_kalman_ou_level(trend, window=480)) <= 3
+    assert len(qg.family_kalman_ou_level(trend, window=480)) * 4 <= len(
+        qg.family_kalman_ou_level(_ou(), window=480))
 
 
 def test_hawkes_switch_fires_both_ways_and_is_causal():
