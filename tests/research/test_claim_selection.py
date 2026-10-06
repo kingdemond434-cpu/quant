@@ -107,8 +107,13 @@ def test_the_lifetime_ledger_charges_each_family_once(tmp_path, monkeypatch) -> 
     assert cs.lifetime_charges() == {rows[0]["claim_family"]: 200}
     assert set(cs.lineage_index()) == {f"g{i}" for i in range(30)}
     monkeypatch.setattr(el, "_graph_counts", lambda: (10, {"carry": 10}))
+    monkeypatch.setattr(el, "_graph_judged", lambda: (10, {"carry": 10}, set()))
     monkeypatch.setattr(el, "_proposer_counts", lambda: (5, {"carry": 5}))
     monkeypatch.setattr(el, "_prereg_counts", lambda: 0)
+    # The other union ledgers read this clone's files; empty them so the sum is the test's own.
+    monkeypatch.setattr(el, "_swarm_counts", lambda *_a, **_k: (0, {}, 0))
+    monkeypatch.setattr(el, "_mass_screen_counts", lambda *_a, **_k: (0, {}))
+    monkeypatch.setattr(el, "_unknown_unknown_counts", lambda *_a, **_k: (0, {}))
     doc = el.lifetime(write=False)
     assert doc["lifetime_trials"] == 10 + 5 + 200
     assert doc["source_selection_trials"] == 200
