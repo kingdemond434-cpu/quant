@@ -355,6 +355,35 @@ def _declared_headers(src: dict[str, Any]) -> dict[str, str]:
             if str(k).lower() not in banned}
 
 
+def _is_keyed(src: dict[str, Any]) -> bool:
+    """A row that authenticates: a key, token, session or cookie, or a paid feed."""
+    return (str(src.get("access") or "public") in ("key", "paid")
+            or bool(src.get("key_env")))
+
+
+def _terms_state(src: dict[str, Any], url: str) -> tuple[str, str]:
+    """(state, why) from the one terms table, `alt_proxies.terms_gate` (the PR #229 mechanism).
+
+    A row's own `terms: refused` is final. A row with a `terms_ref` is judged by that decision; a
+    row without one by its HOST (TERMS_HOSTS). FAIL CLOSED twice over: a row with a `terms_ref`
+    whose table cannot be read is blocked, and a KEYED row on no governed host is `to_confirm` --
+    no credential leaves this process for a source whose terms are not confirmed."""
+    if str(src.get("terms") or "") == "refused":
+        return "refused", f"registry row marks terms refused ({src.get('terms_ref') or '?'})"
+    ref = str(src.get("terms_ref") or "")
+    try:
+        from research.alt_proxies import terms_gate
+    except Exception as exc:
+        if ref or _is_keyed(src):
+            return "unreadable", f"terms table unimportable ({type(exc).__name__}); fail closed"
+        return "ungoverned", ""
+    state, why = terms_gate(ref) if ref else terms_gate(url)
+    if state == "ungoverned" and _is_keyed(src):
+        return "to_confirm", ("keyed source with no terms decision: a credential is sent only "
+                              "under confirmed terms")
+    return state, why
+
+
 def collect_one(src: dict[str, Any], timeout: float = 25.0,
                 validators: dict[str, str] | None = None) -> dict[str, Any]:
     """One source, one verdict. Never raises: an unfetched source is named, never assumed empty."""
@@ -365,6 +394,18 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     rec: dict[str, Any] = {"id": sid, "plane": src.get("plane"), "url": url, "expect": expect,
                            "access": access,
                            "collected_utc": datetime.now(UTC).isoformat(timespec="seconds")}
+
+    # THE TERMS GATE, FAIL CLOSED, BEFORE ANY REQUEST (audit of PR #239, 2026-10-06; the
+    # mechanism of PR #229). Every fetch path below -- robots.txt and the source itself -- is
+    # behind it: a row whose terms decision (its `terms_ref`, else its host's) is not `confirmed`
+    # is sent nothing, and a keyed row needs a confirmed decision to send its credential at all.
+    # This is not robots.txt (which stays a label, LAWS 5e): it is a publisher's written terms,
+    # recorded once in alt_proxies.TERMS / GATE_TERMS so every organ reads the same line.
+    terms_state, terms_why = _terms_state(src, url)
+    if terms_state not in ("confirmed", "ungoverned"):
+        rec.update({"status": "BLOCKED_ON_TERMS", "terms": terms_state,
+                    "why": f"terms {terms_state}: not fetched ({terms_why})"[:400]})
+        return rec
 
     if access in ("key", "paid") and not _key_present(src):
         rec.update({"status": "UNCONFIGURED", "key_env": src.get("key_env"),
@@ -504,7 +545,8 @@ def _derived_sources(sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
                         "plane": src.get("plane"), "name": f"{src.get('name')} :: {low[-60:]}",
                         "url": url, "expect": expect, "access": src.get("access") or "public",
                         "cadence": "daily", "pit": src.get("pit"), "targets": src.get("targets"),
-                        "derived_from": parent, "role": "derived"})
+                        "derived_from": parent, "role": "derived",
+                        **{k: src[k] for k in ("terms", "terms_ref", "key_env") if src.get(k)}})
             if len(out) >= MAX_DERIVED:
                 return out
     return out
@@ -633,7 +675,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"asia collector: {len(rows)} attempted of {len(sources)} -> {dict(census)}")
     for st in ("COLLECTED", "NEEDS_PARSER", "ROUTE_CHANGED", "HTTP_ERROR", "UNREACHABLE",
-               "UNCONFIGURED", "BLOCKED_BY_ROBOTS"):
+               "UNCONFIGURED", "BLOCKED_ON_TERMS", "BLOCKED_BY_ROBOTS"):
         rs = [r for r in rows if r.get("status") == st]
         if not rs:
             continue

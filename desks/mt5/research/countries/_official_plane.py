@@ -67,15 +67,23 @@ def lane(A: Any, src: Any, paths: Any, gains: dict[str, Any]
     store = _read(paths.obs_dir / f"{src.id}.json")
     pts: dict[str, list[dict[str, Any]]] = (A.build_points(src, store)
                                             if store and src.terms == "confirmed" else {})
+    # Revisions are their own vintages, each knowable only from the instant it was first seen
+    # (alt_proxies.revision_points), never folded back onto the first print.
+    revs: dict[str, list[dict[str, Any]]] = (A.revision_points(src, store)
+                                             if pts else {})
     series: dict[str, Any] = {}
     for name, rows in sorted(pts.items()):
         if not rows:
             continue
         last = rows[-1]
+        rv = revs.get(name) or []
         series[name] = {"n": len(rows), "first": rows[0]["d"], "last": last["d"],
-                        "n_revised": sum(1 for r in rows if r.get("revision_delta") is not None),
+                        "n_revised": len({r["d"] for r in rv}), "n_revision_vintages": len(rv),
                         "signal": name in src.signal_series,
-                        "latest": {k: last.get(k) for k in LATEST_FIELDS}}
+                        "latest": {k: last.get(k) for k in LATEST_FIELDS},
+                        "latest_revision": ({k: rv[-1].get(k) for k in (
+                            "d", "value", "revision_delta", "knowable_at", "vintage_n",
+                            "revision_of")} if rv else None)}
     cell_keys = [k for k in gains if k.startswith(f"{src.id}|")]
     verdicts = Counter(str(gains[k].get("verdict")) for k in cell_keys)
     mapped = sorted({sym for s in src.signal_series for sym in src.instruments_for(s)})
