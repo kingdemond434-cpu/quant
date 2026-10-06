@@ -104,10 +104,17 @@ def test_recall_by_route_region_type_and_the_missed_list(tmp_path: Path) -> None
 
 
 def test_downstream_use_is_read_when_a_ledger_exists(tmp_path: Path) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from libs.data import dataset_use as U
     use = tmp_path / "dataset_use"
-    use.mkdir()
-    (use / "uses.json").write_text(json.dumps({"rba_c1_b": ["family_alt_series"]}))
-    m = da.measure_item(BENCH["items"][1], _rows(tmp_path), REGISTRY, use)
+    U.record_reads("world_model", {"acquired:rba_c1_b": "v1"}, use="regime_state", root=use,
+                   now=datetime.now(UTC) - timedelta(days=9))
+    rows = _rows(tmp_path)
+    m = da.measure_item(BENCH["items"][1], rows, REGISTRY, use)
+    assert m["downstream_use"] is False                          # a stale read is not use
+    U.record_reads("anomaly_miner", {"acquired:rba_c1_b": "v2"}, use="new_hypotheses", root=use)
+    m = da.measure_item(BENCH["items"][1], rows, REGISTRY, use)
     assert m["downstream_use"] is True
 
 
