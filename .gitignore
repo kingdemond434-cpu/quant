@@ -469,3 +469,6 @@ desks/mt5/data/import_stems_cache.json
 # The universal sensor ledger's day shards, clock rows and revision index are box-local state
 # that grows every day; the hourly `sensor_ledger` leg publishes reports/SENSOR_LEDGER.json.
 desks/mt5/data/sensors/
+# Option-chain snapshots (gzip per-expiry summaries), the feature history and the 6h fetch state
+# are box-local and grow every six hours; the lake series and reports/OPTION_CHAINS.json carry them.
+desks/mt5/data/option_chains/
