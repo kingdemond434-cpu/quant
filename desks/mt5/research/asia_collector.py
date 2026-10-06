@@ -429,8 +429,15 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     body_out = _declared_form(src)
     send_url, headers, _key = _apply_key(src, url, headers)
     req = urllib.request.Request(send_url, data=body_out, headers=headers)
+    # A KEYED ROW NEVER HANDS ITS CREDENTIAL TO ANOTHER HOST: urllib copies headers to a
+    # cross-host redirect target, so the bearer / declared key header is dropped there.
+    from libs.data.keyed_sources import keyed_opener, redact, scrub_body
+    place, _, hname = str(src.get("key_in") or "").partition(":")
+    opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else ())
+              if _key else None)
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+        with (opener.open(req, timeout=timeout) if opener else
+              urllib.request.urlopen(req, timeout=timeout, context=_TLS)) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")
@@ -450,14 +457,17 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                                  f"change")})
         return rec
     except (urllib.error.URLError, TimeoutError, OSError) as e:
-        why = f"{type(e).__name__}: {str(e)[:90]}"
+        # REDACT FIRST, TRUNCATE AFTER (re-audit of #201): cutting first kept 31 of 40 key
+        # characters of a key that straddled the cut, and `unknown url type` carries the URL.
         rec.update({"status": "UNREACHABLE",
-                    "why": why.replace(_key, "<key>") if _key else why})
+                    "why": f"{type(e).__name__}: {redact(e, (_key,))[:90]}"})
         return rec
     except Exception as e:
-        why = f"{type(e).__name__}: {str(e)[:90]}"
-        rec.update({"status": "UNMEASURED", "why": why.replace(_key, "<key>") if _key else why})
+        rec.update({"status": "UNMEASURED",
+                    "why": f"{type(e).__name__}: {redact(e, (_key,))[:90]}"})
         return rec
+    if _key:
+        body = scrub_body(body, (_key,))
 
     rec.update({"http": status, "content_type": ctype, "bytes": len(body)})
     accept = _ACCEPT.get(expect, ())

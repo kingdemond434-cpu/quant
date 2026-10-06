@@ -2593,8 +2593,13 @@ def _tls() -> Any:
 
 
 def _redact(url: str, src: Source) -> str:
+    """The key out of `url` (or any text), raw AND url-encoded: a key holding `+`, `/` or `=`
+    travels encoded, and only the raw form used to be replaced (re-audit of #201)."""
+    from libs.data.keyed_sources import secret_forms
     key = read_key(src.key_env) if src.key_env else ""
-    return url.replace(key, f"<{src.key_env}>") if key else url
+    for form in secret_forms((key,)):
+        url = url.replace(form, f"<{src.key_env}>")
+    return url
 
 
 def http_get(url: str) -> tuple[bytes, str]:
@@ -3441,6 +3446,9 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         elif fetch:
             try:
                 body, ctype = getter(req.url)
+                if src.key_env:
+                    from libs.data.keyed_sources import scrub_body
+                    body = scrub_body(body, (read_key(src.key_env),))
                 fetched += 1
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:

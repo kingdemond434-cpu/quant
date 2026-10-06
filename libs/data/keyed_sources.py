@@ -25,6 +25,7 @@ import math
 import os
 import re
 import urllib.parse
+import urllib.request
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
@@ -69,13 +70,84 @@ def _json(body: bytes) -> Any:
         return None
 
 
-def redact(text: str, secrets: Iterable[str]) -> str:
-    """Every secret substring replaced by a marker. Applied to anything that could be logged."""
-    out = str(text)
+def secret_forms(secrets: Iterable[str]) -> list[str]:
+    """Each secret as sent: raw, query-encoded (`quote_plus`) and path-encoded (`quote`), longest
+    first. A key holding `+`, `/` or `=` travels ENCODED in a URL, so scrubbing only the raw form
+    left it whole in every error message that carried the URL (re-audit of #201, 2026-10-06)."""
+    forms: set[str] = set()
     for s in secrets:
+        s = str(s or "")
         if s:
-            out = out.replace(s, "<redacted>")
+            forms.update({s, urllib.parse.quote_plus(s), urllib.parse.quote(s, safe=""),
+                          urllib.parse.quote(s)})
+    return sorted(forms, key=len, reverse=True)
+
+
+def redact(text: object, secrets: Iterable[str]) -> str:
+    """Every secret, in every encoded form, replaced by a marker. Applied to anything that could
+    be logged. REDACT FIRST, TRUNCATE AFTER: a cut taken first keeps the prefix of a key that
+    straddles it, and the scrub can no longer find the whole key to replace."""
+    out = str(text)
+    for form in secret_forms(secrets):
+        out = out.replace(form, "<redacted>")
     return out
+
+
+def scrub_body(body: bytes, secrets: Iterable[str]) -> bytes:
+    """A response body with any echoed credential removed BEFORE it reaches a vault or the lake.
+
+    EIA v2 echoes the request back under `request.params`, `api_key` included; that param is
+    dropped from the JSON, and every encoded form of every secret is then replaced bytewise, so a
+    source that echoes the key anywhere else is covered too. A body with nothing to scrub is
+    returned unchanged (same bytes, same content hash)."""
+    keys = [str(s) for s in secrets if s]
+    if not keys or not body:
+        return body
+    out = body
+    if b"api_key" in out:
+        doc = _json(out)
+        params = (doc.get("request") or {}).get("params") if isinstance(doc, dict) else None
+        if isinstance(params, dict) and "api_key" in params:
+            params.pop("api_key")
+            out = json.dumps(doc, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    for form in secret_forms(keys):
+        out = out.replace(form.encode("utf-8"), b"<redacted>")
+    return out
+
+
+#: Header names that carry a credential. Dropped from any redirect that leaves the host or
+#: downgrades to http, together with whatever header names the caller declares.
+CREDENTIAL_HEADERS = frozenset({"authorization", "proxy-authorization", "cookie", "x-api-key",
+                                "api-key", "apikey", "bmx-token"})
+
+
+class SameHostAuthRedirect(urllib.request.HTTPRedirectHandler):
+    """Follows redirects but never carries a credential header to another host.
+
+    urllib copies every ordinary header to the redirect target whatever its host, so a bearer or
+    a `Bmx-Token` sent to a vendor would be handed to wherever its 30x points."""
+
+    def __init__(self, drop: Iterable[str] = ()) -> None:
+        super().__init__()
+        self.drop = CREDENTIAL_HEADERS | {str(h).lower() for h in drop}
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
+                         newurl: str) -> Any:
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is None:
+            return None
+        was, now = urllib.parse.urlsplit(req.full_url), urllib.parse.urlsplit(new.full_url)
+        if (was.hostname or "").lower() != (now.hostname or "").lower() or (
+                was.scheme == "https" and now.scheme != "https"):
+            for name in [h for h in new.headers if h.lower() in self.drop]:
+                del new.headers[name]
+        return new
+
+
+def keyed_opener(tls: Any = None, drop: Iterable[str] = ()) -> urllib.request.OpenerDirector:
+    """An opener for keyed requests: the caller's TLS context and credential-safe redirects."""
+    return urllib.request.build_opener(urllib.request.HTTPSHandler(context=tls),
+                                       SameHostAuthRedirect(drop))
 
 
 def _period(text: str) -> date | None:

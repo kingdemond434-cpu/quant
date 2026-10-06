@@ -227,7 +227,8 @@ def http(req: ks.Request) -> bytes:
     r = urllib.request.Request(req.url, data=req.data, method=req.method,
                                headers={"User-Agent": "quant-desk-keyed-sources/1.0",
                                         "Accept": "application/json", **req.headers})
-    with urllib.request.urlopen(r, timeout=TIMEOUT, context=_tls()) as resp:
+    # The builders' headers carry the credential (a bearer, a key header): never to another host.
+    with ks.keyed_opener(_tls(), req.headers).open(r, timeout=TIMEOUT) as resp:
         return bytes(resp.read(MAX_BYTES))
 
 
@@ -322,7 +323,9 @@ def fetch_generic(row: Mapping[str, Any], keys: Mapping[str, str], get: Getter,
     empty: list[str] = []
     for req in ks.BUILDERS[kind](row, key, start):
         try:
-            body = get(req)
+            # Scrubbed BEFORE anything reads it: EIA v2 echoes `api_key` in `request.params`,
+            # and the 160-byte error excerpt below would otherwise cut a key before redacting it.
+            body = ks.scrub_body(get(req), keys.values())
         except Exception as exc:
             empty.append(f"{req.part or kind}: {type(exc).__name__}: {exc}")
             continue

@@ -53,17 +53,41 @@ def test_no_declaration_sends_no_key(monkeypatch: pytest.MonkeyPatch) -> None:
     assert (url, headers, key) == ("https://x/", {}, "")
 
 
-def test_key_never_lands_in_the_row(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("QK_ASIA_KEY", "SECRET123")
+def _keyed_fetch(monkeypatch: pytest.MonkeyPatch, key: str, fail: Any) -> tuple[dict, list]:
+    monkeypatch.setenv("QK_ASIA_KEY", key)
     monkeypatch.setattr(ac, "_robots_allows", lambda url, agent="": (True, "ok"))
     seen: list[str] = []
 
-    def boom(req: Any, timeout: float = 0, context: Any = None) -> Any:
+    def opened(self: Any, req: Any, data: Any = None, timeout: float = 0) -> Any:
         seen.append(req.full_url)
-        raise OSError(f"refused {req.full_url}")
-    monkeypatch.setattr(urllib.request, "urlopen", boom)
+        raise fail(req.full_url)
+    monkeypatch.setattr(urllib.request.OpenerDirector, "open", opened)
     rec = ac.collect_one({"id": "eia_energy", "access": "key", "key_env": "QK_ASIA_KEY",
                           "key_in": "query:api_key", "url": "https://api.eia.gov/v2/x/data/",
                           "expect": "json"})
+    return rec, seen
+
+
+def test_key_never_lands_in_the_row(monkeypatch: pytest.MonkeyPatch) -> None:
+    rec, seen = _keyed_fetch(monkeypatch, "SECRET123", lambda u: OSError(f"refused {u}"))
     assert "SECRET123" in seen[0]
     assert "SECRET123" not in str(rec)
+
+
+@pytest.mark.parametrize("fail", [lambda u: OSError(f"refused {u}"),
+                                  lambda u: ValueError(f"unknown url type: {u!r}")])
+def test_a_key_straddling_the_cut_leaves_no_prefix(monkeypatch: pytest.MonkeyPatch,
+                                                   fail: Any) -> None:
+    """Re-audit of #201: truncating to 90 chars BEFORE redacting kept 31 of 40 key chars."""
+    key = "K" * 8 + "abcdefghijklmnopqrstuvwxyz012345"   # 40 chars, crosses char 90
+    rec, _ = _keyed_fetch(monkeypatch, key, fail)
+    why = rec["why"]
+    assert key[:12] not in why and "KKKKKKKK" not in why
+
+
+def test_an_encoded_key_is_scrubbed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A key with + / = travels url-encoded; scrubbing only the raw form left it whole."""
+    key = "ab+cd/ef==gh"
+    rec, seen = _keyed_fetch(monkeypatch, key, lambda u: OSError(f"refused {u}"))
+    assert "ab%2Bcd%2Fef%3D%3Dgh" in seen[0]
+    assert "ab%2Bcd" not in str(rec) and key not in str(rec)
