@@ -35,7 +35,7 @@ SYM = "EURUSD"
 
 
 def _rec(hours: dict[int, int], market: dict[str, int],
-         kept: dict[str, int] | None = None) -> dict:
+         kept: dict[str, int] | None = None, digest: dict[str, str] | None = None) -> dict:
     """A measured record. `kept` is the shared filter's own count per session (the anchored
     window for an anchor-clocked family); without it the filter count is the market count."""
     rec = {"status": "MEASURED", "n": sum(hours.values()), "chart": "H1",
@@ -43,12 +43,20 @@ def _rec(hours: dict[int, int], market: dict[str, int],
            "market_sessions": {s: market.get(s, 0) for s in ff.MARKET_SESSIONS}}
     if kept is not None:
         rec["filter_sessions"] = {s: kept.get(s, 0) for s in ff.MARKET_SESSIONS}
+    if digest is not None:
+        rec["filter_digest"] = dict(digest)
     return rec
 
 
 #: overnight_gap_decay as measured: every signal at server 00, the prior close, which lies in the
 #: anchored window of all three sessions and in no market's 08:00-16:00.
 GAP = dict.fromkeys(("asia", "london", "ny"), 269)
+#: ...and the SAME 269 signals in each: one mask, one fingerprint.
+GAP_DIGEST = dict.fromkeys(("asia", "london", "ny", "all"), "gap-at-the-prior-close")
+
+
+def _gap() -> dict:
+    return _rec({0: 269}, {}, GAP, GAP_DIGEST)
 
 
 def _cache(entries: dict[str, dict], verified: tuple[str, ...] = ()) -> dict:
@@ -79,10 +87,12 @@ def test_anchor_clocked_family_is_live_in_its_anchored_sessions() -> None:
     fam = "overnight_gap_decay"
     from libs.regime import session_clock
     assert session_clock.anchor_clocked(fam)
-    cache = _cache({ff.key(fam, {}, SYM): _rec({0: 269}, {}, GAP)})
+    cache = _cache({ff.key(fam, {}, SYM): _gap()})
+    for s in ("asia", "london", "ny"):
+        assert ff.verdict(_gap(), s) == ff.LIVE
+    # ONE ANCHOR, ONE CELL: the same 269 trades in every window are the Tokyo-open cell, once.
     slots = ff.session_cells(fam, {}, ("all", "asia", "london", "ny"), cache=cache, symbol=SYM)
-    assert slots == [("all", {}, None), ("asia", {"session": "asia"}, None),
-                     ("london", {"session": "london"}, None), ("ny", {"session": "ny"}, None)]
+    assert slots == [("asia", {"session": "asia"}, None)]
     assert ff.replacements(fam, {}, "asia", cache=cache, symbol=SYM) == []
     assert ff.standin(fam, {}, "asia", cache=cache, symbol=SYM) == ({"session": "asia"}, None)
 
@@ -145,6 +155,64 @@ def test_net_positive_and_passed_verdicts_are_never_dead(tmp_path: Path) -> None
                                   params={"session": "asia"}, guard=guard) == ff.PROTECTED
     assert ff.guarded_verdict(dead, "asia", symbol="USDJPY", family=fam,
                               params={"session": "asia"}, guard=guard) == ff.DEAD
+
+
+def test_distinct_anchors_stay_distinct_cells() -> None:
+    # Fires at the prior close AND at a later anchor: asia keeps the first set only, london and ny
+    # keep both (identical), `all` keeps both. Two masks, two cells -- asia and london.
+    fam = "overnight_gap_decay"
+    rec = _rec({0: 100, 12: 100}, {}, {"asia": 100, "london": 200, "ny": 200},
+               {"asia": "tokyo", "london": "tokyo+london", "ny": "tokyo+london",
+                "all": "tokyo+london"})
+    cache = _cache({ff.key(fam, {}, SYM): rec})
+    slots = ff.session_cells(fam, {}, ("all", "asia", "london", "ny"), cache=cache, symbol=SYM)
+    assert [s for s, _p, _n in slots] == ["london", "asia"]
+    assert ff.same_cell(fam, {}, "london", "ny", cache=cache, symbol=SYM)
+    assert not ff.same_cell(fam, {}, "asia", "london", cache=cache, symbol=SYM)
+    # A session the caller already holds is never minted again.
+    held = ff.session_cells(fam, {}, ("asia", "london", "ny"), cache=cache, symbol=SYM,
+                            held=["ny"])
+    assert [s for s, _p, _n in held] == ["asia"]
+
+
+def test_a_plain_family_keeps_all_its_sessions_even_with_equal_masks() -> None:
+    fam = "london_close_momentum"
+    from libs.regime import session_clock
+    assert not session_clock.anchor_clocked(fam)
+    rec = _rec({16: 100}, {"london": 100, "ny": 100}, None,
+               dict.fromkeys(("asia", "london", "ny", "all"), "same"))
+    cache = _cache({ff.key(fam, {}, SYM): rec})
+    slots = ff.session_cells(fam, {}, ("all", "asia", "london", "ny"), cache=cache, symbol=SYM)
+    assert len(slots) == 4 and [s for s, _p, _n in slots][::2] == ["all", "london"]
+    assert not ff.same_cell(fam, {}, "london", "ny", cache=cache, symbol=SYM)
+
+
+def test_unmeasured_or_protected_anchored_variants_are_never_folded(tmp_path: Path) -> None:
+    fam = "overnight_gap_decay"
+    # No fingerprint recorded: nothing is known to be identical, every slot is minted.
+    bare = _cache({ff.key(fam, {}, SYM): _rec({0: 269}, {}, GAP)})
+    assert len(ff.session_cells(fam, {}, ("asia", "london", "ny"), cache=bare,
+                                symbol=SYM)) == 3
+    # A certified london cell keeps its own identity even though its mask equals asia's.
+    canon = _canon(tmp_path / "canon.json", [(SYM, fam, "london")])
+    guard = ff.load_guard(canon, tmp_path / "no_ledger.jsonl")
+    keys = ff.anchor_keys(fam, {}, ("asia", "london", "ny"), symbol=SYM, guard=guard,
+                          cache=_cache({ff.key(fam, {}, SYM): _gap()}))
+    assert keys == {"asia": "asia", "london": "london", "ny": "asia"}
+
+
+def test_trial_count_equals_distinct_cells(monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import miner_candidate_compiler as mcc
+    fam = "overnight_gap_decay"
+    cache = _cache({ff.key(fam, {}, SYM): _gap()})
+    monkeypatch.setattr(ff, "current_cache", lambda path=None: cache)
+    monkeypatch.setattr(ff, "_safe_guard", lambda: None)
+    monkeypatch.setattr(mcc, "_charts_with_bars", lambda _s: [])
+    monkeypatch.setattr(mcc, "_invariance", lambda _s, _f: None)
+    out = mcc.expand_axes([{"symbol": SYM, "family": fam, "params": {}}])
+    cells = {json.dumps(v["params"], sort_keys=True) for v in out}
+    assert len(out) == len(cells) == 1                    # one mask on the tape, one trial
+    assert out[0]["params"] == {"session": "asia"}
 
 
 def test_cache_version_follows_the_clock_settings(tmp_path: Path) -> None:
@@ -310,6 +378,13 @@ def test_measures_an_anchor_clocked_family_on_its_anchor() -> None:
     assert rec["market_sessions"]["asia"] == 0
     assert rec["filter_sessions"]["asia"] == rec["n"]
     assert ff.verdict(rec, "asia") == ff.LIVE
+    # Measured, not assumed: the same trades in every window, so one cell under asia.
+    dig = rec["filter_digest"]
+    assert dig["asia"] == dig["london"] == dig["ny"] == dig["all"]
+    cache = _cache({ff.key("overnight_gap_decay", {}, "EURUSD"): rec})
+    slots = ff.session_cells("overnight_gap_decay", {}, ("all", "asia", "london", "ny"),
+                             cache=cache, symbol="EURUSD")
+    assert [s for s, _p, _n in slots] == ["asia"]
 
 
 def test_unmeasured_from_another_host_is_retried() -> None:
@@ -397,7 +472,7 @@ def test_leg_keeps_anchor_clocked_certified_variants_out_of_the_sidecar(
     import session_variant_remap as svr
     fam = "overnight_gap_decay"
     cache_path = tmp_path / "firing.json"
-    ff.save_cache(_cache({ff.key(fam, {}, sym): {**_rec({0: 269}, {}, GAP), "host": ff._host(),
+    ff.save_cache(_cache({ff.key(fam, {}, sym): {**_gap(), "host": ff._host(),
                                                  "measured_at": 1e12}
                           for sym in ("CHFDKK", "EURZAR")}), cache_path)
     docket = tmp_path / "external_survivors.json"
@@ -408,11 +483,16 @@ def test_leg_keeps_anchor_clocked_certified_variants_out_of_the_sidecar(
     doc = svr.run(budget_s=30.0, donate_rows=False, docket=docket, cache_path=cache_path,
                   sidecar=tmp_path / "DEAD.jsonl", out=tmp_path / "REMAP.json", canon=canon,
                   ledger=tmp_path / "no_ledger.jsonl")
-    # Anchored to the prior close, the gap family is LIVE in all three sessions: nothing dead.
-    assert doc["live"] == 6 and doc["dead_found"] == 0 and doc["live_filter_only"] == 0
+    # Anchored to the prior close, the gap family is LIVE in all three sessions with ONE mask:
+    # the certified asia cell is kept, london and ny are that cell again, charged once.
+    assert doc["dead_found"] == 0 and doc["live_filter_only"] == 0
+    assert doc["live"] == 2 and doc["anchored_duplicates"] == 4 and doc["distinct_cells"] == 2
     assert doc["guard"]["certified_or_positive_dead"] == 0
-    side = tmp_path / "DEAD.jsonl"
-    assert not side.exists() or side.read_text().strip() == ""
+    marks = [json.loads(x) for x in (tmp_path / "DEAD.jsonl").read_text().splitlines()]
+    assert sorted((m["symbol"], m["session"]) for m in marks) == [
+        (sym, s) for sym in ("CHFDKK", "EURZAR") for s in ("london", "ny")]
+    assert {m["cause"] for m in marks} == {ff.DUPLICATE}
+    assert {m["duplicate_of"]["session"] for m in marks} == {"asia"}
 
 
 def test_unreadable_universe_is_warned_and_published_and_stays_unmeasured(

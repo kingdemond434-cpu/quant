@@ -440,9 +440,13 @@ def _live_slots(s: dict[str, Any], ks: list[str]) -> list[tuple[str, dict[str, A
         taken = {json.dumps(dict(s["params"] or {}), sort_keys=True, default=str,
                             separators=(",", ":"))}
         slots = ff.session_cells(s["family"], s["params"], ks, taken=taken,
-                                 symbol=s.get("symbol") or None)
-        return [(str(p.get("session") or "all"), {**(n or {}), "params": p} if n else None)
-                for _k, p, n in slots]
+                                 symbol=s.get("symbol") or None, held=[s["session"]])
+        got = {k: (str(p.get("session") or "all"), {**(n or {}), "params": p} if n else None)
+               for k, p, n in slots}
+        # ONE ANCHOR, ONE CELL: a session the oracle folds into the card's own cell (or into an
+        # earlier slot) is that cell already -- no child, and the note says so.
+        return [got.get(k, (k, {"remapped": False, "cause": ff.DUPLICATE, "params": None}))
+                for k in ks]
     except Exception:
         return [(k, None) for k in ks]
 
@@ -452,6 +456,11 @@ def axis_session(card: dict[str, Any], _note: list[dict[str, Any]]) -> list[dict
     ks = [k for k in sessions() if k != s["session"]][:MAX_PER_AXIS]
     out = []
     for k, (landed, remap) in zip(ks, _live_slots(s, ks), strict=True):
+        if remap and remap.get("cause") == "DUPLICATE_ANCHORED_MASK":
+            _note.append({"what": f"session {k} folded for {card['card']}", "n": 1,
+                          "why": f"{s['family']} is anchor-clocked and keeps the same signals in "
+                                 f"{k} as a cell already held: one cell, charged once"})
+            continue
         why = (f"the same rule fired only in the {k} window: the participants differ by "
                f"session and so does the constraint they trade under")
         params = s["params"]

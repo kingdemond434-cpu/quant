@@ -152,6 +152,7 @@ def classify_all(variants: list[dict], cache: dict, *, measure_s: float,
         cache["keys"][k] = ff.measure(v["family"], base, v["symbol"])
         measured += 1
     first_sym = first
+    groups: dict[str, list[dict]] = defaultdict(list)
     for v in variants:
         rec = ff.lookup(v["family"], v["params"], cache, v["symbol"])
         v["verdict"] = ff.guarded_verdict(rec, v["session"], symbol=v["symbol"],
@@ -159,10 +160,39 @@ def classify_all(variants: list[dict], cache: dict, *, measure_s: float,
         if v["verdict"] == ff.PROTECTED:
             v["protected_by"] = ff.protected(guard, v["symbol"], v["family"], v["params"],
                                              v["session"])
-    return {"keys": len(first_sym), "measured_now": measured,
+        base = {kk: vv for kk, vv in v["params"].items() if kk != "session"}
+        groups[json.dumps([v["symbol"], v["family"], base], sort_keys=True, default=str)].append(v)
+    duplicates = mark_duplicates(groups.values(), cache, guard)
+    return {"anchored_duplicates": duplicates,"keys": len(first_sym), "measured_now": measured,
             "unmeasured_keys": sum(1 for k in first_sym if (cache["keys"].get(k) or {})
                                    .get("status") != "MEASURED"),
             "elapsed_s": round(time.monotonic() - started, 2)}
+
+
+def mark_duplicates(groups: Any, cache: dict, guard: dict | None = None) -> int:
+    """ONE ANCHOR, ONE CELL in the docket: within each (symbol, family, params) group of an
+    anchor-clocked family, LIVE variants whose kept signals are identical are one cell. The first
+    in `ff.ANCHOR_ORDER` is kept; the others become DUPLICATE_ANCHORED_MASK, naming it. A variant
+    whose mask differs, an UNMEASURED or a protected one is never touched. Returns the count."""
+    n = 0
+    for members in groups:
+        live = [v for v in members if v.get("verdict") == ff.LIVE]
+        if len(live) < 2:
+            continue
+        v0 = live[0]
+        keys = ff.anchor_keys(v0["family"], v0["params"], [v["session"] for v in live],
+                              cache=cache, symbol=v0["symbol"], guard=guard)
+        by: dict[str, list[dict]] = defaultdict(list)
+        for v in live:
+            by[keys[v["session"]]].append(v)
+        for same in by.values():
+            same.sort(key=lambda v: ff.ANCHOR_ORDER.index(v["session"]))
+            for v in same[1:]:
+                v["verdict"] = ff.DUPLICATE
+                v["duplicate_of"] = {"session": same[0]["session"],
+                                     "genome_id": same[0].get("genome_id")}
+                n += 1
+    return n
 
 
 def plan(variants: list[dict], idents: set[bytes], cache: dict, *,
@@ -173,6 +203,16 @@ def plan(variants: list[dict], idents: set[bytes], cache: dict, *,
     chosen: set[bytes] = set()
     stamp = _now()
     for v in variants:
+        if v.get("verdict") == ff.DUPLICATE:
+            rows.append({"genome_id": v.get("genome_id"), "symbol": v["symbol"],
+                         "family": v["family"], "params": v["params"], "session": v["session"],
+                         "chart": ff.chart_of(v["family"], v["params"]),
+                         "verdict": ff.DUPLICATE, "cause": ff.DUPLICATE,
+                         "duplicate_of": v.get("duplicate_of"), "marked_at": stamp,
+                         "replacement": None,
+                         "why": "anchor-clocked: the filter keeps exactly the signals of "
+                                "duplicate_of on the tape, so it is that cell, charged once"})
+            continue
         # LIVE_FILTER_ONLY and PROTECTED_BY_EVIDENCE never reach the sidecar: the sealed patch
         # sorts every sidecar row last, and both of those trade as the desk runs today.
         if v.get("verdict") not in (ff.DEAD, ff.TZ_MISMATCH):
@@ -227,7 +267,9 @@ def plan(variants: list[dict], idents: set[bytes], cache: dict, *,
 #: The only verdicts written to the sidecar the sealed patch sorts last (2026-09-30 audit of #145):
 #: DEAD alone. SESSION_TZ_MISMATCH stays out until it is re-measured on the market-clock filter;
 #: LIVE_FILTER_ONLY and PROTECTED_BY_EVIDENCE never reach `plan` at all.
-SIDECAR_VERDICTS = frozenset({ff.DEAD})
+#: DUPLICATE_ANCHORED_MASK (2026-10-06): a second session variant of an anchor-clocked family
+#: whose kept signals equal an earlier one's -- one cell, so a feeder spends no second slot on it.
+SIDECAR_VERDICTS = frozenset({ff.DEAD, ff.DUPLICATE})
 
 
 def write_sidecar(rows: list[dict], path: Path = SIDECAR) -> None:
@@ -320,7 +362,7 @@ def report(variants: list[dict], rows: list[dict], census: dict, cls: dict,
     fams = {}
     for f, c in sorted(by.items(), key=lambda kv: -kv[1]["dead"]):
         judged = (c["dead"] + c["live"] + c["session_tz_mismatch"] + c["live_filter_only"]
-                  + c["protected_by_evidence"])
+                  + c["protected_by_evidence"] + c["duplicate_anchored_mask"])
         fams[f] = {**dict(c), "dead_share_of_variants": round(c["dead"] / c["variants"], 4),
                    "dead_share_of_measured": (round(c["dead"] / judged, 4) if judged
                                               else ff.UNMEASURED)}
@@ -330,8 +372,9 @@ def report(variants: list[dict], rows: list[dict], census: dict, cls: dict,
     tzm = sum(1 for v in variants if v.get("verdict") == ff.TZ_MISMATCH)
     lfo = sum(1 for v in variants if v.get("verdict") == ff.LIVE_FILTER_ONLY)
     prot = sum(1 for v in variants if v.get("verdict") == ff.PROTECTED)
-    unm = n - dead - live - tzm - lfo - prot
-    judged = dead + live + tzm + lfo + prot
+    dup = sum(1 for v in variants if v.get("verdict") == ff.DUPLICATE)
+    unm = n - dead - live - tzm - lfo - prot - dup
+    judged = dead + live + tzm + lfo + prot + dup
     dead_rows = [r for r in rows if r.get("verdict") == ff.DEAD]
     return {
         "generated_at": _now(), "oracle_version": ff.VERSION,
@@ -339,7 +382,8 @@ def report(variants: list[dict], rows: list[dict], census: dict, cls: dict,
         "session_variants": n, "dead_found": dead, "live": live, "unmeasured": unm,
         "session_tz_mismatch": tzm, "session_tz_mismatch_in_sidecar": 0,
         "sidecar_verdicts": sorted(SIDECAR_VERDICTS), "live_filter_only": lfo,
-        "protected_by_evidence": prot,
+        "protected_by_evidence": prot, "anchored_duplicates": dup,
+        "distinct_cells": n - dup,
         "dead_share": round(dead / n, 4) if n else ff.UNMEASURED,
         "dead_share_of_measured": round(dead / judged, 4) if judged else ff.UNMEASURED,
         "dead_rule": ("DEAD only when NEITHER clock holds a signal (never on today's server-hour "
