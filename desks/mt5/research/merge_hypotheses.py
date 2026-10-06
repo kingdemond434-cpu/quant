@@ -62,7 +62,42 @@ def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, 
             os.unlink(pending)
 
 
-def _chart_local_order(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+#: CHART LOCALITY INSIDE VALUE BANDS (breadth law, 2026-10-06). Codex's reason for grouping by
+#: (symbol, chart) stands: the judge loads a chart once, and an interleaved docket re-loads bars for
+#: every cell (gate-zero frame-cache churn). But one global sort by (symbol, chart) also undid the
+#: VALUE / family / timeframe-session interleave `judge_coverage.order_docket` builds, so a judge
+#: reading a prefix got the alphabet's head ("AUDCAD" first), not the docket's most valuable cells.
+#: The sort is therefore applied inside consecutive blocks about one judge sweep long: each block
+#: stays chart-local, and the blocks keep the value order between them.
+CHART_LOCAL_BLOCK_DEFAULT = 2048
+CHART_LOCAL_BLOCK_BOUNDS = (256, 20_000)
+
+
+def chart_local_block() -> tuple[int, str]:
+    """Block size: `QUANT_CHART_LOCAL_BLOCK`, else the judge's MEASURED hourly capacity
+    (reports/JUDGE_COVERAGE.json `variant_demotion.capacity`) split over `GAUNTLET_SHARDS`,
+    bounded; else the default. Returns (size, basis)."""
+    env = os.environ.get("QUANT_CHART_LOCAL_BLOCK")
+    if env:
+        try:
+            return max(1, int(env)), "QUANT_CHART_LOCAL_BLOCK"
+        except ValueError:
+            pass
+    try:
+        doc = json.loads((BASE / "reports" / "JUDGE_COVERAGE.json").read_text("utf-8"))
+        cap = int((doc.get("variant_demotion") or {}).get("capacity") or 0)
+        shards = max(1, int(os.environ.get("GAUNTLET_SHARDS") or 1))
+        if cap > 0:
+            lo, hi = CHART_LOCAL_BLOCK_BOUNDS
+            return (min(hi, max(lo, cap // shards)),
+                    f"measured judge capacity {cap}/h over {shards} shard(s)")
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    return CHART_LOCAL_BLOCK_DEFAULT, "default (judge capacity unmeasured)"
+
+
+def _chart_local_order(rows: list[dict[str, Any]],
+                       block: int | None = None) -> list[dict[str, Any]]:
     def key(row: dict[str, Any]) -> tuple[str, str]:
         params = row.get("params") or {}
         # The judge preserves a non-H1 chart carried on the row when params
@@ -74,7 +109,13 @@ def _chart_local_order(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             chart = "M5"  # the canonical judge's fixed native chart
         return str(row.get("sym") or row.get("symbol") or ""), chart
 
-    return sorted(rows, key=key)
+    size = block if block is not None else chart_local_block()[0]
+    size = max(1, int(size))
+    out: list[dict[str, Any]] = []
+    for start in range(0, len(rows), size):
+        # stable: inside a block the prior attention order holds within each (symbol, chart)
+        out.extend(sorted(rows[start:start + size], key=key))
+    return out
 
 
 #: THE STUDY BANK. Rows of a family that is BANNED FROM LIVE CAPITAL keep existing here -- they

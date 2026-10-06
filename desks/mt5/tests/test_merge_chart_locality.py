@@ -38,3 +38,29 @@ def test_row_charts_follow_native_loader_precedence_and_keep_stable_attention():
     assert [r["rank"] for r in ordered] == [1, 5, 0, 2, 4, 3]
     assert {id(r) for r in ordered} == {id(r) for r in rows}
     assert json.dumps(rows, sort_keys=True) == before
+
+
+def test_locality_holds_inside_value_bands_so_a_prefix_keeps_the_top_cells():
+    # a value-ordered docket: rank 0 is the most valuable; symbols interleave by value
+    syms = ["ZARJPY", "AUDCAD", "XAUUSD", "EURUSD"]
+    rows = [{"sym": syms[i % 4], "family": "carry", "params": {"timeframe": "H1"}, "rank": i}
+            for i in range(40)]
+    ordered = _chart_local_order(rows, block=8)
+    assert len(ordered) == len(rows) and {id(r) for r in ordered} == {id(r) for r in rows}
+    # every prefix of whole blocks holds exactly the top-valued cells
+    for k in range(8, 41, 8):
+        assert {r["rank"] for r in ordered[:k]} == set(range(k))
+    # and each block is chart-local: one run per (symbol, chart)
+    for start in range(0, 40, 8):
+        block = [(r["sym"], "H1") for r in ordered[start:start + 8]]
+        runs = [b for i, b in enumerate(block) if i == 0 or b != block[i - 1]]
+        assert len(runs) == len(set(block))
+    # one global sort (the old behaviour) loses the value head to the alphabet
+    whole = _chart_local_order(rows, block=len(rows))
+    assert {r["rank"] for r in whole[:8]} != set(range(8))
+
+
+def test_block_size_is_measured_or_declared(monkeypatch):
+    from research import merge_hypotheses as mh
+    monkeypatch.setenv("QUANT_CHART_LOCAL_BLOCK", "333")
+    assert mh.chart_local_block() == (333, "QUANT_CHART_LOCAL_BLOCK")
