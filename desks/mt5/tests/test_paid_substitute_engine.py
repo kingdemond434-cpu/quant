@@ -99,7 +99,7 @@ def test_library_is_free_lawful_and_never_crypto_exchange() -> None:
         assert not pse.banned(s.get("endpoint") or ""), s["id"]
         if s.get("endpoint"):
             assert str(s["endpoint"]).startswith(("http://", "https://")), s["id"]
-    assert pse.banned("https://api.binance.com/x") and pse.banned("https://www.deribit.com/")
+    assert pse.banned("https://www.binance.com/x") and pse.banned("https://www.deribit.com/")
 
 
 def test_free_key_is_read_by_name_only() -> None:
