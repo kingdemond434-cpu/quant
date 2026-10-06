@@ -33,6 +33,25 @@ def test_each_llm_idea_is_charged_once_even_when_re_donated(desk: Path) -> None:
     assert fam["carry"] == 1 and fam["llm_idea"] == 1
 
 
+def test_three_ideas_citing_one_url_are_three_ideas(desk: Path) -> None:
+    base, _ = L._proposer_counts()
+    ideas = [{"url": "https://x/1", "title": t, "family": "carry"} for t in ("a", "b", "c")]
+    _donate(desk, "deepseek", "1", {"discoveries": ideas})
+    # A re-donation that only rewrites its stamps is the same idea.
+    _donate(desk, "deepseek", "2", {"discoveries": [ideas[0] | {"ingested_time": "later"}]})
+    assert L._proposer_counts()[0] == base + 3
+
+
+def test_committee_files_count_until_the_union_exists(desk: Path) -> None:
+    base, _ = L._proposer_counts()
+    _donate(desk, "committee_ensembles", "1", {"tests_run": 4, "discoveries": []})
+    assert L._proposer_counts()[0] == base + 4            # no union yet: the files' own charge
+    union = desk / L.COMMITTEE_UNION
+    union.parent.mkdir(parents=True)
+    union.write_text("n1|a\nn2|a\nn3|a\n")
+    assert L._proposer_counts()[0] == base + 3            # union on: charged from it, once
+
+
 def test_a_non_llm_seat_without_tests_run_is_not_charged_per_row(desk: Path) -> None:
     base, _ = L._proposer_counts()
     _donate(desk, "broker_swaps", "1", {"discoveries": [{"url": "x"}] * 5})

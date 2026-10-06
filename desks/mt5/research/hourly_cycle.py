@@ -1999,7 +1999,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "factory_throughput": 180,
     # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
     # writes COEVOLUTION.json; the cap sits above it so it is never cut at the same prefix.
-    "coevolution": 1_020,
+    # The method challenger (factor_model_coevolution.H2H_BUDGET_S = 90 s) runs after it, so the
+    # cap is 900 + 90 + a 150 s write/start margin -- 1,020 left 30 s (audit, 2026-10-06).
+    "coevolution": 1_140,
     # The model-family civilization stops itself at --budget-s 600 and writes MODEL_SEARCH.json.
     "model_search": 720,
     # the organ's own budget is 900 s; the cap sits above it so it stops itself, never cut
