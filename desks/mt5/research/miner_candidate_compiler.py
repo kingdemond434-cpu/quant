@@ -752,7 +752,8 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
         # the source each row came from in `provenance.source_id`; carried so the registry can
         # credit that source when its row registers the producing organ (mining_supervisor).
         **({"origin_source_id": _sid} if (_sid := str(
-            row.get("source_id") or (row.get("provenance") or {}).get("source_id") or ""))
+            row.get("origin_source_id") or row.get("source_id")
+            or (row.get("provenance") or {}).get("source_id") or ""))
            else {}),
     }
 

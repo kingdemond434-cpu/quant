@@ -1220,6 +1220,9 @@ def test_a_producer_named_source_id_is_credited_only_to_a_row_that_registers_it(
                           {"source": "alt_proxies", "provenance": {"source_id": "kr_card"}}, "m")
     assert cand["origin_source_id"] == "kr_card"
     assert "origin_source_id" not in mcc._candidate("EURUSD", "carry", {}, "x", {}, "m")
+    stamped = {"source": "news_event_stream", "origin_source_id": "gdelt_events_country"}
+    assert mcc._candidate("EURUSD", "carry", {}, "x", stamped, "m")["origin_source_id"] == \
+        "gdelt_events_country"
     srcs = [acq.Source(id="kr_card", fetcher="owned", kind="text", uses=["direct_cells"],
                        consumer="desks/mt5/research/alt_proxies.py"),
             acq.Source(id="other_lane", fetcher="owned", kind="text", uses=["direct_cells"],
