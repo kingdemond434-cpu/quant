@@ -1,0 +1,13 @@
+[
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Rachel",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Rachel - may impact energy prices"
+  }
+]
