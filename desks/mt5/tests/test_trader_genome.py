@@ -130,7 +130,7 @@ def test_as_of_drops_rows_not_yet_published(corpus: Path) -> None:
     rows, _ = bf.build_genome([corpus], competition_path=corpus.parent / "none.jsonl")
     early = bf.as_of(rows, datetime(2026, 8, 21, tzinfo=UTC))
     assert early and all(not r["trader_id"].endswith("gone-1") for r in early)
-    assert {r["outcome"] for r in early} == {"BLOWN"}
+    assert {r["outcome"] for r in early} == {"BLOWN", "SHELL"}   # read off published numbers
     assert bf.as_of(rows, datetime(2020, 1, 1, tzinfo=UTC)) == []
 
 
