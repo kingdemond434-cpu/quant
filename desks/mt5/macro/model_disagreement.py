@@ -20,7 +20,7 @@ vol, memory, regime) is live. Features:
     hedge_disagreement               cross-model sd of the 25-delta-strike delta    (ROMAN-0397)
     tail_disagreement                cross-model sd of the 2-sigma tail probability (ROMAN-0398)
     model_ensemble_entropy           entropy of softmax(recent out-of-sample log-likelihood of
-                                     realised daily returns), / log(M)              (ROMAN-0399/0812)
+                                     realised daily returns), / log(M)        (ROMAN-0399, 0812)
     bs_iv_minus_heston_equiv_iv      market IV - BS IV of the Heston straddle       (ROMAN-0807)
     market_iv_minus_garch_rv         market IV - GARCH 30-day forecast              (ROMAN-0808)
     market_iv_minus_rough_forecast   market IV - rough-vol 30-day forecast          (ROMAN-0809)
@@ -95,7 +95,7 @@ from libs.quant_models import (  # noqa: E402
     implied_vol,
 )
 from libs.quant_models.heston import fit_term  # noqa: E402
-from libs.quant_models.numerics import bs_greeks, bs_price, norm_cdf  # noqa: E402
+from libs.quant_models.numerics import norm_cdf  # noqa: E402
 from libs.research import sensor_engines as se  # noqa: E402
 
 ENGINE = "model_disagreement"
@@ -627,14 +627,16 @@ def measure_contracts(frame: pd.DataFrame, symbol: str, *, min_n: int = se.MIN_N
     strata = _expanding_tercile(f["rv21"].to_numpy(dtype=float))
     eng = f"{ENGINE}:{symbol}"
     out = [
-        {**se.forecast_gain(y, model, base, engine=eng, loss="qlike", min_n=min_n,
+        {**se.forecast_gain(y.tolist(), model.tolist(), base.tolist(), engine=eng,
+                            loss="qlike", min_n=min_n,
                             cards=["ROMAN-0400", "ROMAN-0396", "ROMAN-0398", "ROMAN-0578"],
                             baseline="expanding PIT regression of log RV21 on log market IV^2",
                             falsifier="no QLIKE reduction of next-21d realised variance over "
                                       "market IV alone (block-bootstrap p >= 0.05)"),
          "label": "disagreement -> future realised vol", "roman": "ROMAN-0400"},
-        {**se.gated_gain(f["next_ret"].to_numpy(dtype=float),
-                         _expanding_flag(f["valuation_disagreement"].to_numpy(dtype=float)),
+        {**se.gated_gain(f["next_ret"].to_numpy(dtype=float).tolist(),
+                         _expanding_flag(f["valuation_disagreement"].to_numpy(dtype=float))
+                         .tolist(),
                          engine=eng, strata=strata, min_n=min_n,
                          cards=["ROMAN-0401", "ROMAN-0395", "ROMAN-0578"],
                          baseline="long next-day return every day (ungated sign cell)",
@@ -648,7 +650,8 @@ def measure_contracts(frame: pd.DataFrame, symbol: str, *, min_n: int = se.MIN_N
                             falsifier="no positive rank order between vol disagreement and the "
                                       "next week's change in daily high-low range"),
          "label": "disagreement -> liquidity (range)", "roman": "ROMAN-0402"},
-        {**se.gated_gain(f["reversal"].to_numpy(dtype=float), _expanding_flag(vd), engine=eng,
+        {**se.gated_gain(f["reversal"].to_numpy(dtype=float).tolist(),
+                         _expanding_flag(vd).tolist(), engine=eng,
                          strata=strata, min_n=min_n,
                          cards=["ROMAN-0403", "ROMAN-0396", "ROMAN-0578"],
                          baseline="1-day reversal cell every day",
@@ -817,7 +820,8 @@ def run(*, now: datetime, budget_s: float = 900.0, heavy_every: int = 5, days: i
     report = {"engine": ENGINE, "at": now.isoformat(timespec="seconds"), "authority": "NONE",
               "measure": "P/Q mixed (Q: IV-calibrated models; P: bar-fitted models)",
               "symbols": per, "implements": CARDS_IMPLEMENTED,
-              "status": (UNMEASURED if not grounds else
+              "status": (UNMEASURED if not grounds or all(
+                  p.get("status") in (UNMEASURED, "ERROR") for p in per) else
                          "PARTIAL" if any(p.get("status") == "PARTIAL" for p in per)
                          else "COMPUTED"),
               "why": "" if grounds else "no vol-index ground resolves to a symbol with H1 bars",
@@ -829,7 +833,7 @@ def run(*, now: datetime, budget_s: float = 900.0, heavy_every: int = 5, days: i
             engine=ENGINE, cards=["ROMAN-0400", "ROMAN-0401", "ROMAN-0402", "ROMAN-0403",
                                   "ROMAN-0578"], metric="all", baseline="n/a",
             falsifier=FALSIFIER, value=None, baseline_value=None, n=0,
-            why=report["why"] or "no symbol produced rows")],
+            why=str(report["why"] or "no symbol produced rows"))],
             extra={"implements": CARDS_IMPLEMENTED, "measure": report["measure"]})
         REPORT.parent.mkdir(parents=True, exist_ok=True)
         REPORT.write_text(json.dumps(report, indent=1, sort_keys=True, default=str) + "\n",
