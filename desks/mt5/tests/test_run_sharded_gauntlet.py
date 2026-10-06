@@ -176,11 +176,142 @@ def test_child_env_never_exports_a_budget_below_the_declared_floor() -> None:
 
 
 def test_run_child_measures_a_real_process(tmp_path) -> None:
-    rc, peak = runner.run_child([sys.executable, "-c", "import time; time.sleep(2.5)"],
-                                dict(__import__("os").environ))
-    assert rc == 0
+    samples: list[float] = []
+    rc, peak, info = runner.run_child([sys.executable, "-c", "import time; time.sleep(2.5)"],
+                                      dict(__import__("os").environ), on_sample=samples.append)
+    assert rc == 0 and info["oom"] is False
     if runner.psutil is not None:
-        assert peak > 0
+        assert peak > 0 and samples
+
+
+def test_run_child_names_a_death_by_memory() -> None:
+    """D3: numpy's _ArrayMemoryError / MemoryError in the child is recognised by name."""
+    code = "import sys; sys.stderr.write('numpy.core._exceptions._ArrayMemoryError: Unable to " \
+           "allocate 9.1 GiB\\n'); raise SystemExit(1)"
+    rc, _peak, info = runner.run_child([sys.executable, "-c", code],
+                                       dict(__import__("os").environ))
+    assert rc == 1 and info["oom"] is True
+
+
+def _model_with(per_cell: float) -> dict:
+    return {"runs": [{"shards": [{"ok": True, "per_cell_mb": per_cell}]}]}
+
+
+def test_free_memory_that_never_falls_still_does_not_over_admit(tmp_path, monkeypatch) -> None:
+    """D1, the measured failure: 60 GB free that never drops (a just-started shard has not grown)
+    and ~9 GB peaks. The old rule launched every shard at once; the outstanding growth of the
+    running shards is now charged, so at most (60,000 - reserve) / 9,000 run together."""
+    running = {"now": 0, "max": 0}
+    lock = threading.Lock()
+
+    def fake(argv, env):
+        with lock:
+            running["now"] += 1
+            running["max"] = max(running["max"], running["now"])
+        time.sleep(0.05)
+        with lock:
+            running["now"] -= 1
+        return 0, 9000.0
+
+    sd = tmp_path / "sd"
+    sd.mkdir()
+    for k in range(15):
+        with open(sd / f"plan_{k}.pkl", "wb") as fh:
+            pickle.dump([(i, {"sym": "X"}) for i in range(1000)], fh)
+    runner.RUN.update(run_id="r", planned_cells=15_000)
+    monkeypatch.setenv("GAUNTLET_SHARD_CONCURRENCY", "15")
+    adm = runner.Admission(_model_with(8.6), measure=lambda: 60_000.0)
+    acquire = runner.Admission.acquire
+    monkeypatch.setattr(runner.Admission, "acquire",
+                        lambda self, need, poll_s=0.01, key=None: acquire(self, need, 0.01, key))
+    runner.dispatch(sd, 15, "build", runner=fake, admission=adm)
+    assert 1 <= running["max"] <= int((60_000 - runner.RESERVE_MB) // 9000)
+
+
+def test_with_no_model_one_shard_runs_first_then_admission_widens(tmp_path, monkeypatch) -> None:
+    order: list[tuple[str, int]] = []
+    lock = threading.Lock()
+
+    def fake(argv, env):
+        k = int(argv[-2])
+        with lock:
+            order.append(("start", k))
+        time.sleep(0.05)
+        with lock:
+            order.append(("end", k))
+        return 0, 1000.0
+
+    acquire = runner.Admission.acquire
+    monkeypatch.setattr(runner.Admission, "acquire",
+                        lambda self, need, poll_s=0.01, key=None: acquire(self, need, 0.01, key))
+    adm = runner.Admission({}, measure=lambda: 100_000.0)
+    runner.dispatch(tmp_path, 4, "build", runner=fake, admission=adm)
+    # nothing else starts until the first shard has ended and its peak is known
+    assert order[0][0] == "start" and order[1] == ("end", order[0][1])
+    starts = [i for i, e in enumerate(order) if e[0] == "start"]
+    ends = [i for i, e in enumerate(order) if e[0] == "end"]
+    assert any(s < e for s in starts[2:] for e in ends[1:])   # then several run together
+
+
+def test_a_crashed_dispatcher_thread_is_a_failure_not_a_success(tmp_path, monkeypatch) -> None:
+    """D5: a fault outside the child (here in the prediction) used to kill the thread silently and
+    read as success. It is the shard's failure now, retried, and fatal if it persists."""
+    calls: list[int] = []
+
+    def fake(argv, env):
+        calls.append(int(argv[-2]))
+        return 0, 100.0
+
+    adm = runner.Admission({}, measure=lambda: 100_000.0)
+    real = adm.predict
+
+    def predict(base, cells):
+        if cells is None and threading.current_thread().name.endswith("-2"):
+            raise ValueError("synthetic bookkeeping fault")
+        return real(base, cells)
+
+    monkeypatch.setattr(adm, "predict", predict)
+    runner.dispatch(tmp_path, 4, "build", runner=fake, admission=adm)
+    assert sorted(calls) == [0, 1, 2, 3]          # shard 2 ran -- on its serial retry
+    rec = [r for r in runner.RUN["shards"] if r["k"] == 2]
+    assert rec[0]["ok"] is False and "synthetic" in rec[0]["error"] and rec[-1]["ok"] is True
+
+    def always(base, cells):
+        raise ValueError("persistent fault")
+
+    monkeypatch.setattr(adm, "predict", always)
+    with pytest.raises(RuntimeError, match="refusing partial merge"):
+        runner.dispatch(tmp_path, 2, "rule", runner=fake, admission=adm)
+
+
+def test_a_memory_death_lowers_concurrency_feeds_the_model_and_retries_alone(tmp_path) -> None:
+    """D3: ArrayMemoryError/MemoryError per shard: its peak goes into the model, this run's
+    concurrency is lowered, and the shard is retried alone."""
+    died = {1: True}
+    lock = threading.Lock()
+
+    def fake(argv, env):
+        k = int(argv[-2])
+        with lock:
+            if died.pop(k, False):
+                return 1, 9000.0, {"oom": True}
+        return 0, 2000.0, {"oom": False}
+
+    sd = tmp_path / "sd"
+    sd.mkdir()
+    for k in range(4):
+        with open(sd / f"plan_{k}.pkl", "wb") as fh:
+            pickle.dump([(i, {"sym": "X"}) for i in range(1000)], fh)
+    runner.RUN.update(run_id="r", planned_cells=4000)
+    adm = runner.Admission(_model_with(1.0), measure=lambda: 100_000.0)
+    runner.dispatch(sd, 4, "build", runner=fake, admission=adm)
+    recs = [r for r in runner.RUN["shards"] if r["k"] == 1]
+    assert recs[0]["oom"] is True and recs[0]["ok"] is False and recs[0]["per_cell_mb"] > 8
+    assert recs[-1]["ok"] is True and recs[-1]["serial_retry"] is True
+    assert adm.limit is not None and adm.limit >= 1
+    assert 9000.0 in adm.seen_peaks
+    # the failed shard's measurement is in the model the next run sizes from
+    assert runner.per_cell_mb(runner.load_model()) > 8
 
 
 def test_model_file_is_desk_state() -> None:

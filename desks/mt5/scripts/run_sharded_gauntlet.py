@@ -202,11 +202,11 @@ def shard_cells(shard_dir: Path, k: int, planned: int | None, n: int) -> int | N
 
 
 def per_cell_mb(model: dict[str, Any]) -> float | None:
-    """The measured MB per planned cell above a shard's base, p90 over recent successful shards."""
+    """The measured MB per planned cell above a shard's base, p90 over recent shards (ok or not)."""
+    # Failed shards count (audit D1): a shard that died of memory at its peak measured that peak.
     vals = sorted(float(s["per_cell_mb"]) for r in (model.get("runs") or [])[-10:]
                   for s in (r.get("shards") or [])
-                  if isinstance(s, dict) and s.get("ok") and isinstance(s.get("per_cell_mb"),
-                                                                        (int, float)))
+                  if isinstance(s, dict) and isinstance(s.get("per_cell_mb"), (int, float)))
     if not vals:
         return None
     return vals[min(len(vals) - 1, int(0.9 * len(vals)))]
@@ -237,11 +237,20 @@ def derive_shards(model: dict[str, Any], planned: int | None, concurrency: int,
 
 # --------------------------------------------------------------------------------- admission
 class Admission:
-    """Starts a shard only when measured free memory covers its predicted peak plus the reserve.
+    """Starts a shard only when measured memory covers it AND every running shard's growth.
 
-    One shard always runs, so admission can delay the judge and never stop it. The prediction is
-    the larger of the persisted model and every peak measured in this run so far, so the first
-    shard's real figure governs the rest of the wave.
+    AUDIT D1 (2026-10-06). Comparing one shard's need with CURRENT free memory admits a whole wave
+    at once: a shard that has just started has not grown yet, so free memory still looks full --
+    measured, 15 shards launched within 0.3 s against 60 GB free with ~9 GB peaks, which is the
+    original ArrayMemoryError. The rule now is
+
+        free - RESERVE - sum over running shards of max(0, predicted_peak - current_rss) >= need
+
+    so the memory a running shard is still going to take is charged before it takes it. With NO
+    measured model (no MB/cell on file and no shard finished this run) exactly ONE shard runs
+    until its peak is sampled, then admission widens on that measurement. Failed shards' peaks
+    feed the prediction too. One shard always runs, so admission can delay the judge and never
+    stop it. `limit` is lowered after a memory failure (D3) and never raised within a run.
     """
 
     def __init__(self, model: dict[str, Any], measure: Callable[[], float | None] = free_mb):
@@ -250,6 +259,11 @@ class Admission:
         self.cond = threading.Condition()
         self.running = 0
         self.seen_peaks: list[float] = []
+        self.live: dict[int, dict[str, float]] = {}
+        self.limit: int | None = None
+
+    def measured(self) -> bool:
+        return per_cell_mb(self.model) is not None or bool(self.seen_peaks)
 
     def predict(self, base: float, cells: int | None) -> float:
         pc = per_cell_mb(self.model)
@@ -258,20 +272,48 @@ class Admission:
         cands = [x for x in (guess, observed) if x is not None]
         return max(cands) if cands else DEFAULT_SHARD_PEAK_MB
 
-    def acquire(self, need_mb: float, poll_s: float = 5.0) -> None:
+    def outstanding(self) -> float:
+        """Memory the running shards are predicted to take beyond what they hold now."""
+        return sum(max(0.0, v["predicted"] - v["rss"]) for v in self.live.values())
+
+    def admits(self, need_mb: float) -> bool:
+        if self.running == 0:
+            return True
+        if self.limit is not None and self.running >= self.limit:
+            return False
+        if not self.measured():
+            return False                       # one shard first; widen on its measured peak
+        free = self.measure()
+        if free is None:
+            return False                       # unmeasurable: never widen past one shard
+        return free - RESERVE_MB - self.outstanding() >= need_mb
+
+    def acquire(self, need_mb: float, poll_s: float = 5.0, key: int | None = None) -> None:
         with self.cond:
-            while True:
-                if self.running == 0:
-                    break
-                free = self.measure()
-                if free is None or free - RESERVE_MB >= need_mb:
-                    break
+            while not self.admits(need_mb):
                 self.cond.wait(timeout=poll_s)
             self.running += 1
+            self.live[key if key is not None else -len(self.live) - 1] = {
+                "predicted": float(need_mb), "rss": 0.0}
 
-    def release(self, peak_mb: float | None) -> None:
+    def sample(self, key: int, rss_mb: float) -> None:
         with self.cond:
-            self.running -= 1
+            if key in self.live:
+                self.live[key]["rss"] = max(self.live[key]["rss"], float(rss_mb))
+
+    def shrink(self) -> None:
+        """After a memory failure: at most half of what was running, never below one."""
+        with self.cond:
+            cur = self.limit if self.limit is not None else max(1, self.running)
+            self.limit = max(1, min(cur, max(1, self.running)) // 2)
+
+    def release(self, peak_mb: float | None, key: int | None = None) -> None:
+        with self.cond:
+            self.running = max(0, self.running - 1)
+            if key is not None:
+                self.live.pop(key, None)
+            elif self.live:
+                self.live.pop(next(iter(self.live)))
             if peak_mb:
                 self.seen_peaks.append(float(peak_mb))
             self.cond.notify_all()
@@ -291,17 +333,39 @@ def child_env(budget_mb: float | None) -> dict[str, str]:
     return env
 
 
-def run_child(argv: list[str], env: dict[str, str]) -> tuple[int, float]:
-    """Run one shard to completion, sampling its tree's memory. Returns (rc, peak MB)."""
+#: What a child's stderr says when the shard died of memory (numpy's `_ArrayMemoryError` is a
+#: MemoryError subclass and prints as `numpy.core._exceptions._ArrayMemoryError`).
+OOM_MARKERS = ("MemoryError", "Unable to allocate")
+
+
+def run_child(argv: list[str], env: dict[str, str],
+              on_sample: Callable[[float], None] | None = None
+              ) -> tuple[int, float, dict[str, Any]]:
+    """Run one shard to completion, sampling its tree's memory.
+
+    Returns (rc, peak MB, info). `on_sample` receives each sample (admission charges a running
+    shard's growth against it). The child's stderr is captured to a temp file and then copied to
+    ours (the task log), so a death by memory is recognised by name: `info["oom"]`."""
+    import tempfile
     peak = 0.0
-    with subprocess.Popen(argv, cwd=DESK, env=env) as proc:
-        while True:
-            try:
-                rc = proc.wait(timeout=SAMPLE_S)
-                break
-            except subprocess.TimeoutExpired:
-                peak = tree_peak_mb(proc.pid, peak)
-    return int(rc), round(peak, 1)
+    with tempfile.TemporaryFile() as err:
+        with subprocess.Popen(argv, cwd=DESK, env=env, stderr=err) as proc:
+            while True:
+                try:
+                    rc = proc.wait(timeout=SAMPLE_S)
+                    break
+                except subprocess.TimeoutExpired:
+                    peak = tree_peak_mb(proc.pid, peak)
+                    if on_sample is not None:
+                        with contextlib.suppress(Exception):
+                            on_sample(peak)
+        err.seek(0)
+        text = err.read().decode("utf-8", "replace")
+    if text:
+        with contextlib.suppress(Exception):
+            sys.stderr.write(text)
+    oom = int(rc) != 0 and any(m in text for m in OOM_MARKERS)
+    return int(rc), round(peak, 1), {"oom": oom, "stderr_tail": text[-400:] if rc else ""}
 
 
 _CODE = (
@@ -334,7 +398,7 @@ def _persist(model_path: Path | None = None) -> None:
 
 
 def dispatch(shard_dir: Path, n: int, phase: str, ks: list[int] | None = None, *,
-             runner: Callable[[list[str], dict[str, str]], tuple[int, float]] | None = None,
+             runner: Callable[[list[str], dict[str, str]], tuple[Any, ...]] | None = None,
              admission: Admission | None = None) -> None:
     """Run `phase` on shards `ks` (default all), admitted by measured memory, retrying failures.
 
@@ -357,41 +421,67 @@ def dispatch(shard_dir: Path, n: int, phase: str, ks: list[int] | None = None, *
          "child_budget_mb": round(budget, 1) if budget is not None else None})
 
     def one(k: int, serial: bool = False) -> Exception | None:
-        base = plan_base_mb(Path(shard_dir), k)
-        cells = shard_cells(Path(shard_dir), k, planned, n)
-        need = adm.predict(base, cells)
-        if not serial:
-            adm.acquire(need)
+        """One shard attempt. EVERYTHING is inside the try (audit D5): a prediction, admission
+        or bookkeeping fault is this shard's failure, never a thread that dies silently and
+        reads as success."""
         t0 = time.time()
         peak: float | None = None
         err: Exception | None = None
+        need = 0.0
+        base = 0.0
+        cells: int | None = None
+        oom = False
+        admitted = False
         try:
+            base = plan_base_mb(Path(shard_dir), k)
+            cells = shard_cells(Path(shard_dir), k, planned, n)
+            need = adm.predict(base, cells)
+            if not serial:
+                adm.acquire(need, key=k)
+                admitted = True
             # A serial retry runs alone, so it may take the whole measured room.
             room = free_mb() if serial else None
             env = child_env((room - RESERVE_MB) if room is not None else budget)
-            rc, peak = run_([sys.executable, "-u", "-c", _CODE, str(shard_dir), str(k), phase],
-                            env)
+            argv = [sys.executable, "-u", "-c", _CODE, str(shard_dir), str(k), phase]
+            if run_ is run_child:
+                out = run_child(argv, env, on_sample=lambda mb: adm.sample(k, mb))
+            else:
+                out = run_(argv, env)
+            rc, peak = int(out[0]), out[1]
+            info = out[2] if len(out) > 2 and isinstance(out[2], dict) else {}
+            oom = bool(info.get("oom"))
             if rc != 0:
-                err = subprocess.CalledProcessError(rc, f"shard {k} {phase}")
-        except Exception as exc:  # child launch failure is evidence, then retried below
+                err = (MemoryError(f"shard {k} {phase} died of memory (rc={rc})") if oom
+                       else subprocess.CalledProcessError(rc, f"shard {k} {phase}"))
+        except MemoryError as exc:       # the parent itself ran out: still this shard's failure
+            err, oom = exc, True
+        except Exception as exc:         # launch / bookkeeping failure is evidence, retried below
             err = exc
         finally:
-            if not serial:
-                adm.release(peak)
+            if admitted:
+                adm.release(peak, key=k)
+        if oom:
+            # AUDIT D3: a memory death lowers this run's concurrency and its peak feeds the model.
+            adm.shrink()
         rec = {"k": k, "phase": phase, "ok": err is None, "serial_retry": serial,
-               "seconds": round(time.time() - t0, 1), "peak_mb": peak,
+               "seconds": round(time.time() - t0, 1), "peak_mb": peak, "oom": oom,
                "predicted_mb": round(need, 1), "base_mb": round(base, 1), "cells": cells,
                "error": None if err is None else f"{type(err).__name__}: {err}"[:300]}
-        if err is None and peak and cells:
-            rec["per_cell_mb"] = round(max(0.0, peak - base) / cells, 5)
+        if peak and cells:
+            # Failed shards' peaks count too (D1): a shard that died at 9 GB measured 9 GB.
+            rec["per_cell_mb"] = round(max(0.0, float(peak) - base) / cells, 5)
         records.append(rec)
         return err
 
     threads: list[threading.Thread] = []
     results: dict[int, Exception | None] = {}
+    _MISSING = RuntimeError("shard thread ended without a result")
 
     def worker(k: int) -> None:
-        results[k] = one(k)
+        try:
+            results[k] = one(k)
+        except BaseException as exc:     # recorded as this shard's failure
+            results[k] = exc if isinstance(exc, Exception) else RuntimeError(repr(exc))
 
     # Shards are started in order; each start waits for its admission, so at most `cap` run
     # and never more than measured memory admits.
@@ -413,12 +503,13 @@ def dispatch(shard_dir: Path, n: int, phase: str, ks: list[int] | None = None, *
     with contextlib.suppress(Exception):
         _persist()
 
-    failed = [k for k in todo if results.get(k) is not None]
+    # A MISSING RESULT IS A FAILURE (audit D5): only an explicit None is success.
+    failed = [k for k in todo if k not in results or results[k] is not None]
     if failed:
         print(f"SHARD RECOVERY: {len(failed)}/{len(todo)} {phase} shard(s) failed; retrying "
-              "only those shards serially after peer memory was released", flush=True)
+              "only those shards serially (alone) after peer memory was released", flush=True)
     for k in failed:
-        last_exc = results[k]
+        last_exc = results.get(k) or _MISSING
         for attempt in range(1, _retry_attempts() + 1):
             exc = one(k, serial=True)
             if exc is None:

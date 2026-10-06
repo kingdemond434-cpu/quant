@@ -748,7 +748,9 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
     # out of this sweep are not warmed now: the next sweep would not look at them, and their key
     # may roll over with the data day before one does. They stay in the docket.
     rank = stage1_ranks(G, specs)
-    keep, order_census = O.sealed_keep(G, specs, stage1_rank=rank)
+    # No stage-1 record: the call is exactly the pre-two-stage one (its callers and stubs agree).
+    keep, order_census = (O.sealed_keep(G, specs, stage1_rank=rank) if rank is not None
+                          else O.sealed_keep(G, specs))
     n_never = int(order_census["keep_never_judged"])
     keep = backlog_first(keep, rank)
     ordered_by = "sealed docket order (judge_docket_order), backlog first"
