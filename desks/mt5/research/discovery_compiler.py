@@ -607,18 +607,58 @@ def gate_data(child: Mapping[str, Any], ctx: TM.Context) -> tuple[bool, str]:
     return True, f"data:ok ({pit})"
 
 
+#: Spellings under which a descendant carries its PARENT's family name. A cell id
+#: (`qquant.hunt16.json.AUDNZD dav_range_filter_adx ...`), a judge lookup (`family_<name>`) or a
+#: population-qualified name (`hunt16:<name>`) all name the same constructor, and a child minted
+#: from such a parent must resolve to that constructor rather than read as unimplemented.
+_FAMILY_SPELLINGS: tuple[str, ...] = ("family_", "hunt16:", "hunt16.", "hunt16/", "orthogonal:",
+                                      "families:")
+
+
+def canonical_family(family: str) -> str:
+    """The name the forward engine resolves for `family`, or `family` unchanged when no spelling
+    of it resolves (the executability gate then refuses it by name -- never a silent drop)."""
+    name = str(family or "").strip()
+    if not name:
+        return name
+    resolve = _resolver()
+    if resolve is None or resolve(name) is not None:
+        return name
+    for prefix in _FAMILY_SPELLINGS:
+        if name.startswith(prefix) and resolve(name[len(prefix):]) is not None:
+            return name[len(prefix):]
+    return name
+
+
+def _resolver() -> Any:
+    try:
+        from mt5desk.executables import resolve_family
+    except Exception:
+        return None
+    return resolve_family
+
+
 def gate_executability(child: Mapping[str, Any]) -> tuple[bool, str]:
     """Refuse variants the shared replay cannot implement before donating them.
 
     The gauntlet still owns the verdict. This is only its existing modifier contract
     applied at the compiler door, with the refusal retained in conversion memory.
+
+    ONE RESOLVER, THE FORWARD ENGINE'S (2026-10-06). This gate used to look the family up in
+    `families` then `families_orthogonal` only. hunt16 is the third population and was absent, so
+    from 082d89607 until 03dad3864 every descendant of all fourteen hunt16 families was refused
+    here as `execution:no_implementation` -- measured on that tree, 3,892 of 5,796 hunt16
+    descendants (5 symbols x 14 families x the twelve miners), 0 passed. 03dad3864 papered over
+    it with a module `__getattr__` on `families`; this gate now asks
+    `executables.resolve_family`, which reads hunt16 FIRST, so the answer no longer hangs on that
+    side door. A family no spelling resolves is still refused BY NAME and counted per family in
+    the artifact's `quarantine` block (`_expand_one`).
     """
-    from mt5desk import cell_modifiers, families, families_orthogonal
+    from mt5desk import cell_modifiers
 
     family = str(child.get("family") or "")
-    fn = getattr(families, f"family_{family}", None)
-    if fn is None:
-        fn = families_orthogonal.ORTHOGONAL_FAMILIES.get(family)
+    resolve = _resolver()
+    fn = resolve(canonical_family(family)) if resolve is not None else None
     if fn is None:
         return False, f"execution:no_implementation ({family})"
     _call, mods = cell_modifiers.split(fn, dict(child.get("params") or {}))
@@ -676,6 +716,25 @@ def _redundant_keys() -> set[str]:
 
 
 # --------------------------------------------------------------------------- closure & compile
+#: The chart a clockless discovery is tested on first: H1, the chart every family runs on unless
+#: `families_orthogonal.FAMILY_TIMEFRAMES` says it cannot speak there.
+DEFAULT_CHART = "H1"
+
+
+def default_chart(family: str) -> str:
+    """H1, or the family's nearest DECLARED chart on the ladder when its domain excludes H1."""
+    try:
+        from mt5desk import families_orthogonal as fo
+        domain = tuple(str(c).upper() for c in fo.timeframe_domain(family)) if family else ()
+    except Exception:
+        domain = ()
+    if not domain or DEFAULT_CHART in domain:
+        return DEFAULT_CHART
+    order = sorted(domain, key=lambda c: abs(TM.CHART_MINUTES.get(c, 10**6)
+                                             - TM.CHART_MINUTES[DEFAULT_CHART]))
+    return order[0]
+
+
 def parent_of(disc: Mapping[str, Any], ctx: TM.Context) -> dict[str, Any]:
     """A registry discovery, normalised into the parent the twelve miners read."""
     spec = dict(disc)
@@ -693,6 +752,21 @@ def parent_of(disc: Mapping[str, Any], ctx: TM.Context) -> dict[str, Any]:
     # disposition as `data:no_chart`; absence is a dependency, never a default observation.
     spec["chart"] = str(spec.get("chart") or spec.get("timeframe")
                         or params.get("timeframe") or "").upper()
+    if spec.get("family"):
+        spec["family"] = canonical_family(str(spec["family"]))
+    if not spec["chart"]:
+        # A CLOCKLESS LEAD IS TESTED ON A DEFAULT CHART, AND SAYS SO (2026-10-06). 2061bf5d0
+        # refused these as `data:no_chart`, which lost the lead AND every horizon and session
+        # variant the miners would have built from it -- research generation cut to stop a
+        # labelling problem. The labelling problem is solved by the label: the parent takes H1
+        # (or the family's nearest declared chart when it cannot speak on H1), is stamped
+        # `chart_defaulted: True`, and every child inherits the stamp through
+        # `transformation_miners._SPEC_KEYS`, so a defaulted H1 cell is never mistaken for a
+        # source that proposed H1. The session variants come from `mine_session` on this same
+        # parent -- one path, not a second one -- and every donated cell is judged and charged
+        # by the gauntlet exactly like any other.
+        spec["chart"] = default_chart(str(spec.get("family") or ""))
+        spec["chart_defaulted"] = True
     spec["session"] = str(spec.get("session") or "all").lower() or "all"
     # UNCONDITIONAL IS A VALUE, NOT A BLANK. `grid_cell` renders a falsy axis as the literal
     # "unknown", and an unconditional arm is not an unknown one -- it is the control every
@@ -742,6 +816,11 @@ def _hash_of(spec: Mapping[str, Any]) -> str:
 
 
 def _with_family(child: dict[str, Any], ctx: TM.Context) -> dict[str, Any]:
+    if child.get("family"):
+        canon = canonical_family(str(child["family"]))
+        if canon != child["family"]:
+            child = {**child, "family": canon}
+            child["content_hash"] = _hash_of(child)
     if child.get("family") and (not ctx.families or child["family"] in ctx.families):
         return child
     pool = _family_pool(ctx, str(child.get("mechanism_id") or ""),
@@ -909,7 +988,8 @@ def _donation_row(child: Mapping[str, Any], parent: Mapping[str, Any]) -> dict[s
             "title": (f"{child.get('transformation')} of {parent.get('symbol') or 'a discovery'}"
                       f" -> {child.get('symbol')} {child.get('chart')} {child.get('session')}"),
             "why": child.get("why"), "parent_discovery_ids": child.get("parent_discovery_ids"),
-            "discovery_id": parent.get("discovery_id")}
+            "discovery_id": parent.get("discovery_id"),
+            **({"chart_defaulted": True} if child.get("chart_defaulted") else {})}
 
 
 # --------------------------------------------------------------------------- the organ
@@ -932,7 +1012,8 @@ def _expand_one(disc: Mapping[str, Any], ctx: TM.Context, *, coverage: dict[str,
                 hashes: set[str], redundant: set[str], conn: Any, dry_run: bool,
                 donations: list[dict[str, Any]], blocked: dict[str, int],
                 by_miner: dict[str, dict[str, int]],
-                meta: Mapping[str, Any] | None = None) -> dict[str, Any]:
+                meta: Mapping[str, Any] | None = None,
+                quarantine: dict[str, dict[str, int]] | None = None) -> dict[str, Any]:
     """One discovery, all the way: interpret, expand, gate, compile, queue.
 
     Every member of the closure leaves here with a disposition, or this function is broken -- and
@@ -972,6 +1053,13 @@ def _expand_one(disc: Mapping[str, Any], ctx: TM.Context, *, coverage: dict[str,
         if not ok:
             key = why.split(" (")[0]
             blocked[key] = blocked.get(key, 0) + 1
+            if key == "execution:no_implementation" and quarantine is not None:
+                # QUARANTINED BY NAME AND COUNTED PER FAMILY: a population that goes dark (the
+                # fourteen hunt16 families, 2026-10-02..05) shows up here as one family name with
+                # a large count rather than vanishing into a single blocked total.
+                fam_slot = quarantine.setdefault(key, {})
+                fam = str(child.get("family") or "?")
+                fam_slot[fam] = fam_slot.get(fam, 0) + 1
             n_blocked += 1
             slot["blocked"] += 1
             if not dry_run:
@@ -1015,7 +1103,8 @@ def _expand_one(disc: Mapping[str, Any], ctx: TM.Context, *, coverage: dict[str,
             possible_cells=possible, generated_cells=len(capped), compiled_cells=compiled,
             queued_cells=compiled, blocked_cells=n_blocked, conn=conn)
     return {"discovery_id": did, "mechanism_id": mechanism_id, "possible": possible,
-            "generated": len(capped), "compiled": compiled, "blocked": n_blocked}
+            "generated": len(capped), "compiled": compiled, "blocked": n_blocked,
+            "chart_defaulted": bool(parent.get("chart_defaulted"))}
 
 
 def run(*, dry_run: bool = False, budget_s: int = BUDGET_S,
@@ -1035,6 +1124,7 @@ def run(*, dry_run: bool = False, budget_s: int = BUDGET_S,
         "generated_cells": 0, "unexplained_missing_cells": None, "conversion_coverage": None,
         "by_miner": {}, "mechanisms": {}, "unmeasured": [], "budget_stopped": False,
         "donated": 0, "donation_path": None, "notes": [], "priors_lowered": [], "rule": RULE,
+        "quarantine": {}, "chart_defaulted": {"parents": 0, "compiled": 0},
     }
     try:
         discoveries, by_source, unmeasured = intake(cursor, conn=conn, limit=max_discoveries,
@@ -1051,6 +1141,7 @@ def run(*, dry_run: bool = False, budget_s: int = BUDGET_S,
         blocked: dict[str, int] = {}
         by_miner: dict[str, dict[str, int]] = {}
         meta = _universe_meta()        # read once per run for `complete_inputs`
+        quarantine: dict[str, dict[str, int]] = {}
 
         for disc in discoveries:
             if time.monotonic() > deadline:
@@ -1062,7 +1153,10 @@ def run(*, dry_run: bool = False, budget_s: int = BUDGET_S,
                 break
             got = _expand_one(disc, ctx, coverage=coverage, hashes=hashes, redundant=redundant,
                               conn=conn, dry_run=dry_run, donations=donations, blocked=blocked,
-                              by_miner=by_miner, meta=meta)
+                              by_miner=by_miner, meta=meta, quarantine=quarantine)
+            if got.get("chart_defaulted"):
+                report["chart_defaulted"]["parents"] += 1
+                report["chart_defaulted"]["compiled"] += got["compiled"]
             report["interpreted"] += 1
             report["expanded"] += 1
             report["compiled"] += got["compiled"]
@@ -1074,6 +1168,8 @@ def run(*, dry_run: bool = False, budget_s: int = BUDGET_S,
             slot["discoveries"] += 1
             slot["compiled"] += got["compiled"]
 
+        report["quarantine"] = {k: {"n": sum(v.values()), "by_family": dict(sorted(v.items()))}
+                                for k, v in quarantine.items()}
         report["blocked"]["by_reason"] = dict(sorted(blocked.items()))
         report["blocked"]["n"] = sum(blocked.values())
         report["by_miner"] = {k: by_miner[k] for k in TM.MINERS if k in by_miner}

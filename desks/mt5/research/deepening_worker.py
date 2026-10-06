@@ -110,7 +110,7 @@ WORKED = BASE / "data" / "hypotheses" / "deepening_worked.jsonl"
 #: Candidates recovered here, in the compiler's own contract, for the same consumers.
 OUT = BASE / "data" / "hypotheses" / "deepened_candidates.json"
 LOG = BASE / "logs" / "deepening_worker.log"
-#: THE BACKLOG, PUBLISHED. The no-queues law (LAWS Ãƒâ€šÃ‚Â§5e) allows a budget to leave work over and
+#: THE BACKLOG, PUBLISHED. The no-queues law (LAWS §5e) allows a budget to leave work over and
 #: requires the leftover's AGE to be published; `QUEUE_CENSUS.json` reported this queue
 #: UNMEASURED because its rows carry no enqueue stamp. The worker stamps what it sees instead,
 #: which is the honest measurement anyway: the compiler rewrites the queue file every hour, so a
@@ -1035,7 +1035,7 @@ def publish_backlog(pending: list[dict], census: dict, now: datetime,
     """Publish the backlog and ITS OLDEST AGE -- the no-queues law's actual requirement.
 
     A budget may leave work over. What it may not do is leave it over unmeasured: an 18,128-row
-    backlog with no published age is the exact shape LAWS Ãƒâ€šÃ‚Â§5e exists to prevent, and
+    backlog with no published age is the exact shape LAWS §5e exists to prevent, and
     `QUEUE_CENSUS.json` was reporting this queue UNMEASURED for precisely that reason ("28,450
     rows, no per-row time"). UNMEASURED is a real answer and it is not this one any more.
     """
@@ -1072,7 +1072,7 @@ def publish_backlog(pending: list[dict], census: dict, now: datetime,
         # UNMEASURED, not "never": a pass that decided nothing cannot price the clearance.
         "days_to_clear": (round(depth / (rate_per_h * 24.0), 2) if rate_per_h > 0 else None),
         "lanes": census,
-        "law": ("LAWS Ãƒâ€šÃ‚Â§5e: nothing is queued; a budget may leave work over and its AGE is "
+        "law": ("LAWS §5e: nothing is queued; a budget may leave work over and its AGE is "
                 "published. Age is FIRST SEEN BY THIS DRAIN, not a stamp in the queue file -- "
                 "the compiler rewrites that file hourly, so a stamp there would reset every hour "
                 "and report a backlog that is permanently one hour old"),

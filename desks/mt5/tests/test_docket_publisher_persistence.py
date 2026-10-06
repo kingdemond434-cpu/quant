@@ -20,8 +20,11 @@ from research import session_chart_equivalents as sce  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def owned_writer_lane(monkeypatch):
+def owned_writer_lane(monkeypatch, tmp_path):
     from research import job_lock
+
+    monkeypatch.setattr(mh, "DEFERRED_DIR", tmp_path / "deferred")
+    monkeypatch.setattr(mh, "DEFER_BACKOFF_S", 0.0)
 
     @contextmanager
     def owned(name, **kwargs):
@@ -58,9 +61,43 @@ def test_refused_shared_writer_lane_preserves_bank(kind, monkeypatch, tmp_path):
         yield False
 
     monkeypatch.setattr(job_lock, 'exclusive_job', refused)
-    with pytest.raises(RuntimeError, match='writer lane'):
-        publish()
+    if kind == 'chart':
+        with pytest.raises(RuntimeError, match='writer lane'):
+            publish()
+    else:
+        # The converter DEFERS rather than raising: the bank is untouched and the candidate
+        # waits on disk for the next pass instead of being lost.
+        assert publish() == (0, -1)
+        assert [c['family'] for c in mh.read_deferred('local_converter')] == ['carry']
     assert bank.read_bytes() == b'[]'
+
+
+def test_converter_deferral_is_merged_first_on_the_next_pass(monkeypatch, tmp_path):
+    from research import job_lock
+
+    bank, _ = _publish('converter', monkeypatch, tmp_path)
+    bank.write_text('[]', encoding='utf-8')
+
+    @contextmanager
+    def refused(*args, **kwargs):
+        yield False
+
+    monkeypatch.setattr(job_lock, 'exclusive_job', refused)
+    held = {'symbols': ['GBPUSD'], 'family': 'carry', 'converted_at': 't0'}
+    assert lc.feed_docket([held]) == (0, -1)
+    # The same candidate minted again next hour with a new timestamp is ONE deferred cell.
+    assert lc.feed_docket([{**held, 'converted_at': 't1'}]) == (0, -1)
+    assert len(mh.read_deferred('local_converter')) == 1
+
+    @contextmanager
+    def owned(name, **kwargs):
+        yield True
+
+    monkeypatch.setattr(job_lock, 'exclusive_job', owned)
+    added, total = lc.feed_docket([{'symbols': ['EURUSD'], 'family': 'carry'}])
+    assert (added, total) == (2, 2)
+    assert {r['symbol'] for r in json.loads(bank.read_text())} == {'GBPUSD', 'EURUSD'}
+    assert mh.read_deferred('local_converter') == []
 
 
 def test_chart_rechecks_identity_under_the_shared_writer_lane(monkeypatch, tmp_path):

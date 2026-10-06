@@ -424,7 +424,10 @@ class Context:
 # --------------------------------------------------------------------------- child helpers
 _SPEC_KEYS = ("family", "symbol", "asset_class", "chart", "session", "regime", "params",
               "information", "horizon", "economic_actor", "mechanism_id", "side", "execution",
-              "entry_timing")
+              "entry_timing",
+              # Lineage, not identity: a parent whose chart the compiler DEFAULTED passes the
+              # stamp to every child, so no descendant of a clockless lead reads as source-declared.
+              "chart_defaulted")
 
 
 def _spec(parent: Mapping[str, Any]) -> dict[str, Any]:

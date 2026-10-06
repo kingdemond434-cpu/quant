@@ -236,21 +236,121 @@ def test_closure_dedupes_by_content_hash(desk, ctx):
     assert dc._hash_of(parent) not in hashes
 
 
-def test_missing_chart_is_not_silently_promoted_to_h1(ctx):
-    """A source lead without a clock is UNMEASURED, not an H1 hypothesis."""
+def test_missing_chart_defaults_to_h1_and_is_stamped_not_refused(ctx):
+    """A clockless lead is TESTED on H1 and says so: 2061bf5d0 refused it as `data:no_chart`,
+    which lost the lead and every horizon/session variant the miners build from it."""
     parent = dc.parent_of({"discovery_id": "clockless", "symbol": "XAUUSD",
                            "family": "asia_momentum", "session": "asia",
                            "declared_mechanism": "session_handover",
                            "why": "asia handover"}, ctx)
 
-    assert parent["chart"] == ""
-    assert parent["horizon"] == "unknown"
-    ok, why = dc.gate_data(parent, ctx)
-    assert ok is False and why == "data:no_chart"
+    assert parent["chart"] == "H1" and parent["chart_defaulted"] is True
+    assert parent["horizon"] == TM.CHART_GRID_HORIZON["H1"]
+    assert dc.gate_data(parent, ctx)[0] is True
     children, _counts, _possible = dc.closure(parent, ctx)
-    assert children  # the other independent transformations still report their attempts
-    assert {child["chart"] for child in children} == {""}
-    assert {dc.gate_data(child, ctx)[1] for child in children} == {"data:no_chart"}
+    assert children
+    # The stamp is lineage: every descendant of a defaulted parent carries it.
+    assert all(child.get("chart_defaulted") is True for child in children)
+    # The horizon and session miners now build their variants instead of returning nothing.
+    assert {c["chart"] for c in children if c["transformation"] == "horizon"} >= {"M15", "H4"}
+    assert any(c["transformation"] == "session" for c in children)
+    assert "data:no_chart" not in {dc.gate_data(c, ctx)[1] for c in children}
+    row = dc._donation_row(children[0], parent)
+    assert row["chart_defaulted"] is True and row["chart"]
+
+
+def test_a_declared_chart_is_never_stamped_defaulted(ctx):
+    parent = dc.parent_of({"discovery_id": "clocked", "symbol": "XAUUSD", "chart": "H1",
+                           "family": "asia_momentum", "declared_mechanism": "session_handover",
+                           "why": "asia handover"}, ctx)
+    assert not parent.get("chart_defaulted")
+    children, _c, _n = dc.closure(parent, ctx)
+    assert not any(c.get("chart_defaulted") for c in children)
+    assert "chart_defaulted" not in dc._donation_row(children[0], parent)
+
+
+def test_default_chart_respects_a_family_that_cannot_speak_on_h1(monkeypatch):
+    from mt5desk import families_orthogonal as fo
+
+    monkeypatch.setitem(fo.FAMILY_TIMEFRAMES, "toy_fast_only", (("M5", "M15"), "toy"))
+    assert dc.default_chart("toy_fast_only") == "M15"
+    assert dc.default_chart("asia_momentum") == "H1"
+    assert dc.default_chart("") == "H1"
+
+
+def test_clockless_discoveries_compile_in_a_full_run(desk, ctx):
+    _write(desk["paths"]["INTEL"] / "seat" / "discoveries_20260917_0000.json",
+           {"discoveries": [{"symbol": "XAUUSD", "family": "asia_momentum",
+                             "mechanism": "asia session handover: tokyo risk repriced in london",
+                             "title": "clockless lead"}]})
+    report = dc.run(budget_s=60, max_discoveries=20, cursor_path=desk["paths"]["CURSOR"],
+                    out=desk["paths"]["OUT"], ctx=ctx)
+    assert report["chart_defaulted"]["parents"] >= 1
+    assert report["chart_defaulted"]["compiled"] > 0
+    assert "data:no_chart" not in report["blocked"]["by_reason"]
+    assert any(d.get("chart_defaulted") for d in desk["donated"])
+
+
+# --------------------------------------------------------------------------- hunt16 descendants
+HUNT16 = "dav_bb_meanrev"
+
+
+def _hunt16_ctx(ctx: TM.Context) -> TM.Context:
+    return _replace_families(ctx, HUNT16)
+
+
+def test_hunt16_descendant_resolves_through_the_forward_engine_resolver(ctx, monkeypatch):
+    """The gate asks `executables.resolve_family` (hunt16 first), so a hunt16 descendant is
+    replayable even without the `families.__getattr__` side door 03dad3864 added. On the
+    082d89607..03dad3864 tree every such child read `execution:no_implementation`."""
+    from mt5desk import families
+
+    monkeypatch.delattr(families, "__getattr__", raising=False)
+    assert getattr(families, f"family_{HUNT16}", None) is None
+    ok, why = dc.gate_executability(_child(family=HUNT16, params={"regime": "high_vol"}))
+    assert ok, why
+
+
+def test_a_population_qualified_family_maps_to_its_parent_implementation(ctx):
+    hctx = _hunt16_ctx(ctx)
+    for spelling in (f"hunt16:{HUNT16}", f"family_{HUNT16}", f"hunt16.{HUNT16}"):
+        parent = dc.parent_of({"discovery_id": "h", "symbol": "XAUUSD", "chart": "H1",
+                               "family": spelling, "why": "bollinger mean reversion"}, hctx)
+        assert parent["family"] == HUNT16
+        kids, _c, _n = dc.closure(parent, hctx)
+        assert kids and {k["family"] for k in kids} == {HUNT16}
+    child = dc._with_family(_child(family=f"hunt16:{HUNT16}"), hctx)
+    assert child["family"] == HUNT16 and dc.gate_executability(child)[0]
+
+
+def test_every_hunt16_family_has_replayable_descendants(ctx):
+    from mt5desk.executables import hunt16_families
+
+    fams = sorted(hunt16_families())
+    assert len(fams) == 14
+    for fam in fams:
+        ok, why = dc.gate_executability(_child(family=fam))
+        assert ok, (fam, why)
+
+
+def test_a_family_with_no_implementation_is_quarantined_by_name_and_counted(desk, ctx):
+    hctx = _replace_families(ctx, "no_such_fam")
+    disc = {"discovery_id": "q", "symbol": "XAUUSD", "chart": "H1", "family": "no_such_fam",
+            "session": "asia", "declared_mechanism": "session_handover", "why": "asia handover"}
+    blocked: dict[str, int] = {}
+    quarantine: dict[str, dict[str, int]] = {}
+    got = dc._expand_one(disc, hctx, coverage={}, hashes=set(), redundant=set(), conn=None,
+                         dry_run=True, donations=[], blocked=blocked, by_miner={},
+                         quarantine=quarantine)
+    n = blocked.get("execution:no_implementation", 0)
+    assert n > 0 and got["blocked"] >= n
+    assert quarantine == {"execution:no_implementation": {"no_such_fam": n}}
+
+
+def _replace_families(ctx: TM.Context, extra: str) -> TM.Context:
+    from dataclasses import replace
+
+    return replace(ctx, families=frozenset({*ctx.families, extra}))
 
 
 def test_explicit_params_timeframe_remains_a_declared_chart(ctx):
