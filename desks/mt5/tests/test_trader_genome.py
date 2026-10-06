@@ -263,7 +263,6 @@ def test_null_pass_is_charged_to_the_lifetime_count(corpus: Path, tmp_path: Path
     """A pass that screens and contrasts but passes nothing still charges every look, through
     the desk's one null-pass helper, into the ledger experiment_ledger reads."""
     from libs.research import experiment_ledger as el
-
     from research import proposer_common as pc
     monkeypatch.setitem(bf.TERMS, "fxblue", ("confirmed", "test"))
     desk = tmp_path / "desks" / "mt5"
