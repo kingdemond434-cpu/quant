@@ -3,10 +3,10 @@
 Scans MQL5.com articles for trading strategy ideas and research.
 """
 
-import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+
 import requests
 
 BASE = Path(__file__).resolve().parent.parent
@@ -57,7 +57,11 @@ def mine_articles(max_pages: int = 3) -> list[dict]:
 def run_and_save() -> list[dict]:
     discoveries = mine_articles()
     out_file = OUT / f"articles_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
-    out_file.write_text(json.dumps(discoveries, indent=2), encoding="utf-8")
+    try:
+        from side_channels.discovery_io import write_discoveries
+    except ModuleNotFoundError:
+        from discovery_io import write_discoveries
+    discoveries = write_discoveries(out_file, discoveries)
     print(f"mql5_articles: {len(discoveries)} discoveries saved")
     return discoveries
 

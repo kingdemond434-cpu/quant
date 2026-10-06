@@ -31,7 +31,6 @@ if str(_P(__file__).resolve().parent.parent) not in _sys.path:
 
 
 import contextlib
-import fcntl
 import json
 import re
 import subprocess
@@ -144,9 +143,20 @@ def _acquire() -> IO[str] | None:
     victim could be the dead-man rail. Declining beats queueing.
     """
     _LOCK.parent.mkdir(parents=True, exist_ok=True)
-    fh = _LOCK.open("w")
+    fh = _LOCK.open("a+")
     try:
-        fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        if sys.platform == "win32":
+            import msvcrt
+
+            if fh.tell() == 0:
+                fh.write("0")
+                fh.flush()
+            fh.seek(0)
+            msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
         fh.close()
         return None

@@ -114,7 +114,8 @@ def _table_rows(table: str) -> int:
     if not METRICS.exists():
         return 0
     try:
-        with sqlite3.connect(f"file:{METRICS}?mode=ro", uri=True) as c:
+        uri = METRICS.resolve().as_uri() + "?mode=ro"
+        with contextlib.closing(sqlite3.connect(uri, uri=True)) as c:
             return int(c.execute(f"select count(*) from {table}"  # noqa: S608 -- internal constant
                                  ).fetchone()[0])
     except sqlite3.Error:

@@ -656,6 +656,27 @@ def gate_data(child: Mapping[str, Any], ctx: TM.Context) -> tuple[bool, str]:
     return True, f"data:ok ({pit})"
 
 
+def gate_executability(child: Mapping[str, Any]) -> tuple[bool, str]:
+    """Refuse variants the shared replay cannot implement before donating them.
+
+    The gauntlet still owns the verdict. This is only its existing modifier contract
+    applied at the compiler door, with the refusal retained in conversion memory.
+    """
+    from mt5desk import cell_modifiers, families, families_orthogonal
+
+    family = str(child.get("family") or "")
+    fn = getattr(families, f"family_{family}", None)
+    if fn is None:
+        fn = families_orthogonal.ORTHOGONAL_FAMILIES.get(family)
+    if fn is None:
+        return False, f"execution:no_implementation ({family})"
+    _call, mods = cell_modifiers.split(fn, dict(child.get("params") or {}))
+    reason = cell_modifiers.refusal(mods)
+    if reason:
+        return False, f"execution:modifier_unavailable ({reason})"
+    return True, "execution:replayable"
+
+
 def pit_status(child: Mapping[str, Any], ctx: TM.Context) -> str:
     """PIT_BAR_CLOSE for a price-only cell (a bar is knowable at its own close); PIT_STAMPED when
     the conditioning axis file carries `knowable_at`; UNKNOWN otherwise, which the data gate
@@ -707,13 +728,20 @@ def _redundant_keys() -> set[str]:
 def parent_of(disc: Mapping[str, Any], ctx: TM.Context) -> dict[str, Any]:
     """A registry discovery, normalised into the parent the twelve miners read."""
     spec = dict(disc)
+    params = dict(spec.get("params") or {})
     sym = str(spec.get("symbol") or "").upper()
     mid, _why = interpret(str(spec.get("why") or ""), str(spec.get("declared_mechanism") or ""))
     contract = TM.CONTRACTS.get(mid)
     spec["mechanism_id"] = mid
     spec["symbol"] = sym
     spec["asset_class"] = spec.get("asset_class") or ctx.class_of(sym)
-    spec["chart"] = (str(spec.get("chart") or "").upper() or "H1")
+    # A chart is part of the hypothesis identity.  The compiler used to turn an absent chart
+    # into H1 here, so source leads that had never named a clock were tested as H1 strategies
+    # and became indistinguishable from sources that explicitly proposed H1.  Accept every
+    # spelling the intake contract supports, but leave genuine absence blank for `gate_data` to
+    # disposition as `data:no_chart`; absence is a dependency, never a default observation.
+    spec["chart"] = str(spec.get("chart") or spec.get("timeframe")
+                        or params.get("timeframe") or "").upper()
     spec["session"] = str(spec.get("session") or "all").lower() or "all"
     # UNCONDITIONAL IS A VALUE, NOT A BLANK. `grid_cell` renders a falsy axis as the literal
     # "unknown", and an unconditional arm is not an unknown one -- it is the control every
@@ -725,7 +753,7 @@ def parent_of(disc: Mapping[str, Any], ctx: TM.Context) -> dict[str, Any]:
                            or (contract.information if contract else "price_only"))
     spec["economic_actor"] = spec.get("economic_actor") or (contract.actor if contract else "")
     spec["horizon"] = TM.CHART_GRID_HORIZON.get(spec["chart"], "unknown")
-    spec["params"] = dict(spec.get("params") or {})
+    spec["params"] = params
     return spec
 
 
@@ -781,6 +809,132 @@ def _with_family(child: dict[str, Any], ctx: TM.Context) -> dict[str, Any]:
     return child
 
 
+#: THE FAMILIES WHOSE IDENTITY NAMES A SECOND INSTRUMENT, and the key that names it.
+#:
+#: WHY (measured 2026-09-30 on the docket committed 2026-09-29, 57,538 rows). `_with_family` hands
+#: a transformed child a family from its mechanism's pool, but a family that trades THIS
+#: instrument against ANOTHER one cannot be built from a symbol alone -- and nothing here named
+#: the other one. 1,952 of 2,291 `relative_value` and 2,052 of 2,302 `correlation_regime` rows
+#: carried no `peer_symbol`, 748 of 1,062 `lead_lag` rows no `driver_symbol`, and 2,060 of 2,888
+#: `cross_asset_residual` and 1,640 of 1,867 `pca_residual` rows no `factor_symbols` -- 8,450
+#: rows, ~99% of them from this compiler. The judge rebuilt the peer families with `peer=None`,
+#: the family returned [] and the cell ended UNKNOWN as "never fires"; the residual families died
+#: as "factor basket incomplete (none named)". On a 1,200-row sample the peerless pair alone were
+#: 21% of every UNKNOWN verdict. The mechanism was never asked -- its input was never written down.
+#:
+#: The other instrument is chosen STRUCTURALLY, by the sweep's own selectors
+#: (`orthogonal_sweep._peer_symbol` / `_factor_symbols`: shared currency leg, then asset class,
+#: then longest history -- the symbol string and the registry only, so there is nothing to leak),
+#: from the hypothesis-lane instruments that hold bars ON THE CHILD'S OWN CHART, because a peer
+#: on another clock silently reduces an inner join to the coarser stamps. A child that already
+#: names its instrument is left exactly as written, and a child for which no instrument can be
+#: found is left as it was: completion only ever adds the input, it never refuses a cell.
+PEER_KEY_BY_FAMILY: dict[str, str] = {"relative_value": "peer_symbol",
+                                      "correlation_regime": "peer_symbol",
+                                      "lead_lag": "driver_symbol"}
+FACTOR_FAMILIES = frozenset({"cross_asset_residual", "pca_residual"})
+#: THE TRIANGLE NAMES TWO INSTRUMENTS, and the same defect struck it (measured 2026-09-30 on the
+#: same docket): 1,720 of 1,796 `triangle` rows came from this compiler with no `leg_b_symbol` /
+#: `leg_c_symbol`, and `family_triangle` returns [] without both legs -- so every one reached the
+#: judge as UNKNOWN / "never fires" (18 of 430 UNKNOWN verdicts in a 6,000-cell census; not one
+#: triangle cell was judgeable). The legs are NOT searched: a triangle is a fact about the quote
+#: set (`triangle_miner`), so the target's two currencies are joined through the first pivot
+#: currency whose two connecting pairs this desk holds on the child's chart, and
+#: `triangle_miner.orient` derives the signs from the symbols' names. Keyed by the first leg.
+LEG_FAMILIES: dict[str, tuple[str, str]] = {"triangle": ("leg_b_symbol", "leg_c_symbol")}
+#: Pivot currencies in order of preference -- the deepest books first. Any other currency the pool
+#: quotes is tried after these, alphabetically, so the choice is deterministic.
+TRIANGLE_PIVOTS = ("USD", "EUR", "JPY", "GBP", "CHF")
+
+
+def _triangle_legs(sym: str, pool: list[str],
+                   meta: Mapping[str, Any]) -> tuple[str, str, int, int] | None:
+    """(leg_b, leg_c, sign_b, sign_c) closing `sym` through a pivot currency, or None."""
+    from research.triangle_miner import fx_pairs, orient
+    legs = fx_pairs(dict(meta))
+    if sym not in legs:
+        return None
+    a, c = legs[sym]
+    by_ccy: dict[frozenset[str], str] = {}
+    for s in sorted(pool):
+        if s in legs:
+            by_ccy.setdefault(frozenset(legs[s]), s)
+    ccys = sorted({x for s in pool if s in legs for x in legs[s]} - {a, c})
+    for b in [*[p for p in TRIANGLE_PIVOTS if p in ccys],
+              *[x for x in ccys if x not in TRIANGLE_PIVOTS]]:
+        ab, bc = by_ccy.get(frozenset((a, b))), by_ccy.get(frozenset((b, c)))
+        if not (ab and bc):
+            continue
+        tri = orient(sym, ab, bc, legs)
+        if tri is not None:
+            return tri.leg_b, tri.leg_c, tri.sign_b, tri.sign_c
+    return None
+
+
+def _universe_meta() -> dict[str, Any]:
+    doc = _read_json(UNIVERSE / "universe.json")
+    return doc if isinstance(doc, dict) else {}
+
+
+def complete_inputs(child: dict[str, Any], ctx: TM.Context,
+                    meta: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """Name the other instrument(s) a peer/driver/factor/triangle family needs, when the child
+    names none."""
+    fam = str(child.get("family") or "")
+    key = PEER_KEY_BY_FAMILY.get(fam)
+    legs_keys = LEG_FAMILIES.get(fam)
+    params = dict(child.get("params") or {})
+    if key is None and fam not in FACTOR_FAMILIES and legs_keys is None:
+        return child
+    if (key and params.get(key)) or (fam in FACTOR_FAMILIES and params.get("factor_symbols")) \
+            or (legs_keys and all(params.get(k) for k in legs_keys)):
+        return child
+    sym = str(child.get("symbol") or "")
+    chart = str(child.get("chart") or params.get("timeframe") or "").upper()
+    if not chart:
+        # `gate_data` will record the canonical `data:no_chart` disposition.  Choosing peers on
+        # H1 first would still perform a hidden clock substitution even though the child later
+        # failed the gate.
+        return child
+    pool = sorted({s for syms in ctx.instruments.values() for s in syms
+                   if str(s).upper() != sym.upper() and ctx.hypothesis_lane(s)
+                   and ctx.has_bars(s, chart)})
+    if not pool:
+        return child
+    try:
+        from research.orthogonal_sweep import _factor_symbols, _peer_symbol
+    except Exception:
+        return child
+    info = dict(meta) if meta is not None else _universe_meta()
+    added: str | None = None
+    if legs_keys:
+        try:
+            tri = _triangle_legs(sym, pool, info)
+        except Exception:
+            tri = None
+        if tri:
+            params[legs_keys[0]], params[legs_keys[1]] = tri[0], tri[1]
+            params["sign_b"], params["sign_c"] = tri[2], tri[3]
+            added = legs_keys[0]
+    elif key:
+        peer = _peer_symbol(sym, [sym, *pool], info)
+        if peer:
+            params[key] = peer
+            added = key
+    else:
+        basket = [s for s in _factor_symbols(pool, info) if s != sym]
+        if basket:
+            params["factor_symbols"] = basket
+            added = "factor_symbols"
+    if not added:
+        return child
+    out = dict(child)
+    out["params"] = params
+    out["input_completed"] = added
+    out["content_hash"] = _hash_of(out)
+    return out
+
+
 def donate(rows: list[dict[str, Any]], tests_run: int) -> str | None:
     """The docket's door. Indirected through this module so a test can monkeypatch ONE name, and
     called ONCE per run -- `proposer_common.donate` names its file by the minute, so two calls in
@@ -816,6 +970,7 @@ def _dispose(child: dict[str, Any], ctx: TM.Context, *, coverage: Mapping[str, i
     economics is not also a data gap, and reporting it as both would double-count the debt."""
     for gate in (lambda: gate_economic(child, ctx),
                  lambda: gate_data(child, ctx),
+                 lambda: gate_executability(child),
                  lambda: gate_novelty(child, ctx, coverage=coverage, hashes=hashes,
                                       redundant=redundant, conn=conn)):
         ok, why = gate()
@@ -827,7 +982,8 @@ def _dispose(child: dict[str, Any], ctx: TM.Context, *, coverage: Mapping[str, i
 def _expand_one(disc: Mapping[str, Any], ctx: TM.Context, *, coverage: dict[str, int],
                 hashes: set[str], redundant: set[str], conn: Any, dry_run: bool,
                 donations: list[dict[str, Any]], blocked: dict[str, int],
-                by_miner: dict[str, dict[str, int]]) -> dict[str, Any]:
+                by_miner: dict[str, dict[str, int]],
+                meta: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """One discovery, all the way: interpret, expand, gate, compile, queue.
 
     Every member of the closure leaves here with a disposition, or this function is broken -- and
@@ -857,8 +1013,9 @@ def _expand_one(disc: Mapping[str, Any], ctx: TM.Context, *, coverage: dict[str,
 
     compiled = 0
     for raw in capped:
-        child = _with_family({**raw, "mechanism_id": mechanism_id,
-                              "economic_actor": parent.get("economic_actor")}, ctx)
+        child = complete_inputs(_with_family({**raw, "mechanism_id": mechanism_id,
+                                              "economic_actor": parent.get("economic_actor")},
+                                             ctx), ctx, meta)
         ok, why = _dispose(child, ctx, coverage=coverage, hashes=hashes, redundant=redundant,
                            conn=conn)
         slot = by_miner.setdefault(str(child.get("miner") or "?"),
@@ -945,6 +1102,7 @@ def run(*, dry_run: bool = False, budget_s: int = BUDGET_S,
         donations: list[dict[str, Any]] = []
         blocked: dict[str, int] = {}
         by_miner: dict[str, dict[str, int]] = {}
+        meta = _universe_meta()        # read once per run for `complete_inputs`
 
         for disc in discoveries:
             if time.monotonic() > deadline:
@@ -956,7 +1114,7 @@ def run(*, dry_run: bool = False, budget_s: int = BUDGET_S,
                 break
             got = _expand_one(disc, ctx, coverage=coverage, hashes=hashes, redundant=redundant,
                               conn=conn, dry_run=dry_run, donations=donations, blocked=blocked,
-                              by_miner=by_miner)
+                              by_miner=by_miner, meta=meta)
             report["interpreted"] += 1
             report["expanded"] += 1
             report["compiled"] += got["compiled"]

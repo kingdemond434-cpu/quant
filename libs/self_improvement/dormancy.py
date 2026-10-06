@@ -119,7 +119,7 @@ def _load_corpus(paths: tuple[str, ...]) -> list[tuple[str, str]]:
     return out
 
 
-def _grep(pattern: str, *paths: str) -> list[str]:
+def _grep(pattern: str, *paths: str, literal: str = "") -> list[str]:
     """Which files match `pattern`. Pure Python: THIS HUNG THE WHOLE TEST SUITE (2026-09-24).
 
     It used to shell out to `grep -rl -E`, which is a POSIX tool on a Windows-only desk. It
@@ -138,17 +138,19 @@ def _grep(pattern: str, *paths: str) -> list[str]:
         rx = re.compile(pattern)
     except re.error:
         return []
-    return [rel for rel, text in corpus if rx.search(text)]
+    # Callers supply a literal required by every branch of their regex. A cheap
+    # substring check avoids scanning every source with every module's regex.
+    return [rel for rel, text in corpus if (not literal or literal in text) and rx.search(text)]
 
 
 def _external_importers(rel: str) -> list[str]:
     """Files OUTSIDE the module's own package that import it."""
-    pkg = str(Path(rel).parent)
+    pkg = Path(rel).parent.as_posix()
     mod = Path(rel).stem
     dotted = pkg.replace("/", ".") + "." + mod
     pattern = rf"(import\s+{re.escape(dotted)}|from\s+{re.escape(dotted)}\s+import|"
     pattern += rf"from\s+{re.escape(pkg.replace('/', '.'))}\s+import\s+[^\n]*\b{re.escape(mod)}\b)"
-    hits = _grep(pattern, "scripts", "libs", "app", "api", "tests")
+    hits = _grep(pattern, "scripts", "libs", "app", "api", "tests", literal=mod)
     # Its own package and its own tests do not make it reachable from the running desk.
     return [h for h in hits if not h.startswith(pkg) and not h.startswith("tests/")]
 
@@ -161,20 +163,32 @@ def _scheduled(rel: str) -> bool:
         if p.exists() and name in p.read_text("utf-8", errors="ignore"):
             return True
     # A unit or shell runner that names it also counts as scheduling.
-    return bool(_grep(re.escape(name), "ops"))
+    return bool(_grep(re.escape(name), "ops", literal=name))
 
 
 def _invoked_by_a_script(rel: str) -> bool:
     """Another script importing it or shelling out to it makes it reachable."""
     name = Path(rel).name
     stem = Path(rel).stem
-    hits = _grep(rf"({re.escape(name)}|import\s+{re.escape(stem)}\b)", "scripts", "libs")
+    hits = _grep(rf"({re.escape(name)}|import\s+{re.escape(stem)}\b)",
+                 "scripts", "libs", literal=stem)
     return bool([h for h in hits if h != rel])
+
+
+def _line_count(path: Path, rel: str, source_text: dict[str, str]) -> int:
+    text = source_text.get(rel)
+    if text is None:
+        # A failed corpus read is not evidence that the source has zero lines.
+        text = path.read_text("utf-8", errors="ignore")
+    return len(text.splitlines())
 
 
 def scan(*, include_modules: bool = True, include_scripts: bool = True) -> DormancyReport:
     """Find capabilities nothing imports and nothing schedules."""
     rep = DormancyReport()
+    # The reachability search already read these files. Reuse that same snapshot
+    # for sizes instead of opening each dormant file again on the busy VPS.
+    source_text = dict(_load_corpus(("scripts", "libs", "app", "api", "tests")))
     if include_modules:
         for pkg in _LIB_SCOPE:
             d = _ROOT / pkg
@@ -192,7 +206,7 @@ def scan(*, include_modules: bool = True, include_scripts: bool = True) -> Dorma
                     reason="no module outside its own package imports it",
                     proving_command=(f"grep -rl '{pkg.replace('/', '.')}.{f.stem}' scripts/ libs/ "
                                      f"| grep -v {pkg}/"),
-                    lines=len(f.read_text('utf-8', errors='ignore').splitlines())))
+                    lines=_line_count(f, rel, source_text)))
     if include_scripts:
         sd = _ROOT / "scripts"
         for f in sorted(sd.glob("*.py")):
@@ -205,7 +219,7 @@ def scan(*, include_modules: bool = True, include_scripts: bool = True) -> Dorma
                 reason="nothing schedules it and no other script invokes or imports it",
                 proving_command=(f"grep -c {f.name} ops/crontab.manifest scripts/run_cadence.py "
                                  f"scripts/daily_research_cycle.py"),
-                lines=len(f.read_text('utf-8', errors='ignore').splitlines())))
+                lines=_line_count(f, rel, source_text)))
     return rep
 
 

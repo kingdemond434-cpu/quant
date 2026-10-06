@@ -5,10 +5,13 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
 import time
 from pathlib import Path
 
+import pytest
 import scripts.max_audit as m
+
 from libs.risk import capital_events
 
 
@@ -16,6 +19,59 @@ def _mk(tmp: Path) -> None:
     (tmp / "data/lake/bronze").mkdir(parents=True)
     (tmp / "reports/reconstructed_oos").mkdir(parents=True)
     (tmp / "web").mkdir(parents=True)
+
+
+def test_audit_database_readers_close_on_success_and_query_failure(tmp_path, monkeypatch):
+    _mk(tmp_path)
+    db = tmp_path / "data/sor_research.sqlite"
+    con = sqlite3.connect(db)
+    con.executescript("""
+        CREATE TABLE research_memory(metrics_json TEXT, category TEXT, created_at TEXT);
+        INSERT INTO research_memory VALUES ('{"axis":"carry"}', 'experiment', datetime('now'));
+        CREATE TABLE trials_ledger(family TEXT);
+        INSERT INTO trials_ledger VALUES ('carry');
+    """)
+    con.close()
+    monkeypatch.setattr(m, "ROOT", tmp_path)
+    connect = sqlite3.connect
+    opened = []
+
+    def track(*args, **kwargs):
+        connection = connect(*args, **kwargs)
+        opened.append(connection)
+        return connection
+
+    monkeypatch.setattr(sqlite3, "connect", track)
+    assert m._converted_axes() == ["carry"]
+    assert m._trial_mechanisms() == ["carry"]
+    m.check_memory_hygiene([])
+    m.check_production([])
+    assert len(opened) == 4
+    for connection in opened:
+        with pytest.raises(sqlite3.ProgrammingError, match="closed database"):
+            connection.execute("SELECT 1")
+
+    con = connect(db)
+    con.executescript("DROP TABLE research_memory; DROP TABLE trials_ledger;")
+    con.close()
+    m._converted_axes()
+    m._trial_mechanisms()
+    m.check_memory_hygiene([])
+    m.check_production([])
+    assert len(opened) == 8
+    for connection in opened:
+        with pytest.raises(sqlite3.ProgrammingError, match="closed database"):
+            connection.execute("SELECT 1")
+
+
+def test_audit_readers_never_create_a_missing_database(tmp_path, monkeypatch):
+    _mk(tmp_path)
+    monkeypatch.setattr(m, "ROOT", tmp_path)
+    assert m._converted_axes() == []
+    assert m._trial_mechanisms() == []
+    m.check_memory_hygiene([])
+    m.check_production([])
+    assert not (tmp_path / "data/sor_research.sqlite").exists()
 
 
 class TestDepthParity:
@@ -171,7 +227,7 @@ class TestSourceBacklog:
         _mk(tmp_path)
         wf = tmp_path / "docs/research/data_axis_watchlist.md"
         wf.parent.mkdir(parents=True, exist_ok=True)
-        wf.write_text("### 1. X — grade: verified-clean\n")
+        wf.write_text("### 1. X — grade: verified-clean\n", encoding="utf-8")
         monkeypatch.setattr(m, "ROOT", tmp_path)
         defects: list[tuple[str, str]] = []
         m.check_source_backlog(defects)
@@ -181,7 +237,8 @@ class TestSourceBacklog:
         _mk(tmp_path)
         wf = tmp_path / "docs/research/data_axis_watchlist.md"
         wf.parent.mkdir(parents=True, exist_ok=True)
-        wf.write_text("### 1. X — grade: UNVERIFIED\n")  # just written -- fresh mtime
+        # Just written: fresh mtime, with the same encoding the catalogue reader uses.
+        wf.write_text("### 1. X — grade: UNVERIFIED\n", encoding="utf-8")
         monkeypatch.setattr(m, "ROOT", tmp_path)
         monkeypatch.setattr(m, "NOW", time.time())
         defects: list[tuple[str, str]] = []
@@ -192,7 +249,7 @@ class TestSourceBacklog:
         _mk(tmp_path)
         wf = tmp_path / "docs/research/data_axis_watchlist.md"
         wf.parent.mkdir(parents=True, exist_ok=True)
-        wf.write_text("### 1. X — grade: UNVERIFIED\n")
+        wf.write_text("### 1. X — grade: UNVERIFIED\n", encoding="utf-8")
         old = time.time() - 20 * 86400
         os.utime(wf, (old, old))
         monkeypatch.setattr(m, "ROOT", tmp_path)

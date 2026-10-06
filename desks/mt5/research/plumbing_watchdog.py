@@ -452,6 +452,13 @@ def check_adoption_partial(root: Path | None = None, now: datetime | None = None
         return rows, facts
     facts["state"] = "ok" if doc.get("ok") else "partial"
     facts["measured_at"] = doc.get("measured_at", UNMEASURED)
+    # Preserve the release identity that produced this observation.  A current dirty-code
+    # refusal and a stale report from an older target are operationally different defects;
+    # dropping these fields made the issue consumer unable to tell them apart.
+    facts["stage"] = doc.get("stage", UNMEASURED)
+    facts["branch"] = doc.get("branch", UNMEASURED)
+    facts["head"] = doc.get("head", UNMEASURED)
+    facts["target"] = doc.get("target", UNMEASURED)
     drift = [str(p) for p in (doc.get("code_drift") or [])]
     unwritable = [str(p) for p in (doc.get("unwritable") or [])]
     facts["code_drift"] = len(drift)
@@ -473,10 +480,13 @@ def check_adoption_partial(root: Path | None = None, now: datetime | None = None
         why_each = (f" {len(unwritable)} of them could not be written or unlinked at all "
                     f"({', '.join(unwritable[:4])}) -- an open handle or the known corrupt NTFS "
                     f"entry.")
+    release_identity = (f" Stage {facts['stage']}; local HEAD {facts['head']}; fetched target "
+                        f"{facts['target']} on {facts['branch']}.")
     rows.append(defect(
         "adoption_partial", ADOPT_TASK,
         f"the adoption RAN and landed a tree that still differs from the branch on "
-        f"{len(drift)} CODE path(s), for {how_long}: {named}.{why_each} The task reads Ready "
+        f"{len(drift)} CODE path(s), for {how_long}: {named}.{why_each}{release_identity} "
+        f"The task reads Ready "
         f"and the log reads healthy; the gateway is running code that is not the shipped code.",
         "read desks/mt5/reports/ADOPTION_STATE.json and desks/mt5/logs/adopt_release_console.log "
         "-- each named path is an open handle, a corrupt NTFS entry (chkdsk C: /F, then reboot), "

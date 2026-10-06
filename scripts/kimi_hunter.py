@@ -648,6 +648,11 @@ def _donate(findings: list[dict]) -> Path | None:
         # carries no source_url (libs.research.source_provenance).
         from libs.research.source_provenance import stamp_row
         stamp_row(discoveries[-1], ground="kimi", retrieved_at=now.isoformat(timespec="seconds"))
+    from libs.data.pit import stamp_or_refuse
+
+    discoveries, refused = stamp_or_refuse(discoveries, "kimi_k3_deep_forest")
+    if refused:
+        raise ValueError(f"Kimi refused {len(refused)} unstamped discoveries")
     path.write_text(json.dumps({
         "source": "kimi_k3_deep_forest",
         "generated_at": now.isoformat(),

@@ -47,7 +47,7 @@ fi
 # VERIFY-THEN-CLAIM: prove the brain can authenticate before declaring done.
 source ops/brain_env.sh
 echo "verifying with a live call..." >&2
-OUT="$(claude -p 'Reply with exactly: AUTH-OK' --dangerously-skip-permissions 2>&1 || true)"
+OUT="$(claude -p 'Reply with exactly: AUTH-OK' --allowedTools "" --max-turns 1 2>&1 || true)"
 echo "$OUT"
 if echo "$OUT" | grep -q "AUTH-OK"; then
     echo "=== BRAIN API AUTH VERIFIED -- watchdog will auto-fire the next cycle ===" >&2

@@ -123,7 +123,13 @@ def _imports_of(path: Path) -> set[str]:
     except (OSError, SyntaxError):
         return set()
     out: set[str] = set()
-    for node in ast.walk(tree):
+    # Imports are statements. Expressions cannot contain an import statement;
+    # walking their often huge numerical ASTs adds no callers to this census.
+    pending: list[ast.AST] = list(tree.body)
+    while pending:
+        node = pending.pop()
+        pending.extend(child for child in ast.iter_child_nodes(node)
+                       if isinstance(child, (ast.stmt, ast.ExceptHandler, ast.match_case)))
         if isinstance(node, ast.Import):
             out |= {a.name for a in node.names if a.name.startswith("libs.")}
         elif (isinstance(node, ast.ImportFrom) and node.level == 0 and node.module
@@ -165,7 +171,8 @@ def build_graph(root: Path) -> Graph:
                 # each file erased the record that anything else had imported it.
                 if target == self_name:
                     continue
-                g.importers.setdefault(target, set()).add(self_name or str(p.relative_to(root)))
+                importer = self_name or p.relative_to(root).as_posix()
+                g.importers.setdefault(target, set()).add(importer)
 
     for area in _SHELL_AREAS:
         base = root / area

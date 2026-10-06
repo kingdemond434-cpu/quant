@@ -184,8 +184,9 @@ def test_the_data_surface_high_water_mark_is_machine_local() -> None:
     near-empty data/ against the VPS's 37 and filed `holdings-shrank` having dropped nothing;
     this checkout read 9. Same shape as the `n_snapshots` ratchet fixed the same day, same fix.
     """
-    assert "data/" in str(M.HOLDINGS_LOCAL), "the surface ratchet must not be committed"
-    assert "docs/" in str(M.HOLDINGS_RECORD), "the paid-target ratchet is genuinely institutional"
+    assert "data/" in M.HOLDINGS_LOCAL.as_posix(), "the surface ratchet must not be committed"
+    assert "docs/" in M.HOLDINGS_RECORD.as_posix(), (
+        "the paid-target ratchet is genuinely institutional")
 
 
 def test_the_committed_record_no_longer_carries_the_surface() -> None:

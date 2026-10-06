@@ -46,6 +46,13 @@ if not _ROOT.exists():
     _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.agent_denials import (  # noqa: E402
+    brain_argv,
+    denial_log_lines,
+    denial_rows,
+    parse_stream,
+    scoped_claude_args,
+)
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
 _OPEN = "data/calibration_probe.jsonl"
@@ -136,13 +143,19 @@ def build_questions(root: Path, n: int = 6) -> list[dict[str, Any]]:
     return qs
 
 
+def ask_argv(prompt: str) -> list[str]:
+    """The probe's CLI call: NO tools, one turn. Every number it needs is in the prompt.
+
+    It used to pass the blanket permission-bypass flag, which granted every tool to a call whose
+    whole job is to print one JSON object. stream-json is how a refused call becomes visible."""
+    return brain_argv("calibration_probe",
+                      scoped_claude_args(prompt, allowed=[], effort="xhigh", max_turns=1))
+
+
 def _ask(prompt: str, timeout: int = 600) -> str:
-    r = subprocess.run(
-        ["bash", "-c",
-         'source ops/brain_env.sh && brain_auth_check || exit 90 && '
-         'claude --effort xhigh --append-system-prompt "$_DOCTRINE" -p "$0" '
-         '--dangerously-skip-permissions', prompt],
-        cwd=_ROOT, capture_output=True, text=True, timeout=timeout)
+    """The raw stream-json stdout; `pose` parses it for the answer AND for refused calls."""
+    r = subprocess.run(ask_argv(prompt), cwd=_ROOT, capture_output=True, text=True,
+                       timeout=timeout)
     return r.stdout or ""
 
 
@@ -166,7 +179,18 @@ def pose(root: Path, *, n: int = 6, ask=_ask) -> dict[str, Any]:
     ctx = json.dumps([{k: q[k] for k in ("id", "symbol", "ref_price", "horizon_h")} for q in qs])
     raw = ask(_BRIEF.format(context=f"Current reference prices: {ctx}",
                             questions="\n".join(f"  {q['id']}: {q['text']}" for q in qs)))
-    ans = parse(raw)
+    stream = parse_stream(raw.splitlines())
+    denied = denial_rows(stream, surface="calibration_probe")
+    if denied:
+        # A refused call is a MISSED step, never a clean answer: nothing is posed from this run,
+        # and each refusal is a row in data/calibration_probe.json plus a line in the cron log.
+        for line in denial_log_lines(denied):
+            print(f"calibration probe: {line}", flush=True)
+        return {"status": "UNMEASURED", "counts_as": "MISSED", "reason": "permission_denied",
+                "permission_denials": denied}
+    # The CLI's stream carries the answer in its result event; a plain-text reply (an injected
+    # `ask`, or a CLI that printed text) is read as it stands.
+    ans = parse(stream.result_text if stream.result_text is not None else raw)
     if not ans:
         return {"status": "NO-ANSWER", "why": "no parseable JSON (auth/quota/refusal)"}
     now = datetime.now(tz=UTC)

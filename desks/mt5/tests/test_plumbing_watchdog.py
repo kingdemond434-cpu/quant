@@ -329,14 +329,18 @@ def test_all_four_git_writers_use_the_lock_helper() -> None:
     assert "MT5-GitWriter-v2" in helper
 
 
-def test_the_live_sleeve_policy_still_bans_fx_and_m15_at_both_doors() -> None:
-    """The forex sleeves came back twice after retirement. Both doors, every time."""
+def test_live_policy_allows_the_authorized_universe_and_preserves_m15_filter_at_both_doors(
+    tmp_path: Path,
+) -> None:
+    """An explicitly supplied wider policy keeps the remaining mechanism fences."""
     from mt5desk import live_policy as lp
-    pol = lp.policy()
+    policy_file = tmp_path / "live_sleeve_policy.json"
+    policy_file.write_text(json.dumps({"live_symbols": ["*"]}), encoding="utf-8")
+    pol = lp.policy(policy_file)
     fx = {"name": "chfnok_carry_asia", "symbol": "CHFNOK", "status": "LIVE"}
     m15 = {"name": "xau_m15", "symbol": "XAUUSD", "timeframe": "M15", "status": "LIVE"}
     gold = {"name": "gold_asia", "symbol": "XAUUSD", "timeframe": "H1", "status": "LIVE"}
-    assert lp.refuse(fx, pol), "an FX sleeve is refused"
+    assert not lp.refuse(fx, pol), "the authorized symbol scope includes FX"
     assert lp.refuse(m15, pol), "an M15 sleeve is refused"
     assert not lp.refuse(gold, pol), "the gold book still passes"
     promoter = (ROOT / "desks/mt5/research/promoter.py").read_text(encoding="utf-8")

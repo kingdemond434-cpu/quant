@@ -124,7 +124,14 @@ def _current(root: Path | None = None) -> dict[str, dict[str, Any]]:
     for r in rows(root):
         ident = str(r.get("ident", ""))
         if ident:
-            cur[ident] = r
+            prior = cur.get(ident)
+            if (r.get("disposition") == "DUPLICATE_OF_EXISTING_TEST" and prior is not None
+                    and prior.get("disposition") != "DUPLICATE_OF_EXISTING_TEST"):
+                # A provenance sighting is not a disposition transition. Folding
+                # it over the canonical row used to silently remove pending work.
+                cur[ident] = {**prior, "last_sighting_at": r.get("ts")}
+            else:
+                cur[ident] = r
     return cur
 
 
@@ -208,7 +215,8 @@ def stamp_queue(report_path: str | Path, *, root: Path | None = None) -> dict[st
             continue
         prior = seen.get(ident)
         if (prior is not None and prior.get("disposition") != "DUPLICATE_OF_EXISTING_TEST"
-                and _same_utc_day(str(prior.get("ts") or prior.get("discovered_at") or ""),
+                and _same_utc_day(str(prior.get("last_sighting_at") or prior.get("ts")
+                                       or prior.get("discovered_at") or ""),
                                   today)):
             continue  # idempotent replay of an already-classified-today row -- not new evidence
         disp, why = classify(r, seen=seen)
