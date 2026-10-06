@@ -116,6 +116,8 @@ DAYS = 1200
 #: makes the desk wait for evidence it can already reach is a brake, not a guard.
 MAX_SOURCES_PER_PASS = 16
 COLLECT_BUDGET_SHARE = 0.4
+#: Share the ALFRED first-print refresh may spend (only when collecting).
+VINTAGE_BUDGET_SHARE = 0.2
 #: A source is re-fetched no more often than this. These are monthly and quarterly publications;
 #: hammering them hourly is three wasted requests and one rate-limit away from a ban.
 DEFAULT_DUE_S = 12 * 3600
@@ -970,18 +972,57 @@ def _donate(candidates: list[dict[str, Any]], tests_run: int) -> Any:
     return donate(SOURCE, candidates, tests_run)
 
 
+# ------------------------------------------------------------------------ the release vintages
+def release_vintage_rows(*, now: datetime, refresh: bool, budget_s: float,
+                         enabled: bool = True) -> dict[str, Any]:
+    """The calendar's PIT consensus joined to ALFRED's first prints (`macro.release_vintages`).
+
+    Until 2026-10-06 nothing joined the two and every scheduled surprise here was UNMEASURED.
+    The rows land in the same store as the collector's, keyed the same way, so a consensus half
+    waits for its first print and a pair is never edited once written.
+    """
+    if not enabled:
+        return {"rows": [], "sensor_inputs": [], "census": {"status": "skipped"}}
+    try:
+        from macro import release_vintages as rv
+        built = rv.build(now=now, refresh_budget_s=budget_s if refresh else 0.0)
+    except Exception as exc:                             # pragma: no cover - guarded organ
+        return {"rows": [], "sensor_inputs": [],
+                "census": {"status": UNMEASURED,
+                           "why": f"release_vintages: {type(exc).__name__}: {str(exc)[:160]}"}}
+    horizon = (now - timedelta(days=DAYS)).date()
+    recent = [s for s in built["sensor_inputs"] if s["sched"].date() >= horizon]
+    return {"rows": built["rows"], "sensor_inputs": recent, "census": built["census"]}
+
+
+def record_sensors(sensor_inputs: list[dict[str, Any]], received_at: datetime) -> dict[str, Any]:
+    """The same releases into the universal sensor ledger; revisions append, never overwrite."""
+    try:
+        from libs.research import sensor_contract as sc
+        from macro import release_vintages as rv
+        return sc.SensorLedger().append(rv.sensor_observations(sensor_inputs, received_at))
+    except Exception as exc:                             # pragma: no cover - guarded organ
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+
+
 # --------------------------------------------------------------------------------- the organ
 def build(*, days: int = DAYS, budget_s: float = 300.0, max_donations: int = MAX_DONATIONS,
           collect_enabled: bool = True, apply: bool = True, now: datetime | None = None,
-          fetch: Any = None) -> dict[str, Any]:
-    """Measure, and return the payload. Touches disk only through `main`."""
+          fetch: Any = None, vintages_enabled: bool | None = None) -> dict[str, Any]:
+    """Measure, and return the payload. Touches disk only through `main` (and, when collecting,
+    the ALFRED first-print lake through the desk's own fetcher)."""
     started = time.monotonic()
     now = now or _now()
     collected = (collect(budget_s=budget_s * COLLECT_BUDGET_SHARE, now=now, fetch=fetch)
                  if collect_enabled else
                  {"status": "skipped", "rows": [], "sources": [], "policy": POLICY,
                   "why": "--no-collect: the measurement ran on the stored and calendar pairs"})
-    fresh_rows = collected.get("rows") or []
+    fresh_rows = list(collected.get("rows") or [])
+    vint = release_vintage_rows(now=now, refresh=collect_enabled,
+                                budget_s=budget_s * VINTAGE_BUDGET_SHARE,
+                                enabled=collect_enabled if vintages_enabled is None
+                                else vintages_enabled)
+    fresh_rows += vint["rows"]
     stored, added = merge_store([r for r in fresh_rows if isinstance(r, dict)], now=now)
     cal, cal_status = calendar_pairs(days, now)
     kept, store_status = store_pairs(days, now)
@@ -1007,6 +1048,7 @@ def build(*, days: int = DAYS, budget_s: float = 300.0, max_donations: int = MAX
         "elapsed_s": round(time.monotonic() - started, 2),
         "budget_s": budget_s,
         "collector": {k: v for k, v in collected.items() if k not in ("rows", "state")},
+        "release_vintages": vint["census"],
         "store": {**store_status, "added_this_pass": added, "rows_after": len(stored)},
         "calendar": cal_status,
         "surprise": surprise_status,
@@ -1029,7 +1071,8 @@ def build(*, days: int = DAYS, budget_s: float = 300.0, max_donations: int = MAX
                                   and not v[0].isdigit()},
                        "rule": "absence is a verdict, never a zero (L1.28a)"},
     }
-    return {"report": report, "store": stored, "collector_state": collected.get("state") or {}}
+    return {"report": report, "store": stored, "collector_state": collected.get("state") or {},
+            "sensor_inputs": vint["sensor_inputs"]}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1043,7 +1086,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="measure and print; write nothing")
     a = ap.parse_args(argv)
     built = build(days=a.days, budget_s=a.budget_s, max_donations=a.max_donations,
-                  collect_enabled=not a.no_collect and not a.dry_run, apply=not a.dry_run)
+                  collect_enabled=not a.no_collect and not a.dry_run, apply=not a.dry_run,
+                  vintages_enabled=not a.dry_run)
     rep = built["report"]
     col = rep["collector"]
     print(f"event_surprise at={rep['at']} status={rep['status']} elapsed={rep['elapsed_s']}s")
@@ -1070,6 +1114,8 @@ def main(argv: list[str] | None = None) -> int:
         _atomic(STORE, "".join(json.dumps(r, default=str) + "\n" for r in built["store"]))
     if built["collector_state"]:
         _atomic(COLLECTOR_STATE, json.dumps(built["collector_state"], indent=1, default=str))
+    if built.get("sensor_inputs"):
+        print(f"  sensors    {record_sensors(built['sensor_inputs'], _now())}")
     print(f"  -> {REPORT}")
     return 0
 

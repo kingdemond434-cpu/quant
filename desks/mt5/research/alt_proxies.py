@@ -612,6 +612,12 @@ def read_sge_premium(paths: Paths) -> list[Obs]:
 # whose wording does not match emits nothing, never a guess.
 
 GDELT_URL = "http://data.gdeltproject.org/gdeltv2/{slot}.export.CSV.zip"
+#: GDELT Translingual: the same 15-minute event export, coded from the machine translation of
+#: 65 source languages' news (identical columns). The English stream above is what the world's
+#: English press says; this one is what the local press says in its own language.
+GDELT_TRANSLINGUAL_URL = "http://data.gdeltproject.org/gdeltv2/{slot}.translation.export.CSV.zip"
+#: Every GDELT export source: they share the slot cursor, the parser and the day accumulator.
+GDELT_IDS: tuple[str, ...] = ("gdelt_events_country", "gdelt_translingual_country")
 #: FIPS 10-4 country code (GDELT's ActionGeo_CountryCode) -> ISO code used for series names.
 GDELT_COUNTRIES: dict[str, str] = {
     "CH": "CN", "HK": "HK", "JA": "JP", "KS": "KR", "TW": "TW", "IN": "IN", "US": "US",
@@ -1808,6 +1814,33 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
               "per slot and published only for days whose 96 slots were all read (<= 8 gaps). "
               "GKG themes are not read (files are 10x larger); CAMEO roots stand in for themes")),
     Source(
+        id="gdelt_translingual_country",
+        name="GDELT 2.0 Translingual Events: country x day x theme tone panel (65 languages)",
+        url=GDELT_TRANSLINGUAL_URL, region="GLOBAL", language="multi (machine-translated)",
+        cadence="daily", parse=parse_gdelt_events, rule=_lag_rule(1, 1), transform="level_dev",
+        instruments={"US500": 1}, series_instruments=_gdelt_series_map(),
+        signal_series=tuple(f"{iso}_{s}" for iso in sorted(set(GDELT_COUNTRIES.values()))
+                            for s in ("tone", "conflict_share")),
+        mechanism=("the same machine-coded event stream as gdelt_events_country, coded from the "
+                   "machine translation of the LOCAL-LANGUAGE press: what Chinese, Japanese, "
+                   "Russian, Arabic, Portuguese and Spanish outlets report about their own "
+                   "country, before or without English coverage"),
+        payer=("holders of EM and Asian FX/index risk who read English wires only and reprice "
+               "when the local story reaches them"),
+        constraint=("an English-only desk cannot read 65 languages; the translated stream's "
+                    "aggregate is not in the price by hand, and it is GDELT's own separate feed, "
+                    "not a re-count of the English one"),
+        licence="GDELT Project open data (unrestricted use with citation); no key",
+        source_culture="GLOBAL/multi-lingual",
+        participant_structure=("institutional", "retail_heavy", "policy_driven"),
+        failure_mode_hypothesis=("fails when translation quality or GDELT's foreign source "
+                                 "list changes, and when English and local coverage are the "
+                                 "same syndicated wire, which makes the two panels collinear"),
+        crowding_prior="low", substitutes_for=_NEWS,
+        note=("read with the same fwd/back slot cursors and day accumulator as "
+              "gdelt_events_country; the news stream also reads its vaulted blobs as live "
+              "machine-coded story groups (news_event_stream.GDELT_VAULTS)")),
+    Source(
         id="wiki_asia_attention", name="Asian-language Wikipedia attention (ja/zh/ko pageviews)",
         url=WIKI_URL, region="ASIA",
         language="ja/zh/ko", cadence="daily", parse=parse_wikimedia,
@@ -2328,6 +2361,7 @@ TERMS: dict[str, tuple[str, str]] = {
     "cn_sge_premium": ("to_confirm", "SGE site shows only 'All Right Reserved'; no terms or "
                        "licence page found, no robots.txt"),
     "gdelt_events_country": ("confirmed", "GDELT: unrestricted use with citation"),
+    "gdelt_translingual_country": ("confirmed", "GDELT: unrestricted use with citation"),
     "wiki_asia_attention": ("confirmed", "Wikimedia pageviews API, CC0"),
     "us_oi_card_spend": ("confirmed", "OI README: 'Anyone is welcome to use this data'"),
     "kr_bok_card_spend": ("confirmed", "BOK ECOS documented Open API"),
@@ -2660,7 +2694,7 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
                 "resultOffset": offset, "resultRecordCount": 2000, "f": "json"})
             reqs.append(Request(f"{src.url}?{q}", Ctx(part=f"page{offset}", fetched_at=now)))
         return reqs
-    if src.id == "gdelt_events_country":
+    if src.id in GDELT_IDS:
         return _gdelt_requests(src, now, state)
     if src.id in DATED_SOURCES:
         recent, lag, back = DATED_SOURCES[src.id]
@@ -3418,7 +3452,7 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     sst = state.setdefault("sources", {}).setdefault(src.id, {})
-    if src.id == "gdelt_events_country":
+    if src.id in GDELT_IDS:
         rec.update(collect_gdelt(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
                                  deadline=deadline, getter=getter))
         _atomic(store_p, store)
@@ -3593,6 +3627,7 @@ def _by_regime(a: dict[Any, float], b: dict[Any, float], min_n: int) -> dict[str
 PAID_ORIGINAL_AGREEMENT: dict[str, dict[str, Any]] = {
     "news_analytics": {
         "paid_original": "RavenPack", "substitutes": ["gdelt_events_country",
+                                                      "gdelt_translingual_country",
                                                       "wiki_asia_attention"],
         "public_outputs": ("academic papers quote summary statistics of RavenPack sentiment "
                            "(ESS/relevance distributions, event counts), never a daily series"),
@@ -3835,7 +3870,7 @@ def _cursor(s: Source) -> str:
         return "firms_backfill_to (10 days/cluster/pass, archive product)"
     if s.id.startswith("imf_portwatch"):
         return "resultOffset paging; 800-day window"
-    if s.id == "gdelt_events_country":
+    if s.id in GDELT_IDS:
         return (f"fwd/back 15-minute slot cursors ({GDELT_FWD_PER_PASS}+{GDELT_BACK_PER_PASS} "
                 f"slots/pass, {GDELT_BACK_DEPTH_D}d deep); open days held in state.acc")
     if s.id in DATED_SOURCES:

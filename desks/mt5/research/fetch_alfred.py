@@ -78,6 +78,23 @@ SERIES = {
     "BUSINV": "business inventories",
     "M2SL": "M2 money stock",
     "WALCL": "Fed balance sheet",
+    # THE RELEASE-SURPRISE SET (2026-10-06): the first prints `macro/release_vintages.py` joins
+    # to the calendar's consensus vintages, release by release. Each is the series whose FIRST
+    # PRINT is the number a scheduled release headline reports.
+    "CPIAUCNS": "CPI, not seasonally adjusted (the y/y headline is computed on NSA)",
+    "CPILFENS": "core CPI, not seasonally adjusted (core y/y)",
+    "CES0500000003": "average hourly earnings, private (AHE m/m)",
+    "ICSA": "initial jobless claims (weekly)",
+    "PPIFIS": "PPI final demand",
+    "PPIFES": "PPI final demand less foods and energy",
+    "RSFSXMV": "retail sales ex motor vehicles (core retail)",
+    "ADXTNO": "durable goods ex transportation (core durables)",
+    "PI": "personal income",
+    "PCE": "personal consumption expenditures (personal spending)",
+    "PERMIT": "building permits",
+    "JTSJOL": "JOLTS job openings",
+    "BOPGSTB": "trade balance, goods and services",
+    "HSN1F": "new home sales",
 }
 
 
@@ -215,7 +232,14 @@ def release_lag(df: pd.DataFrame) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    wanted = {s.upper() for s in argv} or set(SERIES)
+    flags = [a for a in argv if a.startswith("--")]
+    max_age_h: float | None = None
+    for f in flags:
+        if f.startswith("--max-age-h="):
+            max_age_h = float(f.split("=", 1)[1])
+    # A FLAG IS NOT A SERIES. Until 2026-10-06 `--force` was upper-cased into the wanted set and
+    # requested from ALFRED as series "--FORCE".
+    wanted = {s.upper() for s in argv if not s.startswith("--")} or set(SERIES)
 
     key = api_key()
     report = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -240,14 +264,22 @@ def main(argv: list[str] | None = None) -> int:
         print(report["fix"])
         return 2
 
-    force = "--force" in argv
+    force = "--force" in flags
     written, lags, failed, skipped = 0, {}, [], []
     for sid in sorted(wanted):
         # RESUMABLE. A full vintage history is a large download and the box has 4GB; if the OOM
         # killer takes the process mid-run, restarting must not re-fetch what already landed.
         # Each series is written before the next is requested, so completed work survives.
         out_path = OUT / f"{sid}.parquet"
-        if out_path.exists() and not force:
+        # BUT A VINTAGE FILE IS NOT FOREVER. Without `--max-age-h` a file once on disk was never
+        # refreshed, so every release after the first fetch was invisible: a museum, not a lake.
+        # With it, a file older than the bound is re-fetched (the new file holds every vintage
+        # the old one did, plus the new prints; ALFRED never deletes a vintage).
+        stale = False
+        if out_path.exists() and max_age_h is not None:
+            age_h = (datetime.now(timezone.utc).timestamp() - out_path.stat().st_mtime) / 3600.0
+            stale = age_h > max_age_h
+        if out_path.exists() and not force and not stale:
             skipped.append(sid)
             print(f"{sid}: already on disk, skipping (--force to refetch)", flush=True)
             continue
