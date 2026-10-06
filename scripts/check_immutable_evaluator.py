@@ -4,7 +4,7 @@
 autoresearch-trading's split, made a law here: the files that JUDGE a hypothesis -- the
 gauntlet, the multiplicity charge, the cost engine, the lockbox access, the promotion law, the
 heat law and the growth governance fences -- are hashed into `data/IMMUTABLE_MANIFEST.json`.
-Any change to one of them must arrive with a re-signed manifest (a human commit that runs
+Any change to one of them must arrive with a re-sealed manifest (a human commit that runs
 `--sign`), otherwise the gate is red. An organ that dislikes a verdict can change the
 hypothesis; it cannot change the judge.
 
@@ -366,7 +366,7 @@ def _append_only_rows(sealed: Mapping[str, Any]) -> list[dict[str, Any]]:
                 continue
             if not isinstance(rec, Mapping):
                 rows.append({"path": name, "kind": "append_only", "status": "unsealed",
-                             "why": "not in the signed manifest; run --sign once",
+                             "why": "not in the sealed manifest; run --sign once",
                              "records": now["records"]})
                 continue
             n_now, n_was = int(now["records"]), int(rec.get("records") or 0)
@@ -470,7 +470,7 @@ def _vintage_rows(sealed: Mapping[str, Any]) -> list[dict[str, Any]]:
             continue
         if not isinstance(rec, Mapping):
             rows.append({"path": rel, "kind": "vintage", "status": "unsealed",
-                         "why": "not in the signed manifest; run --sign once"})
+                         "why": "not in the sealed manifest; run --sign once"})
             continue
         was, stamp = str(rec.get("stamp") or ""), str(now["stamp"])
         if stamp < was:
@@ -976,7 +976,7 @@ def sign(by: str) -> dict[str, object]:
            "files": _hashes(),
            "append_only": append_only_seal(),
            "vintage": vintage_seal(),
-           "rule": ("these files judge hypotheses; a change must arrive with a re-signed "
+           "rule": ("these files judge hypotheses; a change must arrive with a re-sealed "
                     "manifest -- research organs may change the hypothesis, never the judge"),
            "record_rule": ("the ledgers, the live fills, the cost surface and the lineage chain "
                            "are RECORDS: the sealed prefix may never change, only grow, and a "
@@ -1033,9 +1033,9 @@ def check() -> list[dict[str, str]]:
     out = []
     for rel, h in now.items():
         if rel not in rec:
-            out.append({"file": rel, "why": "immutable file not in the signed manifest"})
+            out.append({"file": rel, "why": "immutable file not in the sealed manifest"})
         elif rec[rel] != h:
-            out.append({"file": rel, "why": f"changed since signing ({rec[rel]} -> {h})"})
+            out.append({"file": rel, "why": f"changed since sealing ({rec[rel]} -> {h})"})
     for rel in rec:
         if rel not in now:
             out.append({"file": rel, "why": "in the manifest but no longer declared immutable"})
@@ -1120,12 +1120,12 @@ def main() -> int:
         doc["signed_by"] = a.by
         MANIFEST.parent.mkdir(parents=True, exist_ok=True)
         MANIFEST.write_text(json.dumps(doc, indent=1), "utf-8")
-        print(f"judge files signed by {a.by}: {len(files)} files "
+        print(f"judge files hash-sealed by {a.by}: {len(files)} files "
               "(the record seals were NOT touched)")
         return 0
     if a.sign:
         d = sign(a.by)
-        print(f"immutable manifest signed by {a.by}: {len(d['files'])} files")  # type: ignore[arg-type]
+        print(f"immutable manifest hash-sealed by {a.by}: {len(d['files'])} files")  # type: ignore[arg-type]
         return 0
     if a.seal_records:
         try:
@@ -1146,7 +1146,7 @@ def main() -> int:
         MANIFEST.parent.mkdir(parents=True, exist_ok=True)
         MANIFEST.write_text(json.dumps(doc, indent=1), "utf-8")
         print(f"record wall sealed by {a.by}: {len(seal_a)} append-only, {len(seal_v)} vintage "
-              "(the frozen-file section was NOT re-signed)")
+              "(the frozen-file section was NOT re-sealed)")
         return 0
     findings = check()
     rows = wall_rows()

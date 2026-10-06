@@ -167,6 +167,14 @@ RAILS: tuple[Rail, ...] = (
     Rail("e8_unowned_position_block", "integrity",
          "prop.e8_gold._retry_failed_legs <- position_since_failure",
          "measure_e8_unowned_block"),
+    # THE REPLICATION HOLD AT FORWARD ENROLMENT (2026-10-06 audit). A NEW certificate of a family
+    # the replication lane has a written rule for waits for its REPLICATED verdict before its
+    # forward clock starts; a family with no rule proceeds. What it costs is forward evidence
+    # deferred (clock-hours not accruing), billed from the held rows FORWARD_ENROLMENT publishes.
+    # Until this entry landed it was measured from missed_growth.PENDING_SEAL_RAILS.
+    Rail("replication_hold", "gate",
+         "admission_integrity.IntegrityGate.hold <- replication_civilization verdicts",
+         "measure_replication_hold"),
 )
 
 _CACHE: dict[str, Any] = {"mtime": None, "doc": {}}

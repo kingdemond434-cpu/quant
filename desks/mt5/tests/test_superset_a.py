@@ -235,7 +235,7 @@ def test_immutable_manifest_catches_a_changed_judge(tmp_path, monkeypatch) -> No
     cie.sign("test")
     assert cie.check() == []
     (tmp_path / "judge.py").write_text("x = 2\n")
-    assert "changed since signing" in cie.check()[0]["why"]
+    assert "changed since sealing" in cie.check()[0]["why"]
 
 
 # --------------------------------------------------------------------------- graveyard
