@@ -67,7 +67,11 @@ MISSION = ("hold the jurisdiction so its already-crawled grounds -- the BoJ time
            "research/japan/; this pack is the declaration the conversion path reads.")
 
 #: The department that owns Japan's research. Named here so nothing re-implements it.
-DEPARTMENT_MODULE = "research.japan.mandate"
+#: REPOINTED 2026-10-06: `research.japan.mandate` was never committed to this repository (no
+#: commit in any branch's history carries `research/japan/`), so the name pointed at nothing.
+#: The Japan department that exists is the official plane beside this file, run by
+#: `global_research_os` through `miners.py`.
+DEPARTMENT_MODULE = "research.countries.jp.official_plane"
 
 
 def _quoted() -> tuple[str, ...]:

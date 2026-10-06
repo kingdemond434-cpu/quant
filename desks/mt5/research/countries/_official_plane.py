@@ -89,6 +89,8 @@ def lane(A: Any, src: Any, paths: Any, gains: dict[str, Any]
            "organ_status": status, "terms": src.terms, "cadence": src.cadence,
            "key_env": src.key_env, "licence": src.licence, "url": src.url.split("?")[0],
            "acquisition_owner": OWNER, "series": series,
+           "data_source": (A.data_source_of(src) if hasattr(A, "data_source_of")
+                           else f"alt_proxies:{src.id}"),
            "stored": len(series), "vintages": sum(int(v["n"]) for v in series.values()),
            "signal_series": list(src.signal_series), "mapped_instruments": mapped,
            "minting_instruments": [s for s in mapped if A.may_mint(s)],
@@ -102,28 +104,39 @@ def lane(A: Any, src: Any, paths: Any, gains: dict[str, Any]
 
 def refused_lanes(A: Any, ids: Iterable[str]) -> list[dict[str, Any]]:
     out = []
+    refused = {**A.KR_HK_REFUSED, **getattr(A, "JP_REFUSED", {})}
+    evidence = {**A.KR_HK_TERMS_EVIDENCE, **getattr(A, "JP_TERMS_EVIDENCE", {})}
     for sid in ids:
-        meta = dict(A.KR_HK_REFUSED.get(sid) or {})
-        ev = dict(A.KR_HK_TERMS_EVIDENCE.get(sid) or {})
-        out.append({"dataset": sid, "status": meta.get("status", "BLOCKED_ON_TERMS:refused"),
-                    "terms": "refused", "stored": 0, "vintages": 0,
-                    "would_carry": meta.get("would_carry", []),
-                    "nearest_lawful": meta.get("nearest_lawful", []),
-                    "why_not_a_substitute": meta.get("why_not_a_substitute", ""),
-                    "terms_url": ev.get("terms_url"), "terms_quote": ev.get("terms_quote"),
-                    "checked_at": ev.get("checked_at"),
-                    "unmeasured": [{"what": sid, "verdict": UNMEASURED,
-                                    "why": "BLOCKED_ON_TERMS:refused -- the publisher's terms "
-                                           "refuse commercial use or systematic retrieval, so "
-                                           "no fetcher is built (fail closed)"}]})
+        meta = dict(refused.get(sid) or {})
+        ev = dict(evidence.get(sid) or {})
+        status = str(meta.get("status", "BLOCKED_ON_TERMS:refused"))
+        why = ("BLOCKED_ON_TERMS:refused -- the publisher's terms refuse commercial use or "
+               "systematic retrieval, so no fetcher is built (fail closed)"
+               if status.endswith(":refused") else
+               f"{status} -- the terms are not confirmed, so no fetcher is built (fail closed)"
+               if status.startswith("BLOCKED_ON_TERMS") else
+               f"{status} -- terms confirmed, but no reader exists for the published format")
+        row = {"dataset": sid, "status": status,
+               "terms": meta.get("terms", "refused"), "stored": 0, "vintages": 0,
+               "would_carry": meta.get("would_carry", []),
+               "nearest_lawful": meta.get("nearest_lawful", []),
+               "why_not_a_substitute": meta.get("why_not_a_substitute", ""),
+               "terms_url": ev.get("terms_url"), "terms_quote": ev.get("terms_quote"),
+               "checked_at": ev.get("checked_at"),
+               "unmeasured": [{"what": sid, "verdict": UNMEASURED, "why": why}]}
+        if meta.get("depends_on"):
+            row["depends_on"] = meta["depends_on"]
+        out.append(row)
     return out
 
 
 EventFn = Callable[[dict[str, dict[str, list[dict[str, Any]]]], datetime], list[dict[str, Any]]]
+#: A region's latent states, built from the same points (e.g. Japan's funding state).
+StateFn = Callable[[dict[str, dict[str, list[dict[str, Any]]]], datetime], dict[str, Any]]
 
 
 def run(*, code: str, region: str, refused: Iterable[str] = (), events: EventFn | None = None,
-        budget_s: float = 300.0, no_fetch: bool = True, dry_run: bool = False,
+        states: StateFn | None = None, budget_s: float = 300.0, no_fetch: bool = True, dry_run: bool = False,
         registry: Any = None, report_default: Path | None = None, paths: Any = None,
         now: datetime | None = None) -> dict[str, Any]:
     """Measure the region's lanes from the factory's stores; write `<CODE>_OFFICIAL_PLANE.json`."""
@@ -149,6 +162,7 @@ def run(*, code: str, region: str, refused: Iterable[str] = (), events: EventFn 
            "fetch_requested_here": not no_fetch,
            "factory_report_at": rep.get("at") or UNMEASURED,
            "lanes": lanes, "events": ev,
+           "states": states(points, now) if states is not None else {},
            "declared": len(lanes), "parsed": sum(1 for r in lanes if r["status"] == "PARSED"),
            "blocked": Counter(str(r["status"]).split(":")[0] for r in lanes
                               if r["status"] != "PARSED"),

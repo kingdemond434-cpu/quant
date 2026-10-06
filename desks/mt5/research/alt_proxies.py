@@ -112,7 +112,8 @@ CHILD_HORIZON_BARS = 24
 PARENTS_PER_SYMBOL = 3
 #: A component older than this (days since its release) no longer describes "now" in the
 #: allocation-intel artifact. Keyed by cadence.
-STALE_DAYS = {"daily": 10, "weekly": 21, "10-daily": 25, "monthly": 45, "event": 30}
+STALE_DAYS = {"daily": 10, "weekly": 21, "10-daily": 25, "monthly": 45, "quarterly": 120,
+              "event": 30}
 
 # ONE KEY, ONE NAME (2026-10-06): BOK_API_KEY, when it is the only name set, is adopted as
 # ECOS_API_KEY for this process. Names only; no value is printed or returned.
@@ -1649,6 +1650,265 @@ def _hkma_requests(src: Source, now: datetime, state: dict[str, Any]) -> list[Re
             for k in range(pages)]
 
 
+# ======================================================================= JP official plane
+# THE JAPAN OFFICIAL PLANE (asia directive PART IX, audit rows ASIA-0428..0448 / 1296 / 1683,
+# 2026-10-06). Three publishers whose terms were read on 2026-10-06 (JP_TERMS_EVIDENCE):
+#   * MOF (www.mof.go.jp, Public Data License 1.0, CC BY 4.0 compatible): weekly and monthly
+#     International Transactions in Securities (the portfolio flow, by investor type monthly)
+#     and the Foreign Exchange Intervention Operations record (daily detail, disclosed
+#     quarterly). Both are CSV files in Shift_JIS (cp932) with the layout quoted below.
+#   * BOJ Time-Series Data Search API (www.stat-search.boj.or.jp/api/v1, its own API notice:
+#     credit line required, no commercial restriction): call rate, TANKAN, current-account
+#     balances and the Bank's JGB holdings (the Rinban footprint).
+#   * J-Quants V2 investor-type flows: PARSED HERE but NOT a source -- the full terms of
+#     service were not readable from the authoring container, so the lane is fail-closed
+#     (BLOCKED_ON_TERMS:to_confirm). `parse_jquants_investor_types` consumes the file the
+#     asia_collector writes for `jpx_jquants` (PR #218: data/lake/series/jpx_jquants.json).
+# JPX (jpx.co.jp: investor-type PDFs, margin, OSE options) and boj.or.jp HTML (Rinban result
+# pages, MPM statements) refuse commercial collection in their own terms and are never fetched.
+
+def _jp_csv_rows(body: bytes) -> list[list[str]]:
+    """MOF CSVs are Shift_JIS; a UTF-8 copy (a re-saved fixture or a vault re-read) also reads."""
+    try:
+        text = body.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = body.decode("cp932", errors="replace")
+    if "<html" in text[:400].lower():
+        return []
+    import csv
+    import io
+    return [[c.strip() for c in r] for r in csv.reader(io.StringIO(text))]
+
+
+_MOF_WEEK = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日\s*[～~〜\-－]\s*"  # noqa: RUF001
+                       r"(?:(\d{4})\s*年\s*)?(\d{1,2})\s*月\s*(\d{1,2})\s*日")
+#: Weekly CSV columns (week.csv, read 2026-10-06; unit 100 million yen). Assets = residents'
+#: purchases of FOREIGN securities; liabilities = non-residents' purchases of JAPANESE ones.
+MOF_WEEK_COLS: dict[int, str] = {
+    3: "assets_equity_net", 6: "assets_bonds_net", 10: "assets_bills_net", 11: "assets_total_net",
+    14: "liab_equity_net", 17: "liab_bonds_net", 21: "liab_bills_net", 22: "liab_total_net"}
+
+
+def parse_mof_securities_weekly(body: bytes, ctx: Ctx) -> list[Obs]:
+    """MOF weekly International Transactions in Securities. The period cell is the reporting
+    week, `2005年1月2日～1月8日`; the observation is dated on its LAST day."""
+    out: list[Obs] = []
+    for r in _jp_csv_rows(body):
+        if not r:
+            continue
+        m = _MOF_WEEK.search(r[0].replace(" ", ""))
+        if not m:
+            continue
+        y0, m0 = int(m.group(1)), int(m.group(2))
+        m1, d1 = int(m.group(5)), int(m.group(6))
+        y1 = int(m.group(4)) if m.group(4) else (y0 + 1 if m1 < m0 else y0)
+        try:
+            end = date(y1, m1, d1)
+        except ValueError:
+            continue
+        for col, series in MOF_WEEK_COLS.items():
+            v = _num(r[col]) if col < len(r) else None
+            if v is not None:
+                out.append(Obs(series, end, v))
+    return out
+
+
+_EN_MONTHS = {m: i for i, m in enumerate(("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug",
+                                          "sep", "oct", "nov", "dec"), start=1)}
+#: Monthly by-investor-type CSV (monthb1..b4.csv, read 2026-10-06; unit 100 million yen): col 0
+#: year (first month of a year only), col 2 English month, then (acquisition, disposition, net)
+#: triplets. The NET column of each investor group, by index.
+MOF_INVESTOR_NET_COLS: dict[int, str] = {
+    5: "total_net", 8: "public_sector_net", 17: "deposit_taking_net", 20: "banks_net",
+    26: "other_sectors_net", 29: "other_financial_net", 32: "trust_accounts_net",
+    41: "securities_firms_net", 44: "life_insurers_net", 47: "nonlife_insurers_net",
+    50: "investment_trusts_net", 53: "others_net"}
+
+
+def make_mof_investor_parser(prefix: str) -> Callable[[bytes, Ctx], list[Obs]]:
+    """One parser per monthb file; `prefix` names the asset (bonds, equity, total, bills)."""
+
+    def parse(body: bytes, ctx: Ctx) -> list[Obs]:
+        out: list[Obs] = []
+        year: int | None = None
+        for r in _jp_csv_rows(body):
+            if len(r) < 6:
+                continue
+            if r[0][:4].isdigit() and len(r[0].strip()) == 4:
+                year = int(r[0][:4])
+            mon = _EN_MONTHS.get(r[2][:3].lower()) if len(r) > 2 else None
+            if year is None or mon is None:
+                continue
+            period = _month_end(year, mon)
+            for col, series in MOF_INVESTOR_NET_COLS.items():
+                v = _num(r[col]) if col < len(r) and r[col] not in ("-", "") else None
+                if v is not None:
+                    out.append(Obs(f"{prefix}_{series}", period, v))
+        return out
+
+    parse.__name__ = f"parse_mof_investor_{prefix}"
+    return parse
+
+
+def parse_mof_intervention(body: bytes, ctx: Ctx) -> list[Obs]:
+    """MOF Foreign Exchange Intervention Operations (foreign_exchange_intervention_operations.csv,
+    read 2026-10-06; unit 100 million yen). Japanese era columns, then Year (only on a year's
+    first row), English Month (only on a month's first row), Day, Amount and the currency-pair
+    text. Quarterly subtotal rows (`April - June 2026`) are skipped. The value is SIGNED from the
+    yen's side: positive when the yen was BOUGHT (the weak-yen defence), negative when sold."""
+    out: list[Obs] = []
+    year: int | None = None
+    mon: int | None = None
+    for r in _jp_csv_rows(body):
+        pair_i = next((i for i, c in enumerate(r) if "yen" in c.lower() or "円" in c), None)
+        if pair_i is None or pair_i < 2:
+            continue
+        day_c, amount = r[pair_i - 2], _num(r[pair_i - 1])
+        if pair_i >= 3 and r[pair_i - 3][:3].lower() in _EN_MONTHS and r[pair_i - 3].isalpha():
+            mon = _EN_MONTHS[r[pair_i - 3][:3].lower()]
+            if pair_i >= 4 and r[pair_i - 4].isdigit() and len(r[pair_i - 4]) == 4:
+                year = int(r[pair_i - 4])
+        if year is None or mon is None or amount is None or not day_c.isdigit():
+            continue
+        text = " ".join(r[pair_i:]).lower()
+        sold = ("yen (sold)" in text.replace("japanese ", "")
+                or ("円売" in text and "yen (bought)" not in text.replace("japanese ", "")))
+        try:
+            out.append(Obs("yen_bought_100m", date(year, mon, int(day_c)),
+                           -amount if sold else amount))
+        except ValueError:
+            continue
+    return out
+
+
+def rule_mof_intervention(period: date) -> datetime:
+    """The DAILY detail is disclosed with the quarterly release, about five to six weeks after
+    the quarter (Q2 2026 on 2026-08-07). Quarter end + 45 days, 00:00 UTC, weekday: late on
+    purpose. The monthly TOTAL (last business day, 19:00 JST) names no day and is an event."""
+    q_end = _month_end(period.year, ((period.month - 1) // 3 + 1) * 3)
+    return _roll_weekday(_utc(q_end.year, q_end.month, q_end.day) + timedelta(days=45))
+
+
+def rule_tankan(period: date) -> datetime:
+    """TANKAN prints at 08:50 JST on the first business day after the survey quarter (mid-December
+    for Q4). Quarter end + 2 days at 00:00 UTC, weekday: never earlier than the print."""
+    return _roll_weekday(_utc(period.year, period.month, period.day) + timedelta(days=2))
+
+
+def _boj_period(t: str, freq: str) -> date | None:
+    t = str(t or "").strip()
+    with contextlib.suppress(ValueError):
+        if len(t) == 8 and t.isdigit():
+            return date(int(t[:4]), int(t[4:6]), int(t[6:]))
+        if len(t) == 6 and t.isdigit():
+            if freq.upper().startswith("QUARTER") and 1 <= int(t[4:]) <= 4:
+                return _month_end(int(t[:4]), 3 * int(t[4:]))
+            return _month_end(int(t[:4]), int(t[4:]))
+        if len(t) == 4 and t.isdigit():
+            return date(int(t), 12, 31)
+    return None
+
+
+def make_boj_parser(names: dict[str, str]) -> Callable[[bytes, Ctx], list[Obs]]:
+    """BOJ stat-search `getDataCode` JSON (API manual, read 2026-10-06): STATUS 200 and a
+    RESULTSET of series, each with SERIES_CODE, FREQUENCY and SURVEY_DATES / VALUES (read both
+    at the series level and nested under VALUES). `names` maps a series code to the series name;
+    an unmapped code keeps a name derived from the code. Any other STATUS is an error document,
+    which parses to nothing and is reported, never a value."""
+
+    def parse(body: bytes, ctx: Ctx) -> list[Obs]:
+        try:
+            doc = json.loads(body.decode("utf-8-sig", errors="replace"))
+        except ValueError:
+            return []
+        if not isinstance(doc, dict) or str(doc.get("STATUS")) != "200":
+            return []
+        rs = doc.get("RESULTSET")
+        series_rows = rs if isinstance(rs, list) else [rs] if isinstance(rs, dict) else []
+        out: list[Obs] = []
+        for s in series_rows:
+            if not isinstance(s, dict):
+                continue
+            code = str(s.get("SERIES_CODE") or "")
+            name = names.get(code) or names.get(code.split("'")[-1]) or f"boj_{code.lower()}"
+            inner = s.get("VALUES") if isinstance(s.get("VALUES"), dict) else s
+            dates, vals = inner.get("SURVEY_DATES"), inner.get("VALUES")
+            if not isinstance(dates, list) or not isinstance(vals, list):
+                continue
+            for t, v in zip(dates, vals, strict=False):
+                period = _boj_period(str(t), str(s.get("FREQUENCY") or ""))
+                x = _num(str(v)) if v not in (None, "", "null") else None
+                if period is not None and x is not None:
+                    out.append(Obs(name, period, x))
+        return out
+
+    parse.__name__ = "parse_boj_" + "_".join(sorted(set(names.values())))[:40]
+    return parse
+
+
+#: J-Quants V2 investor-type field stems -> series (V1 trades_spec long names and the V2
+#: abbreviations both read; values are thousand yen, net = purchases - sales).
+JQ_INVESTORS: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("foreigners", "frgn"), "foreigners"), (("individuals", "ind"), "individuals"),
+    (("trustbanks", "trstbnk"), "trust_banks"), (("investmenttrusts", "invtr"), "investment_trusts"),
+    (("insurancecompanies", "inscos"), "insurers"), (("proprietary", "prop"), "proprietary"))
+
+
+def parse_jquants_investor_types(body: bytes, ctx: Ctx) -> list[Obs]:
+    """J-Quants investor-type trading (V1 `trades_spec`, V2 `/v2/equities/investor-types`), the
+    document PR #218's collector stores verbatim. One TSE section (Prime, or the 1st section
+    before 2022); the observation is dated on the week's END date and stamped with the published
+    date (15:30 JST, taken as 07:00 UTC so it is never early)."""
+    try:
+        doc = json.loads(body.decode("utf-8-sig", errors="replace"))
+    except ValueError:
+        return []
+    rows: Any = doc
+    if isinstance(doc, dict):
+        rows = next((v for v in doc.values() if isinstance(v, list)), [])
+    out: list[Obs] = []
+    for r in rows if isinstance(rows, list) else []:
+        if not isinstance(r, dict):
+            continue
+        sec = str(r.get("Section") or r.get("Sec") or "")
+        if sec and not any(k in sec.replace(" ", "").lower() for k in ("prime", "1st")):
+            continue
+        try:
+            end = date.fromisoformat(str(r.get("EndDate") or r.get("EnDate") or "")[:10])
+            pub_d = date.fromisoformat(str(r.get("PublishedDate") or r.get("PubDate") or "")[:10])
+        except ValueError:
+            continue
+        pub = _utc(pub_d.year, pub_d.month, pub_d.day, 7)
+        for k, v in r.items():
+            low = str(k).lower()
+            if not (low.endswith("balance") or low.endswith("bal")):
+                continue
+            stem = low[:-7] if low.endswith("balance") else low[:-3]
+            name = next((n for keys, n in JQ_INVESTORS if stem in keys), None)
+            x = _num(str(v)) if v not in (None, "") else None
+            if name and x is not None:
+                out.append(Obs(f"{name}_net_kjpy", end, x, published_at=pub))
+    return out
+
+
+def read_jquants_investor_types(paths: Paths) -> list[Obs]:
+    """The stored output of `asia_collector`'s `jpx_jquants` row (PR #218) -- the latest document
+    in data/lake/series and every vaulted body -- READ, never fetched here."""
+    bodies: list[bytes] = []
+    p = paths.series / "jpx_jquants.json"
+    with contextlib.suppress(OSError):
+        bodies.append(p.read_bytes())
+    vdir = paths.vault / "jpx_jquants"
+    for blob in sorted(vdir.glob("*.gz")) if vdir.is_dir() else []:
+        with contextlib.suppress(OSError, EOFError, gzip.BadGzipFile):
+            bodies.append(gzip.decompress(blob.read_bytes()))
+    seen: dict[tuple[str, date], Obs] = {}
+    for b in bodies:
+        for o in parse_jquants_investor_types(b, Ctx()):
+            seen.setdefault((o.series, o.period), o)
+    return list(seen.values())
+
+
 # ============================================================================ the sources
 @dataclass(frozen=True)
 class Source:
@@ -1685,6 +1945,9 @@ class Source:
     terms: str = "to_confirm"
     #: Env vars that must hold REAL codes before a request may be built (no placeholder default).
     config_env: tuple[str, ...] = ()
+    #: `<provider>:<dataset>` for the terms gate a cell door reads (#211's `data_source`);
+    #: empty means `alt_proxies:<id>` (see `data_source_of`).
+    data_source: str = ""
 
     def instruments_for(self, series: str) -> dict[str, int]:
         for prefix, m in self.series_instruments.items():
@@ -2688,6 +2951,300 @@ KR_HK_REFUSED: dict[str, dict[str, Any]] = {
                                  "of cross-border flow, not the mainland equity leg")},
 }
 
+# ---------------------------------------------------------------------------- JP plane
+MOF_SEC = "https://www.mof.go.jp/policy/international_policy/reference/itn_transactions_in_securities/"
+BOJ_API = ("https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=json&lang=en&db={db}"
+           "&startDate={start}&endDate={{yyyymm}}&code={code}")
+#: BOJ series codes. DEFAULTS ONLY WHERE AN OFFICIAL PAGE PRINTS THE CODE: the two TANKAN codes
+#: are the API manual's own getDataCode example (api_manual_en.pdf, read 2026-10-06), and
+#: STRDCLUCON is the FM01 uncollateralised overnight call rate (average). Every code is
+#: overridable on the box and verified there with getMetadata; a wrong code returns an error
+#: STATUS, which parses to nothing and is reported -- never a value. The current-account and
+#: JGB-holdings codes have NO default (UNCONFIGURED until set): no page reachable from the
+#: authoring container printed them, and a code is not guessed.
+BOJ_CALL_CODE = os.environ.get("ALT_BOJ_CALL_RATE_CODE", "STRDCLUCON")
+BOJ_TANKAN_CODES = os.environ.get("ALT_BOJ_TANKAN_CODES",
+                                  "TK99F1000601GCQ01000,TK99F2000601GCQ01000")
+_BOJ_LIC = ("BOJ Time-Series Data Search API notice: credit line 'This service uses the API "
+            "provided by the Bank of Japan Time-Series Data Search'; no key")
+_MOF_LIC = "MOF website content: Public Data License 1.0 (CC BY 4.0 compatible), attribution"
+_JP_FX = {"USDJPY": 1, "EURJPY": 1, "AUDJPY": 1}
+_JP_FX_NEG = {"USDJPY": -1, "EURJPY": -1, "AUDJPY": -1}
+
+
+def _jp_data_source(provider: str, dataset: str) -> str:
+    return f"{provider}:{dataset}"
+
+
+JP_PLANE_SOURCES: tuple[Source, ...] = (
+    Source(
+        id="jp_mof_securities_weekly",
+        name="MOF weekly international transactions in securities (designated major investors)",
+        url=os.environ.get("ALT_MOF_SEC_WEEK_URL", MOF_SEC + "week.csv"), region="JP",
+        language="ja", cadence="weekly", parse=parse_mof_securities_weekly,
+        rule=_lag_rule(5, 0, weekday=True), transform="given",
+        instruments=_JP_FX,
+        series_instruments={"liab_": {"USDJPY": -1, "EURJPY": -1, "JPN225": 1},
+                            "assets_": _JP_FX},
+        signal_series=("assets_bonds_net", "liab_equity_net"),
+        mechanism=("Japanese residents buying foreign bonds sell yen to do it, and non-residents "
+                   "buying Japanese equity buy yen: the weekly MOF print is the portfolio leg of "
+                   "the yen's balance of payments, a week before any monthly BoP number"),
+        payer="yen positions sized on rate differentials that ignore the portfolio flow",
+        constraint="lifers and trust accounts hedge and rebalance on a fiscal-half calendar",
+        licence=_MOF_LIC, source_culture="JP/ja",
+        participant_structure=("institutional", "policy_driven"),
+        failure_mode_hypothesis=("fails when the flow is FX-hedged (a bond purchase with a "
+                                 "matching forward sale moves no spot yen) and in fiscal-year-end "
+                                 "weeks where repatriation is calendar, not view"),
+        crowding_prior="medium", data_source=_jp_data_source("mof", "intl_securities_weekly"),
+        note=("week.csv, Shift_JIS; Thursday 08:50 JST release for the week to the prior "
+              "Saturday (stamped Thursday 00:00 UTC, i.e. late); URL overridable "
+              "(ALT_MOF_SEC_WEEK_URL)")),
+    Source(
+        id="jp_mof_securities_investor_bonds",
+        name="MOF residents' foreign long-term bond purchases by investor type (monthly)",
+        url=os.environ.get("ALT_MOF_SEC_INVESTOR_URL", MOF_SEC + "monthb3.csv"), region="JP",
+        language="ja", cadence="monthly", parse=make_mof_investor_parser("bonds"),
+        rule=_lag_rule(42, 0, weekday=True), transform="given", instruments=_JP_FX,
+        signal_series=("bonds_life_insurers_net", "bonds_trust_accounts_net",
+                       "bonds_banks_net"),
+        mechanism=("WHO sells the yen: life insurers and trust accounts (the pension money) "
+                   "buying foreign bonds are the structural JPY supply of the carry trade; a "
+                   "turn in their monthly net is the slow leg of a carry unwind"),
+        payer="carry books that read only rate spreads, not the domestic sponsor of the trade",
+        constraint="Japanese lifers rebalance on April and October plan dates",
+        licence=_MOF_LIC, source_culture="JP/ja", participant_structure=("institutional",),
+        failure_mode_hypothesis=("fails when hedge ratios move (an FX-hedged bond buy is not a "
+                                 "yen sale), which this table cannot see"),
+        crowding_prior="low", data_source=_jp_data_source("mof", "intl_securities_investor"),
+        note=("monthb3.csv (long-term debt); monthb1/b2/b4 share the layout and are selectable "
+              "with ALT_MOF_SEC_INVESTOR_URL; released with the balance of payments ~8th of M+2")),
+    Source(
+        id="jp_mof_fx_intervention",
+        name="MOF foreign exchange intervention operations (daily detail, disclosed quarterly)",
+        url=os.environ.get("ALT_MOF_INTERVENTION_URL",
+                           "https://www.mof.go.jp/english/policy/international_policy/reference/"
+                           "feio/foreign_exchange_intervention_operations.csv"),
+        region="JP", language="en", cadence="event", parse=parse_mof_intervention,
+        rule=rule_mof_intervention, transform="given", instruments=_JP_FX_NEG,
+        signal_series=("yen_bought_100m",),
+        mechanism=("the intervention record IS the reaction function: the level and pace at "
+                   "which MOF sold dollars bounds how far a weak-yen trend runs before an "
+                   "official seller arrives, and a confirmed operation resets yen positioning"),
+        payer="yen shorts in the carry trade who must cover into an official seller",
+        constraint="MOF intervenes rarely and discloses the day only quarterly",
+        licence=_MOF_LIC, source_culture="JP/en", participant_structure=("policy_driven",),
+        failure_mode_hypothesis=("fails when the macro driver (US yields) overwhelms a one-day "
+                                 "operation; a sparse series, so most surprise_z stay UNMEASURED"),
+        crowding_prior="high", data_source=_jp_data_source("mof", "fx_intervention"),
+        note=("Shift_JIS CSV; quarterly daily detail stamped quarter end + 45 days (late); the "
+              "monthly TOTAL is an event object in countries/jp/official_plane.py")),
+    Source(
+        id="jp_boj_call_rate", name="BOJ uncollateralised overnight call rate (stat-search FM01)",
+        url=BOJ_API.format(db="FM01", start="201501", code=BOJ_CALL_CODE), region="JP",
+        language="en", cadence="daily", parse=make_boj_parser({BOJ_CALL_CODE: "call_rate_on"}),
+        rule=_lag_rule(1, 3, weekday=True), transform="level_dev",
+        instruments={"USDJPY": -1, "EURJPY": -1, "AUDJPY": -1, "JPN225": -1},
+        signal_series=("call_rate_on",),
+        mechanism=("the overnight call rate is where BOJ policy actually clears: a print drifting "
+                   "from the guidance is the funding cost of every yen-funded carry position "
+                   "moving before the statement says so"),
+        payer="carry positions funded at the overnight rate",
+        constraint="policy changes only at the eight MPM dates a year",
+        licence=_BOJ_LIC, source_culture="JP/en",
+        participant_structure=("policy_driven", "institutional"),
+        failure_mode_hypothesis=("fails across fiscal year- and quarter-end dates, which move "
+                                 "the call rate mechanically"),
+        crowding_prior="medium", data_source=_jp_data_source("boj", "call_rate"),
+        note="code overridable (ALT_BOJ_CALL_RATE_CODE); verify on the box with getMetadata"),
+    Source(
+        id="jp_boj_tankan", name="BOJ TANKAN business conditions DI (stat-search CO)",
+        url=BOJ_API.format(db="CO", start="200401", code=BOJ_TANKAN_CODES), region="JP",
+        language="en", cadence="quarterly", parse=make_boj_parser(
+            {c: f"tankan_{c.lower()}" for c in BOJ_TANKAN_CODES.split(",")}),
+        rule=rule_tankan, transform="given",
+        instruments={"USDJPY": -1, "EURJPY": -1, "JPN225": 1},
+        signal_series=tuple(f"tankan_{c.lower()}" for c in BOJ_TANKAN_CODES.split(",")[:1]),
+        mechanism=("TANKAN is the survey the BOJ itself cites when it moves: a business-"
+                   "conditions surprise reprices the hike path and the yen with it"),
+        payer="positions leaning on a slow BOJ",
+        constraint="quarterly, and the BOJ moves only at MPM dates",
+        licence=_BOJ_LIC, source_culture="JP/en", participant_structure=("policy_driven",),
+        failure_mode_hypothesis=("fails when the survey is fully expected by the market's own "
+                                 "forecasts, which this organ does not hold (its expectation is "
+                                 "the prior prints only)"),
+        crowding_prior="high", data_source=_jp_data_source("boj", "tankan"),
+        note=("codes are the API manual's getDataCode example (ALT_BOJ_TANKAN_CODES); the item "
+              "each names is read on the box with getMetadata")),
+    Source(
+        id="jp_boj_current_account",
+        name="BOJ current-account balances (stat-search; code set on the box)",
+        url=BOJ_API.format(db="{ALT_BOJ_CA_DB}", start="201501", code="{ALT_BOJ_CA_CODE}"),
+        region="JP", language="en", cadence="daily",
+        parse=make_boj_parser({}), rule=_lag_rule(2, 0, weekday=True), transform="level_dev",
+        config_env=("ALT_BOJ_CA_DB", "ALT_BOJ_CA_CODE"), instruments=_JP_FX,
+        signal_series=("boj_current_account",),
+        mechanism=("current-account balances at the BOJ are yen liquidity itself: a draw-down "
+                   "after the end of QE is reserves leaving the system, the funding squeeze the "
+                   "carry trade feels first"),
+        payer="yen-funded books that see liquidity only through the call rate",
+        constraint="the balance moves on tax days and JGB settlement dates by calendar",
+        licence=_BOJ_LIC, source_culture="JP/en", participant_structure=("policy_driven",),
+        failure_mode_hypothesis=("fails on calendar days (tax receipts, JGB redemptions) that "
+                                 "move the balance with no policy content"),
+        crowding_prior="low", data_source=_jp_data_source("boj", "current_account"),
+        note=("NO DEFAULT CODE: set ALT_BOJ_CA_DB and ALT_BOJ_CA_CODE from getDataLayer; the "
+              "parser names an unmapped code boj_<code>, so set the code to read the signal "
+              "series under its declared name via ALT_BOJ_CA_CODE")),
+    Source(
+        id="jp_boj_jgb_holdings",
+        name="BOJ holdings of JGBs (Bank of Japan Accounts, stat-search; the Rinban footprint)",
+        url=BOJ_API.format(db="{ALT_BOJ_JGB_DB}", start="201501", code="{ALT_BOJ_JGB_CODE}"),
+        region="JP", language="en", cadence="10-daily",
+        parse=make_boj_parser({}), rule=_lag_rule(4, 0, weekday=True), transform="level_dev",
+        config_env=("ALT_BOJ_JGB_DB", "ALT_BOJ_JGB_CODE"), instruments=_JP_FX,
+        signal_series=("boj_jgb_holdings",),
+        mechanism=("the change in the Bank's JGB holdings is the net of its Rinban purchase "
+                   "operations and redemptions: the taper of QT read from the balance sheet "
+                   "rather than from operation notices whose site terms refuse commercial reuse"),
+        payer="JGB and yen positions that price the taper from the plan, not the purchases",
+        constraint="purchases follow a published quarterly plan",
+        licence=_BOJ_LIC, source_culture="JP/en", participant_structure=("policy_driven",),
+        failure_mode_hypothesis=("fails when redemptions dominate the change (a maturity wall "
+                                 "is not a policy act)"),
+        crowding_prior="low", data_source=_jp_data_source("boj", "jgb_holdings"),
+        note="NO DEFAULT CODE: set ALT_BOJ_JGB_DB / ALT_BOJ_JGB_CODE from getDataLayer (BS01)"),
+)
+#: An unmapped BOJ code is named boj_<code>; the two rows without a default code map their
+#: configured code to the declared signal name at import.
+JP_PLANE_SOURCES = tuple(
+    replace(s, parse=make_boj_parser({os.environ.get(env, ""): s.signal_series[0]}))
+    if (env := {"jp_boj_current_account": "ALT_BOJ_CA_CODE",
+                "jp_boj_jgb_holdings": "ALT_BOJ_JGB_CODE"}.get(s.id)) else s
+    for s in JP_PLANE_SOURCES)
+
+_CHK_JP = "2026-10-06"
+_PDL_EV = {"terms_url": "https://www.mof.go.jp/english/about_mof/notice/index.html",
+           "terms_quote": ("Public Data License (Version 1.0; PDL 1.0) applies unless any rights "
+                           "are indicated."),
+           "licence_url": "https://www.digital.go.jp/resources/open_data/public_data_license_v1.0",
+           "licence_quote": ("どなたでも以下の1.1.から1.7.に定める利用ルールに従って、複製、公衆送信、"
+                             "翻訳・変形等の翻案等、自由に利用できます...商用利用も可能です。"),
+           "robots": "not readable from the authoring container (proxy refuses the host)",
+           "checked_at": _CHK_JP}
+_BOJ_API_EV = {"terms_url": "https://www.stat-search.boj.or.jp/info/api_notice_en.pdf",
+               "terms_quote": ("This service uses the API provided by the \"Bank of Japan "
+                               "Time-Series Data Search.\" The Bank of Japan does not guarantee "
+                               "the content of the service. [required credit]; prohibited: "
+                               "\"Excessive access frequency or other acts that interfere with "
+                               "the operation of the API\""),
+               "api_doc": "https://www.stat-search.boj.or.jp/info/api_manual_en.pdf",
+               "robots": ("the API is the Bank's documented interface; the notice states no "
+                          "commercial-use restriction. A service RELEASED to others must be "
+                          "notified to post.rsd17@boj.or.jp -- the desk's internal use releases "
+                          "none"),
+               "checked_at": _CHK_JP}
+JP_TERMS: dict[str, tuple[str, str]] = {
+    "jp_mof_securities_weekly": ("confirmed", "MOF site: PDL 1.0, commercial use allowed"),
+    "jp_mof_securities_investor_bonds": ("confirmed", "MOF site: PDL 1.0, commercial use allowed"),
+    "jp_mof_fx_intervention": ("confirmed", "MOF site: PDL 1.0, commercial use allowed"),
+    "jp_boj_call_rate": ("confirmed", "BOJ stat-search API notice: credit line, no restriction"),
+    "jp_boj_tankan": ("confirmed", "BOJ stat-search API notice: credit line, no restriction"),
+    "jp_boj_current_account": ("confirmed", "BOJ stat-search API notice: credit line"),
+    "jp_boj_jgb_holdings": ("confirmed", "BOJ stat-search API notice: credit line"),
+}
+#: Evidence for the plane rows AND for the hosts no fetcher is built for, read 2026-10-06.
+JP_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    **{sid: dict(_PDL_EV) for sid in ("jp_mof_securities_weekly",
+                                      "jp_mof_securities_investor_bonds",
+                                      "jp_mof_fx_intervention", "jp_mof_jgb_auctions")},
+    **{sid: dict(_BOJ_API_EV) for sid in ("jp_boj_call_rate", "jp_boj_tankan",
+                                          "jp_boj_current_account", "jp_boj_jgb_holdings")},
+    "jp_estat": {
+        "terms_url": "https://www.e-stat.go.jp/terms-of-use",
+        "terms_quote": ("どなたでも以下の１）～６）に従って、複製、公衆送信、翻訳・変形等の翻案等、"
+                        "自由に利用できます。商用利用も可能です。"),
+        "robots": "api.e-stat.go.jp is the documented API (free appId)",
+        "checked_at": _CHK_JP},
+    "jp_jpx_market_data": {
+        "terms_url": "https://www.jpx.co.jp/english/term-of-use/index.html",
+        "terms_quote": ("The collection of data or secondary use of information from this website "
+                        "for commercial purposes is strictly prohibited, unless JPX has granted "
+                        "prior permission or authorized such use under a paid contract."),
+        "robots": "not read: the terms alone refuse commercial collection",
+        "decision": "refused", "checked_at": _CHK_JP},
+    "jp_boj_site_releases": {
+        "terms_url": "https://www.boj.or.jp/en/about/copyright.htm",
+        "terms_quote": ("The Bank permits copying with proper attribution to the source, except "
+                        "for ... The copying or reproduction of the content for commercial "
+                        "purposes."),
+        "robots": "not read: the terms alone refuse commercial copying of boj.or.jp content",
+        "decision": "refused", "checked_at": _CHK_JP},
+    "jp_jquants_investor_types": {
+        "terms_url": "https://jpx-jquants.com/en",
+        "terms_quote": ("distributing or sharing the data obtained from J-Quants API in a "
+                        "viewable format is prohibited. Additionally, continuously providing or "
+                        "distributing investment analysis results using this data to third "
+                        "parties is also prohibited. (FAQ; the full terms of service page was "
+                        "not reachable from the authoring container)"),
+        "robots": "api.jquants.com is the documented API (x-api-key, PR #218)",
+        "decision": "to_confirm", "checked_at": _CHK_JP},
+    "jp_tfx_click365": {
+        "terms_url": "https://www.tfx.co.jp/sitepolicy.html",
+        "terms_quote": ("(the site policy covers linking only; no reuse or commercial-use "
+                        "statement was found for Click365 statistics)"),
+        "robots": "not read: no terms grant reuse, so fail closed",
+        "decision": "to_confirm", "checked_at": _CHK_JP},
+}
+#: Lanes with NO fetcher: refused or unconfirmed terms, or a format the desk cannot read yet.
+JP_REFUSED: dict[str, dict[str, Any]] = {
+    "jp_jpx_market_data": {
+        "would_carry": ["TSE investor-type weekly flows (jpx.co.jp)", "margin trading balances",
+                        "OSE Nikkei 225 futures/options OI and option implied volatility"],
+        "status": "BLOCKED_ON_TERMS:refused", "terms": "refused",
+        "nearest_lawful": ["jp_mof_securities_weekly", "jp_mof_securities_investor_bonds"],
+        "why_not_a_substitute": ("MOF measures cross-border portfolio flow by residency and "
+                                 "investor type, not domestic margin or option positioning; no "
+                                 "lawful free source publishes Nikkei option IV")},
+    "jp_boj_site_releases": {
+        "would_carry": ["Rinban (outright JGB purchase) operation results: offer/accept, "
+                        "bid-to-cover, spread to average", "MPM statement text"],
+        "status": "BLOCKED_ON_TERMS:refused", "terms": "refused",
+        "nearest_lawful": ["jp_boj_jgb_holdings", "jp_boj_call_rate"],
+        "why_not_a_substitute": ("the balance-sheet holdings carry the NET of the operations, "
+                                 "not each operation's demand; the MPM decision survives as a "
+                                 "calendar event plus the call rate's move across it")},
+    "jp_jquants_investor_types": {
+        "would_carry": ["TSE Prime investor-type net buying (foreigners, individuals, trust "
+                        "banks, investment trusts) weekly", "weekly margin interest"],
+        "status": "BLOCKED_ON_TERMS:to_confirm", "terms": "to_confirm",
+        "depends_on": ("PR #218 (claude/token-refresh-flows): asia_collector's jpx_jquants row "
+                       "at https://api.jquants.com/v2/equities/investor-types with x-api-key "
+                       "JQUANTS_API_KEY; it stores data/lake/series/jpx_jquants.json, which "
+                       "alt_proxies.read_jquants_investor_types parses"),
+        "nearest_lawful": ["jp_mof_securities_weekly"],
+        "why_not_a_substitute": ("MOF's liabilities side is non-residents' Japanese equity "
+                                 "purchases weekly -- the foreigners' leg of investor-type flow, "
+                                 "without the domestic individuals / trust banks legs")},
+    "jp_tfx_click365": {
+        "would_carry": ["Click365 retail FX open interest by currency pair (Japanese retail "
+                        "FX positioning)"],
+        "status": "BLOCKED_ON_TERMS:to_confirm", "terms": "to_confirm",
+        "nearest_lawful": [],
+        "why_not_a_substitute": "no lawful free source of Japanese retail FX positions found"},
+    "jp_mof_jgb_auctions": {
+        "would_carry": ["JGB auction results: bid-to-cover, tail (average minus lowest "
+                        "accepted price) by tenor"],
+        "status": "UNCONFIGURED:NEEDS_XLS_READER", "terms": "confirmed",
+        "nearest_lawful": ["jp_boj_jgb_holdings"],
+        "why_not_a_substitute": ("MOF publishes the history as BIFF .xls (Auction_Results_for_"
+                                 "JGBs.xls); neither xlrd nor openpyxl is installed on the desk, "
+                                 "and a parser is not written against a layout nobody has read")},
+}
+JP_TERMS_EVIDENCE["jp_estat"]["note"] = ("existing e-Stat rows (jp_tokyo_cpi, "
+                                         "jp_estat_immigration) re-read under the same terms")
+
 TERMS: dict[str, tuple[str, str]] = {
     "kr_exports_early": ("confirmed", "KOGL public-sector open licence"),
     "us_tsa_throughput": ("confirmed", "US federal work, public domain"),
@@ -2895,8 +3452,10 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
 }
 
 TERMS.update(KR_HK_TERMS)
+TERMS.update(JP_TERMS)
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
-                for s in (*SOURCES, *SUBSTITUTE_SOURCES, *KR_HK_PLANE_SOURCES))
+                for s in (*SOURCES, *SUBSTITUTE_SOURCES, *KR_HK_PLANE_SOURCES,
+                          *JP_PLANE_SOURCES))
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
 BY_ID = {s.id: s for s in SOURCES}
 
@@ -3468,8 +4027,13 @@ def _bars_close(paths: Paths, sym: str) -> Any:
     return s[s.index.notna()].sort_index()
 
 
+def data_source_of(src: Source) -> str:
+    """Where a cell's numbers come from, as `<provider>:<dataset>` (every cell carries it)."""
+    return src.data_source or f"{SOURCE}:{src.id}"
+
+
 def _meta(src: Source) -> dict[str, Any]:
-    return {"mechanism": src.mechanism, "payer": src.payer, "constraint": src.constraint,
+    return {"data_source": data_source_of(src), "mechanism": src.mechanism, "payer": src.payer, "constraint": src.constraint,
             "source_culture": src.source_culture,
             "participant_structure": list(src.participant_structure),
             "failure_mode_hypothesis": src.failure_mode_hypothesis,
@@ -4284,7 +4848,7 @@ def substitute_roster_rows(environ: dict[str, str] | None = None) -> list[dict[s
 
 
 _CADENCE_MIN = {"daily": 1440, "event": 1440, "weekly": 10080, "10-daily": 14400,
-                "monthly": 43200}
+                "monthly": 43200, "quarterly": 129600}
 ROSTER_HEADER = (
     "# Paid-dataset substitutes (RavenPack / card-spend / foot-traffic / satellite panels),\n"
     "# built by the asia_gap_thread in desks/mt5/research/alt_proxies.py, which FETCHES\n"

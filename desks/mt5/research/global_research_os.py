@@ -86,6 +86,35 @@ def _load_extra(code: str) -> tuple[dict[str, Any], str]:
         return {}, f"miners.py failed: {type(exc).__name__}: {exc}"
 
 
+def department_rows(*, dry_run: bool = False, budget_s: float = 300.0,
+                    codes: Any = None) -> list[dict[str, Any]]:
+    """The OWN miners of the conversion-door packs (NON_LAB_PACKS) that ship a `miners.py`.
+
+    Such a pack has no CountryPack research specification, so the lab never runs it -- but a
+    department plane it declares (Japan's official plane, 2026-10-06) must still run on this
+    leg's clock, or it is a writer with no clock. Each miner gets a disposition row."""
+    from types import SimpleNamespace
+    rows: list[dict[str, Any]] = []
+    for code in sorted(codes if codes is not None else NON_LAB_PACKS):
+        if not (PACK_ROOT / code / "miners.py").exists():
+            continue
+        miners, problem = _load_extra(code)
+        ctx = SimpleNamespace(code=code, dry_run=dry_run, budget_s=budget_s)
+        dispositions = []
+        for name, fn in sorted(miners.items()):
+            try:
+                res = fn(ctx)
+                outcome = "RAN"
+                why = str((res or {}).get("why") or "")
+            except Exception as exc:                  # a miner's failure is its row, not ours
+                outcome, why = "FAILED", f"{type(exc).__name__}: {exc}"
+            dispositions.append({"miner": name, "implementation": "PACK_MINERS_PY",
+                                 "outcome": outcome, "why": why[:300]})
+        rows.append({"country": code, "kind": "department", "extra_problem": problem,
+                     "miners": len(dispositions), "miner_dispositions": dispositions})
+    return rows
+
+
 class SeriesLoader:
     """PIT-certified acquired series plus COT, normalized to the lab's DataSeries type."""
 
@@ -209,6 +238,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, dry_run: bool = False,
             continue
         query_seen.add(key)
         unique_queries.append(row)
+    departments = department_rows(dry_run=dry_run, budget_s=MIN_PACK_BUDGET_S)
     full = len(cycle_rows) == len(codes) and next_index == 0
     miner_rows = [m for row in cycle_rows for m in (row.get("miner_dispositions") or [])]
     miner_outcomes: dict[str, int] = {}
@@ -236,6 +266,9 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, dry_run: bool = False,
         "native_query_enqueue": queue_stats,
         "native_query_reconciliation": queue_reconciliation,
         "native_queries_this_pass": len(native_queue), "countries": cycle_rows,
+        # Conversion-door packs' own department miners (e.g. JP_OFFICIAL_PLANE.json), run on
+        # this leg every pass; outside the lab's pack rotation and its conservation identity.
+        "departments": departments,
         "conservation": {"discovered_packs": len(codes), "run": len(cycle_rows),
                          "deferred_to_cursor": max(0, len(codes) - len(cycle_rows)),
                          "identity_holds": len(codes) == len(cycle_rows)
