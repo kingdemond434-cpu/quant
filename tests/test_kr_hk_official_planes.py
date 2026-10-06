@@ -388,6 +388,10 @@ def test_fixture_pass_publishes_axes_and_never_mints(tmp_path: Path) -> None:
     rep = A.run(paths, fixtures=FIX, donate=False, now=NOW)
     assert rep["direct_cells"]["n"] == 0                     # fixtures never mint
     for sid in PLANE_IDS:
+        if A.BY_ID[sid].terms != "confirmed":                # fenced rows publish nothing
+            assert not (paths.axes / f"alt_{sid}.json").exists(), sid
+            assert rep["sources"][sid]["series"] == {}, sid
+            continue
         axis = json.loads((paths.axes / f"alt_{sid}.json").read_text("utf-8"))
         assert any(k.endswith(".delta") for k in axis["series"]), sid
     # allocation intel needs a surprise_z, i.e. enough history: a synthetic 40-day HIBOR path
