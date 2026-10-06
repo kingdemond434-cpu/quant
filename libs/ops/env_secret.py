@@ -9,9 +9,10 @@ and a key set after that is invisible to every organ they launch until the box r
 
 So a key is looked up in this order, and the caller learns WHERE it came from (never what it is):
 
-    process   os.environ, as before
-    machine   HKLM Session Manager Environment (what `setx /M` writes)
+    machine   HKLM Session Manager Environment (what `setx /M` writes): the newest setting wins
+              over a stale copy a long-running process inherited
     user      HKCU\\Environment (what a plain `setx` writes)
+    process   os.environ (off Windows, and keys a launcher injected)
     file      the secrets files the caller names
 
 Names are tried exactly as given, then case-insensitively in the registry (Windows environment
@@ -82,16 +83,16 @@ def _from_file(path: Path) -> str | None:
 
 
 def lookup(names: Sequence[str], files: Iterable[Path] = ()) -> tuple[str | None, str]:
-    """(value, origin). origin is process | machine | user | file:<name> | absent."""
-    for n in names:
-        v = os.environ.get(n, "").strip()
-        if v:
-            return v, "process"
+    """(value, origin). origin is machine | user | process | file:<name> | absent."""
     for hive in ("machine", "user"):
         for n in names:
             r = _registry(hive, n)
             if r:
                 return r, hive
+    for n in names:
+        v = os.environ.get(n, "").strip()
+        if v:
+            return v, "process"
     for p in files:
         f = _from_file(Path(p))
         if f:

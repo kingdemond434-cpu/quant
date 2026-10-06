@@ -17,7 +17,9 @@ def test_process_env_first_then_registry_then_file(tmp_path: Path,
     f = tmp_path / "fred.json"
     f.write_text('{"key": "from-file"}', encoding="utf-8")
     assert es.lookup(("FRED_API_KEY",), [f]) == ("m" * 32, "machine")
-    monkeypatch.setenv("FRED_API_KEY", "p" * 32)
+    monkeypatch.setenv("FRED_API_KEY", "p" * 32)               # stale inherited copy
+    assert es.lookup(("FRED_API_KEY",), [f])[1] == "machine"  # the registry's newest wins
+    reg.clear()
     assert es.lookup(("FRED_API_KEY",), [f])[1] == "process"
     monkeypatch.delenv("FRED_API_KEY")
     reg.clear()
