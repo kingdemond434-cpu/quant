@@ -9037,6 +9037,63 @@
    "landed": [
     "mass screen 2026-09-30"
    ]
+  },
+  {
+   "id": "ASIA_OTHER1",
+   "item": "Asia directive XXIV (2026-10-06): a forward record for every Asian-derived signal -- forward trades, days, effective sample size, autocorrelation adjustment, sequential lower bound, costs, slippage, execution quality, realized expectancy, DD, decay, correlation to book and marginal E[log W] -- each read from the organ that owns it, UNMEASURED with its path when the owner has nothing, and read back into each Asian region's research ROI row.",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:forward_evidence_tracker",
+   "artifact": "desks/mt5/reports/FORWARD_EVIDENCE.json",
+   "evidence": [
+    "desks/mt5/research/forward_evidence_tracker.py:260 -- asian_lineage(): RESEARCH_ROI delayed credit, sources whose region is china/japan/korea/south_asia/asean",
+    "desks/mt5/research/forward_evidence_tracker.py:338 -- signal_record(): the thirteen fields; n_eff and the sequential bound from forward_verdict over the forward-phase ledger only",
+    "desks/mt5/research/forward_evidence_tracker.py:436 -- asian_signals(): n_signals 0 is a measured empty, absent lineage is UNMEASURED",
+    "desks/mt5/research/forward_evidence_tracker.py:540 -- the block rides on the existing hourly report",
+    "desks/mt5/research/research_roi.py:914 -- attach_forward_record(): the consumer, publish-only (the ROI arithmetic is unchanged)"
+   ],
+   "consumer": "desks/mt5/research/research_roi.py attach_forward_record -> reports/RESEARCH_ROI.json region_roi.by_region[<asian region>].forward_record (hourly_cycle:research_roi)",
+   "tests": [
+    "desks/mt5/tests/test_forward_evidence_tracker.py"
+   ],
+   "gap": "Live yield UNMEASURED: on the day of landing no Asian-derived signal held a forward clock (owned-rows audit), so the record publishes n_signals 0 until one enrols. research_roi caps credited cells at 25 per source, so a heavily credited Asian source can be under-listed.",
+   "next_step": "When the completion audit (#232) lands, point its FORWARD rung for ASIA-0772..0784 at FORWARD_EVIDENCE.asian_signals.",
+   "landed": [
+    "asia other rows 2026-10-06"
+   ]
+  },
+  {
+   "id": "ASIA_OTHER2",
+   "item": "Asia directive OTHER rows (2026-10-06): South-East Asian commodity channels and Singapore trade as PIT alt_proxies rows -- World Bank Pink Sheet monthly prices (palm oil, rubber RSS3/TSR20, Japan LNG, Australian coal as a declared proxy for Indonesian HBA, nickel, tin, robusta, Thai rice, wheat, sugar, soybean oil; CC BY 4.0) and SingStat Table Builder M451001 (NODX, re-exports, imports, total trade) and M450981 (electronics and IC domestic exports; Singapore Open Data Licence), each through the existing gain test, trial charge and donation door with data_source on every cell.",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:alt_proxies",
+   "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+   "evidence": [
+    "desks/mt5/research/hourly_cycle.py:5175 -- the existing alt_proxies leg runs the three new rows (no new leg)",
+    "desks/mt5/research/alt_proxies.py:1254 -- SINGSTAT_SERIES: rows read by the table's own seriesNo",
+    "desks/mt5/research/alt_proxies.py:1315 -- parse_pink_sheet(): header found by name, missing prints skipped, update date stamps only the newest month",
+    "desks/mt5/research/alt_proxies.py:1364 -- rule_pink_sheet(): third business day, never before the release",
+    "desks/mt5/research/alt_proxies.py:1885 -- the three Source rows with instruments and mechanism",
+    "desks/mt5/research/alt_proxies.py:1974 -- DATA_SOURCE: provider:dataset on every direct and indirect cell",
+    "desks/mt5/research/alt_proxies.py:2768 -- TERMS_EVIDENCE with the verbatim licence quotes read 2026-10-06",
+    "desks/mt5/research/alt_proxies.py:2943 -- the Pink Sheet is fetched at most once per UTC day",
+    "libs/data/xls_reader.py:598 -- read_xlsx(): a stdlib OOXML reader (the box has no openpyxl)"
+   ],
+   "consumer": "libs/research/alpha_dsl.axis_fields reads data/axes/alt_<id>.json (FieldCatalogue -> world_model -> representation_forge); passing cells go through proposer_common.donate to the one gauntlet",
+   "tests": [
+    "tests/test_alt_proxies_asia_channels.py",
+    "tests/test_alt_proxies.py"
+   ],
+   "gap": "Live yield UNMEASURED: thedocs.worldbank.org and tablebuilder.singstat.gov.sg are refused by the authoring container's proxy, so the parsers were built against fixtures in the documented format. The Pink Sheet document id changes per release (ALT_WB_PINK_SHEET_URL). The Pink Sheet is the price layer of each channel; country volumes (MPOB stocks, DOSM/GSO electronics, MOTS tourism, PPAC oil) remain NEXT behind their terms.",
+   "next_step": "First box pass: confirm the live header labels of 'Monthly Prices' and the two SingStat table ids, and read the gain verdicts in ALT_PROXIES.json.",
+   "landed": [
+    "asia other rows 2026-10-06"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

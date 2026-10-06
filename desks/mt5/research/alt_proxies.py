@@ -1245,6 +1245,135 @@ def parse_singstat_port(body: bytes, ctx: Ctx) -> list[Obs]:
     return _first_per_key(out)
 
 
+
+#: SingStat Table Builder `seriesNo` -> series slug, per table. The hierarchy numbers are the
+#: table's own (read 2026-10-06 from the live API reply for 2026 Jul): M451001 rows 1..5 are
+#: total trade / imports / exports / domestic exports / re-exports, `.2` under each is Non-Oil;
+#: M450981 row 1 is Total Electronic Products, 1.3 Integrated Circuits, 2 Non-Electronic
+#: Products (all non-oil domestic exports). A row not named here is not emitted.
+SINGSTAT_SERIES: dict[str, dict[str, str]] = {
+    "sg_merch_trade": {"1": "total_trade", "2": "imports", "2.2": "nonoil_imports",
+                       "3": "exports", "4": "domestic_exports", "4.2": "nodx",
+                       "5": "re_exports", "5.2": "nonoil_re_exports"},
+    "sg_nodx_electronics": {"1": "electronics_dx", "1.3": "ic_dx", "2": "non_electronics_dx"},
+}
+
+
+def _singstat_rows(body: bytes, table: dict[str, str]) -> list[Obs]:
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    rows = ((doc or {}).get("Data") or {}).get("row") if isinstance(doc, dict) else None
+    out: list[Obs] = []
+    for r in rows if isinstance(rows, list) else []:
+        series = table.get(str((r or {}).get("seriesNo") or "").strip())
+        if series is None:
+            continue
+        for c in (r or {}).get("columns") or []:
+            m = _SS_MONTH.match(str((c or {}).get("key") or ""))
+            v = _num(str((c or {}).get("value") or ""))
+            mo = _EN_MONTHS3.get(m.group(2).lower()) if m else None
+            if m and mo and v is not None:
+                out.append(Obs(series, _month_end(int(m.group(1)), mo), v))
+    return _first_per_key(out)
+
+
+def parse_singstat_merch(body: bytes, ctx: Ctx) -> list[Obs]:
+    """SingStat M451001 Merchandise Trade By Commodity Section (current prices, S$ thousand):
+    total trade, imports, exports, domestic exports, NODX (row 4.2) and non-oil re-exports."""
+    return _singstat_rows(body, SINGSTAT_SERIES["sg_merch_trade"])
+
+
+def parse_singstat_electronics(body: bytes, ctx: Ctx) -> list[Obs]:
+    """SingStat M450981 Domestic Exports Of Major Non-Oil Products: electronics, ICs and
+    non-electronics NODX (S$ thousand)."""
+    return _singstat_rows(body, SINGSTAT_SERIES["sg_nodx_electronics"])
+
+
+#: World Bank Pink Sheet (CMO-Historical-Data-Monthly.xlsx, sheet "Monthly Prices") column
+#: header -> series slug. Matched on the header text lower-cased with footnote asterisks and
+#: spaces stripped, so "Rubber, TSR20 **" and "Rice, Thai 5% " match. A column not named here is
+#: never emitted. Coal is the Australian (Newcastle) print: the Pink Sheet carries no Indonesian
+#: HBA, so the Indonesian coal channel reads it as a declared PROXY.
+PINK_SHEET_COLUMNS: dict[str, str] = {
+    "palm oil": "palm_oil", "rubber, rss3": "rubber_rss3", "rubber, tsr20": "rubber_tsr20",
+    "liquefied natural gas, japan": "lng_japan", "coal, australian": "coal_australia",
+    "nickel": "nickel", "tin": "tin", "coffee, robusta": "coffee_robusta",
+    "rice, thai 5%": "rice_thai5", "wheat, us hrw": "wheat_us_hrw", "sugar, world": "sugar_world",
+    "soybean oil": "soybean_oil",
+}
+PINK_SHEET_NAME = "Monthly Prices"
+_PINK_PERIOD = re.compile(r"^(\d{4})M(\d{2})$")
+_PINK_UPDATED = re.compile(r"Updated on\s+([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})", re.I)
+
+
+def _pink_key(text: object) -> str:
+    return re.sub(r"\s+", " ", str(text or "").replace("*", "")).strip().lower()
+
+
+def parse_pink_sheet(body: bytes, ctx: Ctx) -> list[Obs]:
+    """World Bank Pink Sheet monthly prices, nominal US$: one Obs per (commodity, month).
+
+    The sheet carries a title block ("Updated on <Month D, YYYY>"), one header row of commodity
+    names, one row of units, then one row per month keyed `YYYYMmm` in column A; a missing print
+    is "…" and is skipped, never zero. The header row is FOUND (the first row naming at least
+    three mapped commodities), not assumed at a fixed index. The update date is the release
+    instant of the NEWEST month only; every older month takes the release rule."""
+    from libs.data.xls_reader import XlsError, read_xlsx
+    try:
+        sheets = read_xlsx(body)
+    except XlsError:
+        return []
+    sheet = next((s for s in sheets if s.name.strip().lower() == PINK_SHEET_NAME.lower()), None)
+    if sheet is None:
+        return []
+    grid = sheet.rows()
+    updated: datetime | None = None
+    head_i, cols = -1, {}
+    for i, row in enumerate(grid):
+        for cell in row:
+            m = _PINK_UPDATED.search(str(cell or ""))
+            mo = _MONTHS.get(m.group(1).lower()) if m else None
+            if m and mo:
+                updated = _utc(int(m.group(3)), mo, int(m.group(2)), 23, 59)
+        found = {j: PINK_SHEET_COLUMNS[_pink_key(c)] for j, c in enumerate(row)
+                 if _pink_key(c) in PINK_SHEET_COLUMNS}
+        if len(found) >= 3:
+            head_i, cols = i, found
+            break
+    if head_i < 0:
+        return []
+    out: list[Obs] = []
+    newest: date | None = None
+    for row in grid[head_i + 1:]:
+        m = _PINK_PERIOD.match(str(row[0] if row else "").strip())
+        if not m or not 1 <= int(m.group(2)) <= 12:
+            continue
+        period = _month_end(int(m.group(1)), int(m.group(2)))
+        newest = period if newest is None or period > newest else newest
+        for j, series in cols.items():
+            v = row[j] if j < len(row) else None
+            if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
+                out.append(Obs(series, period, float(v)))
+    if updated is not None and newest is not None:
+        out = [replace(o, published_at=updated) if o.period == newest else o for o in out]
+    return out
+
+
+def rule_pink_sheet(period: date) -> datetime:
+    """The Pink Sheet is updated on the second business day of the following month (worldbank.org
+    commodity-markets page, 2026-10-06: "Next update: November 3, 2026" for the October release).
+    Stamped at 00:00 UTC on the THIRD business day: always after the release, never before it."""
+    nxt = period + timedelta(days=1)
+    t, n = _utc(nxt.year, nxt.month, 1), 0
+    while True:
+        if t.weekday() < 5:
+            n += 1
+            if n == 3:
+                return t
+        t += timedelta(days=1)
+
 _MOT_WEEK = re.compile(r"(\d{1,2})\s*月\s*(\d{1,2})\s*日\s*[—\-－~至]+\s*(?:(\d{1,2})\s*月\s*)?"  # noqa: RUF001
                        r"(\d{1,2})\s*日")
 _MOT_CARGO = re.compile(r"港口(?:完成)?货物吞吐量\s*([\d.]+)\s*亿吨\s*[，,]?\s*环比(增长|下降)\s*"  # noqa: RUF001
@@ -1752,7 +1881,105 @@ SOURCES: tuple[Source, ...] = (
                                  "-- a policy clock unrelated to the Fed"),
         crowding_prior="low", note="no fetch: fetch_sge_premium already records it",
         reader=read_sge_premium),
+    Source(
+        id="sg_merch_trade", name="SingStat merchandise trade by commodity section (NODX)",
+        url=("https://tablebuilder.singstat.gov.sg/api/table/tabledata/"
+             + os.environ.get("ALT_SINGSTAT_TRADE_TABLE", "M451001")),
+        region="SG", language="en", cadence="monthly", parse=parse_singstat_merch,
+        rule=_lag_rule(20, 0, weekday=True), transform="yoy_monthly",
+        instruments={"USDSGD": -1, "SGDJPY": 1, "CHINAH": 1},
+        series_instruments={"nonoil_imports": {"USDSGD": -1, "AUDSGD": 1},
+                            "nonoil_re_exports": {"USDSGD": -1, "CHINAH": 1}},
+        signal_series=("nodx", "nonoil_re_exports", "nonoil_imports"),
+        mechanism=("NODX is Singapore's own manufacturing exported, re-exports are the region's "
+                   "trade passing through it: the first official monthly read of Asian trade, "
+                   "two weeks before most customs prints"),
+        payer="SGD and Asian trade-cycle holders who wait for China and Korea customs",
+        constraint="MAS manages SGD on a policy band; trade reprices it slowly",
+        licence="SingStat Table Builder API (Singapore Open Data Licence); data: Enterprise "
+                "Singapore",
+        source_culture="SG/en", participant_structure=("physical_flow", "policy_driven"),
+        failure_mode_hypothesis=("fails when pharmaceutical shipments (lumpy, low value-add) "
+                                 "swing NODX without any change in the regional cycle"),
+        crowding_prior="medium",
+        note=("table id from the Table Builder resourceid search, 2026-10-06; overridable "
+              "(ALT_SINGSTAT_TRADE_TABLE). Released ~17th of the next month 08:30 SGT; the "
+              "rule stamps the 20th (late)")),
+    Source(
+        id="sg_nodx_electronics", name="SingStat NODX of major non-oil products (electronics)",
+        url=("https://tablebuilder.singstat.gov.sg/api/table/tabledata/"
+             + os.environ.get("ALT_SINGSTAT_ELECTRONICS_TABLE", "M450981")),
+        region="SG", language="en", cadence="monthly", parse=parse_singstat_electronics,
+        rule=_lag_rule(20, 0, weekday=True), transform="yoy_monthly",
+        instruments={"USDSGD": -1, "USDKRW": -1},
+        series_instruments={"ic_dx": {"USDKRW": -1, "NAS100": 1}},
+        signal_series=("electronics_dx", "ic_dx"),
+        mechanism=("Singapore's electronics and integrated-circuit exports are the regional "
+                   "semiconductor cycle, official and monthly, weeks before Taiwan and Korea "
+                   "report the quarter"),
+        payer="semiconductor-sensitive FX and index holders waiting for company guidance",
+        constraint="the electronics share of NODX is small; a single plant move shifts it",
+        licence="SingStat Table Builder API (Singapore Open Data Licence); data: Enterprise "
+                "Singapore",
+        source_culture="SG/en", participant_structure=("physical_flow",),
+        failure_mode_hypothesis=("fails when one fab's maintenance or a relocation moves "
+                                 "Singapore's share rather than regional demand"),
+        crowding_prior="medium",
+        note=("table id from the Table Builder resourceid search, 2026-10-06; overridable "
+              "(ALT_SINGSTAT_ELECTRONICS_TABLE)")),
+    Source(
+        id="wb_pink_sheet_asia",
+        name="World Bank Pink Sheet: Asian commodity channels (monthly prices)",
+        url=os.environ.get("ALT_WB_PINK_SHEET_URL",
+                           "https://thedocs.worldbank.org/en/doc/"
+                           "74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/"
+                           "CMO-Historical-Data-Monthly.xlsx"),
+        region="ASIA", language="en", cadence="monthly", parse=parse_pink_sheet,
+        rule=rule_pink_sheet, transform="mom_monthly",
+        instruments={"USDIDR": -1},
+        series_instruments={
+            "palm_oil": {"USDIDR": -1, "AUDUSD": 1},
+            "rubber_": {"USDTHB": -1},
+            "lng_japan": {"XNGUSD": 1, "USDIDR": -1},
+            "coal_australia": {"AUDUSD": 1, "USDIDR": -1},
+            "nickel": {"XNIUSD": 1, "USDIDR": -1},
+            "tin": {"USDIDR": -1},
+            "coffee_robusta": {"COFROB": 1},
+            "rice_thai5": {"USDTHB": -1},
+            "wheat_us_hrw": {"USDINR": 1}, "sugar_world": {"USDINR": 1},
+            "soybean_oil": {"USDINR": 1}},
+        signal_series=("palm_oil", "rubber_rss3", "rubber_tsr20", "lng_japan", "coal_australia",
+                       "nickel", "tin", "coffee_robusta", "rice_thai5", "wheat_us_hrw",
+                       "sugar_world", "soybean_oil"),
+        mechanism=("the export prices of South-East Asia's commodity economies (palm oil, rubber, "
+                   "LNG, coal, nickel, tin, robusta, rice) are their terms of trade; the monthly "
+                   "official average is a slow state the hourly FX tape reprices late"),
+        payer=("IDR, THB and INR holders whose central banks smooth the currency, so terms-of-"
+               "trade shocks pass through with a lag"),
+        constraint="managed FX regimes (BI, BOT, RBI intervention) delay the pass-through",
+        licence=("World Bank Commodity Price Data (The Pink Sheet), Creative Commons "
+                 "Attribution 4.0 (World Bank default open-data licence)"),
+        source_culture="WB/en", participant_structure=("physical_flow", "policy_driven"),
+        failure_mode_hypothesis=("fails when the monthly average only restates a move the "
+                                 "futures tape already priced, or when policy (export bans, "
+                                 "biodiesel mandates) and not price drives the currency"),
+        crowding_prior="medium",
+        note=("monthly xlsx, refetched at most once per UTC day; URL overridable "
+              "(ALT_WB_PINK_SHEET_URL) because the document id changes with each release. "
+              "Coal is the Australian print: a declared PROXY for Indonesian HBA")),
 )
+
+#: The `<provider>:<dataset>` every cell of a source carries. A source not named here is the
+#: organ's own row (`alt_proxies:<id>`).
+DATA_SOURCE: dict[str, str] = {
+    "sg_merch_trade": "singstat:M451001",
+    "sg_nodx_electronics": "singstat:M450981",
+    "wb_pink_sheet_asia": "worldbank:cmo_pink_sheet_monthly",
+}
+
+
+def data_source_of(src: Source) -> str:
+    return DATA_SOURCE.get(src.id, f"alt_proxies:{src.id}")
 
 # ---------------------------------------------------------------------------- paid substitutes
 def _gdelt_series_map() -> dict[str, dict[str, int]]:
@@ -2371,6 +2598,12 @@ TERMS: dict[str, tuple[str, str]] = {
                       "allowed with credit"),
     "tr_tuik_retail": ("confirmed", "TÜİK legal notice: reuse without permission, source cited"),
     "kr_mof_container_teu": ("confirmed", "data.go.kr: 이용허락범위 제한 없음 (unrestricted)"),
+    "sg_merch_trade": ("confirmed", "SingStat Table Builder API, Singapore Open Data Licence "
+                       "(same API and licence as sg_port_throughput)"),
+    "sg_nodx_electronics": ("confirmed", "SingStat Table Builder API, Singapore Open Data "
+                            "Licence (same API and licence as sg_port_throughput)"),
+    "wb_pink_sheet_asia": ("confirmed", "World Bank open data: CC BY 4.0 is the default licence "
+                           "for World Bank datasets; commercial use allowed with attribution"),
 }
 TERMS_VALUES = ("confirmed", "to_confirm", "refused")
 
@@ -2517,6 +2750,37 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                          "별도의 신청절차 없이 이용 가능"),
         "robots": "apis.data.go.kr is the portal's documented Open API (free service key)",
         "checked_at": _CHK},
+    # ---- Asia directive OTHER rows (2026-10-06): terms read by fetching the pages that day
+    **{sid: {
+        "terms_url": "https://singstat.gov.sg/our-services-tools-surveys/singstat-mobile-app/tou",
+        "terms_quote": ("Use of Datasets provided in this application is subject to the terms of "
+                        "the Singapore Open Data Licence on the use of statistical data from "
+                        "this Website (\"ODL\")."),
+        "licence_url": "https://data.gov.sg/open-data-licence",
+        "licence_quote": ("You can use, access, download, copy, distribute, transmit, modify and "
+                          "adapt the datasets, or any derived analyses or applications, whether "
+                          "commercially or non-commercially."),
+        "judgement": ("the same Table Builder API and licence already confirmed for "
+                      "sg_port_throughput (quotes as recorded there); the table ids were read "
+                      "from tablebuilder.singstat.gov.sg/api/table/resourceid on 2026-10-06"),
+        "robots": "tablebuilder.singstat.gov.sg/api is the documented Table Builder API",
+        "checked_at": "2026-10-06"} for sid in ("sg_merch_trade", "sg_nodx_electronics")},
+    "wb_pink_sheet_asia": {
+        "terms_url": "https://datacatalog.worldbank.org/public-licenses",
+        "terms_quote": ("CC-BY 4.0, with the additional terms below, is the default license for "
+                        "all Datasets produced by the World Bank itself and distributed as open "
+                        "data / allows users to copy, modify and distribute data in any format "
+                        "for any purpose, including commercial use"),
+        "licence_url": "https://data.worldbank.org/summary-terms-of-use",
+        "licence_quote": ("you are free to copy, distribute, adapt, display or include the data "
+                          "in other products for commercial or noncommercial purposes at no cost "
+                          "under a Creative Commons Attribution 4.0 International License"),
+        "judgement": ("the Pink Sheet is produced by the World Bank (Prospects Group) and served "
+                      "from worldbank.org/en/research/commodity-markets, whose licence links "
+                      "are exactly these two pages; attribution is carried in `credit`"),
+        "credit": "The World Bank: Commodity Price Data (The Pink Sheet)",
+        "robots": "a single monthly xlsx download, refetched at most once per UTC day",
+        "checked_at": "2026-10-06"},
 }
 
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
@@ -2676,6 +2940,14 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
     if src.id == "cn_baidu_migration":
         return [Request(src.url.replace("{city}", cid), Ctx(part=city, fetched_at=now))
                 for city, cid in BAIDU_CITIES.items()]
+    if src.id == "wb_pink_sheet_asia":
+        # A monthly workbook of ~1-2 MB: one read per UTC day is enough to catch the release on
+        # its day, and the hourly leg does not re-download the whole history every hour.
+        today = now.date().isoformat()
+        if state.get("fetched_day") == today:
+            return []
+        state["fetched_day_next"] = today
+        return [Request(src.url, Ctx(fetched_at=now))]
     if src.id == "us_tsa_throughput":
         # The current page carries this year only; the year-on-year comparison needs last year's
         # page, which TSA publishes at /<year>.
@@ -3169,6 +3441,7 @@ def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[s
             "evidence": {k: g.get(k) for k in ("ic", "n", "t", "p_t", "p_placebo",
                                                "placebo_abs_ic_p95", "backfill_share",
                                                "horizon_bars", "min_detectable_ic", "why")},
+            "data_source": data_source_of(src),
             "provenance": {"organ": "alt_proxies", "use": "direct_cells", "source_id": sid,
                            "series": series, **_meta(src)}})
     return out
@@ -3298,7 +3571,7 @@ def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict
                 **_meta(src),
                 "falsifier": ("the conditioned child's gauntlet verdict is no better than its "
                               "certified parent's on the same window"),
-                "parent": par["name"],
+                "parent": par["name"], "data_source": data_source_of(src),
                 "provenance": {"organ": "alt_proxies", "use": "indirect_cells",
                                "source_id": sid, "series": series, **_meta(src)}})
             minted.append((out[-1], par, src, series, op))
@@ -3380,7 +3653,7 @@ def _donate(paths: Paths, source: str, cands: list[dict[str, Any]], tests_run: i
 # ============================================================================ the pass
 def _load_fixture(fixtures: Path, src: Source, req: Request, i: int) -> bytes | None:
     for name in (f"{src.id}.{i}", src.id):
-        for ext in ("html", "json", "csv", "txt"):
+        for ext in ("html", "json", "csv", "txt", "xlsx"):
             p = fixtures / f"{name}.{ext}"
             if p.exists() and (i == 0 or name != src.id):
                 return p.read_bytes()
@@ -3456,7 +3729,7 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             break                                              # paging exhausted
     if src.id == "cn_firms_industrial" and "firms_backfill_to_next" in sst and not errors:
         sst["firms_backfill_to"] = sst.pop("firms_backfill_to_next")
-    for k in ("backfill_to_next", "full_done_next"):
+    for k in ("backfill_to_next", "full_done_next", "fetched_day_next"):
         if k in sst:
             nxt = sst.pop(k)
             if not errors and fixtures is None and fetch:

@@ -75,6 +75,12 @@ SLEEVES = DATA / "sleeves.json"
 SURVIVORS = REPORTS / "UNIVERSAL_SURVIVORS.json"
 ALLOCATION = REPORTS / "pf_allocation.json"
 RESEARCH_PNL = REPORTS / "RESEARCH_PNL.json"
+#: forward_evidence_tracker's per-Asian-signal forward record (directive XXIV), read back so each
+#: Asian region's ROI row carries what its credited signals actually did forward.
+FORWARD_EVIDENCE = REPORTS / "FORWARD_EVIDENCE.json"
+#: The Asian regions the tracker records (forward_evidence_tracker.ASIAN_REGIONS; a test pins
+#: the two equal).
+ASIAN_REGIONS = ("china", "japan", "korea", "south_asia", "asean")
 COMPUTE_LEDGER = DATA / "compute_ledger.jsonl"
 API_LEDGER = DATA / "research_api_calls.jsonl"
 REPRESENTATION = REPORTS / "REPRESENTATION_FORGE.json"
@@ -905,6 +911,53 @@ def region_roi(src_roi: dict[str, Any], rows: dict[str, list[dict[str, Any]]],
             "formula": ROI_REGION_FORMULA}
 
 
+def attach_forward_record(regions: dict[str, Any], src_roi: dict[str, Any],
+                          path: Path | None = None) -> dict[str, Any]:
+    """Each Asian region's row gains `forward_record`: the forward evidence of the signals its
+    sources are credited with, read from FORWARD_EVIDENCE.asian_signals (the tracker owns every
+    number). PUBLISHED, NOT SPENT: the ROI numerator and the forest shares are unchanged by it --
+    survivors and dE[log W] already enter there through the credit walk, and counting the same
+    forward evidence twice would pay a region twice for one sleeve."""
+    doc = _read_json(path or FORWARD_EVIDENCE)
+    block = doc.get("asian_signals") if isinstance(doc, dict) else None
+    by_region = {r: row for r, row in (regions.get("by_region") or {}).items()
+                 if r in ASIAN_REGIONS}
+    if not isinstance(block, dict) or block.get("status") != "MEASURED":
+        why = (f"absent or unreadable: {path or FORWARD_EVIDENCE}" if not isinstance(block, dict)
+               else str(block.get("why") or UNMEASURED))
+        for row in by_region.values():
+            row["forward_record"] = {"status": UNMEASURED, "why": why}
+        return regions
+    per: dict[str, dict[str, Any]] = {}
+    for key, sig in (block.get("signals") or {}).items():
+        if not isinstance(sig, dict):
+            continue
+        regs = {str((src_roi.get(s) or {}).get("region") or "")
+                for s in sig.get("asian_sources") or []}
+        for reg in regs & set(by_region):
+            r = per.setdefault(reg, {"n_signals": 0, "forward_trades": 0, "keys": [],
+                                     "n_significant": 0, "marginal_elogw_sum": 0.0,
+                                     "n_marginal_measured": 0})
+            r["n_signals"] += 1
+            r["keys"] = sorted([*r["keys"], str(key)])[:25]
+            r["forward_trades"] += int(_f((sig.get("forward_trades") or {}).get("value")))
+            if (sig.get("sequential_lower_bound") or {}).get("significant"):
+                r["n_significant"] += 1
+            mv = (sig.get("marginal_elogw") or {}).get("value")
+            if mv is not None:
+                r["marginal_elogw_sum"] += _f(mv)
+                r["n_marginal_measured"] += 1
+    for reg, row in by_region.items():
+        rec = per.get(reg)
+        row["forward_record"] = ({"status": "MEASURED", **rec,
+                                  "marginal_elogw_sum": round(rec["marginal_elogw_sum"], 12)}
+                                 if rec else
+                                 {"status": "MEASURED", "n_signals": 0,
+                                  "why": "no forward signal credited to this region's sources"})
+    regions["forward_record_source"] = str(path or FORWARD_EVIDENCE)
+    return regions
+
+
 # ------------------------------------------------------------------------ the reallocations
 
 def _two_sided_shares(values: dict[str, float | None], floor: float) -> dict[str, float]:
@@ -1183,7 +1236,8 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
         mechanisms, negative = mechanism_roi(fam, rows, surv)
         scientists = scientist_roi(rows, credit, hours)
         variants = variant_roi(scientists, unmeasured)
-        regions = region_roi(src, rows, datasets, fam, api, api_why, hours)
+        regions = attach_forward_record(
+            region_roi(src, rows, datasets, fam, api, api_why, hours), src)
         reps = representation_roi(unmeasured)
     finally:
         if own:

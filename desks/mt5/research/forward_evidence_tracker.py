@@ -18,11 +18,34 @@ WHAT THIS DOES, hourly:
   * publishes reports/FORWARD_EVIDENCE.json: the current reading plus the change against the
     reading ~24 hours and ~7 days earlier, per dimension, so drift is a number.
 
+THE ASIAN-DERIVED SIGNAL RECORD (Asia directive XXIV, 2026-10-06). "For every Asian-derived signal
+record: number of forward trades, days, effective sample size, autocorrelation adjustment,
+sequential lower bound, costs, slippage, execution quality, realized expectancy, DD, decay,
+correlation to book, marginal E[log W]." `asian_signals` publishes exactly those thirteen fields
+per signal, each read from the organ that owns it (never recomputed by a second rule):
+
+  lineage          RESEARCH_ROI.delayed_credit -- a forward key is Asian-derived when a source
+                   whose region is china / japan / korea / south_asia / asean is credited with it
+                   (the same provenance walk the research economy pays on)
+  trades, days,    the forward clock's own row (shadow state: n, days_active, exp_r, max_dd_r)
+  expectancy, DD
+  n_eff, ACF adj., forward_verdict.effective_n / sequential_lower_bound over the FORWARD-phase
+  sequential LB    trades of the clock's own ledger (reports/shadow/ledger_*.json)
+  costs, slippage, data/fill_corpus.jsonl rows of the sleeve (commission_r, slip_r, filled
+  execution        share, decision->send latency, spread at decision), plus the frozen cost basis
+  decay            data/decay_live.json (verdict and fitted half-life)
+  corr. to book,   reports/pf_allocation.json (admission.candidates[*].corr_to_book,
+  marginal E[log W] marginal_delta_elog)
+
+A field whose owner has nothing for the signal is UNMEASURED with the path it looked at -- never a
+zero. No Asian-derived signal on a forward clock is itself the published answer (n_signals 0).
+
     python desks/mt5/research/forward_evidence_tracker.py
 """
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import sys
@@ -51,6 +74,20 @@ EXPERIMENTS = REPORTS / "EXPERIMENT_LEDGER.json"
 SURVIVORS = REPORTS / "UNIVERSAL_SURVIVORS.json"
 HISTORY = DATA / "forward_evidence_history.jsonl"
 OUT = REPORTS / "FORWARD_EVIDENCE.json"
+RESEARCH_ROI = REPORTS / "RESEARCH_ROI.json"
+PF_ALLOCATION = REPORTS / "pf_allocation.json"
+DECAY_LIVE = DATA / "decay_live.json"
+FILL_CORPUS = DATA / "fill_corpus.jsonl"
+SLEEVE_REGISTRY = DATA / "sleeve_registry.json"
+SHADOW_DIR = REPORTS / "shadow"
+#: The research_roi regions that are Asia (directive scope: China first, Japan, Korea, South and
+#: South-East Asia). Oceania is a transmission input, not an Asian origin, and is left out.
+ASIAN_REGIONS = ("china", "japan", "korea", "south_asia", "asean")
+#: The thirteen fields the directive names, in its order.
+ASIAN_FIELDS = ("forward_trades", "days", "effective_sample_size", "autocorrelation_adjustment",
+                "sequential_lower_bound", "costs", "slippage", "execution_quality",
+                "realized_expectancy", "drawdown", "decay", "correlation_to_book",
+                "marginal_elogw")
 
 #: A clock started at least this long ago is old enough to count toward survival.
 SURVIVAL_AGE_D = 14
@@ -211,6 +248,220 @@ def hit_rate() -> dict[str, Any]:
             "source": "reports/UNIVERSAL_SURVIVORS.json n / reports/EXPERIMENT_LEDGER.json"}
 
 
+# ---------------------------------------------------------------- the Asian-derived signal record
+def _um(path: Path, why: str) -> dict[str, Any]:
+    try:
+        rel = str(path.relative_to(ROOT))
+    except ValueError:
+        rel = str(path)
+    return {"status": "UNMEASURED", "value": None, "source": rel, "why": why}
+
+
+def asian_lineage(roi: Any) -> dict[str, list[str]]:
+    """Forward/cell key -> the Asian source ids credited with it (RESEARCH_ROI delayed credit)."""
+    if not isinstance(roi, dict):
+        return {}
+    regions = {str(k): str((v or {}).get("region") or "")
+               for k, v in (roi.get("source_roi") or {}).items() if isinstance(v, dict)}
+    by_source = (roi.get("delayed_credit") or {}).get("by_source") or {}
+    out: dict[str, list[str]] = {}
+    for sid, row in by_source.items():
+        if regions.get(str(sid)) not in ASIAN_REGIONS or not isinstance(row, dict):
+            continue
+        for cell in row.get("cells") or []:
+            out.setdefault(str(cell), [])
+            if str(sid) not in out[str(cell)]:
+                out[str(cell)].append(str(sid))
+    return out
+
+
+def ledger_paths(key: str, shadow_dir: Path | None = None) -> list[Path]:
+    """`shadow_forward`'s ledger names a clock key can map to: `ledger_<SYM>_<window>.json` for a
+    breakout (`SYM.window`) and `ledger_<SYM>_<family>_<window>.json` otherwise. A window may
+    itself carry a dot (`asia.MACRO_FAV`), so both readings are offered; the chart, parameter tail
+    and `.SHORT` are not in the file name."""
+    stem = str(key).split("#", 1)[0].split("@", 1)[0]
+    if stem.endswith(".SHORT"):
+        stem = stem[: -len(".SHORT")]
+    parts = stem.split(".")
+    d = shadow_dir or SHADOW_DIR
+    if len(parts) < 2:
+        return []
+    out = [d / f"ledger_{parts[0]}_{'.'.join(parts[1:])}.json"]
+    if len(parts) >= 3:
+        out.append(d / f"ledger_{parts[0]}_{parts[1]}_{'.'.join(parts[2:])}.json")
+    return out
+
+
+def _forward_rs(key: str, row: dict[str, Any]) -> tuple[list[float] | None, list[str], str]:
+    """The clock's FORWARD-phase R multiples and entry days, or None with the reason. A ledger
+    shared by several parameterisations is believed only when its forward count equals the
+    clock's own `n` -- otherwise it is another clock's evidence and the fields stay UNMEASURED."""
+    n = int(_num(row.get("n")) or 0)
+    why = f"no ledger for {key}"
+    for path in ledger_paths(key):
+        doc = _read(path)
+        if not isinstance(doc, list):
+            continue
+        fwd = [t for t in doc if isinstance(t, dict) and t.get("phase") == "forward"
+               and _num(t.get("r_multiple")) is not None]
+        if len(fwd) != n:
+            why = (f"{path.name} holds {len(fwd)} forward trade(s), the clock {n}: a shared "
+                   f"ledger, not this clock's alone")
+            continue
+        return ([float(t["r_multiple"]) for t in fwd],
+                [str(t.get("entry_time") or "")[:10] for t in fwd], path.name)
+    return None, [], why
+
+
+def _fills(sleeve: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    try:
+        with FILL_CORPUS.open(encoding="utf-8", errors="replace") as fh:
+            for ln in fh:
+                if sleeve not in ln:
+                    continue
+                with contextlib.suppress(ValueError):
+                    r = json.loads(ln)
+                    if isinstance(r, dict) and str(r.get("sleeve") or "") == sleeve:
+                        rows.append(r)
+    except OSError:
+        return []
+    return rows
+
+
+def _mean_of(rows: list[dict[str, Any]], key: str) -> tuple[float | None, int]:
+    vals = [v for v in (_num(r.get(key)) for r in rows) if v is not None]
+    return (round(sum(vals) / len(vals), 6) if vals else None), len(vals)
+
+
+def signal_record(key: str, row: dict[str, Any], sources: list[str], alloc: Any,
+                  decay: Any, registry: Any) -> dict[str, Any]:
+    """The thirteen fields for one Asian-derived forward key."""
+    import forward_verdict as fv
+    rec: dict[str, Any] = {"key": key, "asian_sources": sorted(sources),
+                           "status": str(row.get("status") or "")}
+    n = _num(row.get("n"))
+    rec["forward_trades"] = {"status": "MEASURED", "value": int(n)} if n is not None else \
+        _um(SHADOW[0], "the clock row carries no n")
+    days = _num(row.get("days_active"))
+    rec["days"] = {"status": "MEASURED", "value": int(days)} if days is not None else \
+        _um(SHADOW[0], "the clock row carries no days_active")
+    rs, days_of, basis = _forward_rs(key, row)
+    if rs is None or len(rs) < 2:
+        why = basis if rs is None else f"{len(rs)} forward trade(s): no dependence estimate"
+        for f in ("effective_sample_size", "autocorrelation_adjustment"):
+            rec[f] = _um(SHADOW_DIR, why)
+    else:
+        n_eff, n_basis = fv.effective_n(rs, days_of)
+        rec["effective_sample_size"] = {"status": "MEASURED", "value": round(n_eff, 3),
+                                        "basis": n_basis, "source": basis}
+        rec["autocorrelation_adjustment"] = {"status": "MEASURED",
+                                             "value": round(len(rs) / n_eff, 4),
+                                             "basis": f"n / n_eff ({n_basis})", "source": basis}
+    if rs is None:
+        rec["sequential_lower_bound"] = _um(SHADOW_DIR, basis)
+    else:
+        lb = fv.sequential_lower_bound(rs)
+        rec["sequential_lower_bound"] = (
+            {"status": "MEASURED", "value": round(lb, 6), "significant": lb > 0.0,
+             "alpha": fv.SEQ_ALPHA, "source": basis} if math.isfinite(lb) else
+            _um(SHADOW_DIR, f"{len(rs)} forward trade(s) < {fv.SEQ_MIN_TRADES}: no bound "
+                "is drawn from a handful of trades"))
+    fills = _fills(key)
+    frozen = ((registry or {}).get("sleeves") or {}).get(key, {}) if isinstance(registry,
+                                                                                   dict) else {}
+    frozen_costs = frozen.get("cost_fields") if isinstance(frozen, dict) else None
+    comm, n_comm = _mean_of(fills, "commission_r")
+    rec["costs"] = ({"status": "MEASURED" if comm is not None else "MODELLED",
+                     "value": comm, "n_fills": n_comm,
+                     "frozen_cost_basis": frozen_costs or None,
+                     "definition": "mean live commission per fill in R; the frozen modelled basis "
+                                   "beside it"}
+                    if comm is not None or frozen_costs else
+                    _um(FILL_CORPUS, "no fill and no frozen cost basis for this sleeve"))
+    slip, n_slip = _mean_of(fills, "slip_r")
+    rec["slippage"] = ({"status": "MEASURED", "value": slip, "n_fills": n_slip,
+                        "definition": "mean entry slippage per matched fill, in R"}
+                       if slip is not None else
+                       _um(FILL_CORPUS, "no matched fill for this sleeve (shadow clocks never "
+                                        "fill)"))
+    if fills:
+        filled = sum(1 for r in fills if str(r.get("status") or "") == "FILLED")
+        lat, _ = _mean_of(fills, "latency_decision_to_send_ms")
+        spr, _ = _mean_of(fills, "spread_frac_at_decision")
+        rec["execution_quality"] = {"status": "MEASURED", "value": round(filled / len(fills), 4),
+                                    "n_rows": len(fills), "mean_latency_ms": lat,
+                                    "mean_spread_frac": spr,
+                                    "definition": "filled share of the sleeve's order rows"}
+    else:
+        rec["execution_quality"] = _um(FILL_CORPUS, "no order row for this sleeve")
+    exp_r = _num(row.get("exp_r"))
+    rec["realized_expectancy"] = ({"status": "MEASURED", "value": exp_r, "unit": "R/trade"}
+                                  if exp_r is not None and n else
+                                  _um(SHADOW[0], "no forward trade: an expectancy of nothing"))
+    dd = _num(row.get("max_dd_r"))
+    rec["drawdown"] = ({"status": "MEASURED", "value": dd, "unit": "R"} if dd is not None and n
+                       else _um(SHADOW[0], "no forward trade: no drawdown measured"))
+    dv = (decay or {}).get("verdicts") if isinstance(decay, dict) else None
+    dm = (decay or {}).get("decay_model") if isinstance(decay, dict) else None
+    v = dv.get(key) if isinstance(dv, dict) else None
+    m = dm.get(key) if isinstance(dm, dict) else None
+    rec["decay"] = ({"status": "MEASURED",
+                     "value": (v or {}).get("verdict") if isinstance(v, dict) else None,
+                     "half_life_days": (m or {}).get("half_life_days") if isinstance(m, dict)
+                     else None, "source": "data/decay_live.json"}
+                    if v is not None or m is not None else
+                    _um(DECAY_LIVE, "the decay monitor judges LIVE sleeves; this key has no row"))
+    cand = (((alloc or {}).get("admission") or {}).get("candidates") or {}).get(key) \
+        if isinstance(alloc, dict) else None
+    corr = _num((cand or {}).get("corr_to_book")) if isinstance(cand, dict) else None
+    rec["correlation_to_book"] = ({"status": "MEASURED", "value": corr,
+                                   "source": "reports/pf_allocation.json admission"}
+                                  if corr is not None else
+                                  _um(PF_ALLOCATION, "the allocator scored no admission row for "
+                                                     "this key"))
+    marg = (alloc or {}).get("marginal_delta_elog") if isinstance(alloc, dict) else None
+    mv = _num(marg.get(key)) if isinstance(marg, dict) else None
+    if mv is None and isinstance(cand, dict):
+        mv = _num(cand.get("delta_elogw_per_day"))
+    rec["marginal_elogw"] = ({"status": "MEASURED", "value": mv, "unit": "dE[log W]/day",
+                              "source": "reports/pf_allocation.json"} if mv is not None else
+                             _um(PF_ALLOCATION, "no marginal for this key in the allocation"))
+    rec["n_measured"] = sum(1 for f in ASIAN_FIELDS
+                            if (rec.get(f) or {}).get("status") != "UNMEASURED")
+    return rec
+
+
+def asian_signals(now: datetime) -> dict[str, Any]:
+    """Every Asian-derived signal on a forward clock, with the directive's thirteen fields."""
+    roi = _read(RESEARCH_ROI)
+    if not isinstance(roi, dict):
+        return {"status": "UNMEASURED", "n_signals": None, "signals": {},
+                "fields": list(ASIAN_FIELDS),
+                "why": f"no lineage: {_um(RESEARCH_ROI, '')['source']} absent or unreadable"}
+    lineage = asian_lineage(roi)
+    clocks: dict[str, dict[str, Any]] = {}
+    for p in SHADOW:
+        d = _read(p)
+        if isinstance(d, dict):
+            clocks.update({str(k): v for k, v in d.items() if isinstance(v, dict)
+                           and "status" in v})
+    alloc, decay, registry = _read(PF_ALLOCATION), _read(DECAY_LIVE), _read(SLEEVE_REGISTRY)
+    signals = {key: signal_record(key, clocks[key], srcs, alloc, decay, registry)
+               for key, srcs in sorted(lineage.items()) if key in clocks}
+    return {"status": "MEASURED", "n_signals": len(signals),
+            "n_asian_credited_cells": len(lineage),
+            "signals": signals, "fields": list(ASIAN_FIELDS),
+            "regions": list(ASIAN_REGIONS),
+            "lineage_rule": ("a forward key whose RESEARCH_ROI delayed credit names a source in "
+                             "an Asian region; the credit list is capped at 25 cells per source "
+                             "by research_roi, so a heavily credited source may be under-listed"),
+            "why": (None if signals else
+                    "no Asian-derived signal is on a forward clock: the record is empty because "
+                    "there is nothing to record, not because nothing was looked at")}
+
+
 DIMENSIONS: dict[str, Callable[[datetime], dict[str, Any]]] = {
     "survival": survival, "degradation": lambda _n: degradation(),
     "live_backtest_calibration": lambda _n: calibration(), "breadth": lambda _n: breadth(),
@@ -256,6 +507,14 @@ def trend(hist: list[dict[str, Any]], now: datetime, current: dict[str, float | 
     return out
 
 
+def _asian_block(now: datetime) -> dict[str, Any]:
+    try:
+        return asian_signals(now)
+    except Exception as exc:                    # a diagnostic never takes the tracker down
+        return {"status": "UNMEASURED", "n_signals": None, "signals": {},
+                "fields": list(ASIAN_FIELDS), "why": f"{type(exc).__name__}: {exc}"}
+
+
 def build(now: datetime | None = None) -> tuple[dict[str, Any], dict[str, Any] | None]:
     now = now or datetime.now(tz=UTC)
     dims = {}
@@ -278,6 +537,7 @@ def build(now: datetime | None = None) -> tuple[dict[str, Any], dict[str, Any] |
         "n_dimensions": len(values),
         "dimensions": dims,
         "trend": trend(hist, now, values),
+        "asian_signals": _asian_block(now),
         "history": {"path": str(HISTORY.relative_to(ROOT)), "rows": len(hist) + bool(new_row),
                     "first": hist[0]["at"] if hist else (new_row or {}).get("at"),
                     "rule": "append-only, one row per UTC hour"},
