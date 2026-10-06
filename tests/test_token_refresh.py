@@ -64,13 +64,16 @@ def myfx_unfenced(monkeypatch: pytest.MonkeyPatch) -> None:
     """Exercise the Myfxbook code path as it would run AFTER its terms were confirmed, so the
     secrecy of that path is pinned now, while the shipped fence keeps it closed."""
     monkeypatch.setitem(T.TERMS, "myfxbook", ("confirmed", "test-only"))
+    _collector_gate_confirms(monkeypatch, "MYFXBOOK_SESSION")
 
 
 @pytest.fixture
 def jq_unfenced(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Exercise the J-Quants code path as it would run AFTER its terms were confirmed (they are
-    to_confirm: art. 8 limits use to the registered individual's private use)."""
-    monkeypatch.setitem(T.TERMS, "jquants", ("confirmed", "test-only"))
+    """The J-Quants code path under its SHIPPED verdict, `confirmed_private_use` (art. 8, the
+    principal's answer of 2026-10-06). The collector's terms gate admits it only with the
+    recorded condition, so nothing is overridden here: the fixture pins that it is so."""
+    assert T.TERMS["jquants"][0] == T.PRIVATE_USE
+    assert T.TERMS_EVIDENCE["jquants"].get("condition")
 
 
 def _fake(monkeypatch: pytest.MonkeyPatch, responses: list[tuple[int, dict[str, Any] | None]]
@@ -263,6 +266,21 @@ def _collector() -> Any:
     return C
 
 
+def _collector_gate_confirms(monkeypatch: pytest.MonkeyPatch, *envs: str) -> None:
+    """Open the asia collector's terms gate (#239) for these key envs ONLY, as it would stand
+    once each provider had a confirmed terms row there, so the token path behind it is tested.
+    The shipped gate keeps every one of them fenced (test_cdse_and_myfxbook_stay_fenced_by_the_
+    collector_gate)."""
+    C = _collector()
+    real = C._terms_state
+
+    def gate(src: dict[str, Any], url: str) -> tuple[str, str]:
+        if str(src.get("key_env") or "") in envs:
+            return "confirmed", "test-only"
+        return real(src, url)
+    monkeypatch.setattr(C, "_terms_state", gate)
+
+
 def test_failed_refresh_is_blocked_auth_not_unconfigured(monkeypatch: pytest.MonkeyPatch,
                                                          jq_unfenced: None) -> None:
     _fake(monkeypatch, [(401, None)])
@@ -277,6 +295,7 @@ def test_failed_refresh_is_blocked_auth_not_unconfigured(monkeypatch: pytest.Mon
         == T.UNCONFIGURED
 
     C = _collector()
+    _collector_gate_confirms(monkeypatch, "CDSE_TOKEN")
     monkeypatch.setattr(T, "get_token", lambda env, **k: T.TokenResult(
         T.REFRESH_FAILED, env, http=401, detail="CDSE token endpoint answered HTTP 401"))
     rec = C.collect_one({"id": "copernicus_s5p", "access": "key", "key_env": "CDSE_TOKEN",
@@ -389,6 +408,7 @@ def test_cdse_attribution_duty_rides_on_every_record(monkeypatch: pytest.MonkeyP
 
     # the collector's row and its vault meta carry it on a collected CDSE source
     C = _collector()
+    _collector_gate_confirms(monkeypatch, "CDSE_TOKEN")
     monkeypatch.setattr(C, "VAULT", tmp_path / "vault")
     monkeypatch.setattr(C, "SERIES", tmp_path / "series")
     monkeypatch.setattr(T, "get_token", lambda e, **k: T.TokenResult(
@@ -492,6 +512,8 @@ def _managed_fetch(monkeypatch: pytest.MonkeyPatch, token: str, fail: Any,
                    url: str = "https://api.jquants.com/v2/equities/investor-types"
                    ) -> tuple[dict[str, Any], list[Any]]:
     C = _collector()
+    if env != "JQUANTS_TOKEN":
+        _collector_gate_confirms(monkeypatch, env)
     monkeypatch.setattr(T, "get_token", lambda e, **k: T.TokenResult(
         T.OK, e, token=token, source="api_key", apply=apply))
     monkeypatch.setattr(C, "_robots_allows", lambda u, agent="": (True, "stub"))
@@ -560,3 +582,36 @@ def test_jquants_v2_key_attaches_to_the_real_api_call(monkeypatch: pytest.Monkey
     # a pasted JQUANTS_TOKEN that is not a JWT is a V2 key too
     k = T.get_token("JQUANTS_TOKEN", environ={"JQUANTS_TOKEN": "opaque-key"}, now=NOW)
     assert k.ok and k.apply == "x-api-key"
+
+
+def test_cdse_and_myfxbook_stay_fenced_by_the_collector_gate() -> None:
+    """#239's gate is unchanged for every keyed source but the private-use one: a managed
+    provider whose verdict is plain `confirmed` (CDSE) or `to_confirm` (Myfxbook) still needs a
+    collector terms row, and has none -- nothing is sent."""
+    C = _collector()
+    for env, url in (("CDSE_TOKEN", "https://catalogue.dataspace.copernicus.eu/stac"),
+                     ("MYFXBOOK_SESSION",
+                      "https://www.myfxbook.com/api/get-community-outlook.json")):
+        st, _why = C._terms_state({"id": "x", "access": "key", "key_env": env}, url)
+        assert st == "to_confirm", (env, st)
+
+
+def test_jquants_passes_the_gate_only_under_its_private_use_condition(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    C = _collector()
+    rows = json.loads((ROOT / "desks/mt5/data/asia_sources.json").read_text(encoding="utf-8"))
+    row = next(r for r in rows["sources"] if r.get("id") == "jpx_jquants")
+    st, _ = C._terms_state(row, row["url"])
+    assert st == T.PRIVATE_USE
+    # the condition removed: the permission is gone with it
+    ev = {k: v for k, v in T.TERMS_EVIDENCE["jquants"].items() if k != "condition"}
+    monkeypatch.setitem(T.TERMS_EVIDENCE, "jquants", ev)
+    st, _ = C._terms_state(row, row["url"])
+    assert st == "to_confirm"
+    monkeypatch.setattr(T, "_read_key", lambda n: "fake-k" if n == "JQUANTS_API_KEY" else "")
+    rec = C.collect_one(dict(row))
+    assert rec["status"] == "BLOCKED_ON_TERMS" and "private_use" not in rec
+    # the verdict demoted: blocked too
+    monkeypatch.setitem(T.TERMS_EVIDENCE, "jquants", {**ev, "condition": "x"})
+    monkeypatch.setitem(T.TERMS, "jquants", ("to_confirm", "test"))
+    assert C._terms_state(row, row["url"])[0] == "to_confirm"
