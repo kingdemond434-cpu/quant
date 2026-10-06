@@ -50,7 +50,10 @@ carries the names of the universal sensor contract (MANDATE 2026-10-06 s2.5) so 
 is a pure mapping.
 
 TERMS, FAIL CLOSED. A row whose `terms` is not `confirmed` returns BLOCKED_ON_TERMS and makes no
-request; `terms_evidence` on the roster row holds the URL and the verbatim clause read.
+request; `terms_evidence` on the roster row holds the URL and the verbatim clause read. `refused`
+(the alt_proxies.TERMS_VALUES word: the licence read does not grant the desk's use) blocks before
+anything else is read and names the row's `substitute_candidates`; cnx_shfe and cnx_ine are
+refused (SHFE grants non-commercial use only) and name CFTC COT as the substitute.
 """
 # ruff: noqa: RUF001, RUF002 -- the exchanges' own files use full-width Chinese
 # punctuation (colons and parentheses in their headers); the parsers must match them exactly.
@@ -1009,7 +1012,18 @@ def fetch_cn_exchange(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str,
     if exch not in URLS:
         h.status, h.detail = "NO_ROUTE", f"unknown exchange {exch!r}"
         return h
-    if str(row.get("terms") or "") != "confirmed":
+    terms = str(row.get("terms") or "")
+    if terms == "refused":
+        # REFUSED is harder than to_confirm: the licence read does not grant this use, so no
+        # override (a row `urls` map, a cursor, a retry list) reaches the network; only written
+        # permission recorded in terms_evidence and a `terms` flip can
+        ev = row.get("terms_evidence") or {}
+        subs = ", ".join(str(c.get("substitute")) for c in row.get("substitute_candidates") or [])
+        h.status = "BLOCKED_ON_TERMS"
+        h.detail = (f"terms=refused; evidence {ev.get('terms_url') or 'none recorded'} -- no "
+                    f"request made; named substitute(s): {subs or 'none'}")
+        return h
+    if terms != "confirmed":
         ev = row.get("terms_evidence") or {}
         h.status = "BLOCKED_ON_TERMS"
         h.detail = (f"terms={row.get('terms') or 'to_confirm'}; evidence "

@@ -404,3 +404,46 @@ def test_proposer_mints_exchange_cells_by_axis_from_the_published_series(store, 
     block = fsp.cn_exchange_block(grid, roster, columns, skipped)
     assert block["blocked_on_terms"] == ["cnx_dce"]
     assert block["sources"]["cnx_shfe"]["cells_by_axis"]["divergence"] > 0
+
+
+# ------------------------------------------------------- refused terms + named substitute ---
+@pytest.mark.parametrize("sid", ["cnx_shfe", "cnx_ine"])
+def test_shfe_and_ine_are_refused_and_make_no_request(sid: str) -> None:
+    """SHFE's statement grants non-commercial browse/download only, so the desk's use is not
+    granted: the roster row says `refused` and the fetcher makes no request, even with a `urls`
+    override and a cursor in hand."""
+    doc = json.loads((_DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
+    row = next(r for r in doc["sources"] if r["id"] == sid)
+    assert row["terms"] == "refused"
+    calls: list[str] = []
+
+    def fetch(url: str, headers=None, body=None) -> bytes:
+        calls.append(url)
+        return b"{}"
+    h = cnx.fetch_cn_exchange(fetch, {**row, "urls": {"kx": "https://example.invalid/{ymd}"}},
+                              {"newest": "2026-09-30", "retry": ["2026-09-29"]}, NOW)
+    assert h.status == "BLOCKED_ON_TERMS" and not calls and not h.obs
+    assert "terms=refused" in h.detail and "cftc_cot" in h.detail
+    assert cnx.licence_fields(row)["commercial_rights"] == "refused"
+
+
+@pytest.mark.parametrize("sid", ["cnx_shfe", "cnx_ine"])
+def test_shfe_and_ine_name_cftc_cot_as_an_unmeasured_substitute(sid: str) -> None:
+    """The #152 law: a substitute is COVERED only at a MEASURED corr >= 0.5 with n reported. No
+    SHFE/INE series exists to correlate against, so COT is named, UNVERIFIED, never covering."""
+    doc = json.loads((_DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
+    row = next(r for r in doc["sources"] if r["id"] == sid)
+    assert row["substituted_by"] == []
+    cand = {c["substitute"]: c for c in row["substitute_candidates"]}
+    cot = cand["cftc_cot"]
+    assert cot["terms"] == "confirmed" and "axis_ingest.py" in cot["ingested_by"]
+    assert (cot["verdict"], cot["corr"], cot["n"]) == ("UNVERIFIED", "UNMEASURED", "UNMEASURED")
+    assert row["substitute_status"] == "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=cftc_cot"
+    # the substitute named is the one the desk actually ingests
+    src = (_DESK / "research" / "axis_ingest.py").read_text("utf-8")
+    assert "cftc.gov/dea/newcot/deafut.txt" in src
+
+
+def test_refused_is_in_the_established_terms_vocabulary() -> None:
+    import alt_proxies
+    assert "refused" in alt_proxies.TERMS_VALUES
