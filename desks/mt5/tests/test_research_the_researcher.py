@@ -139,6 +139,29 @@ def test_a_damaged_budget_file_reads_exhausted_and_never_refills(tmp_path, damag
     assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None and out["state_error"]
 
 
+def test_restoring_the_tracked_stub_never_refills_an_opened_study(tmp_path):
+    state = _state(tmp_path)
+    stub = state.read_text()
+    rh.thresholdout("s", {"x": (0.0, 10.0)}, scale=1.0, budget=1, seed=0, state_path=state)
+    state.write_text(stub)                                      # `git checkout` of the stub
+    out = rh.thresholdout("s", {"x": (0.0, 0.0)}, scale=1.0, seed=1, state_path=state)
+    assert out["status"] == "EXHAUSTED" and "opened before" in out["state_error"]
+    state.unlink()                                              # deleted outright: same
+    assert rh.thresholdout("s", {"x": (0.0, 0.0)}, scale=1.0, seed=2,
+                           state_path=state)["status"] == "EXHAUSTED"
+    # A study never opened still gets its budget, on a recreated state.
+    assert rh.thresholdout("t", {"x": (1.0, 1.0)}, scale=1.0, seed=3,
+                           state_path=state)["status"] == "VALID"
+
+
+def test_epochs_survive_a_restored_state_file(tmp_path):
+    state = _state(tmp_path)
+    stub = state.read_text()
+    assert rh.rotate("b", {"k1", "k2"}, state) == "b@1"
+    state.write_text(stub)
+    assert rh.epoch("b", state) == ("b@1", {"k1", "k2"})
+
+
 def test_an_unsaveable_charge_answers_nothing(tmp_path, monkeypatch):
     state = _state(tmp_path)
 
@@ -287,3 +310,69 @@ def test_representation_methods_compete_on_what_their_candidates_survived(tmp_pa
     assert r["status"] == "MEASURED" and r["result"]["leader"] == "surprise"
     assert r["result"]["verdicts"]["fresh"] == "UNMEASURED"
     assert r["result"]["verdicts"]["pace"] == "TRAILS"
+
+
+def _report(tmp_path, name, doc):
+    (tmp_path / "reports").mkdir(exist_ok=True)
+    (tmp_path / "reports" / name).write_text(json.dumps(doc))
+
+
+def test_every_limitation_now_has_a_challenger_or_a_policy_block():
+    for lim in meta_rnd.LIMITATIONS:
+        assert lim.get("challenger") or lim.get("blocked_by"), lim["id"]
+
+
+def test_trajectory_reuse_is_judged_against_cold_starts(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_rnd, "DESK", tmp_path)
+    _report(tmp_path, "MUTATION_YIELD.json", {"reuse_vs_cold": {
+        "reuse": {"certified": 30, "failed": 270, "judged": 300},
+        "cold": {"certified": 5, "failed": 995, "judged": 1000}}})
+    r = {x["id"]: x for x in meta_rnd.frontier({"ordering": {}})["limitations"]}
+    row = r["research_trajectories"]
+    assert row["status"] == "MEASURED" and row["result"]["leader"] == "reuse"
+    assert row["result"]["verdicts"]["cold"] == "TRAILS"
+
+
+def test_record_ablation_names_organs_with_no_measured_product(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_rnd, "DESK", tmp_path)
+    _report(tmp_path, "MODULE_RENT_RESEARCH.json", {"rows": [
+        {"module": "a.py", "compute_h_30d": 9.0, "candidates_30d": 300, "survivors_30d": 0,
+         "admissions_30d": 0},
+        {"module": "b.py", "compute_h_30d": 2.0, "candidates_30d": 50, "survivors_30d": 3,
+         "admissions_30d": 9},
+        {"module": "c.py", "compute_h_30d": None, "survivors_30d": None}]})
+    r = {x["id"]: x for x in meta_rnd.frontier({"ordering": {}})["limitations"]}
+    res = r["component_ablation"]["result"]
+    assert r["component_ablation"]["status"] == "MEASURED"
+    assert res["organs_measured"] == 2 and res["removable_on_record"] == 1
+    assert res["top"][0] == {"module": "a.py", "compute_h_30d": 9.0, "candidates_30d": 300,
+                             "survivor_rate_upper_95": 0.01}
+
+
+def test_discovery_methods_are_read_from_the_owners_report(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_rnd, "DESK", tmp_path)
+    r = {x["id"]: x for x in meta_rnd.frontier({"ordering": {}})["limitations"]}
+    assert r["dataset_discovery_method"]["status"] == "UNMEASURED"
+    _report(tmp_path, "SOURCE_FRONTIER.json", {"by_discovery_method": [
+        {"method": "catalogue", "sources": 200, "testable": 60, "compute_h": 2.0},
+        {"method": "crawl", "sources": 200, "testable": 10, "compute_h": 2.0}]})
+    r = {x["id"]: x for x in meta_rnd.frontier({"ordering": {}})["limitations"]}
+    assert r["dataset_discovery_method"]["result"]["leader"] == "catalogue"
+
+
+def test_mutation_yield_splits_reuse_from_cold_starts():
+    from research import mutation_yield as my
+    rows = {"a": {"operator": "step_lookback_up"}, "b": {"operator": None}}
+    verd = {"a": {"fate": "CERTIFIED"}, "b": {"fate": "FAILED"}, "c": {"fate": "FAILED"},
+            "d": {"fate": "BORN"}}
+    out = my.reuse_vs_cold(rows, verd)
+    assert out["reuse"]["certified"] == 1 and out["reuse"]["judged"] == 1
+    assert out["cold"]["failed"] == 2 and out["cold"]["judged"] == 2
+
+
+def test_the_coevolution_leg_floor_covers_the_challenger():
+    src = (DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
+    floor = src[src.index("LEG_BUDGET_FLOOR_SEC: dict[str, int] = {"):]
+    floor = floor[:floor.index("\n}\n")]
+    assert '"coevolution": 990' in floor
+    assert fmc.BUDGET_S + fmc.H2H_BUDGET_S <= 990

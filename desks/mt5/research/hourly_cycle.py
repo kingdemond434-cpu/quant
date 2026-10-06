@@ -2041,6 +2041,10 @@ LEG_BUDGET_FLOOR_SEC: dict[str, int] = {
     # the SEALED DEFAULT and `_leg_floor_s` raises it to whatever `judging_throughput` actually
     # put in the environment this hour -- a floor read off the run, not off a claim.
     "external_gauntlet": 2_700,
+    # factor_model_coevolution stops itself at --budget-s 900 and then runs the method challenger
+    # (H2H_BUDGET_S = 90): the self-stop floor reads only the 900, so a price may never cut the
+    # challenger off (audit, 2026-10-06).
+    "coevolution": 990,
 }
 
 
