@@ -231,7 +231,7 @@ LEG_LAYER: dict[str, str] = {
     # experimental budget accounts for principal-override heat inside the book: portfolio. The
     # redundancy organ and the forward-evidence series measure the machine itself: meta.
     "live_calibration_posterior": "prediction", "constrained_book": "sizing",
-    "kelly_survival": "sizing",
+    "kelly_survival": "sizing", "stop_geometry_derivation": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "forward_evidence_tracker": "meta",

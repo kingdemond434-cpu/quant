@@ -966,6 +966,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
+    # The two stop-geometry constants on the same solve (2026-09-30): a report the sizing fence's
+    # citations point at, re-derived hourly so a stale number is visible as stale.
+    "stop_geometry_derivation",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
@@ -5552,6 +5555,11 @@ def main() -> None:
     # sizing, unchanged.
     kls = _costed("kelly_survival", lambda: _producer(
         "kelly_survival", "research/kelly_survival.py"))
+    # THE STOP GEOMETRY ON THE SAME SOLVE (2026-09-30): MIN_STOP_SPREAD_MULT and
+    # ENTRY_DRIFT_TOL_FRAC re-derived from the bars' spreads, the entry drift and the live edge.
+    # A report only -- the money path carries the cited values; nothing reads this at run time.
+    sgd = _costed("stop_geometry_derivation", lambda: _producer(
+        "stop_geometry_derivation", "research/stop_geometry_derivation.py"))
     xbg = _costed("experimental_budget", lambda: _producer(
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
@@ -5798,6 +5806,7 @@ def main() -> None:
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls,
+                    "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "forward_evidence_tracker": fet,
