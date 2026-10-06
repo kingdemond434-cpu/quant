@@ -298,6 +298,24 @@ def test_a_live_capture_is_available_no_earlier_than_the_desk_saw_it(tmp_path, m
     last = series.points[-1]
     assert datetime.fromisoformat(last.available_time) == idx[-1] + timedelta(days=5)
     first = series.points[0]
-    assert datetime.fromisoformat(first.available_time) == idx[0] + timedelta(
-        days=3, hours=WM.CLOCK_PAD_H)                                    # reference, by lag
+    assert datetime.fromisoformat(first.available_time) == datetime(2026, 10, 6, tzinfo=UTC)
     assert any(u["name"] == "acquired:backfilled_reference" for u in unmeasured)
+
+
+def test_a_point_without_any_receipt_is_withheld(tmp_path, monkeypatch):
+    from research import world_model as WM
+    idx = pd.date_range("2025-01-05", periods=60, freq="W", tz="UTC")
+    pd.DataFrame({"value": range(60)}, index=idx).to_parquet(tmp_path / "s.parquet")
+    reg = tmp_path / "reg.json"
+    reg.write_text(json.dumps({"series": {"s": {"path": str(tmp_path / "s.parquet"),
+                                                "pit_authority": True}}}))
+    monkeypatch.setattr(WM, "ACQUIRED", reg)
+    unmeasured: list[dict[str, str]] = []
+    assert WM._acquired_inputs(unmeasured) == []
+    assert any(u["name"] == "acquired:no_receipt" for u in unmeasured)
+    meta = {"path": str(tmp_path / "s.parquet"), "pit_authority": True,
+            "acquired_at": "2026-10-01T00:00:00+00:00"}
+    reg.write_text(json.dumps({"series": {"s": meta}}))
+    (series,) = WM._acquired_inputs([])
+    assert all(datetime.fromisoformat(p.available_time) >= datetime(2026, 10, 1, tzinfo=UTC)
+               for p in series.points)

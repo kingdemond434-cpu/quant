@@ -332,13 +332,21 @@ def _first_seen(frame: Any, index: Any) -> list[datetime | None]:
     return [None if pd.isna(x) else x.to_pydatetime() for x in raw]
 
 
+def _receipt(raw: Any) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(raw)) if raw else None
+    except ValueError:
+        return None
+    return (t if t.tzinfo else t.replace(tzinfo=UTC)) if t else None
+
+
 def _acquired_inputs(unmeasured: list[dict[str, str]]) -> list[R.Series]:
     """Every PIT-AUTHORITATIVE acquired series as a representation input.
 
     Authority is the acquirer's certificate verdict (`pit_authority is True`), the same bar the
     cell vocabulary uses; an uncertified series is retained and accumulating, and is named here
-    as UNMEASURED rather than silently absent. Each point is available from its period plus the
-    cadence lag plus the broker-clock pad, and the value is the FIRST value the desk saw for that
+    as UNMEASURED rather than silently absent. Each point is available from the later of its
+    period plus the cadence lag plus the broker-clock pad, and its receipt, and the value is the FIRST value the desk saw for that
     period (the acquirer's accumulation keeps it), so a later revision never leaks backwards.
     """
     import pandas as pd
@@ -349,7 +357,7 @@ def _acquired_inputs(unmeasured: list[dict[str, str]]) -> list[R.Series]:
         return []
     out: list[R.Series] = []
     withheld = 0
-    live_pts = backfilled_pts = 0
+    live_pts = backfilled_pts = no_receipt = 0
     for name, meta in sorted(reg["series"].items()):
         if not isinstance(meta, dict):
             continue
@@ -369,22 +377,27 @@ def _acquired_inputs(unmeasured: list[dict[str, str]]) -> list[R.Series]:
         stamps = [t if t.tzinfo else t.replace(tzinfo=UTC) for t in stamps]
         lag = timedelta(days=_acquired_lag_days(stamps), hours=CLOCK_PAD_H)
         seen = _first_seen(frame, vals.index)
+        acquired_at = _receipt(meta.get("acquired_at"))
         pts = []
         for t, v, s_at in zip(stamps[-MAX_POINTS_PER_SERIES:],
                               vals.to_numpy()[-MAX_POINTS_PER_SERIES:],
                               seen[-MAX_POINTS_PER_SERIES:], strict=False):
             if not math.isfinite(float(v)):
                 continue
-            avail = t + lag
-            # THE VINTAGE BINDS WHEN IT IS A LIVE CAPTURE. A point the desk first saw within
-            # LIVE_CAPTURE_SLACK of its estimated publication was captured as it was published,
-            # and is available no earlier than the moment the desk actually saw it. A point first
-            # seen long after (a history backfill) has no vintage of its own: it is stamped by the
-            # cadence lag and counted as reference history, never presented as a live capture.
-            if s_at is not None and s_at <= avail + LIVE_CAPTURE_SLACK:
-                avail = max(avail, s_at)
+            # EVERY POINT IS STAMPED AT RECEIPT. A point is available no earlier than its
+            # cadence lag AND no earlier than the moment the desk first saw it. A history backfill
+            # (first seen long after publication) therefore enters as of the day it was fetched,
+            # never back-dated to when it might have been published: its vintage was not observed,
+            # so it is not point-in-time evidence before receipt. A point with no receipt stamp at
+            # all is withheld (fail closed), counted below.
+            receipt = s_at or acquired_at
+            if receipt is None:
+                no_receipt += 1
+                continue
+            avail = max(t + lag, receipt)
+            if receipt <= t + lag + LIVE_CAPTURE_SLACK:
                 live_pts += 1
-            elif s_at is not None:
+            else:
                 backfilled_pts += 1
             pts.append(R.Point(available_time=avail.isoformat(), period_time=t.isoformat(),
                                value=float(v)))
@@ -396,9 +409,15 @@ def _acquired_inputs(unmeasured: list[dict[str, str]]) -> list[R.Series]:
     if backfilled_pts:
         unmeasured.append({"name": "acquired:backfilled_reference",
                            "why": (f"{backfilled_pts} acquired points were backfilled from a "
-                                   f"publisher's history ({live_pts} were live captures): they are "
-                                   "stamped by cadence lag, their vintage is not observed"),
+                                   f"publisher's history ({live_pts} were live captures): their "
+                                   "vintage is not observed, so each is stamped at receipt and "
+                                   "carries no history before the desk fetched it"),
                            "measured_by": "forward accumulation of first_seen_at"})
+    if no_receipt:
+        unmeasured.append({"name": "acquired:no_receipt",
+                           "why": f"{no_receipt} acquired points carry no receipt stamp and are "
+                                  "withheld",
+                           "measured_by": "the acquirer's first_seen_at / acquired_at"})
     if withheld:
         unmeasured.append({"name": "acquired:uncertified",
                            "why": f"{withheld} acquired series retained without PIT authority",
