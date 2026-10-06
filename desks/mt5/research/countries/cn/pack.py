@@ -285,6 +285,24 @@ TERMS_RULINGS: dict[str, dict[str, str]] = {
                    "with attribution; no grant to use the data. Held to_confirm and FAIL-CLOSED "
                    "until a written SAFE grant or a clearer reuse clause is quoted"),
     },
+    # Coordinator ruling (2026-10-06): fail-closed applies to EVERY to_confirm row. Neither site's
+    # terms could be read from this container (WebFetch, 2026-10-06), so both stay fenced.
+    "cn_pboc_official": {
+        "terms": "to_confirm",
+        "hosts": "pbc.gov.cn",
+        "clause": ("pbc.gov.cn: no site statement readable (2026-10-06: the fetcher is "
+                   "robots-disallowed on http://www.pbc.gov.cn/ and its English site, and #229 "
+                   "found no route from the container proxy). Held to_confirm and FAIL-CLOSED "
+                   "until the footer's site statement is read and quoted"),
+    },
+    "cn_customs_official": {
+        "terms": "to_confirm",
+        "hosts": "customs.gov.cn",
+        "clause": ("customs.gov.cn: no statement readable (2026-10-06: "
+                   "http://english.customs.gov.cn/statement.html and the Chinese site fail on a "
+                   "self-signed certificate chain before robots.txt can be read). Held "
+                   "to_confirm and FAIL-CLOSED until the STATEMENT page is read and quoted"),
+    },
 }
 
 
@@ -825,8 +843,8 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "root": "pbc.gov.cn, safe.gov.cn", "licence": terms_text("cn_safe_official"),
      "terms_status": "BLOCKED_ON_TERMS:to_confirm", "terms": "to_confirm",
      "terms_ref": "cn_safe_official",
-     "lawful_substitute": ("none confirmed: both publishers (SAFE; the PBOC, whose pbc.gov.cn "
-                           "terms #229 also holds to_confirm) are unread or ungranted"),
+     "lawful_substitute": ("none confirmed: both publishers are held to_confirm and "
+                           "fail-closed (SAFE ungranted; pbc.gov.cn's statement unread)"),
      "note": "Valuation moves dominate the monthly change, so the raw print is close to useless "
              "without a currency and duration adjustment the desk would have to build itself. "
              "HELD BLOCKED_ON_TERMS:to_confirm on its SAFE root, fail-closed."},
@@ -908,25 +926,31 @@ REFUSED_SOURCES: tuple[dict[str, str], ...] = (
     {"ground": "SAFE statistics (safe.gov.cn)",
      "why": "BLOCKED_ON_TERMS:to_confirm (PR #229): no grant to use the data; fail-closed in "
             "cn_safe_official until a written grant is quoted"},
+    {"ground": "PBOC releases (pbc.gov.cn)",
+     "why": "BLOCKED_ON_TERMS:to_confirm: the site statement is unreadable from the desk; "
+            "fail-closed in cn_pboc_official until it is read and quoted"},
+    {"ground": "customs statistics (customs.gov.cn)",
+     "why": "BLOCKED_ON_TERMS:to_confirm: the STATEMENT page is unreadable from the desk; "
+            "fail-closed in cn_customs_official until it is read and quoted"},
     {"ground": "single-name mainland equity hypothesis mining",
      "why": "two-lane order (2026-09-06): single names are traded on news and never hunted for "
             "statistical hypotheses"},
 )
 
 SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
-    source_class("cn_official", "The PBOC, the statistics bureau, customs, MOF and the NDRC",
+    source_class("cn_official", "The statistics bureau, MOF and the NDRC",
                  layer="official",
-                 roots=("pbc.gov.cn", "stats.gov.cn", "data.stats.gov.cn", "customs.gov.cn",
-                        "mof.gov.cn", "ndrc.gov.cn"),
+                 roots=("stats.gov.cn", "data.stats.gov.cn", "mof.gov.cn", "ndrc.gov.cn"),
                  queries=("人民币汇率中间价", "公开市场业务交易公告", "贷款市场报价利率",
                           "存款准备金率", "货币政策执行报告", "社会融资规模", "银行结售汇",
                           "进出口商品总值", "采购经理指数", "外汇风险准备金率"),
                  languages=("zh-Hans", "en"), access_label="OPEN_DATA",
                  credibility="AUTHORITATIVE", predictive_state="UNTESTED",
                  licence="free, public",
-                 notes="CFETS (chinamoney.com.cn, shibor.org) and SAFE (safe.gov.cn) were "
-                       "roots of this class until 2026-10-06 and are now their own HELD classes "
-                       "below (BLOCKED_ON_TERMS, PR #229), so no crawler starting from this "
+                 notes="CFETS (chinamoney.com.cn, shibor.org), SAFE (safe.gov.cn), the PBOC "
+                       "(pbc.gov.cn) and customs (customs.gov.cn) were roots of this class until "
+                       "2026-10-06 and are now their own HELD classes below (BLOCKED_ON_TERMS, "
+                       "PR #229 and the fail-closed ruling), so no crawler starting from this "
                        "class reaches them. Note that the January and February trade and "
                        "activity data are published COMBINED, which is two missing observations "
                        "a year by design."),
@@ -963,6 +987,32 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                        "positioning, CFTC COT on the carriers (AUD, COMEX copper and gold) is "
                        "the lawful read; there is no lawful substitute for the renminbi flow "
                        "itself."),
+    source_class("cn_pboc_official",
+                 "The PBOC: OMO, MLF/RRR, credit aggregates, FX risk reserve -- HELD ON TERMS",
+                 layer="official",
+                 roots=("pbc.gov.cn",),
+                 queries=(),
+                 languages=("zh-Hans", "en"), access_label="ACCESS_UNCLEAR",
+                 credibility="AUTHORITATIVE", predictive_state="UNTESTED",
+                 licence=terms_text("cn_pboc_official"),
+                 machine_use_allowed=False,
+                 notes="The policy announcements this pack's liquidity, credit and intervention "
+                       "domains are built on. The site statement could not be read, so the class "
+                       "is BLOCKED_ON_TERMS:to_confirm and fetching FAILS CLOSED. The "
+                       "announcement CLOCKS (01:20 UTC OMO, the 20th for the LPR, the MLF days) "
+                       "stay usable as windows on the desk's own tape; the values do not."),
+    source_class("cn_customs_official",
+                 "General Administration of Customs: monthly trade -- HELD ON TERMS",
+                 layer="official",
+                 roots=("customs.gov.cn",),
+                 queries=(),
+                 languages=("zh-Hans", "en"), access_label="ACCESS_UNCLEAR",
+                 credibility="AUTHORITATIVE", predictive_state="UNTESTED",
+                 licence=terms_text("cn_customs_official"),
+                 machine_use_allowed=False,
+                 notes="The customs STATEMENT page could not be read (self-signed chain), so the "
+                       "class is BLOCKED_ON_TERMS:to_confirm and fetching FAILS CLOSED until it "
+                       "is read and quoted."),
     source_class("cn_institutional", "The exchanges, the Connect operator and the industry bodies",
                  layer="institutional",
                  roots=("sse.com.cn", "szse.cn", "cffex.com.cn", "shfe.com.cn", "dce.com.cn",
@@ -1061,8 +1111,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     source_class("cn_archive", "Historical notices, gazettes and web archives",
                  layer="archive",
                  roots=("web.archive.org", "gov.cn 国务院办公厅 节假日安排 notice archive",
-                        "sse.com.cn and szse.cn historical 休市安排 and rule notices",
-                        "pbc.gov.cn historical 货币政策执行报告"),
+                        "sse.com.cn and szse.cn historical 休市安排 and rule notices"),
                  queries=("国务院办公厅 节假日安排 通知", "休市安排 公告", "调休 安排",
                           "熔断机制 暂停", "涨跌幅 调整", "沪深港通 交易日历"),
                  languages=("zh-Hans",), access_label="PUBLIC_ARCHIVE",
@@ -1108,9 +1157,9 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                        f"series lives. This layer also carries what the graph REFUSES to "
                        f"traverse: {'; '.join(r['ground'] for r in REFUSED_SOURCES)}. Reasons "
                        f"are in REFUSED_SOURCES and none of those grounds is subscribed or "
-                       f"crawled anywhere in this pack; the two held on terms are NAMED, in "
-                       f"held classes, so the gap shows -- and a package that reads CFETS or "
-                       f"SAFE for the desk is the same ground and is held with it."),
+                       f"crawled anywhere in this pack; the grounds held on terms are NAMED, in "
+                       f"held classes, so the gap shows -- and a package that reads a held ground "
+                       f"for the desk is the same ground and is held with it."),
 )
 
 
@@ -1122,8 +1171,8 @@ DATASETS: tuple[dict[str, Any], ...] = (
                  ref="cn_cfets_chinamoney",
                  substitute=("none confirmed for the VALUE. Lawful today: the desk's own USDCNH "
                              "tape around the public fixing CLOCK (01:15 UTC, a calendar fact, "
-                             "not CFETS data). Candidate once its terms are read: the PBOC's own "
-                             "parity announcement on pbc.gov.cn, which #229 holds to_confirm"),
+                             "not CFETS data). The PBOC's own parity announcement is NOT a "
+                             "substitute today: pbc.gov.cn is held to_confirm, fail-closed"),
                  was=("chinamoney.com.cn, published 09:15 Beijing = 01:15 UTC, fifteen minutes "
                       "before the onshore market opens"),
                  source="中国外汇交易中心 (CFETS) 人民币汇率中间价",
@@ -1171,11 +1220,11 @@ DATASETS: tuple[dict[str, Any], ...] = (
                                      "capital_control_stress")),
     held_dataset("cn_shibor",
                  ref="cn_cfets_chinamoney",
-                 substitute=("none confirmed for onshore interbank funding. Candidates once "
-                             "their own terms are read: the PBOC open-market announcements "
-                             "(pboc_omo_daily, pbc.gov.cn, held to_confirm by #229) and CNH "
-                             "HIBOR (TMA) for the OFFSHORE funding cost, which is a different "
-                             "rate and is named as such"),
+                 substitute=("none confirmed for onshore interbank funding: the PBOC "
+                             "open-market announcements (pboc_omo_daily) are held too, "
+                             "pbc.gov.cn being to_confirm and fail-closed. CNH HIBOR (TMA; its "
+                             "own terms not ruled here) is the OFFSHORE funding cost, a "
+                             "different rate, and is named as such"),
                  was=("shibor.org / chinamoney.com.cn, published about 11:00 Beijing = 03:00 UTC "
                       "each business day"),
                  source="全国银行间同业拆借中心 上海银行间同业拆放利率 (SHIBOR)",
@@ -1187,45 +1236,57 @@ DATASETS: tuple[dict[str, Any], ...] = (
                  pit_feasible=True,
                  assets=("USDCNH", "HK50", "CHINAH"),
                  mechanism_families=("liquidity", "onshore_funding", "curve_slope")),
-    dataset("pboc_omo_daily",
+    held_dataset("pboc_omo_daily",
+            ref="cn_pboc_official",
+            substitute=("none lawful today: the PBOC publishes this itself and pbc.gov.cn is held "
+                        "to_confirm (fail-closed) until its site statement is read and quoted. The"
+                        " announcement CLOCK (01:20 UTC) stays usable as a window on the desk's "
+                        "own tape"),
             source="中国人民银行 公开市场业务交易公告",
             coverage="the daily reverse-repo operation size, tenor and rate, and the net "
                      "injection or drain after maturities",
             frequency="daily",
             publication_lag_days=0.0,
             revisions="none",
-            licence="free, public",
             history_from="2013-01",
             pit_feasible=True,
             assets=("USDCNH", "HK50", "CHINAH"),
             mechanism_families=("liquidity", "policy_rate"),
-            how_to_fetch="pbc.gov.cn announcements at about 09:20 Beijing = 01:20 UTC"),
-    dataset("pboc_lpr",
+            was="pbc.gov.cn announcements at about 09:20 Beijing = 01:20 UTC"),
+    held_dataset("pboc_lpr",
+            ref="cn_cfets_chinamoney",
+            substitute=("none lawful today: the LPR is published by 全国银行间同业拆借中心 "
+                        "(CFETS's interbank funding centre) on chinamoney.com.cn, which is "
+                        "refused, and its "
+                        "pbc.gov.cn reprint is held to_confirm. The 20th-of-the-month CLOCK "
+                        "(cn_lpr_dates, the cn_lpr release class) stays usable as an event window "
+                        "on the desk's own tape"),
             source="全国银行间同业拆借中心 贷款市场报价利率",
             coverage="the 1-year and 5-year Loan Prime Rate",
             frequency="monthly",
             publication_lag_days=0.0,
             revisions="none",
-            licence="free, public",
             history_from="2019-08",
             pit_feasible=True,
             assets=("USDCNH", "HK50", "CHINAH", "XCUUSD"),
             mechanism_families=("policy_rate", "policy_surprise"),
-            how_to_fetch="09:15 Beijing (01:15 UTC) on the 20th, rolled forward off closures; "
+            was="09:15 Beijing (01:15 UTC) on the 20th, rolled forward off closures; "
                          "cn_lpr_dates() computes the grid and the PBOC archive confirms it"),
-    dataset("pboc_mlf_and_rrr",
+    held_dataset("pboc_mlf_and_rrr",
+            ref="cn_pboc_official",
+            substitute=("none lawful today: the PBOC publishes this itself and pbc.gov.cn is held "
+                        "to_confirm (fail-closed) until its site statement is read and quoted"),
             source="中国人民银行 中期借贷便利 and 存款准备金率 announcements",
             coverage="MLF operation size and rate; reserve-requirement changes and their "
                      "effective dates",
             frequency="monthly for MLF, event for RRR",
             publication_lag_days=0.0,
             revisions="none",
-            licence="free, public",
             history_from="2014-09",
             pit_feasible=True,
             assets=("USDCNH", "HK50", "CHINAH", "AUDUSD"),
             mechanism_families=("liquidity", "policy_surprise"),
-            how_to_fetch="pbc.gov.cn. NOTE THE BREAK: the MLF moved from the 15th to the 25th in "
+            was="pbc.gov.cn. NOTE THE BREAK: the MLF moved from the 15th to the 25th in "
                          "July 2024 and was demoted when the 7-day reverse repo became the "
                          "primary policy rate on 2024-07-22 -- an MLF event study pooled across "
                          "that date is pooling a policy rate with a liquidity operation"),
@@ -1244,32 +1305,38 @@ DATASETS: tuple[dict[str, Any], ...] = (
                          "month; the Caixin manufacturing PMI follows at 09:45 Beijing "
                          "(01:45 UTC) on the first business day and is a LICENSED series whose "
                          "headline is reported publicly"),
-    dataset("cn_customs_trade",
+    held_dataset("cn_customs_trade",
+            ref="cn_customs_official",
+            substitute=("none confirmed: customs.gov.cn is held to_confirm (fail-closed). "
+                        "Partner-country import statistics on confirmed-terms sources are the "
+                        "candidate mirror (e.g. in_gold_imports in alt_proxies for gold); none is "
+                        "wired here"),
             source="海关总署 进出口商品总值",
             coverage="exports, imports and the trade balance, by product and by partner",
             frequency="monthly, with JANUARY AND FEBRUARY PUBLISHED COMBINED",
             publication_lag_days=9.0,
             revisions="minor",
-            licence="free, public",
             history_from="1995-01",
             pit_feasible=True,
             assets=("AUDUSD", "AUS200", "XCUUSD", "XTIUSD", "USDCNH"),
             mechanism_families=("trade_cycle", "commodity_demand", "global_growth"),
-            how_to_fetch="customs.gov.cn between the 7th and the 13th. THE COMBINED JANUARY AND "
+            was="customs.gov.cn between the 7th and the 13th. THE COMBINED JANUARY AND "
                          "FEBRUARY RELEASE IS A PIT TRAP: two monthly observations are missing "
                          "every year by design and interpolating them invents data"),
-    dataset("pboc_tsf_credit",
+    held_dataset("pboc_tsf_credit",
+            ref="cn_pboc_official",
+            substitute=("none lawful today: the PBOC publishes this itself and pbc.gov.cn is held "
+                        "to_confirm (fail-closed) until its site statement is read and quoted"),
             source="中国人民银行 金融统计数据报告 (社会融资规模, 新增人民币贷款)",
             coverage="total social financing, new loans, M2 and the credit aggregates",
             frequency="monthly",
             publication_lag_days=12.0,
             revisions="the TSF stock series has been restated when its definition widened",
-            licence="free, public",
             history_from="2002-01",
             pit_feasible=False,
             assets=("AUDUSD", "AUS200", "XCUUSD", "HK50", "CHINAH"),
             mechanism_families=("credit_impulse", "growth_nowcast", "commodity_demand"),
-            how_to_fetch="pbc.gov.cn between the 9th and the 15th with NO PRE-ANNOUNCED TIME. "
+            was="pbc.gov.cn between the 9th and the 15th with NO PRE-ANNOUNCED TIME. "
                          "pit_feasible is FALSE for two reasons: the release minute is unknown "
                          "in advance, and the definition of TSF has widened more than once so "
                          "the historical series is not the series that was published then"),
@@ -1331,19 +1398,23 @@ DATASETS: tuple[dict[str, Any], ...] = (
                          "December Politburo economic meetings because the DATE is not announced "
                          "in advance -- only the month is -- so the event window itself is not "
                          "knowable ex ante and a study must condition on the announcement time"),
-    dataset("cn_fx_risk_reserve",
+    held_dataset("cn_fx_risk_reserve",
+            ref="cn_pboc_official",
+            substitute=("none lawful today: the PBOC publishes this itself and pbc.gov.cn is held "
+                        "to_confirm (fail-closed) until its site statement is read and quoted. "
+                        "Announcement dates reported in the press remain readable as an event "
+                        "calendar, never as PBOC data"),
             source="中国人民银行 外汇风险准备金率 and 外汇存款准备金率 announcements",
             coverage="the reserve requirement on bank forward FX sales (moved between 0% and "
                      "20%) and on FX deposits",
             frequency="event",
             publication_lag_days=0.0,
             revisions="none",
-            licence="free, public",
             history_from="2015-10",
             pit_feasible=True,
             assets=("USDCNH",),
             mechanism_families=("intervention_proxy", "forward_points", "policy_surprise"),
-            how_to_fetch="pbc.gov.cn. These are the cleanest DATED interventions China publishes "
+            was="pbc.gov.cn. These are the cleanest DATED interventions China publishes "
                          "-- a rule change with an announcement minute and a stated effect on "
                          "the cost of hedging, which is what an event study needs"),
 )
@@ -1965,8 +2036,8 @@ TRANSMISSION_EDGES_SEED: tuple[dict[str, Any], ...] = (
                "fifteen-minute window in which only one of the two markets can trade. ITS INPUT "
                "IS HELD: the fix VALUE is CFETS market data, BLOCKED_ON_TERMS:refused (PR "
                "#229), so the residual cannot be computed from CFETS until a written licence "
-               "exists; the PBOC's own announcement is the candidate once pbc.gov.cn's terms "
-               "are read."),
+               "exists, and the PBOC's own announcement is no substitute while pbc.gov.cn is "
+               "held to_confirm (fail-closed)."),
     edge("cnh_funding_squeeze_to_cnh",
          source="CNH HIBOR spiking at the 03:15 UTC fixing",
          mechanism="raising the offshore funding cost makes a short CNH position expensive to "
@@ -2269,13 +2340,13 @@ def _central_bank_row(lab: Any) -> Any:
 def _fixing_rows(lab: Any) -> tuple[Any, ...]:
     """China's three published references, in UTC. CST never shifts, so `dst_rule` is 'none'.
 
-    The two CFETS rows carry BLOCKED_ON_TERMS at the head of `notes` (PR #229): the fixing lab
-    reads that and counts them blocked instead of measuring them. They stay in the tuple so the
-    references are named."""
+    The two CFETS rows are WINDOW studies on the broker's own USDCNH tape at the public
+    publication times, so they are not held; the CFETS VALUES are (the datasets, PR #229)."""
     return (
         lab.Fixing(name="人民币汇率中间价 (CFETS central parity)", time_utc="01:15",
                    dst_rule="none", instruments=("USDCNH",), window_minutes=25,
-                   notes=(f"{FIXING_CONVENTIONS['central_parity']['note']} Window study only: it reads the "
+                   notes=(f"{FIXING_CONVENTIONS['central_parity']['note']} Window study only: "
+                          f"it reads the "
                           f"broker's own USDCNH tape around the public publication time and "
                           f"never a CFETS value, which stays held ({TERMS_RULING}).")),
         lab.Fixing(name="CNH HIBOR (TMA, Hong Kong)", time_utc="03:15", dst_rule="none",
@@ -2283,7 +2354,8 @@ def _fixing_rows(lab: Any) -> tuple[Any, ...]:
                    notes=str(FIXING_CONVENTIONS["cnh_hibor"]["note"])),
         lab.Fixing(name="CFETS 收盘价 (the 16:30 Beijing reference close)", time_utc="08:30",
                    dst_rule="none", instruments=("USDCNH",), window_minutes=45,
-                   notes=(f"{FIXING_CONVENTIONS['onshore_close']['note']} Window study only: it reads the "
+                   notes=(f"{FIXING_CONVENTIONS['onshore_close']['note']} Window study only: "
+                          f"it reads the "
                           f"broker's own USDCNH tape around the public publication time and "
                           f"never a CFETS value, which stays held ({TERMS_RULING}).")),
     )

@@ -26,7 +26,12 @@ import countries.cn.pack as CN  # noqa: E402
 from libs.data import terms_fence as TF  # noqa: E402
 from libs.research import country_lab as CL  # noqa: E402
 
-CFETS_DATASETS = ("cfets_central_parity", "cfets_onshore_close", "cn_cnh_cny_basis", "cn_shibor")
+CFETS_DATASETS = ("cfets_central_parity", "cfets_onshore_close", "cn_cnh_cny_basis", "cn_shibor",
+                  "pboc_lpr")        # the LPR is published by CFETS's funding centre
+PBOC_DATASETS = ("pboc_omo_daily", "pboc_mlf_and_rrr", "pboc_tsf_credit", "cn_fx_risk_reserve")
+CUSTOMS_DATASETS = ("cn_customs_trade",)
+TO_CONFIRM_DATASETS = PBOC_DATASETS + CUSTOMS_DATASETS
+HELD_DATASETS = CFETS_DATASETS + TO_CONFIRM_DATASETS
 CLAUSE_WORDS = "without written permission from CFETS"
 
 
@@ -44,7 +49,7 @@ def test_cfets_and_shibor_datasets_read_blocked_on_terms_refused_and_stay_in_the
         assert "covered" not in row["licence"].lower(), name
     # The rest of the catalogue is untouched: nothing else is held by this ruling.
     held = {d["name"] for d in CN.DATASETS if CN.is_terms_blocked(d)}
-    assert held == set(CFETS_DATASETS)
+    assert held == set(HELD_DATASETS)
 
 
 def test_the_typed_pack_still_carries_the_hold_and_every_row() -> None:
@@ -56,7 +61,8 @@ def test_the_typed_pack_still_carries_the_hold_and_every_row() -> None:
     for d in pk.datasets:
         state, why = TF.row_hold(d)
         assert (state == "refused") == (d.name in CFETS_DATASETS), d.name
-        if state:
+        assert (state == "to_confirm") == (d.name in TO_CONFIRM_DATASETS), d.name
+        if state == "refused":
             assert CLAUSE_WORDS in why and "#229" in why
     fixes = {f.name: TF.row_hold(f)[0] for f in pk.fixing_conventions}
     # The fixing WINDOWS read only the broker's USDCNH tape at the public times, never a CFETS
@@ -227,9 +233,9 @@ def test_regional_parity_counts_held_datasets_blocked_never_as_depth() -> None:
     from libs.research import regional_parity as RP
     pk = _typed_pack()
     d = RP.pack_depth(pk, "cn")
-    assert d.datasets_blocked_on_terms == len(CFETS_DATASETS)
-    assert d.datasets == len(CN.DATASETS) - len(CFETS_DATASETS)
-    assert d.as_row()["datasets_blocked_on_terms"] == len(CFETS_DATASETS)
+    assert d.datasets_blocked_on_terms == len(HELD_DATASETS)
+    assert d.datasets == len(CN.DATASETS) - len(HELD_DATASETS)
+    assert d.as_row()["datasets_blocked_on_terms"] == len(HELD_DATASETS)
 
 
 def test_the_forest_tensor_holds_no_cell_for_a_held_source() -> None:
@@ -255,7 +261,7 @@ def test_the_forest_tensor_holds_no_cell_for_a_held_source() -> None:
     absent = _Absent()
     counts = CT.observe_forest(_Forest(), _Conn(), absent,  # type: ignore[arg-type]
                                {"cn": {"pack": pk, "languages": ["zh-hans"]}}, "2026-10-06")
-    assert counts["blocked_on_terms_pack_sources"] == 2
+    assert counts["blocked_on_terms_pack_sources"] == 4
     assert "pack_sources_blocked_on_terms" in absent.notes
     assert not any("cn_cfets_market_data" in s["why"] or "cn_safe_official" in s["why"]
                    for s in seen)
@@ -332,3 +338,82 @@ def test_source_drain_repair_parses_and_enqueues_no_held_source(
     monkeypatch.setattr(AP, "parse_all", lambda only=None: called.append(only) or {})
     out = SD.repair(rows, ["cfets_fixing", "safe_reserves"], budget_s=5.0)
     assert out["parsed_attempted"] == [] and out["enqueued"] == [] and called == []
+
+
+# ------------------------------------------------------------------ PBOC and customs: fail-closed
+@pytest.mark.parametrize(("url", "ref"), [
+    ("http://www.pbc.gov.cn/zhengcehuobisi/125207/125213/125431/125475/index.html",
+     "cn_pboc_official"),
+    ("http://www.pbc.gov.cn/diaochatongjisi/116219/index.html", "cn_pboc_official"),
+    ("http://www.customs.gov.cn/customs/302249/zfxxgk/2799825/302274/302277/index.html",
+     "cn_customs_official"),
+    ("http://stats.customs.gov.cn/", "cn_customs_official"),
+])
+def test_pboc_and_customs_hosts_are_fenced_to_confirm(url: str, ref: str) -> None:
+    state, why = TF.hold_of(url)
+    assert state == "to_confirm" and why.startswith("BLOCKED_ON_TERMS:to_confirm")
+    assert TF.row_hold({"id": "x", "terms_ref": ref})[0] == "to_confirm"
+
+
+def test_a_host_leaves_the_fence_only_on_a_quoted_permitting_clause() -> None:
+    for ref in TF.TERMS_REFS:
+        ev = TF.TERMS_EVIDENCE[ref]
+        assert ev["terms_url"] and ev["checked_at"].startswith("2026-10-06"), ref
+        # Every fenced id carries no permitting clause; an unreadable page is never permission.
+        assert ev["permitting_clause"] == "", ref
+    for host, ref in TF.TERMS_HOSTS.items():
+        assert ref in TF.TERMS_REFS and ref in TF.TERMS_EVIDENCE, host
+    assert TF.TERMS_EVIDENCE["cn_pboc_official"]["result"].startswith("UNREADABLE")
+    assert TF.TERMS_EVIDENCE["cn_customs_official"]["result"].startswith("UNREADABLE")
+
+
+def test_pboc_and_customs_rows_read_to_confirm_and_no_substitute_names_pbc_as_lawful() -> None:
+    rows = {d["name"]: d for d in CN.DATASETS}
+    for name in TO_CONFIRM_DATASETS:
+        assert rows[name]["terms_status"] == "BLOCKED_ON_TERMS:to_confirm", name
+        assert rows[name]["how_to_fetch"].startswith("BLOCKED_ON_TERMS:to_confirm"), name
+        assert rows[name]["lawful_substitute"].strip(), name
+    assert rows["pboc_lpr"]["terms_status"] == "BLOCKED_ON_TERMS:refused"
+    by_id = {sc["id"]: sc for sc in CN.SOURCE_CLASSES}
+    assert by_id["cn_pboc_official"]["licence"].startswith("BLOCKED_ON_TERMS:to_confirm")
+    assert by_id["cn_customs_official"]["licence"].startswith("BLOCKED_ON_TERMS:to_confirm")
+    open_roots = {r for sc in CN.SOURCE_CLASSES if not CN.is_terms_blocked(sc)
+                  and not str(sc["licence"]).startswith("BLOCKED_ON_TERMS")
+                  for r in sc["roots"]}
+    for host in TF.TERMS_HOSTS:
+        assert not any(host in r for r in open_roots), host
+    for d in CN.DATASETS:
+        sub = str(d.get("lawful_substitute") or "").lower()
+        assert "once its terms are read" not in sub and "once their own terms" not in sub
+    edge = next(e for e in CN.TRANSMISSION_EDGES_SEED if e["id"] == "cn_fix_residual_to_cnh")
+    assert "candidate once pbc.gov.cn" not in edge["notes"]
+
+
+def test_the_acquirer_never_requests_pboc_or_customs(monkeypatch: pytest.MonkeyPatch,
+                                                     tmp_path: Path) -> None:
+    from research import acquire_datasets as AD
+    urls = [("http://www.pbc.gov.cn/diaochatongjisi/116219/index.html", "pbc"),
+            ("http://stats.customs.gov.cn/", "customs")]
+    fetched: list[str] = []
+    monkeypatch.setattr(AD, "STORE", tmp_path)
+    monkeypatch.setattr(AD, "REGISTRY", tmp_path / "registry.json")
+    monkeypatch.setattr(AD, "REPORT", tmp_path / "report.json")
+    monkeypatch.setattr(AD, "_endpoints", lambda limit: list(urls))
+    monkeypatch.setattr(AD, "_fetch", lambda url: (fetched.append(url), (None, "html"))[1])
+    rep = AD.acquire(limit=5)
+    assert fetched == [] and rep["endpoints_tried"] == 0
+    assert set(rep["blocked_on_terms"].values()) == {"BLOCKED_ON_TERMS:to_confirm"}
+
+
+def test_pack_cells_and_source_drain_hold_the_pboc_and_customs_registry_rows(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import source_drain as SD
+    rows = [SD.chain_for(s, {}, {}) for s in (
+        {"id": "pboc_open_market", "url": "http://www.pbc.gov.cn/zhengcehuobisi/x/index.html"},
+        {"id": "china_customs", "url": "http://www.customs.gov.cn/customs/302249/index.html"},
+        {"id": "cn_customs_detail", "url": "http://stats.customs.gov.cn/"},
+        {"id": "nbs_pmi", "url": "https://data.stats.gov.cn/easyquery.htm"})]
+    assert {r["id"]: r["terms"] for r in rows} == {
+        "pboc_open_market": "BLOCKED_ON_TERMS:to_confirm",
+        "china_customs": "BLOCKED_ON_TERMS:to_confirm",
+        "cn_customs_detail": "BLOCKED_ON_TERMS:to_confirm", "nbs_pmi": None}

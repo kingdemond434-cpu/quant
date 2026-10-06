@@ -10,10 +10,13 @@ its SHIBOR site shibor.org -- carries an explicit clause:
 
 so it reads `refused`. SAFE (safe.gov.cn) bars commercial reprint and grants nothing permitting a
 desk to use the statistics, so it reads `to_confirm` and is held FAIL-CLOSED until a written grant
-or a clearer reuse clause is quoted. #229 gates the Asia organs (the registry, the collector, the
-parser). The country packs and the generic organs that read them -- the fixing lab, the dataset
-acquirer, the source census, the coverage tensor, pack_cells, source_drain -- are gated here, by
-the same vocabulary `alt_proxies.status_of` already speaks on LIVE: `BLOCKED_ON_TERMS:<terms>`.
+or a clearer reuse clause is quoted. The PBOC (pbc.gov.cn) and customs (customs.gov.cn)
+terms could not be read at all, and fail-closed applies to every to_confirm row, so both are
+fenced `to_confirm` too (TERMS_EVIDENCE records each attempt). #229 gates the Asia organs
+(the registry, the collector, the parser). The country packs and the generic organs that read
+them -- the fixing lab, the dataset acquirer, the source census, the coverage tensor,
+pack_cells, source_drain -- are gated here, by the same vocabulary `alt_proxies.status_of`
+already speaks on LIVE: `BLOCKED_ON_TERMS:<terms>`.
 
 WHAT A HOLD MEANS. A held row is NEVER fetched, never mints a cell, never claims coverage, and is
 NEVER DELETED: the ontology stays open and the gap is named. It is counted as BLOCKED, beside
@@ -56,10 +59,51 @@ SAFE_CLAUSE = ("SAFE legal statement (https://www.safe.gov.cn/safe/flsm/index.ht
                "no grant to use the data. Held to_confirm and FAIL-CLOSED until a written SAFE "
                "grant or a clearer reuse clause is quoted")
 
+#: FAIL-CLOSED APPLIES TO EVERY to_confirm ROW (coordinator ruling, 2026-10-06). The PBOC and
+#: customs hosts were read for terms on that date and neither could be read, so both are fenced.
+PBOC_CLAUSE = ("pbc.gov.cn: no site statement readable (2026-10-06: the fetcher is "
+               "robots-disallowed on http://www.pbc.gov.cn/ and its English site, and #229 "
+               "found no route from the container proxy). Held to_confirm and FAIL-CLOSED "
+               "until the footer's site statement is read and quoted")
+CUSTOMS_CLAUSE = ("customs.gov.cn: no statement readable (2026-10-06: "
+                  "http://english.customs.gov.cn/statement.html and the Chinese site fail on a "
+                  "self-signed certificate chain before robots.txt can be read). Held "
+                  "to_confirm and FAIL-CLOSED until the STATEMENT page is read and quoted")
+
 #: Terms ids (#229's `terms_ref` vocabulary) -> (state, clause).
 TERMS_REFS: dict[str, tuple[str, str]] = {
     "cn_cfets_chinamoney": ("refused", CFETS_CLAUSE),
     "cn_safe_official": ("to_confirm", SAFE_CLAUSE),
+    "cn_pboc_official": ("to_confirm", PBOC_CLAUSE),
+    "cn_customs_official": ("to_confirm", CUSTOMS_CLAUSE),
+}
+
+#: WHAT WAS READ, per terms id: the URL tried, when, and what came back. A host leaves the fence
+#: only when its entry here quotes a PERMITTING clause verbatim with its URL and fetch date; an
+#: unreadable page is never permission.
+TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    "cn_cfets_chinamoney": {
+        "terms_url": "https://www.chinamoney.com.cn/english/svcmds/",
+        "checked_at": "2026-10-06 (read by #229)",
+        "permitting_clause": "",
+        "result": "REFUSED: explicit no-use-without-written-permission clause"},
+    "cn_safe_official": {
+        "terms_url": "https://www.safe.gov.cn/safe/flsm/index.html",
+        "checked_at": "2026-10-06 (read by #229)",
+        "permitting_clause": "",
+        "result": "TO_CONFIRM: governs reprinting; grants no use of the data"},
+    "cn_pboc_official": {
+        "terms_url": "http://www.pbc.gov.cn/ (and http://www.pbc.gov.cn/en/3688006/index.html)",
+        "checked_at": "2026-10-06",
+        "permitting_clause": "",
+        "result": "UNREADABLE: 'URL is disallowed by robots.txt rules' on both pages"},
+    "cn_customs_official": {
+        "terms_url": ("http://english.customs.gov.cn/statement.html (and "
+                      "http://www.customs.gov.cn/customs/wzsm/index.html)"),
+        "checked_at": "2026-10-06",
+        "permitting_clause": "",
+        "result": ("UNREADABLE: 'robots.txt fetch failed: [SSL: CERTIFICATE_VERIFY_FAILED] "
+                   "self-signed certificate in certificate chain' on both pages")},
 }
 
 #: Registrable host suffix -> terms id. Matched on the suffix so www./en./any sub-host is held
@@ -68,6 +112,8 @@ TERMS_HOSTS: dict[str, str] = {
     "chinamoney.com.cn": "cn_cfets_chinamoney",
     "shibor.org": "cn_cfets_chinamoney",
     "safe.gov.cn": "cn_safe_official",
+    "pbc.gov.cn": "cn_pboc_official",
+    "customs.gov.cn": "cn_customs_official",
 }
 
 #: The fields a pack row or registry row may carry its hold in, checked in this order.
