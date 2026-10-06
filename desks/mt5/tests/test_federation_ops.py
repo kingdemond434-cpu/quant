@@ -275,7 +275,7 @@ def test_a_roster_id_upstream_is_delta_scannable() -> None:
 def test_the_quant_guild_civilization_is_seeded() -> None:
     ids = {s.system_id for s in fed.SEEDS}
     assert {"quant_guild_library", "paolucci_qfin", "openterminal"} <= ids
-    assert fed.SEED_BY_ID["quant_guild_library"].licence == "NONE"
+    assert fed.SEED_BY_ID["quant_guild_library"].licence == "UNVERIFIED"
 
 
 def test_a_drained_packet_charges_its_trials_on_the_contract(tmp_path, monkeypatch) -> None:
