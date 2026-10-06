@@ -375,11 +375,23 @@ def _orthogonal_key() -> Any:
     except Exception:
         by_pair = {}
     certified = _certified_family_counts()
+    # UNDER-TARGET (chart, session) BUCKETS FIRST (principal 2026-10-06: "all timeframes ... its
+    # fr sessions too ... basically all breadths targetted"). The published census
+    # (PRODUCER_BREADTH.json `timeframe_session`) names the buckets whose discovery or judged
+    # share is under an equal share; their cells lead the capped merge, and inside each tier the
+    # principal's intraday-first ranking and the rest of this key hold unchanged. No census means
+    # the tier is 0 for every cell and the order is exactly the previous one.
+    try:
+        from research.breadth_rotation import tf_session_key
+        tier = tf_session_key()
+    except Exception:
+        def tier(_r: dict) -> int:
+            return 0
 
     def key(r: dict) -> tuple:
         tf = str((r.get("params") or {}).get("timeframe") or "H1")
         fam = str(r["family"])
-        return (_tf_rank(tf), certified.get(fam, 0),
+        return (tier(r), _tf_rank(tf), certified.get(fam, 0),
                 by_pair.get((str(r["symbol"]).upper(), fam), 0),
                 r["symbol"], r["family"])
     return key
@@ -514,7 +526,15 @@ def order_by_failure_memory(rows: list[dict], memory: dict | None = None) -> tup
         return {"mechanism": mech[fam], "asset_class": acls[sym],
                 "selector": str((r.get("params") or {}).get("session") or "?")}
 
-    return fm.prioritise(rows, mem, desc_of, rank=_cell_tf_rank)
+    # THE TIER `_orthogonal_key` sorted by leads here too, or this re-sort would undo it: the
+    # under-target (chart, session) tier first, then the chart tier, then the memory.
+    try:
+        from research.breadth_rotation import tf_session_key
+        tier = tf_session_key()
+    except Exception:
+        def tier(_r: dict) -> int:
+            return 0
+    return fm.prioritise(rows, mem, desc_of, rank=lambda r: (tier(r), _cell_tf_rank(r)))
 
 
 def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:

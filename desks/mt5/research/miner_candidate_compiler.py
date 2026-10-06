@@ -754,12 +754,37 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
 #: `session` are identity keys the gauntlet, the forward clock and the live executor already
 #: read (`family_call.session_filter`, `external_gauntlet.timeframe_of`). A source that named
 #: its own chart or session is respected as written.
-INTRADAY_CHARTS = ("M5", "M15", "M30")
+#:
+#: THE WHOLE LADDER (principal 2026-10-06: "all timeframes, m1 m15 m30 h1 h4 d1 ... not just h1
+#: fully, so we can get intraday mechanisms ... its fr sessions too"). M1 joined the intraday
+#: charts and H4/D1 the slower ones: until then a chartless candidate was expanded on M5..M30 and
+#: H1 only, so this compiler -- the desk's largest producer of docket rows -- never minted a
+#: single M1, H4 or D1 cell. A D1 bar has no session inside it, so a D1 cell is `all` only. A
+#: chart the family DECLARES inexpressible (`families_orthogonal.FAMILY_TIMEFRAMES`) is not
+#: minted -- the family would return no signals there and the judge would file a market "no" the
+#: market never gave -- and `LAST_TIMEFRAME_SET_ASIDE` counts it by name.
+INTRADAY_CHARTS = ("M1", "M5", "M15", "M30")
+SLOW_CHARTS = ("H4", "D1")
 SESSION_AXIS = ("all", "asia", "london", "ny")
+#: (family|chart) -> candidates not expanded there by the family's own declaration, this process.
+LAST_TIMEFRAME_SET_ASIDE: dict[str, int] = {}
 
 
 def _charts_with_bars(symbol: str) -> list[str]:
-    return [tf for tf in INTRADAY_CHARTS if (UNIVERSE / f"{symbol}_{tf}.parquet").exists()]
+    return [tf for tf in (*INTRADAY_CHARTS, *SLOW_CHARTS)
+            if (UNIVERSE / f"{symbol}_{tf}.parquet").exists()]
+
+
+def _chart_refusal(family: str, chart: str) -> str | None:
+    """`families_orthogonal.timeframe_refusal`, or None (refuses NOTHING) when unimportable."""
+    try:
+        from mt5desk.families_orthogonal import timeframe_refusal
+    except Exception:
+        return None
+    try:
+        return timeframe_refusal(family, chart)
+    except Exception:
+        return None
 
 
 def _invariance(symbol: str, family: str) -> dict | None:
@@ -795,9 +820,9 @@ def _session_slots(family: str, base: dict, symbol: str) -> list[tuple[str, dict
 
 
 def expand_axes(cands: list[dict]) -> list[dict]:
-    """Every candidate on every intraday chart with bars, in every session; H1 kept, ranked
-    last (`priority` 1 against 0). A candidate whose params already name a chart or a session
-    is returned as it is.
+    """Every candidate on every chart with bars (M1..M30, H4, D1), in every session (D1: `all`);
+    H1 kept, ranked last (`priority` 1 against 0). A candidate whose params already name a chart
+    or a session is returned as it is.
 
     A mechanism the causal organ found NON_INVARIANT carries its verdict and sorts one step
     later still (`priority` + 1). Nothing is ever removed from the queue by this."""
@@ -822,6 +847,10 @@ def expand_axes(cands: list[dict]) -> list[dict]:
         except Exception:
             pass
         for tf in [*_charts, "H1"]:
+            if tf != "H1" and _chart_refusal(fam, tf):
+                key = f"{fam}|{tf}"
+                LAST_TIMEFRAME_SET_ASIDE[key] = LAST_TIMEFRAME_SET_ASIDE.get(key, 0) + 1
+                continue
             chart_base = dict(base)
             if tf != "H1":
                 chart_base["timeframe"] = tf
@@ -830,7 +859,8 @@ def expand_axes(cands: list[dict]) -> list[dict]:
             # none is minted as the cell that CAN fire there (hour params re-anchored to the
             # session's open) or at the hours it does fire (re-homed). One cell per slot, so the
             # count never falls; UNMEASURED leaves the slot exactly as it was.
-            for sess, p, remap in _session_slots(fam, chart_base, sym):
+            for sess, p, remap in (_session_slots(fam, chart_base, sym) if tf != "D1"
+                                   else [("all", chart_base, None)]):
                 v = dict(c)
                 v["params"] = p
                 gid = _genome_id(sym, fam, p)
@@ -1928,6 +1958,9 @@ def main() -> int:
                                    if d.get("rows_with_outcomes")}},
         "graph": graph_note,
         "impossible_metrics": fence_tally.to_dict(),
+        # chartless candidates NOT expanded onto a chart their family declares inexpressible
+        # (FAMILY_TIMEFRAMES), by family|chart: counted by name, never silent
+        "timeframe_set_aside": dict(sorted(LAST_TIMEFRAME_SET_ASIDE.items())),
         "rows_accounted": rows_total,
         "executable_candidates": len(candidates),
         "deepening_tasks": len(deepening),

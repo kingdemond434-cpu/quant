@@ -74,7 +74,11 @@ CHARTS: tuple[str, ...] = ("H1", "H4", "D1")
 #: M15 at anchor_mult=4 is the hourly anchor gating a fifteen-minute entry -- the same claim one
 #: rung finer, not a different one. Minted only where `<SYM>_<chart>.parquet` exists: a fine
 #: chart the desk does not hold is a cell the judge cannot replay off this checkout.
-FINE_CHARTS: tuple[str, ...] = ("M15", "M30")
+#: M1 and M5 JOINED 2026-10-06 (principal: "all timeframes, m1 m15 m30 ... so we can get
+#: intraday mechanisms"): at anchor_mult 3-6 an M5 entry is gated by a 15-30 minute anchor and an
+#: M1 entry by a 3-6 minute one -- the same claim further down the ladder, minted only where the
+#: instrument's own bars for that chart exist.
+FINE_CHARTS: tuple[str, ...] = ("M1", "M5", "M15", "M30")
 
 #: Arm A. The mechanism's own degrees of freedom. `(0.0, False)` is the CONTROL ARM -- the anchor
 #: gate and ATR stop with the desk's ordinary stop/target/time exit -- without which the two exit

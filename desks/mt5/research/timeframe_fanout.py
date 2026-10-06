@@ -21,10 +21,10 @@ allowed to see.
 WHAT THIS ORGAN DOES. It takes work already done -- every certified mechanism in the canonical
 lane (`reports/UNIVERSAL_SURVIVORS.json`) and every strong family in the docket (the registry's
 own survivors and each family's best-scored representative) -- and mints the SAME spec on M1, M5,
-M15, H1 and H4 as separate cells through the one door, each carrying provenance that names its
-parent and the parent's chart. It changes no rule, no parameter, no symbol and no side. The only
-thing that varies is the chart, which is the whole point: the judge decides which chart pays
-rather than the compiler assuming.
+M15, M30, H1, H4 and D1 (every chart the family declares expressible) as separate cells through
+the one door, each carrying provenance that names its parent and the parent's chart. It changes
+no rule, no parameter, no symbol and no side. The only thing that varies is the chart, which is
+the whole point: the judge decides which chart pays rather than the compiler assuming.
 
 THE TRIALS ARE CHARGED, and this is the half that makes it honest rather than free. Five charts
 is five times the cells, and a multiple-testing budget that does not notice is a budget that
@@ -35,9 +35,11 @@ they are and not as five independent discoveries. Both numbers are published: `n
 desk would have to admit to a naive counter) and `n_effective` (what the deflated-Sharpe charge
 should actually use), with the inflation between them.
 
-NOTHING HERE IS A FILTER. No chart is preferred, none is dropped, no parent is refused and no
-threshold is applied. A chart with no bars on this host still gets its cell -- the gauntlet
-reports UNMEASURED for it, which is a verdict this desk trusts more than an assumption.
+NOTHING HERE IS A FILTER. No chart is preferred, no parent is refused and no threshold is
+applied. The one chart a cell is not minted on is one its family DECLARES it cannot express
+(`FAMILY_TIMEFRAMES`), counted by name in `refused_by_family_timeframes`. A chart with no bars
+on this host still gets its cell -- the gauntlet reports UNMEASURED for it, which is a verdict
+this desk trusts more than an assumption.
 
     python desks/mt5/research/timeframe_fanout.py --once --budget-s 240
     python desks/mt5/research/timeframe_fanout.py --once --dry-run
@@ -67,7 +69,13 @@ OUT = DESK / "reports" / "TIMEFRAME_FANOUT.json"
 #: Every chart the same spec is minted on. M1 and M5 are here because the registry carried NONE
 #: and the replay says M5 paid most; H1 because it is the parent's own chart and the fanout must
 #: include the control, or the comparison is between five new things and nothing.
-CHARTS: tuple[str, ...] = ("M1", "M5", "M15", "H1", "H4")
+#: M30 and D1 JOINED 2026-10-06 (principal: "all timeframes, m1 m15 m30 h1 h4 d1 ... not just
+#: h1 fully"): the ladder had a hole between M15 and H1 and stopped at H4, so a mechanism was
+#: never once minted on the half-hour or the daily chart by this organ. A family that DECLARES a
+#: chart inexpressible (`families_orthogonal.FAMILY_TIMEFRAMES`) is not minted there -- that is
+#: a cell the family returns no signals on, judged as a market "no" the market never gave -- and
+#: the refusal is counted by name in the pass report, never silent.
+CHARTS: tuple[str, ...] = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
 
 #: Parents taken per pass from each lane, advanced by a saved cursor so every parent is reached.
 #: Not a cap: a parent not reached this pass leads the next one.
@@ -183,7 +191,17 @@ def mint(parent: dict[str, Any], charts: list[str], *, dry_run: bool) -> dict[st
     made = created = 0
     errors: list[str] = []
     trials: list[dict[str, Any]] = []
+    refused: dict[str, str] = {}
+    try:
+        from mt5desk.families_orthogonal import timeframe_refusal
+    except Exception:
+        def timeframe_refusal(_f: str, _c: str) -> str | None:  # type: ignore[misc]
+            return None                  # an unimportable declaration refuses NOTHING (L1.28a)
     for chart in charts:
+        why = timeframe_refusal(str(parent.get("family") or ""), chart)
+        if why:
+            refused[chart] = why
+            continue
         made += 1
         params = {**dict(parent.get("params") or {}), "parent_chart": parent["parent_chart"],
                   "chart": chart}
@@ -215,7 +233,8 @@ def mint(parent: dict[str, Any], charts: list[str], *, dry_run: bool) -> dict[st
         except Exception as exc:
             errors.append(f"{parent['parent'][:20]}@{chart}: "
                           f"{type(exc).__name__}: {str(exc)[:50]}")
-    return {"emitted": made, "created": created, "errors": errors, "trials": trials}
+    return {"emitted": made, "created": created, "errors": errors, "trials": trials,
+            "refused_charts": refused}
 
 
 def charge_trials(trials: list[dict[str, Any]]) -> dict[str, Any]:
@@ -263,6 +282,7 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
     per_lane: dict[str, dict[str, Any]] = {}
     all_trials: list[dict[str, Any]] = []
     errors: list[str] = []
+    refused: dict[str, int] = {}
     for lane, rows in lanes.items():
         start = int(starts.get(lane) or 0) % max(len(rows), 1)
         order = rows[start:] + rows[:start]
@@ -276,6 +296,9 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
             lane_created += int(res["created"])
             all_trials.extend(res["trials"])
             errors.extend(res["errors"][:2])
+            for chart in res.get("refused_charts") or {}:
+                key = f"{parent.get('family')}|{chart}"
+                refused[key] = refused.get(key, 0) + 1
         starts[lane] = start + n_done
         emitted += lane_emitted
         created += lane_created
@@ -300,6 +323,9 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
         "cells_emitted_this_pass": emitted,
         "cells_created_this_pass": created,
         "per_lane": per_lane,
+        # (family|chart) -> parents not minted there because the family DECLARES that chart
+        # inexpressible (families_orthogonal.FAMILY_TIMEFRAMES): counted, never silent.
+        "refused_by_family_timeframes": dict(sorted(refused.items())),
         "trial_ledger": ledger,
         "unmeasured": unmeasured,
         "errors": errors[:10],
