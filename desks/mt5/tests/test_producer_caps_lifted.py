@@ -354,3 +354,39 @@ def test_asia_chain_measurements_are_charged_once_per_chain_identity(
                         lambda d, t, plausible_role=None: {"verdict": "UNMEASURED", "n": 3})
     assert atx.measure(budget_s=1e6)["chain_looks"]["newly_charged"] == 0
     assert charges() == [2, 2]
+
+
+def test_forward_sums_are_bit_identical_to_the_loop() -> None:
+    """The vectorised lag sums perform the same float additions as the comprehension they
+    replaced, so every t, lag and verdict `lead_lag.edge` reports is unchanged -- equality, not
+    tolerance."""
+    from libs.research import lead_lag
+    rng = np.random.default_rng(20261006)
+    y = rng.standard_t(3, 20_000) * 1e-3
+    for h in range(1, lead_lag.MAX_LAG + 1):
+        loop = np.array([y[i + 1:i + 1 + h].sum() for i in range(y.size - h)])
+        assert np.array_equal(loop, lead_lag._forward_sums(y, h))
+    assert lead_lag._forward_sums(y[:3], 6).size == 0
+
+
+def test_edge_matches_the_loop_implementation_field_for_field() -> None:
+    from libs.research import lead_lag
+
+    def loop_edge_t(x: np.ndarray, y: np.ndarray) -> list[tuple[float, float]]:
+        out = []
+        for h in range(1, lead_lag.MAX_LAG + 1):
+            xs = x[:-h][::h]
+            ys = np.array([y[i + 1:i + 1 + h].sum() for i in range(x.size - h)])[::h]
+            out.append(lead_lag._t_reg(xs, ys))
+        return out
+    rng = np.random.default_rng(7)
+    n = 3_000
+    idx = pd.date_range("2024-01-01", periods=n, freq="h", tz="UTC")
+    x = rng.normal(0, 1e-3, n)
+    yv = 0.4 * np.roll(x, 3) + rng.normal(0, 1e-3, n)
+    d = pd.DataFrame({"close": np.exp(np.cumsum(x))}, index=idx)
+    t = pd.DataFrame({"close": np.exp(np.cumsum(yv))}, index=idx)
+    xa, ya, _ = lead_lag._align(d, t)
+    best = max(loop_edge_t(xa, ya), key=lambda bt: abs(bt[1]))
+    e = lead_lag.edge(d, t)
+    assert e["t"] == round(best[1], 2) and e["lag"] == 3 and e["verdict"] == "EDGE"
