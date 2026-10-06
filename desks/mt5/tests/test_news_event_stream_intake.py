@@ -212,3 +212,26 @@ def test_first_sight_of_a_ground_does_not_replay_its_history(desk: Path) -> None
     os.utime(stale, (old, old))
     out = nes.run(budget_s=0)
     assert out["items_new"] == 5
+
+
+def test_donated_rows_carry_provenance_for_the_mining_registry(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    got: list[dict[str, Any]] = []
+
+    class Reg:
+        def remember(self, *a: Any, **k: Any) -> str:
+            return "m1"
+
+        def record_discovery(self, **k: Any) -> tuple[str, bool]:
+            got.append(k)
+            return "d1", True
+
+    monkeypatch.setattr(nes, "_registry", lambda: Reg())
+    event = {"event_id": "ev1", "source_id": "gdelt_translingual", "kind": "war_escalation"}
+    deep = {"causal": [{"mechanism": "risk-off", "asset_class": "metals", "horizon": "1d"}]}
+    out = nes.record_deep(event, deep, [])
+    assert out["discoveries"] == 1
+    prov = got[0]["payload"]["provenance"]
+    assert prov == {"organ": "news_event_stream", "use": "deep_lane",
+                    "source_id": "gdelt_translingual_country"}
+    assert got[0]["payload"]["origin_source_id"] == "gdelt_translingual_country"
