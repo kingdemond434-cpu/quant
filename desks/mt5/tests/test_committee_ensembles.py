@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -527,6 +528,7 @@ def _fake_committee(forensic_unique: bool):
     first = {c: ens.seats_of(c)[0].name for c in ens.COMMITTEES}
 
     def run_one(name, subjects, traps, examined_all, state, share_s, now_ts, bank):
+        time.sleep(0.003)                  # a pass that took no measurable time moves no budget
         if name == ens.FORENSIC:
             keys = [f"forensic-{i}" if forensic_unique else f"{ens.SCIENTIFIC}-{i}"
                     for i in range(5)]
