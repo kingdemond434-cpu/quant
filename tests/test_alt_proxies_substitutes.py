@@ -348,9 +348,21 @@ def test_reviewed_terms_carry_evidence() -> None:
     assert set(A.TERMS_EVIDENCE) <= set(A.TERMS)
     for sid, ev in A.TERMS_EVIDENCE.items():
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
-        assert ev["robots"] and ev["checked_at"] == "2026-09-30", sid
+        # 2026-09-30 is the original review; 2026-10-06 the re-read of SGE's terms (refused).
+        assert ev["robots"] and ev["checked_at"] in ("2026-09-30", "2026-10-06"), sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
     assert reviewed == {"cn_nbs_retail", *NEW_SUBSTITUTES}
+
+
+def test_sge_terms_are_refused_and_the_gate_governs_the_whole_host() -> None:
+    assert A.TERMS["cn_sge_premium"][0] == "refused"
+    assert "no institution or individual may disseminate" in (
+        A.TERMS_EVIDENCE["cn_sge_premium"]["terms_quote"])
+    for url in ("https://www.sge.com.cn/graph/quotations", "https://en.sge.com.cn/data_Licensed",
+                "https://www.sge.com.cn/sjzx/mrhq"):
+        assert A.terms_gate(url)[0] == "refused", url
+    assert A.terms_gate("https://example.org/data.csv")[0] == "ungoverned"
+    assert A.terms_gate("no_such_row")[0] == "to_confirm"            # fail closed
 
 
 def test_a_to_confirm_source_is_never_fetched(tmp_path: Path) -> None:

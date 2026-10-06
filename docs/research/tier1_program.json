@@ -221,7 +221,7 @@
     "desks/mt5/research/lake_promote.py:75-135 -- THE GAP CLOSED: the row read 'Nothing on the tree called promote'. It does now, hourly, over the intelligence corpus (MEASURED)",
     "desks/mt5/reports/LAKE_PROMOTION.json -- MEASURED: 400 files, 18,079 bronze rows, 0 promoted to silver, with the single refusal reason written out ('no resolvable event_time ... REFUSED rather than invented'). A promoter that refuses everything and says why is a measurement; one that guessed a timestamp would be lookahead (MEASURED)",
     "desks/mt5/reports/PIT_CENSUS.json -- the stamped-fraction census behind the pit_high_water ratchet (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:1554 `lake_promote` and :3852 its _costed entry (MEASURED)"
+    "desks/mt5/research/hourly_cycle.py:1554 `lake_promote` and :3856 its _costed entry (MEASURED)"
    ],
    "scheduled_by": "hourly_cycle:lake_promote, hourly_cycle:pit_canaries, hourly_cycle:time_joins",
    "artifact": "desks/mt5/reports/LAKE_PROMOTION.json + desks/mt5/reports/PIT_CENSUS.json",
@@ -1135,7 +1135,7 @@
     "desks/mt5/research/capacity.py:110-121 `capacity_curve` -- the over-policy multiple at every rung of the equity ladder: capacity as a FUNCTION of capital, not a scalar (MEASURED)",
     "desks/mt5/research/capacity.py:232-260 `elog_at_capital` -- Elog(C) per alpha: each sleeve's expected log growth walked up decade rungs of account equity, so the desk can say which edge dies as the account grows (MEASURED)",
     "desks/mt5/reports/CAPACITY.json -- 31 rows, each carrying q_target, min_lot_risk_eur, floor_binding_below_eur, over_policy_now, headroom_multiple, ceiling_eur and `elog_at_capital`. Every ceiling on this host reads UNMEASURED with its reason stated in full ('market impact needs realised fills and matched_fills is 0; a ceiling from an unvalidated cost model would be believed and should not be') -- a verdict, not a zero (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:3970 `_costed(\"capacity\", ...)` (MEASURED)"
+    "desks/mt5/research/hourly_cycle.py:3974 `_costed(\"capacity\", ...)` (MEASURED)"
    ],
    "scheduled_by": "hourly_cycle:capacity",
    "artifact": "desks/mt5/reports/CAPACITY.json (`rows[].elog_at_capital`, `ceiling_status`, `headroom_multiple`, per-sleeve floor equity)",
@@ -1944,7 +1944,7 @@
    "evidence": [
     "libs/research/alpha_rl.py -- Q(partial spec, next decision) over the alpha-construction MDP, with a replay buffer, an epsilon floor, and a reward that is the book's measured marginal dE[log W]; it refuses to learn from an unmeasured book (MEASURED)",
     "desks/mt5/research/alpha_rl_run.py:1-184 -- the runner: a wall-clock budget, episodes reported against episodes requested, and UNMEASURED with no episode run when the allocator artifact is absent (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:1952-1970 `alpha_rl` and :3902 `_costed(\"alpha_rl\", alpha_rl)` -- THE GAP CLOSED. The row's own words were 'SEQUENTIAL CONTROL NOW EXISTS AND IS MEASURED; NOTHING RUNS IT' (MEASURED)",
+    "desks/mt5/research/hourly_cycle.py:1952-1970 `alpha_rl` and :3906 `_costed(\"alpha_rl\", alpha_rl)` -- THE GAP CLOSED. The row's own words were 'SEQUENTIAL CONTROL NOW EXISTS AND IS MEASURED; NOTHING RUNS IT' (MEASURED)",
     "desks/mt5/research/merge_hypotheses.py:80-115 `alpha_rl_family_values` -- THE CONSUMER. Only rows whose prefix is EMPTY are read, because those are the only values about a family rather than about a family conditioned on a symbol chosen later; a non-MEASURED table returns nothing at all (MEASURED)",
     "desks/mt5/research/merge_hypotheses.py:146-160 `breadth_order` -- the learned family value breaks the tie between families judged equally often per docket row. It re-orders and REMOVES NOTHING: a family the agent has never valued sorts at 0.0, the neutral point of a signed dE[log W] (MEASURED)",
     "desks/mt5/reports/ALPHA_RL.json + desks/mt5/reports/EVOLUTION.json (MEASURED)"
@@ -2424,7 +2424,7 @@
     "scripts/gate_attestation.py:171 -- tested_code_hash recorded on every attestation",
     "desks/mt5/scripts/Adopt-And-Seal.ps1:291 -- the seal publishes the bit in the same act that seals",
     "scripts/check_closed_loop.py:127 -- release_authority() reads RELEASE_AUTHORITY.json and takes its clauses as the basis for tested/sealed/running",
-    "desks/mt5/research/hourly_cycle.py:2819 -- leg release_authority",
+    "desks/mt5/research/hourly_cycle.py:2823 -- leg release_authority",
     "libs/research/layers.py:176 -- layer meta",
     "desks/mt5/tests/test_blueprint_b_rows.py:63 -- the bit is false unless all three clauses hold"
    ],
@@ -2451,7 +2451,7 @@
     "desks/mt5/research/asia_plane.py:114 -- _have_data() joins on available_time before a source counts as data the desk holds",
     "scripts/check_pit_canaries.py:95 -- plant_in_lake(): past and future canary series, with sidecars, in the lake consumers actually read",
     "scripts/check_pit_canaries.py:118 -- ask_consumers(): every lake consumer is asked whether it can see the future row",
-    "desks/mt5/research/hourly_cycle.py:2803 -- leg pit_canaries",
+    "desks/mt5/research/hourly_cycle.py:2807 -- leg pit_canaries",
     "desks/mt5/tests/test_blueprint_b_rows.py:25 -- future withheld, past visible, unstamped visible and counted"
    ],
    "scheduled_by": "hourly_cycle:pit_canaries",
@@ -2475,7 +2475,7 @@
     "desks/mt5/research/regime_hierarchy.py:201 -- _liquidity(): the instrument's own spread/range percentiles against its own history",
     "desks/mt5/research/regime_hierarchy.py:242 -- _crowding(): share of variance explained by the asset class's first principal component",
     "desks/mt5/research/pf_allocator.py:1024 -- _regime_hierarchy_report(): recorded beside the state vector, sizing nothing",
-    "desks/mt5/research/hourly_cycle.py:2821 -- leg regime_hierarchy",
+    "desks/mt5/research/hourly_cycle.py:2825 -- leg regime_hierarchy",
     "desks/mt5/tests/test_blueprint_b_rows.py:142 -- the shrink borrows more from the class the fewer days a symbol has"
    ],
    "scheduled_by": "hourly_cycle:regime_hierarchy",
@@ -2498,7 +2498,7 @@
     "desks/mt5/research/representation_discovery.py:231 -- _stability(): direction and mutual information in each HALF of the test slice",
     "desks/mt5/research/representation_discovery.py:275 -- _subspace_stability(): principal angles between the embedding refitted on the two halves of TRAIN",
     "desks/mt5/research/representation_discovery.py:648 -- donate(): stable directional representations leave as cells through proposer_common's stamped contract",
-    "desks/mt5/research/hourly_cycle.py:2833 -- leg representation_discovery",
+    "desks/mt5/research/hourly_cycle.py:2837 -- leg representation_discovery",
     "desks/mt5/tests/test_blueprint_b_rows.py:157 -- a sign flip between halves is not stable"
    ],
    "scheduled_by": "hourly_cycle:representation_discovery",
@@ -2543,7 +2543,7 @@
    "evidence": [
     "desks/mt5/research/research_tree.py:71 -- the checkpointed tree's artifact",
     "desks/mt5/research/research_tree.py:578 -- _donate(): falsifier, state-variant, cross-market and execution-variant nodes leave as cells",
-    "desks/mt5/research/hourly_cycle.py:2831 -- leg research_tree",
+    "desks/mt5/research/hourly_cycle.py:2835 -- leg research_tree",
     "desks/mt5/research/evig_acquisition.py:169 -- the tree's nodes are priced against the arms and the cells in one acquisition"
    ],
    "scheduled_by": "hourly_cycle:research_tree",
@@ -2567,7 +2567,7 @@
     "desks/mt5/research/scientist_standings.py:176 -- score_of(): the consumer helper",
     "desks/mt5/research/frontier_ceo.py:382 -- the docket's rank breaks ties on the proposing scientist's live score",
     "desks/mt5/research/scientist_tournament.py:282 -- the panel's subject queue is ordered by the same score",
-    "desks/mt5/research/hourly_cycle.py:2827 -- leg scientist_standings",
+    "desks/mt5/research/hourly_cycle.py:2831 -- leg scientist_standings",
     "desks/mt5/tests/test_blueprint_b_rows.py:179 -- the leader ranks first and an unmeasured seat keeps a share"
    ],
    "scheduled_by": "hourly_cycle:scientist_standings,MT5-ScientistTournament",
@@ -2590,7 +2590,7 @@
     "desks/mt5/research/residual_map.py:192 -- build(): unexplained P&L, dispersion gaps, calibration holes and execution anomalies, ranked by magnitude",
     "desks/mt5/research/residual_map.py:240 -- load_prior(): the per-symbol search weights, floored so nothing is excluded",
     "desks/mt5/research/unknown_unknowns.py:103 -- the exogenous search visits the instruments the desk got most wrong first",
-    "desks/mt5/research/hourly_cycle.py:2823 -- leg residual_map",
+    "desks/mt5/research/hourly_cycle.py:2827 -- leg residual_map",
     "desks/mt5/tests/test_blueprint_b_rows.py:199 -- a well-explained symbol keeps the floor and stays in the search"
    ],
    "scheduled_by": "hourly_cycle:residual_map",
@@ -2613,7 +2613,7 @@
     "desks/mt5/research/frontier_ceo.py:62 -- _served_by_gauntlet(): the authority claim is MEASURED from the scheduler's own order record, never asserted",
     "desks/mt5/scripts/external_gauntlet.py:2857 -- the SEALED scheduler sorts eligible specs by _ceo_rank and counts the docket's cells it placed first",
     "desks/mt5/scripts/external_gauntlet.py:2862 -- it writes that count to reports/GAUNTLET_ORDER.json every sweep",
-    "desks/mt5/research/hourly_cycle.py:2829 -- leg frontier_ceo",
+    "desks/mt5/research/hourly_cycle.py:2833 -- leg frontier_ceo",
     "desks/mt5/research/evig_acquisition.py:169 -- the docket's cells are priced against the bandit's arms in one acquisition"
    ],
    "scheduled_by": "hourly_cycle:frontier_ceo,MT5-CEODocket",
@@ -2637,7 +2637,7 @@
     "desks/mt5/research/failure_prior.py:190 -- multiplier_for(): a two-sided multiplier clipped to [0.5, 2.0], never a veto",
     "desks/mt5/research/miner_candidate_compiler.py:1342 -- every compiled candidate is stamped with the prior and a reopen flag, beside prior_failures_in_region",
     "libs/research/graveyard_model.py:257 -- survival_by(): the per-level survival counts both fits read",
-    "desks/mt5/research/hourly_cycle.py:2825 -- leg failure_prior",
+    "desks/mt5/research/hourly_cycle.py:2829 -- leg failure_prior",
     "desks/mt5/tests/test_blueprint_b_rows.py:217 -- the multiplier is symmetric and an unknown structure is never charged"
    ],
    "scheduled_by": "hourly_cycle:failure_prior",
@@ -2661,7 +2661,7 @@
     "desks/mt5/research/evig_acquisition.py:216 -- leg_factors(): the per-leg multiplier, >= 1.0 by construction",
     "desks/mt5/research/cycle_pricing.py:263 -- _evig_prices(): the fourth price source",
     "desks/mt5/research/cycle_pricing.py:301 -- the blend weights; cycle_pricing sets every leg's seconds and the order they run in",
-    "desks/mt5/research/hourly_cycle.py:2836 -- leg evig_acquisition",
+    "desks/mt5/research/hourly_cycle.py:2840 -- leg evig_acquisition",
     "desks/mt5/tests/test_blueprint_b_rows.py:230 -- no leg factor is ever a cut"
    ],
    "scheduled_by": "hourly_cycle:evig_acquisition",
@@ -2686,7 +2686,7 @@
     "desks/mt5/research/research_bandit.py:89 -- the published report is stamped from the RUN, not from the three-key budget extract that was overwriting it",
     "desks/mt5/research/mutation_yield.py:290 -- realised_credit_by_generator(): live R joined to the generator that made the sleeve",
     "scripts/check_closed_loop.py:213 -- research.delayed_truth_credit_live reads the basis and the applied flag",
-    "desks/mt5/research/hourly_cycle.py:2808 -- leg credit_assignment"
+    "desks/mt5/research/hourly_cycle.py:2812 -- leg credit_assignment"
    ],
    "scheduled_by": "hourly_cycle:credit_assignment,hourly_cycle:mutation_yield",
    "artifact": "desks/mt5/reports/CREDIT_ASSIGNMENT.json",
@@ -3376,7 +3376,7 @@
     "desks/mt5/research/event_response_atlas.py -> reports/EVENT_RESPONSE_ATLAS.json -- MEASURED: 2,010 cells across the declared `horizons` and `conditioners`, with per-kind event and placement counts, a threshold t, the clearing set and the donated rows (MEASURED)",
     "desks/mt5/reports/EVENT_RESPONSE_ATLAS.json -- the reaction CUBE the row asked for: response by release family x instrument x horizon x conditioner, with `unmeasured` naming every cell it could not fill (MEASURED)",
     "desks/mt5/research/event_surprise.py -> reports/EVENT_SURPRISE.json -- the conditioning variable itself: surprise z per calendar event with `by_bucket`, `regime_timeline`, `cells` and `n_clearing`; UNMEASURED on this host with the pair count that made it so (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:2947 event_surprise leg, :2978 event_response_atlas leg, daily_cycle:hour_surface (MEASURED)",
+    "desks/mt5/research/hourly_cycle.py:2951 event_surprise leg, :2982 event_response_atlas leg, daily_cycle:hour_surface (MEASURED)",
     "desks/mt5/reports/hour_surface.json -- the hour-of-day surface the family lane reads (MEASURED)"
    ],
    "scheduled_by": "hourly_cycle:event_response_atlas, hourly_cycle:event_surprise, hourly_cycle:news_event_stream, hourly_cycle:event_sleeves, daily_cycle:hour_surface",
@@ -3427,7 +3427,7 @@
     "desks/mt5/data/excursions.jsonl + daily_cycle:excursions -- the MFE/MAE dataset the path model is fitted on (MEASURED)",
     "desks/mt5/research/net_edge_spine.py:184-286 -- ONE objective the four terms meet in: gross edge minus spread, financing, commission and the multiplicity charge, per cell, ranked (MEASURED)",
     "desks/mt5/reports/execution_resolver.json -- entry/exit mode chosen per intent under that objective, with the ranking published (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:3306 execution_alpha leg, :3543 net_edge leg, hourly_cycle:exit_study, hourly_cycle:markout, hourly_cycle:cost_to_edge (MEASURED)"
+    "desks/mt5/research/hourly_cycle.py:3310 execution_alpha leg, :3547 net_edge leg, hourly_cycle:exit_study, hourly_cycle:markout, hourly_cycle:cost_to_edge (MEASURED)"
    ],
    "scheduled_by": "hourly_cycle:execution_alpha, hourly_cycle:net_edge, hourly_cycle:exit_study, hourly_cycle:markout, hourly_cycle:cost_to_edge, daily_cycle:excursions",
    "artifact": "desks/mt5/reports/EXECUTION_ALPHA.json + desks/mt5/reports/NET_EDGE.json + desks/mt5/reports/ALPHA_CAPTURE.json",
@@ -3450,7 +3450,7 @@
     "desks/mt5/research/blind_reviewer.py:407-413 -- THE MOUNT, and the reason C14 is not a gauntlet stage: external_gauntlet is SEALED. The reviewer rebuilds the cell's evaluate closure, replays it, and injects that closure into hostile.run_all (MEASURED)",
     "desks/mt5/research/blind_reviewer.py:420-438 -- the verdict: a reproduction whose t falls below half the certified t, OR a hostile roster that BLOCKS, is recorded as such with `blocked_by` naming which adversaries fired (MEASURED)",
     "desks/mt5/research/blind_reviewer.py:95 OUT = reports/BLIND_REVIEW.json and :655-684 main (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:2880 blind_reviewer leg; hourly_cycle:adversaries and hourly_cycle:falsifier_run for the independent roster (MEASURED)",
+    "desks/mt5/research/hourly_cycle.py:2884 blind_reviewer leg; hourly_cycle:adversaries and hourly_cycle:falsifier_run for the independent roster (MEASURED)",
     "desks/mt5/reports/ADVERSARY.json -- the adversary lab's own artifact (MEASURED)"
    ],
    "scheduled_by": "hourly_cycle:blind_reviewer, hourly_cycle:adversaries, hourly_cycle:falsifier_run, hourly_cycle:external_gauntlet, MT5-Gauntlet",
@@ -3991,7 +3991,7 @@
     "desks/mt5/research/algorithm_db.py:133 CLASSES -- search policy, regime detector, execution model, cost model, validator battery, each with a declared schema and its own scoring organ",
     "desks/mt5/research/algorithm_db.py:255 champion; desks/mt5/research/algorithm_db.py:273 evolve (mutation/crossover with lineage)",
     "desks/mt5/research/alpha_evolution.py:132 search_policy() reads the champion config when the research-evolution archive names no variant",
-    "desks/mt5/research/hourly_cycle.py:2780 the algorithm_db leg",
+    "desks/mt5/research/hourly_cycle.py:2784 the algorithm_db leg",
     "libs/research/layers.py the meta-layer entry for algorithm_db"
    ],
    "scheduled_by": "hourly_cycle:algorithm_db",
@@ -4359,7 +4359,7 @@
     "desks/mt5/research/attribution_reconcile.py:105 (the roster: sleeves.json, survivor keys, sleeve_registry and promoter.GOLD_SLEEVE_NAMES as the gateway's own window names)",
     "desks/mt5/research/attribution_reconcile.py:178 (three unambiguous passes: EXACT, unique PREFIX, tp/sl GEOMETRY; AMBIGUOUS publishes its candidates rather than guessing)",
     "desks/mt5/research/tier1_scorecard.py:59 + :301 (the scorecard's live-attribution row now PREFERS the reconciled number and keeps the exact-name figure beside it)",
-    "desks/mt5/research/hourly_cycle.py:2721 (leg attribution_reconcile)",
+    "desks/mt5/research/hourly_cycle.py:2725 (leg attribution_reconcile)",
     "libs/research/layers.py:177 (layer meta)",
     "desks/mt5/tests/test_attribution_reconcile.py (8 tests: truncation recovered only when unique, short labels never matched, bracket prints joined on the terminal's own price, unreachable deals published BY NAME, absent ledger UNMEASURED)"
    ],
@@ -4920,7 +4920,7 @@
     "libs/moat/registry.py:682 claim_candidates -- a department bids compute",
     "desks/mt5/research/moat_candidate_compiler.py:260 ready() -- READY_ALL and READY_PRIORITY",
     "desks/mt5/research/moat_candidate_compiler.py:279 claim_and_donate -- every department bids and the claims are donated into the intake",
-    "desks/mt5/research/hourly_cycle.py:2774 the moat_candidate_compiler leg"
+    "desks/mt5/research/hourly_cycle.py:2778 the moat_candidate_compiler leg"
    ],
    "scheduled_by": "hourly_cycle:moat_candidate_compiler, hourly_cycle:registry_sync",
    "artifact": "desks/mt5/reports/MOAT_FACTORY.json and desks/mt5/reports/RESEARCH_REGISTRY.json",
@@ -5579,7 +5579,7 @@
     "desks/mt5/research/news_event_stream.py:482 shock_model; :513 liquidity_model; :555 execution_recommendations",
     "desks/mt5/research/news_event_stream.py:624 deep_lane -- transmission, analogues, positioning, scenario tree",
     "desks/mt5/research/event_sleeves.py -- the event-conditioned sleeve families, validated before they trade",
-    "desks/mt5/research/hourly_cycle.py:2922 the news_event_stream leg"
+    "desks/mt5/research/hourly_cycle.py:2926 the news_event_stream leg"
    ],
    "scheduled_by": "hourly_cycle:news_event_stream, hourly_cycle:event_sleeves, hourly_cycle:event_response_atlas",
    "artifact": "desks/mt5/reports/NEWS_EVENT_STREAM.json and desks/mt5/data/world_state.json",
@@ -5603,7 +5603,7 @@
     "desks/mt5/research/shadow_institutional.py:887 disagreement (the disagreement dataset); :980 vault_manifest (synthetic proprietary datasets, with vintages); :1040 gap_map (the capability gap map)",
     "desks/mt5/research/latency_lab.py:421 edge_after_latency; :483 latency_verdict -- auto-reject below the desk's measured latency",
     "desks/mt5/research/latent_actors.py -- latent actor inference with UNKNOWN_ACTOR classes",
-    "desks/mt5/research/hourly_cycle.py:3424 the shadow_institutional leg"
+    "desks/mt5/research/hourly_cycle.py:3428 the shadow_institutional leg"
    ],
    "scheduled_by": "hourly_cycle:shadow_institutional, hourly_cycle:latency_lab, hourly_cycle:latent_actors",
    "artifact": "desks/mt5/reports/SHADOW_INSTITUTIONAL.json and desks/mt5/reports/LATENCY_LAB.json",
@@ -5807,7 +5807,7 @@
     "desks/mt5/research/news_event_stream.py:925 - the resident: precision-weighted logit update m += k*w/(tau+w), tau += w on a 6h relaxation half-life, so a follow-up headline moves the posterior AGAIN and by LESS (MEASURED in the test)",
     "tests/research/test_event_ontology.py:43 tests green and desks/mt5/tests/test_news_event_stream.py:22 tests green (MEASURED)",
     "libs/research/layers.py:169 - the leg is declared in the INFORMATION layer",
-    "desks/mt5/research/hourly_cycle.py:2545 - the hourly leg, run with --once"
+    "desks/mt5/research/hourly_cycle.py:2549 - the hourly leg, run with --once"
    ],
    "scheduled_by": "hourly_cycle:news_event_stream",
    "artifact": "desks/mt5/reports/NEWS_EVENT_STREAM.json, desks/mt5/data/world_state.json, desks/mt5/data/allocator_resolve_request.json, desks/mt5/data/events/events.jsonl",
@@ -5827,7 +5827,7 @@
     "desks/mt5/tests/test_event_sleeves.py:24 tests green, asserting hosting against the LIVE mt5desk.families_orthogonal signature rather than a copy of it (MEASURED)",
     "desks/mt5/research/regime_router.py:633 - the p_alpha_positive_now convention these rows follow",
     "libs/research/layers.py:169 - declared in the PREDICTION layer",
-    "desks/mt5/research/hourly_cycle.py:2550 - the hourly leg"
+    "desks/mt5/research/hourly_cycle.py:2554 - the hourly leg"
    ],
    "scheduled_by": "hourly_cycle:event_sleeves",
    "artifact": "desks/mt5/data/event_sleeve_posteriors.json, desks/mt5/reports/EVENT_SLEEVES.json, desks/mt5/data/program_candidates.jsonl",
@@ -6203,7 +6203,7 @@
     "desks/mt5/research/math_lab.py:82",
     "desks/mt5/research/physics_lab.py:180",
     "desks/mt5/tests/test_mathlab_physics.py",
-    "desks/mt5/research/hourly_cycle.py:3192",
+    "desks/mt5/research/hourly_cycle.py:3196",
     "libs/research/layers.py:201"
    ],
    "scheduled_by": "hourly_cycle:math_lab (mathlab department resident, MT5-Dept-Mathlab) AND hourly_cycle:physics_lab (--once --budget-s 600, layer prediction)",
@@ -6235,7 +6235,7 @@
     "libs/research/adapters/pysindy.py",
     "libs/research/adapters/sbi.py",
     "desks/mt5/tests/test_mathlab_physics.py",
-    "desks/mt5/research/hourly_cycle.py:3192"
+    "desks/mt5/research/hourly_cycle.py:3196"
    ],
    "scheduled_by": "hourly_cycle:physics_lab (--once --budget-s 600, mathlab department, layer prediction); the subset that fits the math_lab budget also runs in hourly_cycle:math_lab",
    "artifact": "desks/mt5/reports/PHYSICS_LAB.json (`engines` block: one row per engine with status, trials, findings, unmeasured and compute_s)",
@@ -6267,7 +6267,7 @@
     "desks/mt5/research/mathlab/institution.py:764",
     "desks/mt5/research/physics_lab.py:489",
     "desks/mt5/tests/test_mathlab_institution.py",
-    "desks/mt5/research/hourly_cycle.py:3192",
+    "desks/mt5/research/hourly_cycle.py:3196",
     "libs/research/layers.py:201"
    ],
    "scheduled_by": "hourly_cycle:physics_lab (mathlab department, --once --budget-s 600, layer prediction)",
@@ -6300,7 +6300,7 @@
     "desks/mt5/side_channels/run_external_backtest.py:426",
     "desks/mt5/side_channels/run_external_backtest.py:554",
     "desks/mt5/research/hourly_cycle.py:789",
-    "desks/mt5/research/hourly_cycle.py:2729",
+    "desks/mt5/research/hourly_cycle.py:2733",
     "libs/research/layers.py:181",
     "tests/research/test_market_constitution.py:236",
     "desks/mt5/tests/test_market_constitution_organ.py:149",
@@ -6351,7 +6351,7 @@
     "desks/mt5/research/archaeology/sares.py:99",
     "desks/mt5/research/archaeology/sares.py:106",
     "desks/mt5/research/archaeology/sares.py:1600",
-    "desks/mt5/research/hourly_cycle.py:2884",
+    "desks/mt5/research/hourly_cycle.py:2888",
     "desks/mt5/research/hourly_cycle.py:754",
     "libs/research/layers.py:240",
     "desks/mt5/tests/test_sares.py"
@@ -6384,7 +6384,7 @@
     "desks/mt5/research/feed_clock_lab.py:731",
     "desks/mt5/mt5desk/decision_core.py:1444",
     "desks/mt5/research/hourly_cycle.py:793",
-    "desks/mt5/research/hourly_cycle.py:3015",
+    "desks/mt5/research/hourly_cycle.py:3019",
     "libs/research/layers.py:275",
     "tests/research/test_feed_observatory.py",
     "desks/mt5/tests/test_feed_clock_lab.py:162"
@@ -6412,7 +6412,7 @@
     "desks/mt5/research/feed_clock_lab.py:686",
     "desks/mt5/research/feed_clock_lab.py:817",
     "desks/mt5/research/hourly_cycle.py:793",
-    "desks/mt5/research/hourly_cycle.py:3022",
+    "desks/mt5/research/hourly_cycle.py:3026",
     "libs/research/layers.py:275",
     "tests/research/test_impact_lab.py:80",
     "desks/mt5/tests/test_feed_clock_lab.py:218"
@@ -6522,7 +6522,7 @@
     "libs/research/licence_reader.py:460",
     "libs/research/trial_ledger.py",
     "libs/moat/registry.py",
-    "desks/mt5/research/hourly_cycle.py:3071",
+    "desks/mt5/research/hourly_cycle.py:3075",
     "libs/research/layers.py:270",
     "tests/research/test_adapters.py",
     "tests/research/test_licence_reader.py",
@@ -6704,7 +6704,7 @@
     "desks/mt5/research/digital_twin.py:231 - the window: M5 where held else H1; spread/OFI/flicker per bar from the tick tape",
     "desks/mt5/research/digital_twin.py:280 - summary -> posterior -> checks -> score -> pre-registrations -> store",
     "desks/mt5/research/digital_twin.py:170 - the rotation cursor over the hypothesis-lane universe, never a symbol list",
-    "desks/mt5/research/hourly_cycle.py:3308 - the clock: execution department, 600 s",
+    "desks/mt5/research/hourly_cycle.py:3312 - the clock: execution department, 600 s",
     "libs/research/layers.py:112 - the layer",
     "tests/research/test_digital_twin.py - a planted world is recovered inside the 95% credible intervals from its own tape; the returns-only match is named RETURNS_ONLY:spread_log_mean; a tape without sided quotes is REALISTIC_PARTIAL (MEASURED)",
     "desks/mt5/tests/test_digital_twin.py - rotation cursor advances and wraps over the hunt universe and never reaches an equity; --dry-run writes no store, cursor, report or registry row (MEASURED)"
@@ -6877,8 +6877,8 @@
     "desks/mt5/research/expression_factory.py:2096",
     "desks/mt5/research/hourly_cycle.py:813",
     "desks/mt5/research/hourly_cycle.py:1177",
-    "desks/mt5/research/hourly_cycle.py:2979",
-    "desks/mt5/research/hourly_cycle.py:3558",
+    "desks/mt5/research/hourly_cycle.py:2983",
+    "desks/mt5/research/hourly_cycle.py:3562",
     "libs/research/layers.py:198",
     "libs/ops/events.py:43",
     "libs/ops/events.py:54",
@@ -7062,7 +7062,7 @@
     "desks/mt5/research/experiment_spine.py:301",
     "libs/research/experiment_spec.py:633",
     "desks/mt5/tests/test_experiment_spine.py:72",
-    "desks/mt5/research/hourly_cycle.py:3028"
+    "desks/mt5/research/hourly_cycle.py:3032"
    ],
    "scheduled_by": "hourly_cycle:experiment_spine",
    "artifact": "desks/mt5/reports/EXPERIMENT_SPINE.json",
@@ -7141,7 +7141,7 @@
     "libs/research/trial_ledger.py:338",
     "libs/ops/compute_ledger.py:245",
     "desks/mt5/tests/test_experiment_spine.py:172",
-    "desks/mt5/research/hourly_cycle.py:3028"
+    "desks/mt5/research/hourly_cycle.py:3032"
    ],
    "scheduled_by": "hourly_cycle:experiment_spine",
    "artifact": "desks/mt5/reports/RESEARCH_FUNNEL.json",
@@ -7582,7 +7582,7 @@
    "item": "THE ARTIFACT AND ITS CLOCK. desks/mt5/reports/NET_EDGE.json publishes net versus gross per FAMILY and per INSTRUMENT, the sign-flip count, capacity per sleeve (the size at which net decays to zero, UNMEASURED with its reason while matched_fills is 0 -- which is not the same as unlimited), the cost model's own prediction error, and the ranked list of what the desk would trade if it ranked purely on net. Wired as leg `net_edge` in hourly_cycle.py (execution department, --once --budget-s 600, cap 700), layered `execution` in libs/research/layers.py LEG_LAYER, with the join file desks/mt5/data/net_edge_ranks.json for the three doors.",
    "evidence": [
     "desks/mt5/research/net_edge_spine.py:511",
-    "desks/mt5/research/hourly_cycle.py:3333",
+    "desks/mt5/research/hourly_cycle.py:3337",
     "libs/research/layers.py:347",
     "desks/mt5/tests/test_net_edge_spine.py:236"
    ],
@@ -7697,7 +7697,7 @@
     "desks/mt5/research/implementer.py:558 - _dispose re-imposes the CLI's own bars (25-char rejection, due date, resolvable commit, `disposed` stamp)",
     "desks/mt5/research/implementer.py:580 - _block: owner, next_action, blocker on a row that stays OPEN",
     "desks/mt5/research/implementer.py:914 - run: the pass, its two-phase budget, the artifact and the rendered page",
-    "desks/mt5/research/hourly_cycle.py:3147 - the leg",
+    "desks/mt5/research/hourly_cycle.py:3151 - the leg",
     "libs/research/layers.py:249 - the layer",
     "desks/mt5/tests/test_implementer.py:64 - every open row leaves the pass owned",
     "desks/mt5/research/implementer.py:478 - ledger_lock: the SAME advisory lock the CLI takes (R0623), rooted under the tree being written, refusing rather than writing around a wedged holder"
@@ -7745,7 +7745,7 @@
     "desks/mt5/research/conversion_maximiser.py:participation_ratio - effective breadth as the desk's own participation ratio, pinned against libs.risk.fx_exposure.effective_rank",
     "desks/mt5/research/conversion_maximiser.py:_keep_queued - an unrepaired row stays QUEUED with its blocker and owner; it is never parked in a siding",
     "desks/mt5/research/conversion_maximiser.py:oldest_unconverted - the age that separates a drain from a stall, published every pass",
-    "desks/mt5/research/hourly_cycle.py:3013 - the costed leg conversion_maximiser, --once --budget-s 900, after discovery_compiler",
+    "desks/mt5/research/hourly_cycle.py:3017 - the costed leg conversion_maximiser, --once --budget-s 900, after discovery_compiler",
     "libs/research/layers.py:240 - the prediction-layer entry, so the hour is attributable",
     "desks/mt5/tests/test_conversion_maximiser.py - 22 tests in tmp_path against a synthetic registry, universe and bars: a planted row of every blocker class leaves with a disposition (silent_drops == 0), nothing off-universe is converted, an equity is never bound into the hypothesis lane, H4 is built from H1 while M5 is never manufactured, the leftover is the next pass's first work, and a licence label never blocks a row"
    ],
@@ -7936,7 +7936,7 @@
     "desks/mt5/research/sandbox_runner.py:283 - plan_adapter: importable here, or in the shared venv, or a per-system venv -- three ways to be RUNNABLE instead of one",
     "tests/test_sandbox_federation.py:132 - pip failures classified final vs retryable, a settled row never retried, backoff doubling, every unpinned system names its cover"
    ],
-   "scheduled_by": "leg:sandbox_provision (desks/mt5/research/hourly_cycle.py:3370, hourly)",
+   "scheduled_by": "leg:sandbox_provision (desks/mt5/research/hourly_cycle.py:3374, hourly)",
    "artifact": "desks/mt5/reports/SANDBOX_PROVISION.json + desks/mt5/data/sandbox_install_ledger.json",
    "consumer": "desks/mt5/research/sandbox_runner.py (availability and the interpreter), desks/mt5/research/sandbox_roster.py (the disposition column), scripts/check_sandbox_liveness.py (a stale UNMEASURED reason is a fence failure)",
    "landed": [
@@ -7960,7 +7960,7 @@
     "tests/test_sandbox_federation.py:71 - a simulated day of hourly passes leaves no runnable system past its window; the duplicate reads 0 marginal breadth and the orthogonal reads a direction",
     "desks/mt5/research/sandbox_runner.py:76 - rotation_extra + the seed-rotated frame head: the BUNDLE was the breadth cap (145 lane-eligible instruments, ten in the bundle, every adapter slicing its first MAX_SYMBOLS off the same ten), not the engines"
    ],
-   "scheduled_by": "leg:sandbox_runner (desks/mt5/research/hourly_cycle.py:3357, hourly)",
+   "scheduled_by": "leg:sandbox_runner (desks/mt5/research/hourly_cycle.py:3361, hourly)",
    "artifact": "desks/mt5/reports/SANDBOX_RUNNER.json (the rotation block: order, shares, scouts, ages, breadth)",
    "consumer": "scripts/check_sandbox_liveness.py, desks/mt5/research/sandbox_roster.py",
    "landed": [
@@ -8004,7 +8004,7 @@
     "docs/research/SANDBOX_ROSTER.md - the rendered table (DERIVED; never edited by hand)",
     "tests/test_sandbox_federation.py:266 - every seed, every adapter and every cell has exactly one row; every row carries the columns the question asked for; the Markdown names them all"
    ],
-   "scheduled_by": "leg:sandbox_roster (desks/mt5/research/hourly_cycle.py:3376, hourly)",
+   "scheduled_by": "leg:sandbox_roster (desks/mt5/research/hourly_cycle.py:3380, hourly)",
    "artifact": "desks/mt5/reports/SANDBOX_ROSTER.json + docs/research/SANDBOX_ROSTER.md",
    "consumer": "scripts/check_sandbox_liveness.py, any session asking whether the federation is real",
    "landed": [
@@ -8023,9 +8023,9 @@
     "desks/mt5/research/sandbox_runner.py:631 - the gain formula counts MEASURED research methods; ROUTE_KINDS and UNMEASURED still count zero",
     "libs/research/adapters/numerai_method.py:98 - the gauntlet exit: one candidate per model, family by the sign of the measured correlation, evidence carried",
     "libs/research/adapters/bridgewater_pat_aia.py:20 - STAGES measured against the tree; coverage donated as a representation instead of asserted as text",
-    "desks/mt5/research/hourly_cycle.py:3357 - the sandbox_runner leg passes --allow-network so the EDGAR cell's declared public source is reachable"
+    "desks/mt5/research/hourly_cycle.py:3361 - the sandbox_runner leg passes --allow-network so the EDGAR cell's declared public source is reachable"
    ],
-   "scheduled_by": "leg:sandbox_runner (desks/mt5/research/hourly_cycle.py:3357, hourly)",
+   "scheduled_by": "leg:sandbox_runner (desks/mt5/research/hourly_cycle.py:3361, hourly)",
    "artifact": "desks/mt5/reports/SANDBOX_RUNNER.json (systems_tried[].counts and ingested)",
    "consumer": "libs/moat/registry.py research_candidates -> desks/mt5/scripts/external_gauntlet.py",
    "landed": [
@@ -8046,7 +8046,7 @@
     "desks/mt5/research/cost_truth.py:353 - position_direction: long/short from the bracket, measured 112 SHORT at side==0 and 35 LONG at side==1 over the ledger",
     "desks/mt5/research/cost_truth.py:505 - compare: charged vs quoted vs realised, with the zero-median fallback to p90/live before a charge is called manufactured"
    ],
-   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3353, hourly)",
+   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3357, hourly)",
    "artifact": "desks/mt5/reports/COST_TRUTH.json + docs/research/COST_TRUTH.md",
    "consumer": "scripts/check_cost_truth.py (law gate) and desks/mt5/research/net_edge_spine.py through desks/mt5/reports/EXECUTION_COST_SURFACE.json",
    "landed": [
@@ -8067,7 +8067,7 @@
     "desks/mt5/research/net_edge_spine.py:341 - exec_cell_index, the consumer that reads it",
     "tests/research/test_cost_truth.py:1 - 32 cases in tmp_path, including the deferral, the zero floor and the two-sided re-judge"
    ],
-   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3353, hourly)",
+   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3357, hourly)",
    "artifact": "desks/mt5/reports/EXECUTION_COST_SURFACE.json (net_alpha[] with cost_basis)",
    "consumer": "desks/mt5/research/net_edge_spine.py:341 exec_cell_index -> spread_term",
    "landed": [
@@ -8088,7 +8088,7 @@
     "scripts/run_law_gate.py:221 - the fence in _STATE_FENCES",
     "desks/mt5/research/cost_truth.py:584 - rejudge, and cost_truth.py:660 missed_lines"
    ],
-   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3353, hourly)",
+   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3357, hourly)",
    "artifact": "desks/mt5/data/cost_truth_ratchet.json + the rejudge block of desks/mt5/reports/COST_TRUTH.json + desks/mt5/data/missed_growth.jsonl",
    "consumer": "scripts/run_law_gate.py:221 (state fences) and the intake, through restored cells",
    "landed": [
@@ -8110,7 +8110,7 @@
     "libs/ops/control_plane/edges.py:146 - the cost->net and venue-cost->cost-truth edges",
     "desks/mt5/tests/test_net_edge_spine.py:292 - the commission arithmetic, both numbers pinned"
    ],
-   "scheduled_by": "hourly_cycle:net_edge (desks/mt5/research/hourly_cycle.py:3339, hourly)",
+   "scheduled_by": "hourly_cycle:net_edge (desks/mt5/research/hourly_cycle.py:3343, hourly)",
    "artifact": "desks/mt5/reports/NET_EDGE.json + desks/mt5/reports/COST_SURFACE.json",
    "consumer": "desks/mt5/research/miner_candidate_compiler.py and forward_slot_ranker.py, through desks/mt5/data/net_edge_ranks.json",
    "landed": [
@@ -8130,7 +8130,7 @@
     "desks/mt5/scripts/repair_universe_spreads.py:119 - _verified, and the skip in run()",
     "tests/research/test_cost_truth.py:430 - TOWARD verified, AWAY refused, UNVERIFIED not applied, and an unreadable gate applying nothing"
    ],
-   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3353, hourly)",
+   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3357, hourly)",
    "artifact": "desks/mt5/data/spread_repair_verified.json + the spread_repair block of desks/mt5/reports/COST_TRUTH.json + docs/research/COST_TRUTH.md",
    "consumer": "desks/mt5/scripts/repair_universe_spreads.py --only-verified (task MT5-CostState)",
    "landed": [
@@ -8152,7 +8152,7 @@
     "scripts/run_law_gate.py:222 - the fence in _STATE_FENCES",
     "tests/scripts/test_check_cost_surface_reference.py:1 - both directions pinned"
    ],
-   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3353, hourly)",
+   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3357, hourly)",
    "artifact": "data/cost_surface_report.json + desks/mt5/data/cost_basis_ratchet.json",
    "consumer": "scripts/run_law_gate.py (state fences)",
    "landed": [
@@ -8174,12 +8174,12 @@
     "scripts/check_coverage_drain.py:109 - judge(): the three ratchets and the seeding exception",
     "scripts/run_law_gate.py:186 - the fence in the portable gate",
     "scripts/run_law_gate.py:286 - the --require-state half in the box gate",
-    "desks/mt5/research/hourly_cycle.py:3083 - the costed leg",
+    "desks/mt5/research/hourly_cycle.py:3087 - the costed leg",
     "libs/research/layers.py:266 - LEG_LAYER: information",
     "desks/mt5/tests/test_coverage_drain.py:1 - 48 tests",
     "tests/scripts/test_check_coverage_drain.py:1 - 24 tests, both failure directions pinned"
    ],
-   "scheduled_by": "hourly_cycle:coverage_drain (desks/mt5/research/hourly_cycle.py:3083, hourly)",
+   "scheduled_by": "hourly_cycle:coverage_drain (desks/mt5/research/hourly_cycle.py:3087, hourly)",
    "artifact": "desks/mt5/reports/COVERAGE_DRAIN.json + desks/mt5/data/coverage_drain_ledger.json",
    "consumer": "scripts/check_coverage_drain.py in scripts/run_law_gate.py (both halves); the drained rows feed research/moat_collectors.py and the deep-forest miner",
    "landed": [
@@ -8204,7 +8204,7 @@
     "desks/mt5/research/countries/east_africa/pack.py:1 - et/tz/ug",
     "desks/mt5/reports/regional_parity.json:1 - countries 81/81 answered"
    ],
-   "scheduled_by": "hourly_cycle:coverage_drain (desks/mt5/research/hourly_cycle.py:3083, hourly) verifies the packs' layers; scripts/check_regional_parity.py runs in scripts/run_law_gate.py",
+   "scheduled_by": "hourly_cycle:coverage_drain (desks/mt5/research/hourly_cycle.py:3087, hourly) verifies the packs' layers; scripts/check_regional_parity.py runs in scripts/run_law_gate.py",
    "artifact": "desks/mt5/reports/regional_parity.json",
    "consumer": "scripts/check_regional_parity.py (the NO_PACK fence) and research_roi.forest_allocation, which folds the published priority in as a bonus",
    "landed": [
@@ -8230,7 +8230,7 @@
     "desks/mt5/research/coverage_drain.py:1176 - ingestion_score() over the ten PUBLISHER_CLASSES",
     "scripts/check_coverage_drain.py:96 - PARITY_FLOORS, the three ratchets"
    ],
-   "scheduled_by": "hourly_cycle:coverage_drain (desks/mt5/research/hourly_cycle.py:3083, hourly)",
+   "scheduled_by": "hourly_cycle:coverage_drain (desks/mt5/research/hourly_cycle.py:3087, hourly)",
    "artifact": "desks/mt5/reports/COVERAGE_DRAIN.json (layers.packs, layers.totals, verdict)",
    "consumer": "scripts/check_coverage_drain.py publishes the largest gap every morning; libs/research/coverage.covered() consumes the same layer inventory",
    "landed": [
@@ -8285,11 +8285,11 @@
     "desks/mt5/research/queue_census.py:455 - verdict(): BREACH / PARKED / UNMEASURED",
     "scripts/check_no_queues.py:84 - build_report, and why STALE and DARK both fail",
     "scripts/run_law_gate.py:187 - the fence in _STATE_FENCES",
-    "desks/mt5/research/hourly_cycle.py:2723 - the _costed('queue_census') leg",
+    "desks/mt5/research/hourly_cycle.py:2727 - the _costed('queue_census') leg",
     "libs/research/layers.py:176 - LEG_LAYER queue_census = meta",
     "tests/scripts/test_check_no_queues.py:1 - 14 tests, including the owner's-cycle rule in both directions and the wiring assertions"
    ],
-   "scheduled_by": "hourly_cycle:queue_census (desks/mt5/research/hourly_cycle.py:2723, hourly, --once --budget-s 120)",
+   "scheduled_by": "hourly_cycle:queue_census (desks/mt5/research/hourly_cycle.py:2727, hourly, --once --budget-s 120)",
    "artifact": "desks/mt5/reports/QUEUE_CENSUS.json + desks/mt5/data/queue_census_history.jsonl",
    "consumer": "scripts/check_no_queues.py, registered in scripts/run_law_gate.py _STATE_FENCES",
    "landed": [
@@ -8313,11 +8313,11 @@
     "desks/mt5/research/certificate_truth.py:637 - CANON_EMPTY_WITH_RESTORABLE_EVIDENCE, the fatal kind that names the state nothing named",
     "desks/mt5/research/certificate_truth.py:1067 - lane_settled: an empty or degraded authority file never grounds a retirement",
     "desks/mt5/research/certificate_truth.py:383 - _scalp_declared: the scalp writer's own declaration backs its four clocks instead of leaving them UNPARSED for ever",
-    "desks/mt5/research/hourly_cycle.py:3306 - the _costed('certificate_truth') leg, --once --budget-s 120, repair on by default",
+    "desks/mt5/research/hourly_cycle.py:3310 - the _costed('certificate_truth') leg, --once --budget-s 120, repair on by default",
     "libs/research/layers.py:335 - LEG_LAYER certificate_truth = meta",
     "desks/mt5/tests/test_certificate_truth.py:362 - 15 tests, five of them new: the wipe repaired, the expired retirement restored and the banned one never, the drift made fatal and closed, the scalp declaration, and the source-level guard on the fork"
    ],
-   "scheduled_by": "hourly_cycle:certificate_truth (desks/mt5/research/hourly_cycle.py:3306, hourly, --once --budget-s 120)",
+   "scheduled_by": "hourly_cycle:certificate_truth (desks/mt5/research/hourly_cycle.py:3310, hourly, --once --budget-s 120)",
    "artifact": "desks/mt5/reports/CERTIFICATE_TRUTH.json (repaired block) + desks/mt5/data/certificate_history.jsonl",
    "consumer": "scripts/check_certificate_truth.py, registered in scripts/run_law_gate.py:163 and :272 (--require-state on the box)",
    "landed": [
@@ -8402,7 +8402,7 @@
     "libs/ops/producer_census.py:550 -- seat_rows(); libs/ops/producer_census.py:626 -- component_rows(); libs/ops/producer_census.py:695 -- sandbox_rows()",
     "libs/ops/producer_census.py:109 -- runs_clocks_here(): whether THIS checkout holds the clocks is MEASURED (box tasks / systemd user units), not inferred from os.name, so a build box's git-mirrored seats read UNMEASURED_HERE instead of a hundred false DARK rows",
     "scripts/check_seat_health.py:483 -- run_census(), the fence half; scripts/check_seat_health.py:354 -- seat_organs() merges the derived mapping under the declared overrides",
-    "desks/mt5/research/hourly_cycle.py:3963 -- the leg; desks/mt5/research/hourly_cycle.py:715 -- CORE_LEGS; desks/mt5/research/hourly_cycle.py:846 -- LEG_DEPARTMENT meta; libs/research/layers.py:74 -- LEG_LAYER",
+    "desks/mt5/research/hourly_cycle.py:3967 -- the leg; desks/mt5/research/hourly_cycle.py:715 -- CORE_LEGS; desks/mt5/research/hourly_cycle.py:846 -- LEG_DEPARTMENT meta; libs/research/layers.py:74 -- LEG_LAYER",
     "MEASURED on the trading box 2026-09-23: 1,480 producers censused where the previous fence saw 105 seats, of which 92 read UNMEASURED for the single reason that a table had never been filled in",
     "tests/ops/test_producer_census.py:1 -- 24 tests, one per failure mode including the fence-never-wins-the-organ-slot rule"
    ]
@@ -8598,7 +8598,7 @@
     "desks/mt5/research/certificate_truth.py:700 - the three fatal re-split kinds raised in audit()",
     "desks/mt5/tests/test_certificate_truth.py:487 - 4 one-lane tests of the 19 in the file"
    ],
-   "scheduled_by": "hourly_cycle:certificate_truth (desks/mt5/research/hourly_cycle.py:3306, hourly, --once --budget-s 120)",
+   "scheduled_by": "hourly_cycle:certificate_truth (desks/mt5/research/hourly_cycle.py:3310, hourly, --once --budget-s 120)",
    "artifact": "desks/mt5/reports/CERTIFICATE_TRUTH.json one_lane block + desks/mt5/data/hypotheses/certification_queue.jsonl",
    "consumer": "scripts/check_certificate_truth.py (run_law_gate.py:163 and :272)",
    "landed": [
@@ -8653,7 +8653,7 @@
     "desks/mt5/research/runtime_attestation.py:1-60 (why a docstring is not evidence and a hash is not the body), :297-320 _summary (only the 26 declared SUMMARY_KEYS, at most 6 per organ, scalars truncated to 48 chars -- never a nested report body), :322-336 _state (MISSING / NEVER decided before any freshness arithmetic, UNMEASURED where the registry declares no cadence)",
     "desks/mt5/research/runtime_attestation.py:189-232 host_identity -- hostname, platform, git SHA read from .git without a subprocess, release seal, and a role DERIVED from the measured age of gateway_state.json and published with that measurement, so a host not running the live loop says so in its own first line",
     "desks/mt5/research/runtime_attestation.py:415-432 _trim -- the JSON is held under MAX_JSON_BYTES by construction and the count of trimmed summaries is published, never a silent truncation",
-    "desks/mt5/research/hourly_cycle.py:3393-3404 the leg (--once --budget-s 180), :900-904 LEG_DEPARTMENT meta, :4147 the results row; libs/research/layers.py:340-342 LEG_LAYER meta",
+    "desks/mt5/research/hourly_cycle.py:3397-3408 the leg (--once --budget-s 180), :900-904 LEG_DEPARTMENT meta, :4151 the results row; libs/research/layers.py:340-342 LEG_LAYER meta",
     "scripts/check_runtime_attestation.py:1-27 the fence: HOST DRIFT fails everywhere because it is a fact about the document's own internals, staleness is judged only on the trading box the document names, i.e. this machine is the attesting host AND its measured host.role is trading_host (a reader elsewhere, or a cloud container that attested itself, reads the age as UNMEASURED with age and host); scripts/run_law_gate.py:163-169 the portable half, :296-301 the --require-state half the box runs",
     "IT REACHES GITHUB, verified on this tree: `git check-ignore -v docs/research/runtime_state.json docs/research/RUNTIME_STATE.md` exits 1 (neither is ignored); docs/ is in libs/ops/release.py:438 STATE_PREFIXES so release.seal never refuses on it and desks/mt5/scripts/Adopt-And-Seal.ps1:247-249 mirrors that; desks/mt5/scripts/Adopt-Release.ps1:598-609 stages EVERY dirty tracked path into 'Box state captured before release adoption' before it adopts, so the box's own attestation is committed and pushed on the hourly sync slot",
     "MEASURED on this host 2026-09-23 10:36 UTC (vmi3500897, non_trading_host: gateway_state.json 168.8h old, so this document attests to no live trading loop): 365 organs attested of 1281 registry components (916 declare no artifact, counted with the reason rather than rendered as blank rows) -- LIVE 111, STALE 95, MISSING 33, NEVER 126, UNMEASURED 0; one pass costs 1.09s, runtime_state.json is 252 KB and RUNTIME_STATE.md 71 KB"
@@ -8679,7 +8679,7 @@
     "desks/mt5/research/productivity_census.py:1-60 (why the funnel and not a dashboard), :210-330 measure_registry (every stage from data/alpha_registry.sqlite by generator and by source), :268-292 the THREE dedup identities, :560-700 build (roster x funnel x ratios, region roll-up, the zero-cell list) -- derived from the two rosters that already exist, never hand-listed (MEASURED)",
     "THE DEDUP IS REAL AND IT FOUND THE THING IT WAS BUILT TO FIND (MEASURED 2026-09-23T18:06:46+00:00): 18201 raw cells collapse to 18201 distinct content_hash (1.0x -- the door, enforced by enqueue_candidate), to 2844 distinct grid_cell (6.3998x) and to 583 distinct mechanism (31.2196x). The door's 1.00x cannot show duplication; the other two do.",
     "UNMEASURED IS A VERDICT, NOT A ZERO (L1.28a): registry table `mechanisms` holds 0 rows, so canonical_mechanisms reads UNMEASURED with a named proxy; `judged_at` is null on every research_candidates row, so cheap-stage survivors reads UNMEASURED rather than reporting the column default 0 as a verdict; 33 of 58 certificates reach no producer by name or family lineage and are published as UNATTRIBUTED, never spread across organs (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:4192-4193 the leg `productivity_census` (--once --budget-s 300), :776 the core plan, :921 LEG_DEPARTMENT meta, :1370 the cost cap, :4340 the results dict; libs/research/layers.py:82 LEG_LAYER meta (MEASURED)",
+    "desks/mt5/research/hourly_cycle.py:4196-4197 the leg `productivity_census` (--once --budget-s 300), :776 the core plan, :921 LEG_DEPARTMENT meta, :1370 the cost cap, :4344 the results dict; libs/research/layers.py:82 LEG_LAYER meta (MEASURED)",
     "scripts/check_productivity_census.py:1-30 (the two things it fails on and the one it deliberately does not), :110-175 check -- stale census, or a producer past the stated window with compute, no unique cell and no named blocker in docs/research/productivity_blockers.json; wired at scripts/run_law_gate.py:178. It NEVER fails on low productivity: cutting the tail of the search distribution is the reduction in aggressiveness the desk refuses (MEASURED)",
     "CONSUMER: docs/research/PRODUCTIVITY_CENSUS.md is the one-screen render read by the CEO cycle and by scripts/check_productivity_census.py, which is a law-gate fence -- so the artifact is read on every gate run, not only by a human (MEASURED)",
     "FIRST MEASUREMENT on this box: 1589 producers on the derived roster, 87 productive (at least one unique cell), 23 consuming compute for no unique cell and no discovery; top by certificates net_edge 24 and mechanism_genome 1, and 33 of 58 certificates UNATTRIBUTED for want of lineage. The roster is derived every pass, so the count moves as the registry sees new generators (MEASURED)"
@@ -8779,7 +8779,7 @@
     "desks/mt5/research/pack_cells.py:169 -- JUDGED_SQL counts a cell judged in any of the three registers a verdict can land in (trials_ledger.candidate_id, research_candidates.judged_at, terminal_gate); counting only the first reported zero for a structural reason and looked like a slow clock",
     "desks/mt5/research/pack_cells.py:177 -- judged_registers measures why the end of the chain is open: 3,368 gauntlet verdicts sit in data/hypotheses/gate_verdict_ledger.jsonl and the registry's sync_cursor holds no 'gate_verdicts' key, so libs/moat/registry.py:1485 sync_from_desk has poured none in since the 2026-09-17 restore; and the sampled verdict rows carry graph_id=None, so its candidate edge would fall back to the cell NAME and join to no cand_<hex>",
     "desks/mt5/research/pack_cells.py:740 -- drain_reachability reads source_drain's own chain state (never edits it) and publishes, per bucket, whether its repair path reaches it, grouped by the text that defeated the desk's reader with the sources attached, so the next reader is a named job",
-    "desks/mt5/research/hourly_cycle.py:4161 -- the leg, run after source_drain whose chain state it reads and never edits",
+    "desks/mt5/research/hourly_cycle.py:4165 -- the leg, run after source_drain whose chain state it reads and never edits",
     "libs/research/layers.py:455 -- layer: information",
     "MEASURED 2026-09-23: registry cells 18,201 -> 21,276; packs with cells 0 -> 5 (567 cells); world grounds with cells 60 -> 152 (2,208 cells, 313 discoveries); EUROPE 212 grounds / 158 documents / 0 cells -> 384 cells; every region except UNMAPPED now carries cells, and the UNMAPPED grounds' reason is named",
     "NOTHING HERE IS A CAP: the per-pass budget is a wall clock and a pack not reached leads the next pass; no pack is throttled, refused or removed from the eligible set. The world lane is ordered by documents ALREADY FETCHED so a pass cut short leaves the ranked backlog in remaining_ranked_by_documents_held for the next one."
@@ -8834,7 +8834,7 @@
     "desks/mt5/research/ground_depth.py:485 -- verdict_of: NAMES_AN_INSTRUMENT, NAMES_A_SERIES, READER_MISSING (with the shape: javascript_rendered / binary_document / api_key_required / access_controlled), LADDER_WINDOW_SATURATED, DEEPER_PAGES_NAME_NOTHING with the pages tried and the links offered -- a failure is a measured verdict with evidence, never an open job",
     "desks/mt5/research/ground_depth.py:523 -- next_job_for gives every unconverted ground an OWNED job: register the series, write the reader, widen the ladder's sample, or the measured exhaustion count with the passes and pages already spent",
     "desks/mt5/research/ground_depth.py:457 -- seed_frontier hands the links this pass did not reach to world_frontier, so depth is bounded by a per-pass wall clock plus the crawler the desk already runs, never by an unbounded recursive crawl of its own",
-    "desks/mt5/research/hourly_cycle.py:4206 -- the clock: _costed(\"ground_depth\", ...) --budget-s 600, after pack_cells whose ladder decides its targets; CORE_LEGS at desks/mt5/research/hourly_cycle.py:781 and the data department at desks/mt5/research/hourly_cycle.py:847",
+    "desks/mt5/research/hourly_cycle.py:4210 -- the clock: _costed(\"ground_depth\", ...) --budget-s 600, after pack_cells whose ladder decides its targets; CORE_LEGS at desks/mt5/research/hourly_cycle.py:781 and the data department at desks/mt5/research/hourly_cycle.py:847",
     "libs/research/layers.py:459 -- the layer: information. Walking inside a ground's door is COLLECTION; it mints nothing and predicts nothing",
     "MEASURED 2026-09-23 over two passes on the box: 26 ground-walks, 120 deeper pages fetched, 20 of them naming an MT5 instrument, 947 claims written, 202 links handed to world_frontier. Grounds holding documents that name an instrument 106 -> 108 of 121 (rung instruments_named_in_documents 6 -> 8); documents held by those grounds 963 -> 2,034; cells minted by pack_cells from the two converted grounds: frontier 3 cells / 4 discoveries, literature 3 cells / 4 discoveries, from zero",
     "THE REMAINDER IS MEASURED, NOT PENDING: 3 grounds (mql5_signals 230 claims, asia:mql5_signals 135, trading_latam 128) now HOLD documents naming an instrument and the ladder still cannot see them -- pack_cells.held_documents reads a ground's OLDEST RESOLVE_SAMPLE claims, which are the landing page's chrome. Verdict LADDER_WINDOW_SATURATED, owner pack_cells (unedited here), one-line fix: sample the newest rows as well as the oldest. 6 grounds are NAMES_A_SERIES (the next job is a registry row, not more crawling), 3 are DEEPER_PAGES_NAME_NOTHING with their attempts counted, 1 (asia:copernicus_s5p) offers no link at all",
@@ -8858,7 +8858,7 @@
     "desks/mt5/research/timeframe_fanout.py:181 -- mint changes the chart and nothing else: same family, symbol, side, session and regime, with parent_ids naming the parent and params carrying the parent's own chart",
     "desks/mt5/research/timeframe_fanout.py:221 -- prices the pass with libs/research/trial_ledger.py census: n_raw 400, n_effective 63.69, inflation 6.28 on the first pass, so five charts of one mechanism cost more than one and less than five",
     "desks/mt5/research/timeframe_fanout.py:165 -- reads the replay for the ORDER only; every chart in CHARTS is minted and none is filtered or preferred",
-    "desks/mt5/research/hourly_cycle.py:4167 -- the leg",
+    "desks/mt5/research/hourly_cycle.py:4171 -- the leg",
     "libs/research/layers.py:455 -- layer: prediction",
     "MEASURED 2026-09-23 after one pass: M5 0 -> 60 cells, M1 0 -> 60, M15 117 -> 177, H4 684 -> 933, D1 4 -> 193"
    ],
@@ -8882,7 +8882,7 @@
     "desks/mt5/research/fill_recorder.py:210 -- slippage is measured against the ENTRY price only; falling back to the ledger's fill_price (the CLOSING price) published +203 R of slippage on this box's own thirty fills",
     "desks/mt5/mt5desk/gateway.py:971 -- _record_intent now stamps decision_bid, decision_ask, spread_at_decision and point on EVERY intent, not only the bracket path (the handoff libs/execution/fill_corpus.py CAPTURE_HANDOFFS has named since it was written); suppressed throughout, so an unreadable tick costs the fields and never the order",
     "libs/execution/fill_corpus.py:78 -- schema 2 adds slip_points, spread_points_at_decision, point and quote_mid_at_decision; fields are added, never removed or repurposed",
-    "desks/mt5/research/hourly_cycle.py:4173 -- the leg",
+    "desks/mt5/research/hourly_cycle.py:4177 -- the leg",
     "libs/research/layers.py:456 -- layer: execution",
     "MEASURED 2026-09-23: matched_fills 0 -> 30; fill_corpus.jsonl 109 -> 201 rows; mean entry slippage -0.032 R / +0.467 points, worst 276 points; slip_points and slip_r complete on 30 of 30 matched fills",
     "RECORDING ONLY: nothing here sends, routes, sizes, cancels or vetoes an order, and what the gateway TRADES is unchanged"
@@ -8990,7 +8990,7 @@
     "PROVED BY MEASUREMENT, NOT ASSERTED: desks/mt5/research/effective_trials.py:242 re-imports the judge's own input function from a clean module state and reads what it will charge. After the pass: desks/mt5/policy/gate_spec.yaml:60 carries fixed_trial_count 109, charged_trial_count(1000, None, None) returns (109, 'fixed_campaign_trials(109)'), fail_closed_trial_count returns 109, and the deflated-Sharpe hurdle sr0 falls 0.378596 -> 0.312194 at the spec's fixed variance 0.014863.",
     "NO GATE IS WEAKENED AND EVERY FAILURE PATH POINTS UP: libs/research/trial_ledger.py:515 returns the UNCHANGED nominal 597 whenever the census is UNMEASURED or the ratio is implausible, floors the charge at the number of distinct mechanisms, and can never return more than nominal; desks/mt5/research/effective_trials.py:194 refuses any charge that is not lower than the standing one and refuses a move smaller than MIN_CHANGE_FRAC, so the bar stays a property of policy rather than of the hour. The ten gates run exactly as defined, no cell is removed and no producer is capped.",
     "THE ATTESTATION STAYS HONEST: desks/mt5/research/gate_policy.py:88 now READS trial_count_basis from the spec instead of retyping 597, so a certificate can never attest to a basis it was not judged under; desks/mt5/research/gate_policy.py:137 carries the old fixed-597 basis in _SUPERSEDED_TRIAL_BASES only while the spec charges 597 or fewer -- the documented admissibility rule (a superseded basis must have charged AT LEAST as many trials). Measured: a certificate on the old basis still returns is_exact_policy True, and a tampered dsr_threshold is still refused.",
-    "CLOCK AND LAYER: desks/mt5/research/hourly_cycle.py:3280 registers the leg (data department, --budget-s 300); libs/research/layers.py:296 gives it the information layer.",
+    "CLOCK AND LAYER: desks/mt5/research/hourly_cycle.py:3284 registers the leg (data department, --budget-s 300); libs/research/layers.py:296 gives it the information layer.",
     "TESTS: desks/mt5/tests/test_effective_trials.py, 19 passing -- clones collapse, distinct grid cells never collapse, distinct mechanisms stay independent, effective is never above nominal nor below one, an empty docket is UNMEASURED rather than zero trials, the charge never rises, a sub-threshold move never rewrites policy, and the spec's comments survive the write."
    ],
    "consumer": "desks/mt5/scripts/external_gauntlet.py (SEALED) reads the corrected charge through research.gate_policy.charged_trial_count on its next sweep; desks/mt5/reports/EFFECTIVE_TRIALS.json publishes nominal vs effective per family with the ratio and sr0 before/after."
@@ -9037,6 +9037,113 @@
    "landed": [
     "mass screen 2026-09-30"
    ]
+  },
+  {
+   "id": "CNOFF1",
+   "item": "CHINA OFFICIAL HARD DATA, KEPT AS HISTORY (audit 2026-10-06 P3, row 52): the generic Asia parser appends every vintage of every series with its honest release stamp and keeps revisions (revision_of / revision_delta), never overwriting; CFETS central parity and history, SHIBOR, NBS PMI (manufacturing, non-manufacturing, sub-indices), SAFE settlement / cross-border / reserves tables (index -> article -> attachment), PBOC open-market operations and customs commodity x country x port tables are read by declared shape adapters into records carrying the mandate's sensor-contract field names.",
+   "domain": "PCN",
+   "phase": "PCN",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/asia_parser.py:821 (append_vintage: append-only ledger, knowable_at, revision_number, revision_delta, provenance_hash, raw_pointer)",
+    "desks/mt5/research/asia_parser.py:948 (first_release_frame: the research view takes revision 0 only)",
+    "desks/mt5/research/asia_parser.py:984 (publish_first_release: series/<root>.parquet with available_time)",
+    "desks/mt5/research/cn_official_tables.py:528 (chinamoney: CFETS parity + SHIBOR at their documented release times)",
+    "desks/mt5/research/cn_official_tables.py:625 (NBS easyquery: PMI and sub-indices, scheduled 09:30 CST last day)",
+    "desks/mt5/research/cn_official_tables.py:726 (SAFE: xlsx / html tables and the article walk)",
+    "desks/mt5/research/cn_official_tables.py:794 (PBOC OMO: operations, maturities, net injection only when stated)",
+    "desks/mt5/research/cn_official_tables.py:867 (customs: commodity x country x port quantity, value, unit value)",
+    "desks/mt5/tests/test_asia_parser_ledger.py:66"
+   ],
+   "scheduled_by": "hourly_cycle:asia_parser",
+   "artifact": "desks/mt5/reports/ASIA_PARSER.json",
+   "consumer": "desks/mt5/research/pack_cells.py semantic_lane reads asia_parser.read_ledger/first_release_frame; mt5desk/family_exogenous_conditioner.py reads series/<root>.parquet",
+   "gap": "Live yield UNMEASURED: the new routes (CcprHisNew POST, shibor.json, NBS easyquery, PBOC 125475 list, customs tables) are built against offline fixtures of the documented formats and must be verified on the box; legacy SAFE .xls needs xlrd (reads NEEDS_PARSER until installed).",
+   "next_step": "First box run of asia_collector + asia_parser; read ASIA_PARSER.json ledger section per root."
+  },
+  {
+   "id": "CNOFF2",
+   "item": "CHINA OFFICIAL SEMANTIC CELLS (audit 2026-10-06 P3): flow features on the first-release view -- SAFE settlement imbalance, forward hedge, receipts/payments, reserve-change surprise; CFETS fix SURPRISE against a model-implied fix (previous 16:30 Beijing USDCNH close plus a fitted basket move on USDX, rolling OLS on prior fixings only) rather than the fix level; SHIBOR curve slope / curvature; OMO net injection; NBS PMI diffusion, breadth, disagreement, orders-inventory and price-production divergence; customs quantity surprise and unit-value divergence; each with change, acceleration and a seasonal/trailing surprise z. Targets routed by asset class (universe_policy), cells screened -> deflated -> donated through proposer_common, null passes charged.",
+   "domain": "PCN",
+   "phase": "PCN",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/pack_cells.py:1321 (semantic_features)",
+    "desks/mt5/research/pack_cells.py:1483 (cfets_fix_surprise: implied fix, basket beta, surprise pips and z, available after the 01:00 UTC basket bar)",
+    "desks/mt5/research/pack_cells.py:1560 (resolve_targets: universe_policy.may_hypothesise)",
+    "desks/mt5/research/pack_cells.py:1576 (semantic_lane: screen -> deflate -> donate)",
+    "desks/mt5/research/pack_cells.py:1692 (_sem_donate: donation or null_pass_trials charge)",
+    "desks/mt5/tests/test_cn_sge_dislocation.py"
+   ],
+   "scheduled_by": "hourly_cycle:pack_cells",
+   "artifact": "desks/mt5/reports/PACK_CELLS.json",
+   "consumer": "data/intelligence/pack_cells_cn/discoveries_*.json -> desks/mt5/research/miner_candidate_compiler.py; data/null_pass_trials.jsonl -> libs/research/experiment_ledger.py",
+   "gap": "Cells reach the screen only once the ledgers hold history (INSUFFICIENT_HISTORY is reported per pack until then) and the CFETS model needs a measured BAR_CLOCK.json on the host; live yield UNMEASURED."
+  },
+  {
+   "id": "SGE1",
+   "item": "SGE BENCHMARK AND PREMIUM HISTORY (audit 2026-10-06 P1): Shanghai Gold/Silver Benchmark AM/PM and daily quotes as an append-only vintage ledger; USD/oz premium of each fix over XAUUSD with USDCNH at the fix instant on the measured bar clock; premium change, acceleration, z, percentile and premium x CNH / x USD states. SGE's terms were re-read 2026-10-06 and REFUSE use without permission, so every organ that knows an SGE URL (fetch_sge_premium, asia_collector, world_dataset_hunter's legacy door, the source-route probe) reads alt_proxies' one terms gate and reports BLOCKED_ON_TERMS without a request.",
+   "domain": "PCN",
+   "phase": "PCN",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/alt_proxies.py:2328 (TERMS cn_sge_premium refused, with TERMS_EVIDENCE quote and URL)",
+    "desks/mt5/research/alt_proxies.py:2669 (terms_gate: by id or host, fail closed)",
+    "desks/mt5/research/fetch_sge_premium.py:293 (append_vintages)",
+    "desks/mt5/research/fetch_sge_premium.py:449 (benchmark_premium)",
+    "desks/mt5/research/fetch_sge_premium.py:482 (premium_features)",
+    "desks/mt5/research/fetch_sge_premium.py:545 (main: BLOCKED_ON_TERMS before any fetch)",
+    "desks/mt5/research/world_dataset_hunter.py:1158",
+    "scripts/check_source_routes.py:88",
+    "desks/mt5/tests/test_cn_sge_dislocation.py"
+   ],
+   "scheduled_by": "hourly_cycle:sge_premium",
+   "artifact": "desks/mt5/reports/sge_premium.json",
+   "consumer": "desks/mt5/research/dislocation_lab.py hard_dislocations (sge_london) and engine_p6",
+   "gap": "BLOCKED_ON_TERMS: SGE's licensing page (https://en.sge.com.cn/data_Licensed) bars use of its trading information without permission. The code is built and tested on fixtures; it runs live only when a held licence flips alt_proxies.TERMS['cn_sge_premium'] to confirmed. Substitute stays in_gold_imports.",
+   "next_step": "Principal: obtain an SGE / vendor licence or leave blocked."
+  },
+  {
+   "id": "DISL1",
+   "item": "ONSHORE/OFFSHORE HARD DISLOCATIONS (audit 2026-10-06 P1): SHFE gold and silver vs XAUUSD/XAGUSD x USDCNH, INE crude vs XBRUSD x USDCNH, CNY fix vs CNH and SGE vs London (terms-gated) as log bases with z, delta and AR(1) half-life, available no earlier than the onshore close and the series' own publication; published as lake series and screened -> deflated -> donated through proposer_common (seat dislocation_lab_hard), nulls charged. Absent series read UNMEASURED by name.",
+   "domain": "PCN",
+   "phase": "PCN",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/dislocation_lab.py:1327 (HARD_PAIRS: SHFE Au/Ag, INE SC, CNY fix, SGE and the KR/IN/TR physical premiums)",
+    "desks/mt5/research/dislocation_lab.py:1362 (half_life)",
+    "desks/mt5/research/dislocation_lab.py:1478 (hard_dislocations)",
+    "desks/mt5/mt5desk/families_orthogonal.py:2369 (exogenous_conditioner is an ORTHOGONAL_FAMILIES member: the judge builds the donated cells)",
+    "desks/mt5/tests/test_cn_sge_dislocation.py"
+   ],
+   "scheduled_by": "hourly_cycle:dislocation_lab",
+   "artifact": "desks/mt5/reports/DISLOCATION_LAB.json",
+   "consumer": "data/intelligence/dislocation_lab_hard/discoveries_*.json -> desks/mt5/research/miner_candidate_compiler.py; mt5desk/family_exogenous_conditioner.py reads series/dislocation_<pair>.parquet",
+   "gap": "Live yield UNMEASURED: needs free_stack's akshare series (shfe_au_ret / shfe_ag_ret / ine_sc_ret) and a measured BAR_CLOCK.json on the host; sge_london stays BLOCKED_ON_TERMS."
+  },
+  {
+   "id": "PHYS1",
+   "item": "PHYSICAL GOLD PREMIUMS OUTSIDE CHINA (audit 2026-10-06 repair #4): KRX gold (KRW/g), IBJA 999 (INR/10 g, ex-GST, landed parity with the declared Indian import-duty schedule) and Borsa Istanbul standard gold (TRY/g) against XAUUSD x USDKRW / USDINR / USDTRY at each market's close on the measured bar clock, in the SGE framework: vintages in the SGE ledger, premium change/acceleration/z/percentile, series published for the dislocation lab, screened as exogenous_conditioner cells and donated through proposer_common.",
+   "domain": "PCN",
+   "phase": "PCN",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/physical_gold_premium.py:191 (market_premium)",
+    "desks/mt5/research/physical_gold_premium.py:223 (record_physical_premiums: terms gate, route, vintages, features, series)",
+    "desks/mt5/research/alt_proxies.py:2558 (GATE_TERMS: kr_krx_gold, in_ibja_gold, tr_borsa_gold, all to_confirm with quoted evidence)",
+    "desks/mt5/research/fetch_sge_premium.py:545 (main: runs the physical markets on the sge_premium leg before SGE's own gate)",
+    "desks/mt5/tests/test_cn_sge_dislocation.py"
+   ],
+   "scheduled_by": "hourly_cycle:sge_premium",
+   "artifact": "desks/mt5/reports/sge_premium.json",
+   "consumer": "desks/mt5/research/dislocation_lab.py hard_dislocations (kr/in/tr_gold_london) -> data/intelligence/dislocation_lab_hard -> miner_candidate_compiler -> external_gauntlet (exogenous_conditioner)",
+   "gap": "BLOCKED_ON_TERMS: KRX, IBJA and Borsa Istanbul terms are to_confirm (2026-10-06); KRX and Borsa routes are UNCONFIGURED until a verified route is set (PHYS_GOLD_URL_<MARKET>). Code end to end is tested on a confirmed gate with fixtures; live yield UNMEASURED.",
+   "next_step": "Principal: read and quote each venue's terms (or hold a vendor licence), flip alt_proxies.GATE_TERMS, set the routes on the box."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
