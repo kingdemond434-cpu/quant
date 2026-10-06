@@ -534,7 +534,8 @@ def never_judged_flags(G, specs: list[dict]) -> int:
     return O.stamp_new(G, specs)
 
 
-def backlog_first(specs: list[dict]) -> list[dict]:
+def backlog_first(specs: list[dict], rank: dict[int, tuple[int, float]] | None = None
+                  ) -> list[dict]:
     """THE BACKLOG IS WARMED BEFORE ANY RE-JUDGE. A PERMUTATION -- same cells, same multiset.
 
     WHY, MEASURED 2026-09-30. The judge rules on what is WARM: a cached cell costs the sweep no
@@ -553,7 +554,34 @@ def backlog_first(specs: list[dict]) -> list[dict]:
     INSIDE each tier, so within the backlog the most promising cell is still warmed first, and a
     re-judge is delayed until the backlog is warm, never dropped.
     """
-    return sorted(specs, key=lambda sp: 0 if sp.get("_never_judged", True) else 1)
+    if rank is None:
+        return sorted(specs, key=lambda sp: 0 if sp.get("_never_judged", True) else 1)
+    # THE TWO-STAGE JUDGE'S ORDER (2026-09-30, `research/stage1_record`; audit R1, PR143_v3):
+    # the NAMED re-judge queues (group 0: v4 re-mint, evicted, rollover, zero-spread) go first,
+    # as the sealed patch puts them; then the backlog before re-judges, and NOTHING ELSE moves.
+    # Stage 1's score is NOT a sort key here any more: it is a LATE key inside the sealed order
+    # (`judge_docket_order.order(stage1_rank=...)`), after intraday-first, the CEO docket, bucket
+    # balance and symbol rotation, so re-sorting by it here would override the principal's order.
+    # A permutation; a missing rank reads as "not yet ruled".
+    return sorted(specs, key=lambda sp: (0 if rank.get(id(sp), (2, 0.0))[0] == 0 else 1,
+                                         0 if sp.get("_never_judged", True) else 1))
+
+
+def stage1_ranks(G, specs: list[dict]) -> dict[int, tuple[int, float]] | None:
+    """{id(spec): (group, -score)} from the stage-1 record, or None when it cannot be read (the
+    order is then exactly what it was before the two-stage judge existed)."""
+    try:
+        import stage1_record as S1
+    except ImportError:
+        try:
+            from research import stage1_record as S1  # type: ignore[no-redef]
+        except ImportError:
+            return None
+    try:
+        return S1.stage1_rank_for_specs(specs, G.cell_id)
+    except Exception as exc:
+        print(f"  stage-1 tiers unavailable ({type(exc).__name__}: {exc}); order unchanged")
+        return None
 
 
 def modifier_refusals(G, specs: list[dict]) -> tuple[list[dict], int]:
@@ -719,9 +747,10 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
     # THE SAME DOCKET, IN THE SAME ORDER, THE SEALED SWEEP WILL READ. Cells the family trim leaves
     # out of this sweep are not warmed now: the next sweep would not look at them, and their key
     # may roll over with the data day before one does. They stay in the docket.
-    keep, order_census = O.sealed_keep(G, specs)
+    rank = stage1_ranks(G, specs)
+    keep, order_census = O.sealed_keep(G, specs, stage1_rank=rank)
     n_never = int(order_census["keep_never_judged"])
-    keep = backlog_first(keep)
+    keep = backlog_first(keep, rank)
     ordered_by = "sealed docket order (judge_docket_order), backlog first"
     print(f"  order: {ordered_by} -- {order_census['keep']} of {len(specs)} eligible cell(s) in "
           f"the next sweep's docket, {n_never} of them never judged; "
@@ -739,7 +768,7 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
 
     now = time.time()
     order_, held, rows = split_deferred(cold, stamps, now)
-    order_ = backlog_first(order_)
+    order_ = backlog_first(order_, stage1_ranks(G, order_))
     if held:
         print(f"  deferred: {len(held)} cell(s) held this round (build failed before, bars "
               f"unchanged, retry in under {RETRY_SEC / 3600:.0f}h) -- ages in "

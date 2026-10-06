@@ -64,6 +64,15 @@ KINDS = (
     # verdict and the why, so a refusal is a transition with a time on it rather than a quiet
     # no-op -- which is the only way an operator learns that a writer upstream has gone silent.
     "REFERENCE_STAND_DOWN",
+    # A stage-1-ranked cell has waited >= 24h for a SEALED judgement: the screen's window now
+    # biases WHICH cells the sealed judge ever reaches. Carries the window and the oldest age.
+    "STAGE1_ORDERING_BIAS",
+    # Stage 1's walk-forward bound is not proven equal to the sealed gauntlet's actual cut: the run
+    # fell back to the pre_wf window (research/stage1_judge.wf_cut_check).
+    "STAGE1_WINDOW_MISMATCH",
+    # The sealed judge could not read stage 1's order (the record) and fell back to its unpatched
+    # order -- written by the two-stage sealed patch, never silent.
+    "STAGE1_FALLBACK",
     # A RAIL THAT HALTS ALL TRADING MUST NOT BE ABLE TO DO SO QUIETLY (recovered box commit
     # fe09b89b, 2026-09-24). `scripts/check_placement_interlock.py` writes PLACEMENT_HALTED when a
     # sleeve has been refused in a run with no placement in between, or the release identity

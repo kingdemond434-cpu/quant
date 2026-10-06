@@ -350,25 +350,33 @@ def _fresh_for_run(path: Path, started_at: datetime | None) -> bool:
     return modified.timestamp() >= started_at.timestamp() - 2.0
 
 
-#: THE SCREENED-REFUSED TRIAL LEDGER (one JSON line per distinct cell ever held out of the docket
-#: as unbuildable). Lives beside the hypothesis graph; `libs/research/experiment_ledger.py`
-#: counts it into the lifetime trial census.
-SCREENED_REFUSED_NAME = "SCREENED_REFUSED_TRIALS.jsonl"
+#: THE SCREENED TRIAL LEDGER, stage `buildability` (one JSON line per distinct cell ever held out
+#: of the docket as unbuildable). Lives beside the hypothesis graph and is shared with stage 1 of
+#: the two-stage judge; `libs/research/experiment_ledger.py` counts it into the lifetime census.
+SCREENED_REFUSED_NAME = "SCREENED_TRIALS.jsonl"
+
+
+def _cell_digest(cell: str) -> bytes:
+    import hashlib
+    return hashlib.blake2b(cell.encode("utf-8", "replace"), digest_size=8).digest()
 
 
 def record_screened_refusals(rows: list[dict[str, Any]], path: Path,
                              stamp: str) -> dict[str, Any]:
-    """Append each NEW refused cell once (by executed identity) and report the counts."""
-    seen: set[str] = set()
+    """Append each NEW refused cell once (by executed identity) and report the counts. Only this
+    stage's rows are read back, as 8-byte digests: the shared ledger also holds stage 1's cells."""
+    seen: set[bytes] = set()
     try:
-        with path.open("r", encoding="utf-8") as fh:
+        with path.open("r", encoding="utf-8", errors="replace") as fh:
             for ln in fh:
+                if '"stage": "stage1"' in ln:
+                    continue
                 try:
                     cell = json.loads(ln).get("cell")
                 except (ValueError, AttributeError):
                     continue
                 if cell:
-                    seen.add(str(cell))
+                    seen.add(_cell_digest(str(cell)))
     except OSError:
         pass
     by_verdict: dict[str, int] = {}
@@ -377,12 +385,14 @@ def record_screened_refusals(rows: list[dict[str, Any]], path: Path,
         v = str(row.get("refusal_verdict") or "?")
         by_verdict[v] = by_verdict.get(v, 0) + 1
         cell = _identity(row)
-        if cell in seen:
+        d = _cell_digest(cell)
+        if d in seen:
             continue
-        seen.add(cell)
+        seen.add(d)
         new.append(json.dumps({
             "cell": cell, "symbol": row.get("symbol"), "family": row.get("family"),
             "params": row.get("params"), "source": row.get("source"), "verdict": v,
+            "stage": "buildability",
             "reason": str(row.get("refusal_reason") or "")[:300], "at": stamp,
         }, sort_keys=True, default=str))
     if new:

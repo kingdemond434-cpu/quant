@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import glob
 import json
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -142,38 +143,108 @@ def _mass_screen_counts(path: Path | None = None) -> tuple[int, dict[str, int]]:
     return total, by_fam
 
 
-#: THE SCREENED-REFUSED LEDGER (desks/mt5/research/merge_hypotheses.py, 2026-10-06). A minted cell
-#: the judge cannot build is held out of the docket, never out of the census: each distinct one is
-#: a row here and counts as a trial exactly as a mass-screen cell does, so keeping an unbuildable
-#: cell away from the judge can never lower the deflation every other cell is charged.
-SCREENED_REFUSED_TRIALS = DESK / "data" / "SCREENED_REFUSED_TRIALS.jsonl"
+#: THE SCREENED LEDGER (2026-10-06): one JSON line per distinct cell a SCREEN looked at, with the
+#: stage that looked -- `buildability` (desks/mt5/research/merge_hypotheses.py: a minted cell the
+#: judge cannot build, held out of the docket, never out of the census) and `stage1` (the two-stage
+#: judge's training-window screen, research/stage1_judge.py). Each distinct cell is ONE trial of
+#: its family, charged once into the union however many times it is re-screened; a cell that
+#: later receives a FULL verdict is counted by the hypothesis graph instead, never twice.
+SCREENED_TRIALS = DESK / "data" / "SCREENED_TRIALS.jsonl"
+GATE_LEDGER = DESK / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
 
 
-def _screened_refused_counts(path: Path | None = None) -> tuple[int, dict[str, int]]:
-    """(distinct refused cells, per family), streamed. Absent ledger: (0, {})."""
-    total = 0
-    by_fam: dict[str, int] = {}
-    seen: set[str] = set()
+def _jsonl_rows(path: Path) -> Iterator[dict[str, Any]]:
+    """Every JSON-object line of `path`, streamed; a malformed or non-object line is skipped, an
+    unreadable file yields nothing (absence is no rows, never an exception)."""
     try:
-        fh = (path or SCREENED_REFUSED_TRIALS).open("r", encoding="utf-8")
+        fh = path.open("r", encoding="utf-8", errors="replace")
     except OSError:
-        return 0, {}
+        return
     with fh:
         for ln in fh:
+            if not ln.strip():
+                continue
             try:
                 row = json.loads(ln)
             except ValueError:
                 continue
-            if not isinstance(row, dict):
-                continue
-            cell = str(row.get("cell") or "")
-            if not cell or cell in seen:
-                continue
-            seen.add(cell)
-            fam = str(row.get("family") or "screened_refused")
-            total += 1
-            by_fam[fam] = by_fam.get(fam, 0) + 1
-    return total, by_fam
+            if isinstance(row, dict):
+                yield row
+
+
+def _cell_hash(cell: str) -> int:
+    import hashlib
+    return int.from_bytes(hashlib.blake2b(cell.encode("utf-8", "replace"),
+                                          digest_size=8).digest(), "little")
+
+
+def _fully_judged_mask(hashes: Any, gate_ledger: Path) -> Any:
+    """Boolean mask over sorted unique `hashes`: True where the gate ledger holds a RULED verdict
+    for that cell. Streams the ledger in bounded chunks; unreadable -> all False (charge stands)."""
+    import numpy as np
+    mask = np.zeros(len(hashes), dtype=bool)
+    try:
+        import sys as _sys
+        if str(DESK) not in _sys.path:
+            _sys.path.insert(0, str(DESK))
+        from research.judging_burndown import classify  # type: ignore[import-not-found]
+    except Exception:
+        def classify(row: dict[str, Any]) -> str:
+            return "ruled" if row.get("terminal_gate") else "unknown"
+    buf: list[int] = []
+
+    def flush() -> None:
+        if buf:
+            mask[:] |= np.isin(hashes, np.fromiter(buf, dtype=np.uint64, count=len(buf)))
+            buf.clear()
+    for row in _jsonl_rows(gate_ledger):
+        cell = str(row.get("cell") or "")
+        if cell and classify(row) == "ruled":
+            buf.append(_cell_hash(cell))
+            if len(buf) >= 1 << 20:
+                flush()
+    flush()
+    return mask
+
+
+def _screened_counts(path: Path | None = None, gate_ledger: Path | None = None
+                     ) -> dict[str, Any]:
+    """Distinct screened cells (by family and stage) still owed a charge: each cell once, minus
+    those the gate ledger has since RULED (the graph counts those). Memory is 8 bytes per distinct
+    cell plus small per-row indices, never the cell strings."""
+    from array import array
+
+    import numpy as np
+    hs = array("Q")
+    fam_ix = array("I")
+    stage_ix = array("B")
+    fams: dict[str, int] = {}
+    stages: dict[str, int] = {}
+    for row in _jsonl_rows(path or SCREENED_TRIALS):
+        cell = str(row.get("cell") or "")
+        if not cell:
+            continue
+        hs.append(_cell_hash(cell))
+        fam_ix.append(fams.setdefault(str(row.get("family") or "screened"), len(fams)))
+        stage_ix.append(stages.setdefault(str(row.get("stage") or "buildability"), len(stages)))
+    if not hs:
+        return {"total": 0, "by_family": {}, "by_stage": {}, "fully_judged_excluded": 0}
+    h = np.frombuffer(hs, dtype=np.uint64)
+    uniq, first = np.unique(h, return_index=True)
+    f = np.frombuffer(fam_ix, dtype=np.uint32)[first]
+    st = np.frombuffer(stage_ix, dtype=np.uint8)[first]
+    judged = np.zeros(len(uniq), dtype=bool)
+    if "stage1" in stages:
+        judged = _fully_judged_mask(uniq, gate_ledger or GATE_LEDGER)
+    keep = ~judged
+    fam_names = {i: n for n, i in fams.items()}
+    stage_names = {i: n for n, i in stages.items()}
+    by_fam = {fam_names[int(i)]: int(c) for i, c in
+              enumerate(np.bincount(f[keep], minlength=len(fams))) if c}
+    by_stage = {stage_names[int(i)]: int(c) for i, c in
+                enumerate(np.bincount(st[keep], minlength=len(stages))) if c}
+    return {"total": int(keep.sum()), "by_family": by_fam, "by_stage": by_stage,
+            "fully_judged_excluded": int(judged.sum())}
 
 
 def _claim_selection_counts() -> tuple[int, dict[str, int]]:
@@ -204,7 +275,8 @@ def lifetime(write: bool = True) -> dict[str, Any]:
     for fam, k in m_fam.items():
         p_fam[fam] = p_fam.get(fam, 0) + k
     p_total += m_total
-    r_total, r_fam = _screened_refused_counts()
+    scr = _screened_counts()
+    r_total, r_fam = int(scr["total"]), dict(scr["by_family"])
     for fam, k in r_fam.items():
         p_fam[fam] = p_fam.get(fam, 0) + k
     p_total += r_total
@@ -217,12 +289,17 @@ def lifetime(write: bool = True) -> dict[str, Any]:
            "judged_cells": g_total, "screened_cells": p_total,
            "source_selection_trials": s_total, "preregistered_cards": prereg,
            "mass_screen_cells": m_total,
-           "screened_refused_cells": r_total,
+           "screened_cells_distinct": r_total,
+           "screened_refused_cells": int(scr["by_stage"].get("buildability", 0)),
+           # the stage-1 union the two-stage order is drawn from (stage1_record.LEDGER_UNION_KEY)
+           "stage1_cells": int(scr["by_stage"].get("stage1", 0)),
+           "screened_fully_judged_excluded": int(scr["fully_judged_excluded"]),
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
                     "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl and "
-                    "every unbuildable cell held out of the docket in "
-                    "SCREENED_REFUSED_TRIALS.jsonl) + "
+                    "every distinct cell a screen looked at in SCREENED_TRIALS.jsonl -- "
+                    "unbuildable cells and stage-1 cells, once each, minus any since fully "
+                    "judged) + "
                     "each claim family's stated source selection, once; "
                     "consumers may only deflate MORE with it, never less")}
     if write:

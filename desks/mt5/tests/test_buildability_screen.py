@@ -159,7 +159,7 @@ def test_holding_cells_out_of_the_docket_never_lowers_the_lifetime_trial_census(
     monkeypatch.setattr(el, "_claim_selection_counts", lambda: (3, {"s": 3}))
     monkeypatch.setattr(el, "_prereg_counts", lambda: 0)
     ledger = tmp_path / mh.SCREENED_REFUSED_NAME
-    monkeypatch.setattr(el, "SCREENED_REFUSED_TRIALS", ledger)
+    monkeypatch.setattr(el, "SCREENED_TRIALS", ledger)
 
     monkeypatch.setattr(el, "_graph_counts", lambda: (base_judged + len(rows), {}))
     before = el.lifetime(write=False)["lifetime_trials"]

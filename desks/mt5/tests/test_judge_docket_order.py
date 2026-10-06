@@ -30,9 +30,41 @@ SEALED = (_DESK / "scripts" / "external_gauntlet.py").read_text("utf-8")
 
 
 def test_the_sealed_sort_key_is_still_the_text_this_module_restates() -> None:
-    assert O.SEALED_SORT_KEY_SOURCE in SEALED, (
+    assert O.sealed_sort_key_source(SEALED) is not None, (
         "external_gauntlet.main's docket sort key changed: re-read it and update "
-        "judge_docket_order.order and SEALED_SORT_KEY_SOURCE together")
+        "judge_docket_order.order and SEALED_SORT_KEY_SOURCE(_STAGE1) together")
+
+
+def test_stage1_is_a_late_key_that_never_overrides_the_principal_order() -> None:
+    """AUDIT R1 (PR143_v3): stage 1's rank ranks AFTER never-judged, intraday-first, the CEO
+    docket, bucket balance and symbol rotation; it only breaks ties among a symbol's cells on one
+    chart. The patched sealed text puts `_stage1_rank(sp)` right before the family name."""
+    k = O.SEALED_SORT_KEY_SOURCE_STAGE1
+    at = [k.find(x) for x in ("_is_new(sp)", "_tf_rank(sp)", "_ceo_rank(sp)",
+                              "prejudge_flagged", "_judged_in_bucket.get(", "_cursor.get(",
+                              "str(sp.get(\"sym\")", "timeframe_of(", "_stage1_rank(sp)")]
+    at.append(k.rfind("str(sp.get(\"family\")"))                # the LAST key: the family name
+    assert all(a >= 0 for a in at) and at == sorted(at)
+    fake = SimpleNamespace(timeframe_of=G.timeframe_of, _build_cursor=lambda: {},
+                           BASE=Path("/nonexistent"))
+
+    def cell(sym: str, fam: str, tf: str, new: bool = True) -> dict:
+        return {"sym": sym, "family": fam, "params": {"timeframe": tf} if tf != "H1" else {},
+                "_never_judged": new}
+    m5_low = cell("EURUSD", "b_fam", "M5")          # intraday, stage-1 score low
+    h1_high = cell("EURUSD", "a_fam", "H1")         # H1, stage-1 score very high
+    old_high = cell("EURUSD", "c_fam", "M5", new=False)
+    m5_hi = cell("EURUSD", "z_fam", "M5")           # same symbol + chart as m5_low
+    specs = [h1_high, old_high, m5_low, m5_hi]
+    rank = {id(h1_high): (1, -9.0), id(old_high): (1, -9.0), id(m5_low): (1, 2.0),
+            id(m5_hi): (1, -3.0)}
+    out = O.order(fake, list(specs), rank)
+    # intraday before H1 and never-judged before judged, whatever stage 1 scored ...
+    assert out.index(m5_low) < out.index(h1_high) and out[-1] is old_high
+    # ... and inside one symbol + chart, stage 1 orders (ahead of the family name)
+    assert out.index(m5_hi) < out.index(m5_low)
+    # no rank: exactly the unpatched order
+    assert O.order(fake, list(specs)) == O.order(fake, list(specs), {})
 
 
 def test_the_sealed_steps_still_run_in_the_order_restated() -> None:
@@ -40,7 +72,7 @@ def test_the_sealed_steps_still_run_in_the_order_restated() -> None:
     marks = ["partition_at_economic_prior(list(cells.values()), meta)",
              "modifier_preflight(_spec)",
              "family_banned(sp.get(\"family\"))",
-             O.SEALED_SORT_KEY_SOURCE,
+             O.sealed_sort_key_source(SEALED) or O.SEALED_SORT_KEY_SOURCE,
              "_ng.screen(_cands)",
              "allocate_by_yield(eligible_specs)",
              "_prewarm_cache(eligible_specs, meta"]

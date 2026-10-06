@@ -1034,6 +1034,18 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
                  "judge; the live terminal always wins and standing down means returning to that "
                  "baseline, not below it"),
     }
+    # THE TWO-STAGE JUDGE (2026-09-30), embedded from its own small artifact -- read, never
+    # recomputed: `research/stage1_judge.py` owns JUDGING_TWO_STAGE.json and its numbers
+    # (stage-1/stage-2 per day, backlog, oldest age, UNBUILDABLE by cause, days to clear, fence).
+    try:
+        from research.stage1_judge import summary as _two_stage
+        payload["two_stage"] = _two_stage()
+    except Exception as exc:
+        payload["two_stage"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    # the stage-1 window's ordering bias: TRUE once the backlog has not cleared for 24h
+    _ts = payload["two_stage"] if isinstance(payload["two_stage"], dict) else {}
+    payload["ordering_bias_warning"] = _ts.get("ordering_bias_warning", UNMEASURED)
+    payload["stage1_window"] = _ts.get("window", UNMEASURED)
     try:
         payload["rate"] = measure_rate(queue, decision, now)
     except Exception as exc:     # a broken rate read must never cost the sizing decision
