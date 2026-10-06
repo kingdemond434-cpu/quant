@@ -44,7 +44,12 @@ from this book.
 Fusion: EURZAR, AUDCHF and USDZAR overnight gap decay at about 10% each, gold_asia 8.2% (0.01 lot).
 Total heat 38.4%. P(<=20% equity in 60d) is 3.3% as estimated and 4.25% with edges halved.
 Today's three gold windows at 0.02 lot read 13%.
-E8: gold_asia and AUDCHF at 0.375% each (0.75% total daily risk). P(pass) 95%, median 108 days,
-P(fail) 2.0%.
+E8 (zuck 21:10Z, one-time exception, pass within about a month): gold_asia 1.0% and AUDCHF 1.0%
+risk per trade (2% total per day). P(pass within 30d) 28%, median 38 days, 92% eventual pass, breach
+4.5% as estimated and 16% with edges halved. 95% within 30 days is not reachable at any risk.
+Fallback if the halved-edge breach is unacceptable: 0.75% each (52-day median, breach <=5% both ways).
+Frontier table: /mnt/project-files/sizing/CERT_BOOK_2026-10-06.md.
+Final sizes for the desktop pass. Fusion: EURZAR 9.8%, USDZAR 10%, AUDCHF 10%, gold_asia 8.2%.
+E8: gold_asia 1.0%, AUDCHF 1.0%. Do not include USDJPY SRB.
 Not admitted: CHFNOK carry (live -3.67R/17), nine gap-decay crosses the worlds price at or below 0,
 XAUUSD SRB (correlation 0.94 with gold_asia).
