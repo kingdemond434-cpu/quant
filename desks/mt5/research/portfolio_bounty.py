@@ -49,6 +49,7 @@ DRAWDOWN = R / "DRAWDOWN_ALPHA.json"
 DD_MINER = R / "DRAWDOWN_ALPHA_MINER.json"
 ORTHO = R / "ORTHOGONALITY.json"
 SESSION = R / "session_capital.json"
+SATURATION = R / "CERTIFICATE_SATURATION.json"
 SLEEVES = BASE / "data" / "sleeves.json"
 UNIVERSE = BASE / "data" / "universe" / "universe.json"
 MAX_PER_KIND = 6
@@ -63,6 +64,9 @@ TARGETS: dict[str, tuple[str, ...]] = {
     "session_dark": ("discovery", "regions", "japan", "intel"),
     "heat_shortfall": ("discovery", "validate", "forward"),
     "tail_dependence": ("mathlab", "validate", "discovery"),
+    #: breadth law (2026-10-05) producer law 27: the most valuable MISSING return streams,
+    #: priced by expected dk_eff x information value x failure-mode hedge x empty-prior decay.
+    "breadth_debt": ("discovery", "macro", "intel", "regions", "mathlab"),
 }
 
 
@@ -92,7 +96,8 @@ def _bounty(kind: str, key: str, need: str, evidence: dict[str, Any],
 def bounties(alloc: dict[str, Any], exposure: dict[str, Any], regimes: dict[str, Any],
              drawdown: dict[str, Any], dd_miner: dict[str, Any], ortho: dict[str, Any],
              session: dict[str, Any], sleeves: dict[str, Any],
-             universe: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
+             universe: dict[str, Any],
+             saturation: dict[str, Any] | None = None) -> tuple[list[dict[str, Any]], list[str]]:
     out: list[dict[str, Any]] = []
     unmeasured: list[str] = []
 
@@ -194,6 +199,27 @@ def bounties(alloc: dict[str, Any], exposure: dict[str, Any], regimes: dict[str,
                                f"{p.get('b')} (tail lift {p.get('tail_lift')})",
                                {"pearson": p.get("pearson"), "tail_lift": p.get("tail_lift"),
                                 "co_drawdown": p.get("co_drawdown")}, 2))
+
+    # 8. breadth debt: the saturation map's most valuable missing clusters (breadth law)
+    if saturation is not None:
+        debts = saturation.get("breadth_debts") \
+            if isinstance(saturation.get("breadth_debts"), list) else None
+        if debts is None:
+            unmeasured.append("CERTIFICATE_SATURATION.breadth_debts absent")
+        else:
+            for d in debts[:MAX_PER_KIND]:
+                if not isinstance(d, dict) or not d.get("missing_cluster"):
+                    continue
+                out.append(_bounty(
+                    "breadth_debt", str(d["missing_cluster"]),
+                    f"need a certified {d.get('mechanism')} edge read from "
+                    f"{d.get('information_source')} on {d.get('asset_class')}: "
+                    f"{d.get('current_nearest_exposure')}",
+                    {k: d.get(k) for k in ("expected_delta_k_eff", "expected_independence",
+                                           "historical_search_effort", "empty_prior_decay",
+                                           "hedges_failure_modes", "new_payer",
+                                           "candidate_producers", "bounty", "priority")},
+                    2 if d.get("new_payer") or d.get("hedges_failure_modes") else 3))
     out.sort(key=lambda b: (int(b["priority"]), b["kind"], b["bounty_id"]))
     return out, unmeasured
 
@@ -220,7 +246,8 @@ def build(now: datetime | None = None, **docs: dict[str, Any]) -> dict[str, Any]
                                 get("regimes", REGIMES), get("drawdown", DRAWDOWN),
                                 get("dd_miner", DD_MINER), get("ortho", ORTHO),
                                 get("session", SESSION), get("sleeves", SLEEVES),
-                                get("universe", UNIVERSE))
+                                get("universe", UNIVERSE),
+                                get("saturation", SATURATION))
     by_kind: dict[str, int] = {}
     for b in rows:
         by_kind[b["kind"]] = by_kind.get(b["kind"], 0) + 1

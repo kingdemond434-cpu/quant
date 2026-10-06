@@ -18,7 +18,21 @@ exploration floor is the share of UNMEASURED cells in the axis registry when it 
 share of empty breadth clusters, bounded to [0.2, 0.6]; it is published, and `research_budget`
 reads it as the minimum share of the exploration legs' seconds.
 
-Consumers: research_budget.budget_s (factor), tier1_scorecard (rung), the dashboard.
+BREADTH LAW (2026-10-05), section 16 and section 28. The ladder also publishes the adaptive
+A/B/C/D research split -- A new-breadth discovery, B depth/quality, C frontier unknown-unknowns,
+D replication/falsification -- and the exploration TEMPERATURE that moves it: a stall (n_eff flat
+while compute was spent) or a rising duplicate share heats A and C; edge quality degrading while
+breadth rises heats B; many new structural clusters with no rise in N_EFFECTIVE_CERT heats D;
+strong independent forward streams accumulating heats B (forward evidence / exploitation). Every
+category keeps SPLIT_FLOOR and none exceeds SPLIT_CAP, so no category ever consumes 100% and the
+frontier (C) always retains compute. Every input that is absent leaves its rule unfired and is
+named in `split.unmeasured`; nothing reads as zero. `budget_factor` multiplies the leg's category
+share against its base share (square-rooted, inside FACTOR_CLIP), and `judge_coverage`
+reads split.B as the protected quality channel's share of the docket head. N_CERT is published
+beside N_EFFECTIVE_CERT so no reader sees a nominal certificate count alone.
+
+Consumers: research_budget.budget_s (factor), judge_coverage.quality_share (split B),
+tier1_scorecard (rung), the dashboard.
 """
 from __future__ import annotations
 
@@ -45,6 +59,23 @@ EXPLORATION_LEGS: frozenset[str] = frozenset({
     "deep_forest", "frontier_unknowns", "session_chart_expansion", "causal_graph",
 })
 EXPLOITATION_LEGS: frozenset[str] = frozenset({"deepen", "alpha_evolution", "mine", "search"})
+#: breadth law section 16: research categories. C (outside the current taxonomy) is carved out of
+#: the exploration legs; D are the legs that check the institution itself.
+FRONTIER_LEGS: frozenset[str] = frozenset({"frontier_unknowns", "world_crawler", "deep_forest",
+                                           "exogenous_search"})
+FALSIFICATION_LEGS: frozenset[str] = frozenset({
+    "falsifier_run", "adversaries", "adversary_evolution", "prosecutor", "placebo_audit",
+    "lead_replication", "replication_civilization",
+})
+SATURATION = DESK / "reports" / "CERTIFICATE_SATURATION.json"
+FEEDBACK = DESK / "reports" / "BREADTH_FEEDBACK.json"
+#: preregistered base split and the heat applied by each fired rule (never tuned on outcomes).
+BASE_SPLIT: dict[str, float] = {"A": 0.35, "B": 0.25, "C": 0.20, "D": 0.20}
+SPLIT_FLOOR = 0.10
+SPLIT_CAP = 0.60
+HEAT = 1.5
+DUP_RISE = 0.05
+STRONG_STREAMS = 3
 
 
 def _read(p: Path) -> dict[str, Any]:
@@ -53,6 +84,10 @@ def _read(p: Path) -> dict[str, Any]:
         return d if isinstance(d, dict) else {}
     except (OSError, ValueError):
         return {}
+
+
+def _dict(v: Any) -> dict[str, Any]:
+    return v if isinstance(v, dict) else {}
 
 
 def _jsonl(p: Path, tail: int = 5000) -> list[dict[str, Any]]:
@@ -177,6 +212,112 @@ def factors(sl: dict[str, Any]) -> dict[str, Any]:
                     "exploitation is paying; exploration keeps its floor")}
 
 
+def _clamp_split(raw: dict[str, float]) -> dict[str, float]:
+    """Normalise to 1 with every share in [SPLIT_FLOOR, SPLIT_CAP] (iterative water-fill)."""
+    w = {k: max(1e-9, float(v)) for k, v in raw.items()}
+    fixed: dict[str, float] = {}
+    for _ in range(len(w) + 1):
+        free = {k: v for k, v in w.items() if k not in fixed}
+        room = 1.0 - sum(fixed.values())
+        tot = sum(free.values())
+        shares = {k: room * v / tot for k, v in free.items()} if tot > 0 else {}
+        clipped = {k: (SPLIT_FLOOR if v < SPLIT_FLOOR else SPLIT_CAP)
+                   for k, v in shares.items() if v < SPLIT_FLOOR or v > SPLIT_CAP}
+        if not clipped:
+            fixed.update(shares)
+            break
+        fixed.update(clipped)
+    return {k: round(fixed.get(k, SPLIT_FLOOR), 4) for k in raw}
+
+
+def temperature(sl: dict[str, Any], saturation: dict[str, Any], feedback: dict[str, Any],
+                prev: dict[str, Any], history: list[dict[str, Any]]) -> dict[str, Any]:
+    """Breadth law section 28: which rules fire, from measured inputs only."""
+    fired: list[str] = []
+    unmeasured: list[str] = []
+    if sl.get("status") == "MEASURED":
+        if float(sl.get("per_hour") or 0.0) <= 0.0:
+            fired.append("stall")
+    else:
+        unmeasured.append(f"n_eff slope: {sl.get('why')}")
+    cert = _dict(saturation.get("certificates"))
+    recent = cert.get("median_validated_edge_recent")
+    prior = cert.get("median_validated_edge_prior")
+    if isinstance(recent, (int, float)) and isinstance(prior, (int, float)):
+        if float(recent) < float(prior):
+            fired.append("quality_degrading")
+    else:
+        unmeasured.append("validated edge recent-vs-prior (CERTIFICATE_SATURATION.certificates)")
+    dup = feedback.get("duplicate_share")
+    pdup = _dict(_dict(prev.get("budget_split")).get("inputs")).get("duplicate_share")
+    if isinstance(dup, (int, float)) and isinstance(pdup, (int, float)):
+        if float(dup) - float(pdup) > DUP_RISE:
+            fired.append("duplicates_rising")
+    else:
+        unmeasured.append("duplicate share trend (BREADTH_FEEDBACK.json, two readings)")
+    rows = [r for r in history if isinstance(r.get("n_structural_clusters"), (int, float))
+            and isinstance(r.get("n_effective_certificates"), (int, float))]
+    if len(rows) >= 2:
+        a, b = rows[max(0, len(rows) - 6)], rows[-1]
+        if (float(b["n_structural_clusters"]) > float(a["n_structural_clusters"])
+                and float(b["n_effective_certificates"]) <= float(a["n_effective_certificates"])):
+            fired.append("new_clusters_not_surviving")
+    else:
+        unmeasured.append("structural-cluster vs N_EFFECTIVE_CERT trend (effective_breadth.jsonl)")
+    streams = cert.get("n_independent_forward_streams")
+    if isinstance(streams, (int, float)):
+        if int(streams) >= STRONG_STREAMS and "stall" not in fired:
+            fired.append("independent_survivors_accumulating")
+    else:
+        unmeasured.append("independent forward streams (CERTIFICATE_SATURATION.certificates)")
+    if "stall" in fired or "duplicates_rising" in fired:
+        mode = "EXPLORE"
+    elif "new_clusters_not_surviving" in fired:
+        mode = "FALSIFY"
+    elif "quality_degrading" in fired:
+        mode = "DEEPEN"
+    elif "independent_survivors_accumulating" in fired:
+        mode = "EXPLOIT"
+    else:
+        mode = "BALANCED"
+    return {"mode": mode, "fired": fired, "unmeasured": unmeasured,
+            "duplicate_share": dup if isinstance(dup, (int, float)) else None}
+
+
+def budget_split(temp: dict[str, Any]) -> dict[str, Any]:
+    """Breadth law section 16: the adaptive A/B/C/D split from the fired rules."""
+    w = dict(BASE_SPLIT)
+    fired = set(temp.get("fired") or [])
+    if fired & {"stall", "duplicates_rising"}:
+        w["A"] *= HEAT
+        w["C"] *= HEAT
+    if "quality_degrading" in fired:
+        w["B"] *= HEAT
+    if "new_clusters_not_surviving" in fired:
+        w["D"] *= HEAT
+    if "independent_survivors_accumulating" in fired:
+        w["B"] *= HEAT
+    return {"split": _clamp_split(w), "base": dict(BASE_SPLIT), "mode": temp.get("mode"),
+            "fired": sorted(fired), "unmeasured": temp.get("unmeasured") or [],
+            "inputs": {"duplicate_share": temp.get("duplicate_share")},
+            "floor": SPLIT_FLOOR, "cap": SPLIT_CAP,
+            "rule": ("stall or rising duplicates heat A and C; quality degrading heats B; new "
+                     "clusters without N_EFFECTIVE_CERT rise heat D; strong independent forward "
+                     f"streams heat B; every share in [{SPLIT_FLOOR}, {SPLIT_CAP}]")}
+
+
+def category_of(leg: str) -> str | None:
+    if leg in FALSIFICATION_LEGS:
+        return "D"
+    if leg in FRONTIER_LEGS:
+        return "C"
+    if leg in EXPLORATION_LEGS:
+        return "A"
+    if leg in EXPLOITATION_LEGS:
+        return "B"
+    return None
+
+
 def build() -> dict[str, Any]:
     hist = _jsonl(HISTORY)
     reads = readings(hist)
@@ -188,6 +329,10 @@ def build() -> dict[str, Any]:
     sl = slope(reads, ledger)
     fac = factors(sl)
     floor = exploration_floor(axis, latest, hist[-1] if hist else None)
+    sat = _read(SATURATION)
+    temp = temperature(sl, sat, _read(FEEDBACK), _read(OUT), hist)
+    split = budget_split(temp)
+    cert = _dict(sat.get("certificates"))
     return {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "n_eff": n_eff, "n_eff_at": reads[-1][0].isoformat(timespec="seconds") if reads else None,
@@ -198,6 +343,11 @@ def build() -> dict[str, Any]:
         "exploration_legs": sorted(EXPLORATION_LEGS),
         "exploitation_legs": sorted(EXPLOITATION_LEGS),
         "status": "UNMEASURED" if n_eff is None else "MEASURED",
+        "temperature": temp, "budget_split": split,
+        "certificates": {"n_certificates": cert.get("n_certificates"),
+                         "n_effective_certificates": cert.get("n_effective_certificates"),
+                         "basis": ("CERTIFICATE_SATURATION.json" if cert
+                                   else "UNMEASURED: no saturation map")},
         "rule": ("research is paid in n_eff per compute-hour: a stalled ladder moves budget to "
                  "the legs that open axes, a rising one to the legs that deepen them, clipped to "
                  f"{list(FACTOR_CLIP)}; UNMEASURED reallocates nothing"),
@@ -207,12 +357,24 @@ def build() -> dict[str, Any]:
 def budget_factor(leg: str, doc: dict[str, Any] | None = None) -> float:
     """The ladder's factor for `leg` (1.0 for legs in neither set or when unmeasured)."""
     d = doc if doc is not None else _read(OUT)
-    fac = d.get("factors") if isinstance(d.get("factors"), dict) else {}
+    fac = _dict(d.get("factors"))
     if leg in EXPLORATION_LEGS:
-        return float(fac.get("exploration", 1.0) or 1.0)
-    if leg in EXPLOITATION_LEGS:
-        return float(fac.get("exploitation", 1.0) or 1.0)
-    return 1.0
+        base = float(fac.get("exploration", 1.0) or 1.0)
+    elif leg in EXPLOITATION_LEGS:
+        base = float(fac.get("exploitation", 1.0) or 1.0)
+    else:
+        base = 1.0
+    return min(FACTOR_CLIP[1], max(FACTOR_CLIP[0], base * split_factor(leg, d)))
+
+
+def split_factor(leg: str, doc: dict[str, Any]) -> float:
+    """The leg's category share over its base share, square-rooted (1.0 when absent)."""
+    cat = category_of(leg)
+    split = _dict(_dict(doc.get("budget_split")).get("split"))
+    share = split.get(cat) if cat else None
+    if not isinstance(share, (int, float)) or cat is None or BASE_SPLIT.get(cat, 0) <= 0:
+        return 1.0
+    return float((float(share) / BASE_SPLIT[cat]) ** 0.5)
 
 
 def write(doc: dict[str, Any], path: Path | None = None) -> Path:
@@ -235,6 +397,8 @@ def main(argv: list[str] | None = None) -> int:
           f"factors exploration x{doc['factors']['exploration']:.2f} "
           f"exploitation x{doc['factors']['exploitation']:.2f}")
     print(f"  {doc['factors']['why']}")
+    print(f"  temperature {doc['temperature']['mode']} fired={doc['temperature']['fired']} "
+          f"split={doc['budget_split']['split']}")
     if not a.dry_run:
         print(f"-> {write(doc)}")
     return 0
