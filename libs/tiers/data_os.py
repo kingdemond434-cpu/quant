@@ -604,6 +604,10 @@ READER_ROUTES: dict[str, dict[str, Any]] = {
     "libs/research/measurement.py": {
         "route": "mention", "sources": ("cot_fx",),
         "basis": "declares data/cot/*.parquet as a measurement's data_source label"},
+    "desks/mt5/research/countries/institutional/ontology.py": {
+        "route": "mention", "sources": ("lbma_vaults", "shfe_gold"),
+        "basis": "names lbma_vault and shfe_warehouse as triangulation source ids in the frozen "
+                 "taxonomy; reads no values (institutional_footprint.py stamps every frame)"},
 }
 
 

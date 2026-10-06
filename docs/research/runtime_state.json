@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 761,
+  "NEVER": 762,
   "UNMEASURED": 37
  },
  "scope": {
-  "attested": 979,
+  "attested": 980,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -273,6 +273,16 @@
     "organs": [
      "executable:desks/mt5/research/dormant_components.py",
      "library:libs/ops/intelligence_inputs.py"
+    ]
+   },
+   {
+    "at": "2026-10-06T15:25:39+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:institutional_footprint"
     ]
    }
   ]
@@ -25230,6 +25240,34 @@
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
    "measured_at": "2026-10-01T12:25:50+00:00"
+  },
+  {
+   "organ": "leg:institutional_footprint",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/institutional_footprint.py"
+   ],
+   "clock": "hourly_cycle:institutional_footprint",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/INSTITUTIONAL_COVERAGE.json",
+   "artifact_declared": "desks/mt5/reports/INSTITUTIONAL_COVERAGE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T15:25:39+00:00"
   }
  ],
  "ratchet": {
