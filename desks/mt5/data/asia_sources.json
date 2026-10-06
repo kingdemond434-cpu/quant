@@ -907,6 +907,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "C2_API_KEY",
+   "key_in": "query:apikey",
    "cadence": "weekly",
    "targets": [
     "EURUSD",
@@ -932,6 +933,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "DARWINEX_TOKEN",
+   "key_in": "bearer",
    "cadence": "weekly",
    "targets": [
     "EURUSD",
@@ -1088,6 +1090,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "EIA_API_KEY",
+   "key_in": "query:api_key",
    "cadence": "weekly",
    "pit": {
     "event_time": "reference week",
@@ -1628,6 +1631,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "BANXICO_TOKEN",
+   "key_in": "header:Bmx-Token",
    "cadence": "daily",
    "pit": {
     "event_time": "publication",

@@ -151,6 +151,32 @@ def _key_present(src: dict[str, Any]) -> bool:
     return bool(env and read_key(env))
 
 
+def _apply_key(src: dict[str, Any], url: str, headers: dict[str, str]
+               ) -> tuple[str, dict[str, str], str]:
+    """(url to SEND, headers, key) with the source's key placed where its row DECLARES.
+
+    `key_in` is `query:<param>`, `header:<name>` or `bearer`; a row without it sends no key (its
+    url is a landing page, and the keyed fetch of that dataset lives in keyed_sources/alt_proxies,
+    which build the real endpoint). The recorded `url` never carries the key, and the returned
+    key lets the caller scrub it out of any error text before the row is written."""
+    from libs.ops.env_keys import read_key
+    place = str(src.get("key_in") or "")
+    env = str(src.get("key_env") or "")
+    key = read_key(env) if (place and env) else ""
+    if not key:
+        return url, headers, ""
+    out = dict(headers)
+    kind, _, name = place.partition(":")
+    if kind == "query" and name:
+        sep = "&" if "?" in url else "?"
+        return f"{url}{sep}{urllib.parse.urlencode({name: key})}", out, key
+    if kind == "header" and name:
+        out[name] = key
+    elif kind == "bearer":
+        out["Authorization"] = f"Bearer {key}"
+    return url, out, key
+
+
 def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool, str]:
     """Ask the host's robots.txt and RECORD what it said. The answer is a LABEL, not a gate.
 
@@ -358,7 +384,15 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                            "access": access,
                            "collected_utc": datetime.now(UTC).isoformat(timespec="seconds")}
 
-    if access in ("key", "paid") and not _key_present(src):
+    # PAID DATA IS REFUSED BY RULE, NOT BY THE ACCIDENT OF A MISSING KEY (audit of #201,
+    # 2026-10-06): private or paid data stays blocked whatever is set on the box.
+    if access == "paid":
+        rec.update({"status": "BLOCKED_PAID",
+                    "why": "paid source: refused by the data policy (public or licensed only), "
+                           "whatever credential the host holds"})
+        return rec
+
+    if access == "key" and not _key_present(src):
         rec.update({"status": "UNCONFIGURED", "key_env": src.get("key_env"),
                     "why": (f"declares {access} access and {src.get('key_env') or 'no key env'} "
                             f"is not set. A named state, never a failure and never a silent "
@@ -393,7 +427,8 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
             headers["If-Modified-Since"] = str(validators["last_modified"])
     headers.update(_declared_headers(src))
     body_out = _declared_form(src)
-    req = urllib.request.Request(url, data=body_out, headers=headers)
+    send_url, headers, _key = _apply_key(src, url, headers)
+    req = urllib.request.Request(send_url, data=body_out, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
             status = int(getattr(r, "status", 0) or 0)
@@ -415,10 +450,13 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                                  f"change")})
         return rec
     except (urllib.error.URLError, TimeoutError, OSError) as e:
-        rec.update({"status": "UNREACHABLE", "why": f"{type(e).__name__}: {str(e)[:90]}"})
+        why = f"{type(e).__name__}: {str(e)[:90]}"
+        rec.update({"status": "UNREACHABLE",
+                    "why": why.replace(_key, "<key>") if _key else why})
         return rec
     except Exception as e:
-        rec.update({"status": "UNMEASURED", "why": f"{type(e).__name__}: {str(e)[:90]}"})
+        why = f"{type(e).__name__}: {str(e)[:90]}"
+        rec.update({"status": "UNMEASURED", "why": why.replace(_key, "<key>") if _key else why})
         return rec
 
     rec.update({"http": status, "content_type": ctype, "bytes": len(body)})
@@ -625,7 +663,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"asia collector: {len(rows)} attempted of {len(sources)} -> {dict(census)}")
     for st in ("COLLECTED", "NEEDS_PARSER", "ROUTE_CHANGED", "HTTP_ERROR", "UNREACHABLE",
-               "UNCONFIGURED", "BLOCKED_BY_ROBOTS"):
+               "UNCONFIGURED", "BLOCKED_PAID", "BLOCKED_BY_ROBOTS"):
         rs = [r for r in rows if r.get("status") == st]
         if not rs:
             continue

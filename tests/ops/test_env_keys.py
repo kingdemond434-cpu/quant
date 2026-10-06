@@ -15,32 +15,41 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_process_env_is_used_off_windows(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("QK_TEST_KEY", " abc ")
-    monkeypatch.setattr(env_keys, "registry_sources", lambda name: [])
     assert env_keys.read_key("QK_TEST_KEY") == "abc"
 
 
 def test_registry_value_reaches_a_process_started_before_setx(
         monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+
     from libs.ops import env_secret
     monkeypatch.setenv("QK_TEST_KEY", "stale")
     monkeypatch.setattr(env_secret, "_registry",
                         lambda hive, name: "fromreg" if hive == "machine" else None)
     assert env_keys.read_key("QK_TEST_KEY") == "fromreg"
-    # the registry wins over a stale inherited copy, and children inherit the fresh one
-    import os
+    assert os.environ["QK_TEST_KEY"] == "stale", "no export unless asked"
+    assert env_keys.read_key("QK_TEST_KEY", export=True) == "fromreg"
     assert os.environ["QK_TEST_KEY"] == "fromreg"
 
 
-def test_another_users_hive_is_the_last_resort(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_another_users_hive_is_reported_but_never_read(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("QK_TEST_KEY", raising=False)
     monkeypatch.setattr(env_keys, "registry_sources",
                         lambda name: [("user:S-1-5-21-1", "otheruser")])
-    assert env_keys.read_key("QK_TEST_KEY") == "otheruser"
+    assert env_keys.read_key("QK_TEST_KEY") == ""
+
+
+@pytest.mark.parametrize("name", ["TIANYANCHA_TOKEN", "BAIDU_INDEX_COOKIE", "XUEQIU_COOKIE",
+                                  "X_BEARER_TOKEN", "REDDIT_CLIENT_ID", "WIND_KEY"])
+def test_paid_and_banned_names_are_refused_even_when_set(
+        monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+    monkeypatch.setenv(name, "set-on-the-box")
+    assert env_keys.refused(name)
+    assert env_keys.read_key(name) == ""
 
 
 def test_missing_is_default(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("QK_TEST_KEY", raising=False)
-    monkeypatch.setattr(env_keys, "registry_sources", lambda name: [])
     assert env_keys.read_key("QK_TEST_KEY") == ""
     assert env_keys.read_key("") == ""
 

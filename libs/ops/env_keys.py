@@ -7,10 +7,11 @@ however many times the operator sets it (10-06: FRED_API_KEY, "I did this so man
 plain ``setx`` without ``/M`` lands in one user's HKCU, which a task running as another account
 never reads either.
 
-``read_key`` closes both. It reuses ``libs.ops.env_secret.lookup`` (machine registry, user
-registry, process env; from the World sensor lane, #204) and adds any other loaded user's hive.
-A hit is copied into ``os.environ`` so the children the caller spawns inherit it. Values are never
-logged.
+``read_key`` closes the first. It reuses ``libs.ops.env_secret.lookup`` (machine registry, user
+registry, process env; from the World sensor lane, #204) and refuses names the catalog marks
+paid, non-commercial or banned. For the second, ``registry_sources`` (used only by the
+checkers, to REPORT, never to hand a value to a reader) also names another account's hive, so
+the operator learns the key was set under the wrong account. Values are never logged.
 
 The key list itself is data, in ``env_keys_catalog.json`` next to this file, so the Python and
 PowerShell checkers (scripts/check_keys.py, scripts/check_keys.ps1) and the operator guide read
@@ -78,24 +79,32 @@ def registry_sources(name: str) -> list[tuple[str, str]]:
     return out
 
 
-def read_key(name: str, default: str = "") -> str:
-    """The value of ``name`` wherever Windows put it.
+#: Catalog groups a reader may never be handed a value for, whatever the host holds: paid or
+#: non-commercial data, login cookies and banned sources stay blocked BY RULE (audit of #201).
+REFUSED_GROUPS = frozenset({"paid_blocked", "banned"})
 
-    ``libs.ops.env_secret.lookup`` first (machine registry, user registry, process env -- the
-    registry wins so a key re-set after a resident started beats its stale inherited copy), then
-    any other loaded user's hive (a ``setx`` without ``/M`` made under another account). A hit is
-    copied into ``os.environ`` so the children the caller spawns inherit it.
-    """
-    if not name:
+
+def refused(name: str) -> bool:
+    return any(r["name"] == name or name in (r.get("aliases") or [])
+               for r in catalog() if r.get("group") in REFUSED_GROUPS)
+
+
+def read_key(name: str, default: str = "", *, export: bool = False) -> str:
+    """The value of ``name`` wherever Windows put it, via ``libs.ops.env_secret.lookup``
+    (machine registry, user registry, process env -- the registry wins so a key re-set after a
+    resident started beats its stale inherited copy). Only this account's hives are read.
+
+    A name the catalog marks paid, non-commercial or banned returns ``default`` even when set.
+    ``export=True`` also copies the value into ``os.environ`` for children; off by default, so a
+    lookup never widens what every subprocess inherits."""
+    if not name or refused(name):
         return default
     from libs.ops.env_secret import lookup
 
     value, _origin = lookup((name,))
     if not value:
-        value = next((v for s, v in registry_sources(name) if s.startswith("user:")), "")
-    if not value:
         return default
-    if os.environ.get(name, "").strip() != value:
+    if export and os.environ.get(name, "").strip() != value:
         os.environ[name] = value
     return value
 
