@@ -148,7 +148,12 @@ def family_kalman_beta_residual(df: pd.DataFrame, *, pair_symbol: str = "US500",
     if x is None:
         return []
     ry, rx = np.diff(y, prepend=np.nan), np.diff(x, prepend=np.nan)
-    r = _r_scale(y, warm)
+    # the observation noise is the residual variance of a static beta on the warm-up bars only
+    a, b = ry[:warm], rx[:warm]
+    ok = np.isfinite(a) & np.isfinite(b)
+    if ok.sum() < warm // 2 or not np.var(b[ok]) > 0:
+        return []
+    r = float(np.var(a[ok] - np.polyfit(b[ok], a[ok], 1)[0] * b[ok]))
     if not (math.isfinite(r) and r > 0):
         return []
     e = ss.dynamic_regression(ry, rx, delta=delta, r=r).innov

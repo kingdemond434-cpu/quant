@@ -86,6 +86,8 @@ def test_no_pair_no_signals():
                                                       "window": 2000, "min_events": 60})])
 def test_fires_with_a_sane_bracket_and_is_causal(pair, name, kw):
     fn = rm.ROMAN_FAMILIES[name]
+    if name != "kalman_beta_residual":
+        pair = _bars()                                    # fat-tailed bars for the solo legs
     sigs = fn(pair, **kw)
     assert sigs, name
     for s in sigs:
