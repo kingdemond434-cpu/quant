@@ -56,6 +56,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT), str(ROOT / "scripts")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from research.parquet_publication import atomic_parquet  # noqa: E402
+
 UNIVERSE = DESK / "data" / "universe"
 REGISTRY = UNIVERSE / "universe.json"
 VERDICTS = DESK / "data" / "bar_coverage_verdicts.json"
@@ -317,7 +319,7 @@ def _one(mt5: Any, pd: Any, pull: Any, floor_for: Any, sym: str, tf: str,
     frame["time"] = pd.to_datetime(frame["time"], unit="s", utc=True)
     frame = frame.set_index("time").sort_index()
     try:
-        frame.to_parquet(UNIVERSE / f"{sym}_{tf}.parquet")
+        atomic_parquet(frame, UNIVERSE / f"{sym}_{tf}.parquet")
     except Exception as exc:                             # pragma: no cover - disk-level failure
         return {"verdict": UNMEASURED, "at": at, "bars": int(n), "floor": floor,
                 "why": f"the venue served {n} bars and the write failed: "

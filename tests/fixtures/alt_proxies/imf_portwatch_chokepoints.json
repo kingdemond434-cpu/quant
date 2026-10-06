@@ -1,0 +1,5 @@
+{"features":[
+ {"attributes":{"date":1788220800000,"portname":"Strait of Hormuz","n_total":98,"capacity":5201000}},
+ {"attributes":{"date":1788307200000,"portname":"Strait of Hormuz","n_total":103}},
+ {"attributes":{"date":1788307200000,"portname":"Bab el-Mandeb Strait","n_total":31}}
+]}

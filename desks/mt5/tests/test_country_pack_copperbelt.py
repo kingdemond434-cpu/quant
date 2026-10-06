@@ -61,6 +61,7 @@ from countries.copperbelt import pack as CB  # type: ignore[import-not-found]  #
 from libs.research import country_lab as CL  # noqa: E402
 from libs.research import forests as F  # noqa: E402
 from libs.research import regional_parity as RP  # noqa: E402
+from libs.research.country_lab import registered_terms_ground  # noqa: E402
 
 ACTOR_FIELDS = ("holds", "forced_to", "when", "information", "constraints", "instruments",
                 "counterparties", "observables", "impact", "persistence", "falsifier")
@@ -345,7 +346,9 @@ def test_all_ten_source_layers_are_populated_and_the_refusals_are_named() -> Non
     coverage = CB.source_layer_coverage()
     assert coverage["n_layers_covered"] == 10
     assert coverage["unexplained_missing"] == []
-    assert coverage["machine_use_forbidden"], (
+    # LAWS §5e (2026-09-23): terms-restricted ground is REGISTERED by its access label and mined;
+    # machine_use_allowed=false is a deleted brake, so the label is what proves it was not omitted.
+    assert registered_terms_ground(CB.SOURCE_CLASSES), (
         "nothing is registered as machine-use-forbidden, which is implausible for a region whose "
         "cobalt price assessment and copper balance both live behind publishers' terms")
     assert coverage["low_weight_kept"], "no fringe ground is kept at all, so it was dropped"

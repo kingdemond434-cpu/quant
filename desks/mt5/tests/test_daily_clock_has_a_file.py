@@ -134,7 +134,7 @@ def test_the_refresher_loads_and_answers_2_without_a_terminal(tmp_path, monkeypa
     monkeypatch.setattr(rt, "OUT", tmp_path)
     monkeypatch.setattr(rt, "DERIVED_MANIFEST", tmp_path / "derived_series.json")
     _bars(24 * 400, "h").to_parquet(tmp_path / "HASBARS_H1.parquet")
-    assert rt.mt5 is None, "this container has no MetaTrader5; the guard is what is under test"
+    monkeypatch.setattr(rt, "mt5", None)  # exercise an unavailable terminal on every host
     assert rt.main() == 2
     # ...and the derivation, which needs no terminal, still ran.
     assert (tmp_path / "HASBARS_D1.parquet").exists()

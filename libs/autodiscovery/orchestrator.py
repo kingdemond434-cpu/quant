@@ -9,6 +9,7 @@ is testable offline; in production it pulls from MT5.
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
@@ -65,6 +66,27 @@ _MIN_BARS = 250
 # would need 358 bars before any candidate qualified, so the discipline would almost
 # never apply. A holdout that never engages is not a holdout either.
 _LOCKBOX_FRACTION = 0.20
+
+
+def frozen_lockbox_refusal(hyp: Hypothesis, box: LockedHoldout[np.ndarray]) -> str | None:
+    """THE FREEZE STEP BEFORE `open_lockbox` (Tier S layer 12): None when the box may open.
+
+    The lockbox accepts an immutable candidate only. The hypothesis spec and the research slice
+    it was judged on are hashed into a frozen candidate (`firewall.freeze`), `lockbox_accepts`
+    re-verifies that pin, and the judge's runtime firewall (`firewall.judge_refusal`) must clear
+    the read. Any refusal -- or any error inside the check -- is returned as the reason, and the
+    caller keeps the box SHUT and the candidate off the registry: it refuses, it never passes."""
+    try:
+        from libs.tiers import firewall as _fw
+        research_sha256 = hashlib.sha256(np.ascontiguousarray(
+            box.research(), dtype="float64").tobytes()).hexdigest()
+        frozen = _fw.freeze({"hypothesis": hyp.model_dump(mode="json"),
+                             "research_sha256": research_sha256,
+                             "split_index": int(box.split_index)})
+        _fw.lockbox_accepts(frozen)
+        return _fw.judge_refusal("read", f"lockbox/{frozen['spec_hash']}")
+    except Exception as exc:  # the check could not run: refuse, never pass
+        return f"FIREWALL_ERROR: {type(exc).__name__}: {exc}"
 
 
 class AutoDiscoveryLab:
@@ -440,8 +462,13 @@ class AutoDiscoveryLab:
             # reach the registry. Opening it for candidates already rejected would burn the
             # holdout's independence for no decision.
             elif status is CandidateStatus.REGISTRY and box is not None:
-                held = box.open_lockbox()
-                if float(np.mean(held)) <= 0.0:
+                # FREEZE, then the judge's firewall, then open (`frozen_lockbox_refusal`).
+                _refusal = frozen_lockbox_refusal(hyp, box)
+                held = None if _refusal else box.open_lockbox()
+                if _refusal:
+                    status = CandidateStatus.PAPER
+                    reason = f"failed: lockbox firewall ({_refusal}); the lockbox stays sealed"
+                elif held is not None and float(np.mean(held)) <= 0.0:
                     status = CandidateStatus.PAPER
                     reason = ("failed: lockbox (edge absent in the sealed final "
                               f"{_LOCKBOX_FRACTION:.0%} never used for validation)")

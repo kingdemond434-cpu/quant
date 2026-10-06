@@ -38,6 +38,15 @@ except Exception as _prejudge_exc:                        # pragma: no cover - h
     _prejudge = None
     print(f"prejudge screen unavailable ({_prejudge_exc}); candidates carry no Tier S tag")
 
+# THE BUILD-FAILURE BANK (Defect 4). Every cell that fails to BUILD here -- unknown family,
+# unknown symbol, a raising family, unresolvable inputs, too few signals -- is recorded with its
+# cause class instead of vanishing into a `return None`; the hourly leg `build_failure_bank`
+# ranks the causes into fix work. Recording only, and guarded: no bank, no change in behaviour.
+try:
+    import build_failure_bank as _bfb
+except Exception:                                          # pragma: no cover - host-dependent
+    _bfb = None
+
 _h1_cache: dict = {}
 _prejudge_rules_cache: dict = {}
 
@@ -238,7 +247,7 @@ def run_cell(cell: dict) -> dict | None:
     params = cell["params"]
     func = FAMILY_FUNCS.get(family_name)
     if not func:
-        return None
+        return _fail("UNKNOWN_FAMILY", f"no implementation of family {family_name!r}", cell)
     try:
         # SAME CASE FOLD AS `bars()`, and the same reason. An uppercased `ACCENTURE` missed the
         # registry's `Accenture` here too and returned None -- the second of two silent kills on
@@ -246,7 +255,7 @@ def run_cell(cell: dict) -> dict | None:
         # be looked up". A cell that is genuinely unknown to the broker still returns None below.
         meta = _uni.get(canonical_symbol(sym), {})
         if not meta:
-            return None
+            return _fail("UNKNOWN_SYMBOL", f"{sym!r} is not in the broker registry", cell)
         # THE CELL'S OWN CHART. `timeframe_of` reads it from the cell's params and defaults to
         # H1 when the cell does not declare one -- the docket's 23,465 rows are all undeclared
         # today, so this is a no-op for them and load-bearing for every M5/M15/H4/D1 cell the
@@ -281,11 +290,11 @@ def run_cell(cell: dict) -> dict | None:
             call_params.update(extra)
         sigs = list(func(df, **call_params))
         if len(sigs) < 20:
-            return None
+            return _fail("INSUFFICIENT_SIGNALS", f"{len(sigs)} signal(s), 20 needed", cell)
         result = run_backtest(df, sigs, costs=costs)
         st = result.stats()
         if st["n"] < 20:
-            return None
+            return _fail("INSUFFICIENT_SIGNALS", f"{st['n']} trade(s), 20 needed", cell)
         row = {
             "symbol": sym, "family": family_name, "params": params,
             "n": st["n"], "exp_r": round(st["expectancy_r"], 4),
@@ -301,7 +310,31 @@ def run_cell(cell: dict) -> dict | None:
         return row
     except Exception as e:
         print(f"  ERR {sym}.{family_name}: {e}")
-        return None
+        cause = _bfb.classify_exception(e) if _bfb is not None else "COMPILE_ERROR"
+        return _fail(cause, f"{type(e).__name__}: {e}", cell)
+
+
+def _fail(cause: str, detail: str, cell: dict) -> dict:
+    """A cell that did not BUILD, with its cause class. Returned (never appended to a module
+    list: workers are separate processes) and counted by the collector into the bank; it is
+    never filed as a result."""
+    return {"__fail__": cause, "detail": str(detail)[:240],
+            "symbol": cell.get("symbol"), "family": cell.get("family")}
+
+
+def _bank_result(bank, r: dict | None) -> None:
+    """Route one run_cell outcome into the build-failure bank (skips are INPUTS_UNRESOLVED)."""
+    if bank is None:
+        return
+    bank.attempt()
+    if not r:
+        return
+    if "__fail__" in r:
+        bank.record(r["__fail__"], r.get("detail", ""), symbol=r.get("symbol"),
+                    family=r.get("family"))
+    elif "__skip__" in r:
+        fam, _, why = str(r["__skip__"]).partition(":")
+        bank.record("INPUTS_UNRESOLVED", why.strip(), family=fam)
 
 
 def _docket_rows() -> list[dict]:
@@ -658,6 +691,7 @@ def run_all() -> list[dict]:
     grid.sort(key=lambda c: (_cell_key(c) in cursor, str(c.get("symbol")), str(c.get("family"))))
     results = []
     skips: Counter = Counter()
+    bank = _bfb.Bank("run_external_backtest") if _bfb is not None else None
     t0 = time.time()
     if WORKERS > 1 and len(grid) > WORKERS:
         # ONE CORE WAS THE BINDING CONSTRAINT AT THIS STAGE. This was a serial `for` loop while
@@ -673,9 +707,10 @@ def run_all() -> list[dict]:
         # here: `exp_r > 0.05` and `max_dd_r > -30` are exactly as they were.
         with mp.Pool(WORKERS) as pool:
             for k, r in enumerate(pool.imap_unordered(run_cell, grid, chunksize=8)):
+                _bank_result(bank, r)
                 if r and "__skip__" in r:
                     skips[r["__skip__"].split(":", 1)[0]] += 1
-                elif r:
+                elif r and "__fail__" not in r:
                     results.append(r)
                     if r["exp_r"] > 0.05:
                         print(f"  PASS {r['symbol']:8s}.{r['family']:25s} n={r['n']:4d} "
@@ -694,6 +729,9 @@ def run_all() -> list[dict]:
     else:
         for i, cell in enumerate(grid):
             r = run_cell(cell)
+            _bank_result(bank, r)
+            if r and "__fail__" in r:
+                r = None
             if r and "__skip__" in r:
                 skips[r["__skip__"].split(":", 1)[0]] += 1
                 r = None
@@ -715,6 +753,7 @@ def run_all() -> list[dict]:
     results.sort(key=lambda r: (r["symbol"], r["family"],
                                 json.dumps(r["params"], sort_keys=True, default=str)))
     elapsed = time.time() - t0
+    bank_row = bank.flush() if bank is not None else None
 
     # THIS SLICE'S ROWS REPLACE THEIR OWN KEYS; EVERY OTHER ROW SURVIVES. Writing `results`
     # alone would hand the gauntlet one hour's cells and forget the rest -- partial credit
@@ -768,6 +807,11 @@ def run_all() -> list[dict]:
                      "survivors": len(survivors),
                      "prejudge": prejudge_note,
                      "elapsed_s": round(elapsed, 1), "workers": WORKERS,
+                     # The skips were counted and never written: they are published now, and the
+                     # full cause breakdown sits in the build-failure bank.
+                     "skipped_inputs_by_family": dict(skips.most_common()),
+                     "build_failures": ((bank_row or {}).get("by_cause")
+                                        if bank is not None else "UNMEASURED: bank unavailable"),
                      "measured_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
     cov_path = BASE / "reports" / "BACKTEST_COVERAGE.json"
     cov_path.parent.mkdir(parents=True, exist_ok=True)

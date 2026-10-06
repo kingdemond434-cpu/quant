@@ -172,7 +172,7 @@ def _scannable(p: Path) -> bool:
         return False
     if p.suffix not in {".py", ".sh", ".ps1", ".cmd"}:
         return False
-    rel = str(p.relative_to(ROOT))
+    rel = p.relative_to(ROOT).as_posix()
     return not any(rel.startswith(m) for m in _MEMORY_ROOTS)
 
 
@@ -224,7 +224,7 @@ def scan() -> dict:
     for p in sorted(ROOT.rglob("*")):
         if not p.is_file() or not _scannable(p):
             continue
-        rel = str(p.relative_to(ROOT))
+        rel = p.relative_to(ROOT).as_posix()
         try:
             text = p.read_text("utf-8")
         except (OSError, UnicodeDecodeError):

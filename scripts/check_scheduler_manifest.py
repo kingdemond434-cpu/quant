@@ -607,6 +607,10 @@ def _box_rows(root: Path) -> tuple[list[ScheduleRow], str]:
             continue
         if runs.lower().endswith(".cmd"):
             runs = _resolve_cmd_wrapper(root, runs)
+        # A launcher can be the scheduled executable while a deeper script is the
+        # shared organ whose overlap matters.  Keep the executable truthful in
+        # ``runs`` and let the manifest name that underlying organ explicitly.
+        runs = kv.get("organ", runs)
         rows.append(ScheduleRow("box_task", runs, kv.get("trigger", "UNDECLARED"), None,
                                 f"{kv.get('name', '?')} (line {i})"))
     return rows, f"{_BOX_TASKS_REL}: {len(rows)} task row(s) naming a script"

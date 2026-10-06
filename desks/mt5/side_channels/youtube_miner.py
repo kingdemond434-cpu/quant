@@ -191,7 +191,11 @@ def run_and_save() -> list[dict]:
         })
 
     out_file = OUT / f"discoveries_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
-    out_file.write_text(json.dumps(results, indent=2), encoding="utf-8")
+    try:
+        from side_channels.discovery_io import write_discoveries
+    except ModuleNotFoundError:
+        from discovery_io import write_discoveries
+    results = write_discoveries(out_file, results)
     print(f"youtube: {len(results)} discoveries saved to {out_file.name}")
     return results
 

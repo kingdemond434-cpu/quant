@@ -24,7 +24,7 @@ THREE READINGS PER SYMBOL, AND THEY ARE DIFFERENT MEASUREMENTS, NEVER THE SAME O
             `live_ledger.jsonl` (risk_quote -> R) and `order_intents.jsonl` (intended price ->
             entry slippage).
 
-WHAT THE FIRST RUN MEASURED, on account 495044 (Fusion Markets Pty Ltd, FusionMarkets-Live, EUR)
+WHAT THE FIRST RUN MEASURED, on the live account (Fusion Markets Pty Ltd, FusionMarkets-Live, EUR)
 from 433 deals between 2026-08-23 and 2026-09-22 and the terminal's own M1 tape:
 
   COMMISSION IS 2.00 EUR PER LOT PER SIDE, on every one of the 12 symbols the desk has traded,
@@ -832,7 +832,10 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
     try:
         acct = mt5.account_info()
         term = mt5.terminal_info()
-        out["account"] = {"login": getattr(acct, "login", None),
+        # The login is WITHHELD: this snapshot is committed, and a tracked file must never name
+        # the live account (tests/ops/test_live_infrastructure_is_not_published.py). Nothing
+        # reads it from here; the terminal itself answers mt5.account_info().login on the box.
+        out["account"] = {"login_withheld": getattr(acct, "login", None) is not None,
                           "currency": getattr(acct, "currency", None),
                           "company": getattr(acct, "company", None),
                           "server": getattr(acct, "server", None),
@@ -1167,7 +1170,7 @@ def render_md(rep: dict[str, Any]) -> str:
     add(f"Generated {rep.get('at')} by `desks/mt5/research/cost_truth.py` "
         "(hourly leg `cost_truth`). DERIVED -- edit the organ, never this page.")
     add("")
-    add(f"Account **{acct.get('login')}** ({acct.get('company')}, {acct.get('server')}, "
+    add(f"The live account ({acct.get('company')}, {acct.get('server')}, "
         f"{acct.get('currency')}), terminal {rep.get('terminal_status')}, "
         f"{rep.get('n_deals')} deals, {rep.get('n_symbols')} symbols, "
         f"{rep.get('n_symbols_measured')} with a realised reading.")

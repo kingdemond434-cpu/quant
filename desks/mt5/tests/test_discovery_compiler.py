@@ -123,6 +123,20 @@ def _child(**over: Any) -> dict[str, Any]:
     return {**base, **over}
 
 
+def test_unexecutable_descendant_is_disposed_before_donation(ctx):
+    cell = _child(params={"conditioner": "carry"})
+    ok, why = dc._dispose(cell, ctx, coverage={}, hashes=set(), redundant=set(), conn=None)
+    assert not ok
+    assert why.startswith("execution:modifier_unavailable")
+    assert "conditioner='carry'" in why
+
+
+def test_executable_descendant_keeps_the_same_door(ctx):
+    cell = _child(params={"regime": "high_vol"})
+    ok, why = dc._dispose(cell, ctx, coverage={}, hashes=set(), redundant=set(), conn=None)
+    assert ok, why
+
+
 # --------------------------------------------------------------------------- intake
 def test_intake_reads_every_live_source_shape(desk, ctx):
     _populate(desk)
@@ -220,6 +234,35 @@ def test_closure_dedupes_by_content_hash(desk, ctx):
     hashes = [c["content_hash"] for c in children]
     assert len(hashes) == len(set(hashes))
     assert dc._hash_of(parent) not in hashes
+
+
+def test_missing_chart_is_not_silently_promoted_to_h1(ctx):
+    """A source lead without a clock is UNMEASURED, not an H1 hypothesis."""
+    parent = dc.parent_of({"discovery_id": "clockless", "symbol": "XAUUSD",
+                           "family": "asia_momentum", "session": "asia",
+                           "declared_mechanism": "session_handover",
+                           "why": "asia handover"}, ctx)
+
+    assert parent["chart"] == ""
+    assert parent["horizon"] == "unknown"
+    ok, why = dc.gate_data(parent, ctx)
+    assert ok is False and why == "data:no_chart"
+    children, _counts, _possible = dc.closure(parent, ctx)
+    assert children  # the other independent transformations still report their attempts
+    assert {child["chart"] for child in children} == {""}
+    assert {dc.gate_data(child, ctx)[1] for child in children} == {"data:no_chart"}
+
+
+def test_explicit_params_timeframe_remains_a_declared_chart(ctx):
+    """The repair preserves a clock explicitly carried in the source parameter envelope."""
+    parent = dc.parent_of({"discovery_id": "clocked", "symbol": "XAUUSD",
+                           "family": "asia_momentum", "session": "asia",
+                           "params": {"timeframe": "m15"},
+                           "declared_mechanism": "session_handover",
+                           "why": "asia handover"}, ctx)
+
+    assert parent["chart"] == "M15"
+    assert parent["horizon"] == "intrabar"
 
 
 # --------------------------------------------------------------------------- the three gates

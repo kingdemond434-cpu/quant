@@ -110,7 +110,7 @@ WORKED = BASE / "data" / "hypotheses" / "deepening_worked.jsonl"
 #: Candidates recovered here, in the compiler's own contract, for the same consumers.
 OUT = BASE / "data" / "hypotheses" / "deepened_candidates.json"
 LOG = BASE / "logs" / "deepening_worker.log"
-#: THE BACKLOG, PUBLISHED. The no-queues law (LAWS §5e) allows a budget to leave work over and
+#: THE BACKLOG, PUBLISHED. The no-queues law (LAWS Ãƒâ€šÃ‚Â§5e) allows a budget to leave work over and
 #: requires the leftover's AGE to be published; `QUEUE_CENSUS.json` reported this queue
 #: UNMEASURED because its rows carry no enqueue stamp. The worker stamps what it sees instead,
 #: which is the honest measurement anyway: the compiler rewrites the queue file every hour, so a
@@ -515,6 +515,32 @@ def validate_expression(found: dict, universe: set[str]) -> tuple[dict, str]:
             "evidence": f"generated: {mechanism} [{ag.to_str(expr)}]"}, ""
 
 
+#: THE COMPLETION CAP, AND IT WAS THROWING AWAY HALF THE DAY'S SEAT CALLS (measured 2026-09-25).
+#:
+#: This was 700. A/B on twelve real queue rows, same prompts, same model, only the cap varying --
+#: and `response_format: json_object` crossed with it to separate "the model will not emit JSON"
+#: from "the model was cut off before it finished emitting JSON":
+#:
+#:     max_tokens=700,  no response_format    6/12 parsed   (50%)
+#:     max_tokens=700,  response_format json  7/12 parsed   (58%)
+#:     max_tokens=3000, no response_format   12/12 parsed  (100%)
+#:     max_tokens=3000, response_format json 12/12 parsed  (100%)
+#:
+#: THE CAUSE IS TRUNCATION, NOT COMPLIANCE. Structured output barely moves it (+8pp) while the
+#: cap moves it to perfect. The seat asks for `reasoning_effort: high` and OpenAI-compatible
+#: endpoints charge reasoning tokens against the completion cap, so a reasoning model spends the
+#: allowance thinking and is cut off mid-object; `_parse` then finds no closing brace and the
+#: caller records "reply was not a JSON object" -- which reads like a model that refused.
+#: Measured live the day before: 456 of 789 completed calls (58%) died exactly that way, the
+#: single largest loss in the lane.
+#:
+#: IT COSTS NOTHING. The free tier is capped in REQUESTS PER DAY, not tokens (see
+#: `llm_seat.provider_free_quota`), so the same thousand requests simply come back usable. This
+#: is the cheapest capacity on the desk: no purchase, no permission, no gate touched -- the
+#: recovered rows face the identical ten gates they always did.
+EXTRACT_MAX_TOKENS = int(os.environ.get("DEEPEN_EXTRACT_MAX_TOKENS", "3000"))
+
+
 def extract(task: dict, *, chat=None) -> tuple[dict, str]:
     """Ask the seat what the row's own text states. ({}, reason) on any doubt."""
     if chat is None:
@@ -524,7 +550,8 @@ def extract(task: dict, *, chat=None) -> tuple[dict, str]:
     kind = str(task.get("kind") or "")
     system = _SYSTEM_BY_KIND.get(kind, _SYSTEM)
     contract = _CONTRACT_EXPR if kind == "alpha_expression" else _CONTRACT
-    reply, err = chat(f"{text}\n\n{contract}", system=system, max_tokens=700, temperature=0.0)
+    reply, err = chat(f"{text}\n\n{contract}", system=system, max_tokens=EXTRACT_MAX_TOKENS,
+                      temperature=0.0)
     if err:
         return {}, f"seat error: {err}"
     found = _parse(reply)
@@ -741,7 +768,7 @@ def _scorer():
         p_fam, pooled = {}, 0.05
     try:
         from libs.research.hypothesis_graph import Graph
-        graph = Graph()
+        graph = Graph().snapshot()
         graph.buried()
     except Exception:
         graph = None
@@ -1008,7 +1035,7 @@ def publish_backlog(pending: list[dict], census: dict, now: datetime,
     """Publish the backlog and ITS OLDEST AGE -- the no-queues law's actual requirement.
 
     A budget may leave work over. What it may not do is leave it over unmeasured: an 18,128-row
-    backlog with no published age is the exact shape LAWS §5e exists to prevent, and
+    backlog with no published age is the exact shape LAWS Ãƒâ€šÃ‚Â§5e exists to prevent, and
     `QUEUE_CENSUS.json` was reporting this queue UNMEASURED for precisely that reason ("28,450
     rows, no per-row time"). UNMEASURED is a real answer and it is not this one any more.
     """
@@ -1045,7 +1072,7 @@ def publish_backlog(pending: list[dict], census: dict, now: datetime,
         # UNMEASURED, not "never": a pass that decided nothing cannot price the clearance.
         "days_to_clear": (round(depth / (rate_per_h * 24.0), 2) if rate_per_h > 0 else None),
         "lanes": census,
-        "law": ("LAWS §5e: nothing is queued; a budget may leave work over and its AGE is "
+        "law": ("LAWS Ãƒâ€šÃ‚Â§5e: nothing is queued; a budget may leave work over and its AGE is "
                 "published. Age is FIRST SEEN BY THIS DRAIN, not a stamp in the queue file -- "
                 "the compiler rewrites that file hourly, so a stamp there would reset every hour "
                 "and report a backlog that is permanently one hour old"),
@@ -1127,48 +1154,75 @@ LOCK = BASE / "data" / "hypotheses" / ".deepening.lock"
 
 
 def _single_flight():
-    """Acquire the run lock, or None when another run holds it.
+    """Serialize stale-lock inspection and publication; never run duplicate writers."""
+    import psutil
 
-    A CRASHED RUN MUST NOT LOCK THE DESK OUT FOR EVER, which is the failure mode of every naive
-    lock file: the process dies mid-task, the file stays, and the organ is silently dark until a
-    person notices. So the lock carries its own start time and a run older than the stale
-    threshold is TAKEN OVER with the takeover logged -- an unattended desk cannot wait for someone
-    to clear a file by hand.
-    """
     stale_after = RUN_BUDGET_SEC * 2.0
+    guard = LOCK.with_name(LOCK.name + ".claim")
+    handle = None
+    claimed_guard = False
     try:
         LOCK.parent.mkdir(parents=True, exist_ok=True)
+        handle = guard.open("a+b")
+        if guard.stat().st_size == 0:
+            handle.write(b"0")
+            handle.flush()
+        handle.seek(0)
+        # Kernel-owned byte/file locks release automatically if a claimant dies.
+        # Keep the guard inode in place so no unlink/recreate race can split owners.
+        try:
+            if os.name == "nt":
+                import msvcrt
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            claimed_guard = True
+        except OSError:
+            return None
         if LOCK.exists():
             try:
                 held = json.loads(LOCK.read_text("utf-8"))
                 age = time.time() - float(held.get("at") or 0.0)
-            except (OSError, ValueError, TypeError):
-                age = stale_after + 1.0                       # unreadable lock is a dead lock
-                held = {}
-            if age <= stale_after:
-                dlog(f"another deepening run holds the lock (pid={held.get('pid')}, "
-                     f"{age:.0f}s old): exiting rather than racing it. The queue is worked once "
-                     f"per hour whichever schedule wins -- MT5-Deepening or hourly_cycle -- and "
-                     f"two runs would choose the same tasks and overwrite each other's output")
+                pid = int(held.get("pid") or 0)
+            except (OSError, ValueError, TypeError, AttributeError):
+                age, pid = stale_after + 1.0, 0
+            if age <= stale_after or (pid > 0 and psutil.pid_exists(pid)):
+                dlog(f"another deepening run holds the lock (pid={pid}, {age:.0f}s old): "
+                     "exiting rather than racing it")
                 return None
-            dlog(f"taking over a stale lock ({age:.0f}s > {stale_after:.0f}s): the run holding it "
-                 f"is presumed dead, because an unattended desk cannot wait for a person to "
-                 f"clear a file")
-        LOCK.write_text(json.dumps({"pid": os.getpid(), "at": time.time()}), "utf-8")
-    except OSError as exc:
-        # A LOCK THAT CANNOT BE TAKEN MUST NOT STOP THE WORK. The race it prevents is wasteful,
-        # not dangerous -- the worked-ledger still stops double billing -- so an unwritable path
-        # degrades to the previous behaviour rather than silencing the organ.
-        dlog(f"lock unavailable ({type(exc).__name__}: {exc}); running unlocked")
+            dlog(f"taking over a dead stale lock (pid={pid}, {age:.0f}s old)")
+        temporary = LOCK.with_name(LOCK.name + f".{os.getpid()}.tmp")
+        try:
+            temporary.write_text(json.dumps({"pid": os.getpid(), "at": time.time()}), "utf-8")
+            os.replace(temporary, LOCK)
+        finally:
+            temporary.unlink(missing_ok=True)
         return LOCK
-    return LOCK
+    except OSError as exc:
+        dlog(f"lock unavailable ({type(exc).__name__}: {exc}); not running duplicate writers")
+        return None
+    finally:
+        if handle is not None:
+            if claimed_guard:
+                with contextlib.suppress(OSError):
+                    handle.seek(0)
+                    if os.name == "nt":
+                        import msvcrt
+                        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                    else:
+                        import fcntl
+                        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            handle.close()
 
 
 def _release(lock) -> None:
     if lock is not None:
         try:
-            lock.unlink(missing_ok=True)
-        except OSError:
+            held = json.loads(lock.read_text("utf-8"))
+            if int(held.get("pid") or 0) == os.getpid():
+                lock.unlink(missing_ok=True)
+        except (OSError, ValueError, TypeError):
             pass
 
 

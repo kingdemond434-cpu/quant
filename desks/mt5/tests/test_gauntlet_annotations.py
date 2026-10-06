@@ -70,20 +70,77 @@ def test_gate_independence_counts_lockbox_restating_walk_forward() -> None:
 
 
 def test_run_gauntlet_result_carries_independence_and_the_trial_ledger(monkeypatch) -> None:
+    # 400 days, so the reserved lockbox (gate_policy: LOCKBOX_FRAC of the calendar, at least
+    # LOCKBOX_MIN_DAYS) exists. At 120 days the 20% tail was 24 days, under the 40-day floor, no
+    # lockbox was carved, and gate 9 had no Sharpe to compare.
+    from research.gate_policy import LOCKBOX_FRAC, LOCKBOX_MIN_DAYS
+    n_days = 400
+    assert int(n_days * LOCKBOX_FRAC) >= LOCKBOX_MIN_DAYS
+    daily = pd.Series(np.sin(np.arange(n_days) / 7.0) * 0.1 + 0.01,
+                      index=pd.date_range("2025-01-01", periods=n_days, freq="D"))
+    monkeypatch.setattr(eg, "daily_series", lambda *_a, **_kw: daily)
+    cell = {"sym": "XAUUSD", "family": "cot_positioning", "params": {},
+            "mechanism_status": "NAMED", "df": None, "sigs": [], "costs": None}
+    result = eg.run_gauntlet([cell], "single-cell", {})
+    lb = result["verdicts"][0]["stages"]["lockbox"]
+    assert lb["n_days"] >= LOCKBOX_MIN_DAYS and lb["lockbox_sharpe"] is not None
+    # Since v3/v4 of the gate policy the lockbox is carved BEFORE the program matrix and read on
+    # the held-out tail alone, so gate 9 no longer restates gate 7's walk-forward OOS Sharpe.
+    # The count is still measured; the independent lockbox makes it 0 of 1 (it was 1 of 1 when
+    # gate 9 passed on wf_oos, which is the defect cf59d6b1c ended).
+    gi = result["gate_independence"]
+    assert gi["lockbox_restates_walk_forward"] == {"n": 0, "of": 1}
+    tl = result["trial_ledger"]
+    assert tl["status"] in ("MEASURED", "UNMEASURED")
+    assert "cot_positioning" in tl["family_trials"]
+    assert "UNION sets" in tl["note"]
+    # The lifetime union is the charge: never below the campaign charge, and an unmeasured
+    # ledger leaves the charge unknown, which fails the deflated-Sharpe gate closed.
+    ds = result["verdicts"][0]["stages"]["deflated_sharpe"]
+    if tl["status"] == "MEASURED" and tl.get("lifetime_trials"):
+        assert ds["n_trials"] >= result["n_trials"]
+    else:
+        assert ds["n_trials"] is None and ds["passed"] is False
+
+
+def test_run_gauntlet_lockbox_fails_closed_when_the_calendar_cannot_reserve_it(
+        monkeypatch) -> None:
+    # TRUE LOCKBOX (#52, policy v3/v4): gate 9 reads a reserved calendar tail carved BEFORE the
+    # program matrix, so it can no longer restate walk-forward's OOS Sharpe. 120 days cannot
+    # reserve the 40-day held-out floor, so gate 9 FAILS CLOSED with no Sharpe -- and an absent
+    # lockbox Sharpe is never counted as a restatement.
     daily = pd.Series(np.sin(np.arange(120) / 7.0) * 0.1 + 0.01,
                       index=pd.date_range("2025-01-01", periods=120, freq="D"))
     monkeypatch.setattr(eg, "daily_series", lambda *_a, **_kw: daily)
     cell = {"sym": "XAUUSD", "family": "cot_positioning", "params": {},
             "mechanism_status": "NAMED", "df": None, "sigs": [], "costs": None}
     result = eg.run_gauntlet([cell], "single-cell", {})
-    gi = result["gate_independence"]
-    assert gi["lockbox_restates_walk_forward"] == {"n": 1, "of": 1}
-    tl = result["trial_ledger"]
-    assert tl["status"] in ("MEASURED", "UNMEASURED")
-    assert "cot_positioning" in tl["family_trials"]
-    assert "never sets the bar" in tl["note"]
-    # The sealed charge is still the only n_trials the gate saw.
-    assert result["n_trials"] == result["verdicts"][0]["stages"]["deflated_sharpe"]["n_trials"]
+    assert result["gate_independence"]["lockbox_restates_walk_forward"] == {"n": 0, "of": 1}
+    lb = result["verdicts"][0]["stages"]["lockbox"]
+    assert lb["passed"] is False and lb["lockbox_sharpe"] is None and lb["n_days"] == 0
+    assert "no lockbox evidence exists" in lb["why"]
+
+
+def test_run_gauntlet_lockbox_reads_only_the_reserved_tail(monkeypatch) -> None:
+    # With a long enough campaign the final LOCKBOX_FRAC of the calendar is carved off before
+    # every other gate: gate 9 reads exactly those rows, and is measured apart from walk-forward.
+    from research.gate_policy import LOCKBOX_FRAC
+    n = 400
+    rng = np.random.default_rng(7)
+    daily = pd.Series(rng.normal(0.02, 0.1, n),
+                      index=pd.date_range("2024-01-01", periods=n, freq="D"))
+    monkeypatch.setattr(eg, "daily_series", lambda *_a, **_kw: daily)
+    cell = {"sym": "XAUUSD", "family": "cot_positioning", "params": {},
+            "mechanism_status": "NAMED", "df": None, "sigs": [], "costs": None}
+    result = eg.run_gauntlet([cell], "single-cell", {})
+    st = result["verdicts"][0]["stages"]
+    held = daily.iloc[int(n * (1.0 - LOCKBOX_FRAC)):]
+    assert st["lockbox"]["n_days"] == len(held) == 80
+    assert st["lockbox"]["lockbox_sharpe"] == round(
+        float(eg.sharpe_ratio(held.to_numpy(float))), 4)
+    assert st["lockbox"]["lockbox_sharpe"] != st["walk_forward"]["oos_sharpe"]
+    assert "reserved_final_calendar_fraction" in st["lockbox"]["basis"]
+    assert result["gate_independence"]["lockbox_restates_walk_forward"] == {"n": 0, "of": 1}
 
 
 def test_lifetime_trial_report_reads_the_ledger_and_never_invents_zero(monkeypatch,

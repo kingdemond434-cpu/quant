@@ -122,6 +122,13 @@ def test_horizon_never_proposes_d1_for_a_session_mechanism(ctx):
     assert "D1" in _why(ctx, "horizon")
 
 
+def test_horizon_does_not_invent_h1_when_parent_chart_is_missing(ctx):
+    """Chart adjacency has no origin until the source names a chart."""
+    assert TM.mine_horizon({**PARENT, "chart": ""}, ctx) == []
+    assert "UNMEASURED" in _why(ctx, "horizon")
+    assert "substituting H1" in _why(ctx, "horizon")
+
+
 def test_session_moves_to_the_adjacent_window_and_refuses_all_for_a_session_claim(ctx):
     kids = TM.mine_session(PARENT, ctx)
     assert {k["session"] for k in kids} == {"london"}
@@ -132,6 +139,13 @@ def test_session_offers_the_unconditional_control_where_the_contract_allows_it(c
     parent = {**PARENT, "mechanism_id": "trend_persistence", "session": "london"}
     kids = TM.mine_session(parent, ctx)
     assert {"asia", "ny", "all"} == {k["session"] for k in kids}
+
+
+def test_session_does_not_invent_h1_when_parent_chart_is_missing(ctx):
+    """Session compatibility cannot be inferred from an absent bar duration."""
+    assert TM.mine_session({**PARENT, "chart": ""}, ctx) == []
+    assert "UNMEASURED" in _why(ctx, "session")
+    assert "substituting H1" in _why(ctx, "session")
 
 
 def test_regime_proposes_both_sides_of_both_pairs(ctx):

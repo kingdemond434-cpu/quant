@@ -9,7 +9,7 @@ done. When the provider miner starts extracting fills, the same functions read t
 
 WHAT THE DESK CAN ANSWER TODAY, and it is the more urgent question anyway: does the desk's OWN
 book have the structure it would condemn in somebody else's? `data/live_ledger.jsonl` holds real
-fills from account 495044 on FusionMarkets-Live -- entry, exit, lots, SL, TP, realised PnL -- and
+fills from the live account on FusionMarkets-Live -- entry, exit, lots, SL, TP, realised PnL -- and
 that is exactly the shape `build_baskets` -> `infer_structure` -> `ruin_forensics` consumes.
 
 WHY IT MATTERS MORE THAN IT SOUNDS. The principal asked on 2026-09-12 about an EA advertising a

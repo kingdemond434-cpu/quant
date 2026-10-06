@@ -930,8 +930,11 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
             _clear_blocked(name)
             d = INTEL / name
             d.mkdir(parents=True, exist_ok=True)
-            _atomic_write(d / f"discoveries_{now:%Y%m%d_%H%M}.json",
-                          json.dumps(rows_, indent=1, default=str, ensure_ascii=False))
+            try:
+                from side_channels.discovery_io import write_discoveries
+            except ModuleNotFoundError:
+                from discovery_io import write_discoveries
+            rows_ = write_discoveries(d / f"discoveries_{now:%Y%m%d_%H%M}.json", rows_)
         else:
             _record_blocked(name, str(last.get("url") or ""), region,
                             str(last.get("diagnosis") or "FETCH_ERROR"),
@@ -950,8 +953,11 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
         tape = mine_fbs_tape()
         d = INTEL / "fbs_tape"
         d.mkdir(parents=True, exist_ok=True)
-        _atomic_write(d / f"discoveries_{now:%Y%m%d_%H%M}.json",
-                      json.dumps(tape, indent=1, default=str, ensure_ascii=False))
+        try:
+            from side_channels.discovery_io import write_discoveries
+        except ModuleNotFoundError:
+            from discovery_io import write_discoveries
+        tape = write_discoveries(d / f"discoveries_{now:%Y%m%d_%H%M}.json", tape)
         results["fbs_tape"] = {"discoveries": tape, "count": len(tape)}
         print(f"  fbs_tape: {len(tape)} rows")
     except Exception as exc:

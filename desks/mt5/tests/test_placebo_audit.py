@@ -9,6 +9,7 @@ gauntlet and lookahead sentinel and require recall 1.0 with every positive admit
 from __future__ import annotations
 
 import sys
+import json
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,25 @@ for _p in (str(DESK / "research"), str(DESK / "scripts"), str(DESK), str(DESK.pa
 
 import adversary  # noqa: E402
 import placebo_audit as pa  # noqa: E402
+
+
+@pytest.fixture(scope="module", autouse=True)
+def owned_lifetime_trials(tmp_path_factory):
+    """Real lifetime writer over owned synthetic screening receipts, never the VPS bank."""
+    from libs.research import experiment_ledger as el, hypothesis_graph as hg
+    desk = tmp_path_factory.mktemp("placebo_trials")
+    intel = desk / "data" / "intelligence" / "controls"
+    intel.mkdir(parents=True)
+    (intel / "discoveries_controls.json").write_text(json.dumps({
+        "tests_run": 200, "discoveries": [{"family": "fixture"}]}), encoding="utf-8")
+    graph = hg.Graph(desk / "data" / "hypothesis_graph.jsonl")
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(el, "DESK", desk)
+        mp.setattr(el, "OUT", desk / "reports" / "EXPERIMENT_LEDGER.json")
+        mp.setattr(hg, "Graph", lambda: graph)
+        doc = el.lifetime(write=True)
+        assert doc["lifetime_trials"] == 200
+        yield el.OUT
 
 
 class _Fixed:
@@ -78,7 +98,8 @@ def test_each_negative_differs_from_the_positive_in_its_one_respect() -> None:
 
 
 @pytest.fixture(scope="module")
-def real() -> dict[str, Any]:
+def real(measured_dsr_inputs_module: Path) -> dict[str, Any]:
+    # The judge reads its DSR inputs from a measured document and fails closed without one.
     return pa.run()
 
 
@@ -91,7 +112,8 @@ def test_the_real_judges_admit_the_positives_and_catch_every_planted_defect(real
     assert real["by_judge"][pa.SENTINEL]["recall"] == 1.0
 
 
-def test_main_writes_the_report_and_a_history_row(tmp_path: Path) -> None:
+def test_main_writes_the_report_and_a_history_row(tmp_path: Path,
+                                                  measured_dsr_inputs: Path) -> None:
     rep, hist = tmp_path / "r.json", tmp_path / "h.jsonl"
     rc = pa.main(["--report", str(rep), "--history", str(hist)])
     assert rc == 0 and rep.exists() and len(hist.read_text("utf-8").splitlines()) == 1

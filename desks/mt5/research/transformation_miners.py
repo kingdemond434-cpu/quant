@@ -501,7 +501,11 @@ def mine_asset_transfer(parent: Mapping[str, Any], ctx: Context) -> list[dict[st
 def mine_horizon(parent: Mapping[str, Any], ctx: Context) -> list[dict[str, Any]]:
     """The ADJACENT charts only (M5 < M15 < H1 < H4 < D1), pruned by the contract's span."""
     pid = str(parent.get("discovery_id") or "")
-    chart = str(parent.get("chart") or "H1").upper()
+    chart = str(parent.get("chart") or "").upper()
+    if not chart:
+        ctx.note("horizon", pid, "UNMEASURED: the parent names no chart, so adjacency cannot "
+                 "be defined without silently substituting H1")
+        return []
     if chart not in CHART_LADDER:
         ctx.note("horizon", pid, f"{chart!r} is not on the chart ladder; no neighbour is defined")
         return []
@@ -532,7 +536,11 @@ def mine_session(parent: Mapping[str, Any], ctx: Context) -> list[dict[str, Any]
     pid = str(parent.get("discovery_id") or "")
     session = str(parent.get("session") or "all").lower()
     contract = ctx.contract(parent.get("mechanism_id"))
-    chart = str(parent.get("chart") or "H1").upper()
+    chart = str(parent.get("chart") or "").upper()
+    if not chart:
+        ctx.note("session", pid, "UNMEASURED: the parent names no chart, so session compatibility "
+                 "cannot be tested without silently substituting H1")
+        return []
     wanted: list[str] = []
     if session in SESSION_LADDER:
         i = SESSION_LADDER.index(session)

@@ -188,7 +188,7 @@ def _age_of(path: Path) -> tuple[float | None, str, Any]:
 
 def _rel(root: Path, p: Path) -> str:
     try:
-        return str(p.relative_to(root))
+        return p.relative_to(root).as_posix()
     except ValueError:
         return str(p)
 

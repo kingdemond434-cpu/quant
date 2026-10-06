@@ -47,7 +47,15 @@ for _p in (str(ROOT), str(BASE), str(BASE / "scripts")):
 from libs.ops.reference_freshness import require_live_reference  # noqa: E402
 
 SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
+#: This organ's artifact is the record it appends to: `retired_certificates` and `revoked_at` in
+#: the survivor file. Bound by name so the component registry reads it (`own_artifact`).
+ARTIFACT = SURVIVORS
 UNIVERSE = BASE / "data" / "universe" / "universe.json"
+#: THE ARTIFACT THIS ORGAN OWNS, bound to the name the component registry reads (`OUT`). It
+#: writes nothing else: it retires rows out of the survivors registry above. Without the binding
+#: the registry's reach walk could attribute it to an invoker with no artifact, and the runtime
+#: attestation -- which only rows organs that declare an output -- dropped it (2026-09-30).
+OUT = SURVIVORS
 
 #: STUMP FLOOR, the same number `scripts/purge_untradeable_certs.py` carries.
 UNIVERSE_FLOOR = 50

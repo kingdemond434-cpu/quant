@@ -106,7 +106,8 @@ def check(ledger: dict[str, Any], root: Path,
         rem = str(r.get("remaining") or "").strip()
         if st == "DONE" and lid not in on_box:
             problems.append(f"{lid}: DONE without the trading box's attestation "
-                            f"({box_evidence.TRADING_HOST} in data/tier_s/box_evidence.json); "
+                            f"({box_evidence.TRADING_HOST}, by its recorded machine id, in "
+                            "data/tier_s/box_evidence.json); "
                             "code that is complete but unattested is BUILT")
         if st == "DONE" and rem:
             problems.append(f"{lid}: DONE but `remaining` names unfinished work")

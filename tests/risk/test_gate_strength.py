@@ -15,9 +15,9 @@ checker (register #52's standing warning); these tests pin the behaviour that ex
 from __future__ import annotations
 
 import pytest
-from tests.risk.conftest import make_account, make_intent
 
 from libs.risk.gate import risk_gate
+from tests.risk.conftest import make_account, make_intent
 
 
 def _approved() -> None:

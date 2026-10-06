@@ -491,14 +491,103 @@ def measure_tier_s_block(r: Any, alloc: dict[str, Any],
     by: dict[str, int] = {}
     for x in rows:
         by[str(x.get("reason"))] = by.get(str(x.get("reason")), 0) + 1
+    q = float(np.mean(list((alloc.get("book") or {}).values()) or [0.0]))
+    door_error = _bill_door_error(rows, q)
     rs = [float(x["exp_r"]) for x in rows if isinstance(x.get("exp_r"), (int, float))]
     if len(rs) < 10:
         return {"verdict": UNMEASURED, "n": len(rows), "by_reason": by,
+                "door_error": door_error,
                 "why": f"{len(rs)} withheld row(s) carry a forward R; ten are needed to price"}
-    q = float(np.mean(list((alloc.get("book") or {}).values()) or [0.0]))
     m = float(np.mean(rs))
     return {"verdict": COSTS if m > 0 else EARNS, "n": len(rows), "by_reason": by,
+            "door_error": door_error,
             "mean_withheld_r": round(m, 5), "value_logw_per_veto": round(-m * q, 6)}
+
+
+def _bill_door_error(rows: list[dict[str, Any]], heat_per_sleeve: float) -> dict[str, Any]:
+    """THE COST OF FAILING CLOSED, BILLED PER INPUT (gap E, 2026-09-30).
+
+    The door withholds every new row while one of its verdict inputs is absent or stale
+    (`DOOR_ERROR`, never relaxed). On a box's first adoption that is EVERY row until tier_s writes
+    its verdict files. Each such withhold is a ledger line here: the input it names, the window
+    it was missing over (first/last withhold, the input's own last stamp) and the forward R the
+    withheld clocks carried, priced like every door refusal (mean R x one sleeve's heat)."""
+    lines: dict[str, dict[str, Any]] = {}
+    for x in rows:
+        if str(x.get("reason")) != "DOOR_ERROR":
+            continue
+        de = x.get("door_error") if isinstance(x.get("door_error"), dict) else {}
+        key = str(de.get("input") or "unattributed")
+        ln = lines.setdefault(key, {"input": key, "input_file": de.get("input_file"),
+                                    "n_withheld": 0, "names": [], "first_withheld": None,
+                                    "last_withheld": None, "input_last_stamp": None,
+                                    "input_state": None, "window_start": None,
+                                    "sum_withheld_r": 0.0, "n_priced": 0})
+        ln["n_withheld"] += 1
+        if x.get("name") and x["name"] not in ln["names"] and len(ln["names"]) < 50:
+            ln["names"].append(x["name"])
+        at = x.get("at")
+        if at and (ln["first_withheld"] is None or str(at) < ln["first_withheld"]):
+            ln["first_withheld"] = str(at)
+        if at and (ln["last_withheld"] is None or str(at) > ln["last_withheld"]):
+            ln["last_withheld"] = str(at)
+        ws = de.get("window_start")
+        if ws and (ln["window_start"] is None or str(ws) < ln["window_start"]):
+            ln["window_start"] = str(ws)
+        ln["input_last_stamp"] = de.get("last_stamp") or ln["input_last_stamp"]
+        ln["input_state"] = de.get("state") or ln["input_state"]
+        if isinstance(x.get("exp_r"), (int, float)):
+            ln["sum_withheld_r"] += float(x["exp_r"])
+            ln["n_priced"] += 1
+    for ln in lines.values():
+        ln["window"] = {"from": ln["window_start"] or ln["first_withheld"],
+                        "to": ln["last_withheld"]}
+        ln["logw_forgone"] = round(max(0.0, ln["sum_withheld_r"]) * heat_per_sleeve, 8)
+        ln["sum_withheld_r"] = round(ln["sum_withheld_r"], 6)
+        ln["verdict"] = (UNMEASURED if ln["n_priced"] == 0
+                         else COSTS if ln["sum_withheld_r"] > 0 else EARNS)
+    return {"n": sum(v["n_withheld"] for v in lines.values()),
+            "lines": sorted(lines.values(), key=lambda v: -v["n_withheld"]),
+            "rule": "every DOOR_ERROR withhold billed to the input it names, over the window "
+                    "that input was absent/stale; fail-closed stands, its cost is a number"}
+#: E8 gold's intents journal: the duplicate guard journals each block as RAIL_BLOCKED there.
+E8_INTENTS = BASE / "data" / "e8_gold_intents.jsonl"
+
+
+def measure_e8_unowned_block(r: Any, _alloc: dict[str, Any],
+                             _fv: dict[str, Any]) -> dict[str, Any]:
+    """What E8 gold's duplicate guard stood aside from, read from the lane's own journal.
+
+    Each RAIL_BLOCKED row is a dropped bracket leg NOT re-sent because an unowned same-side
+    position opened after the failed send may have been that send. If it was, the block saved a
+    doubled position; if not, it forwent the leg's certified risk (`missed_growth_risk_usd`).
+    Which one it was is not observable from the journal, so the verdict stays UNMEASURED with
+    the count and the undeployed risk published. That figure is the risk the blocked legs would
+    have carried, NOT a bound on the growth forgone: a leg that ran to target earns its R:R
+    multiple of that risk, so the forgone profit can exceed it several times over."""
+    rows: list[dict[str, Any]] = []
+    try:
+        for line in E8_INTENTS.read_text("utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if isinstance(row, dict) and row.get("status") == "RAIL_BLOCKED" \
+                    and row.get("rail") == r.name:
+                rows.append(row)
+    except (OSError, ValueError):
+        return {"verdict": UNMEASURED, "why": "the E8 intents journal is missing or unreadable"}
+    if not rows:
+        return {"verdict": NOT_BINDING, "n": 0,
+                "why": "the guard has not blocked a re-send on this host"}
+    risk = [float(x["missed_growth_risk_usd"]) for x in rows
+            if isinstance(x.get("missed_growth_risk_usd"), (int, float))]
+    return {"verdict": UNMEASURED, "n": len(rows),
+            "undeployed_risk_usd": round(sum(risk), 2),
+            "last_at": rows[-1].get("at"),
+            "why": ("each block leaves the leg's certified risk undeployed only if the blocking "
+                    "position was not the lost send; the journal cannot tell which. The figure "
+                    "is risk, not forgone profit, which can be R:R times larger; it is "
+                    "published rather than priced as zero")}
 
 
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
