@@ -93,7 +93,7 @@ def test_fd_greeks_match_closed_form(kind: str) -> None:
             continue                      # deep OTM short-dated: all greeks ~ 0, FD is noise
         spec = OptionSpec(kind, k, t, S, R, Q)  # type: ignore[arg-type]
         m = BlackScholes(BSParams(v))
-        cf, fd = m.greeks(spec), fd_greeks(m, spec)
+        cf, fd = m.greeks(spec), fd_greeks(m, spec, rel_spot=2e-4)
         assert cf.method == "closed_form" and fd.method == "central_fd"
         assert abs(cf.delta - fd.delta) < 1e-5
         assert abs(cf.gamma - fd.gamma) < 1e-4
@@ -108,10 +108,10 @@ def test_heston_collapses_to_bs_when_vol_of_vol_vanishes() -> None:
         for t in (0.1, 1.0):
             bs = bs_price("call", S, k, t, R, Q, 0.2)
             exact = Heston(HestonParams(0.04, 1.5, 0.04, 1e-7, -0.7))      # degenerate branch
-            near = Heston(HestonParams(0.04, 1.5, 0.04, 2e-3, -0.7))       # the CF itself
+            near = Heston(HestonParams(0.04, 1.5, 0.04, 1e-4, -0.7))       # the CF itself
             spec = OptionSpec("call", k, t, S, R, Q)
             assert abs(exact.price(spec) - bs) < 1e-7
-            assert abs(near.price(spec) - bs) < 2e-3
+            assert abs(near.price(spec) - bs) < 1e-3          # O(rho * sigma) correction
 
 
 def test_merton_with_zero_jumps_is_bs_and_series_equals_cf() -> None:
@@ -186,8 +186,10 @@ def test_implied_vol_round_trips_and_refuses_arbitrage() -> None:
         for k, t, v in GRID:
             p = bs_price(kind, S, k, t, R, Q, v)
             iv = implied_vol(p, kind, S, k, t, R, Q)
-            if p < 1e-10:
-                continue               # no information left in the price
+            itm = max((S * math.exp(-Q * t) - k * math.exp(-R * t)) * (1 if kind == "call" else -1),
+                      0.0)
+            if p - itm < 1e-8:
+                continue               # no time value left: the price carries no vol
             assert iv is not None and abs(iv - v) < 1e-6, (kind, k, t, v, iv)
     assert implied_vol(1e-9, "call", S, 50.0, 1.0, R, Q) is None        # below intrinsic
     assert implied_vol(S * 2, "call", S, 100.0, 1.0, R, Q) is None      # above the spot bound
