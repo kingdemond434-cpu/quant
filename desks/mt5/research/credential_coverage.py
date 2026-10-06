@@ -270,11 +270,16 @@ def main(argv: list[str] | None = None) -> int:
         Path(a.markdown).write_text(markdown(doc), "utf-8")
     # KEYS_NEEDED.json (principal 2026-10-06: an alert whenever a key is needed). Derived from
     # the report just written plus the keyed and Asia legs' own; names and links only.
-    from libs.ops import keys_needed
-    need = keys_needed.build()
-    keys_needed.write(need)
+    # Never fails the leg: CREDENTIAL_COVERAGE.json is already written above.
+    try:
+        from libs.ops import keys_needed
+        need = keys_needed.build()
+        keys_needed.write(need)
+        needed = f"{need['n']} key(s) needed"
+    except Exception as exc:
+        needed = f"KEYS_NEEDED not written ({type(exc).__name__})"
     print(f"credential_coverage: {doc['status_counts']}; {len(doc['name_mismatches'])} name "
-          f"mismatches; {need['n']} key(s) needed")
+          f"mismatches; {needed}")
     return 0
 
 
