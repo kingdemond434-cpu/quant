@@ -361,7 +361,7 @@ def test_sge_terms_are_refused_and_the_gate_governs_the_whole_host() -> None:
     for url in ("https://www.sge.com.cn/graph/quotations", "https://en.sge.com.cn/data_Licensed",
                 "https://www.sge.com.cn/sjzx/mrhq"):
         assert A.terms_gate(url)[0] == "refused", url
-    assert A.terms_gate("https://www.safe.gov.cn/safe/whxsdsj/index.html")[0] == "ungoverned"
+    assert A.terms_gate("https://example.org/data.csv")[0] == "ungoverned"
     assert A.terms_gate("no_such_row")[0] == "to_confirm"            # fail closed
 
 
