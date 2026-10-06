@@ -170,14 +170,16 @@ def test_session_labels_follow_the_one_shared_window_table() -> None:
 
 # ---------------------------------------------------------------------------- the operators ---
 def test_a_wide_spread_decision_waits_for_the_normal_bar_and_keeps_its_geometry() -> None:
-    d = _bars()
+    # asia_momentum decides at server hour 7; the fixture widens that bar's spread. (The default
+    # base, overnight_gap_decay, needs real gaps a random walk does not print.)
+    d = _bars(wide_hour=7)
     fn = fee.family_entry_alpha_spread_session_median
-    base = {s.time: s for s in fee.base_signals(fee._h1(d), "overnight_gap_decay", None)}
-    out = fn(d)
+    base = {s.time: s for s in fee.base_signals(fee._h1(d), "asia_momentum", None)}
+    out = fn(d, base_family="asia_momentum")
     moved = [s for s in out if s.tag.startswith("entry_alpha_spread_session_median<")]
-    assert moved, "the rollover-hour decisions should be held to the next bar"
+    assert moved, "the wide-spread decisions should be held to a later bar"
+    assert all(s.time.hour != 7 for s in out)      # the wide bar never admits an entry
     for s in moved:
-        assert s.time.hour != 0                     # the wide bar never admits an entry
         src = max(t for t in base if t < s.time)
         ref_old, ref_new = float(d["close"][src]), float(d["close"][s.time])
         assert abs(ref_new - s.stop) == pytest.approx(abs(ref_old - base[src].stop))
@@ -186,8 +188,9 @@ def test_a_wide_spread_decision_waits_for_the_normal_bar_and_keeps_its_geometry(
 
 
 def test_post_open_moves_only_open_window_fills_and_lands_past_the_window() -> None:
-    d = _bars()
-    out = fee.family_entry_alpha_post_open_normalised(d, open_minutes=120)
+    d = _bars(wide_hour=7)                         # asia_momentum fills at 08:00, the open
+    out = fee.family_entry_alpha_post_open_normalised(d, base_family="asia_momentum",
+                                                      open_minutes=120)
     assert out
     for s in out:
         fill_hour = (s.time + pd.Timedelta(hours=1)).hour
