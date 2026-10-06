@@ -70,6 +70,42 @@ function Git-In-Repo {
     return $LASTEXITCODE
 }
 
+# OWNERSHIP AND CREDENTIAL, BEFORE THE FIRST GIT CALL (2026-10-06). See GitBoxEnv.ps1: the box
+# refused every git call for "dubious ownership" and had no credential a scheduled task could use,
+# and the log said only "git add failed rc=128" and "push failed". Both are now set for this
+# process (safe.directory = this repo; GITHUB_TOKEN as a header when the machine has one) and a
+# missing credential is named BLOCKED_AUTH instead of a bare exit code.
+. (Join-Path $PSScriptRoot "GitBoxEnv.ps1")
+$script:GitEnv = Initialize-BoxGitEnv -RepoRoot $RepoRoot
+$script:BlockedAuth = $false
+Write-SyncLog ("git env: safe.directory={0} auth={1}" -f $script:GitEnv.SafeDirectory, $script:GitEnv.Auth)
+
+# A GIT WRITE THAT CRASHES IS RETRIED, NOT FATAL (2026-10-06). Measured 13:54 on the box: `git
+# commit` died with rc=-1073741819 (0xC0000005, an access violation) and the pass aborted, so the
+# state waited fifteen minutes for a slot that could crash the same way. A crashed git can leave
+# .git\index.lock behind, which then refuses every later write with rc=128. This pass HOLDS the
+# git-writer mutex, so no coordinated writer owns that lock; one older than five minutes is the
+# crash's debris and is removed (logged). Three attempts, a short pause between.
+function Invoke-GitWriteRetry {
+    param([string[]]$GitArgs, [string]$What)
+    $rc = 1
+    for ($try = 1; $try -le 3; $try++) {
+        $rc = Git-In-Repo $GitArgs
+        if ($rc -eq 0) { return 0 }
+        Write-SyncLog ("{0} failed rc={1} (attempt {2}/3)" -f $What, $rc, $try)
+        $lock = Join-Path $RepoRoot ".git\index.lock"
+        if (Test-Path -LiteralPath $lock) {
+            $age = (Get-Date) - (Get-Item -LiteralPath $lock).LastWriteTime
+            if ($age.TotalMinutes -ge 5) {
+                Write-SyncLog ("removing stale .git\index.lock ({0:N0} min old; this pass holds the git-writer lock)" -f $age.TotalMinutes)
+                Remove-Item -LiteralPath $lock -Force -ErrorAction SilentlyContinue
+            }
+        }
+        if ($try -lt 3) { Start-Sleep -Seconds (5 * $try) }
+    }
+    return $rc
+}
+
 # YIELD TO AN ADOPTION IN PROGRESS (2026-09-08). MT5-AdoptRelease rewrites the tree in place and
 # commits by name; this pass would `git checkout -- <path>` its dirty incoming paths (undoing the
 # adoption's writes), race it for `.git/index.lock`, and sweep its chunk-staged code into a
@@ -390,14 +426,27 @@ function Push-Logged {
         foreach ($l in @($out | Where-Object { $_ -match '\S' } | Select-Object -Last 12)) {
             Write-SyncLog ("  push said: " + $l.Trim())
         }
+        if (Test-GitAuthFailure -Lines $out) { $script:BlockedAuth = $true }
     }
     return $rc
 }
 
 function Publish-StateOnto {
-    param([string]$RepoRoot, [string]$Branch, [string[]]$Paths)
+    param([string]$RepoRoot, [string]$Branch, [string[]]$Paths, [switch]$FromDisk)
     if (-not $Paths -or $Paths.Count -eq 0) { Write-SyncLog "publish: no state paths"; return $false }
-    $entries = @(Git-Lines (@("ls-tree", "HEAD", "--") + $Paths) | Where-Object { $_ -match '\S' })
+    if ($FromDisk) {
+        # THE LOCAL COMMIT FAILED, THE STATE STILL TRAVELS (2026-10-06). The blobs are written
+        # straight from the files on disk (`hash-object -w`) in the same "<mode> blob <sha>`t<path>"
+        # shape ls-tree prints, so everything below is unchanged. HEAD, the real index and the
+        # working tree are still never touched.
+        $entries = @()
+        foreach ($rel in $Paths) {
+            $sha = "$(Git-Lines @("hash-object", "-w", "--", $rel) | Select-Object -First 1)".Trim()
+            if ($sha -match '^[0-9a-f]{40}$') { $entries += ("100644 blob {0}`t{1}" -f $sha, $rel) }
+        }
+    } else {
+        $entries = @(Git-Lines (@("ls-tree", "HEAD", "--") + $Paths) | Where-Object { $_ -match '\S' })
+    }
     if ($entries.Count -eq 0) {
         Write-SyncLog "publish: HEAD carries none of the state paths yet; nothing to publish"
         return $false
@@ -450,6 +499,13 @@ function Publish-StateOnto {
             Write-SyncLog ("published box state onto origin/{0} as {1} ({2} path(s)) without merging code" -f
                            $Branch, $commit.Substring(0, 12), $n)
             return $true
+        }
+        if ($script:BlockedAuth) {
+            # Re-fetching cannot mint a credential, so the other two attempts would only repeat it.
+            Write-SyncLog (("BLOCKED_AUTH: the push needs a credential this unattended task cannot get " +
+                            "(auth={0}). Set GITHUB_TOKEN as a MACHINE variable on the box (setx /M); " +
+                            "the next slot publishes the state.") -f $script:GitEnv.Auth)
+            return $false
         }
         Write-SyncLog "publish: push of $($commit.Substring(0, 12)) failed rc=$rc (attempt $try); re-fetching and re-basing onto origin's tip"
     }
@@ -644,12 +700,17 @@ if ($existing.Count -eq 0) {
     exit 0
 }
 
-$addRc = Git-In-Repo (@("add", "--") + $existing)
-if ($addRc -ne 0) { Write-SyncLog "ABORT: git add failed rc=$addRc"; exit 1 }
+$script:PublishFromDisk = $false
+$addRc = Invoke-GitWriteRetry -GitArgs (@("add", "--") + $existing) -What "git add"
+if ($addRc -ne 0) {
+    Write-SyncLog "git add failed rc=$addRc after 3 attempts; publishing the state straight from disk"
+    $script:PublishFromDisk = $true
+}
 
 # Nothing changed since the last cycle -- do not create empty commits every 15 minutes forever.
-& git -C $RepoRoot diff --cached --quiet
-if ($LASTEXITCODE -eq 0) {
+if ($script:PublishFromDisk) {
+    Write-SyncLog "local commit skipped (index unusable this pass)"
+} elseif ($(& git -C $RepoRoot diff --cached --quiet; $LASTEXITCODE) -eq 0) {
     # NOTHING NEW TO COMMIT IS NOT NOTHING TO DELIVER. A state commit that was made and then
     # failed to reach origin sits local; delivery must not depend on having something NEW to
     # say, so this pass still publishes what HEAD carries (Publish-StateOnto is idempotent: when
@@ -657,8 +718,11 @@ if ($LASTEXITCODE -eq 0) {
     Write-SyncLog "no new state since last sync; making sure origin carries the committed state"
 } else {
     $stamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd_HHmm")
-    $commitRc = Git-In-Repo @("commit", "-m", "mt5 shadow state sync $stamp")
-    if ($commitRc -ne 0) { Write-SyncLog "ABORT: git commit failed rc=$commitRc"; exit 1 }
+    $commitRc = Invoke-GitWriteRetry -GitArgs @("commit", "-m", "mt5 shadow state sync $stamp") -What "git commit"
+    if ($commitRc -ne 0) {
+        Write-SyncLog "git commit failed rc=$commitRc after 3 attempts; publishing the state straight from disk"
+        $script:PublishFromDisk = $true
+    }
 }
 
 # ONE DELIVERY PATH: THE STATE BLOBS, ONTO ORIGIN'S TIP, NEVER THE BOX'S BRANCH (2026-10-01).
@@ -680,8 +744,13 @@ if ($script:InboundAdoptionRequired) {
     Write-SyncLog "local state commit is safe; inbound code is left to MT5-AdoptRelease"
 }
 $branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD).Trim()
-$ok = Publish-StateOnto -RepoRoot $RepoRoot -Branch $branch -Paths $existing
+$ok = Publish-StateOnto -RepoRoot $RepoRoot -Branch $branch -Paths $existing -FromDisk:$script:PublishFromDisk
 if (-not $ok) {
+    if ($script:BlockedAuth) {
+        # A NAMED STATE, NOT rc=1: Task Scheduler's LastTaskResult reads 3, and the log says why.
+        Write-SyncLog "ABORT: BLOCKED_AUTH -- box state did not reach origin/$branch (no usable git credential)"
+        exit 3
+    }
     Write-SyncLog "ABORT: box state did not reach origin/$branch this pass; the next slot retries"
     exit 1
 }
