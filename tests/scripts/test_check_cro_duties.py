@@ -16,6 +16,7 @@ import check_cro_duties as ccd  # noqa: E402
 TABLE = "\n".join((
     "| D41 | **Nothing is a museum** | orphan (`reports/dead_architecture.json`) | 0 | Wire. |",
     "| D44 | **Self-evolution** | gains (`reports/TIER1_BREADTH_REVIEW.json`) | >= 1 | Land. |",
+    "| D5 | **Procedure** | judged from the pass record | x | y |",
     "| D45 | **No artifact** | judged from git | x | y |",
 ))
 SPEC = {"default_max_age_h": 26, "duties": {
@@ -83,13 +84,13 @@ def test_review_downgrades_only_an_unbacked_claim_of_this_pass(tmp_path: Path) -
     start = datetime.now(UTC) - timedelta(minutes=5)
     review = tmp_path / "review.json"
     review.write_text(json.dumps({"latest": {"at": datetime.now(UTC).isoformat(), "duties": {
-        "D41": {"status": "MET"}, "D45": {"status": "MET"}, "D44": {"status": "BLOCKED"}}}}))
+        "D41": {"status": "MET"}, "D5": {"status": "MET"}, "D44": {"status": "BLOCKED"}}}}))
     measured = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)
     res = ccd.apply_to_review(review, measured, start.isoformat())
     assert res["applied"] and res["changed"] == ["D41"]
     duties = json.loads(review.read_text())["latest"]["duties"]
     assert duties["D41"]["status"] == "MISSED" and duties["D41"]["status_claimed"] == "MET"
-    assert duties["D45"]["status"] == "MET"
+    assert duties["D5"]["status"] == "MET"
     assert duties["D44"]["status"] == "BLOCKED" and duties["D44"]["counts_as"] == "MISSED"
 
 
@@ -101,3 +102,34 @@ def test_an_earlier_passes_review_is_never_rewritten(tmp_path: Path) -> None:
     res = ccd.apply_to_review(review, measured, datetime.now(UTC).isoformat())
     assert not res["applied"]
     assert json.loads(review.read_text())["latest"]["duties"]["D41"]["status"] == "MET"
+
+
+def test_an_artifact_backed_duty_with_no_artifact_named_cannot_be_met(tmp_path: Path) -> None:
+    """From D15 on a duty is backed by an artifact; a row naming only counters is UNMEASURED,
+    so a MET the pass claims for it is rewritten MISSED. Procedure duties are left alone."""
+    measured = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)
+    assert measured["duties"]["D45"]["status"] == "UNMEASURED"
+    assert measured["duties"]["D5"]["status"] == "NO_ARTIFACT_NAMED"
+    review = tmp_path / "review.json"
+    review.write_text(json.dumps({"latest": {"at": datetime.now(UTC).isoformat(), "duties": {
+        "D45": {"status": "MET"}, "D5": {"status": "MET"}}}}))
+    ccd.apply_to_review(review, measured, (datetime.now(UTC) - timedelta(minutes=1)).isoformat())
+    duties = json.loads(review.read_text())["latest"]["duties"]
+    assert duties["D45"]["status"] == "MISSED" and duties["D45"]["verdict"] == "UNMEASURED"
+    assert duties["D5"]["status"] == "MET"
+
+
+def test_a_measured_target_that_failed_cannot_be_claimed_met(tmp_path: Path) -> None:
+    _write(tmp_path, "reports/dead_architecture.json",
+           {"generated_at": datetime.now(UTC).isoformat(), "unreached": ["organ_a"]})
+    measured = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)
+    assert measured["duties"]["D41"]["status"] == "NOT_MET"
+    review = tmp_path / "review.json"
+    review.write_text(json.dumps({"latest": {"at": datetime.now(UTC).isoformat(), "duties": {
+        "D41": {"status": "MET"}}}}))
+    res = ccd.apply_to_review(review, measured,
+                              (datetime.now(UTC) - timedelta(minutes=1)).isoformat())
+    assert res["changed"] == ["D41"]
+    d41 = json.loads(review.read_text())["latest"]["duties"]["D41"]
+    assert d41["status"] == "MISSED" and d41["status_claimed"] == "MET"
+    assert d41["verdict"] == "NOT_MET" and d41["reason"] == "measured_target_not_met"

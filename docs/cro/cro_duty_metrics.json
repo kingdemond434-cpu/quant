@@ -2,6 +2,7 @@
  "schema": "cro_duty_metrics/1",
  "note": "Which counters each STEP 4B duty must find in its artifacts. The artifacts themselves are read from the duty's row in docs/cro/CRO_CYCLE.md, so a duty row and its check cannot drift. A counter no artifact carries reads UNMEASURED, and an UNMEASURED duty counts as MISSED. Targets are checked only where they are a plain comparison; the rest are the CRO's judgement on the measured values.",
  "default_max_age_h": 26,
+ "artifact_backed_from": 15,
  "duties": {
   "D37": {
    "max_age_h": 3,

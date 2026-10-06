@@ -13,8 +13,10 @@ artifacts on the host it runs on and writes `desks/mt5/reports/CRO_DUTIES.json`:
     Plain-comparison targets are scored MET / NOT_MET; the rest stay MEASURED for the CRO.
 
 `--review PATH --started-at ISO` then applies the verdicts to the TIER1_BREADTH_REVIEW.json the
-pass just wrote: a duty the pass scored MET or OPTIMAL whose artifacts are UNMEASURED is
-downgraded to MISSED, keeping its claim under `status_claimed`. A review written before
+pass just wrote: a duty the pass scored MET or OPTIMAL whose artifacts are UNMEASURED, or whose
+measured target comparison failed, is downgraded to MISSED, keeping its claim under
+`status_claimed`. A duty from D15 on (`artifact_backed_from`) whose row names no artifact is
+UNMEASURED: only the procedure duties D1..D14 are left to the pass's own record. A review written before
 `--started-at` belongs to an earlier pass and is never rewritten.
 """
 from __future__ import annotations
@@ -144,6 +146,7 @@ def measure(rows: Mapping[str, Mapping[str, Any]], spec: Mapping[str, Any],
             now: datetime | None = None, root: Path = ROOT) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     default_age = float(spec.get("default_max_age_h", 26))
+    backed_from = int(spec.get("artifact_backed_from", 15))
     per = spec.get("duties") or {}
     duties: dict[str, Any] = {}
     for duty, row in rows.items():
@@ -185,9 +188,14 @@ def measure(rows: Mapping[str, Mapping[str, Any]], spec: Mapping[str, Any],
             m.pop("_raw", None)
         missing = [a for a, v in arts.items() if v["status"] != "FRESH"]
         unmeasured = [k for k, v in metrics.items() if v["status"] == "UNMEASURED"]
-        if not row["artifacts"]:
-            # a duty measured from live reads the row does not name (git, the desktop) is the
-            # pass's own judgement; this check has nothing to say about it either way
+        if not row["artifacts"] and int(duty[1:]) >= backed_from:
+            # an artifact-backed duty whose row names only counters has nothing on this host that
+            # can back a MET: that is UNMEASURED, never a free pass (L1.28a)
+            status = "UNMEASURED"
+            why = "the row names counters but no artifact path; nothing on this host backs them"
+        elif not row["artifacts"]:
+            # a procedure duty (D1..D14) is judged from the pass's own record, which the CRO
+            # scores; this check has nothing to say about it either way
             status, why = "NO_ARTIFACT_NAMED", "the duty row names no artifact to check"
         elif not docs or unmeasured:
             # rows name alternatives ("until X exists, Y"), so one fresh artifact is enough;
@@ -250,8 +258,9 @@ def apply_to_review(review: Path, measured: Mapping[str, Any],
 
 def _changed(duties: dict[str, Any], measured: Mapping[str, Any]) -> Iterable[str]:
     for duty, m in sorted(measured.items(), key=lambda kv: int(kv[0][1:])):
-        if m.get("status") != "UNMEASURED":
+        if m.get("status") not in ("UNMEASURED", "NOT_MET"):
             continue
+        verdict = m["status"]
         cur = duties.get(duty)
         entry: dict[str, Any] = dict(cur) if isinstance(cur, Mapping) else {}
         prior = str(entry.get("status") or "")
@@ -261,8 +270,9 @@ def _changed(duties: dict[str, Any], measured: Mapping[str, Any]) -> Iterable[st
             if prior:
                 entry["status_claimed"] = prior
             entry["status"] = "MISSED"
-            entry["verdict"] = "UNMEASURED"
-            entry["reason"] = "artifact_unmeasured"
+            entry["verdict"] = verdict
+            entry["reason"] = ("artifact_unmeasured" if verdict == "UNMEASURED"
+                               else "measured_target_not_met")
             duties[duty] = entry
             yield duty
         else:
