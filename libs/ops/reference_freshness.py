@@ -797,6 +797,24 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "retired_certificates and the banned archive.",
     ),
     DestructivePath(
+        path_id="canon_publication.pending_rejudge",
+        module="desks/mt5/research/canon_publication.py",
+        function="publish",
+        removes="seal survivors popped out of `survivors` into the seal's `pending_rejudge` "
+                "(lockbox v4: gates evaluated before the attestation in force)",
+        reference="attestation_remint's REMINT_STATUS.json (in_force_since, fingerprint-matched "
+                  "to the attestation in force) and the seal's own gate_policy",
+        status="positive",
+        note="Triggered only by POSITIVE evidence that the attestation changed: a REMINT_STATUS "
+             "whose fingerprint is the current attestation's (absent, unreadable or another "
+             "attestation's status gives floor=None and parks nothing), or a seal whose own "
+             "gate_policy is not the exact one. Nothing is deleted: rows move whole to "
+             "pending_rejudge, stay in the never-shrink accounting, are put on the docket by "
+             "attestation_remint, and return when the judge re-mints them. OPEN DESIGN POINT for "
+             "the owner: once the floor is established, a row with NO gated_at is parked as "
+             "predating it (attestation_remint.stale_keys / canon_publication.predates).",
+    ),
+    DestructivePath(
         path_id="forward_reconcile.orphan_clocks",
         module="desks/mt5/research/forward_reconcile.py",
         function="main",
