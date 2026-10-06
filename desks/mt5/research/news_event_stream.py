@@ -245,6 +245,8 @@ PENDING = DATA / "news_event_stream_pending.jsonl"
 RESOLVE_QUEUE = DATA / "allocator_resolve_queue.jsonl"
 INTAKE_REPORT = REPORTS / "WORLD_SENSOR_INTAKE.json"
 LOCK = DATA / "locks" / "news_event_stream.lock"
+#: Held for the length of ONE pass by every caller (hourly --once and each resident pass).
+PASS_LOCK = DATA / "locks" / "news_event_stream.pass.lock"
 #: GDELT 2.0 export blobs that `alt_proxies` already fetches and vaults every pass: the English
 #: stream and the machine-translated stream of 65 source languages. Read here, never re-fetched.
 GDELT_VAULTS: tuple[tuple[str, Path], ...] = (
@@ -613,34 +615,48 @@ def _mark_files(paths: Iterable[Path], key: str, cur: dict[str, Any]) -> None:
             known[str(path)] = [round(st.st_mtime, 3), st.st_size]
 
 
-def _jsonl_since(path: Path, key: str, cur: dict[str, Any]) -> list[dict[str, Any]]:
-    """Every row appended since the cursor's byte offset. A file that SHRANK was rotated and is
-    read from the start; the offset moves only over whole lines."""
+#: Rows one call may take from one jsonl ground. NOT A CAP: the offset stops at the last row
+#: taken, so the rest is read on the next pass (60 s later on the resident) and nothing is lost.
+#: It bounds the memory one pass can hold, which a single fh.read() of a ground did not.
+MAX_ROWS_PER_READ = 20_000
+
+
+def _jsonl_since(path: Path, key: str, cur: dict[str, Any],
+                 max_rows: int = MAX_ROWS_PER_READ) -> list[dict[str, Any]]:
+    """Rows appended since the cursor's byte offset, STREAMED line by line. A file that SHRANK
+    was rotated and is read from the start; the offset moves only over whole lines, and stops
+    after `max_rows` rows so one pass never holds a whole ground in memory."""
     try:
         size = path.stat().st_size
     except OSError:
         return []
     # First sight: start from the tail the old reader read, never from a 50 MB history.
+    first = key not in cur["offsets"]
     off = int(cur["offsets"].get(key, max(0, size - LOG_TAIL_BYTES)))
     if size < off:
         off = 0
     rows: list[dict[str, Any]] = []
+    pos = off
     with path.open("rb") as fh:
         fh.seek(off)
-        blob = fh.read()
-    if key not in cur["offsets"] and off > 0:
-        cut = blob.find(b"\n")
-        blob, off = (blob[cut + 1:], off + cut + 1) if cut >= 0 else (b"", off)
-    end = blob.rfind(b"\n")
-    if end < 0:
-        return []
-    for line in blob[:end].decode("utf-8", "replace").splitlines():
-        if line.strip().startswith("{"):
-            with suppress(ValueError):
-                row = json.loads(line)
-                if isinstance(row, dict):
-                    rows.append(row)
-    cur["offsets"][key] = off + end + 1
+        if first and off > 0:
+            skipped = fh.readline()                      # a partial line at the tail cut
+            if not skipped.endswith(b"\n"):
+                return []
+            pos += len(skipped)
+        for raw in fh:
+            if not raw.endswith(b"\n"):
+                break                                    # a row still being written
+            pos += len(raw)
+            line = raw.decode("utf-8", "replace").strip()
+            if line.startswith("{"):
+                with suppress(ValueError):
+                    row = json.loads(line)
+                    if isinstance(row, dict):
+                        rows.append(row)
+            if len(rows) >= max_rows:
+                break
+    cur["offsets"][key] = pos
     return rows
 
 
@@ -744,7 +760,25 @@ def _spill(items: Sequence[Item]) -> int:
     return _append(PENDING, [asdict(i) for i in items])
 
 
+def _settle_pending(spilled: Sequence[Item]) -> int:
+    """After a pass has committed (cursor written): the owed file becomes exactly what THIS pass
+    could not reach. Atomic, so a crash leaves either the old owed set or the new one."""
+    if not spilled:
+        with suppress(OSError):
+            PENDING.unlink()
+        return 0
+    PENDING.parent.mkdir(parents=True, exist_ok=True)
+    tmp = PENDING.with_suffix(".tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
+        for i in spilled:
+            fh.write(json.dumps(asdict(i), default=str, ensure_ascii=False) + "\n")
+    os.replace(tmp, PENDING)
+    return len(spilled)
+
+
 def _unspill() -> list[Item]:
+    """The items the last pass owed. READ ONLY: the file is replaced by `_settle_pending` after
+    the pass that processed them has written its cursor, so a crash mid-pass re-owes them."""
     if not PENDING.exists():
         return []
     rows: list[dict[str, Any]] = []
@@ -757,8 +791,6 @@ def _unspill() -> list[Item]:
                         rows.append(row)
     except OSError:
         return []
-    with suppress(OSError):
-        PENDING.unlink()
     out: list[Item] = []
     for r in rows:
         with suppress(TypeError):
@@ -1203,6 +1235,31 @@ def _observation(item: Item, *, kind_label: str, story_id: str, event_id: str | 
 
 def run(*, limit: int = MAX_ITEMS, deep_threshold: float = DEEP_THRESHOLD, dry_run: bool = False,
         now: datetime | None = None, budget_s: float = DEFAULT_BUDGET_S) -> dict[str, Any]:
+    """One pass, under the PASS LOCK. The hourly `--once` leg and the MT5-NewsResident loop both
+    call this, and two passes at once would read the same cursor, process the same items twice
+    and race on the cursor, the owed file and the ledger. A pass that cannot take the lock does
+    nothing and says so (status LOCKED); the holder's pass covers the same items."""
+    if dry_run:
+        return _run_pass(limit=limit, deep_threshold=deep_threshold, dry_run=True, now=now,
+                         budget_s=budget_s)
+    lock = _claim_lock(PASS_LOCK)
+    if lock is None:
+        when = now or _now()
+        return {"at": _iso(when), "status": "LOCKED", "rule": RULE,
+                "why": f"another pass holds {PASS_LOCK}; this one did nothing",
+                "items_seen": 0, "items_new": 0, "items_processed": 0, "items_spilled": 0,
+                "items_owed_from_last_pass": 0, "syndicated_copies": 0, "events": [],
+                "deep_events": 0, "resolve_requests": [], "unmeasured": [],
+                "world_state_delta": {}, "written": {"status": "locked: nothing written"}}
+    try:
+        return _run_pass(limit=limit, deep_threshold=deep_threshold, dry_run=False, now=now,
+                         budget_s=budget_s)
+    finally:
+        _release_lock(lock)
+
+
+def _run_pass(*, limit: int, deep_threshold: float, dry_run: bool, now: datetime | None,
+              budget_s: float) -> dict[str, Any]:
     """One pass of the fast lane over every new item, and the deep lane over what earns it."""
     when = now or _now()
     t0 = time.monotonic()
@@ -1403,7 +1460,6 @@ def run(*, limit: int = MAX_ITEMS, deep_threshold: float = DEEP_THRESHOLD, dry_r
                                         if e["id"] in asked_ids]}
         _append(RESOLVE_QUEUE, [envelope])
         _atomic_json(RESOLVE_REQUEST, envelope)
-    _spill(spilled)
     ledger_census: dict[str, Any] = {}
     try:
         led = _ledger()
@@ -1418,6 +1474,7 @@ def run(*, limit: int = MAX_ITEMS, deep_threshold: float = DEEP_THRESHOLD, dry_r
         notes.append(f"sensor ledger refused: {type(exc).__name__}: {str(exc)[:160]}")
         intake = None
     _atomic_json(CURSOR, cur)
+    _settle_pending(spilled)
     payload["sensor_ledger"] = ledger_census
     payload["intake"] = intake
     _atomic_json(REPORT, payload)
@@ -1428,13 +1485,39 @@ def run(*, limit: int = MAX_ITEMS, deep_threshold: float = DEEP_THRESHOLD, dry_r
     return payload
 
 
+#: The meter's view of today's shard, kept across resident passes: (shard, offset, compact rows).
+#: Each pass reads only the bytes appended since the last one instead of the whole day.
+_METER: dict[str, Any] = {}
+_METER_FIELDS = ("kind", "provenance_hash", "observation_id", "language", "geography",
+                 "asset_domain", "sensor_class", "source_id", "source_publication_time",
+                 "publication_time", "knowable_at", "received_at", "parse_complete_at")
+_METER_ATTRS = ("copies", "story_id", "event_id", "novelty", "event_kind")
+
+
+def _day_rows(led: Any, day: str) -> list[dict[str, Any]]:
+    """Today's ledger rows for the meter, read INCREMENTALLY: a new day or another ledger root
+    starts over; otherwise only rows past the saved offset are parsed, projected to the fields
+    `intake_metrics` reads, and added to the held list."""
+    root = str(getattr(led, "root", ""))
+    if _METER.get("day") != day or _METER.get("root") != root:
+        _METER.clear()
+        _METER.update({"day": day, "root": root, "offset": 0, "rows": []})
+    new, off = led.rows_since(day, int(_METER["offset"]))
+    for r in new:
+        attrs = r.get("attributes") if isinstance(r.get("attributes"), Mapping) else {}
+        _METER["rows"].append({**{k: r.get(k) for k in _METER_FIELDS},
+                               "attributes": {k: attrs.get(k) for k in _METER_ATTRS}})
+    _METER["offset"] = off
+    return list(_METER["rows"])
+
+
 def _intake_report(led: Any, when: datetime, payload: Mapping[str, Any],
                    ledger_census: Mapping[str, Any], tallies: Mapping[str, Any]
                    ) -> dict[str, Any]:
     """The day's MEASURED intake across every sensor that writes the ledger, not only news."""
     from libs.research import sensor_contract as sc
     day = when.date().isoformat()
-    metrics = sc.intake_metrics(led.rows(day), led.clock_rows(day))
+    metrics = sc.intake_metrics(_day_rows(led, day), led.clock_rows(day))
     doc = {
         "at": _iso(when), "day": day, "schema": "world_sensor_intake/1",
         "rule": ("throughput is a measurement, not a quota: no article target exists; every "
@@ -1468,10 +1551,11 @@ def _intake_report(led: Any, when: datetime, payload: Mapping[str, Any],
     return doc
 
 
-def _claim_lock() -> Any:
-    """A singleton lock so the keep-alive task never starts a second resident."""
-    LOCK.parent.mkdir(parents=True, exist_ok=True)
-    fh = LOCK.open("a+")
+def _claim_lock(path: Path | None = None) -> Any:
+    """A non-blocking exclusive lock on `path` (default: the resident singleton), or None."""
+    target = path or LOCK
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fh = target.open("a+")
     try:
         if os.name == "nt":                              # pragma: no cover - the trading box
             import msvcrt
@@ -1484,6 +1568,23 @@ def _claim_lock() -> Any:
         fh.close()
         return None
     return fh
+
+
+class _Skip(Exception):
+    """A resident pass that found another pass holding the lock."""
+
+
+def _release_lock(fh: Any) -> None:
+    with suppress(OSError):
+        if os.name == "nt":                              # pragma: no cover - the trading box
+            import msvcrt
+            fh.seek(0)
+            msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+    with suppress(OSError):
+        fh.close()
 
 
 def resident(interval_s: float = 60.0, limit: int = MAX_ITEMS,
@@ -1499,11 +1600,16 @@ def resident(interval_s: float = 60.0, limit: int = MAX_ITEMS,
         started = time.time()
         try:
             out = run(limit=limit, budget_s=per_pass)
+            if out.get("status") == "LOCKED":
+                print(f"{SOURCE} at={out['at']} LOCKED: {out['why']}", flush=True)
+                raise _Skip
             print(f"{SOURCE} at={out['at']} items={out['items_seen']} new={out['items_new']} "
                   f"processed={out['items_processed']} spilled={out['items_spilled']} "
                   f"copies={out['syndicated_copies']} events={len(out['events'])} "
                   f"deep={out['deep_events']} requests={len(out['resolve_requests'])}",
                   flush=True)
+        except _Skip:
+            pass
         except Exception as exc:                         # pragma: no cover - resident guard
             print(f"{SOURCE} pass failed: {type(exc).__name__}: {exc}", flush=True)
         passes += 1
@@ -1530,6 +1636,9 @@ def main(argv: list[str] | None = None) -> int:
         return resident(args.interval_s, args.limit, budget_s=args.budget_s)
     out = run(limit=args.limit, deep_threshold=args.deep_threshold, dry_run=args.dry_run,
               budget_s=DEFAULT_BUDGET_S if args.budget_s is None else args.budget_s)
+    if out.get("status") == "LOCKED":
+        print(f"{SOURCE} at={out['at']} LOCKED: {out['why']}")
+        return 0
     kinds: dict[str, int] = {}
     for event in out["events"]:
         kinds[event["kind"]] = kinds.get(event["kind"], 0) + 1

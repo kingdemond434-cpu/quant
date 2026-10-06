@@ -197,3 +197,31 @@ def test_event_surprise_takes_the_rows_without_touching_disk(
     assert added == len(got["rows"])
     assert es.release_vintage_rows(now=NOW, refresh=False, budget_s=0.0,
                                    enabled=False)["rows"] == []
+
+
+def test_ff_consensus_pairs_are_stored_but_held_from_the_gauntlet(
+        world: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit #204 item 4: the Forex Factory survey median is stored and counted, but no pair built
+    on it reaches the gauntlet until its terms are cleared; nowcast_ewm12 ships alone."""
+    alfred, vint = world
+    monkeypatch.setattr(rv, "CLEARANCES", tmp_path / "terms_clearances.json")
+    out = rv.build(now=NOW, vintages=vint, alfred=alfred)
+    rows = out["rows"]
+    assert any(r["provides"] == "both" and r["expectation_kind"] == "consensus_median"
+               for r in rows)                              # stored
+    assert out["census"]["terms"]["gauntlet"] == "HELD"
+    assert out["census"]["releases"][TITLE]["held_terms"] == 1
+    kept, held = es.terms_filter(rows)
+    assert kept and all(r.get("expectation_kind") == "nowcast_ewm12" for r in kept)
+    assert held["n"] == len(rows) - len(kept) and held["n"] >= 2
+    assert all("HELD_TERMS" in w for w in held["why"].values())
+    # a recorded clearance admits them; a non-CLEARED record does not
+    (tmp_path / "terms_clearances.json").write_text(
+        json.dumps({"ff_calendar": {"status": "PENDING"}}), "utf-8")
+    assert rv.gauntlet_terms("ff_calendar_vintage+alfred:PAYEMS")[0] is False
+    (tmp_path / "terms_clearances.json").write_text(
+        json.dumps({"ff_calendar": {"status": "CLEARED", "by": "terms review"}}), "utf-8")
+    kept, held = es.terms_filter(rows)
+    assert len(kept) == len(rows) and held["n"] == 0
+    # the nowcast source was never held, and an unknown source is not whitelisted away
+    assert rv.gauntlet_terms("alfred:PAYEMS") == (True, "")

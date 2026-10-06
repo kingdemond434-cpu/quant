@@ -983,6 +983,28 @@ def _donate(candidates: list[dict[str, Any]], tests_run: int) -> Any:
 
 
 # ------------------------------------------------------------------------ the release vintages
+def terms_filter(pairs: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Pairs whose consensus source is held by the terms gate never reach the gauntlet (audit
+    #204 item 4). They stay in the store; this only keeps them out of standardize/donation."""
+    try:
+        from macro.release_vintages import gauntlet_terms
+    except Exception as exc:                             # pragma: no cover - guarded import
+        return [], {"status": UNMEASURED, "why": f"terms gate unavailable, every pair held: "
+                                                 f"{type(exc).__name__}"}
+    kept: list[dict[str, Any]] = []
+    held: dict[str, int] = {}
+    why: dict[str, str] = {}
+    for p in pairs:
+        ok, reason = gauntlet_terms(str(p.get("source_id") or ""))
+        if ok:
+            kept.append(p)
+        else:
+            src = str(p.get("source_id") or "")
+            held[src] = held.get(src, 0) + 1
+            why[src] = reason
+    return kept, {"n": sum(held.values()), "by_source": held, "why": why}
+
+
 def release_vintage_rows(*, now: datetime, refresh: bool, budget_s: float,
                          enabled: bool = True) -> dict[str, Any]:
     """The calendar's PIT consensus joined to ALFRED's first prints (`macro.release_vintages`).
@@ -1058,7 +1080,7 @@ def build(*, days: int = DAYS, budget_s: float = 300.0, max_donations: int = MAX
     stored, added = merge_store([r for r in fresh_rows if isinstance(r, dict)], now=now)
     cal, cal_status = calendar_pairs(days, now)
     kept, store_status = store_pairs(days, now)
-    pairs = cal + kept
+    pairs, held = terms_filter(cal + kept)
     events, surprise_status = standardize(pairs)
     reaction = (measure(events, budget_s=max(1.0, budget_s - (time.monotonic() - started)),
                         started=started) if events else
@@ -1085,7 +1107,7 @@ def build(*, days: int = DAYS, budget_s: float = 300.0, max_donations: int = MAX
         "store": {**store_status, "added_this_pass": added, "rows_after": len(stored)},
         "calendar": cal_status,
         "surprise": surprise_status,
-        "n_pairs": len(pairs), "n_events": len(events),
+        "n_pairs": len(pairs), "n_events": len(events), "held_terms": held,
         "by_bucket": {b: sum(1 for e in events if bucket_of(float(e["z"])) == b)
                       for b in ("up_ge1sigma", "up_lt1sigma", "dn_lt1sigma", "dn_ge1sigma")},
         "n_cells": reaction["n_cells"], "threshold_t": reaction["threshold_t"],

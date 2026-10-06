@@ -79,7 +79,8 @@ def test_revisions_append_and_never_overwrite(tmp_path) -> None:
     out1 = led.append([first])
     assert out1["appended"] == 1
     assert led.append([first])["duplicates"] == 1                  # same print twice: one row
-    revised = _payrolls(95.0, received=T0 + timedelta(days=30))
+    revised = _payrolls(95.0, received=T0 + timedelta(days=30),
+                        knowable=T0 + timedelta(days=30))
     out2 = led.append([revised])
     assert out2["revisions"] == 1
     rows = led.rows(first.received_at[:10]) + led.rows(revised.received_at[:10])
@@ -151,9 +152,10 @@ def test_a_resent_first_print_after_its_revision_is_a_duplicate(tmp_path) -> Non
     led = sc.SensorLedger(tmp_path)
     first = _payrolls(120.0, received=T0 + timedelta(seconds=30))
     led.append([first])
-    led.append([_payrolls(95.0, received=T0 + timedelta(days=30))])
+    led.append([_payrolls(95.0, received=T0 + timedelta(days=30),
+                          knowable=T0 + timedelta(days=30))])
     again = led.append([first])
-    assert again == {**again, "appended": 0, "duplicates": 1, "revisions": 0}
+    assert again["appended"] == 0 and again["duplicates"] == 1 and again["revisions"] == 0
     # a fresh ledger object (the index re-read from disk) agrees
     again2 = sc.SensorLedger(tmp_path).append([first])
     assert again2["duplicates"] == 1 and again2["revisions"] == 0
@@ -190,7 +192,8 @@ def test_the_digest_is_unmeasured_on_an_empty_ledger_and_measures_a_full_one(tmp
     assert all(d["status"] == sc.UNMEASURED for d in empty["days"].values())
     led = sc.SensorLedger(tmp_path)
     led.append([_payrolls(120.0, received=T0 + timedelta(seconds=30))])
-    led.append([_payrolls(95.0, received=T0 + timedelta(seconds=90))])
+    led.append([_payrolls(95.0, received=T0 + timedelta(seconds=90),
+                          knowable=T0 + timedelta(seconds=60))])
     got = sc.digest(led, now=T0 + timedelta(hours=1))
     assert got["status"] == "MEASURED" and got["shards"] == 1
     assert got["index_keys"] == 1 and got["revised_keys"] == 1
@@ -206,3 +209,112 @@ def test_the_ledger_has_a_clock_an_artifact_and_stays_out_of_git() -> None:
     digest = (root / "desks/mt5/research/sensor_ledger_digest.py").read_text("utf-8")
     assert 'REPORT = DESK / "reports" / "SENSOR_LEDGER.json"' in digest
     assert "desks/mt5/data/sensors/" in (root / ".gitignore").read_text("utf-8")
+
+
+def _vintages(day: int) -> list[sc.SensorObservation]:
+    """What release_vintages sends EVERY pass: the first print and every revision so far."""
+    rx = T0 + timedelta(days=day, hours=1)
+    rows = [_payrolls(120.0, received=rx)]
+    if day >= 30:
+        rows.append(_payrolls(95.0, received=rx, knowable=T0 + timedelta(days=30)))
+    if day >= 60:
+        rows.append(_payrolls(101.0, received=rx, knowable=T0 + timedelta(days=60)))
+    return rows
+
+
+def test_daily_resends_of_every_vintage_append_nothing_new(tmp_path) -> None:
+    """Audit HOLD #204/#208 item 1: each new day re-appended the first print as revision 6, 9."""
+    led = sc.SensorLedger(tmp_path)
+    totals = []
+    for day in (0, 1, 2, 30, 31, 60, 61, 62):
+        out = sc.SensorLedger(tmp_path).append(_vintages(day))
+        totals.append((day, out["appended"], out["revisions"]))
+    assert totals == [(0, 1, 0), (1, 0, 0), (2, 0, 0), (30, 1, 1), (31, 0, 0), (60, 1, 1),
+                      (61, 0, 0), (62, 0, 0)]
+    latest = led.latest("macro:alfred", "US", "PAYEMS_change", "2026-09-30")
+    assert latest is not None and latest["value"] == 101.0 and latest["revision_n"] == 2
+    # same-day rerun: nothing appended AND no revisions reported
+    again = sc.SensorLedger(tmp_path).append(_vintages(62))
+    assert (again["appended"], again["revisions"], again["duplicates"]) == (0, 0, 3)
+
+
+def test_as_of_reads_what_the_ledger_held_at_an_instant(tmp_path) -> None:
+    led = sc.SensorLedger(tmp_path)
+    led.append(_vintages(60))
+    key = ("macro:alfred", "US", "PAYEMS_change", "2026-09-30")
+    assert led.as_of(*key, T0 - timedelta(seconds=1)) is None
+    assert led.as_of(*key, T0 + timedelta(days=10))["value"] == 120.0
+    assert led.as_of(*key, T0 + timedelta(days=45))["value"] == 95.0
+    assert led.as_of(*key, T0 + timedelta(days=90))["value"] == 101.0
+
+
+def test_a_same_vintage_with_a_different_value_is_a_refused_conflict(tmp_path) -> None:
+    led = sc.SensorLedger(tmp_path)
+    led.append([_payrolls(120.0, received=T0 + timedelta(seconds=30))])
+    out = led.append([_payrolls(121.0, received=T0 + timedelta(seconds=40))])
+    assert out["conflicts"] == 1 and out["appended"] == 0
+    assert "vintage conflict" in out["refusals"][0]["defects"][0]
+
+
+def test_a_late_older_vintage_is_history_not_a_revision_of_the_newer(tmp_path) -> None:
+    led = sc.SensorLedger(tmp_path)
+    led.append([_payrolls(95.0, received=T0 + timedelta(days=31),
+                          knowable=T0 + timedelta(days=30))])
+    out = led.append([_payrolls(120.0, received=T0 + timedelta(days=32))])
+    assert out["appended"] == 1 and out["revisions"] == 0
+    rows = led.rows((T0 + timedelta(days=32)).date().isoformat())
+    assert rows[-1]["attributes"]["late_vintage"] is True and not rows[-1]["revision_of"]
+    assert led.latest("macro:alfred", "US", "PAYEMS_change", "2026-09-30")["value"] == 95.0
+
+
+def test_a_corrupt_index_fails_closed_and_is_never_reset(tmp_path) -> None:
+    led = sc.SensorLedger(tmp_path)
+    led.append([_payrolls(120.0, received=T0 + timedelta(seconds=30))])
+    led.index_path.write_text("{not json", encoding="utf-8")
+    fresh = sc.SensorLedger(tmp_path)
+    out = fresh.append([_payrolls(95.0, received=T0 + timedelta(days=30),
+                                  knowable=T0 + timedelta(days=30))])
+    assert out["status"] == "INDEX_CORRUPT" and out["appended"] == 0
+    assert led.index_path.read_text(encoding="utf-8") == "{not json"
+    with pytest.raises(sc.LedgerIndexCorrupt):
+        fresh.latest("macro:alfred", "US", "PAYEMS_change", "2026-09-30")
+    assert sc.digest(sc.SensorLedger(tmp_path))["index_status"].startswith("INDEX_CORRUPT")
+
+
+def test_the_index_moves_only_after_the_rows_are_written(tmp_path) -> None:
+    led = sc.SensorLedger(tmp_path)
+    led.append([_payrolls(120.0, received=T0 + timedelta(seconds=30))])
+    before = led.index_path.read_text(encoding="utf-8")
+    day = (T0 + timedelta(days=30)).date().isoformat()
+    (led.obs_dir / f"{day}.jsonl").mkdir(parents=True)       # the shard cannot be opened
+    out = sc.SensorLedger(tmp_path).append([_payrolls(95.0, received=T0 + timedelta(days=30),
+                                                      knowable=T0 + timedelta(days=30))])
+    assert out["status"] == "WRITE_FAILED" and out["appended"] == 0
+    assert led.index_path.read_text(encoding="utf-8") == before
+
+
+def test_the_pre_vintage_index_form_is_still_read(tmp_path) -> None:
+    import json
+    led = sc.SensorLedger(tmp_path)
+    led.index_path.parent.mkdir(parents=True, exist_ok=True)
+    first = _payrolls(120.0, received=T0 + timedelta(seconds=30))
+    key = sc.SensorLedger.revision_key(first)
+    led.index_path.write_text(json.dumps({key: [first.observation_id, 120.0, 0,
+                                                [first.observation_id]]}), encoding="utf-8")
+    assert sc.SensorLedger(tmp_path).append([first])["duplicates"] == 1
+
+
+def test_rows_since_streams_only_new_whole_lines(tmp_path) -> None:
+    led = sc.SensorLedger(tmp_path)
+    led.append([_payrolls(120.0, received=T0 + timedelta(seconds=30))])
+    day = T0.date().isoformat()
+    rows, off = led.rows_since(day)
+    assert len(rows) == 1 and off > 0
+    assert led.rows_since(day, off) == ([], off)
+    led.append([_payrolls(95.0, received=T0 + timedelta(seconds=90),
+                          knowable=T0 + timedelta(seconds=60))])
+    with led._shard(day).open("a", encoding="utf-8") as fh:
+        fh.write('{"partial": ')                          # a row still being written
+    more, off2 = led.rows_since(day, off)
+    assert [r["value"] for r in more] == [95.0] and off2 > off
+    assert led.rows_since(day, 10 ** 9)[0][0]["value"] == 120.0   # rotated: restart
