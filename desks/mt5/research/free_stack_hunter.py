@@ -265,7 +265,7 @@ def merge_obs(path: Path, new: list[dict[str, Any]], *, now: datetime, lag_h: fl
         backfill = first_fetch and k not in last
         archive = pub is not None and k not in last
         at = avail if (backfill or archive) else max(avail, now)
-        vintage = (BACKFILL if backfill else "archive" if archive else
+        vintage = ("archive" if archive else BACKFILL if backfill else
                    "revision" if k in last else "first")
         rec: dict[str, Any] = {"key": k[0], "period_end": k[1], "value": v,
                                "available_time": _iso(at), "first_seen_utc": _iso(now),
