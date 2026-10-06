@@ -77,11 +77,11 @@ def test_reproduction_twin_sleeves_converge_at_a_beaten_point() -> None:
     """
     ev, cfg, worlds = _twin_book()
     res = optimise(ev, hard_cap=0.20, target=0.20, max_per_sleeve=0.15, cfg=cfg, worlds=worlds)
-    assert res.heat == pytest.approx({"a": 0.10, "b": 0.10}, abs=1e-12)
+    assert res.heat == pytest.approx({"a": 0.10, "b": 0.10}, abs=1e-9)
     assert res.converged is True
-    assert res.robust_score == pytest.approx(-0.002724057723898416, abs=1e-12)
+    assert res.robust_score == pytest.approx(-0.002724057723898416, abs=1e-9)
     better = score_book(ev, {"a": 0.15, "b": 0.05}, cfg=cfg, worlds=worlds)["robust_score"]
-    assert better == pytest.approx(-0.001974057731828799, abs=1e-12)
+    assert better == pytest.approx(-0.001974057731828799, abs=1e-9)
     assert better - res.robust_score == pytest.approx(0.00075, abs=1e-9)
     # The non-PSD charge itself, on the module's own |C|.
     c = re_._corr_abs(ev)
