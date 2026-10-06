@@ -56,3 +56,34 @@ def test_the_method_trials_evaluations_are_charged(desk: Path) -> None:
         json.dumps({"trials": 25}) + "\n" + json.dumps({"trials": 11}) + "\n")
     total, fam = L._proposer_counts()
     assert total == base + 36 and fam["model_pairing"] >= 36
+
+
+def test_a_donated_cell_the_judge_saw_is_charged_once_not_twice(desk: Path) -> None:
+    by_src: dict[tuple[str, str], int] = {}
+    _donate(desk, "anomalies", "1", {"tests_run": 40,
+                                     "discoveries": [{"family": "carry"}] * 3})
+    L._proposer_counts(by_src)
+    assert by_src == {("anomalies", "carry"): 40}
+    judged = {("anomalies", "carry"): 3,             # donated, then judged: already screened
+              ("", "carry"): 2,                      # judged with no BORN row: nobody screened it
+              ("broker_swaps", "carry"): 4,          # a source that charged no tests_run
+              ("", "mass_screen_cond"): 7}
+    over = L.judged_screened_overlap(by_src, {"mass_screen_cond": 5}, judged)
+    assert over == {"carry": 3, "mass_screen_cond": 5}   # never more than either side charged
+
+
+def test_lifetime_subtracts_the_overlap_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(L, "_graph_counts", lambda: (10, {"carry": 10}))
+
+    def prop(by_source=None):
+        if by_source is not None:
+            by_source[("anomalies", "carry")] = 6
+        return 6, {"carry": 6}
+    monkeypatch.setattr(L, "_proposer_counts", prop)
+    monkeypatch.setattr(L, "_mass_screen_counts", lambda: (0, {}))
+    monkeypatch.setattr(L, "_claim_selection_counts", lambda: (0, {}))
+    monkeypatch.setattr(L, "_graph_judged_by_source",
+                        lambda: {("anomalies", "carry"): 4, ("", "carry"): 6})
+    doc = L.lifetime(write=False)
+    assert doc["judged_already_screened"] == 4
+    assert doc["lifetime_trials"] == 10 + 6 - 4 == doc["by_family"]["carry"]
