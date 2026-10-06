@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import Any
 
 DESK = Path(__file__).resolve().parent.parent
 REPO = DESK.parent.parent
@@ -117,3 +118,48 @@ def test_bulk_fill_does_not_spend_the_recovery_window_on_single_name_shares() ->
     assert "def _is_single_name_equity(" in src
     assert "tradable_all =" in src
     assert "not _is_single_name_equity(s.path)" in src
+
+
+def test_the_box_census_measures_freshness_gaps_verdicts_and_tape(
+        tmp_path: Path, monkeypatch: Any) -> None:
+    """The published report says what the box captures: fresh symbols per chart, holes that are
+    not the instrument's recurring session break, the downloader's verdicts and the tape status;
+    an absent input is UNMEASURED, never zero."""
+    import json
+    from datetime import UTC, datetime
+
+    import pandas as pd
+
+    now = datetime(2026, 10, 6, 12, 0, tzinfo=UTC)
+    uni = tmp_path / "universe"
+    uni.mkdir()
+    idx = pd.date_range(pd.Timestamp("2026-09-07", tz="UTC"), now, freq="1min")
+    keep = ~((idx.hour == 22) & (idx.minute < 30))           # a daily 30-minute break: recurs
+    keep &= ~((idx >= pd.Timestamp("2026-10-02 09:00", tz="UTC"))
+             & (idx < pd.Timestamp("2026-10-02 11:00", tz="UTC")))   # one real 2h hole
+    keep &= idx.dayofweek < 5
+    pd.DataFrame({"close": 1.0}, index=pd.Index(idx[keep], name="time")).to_parquet(
+        uni / "EURUSD_M1.parquet")
+    old = pd.date_range("2026-08-01", periods=50, freq="1h", tz="UTC")
+    pd.DataFrame({"close": 1.0}, index=pd.Index(old, name="time")).to_parquet(
+        uni / "EURUSD_H1.parquet")
+    monkeypatch.setattr(tf, "UNIVERSE", uni)
+    cap = tf.capture(now)
+    m1 = cap["by_timeframe"]["M1"]
+    assert m1["fresh_symbols"] == ["EURUSD"] and cap["symbols_fresh_at_or_below_60s"] == 1
+    assert m1["gaps"] == 1 and abs(m1["gap_hours"] - 2.0) < 0.1
+    assert cap["by_timeframe"]["H1"]["fresh_symbols"] == 0
+    assert cap["by_timeframe"]["D1"] == {"series": 0}
+
+    monkeypatch.setattr(tf, "VERDICTS", tmp_path / "v.json")
+    monkeypatch.setattr(tf, "TAPE_STATUS", tmp_path / "t.json")
+    assert tf.fetch_verdicts()["status"] == tf.tape()["status"] == "UNMEASURED"
+    (tmp_path / "v.json").write_text(json.dumps({"cells": {
+        "EURUSD_M1": {"verdict": "FILLED", "at": "2026-10-06T10:00:00+00:00"},
+        "GBPUSD_M1": {"verdict": "BROKER_SERVES_NOTHING", "at": "2026-10-06T11:00:00+00:00"}}}))
+    (tmp_path / "t.json").write_text(json.dumps({"state": "RECORDING", "max_lag_s": 4.0,
+                                                 "added": ["X"]}))
+    v = tf.fetch_verdicts()
+    assert v["by_timeframe"]["M1"] == {"BROKER_SERVES_NOTHING": 1, "FILLED": 1}
+    assert v["newest_at"] == "2026-10-06T11:00:00+00:00"
+    assert tf.tape() == {"status": "MEASURED", "state": "RECORDING", "max_lag_s": 4.0}
