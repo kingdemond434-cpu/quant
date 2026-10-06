@@ -751,7 +751,10 @@ def engine_p6(ctx: Context, sym: str, h: str, df: pd.DataFrame, close_t: np.ndar
     pts, src = _cot_series(ctx, sym)
     sge_n = 0
     if sym == "XAUUSD" and isinstance(ctx.sge, dict):
-        sge_n = int(_num(ctx.sge.get("rows")) or 0)
+        # A BLOCKED_ON_TERMS report carries no rows: SGE's terms are refused (alt_proxies), so
+        # the premium is never read here until the gate reads `confirmed`.
+        sge_n = (0 if str(ctx.sge.get("status")) == "BLOCKED_ON_TERMS"
+                 else int(_num(ctx.sge.get("rows")) or 0))
     if len(pts) < 30:
         syms = sorted({str(r.get("symbol")) for r in ((ctx.cot or {}).get("rows") or [])
                        if isinstance(r, dict)}) if isinstance(ctx.cot, dict) else []
@@ -1291,6 +1294,214 @@ def _hunt_universe(ctx: Context) -> list[str]:
     return [s for s in syms if s not in CORE_TARGETS and up.lane(s) == up.HYPOTHESIS]
 
 
+# --------------------------------------------------------------------------- hard-series spreads
+# THE ONSHORE / OFFSHORE DISLOCATIONS THAT HAVE A PUBLISHED SERIES ON BOTH SIDES. Each is a basis
+# in LOG terms: the onshore contract's cumulative daily log return against the offshore MT5
+# instrument converted into CNY with USDCNH at the onshore close, so the basis LEVEL is known only
+# up to a constant (its first day) -- which is all a z, a change and a half-life need. A pair
+# whose series is absent, whose bar clock cannot place the onshore close, or whose host's terms
+# are not confirmed reads UNMEASURED / BLOCKED_ON_TERMS by name; nothing is filled.
+#
+#   shfe_gold_london    SHFE AU0 (free_stack fs_*: shfe_au_ret)  vs  XAUUSD x USDCNH
+#   shfe_silver_london  SHFE AG0 (shfe_ag_ret)                   vs  XAGUSD x USDCNH
+#   ine_brent           INE SC0 (ine_sc_ret)                     vs  XBRUSD x USDCNH
+#   cny_fix_cnh         CFETS central parity vs USDCNH's previous 16:30 Beijing close
+#                       (pack_cells' cfets_fix__sem: fix_vs_cnh_gap_pips)
+#   sge_london          SGE benchmark USD/oz premium over XAUUSD (fetch_sge_premium's
+#                       sge_premium_features) -- ONLY when alt_proxies' terms gate reads
+#                       `confirmed` for SGE; it reads `refused` (2026-10-06), so BLOCKED_ON_TERMS.
+#
+# Every spread is written as data/lake/series/dislocation_<pair>.parquet (available_time, basis,
+# basis_z, basis_delta) and its cells -- exogenous_conditioner on `basis` against the pair's MT5
+# targets, routed by asset class -- go through proposer_common's screen -> deflate -> donate
+# (seat `dislocation_lab_hard`); a pass that donates nothing charges its looks to the null-trial
+# ledger. NOTHING HERE SIZES CAPITAL.
+HARD_SEAT = "dislocation_lab_hard"
+#: Shanghai day-session close, 15:00 CST: the H1 bar opening 06:00 UTC closes on it.
+ONSHORE_CLOSE_UTC = (6, 30)
+HARD_Z_WINDOW = 60
+HARD_MIN_POINTS = 40
+HARD_GRID = {"threshold": (1.0, 1.5), "side_when_high": (1, -1)}
+HARD_PAIRS: dict[str, dict[str, Any]] = {
+    "shfe_gold_london": {"kind": "return_basis", "onshore": "shfe_au_ret",
+                         "offshore": "XAUUSD", "targets": ("XAUUSD",)},
+    "shfe_silver_london": {"kind": "return_basis", "onshore": "shfe_ag_ret",
+                           "offshore": "XAGUSD", "targets": ("XAGUSD",)},
+    "ine_brent": {"kind": "return_basis", "onshore": "ine_sc_ret", "offshore": "XBRUSD",
+                  "targets": ("XBRUSD", "XTIUSD")},
+    "cny_fix_cnh": {"kind": "level", "series": "cfets_fix__sem",
+                    "column": "fix_vs_cnh_gap_pips", "targets": ("USDCNH",)},
+    "sge_london": {"kind": "level", "series": "sge_premium_features",
+                   "column": "premium_usd_oz", "targets": ("XAUUSD",),
+                   "terms_ref": "cn_sge_premium"},
+}
+
+
+def half_life(basis: pd.Series) -> float | None:
+    """Mean-reversion half-life in observations from an AR(1) on the basis: d b = a + beta b(-1).
+    None when the basis does not revert (beta >= 0) or there are too few points."""
+    b = pd.Series(basis, dtype=float).dropna()
+    if len(b) < HARD_MIN_POINTS:
+        return None
+    lag = b.shift(1).iloc[1:].to_numpy(dtype=float)
+    d = b.diff().iloc[1:].to_numpy(dtype=float)
+    x = lag - lag.mean()
+    den = float((x * x).sum())
+    if den <= 0:
+        return None
+    beta = float((x * (d - d.mean())).sum() / den)
+    if not (-1.0 < beta < 0.0):
+        return None
+    return round(-math.log(2.0) / math.log(1.0 + beta), 2)
+
+
+def _basis_frame(at: pd.Series, basis: pd.Series) -> pd.DataFrame:
+    f = pd.DataFrame({"available_time": pd.to_datetime(at, utc=True),
+                      "basis": pd.Series(basis, dtype=float).to_numpy()}).dropna()
+    f = f.sort_values("available_time").drop_duplicates("available_time", keep="last")
+    mu = f["basis"].rolling(HARD_Z_WINDOW, min_periods=20).mean()
+    sd = f["basis"].rolling(HARD_Z_WINDOW, min_periods=20).std()
+    f["basis_z"] = (f["basis"] - mu) / sd.where(sd > 0)
+    f["basis_delta"] = f["basis"].diff()
+    return f.reset_index(drop=True)
+
+
+def _onshore_returns(series_dir: Path, column: str) -> tuple[pd.DataFrame | None, str]:
+    """The free_stack column (`fs_*.parquet`, first-vintage view) carrying `column`."""
+    for fp in sorted(series_dir.glob("fs_*.parquet")):
+        try:
+            df = pd.read_parquet(fp)
+        except Exception:
+            continue
+        if column in df.columns and "period_end" in df.columns:
+            out = df[["period_end", "available_time", column]].dropna(subset=[column])
+            return out.sort_values("period_end").reset_index(drop=True), fp.name
+    return None, f"no free_stack series carries {column} on this host"
+
+
+def _return_basis(series_dir: Path, spec: dict[str, Any], bars_fn: Any,
+                  clock_root: Path | None) -> tuple[pd.DataFrame | None, str, str]:
+    from research.pack_cells import bar_value_at
+    on, src = _onshore_returns(series_dir, str(spec["onshore"]))
+    if on is None or len(on) < HARD_MIN_POINTS:
+        return None, UNMEASURED, (src if on is None else
+                                  f"{src}: {len(on)} onshore rows < {HARD_MIN_POINTS}")
+    off_bars, cnh_bars = bars_fn(str(spec["offshore"])), bars_fn("USDCNH")
+    if off_bars is None or cnh_bars is None:
+        return None, UNMEASURED, f"no H1 bars for {spec['offshore']} or USDCNH"
+    on_level = on[str(spec["onshore"])].astype(float).cumsum()
+    off_level: list[float] = []
+    hh, mm = ONSHORE_CLOSE_UTC
+    for d in on["period_end"]:
+        day = pd.Timestamp(str(d)[:10]).to_pydatetime().replace(tzinfo=UTC)
+        instant = day.replace(hour=hh, minute=mm)
+        px = bar_value_at(off_bars, instant, "close", clock_root)
+        fx = bar_value_at(cnh_bars, instant, "close", clock_root)
+        off_level.append(math.log(px * fx) if px and fx and px > 0 and fx > 0 else float("nan"))
+    basis = on_level.to_numpy() - np.asarray(off_level, dtype=float)
+    close_at = pd.to_datetime(on["period_end"].astype(str).str[:10], utc=True) + pd.Timedelta(
+        hours=hh + 1)
+    pub = pd.to_datetime(on["available_time"], utc=True, errors="coerce")
+    avail = pd.concat([close_at, pub], axis=1).max(axis=1)
+    f = _basis_frame(avail, pd.Series(basis))
+    if len(f) < HARD_MIN_POINTS:
+        return None, UNMEASURED, (f"{len(f)} dates where the bar clock placed the onshore close "
+                                  f"on both {spec['offshore']} and USDCNH (< {HARD_MIN_POINTS})")
+    return f, MEASURED, f"{src}:{spec['onshore']} vs {spec['offshore']} x USDCNH at 15:00 CST"
+
+
+def _level_basis(series_dir: Path, spec: dict[str, Any]) -> tuple[pd.DataFrame | None, str, str]:
+    fp = series_dir / f"{spec['series']}.parquet"
+    if not fp.exists():
+        return None, UNMEASURED, f"{fp.name} absent on this host"
+    try:
+        df = pd.read_parquet(fp)
+    except Exception as exc:
+        return None, UNMEASURED, f"{fp.name}: {type(exc).__name__}"
+    col = str(spec["column"])
+    if col not in df.columns or "available_time" not in df.columns:
+        return None, UNMEASURED, f"{fp.name} carries no {col}"
+    f = _basis_frame(df["available_time"], df[col])
+    if len(f) < HARD_MIN_POINTS:
+        return None, UNMEASURED, f"{fp.name}: {len(f)} rows < {HARD_MIN_POINTS}"
+    return f, MEASURED, f"{fp.name}:{col}"
+
+
+def hard_dislocations(paths: Paths, *, dry_run: bool = False, budget_s: float = 120.0,
+                      bars_fn: Any = None, clock_root: Path | None = None) -> dict[str, Any]:
+    """Every HARD_PAIRS spread: build, publish, screen, deflate, donate (or charge the nulls)."""
+    from research import pack_cells as PK
+    from research.alt_proxies import terms_gate
+    t0 = time.monotonic()
+    series_dir = paths.desk / "data" / "lake" / "series"
+    load = bars_fn or (lambda s: _load_bars(paths, s))
+    pairs: dict[str, Any] = {}
+    screened: list[dict[str, Any]] = []
+    n_tests = 0
+    for name, spec in HARD_PAIRS.items():
+        row: dict[str, Any] = {"targets": list(spec["targets"])}
+        pairs[name] = row
+        if spec.get("terms_ref"):
+            state, why = terms_gate(str(spec["terms_ref"]))
+            row["terms"] = state
+            if state != "confirmed":
+                row.update({"status": "BLOCKED_ON_TERMS", "why": why[:240]})
+                continue
+        if spec["kind"] == "return_basis":
+            f, status, why = _return_basis(series_dir, spec, load, clock_root)
+        else:
+            f, status, why = _level_basis(series_dir, spec)
+        row.update({"status": status, "why": why})
+        if f is None:
+            continue
+        last = f.iloc[-1]
+        row.update({"n": len(f), "basis": round(float(last["basis"]), 6),
+                    "basis_z": (None if pd.isna(last["basis_z"])
+                                else round(float(last["basis_z"]), 3)),
+                    "half_life_obs": half_life(f["basis"]),
+                    "last_available": str(last["available_time"])[:25]})
+        sid = f"dislocation_{name}"
+        if dry_run:
+            continue
+        series_dir.mkdir(parents=True, exist_ok=True)
+        f.to_parquet(series_dir / f"{sid}.parquet", index=False)
+        row["series"] = f"{sid}.parquet"
+        targets = list(PK.resolve_targets(list(spec["targets"])))
+        row["routed_targets"] = targets
+        tests_here = 0
+        for sym in targets:
+            for thr in HARD_GRID["threshold"]:
+                for side in HARD_GRID["side_when_high"]:
+                    if time.monotonic() - t0 > budget_s:
+                        row["stopped"] = "budget"
+                        break
+                    res = PK._screen_one(
+                        sid, "basis", sym, float(thr), int(side), bars_fn,
+                        seat=HARD_SEAT, series_root=series_dir,
+                        mechanism=(f"{name}: onshore/offshore basis at an extreme reverts or "
+                                   f"transmits into {sym}"))
+                    tests_here += 1
+                    if res is not None:
+                        screened.append(res)
+        row["tests"] = tests_here
+        n_tests += tests_here
+    cands: list[dict[str, Any]] = []
+    if screened:
+        from research import proposer_common as pc
+        pc.deflate(screened)
+        cands = [r["candidate"] for r in pc.best_per_cell(screened)]
+    donation: dict[str, Any] = {"donated": 0}
+    if not dry_run and n_tests > 0:
+        donation = PK._sem_donate(cands, n_tests, seat=HARD_SEAT,
+                                  why="hard-series dislocation cells tested; none donated")
+    return {"rule": ("onshore/offshore basis from published series on both sides; spread, z, "
+                     "half-life; cells screened net of cost, deflated by every look, donated "
+                     "through proposer_common; a null pass is charged"),
+            "seat": HARD_SEAT, "pairs": pairs, "tests_run": n_tests,
+            "screened_measurable": len(screened), "proposed": len(cands),
+            "donation": donation, "seconds": round(time.monotonic() - t0, 2)}
+
+
 def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, desk: Path | None = None,
              now: datetime | None = None, horizons: tuple[str, ...] = HORIZONS,
              max_targets: int = MAX_TARGETS_PER_PASS) -> dict[str, Any]:
@@ -1423,6 +1634,12 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, desk: Path | Non
                            "path": str(paths.ledger)},
         "allocates_capital": False,
     }
+    try:
+        report["hard_dislocations"] = hard_dislocations(
+            paths, dry_run=dry_run, budget_s=max(30.0, budget_s - (time.monotonic() - started)))
+    except Exception as exc:          # one section's defect never costs the lab its report
+        report["hard_dislocations"] = {"status": "ERROR",
+                                       "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
     if not dry_run:
         _atomic(paths.report, report)
         last_readings: dict[str, Any] = {}

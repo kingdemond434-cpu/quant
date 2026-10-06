@@ -1637,8 +1637,12 @@ def semantic_lane(budget_s: float = 80.0, *, dry_run: bool = False,
 
 
 def _screen_one(sid: str, sig: str, sym: str, thr: float, side: int,
-                bars_fn: Any = None) -> dict[str, Any] | None:
-    """One cell through `proposer_common.screen`. None = not measurable (too few trades)."""
+                bars_fn: Any = None, *, seat: str = SEM_SEAT, series_root: Path | None = None,
+                mechanism: str | None = None) -> dict[str, Any] | None:
+    """One cell through `proposer_common.screen`. None = not measurable (too few trades).
+
+    `seat` / `series_root` / `mechanism` let another organ (the dislocation lab's hard-series
+    spreads) send its own series through the same door instead of growing a second one."""
     from mt5desk.family_exogenous_conditioner import family_exogenous_conditioner
 
     from research import proposer_common as pc
@@ -1650,7 +1654,7 @@ def _screen_one(sid: str, sig: str, sym: str, thr: float, side: int,
     try:
         sigs = family_exogenous_conditioner(bars, source=sid, signal=sig, transform="level_z",
                                             threshold=thr, side_when_high=side,
-                                            series_root=SERIES)
+                                            series_root=series_root or SERIES)
     except Exception:
         return None
     cost = pc.cost_frac(sym, pc.universe_meta(), bars["close"])
@@ -1660,9 +1664,9 @@ def _screen_one(sid: str, sig: str, sym: str, thr: float, side: int,
     if res is None:
         return None
     cell = f"{sym}.exogenous_conditioner.{sid}.{sig}"
-    mech = (f"{sid}.{sig}: China official data ({sid.split('__')[0]}) at an extreme conditions "
-            f"{sym}")
-    cand = pc.candidate(SEM_SEAT, sym, "exogenous_conditioner", params, mech,
+    mech = mechanism or (f"{sid}.{sig}: China official data ({sid.split('__')[0]}) at an "
+                         f"extreme conditions {sym}")
+    cand = pc.candidate(seat, sym, "exogenous_conditioner", params, mech,
                         f"exogenous_conditioner {sid}.{sig} -> {sym} thr {thr} side {side}",
                         dict(res))
     cand["required_data"] = [f"desks/mt5/data/lake/series/{sid}.parquet"]
@@ -1671,22 +1675,24 @@ def _screen_one(sid: str, sig: str, sym: str, thr: float, side: int,
     return {**res, "cell": cell, "candidate": cand}
 
 
-def _sem_donate(cands: list[dict[str, Any]], tests_run: int) -> dict[str, Any]:
+def _sem_donate(cands: list[dict[str, Any]], tests_run: int, *, seat: str = SEM_SEAT,
+                why: str = "semantic China cells tested; no discovery file carried them this pass"
+                ) -> dict[str, Any]:
     """Donate through the door; a pass that donates nothing charges its looks to the side
     ledger so the lifetime trial count never forgets them (one of the two, never both)."""
     res: dict[str, Any] = {"donated": 0, "path": None}
     if cands:
         try:
             from research import proposer_common as pc
-            path = pc.donate(SEM_SEAT, cands, max(1, tests_run))
+            path = pc.donate(seat, cands, max(1, tests_run))
             res = {**pc.donation_counts(), "path": str(path) if path else None}
         except Exception as exc:
             res = {"donated": 0, "path": None,
                    "error": f"{type(exc).__name__}: {str(exc)[:160]}"}
     if tests_run > 0 and not res.get("path"):
-        row = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "source": SEM_SEAT,
+        row = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "source": seat,
                "tests_run": int(tests_run), "by_family": {"exogenous_conditioner": tests_run},
-               "why": "semantic China cells tested; no discovery file carried them this pass"}
+               "why": why}
         try:
             NULL_TRIALS.parent.mkdir(parents=True, exist_ok=True)
             with NULL_TRIALS.open("a", encoding="utf-8") as fh:
