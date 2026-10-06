@@ -48,6 +48,9 @@ ROOT = DESK.parent.parent
 OUT = DESK / "reports" / "FAILURE_PRIOR.json"
 TABLE = DESK / "data" / "failure_prior.json"
 REGIMES = DESK / "reports" / "REGIME_HIERARCHY.json"
+#: The public trader genome's priors (book_forensics): styles that die in the public population,
+#: measured over alive + dead. External failure memory, reported beside the desk's own.
+GENOME_PRIORS = DESK / "data" / "trader_genome_priors.json"
 
 #: The window that counts as "now". Thirty days of judging on this desk is thousands of rows --
 #: enough for a family-level rate, never enough for a single region, which is why the prior is
@@ -169,8 +172,29 @@ def build(recent_days: float = RECENT_DAYS) -> dict[str, Any]:
                      "a cap on discovery calling itself learning (L1.25)."),
         "consumers": ["desks/mt5/research/miner_candidate_compiler.py (stamps failure_prior and "
                       "reopen on every compiled candidate, beside prior_failures_in_region)"],
+        "public_graveyard": public_graveyard(),
     }
     return doc
+
+
+def public_graveyard(path: Path | None = None) -> dict[str, Any]:
+    """The public trader genome's failure memory: which STYLES die in the public population.
+
+    Read, never applied as a veto: the same boundary as everything above. A style the public
+    graveyard is full of is a structure the desk should expect to fail for the same reason
+    (hidden short volatility, no stop), and the genome's own candidate for it is that style's
+    entry with the recovery layer stripped. UNMEASURED when the genome has not run or its
+    sources are still behind the terms gate.
+    """
+    doc = _read(path or GENOME_PRIORS)
+    if not doc:
+        return {"status": "UNMEASURED", "why": "no trader_genome_priors.json on this box"}
+    if doc.get("status") != "MEASURED":
+        return {"status": "UNMEASURED", "why": f"trader genome status {doc.get('status')}",
+                "at": doc.get("at")}
+    return {"status": "MEASURED", "at": doc.get("at"),
+            "failure_memory": doc.get("failure_memory") or [],
+            "base_rates": doc.get("base_rates") or {}}
 
 
 def _state_note() -> dict[str, Any]:

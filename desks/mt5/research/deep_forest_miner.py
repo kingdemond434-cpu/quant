@@ -132,6 +132,12 @@ RUNS = _DESK / "data" / "alt_fetch_runs.jsonl"
 LEG = "deep_forest_miner"
 #: Cross-process locks live where the desk keeps its job locks (gitignored, per machine).
 LOCKS = _DESK / "data" / ".job_locks"
+#: THE COMPETITION GRAVEYARD (Asia directive PART XIV, 2026-10-06). A `competition` ground's
+#: ranking TABLE is a population -- winners, the middle and the accounts that blew up or left --
+#: and the claims extractor only ever read its prose. `competition_rows` reads the table; the
+#: rows are appended here (never overwritten) and `book_forensics` folds them into the trader
+#: genome under its terms gate.
+COMPETITION_LEDGER = _DESK / "data" / "trader_genome_competition.jsonl"
 #: Per-vector attempts / successes / rows / last error, beside the frontier file.
 VECTOR_STATS_NAME = "deep_forest_vector_stats.json"
 _UA = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -845,6 +851,8 @@ class _Run:
     def take(self, text: str, *, ground: dict[str, Any], url: str, title: str,
              route: str, grade: str | None = None, extra: dict[str, Any] | None = None,
              page: str = "") -> int:
+        if page and str(ground.get("kind")) == "competition":
+            self._competition(page, ground=ground, url=url)
         r = mc.extract(text, universe=self.universe or None)
         self.counts["dropped_venue"] += int(r["dropped_venue"])
         self.counts["dropped_unmappable"] += int(r["dropped_unmappable"])
@@ -886,6 +894,28 @@ class _Run:
             n += 1
             self._provenance(row)
         return n
+
+    def _competition(self, page: str, *, ground: dict[str, Any], url: str) -> int:
+        """Append a competition page's ranking rows to the genome's competition ledger."""
+        try:
+            meta = page_meta(page)
+            now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+            rows = competition_rows(page, ground=str(ground.get("name")), url=url,
+                                    published_time=meta.get("published_time"),
+                                    available_time=now, region=str(ground.get("region") or ""),
+                                    language=str(ground.get("language") or ""))
+            if not rows:
+                return 0
+            with self._lock, _xlock("trader_genome_competition"):
+                COMPETITION_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+                with COMPETITION_LEDGER.open("a", encoding="utf-8") as fh:
+                    for row in rows:
+                        fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+            self.counts["competition_rows"] = self.counts.get("competition_rows", 0) + len(rows)
+            return len(rows)
+        except Exception as exc:                 # a table we cannot read never costs the claims
+            self.status.append({"url": url, "competition_table": f"{type(exc).__name__}: {exc}"})
+            return 0
 
     def _provenance(self, row: dict[str, Any]) -> None:
         try:
@@ -1405,6 +1435,130 @@ class _Run:
                             # ORTHOGONALITY: a ground that yields only momentum says so.
                             "momentum_only": bool(classes) and set(classes) <= {"momentum"},
                             "datasets": sum(1 for d in self.datasets if d.get("ground") == name)})
+
+
+# ------------------------------------------------------------ competition ranking tables
+
+#: Header vocabulary of public futures/FX competition ranking tables. Based on the published
+#: layout of the 期货日报 全国期货(期权)实盘交易大赛 ranking pages (名次 / 参赛者 / 净值 /
+#: 累计净值增长率 / 最大回撤 / 风险度 / 组别 / 状态) and its English and Russian equivalents
+#: (MOEX ЛЧИ: Место / Участник / Доходность). A column is matched by substring.
+_COMP_COLS: dict[str, tuple[str, ...]] = {
+    "rank": ("名次", "排名", "rank", "место", "#"),
+    "name": ("参赛者", "参赛账户", "昵称", "选手", "账户", "trader", "participant", "участник",
+             "name"),
+    "nav": ("净值", "nav", "权益"),
+    "return_pct": ("收益率", "增长率", "return", "доходность", "profit %"),
+    "max_dd_pct": ("回撤", "drawdown", "просадка"),
+    "group": ("组别", "group", "division", "лига"),
+    "status": ("状态", "status", "статус"),
+}
+#: Words that put a competitor in the graveyard: a blown, liquidated, withdrawn or disqualified
+#: account. Matched against the row's status cell and its name cell.
+_COMP_DEAD = ("爆仓", "清盘", "退赛", "出局", "淘汰", "强平", "取消资格", "blown", "liquidated",
+              "withdrawn", "disqualified", "выбыл", "дисквал")
+
+
+def _pct(v: str) -> float | None:
+    t = str(v or "").replace(",", "").replace("%", "").replace("\uff05", "").strip()
+    try:
+        return float(t)
+    except ValueError:
+        return None
+
+
+def _tables(page: str) -> list[list[list[str]]]:
+    from html.parser import HTMLParser
+
+    class _P(HTMLParser):
+        def __init__(self) -> None:
+            super().__init__(convert_charrefs=True)
+            self.tables: list[list[list[str]]] = []
+            self.row: list[str] | None = None
+            self.cell: list[str] | None = None
+
+        def handle_starttag(self, tag: str, attrs: Any) -> None:
+            if tag == "table":
+                self.tables.append([])
+            elif tag == "tr" and self.tables:
+                self.row = []
+            elif tag in ("td", "th") and self.row is not None:
+                self.cell = []
+
+        def handle_endtag(self, tag: str) -> None:
+            if tag in ("td", "th") and self.row is not None and self.cell is not None:
+                self.row.append(" ".join("".join(self.cell).split()))
+                self.cell = None
+            elif tag == "tr" and self.row is not None and self.tables:
+                if self.row:
+                    self.tables[-1].append(self.row)
+                self.row = None
+
+        def handle_data(self, data: str) -> None:
+            if self.cell is not None:
+                self.cell.append(data)
+
+    p = _P()
+    p.feed(page)
+    return p.tables
+
+
+def competition_rows(page: str, *, ground: str, url: str, published_time: str | None,
+                     available_time: str, region: str = "", language: str = ""
+                     ) -> list[dict[str, Any]]:
+    """Every competitor row of every ranking table on a page, the dead ones included.
+
+    A table qualifies when its header names a competitor column and at least one of NAV /
+    return / drawdown. Values are kept verbatim beside their parse; an unparseable number is
+    None, never zero. PIT: a row is knowable from the page's own published time when it states
+    one, else from the fetch -- never earlier.
+    """
+    out: list[dict[str, Any]] = []
+    for t in _tables(page):
+        if len(t) < 2:
+            continue
+        head = [h.lower() for h in t[0]]
+        col: dict[str, int] = {}
+        for key, words in _COMP_COLS.items():
+            for i, h in enumerate(head):
+                if i in col.values():
+                    continue
+                if any(w.lower() in h for w in words):
+                    col[key] = i
+                    break
+        if "name" not in col or not ({"nav", "return_pct", "max_dd_pct"} & set(col)):
+            continue
+        for cells in t[1:]:
+            if len(cells) <= col["name"]:
+                continue
+
+            def cell(k: str, cells: list[str] = cells, col: dict[str, int] = col) -> str:
+                return cells[col[k]] if k in col and col[k] < len(cells) else ""
+
+            name = cell("name").strip()
+            if not name:
+                continue
+            nav, ret, dd = _pct(cell("nav")), _pct(cell("return_pct")), _pct(cell("max_dd_pct"))
+            status = cell("status")
+            dead_word = next((w for w in _COMP_DEAD if w in status.lower() or w in name.lower()),
+                             None)
+            if dead_word or (nav is not None and nav <= 0.05) or (ret is not None and ret <= -95.0):
+                outcome = "BLOWN"
+            else:
+                outcome = "ALIVE"
+            raw = "|".join(cells)
+            out.append({
+                "ground": ground, "url": url, "region": region, "language": language,
+                "name": name, "rank": cell("rank") or None, "group": cell("group") or None,
+                "nav": nav, "return_pct": ret, "max_dd_pct": (-abs(dd) if dd is not None else None),
+                "status_text": status or None, "outcome": outcome,
+                "outcome_why": (f"status/name says {dead_word!r}" if dead_word else
+                                "NAV/return at the blow-up floor" if outcome == "BLOWN" else
+                                "listed in the ranking"),
+                "published_time": published_time, "available_time": available_time,
+                "row_hash": hashlib.sha256(f"{url}|{raw}".encode()).hexdigest()[:16],
+                "raw": raw[:400]})
+    return out
 
 
 def _feed_frontier(urls: list[tuple[str, str, str]]) -> int:
