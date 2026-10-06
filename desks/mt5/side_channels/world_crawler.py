@@ -48,6 +48,7 @@ from typing import Any
 from urllib.parse import quote, urljoin, urlparse, urlsplit, urlunsplit
 
 BASE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE.parent.parent))
 sys.path.insert(0, str(BASE / "side_channels"))
 sys.path.insert(0, str(BASE))
 if str(BASE.parent.parent) not in sys.path:      # the repo root, for libs.data.terms_fence
@@ -1096,10 +1097,14 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
     }
 
     if rows:
+        try:
+            from side_channels.discovery_io import write_discoveries
+        except ModuleNotFoundError:
+            from discovery_io import write_discoveries
         stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
         out = WORLD / f"discoveries_{stamp}.json"
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(rows, indent=1), encoding="utf-8")
+        rows = write_discoveries(out, rows)
         log(f"-> {out.relative_to(BASE)} ({len(rows)} row(s))")
 
     REPORT.parent.mkdir(parents=True, exist_ok=True)

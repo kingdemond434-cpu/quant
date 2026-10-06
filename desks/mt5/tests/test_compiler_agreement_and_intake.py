@@ -172,6 +172,9 @@ def test_a_prose_row_that_compiles_to_nothing_is_still_deepened(tmp_path, monkey
          "title": "structured"}]})
     assert res["out"]["executable_candidates"] == 1
     assert res["out"]["deepening_tasks"] == 1 and len(res["deepen"]["tasks"]) == 1
+    for emitted in (res["out"]["hypotheses"] + res["deepen"]["tasks"]):
+        assert all(emitted.get(field) for field in (
+            "available_time", "ingested_time", "payload_hash", "source_version"))
     assert res["out"]["per_source"]["forumx"] == {
         "rows": 2, "candidates": 1, "deepening": 1, "convertible_rows": 1,
         "converted_rows": 1, "valid_refusals": 0, "invalid_cells": 0,

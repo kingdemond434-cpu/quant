@@ -148,7 +148,14 @@ WEIGHTS: dict[str, float] = {
 #: The genome slots mechanism distance is measured over. A slot both sides declare is comparable;
 #: a slot either side leaves blank or UNKNOWN is skipped, so declining to declare buys nothing.
 SLOT_NAMES: tuple[str, ...] = ("asset_class", "instrument", "mechanism", "session",
-                               "horizon", "regime")
+                               "horizon", "regime", "direction", "representation")
+#: Axes that can make another member of an existing family a genuinely different experiment.
+#: `instrument` is deliberately absent: copying the same mechanism from EURUSD to GBPUSD is not
+#: independent merely because the ticker changed. A different asset class, clock, horizon, state,
+#: direction or representation is a structural distinction the desk can subsequently verify in
+#: returns. These axes RELIEVE the concentration charge; they never certify the candidate.
+DISTINCT_AXIS_SLOTS: tuple[str, ...] = ("asset_class", "session", "horizon", "regime",
+                                        "direction", "representation")
 #: The breadth grid the scarcity term counts occupancy in (`axis_registry`, hourly leg).
 AXIS_REGISTRY_PATH = DESK / "reports" / "AXIS_REGISTRY.json"
 #: Which occupancy plane is read. `axis_registry` publishes several crossed planes; this is the
@@ -580,12 +587,25 @@ def multiplicity_term(n_trials: int, *, sharpes: Sequence[float] | None = None,
     `external_gauntlet`'s `deflated_sharpe` stage raises its benchmark to, so a candidate that
     the search prefers because it came out of a wider haystack is charged HERE for the width of
     that haystack, in the same units and by the same function that will charge it later. The
-    variance of Sharpes is the desk's declared constant when `gate_policy` is readable and the
-    measured batch dispersion otherwise -- the gauntlet's own order of preference.
+    variance of Sharpes is the measured one in a verified `reports/DSR_INPUTS.json` when there is
+    one, the spec's constant while a spec still declares one, and the measured batch dispersion
+    otherwise.
     """
     n = max(1, int(n_trials))
     var = variance_of_sharpes
     basis = "given variance_of_sharpes"
+    if var is None:
+        # THE MEASURED VARIANCE FIRST (principal 2026-09-30): the verified DSR_INPUTS pooled
+        # variance the judge now charges. The spec constant below is read only while a spec still
+        # carries one (before the sealed judge's patch lands); the batch dispersion after that.
+        try:
+            from libs.research.dsr_inputs import load_verified
+            _doc, _ = load_verified()
+            if _doc is not None:
+                var = float(_doc["variance"]["pooled"]["variance"])
+                basis = f"measured DSR_INPUTS pooled variance ({str(_doc['content_sha256'])[:12]})"
+        except Exception:
+            var = None
     if var is None:
         try:
             from research.gate_policy import (  # type: ignore[import-not-found]
@@ -741,14 +761,34 @@ def survivor_slots(canon: Path | None = None) -> tuple[dict[str, str], ...]:
         spec: dict[str, Any] = _spec if isinstance(_spec, dict) else {}
         cell = str(cert.get("cell") or "")
         parts = cell.split(".")
+        _params = spec.get("params") or cert.get("params")
+        params: dict[str, Any] = _params if isinstance(_params, dict) else {}
         fam = str(spec.get("family") or cert.get("family")
                   or (parts[1] if len(parts) > 1 else ""))
         sym = str(spec.get("symbol") or cert.get("sym") or (parts[0] if parts else ""))
         slot = {k: v for k, v in (("instrument", sym), ("mechanism", fam),
-                                  ("session", str(spec.get("session") or "")),
-                                  ("horizon", str(spec.get("horizon") or "")),
-                                  ("asset_class", str(spec.get("asset_class") or "")),
-                                  ("regime", str(spec.get("regime") or ""))) if v}
+                                  ("session", str(spec.get("session") or spec.get("selector")
+                                                  or cert.get("session")
+                                                  or cert.get("selector")
+                                                  or params.get("session")
+                                                  or params.get("selector") or "")),
+                                  ("horizon", str(spec.get("horizon")
+                                                  or spec.get("timeframe")
+                                                  or cert.get("timeframe")
+                                                  or params.get("timeframe")
+                                                  or (parts[0].rsplit("@", 1)[-1]
+                                                      if parts and "@" in parts[0] else "H1"))),
+                                  ("asset_class", str(spec.get("asset_class")
+                                                      or params.get("asset_class") or "")),
+                                  ("regime", str(spec.get("regime") or spec.get("condition")
+                                                 or params.get("regime")
+                                                 or params.get("condition") or "")),
+                                  ("direction", str(spec.get("direction") or spec.get("side")
+                                                    or params.get("direction")
+                                                    or params.get("side") or "")),
+                                  ("representation", str(spec.get("representation")
+                                                         or params.get("representation")
+                                                         or params.get("feature") or ""))) if v}
         if slot:
             rows.append(slot)
     out = tuple(rows)
@@ -839,13 +879,20 @@ def axis_scarcity_term(asset_class: str, mechanism: str, *,
                                     f"{AXIS_PLANE} plane; scarcity 1/(1+{n})")
 
 
-def existing_exposure_term(family: str, *, canon: Path | None = None) -> tuple[float, str]:
-    """The candidate family's share of certified sleeves, in [0, 1].
+def existing_exposure_term(family: str, slots: Mapping[str, Any] | None = None, *,
+                           canon: Path | None = None) -> tuple[float, str]:
+    """Axis-aware share of certified sleeves already occupying this family, in [0, 1].
 
     The hurdle that scales with how much of this KIND the book already owns: novelty prices
     correlation and the growth solve prices the marginal heat, but neither rises because the
-    canon already holds twenty session-range breakouts. This does, by the count. No family on
-    the candidate, or no canon, is unmeasured -- an unknown exposure is not a zero exposure.
+    canon already holds twenty session-range breakouts. This does, by the count.
+
+    The full family share is charged to an exact structural repeat. Genuinely different clocks,
+    horizons, regimes, directions, representations or asset classes receive proportional relief:
+    ``family_share * nearest_same_family_axis_similarity``. The NEAREST member decides, so one
+    existing twin is enough to keep the full charge. Merely changing the ticker inside an asset
+    class buys no relief. Missing axis metadata also buys no relief; absence is not independence.
+    This is search ordering only -- it never removes a cell or changes any evidence gate.
     """
     fam = str(family or "")
     canon = CANON_PATH if canon is None else canon
@@ -856,8 +903,38 @@ def existing_exposure_term(family: str, *, canon: Path | None = None) -> tuple[f
         return 0.0, (f"no certified sleeves readable at {Path(canon).name}: existing exposure "
                      f"unmeasured")
     share = float(shares.get(fam, 0.0))
-    return share, (f"{fam} holds {round(share * n)} of {n} certified sleeves in "
-                   f"{Path(canon).name}")
+    count = round(share * n)
+    if share == 0.0 or slots is None:
+        return share, (f"{fam} holds {count} of {n} certified sleeves in "
+                       f"{Path(canon).name}")
+
+    mine = {k: str(v).strip().lower() for k, v in dict(slots).items()
+            if k in DISTINCT_AXIS_SLOTS and str(v).strip()
+            and str(v).strip().upper() != "UNKNOWN"}
+    if not mine:
+        return share, (f"{fam} holds {count} of {n} certified sleeves; candidate declares no "
+                       "structural axis, so no independence relief is earned")
+
+    comparisons: list[tuple[float, tuple[str, ...]]] = []
+    for row in survivor_slots(canon):
+        if str(row.get("mechanism") or "") != fam:
+            continue
+        shared = tuple(k for k in DISTINCT_AXIS_SLOTS if k in mine
+                       and str(row.get(k) or "").strip()
+                       and str(row.get(k)).strip().upper() != "UNKNOWN")
+        if not shared:
+            continue
+        similarity = sum(str(row[k]).strip().lower() == mine[k] for k in shared) / len(shared)
+        comparisons.append((float(similarity), shared))
+    if not comparisons:
+        return share, (f"{fam} holds {count} of {n} certified sleeves; canon and candidate share "
+                       "no declared structural axis, so independence is UNMEASURED and no relief "
+                       "is earned")
+    nearest, axes = max(comparisons, key=lambda item: item[0])
+    pressure = share * nearest
+    return pressure, (f"{fam} holds {count} of {n} certified sleeves (raw share {share:.3f}); "
+                      f"nearest same-family structural similarity is {nearest:.3f} across "
+                      f"{','.join(axes)}, so charged exposure is {pressure:.3f}")
 
 
 # --------------------------------------------------------------------------- the vector
@@ -1000,7 +1077,6 @@ def evaluate(candidate: Candidate, book: Book | None = None, *, cfg: Any = None,
                                                 name=candidate.name)
     detail["crowding"] = cr_detail
     crowd = _take("crowding", cr_value, cr_why)
-    expo = _take("existing_exposure", *existing_exposure_term(candidate.family))
     # THE TWO BREADTH CREDITS (Tier-1 D5). Both are read off the candidate's DECLARED slots, so
     # a proposer that declares nothing gets 0.0 with `UNMEASURED` on the reason -- absence is a
     # verdict here exactly as it is everywhere else (L1.28a).
@@ -1009,6 +1085,7 @@ def evaluate(candidate: Candidate, book: Book | None = None, *, cfg: Any = None,
         slots["instrument"] = candidate.symbol
     if candidate.family and "mechanism" not in slots:
         slots["mechanism"] = candidate.family
+    expo = _take("existing_exposure", *existing_exposure_term(candidate.family, slots))
     mdist = _take("mechanism_distance", *mechanism_distance_term(slots))
     scarce = _take("axis_scarcity", *axis_scarcity_term(
         str(slots.get("asset_class") or ""), str(slots.get("mechanism") or "")))

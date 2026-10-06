@@ -48,6 +48,7 @@ SEALED_SORT_KEY_SOURCE = (
     "key=lambda sp: (_is_new(sp),\n"
     "                        _tf_rank(sp),\n"
     "                        _ceo_rank(sp),\n"
+    "                        bool(sp.get(\"prejudge_flagged\")),\n"
     "                        _judged_in_bucket.get(_bucket(sp), 0),\n"
     "                        _cursor.get(str(sp.get(\"sym\") or \"\"), \"\"),\n"
     "                        str(sp.get(\"sym\") or \"\"),\n"
@@ -106,7 +107,8 @@ def sealed_docket(G: Any, meta: dict) -> tuple[list[dict], dict[str, int]]:
         if key not in cells:
             cells[key] = {"sym": sym, "family": fam, "params": params,
                           "mechanism_status": h.get("mechanism_status"),
-                          "mechanism_note": h.get("mechanism_note")}
+                          "mechanism_note": h.get("mechanism_note"),
+                          "prejudge_flagged": bool(((h.get("prejudge") or {}).get("flags")))}
     census["cells"] = len(cells)
     eligible, rejected = G.partition_at_economic_prior(list(cells.values()), meta)
     census["rejected_at_prior"] = len(rejected)
@@ -171,7 +173,7 @@ def _ceo_families(G: Any) -> set[str]:
 
 
 def order(G: Any, specs: list[dict]) -> list[dict]:
-    """The sealed eight-key sort (see SEALED_SORT_KEY_SOURCE). Requires `stamp_new` first."""
+    """The sealed nine-key sort (see SEALED_SORT_KEY_SOURCE). Requires `stamp_new` first."""
     tf_of = G.timeframe_of
 
     def _bucket(sp: dict) -> tuple[str, str]:
@@ -198,6 +200,7 @@ def order(G: Any, specs: list[dict]) -> list[dict]:
         0 if sp.get("_never_judged", True) else 1,
         _tf_rank(sp),
         0 if str(sp.get("family") or "") in ceo else 1,
+        bool(sp.get("prejudge_flagged")),
         judged_in_bucket.get(_bucket(sp), 0),
         cursor.get(str(sp.get("sym") or ""), ""),
         str(sp.get("sym") or ""),

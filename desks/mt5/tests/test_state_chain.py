@@ -97,10 +97,12 @@ def test_the_promoter_parses_a_three_part_key():
     whitelist and drops the sleeve silently -- a conditioned candidate would meet every promotion
     criterion forever and never promote, with no error raised anywhere."""
     assert 'key.split(".", 1)' not in _PR, "the two-part split is back"
-    assert 'parts = key.split(".")' in _PR
-    key = "CADJPY.asia.FAILED_BREAK"
-    parts = key.split(".")
-    assert (parts[0], parts[1], parts[2]) == ("CADJPY", "asia", "FAILED_BREAK")
+    # The parameter tail (`#rr=2.5`) is cut off FIRST, so its decimal is never read as a state.
+    assert 'parts = key.split("#", 1)[0].split(".")' in _PR
+    for key, want in (("CADJPY.asia.FAILED_BREAK", ("CADJPY", "asia", "FAILED_BREAK")),
+                      ("USDJPY.asia#rr=2.5", ("USDJPY", "asia")),
+                      ("USDJPY.asia.MACRO_FAV#rr=2.5", ("USDJPY", "asia", "MACRO_FAV"))):
+        assert tuple(key.split("#", 1)[0].split(".")) == want
     assert len(["CADJPY", "asia"]) == 2, "unconditioned keys must still parse"
 
 

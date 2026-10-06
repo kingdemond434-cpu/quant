@@ -52,6 +52,7 @@ from datetime import UTC, datetime
 from typing import Any, Protocol, runtime_checkable
 
 import numpy as np
+from research.mt5_session import attach_or_initialize
 
 #: The dtype every source must return. Field names match MT5's own tick struct so the MT5
 #: implementation is a zero-copy pass-through and the fake cannot drift from it.
@@ -139,8 +140,7 @@ class Mt5TickSource:
         if mt5.terminal_info() is not None:
             self._initialised = True
             return True
-        ok = bool(mt5.initialize(path=self._terminal_path) if self._terminal_path
-                  else mt5.initialize())
+        ok = attach_or_initialize(mt5, path=self._terminal_path, timeout=15000)
         self._initialised = ok
         return ok
 

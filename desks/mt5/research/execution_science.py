@@ -35,8 +35,10 @@ TRAIN AND TEST ARE PURGED AND EMBARGOED, and every number reported is from the h
 variants are ranked on train; a variant chosen on test would be an execution policy fitted to the
 window it is measured in.
 
-LIVE FILLS RECALIBRATING THE SIMULATOR is the one clause this cannot yet honour, and it says so:
-the live ledger holds 16 deals across 3 days. The hook is named rather than faked.
+LIVE FILLS RECALIBRATING THE SIMULATOR (wired 2026-09-30, S23): every run joins the fill
+corpus's requested price and entry fill to the live ledger's closing deal (`live_fills`) and
+splits each real fill into signal alpha and execution drag (`split_fills`), book-level and per
+sleeve, into `live_fill_calibration`. Below MIN_CALIBRATION_FILLS it is published UNMEASURED.
 
     python desks/mt5/research/execution_science.py [--apply] [--dry-run]
 
@@ -143,23 +145,122 @@ def _growth(ds: Any) -> float:
     return float(np.mean(np.log1p(r)))
 
 
-def _live_fill_calibration() -> dict[str, Any]:
-    """The clause this cannot honour yet, stated rather than faked."""
-    n = 0
-    if LEDGER.exists():
-        for ln in LEDGER.read_text(encoding="utf-8", errors="replace").splitlines():
-            if ln.strip():
-                n += 1
+#: the fill corpus the fill recorder appends (requested price vs fill, per order the gateway sent)
+CORPUS = DESK / "data" / "fill_corpus.jsonl"
+#: below this many split fills the split is REPORTED but the simulator is not called recalibrated:
+#: a slippage distribution from a handful of fills is a point estimate wearing a histogram
+MIN_CALIBRATION_FILLS = 30
+
+
+def _jsonl(p: Path) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    try:
+        with p.open(encoding="utf-8", errors="replace") as fh:
+            for ln in fh:
+                if not ln.strip():
+                    continue
+                try:
+                    r = json.loads(ln)
+                except ValueError:
+                    continue
+                if isinstance(r, dict):
+                    out.append(r)
+    except OSError:
+        return []
+    return out
+
+
+def _num(x: Any) -> float | None:
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return None
+    return v if math.isfinite(v) else None
+
+
+def live_fills(corpus: Iterable[Mapping[str, Any]], ledger: Iterable[Mapping[str, Any]]
+               ) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """THE REAL FILLS, IN `split_fills`'s SHAPE (S23, wired 2026-09-30: until now only tests
+    called `split_fills`).
+
+    The fill corpus (`fill_recorder`, hourly) carries what the desk ASKED for (`requested_price`,
+    the signal's modelled fill) and what the ENTRY got (`fill_price`); the live ledger's closing
+    deal carries where the trade LEFT (`fill_price` of the close), the stop it was sized against
+    (`entry_price`, `sl`) and the round trip's commission and swap. Joined on the closing deal,
+    else the position, else the entry order == the intent's ticket -- the same bridges the
+    recorder uses. A row that cannot be joined or has no stop distance is counted, never scored
+    as a zero."""
+    by_deal: dict[str, Mapping[str, Any]] = {}
+    by_pos: dict[str, Mapping[str, Any]] = {}
+    by_entry: dict[str, Mapping[str, Any]] = {}
+    for d in ledger:
+        for key, idx in (("deal", by_deal), ("position_id", by_pos), ("entry_order", by_entry)):
+            v = d.get(key)
+            if v not in (None, ""):
+                idx[str(v)] = d
+    out: list[dict[str, Any]] = []
+    counts = {"corpus_filled": 0, "joined": 0, "unjoined": 0, "no_request": 0}
+    for c in corpus:
+        if str(c.get("status") or "").upper() != "FILLED":
+            continue
+        counts["corpus_filled"] += 1
+        asked, entry_fill = _num(c.get("requested_price")), _num(c.get("fill_price"))
+        if asked is None or entry_fill is None:
+            counts["no_request"] += 1
+            continue
+        jk = c.get("join_keys") if isinstance(c.get("join_keys"), Mapping) else {}
+        deal = by_deal.get(str(c["deal"])) if c.get("deal") is not None else None
+        if deal is None and jk.get("position_id"):
+            deal = by_pos.get(str(jk["position_id"]))
+        if deal is None and c.get("ticket") is not None:
+            deal = by_entry.get(str(c["ticket"]))
+        if deal is None:
+            counts["unjoined"] += 1
+            continue
+        exit_px, entry_px, sl = (_num(deal.get("fill_price")), _num(deal.get("entry_price")),
+                                 _num(deal.get("sl")))
+        contract, lots = _num(deal.get("contract_size")), _num(deal.get("volume"))
+        stop_dist = abs(entry_px - sl) if (entry_px is not None and sl is not None) else None
+        fees_quote = (_num(deal.get("commission")) or 0.0) + (_num(deal.get("swap")) or 0.0)
+        cost = (-fees_quote / (contract * lots)) if (contract and lots) else 0.0
+        direction = _num(c.get("direction"))
+        counts["joined"] += 1
+        out.append({"sleeve": str(c.get("sleeve") or deal.get("sleeve") or ""),
+                    "symbol": str(c.get("symbol") or deal.get("symbol") or ""),
+                    "deal": deal.get("deal"),
+                    "side": 1.0 if (direction is None or direction >= 0) else -1.0,
+                    "signal_price": asked, "fill_price": entry_fill, "exit_price": exit_px,
+                    "stop_dist": stop_dist, "cost": cost})
+    return out, counts
+
+
+def _live_fill_calibration(corpus_path: Path | None = None,
+                           ledger_path: Path | None = None) -> dict[str, Any]:
+    """Live fills, split into signal alpha and execution drag by `split_fills`, every hour.
+
+    The book-level split and one per sleeve. Below MIN_CALIBRATION_FILLS the split is published
+    with status UNMEASURED (a thin distribution is not a calibration) -- never withheld."""
+    ledger = _jsonl(ledger_path or LEDGER)
+    corpus = _jsonl(corpus_path or CORPUS)
+    fills, counts = live_fills(corpus, ledger)
+    book = split_fills(fills)
+    by_sleeve: dict[str, list[dict[str, Any]]] = {}
+    for f in fills:
+        by_sleeve.setdefault(f["sleeve"] or "?", []).append(f)
+    n = int(book.get("n") or 0)
+    status = "MEASURED" if n >= MIN_CALIBRATION_FILLS else "UNMEASURED"
     return {
-        "status": "UNMEASURED",
-        "n_live_deals": n,
-        "why": (f"the live ledger holds {n} realised deal(s). Recalibrating a fill simulator "
-                f"needs the distribution of slippage against the modelled fill, and a "
-                f"distribution estimated from {n} observations would be a point estimate wearing "
-                f"a histogram."),
-        "hook": ("when the ledger carries enough deals, `split_fills` is the recalibration: "
-                 "each deal records entry_price and fill_price, and their difference against the "
-                 "modelled fill IS the recalibration. Nothing further needs building."),
+        "status": status,
+        "n_live_deals": len(ledger),
+        "n_split_fills": n,
+        "join": counts,
+        "split": book,
+        "by_sleeve": {k: split_fills(v) for k, v in sorted(by_sleeve.items())},
+        "why": (f"{n} live fill(s) joined requested price -> entry fill -> exit and split by "
+                f"split_fills" + ("" if status == "MEASURED" else
+                                  f"; {MIN_CALIBRATION_FILLS} are needed before the split is "
+                                  "read as a recalibration of the fill simulator")),
+        "consumer": "execution_science.split_fills <- data/fill_corpus.jsonl x live_ledger.jsonl",
     }
 
 

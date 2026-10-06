@@ -1,5 +1,8 @@
 """LOCK LIVENESS: A CORPSE MUST NEVER BLOCK, AND A LIVING OWNER MUST NEVER BE ROBBED.
 
+Windows liveness uses a native PID lookup. Unlike POSIX, os.kill(pid, 0) would terminate
+the owner; the native self-process regression below verifies that it survives the probe.
+
 Two regressions live here, in the two opposite directions, and the file covers both because
 fixing either one alone is what produced the other.
 
@@ -54,9 +57,25 @@ def _lock(tmp_path, monkeypatch, host: str | None = None) -> Path:
 
 
 def _raise(exc):
-    def _kill(pid, sig):
+    def _kill(pid, sig=0):
         raise exc
     return _kill
+
+
+def test_windows_liveness_never_sends_a_signal(monkeypatch):
+    import psutil
+
+    monkeypatch.setattr(J.sys, "platform", "win32")
+    monkeypatch.setattr(psutil, "pid_exists", lambda pid: pid == 6904)
+    monkeypatch.setattr(J.os, "kill", _raise(AssertionError("liveness sent a signal")))
+    assert J._pid_exists(6904) is True
+    assert J._pid_exists(6905) is False
+
+
+@pytest.mark.skipif(os.name != "nt", reason="native Windows process regression")
+def test_windows_probe_preserves_the_actual_current_process():
+    # No fake process result: a signal-zero probe used to terminate this worker.
+    assert J._pid_exists(os.getpid()) is True
 
 
 def _win_not_a_process() -> OSError:
@@ -70,7 +89,7 @@ def test_a_dead_windows_owner_is_recognised_as_dead(tmp_path, monkeypatch):
     """THE REGRESSION. The exact exception the desk box raises for a pid that is gone."""
     path = _lock(tmp_path, monkeypatch)
     monkeypatch.setattr(J.sys, "platform", "win32")
-    monkeypatch.setattr(J.os, "kill", _raise(_win_not_a_process()))
+    monkeypatch.setattr(J, "_pid_exists", _raise(_win_not_a_process()))
 
     assert J._owner_state(path) == "DEAD", (
         "a Windows pid that no longer exists must read as DEAD; reading it as alive is what "
@@ -85,7 +104,7 @@ def test_a_live_windows_owner_reads_alive_not_merely_not_dead(tmp_path, monkeypa
     """
     path = _lock(tmp_path, monkeypatch)
     monkeypatch.setattr(J.sys, "platform", "win32")
-    monkeypatch.setattr(J.os, "kill", lambda pid, sig: None)   # live pid raises nothing
+    monkeypatch.setattr(J, "_pid_exists", lambda pid: True)   # live pid raises nothing
 
     assert J._owner_state(path) == "ALIVE"
 
@@ -100,7 +119,7 @@ def test_an_oserror_of_unknown_origin_stays_unknown(tmp_path, monkeypatch):
     """
     path = _lock(tmp_path, monkeypatch)
     monkeypatch.setattr(J.sys, "platform", "win32")
-    monkeypatch.setattr(J.os, "kill", _raise(OSError(22, "something else entirely")))
+    monkeypatch.setattr(J, "_pid_exists", _raise(OSError(22, "something else entirely")))
 
     assert J._owner_state(path) == "UNKNOWN"
 
@@ -127,7 +146,7 @@ def test_windows_access_denied_reaches_the_permissionerror_branch_not_the_winerr
         "if this ever stops being true the module's branch order must be revisited: the "
         "winerror==87 test would then start seeing access-denied errors")
     monkeypatch.setattr(J.sys, "platform", "win32")
-    monkeypatch.setattr(J.os, "kill", _raise(err))
+    monkeypatch.setattr(J, "_pid_exists", _raise(err))
 
     assert J._owner_state(path) == "ALIVE"
 
@@ -159,7 +178,7 @@ def test_another_hosts_lock_is_never_judged(tmp_path, monkeypatch):
     """A pid number means nothing on a machine that did not write it -- pids collide."""
     path = _lock(tmp_path, monkeypatch, host="some-other-box")
     monkeypatch.setattr(J.sys, "platform", "win32")
-    monkeypatch.setattr(J.os, "kill", _raise(_win_not_a_process()))
+    monkeypatch.setattr(J, "_pid_exists", _raise(_win_not_a_process()))
 
     assert J._owner_state(path) == "UNKNOWN"
 
@@ -180,10 +199,10 @@ def test_a_dead_owner_actually_lets_the_next_writer_in(tmp_path, monkeypatch):
     """
     _lock(tmp_path, monkeypatch)
     monkeypatch.setattr(J.sys, "platform", "win32")
-    real_kill = J.os.kill
+    real_probe = J._pid_exists
     err = _win_not_a_process()
-    monkeypatch.setattr(J.os, "kill", lambda pid, sig: _raise(err)(pid, sig)
-                        if pid == 6904 else real_kill(pid, sig))
+    monkeypatch.setattr(J, "_pid_exists", lambda pid: _raise(err)(pid)
+                        if pid == 6904 else real_probe(pid))
 
     with J.exclusive_job("edge_search") as granted:
         assert granted is True, "the lock of a dead owner must be reclaimable, not merely detected"
@@ -200,9 +219,9 @@ def test_a_live_owner_of_an_ancient_lock_is_never_robbed(tmp_path, monkeypatch):
     ancient = time.time() - (J.STALE_SECONDS + 600)
     os.utime(path, (ancient, ancient))
     monkeypatch.setattr(J.sys, "platform", "win32")
-    real_kill = J.os.kill
-    monkeypatch.setattr(J.os, "kill",
-                        lambda pid, sig: None if pid == 6904 else real_kill(pid, sig))
+    real_probe = J._pid_exists
+    monkeypatch.setattr(J, "_pid_exists",
+                        lambda pid: True if pid == 6904 else real_probe(pid))
 
     with J.exclusive_job("edge_search") as granted:
         assert granted is False, (

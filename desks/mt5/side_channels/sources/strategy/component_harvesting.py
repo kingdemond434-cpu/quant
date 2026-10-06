@@ -218,17 +218,22 @@ class ComponentTester:
                                   price_data: dict[str, pd.DataFrame],
                                   regime_labels: pd.Series | None = None) -> ComponentTestResult:
         """Test a single component in isolation."""
-        # This would run a backtest with ONLY this component active
-        # For now, return a mock result
+        # NO ISOLATION BACKTEST EXISTS FOR A BARE COMPONENT, so the result says so. Until
+        # 2026-09-30 this returned `tested_in_isolation=True` with zero trades -- a mock that read
+        # as "tested, found nothing", which is a verdict nobody measured (L1.28a).
         result = ComponentTestResult(component=component)
-        result.tested_in_isolation = True
-        result.n_trades = 0
+        result.tested_in_isolation = False
+        result.metadata = {"status": "UNMEASURED",
+                           "why": "no single-component backtest is implemented; components are "
+                                  "judged only inside a full hypothesis by the gauntlet"}
         return result
-    
+
     def test_component_combination(self, components: list[StrategyComponent],
                                     price_data: dict[str, pd.DataFrame]) -> ComponentTestResult:
         """Test a combination of components together."""
         result = ComponentTestResult(component=components[0] if components else None)
+        result.metadata = {"status": "UNMEASURED",
+                           "why": "no combination backtest is implemented here"}
         return result
     
     def test_all_components(self, components: list[StrategyComponent],
