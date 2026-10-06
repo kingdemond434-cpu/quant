@@ -383,3 +383,150 @@ def test_transmission_null_pass_is_charged_and_battery_proposes(tmp_path: Path) 
     from research import batteries
     entry = [e for e in batteries.ORGANS if e.path.endswith("asia_transmission.py")]
     assert entry and "--propose" in entry[0].argv
+
+
+# ------------------------------------------------------------------- budget: mining never shrinks
+class _Clock:
+    """A fake monotonic clock: `step` seconds pass on every read, `jump()` moves it on."""
+
+    def __init__(self, step: float = 0.0) -> None:
+        self.t, self.step = 1_000.0, step
+
+    def monotonic(self) -> float:
+        self.t += self.step
+        return self.t
+
+    def jump(self, s: float) -> None:
+        self.t += s
+
+
+@pytest.mark.parametrize("latent_s", [0.0, 140.0, 900.0])
+def test_edge_scan_keeps_its_whole_budget_whatever_the_latent_build_costs(
+        monkeypatch: pytest.MonkeyPatch, latent_s: float) -> None:
+    """The edge scan's deadline is ITS start + budget_s, never shortened by the latent build."""
+    import types
+    clock = _Clock()
+    monkeypatch.setattr(mse, "time", types.SimpleNamespace(monotonic=clock.monotonic))
+    seen: dict[str, Any] = {}
+
+    def fake_latent(now: datetime, *, budget_s: float, apply: bool) -> dict[str, Any]:
+        seen["latent_budget"] = budget_s
+        clock.jump(latent_s)
+        return {"datasets": {}}
+
+    def fake_hunt(pairs: list[dict[str, Any]], *, deadline: float, n_perm: int,
+                  ) -> tuple[list[Any], list[Any], dict[str, Any]]:
+        seen["deadline"], seen["scan_start"] = deadline, clock.t
+        return [], [], {"pairs": 1, "measured": 0, "unmeasured": 0, "tests_run": 0,
+                        "skipped_budget": 0, "n_perm": n_perm}
+
+    monkeypatch.setattr(mse, "build_latent", fake_latent)
+    monkeypatch.setattr(mse, "build_asia_events", lambda now, axes, apply: {"n_events": 0})
+    monkeypatch.setattr(mse, "build_blocks", lambda: ({}, {"n_blocks": 0}, {}))
+    monkeypatch.setattr(mse, "graph_pairs", lambda: ([{"src": "A", "dst": "B"}], {}))
+    monkeypatch.setattr(mse, "hunt_edges", fake_hunt)
+    monkeypatch.setattr(mse, "global_factors", lambda blocks: {})
+    monkeypatch.setattr(mse, "fred_levels", lambda: {})
+    monkeypatch.setattr(mse, "fred_vintages", lambda: {})
+    monkeypatch.setattr(mse, "_registry", lambda: {})
+    rep = mse.build(budget_s=600.0, apply=False, latent_budget_s=150.0)
+    assert seen["latent_budget"] == 150.0
+    assert seen["deadline"] == pytest.approx(seen["scan_start"] + 600.0)
+    assert rep["latent_budget_s"] == 150.0 and rep["latent_spent_s"] >= latent_s
+
+
+def test_the_cli_and_the_hourly_leg_carry_the_latent_budget_on_top() -> None:
+    from research import hourly_cycle as hc
+    src = Path(hc.__file__).read_text("utf-8")
+    assert '"--latent-budget-s", "150"' in src
+    # The leg's cap sits above scan budget + latent budget, so neither half is killed.
+    assert hc.LEG_BUDGET_SEC["macro_state_engine"] >= 600 + 150
+    assert mse.LATENT_BUDGET_S == 150.0
+
+
+def test_the_latent_build_stops_inside_its_own_budget(world: Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    import types
+    clock = _Clock(step=5.0)                    # every clock read costs 5 s; the budget is 1 s
+    monkeypatch.setattr(mse, "time", types.SimpleNamespace(monotonic=clock.monotonic))
+    rep = mse.build_latent(NOW, budget_s=1.0, apply=True, cells=False,
+                           specs=(mse.LATENT_BY_ID["asia_export"],), environ={})
+    ds = rep["datasets"]["asia_export"]
+    assert ds["new_vintages"] == 0 and ds["release_dates_owed"] > 0
+    # Cells past the deadline are named, never screened, and charge nothing.
+    spec = mse.LATENT_BY_ID["asia_export"]
+    monkeypatch.setattr(mse, "direct_latent_cells",
+                        lambda s, r, n: pytest.fail("screened past the latent deadline"))
+    monkeypatch.setattr(mse, "regime_children",
+                        lambda *a: pytest.fail("children past the latent deadline"))
+    cells = mse.latent_cells([spec], {spec.id: [{"level": 0.1}] * mse.MIN_CELL_VINTAGES},
+                             world / "series", {}, NOW, apply=False, deadline=0.0)
+    assert cells["tests_run"] == 0
+    assert "budget" in cells["skipped"][spec.id] and "budget" in cells["skipped"][
+        "regime_children"]
+
+
+# ------------------------------------------------------------------- the dataset rule (D18)
+def test_the_latent_artifact_publishes_fed_and_unfed_inputs(world: Path) -> None:
+    rep = _run(world)
+    intel = json.loads((world / "reports" / "LI.json").read_text())
+    fed = intel["fed"]
+    assert fed == {**rep["fed"]}
+    rows = fed["datasets"]
+    ok = rows["asia_export.kr_exports_daily_avg"]
+    assert ok["status"] == "FED" and ok["consumed_this_pass"]
+    assert ok["last_fed_at"] == NOW.isoformat(timespec="seconds")
+    assert ok["census_id"] == "axis:alt_kr_exports_early"
+    pend = rows["asia_export.tw_export_orders"]
+    assert pend["status"] == "UNFED" and pend["last_fed_at"] is None
+    names = {u["dataset"] for u in fed["unfed"]}
+    assert "asia_export.tw_export_orders" in names
+    assert "asia_export.kr_exports_daily_avg" not in names
+    assert fed["unfed_count"] == fed["unfed_datasets"] == len(fed["unfed"]) > 0
+    assert fed["datasets_held"] == fed["fed"] + fed["unfed_count"] and fed["target"] == 0
+    for u in fed["unfed"]:
+        assert set(u) >= {"dataset", "kind", "status", "last_fed_at"}
+
+
+def test_an_input_that_stops_arriving_keeps_its_last_fed_time_then_goes_stale(
+        world: Path) -> None:
+    spec = (mse.LATENT_BY_ID["asia_export"],)
+    _run(world, specs=spec)
+    (world / "axes" / "alt_sg_port_throughput.json").unlink()
+    later = NOW + timedelta(hours=6)
+    rows = _run(world, now=later, specs=spec)["fed"]["datasets"]
+    sg = rows["asia_export.sg_port_teu"]
+    assert sg["status"] == "FED" and not sg["consumed_this_pass"]       # inside the 24h window
+    assert sg["last_fed_at"] == NOW.isoformat(timespec="seconds")
+    fed = _run(world, now=NOW + timedelta(hours=30), specs=spec)["fed"]
+    sg = fed["datasets"]["asia_export.sg_port_teu"]
+    assert sg["status"] == "STALE" and sg["last_fed_at"] == NOW.isoformat(timespec="seconds")
+    assert "asia_export.sg_port_teu" in {u["dataset"] for u in fed["unfed"]}
+
+
+def test_real_reads_go_to_the_dataset_use_census_under_its_own_ids(
+        world: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import types
+    calls: list[tuple[str, dict[str, Any], str]] = []
+    fake = types.ModuleType("libs.data.dataset_use")
+    fake.record_reads = (  # type: ignore[attr-defined]
+        lambda consumer, datasets, *, use, now=None: calls.append(
+            (consumer, dict(datasets), use)) or True)
+    monkeypatch.setitem(sys.modules, "libs.data.dataset_use", fake)
+    import libs.data
+    monkeypatch.setattr(libs.data, "dataset_use", fake, raising=False)
+    rep = _run(world)
+    assert calls and calls[0][0] == mse.FED_CONSUMER and calls[0][2] == "regime_state"
+    assert "axis:alt_kr_exports_early" in calls[0][1] and "axis:bis" in calls[0][1]
+    assert rep["fed"]["census_record"].startswith("recorded")
+
+
+def test_bis_terms_are_confirmed_with_evidence_in_the_one_terms_table() -> None:
+    from research import alt_proxies as ap
+    assert ap.TERMS["bis_policy_rates"][0] == "confirmed"
+    ev = ap.TERMS_EVIDENCE["bis_policy_rates"]
+    assert ev["terms_url"].startswith("https://") and "unrestricted" in ev["terms_quote"]
+    assert mse._terms("bis_policy_rates") == "confirmed"
+    assert mse._terms("no_such_source") == "unknown_source"
+    bis = [i for i in mse.LATENT_BY_ID["asia_funding"].inputs if i.axis == "bis"]
+    assert bis and all(i.terms_source == "bis_policy_rates" for i in bis)

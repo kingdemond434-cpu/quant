@@ -1259,6 +1259,14 @@ PRIOR_LOADING, SHRINK_ROWS = 0.5, 52
 MIN_CELL_VINTAGES, LATENT_CHILDREN_PER_PASS = 60, 12
 #: Days a latent state stays current in the allocation intel.
 INTEL_STALE_DAYS = 21
+#: The latent build's OWN wall-clock budget (seconds), spent BEFORE the edge scan and never taken
+#: out of the scan's `--budget-s`. The hourly leg's timeout carries both on top of each other.
+LATENT_BUDGET_S = 150.0
+#: THE DATASET RULE: every declared input must be consumed by the latent build within this
+#: window, or it is published as UNFED (CRO D18, target 0).
+FED_WINDOW_H = 24
+#: The consumer name under which the latent build records its reads for the dataset-use census.
+FED_CONSUMER = "macro_state_engine.latent"
 
 
 @dataclass(frozen=True)
@@ -1418,9 +1426,11 @@ LATENT_SPECS: tuple[LatentSpec, ...] = (
                 "is paid more than its own recent history",
         (
             LatentInput("usdjpy_policy_differential", "BIS policy-rate differential USD-JPY",
-                        "bis", "row:USDJPY:carry_differential", 1, "policy"),
+                        "bis", "row:USDJPY:carry_differential", 1, "policy",
+                        terms_source="bis_policy_rates"),
             LatentInput("audjpy_policy_differential", "BIS policy-rate differential AUD-JPY",
-                        "bis", "row:AUDJPY:carry_differential", 1, "policy"),
+                        "bis", "row:AUDJPY:carry_differential", 1, "policy",
+                        terms_source="bis_policy_rates"),
             _pending("shibor_dr007", "SHIBOR / DR007 onshore funding", -1, "daily",
                      "package P3: chinamoney SHIBOR / DR007 JSON"),
             _pending("cfets_fix_surprise", "CFETS fix surprise vs model-implied fix", -1, "daily",
@@ -1463,11 +1473,16 @@ def _iso_t(v: Any) -> datetime | None:
 
 
 def _terms(source_id: str) -> str:
-    """The alt_proxies TERMS verdict for a source; anything unreadable is NOT confirmed."""
+    """The alt_proxies TERMS verdict for a source; anything unreadable is NOT confirmed. A source
+    that alt_proxies does not fetch itself (BIS, read from the axis door) is judged by its row in
+    the same TERMS table; a source in neither is `unknown_source`, i.e. blocked."""
     try:
         from research import alt_proxies
         src = alt_proxies.BY_ID.get(source_id)
-        return str(src.terms) if src is not None else "unknown_source"
+        if src is not None:
+            return str(src.terms)
+        row = alt_proxies.TERMS.get(source_id)
+        return str(row[0]) if row is not None else "unknown_source"
     except Exception as exc:                                            # pragma: no cover - env
         return f"unreadable:{type(exc).__name__}"
 
@@ -2235,8 +2250,10 @@ def _charge_null(tests_run: int, by_family: dict[str, int], now: datetime,
 
 def latent_cells(specs: list[LatentSpec], ledgers: dict[str, list[dict[str, Any]]],
                  series_root: Path, state: dict[str, Any], now: datetime, apply: bool,
-                 ) -> dict[str, Any]:
-    """Screen -> deflate -> donate, with every look charged whether or not anything passes."""
+                 deadline: float | None = None) -> dict[str, Any]:
+    """Screen -> deflate -> donate, with every look charged whether or not anything passes.
+    Past `deadline` no further spec is screened (named in `skipped`): the latent build stops
+    inside its own budget and the looks it DID take are still charged."""
     from research import proposer_common as pc
     rows: list[dict[str, Any]] = []
     looks = 0
@@ -2246,6 +2263,9 @@ def latent_cells(specs: list[LatentSpec], ledgers: dict[str, list[dict[str, Any]
         if spec not in ready:
             skipped[spec.id] = (f"{len(ledgers.get(spec.id) or [])} vintages < "
                                 f"{MIN_CELL_VINTAGES}: the conditioner cannot measure yet")
+            continue
+        if deadline is not None and time.monotonic() > deadline:
+            skipped[spec.id] = "latent budget spent: not screened this pass"
             continue
         try:
             got_rows, n = direct_latent_cells(spec, series_root, now)
@@ -2282,10 +2302,13 @@ def latent_cells(specs: list[LatentSpec], ledgers: dict[str, list[dict[str, Any]
     gates: list[dict[str, Any]] = []
     child_looks = 0
     child_fam: dict[str, int] = {}
-    try:
-        children, child_looks, gates, child_fam = regime_children(ready, series_root, state)
-    except Exception as exc:
-        skipped["regime_children"] = f"{type(exc).__name__}: {str(exc)[:160]}"
+    if deadline is not None and time.monotonic() > deadline:
+        skipped["regime_children"] = "latent budget spent: not screened this pass"
+    else:
+        try:
+            children, child_looks, gates, child_fam = regime_children(ready, series_root, state)
+        except Exception as exc:
+            skipped["regime_children"] = f"{type(exc).__name__}: {str(exc)[:160]}"
     tests_run = looks + child_looks
     by_family = {"exogenous_conditioner": looks, **child_fam}
     out: dict[str, Any] = {"screened": len(rows), "looks": looks, "child_looks": child_looks,
@@ -2388,6 +2411,72 @@ def build_asia_events(now: datetime, axes_dir: Path, apply: bool,
             "appended_to_ledger": appended, "path": str(out_path) if apply else None}
 
 
+# ---------------------------------------------------------------------------- the dataset rule
+def fed_block(consumed: dict[str, dict[str, Any]], prior: dict[str, Any], now: datetime,
+              ) -> dict[str, Any]:
+    """THE DATASET RULE (CRO D18): every declared input is consumed within FED_WINDOW_H or it is
+    UNFED, and the count is published (`unfed_count`, target 0).
+
+    An input is FED this pass when the latent build actually loaded its observations and handed
+    them to the estimator. `last_fed_at` is carried in `data/latent/state.json` so an input
+    that stops arriving keeps its last real consumption time and turns STALE after the window,
+    never silently FED. Field names follow the desk's D18 publishers (`dataset_exploitation`:
+    `unfed_count` + `unfed_datasets`; `dataset_use_census`: `unfed[{dataset, kind, status}]`)."""
+    at = now.isoformat(timespec="seconds")
+    window = timedelta(hours=FED_WINDOW_H)
+    rows: dict[str, dict[str, Any]] = {}
+    unfed: list[dict[str, Any]] = []
+    for key, c in sorted(consumed.items()):
+        inp: LatentInput = c["inp"]
+        rec: dict[str, Any] = c["rec"]
+        last = at if c["fed"] else (prior.get(key) if isinstance(prior.get(key), str) else None)
+        try:
+            age_ok = last is not None and now - datetime.fromisoformat(last) <= window
+        except ValueError:
+            age_ok, last = False, None
+        # Consumed inside the window (this pass or an earlier one) is FED; consumed once but
+        # not inside the window is STALE; never consumed is UNFED. Both of the last count.
+        status = "FED" if (c["fed"] or age_ok) else ("UNFED" if last is None else "STALE")
+        rows[key] = {"dataset_id": f"latent_{key.split('.', 1)[0]}", "input": inp.id,
+                     "axis": inp.axis or None,
+                     "census_id": f"axis:{inp.axis}" if inp.axis else None,
+                     "status": status, "last_fed_at": last, "consumed_this_pass": c["fed"],
+                     "input_status": rec.get("status")}
+        if status != "FED":
+            unfed.append({"dataset": key, "kind": "latent_input", "status": status,
+                          "last_fed_at": last,
+                          "why": str(rec.get("why") or rec.get("status") or "")[:200]})
+    return {"measured_at": at, "duty": "CRO D18 -- no unfed datasets", "window_h": FED_WINDOW_H,
+            "datasets": rows, "datasets_held": len(rows), "fed": len(rows) - len(unfed),
+            "unfed": unfed, "unfed_count": len(unfed), "unfed_datasets": len(unfed),
+            "target": 0,
+            "evidence": ("an input is fed when the latent build loaded its observations and "
+                         f"handed them to the estimator inside {FED_WINDOW_H}h; declared, "
+                         "pending, blocked or absent inputs are UNFED")}
+
+
+def record_fed_reads(consumed: dict[str, dict[str, Any]], now: datetime) -> str:
+    """Record this pass's real reads with the desk's dataset-use recorder (`libs.data.dataset_use`,
+    read by `dataset_use_census`) under the census's own ids (`axis:<stem>`). Never raises: a
+    recorder that is not on this branch reads UNMEASURED, never 'recorded'."""
+    reads: dict[str, str | None] = {}
+    for c in consumed.values():
+        if c["fed"] and c["inp"].axis:
+            reads[f"axis:{c['inp'].axis}"] = c["rec"].get("last_arrival")
+    if not reads:
+        return "nothing consumed this pass: no read to record"
+    try:
+        import importlib
+        dataset_use = importlib.import_module("libs.data.dataset_use")
+    except Exception as exc:
+        return f"UNMEASURED: dataset-use recorder not importable ({type(exc).__name__})"
+    try:
+        ok = dataset_use.record_reads(FED_CONSUMER, reads, use="regime_state", now=now)
+    except Exception as exc:                                            # pragma: no cover - env
+        return f"UNMEASURED: {type(exc).__name__}: {str(exc)[:120]}"
+    return f"recorded {len(reads)} read(s)" if ok else "UNMEASURED: recorder refused the write"
+
+
 # ---------------------------------------------------------------------------- the latent pass
 def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
                  axes_dir: Path | None = None, latent_dir: Path | None = None,
@@ -2406,12 +2495,14 @@ def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
     docs: dict[str, Any] = {}
     report: dict[str, Any] = {}
     ledgers: dict[str, list[dict[str, Any]]] = {}
+    consumed: dict[str, dict[str, Any]] = {}
     for spec in specs:
         recs: list[dict[str, Any]] = []
         prep: list[_Prepared] = []
         for inp in spec.inputs:
             obs, rec = load_input(inp, axes_dir, docs, environ)
             recs.append(rec)
+            consumed[f"{spec.id}.{inp.id}"] = {"inp": inp, "rec": rec, "fed": bool(obs)}
             if obs:
                 prep.append(_Prepared(inp, obs))
         lpath = _ledger_path(spec, latent_dir)
@@ -2457,16 +2548,24 @@ def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
             "axis_doc": f"desks/mt5/data/axes/{spec.dataset_id}.json" if full else None,
             "lake_series": f"desks/mt5/data/lake/series/{spec.dataset_id}.csv" if full else None,
             "ledger": f"desks/mt5/data/latent/{spec.dataset_id}.vintages.jsonl"}
+    state_path = latent_dir / "state.json"
+    state = _read_json(state_path)
+    state = state if isinstance(state, dict) else {}
+    prior_fed = state.get("fed")
+    fed = fed_block(consumed, prior_fed if isinstance(prior_fed, dict) else {}, now)
+    state["fed"] = {k: v["last_fed_at"] for k, v in fed["datasets"].items()
+                    if v["last_fed_at"] is not None}
+    fed["census_record"] = (record_fed_reads(consumed, now) if apply
+                            else "dry run: no read recorded")
     intel = allocation_intel_latent({k: v for k, v in ledgers.items() if v}, now)
+    intel["fed"] = fed
     if apply:
         _atomic(intel_path, json.dumps(intel, indent=1, default=str))
-    state_path = latent_dir / "state.json"
-    state = _read_json(state_path) if apply else None
-    state = state if isinstance(state, dict) else {}
     cell_rep: dict[str, Any] = {"status": "skipped (cells=False)"}
     if cells:
         try:
-            cell_rep = latent_cells(list(specs), ledgers, series_root, state, now, apply)
+            cell_rep = latent_cells(list(specs), ledgers, series_root, state, now, apply,
+                                    deadline=deadline)
         except Exception as exc:
             cell_rep = {"status": f"UNMEASURED: {type(exc).__name__}: {str(exc)[:160]}"}
     if apply:
@@ -2474,7 +2573,7 @@ def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
     return {"datasets": report, "allocation_intel": {
                 "path": str(intel_path) if apply else None,
                 "n_instruments": len(intel["instruments"])},
-            "cells": cell_rep,
+            "fed": fed, "cells": cell_rep,
             "rule": ("one vintage per release date, re-estimated on the data knowable at that "
                      "date and appended; no price series fused; not-yet-collected inputs are "
                      "named with the package that delivers them")}
@@ -2482,22 +2581,26 @@ def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
 
 # -------------------------------------------------------------------------------------- build
 def build(*, budget_s: float = 600.0, max_donations: int = MAX_DONATIONS, p_max: float = P_MAX,
-          n_perm: int = N_PERM, apply: bool = True) -> dict[str, Any]:
+          n_perm: int = N_PERM, apply: bool = True,
+          latent_budget_s: float = LATENT_BUDGET_S) -> dict[str, Any]:
     """Measure both halves and return the report. `apply=False` measures and donates nothing."""
-    start = time.monotonic()
-    # THE LATENT DATASETS AND THE ASIA EVENTS GO FIRST, on a quarter of the budget: the edge scan
-    # below spends whatever it is given up to its deadline, and the leg's timeout sits just
-    # above the budget, so anything scheduled after it would be killed rather than late.
+    t0 = time.monotonic()
+    # THE LATENT DATASETS AND THE ASIA EVENTS GO FIRST, ON THEIR OWN BUDGET (`latent_budget_s`),
+    # never on the edge scan's: mining is never reduced to make room for a new organ. The edge
+    # scan below keeps the WHOLE `budget_s` from the moment it starts, exactly as before the
+    # latent build existed, and the leg's timeout sits above latent + scan so neither is killed.
     now = _now()
     try:
-        latent = build_latent(now, budget_s=max(5.0, 0.25 * float(budget_s)), apply=apply)
+        latent = build_latent(now, budget_s=max(1.0, float(latent_budget_s)), apply=apply)
     except Exception as exc:                                            # pragma: no cover - env
         latent = {"status": f"UNMEASURED: {type(exc).__name__}: {str(exc)[:200]}"}
     try:
         asia_events = build_asia_events(now, AXES_DIR, apply)
     except Exception as exc:                                            # pragma: no cover - env
         asia_events = {"status": f"UNMEASURED: {type(exc).__name__}: {str(exc)[:200]}"}
-    deadline = time.monotonic() + max(float(budget_s) - (time.monotonic() - start), 1.0)
+    latent_spent = time.monotonic() - t0
+    start = time.monotonic()
+    deadline = start + max(float(budget_s), 1.0)
     blocks, summary, census = build_blocks()
     pairs, inputs = graph_pairs()
     if pairs:
@@ -2528,7 +2631,9 @@ def build(*, budget_s: float = 600.0, max_donations: int = MAX_DONATIONS, p_max:
         "status": "OK" if (blocks or rows) else "UNMEASURED",
         "why": "" if (blocks or rows) else ("no classified instrument and no graph edge: both "
                                             "halves are UNMEASURED and named below"),
-        "budget_s": float(budget_s), "spent_s": round(time.monotonic() - start, 2),
+        "budget_s": float(budget_s), "spent_s": round(time.monotonic() - t0, 2),
+        "edge_scan_spent_s": round(time.monotonic() - start, 2),
+        "latent_budget_s": float(latent_budget_s), "latent_spent_s": round(latent_spent, 2),
         "rule": RULE,
         "inputs": {**inputs,
                    "instrument_registry": {"status": "present" if _registry() else "absent",
@@ -2572,6 +2677,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--budget-s", type=float, default=600.0,
                     help="wall-clock bound; the edge scan stops on it and says how many pairs "
                          "it did not reach")
+    ap.add_argument("--latent-budget-s", type=float, default=LATENT_BUDGET_S,
+                    help="the latent build's OWN wall-clock bound, spent before the edge scan "
+                         "and never taken out of --budget-s")
     ap.add_argument("--dry-run", action="store_true",
                     help="measure and print; write no report and donate nothing")
     ap.add_argument("--max-donations", type=int, default=MAX_DONATIONS)
@@ -2579,7 +2687,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--n-perm", type=int, default=N_PERM)
     a = ap.parse_args(argv)
     rep = build(budget_s=a.budget_s, max_donations=a.max_donations, p_max=a.p_max,
-                n_perm=a.n_perm, apply=not a.dry_run)
+                n_perm=a.n_perm, apply=not a.dry_run, latent_budget_s=a.latent_budget_s)
     s, e = rep["blocks_summary"], rep["edge_changes"]
     print(f"macro-state-engine: {s['n_blocks']} region block(s), {s['measured']}/"
           f"{s['n_blocks'] * s['states_per_block']} states measured "
