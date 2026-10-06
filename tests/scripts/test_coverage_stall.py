@@ -32,7 +32,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
 import scripts.check_coverage_floors as C
 
 

@@ -1485,8 +1485,9 @@ class Factory:
         except Exception as exc:
             out["error"] = f"registry retraction: {type(exc).__name__}: {exc}"[:200]
         finally:
-            if self.registry is None:
-                conn.close()
+            # This method opened the connection, including through an injected
+            # registry module; injecting the provider does not transfer ownership.
+            conn.close()
         if out["archive"] or out["registry"]:
             self.say(f"clock retraction: {out['archive']} archive niche(s), {out['registry']} "
                      "registry discovery(ies) found on the broker stamp clock withdrawn")

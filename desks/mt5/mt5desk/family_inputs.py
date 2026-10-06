@@ -355,7 +355,8 @@ def resolve(sym: str, family: str, params: dict[str, Any],
     return extra, "ok"
 
 
-def strip_identity_keys(family: str, params: dict[str, Any]) -> dict[str, Any]:
+def strip_identity_keys(family: str, params: dict[str, Any], *,
+                        preserve_session: bool = False) -> dict[str, Any]:
     """Drop params that NAME an input rather than parameterise the family.
 
     `peer_symbol`, `factor_symbols`, `input_symbol` and `input_source` identify what to load; the
@@ -367,7 +368,13 @@ def strip_identity_keys(family: str, params: dict[str, Any]) -> dict[str, Any]:
     family takes it as an argument. It stays in the cell's IDENTITY -- callers pass the unstripped
     params to `resolve` and to the sleeve registry -- because that is the only place it belongs.
     """
-    return {k: v for k, v in (params or {}).items() if k not in IDENTITY_KEYS}
+    return {k: v for k, v in (params or {}).items()
+            if k not in IDENTITY_KEYS or (preserve_session and k == "session")}
+
+
+def runtime_call_params(family: str, params: dict[str, Any]) -> dict[str, Any]:
+    """The shared shadow/Fusion call shape: input keys out, session filter key in."""
+    return strip_identity_keys(family, params, preserve_session=True)
 
 
 #: Params that NAME an input or a chart rather than parameterise a family. Hoisted out of

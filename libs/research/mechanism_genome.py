@@ -310,6 +310,26 @@ FAMILY_GENOME: dict[str, dict[str, str]] = {
         "trigger": "price_pattern", "catalyst": "composite", "transmission": "behavioural",
         "entry": "market_on_signal", "exit": "signal_flip", "holding": "multiday",
         "capacity": "depth_bound", "decay_risk": "composite"},
+    # Registered 2026-09-23/24 in `mt5desk.families_orthogonal` and never declared here, so the
+    # census read both as UNDECLARED whenever the orthogonal families were loaded. A
+    # higher-timeframe anchor PERMITS a lower-timeframe entry and the position is flat on the
+    # anchor's flip (`mt5desk/family_htf_anchor_trend.py`).
+    "htf_anchor_trend": {
+        "actor": "trend_followers", "constraint": "vol_targeting_mandate",
+        "observable": "higher_timeframe_trend_anchor", "trigger": "price_pattern",
+        "catalyst": "trend_onset", "transmission": "behavioural", "entry": "market_on_signal",
+        "exit": "signal_flip", "holding": "multiday", "capacity": "depth_bound",
+        "decay_risk": "crowding"},
+    # An OPERATOR over any wrappable base family: the entry, actor and constraint are the base's,
+    # so they are declared `composite` exactly as `joint_genome` does; what the operator itself
+    # claims is the exit -- flat when ATR expands past a multiple of its value at entry
+    # (`mt5desk/family_exit_operated.py`), which is a protective stop on the volatility state.
+    "exit_operated": {
+        "actor": "composite", "constraint": "composite",
+        "observable": "atr_expansion_since_entry", "trigger": "price_pattern",
+        "catalyst": "composite", "transmission": "behavioural", "entry": "market_on_signal",
+        "exit": "stop", "holding": "multiday", "capacity": "depth_bound",
+        "decay_risk": "composite"},
 }
 
 

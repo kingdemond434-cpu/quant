@@ -201,6 +201,18 @@ def test_the_brief_loads_cycle_first_constitution_second_reference_on_demand() -
     assert 'docs\\cro\\CRO_CYCLE.md' in src
 
 
+def test_all_three_cro_documents_are_readable_before_the_agent_starts() -> None:
+    """A missing reference used to be omitted from the launcher's preflight."""
+    src = LAUNCHER.read_text("utf-8")
+    preflight = src[src.index("$Documents = @("):src.index("# ---- THE CHECKPOINT")]
+    for name in ("CRO_CYCLE.md", "QUANT_CONSTITUTION.md", "QUANT_REFERENCE.md"):
+        assert name in preflight
+    assert "Get-Content -LiteralPath $document.Path -Raw -Encoding UTF8" in preflight
+    assert "Get-FileHash -LiteralPath $document.Path -Algorithm SHA256" in preflight
+    assert src.index("$Documents = @(") < src.index("controller_checkpoint.py claim")
+    assert "Verified CRO documents (readable before agent launch" in src
+
+
 def test_one_controller_at_a_time_through_the_canonical_lease() -> None:
     src = LAUNCHER.read_text("utf-8")
     assert "controller_checkpoint.py claim" in src

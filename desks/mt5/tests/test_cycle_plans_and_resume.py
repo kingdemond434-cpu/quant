@@ -66,6 +66,7 @@ def test_running_unfrozen_excludes_same_pass_retirements():
 
 
 def test_healer_freezes_modern_keys_from_the_engine_identity(monkeypatch, tmp_path):
+    monkeypatch.setattr(healer, "execution_identity", lambda spec, fields: spec)
     monkeypatch.setattr(healer, "DESK", tmp_path)
     (tmp_path / "reports" / "shadow").mkdir(parents=True)
     key = "EURRUB.carry.continuous#input_symbol=EURRUB"

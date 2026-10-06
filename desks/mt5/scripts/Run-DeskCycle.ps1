@@ -82,6 +82,29 @@ function Write-Cycle([string] $Message) {
     Add-Content -LiteralPath $Log -Value $line
 }
 
+# Verify all three authoritative files are readable before claiming a controller
+# lease or starting an agent. The old check covered only the first two: a missing
+# reference made the CRO silently skip subsystem-specific duties.
+$Documents = @(
+    @{ Name = 'CRO_CYCLE.md'; Path = $Prompt },
+    @{ Name = 'QUANT_CONSTITUTION.md'; Path = $Constitution },
+    @{ Name = 'QUANT_REFERENCE.md'; Path = $Reference }
+)
+foreach ($document in $Documents) {
+    try {
+        if (-not (Test-Path -LiteralPath $document.Path -PathType Leaf)) {
+            throw "file absent"
+        }
+        $contents = Get-Content -LiteralPath $document.Path -Raw -Encoding UTF8 -ErrorAction Stop
+        if ([string]::IsNullOrWhiteSpace($contents)) { throw "file empty" }
+        $document.Hash = (Get-FileHash -LiteralPath $document.Path -Algorithm SHA256).Hash
+        $document.Length = $contents.Length
+    } catch {
+        Write-Cycle ("FATAL: CRO document {0} unreadable: {1}; refusing to run an agent with no brief" -f $document.Name, $_.Exception.Message)
+        exit 2
+    }
+}
+
 # ---- THE CHECKPOINT: A CUT-OFF PASS RESUMES, IT DOES NOT RESTART -----------------------------
 # These passes are long, and two things reliably interrupt them: the box being off at the trigger
 # time, and the execution time limit landing mid-sweep. Restarting from stage one on the next
@@ -164,13 +187,6 @@ if ($state -and $state.date -eq $Today) {
         Write-Cycle ("RESUMING an interrupted pass: {0} stage(s) already complete, " -f $done.Count +
                      "previous pid $($state.pid) is gone")
     }
-}
-
-if (-not (Test-Path -LiteralPath $Prompt) -or -not (Test-Path -LiteralPath $Constitution)) {
-    # The prompt IS the pass. Running an agent against this repository with no instructions is
-    # strictly worse than not running one, so this is fatal rather than a warning.
-    Write-Cycle "FATAL: CRO_CYCLE.md or QUANT_CONSTITUTION.md missing under docs\cro -- refusing to run an agent with no brief"
-    exit 2
 }
 
 if (-not $AgentCommand) {
@@ -331,6 +347,8 @@ LOAD ORDER (do not spend the pass re-summarizing these):
   on demand, as you would the reference.
 
 Repository root: $RepoRoot
+Verified CRO documents (readable before agent launch; SHA256 fixes exact content identity):
+$($Documents | ForEach-Object { "  $($_.Name): $($_.Path) SHA256=$($_.Hash) chars=$($_.Length)" } | Out-String)
 Dublin time now: $($DublinNow.ToString("yyyy-MM-dd HH:mm"))
 Controller lease: '$Controller' epoch $LeaseEpoch, claimed by the launcher (QUANT_CONTROLLER_*
   are set in your environment). After each material closure run

@@ -200,7 +200,11 @@ def run_and_save() -> list[dict[str, Any]]:
             for row in rows:
                 fh.write(json.dumps(row, ensure_ascii=False) + "\n")
     snap = OUT / f"discoveries_{datetime.now(UTC).strftime('%Y%m%d_%H%M')}.json"
-    snap.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
+    try:
+        from side_channels.discovery_io import write_discoveries
+    except ModuleNotFoundError:
+        from discovery_io import write_discoveries
+    rows = write_discoveries(snap, rows)
     total = sum(1 for _ in ARCHIVE.open(encoding="utf-8")) if ARCHIVE.exists() else 0
     print(f"central_bank: {len(rows)} new dated document(s); archive now {total} row(s) -> {ARCHIVE}")
     return rows

@@ -29,10 +29,16 @@ import ops_redundancy as ops  # noqa: E402
 OUT = DESK / "reports" / "DR_DRILL.json"
 
 
-def run() -> dict[str, Any]:
-    drill = ops.restore_drill()
-    journal = ops.journal_replay()
-    dup = ops.duplicate_guard()
+def run(data: Path | None = None, cwd: Path | None = None,
+        stores: dict[str, str] | None = None) -> dict[str, Any]:
+    """The three drill checks. `data`, `cwd` and `stores` default to the box's own committed
+    stores and repo; they are parameters only so the drill can run against a fixture tree. It
+    reads the journal files and the origin ref's objects -- never a live terminal."""
+    data = data if data is not None else ops.DATA
+    cwd = cwd if cwd is not None else ops.ROOT
+    drill = ops.restore_drill(stores, cwd=cwd)
+    journal = ops.journal_replay(data)
+    dup = ops.duplicate_guard(data)
     parts = {"offbox_restore": drill["status"], "journal_replay": journal["status"],
              "duplicate_guard": dup["status"]}
     return {"generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
