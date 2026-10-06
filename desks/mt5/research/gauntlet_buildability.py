@@ -76,6 +76,18 @@ def _family_table() -> dict[str, Any]:
             out[name[len("family_"):]] = getattr(families, name)
     for name, fn in fo.ORTHOGONAL_FAMILIES.items():
         out.setdefault(str(name), fn)
+    # HUNT16 IS A THIRD POPULATION THE JUDGE RESOLVES. `families.__getattr__` exposes each one as
+    # `family_<name>`, which is exactly the judge's `getattr(families, ...)` lookup -- but `dir()`
+    # never lists a module `__getattr__` name, so this table called `dav_range_filter_adx`
+    # NO_IMPLEMENTATION while the judge built it (measured 2026-10-06: it raised on a string
+    # `side` instead). Read the same population the judge reads.
+    try:
+        from mt5desk.executables import hunt16_families
+        for name, fn in hunt16_families().items():
+            if callable(getattr(families, f"family_{name}", None)):
+                out.setdefault(str(name), fn)
+    except Exception:
+        pass
     return out
 
 
@@ -193,6 +205,11 @@ def cell_verdict(family: str, params: dict[str, Any] | None = None,
     missing = [r for r in _required(str(family)) if r not in p]
     if missing:
         return MISSING_PARAMS, f"{family} requires {missing} and the cell does not carry them"
+    if _requires_side(str(family)):
+        side = p.get("side")
+        if isinstance(side, bool) or side not in (1, -1):
+            return MISSING_PARAMS, (f"{family} takes a REQUIRED numeric side (+1/-1) and the "
+                                    f"cell carries {side!r}")
     if family == "clock_transition":
         from mt5desk.family_clock_transition import CATALOGUE, MODES
         label, hour = p.get("label"), p.get("stamp_hour")
@@ -203,6 +220,143 @@ def cell_verdict(family: str, params: dict[str, Any] | None = None,
         if p.get("mode", "out_of") not in MODES:
             return MISSING_PARAMS, "clock_transition mode is not in its registered modes"
     return BUILDABLE, why
+
+
+@lru_cache(maxsize=256)
+def _requires_side(family: str) -> bool:
+    """`side` is skipped by `_signature_needs` (most families default it); a family that has NO
+    default for it -- the hunt16 population -- must carry a numeric one."""
+    try:
+        fn = _family_table()[family]
+        prm = inspect.signature(fn).parameters.get("side")
+    except Exception:
+        return False
+    return prm is not None and prm.default is inspect.Parameter.empty
+
+
+#: Verdicts that mean the sealed judge cannot rule this cell as written. A row holding one is
+#: never dispatched; it is charged in the trial census through the screened-refused ledger.
+#: UNMEASURED and BANNED are NOT here: absence never refuses (L1.28a), and banned families have
+#: their own study-bank route.
+REFUSED_VERDICTS: frozenset[str] = frozenset({
+    NO_IMPLEMENTATION, INPUT_NOT_SUPPLIED, SEALED_INPUT_DEFECT, TIMEFRAME_REFUSED, MISSING_PARAMS})
+
+#: A claim about commercial COT positioning reaches the judge through the one COT conditioner
+#: the sealed build path supplies (`cot_positioning`, which it hands the point-in-time frame).
+COT_CONDITIONER = "cot_positioning"
+COT_ROUTED: frozenset[str] = frozenset({"cot_comm_follow", "cot_change_momentum"})
+
+_SIDE_WORDS = {"LONG": 1, "BUY": 1, "BULL": 1, "SHORT": -1, "SELL": -1, "BEAR": -1}
+
+
+def normalise_side(value: Any) -> Any:
+    """'SHORT'/'SELL' -> -1, 'LONG'/'BUY' -> +1, numeric strings to int; anything else unchanged."""
+    if isinstance(value, str):
+        v = value.strip().upper()
+        if v in _SIDE_WORDS:
+            return _SIDE_WORDS[v]
+        if v in {"1", "+1", "-1"}:
+            return int(v)
+    if isinstance(value, float) and value in (1.0, -1.0):
+        return int(value)
+    return value
+
+
+def _broker_offset() -> int:
+    try:
+        from research.session_phase import broker_utc_offset_h
+        return int(broker_utc_offset_h()[0])
+    except Exception:
+        return 2          # the measured winter anchor (CLAUDE.md, the seven sleeves' clocks)
+
+
+def repair_cell(family: str, params: dict[str, Any] | None = None
+                ) -> tuple[list[tuple[str, dict[str, Any]]], str]:
+    """Re-express a minted cell so the sealed judge can build it, WITHOUT changing its claim.
+
+    Returns `([(family, params), ...], note)`. Every returned cell is BUILDABLE by `cell_verdict`;
+    an empty list means it could not be repaired and `note` says why (the caller keeps the row so
+    the merge screen charges it). The repairs, each the producer-side root of a measured
+    build-failure class (2026-10-06 docket probe):
+      * a chart the family declares inexpressible -> one cell per chart it DOES declare;
+      * `clock_transition` with no stamp hour -> one cell per broker stamp hour of its label;
+      * `calendar_month` with no month/direction -> the 12 x 2 month/side grid (all charged);
+      * the two COT claims -> `cot_positioning`, the COT conditioner the judge supplies;
+      * a worded side ('SHORT') -> its numeric convention.
+    """
+    fam = str(family or "")
+    p = dict(params or {})
+    note: list[str] = []
+    if "side" in p:
+        side = normalise_side(p["side"])
+        if side != p["side"]:
+            note.append(f"side {p['side']!r} -> {side}")
+            p["side"] = side
+    if fam in COT_ROUTED:
+        note.append(f"{fam} reads a COT frame the judge never loads for it; routed to "
+                    f"{COT_CONDITIONER}, which it does")
+        fam = COT_CONDITIONER
+        p = {k: v for k, v in p.items() if k in {"timeframe", "session"}}
+        p["input_source"] = "cot_point_in_time"
+    variants: list[dict[str, Any]] = [p]
+    if fam == "clock_transition":
+        hour = p.get("stamp_hour")
+        if isinstance(hour, bool) or not isinstance(hour, int) or not 0 <= hour <= 23:
+            try:
+                from mt5desk.family_clock_transition import stamp_hours_for
+                hours = stamp_hours_for(str(p.get("label") or ""), _broker_offset())
+            except Exception:
+                hours = ()
+            if hours:
+                variants = [{**p, "stamp_hour": int(h)} for h in hours]
+                note.append(f"stamp_hour from the catalogue: {list(hours)}")
+    if fam == "calendar_month" and not ({"active_month", "side_bias"} <= set(p)):
+        variants = [{**p, "active_month": m, "side_bias": sd}
+                    for m in range(1, 13) for sd in (1, -1)
+                    if p.get("active_month", m) == m and p.get("side_bias", sd) == sd]
+        note.append(f"calendar_month carried no month/direction: {len(variants)} explicit "
+                    "cell(s), every one charged")
+    tf = str(p.get("timeframe") or "H1").upper()
+    try:
+        from mt5desk.families_orthogonal import timeframe_domain, timeframe_refusal
+        if timeframe_refusal(fam, tf):
+            domain = timeframe_domain(fam)
+            variants = [{**{k: v for k, v in v0.items() if k != "timeframe"},
+                         **({"timeframe": t} if t != "H1" else {})}
+                        for v0 in variants for t in domain]
+            note.append(f"{tf} is not a chart {fam} can express; re-homed to {list(domain)}")
+    except Exception:
+        pass
+    out: list[tuple[str, dict[str, Any]]] = []
+    why = ""
+    for v in variants:
+        verdict, why = cell_verdict(fam, v, v.get("timeframe"))
+        if verdict == BUILDABLE:
+            out.append((fam, v))
+    if not out:
+        return [], why or "no buildable re-expression"
+    return out, "; ".join(note)
+
+
+def screen_rows(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
+                                                     list[dict[str, Any]]]:
+    """(dispatchable, refused): refused rows carry `refusal_verdict` / `refusal_reason`. A row
+    whose verdict cannot be read is DISPATCHED -- absence never refuses (L1.28a)."""
+    keep: list[dict[str, Any]] = []
+    refused: list[dict[str, Any]] = []
+    for row in rows:
+        p = row.get("params") if isinstance(row.get("params"), dict) else {}
+        try:
+            verdict, why = cell_verdict(str(row.get("family") or ""), p,
+                                        p.get("timeframe") or row.get("timeframe"))
+        except Exception:
+            keep.append(row)
+            continue
+        if verdict in REFUSED_VERDICTS:
+            refused.append({**row, "refusal_verdict": verdict, "refusal_reason": why})
+        else:
+            keep.append(row)
+    return keep, refused
 
 
 def census() -> dict[str, dict[str, str]]:

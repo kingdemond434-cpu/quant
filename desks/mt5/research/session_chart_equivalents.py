@@ -279,6 +279,15 @@ def expand() -> dict[str, Any]:
         base = _flat_params({k: v for k, v in spec.items()
                              if k not in ("symbol", "family", "selector",
                                           "is_universe", "hunt")})
+        # A WORDED SIDE IS NOT A SIDE (2026-10-06). A hunt16 shadow spec carries `side: "SHORT"`;
+        # the family compares it with 0 and every equivalent built from it raised in the judge.
+        # The desk's numeric convention (+1 long / -1 short) is what the family reads.
+        if "side" in base:
+            try:
+                from research.gauntlet_buildability import normalise_side
+                base["side"] = normalise_side(base["side"])
+            except Exception:
+                pass
         # THE CROSS-PRODUCT, not two separate lists. An M15 breakout at 13:00 is a different bet
         # from an H1 breakout at 13:00 AND from an M15 breakout at 07:00; emitting hours and
         # charts as independent one-dimensional variations asks neither question. A mechanism

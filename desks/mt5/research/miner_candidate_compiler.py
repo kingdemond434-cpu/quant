@@ -746,6 +746,36 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
     }
 
 
+def _buildable_recipe(symbol: str, family: str, params: dict, source: str, row: dict,
+                      mechanism: str) -> list[dict]:
+    """An exact recipe, MINTED AS A CELL THE SEALED JUDGE CAN BUILD (2026-10-06).
+
+    The docket probe of 2026-10-06 found 2,284 of 57,538 docket rows (4.0%) the judge could never
+    build, ~95% of them minted on this path: relational families on sub-hour charts they declare
+    inexpressible, `calendar_month` with no month, `clock_transition` with no stamp hour, COT
+    claims whose frame the judge never loads. `gauntlet_buildability.repair_cell` re-expresses
+    each without changing the claim (it never drops one: a chart becomes the charts the family
+    declares, a missing month becomes the explicit grid, every cell charged). A recipe it cannot
+    repair is still minted AS WRITTEN with the reason on it -- the merge screen then keeps it
+    out of the judge and charges it in the trial census, so no claim and no trial is lost."""
+    try:
+        from research.gauntlet_buildability import repair_cell
+        cells, note = repair_cell(family, params)
+    except Exception as exc:
+        cells, note = [], f"buildability unavailable ({type(exc).__name__}: {exc})"
+    if not cells:
+        cand = _candidate(symbol, family, params, source, row, mechanism)
+        cand["buildability"] = note
+        return [cand]
+    out = []
+    for fam, p in cells:
+        cand = _candidate(symbol, fam, p, source, row, mechanism)
+        if note:
+            cand["repaired"] = {"from_family": family, "from_params": params, "why": note}
+        out.append(cand)
+    return out
+
+
 #: EVERY MINED MECHANISM IS HUNTED INTRADAY, IN EVERY SESSION (principal 2026-09-16: "the miners
 #: crawlers swarms should prioritise and produce rows in massive quantity of intraday, giving
 #: less priority to H1"). A compiled candidate named its symbol and family; the chart and the
@@ -821,7 +851,19 @@ def expand_axes(cands: list[dict]) -> list[dict]:
             _charts = [c for c in chart_order(sym, _charts) if c in _charts]
         except Exception:
             pass
-        for tf in [*_charts, "H1"]:
+        # ONLY THE CHARTS THE FAMILY CAN EXPRESS (2026-10-06). `FAMILY_TIMEFRAMES` declares,
+        # with the reason, that a bar-for-bar join or a daily conditioner is meaningless below
+        # the hour; minting those cells anyway put 2,170 rows in the docket the judge could only
+        # refuse. The declared charts are minted; an undeclared family keeps every chart.
+        try:
+            from mt5desk.families_orthogonal import timeframe_domain
+            _domain = set(timeframe_domain(fam))
+        except Exception:
+            _domain = {*_charts, "H1"}
+        _tfs = [t for t in [*_charts, "H1"] if t in _domain]
+        # A family declared only on charts this expansion does not enumerate (D1-only, H4-only)
+        # is minted on its declared charts rather than vanishing: the count never falls to zero.
+        for tf in _tfs or sorted(_domain):
             chart_base = dict(base)
             if tf != "H1":
                 chart_base["timeframe"] = tf
@@ -1244,9 +1286,9 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
     params = row.get("params")
     if (isinstance(family, str) and isinstance(params, dict) and symbols
             and _registered_family(family)):
-        return ([_candidate(s, family, dict(params), source, row,
-                            str(row.get("mechanism") or "source supplied exact recipe"))
-                 for s in symbols], "EXACT_RECIPE")
+        mech = str(row.get("mechanism") or "source supplied exact recipe")
+        return ([c for s in symbols for c in _buildable_recipe(s, family, dict(params), source,
+                                                               row, mech)], "EXACT_RECIPE")
 
     if (source_l == "cot" or (kind == "positioning" and "cot" in source_l)) and symbols:
         return ([_candidate(s, "cot_positioning", {"input_source": "cot_point_in_time"},

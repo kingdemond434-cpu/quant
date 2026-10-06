@@ -142,6 +142,40 @@ def _mass_screen_counts(path: Path | None = None) -> tuple[int, dict[str, int]]:
     return total, by_fam
 
 
+#: THE SCREENED-REFUSED LEDGER (desks/mt5/research/merge_hypotheses.py, 2026-10-06). A minted cell
+#: the judge cannot build is held out of the docket, never out of the census: each distinct one is
+#: a row here and counts as a trial exactly as a mass-screen cell does, so keeping an unbuildable
+#: cell away from the judge can never lower the deflation every other cell is charged.
+SCREENED_REFUSED_TRIALS = DESK / "data" / "SCREENED_REFUSED_TRIALS.jsonl"
+
+
+def _screened_refused_counts(path: Path | None = None) -> tuple[int, dict[str, int]]:
+    """(distinct refused cells, per family), streamed. Absent ledger: (0, {})."""
+    total = 0
+    by_fam: dict[str, int] = {}
+    seen: set[str] = set()
+    try:
+        fh = (path or SCREENED_REFUSED_TRIALS).open("r", encoding="utf-8")
+    except OSError:
+        return 0, {}
+    with fh:
+        for ln in fh:
+            try:
+                row = json.loads(ln)
+            except ValueError:
+                continue
+            if not isinstance(row, dict):
+                continue
+            cell = str(row.get("cell") or "")
+            if not cell or cell in seen:
+                continue
+            seen.add(cell)
+            fam = str(row.get("family") or "screened_refused")
+            total += 1
+            by_fam[fam] = by_fam.get(fam, 0) + 1
+    return total, by_fam
+
+
 def _claim_selection_counts() -> tuple[int, dict[str, int]]:
     """A SOURCE'S OWN SEARCH IS A TRIAL TOO (libs.research.claim_selection, 2026-09-30). A claim
     reported as the best of N searched variations spent N trials before the desk saw it; the
@@ -170,6 +204,10 @@ def lifetime(write: bool = True) -> dict[str, Any]:
     for fam, k in m_fam.items():
         p_fam[fam] = p_fam.get(fam, 0) + k
     p_total += m_total
+    r_total, r_fam = _screened_refused_counts()
+    for fam, k in r_fam.items():
+        p_fam[fam] = p_fam.get(fam, 0) + k
+    p_total += r_total
     s_total, s_fam = _claim_selection_counts()
     prereg = _prereg_counts()
     fams = sorted(set(g_fam) | set(p_fam) | set(s_fam))
@@ -179,9 +217,12 @@ def lifetime(write: bool = True) -> dict[str, Any]:
            "judged_cells": g_total, "screened_cells": p_total,
            "source_selection_trials": s_total, "preregistered_cards": prereg,
            "mass_screen_cells": m_total,
+           "screened_refused_cells": r_total,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
-                    "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl) + "
+                    "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl and "
+                    "every unbuildable cell held out of the docket in "
+                    "SCREENED_REFUSED_TRIALS.jsonl) + "
                     "each claim family's stated source selection, once; "
                     "consumers may only deflate MORE with it, never less")}
     if write:
