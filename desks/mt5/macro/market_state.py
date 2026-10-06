@@ -307,21 +307,28 @@ def observations(report: Mapping[str, Any], received_at: datetime) -> list[Any]:
         if not isinstance(value, int | float) or isinstance(value, bool):
             return
         domain = kw.pop("domain", "vol")
-        out.append(sc.make(**common, sensor_id=sensor, metric=metric, value=float(value),
+        basis = kw.pop("basis", "declared_lag")
+        clocks = dict(common)
+        if basis == "bounded_by_receipt":
+            # vol_archive's own observation instant IS the receipt: the desk read the index then.
+            clocks.update(received_at=row.get("knowable_at"),
+                          parse_complete_at=row.get("knowable_at"))
+        out.append(sc.make(**clocks, sensor_id=sensor, metric=metric, value=float(value),
                            entity=entity, asset_domain=domain, event_time=row.get("date"),
-                           knowable_at=row.get("knowable_at"), **kw))
+                           knowable_at=row.get("knowable_at"), knowable_basis=basis, **kw))
 
     for tk, row in (report.get("vol") or {}).items():
         if not isinstance(row, dict) or row.get("status") != "MEASURED":
             continue
         ent = row.get("symbol") or tk
-        add("market:implied_vol", tk, row["implied"], row, ent,
+        add("market:implied_vol", tk, row["implied"], row, ent, basis="bounded_by_receipt",
             percentile=row.get("implied_percentile"), surprise_z=row.get("implied_z"))
         if isinstance(row.get("vrp"), float):
-            add("market:vrp", f"{tk}_vrp", row["vrp"], row, ent,
+            add("market:vrp", f"{tk}_vrp", row["vrp"], row, ent, basis="bounded_by_receipt",
                 percentile=row.get("vrp_percentile"), surprise_z=row.get("vrp_z"))
         if isinstance(row.get("vix_vix3m_ratio"), float):
-            add("market:vol_term", "vix_vix3m_ratio", row["vix_vix3m_ratio"], row, ent)
+            add("market:vol_term", "vix_vix3m_ratio", row["vix_vix3m_ratio"], row, ent,
+                basis="bounded_by_receipt")
     gc = report.get("curve") or {}
     if gc.get("status") == "MEASURED":
         for k in ("level", "slope_10y3m", "slope_10y2y", "curvature"):

@@ -191,6 +191,7 @@ def observations(report: Mapping[str, Any], received_at: datetime) -> list[Any]:
             sensor_class="physical_commodity", kind="state", value=row["level"],
             unit=row["unit"], event_time=row["week_end"], scheduled_time=row["knowable_at"],
             publication_time=row["knowable_at"], knowable_at=row["knowable_at"],
+            knowable_basis="declared_lag",
             received_at=max(received_at, datetime.fromisoformat(row["knowable_at"])),
             parse_complete_at=max(received_at, datetime.fromisoformat(row["knowable_at"])),
             delta=row["change"], seasonal_expected=exp,
