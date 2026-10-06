@@ -147,3 +147,60 @@ def test_git_reads_safe_directory_and_the_header_from_the_process_env(tmp_path: 
                          capture_output=True, text=True, env=env, check=True)
     assert hdr.stdout.strip() == "AUTHORIZATION: basic eA=="
     assert "extraheader" not in (tmp_path / ".git" / "config").read_text("utf-8")
+
+
+def test_a_stale_lock_is_removed_only_when_no_git_process_is_alive() -> None:
+    """Audit R1 (2026-10-06): age alone is not debris. An orphan `git merge` that outlived a killed
+    task holds index.lock without the mutex; deleting it under that git corrupts the index."""
+    code = _code(SYNC)
+    fn = code[code.index("function Invoke-GitWriteRetry"):]
+    fn = fn[:fn.index("\n}\n")]
+    assert "Get-Process -Name git" in fn
+    remove = fn.index("Remove-Item -LiteralPath $lock")
+    cond = fn.rfind("if (", 0, remove)
+    guard = fn[cond:remove]
+    assert "TotalMinutes -ge 5" in guard and "$alive.Count -eq 0" in guard, guard
+    assert "KEEPING .git\\index.lock" in fn, "a kept lock must be logged with the live pids"
+
+
+def test_the_from_disk_fallback_names_every_file_it_drops() -> None:
+    code = _code(SYNC)
+    pub = code[code.index("function Publish-StateOnto"):]
+    pub = pub[:pub.index("\n}\n")]
+    disk = pub[pub.index("if ($FromDisk)"):pub.index("} else {")]
+    assert "could not hash" in disk and "it is NOT in this publish" in disk
+    assert "listed path(s) hashed" in disk
+    assert "EVERY state file failed to hash" in disk, "all-failed needs its own message"
+
+
+def test_an_old_git_is_warned_at_startup() -> None:
+    env, sync = _code(ENV), _code(SYNC)
+    assert '[version]"2.38"' in env and "Get-BoxGitVersion" in env
+    assert "GitTooOldForEnvSafeDirectory" in sync and "WARN:" in sync
+
+
+def test_a_crash_writes_a_diagnosis_that_travels() -> None:
+    code = _code(SYNC)
+    fn = code[code.index("function Write-GitCrashDiag"):]
+    fn = fn[:fn.index("\n}\n")]
+    for key in ("rc_hex", "git_version", "index_bytes", "count-objects", "Get-WinEvent",
+                "git_processes_alive", "command"):
+        assert key in fn, key
+    assert "<{0} path(s)>" in fn, "paths are counted, never listed"
+    retry = code[code.index("function Invoke-GitWriteRetry"):]
+    assert "if ($rc -lt 0 -or $rc -gt 255) { Write-GitCrashDiag" in retry
+    assert "-Extra @($script:CrashDiagRel, $script:BacklogRel)" in code
+
+
+def test_the_backlog_drain_is_daily_and_never_blocks_the_publish() -> None:
+    code = _code(SYNC)
+    tail = code[code.index("shadow state synced to origin"):]
+    assert "libs.ops.box_backlog" in tail and '"--push"' in tail
+    assert "TotalHours -ge 24" in tail
+    assert tail.rstrip().endswith("exit 0"), "a failed drain must not fail the state publish"
+
+
+def test_the_python_reader_carries_safe_directory_too() -> None:
+    from libs.ops import state_publication as sp
+    src = Path(sp.__file__).read_text("utf-8")
+    assert "env=git_env(root)" in src

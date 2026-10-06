@@ -49,6 +49,25 @@ function Get-BoxGitHubToken {
     return $null
 }
 
+# safe.directory read from the COMMAND scope (GIT_CONFIG_COUNT) needs a recent git; an older Git for
+# Windows ignores it there and the ownership refusal comes straight back. The caller logs a WARN
+# below this version so the next "rc=128" names its cause.
+$script:MinGitForEnvSafeDirectory = [version]"2.38"
+
+function Get-BoxGitVersion {
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try { $raw = "$(& git --version 2>$null)" } catch { $raw = "" }
+    finally { $ErrorActionPreference = $prev }
+    $v = $null
+    if ($raw -match '(\d+)\.(\d+)(?:\.(\d+))?') {
+        $patch = 0
+        if ($Matches[3]) { $patch = [int]$Matches[3] }
+        $v = [version]::new([int]$Matches[1], [int]$Matches[2], $patch)
+    }
+    return [pscustomobject]@{ Raw = $raw.Trim(); Version = $v }
+}
+
 function Initialize-BoxGitEnv {
     param([string]$RepoRoot)
     $env:GIT_TERMINAL_PROMPT = "0"
@@ -59,9 +78,14 @@ function Initialize-BoxGitEnv {
     if ($token) {
         $basic = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$token"))
         Add-GitConfigEnv -Key "http.https://github.com/.extraheader" -Value "AUTHORIZATION: basic $basic"
-        return [pscustomobject]@{ SafeDirectory = $safe; Auth = "GITHUB_TOKEN" }
+        $auth = "GITHUB_TOKEN"
+    } else {
+        $auth = "CREDENTIAL_MANAGER_ONLY"
     }
-    return [pscustomobject]@{ SafeDirectory = $safe; Auth = "CREDENTIAL_MANAGER_ONLY" }
+    $gv = Get-BoxGitVersion
+    $tooOld = ($null -eq $gv.Version) -or ($gv.Version -lt $script:MinGitForEnvSafeDirectory)
+    return [pscustomobject]@{ SafeDirectory = $safe; Auth = $auth; GitVersion = $gv.Raw;
+                              GitTooOldForEnvSafeDirectory = $tooOld }
 }
 
 # The lines git and Git Credential Manager print when a push needed a credential it could not get.
