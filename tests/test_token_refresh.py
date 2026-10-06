@@ -66,6 +66,13 @@ def myfx_unfenced(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(T.TERMS, "myfxbook", ("confirmed", "test-only"))
 
 
+@pytest.fixture
+def jq_unfenced(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Exercise the J-Quants code path as it would run AFTER its terms were confirmed (they are
+    to_confirm: art. 8 limits use to the registered individual's private use)."""
+    monkeypatch.setitem(T.TERMS, "jquants", ("confirmed", "test-only"))
+
+
 def _fake(monkeypatch: pytest.MonkeyPatch, responses: list[tuple[int, dict[str, Any] | None]]
           ) -> FakeHTTP:
     f = FakeHTTP(responses)
@@ -302,10 +309,49 @@ def test_terms_evidence_is_recorded_for_every_fenced_provider() -> None:
         ev = T.TERMS_EVIDENCE[name]
         assert ev["terms_url"].startswith("https://") and len(ev["terms_quote"]) > 20
         assert ev["checked_at"]
-        assert T.terms_ok(T.PROVIDERS[{"cdse": "CDSE_TOKEN",
+        assert T.terms_ok(T.PROVIDERS[{"cdse": "CDSE_TOKEN", "jquants": "JQUANTS_TOKEN",
                                        "myfxbook": "MYFXBOOK_SESSION"}[name]]) == (
             verdict == "confirmed")
     assert T.TERMS["cdse"][0] == "confirmed"
+    # the clause that scopes the portal's non-commercial sentence away from Sentinel data
+    cdse = T.TERMS_EVIDENCE["cdse"]
+    assert cdse["scope_url"].startswith("https://dataspace.copernicus.eu/")
+    assert cdse["scope_quote"].startswith("Any other contents of the Copernicus Data Space")
+
+
+def test_every_managed_provider_is_terms_listed() -> None:
+    """No managed provider is unfenced by omission."""
+    assert {p.name for p in T.PROVIDERS.values()} <= set(T.TERMS)
+
+
+def test_unknown_provider_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A provider absent from TERMS is BLOCKED_ON_TERMS, never a silent pass."""
+    p = T.Provider(name="newcomer", short_env="NEWCOMER_TOKEN", long_envs=(("NEWCOMER_KEY",),),
+                   apply="bearer", hosts=("api.example.org",), docs="https://example.org")
+    assert "newcomer" not in T.TERMS and not T.terms_ok(p)
+    monkeypatch.setitem(T.PROVIDERS, "NEWCOMER_TOKEN", p)
+    f = _fake(monkeypatch, [])
+    r = T.get_token("NEWCOMER_TOKEN", environ={"NEWCOMER_TOKEN": "tok-abc",
+                                               "NEWCOMER_KEY": "k"}, now=NOW)
+    assert r.status == T.BLOCKED_ON_TERMS and r.token is None and not f.calls
+    row = {x["env"]: x for x in T.status_report({"NEWCOMER_KEY": "k"})}["NEWCOMER_TOKEN"]
+    assert row["status"] == T.BLOCKED_ON_TERMS and row["terms"] == "unlisted"
+    # confirmed WITHOUT recorded evidence is still not ok
+    monkeypatch.setitem(T.TERMS, "newcomer", ("confirmed", "no evidence"))
+    assert not T.terms_ok(p)
+
+
+def test_jquants_is_fenced_on_terms_and_sends_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The user holds a key; the key does not override the terms (art. 8, private use only)."""
+    f = _fake(monkeypatch, [])
+    for env in ({"JQUANTS_API_KEY": "k-123456"}, {"JQUANTS_TOKEN": "opaque"},
+                {"JQUANTS_MAILADDRESS": "me@example.org", "JQUANTS_PASSWORD": PASSWORD}):
+        r = T.get_token("JQUANTS_TOKEN", environ=env, now=NOW)
+        assert r.status == T.BLOCKED_ON_TERMS and r.token is None
+    assert not f.calls and T.TERMS["jquants"][0] != "confirmed"
+    ev = T.TERMS_EVIDENCE["jquants"]
+    assert ev["terms_url"] == "https://jpx-jquants.com/termsofservice"
+    assert "私的使用の目的に限ります" in ev["terms_quote"]
 
 
 def test_credentials_come_from_read_key_not_os_environ(monkeypatch: pytest.MonkeyPatch) -> None:

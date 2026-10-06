@@ -31,7 +31,8 @@ THE PROVIDERS' OWN DOCUMENTED FLOWS (verified 2026-10-06):
 TERMS FENCE (security audit of #218, 2026-10-06). A provider listed in `TERMS` sends NO
 credential -- no login, no mint, no pasted token on a request -- until its terms are recorded as
 "confirmed" with the URL and a verbatim quote in `TERMS_EVIDENCE`. Anything else is
-BLOCKED_ON_TERMS (fail closed). CDSE is confirmed; Myfxbook is not (see the evidence).
+BLOCKED_ON_TERMS (fail closed), and so is a provider absent from `TERMS`. CDSE is confirmed;
+Myfxbook and J-Quants are not (see the evidence).
 
 CREDENTIALS ARE READ THROUGH `libs.ops.env_keys.read_key` (#201), never straight from
 `os.environ`: a value set with `setx /M` after a resident task started lives only in the machine
@@ -135,6 +136,11 @@ TERMS: dict[str, tuple[str, str]] = {
                                "information only'; its Terms say 'Reproduction is prohibited' "
                                "and do not address automated or commercial use of community "
                                "data -- not a clear permission for this desk's use"),
+    "jquants": ("to_confirm", "J-Quants API Terms of Service art. 8: use is limited to the "
+                              "registered (individual) user's private use; commercial or "
+                              "academic use, or making the data usable by third parties, is "
+                              "not private use -- not a clear permission for a trading desk "
+                              "that passes data to automated research seats"),
 }
 _TERMS_CHK = "2026-10-06"
 TERMS_EVIDENCE: dict[str, dict[str, str]] = {
@@ -150,10 +156,30 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                           "Data and Service Information ... (a) reproduction; (b) distribution; "
                           "(c) communication to the public; (d) adaptation, modification and "
                           "combination with other data and information"),
-        "scope_note": ("the T&C's 'intended for non-commercial use' clause covers 'Any other "
-                       "contents of the ... portal', not Sentinel data; the forum no-automation "
-                       "clause covers the forum only; quotas must not be bypassed with multiple "
-                       "accounts (one account is used)"),
+        "licence_quote_full": ("EU law grants free access to Copernicus Sentinel Data and "
+                               "Service Information for the purpose of the following use in so "
+                               "far as it is lawful: (a) reproduction; (b) distribution; (c) "
+                               "communication to the public; (d) adaptation, modification and "
+                               "combination with other data and information; (e) any "
+                               "combination of points (a) to (d)."),
+        # The clause that SCOPES the portal's non-commercial sentence away from Sentinel data.
+        # Same page, section 3 (Copyrights): the Sentinel-data sentence above comes first and is
+        # governed by the Legal Notice; the non-commercial sentence opens with "Any OTHER
+        # contents", i.e. everything that is not Sentinel data. Re-fetched 2026-10-06.
+        "scope_url": "https://dataspace.copernicus.eu/terms-and-conditions",
+        "scope_quote": ("Any other contents of the Copernicus Data Space Ecosystem portal are "
+                        "intended for non-commercial use. ESA and T-Systems grant the permission "
+                        "to users to visit the site, and to download and copy information, "
+                        "images, documents and materials from the web portal for non-commercial "
+                        "use."),
+        "scope_note": ("section 3 of the T&C splits Sentinel data (free, full and open, governed "
+                       "by the Legal Notice, whose permitted uses carry no non-commercial "
+                       "limit) from 'Any other contents of the ... portal' (non-commercial). "
+                       "The forum no-automation clause covers the forum only; quotas must not "
+                       "be bypassed with multiple accounts (one account is used). Both pages "
+                       "were read through a fetch tool that renders the page for a reader "
+                       "(this container cannot reach the host directly); the quotes were "
+                       "requested character-for-character and agree across fetches"),
         "checked_at": _TERMS_CHK},
     "myfxbook": {
         "terms_url": "https://www.myfxbook.com/api",
@@ -165,13 +191,39 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                        "by a trading desk; stays BLOCKED_ON_TERMS until a written permission "
                        "is recorded here"),
         "checked_at": _TERMS_CHK},
+    "jquants": {
+        "terms_url": "https://jpx-jquants.com/termsofservice",
+        "terms_quote": ("第8条(利用目的) 本サービス及び本データの利用目的(以下「本利用目的」といい"
+                        "ます。)は、登録ユーザーのみによる私的使用の目的に限ります。"),
+        "licence_url": "https://jpx-jquants.com/termsofservice",
+        "licence_quote": ("本サービス及び本データ(本データを編集又は加工したものを含みます。)を、"
+                          "第三者が使用できる状態にすること(インターネット上での配信を含みます。)"
+                          "または商用もしくは学術の目的で利用することは、私的使用の目的に該当"
+                          "しません。"),
+        "definition_quote": ("登録ユーザー: 第3条(登録)に基づいて本サービスの利用者としての登録が"
+                             "なされた個人"),
+        "scope_note": ("Art. 8 confines use to the registered individual's private use and "
+                       "excludes commercial use and making the data (or anything derived from "
+                       "it) usable by third parties. No clause clearly permits use by an "
+                       "automated trading/research desk whose artifacts are committed to a "
+                       "shared repository and read by external LLM seats; art. 9(2) applies a "
+                       "separate paid-service agreement to use outside the purpose. A key does "
+                       "not override terms: stays BLOCKED_ON_TERMS until a written permission "
+                       "or a paid/commercial licence that covers this use is recorded here. "
+                       "Read through a fetch tool (host not reachable from this container); "
+                       "the art. 8 sentences agree across two fetches"),
+        "checked_at": _TERMS_CHK},
 }
 
 
 def terms_ok(p: Provider) -> bool:
-    """True when the provider is not terms-fenced, or its terms are recorded as confirmed."""
+    """True only when the provider's terms are recorded as confirmed WITH evidence.
+
+    FAIL CLOSED: a provider absent from `TERMS` is not ok (BLOCKED_ON_TERMS) -- an unlisted
+    provider is an unchecked one, never a permitted one."""
     verdict = TERMS.get(p.name)
-    return verdict is None or (verdict[0] == "confirmed" and p.name in TERMS_EVIDENCE)
+    return (verdict is not None and verdict[0] == "confirmed"
+            and p.name in TERMS_EVIDENCE)
 
 
 def collector_status(res: TokenResult) -> str:
@@ -587,7 +639,7 @@ def status_report(environ: Mapping[str, str] | None = None) -> list[dict[str, An
             status = OK
         rows.append({
             "env": p.short_env, "provider": p.name, "status": status,
-            "terms": TERMS.get(p.name, ("not_fenced", ""))[0],
+            "terms": TERMS.get(p.name, ("unlisted", ""))[0],
             "short_lived_env_set": short,
             "long_lived_present": group is not None,
             "long_lived_set": "+".join(group) if group else "",
