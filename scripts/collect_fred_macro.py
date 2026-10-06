@@ -42,12 +42,11 @@ _SERIES = ("DGS10", "T10Y2Y", "VIXCLS", "DTWEXBGS", "WALCL", "M2SL", "DFII10")
 #: THE MARKET-STATE SERIES (2026-10-06, world sensor J/L). Written to their OWN archive,
 #: `data/fred_market_state.json`, so the consumers that iterate every series of fred_macro*.json
 #: (macro_view, world_model, exposure_decomposition) see exactly the inputs they were built on.
-#:   CBOE implied vol: VIXCLS VXVCLS (3m) VXNCLS VXDCLS RVXCLS OVXCLS GVZCLS EVZCLS VXEEMCLS
+#: Implied vol is NOT here: `recorders/vol_archive.py` already archives the CBOE indices.
 #:   Treasury curve:   DGS3MO DGS2 DGS5 DGS10 DGS30
 #:   EIA weekly petroleum: WCESTUS1 (crude ex SPR) WCSSTUS1 (SPR) WGTSTUS1 (gasoline)
 #:                         WDISTUS1 (distillate) WPULEUS3 (refinery utilisation %)
-_STATE_SERIES = ("VIXCLS", "VXVCLS", "VXNCLS", "VXDCLS", "RVXCLS", "OVXCLS", "GVZCLS",
-                 "EVZCLS", "VXEEMCLS", "DGS3MO", "DGS2", "DGS5", "DGS10", "DGS30",
+_STATE_SERIES = ("DGS3MO", "DGS2", "DGS5", "DGS10", "DGS30",
                  "WCESTUS1", "WCSSTUS1", "WGTSTUS1", "WDISTUS1", "WPULEUS3")
 _STATE_ARCHIVE = Path("data/fred_market_state.json")
 #: ~11.5y fetched: the allocator's regime kernel (`libs.portfolio.macro_state`) ranks each day's

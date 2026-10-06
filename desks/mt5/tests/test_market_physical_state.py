@@ -3,7 +3,6 @@ physical states, PIT and directionless. Everything is synthetic; nothing touches
 from __future__ import annotations
 
 import json
-import math
 import sys
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -40,50 +39,58 @@ def _bars(closes: list[float], end: date = date(2026, 10, 5)) -> pd.DataFrame:
 
 def _series() -> dict[str, list[tuple[str, float]]]:
     days = _days(300)
-    ser = {"VIXCLS": [(d, 15.0 + (i % 7)) for i, d in enumerate(days)],
-           "VXVCLS": [(d, 18.0) for d in days],
-           "GVZCLS": [(d, 16.0 + (i % 5) * 0.1) for i, d in enumerate(days)]}
-    ser["VIXCLS"][-1] = (days[-1], 30.0)                  # a spike above VIX3M
+    ser: dict[str, list[tuple[str, float]]] = {}
     for sid, y in (("DGS3MO", 4.5), ("DGS2", 4.0), ("DGS5", 3.9), ("DGS10", 4.1),
                    ("DGS30", 4.4)):
         ser[sid] = [(d, y + 0.001 * i) for i, d in enumerate(days)]
     return ser
 
 
-def test_term_structure_reads_only_what_was_knowable() -> None:
-    ser = _series()
-    ts = ms.term_structure(ser, NOW)
-    assert ts["date"] == "2026-10-05" and ts["state"] == "backwardation"
-    assert ts["ratio"] == pytest.approx(30.0 / 18.0, rel=1e-3)
-    assert ts["ratio_percentile"] == 1.0
-    # the 10-05 close is knowable at 10-06 09:00 ET (13:00Z); an hour before, it is not
-    early = ms.term_structure(ser, datetime(2026, 10, 6, 12, 0, tzinfo=UTC))
-    assert early["date"] == "2026-10-04"
-    assert ms.term_structure({}, NOW)["status"] == "UNMEASURED"
+def _vol_rows() -> list[dict]:
+    """vol_archive observations: 40 daily ^VIX/^GVZ rows, the last a spike in backwardation."""
+    rows = []
+    for i, d in enumerate(_days(40)):
+        seen = (datetime.fromisoformat(d) + timedelta(hours=21)).replace(tzinfo=UTC)
+        last = i == 39
+        rows.append({"observed_at": seen.isoformat(), "value_date": d, "vol_ticker": "^VIX",
+                     "mt5_symbol": "US500", "implied_vol": 30.0 if last else 15.0 + i % 5,
+                     "term": {"^VIX": 30.0 if last else 15.0, "^VIX3M": 18.0},
+                     "term_shape": "backwardation" if last else "contango",
+                     "variance_risk_premium": 9.0 if last else 2.0 + (i % 3),
+                     "realised_vol_cc": 21.0, "iv_over_rv": 1.4})
+        rows.append({"observed_at": seen.isoformat(), "value_date": d, "vol_ticker": "^EVZ",
+                     "mt5_symbol": "EURUSD", "implied_vol": 7.0, "status": "OBSERVED",
+                     "reason": "no bars"})
+    return rows
 
 
-def test_implied_vs_realised_and_beta_from_bars() -> None:
+def test_vol_state_reads_the_archive_as_held_and_ranks_it() -> None:
+    vol = ms.vol_state(_vol_rows(), NOW)
+    vix = vol["^VIX"]
+    assert vix["date"] == "2026-10-05" and vix["term_shape"] == "backwardation"
+    assert vix["implied_percentile"] == 1.0 and vix["vrp_percentile"] == 1.0
+    assert vix["vix_vix3m_ratio"] == pytest.approx(30.0 / 18.0, rel=1e-3)
+    assert vol["^EVZ"]["realised"]["status"] == "UNMEASURED"
+    # an observation the desk had not yet made is not read
+    early = ms.vol_state(_vol_rows(), datetime(2026, 10, 5, 20, 0, tzinfo=UTC))
+    assert early["^VIX"]["date"] == "2026-10-04"
+    assert ms.vol_state([], NOW)["_status"]["status"] == "UNMEASURED"
+    assert ms.regime_from(vol) == "vol_backwardation_high"
+
+
+def test_beta_from_bars() -> None:
     rng = np.random.default_rng(7)
     bench = 100 * np.exp(np.cumsum(rng.normal(0, 0.01, 300)))
     gold_r = 2.0 * np.diff(np.log(bench))
     gold = list(100 * np.exp(np.concatenate([[0.0], np.cumsum(gold_r)])))
-    charts = {"US500": _bars(list(bench)), "XAUUSD": _bars(gold)}
-    out = ms.implied_vs_realised(_series(), NOW, charts)
-    g = out["GVZCLS"]
-    rv = float(np.std(gold_r[-21:], ddof=1) * math.sqrt(252) * 100)
-    assert g["realised_21d"] == pytest.approx(rv, rel=1e-3)
-    assert g["vrp"] == pytest.approx(g["implied"] - rv, rel=1e-3)
-    assert isinstance(g["vrp_percentile"], float)
-    assert out["OVXCLS"]["status"] == "UNMEASURED"           # absent series: named, not zero
-    assert "vrp" in out["VIXCLS"]
-    b = ms.betas(charts, NOW)
+    b = ms.betas({"US500": _bars(list(bench)), "XAUUSD": _bars(gold)}, NOW)
     assert b["symbols"]["XAUUSD"]["beta"] == pytest.approx(2.0, rel=1e-6)
     assert b["symbols"]["XAUUSD"]["corr"] == pytest.approx(1.0, rel=1e-6)
     assert b["symbols"]["USOIL"]["status"] == "UNMEASURED"
 
 
-def test_curve_and_regime_and_ledger() -> None:
-    rep = ms.build(now=NOW, series=_series(), charts={})
+def test_curve_regime_and_ledger() -> None:
+    rep = ms.build(now=NOW, series=_series(), charts={}, vol_rows=_vol_rows())
     gc = rep["curve"]
     assert gc["slope_10y3m"] == pytest.approx(4.1 - 4.5, abs=1e-6)
     assert gc["inverted_10y3m"] is True
@@ -92,6 +99,8 @@ def test_curve_and_regime_and_ledger() -> None:
     assert rep["option_chains"]["status"] == "EXTERNALLY_BLOCKED"
     obs = ms.observations(rep, NOW)
     assert obs and all(sc.defects(o) == [] for o in obs)
+    assert {o.sensor_id for o in obs} >= {"market:implied_vol", "market:vrp",
+                                          "market:vol_term", "market:ust_curve"}
     assert all(o.authority == "NONE" for o in obs)
 
 

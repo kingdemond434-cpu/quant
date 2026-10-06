@@ -5,13 +5,13 @@ WHY (principal 2026-10-05, "OPTIONS, VOL AND CURVE ENGINES"): the desk had a VIX
 archive and nothing else about how the market PRICES uncertainty. The terminal functions it named
 map onto free equivalents as follows, and each is measured or carries its reason:
 
-    OVDV (vol term structure)   VIX against VIX3M (CBOE, via FRED): ratio, slope, backwardation,
-                                percentile against its own trailing year
-    OMON (implied by underlying) CBOE's implied-vol indices for the instruments the desk trades:
-                                GVZ -> XAUUSD, OVX -> USOIL, EVZ -> EURUSD, VIX -> US500,
-                                VXN -> NAS100, VXD -> US30, RVX -> US2000, VXEEM (no MT5 pair)
-    HVG (implied vs realised)   the index against 21-day realised vol from the desk's own bars:
-                                the variance risk premium, and its percentile
+    OVDV / OMON / HVG           READ, NEVER RECOMPUTED, from `recorders/vol_archive.py` (task
+                                MT5-VolArchive): its own point-in-time observations of the CBOE
+                                indices (GVZ, OVX, VIX with its 9D/3M/6M term, VXN, VXD, EVZ),
+                                joined to THIS broker's realised vol. Added here: each index's
+                                and each premium's percentile and z against the archive's OWN
+                                history, the term shape as a conditioning key, and the rows in
+                                the sensor ledger. Until 2026-10-06 nothing read that archive.
     GC (curve)                  3m/2y/5y/10y/30y Treasury: level, 10y-3m and 10y-2y slopes,
                                 2x5y-2y-10y curvature, five-print changes
     BETA                        63-day beta and correlation of every charted MT5 instrument's
@@ -45,14 +45,8 @@ REPORT = DESK / "reports" / "MARKET_STATE.json"
 UNMEASURED = "UNMEASURED"
 ET = ZoneInfo("America/New_York")
 TRAIL = 252
-RV_DAYS = 21
 BETA_DAYS = 63
 
-#: CBOE implied-vol index -> the MT5 instrument it prices (None: no tradable pair here).
-VOL_PAIRS: dict[str, str | None] = {
-    "VIXCLS": "US500", "VXNCLS": "NAS100", "VXDCLS": "US30", "RVXCLS": "US2000",
-    "OVXCLS": "USOIL", "GVZCLS": "XAUUSD", "EVZCLS": "EURUSD", "VXEEMCLS": None,
-}
 CURVE = ("DGS3MO", "DGS2", "DGS5", "DGS10", "DGS30")
 BETA_SYMBOLS = ("XAUUSD", "XAGUSD", "USOIL", "UKOIL", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD",
                 "USDCAD", "USDCHF", "NAS100", "US30", "GER40", "JP225")
@@ -138,15 +132,6 @@ def _returns(closes: Sequence[tuple[str, float]]) -> dict[str, float]:
             for i in range(1, len(closes))}
 
 
-def realised_vol(closes: Sequence[tuple[str, float]], days: int = RV_DAYS) -> float | None:
-    rets = list(_returns(closes).values())[-days:]
-    if len(rets) < days:
-        return None
-    m = sum(rets) / len(rets)
-    var = sum((r - m) ** 2 for r in rets) / (len(rets) - 1)
-    return math.sqrt(var * 252.0) * 100.0
-
-
 def _chart(symbol: str) -> Any:
     try:
         sys.path.insert(0, str(DESK / "research"))
@@ -158,64 +143,62 @@ def _chart(symbol: str) -> Any:
 
 
 # ============================================================================== the engines
-def term_structure(series: Mapping[str, list[tuple[str, float]]], now: datetime) -> dict[str, Any]:
-    vix = dict(as_of(series.get("VIXCLS", []), "VIXCLS", now))
-    v3m = dict(as_of(series.get("VXVCLS", []), "VXVCLS", now))
-    common = sorted(set(vix) & set(v3m))
-    if not common:
-        return _un("VIX and VIX3M are not both in the archive as of now (fred_market_state.json "
-                   "is written by collect_fred_macro once the FRED key is found)")
-    ratios = [vix[d] / v3m[d] for d in common if v3m[d] > 0]
-    d = common[-1]
-    ratio = vix[d] / v3m[d]
-    return {"status": "MEASURED", "date": d, "vix": vix[d], "vix3m": v3m[d],
-            "ratio": round(ratio, 4), "slope": round(v3m[d] - vix[d], 4),
-            "state": "backwardation" if ratio > 1.0 else "contango",
-            "ratio_percentile": percentile(ratios[-TRAIL - 1:-1], ratio),
-            "ratio_z": zscore(ratios[-TRAIL - 1:-1], ratio),
-            "knowable_at": knowable(d, "VIXCLS").isoformat()}
+def read_vol_archive(path: Path | None = None) -> list[dict[str, Any]]:
+    try:
+        sys.path.insert(0, str(DESK))
+        from recorders import vol_archive as va
+        return list(va.read_archive(path or va.ARCHIVE))
+    except Exception:
+        return []
 
 
-def implied_vs_realised(series: Mapping[str, list[tuple[str, float]]], now: datetime,
-                        charts: Mapping[str, Any]) -> dict[str, Any]:
+def vol_state(rows: Sequence[Mapping[str, Any]], now: datetime) -> dict[str, Any]:
+    """Per CBOE index: the newest observation the desk HELD by `now`, with percentiles of the
+    implied level and the premium against that index's own earlier observations."""
+    by_ticker: dict[str, list[Mapping[str, Any]]] = {}
+    for r in rows:
+        at = r.get("observed_at")
+        try:
+            seen = datetime.fromisoformat(str(at).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if seen.tzinfo is None:
+            seen = seen.replace(tzinfo=UTC)
+        if seen <= now and isinstance(r.get("implied_vol"), int | float):
+            by_ticker.setdefault(str(r.get("vol_ticker")), []).append(r)
     out: dict[str, Any] = {}
-    for sid, symbol in VOL_PAIRS.items():
-        rows = as_of(series.get(sid, []), sid, now)
-        if not rows:
-            out[sid] = {"symbol": symbol, **_un(f"{sid} absent from the archive as of now")}
-            continue
-        d, iv = rows[-1]
-        hist = [v for _d, v in rows[-TRAIL - 1:-1]]
-        row: dict[str, Any] = {"symbol": symbol, "status": "MEASURED", "date": d,
-                               "implied": iv, "implied_percentile": percentile(hist, iv),
-                               "implied_z": zscore(hist, iv),
-                               "implied_chg_5": (round(iv - rows[-6][1], 4)
-                                                 if len(rows) > 5 else None),
-                               "knowable_at": knowable(d, sid).isoformat()}
-        if symbol is None:
-            row["realised"] = _un("no MT5 instrument is priced by this index")
-            out[sid] = row
-            continue
-        closes = daily_closes(charts.get(symbol), now)
-        rv = realised_vol(closes)
-        if rv is None:
-            row["realised"] = _un(f"fewer than {RV_DAYS + 1} daily closes for {symbol}")
-            out[sid] = row
-            continue
-        implied_by_day = dict(rows)
-        vrp_hist = []
-        for i in range(RV_DAYS + 1, len(closes)):
-            day = closes[i - 1][0]
-            if day in implied_by_day:
-                r = realised_vol(closes[:i])
-                if r is not None:
-                    vrp_hist.append(implied_by_day[day] - r)
-        vrp = iv - rv
-        row.update({"realised_21d": round(rv, 4), "vrp": round(vrp, 4),
-                    "iv_rv_ratio": round(iv / rv, 4) if rv > 0 else None,
-                    "vrp_percentile": percentile(vrp_hist[-TRAIL:], vrp),
-                    "vrp_z": zscore(vrp_hist[-TRAIL:], vrp)})
-        out[sid] = row
+    for tk, hist in by_ticker.items():
+        hist.sort(key=lambda r: (str(r.get("value_date")), str(r.get("observed_at"))))
+        last = hist[-1]
+        prior = [h for h in hist[:-1] if str(h.get("value_date")) < str(last.get("value_date"))]
+        iv = float(last["implied_vol"])
+        ivs = [float(h["implied_vol"]) for h in prior][-TRAIL:]
+        row: dict[str, Any] = {"status": "MEASURED", "symbol": last.get("mt5_symbol"),
+                               "date": last.get("value_date"),
+                               "knowable_at": last.get("observed_at"),
+                               "value_age_days": last.get("value_age_days"),
+                               "implied": iv, "implied_percentile": percentile(ivs, iv),
+                               "implied_z": zscore(ivs, iv), "desk_vintages": len(hist),
+                               "term_shape": last.get("term_shape") or None,
+                               "term_slope_short": last.get("term_slope_short"),
+                               "term_slope_long": last.get("term_slope_long")}
+        vrp = last.get("variance_risk_premium")
+        if isinstance(vrp, int | float):
+            vrps = [float(h["variance_risk_premium"]) for h in prior
+                    if isinstance(h.get("variance_risk_premium"), int | float)][-TRAIL:]
+            row.update({"realised_21d": last.get("realised_vol_cc"), "vrp": float(vrp),
+                        "iv_rv_ratio": last.get("iv_over_rv"),
+                        "vrp_percentile": percentile(vrps, float(vrp)),
+                        "vrp_z": zscore(vrps, float(vrp))})
+        else:
+            row["realised"] = _un(last.get("reason") or "no realised-vol join on this row")
+        term = last.get("term") or {}
+        if isinstance(term, dict) and term.get("^VIX") and term.get("^VIX3M"):
+            row["vix_vix3m_ratio"] = round(float(term["^VIX"]) / float(term["^VIX3M"]), 4)
+        out[tk] = row
+    if not out:
+        return {"_status": _un("vol_archive holds no observation as of now "
+                               "(MT5-VolArchive has not run, or its archive is absent)")}
     return out
 
 
@@ -272,32 +255,32 @@ def betas(charts: Mapping[str, Any], now: datetime, bench: str = "US500") -> dic
     return out
 
 
-def regime_from(ts: Mapping[str, Any], ivrv: Mapping[str, Any]) -> str:
-    """A bucket KEY for conditioning: term-structure state x VIX level tercile."""
-    if ts.get("status") != "MEASURED":
+def regime_from(vol: Mapping[str, Any]) -> str:
+    """A bucket KEY for conditioning: the VIX term shape x the VIX level tercile."""
+    vix = vol.get("^VIX") or {}
+    if vix.get("status") != "MEASURED" or not vix.get("term_shape"):
         return UNMEASURED
-    pct = (ivrv.get("VIXCLS") or {}).get("implied_percentile")
+    pct = vix.get("implied_percentile")
     if not isinstance(pct, float):
-        return f"vol_{ts['state']}"
+        return f"vol_{vix['term_shape']}"
     tier = "low" if pct < 1 / 3 else ("high" if pct > 2 / 3 else "mid")
-    return f"vol_{ts['state']}_{tier}"
+    return f"vol_{vix['term_shape']}_{tier}"
 
 
 def build(*, now: datetime | None = None, series: Mapping[str, list[tuple[str, float]]] | None
-          = None, charts: Mapping[str, Any] | None = None) -> dict[str, Any]:
+          = None, charts: Mapping[str, Any] | None = None,
+          vol_rows: Sequence[Mapping[str, Any]] | None = None) -> dict[str, Any]:
     when = now or datetime.now(UTC)
     ser = load_series() if series is None else series
     if charts is None:
-        wanted = {s for s in VOL_PAIRS.values() if s} | set(BETA_SYMBOLS) | {"US500"}
-        charts = {s: _chart(s) for s in sorted(wanted)}
-    ts = term_structure(ser, when)
-    ivrv = implied_vs_realised(ser, when, charts)
+        charts = {s: _chart(s) for s in sorted(set(BETA_SYMBOLS) | {"US500"})}
+    vol = vol_state(read_vol_archive() if vol_rows is None else vol_rows, when)
     gc = curve(ser, when)
     bt = betas(charts, when)
     return {"at": when.isoformat(timespec="seconds"), "source": "market_state",
-            "term_structure": ts, "implied_vs_realised": ivrv, "curve": gc, "beta": bt,
+            "vol": vol, "curve": gc, "beta": bt,
             "option_chains": {"status": "EXTERNALLY_BLOCKED", "why": CHAINS_BLOCKED},
-            "regime": regime_from(ts, ivrv),
+            "regime": regime_from(vol),
             "series_present": sorted(ser),
             "rule": "states, never directions; every number PIT as of its knowable instant"}
 
@@ -305,9 +288,7 @@ def build(*, now: datetime | None = None, series: Mapping[str, list[tuple[str, f
 def regime_label(now: datetime | None = None) -> str:
     """The conditioning key `event_surprise` buckets on. UNMEASURED when nothing is read."""
     try:
-        when = now or datetime.now(UTC)
-        ser = load_series()
-        return regime_from(term_structure(ser, when), implied_vs_realised(ser, when, {}))
+        return regime_from(vol_state(read_vol_archive(), now or datetime.now(UTC)))
     except Exception:
         return UNMEASURED
 
@@ -330,19 +311,17 @@ def observations(report: Mapping[str, Any], received_at: datetime) -> list[Any]:
                            entity=entity, asset_domain=domain, event_time=row.get("date"),
                            knowable_at=row.get("knowable_at"), **kw))
 
-    ts = report.get("term_structure") or {}
-    if ts.get("status") == "MEASURED":
-        add("market:vol_term", "vix_vix3m_ratio", ts["ratio"], ts, "US500",
-            percentile=ts.get("ratio_percentile"), surprise_z=ts.get("ratio_z"))
-    for sid, row in (report.get("implied_vs_realised") or {}).items():
-        if row.get("status") != "MEASURED":
+    for tk, row in (report.get("vol") or {}).items():
+        if not isinstance(row, dict) or row.get("status") != "MEASURED":
             continue
-        ent = row.get("symbol") or sid
-        add("market:implied_vol", sid, row["implied"], row, ent,
+        ent = row.get("symbol") or tk
+        add("market:implied_vol", tk, row["implied"], row, ent,
             percentile=row.get("implied_percentile"), surprise_z=row.get("implied_z"))
         if isinstance(row.get("vrp"), float):
-            add("market:vrp", f"{sid}_vrp", row["vrp"], row, ent,
+            add("market:vrp", f"{tk}_vrp", row["vrp"], row, ent,
                 percentile=row.get("vrp_percentile"), surprise_z=row.get("vrp_z"))
+        if isinstance(row.get("vix_vix3m_ratio"), float):
+            add("market:vol_term", "vix_vix3m_ratio", row["vix_vix3m_ratio"], row, ent)
     gc = report.get("curve") or {}
     if gc.get("status") == "MEASURED":
         for k in ("level", "slope_10y3m", "slope_10y2y", "curvature"):
@@ -360,7 +339,7 @@ def main(argv: list[str] | None = None) -> int:
         led = sc.SensorLedger().append(observations(rep, datetime.now(UTC)))
     except Exception as exc:                             # pragma: no cover - ledger guard
         led = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
-    print(f"market_state regime={rep['regime']} term={rep['term_structure'].get('status')} "
+    print(f"market_state regime={rep['regime']} vol={len(rep['vol'])} "
           f"curve={rep['curve'].get('status')} beta={rep['beta'].get('status')} ledger={led}")
     return 0
 
