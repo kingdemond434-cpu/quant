@@ -8,6 +8,10 @@ here sizes, sides or routes an order.
     from libs.quant_models import MODELS, OptionSpec, MarketData
     m = MODELS["heston"]().calibrate(data)
     m.price(OptionSpec("call", 100, 30 / 365, 100)), m.greeks(...), m.vol_forecast(30)
+
+Point processes and state space live beside them: `libs.quant_models.hawkes` (multivariate
+exponential Hawkes: MLE, PIT intensity, goodness of fit, Ogata simulation) and
+`libs.quant_models.kalman` (filter, RTS smoother, local level, TVP regression, MLE).
 """
 from __future__ import annotations
 
