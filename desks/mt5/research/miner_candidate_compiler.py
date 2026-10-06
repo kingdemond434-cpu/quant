@@ -1002,6 +1002,15 @@ _FAMILY_VOCAB: dict[str, tuple[str, ...]] = {
     "drawdown_conditional": ("after a drawdown", "buy after decline", "drawdown recovery",
                              "post-drawdown", "after a selloff"),
     "spread_state": ("spread widening", "wide spread", "spread regime", "spread compression"),
+    "entry_alpha_spread_session_median": ("enter when the spread is tight",
+                                          "spread below its session median",
+                                          "spread filter on entry", "spread-aware entry",
+                                          "wait for the spread to narrow"),
+    "entry_alpha_post_open_normalised": ("post-open spread normalisation",
+                                         "post-open spread normalization",
+                                         "wait for the spread to normalise",
+                                         "wait for the spread to normalize",
+                                         "avoid entering at the open", "rollover spread"),
     "comex_settlement": ("comex settlement", "comex close", "gold settlement", "comex fix"),
 }
 
