@@ -30,8 +30,25 @@ def _shards() -> int:
         return 1
 
 
+def _retry_attempts() -> int:
+    """Retries after the parallel attempt; invalid values fall closed to two."""
+    try:
+        return max(0, int(os.environ.get("GAUNTLET_SHARD_RETRIES", "2")))
+    except (TypeError, ValueError):
+        return 2
+
+
 def dispatch(shard_dir: Path, n: int, phase: str) -> None:
-    """Run every judge-owned shard once; any missing/failed child aborts publication."""
+    """Run every judge-owned shard, retrying only failed children at low concurrency.
+
+    Publication remains fail closed: a shard that still fails after the bounded retries raises,
+    so the sealed judge cannot merge a partial result.  The retries are deliberately serial.
+    A measured production failure mode had ten of fifteen memory-heavy shards finish, five die,
+    and the next scheduled invocation discard all ten successful artifacts before repeating the
+    two-hour pre-warm.  Retaining the successful outputs and rerunning only the failed children
+    after the parallel wave has released its memory converts that restart loop into progress
+    without changing a gate, verdict, docket, or merge rule.
+    """
     code = (
         "import sys;"
         f"sys.path[:0]=[{str(ROOT)!r},{str(DESK)!r}];"
@@ -40,19 +57,42 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
     )
 
     def one(k: int) -> None:
-        run(
-            [sys.executable, "-u", "-c", code, str(shard_dir), str(k), phase],
-            cwd=DESK,
-            env=os.environ.copy(),
-            timeout=None,
-            capture_output=False,
-            check=True,
-        )
+        run([sys.executable, "-u", "-c", code, str(shard_dir), str(k), phase],
+            cwd=DESK, env=os.environ.copy(), timeout=None, capture_output=False, check=True)
+
+    def attempted(k: int) -> tuple[int, Exception | None]:
+        try:
+            one(k)
+        except Exception as exc:  # child exit/OOM is evidence, then retried below
+            return k, exc
+        return k, None
 
     with ThreadPoolExecutor(max_workers=n, thread_name_prefix=f"judge-{phase}") as pool:
-        # Iterating forces every result; one failed process raises and the judge publishes nothing.
-        for _ in pool.map(one, range(n)):
-            pass
+        # Consume every result even when one child fails, so successful shard artifacts survive.
+        first = list(pool.map(attempted, range(n)))
+
+    failed = [(k, exc) for k, exc in first if exc is not None]
+    if failed:
+        print(f"SHARD RECOVERY: {len(failed)}/{n} {phase} shard(s) failed in parallel; "
+              "retrying only those shards serially after peer memory was released", flush=True)
+    for k, first_exc in failed:
+        assert first_exc is not None
+        last_exc = first_exc
+        for attempt in range(1, _retry_attempts() + 1):
+            try:
+                one(k)
+                print(f"SHARD RECOVERY: {phase} shard {k} recovered on retry {attempt}",
+                      flush=True)
+                break
+            except Exception as exc:
+                last_exc = exc
+                print(f"SHARD RECOVERY: {phase} shard {k} retry {attempt} failed: "
+                      f"{type(exc).__name__}: {exc}", flush=True)
+        else:
+            attempts = _retry_attempts() + 1
+            raise RuntimeError(
+                f"{phase} shard {k} failed after {attempts} attempt(s); refusing partial merge"
+            ) from last_exc
 
 
 def main() -> int:
