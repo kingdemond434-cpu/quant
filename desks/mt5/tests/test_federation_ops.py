@@ -353,3 +353,9 @@ def test_a_drained_row_names_its_system_by_registry_id(tmp_path, monkeypatch) ->
     row = doc["discoveries"][0]
     assert row["origin_source_id"] == "github:ErTasselli/OpenTerminal"
     assert row["provenance"]["source_id"] == row["origin_source_id"]
+
+
+def test_an_account_upstream_watches_the_authors_activity_feed() -> None:
+    assert fo.surfaces_for("github:romanmichaelpaolucci") == {
+        "commits": "https://github.com/romanmichaelpaolucci.atom"}
+    assert fed.SEED_BY_ID["paolucci_github_account"].upstream == "github:romanmichaelpaolucci"

@@ -185,7 +185,7 @@ def surfaces_for(upstream: str) -> dict[str, str]:
     # (the registry id form), which has no scheme and no dot, so every one of them was refused
     # here as "not a URL a delta scan can hash" and no seed repository was ever delta-watched.
     forge, _, rest = url.partition(":")
-    if rest and "://" not in url and forge in _FORGE_HOSTS and rest.count("/") >= 1:
+    if rest and "://" not in url and forge in _FORGE_HOSTS and rest.strip("/"):
         url = f"https://{_FORGE_HOSTS[forge]}/{rest.strip('/')}"
     if not url or url == UNMEASURED or ("://" not in url and "." not in url):
         return {}
@@ -199,6 +199,12 @@ def surfaces_for(upstream: str) -> dict[str, str]:
                 "commits": f"https://github.com/{owner}/{repo}/commits.atom",
                 "releases": f"https://github.com/{owner}/{repo}/releases.atom",
                 "docs": f"https://raw.githubusercontent.com/{owner}/{repo}/HEAD/README.md"}
+    # AN ACCOUNT, NOT A REPOSITORY (2026-10-06): the owner's public activity feed carries every
+    # push, new repository and release across all of their repos, so one hash watches the person's
+    # whole public GitHub output -- used only where an author-monitoring exception is recorded
+    # (`source_civilizations.MONITORED_AUTHOR_EXCEPTIONS`).
+    if host in ("github.com", "www.github.com") and len(parts) == 1 and parts[0]:
+        return {"commits": f"https://github.com/{parts[0]}.atom"}
     if host in ("arxiv.org", "export.arxiv.org"):
         return {"papers": full}
     if host.endswith(("gitlab.com", "gitee.com", "codeberg.org", "bitbucket.org")):

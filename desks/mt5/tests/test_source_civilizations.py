@@ -499,6 +499,8 @@ def test_dry_run_writes_nothing(tmp_path, monkeypatch, registry):
     assert not report.exists() and not clocks.exists() and not attribution.exists()
     assert not R.path().exists(), "a dry run opened the registry"
     assert out["no_author_monitored"] is True
+    # the one scoped exception (principal 2026-10-06), never a general repeal
+    assert out["author_monitoring_exceptions"] == ["romanmichaelpaolucci"]
     assert out["access_policy"]["hard_boundary"]
     assert out["sensor_gaps"] == list(sc.SENSOR_LEGS)
 

@@ -793,6 +793,15 @@ SEEDS: tuple[ExternalSystem, ...] = (
                    "REBUILT", _s("financial_nlp", "information_acquisition"),
                    _s("representation", "data"), discovery_source="principal_upload_2026-10-05",
                    lineage_parent="quant_guild_library"),
+    # The whole public account, so a NEW repository, push or release by the author reopens the
+    # civilization's fingerprint (audit repair 14; the scoped author-monitoring exception is
+    # recorded in desks/mt5/research/source_civilizations.MONITORED_AUTHOR_EXCEPTIONS).
+    ExternalSystem("paolucci_github_account", "Roman Paolucci public GitHub (all repositories)",
+                   "github:romanmichaelpaolucci",
+                   "account-level activity feed: new repositories, pushes and releases",
+                   "REBUILT", _s("information_acquisition",), _s("data",),
+                   discovery_source="principal_upload_2026-10-06",
+                   lineage_parent="quant_guild_library"),
     ExternalSystem("openterminal", "OpenTerminal (ErTasselli)", "github:ErTasselli/OpenTerminal",
                    "open Bloomberg-style terminal: a provider and function catalogue mined for "
                    "free sources and terminal analytics", "REBUILT",

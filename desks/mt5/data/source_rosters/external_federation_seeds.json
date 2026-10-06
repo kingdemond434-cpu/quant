@@ -2489,6 +2489,23 @@
    "system_id": "paolucci_discourses"
   },
   {
+   "id": "ext:paolucci_github_account",
+   "name": "Roman Paolucci public GitHub (all repositories)",
+   "url": "",
+   "fetcher": "owned",
+   "owner": "external_federation",
+   "kind": "code",
+   "consumer": "desks/mt5/research/external_federation.py",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "global",
+   "licence": "UNVERIFIED",
+   "cadence": "hourly",
+   "system_id": "paolucci_github_account"
+  },
+  {
    "id": "github:ErTasselli/OpenTerminal",
    "name": "OpenTerminal (ErTasselli)",
    "url": "https://github.com/ErTasselli/OpenTerminal",
