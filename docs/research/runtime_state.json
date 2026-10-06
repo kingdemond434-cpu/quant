@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 766,
+  "NEVER": 767,
   "UNMEASURED": 37
  },
  "scope": {
-  "attested": 984,
+  "attested": 985,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -276,17 +276,27 @@
     ]
    },
    {
-    "at": "2026-10-06T15:56:44+00:00",
+    "at": "2026-10-06T15:32:32+00:00",
     "host": "vm",
-    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:scripts/lessons.py",
+     "leg:recovery_drills",
+     "task:E8-Book"
+    ]
+   },
+   {
+    "at": "2026-10-06T21:10:58+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
     "on_attesting_host": false,
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "battery:scripts/check_keys.py",
-     "executable:scripts/lessons.py",
      "leg:credential_coverage",
-     "leg:keyed_sources",
-     "task:E8-Book"
+     "leg:keyed_sources"
     ]
    }
   ]
@@ -25246,34 +25256,6 @@
    "measured_at": "2026-10-01T12:25:50+00:00"
   },
   {
-   "organ": "battery:scripts/check_keys.py",
-   "kind": "executable",
-   "code": [
-    "scripts/check_keys.py"
-   ],
-   "clock": "hourly_cycle:fence_battery",
-   "cadence_s": 43200,
-   "max_silence_s": 86400,
-   "state": "NEVER",
-   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
-   "last_run_at": "UNMEASURED",
-   "last_run_outcome": "UNMEASURED",
-   "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/BATTERY_FENCES.json",
-   "artifact_declared": "desks/mt5/reports/BATTERY_FENCES.json",
-   "artifact_resolved_by": "absent",
-   "artifact_declared_n": 1,
-   "artifact_age_s": null,
-   "artifact_bytes": 0,
-   "artifact_sha256": "UNMEASURED",
-   "summary": {},
-   "progress_metric": "battery_rotation_runs",
-   "consumer": "desks/mt5/research/wiring_ceo.py",
-   "measured_on": "vm",
-   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-06T15:56:44+00:00"
-  },
-  {
    "organ": "executable:scripts/lessons.py",
    "kind": "executable",
    "code": [
@@ -25298,16 +25280,16 @@
    "progress_metric": "UNMEASURED",
    "consumer": "UNMEASURED",
    "measured_on": "vm",
-   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-06T15:56:44+00:00"
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T15:32:32+00:00"
   },
   {
-   "organ": "leg:credential_coverage",
+   "organ": "leg:recovery_drills",
    "kind": "leg",
    "code": [
-    "desks/mt5/research/credential_coverage.py"
+    "desks/mt5/research/recovery_drills.py"
    ],
-   "clock": "hourly_cycle:credential_coverage",
+   "clock": "hourly_cycle:recovery_drills",
    "cadence_s": 3600,
    "max_silence_s": 7200,
    "state": "NEVER",
@@ -25315,8 +25297,8 @@
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/CREDENTIAL_COVERAGE.json",
-   "artifact_declared": "desks/mt5/reports/CREDENTIAL_COVERAGE.json",
+   "artifact": "desks/mt5/reports/RECOVERY_DRILLS.json",
+   "artifact_declared": "desks/mt5/reports/RECOVERY_DRILLS.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -25326,36 +25308,8 @@
    "progress_metric": "leg_completions",
    "consumer": "UNMEASURED",
    "measured_on": "vm",
-   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-06T15:56:44+00:00"
-  },
-  {
-   "organ": "leg:keyed_sources",
-   "kind": "leg",
-   "code": [
-    "desks/mt5/research/keyed_sources.py"
-   ],
-   "clock": "hourly_cycle:keyed_sources",
-   "cadence_s": 3600,
-   "max_silence_s": 7200,
-   "state": "NEVER",
-   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
-   "last_run_at": "UNMEASURED",
-   "last_run_outcome": "UNMEASURED",
-   "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/KEYED_SOURCES.json",
-   "artifact_declared": "desks/mt5/reports/KEYED_SOURCES.json",
-   "artifact_resolved_by": "absent",
-   "artifact_declared_n": 1,
-   "artifact_age_s": null,
-   "artifact_bytes": 0,
-   "artifact_sha256": "UNMEASURED",
-   "summary": {},
-   "progress_metric": "leg_completions",
-   "consumer": "UNMEASURED",
-   "measured_on": "vm",
-   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-06T15:56:44+00:00"
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T15:32:32+00:00"
   },
   {
    "organ": "task:E8-Book",
@@ -25382,8 +25336,92 @@
    "progress_metric": "task_runs",
    "consumer": "UNMEASURED",
    "measured_on": "vm",
-   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-06T15:56:44+00:00"
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T15:32:32+00:00"
+  },
+  {
+   "organ": "battery:scripts/check_keys.py",
+   "kind": "executable",
+   "code": [
+    "scripts/check_keys.py"
+   ],
+   "clock": "hourly_cycle:fence_battery",
+   "cadence_s": 43200,
+   "max_silence_s": 86400,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/BATTERY_FENCES.json",
+   "artifact_declared": "desks/mt5/reports/BATTERY_FENCES.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "battery_rotation_runs",
+   "consumer": "desks/mt5/research/wiring_ceo.py",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T21:10:58+00:00"
+  },
+  {
+   "organ": "leg:credential_coverage",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/credential_coverage.py"
+   ],
+   "clock": "hourly_cycle:credential_coverage",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CREDENTIAL_COVERAGE.json",
+   "artifact_declared": "desks/mt5/reports/CREDENTIAL_COVERAGE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T21:10:58+00:00"
+  },
+  {
+   "organ": "leg:keyed_sources",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "clock": "hourly_cycle:keyed_sources",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/KEYED_SOURCES.json",
+   "artifact_declared": "desks/mt5/reports/KEYED_SOURCES.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T21:10:58+00:00"
   }
  ],
  "ratchet": {
