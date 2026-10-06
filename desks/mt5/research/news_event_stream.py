@@ -473,6 +473,9 @@ _FIPS = {"US": "US", "GM": "DE", "FR": "FR", "UK": "GB", "JA": "JP", "CH": "CN",
 #: The independent-source count GDELT reports is capped before it reaches the ladder: GDELT counts
 #: outlets, and outlets that syndicate one wire are not independent.
 GDELT_MAX_CORROBORATIONS = 5
+#: The vault short names -> the alt_proxies registry ids the mining registry credits.
+GDELT_REGISTRY_ID = {"gdelt_events": "gdelt_events_country",
+                     "gdelt_translingual": "gdelt_translingual_country"}
 
 
 def _gdelt_kind(code: str, base: str, root: str) -> str:
@@ -1050,6 +1053,12 @@ def record_deep(event: Mapping[str, Any], deep: Mapping[str, Any],
         notes.append("libs.moat.registry not importable: the deep lane recorded nothing")
         return {"memory": None, "discoveries": 0, "status": "registry unavailable"}
     eid = str(event.get("event_id") or "")
+    # PROVENANCE FOR THE MINING REGISTRY (2026-10-06): the registry credits a donated row to the
+    # source id its producer stamps, and only when that registry row registers this organ. GDELT
+    # grounds are named by their alt_proxies registry ids, never the vault's short name.
+    src = str(event.get("source_id") or SOURCE)
+    prov_id = GDELT_REGISTRY_ID.get(src, src)
+    provenance = {"organ": SOURCE, "use": "deep_lane", "source_id": prov_id}
     try:
         memory_id = reg.remember(
             "news", f"{event.get('kind')} on {', '.join(deep.get('entities') or []) or 'unnamed'}: "
@@ -1066,7 +1075,8 @@ def record_deep(event: Mapping[str, Any], deep: Mapping[str, Any],
                 confidence=float(event.get("confidence") or 0.0),
                 novelty=float(event.get("novelty") or 0.0),
                 falsifier="the event atlas measures no reaction of this kind on this class",
-                payload={"event_id": eid, "state_vars": mech.get("state_vars")})
+                payload={"event_id": eid, "state_vars": mech.get("state_vars"),
+                         "provenance": provenance, "origin_source_id": prov_id})
             recorded += int(bool(created))
         return {"memory": memory_id, "discoveries": recorded, "status": "recorded"}
     except Exception as exc:                             # pragma: no cover - registry write path
