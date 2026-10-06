@@ -754,38 +754,12 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
 #: `session` are identity keys the gauntlet, the forward clock and the live executor already
 #: read (`family_call.session_filter`, `external_gauntlet.timeframe_of`). A source that named
 #: its own chart or session is respected as written.
-#:
-#: EVERY CHART, NOT THREE (principal 2026-10-06: "all timeframes, m1 m15 m30 h1 h4 d1 ... so we
-#: can get intraday mechanisms"). The axis was M5/M15/M30 only, so a symbol holding M1, H4 or D1
-#: bars was still never compiled onto them; `breadth_sweep.CHARTS` already walked all seven. A
-#: chart is minted only where its bars are on disk and the family can speak on it
-#: (`families_orthogonal.timeframe_refusal`, the same bar-compatibility rule the sweep and the
-#: judge's buildability check apply), so every new cell is judgeable as minted.
-INTRADAY_CHARTS = ("M1", "M5", "M15", "M30")
-SWING_CHARTS = ("H4", "D1")
-CHARTS = (*INTRADAY_CHARTS, *SWING_CHARTS)
+INTRADAY_CHARTS = ("M5", "M15", "M30")
 SESSION_AXIS = ("all", "asia", "london", "ny", "tokyo_fix", "london_fix", "overlap")
 
 
 def _charts_with_bars(symbol: str) -> list[str]:
-    return [tf for tf in CHARTS if (UNIVERSE / f"{symbol}_{tf}.parquet").exists()]
-
-
-def _sessions_for(tf: str) -> tuple[str, ...]:
-    """A daily bar carries no intraday session (`breadth_sweep._sessions_for`, same rule)."""
-    return ("all",) if tf == "D1" else SESSION_AXIS
-
-
-def _chart_refused(family: str, tf: str) -> bool:
-    """The family declares it cannot run on `tf`. H1 is never refused here: the H1 cell is the
-    identity every compiled candidate already had, and it stays exactly as it was."""
-    if tf == "H1":
-        return False
-    try:
-        from mt5desk.families_orthogonal import timeframe_refusal
-        return timeframe_refusal(family, tf) is not None
-    except Exception:
-        return False
+    return [tf for tf in INTRADAY_CHARTS if (UNIVERSE / f"{symbol}_{tf}.parquet").exists()]
 
 
 def _invariance(symbol: str, family: str) -> dict | None:
@@ -807,23 +781,22 @@ def _invariance(symbol: str, family: str) -> dict | None:
         return None
 
 
-def _session_slots(family: str, base: dict, symbol: str,
-                   axis: tuple[str, ...] = SESSION_AXIS) -> list[tuple[str, dict, dict | None]]:
-    """(session, params, remap note) for every slot of `axis` -- the oracle's door
+def _session_slots(family: str, base: dict, symbol: str) -> list[tuple[str, dict, dict | None]]:
+    """(session, params, remap note) for every slot of `SESSION_AXIS` -- the oracle's door
     (`libs/research/family_firing.session_cells`), or the plain axis when it is unreachable."""
     try:
         if str(ROOT) not in sys.path:
             sys.path.insert(0, str(ROOT))
         from libs.research import family_firing
-        return family_firing.session_cells(family, base, axis, symbol=symbol)
+        return family_firing.session_cells(family, base, SESSION_AXIS, symbol=symbol)
     except Exception:
         return [(s, {**base, **({"session": s} if s != "all" else {})}, None)
-                for s in axis]
+                for s in SESSION_AXIS]
 
 
 def expand_axes(cands: list[dict]) -> list[dict]:
-    """Every candidate on every chart with bars it can run on (M1..D1), in every session (D1:
-    `all` only); H1 kept, ranked last (`priority` 1 against 0). A candidate whose params already name a chart or a session
+    """Every candidate on every intraday chart with bars, in every session; H1 kept, ranked
+    last (`priority` 1 against 0). A candidate whose params already name a chart or a session
     is returned as it is.
 
     A mechanism the causal organ found NON_INVARIANT carries its verdict and sorts one step
@@ -842,7 +815,7 @@ def expand_axes(cands: list[dict]) -> list[dict]:
         # trades on M1/M5/M15/H1 with the same pricer and publishes which resolution actually
         # paid; the charts that paid are expanded first. Every chart is still expanded -- this
         # is queue order, never a refusal (L1.60), and an absent artifact leaves the old order.
-        _charts = [t for t in _charts_with_bars(sym) if not _chart_refused(fam, t)]
+        _charts = _charts_with_bars(sym)
         try:
             from research.counterfactual_timeframes import chart_order
             _charts = [c for c in chart_order(sym, _charts) if c in _charts]
@@ -857,7 +830,7 @@ def expand_axes(cands: list[dict]) -> list[dict]:
             # none is minted as the cell that CAN fire there (hour params re-anchored to the
             # session's open) or at the hours it does fire (re-homed). One cell per slot, so the
             # count never falls; UNMEASURED leaves the slot exactly as it was.
-            for sess, p, remap in _session_slots(fam, chart_base, sym, _sessions_for(tf)):
+            for sess, p, remap in _session_slots(fam, chart_base, sym):
                 v = dict(c)
                 v["params"] = p
                 gid = _genome_id(sym, fam, p)
