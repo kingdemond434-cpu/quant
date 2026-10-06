@@ -45,6 +45,13 @@ def test_held_slot_is_near_duplicate_and_new_ground_is_not(tmp_path: Path) -> No
     assert "E_new_expression" in expr["exceptions"] and not expr["near_duplicate"]
     clock = m.assess([spec("carry", "AUDJPY", tf="M15")], set())
     assert "C_new_temporal" in clock["exceptions"] and not clock["near_duplicate"]
+    reg = m.assess([spec("carry", "AUDJPY", regime="high_vol")], set())
+    assert reg["exceptions"] == ["D_new_regime"] and not reg["near_duplicate"]
+    info = m.assess([{**spec("carry", "AUDJPY"),
+                      "required_data": ["bars:AUDJPY:H1", "cot:JPY"]}], set())
+    assert info["exceptions"] == ["B_new_information"]
+    bars = m.assess([{**spec("carry", "AUDJPY"), "required_data": ["bars:AUDJPY:H1"]}], set())
+    assert bars["near_duplicate"]
     # crowded family: lower breadth score than an equally scored uncrowded one
     assert expr["breadth_score"] > 0 and m.keff_status == "MEASURED"
 

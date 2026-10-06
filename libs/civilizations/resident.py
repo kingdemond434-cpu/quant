@@ -547,7 +547,8 @@ class Resident:
                 res = compiler.compile_rule(
                     dict(c.get("rule") or {}), universe=getattr(hooks, "universe", None),
                     family_params=getattr(hooks, "family_params", None))
-                specs = [s.spec() for s in res.specs]
+                specs = [{**s.spec(), "required_data": list(s.required_data)}
+                         for s in res.specs]
             except Exception:
                 specs = []
             return bmap.assess(specs, released)

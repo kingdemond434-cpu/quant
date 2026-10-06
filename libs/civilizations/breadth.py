@@ -191,9 +191,15 @@ class BreadthMap:
             p = s.get("params") or {}
             if self.n_cert and fam not in self.fam_cert:
                 exc.add("A_new_payer")
-            if (str(s.get("timeframe") or H1).upper() != H1 or p.get("session")
-                    or p.get("regime") or p.get("condition")):
+            if str(s.get("timeframe") or H1).upper() != H1 or p.get("session"):
                 exc.add("C_new_temporal")
+            if p.get("regime") or p.get("condition"):
+                exc.add("D_new_regime")
+            # an input beyond the instrument's own bars (and a regime label) is information the
+            # certified book was not built on
+            if any(not str(d).startswith(("bars:", "regime:"))
+                   for d in s.get("required_data") or ()):
+                exc.add("B_new_information")
             cls = self.asset_class_of.get(sym, "")
             if self.n_cert and cls and fam in self.fam_cert and cls not in self.fam_classes[fam]:
                 exc.add("E_new_expression")
@@ -369,6 +375,11 @@ class BreadthLedger:
                 "last_24h": {sid: row(sid, c) for sid, c in sorted(per_day.items())},
                 "by_civilization": {k: row(k, c) for k, c in sorted(civ.items())},
                 "lanes": lanes, "exceptions_claimed": dict(exc),
+                "exceptions_post_evidence": {
+                    "F_measured_orthogonality": "UNMEASURED at the producer: needs returns, "
+                                                "measured by the judge and allocator",
+                    "G_quality_replacement": "UNMEASURED at the producer: needs a verdict on "
+                                             "both the incumbent and the candidate"},
                 "saturated_families": saturated,
                 "certificates_in_canon": bmap.n_cert if bmap is not None else "UNMEASURED",
                 "keff_status": bmap.keff_status if bmap is not None else "UNMEASURED",
