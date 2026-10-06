@@ -38,10 +38,13 @@ Deploy), so it runs here, behind the principal's Allow. This file is the spec. N
 - Check: the gateway logs "kelly book sets N sleeve(s)", and the first fills land at the solved fractions.
 
 ## Git-snapshot answer (certs 09-16, worlds 09-28), provisional
-Fusion: EURZAR, AUDCHF and USDZAR overnight gap decay at about 10% each, gold_asia 6-8% (0.01 lot),
-USDJPY SRB rr2.5 1-2%. Total heat 38-39%. P(<=20% equity in 60d) is 3.5% as estimated and 4.1% with
-edges halved. Today's three gold windows at 0.02 lot read 13%.
-E8: about 1.0% total daily risk (AUDCHF 0.45%, gold_asia 0.28%, USDJPY 0.10%, small yen crosses).
-P(pass) 95%, median 105 days, P(fail) 2.9%.
+Re-solved 10-06 21:30Z after the terms fence dropped USDJPY SRB (Reddit-only lineage, PR #162;
+`--book` now excludes such cells itself). Do NOT admit or promote USDJPY session_range_breakout
+from this book.
+Fusion: EURZAR, AUDCHF and USDZAR overnight gap decay at about 10% each, gold_asia 8.2% (0.01 lot).
+Total heat 38.4%. P(<=20% equity in 60d) is 3.3% as estimated and 4.25% with edges halved.
+Today's three gold windows at 0.02 lot read 13%.
+E8: gold_asia and AUDCHF at 0.375% each (0.75% total daily risk). P(pass) 95%, median 108 days,
+P(fail) 2.0%.
 Not admitted: CHFNOK carry (live -3.67R/17), nine gap-decay crosses the worlds price at or below 0,
 XAUUSD SRB (correlation 0.94 with gold_asia).
