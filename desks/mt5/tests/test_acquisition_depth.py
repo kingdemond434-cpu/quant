@@ -130,7 +130,8 @@ def test_keyed_urls_get_an_explicit_access_state(tmp_path, monkeypatch):
     assert states["api.eia.gov"] == "ROUTED:asia_collector:eia_energy"
     assert states["ecos.bok.or.kr"] == "BLOCKED_ON_KEY:BOK_API_KEY"
     assert states["unknown.test"] == "NEEDS_KEY_UNDECLARED"
-    assert all("?" not in r["url"] for r in rows)       # a credential never lands in the registry
+    assert not any(secret in r["url"] for r in rows for secret in ("SECRET", "=X", "abc"))
+    assert rows[0]["url"] == "https://api.eia.gov/v2/series?api_key=REDACTED"
 
 
 def test_hourly_discovery_calling_convention_exists():
@@ -193,3 +194,16 @@ def test_d18_census_counts_unfed_on_reads(tmp_path):
     status = {r["dataset"]: r["status"] for r in doc["unfed"]}
     assert status == {"acquired:s1": "UNFED", "axis:macro": "UNFED", "lake:pack_x": "STALE"}
     assert doc["fed_by_use"]["regime_state"] == 1 and doc["target"] == 0
+
+
+def test_discovered_endpoints_hold_a_reserved_share_of_the_pass(tmp_path, monkeypatch):
+    monkeypatch.setattr(A, "REGISTRY", tmp_path / "missing.json")
+    monkeypatch.setattr(A, "WORLD", tmp_path / "world")
+    monkeypatch.setattr(A, "_SEED_ENDPOINTS", ())
+    (tmp_path / "world").mkdir()
+    rows = [{"host": "catalog.test", "endpoints": [f"https://catalog.test/d{i}.csv"
+                                                   for i in range(30)]}]
+    (tmp_path / "world" / "discoveries_catalog_20261006.json").write_text(json.dumps(rows))
+    out = A._endpoints(40, now=datetime(2026, 10, 6, tzinfo=UTC))
+    assert len(out) == 40
+    assert sum(1 for _u, h in out if h == "catalog.test") == 10      # a quarter, packs the rest

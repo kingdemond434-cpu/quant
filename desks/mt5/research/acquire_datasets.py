@@ -426,20 +426,20 @@ def _endpoints(limit: int, *, now: datetime | None = None,
                 continue
             seen.add(url)
             buckets[region].append((url, urllib.parse.urlparse(url).netloc or code))
-    active = deque(sorted(region for region, rows in buckets.items() if rows))
-    while active and len(out) < limit:
-        region = active.popleft()
-        out.append(buckets[region].popleft())
-        if buckets[region]:
-            active.append(region)
-    if len(out) >= limit:
-        return out
+    # DISCOVERED ENDPOINTS HOLD A RESERVED SHARE. The crawler, the deep forest and the catalog
+    # routes (CKAN/DCAT/SDMX/STAC/Common Crawl) resolve real data URLs into
+    # `discoveries_*.json`; read only after ~170 country packs, they almost never reached a seat
+    # in a 40-endpoint pass. A quarter of the pass is theirs whenever they have work; packs keep
+    # the rest, and either side's unused share flows to the other.
+    found: list[tuple[str, str]] = []
     for f in sorted(glob.glob(str(WORLD / "discoveries_*.json")), reverse=True):
         try:
             rows = json.loads(Path(f).read_text("utf-8"))
         except (OSError, ValueError):
             continue
-        for r in rows:
+        for r in rows if isinstance(rows, list) else []:
+            if not isinstance(r, dict):
+                continue
             for u in (r.get("endpoints") or []):
                 if _KEYED.search(str(u)):
                     if keyed is not None:
@@ -448,13 +448,36 @@ def _endpoints(limit: int, *, now: datetime | None = None,
                 if u in seen or u in fresh:
                     continue
                 seen.add(u)
-                out.append((u, str(r.get("host") or "")))
-                if len(out) >= limit:
-                    return out
+                found.append((u, str(r.get("host") or "")))
+    room = limit - len(out)
+    reserve = min(len(found), max(room // 4, 1 if room > 0 else 0))
+    active = deque(sorted(region for region, rows in buckets.items() if rows))
+    while active and len(out) < limit - reserve:
+        region = active.popleft()
+        out.append(buckets[region].popleft())
+        if buckets[region]:
+            active.append(region)
+    for item in found:
+        if len(out) >= limit:
+            break
+        out.append(item)
+    while active and len(out) < limit:
+        region = active.popleft()
+        out.append(buckets[region].popleft())
+        if buckets[region]:
+            active.append(region)
     return out
 
-
 ASIA_SOURCES = DESK / "data" / "asia_sources.json"
+
+
+_CREDENTIAL_PARAM = re.compile(
+    r"(?i)((?:api[_-]?key|apikey|token|access_key|client_id|client_secret|subscription[_-]?key"
+    r"|key|secret|password|sig|signature)=)[^&#]*")
+
+
+def _redact(url: str) -> str:
+    return _CREDENTIAL_PARAM.sub(r"\1REDACTED", url)
 
 
 def _access_states(keyed: list[tuple[str, str]],
@@ -493,8 +516,9 @@ def _access_states(keyed: list[tuple[str, str]],
             key_env = str(row["key_env"])
             adapter = f"asia_collector:{row.get('id')}"
             state = f"ROUTED:{adapter}" if env.get(key_env) else f"BLOCKED_ON_KEY:{key_env}"
-        # The URL is stored with its query stripped: a discovered URL can carry a token.
-        safe = url.split("?", 1)[0]
+        # A discovered URL can carry a live credential: every credential-shaped parameter VALUE
+        # is replaced before the URL is stored, so the discovery is named and the secret is not.
+        safe = _redact(url)
         out.append({"url": safe, "host": host, "origin": origin, "state": state,
                     "adapter": adapter})
     return out
@@ -568,7 +592,11 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
     def _refuse(why: str) -> None:
         refusals[why] = refusals.get(why, 0) + 1
 
-    for url, host in _endpoints(limit, keyed=keyed):
+    try:
+        frontier = _endpoints(limit, keyed=keyed)
+    except TypeError:                     # a caller-supplied frontier without the keyed collector
+        frontier = _endpoints(limit)
+    for url, host in frontier:
         tried += 1
         attempt_at = datetime.now(UTC).isoformat(timespec="seconds")
         prev = dict(reg["by_url"].get(url) or {})
