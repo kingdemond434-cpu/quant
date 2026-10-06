@@ -83,7 +83,10 @@ def test_no_pair_no_signals():
                                      ("hawkes_flow", {"mode": "sell_cascade_skew",
                                                       "window": 2000, "min_events": 60}),
                                      ("hawkes_flow", {"mode": "arrival_breakout",
-                                                      "window": 2000, "min_events": 60})])
+                                                      "window": 2000, "min_events": 60}),
+                                     ("path_state", {"rep": "hurst"}),
+                                     ("path_state", {"rep": "bridge"}),
+                                     ("path_state", {"rep": "rough_vol", "window": 60})])
 def test_fires_with_a_sane_bracket_and_is_causal(pair, name, kw):
     fn = rm.ROMAN_FAMILIES[name]
     if name != "kalman_beta_residual":

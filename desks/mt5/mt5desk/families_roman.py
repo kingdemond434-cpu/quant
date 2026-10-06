@@ -44,6 +44,7 @@ import math
 import numpy as np
 import pandas as pd
 
+from libs.research import path_representations as pr
 from libs.research import point_process as pp
 from libs.research import state_space as ss
 from mt5desk import families_cross_sectional as xs
@@ -338,18 +339,86 @@ def family_hawkes_flow(df: pd.DataFrame, *, mode: str = "accel_depletion", hi: f
     return out
 
 
+# ------------------------------------------------------------------- path shape --------------
+def family_path_state(df: pd.DataFrame, *, rep: str = "hurst", window: int = 240,
+                      hi: float = 0.55, lo: float = 0.45, momentum_n: int = 24,
+                      bridge_n: int = 48, bridge_max: float = 0.35, jump_k: float = 2.5,
+                      atr_n: int = 20, stop_atr: float = 2.0, rr: float = 1.5,
+                      ttl_bars: int = 24) -> list[Signal]:
+    """Trade the path's shape (rows 1000 and 0743): `hurst` follows the last `momentum_n` bars
+    when the trailing path is persistent (H > hi) and fades them when anti-persistent (H < lo);
+    `bridge` follows a path that hugs its own straight line (bridge excursion < bridge_max);
+    `rough_vol` follows a jump when log vol is smoother than usual (H_vol above its trailing
+    median: vol persists) and fades it when rougher (vol reverts)."""
+    if rep not in ("hurst", "bridge", "rough_vol"):
+        return []
+    h = _h1(df)
+    if len(h) < window + 120:
+        return []
+    c = h["close"].to_numpy(dtype=float)
+    if not np.all(c > 0):
+        return []
+    x = np.log(c)
+    r = np.diff(x, prepend=np.nan)
+    n = len(c)
+    side = np.zeros(n, dtype=int)
+    mom = np.sign(x - np.r_[np.full(momentum_n, np.nan), x[:-momentum_n]])
+    if rep == "hurst":
+        H = pr.rolling_hurst(x, window, step=6)
+        prev = np.r_[np.nan, H[:-1]]
+        side[(H > hi) & ~(prev > hi)] = 1
+        side[(H < lo) & ~(prev < lo)] = -1
+        side = side * np.nan_to_num(mom).astype(int)
+    elif rep == "bridge":
+        b = np.full(n, np.nan)
+        for t in range(bridge_n, n):
+            b[t] = pr.bridge_excursion(x[t - bridge_n:t + 1])
+        prev = np.r_[np.nan, b[:-1]]
+        hug = (b < bridge_max) & ~(prev < bridge_max)
+        trend = np.sign(x - np.r_[np.full(bridge_n, np.nan), x[:-bridge_n]])
+        side[hug] = np.nan_to_num(trend[hug]).astype(int)
+    else:
+        ab = np.abs(r)
+        bip = pd.Series(ab * np.roll(ab, 1)).rolling(120).mean().shift(1).to_numpy()
+        sigma = np.sqrt(np.pi / 2.0 * bip)
+        jump = (ab > jump_k * sigma) & np.isfinite(sigma) & (sigma > 0)
+        hv = np.full(n, np.nan)
+        for t in range(window * 6, n, 24):
+            hv[t] = pr.rough_vol_hurst(r[t - window * 6 + 1:t + 1])
+        hv = pd.Series(hv).ffill(limit=23).to_numpy()
+        med = pd.Series(hv).shift(1).rolling(24 * 60, min_periods=24 * 10).median().to_numpy()
+        follow = hv > med
+        fade = hv < med
+        sgn = np.sign(np.nan_to_num(r)).astype(int)
+        side[jump & follow] = sgn[jump & follow]
+        side[jump & fade] = -sgn[jump & fade]
+    atr = _atr(h, atr_n).to_numpy()
+    out: list[Signal] = []
+    busy = -1
+    for i in np.flatnonzero(side):
+        if i <= busy or i >= n - 1 or not math.isfinite(float(atr[i])):
+            continue
+        sig = _sig(h, int(i), int(side[i]), stop_atr * float(atr[i]), rr, ttl_bars,
+                   f"path_state:{rep}")
+        if sig:
+            out.append(sig)
+            busy = int(i) + ttl_bars
+    return out
+
+
 ROMAN_FAMILIES = {
     "kalman_hedge_spread": family_kalman_hedge_spread,
     "kalman_beta_residual": family_kalman_beta_residual,
     "kalman_trend": family_kalman_trend,
     "kalman_vol_residual": family_kalman_vol_residual,
     "hawkes_flow": family_hawkes_flow,
+    "path_state": family_path_state,
 }
 
 #: The Roman row each family closes, for the thread's assignment table.
 ROWS = {"kalman_hedge_spread": ["ROMAN-0834", "ROMAN-0836", "ROMAN-0837"],
         "kalman_beta_residual": ["ROMAN-0835"], "kalman_trend": ["ROMAN-0838"],
-        "kalman_vol_residual": ["ROMAN-0843"],
+        "kalman_vol_residual": ["ROMAN-0843"], "path_state": ["ROMAN-1000", "ROMAN-0743"],
         "hawkes_flow": ["ROMAN-0819", "ROMAN-0820", "ROMAN-0821", "ROMAN-0823", "ROMAN-0828",
                         "ROMAN-0829", "ROMAN-0831"]}
 
@@ -370,6 +439,7 @@ PARAM_GRID: dict[str, dict[str, list]] = {
     "kalman_trend": {"entry_k": [0.05, 0.1]},
     "kalman_vol_residual": {"entry_z": [2.0]},
     "hawkes_flow": {"mode": ["accel_depletion", "sell_cascade_skew", "arrival_breakout"]},
+    "path_state": {"rep": ["hurst", "bridge", "rough_vol"]},
 }
 
 _RM = {"source_culture": "US/en", "participant_structure": "retail_education",
@@ -384,6 +454,9 @@ CULTURE: dict[str, dict[str, str]] = {
         "fails in a ranging market where the filtered slope crosses and recrosses its line")},
     "kalman_vol_residual": {**_RM, "failure_mode_hypothesis": (
         "fails when the first shock of a calm regime is the start of a repricing")},
+    "path_state": {**_RM, "failure_mode_hypothesis": (
+        "fails because a roughness estimate on a few hundred bars is noisy enough that the state "
+        "flips on sampling error rather than on a change in who is trading")},
     "hawkes_flow": {**_RM, "failure_mode_hypothesis": (
         "fails because bar tick_volume is a quote count, not signed trades, so the 'flow' may "
         "be quoting activity rather than aggression")},
