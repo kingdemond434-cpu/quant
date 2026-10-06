@@ -170,3 +170,15 @@ def test_artifacts_named_in_the_metrics_file_are_read(tmp_path: Path) -> None:
     d = ccd.measure(rows, spec, root=tmp_path)["duties"]["D19"]
     assert d["status"] == "MEASURED"
     assert d["metrics"]["paid_sources_substituted"]["value"] == 3
+
+
+def test_d34_backpressure_goes_to_the_judge_only() -> None:
+    """D34 runs twice a day: its action is a standing order, so it must never cut research.
+    Law: backpressure goes to the judge only; onboarding, mining and research generation are
+    never throttled."""
+    row = next(ln for ln in (ROOT / "docs" / "cro" / "CRO_CYCLE.md").read_text(
+        encoding="utf-8").splitlines() if ln.startswith("| D34 |"))
+    action = row.rstrip(" |").rsplit("|", 1)[-1].strip()
+    assert action == ("Raise judge capacity (backpressure goes to the judge only). "
+                      "Never throttle onboarding, mining or research generation.")
+    assert "throttle onboarding and" not in row.lower()
