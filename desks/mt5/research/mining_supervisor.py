@@ -978,9 +978,11 @@ class Pipeline:
 
     def attribute_source(self, row: Mapping[str, Any], idx: Mapping[str, list[tuple[str, str]]],
                          seats: Mapping[str, str]) -> tuple[str, str]:
-        """(source id, how): the declared seat, then the row's own URL, then its parent's declared
-        seat (`origin_seat`, a derived row's lineage), then -- only with BOTH signals -- a seat
-        named exactly as a registry id whose URL is on the same site."""
+        """(source id, how): the declared seat, then the row's own URL, then the registry id its
+        producer stamped (`origin_source_id`, credited only when that registry row registers the
+        row's producing organ), then its parent's declared seat (`origin_seat`, a derived row's
+        lineage), then -- only with BOTH signals -- a seat named exactly as a registry id whose
+        URL is on the same site."""
         seat = str(row.get("source") or "")
         sid = seats.get(seat, "")
         if sid:
@@ -989,6 +991,15 @@ class Pipeline:
         sid = self.attribute_url(url, idx)
         if sid:
             return sid, "url"
+        # A PRODUCER THAT NAMES ITS SOURCE BY ID (alt_proxies stamps `provenance.source_id` on a
+        # one-seat stream with no URL, 2026-10-06): the id is credited only when the registry
+        # row it names registers the organ that produced this row -- a row cannot claim a source
+        # another organ fetches.
+        named = self.by_id.get(str(row.get("origin_source_id") or ""))
+        if named is not None:
+            organ_of = getattr(self, "_organ_of", {}) or {}
+            if producer_of(seat, organ_of) in registered_organs(named, organ_of):
+                return named.id, "provenance"
         # a DERIVED row (discovery_compiler) names its parent's seat: credited only when that
         # seat is DECLARED by a registry row, exactly as the row's own seat would be
         origin = str(row.get("origin_seat") or "")

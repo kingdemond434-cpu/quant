@@ -748,6 +748,12 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
         # seat instead of leaving it unattributed.
         **{k: str(row[k]) for k in ("origin_seat", "origin_intake")
            if isinstance(row.get(k), str) and row.get(k)},
+        # THE REGISTRY ID A PRODUCER NAMED (2026-10-06): a one-seat stream (alt_proxies) stamps
+        # the source each row came from in `provenance.source_id`; carried so the registry can
+        # credit that source when its row registers the producing organ (mining_supervisor).
+        **({"origin_source_id": _sid} if (_sid := str(
+            row.get("source_id") or (row.get("provenance") or {}).get("source_id") or ""))
+           else {}),
     }
 
 

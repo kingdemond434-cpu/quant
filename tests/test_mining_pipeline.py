@@ -1205,3 +1205,30 @@ def test_a_ground_another_organ_reads_registers_it_by_fetched_by() -> None:
                           "deep_forest_sources.json").read_text("utf-8"))["grounds"]
     boj = [g for g in grounds if g.get("url") == "https://www.boj.or.jp/statistics/index.htm"]
     assert boj and boj[0]["fetched_by"] == ["central_bank_miner"]
+
+
+def test_a_producer_named_source_id_is_credited_only_to_a_row_that_registers_it(
+        tmp_path: Path) -> None:
+    """alt_proxies emits every row under one seat with no URL and names its source in
+    `provenance.source_id`; the compiler carries it as `origin_source_id`, and the registry credits
+    that id only when its row registers the producing organ (2026-10-06)."""
+    for p in (ROOT / "desks" / "mt5", ROOT / "desks" / "mt5" / "research"):
+        if str(p) not in sys.path:
+            sys.path.insert(0, str(p))
+    from research import miner_candidate_compiler as mcc
+    cand = mcc._candidate("EURUSD", "carry", {}, "alt_proxies",
+                          {"source": "alt_proxies", "provenance": {"source_id": "kr_card"}}, "m")
+    assert cand["origin_source_id"] == "kr_card"
+    assert "origin_source_id" not in mcc._candidate("EURUSD", "carry", {}, "x", {}, "m")
+    srcs = [acq.Source(id="kr_card", fetcher="owned", kind="text", uses=["direct_cells"],
+                       consumer="desks/mt5/research/alt_proxies.py"),
+            acq.Source(id="other_lane", fetcher="owned", kind="text", uses=["direct_cells"],
+                       consumer="desks/mt5/research/source_fixer.py")]
+    pipe = _pipe(tmp_path, sources=srcs)
+    pipe._organ_of = MS._scout_seats()
+    idx, seats = pipe._url_index(), pipe._seat_index()
+    row = {"source": "miner:alt_proxies", "source_url": "", "origin_source_id": "kr_card"}
+    assert pipe.attribute_source(row, idx, seats) == ("kr_card", "provenance")
+    stolen = {**row, "origin_source_id": "other_lane"}         # another organ fetches it
+    assert pipe.attribute_source(stolen, idx, seats) == ("", "")
+    assert pipe.attribute_source({**row, "origin_source_id": "nope"}, idx, seats) == ("", "")
