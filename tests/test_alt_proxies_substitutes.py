@@ -354,7 +354,9 @@ def test_every_source_has_an_explicit_terms_entry() -> None:
 def test_reviewed_terms_carry_evidence() -> None:
     assert set(A.TERMS_EVIDENCE) <= set(A.TERMS)
     for sid, ev in A.TERMS_EVIDENCE.items():
-        assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
+        # http only where the publisher serves no https (ccgp.gov.cn, checked 2026-10-06)
+        assert ev["terms_url"].startswith(("https://", "http://www.ccgp.gov.cn/")), sid
+        assert ev["terms_quote"], sid
         assert ev["robots"] and ev["checked_at"] in ("2026-09-30", "2026-10-06"), sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
     confirmed = {s.id for s in A.SOURCES if s.terms == "confirmed"}
