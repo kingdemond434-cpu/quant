@@ -1,0 +1,280 @@
+{
+ "generated_at": "2026-09-30T14:42:41+00:00",
+ "assets": {
+  "AUDCAD": {
+   "symbol": "AUDCAD",
+   "state": "low|trend|normal",
+   "asof": "2026-09-15",
+   "vol": "low",
+   "trend": "trend",
+   "liq": "normal",
+   "vol_pct": 0.239,
+   "er_pct": 0.6414,
+   "spread_mult": 0.7561
+  },
+  "AUDCHF": {
+   "symbol": "AUDCHF",
+   "state": "mid|trend|thin",
+   "asof": "2026-09-15",
+   "vol": "mid",
+   "trend": "trend",
+   "liq": "thin",
+   "vol_pct": 0.6414,
+   "er_pct": 0.6813,
+   "spread_mult": 0.8302
+  },
+  "AUDJPY": {
+   "symbol": "AUDJPY",
+   "state": "mid|trend|normal",
+   "asof": "2026-09-15",
+   "vol": "mid",
+   "trend": "trend",
+   "liq": "normal",
+   "vol_pct": 0.5259,
+   "er_pct": 0.6614,
+   "spread_mult": 0.5543
+  },
+  "AUDUSD": {
+   "symbol": "AUDUSD",
+   "state": "low|range|thin",
+   "asof": "2026-09-15",
+   "vol": "low",
+   "trend": "range",
+   "liq": "thin",
+   "vol_pct": 0.2669,
+   "er_pct": 0.2669,
+   "spread_mult": 0.4011
+  },
+  "CADJPY": {
+   "symbol": "CADJPY",
+   "state": "high|trend|normal",
+   "asof": "2026-09-15",
+   "vol": "high",
+   "trend": "trend",
+   "liq": "normal",
+   "vol_pct": 0.761,
+   "er_pct": 0.9124,
+   "spread_mult": 0.7532
+  },
+  "EURCHF": {
+   "symbol": "EURCHF",
+   "state": "high|range|thin",
+   "asof": "2026-09-15",
+   "vol": "high",
+   "trend": "range",
+   "liq": "thin",
+   "vol_pct": 0.9562,
+   "er_pct": 0.2869,
+   "spread_mult": 2.1176
+  },
+  "EURGBP": {
+   "symbol": "EURGBP",
+   "state": "low|range|thin",
+   "asof": "2026-09-15",
+   "vol": "low",
+   "trend": "range",
+   "liq": "thin",
+   "vol_pct": 0.1036,
+   "er_pct": 0.1195,
+   "spread_mult": 1.9481
+  },
+  "EURJPY": {
+   "symbol": "EURJPY",
+   "state": "high|trend|thin",
+   "asof": "2026-09-15",
+   "vol": "high",
+   "trend": "trend",
+   "liq": "thin",
+   "vol_pct": 0.9084,
+   "er_pct": 0.9482,
+   "spread_mult": 2.058
+  },
+  "EURUSD": {
+   "symbol": "EURUSD",
+   "state": "mid|range|thin",
+   "asof": "2026-09-15",
+   "vol": "mid",
+   "trend": "range",
+   "liq": "thin",
+   "vol_pct": 0.4582,
+   "er_pct": 0.1434,
+   "spread_mult": 0.4377
+  },
+  "GBPJPY": {
+   "symbol": "GBPJPY",
+   "state": "high|trend|thin",
+   "asof": "2026-09-15",
+   "vol": "high",
+   "trend": "trend",
+   "liq": "thin",
+   "vol_pct": 0.8008,
+   "er_pct": 0.9004,
+   "spread_mult": 0.1107
+  },
+  "GBPUSD": {
+   "symbol": "GBPUSD",
+   "state": "low|range|thin",
+   "asof": "2026-09-15",
+   "vol": "low",
+   "trend": "range",
+   "liq": "thin",
+   "vol_pct": 0.0398,
+   "er_pct": 0.2869,
+   "spread_mult": 0.6194
+  },
+  "NZDCAD": {
+   "symbol": "NZDCAD",
+   "state": "mid|trend|thin",
+   "asof": "2026-09-15",
+   "vol": "mid",
+   "trend": "trend",
+   "liq": "thin",
+   "vol_pct": 0.4223,
+   "er_pct": 0.7968,
+   "spread_mult": 1.6435
+  },
+  "NZDUSD": {
+   "symbol": "NZDUSD",
+   "state": "mid|trend|normal",
+   "asof": "2026-09-15",
+   "vol": "mid",
+   "trend": "trend",
+   "liq": "normal",
+   "vol_pct": 0.3904,
+   "er_pct": 0.5458,
+   "spread_mult": 1.1397
+  },
+  "USDCAD": {
+   "symbol": "USDCAD",
+   "state": "high|range|thin",
+   "asof": "2026-09-15",
+   "vol": "high",
+   "trend": "range",
+   "liq": "thin",
+   "vol_pct": 0.8606,
+   "er_pct": 0.0398,
+   "spread_mult": 0.2441
+  },
+  "USDCHF": {
+   "symbol": "USDCHF",
+   "state": "high|range|thin",
+   "asof": "2026-09-15",
+   "vol": "high",
+   "trend": "range",
+   "liq": "thin",
+   "vol_pct": 0.8367,
+   "er_pct": 0.4263,
+   "spread_mult": 1.3043
+  },
+  "USDJPY": {
+   "symbol": "USDJPY",
+   "state": "high|trend|normal",
+   "asof": "2026-09-15",
+   "vol": "high",
+   "trend": "trend",
+   "liq": "normal",
+   "vol_pct": 0.8247,
+   "er_pct": 0.6693,
+   "spread_mult": 0.5229
+  },
+  "XAGUSD": {
+   "symbol": "XAGUSD",
+   "state": "mid|range|normal",
+   "asof": "2026-09-15",
+   "vol": "mid",
+   "trend": "range",
+   "liq": "normal",
+   "vol_pct": 0.3506,
+   "er_pct": 0.0478,
+   "spread_mult": 0.4513
+  },
+  "XAUUSD": {
+   "symbol": "XAUUSD",
+   "state": "mid|range|thin",
+   "asof": "2026-09-15",
+   "vol": "mid",
+   "trend": "range",
+   "liq": "thin",
+   "vol_pct": 0.5857,
+   "er_pct": 0.1036,
+   "spread_mult": 0.2381
+  }
+ },
+ "unmeasured": [
+  "AUDNZD",
+  "CADCHF",
+  "CHFDKK",
+  "CHFNOK",
+  "EURNOK",
+  "EURZAR",
+  "GBPCHF",
+  "GBPMXN",
+  "GBPNOK",
+  "GBPSEK",
+  "GBPZAR",
+  "USDMXN",
+  "USDZAR"
+ ],
+ "share_trending": 0.5,
+ "share_high_vol": 0.3889,
+ "share_thin": 0.6667,
+ "live_sleeves_by_state": {
+  "mid|range|thin": [
+   "xau_m5_anti_breakout_overlap",
+   "gold_london_am_v2",
+   "gold_london_am_v3",
+   "gold_london_am_v4",
+   "gold_afternoon_v2",
+   "gold_afternoon_v3",
+   "gold_afternoon_v4",
+   "eurusd_discovered_asia_p_6d034b421914e1a2",
+   "eurusd_discovered_asia_p_f8bd412f38e33d20"
+  ],
+  "low|trend|normal": [
+   "audcad_discovered_asia_p_7c996ac8456c8919",
+   "audcad_discovered_asia_p_8030fb339510dceb",
+   "audcad_discovered_asia_p_a7324e7affe1f80a"
+  ],
+  "UNMEASURED": [
+   "audnzd_discovered_asia_p_c76b860ff91ee920",
+   "cadchf_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "chfnok_carry_asia_p_98d776f3e210d3e2",
+   "eurnok_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "gbpmxn_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "gbpnok_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "gbpsek_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "gbpzar_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "audnzd_dav_range_filter_adx_afternoon_audnzd_dav_range_filte",
+   "CHFNOK.carry.asia#input_symbol=CHFNOK"
+  ],
+  "low|range|thin": [
+   "audusd_discovered_asia_p_8e61ea22743f15b7",
+   "audusd_discovered_asia_p_a5bbf78b5c8595c0",
+   "audusd_discovered_asia_p_cf0368e026d6b477",
+   "audusd_discovered_asia_p_de80ad4f2ef91116",
+   "eurgbp_discovered_asia_p_8e61ea22743f15b7",
+   "eurgbp_discovered_asia_p_f31f02aa2b9d79b1"
+  ],
+  "high|range|thin": [
+   "eurchf_discovered_asia_p_16bd35526c7f3515",
+   "eurchf_discovered_asia_p_4cba1afa572a99cd",
+   "eurchf_discovered_asia_p_6c7943b997558157",
+   "eurchf_discovered_asia_p_9bc1f7c40f200e78",
+   "eurchf_discovered_asia_p_a5bbf78b5c8595c0",
+   "eurchf_discovered_asia_p_c14e361e680e6d0b",
+   "eurchf_discovered_asia_p_c7d53510458ba32c",
+   "eurchf_discovered_asia_p_e266baf78567bef3",
+   "usdcad_discovered_asia_p_193aadf2caba3698",
+   "usdcad_discovered_asia_p_56aadf0a3018c790",
+   "usdchf_discovered_asia_p_19dd11ec392fa005"
+  ],
+  "mid|trend|thin": [
+   "nzdcad_discovered_asia_p_0ffb1e19a04f260e"
+  ]
+ },
+ "axes": {
+  "vol": "20d realised vol, tercile of own trailing year",
+  "trend": "20d efficiency ratio vs own trailing-year median",
+  "liq": "spread >= 1.25x its 60d median or activity in bottom 20% of own year"
+ }
+}

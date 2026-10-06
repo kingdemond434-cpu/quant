@@ -52,6 +52,7 @@ from countries.caucasus_central_asia import (  # type: ignore[import-not-found] 
 from libs.research import country_lab as CL  # noqa: E402
 from libs.research import forests as F  # noqa: E402
 from libs.research import regional_parity as RP  # noqa: E402
+from libs.research.country_lab import registered_terms_ground  # noqa: E402
 
 # ruff: noqa: RUF001
 # RUF001 flags Armenian, Cyrillic and Uzbek-Latin characters that look like Latin ASCII.
@@ -360,7 +361,9 @@ def test_all_ten_source_layers_are_populated() -> None:
     coverage = CCA.source_layer_coverage()
     assert coverage["n_layers_covered"] == 10
     assert coverage["unexplained_missing"] == []
-    assert coverage["machine_use_forbidden"], (
+    # LAWS §5e (2026-09-23): terms-restricted ground is REGISTERED by its access label and mined;
+    # machine_use_allowed=false is a deleted brake, so the label is what proves it was not omitted.
+    assert registered_terms_ground(CCA.SOURCE_CLASSES), (
         "nothing is registered as machine-use-forbidden, which is implausible for a region "
         "whose gas border price and concentrate treatment charge both sit behind PRA terms")
     assert coverage["low_weight_kept"], "no fringe or unreliable ground is kept at all"

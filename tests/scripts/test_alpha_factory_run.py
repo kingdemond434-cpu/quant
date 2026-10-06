@@ -7,8 +7,8 @@ from __future__ import annotations
 import json
 
 import pytest
-
 import scripts.run_alpha_factory as af
+
 from libs.alpha_factory.models import AlphaCategory
 
 
@@ -126,8 +126,9 @@ class TestGovernanceHolds:
         from libs.alpha_factory.alpha_factory_controller import AlphaFactoryController
         from libs.alpha_factory.errors import AlphaFactoryGovernanceError
         from libs.store.connection import Database
-        ctl = AlphaFactoryController(Database(":memory:"))
-        for fn in (ctl.promote_alpha, ctl.retire_alpha, ctl.allocate_production_capital,
-                   ctl.change_risk_limit, ctl.change_validation_threshold):
-            with pytest.raises(AlphaFactoryGovernanceError):
-                fn()
+        with Database(":memory:") as database:
+            ctl = AlphaFactoryController(database)
+            for fn in (ctl.promote_alpha, ctl.retire_alpha, ctl.allocate_production_capital,
+                       ctl.change_risk_limit, ctl.change_validation_threshold):
+                with pytest.raises(AlphaFactoryGovernanceError):
+                    fn()

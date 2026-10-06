@@ -43,6 +43,15 @@ def _ppid(pid: int) -> int | None:
     try:
         st = Path(f"/proc/{pid}/stat").read_text("utf-8")
     except OSError:
+        if os.name == "nt":
+            try:
+                import psutil  # type: ignore[import-untyped,unused-ignore]
+            except ImportError:
+                return None
+            try:
+                return int(psutil.Process(pid).ppid())
+            except psutil.Error:
+                return None
         return None
     # comm (field 2) can contain spaces and parens, so split after the LAST ')' -- the standard
     # parse, same reason max_audit._proc_start does it this way.

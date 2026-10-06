@@ -71,6 +71,65 @@ def resolve_archive(path: Path | None = None) -> Path:
         return path
     return ARCHIVE_LONG if ARCHIVE_LONG.exists() else ARCHIVE
 
+
+#: ALFRED VINTAGES, PREFERRED WHEN THEY EXIST (2026-09-30). `data/fred_macro*.json` is the
+#: fredgraph CURRENT vintage: every print is its latest revision, so a rank "as of" 2021-03-01
+#: reads numbers revised after 2021-03-01. `research/fetch_alfred.py` writes one parquet per
+#: series here, (observation_date, realtime_date, value) -- every vintage ALFRED holds.
+ALFRED_DIR = ROOT / "desks" / "mt5" / "data" / "lake" / "alfred"
+#: The stamp a series read from the current-vintage archive carries, verbatim, so no reader can
+#: mistake it for point-in-time.
+VINTAGE_CURRENT = "current (look-ahead risk)"
+VINTAGE_ALFRED = "alfred first-release, dated by realtime_date (point-in-time)"
+
+
+def _alfred_file(sid: str, alfred_dir: Path | None = None) -> Path | None:
+    base = ALFRED_DIR if alfred_dir is None else alfred_dir
+    for ext in (".parquet", ".csv"):
+        p = base / f"{sid}{ext}"
+        if p.exists():
+            return p
+    return None
+
+
+def alfred_rows(sid: str, alfred_dir: Path | None = None) -> list[tuple[str, float]] | None:
+    """The series AS THE DESK COULD HAVE SEEN IT: each observation's FIRST print, placed on the
+    date it was published (`realtime_date`), never on the period it describes. None when no
+    vintage file exists or it cannot be read -- the caller then falls back and says so.
+
+    First release, not the latest revision known at each date: a trailing rank recomputed from
+    the full vintage-as-of table on every calendar day is quadratic in the history, and the first
+    print is the number that moved the market on its release day. Every value used on day D was
+    published on or before D, which is the whole requirement. When several observations are
+    first published the same day (a benchmark release), the newest observation wins that day.
+    """
+    p = _alfred_file(sid, alfred_dir)
+    if p is None:
+        return None
+    try:
+        import pandas as pd
+        df = pd.read_parquet(p) if p.suffix == ".parquet" else pd.read_csv(p)
+        need = {"observation_date", "realtime_date", "value"}
+        if not need.issubset(df.columns) or df.empty:
+            return None
+        df = df[list(need)].dropna()
+        df["observation_date"] = pd.to_datetime(df["observation_date"], errors="coerce")
+        df["realtime_date"] = pd.to_datetime(df["realtime_date"], errors="coerce")
+        df["value"] = pd.to_numeric(df["value"], errors="coerce")
+        df = df.dropna()
+        first = (df.sort_values(["observation_date", "realtime_date"])
+                 .groupby("observation_date", as_index=False).head(1))
+        first = first.sort_values(["realtime_date", "observation_date"])
+        by_day: dict[str, float] = {}
+        for rt, v in zip(first["realtime_date"], first["value"], strict=True):
+            fv = float(v)
+            if math.isfinite(fv):
+                by_day[rt.date().isoformat()] = fv
+    except Exception:
+        return None
+    rows = sorted(by_day.items())
+    return rows or None
+
 #: state dimension -> FRED series id. Order is the order the artifact reports them in.
 SERIES: dict[str, str] = {
     "dollar": "DTWEXBGS", "risk": "VIXCLS", "rates": "DGS10", "real_rates": "DFII10",
@@ -127,6 +186,56 @@ def _load_archive(path: Path | None = None,
     return out, newest
 
 
+def alfred_dir_for(path: Path) -> Path:
+    """The vintage directory that belongs to an archive: the desk's lake for the desk's own
+    archives, and an `alfred/` directory beside any other archive (a test's, a replay's), so a
+    synthetic archive is never overlaid with the box's real vintages."""
+    try:
+        own = path.resolve() in (ARCHIVE.resolve(), ARCHIVE_LONG.resolve())
+    except OSError:
+        own = False
+    return ALFRED_DIR if own else path.parent / "alfred"
+
+
+def load_pit(path: Path | None = None, alfred_dir: Path | None = None,
+             ) -> tuple[dict[str, list[tuple[str, float]]], str | None, dict[str, str]]:
+    """The archive with every series an ALFRED vintage exists for REPLACED by its point-in-time
+    rows, plus each series' vintage stamp. A series with no vintage keeps the current-vintage
+    rows and is stamped `VINTAGE_CURRENT`, so it is never silently treated as point-in-time."""
+    if alfred_dir is None:
+        alfred_dir = alfred_dir_for(resolve_archive(path))
+    series, newest = _load_archive(path)
+    vintages: dict[str, str] = dict.fromkeys(series, VINTAGE_CURRENT)
+    for sid in set(series) | set(SERIES.values()):
+        pit = alfred_rows(sid, alfred_dir)
+        if pit:
+            series[sid] = pit
+            vintages[sid] = VINTAGE_ALFRED
+    newest = max((rows[-1][0] for rows in series.values() if rows), default=newest)
+    return series, newest, vintages
+
+
+def overall_vintage(vintages: dict[str, str], dims: Iterable[str] | None = None) -> str:
+    """ONE stamp for the state: point-in-time only when EVERY series it uses is; any series read
+    from the current vintage makes the whole state `VINTAGE_CURRENT`."""
+    used = [vintages.get(SERIES[d]) for d in (dims or SERIES) if SERIES.get(d) in vintages]
+    if used and all(v == VINTAGE_ALFRED for v in used):
+        return VINTAGE_ALFRED
+    return VINTAGE_CURRENT
+
+
+def _alfred_key(alfred_dir: Path | None = None) -> tuple[tuple[str, float], ...]:
+    out: list[tuple[str, float]] = []
+    for sid in SERIES.values():
+        p = _alfred_file(sid, alfred_dir)
+        if p is not None:
+            try:
+                out.append((str(p), p.stat().st_mtime))
+            except OSError:
+                continue
+    return tuple(out)
+
+
 def _rank(values: np.ndarray, window: int) -> np.ndarray:
     """Trailing-window percentile rank of each value among the `window` prints ending at it.
 
@@ -152,14 +261,16 @@ def daily_states(path: Path | None = None) -> dict[str, Any]:
     is never carried BACKWARD.
     """
     path = resolve_archive(path)
-    key: tuple[str, float | None]
+    adir = alfred_dir_for(path)
+    key: tuple[Any, ...]
     try:
-        key = (str(path), path.stat().st_mtime)
+        key = (str(path), path.stat().st_mtime, str(adir), _alfred_key(adir))
     except OSError:
-        key = (str(path), None)
+        key = (str(path), None, str(adir), _alfred_key(adir))
     if _CACHE["key"] == key and _CACHE["states"] is not None:
         return dict(_CACHE["states"])
-    series, newest = _load_archive(path)
+    # POINT-IN-TIME WHERE A VINTAGE EXISTS, AND STAMPED WHERE IT DOES NOT (2026-09-30).
+    series, newest, vintages = load_pit(path, adir)
     states: dict[str, dict[str, float]] = {}
     for dim, sid in SERIES.items():
         rows = series.get(sid)
@@ -184,7 +295,10 @@ def daily_states(path: Path | None = None) -> dict[str, Any]:
             day += timedelta(days=1)
         if by_day:
             states[dim] = by_day
-    doc = {"states": states, "newest": newest}
+    by_series = {SERIES[d]: vintages.get(SERIES[d], VINTAGE_CURRENT) for d in states}
+    doc = {"states": states, "newest": newest,
+           "vintage": overall_vintage(vintages, list(states)) if states else VINTAGE_CURRENT,
+           "vintage_by_series": by_series}
     _CACHE["key"], _CACHE["states"] = key, doc
     return dict(doc)
 
@@ -208,7 +322,7 @@ def _freshness(newest: str | None, now: datetime | None = None) -> tuple[float, 
                - date.fromisoformat(newest)).days
     except ValueError:
         return 0.0, None
-    return max(0.0, 1.0 - float(age) / STALE_DAYS), float(age)
+    return min(1.0, max(0.0, 1.0 - float(age) / STALE_DAYS)), float(age)
 
 
 def now(path: Path | None = None, at: datetime | None = None) -> dict[str, Any]:
@@ -219,7 +333,8 @@ def now(path: Path | None = None, at: datetime | None = None) -> dict[str, Any]:
     if not states or not newest:
         return {"status": "UNMEASURED", "why": f"no macro state: {path.name} holds no series "
                 f"with {RANK_WINDOW}+ prints", "state": {}, "labels": {}, "confidence": 0.0,
-                "freshness": 0.0, "age_days": None, "newest_print": newest}
+                "freshness": 0.0, "age_days": None, "newest_print": newest,
+                "vintage": doc.get("vintage", VINTAGE_CURRENT), "vintage_by_series": {}}
     state = {dim: float(by_day[newest]) for dim, by_day in states.items() if newest in by_day}
     # A dimension whose series ended before the newest print of the others reads its own last
     # calendar day, never the others'.
@@ -237,7 +352,11 @@ def now(path: Path | None = None, at: datetime | None = None) -> dict[str, Any]:
             "state": {k: round(v, 4) for k, v in state.items()}, "labels": labels,
             "confidence": conf, "freshness": round(fresh, 4), "strength": round(strength, 4),
             "age_days": age, "newest_print": newest, "kernel_dims": list(KERNEL_DIMS),
-            "bandwidth": BANDWIDTH}
+            "bandwidth": BANDWIDTH,
+            # WHICH VINTAGE THIS STATE IS. "current (look-ahead risk)" whenever any series it
+            # reads came from the fredgraph current vintage rather than an ALFRED file.
+            "vintage": doc.get("vintage", VINTAGE_CURRENT),
+            "vintage_by_series": dict(doc.get("vintage_by_series") or {})}
 
 
 def _as_day(d: Any) -> str:
@@ -307,6 +426,7 @@ def kernel_weights(dates: Iterable[Any], path: Path | None = None, at: datetime 
     n_w = int(known.size)
     sw = float(known.sum()) if n_w else 0.0
     return w, {"status": "MEASURED", "dims": use, "n_weighted": n_w, "n_dates": len(days),
+               "vintage": doc.get("vintage", VINTAGE_CURRENT),
                "freshness": round(fresh, 4), "bandwidth_effective": round(bw, 4),
                "today": {d: round(float(v), 4) for d, v in today.items()},
                "sum_weights": round(sw, 3),

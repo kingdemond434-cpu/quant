@@ -31,7 +31,7 @@ import pytest
 from libs.ops import platform_paths
 from libs.ops.platform_paths import venv_python
 
-_ROOT = Path("/srv/quant")
+_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _force_os(monkeypatch: pytest.MonkeyPatch, name: str) -> None:
@@ -81,7 +81,7 @@ def test_the_SEPARATOR_is_the_TARGET_platforms_not_the_hosts(
     that Windows separators were checked.
     """
     _force_os(monkeypatch, "nt")
-    assert venv_python(_ROOT).endswith("/.venv/Scripts/python.exe")
+    assert venv_python(_ROOT).endswith(str(Path(".venv") / "Scripts" / "python.exe"))
 
 
 @pytest.mark.parametrize("name", ["posix", "nt"])

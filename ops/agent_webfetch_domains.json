@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "what": "The public data hosts an unattended agent lane may WebFetch (read-only). ONE list: desks/mt5/scripts/Run-DeskCycle.ps1 turns each entry into a WebFetch(domain:<host>) allow rule for the noon CRO lane, and libs/ops/agent_denials.py (load_webfetch_domains / webfetch_rules) serves the same list to every Python consumer. Never copy it into a second file.",
+  "rule": "A host is listed only when every source it serves is `confirmed` on the alt_proxies TERMS gate (government open data under a stated licence, CC/CC0, a documented public statistics API, or a written grant of reuse) and robots.txt does not disallow the data path. `to_confirm` and `refused` sources are never listed. Removing a host is always allowed; adding one needs its terms evidence in `terms`.",
+  "evidence": [
+    "desks/mt5/research/alt_proxies.py TERMS gate, lines 2315-2372 on branch claude/paid-substitutes-consumer (PR #148)",
+    "/mnt/project-files/reports/asia_source_terms_2026-09-30.md"
+  ],
+  "reviewed": "2026-09-30",
+  "domains": [
+    {"domain": "www.customs.go.kr", "sources": ["kr_exports_early"], "terms": "KOGL public-sector open licence"},
+    {"domain": "www.tsa.gov", "sources": ["us_tsa_throughput"], "terms": "US federal work, public domain"},
+    {"domain": "api.census.gov", "sources": ["us_census_marts_ex_autos"], "terms": "US Census documented public API, public domain"},
+    {"domain": "api.e-stat.go.jp", "sources": ["jp_tokyo_cpi", "jp_estat_immigration"], "terms": "e-Stat documented API; free reuse incl. commercial, CC BY 4.0 compatible"},
+    {"domain": "firms.modaps.eosdis.nasa.gov", "sources": ["cn_firms_industrial"], "terms": "NASA open data, documented API"},
+    {"domain": "pib.gov.in", "sources": ["in_gold_imports"], "terms": "Government of India press releases (PIB), public"},
+    {"domain": "data.gdeltproject.org", "sources": ["gdelt_events_country"], "terms": "GDELT: unrestricted use with citation"},
+    {"domain": "wikimedia.org", "sources": ["wiki_asia_attention"], "terms": "Wikimedia pageviews API, CC0"},
+    {"domain": "ecos.bok.or.kr", "sources": ["kr_bok_card_spend"], "terms": "BOK ECOS documented Open API"},
+    {"domain": "www.meti.go.jp", "sources": ["jp_meti_retail"], "terms": "Government of Japan Standard Terms of Use (CC BY compatible)"},
+    {"domain": "www.stats.gov.cn", "sources": ["cn_nbs_retail"], "terms": "NBS terms of service: download and use of NBS statistics, reuse with attribution"},
+    {"domain": "www.kobis.or.kr", "sources": ["kr_kobis_box_office"], "terms": "KOBIS documented Open API (Korean Film Council)"},
+    {"domain": "openapi.seoul.go.kr", "sources": ["kr_seoul_subway"], "terms": "Seoul Open Data Plaza, KOGL type 1"},
+    {"domain": "tablebuilder.singstat.gov.sg", "sources": ["sg_port_throughput"], "terms": "SingStat Table Builder API, Singapore Open Data Licence"},
+    {"domain": "www.immd.gov.hk", "sources": ["hk_immd_passenger"], "terms": "DATA.GOV.HK terms: commercial and non-commercial reuse, free, with attribution"},
+    {"domain": "olinda.bcb.gov.br", "sources": ["br_bcb_payments"], "terms": "BCB Open Data portal, ODbL"},
+    {"domain": "www.inegi.org.mx", "sources": ["mx_inegi_emec"], "terms": "INEGI Terminos de Libre Uso: commercial exploitation allowed with credit"},
+    {"domain": "veriportali.tuik.gov.tr", "sources": ["tr_tuik_retail"], "terms": "TUIK legal notice: reuse without permission, source cited"},
+    {"domain": "apis.data.go.kr", "sources": ["kr_mof_container_teu"], "terms": "data.go.kr: unrestricted use (no restriction on permitted scope)"}
+  ]
+}
