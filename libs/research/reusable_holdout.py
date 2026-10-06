@@ -21,8 +21,8 @@ IT FAILS CLOSED (audit, 2026-10-06). A missing, unreadable or malformed state fi
 EXHAUSTED -- deleting the file must never refill the budget -- and a pass whose charge cannot be
 saved answers nothing. A study is opened once: the append-only register beside the state
 (`register_path`) records every opening, so a state file restored to its tracked stub cannot
-hand an old study a new budget. The file is created once, explicitly (`init_state`), and is tracked. The
-noise is drawn from OS entropy: seeding it from the committed state made a repeated question
+hand an old study a new budget. The state file is created once (`init_state`) and is tracked.
+The noise is drawn from OS entropy: seeding it from the committed state made a repeated question
 get an identical answer, which is exactly the leak the noise is there to close.
 
 ROTATION, NOT A PERMANENT FREEZE. `rotate` retires the row keys an exhausted study was asked
