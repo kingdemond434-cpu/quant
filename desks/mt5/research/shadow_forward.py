@@ -1486,6 +1486,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     st["status"] = "KILL"
                     slog(f"{key}: VERDICT KILL n={st['n']} exp={st['exp_r']:.3f}R "
                          f"maxDD={st['max_dd_r']:.1f}R")
+            st["forward_evidence"] = {"status": "MEASURED",
+                                      "at": datetime.now(UTC).isoformat(timespec="seconds")}
             state[key] = st
             slog(f"{key}: shadow n={st['n']} cumR={st['cum_r']:+.2f} "
                  f"exp={st['exp_r']:+.3f}R maxDD={st['max_dd_r']:.1f}R "
@@ -1494,6 +1496,10 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             detail = f"{type(exc).__name__}: {exc}"
             st["last_error"] = detail
             st["last_error_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+            # SURFACED, NOT SWALLOWED (audit 2026-10-06): a terminal row keeps its status, so
+            # without this its evidence froze with nothing on the row saying it was not measured.
+            st["forward_evidence"] = {"status": "UNMEASURED", "why": detail,
+                                      "at": st["last_error_at"]}
             if not _is_terminal(st.get("status")):
                 st["status"] = "BLOCKED_SLEEVE_ERROR"
             state[key] = st

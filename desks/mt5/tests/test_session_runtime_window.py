@@ -61,12 +61,42 @@ def test_all_session_does_not_discard_valid_forward_history(tmp_path: Path) -> N
     assert state["n"] == 50
 
 
-def test_terminal_clock_is_not_reactivated_by_session_migration(tmp_path: Path) -> None:
-    state = {"status": "KILL", "n": 50}
-    import pytest
-    with pytest.raises(ValueError, match="terminal clock"):
-        runtime.ensure("x", {"session": "asia"}, state, ledger=tmp_path / "x.json")
-    assert state == {"status": "KILL", "n": 50}
+def test_terminal_clock_is_not_reactivated_and_not_frozen(tmp_path: Path) -> None:
+    """PROMOTED and KILL clocks are neither revived nor aborted (audit 2026-10-06): raising made
+    shadow_forward skip the sleeve every pass, so its evidence froze and retirement went blind."""
+    for status in ("KILL", "PROMOTED"):
+        state = {"status": status, "n": 50, "runtime_version": None}
+        assert not runtime.ensure("x", {"session": "asia"}, state, ledger=tmp_path / "x.json")
+        assert state["status"] == status and state["n"] == 50
+        assert state["runtime_window"]["status"] == "UNMEASURED"
+        assert status in state["runtime_window"]["why"]
+        assert "forward_start" not in state
+
+
+def test_bytecode_drift_with_the_same_behaviour_keeps_the_clock(tmp_path: Path) -> None:
+    """A new VERSION whose outputs are unchanged (a refactor, a Python upgrade) is not a new
+    rule: the content fingerprint decides, so no session clock restarts on bytecode alone."""
+    state = {"status": "ACTIVE", "n": 30, "runtime_version": "session-oldbytecode00",
+             "runtime_contract": runtime.CONTRACT, "forward_start": "2026-09-20T00:00:00+00:00"}
+    assert not runtime.ensure("x", {"session": "asia"}, state, ledger=tmp_path / "x.json")
+    assert state["n"] == 30 and state["forward_start"] == "2026-09-20T00:00:00+00:00"
+
+
+def test_a_legacy_corrected_window_is_adopted_once_never_reset(tmp_path: Path) -> None:
+    state = {"status": "ACTIVE", "n": 30, "runtime_version": "session-oldbytecode00"}
+    assert not runtime.ensure("x", {"session": "asia"}, state, ledger=tmp_path / "x.json")
+    assert state["n"] == 30
+    assert state["runtime_contract"] == runtime.CONTRACT
+    assert state["runtime_contract_adopted_from"] == "session-oldbytecode00"
+
+
+def test_a_behaviour_change_moves_the_contract(monkeypatch) -> None:
+    """The fingerprint is of outputs: change what a session keeps and it moves."""
+    from mt5desk import family_call
+    before = runtime.contract_fingerprint()
+    assert before == runtime.CONTRACT and before.startswith("contract-")
+    monkeypatch.setitem(family_call.SESSIONS, "asia", (1, 8))
+    assert runtime.contract_fingerprint() != before
 
 
 def test_terminal_registry_refuses_before_opening_new_clock(
