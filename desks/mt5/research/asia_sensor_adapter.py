@@ -233,20 +233,34 @@ def local_end_of_day(stamp: Any, country: Any) -> datetime | None:
     return datetime.combine(t.date(), END_OF_DAY, tzinfo=tz).astimezone(UTC)
 
 
+#: A row first read more than this after its local day ended is BACKFILL (alt_proxies'
+#: `pit_quality=backfill`): its knowable_at is still the end of its day, received_at as recorded.
+BACKFILL_AFTER = timedelta(hours=24)
+
+
 def _date_bound(stamp: Any, received: Any, country: Any) -> tuple[str, str]:
-    """(knowable_at, knowable_basis) for a DATE-ONLY declared stamp:
-    knowable_at = max(end of that local day, received_at); `declared_lag` when it is the end of
-    day, `bounded_by_receipt` when it is received_at. A row the desk received BEFORE the local
-    day ended keeps the end of day and is then refused by the contract (received_at precedes
-    knowable_at): an intraday read of a date-stamped value may be a partial, not the print."""
+    """(knowable_at, knowable_basis) for a DATE-ONLY declared stamp: the END OF THAT LOCAL DAY,
+    `declared_lag`, whenever the desk read it -- a value published on day D was knowable at the
+    end of D, so history keeps its release instant. A row read BEFORE the local day ended keeps
+    the end of day too and is refused by the contract (received_at precedes knowable_at): an
+    intraday read of a date-stamped value may be a partial; `run` holds it and re-sends it
+    after the close (`_settle_intraday`)."""
     eod = local_end_of_day(stamp, country)
-    rx = sc.parse_time(received)
     if eod is None:
+        rx = sc.parse_time(received)
         return (sc.iso(received), "bounded_by_receipt") if rx is not None else (UNMEASURED,
                                                                                 UNMEASURED)
-    if rx is not None and rx > eod:
-        return sc.iso(rx), "bounded_by_receipt"
     return sc.iso(eod), "declared_lag"
+
+
+def _date_attrs(knowable: str, received: Any) -> dict[str, Any]:
+    """Attributes of a date-only row: the flag `run` settles on, and backfill when first read
+    more than BACKFILL_AFTER after the local day ended."""
+    k, rx = sc.parse_time(knowable), sc.parse_time(received)
+    out: dict[str, Any] = {"date_only_stamp": True}
+    if k is not None and rx is not None and rx - k > BACKFILL_AFTER:
+        out["pit_quality"] = "backfill"
+    return out
 
 
 def _bounded(stamp: Any, basis: str, received: Any) -> tuple[str, str]:
@@ -375,8 +389,10 @@ def map_asia_frame_row(source: Mapping[str, Any], record: Mapping[str, Any],
         return []
     snapshot = sc.iso(event) == sc.iso(received) or sc.iso(avail) == sc.iso(received)
     # a cross-section snapshot's available_time IS the fetch: only receipt bounds it
+    date_attrs: dict[str, Any] = {}
     if not snapshot and _date_only(avail):
         knowable, kbasis = _date_bound(avail, received, source.get("country"))
+        date_attrs = _date_attrs(knowable, received)
     else:
         knowable, kbasis = _bounded(None if snapshot else avail, "declared_lag", received)
     labels = [str(record.get(c)).strip() for c in label_columns
@@ -400,7 +416,7 @@ def map_asia_frame_row(source: Mapping[str, Any], record: Mapping[str, Any],
             raw_pointer=frame_ref or sid,
             attributes={"snapshot": snapshot, "modelled_available_time": sc.iso(avail),
                         "vintage_id": record.get("vintage_id"), "cadence": source.get("cadence"),
-                        "url": source.get("url")}))
+                        "url": source.get("url"), **date_attrs}))
     return out
 
 
@@ -442,6 +458,7 @@ def map_contract_record(record: Mapping[str, Any], *, family: str,
             received = kw.get("received_at") or record.get("first_seen_utc")
             kw["knowable_at"], producer_basis = _date_bound(
                 record["available_time"], received, record.get("geography"))
+            attrs.update(_date_attrs(kw["knowable_at"], received))
     if not kw.get("received_at") and record.get("first_seen_utc"):
         kw["received_at"] = record["first_seen_utc"]
     kw["knowable_basis"] = _basis_of(kw, producer_basis)
@@ -672,6 +689,36 @@ def restamp_corrections(ledger: sc.SensorLedger, obs: list[sc.SensorObservation]
     return out, n
 
 
+def settle_intraday(obs: list[sc.SensorObservation], now: datetime
+                    ) -> tuple[list[sc.SensorObservation], int, int]:
+    """A date-only row first read BEFORE its local day ended (received_at < knowable_at) is not
+    final at that read, and the contract refuses it. Once this pass runs after the local close,
+    the desk demonstrably holds the stored value then: it is re-sent with received_at = this
+    pass, knowable_at unchanged (the end of the day), and the intraday read kept as
+    `attributes.first_read_at`. Before the close it is HELD (sent as is, refused, counted) and
+    the caller keeps the store's cursor where it was so the next pass re-sends it.
+    Returns (observations, settled, held)."""
+    out: list[sc.SensorObservation] = []
+    settled = held = 0
+    for o in obs:
+        k, rx = sc.parse_time(o.knowable_at), sc.parse_time(o.received_at)
+        if (not o.attributes.get("date_only_stamp") or k is None or rx is None
+                or rx >= k - timedelta(seconds=1)):
+            out.append(o)
+            continue
+        if now < k:
+            held += 1
+            out.append(o)
+            continue
+        attrs = {**dict(o.attributes), "first_read_at": o.received_at,
+                 "settled_after_local_close": True}
+        out.append(sc.make(**{**{f.name: getattr(o, f.name) for f in fields(o)},
+                              "observation_id": "", "received_at": sc.iso(now),
+                              "attributes": attrs}))
+        settled += 1
+    return out, settled, held
+
+
 def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float = 60.0,
         report: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     """One pass: every Asia store whose bytes changed since the last pass, mapped and appended."""
@@ -717,6 +764,7 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
                                 "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
                 continue
             n_fix = 0
+            obs, n_settled, n_held = settle_intraday(obs, now)
             if obs and ledger_status == "OK":
                 try:
                     obs, n_fix = restamp_corrections(ledger, obs, _as_time(path), now)
@@ -731,10 +779,14 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
                 totals[k] += int(res.get(k) or 0)
             totals["mapped"] += len(obs)
             totals["corrections_restamped"] += n_fix
+            totals["intraday_settled"] += n_settled
+            totals["intraday_held_until_local_close"] += n_held
             stores[name] = {"status": "MAPPED" if status == "OK" else status, "mapped": len(obs),
                             **{k: res.get(k) for k in ("appended", "duplicates", "revisions",
                                                        "conflicts", "refused")},
                             "corrections_restamped": n_fix,
+                            "intraday_settled": n_settled,
+                            "intraday_held_until_local_close": n_held,
                             "refusals": (res.get("refusals") or [])[:3]}
             if status != "OK":
                 # INDEX_CORRUPT / WRITE_FAILED: counted, the store is NOT marked seen (the next
@@ -743,6 +795,10 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
                 stores[name]["why"] = str(res.get("why") or "")[:160]
                 if status == "INDEX_CORRUPT":
                     ledger_status = f"INDEX_CORRUPT: {str(res.get('why') or '')[:160]}"
+                continue
+            if n_held:
+                # a row read before its local close is not lost: the cursor stays put, so the
+                # first pass after the close re-sends the store and the row is admitted
                 continue
             seen[name] = sig
     families = Counter(n.split(":", 1)[0] for n in stores)
@@ -753,7 +809,9 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
         "generated_at": now.isoformat(timespec="seconds"),
         "rule": ("pure mapping of stored Asia observations into the universal sensor ledger; "
                  "knowable_at = publication (bounded by first sight) with its knowable_basis; "
-                 "a DATE-only declared stamp = max(local end of day, received_at); "
+                 "a DATE-only declared stamp = the local end of that day (declared_lag; "
+                 "pit_quality=backfill when first read > 24h later; an intraday read is held "
+                 "until the local close, then re-sent); "
                  "received_at = first sight; every revision or correction is its own, strictly "
                  "later vintage; authority NONE"),
         "ledger_root": str(ledger.root),

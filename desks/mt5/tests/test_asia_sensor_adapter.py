@@ -173,10 +173,12 @@ def test_pass_maps_every_asia_store_and_a_downstream_reader_sees_it(tmp_path: Pa
     frame = [r for r in rows if r["source_id"] == "cn_test_stat"]
     assert {r["entity"] for r in frame} == {"north", "south"}
     south = next(r for r in frame if r["entity"] == "south")
-    # declared lag says the DATE 2026-09-20; its Shanghai day ends 15:59:59Z and the desk first
-    # held it at 2026-09-21 00:00Z: knowable_at = max(local end of day, received_at)
-    assert south["knowable_at"] == "2026-09-21T00:00:00+00:00"
-    assert south["knowable_basis"] == "bounded_by_receipt"
+    # declared lag says the DATE 2026-09-20: knowable at the end of that Shanghai day, whenever
+    # the desk read it (2026-09-21 00:00Z here, within 24h, so not backfill)
+    assert south["knowable_at"] == "2026-09-20T15:59:59+00:00"
+    assert south["knowable_basis"] == "declared_lag"
+    assert south["received_at"] == "2026-09-21T00:00:00+00:00"
+    assert "pit_quality" not in south["attributes"]
 
 
 def test_rerun_appends_nothing_even_without_the_cursor(tmp_path: Path) -> None:
@@ -228,10 +230,12 @@ def test_each_knowable_basis_is_set_from_how_knowable_at_was_derived(tmp_path: P
            "level": 10.5}
     (o,) = ad.map_asia_frame_row(reg, rec, ["level"])
     assert (o.knowable_basis, o.knowable_at) == ("declared_lag", "2026-08-20T15:59:59+00:00")
-    # bounded_by_receipt: first sight after the local day ended -> max() is received_at
+    # read 11 days after the local day ended: still the end of that day, marked backfill
     (o,) = ad.map_asia_frame_row(reg, {**rec, "ingested_time": "2026-09-01T00:00:00+00:00"},
                                  ["level"])
-    assert o.knowable_basis == "bounded_by_receipt" and o.knowable_at == o.received_at
+    assert (o.knowable_basis, o.knowable_at) == ("declared_lag", "2026-08-20T15:59:59+00:00")
+    assert o.received_at == "2026-09-01T00:00:00+00:00"
+    assert o.attributes["pit_quality"] == "backfill" and sc.defects(o) == []
     # s2.5 producer rows: the contract word is kept, free text is read into the vocabulary
     # (and kept as producer_knowable_basis), and with no word the matching clock decides
     row = {"source_id": "cnx_shfe", "metric": "wr", "value": 1.0, "geography": "CN",
@@ -254,8 +258,8 @@ def test_each_knowable_basis_is_set_from_how_knowable_at_was_derived(tmp_path: P
     doc = ad.run(desk, ledger_root=root, report=tmp_path / "rep.json", now=NOW)
     assert doc["totals"]["refused"] == 0 and doc["contract_gaps"] == []
     rows = _all_rows(root)
-    # every frame row here was first read after its local day ended, so max() is received_at
-    assert {r["knowable_basis"] for r in rows} == {"printed_stamp", "bounded_by_receipt"}
+    assert {r["knowable_basis"] for r in rows} == {
+        "printed_stamp", "declared_lag", "bounded_by_receipt"}
     assert all(r["knowable_basis"] in sc.KNOWABLE_BASES for r in rows)
     assert not any("knowable_basis" in (r["attributes"] or {}) for r in rows)
     assert all(r["knowable_at"] == r["received_at"] for r in rows
@@ -310,11 +314,18 @@ def test_cn_close_dated_0901_is_not_knowable_before_the_shanghai_day_ends() -> N
     assert sc.usable_at(o, "2026-09-01T03:00:00Z", basis="world") is False
     # an intraday read of a date-stamped close is refused by the contract, not admitted early
     assert any("received_at precedes knowable_at" in d for d in sc.defects(o))
-    # read after the day ended: knowable_at IS received_at
+    # read after the day ended: still knowable at the end of the day, received_at as recorded
     late = _close("cn", "2026-09-01T20:00:00+00:00")
-    assert (late.knowable_at, late.knowable_basis) == ("2026-09-01T20:00:00+00:00",
-                                                      "bounded_by_receipt")
-    assert sc.defects(late) == [] and sc.usable_at(late, "2026-09-01T19:59:59Z") is False
+    assert (late.knowable_at, late.knowable_basis) == ("2026-09-01T15:59:59+00:00",
+                                                      "declared_lag")
+    assert late.received_at == "2026-09-01T20:00:00+00:00"
+    assert sc.defects(late) == [] and "pit_quality" not in late.attributes
+    assert sc.usable_at(late, "2026-09-01T15:59:58Z", basis="world") is False
+    assert sc.usable_at(late, "2026-09-01T15:59:59Z", basis="world") is True
+    # backfill: read a week later, the release instant is kept and the row is marked
+    old = _close("cn", "2026-09-08T00:00:00+00:00")
+    assert old.knowable_at == "2026-09-01T15:59:59+00:00"
+    assert old.attributes["pit_quality"] == "backfill"
 
 
 @pytest.mark.parametrize(("country", "eod"), [
@@ -424,3 +435,46 @@ def test_as_of_on_adapter_rows_answers_nothing_before_knowable_at(tmp_path: Path
         latest = led.latest(*args)
         assert latest is not None and latest["knowable_at"] == r["knowable_at"]
         assert sc.usable_at(r, k - timedelta(seconds=1)) is False
+
+
+def test_an_intraday_read_is_held_then_admitted_after_the_local_close(tmp_path: Path) -> None:
+    """A date-only CN close fetched at 02:00Z (10:00 CST) is not final: refused, and the cursor
+    does not advance. The pass after the Shanghai day ends re-sends it and it is admitted,
+    knowable at 15:59:59Z, never earlier."""
+    desk = tmp_path / "desk"
+    _write(desk / "data" / "asia_sources.json", {"sources": [
+        {"id": "cn_close", "country": "cn", "plane": "cn_markets", "access": "public",
+         "cadence": "daily"}]})
+    series = desk / "data" / "lake" / "series"
+    series.mkdir(parents=True, exist_ok=True)
+    (series / "cn_close.csv").write_text(
+        "close,event_time,available_time,ingested_time,source_id,vintage_id\n"
+        "3.5,2026-09-01,2026-09-01 00:00:00+00:00,2026-09-01T02:00:00+00:00,cn_close,v1\n",
+        encoding="utf-8")
+    root = tmp_path / "sensors"
+    rep = tmp_path / "rep.json"
+    early = ad.run(desk, ledger_root=root, report=rep,
+                   now=datetime(2026, 9, 1, 2, 30, tzinfo=UTC))
+    st = early["stores"]["asia_parser_frames:cn_close"]
+    assert st["intraday_held_until_local_close"] == 1 and st["refused"] == 1
+    assert st["appended"] == 0
+    assert "asia_parser_frames:cn_close" not in early["stores_seen"]      # cursor held
+    assert _all_rows(root) == []
+    late = ad.run(desk, ledger_root=root, report=rep,
+                  now=datetime(2026, 9, 1, 20, 0, tzinfo=UTC))
+    st = late["stores"]["asia_parser_frames:cn_close"]
+    assert st["appended"] == 1 and st["refused"] == 0 and st["intraday_settled"] == 1
+    assert "asia_parser_frames:cn_close" in late["stores_seen"]
+    (row,) = _all_rows(root)
+    assert row["knowable_at"] == "2026-09-01T15:59:59+00:00"
+    assert row["knowable_basis"] == "declared_lag"
+    assert row["received_at"] == "2026-09-01T20:00:00+00:00"
+    assert row["attributes"]["first_read_at"] == "2026-09-01T02:00:00+00:00"
+    led = sc.SensorLedger(root)
+    args = (row["sensor_id"], row["entity"], row["metric"], row["event_time"])
+    assert led.as_of(*args, "2026-09-01T15:59:58Z") is None
+    got = led.as_of(*args, "2026-09-01T15:59:59Z")
+    assert got is not None and got["value"] == 3.5
+    again = ad.run(desk, ledger_root=root, report=tmp_path / "rep2.json",
+                   now=datetime(2026, 9, 2, 1, 0, tzinfo=UTC))
+    assert again["totals"].get("appended", 0) == 0 and again["totals"]["conflicts"] == 0
