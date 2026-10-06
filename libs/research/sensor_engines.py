@@ -58,7 +58,7 @@ ROLLUP = DESK / "reports" / "SENSOR_CONTRACTS.json"
 DECLARED_CARDS: dict[str, dict[str, str]] = {
     "QG25-05": {"engine": "vol_conditioner"}, "QG25-06": {"engine": "implied_move"},
     "QG25-25": {"engine": "name_sentiment"}, "QG25-26": {"engine": "priced_in"},
-    "QG25-29": {"engine": "regime_probabilities"}, "QG26-07": {"engine": "vol_conditioner"},
+    "QG25-29": {"engine": "model_disagreement"}, "QG26-07": {"engine": "vol_conditioner"},
     "QG26-08": {"engine": "vol_conditioner"}, "QG26-09": {"engine": "vol_conditioner"},
     "QG26-17": {"engine": "model_disagreement"}, "QG-ADH-001": {"engine": "option_chains"},
     "QG-ADH-003": {"engine": "priced_in"}, "QG-QFIN-005": {"engine": "model_disagreement"},
@@ -111,8 +111,10 @@ def contract(*, engine: str, cards: Sequence[str], metric: str, baseline: str, f
              null_p: float | None = None, extra: Mapping[str, Any] | None = None,
              require_positive: bool = True, why: str = "") -> dict[str, Any]:
     """One contract row. GAIN needs n >= min_n, a finite gain above zero and null_p < ALPHA."""
+    # significant figures, not decimals: an MSE gain on raw log returns is ~1e-6 and must not
+    # round to zero (w3 finding, 2026-10-06)
     gain = (None if value is None or baseline_value is None
-            else round(float(value) - float(baseline_value), 6))
+            else float(f"{float(value) - float(baseline_value):.6g}"))
     if n < min_n or gain is None:
         verdict = UNMEASURED
         why = why or (f"n={n} < {min_n}" if n < min_n else "the gain is not computable")

@@ -883,7 +883,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries", "sensor_ledger",
     "ws_vol_conditioner", "ws_option_chains", "ws_priced_in", "ws_name_sentiment",
-    "ws_model_disagreement",
+    "ws_model_disagreement", "ws_regime_probabilities", "ws_news_hawkes", "ws_latent_states",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -2910,6 +2910,9 @@ WORLD_SENSOR_LEGS: dict[str, tuple[str, tuple[str, ...], float, str]] = {
     "ws_model_disagreement": ("macro/model_disagreement.py",
                               ("--budget-s", "900", "--heavy-every", "5", "--days", "750"), 20.0,
                               "MODEL_DISAGREEMENT.json"),
+    "ws_regime_probabilities": ("macro/regime_probabilities.py", ("--budget-s", "600", "--days", "1500"), 20.0, "REGIME_PROBABILITIES.json"),
+    "ws_news_hawkes": ("macro/news_hawkes.py", (), 20.0, "NEWS_HAWKES.json"),
+    "ws_latent_states": ("macro/latent_states.py", (), 20.0, "LATENT_STATES.json"),
 }
 
 
@@ -3820,7 +3823,13 @@ def main() -> None:
            "ws_name_sentiment": _costed("ws_name_sentiment",
                                         lambda: world_sensor("ws_name_sentiment")),
            "ws_model_disagreement": _costed("ws_model_disagreement",
-                                            lambda: world_sensor("ws_model_disagreement"))}
+                                            lambda: world_sensor("ws_model_disagreement")),
+           "ws_regime_probabilities": _costed("ws_regime_probabilities",
+                          lambda: world_sensor("ws_regime_probabilities")),
+           "ws_news_hawkes": _costed("ws_news_hawkes",
+                          lambda: world_sensor("ws_news_hawkes")),
+           "ws_latent_states": _costed("ws_latent_states",
+                          lambda: world_sensor("ws_latent_states"))}
     pil = _costed("placement_interlock", placement_interlock)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back

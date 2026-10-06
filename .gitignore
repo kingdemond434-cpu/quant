@@ -482,6 +482,9 @@ desks/mt5/data/vol_archive/reference/
 !desks/mt5/reports/PRICED_IN.json
 !desks/mt5/reports/NAME_SENTIMENT.json
 !desks/mt5/reports/MODEL_DISAGREEMENT.json
+!desks/mt5/reports/REGIME_PROBABILITIES.json
+!desks/mt5/reports/NEWS_HAWKES.json
+!desks/mt5/reports/LATENT_STATES.json
 # Option-chain snapshots (gzip per-expiry summaries), the feature history and the 6h fetch state
 # are box-local and grow every six hours; the lake series and reports/OPTION_CHAINS.json carry them.
 desks/mt5/data/option_chains/
