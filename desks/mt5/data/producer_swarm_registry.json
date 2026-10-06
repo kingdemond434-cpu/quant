@@ -1,0 +1,317 @@
+{
+ "version": 1,
+ "rule": "THE PRODUCER SWARM's axes. One producer is instantiated per (family x asset class x chart x session x transform) this file admits and the sealed gauntlet can build; research/producer_swarm.py reads it and hard-codes none of it. Adding a class, chart, session or transform here adds producers on the next hourly pass. Families are DERIVED (every family the sealed gauntlet builds from a cell's own params, research/gauntlet_buildability) minus the exclusions named below with their reason, so a family registered tomorrow gets its producers tomorrow.",
+ "families": {
+  "source": "gauntlet_buildable_at_defaults",
+  "exclude": {
+   "generic": "a constructor that builds a family from a spec, not a family",
+   "formula": "a constructor that builds a family from a spec, not a family",
+   "ensemble": "a constructor over member cells, not a family",
+   "joint_genome": "a genome constructor that takes **kwargs: a transform key would reach it unapplied",
+   "exit_operated": "an operator over a base family's entries; at its defaults it names no base",
+   "exogenous_conditioner": "reads a named data pack's series; at its defaults it names none",
+   "cross_sectional": "takes its peers as an argument the sealed build_cell never supplies"
+  }
+ },
+ "asset_classes": {
+  "fx": [
+   "forex",
+   "forex majors",
+   "forex crosses",
+   "fx",
+   "fx_major",
+   "fx_cross"
+  ],
+  "fx_exotic": [
+   "forex exotics",
+   "fx_exotic"
+  ],
+  "metals": [
+   "commodities",
+   "metals",
+   "metal",
+   "precious metals"
+  ],
+  "energy": [
+   "energy"
+  ],
+  "softs": [
+   "soft commodity",
+   "soft commodities",
+   "softs",
+   "soft"
+  ],
+  "indices": [
+   "indices",
+   "index"
+  ],
+  "bonds": [
+   "bonds",
+   "bond"
+  ],
+  "crypto": [
+   "crypto",
+   "cryptocurrency"
+  ],
+  "equity": [
+   "equities",
+   "equity",
+   "stocks",
+   "shares"
+  ]
+ },
+ "charts": [
+  "M1",
+  "M5",
+  "M15",
+  "M30",
+  "H1",
+  "H4",
+  "D1"
+ ],
+ "sessions": [
+  "all",
+  "asia",
+  "london",
+  "ny"
+ ],
+ "session_free_charts": [
+  "D1"
+ ],
+ "transforms": {
+  "base": {},
+  "high_vol": {
+   "regime": "high_vol"
+  },
+  "low_vol": {
+   "regime": "low_vol"
+  },
+  "month_end": {
+   "regime": "month_end"
+  },
+  "delayed": {
+   "entry_timing": "delayed"
+  }
+ },
+ "param_variants": {
+  "rule": "after every lane symbol holds the family's own defaults, a producer walks one-axis moves: each numeric default whose name matches `scale` (and none of `never`) times each factor in `scales`, one parameter at a time",
+  "scales": [
+   0.5,
+   2.0
+  ],
+  "scale": [
+   "lookback",
+   "window",
+   "period",
+   "ttl",
+   "atr_n",
+   "fast",
+   "slow",
+   "rr",
+   "bars",
+   "hold",
+   "len",
+   "span",
+   "_n",
+   "_d",
+   "mult",
+   "atr",
+   "z"
+  ],
+  "never": [
+   "hour",
+   "minute",
+   "weekday",
+   "dow",
+   "month",
+   "side",
+   "mode",
+   "session",
+   "timeframe",
+   "clock",
+   "decision",
+   "quantile",
+   "stale",
+   "min_",
+   "max_stale"
+  ]
+ },
+ "min_quota_per_visit": 1,
+ "hourly_cell_ceiling": 2000,
+ "hole_visit_share": 0.25,
+ "visit_lap_hours": 24,
+ "sizing_note": "every visit mints at least min_quota_per_visit; the hour's hourly_cell_ceiling is shared evenly across the visits, and quota x visits never exceeds it so one hour never hands the registry (and, through docket_feed, the judge's docket) more than 2,000 new cells: the docket is a JSON file the sealed gauntlet loads whole. The lap is ceil(N / 24) producers an hour, so every producer is visited at least once a UTC day while N <= 24 x ceiling; beyond that the lap lengthens and PRODUCER_SWARM.json says by how much.",
+ "class_participants": {
+  "_rule": "participant_structure a GLOBAL producer's cells carry, by the class it mints on: the dominant participants of that market, a declared hypothesis the cell carries, never a measurement",
+  "fx": "institutional",
+  "fx_exotic": "policy_driven",
+  "metals": "physical_flow",
+  "energy": "physical_flow",
+  "softs": "physical_flow",
+  "indices": "mixed",
+  "bonds": "policy_driven",
+  "crypto": "retail_heavy",
+  "equity": "mixed"
+ },
+ "cultures": {
+  "_rule": "CULTURE PRODUCERS (principal, 2026-09-30: weight the swarm toward non-Western and multilingual producers, because the payoff is orthogonal failure modes, not raw count). One producer per (family x culture x chart x transform), on the culture's OWN instruments (a symbol containing any `tokens` entry, uppercase) in its HOME session. Every cell carries the culture's tag, participant structure and failure-mode hypothesis. Adding a culture here adds producers on the next pass.",
+  "JP": {
+   "session": "asia",
+   "tokens": [
+    "JPY",
+    "JP225",
+    "JPN225",
+    "NIKKEI",
+    "N225"
+   ],
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "Japanese retail margin-FX positioning, fiscal half-year repatriation and MoF intervention set a Tokyo clock, so the JP version fails on positioning washouts and intervention days rather than on US data."
+  },
+  "KR": {
+   "session": "asia",
+   "tokens": [
+    "KRW",
+    "KOSPI",
+    "KS200",
+    "KOR"
+   ],
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "Korean retail flows, National Pension Service hedge-ratio changes and the onshore KRW fixing set a Seoul clock, so the KR version fails on NPS hedging shifts and export-data days, not on Western sessions."
+  },
+  "CN": {
+   "session": "asia",
+   "tokens": [
+    "CNH",
+    "CNY",
+    "CHINA50",
+    "CHINAH",
+    "CN50",
+    "A50",
+    "HK50",
+    "HSI",
+    "HKG33"
+   ],
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "the renminbi trades around the PBoC daily fixing and capital controls, so the CN version fails on fixing-signal and policy days rather than on Western momentum crashes."
+  },
+  "RU": {
+   "session": "london",
+   "tokens": [
+    "RUB",
+    "XPD",
+    "PALLADIUM"
+   ],
+   "participant_structure": "settlement_constrained",
+   "failure_mode_hypothesis": "sanctions and capital controls bind settlement for Russian flows, so the RU version fails on sanction and settlement shocks rather than on the Western risk cycle."
+  },
+  "AE": {
+   "session": "asia",
+   "tokens": [
+    "AED",
+    "USOIL",
+    "UKOIL",
+    "WTI",
+    "BRENT",
+    "XAU"
+   ],
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "Gulf physical crude and Dubai gold flows follow OPEC+ decisions, Ramadan and the Gulf weekend, so the AE version fails around those calendars instead of US macro releases."
+  },
+  "IN": {
+   "session": "asia",
+   "tokens": [
+    "INR",
+    "NIFTY",
+    "IND50",
+    "INDIA50",
+    "XAU"
+   ],
+   "participant_structure": "tax_driven",
+   "failure_mode_hypothesis": "Indian gold and rupee demand is set by import duty and the festival and wedding calendar, so the IN version fails around duty changes and festival seasons rather than Fed days."
+  },
+  "BR": {
+   "session": "ny",
+   "tokens": [
+    "BRL",
+    "BRAZIL",
+    "BOVESPA",
+    "IBOV",
+    "SOYBEAN",
+    "COFFEE",
+    "SUGAR"
+   ],
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "real flows are carry, IOF-tax and BCB-auction driven and Brazil prices the softs it exports, so the BR version fails on fiscal, IOF and harvest shocks, not on US equity drawdowns."
+  },
+  "TR": {
+   "session": "london",
+   "tokens": [
+    "TRY",
+    "XAU"
+   ],
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "lira pricing is shaped by CBRT policy surprises and domestic savers' dollar and gold hoarding, so the TR version fails on CBRT days and local gold-buying waves."
+  },
+  "ZA": {
+   "session": "london",
+   "tokens": [
+    "ZAR",
+    "SA40",
+    "XPT",
+    "PLATINUM",
+    "XPD",
+    "XAU"
+   ],
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "rand and PGM prices follow mine output, power load-shedding and SARB decisions, so the ZA version fails around supply and power shocks rather than US data."
+  },
+  "MX": {
+   "session": "ny",
+   "tokens": [
+    "MXN",
+    "MEX",
+    "MXX",
+    "IPC"
+   ],
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "the peso is the liquid EM hedge with Banxico carry and US remittance and tariff flows, so the MX version fails on Banxico and US-Mexico trade shocks rather than European sessions."
+  }
+ },
+ "culture_visit_share": 0.3,
+ "dataset_cultures": {
+  "_rule": "the culture an intelligence seat or data file speaks for; a seat named `<x>_<tag>` for a declared culture tag is read from its name. Unlisted: UNMEASURED.",
+  "china": "CN",
+  "korea": "KR",
+  "readitrades_africa": "ZA",
+  "trading_latam": "LATAM",
+  "cot": "GLOBAL",
+  "aaii": "US",
+  "fear_greed": "US",
+  "sec_edgar": "US",
+  "earnings": "US",
+  "fred": "US",
+  "ecb": "EU",
+  "bis": "GLOBAL",
+  "bis_speeches": "GLOBAL",
+  "central_banks": "GLOBAL",
+  "shipping": "GLOBAL",
+  "weather": "GLOBAL",
+  "broker_swaps": "GLOBAL",
+  "world": "GLOBAL",
+  "google_trends": "GLOBAL"
+ },
+ "dataset_conditioning": {
+  "_rule": "THE INDIRECT USE OF EVERY DATASET. One producer per (usable dataset x field x base family), minting `dataset_conditioned` cells: the base family's own entries kept while the dataset's point-in-time reading is in a state. Datasets come from research/dataset_census (a usable series only); base families are the swarm's own families that `family_dataset_conditioned.base_ok` admits. The datasets PRODUCER_BREADTH.json names as feeding no producer are visited first, up to `unfed_visit_share` of the hour's ceiling.",
+  "family": "dataset_conditioned",
+  "chart": "H1",
+  "states": [
+   "high",
+   "low"
+  ],
+  "transform": "level_z",
+  "threshold": 1.0,
+  "max_fields_per_dataset": 3,
+  "min_span_days": 28,
+  "unfed_visit_share": 0.2
+ }
+}

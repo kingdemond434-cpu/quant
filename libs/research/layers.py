@@ -193,6 +193,11 @@ LEG_LAYER: dict[str, str] = {
     # The mass screen generates and screens rule cells by the million and forwards the FDR
     # survivors to the judge -- a predictor search at scale: prediction.
     "mass_screen": "prediction",
+    # The producer swarm mints breadth cells for every buildable family on every class, chart,
+    # session and transform, and the unknown-unknown miner searches expressions nobody named:
+    # both are predictor searches.
+    "producer_swarm": "prediction",
+    "unknown_unknown": "prediction",
     # The dead-session remap turns asia/london/ny variants that can never fire into stand-in
     # cells that can -- a predictor search on the session axis: prediction.
     "session_variant_remap": "prediction",

@@ -407,10 +407,15 @@ def cell_stats(R1: np.ndarray, R3: np.ndarray, kept: np.ndarray, days: np.ndarra
 
 
 def screen_symbol(P: Prepared, meta: dict[str, Any] | None = None, *, q: float = FDR_Q,
-                  conds: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+                  conds: list[dict[str, Any]] | None = None,
+                  horizons: tuple[int, ...] | None = None) -> dict[str, Any]:
     """Screen every cell of one symbol. Returns counts per grammar and the CANDIDATES -- cells
     whose one-sided p-value is <= q, the only ones Benjamini-Hochberg can ever reject at q --
-    with the days they trade, for the run-level FDR and dedup."""
+    with the days they trade, for the run-level FDR and dedup.
+
+    `horizons` (a subset of HORIZONS, whose R arrays `Prepared` holds) lets a wider grammar
+    (`research/unknown_unknown`) spend its width on expressions rather than on holds; every cell
+    it does evaluate is counted exactly as here."""
     from scipy.stats import t as student_t
     started = time.monotonic()
     conds = conds if conds is not None else conditions(P, meta)
@@ -422,7 +427,7 @@ def screen_symbol(P: Prepared, meta: dict[str, Any] | None = None, *, q: float =
         allowed = [vi for vi, (d, _k) in enumerate(VARIANTS)
                    if g != "carry" or d == cond.get("carry_side")]
         pos_all = np.flatnonzero(P.mask(cond))
-        for h in HORIZONS:
+        for h in (horizons or HORIZONS):
             agg["cells"] += len(allowed)
             if pos_all.size < MIN_DAYS:
                 continue
@@ -444,6 +449,9 @@ def screen_symbol(P: Prepared, meta: dict[str, Any] | None = None, *, q: float =
                 agg["candidates"] += 1
                 cands.append({
                     "symbol": P.symbol, "grammar": g, "cond": _public(cond), "hold": h,
+                    # the quantile LEVEL and band label, which `_public` strips: the structural
+                    # key needs them, or two quantiles of one feature collapse into one identity
+                    "qlevel": cond.get("_q", ""), "band": cond.get("_band", ""),
                     "direction": d, "stop_atr": k, "p": float(p[vi]),
                     "t": float(st["t"][vi]), "mean_r": float(st["mean"][vi]),
                     "hit": float(st["hit"][vi]), "mean_r_x3": float(st["mean_x3"][vi]),
@@ -501,7 +509,8 @@ def structural_key(c: dict[str, Any]) -> str:
     the sixth digit) does not re-forward the same rule under a new content hash."""
     cd = c["cond"]
     return "|".join(str(x) for x in (
-        c["symbol"], c["grammar"], cd.get("feat", ""), cd.get("op", ""), cd.get("_q", ""),
+        c["symbol"], c["grammar"], cd.get("feat", ""), cd.get("op", ""),
+        c.get("qlevel", cd.get("_q", "")),
         cd.get("cond_feat", ""), _band_label(cd), cd.get("hour", -1), cd.get("weekday", -1),
         cd.get("leader", ""), c["hold"], c["direction"], c["stop_atr"], MR.GRAMMAR_VERSION))
 

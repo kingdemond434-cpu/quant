@@ -332,3 +332,54 @@ def test_the_artifact_is_written_atomically(tmp_path: Path) -> None:
     out = pb.write({"totals": {}, "producers": {}}, tmp_path / "PRODUCER_BREADTH.json")
     assert json.loads(out.read_text()) == {"totals": {}, "producers": {}}
     assert not list(tmp_path.glob("*.tmp"))
+
+
+# ------------------------------------------------------------------ the flags and the headline
+def test_flags_name_idle_narrow_untestable_and_keep_unmeasured_distinct() -> None:
+    wide = {"symbols": 20, "symbol_share": 0.8, "asset_classes": 4}
+    narrow = {"symbols": 2, "symbol_share": 0.08, "asset_classes": 1}
+    f, why = pb.flags_for(scheduled=False, clocks=[], cells_24h=5, cells_7d=5, b24=wide,
+                          b7=wide, buildable_share=1.0, lane_n=25, lane_classes_n=5)
+    assert f == ["IDLE"] and "no clock" in why["IDLE"]
+    f, why = pb.flags_for(scheduled=True, clocks=["hourly_cycle:x"], cells_24h=0, cells_7d=9,
+                          b24={}, b7=narrow, buildable_share=0.5, lane_n=25, lane_classes_n=5)
+    assert f == ["IDLE", "NARROW", "UNTESTABLE"]
+    assert "hourly_cycle:x" in why["IDLE"] and "7d" in why["NARROW"]
+    assert "3" in why["NARROW"] and "50%" in why["UNTESTABLE"]
+    # a lane of one class never flags a one-class producer NARROW on classes
+    f, _ = pb.flags_for(scheduled=True, clocks=["c"], cells_24h=3, cells_7d=3,
+                        b24={"symbols": 10, "symbol_share": 1.0, "asset_classes": 1}, b7={},
+                        buildable_share=0.95, lane_n=10, lane_classes_n=1)
+    assert f == []
+    # UNMEASURED is not zero: a scheduled producer nobody can see is not called IDLE
+    f, why = pb.flags_for(scheduled=True, clocks=["c"], cells_24h=pb.UNMEASURED,
+                          cells_7d=pb.UNMEASURED, b24={}, b7={}, buildable_share=pb.UNMEASURED,
+                          lane_n=25, lane_classes_n=5, measured_from="UNMEASURED: no seat")
+    assert f == ["UNMEASURED"] and why["UNMEASURED"].startswith("UNMEASURED")
+
+
+def test_the_headline_and_breadth_windows(tmp_path: Path) -> None:
+    now = datetime(2026, 9, 30, 12, tzinfo=UTC)
+    db = tmp_path / "alpha_registry.sqlite"
+    _registry(db, [
+        ("video_anchor_exit", "htf_anchor_trend", "EURUSD", "M15", "all",
+         (now - timedelta(hours=2)).isoformat()),
+        ("video_anchor_exit", "htf_anchor_trend", "XAUUSD", "H4", "london",
+         (now - timedelta(days=3)).isoformat()),
+    ])
+    doc = pb.build(now=now, db=db)
+    htf = doc["producers"]["htf_anchor_proposer"]
+    assert htf["breadth"]["24h"]["symbols"] == 1 and htf["breadth"]["7d"]["symbols"] == 2
+    assert htf["breadth"]["24h"]["sessions"] == 1 and htf["breadth"]["7d"]["sessions"] == 2
+    assert "NARROW" in htf["flags"] and "24h" in htf["flag_reasons"]["NARROW"]
+    h = doc["headline"]
+    for k in ("producers_total", "active", "idle", "narrow", "untestable", "unmeasured",
+              "top_gaps", "swarm", "hand_written"):
+        assert k in h
+    assert h["active"] >= 1 and isinstance(h["top_gaps"], list)
+    holes = doc["totals"]["coverage_holes"]
+    assert holes["status"] == "MEASURED"
+    assert "all" not in holes["sessions"]            # htf minted an `all` cell inside 24h
+    unm = doc["producers"]["qd_frontier"]
+    if not isinstance(unm["cells_7d"], int):
+        assert unm["breadth"]["24h"]["status"] == pb.UNMEASURED
