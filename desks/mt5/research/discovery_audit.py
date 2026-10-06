@@ -276,9 +276,11 @@ def _registry_view(reg: Mapping[str, Any] | None) -> dict[str, Any] | None:
 def downstream_use(series: list[str], reg: Mapping[str, Any] | None,
                    use_dir: Path) -> bool | str:
     if use_dir.is_dir():
-        text = "\n".join(p.read_text("utf-8", errors="replace")
-                         for p in sorted(use_dir.rglob("*")) if p.is_file())
-        return any(s in text for s in series)
+        # A LIVE recorded read (libs/data/dataset_use) is the evidence; a stale one is not use.
+        from libs.data import dataset_use as U
+        reads = U.census(use_dir)
+        return any((reads.get(f"acquired:{s}") or {}).get("live_consumers", 0) > 0
+                   for s in series)
     consumers = (reg or {}).get("consumers")
     if isinstance(consumers, dict):
         return any(consumers.get(s) for s in series)

@@ -1164,7 +1164,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     # GLOBAL-LAYER forests (web, academic+code, physical data, market data) -- layers of the
     # world that would be mined seventeen times over if each region hunted them itself.
     **dict.fromkeys(("global_research_os", "acquire_datasets", "source_experiment_census",
-                     "dataset_use_census",
+                     "dataset_use_census", "catalog_routes", "discovery_audit",
                      *GLOBAL_FOREST_LEGS), "regions"),
     # the free stack (2026-09-30): app rankings, CN forums, JP IR, JP patents, trends, congress,
     # CoinPaprika (crypto CFDs only), Reddit/Telegram, AKShare/TuShare/BaoStock, catalogues --
@@ -1726,6 +1726,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
     "acquire_datasets": 1_100,
+    # catalog_routes stops itself at DEFAULT_BUDGET_S=600 and writes its cursors; cap above it.
+    "catalog_routes": 720,
     # THE WORLD DATASET HUNTER stops itself at --budget-s 900 and writes its catalog, registry
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
@@ -4498,8 +4500,17 @@ def main() -> None:
     # census named it as owner, but no named cycle leg invoked it; production's registry therefore
     # stayed frozen at 2026-09-24 while every regional pack kept declaring sources. Run it after
     # the OS declares today's needs and before the census measures source-to-experiment closure.
+    # CATALOG ROUTES (2026-10-06): CKAN, DCAT, SDMX, STAC, Opendatasoft and Common Crawl
+    # catalogues write discoveries_catalog_<date>.json, which the acquirer below reserves a
+    # quarter of its pass for. It runs first so the same hour fetches what it found.
+    ctr = _costed("catalog_routes", lambda: _producer(
+        "catalog_routes", "research/catalog_routes.py"))
     acq = _costed("acquire_datasets", lambda: _producer(
         "acquire_datasets", "research/acquire_datasets.py"))
+    # The withheld rotating benchmark: what share of known public datasets the routes above
+    # found, fetched and fed. Benchmark coverage, never world coverage.
+    dau = _costed("discovery_audit", lambda: _producer(
+        "discovery_audit", "research/discovery_audit.py"))
     # THE FREE STACK (2026-09-30, asia gap rows 14-17, 20): every free alt source the gap report
     # measured MISSING, point-in-time, cursor-based, one yield row per source in
     # reports/FREE_STACK_YIELD.json; series land in data/lake/series/fs_<id>, catalogue finds
@@ -5709,6 +5720,7 @@ def main() -> None:
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "acquire_datasets": acq, "free_stack_hunt": fsh,
+                    "catalog_routes": ctr, "discovery_audit": dau,
                     "free_stack_proposer": fsp, "factory_throughput": fxt,
                     "world_dataset_hunt": wdh,
                     "world_macro_proposer": wmp,
