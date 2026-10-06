@@ -1479,7 +1479,7 @@ def run(budget_s: float = DEFAULT_BUDGET_S, *, fetch: Fetch | None = None,
     for p in sorted(portals, key=stale):
         pid, route = str(p["id"]), str(p["route"])
         st = pstate.setdefault(pid, {})
-        if sess.exhausted():
+        if sess.exhausted() and route != "keyed":           # keyed costs no request
             table[pid] = {"route": route, "status": "NOT_VISITED_BUDGET",
                           "remainder": st.get("remainder", UNMEASURED),
                           "unit": st.get("unit", "datasets")}
