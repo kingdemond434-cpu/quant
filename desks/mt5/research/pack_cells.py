@@ -47,7 +47,10 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
 import json
+import math
+import re
 import sys
 import time
 from datetime import UTC, datetime
@@ -562,8 +565,8 @@ def named_instruments(texts: list[str]) -> list[str]:
     upper = blob.upper()
     try:
         from research.universe_policy import may_hypothesise
-    except Exception:
-        def may_hypothesise(symbol: str) -> bool:   # an absent router never filters
+    except Exception:   # an absent router never filters
+        def may_hypothesise(symbol: str, family: object = None) -> bool:
             return True
     hits: list[str] = []
     for sym in sorted(universe_symbols()):
@@ -1186,6 +1189,514 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
     }
 
 
+# =============================================================================== semantic lane
+# THE CHINA OFFICIAL PACKS GET SEMANTIC TRANSFORMS, NOT THREE GENERIC ONES (audit 2026-10-06,
+# rows 1-5 and 7). `level_z / delta / delta_z` of any numeric column cannot see a
+# settlement-sales IMBALANCE, a PMI orders-inventory GAP, a curve SLOPE or a fixing SURPRISE:
+# each is a relation between columns or against a model, and each is what the directive names
+# as the observable ("do not use the fixing level alone"). This lane reads the append-only
+# ledgers `asia_parser` keeps (first-release view only, so no revised value is ever back-dated),
+# builds those features with the PIT `available_time` of their newest input, writes them as
+# `series/<pack>__sem.parquet`, and sends exogenous-conditioner cells on them through THE DOOR:
+# `proposer_common.screen` (family signals on the target's own bars, net of cost) ->
+# `deflate` (charged for every look this pass) -> `donate`, with a null pass charged to
+# `data/null_pass_trials.jsonl` so no look is free. Targets are the registry's, resolved to the
+# MT5 universe and routed by asset class through `universe_policy`.
+
+SEM_SEAT = "pack_cells_cn"
+SEM_CURSOR = DESK / "data" / "pack_cells_sem_cursor.json"
+NULL_TRIALS = DESK / "data" / "null_pass_trials.jsonl"
+
+#: Semantic builder per registry pack. Packs sharing a builder are merged first (the CFETS daily
+#: payload and its history endpoint describe the same fixings).
+SEMANTIC_PACKS: dict[str, tuple[str, ...]] = {
+    "safe_settlement": ("safe_fx_settlement",),
+    "safe_cross_border": ("safe_cross_border",),
+    "safe_reserves": ("safe_reserves",),
+    "cfets_fix": ("cfets_fixing", "cfets_fixing_history"),
+    "shibor": ("cn_shibor",),
+    "omo": ("pboc_open_market",),
+    "pmi_mfg": ("nbs_pmi",),
+    "pmi_nonmfg": ("nbs_pmi_nonmfg",),
+    "macro_industrial": ("nbs_industrial",),
+    "macro_prices": ("nbs_prices",),
+    "customs": ("china_customs", "cn_customs_detail"),
+}
+#: Registry target spellings that are not MT5 symbols, resolved to the universe's own names.
+TARGET_ALIASES: dict[str, str] = {"Copper": "XCUUSD", "CN50": "CHINAH", "CHINA50": "CHINAH",
+                                  "A50": "CHINAH"}
+#: Customs commodities the directive names first (Part I.D), matched on the printed name.
+CUSTOMS_PRIORITY: tuple[str, ...] = ("铁矿", "铜", "原油", "天然气", "煤", "黄金", "金", "银",
+                                     "大豆", "粮食", "钢", "铝", "镍", "锂", "多晶硅", "集成电路")
+SEM_GRID: dict[str, tuple[Any, ...]] = {"threshold": (1.0, 1.5), "side_when_high": (1, -1)}
+SEM_FEATURES_PER_PASS = 8
+SEM_BUDGET_SHARE = 0.35
+#: The fixing model's rolling fit: observations strictly BEFORE the fix being explained.
+FIX_FIT_WINDOW = 120
+FIX_FIT_MIN = 40
+
+
+def _sem_frame(packs_: tuple[str, ...]) -> tuple[Any, str]:
+    """The first-release wide frames of the packs, merged on event_time (earliest availability
+    wins only where the packs agree on a period: the second source cannot make the first known
+    earlier than it was)."""
+    import pandas as pd
+    try:
+        from research.asia_parser import first_release_frame, read_ledger
+    except Exception as exc:
+        return None, f"asia_parser unimportable: {type(exc).__name__}"
+    frames = []
+    for pid in packs_:
+        rows = read_ledger(pid)
+        if not rows:
+            continue
+        wide, _why = first_release_frame(pid, rows)
+        if wide is not None and not wide.empty:
+            frames.append(wide)
+    if not frames:
+        return None, ("UNMEASURED: no ledger rows for " + ", ".join(packs_)
+                      + " on this host (asia_parser has not read a vintage of it)")
+    df = pd.concat(frames, ignore_index=True)
+    df["event_time"] = pd.to_datetime(df["event_time"], utc=True, errors="coerce")
+    df["available_time"] = pd.to_datetime(df["available_time"], utc=True, errors="coerce")
+    num = [c for c in df.columns if c not in STAMP_COLUMNS and c != "event_time"]
+    agg: dict[str, Any] = dict.fromkeys(num, "first")
+    agg["available_time"] = "min"
+    out = df.groupby("event_time", as_index=False).agg(agg).sort_values("event_time")
+    return out.reset_index(drop=True), f"{len(out)} period(s) from {len(frames)} ledger(s)"
+
+
+def _col(df: Any, metric: str, entity_has: str | None = None,
+         unit_pref: tuple[str, ...] = ()) -> Any:
+    """The first column for a metric (optionally whose entity contains a substring)."""
+    cands = [c for c in df.columns if c == metric or c.startswith(metric + "|")]
+    if entity_has is not None:
+        cands = [c for c in cands if entity_has in c]
+    for u in unit_pref:
+        pref = [c for c in cands if u in c]
+        if pref:
+            return df[pref[0]]
+    return df[cands[0]] if cands else None
+
+
+def surprise(s: Any, *, monthly: bool) -> tuple[Any, Any, Any]:
+    """(expected, raw surprise, surprise z) against the series' OWN prior history only.
+
+    Monthly: the same calendar month's mean change over prior years when two exist (a seasonal
+    expectation), else the trailing six-period mean. The z divides by the std of PRIOR
+    surprises, so a value is never scored against a dispersion that includes itself."""
+    import pandas as pd
+    s = pd.Series(s, dtype=float)
+    trail = s.shift(1).rolling(6, min_periods=3).mean()
+    exp = trail
+    if monthly and isinstance(s.index, pd.DatetimeIndex) and len(s) >= 25:
+        seas = s.groupby(s.index.month).transform(
+            lambda x: x.shift(1).expanding(min_periods=2).mean())
+        exp = seas.where(seas.notna(), trail)
+    raw = s - exp
+    sd = raw.shift(1).rolling(24, min_periods=6).std(ddof=0)
+    return exp, raw, raw / sd.where(sd > 0)
+
+
+def _add_generic(feats: dict[str, Any], name: str, s: Any, monthly: bool) -> None:
+    """Level, change, acceleration and the surprise trio for one series."""
+    feats[name] = s
+    feats[f"{name}_delta"] = s.diff()
+    feats[f"{name}_accel"] = s.diff().diff()
+    _e, raw, z = surprise(s, monthly=monthly)
+    feats[f"{name}_surprise"] = raw
+    feats[f"{name}_surprise_z"] = z
+
+
+def semantic_features(builder: str, df: Any, *, bars_fn: Any = None,
+                      clock_root: Path | None = None) -> tuple[Any, str]:
+    """The builder's features on the merged first-release frame. (frame, why) -- frame None with
+    the reason when an input is missing; INSUFFICIENT_HISTORY is a verdict, not a zero."""
+    import numpy as np
+    import pandas as pd
+    if df is None or df.empty:
+        return None, "no frame"
+    idx = pd.DatetimeIndex(df["event_time"])
+    d = df.set_index(idx)
+    feats: dict[str, Any] = {}
+    if builder == "safe_settlement":
+        up_ = ("美元", "人民币")
+        sett, sales = _col(d, "settlement", unit_pref=up_), _col(d, "sales", unit_pref=up_)
+        if sett is None or sales is None:
+            return None, "settlement / sales not both in the ledger"
+        tot = (sett + sales).where((sett + sales) != 0)
+        feats["imbalance"] = (sett - sales) / tot
+        feats["imbalance_delta"] = feats["imbalance"].diff()
+        feats["imbalance_accel"] = feats["imbalance_delta"].diff()
+        _e, _raw, z = surprise(sett - sales, monthly=True)
+        feats["net_surprise_z"] = z
+        cs, cp = (_col(d, "customer_settlement", unit_pref=up_),
+                  _col(d, "customer_sales", unit_pref=up_))
+        if cs is not None and cp is not None:
+            feats["customer_imbalance"] = (cs - cp) / (cs + cp).where((cs + cp) != 0)
+        fs, fp = (_col(d, "forward_settlement", unit_pref=up_),
+                  _col(d, "forward_sales", unit_pref=up_))
+        if fs is not None and fp is not None:
+            feats["forward_hedge_imbalance"] = (fs - fp) / (fs + fp).where((fs + fp) != 0)
+            feats["forward_hedge_imbalance_delta"] = feats["forward_hedge_imbalance"].diff()
+        roll = feats["imbalance"].rolling(36, min_periods=12)
+        feats["imbalance_pct_rank"] = roll.rank(pct=True)
+    elif builder == "safe_cross_border":
+        r, p = _col(d, "receipts", unit_pref=("美元",)), _col(d, "payments", unit_pref=("美元",))
+        if r is None or p is None:
+            return None, "receipts / payments not both in the ledger"
+        feats["receipts_payments_ratio"] = r / p.where(p != 0)
+        feats["payment_imbalance"] = (r - p) / (r + p).where((r + p) != 0)
+        feats["payment_imbalance_accel"] = feats["payment_imbalance"].diff().diff()
+        _e, _raw, feats["payment_imbalance_surprise_z"] = surprise(feats["payment_imbalance"],
+                                                                   monthly=True)
+    elif builder == "safe_reserves":
+        fx = _col(d, "fx_reserves", unit_pref=("美元",))
+        if fx is None:
+            return None, "fx_reserves not in the ledger"
+        _add_generic(feats, "fx_reserves_change", fx.diff(), monthly=True)
+        gold = _col(d, "gold_reserves", unit_pref=("盎司", "美元"))
+        if gold is not None:
+            _add_generic(feats, "gold_reserves_change", gold.diff(), monthly=True)
+    elif builder == "cfets_fix":
+        fx = cfets_fix_surprise(d, bars_fn=bars_fn, clock_root=clock_root)
+        if isinstance(fx, str):
+            return None, fx
+        out = fx
+        out["source_id"] = "cfets_fix__sem"
+        return out, f"{int(out['fix_surprise_pips'].notna().sum())} modelled fix surprise(s)"
+    elif builder == "shibor":
+        on, w1 = _col(d, "shibor", "O/N"), _col(d, "shibor", "1W")
+        m3, y1 = _col(d, "shibor", "3M"), _col(d, "shibor", "1Y")
+        if on is None or y1 is None:
+            return None, "O/N and 1Y SHIBOR not both in the ledger"
+        feats["curve_slope"] = y1 - on
+        if m3 is not None:
+            feats["curve_curvature"] = 2.0 * m3 - on - y1
+        feats["on_delta"] = on.diff()
+        feats["liquidity_impulse_5"] = on.diff(5)
+        if w1 is not None:
+            feats["w1_on_spread"] = w1 - on
+    elif builder == "omo":
+        net = _col(d, "omo_net_injection")
+        if net is None:
+            return None, "no net injection in the ledger (maturity never stated)"
+        feats["net_injection"] = net
+        feats["net_injection_5"] = net.rolling(5, min_periods=3).sum()
+        feats["net_injection_accel"] = feats["net_injection_5"].diff()
+    elif builder.startswith("pmi"):
+        subs = {c.split("|")[0]: d[c] for c in d.columns
+                if c not in STAMP_COLUMNS and c not in ("available_time", "event_time")}
+        head = subs.get("pmi") if builder == "pmi_mfg" else subs.get("business_activity")
+        if head is not None:
+            _add_generic(feats, "headline", head, monthly=True)
+        comp = pd.DataFrame({k: v for k, v in subs.items() if k not in ("pmi",)})
+        if comp.shape[1] >= 3:
+            feats["diffusion"] = (comp > 50.0).mean(axis=1)
+            feats["breadth"] = (comp.diff() > 0).mean(axis=1)
+            feats["disagreement"] = comp.diff().std(axis=1, ddof=0)
+        no = subs.get("new_orders")
+        inv = subs.get("finished_goods_inventory")
+        if inv is None:
+            inv = subs.get("raw_material_inventory")
+        if no is not None and inv is not None:
+            _add_generic(feats, "orders_inventory_gap", no - inv, monthly=True)
+        if subs.get("new_export_orders") is not None:
+            feats["export_order_impulse"] = subs["new_export_orders"].diff()
+        if subs.get("input_prices") is not None and subs.get("production") is not None:
+            feats["price_production_divergence"] = subs["input_prices"] - subs["production"]
+        for k in ("new_orders", "production", "employment", "input_prices"):
+            if subs.get(k) is not None:
+                _add_generic(feats, k, subs[k], monthly=True)
+    elif builder.startswith("macro"):
+        cols = [c for c in d.columns if c not in STAMP_COLUMNS
+                and c not in ("available_time", "event_time")][:20]
+        for c in cols:
+            _add_generic(feats, re.sub(r"[^A-Za-z0-9]+", "_", c)[:40] or "series",
+                         pd.to_numeric(d[c], errors="coerce"), monthly=True)
+    elif builder == "customs":
+        for c in d.columns:
+            if "|" not in c:
+                continue
+            metric, ent = c.split("|", 1)
+            if not any(k in ent for k in CUSTOMS_PRIORITY):
+                continue
+            slug = hashlib.sha1(ent.encode()).hexdigest()[:6]
+            if metric.endswith("_quantity"):
+                _e, _raw, feats[f"{metric}_surprise_z_{slug}"] = surprise(d[c], monthly=True)
+                feats[f"{metric}_pace_{slug}"] = d[c].rolling(3, min_periods=2).mean()
+            elif metric.endswith("_unit_value"):
+                q = d.get(c.replace("_unit_value|", "_quantity|"))
+                uv = d[c].pct_change()
+                if q is not None:
+                    qc = q.pct_change()
+                    zuv = (uv - uv.shift(1).rolling(12, min_periods=4).mean()) / uv.shift(
+                        1).rolling(12, min_periods=4).std(ddof=0)
+                    zq = (qc - qc.shift(1).rolling(12, min_periods=4).mean()) / qc.shift(
+                        1).rolling(12, min_periods=4).std(ddof=0)
+                    feats[f"unit_value_divergence_{slug}"] = zuv - zq
+    else:
+        return None, f"unknown builder {builder!r}"
+    if not feats:
+        return None, "INSUFFICIENT_HISTORY: no feature could be formed"
+    out = pd.DataFrame(feats, index=idx).replace([np.inf, -np.inf], np.nan)
+    out.insert(0, "available_time", d["available_time"].to_numpy())
+    out.insert(0, "event_time", idx)
+    out = out.reset_index(drop=True)
+    keep = [c for c in out.columns if c in ("event_time", "available_time")
+            or out[c].notna().sum() >= 3]
+    out = out[keep]
+    if len(keep) <= 2:
+        return None, "INSUFFICIENT_HISTORY: every feature has fewer than 3 values"
+    out["source_id"] = f"{builder}__sem"
+    return out, f"{len(out)} period(s) x {len(keep) - 2} feature(s)"
+
+
+def bar_value_at(bars: Any, instant_utc: datetime, field: str,
+                 clock_root: Path | None = None) -> float | None:
+    """A field of the H1 bar CONTAINING a genuinely-UTC instant, on the bars' broker clock.
+
+    None when `bar_clock` cannot place the instant (no measured clock, shoulder month) or the bar
+    is absent -- the observation is dropped, never placed on a guessed offset."""
+    import pandas as pd
+
+    from libs.research.bar_clock import to_bar_time
+    conv, _status, _why = to_bar_time(instant_utc, clock_root)
+    if conv is None:
+        return None
+    stamp = pd.Timestamp(conv).tz_convert("UTC").floor("h")
+    if stamp not in bars.index:
+        return None
+    return float(bars.loc[stamp, field])
+
+
+def cfets_fix_surprise(d: Any, *, bars_fn: Any = None, clock_root: Path | None = None) -> Any:
+    """The CNY central-parity SURPRISE against the documented fixing model.
+
+    THE MODEL (PBOC/CFETS 2016-: "previous close + basket"): the parity is set from the previous
+    day's 16:30 Beijing USD/CNY close plus the move that would keep the CFETS basket stable
+    overnight; what is left -- the counter-cyclical / discretionary part -- is the policy signal.
+    Here, with the desk's own bars:
+
+        close_prev   USDCNH, CLOSE of the H1 bar containing 08:30 UTC (16:30 Beijing) the
+                     previous fixing day (the offshore rate stands in for the onshore close);
+        basket move  USDX log return from that bar's close to the OPEN of the bar containing
+                     01:00 UTC on the fix day (before the 01:15 UTC announcement);
+        implied_t    close_prev + a + b * close_prev * basket_move, with (a, b) fitted by OLS on
+                     the previous FIX_FIT_WINDOW fixings ONLY (never on t or later);
+        surprise_t   fix_t - implied_t, in pips (1e-4 CNY), and its z against prior residuals.
+
+    No basket weights are invented: b is estimated, so the model is the data's own reading of how
+    much basket stabilisation the parity carried. Returns a frame or the reason it cannot."""
+    import numpy as np
+    import pandas as pd
+    fix = _col(d, "central_parity", "USD/CNY")
+    if fix is None:
+        return "no USD/CNY central parity in the ledger"
+    fix = fix.dropna()
+    if len(fix) < FIX_FIT_MIN + 5:
+        return f"INSUFFICIENT_HISTORY: {len(fix)} fixings < {FIX_FIT_MIN + 5}"
+    bars_fn = bars_fn or (lambda s: __import__("research.proposer_common",
+                                               fromlist=["bars"]).bars(s))
+    cnh, usdx = bars_fn("USDCNH"), bars_fn("USDX")
+    if cnh is None or usdx is None:
+        return "UNMEASURED: USDCNH or USDX H1 bars absent on this host"
+    rows = []
+    days = list(fix.index)
+    for i in range(1, len(days)):
+        t, prev = days[i], days[i - 1]
+        prev_close_at = datetime(prev.year, prev.month, prev.day, 8, 30, tzinfo=UTC)
+        basket_end = datetime(t.year, t.month, t.day, 1, 0, tzinfo=UTC)
+        c_prev = bar_value_at(cnh, prev_close_at, "close", clock_root)
+        x0 = bar_value_at(usdx, prev_close_at, "close", clock_root)
+        x1 = bar_value_at(usdx, basket_end, "open", clock_root)
+        if c_prev is None or x0 is None or x1 is None or x0 <= 0 or x1 <= 0:
+            continue
+        rows.append({"event_time": t, "fix": float(fix.loc[t]), "cnh_prev_close": c_prev,
+                     "basket_move": math.log(x1 / x0)})
+    if len(rows) < FIX_FIT_MIN + 5:
+        return (f"INSUFFICIENT_HISTORY: {len(rows)} fixings placeable on the bars' clock "
+                f"(of {len(fix)}); shoulder months and missing bars are dropped, never guessed")
+    m = pd.DataFrame(rows).set_index("event_time")
+    y = (m["fix"] - m["cnh_prev_close"]).to_numpy()
+    x = (m["cnh_prev_close"] * m["basket_move"]).to_numpy()
+    implied = np.full(len(m), np.nan)
+    beta = np.full(len(m), np.nan)
+    for i in range(len(m)):
+        lo = max(0, i - FIX_FIT_WINDOW)
+        if i - lo < FIX_FIT_MIN:
+            continue
+        X = np.column_stack([np.ones(i - lo), x[lo:i]])
+        coef, *_ = np.linalg.lstsq(X, y[lo:i], rcond=None)
+        implied[i] = m["cnh_prev_close"].iloc[i] + coef[0] + coef[1] * x[i]
+        beta[i] = coef[1]
+    m["implied_fix"] = implied
+    m["basket_beta"] = beta
+    m["fix_surprise"] = m["fix"] - m["implied_fix"]
+    m["fix_surprise_pips"] = m["fix_surprise"] * 1e4
+    prior_sd = m["fix_surprise_pips"].shift(1).rolling(60, min_periods=20).std(ddof=0)
+    m["fix_surprise_z"] = m["fix_surprise_pips"] / prior_sd.where(prior_sd > 0)
+    m["fix_defence_index_20"] = m["fix_surprise_pips"].rolling(20, min_periods=10).mean()
+    m["fix_vs_cnh_gap_pips"] = (m["fix"] - m["cnh_prev_close"]) * 1e4
+    avail = pd.to_datetime(d["available_time"], utc=True).reindex(m.index)
+    out = m.reset_index()
+    # The surprise is knowable when the fix is (09:15 Beijing, the ledger's own stamp) AND the
+    # basket bar has opened (01:00 UTC): the later of the two.
+    bar_open = out["event_time"].dt.floor("D") + pd.Timedelta(hours=1)
+    out.insert(1, "available_time", np.maximum(avail.to_numpy(), bar_open.to_numpy()))
+    return out
+
+
+def resolve_targets(raw: list[str]) -> list[str]:
+    """Registry targets -> MT5 symbols the hypothesis lane may mint on, routed by asset class."""
+    syms: list[str] = []
+    reg = universe_symbols()
+    from research import universe_policy as up
+    for t in raw:
+        s = TARGET_ALIASES.get(t, t)
+        if reg and s not in reg:
+            continue
+        if not up.may_hypothesise(s, "exogenous_conditioner"):
+            continue
+        if s not in syms:
+            syms.append(s)
+    return syms
+
+
+def semantic_lane(budget_s: float = 80.0, *, dry_run: bool = False,
+                  bars_fn: Any = None) -> dict[str, Any]:
+    """Build every semantic pack's features, then screen -> deflate -> donate its cells."""
+    t0 = time.monotonic()
+    reg = {str(p.get("id")): p for p in packs()}
+    cursor = _read(SEM_CURSOR, {}) or {}
+    offsets: dict[str, int] = dict(cursor.get("offsets") or {})
+    out: dict[str, Any] = {}
+    cands_all: list[dict[str, Any]] = []
+    screened: list[dict[str, Any]] = []
+    for builder, members in SEMANTIC_PACKS.items():
+        row: dict[str, Any] = {"packs": list(members)}
+        out[builder] = row
+        df, why = _sem_frame(members)
+        if df is None:
+            row.update({"status": "UNMEASURED", "why": why})
+            continue
+        feats, fwhy = semantic_features(builder, df, bars_fn=bars_fn)
+        if feats is None:
+            row.update({"status": ("INSUFFICIENT_HISTORY" if "INSUFFICIENT" in fwhy
+                                   else "UNMEASURED"), "why": fwhy})
+            continue
+        sid = f"{builder}__sem"
+        if not dry_run:
+            SERIES.mkdir(parents=True, exist_ok=True)
+            feats.to_parquet(SERIES / f"{sid}.parquet", index=False)
+        cols = [c for c in feats.columns if c not in ("event_time", "available_time",
+                                                       "source_id")]
+        targets: list[str] = []
+        for pid in members:
+            targets += [t for t in targets_of(reg.get(pid) or {}) if t not in targets]
+        syms = resolve_targets(targets)
+        row.update({"status": "BUILT", "why": fwhy, "series": f"{sid}.parquet",
+                    "features": cols, "targets": syms,
+                    "last_available": str(feats["available_time"].max())[:25]})
+        off = offsets.get(builder, 0)
+        take = (cols[off % len(cols):] + cols[:off % len(cols)])[:SEM_FEATURES_PER_PASS]
+        offsets[builder] = off + len(take)
+        tests_here = 0
+        for sig in take:
+            for sym in syms:
+                if time.monotonic() - t0 > budget_s:
+                    row["stopped"] = "budget"
+                    break
+                for thr in SEM_GRID["threshold"]:
+                    for side in SEM_GRID["side_when_high"]:
+                        res = _screen_one(sid, sig, sym, float(thr), int(side), bars_fn)
+                        tests_here += 1
+                        if res is not None:
+                            screened.append(res)
+        row["tests"] = tests_here
+    # ---- deflate over EVERY look of the pass, then donate what clears it
+    donation: dict[str, Any] = {"donated": 0}
+    n_tests = sum(int(r.get("tests") or 0) for r in out.values())
+    if screened:
+        from research import proposer_common as pc
+        pc.deflate(screened)
+        best = pc.best_per_cell(screened)
+        for r in best:
+            cands_all.append(r["candidate"])
+    if not dry_run and n_tests > 0:
+        donation = _sem_donate(cands_all, n_tests)
+        _write(SEM_CURSOR, {"at": datetime.now(UTC).isoformat(timespec="seconds"),
+                            "offsets": offsets})
+    return {"rule": ("semantic features on the first-release ledger view; cells screened on the "
+                     "target's bars net of cost, deflated by every look this pass, donated "
+                     "through proposer_common; a null pass is charged to null_pass_trials"),
+            "seat": SEM_SEAT, "packs": out, "tests_run": n_tests,
+            "screened_measurable": len(screened),
+            "proposed": len(cands_all), "donation": donation,
+            "seconds": round(time.monotonic() - t0, 2)}
+
+
+def _screen_one(sid: str, sig: str, sym: str, thr: float, side: int,
+                bars_fn: Any = None) -> dict[str, Any] | None:
+    """One cell through `proposer_common.screen`. None = not measurable (too few trades)."""
+    from mt5desk.family_exogenous_conditioner import family_exogenous_conditioner
+
+    from research import proposer_common as pc
+    bars = bars_fn(sym) if bars_fn is not None else pc.bars(sym)
+    if bars is None or len(bars) < 500:
+        return None
+    params: dict[str, Any] = {"source": sid, "signal": sig, "transform": "level_z",
+                              "threshold": thr, "side_when_high": side}
+    try:
+        sigs = family_exogenous_conditioner(bars, source=sid, signal=sig, transform="level_z",
+                                            threshold=thr, side_when_high=side,
+                                            series_root=SERIES)
+    except Exception:
+        return None
+    cost = pc.cost_frac(sym, pc.universe_meta(), bars["close"])
+    if cost is None:
+        return None
+    res = pc.screen(bars, sigs, cost)
+    if res is None:
+        return None
+    cell = f"{sym}.exogenous_conditioner.{sid}.{sig}"
+    mech = (f"{sid}.{sig}: China official data ({sid.split('__')[0]}) at an extreme conditions "
+            f"{sym}")
+    cand = pc.candidate(SEM_SEAT, sym, "exogenous_conditioner", params, mech,
+                        f"exogenous_conditioner {sid}.{sig} -> {sym} thr {thr} side {side}",
+                        dict(res))
+    cand["required_data"] = [f"desks/mt5/data/lake/series/{sid}.parquet"]
+    cand["falsifier"] = (f"{sid}.{sig} at |z| >= {thr} carries no measurable relation to "
+                         f"{sym}'s forward return out of sample")
+    return {**res, "cell": cell, "candidate": cand}
+
+
+def _sem_donate(cands: list[dict[str, Any]], tests_run: int) -> dict[str, Any]:
+    """Donate through the door; a pass that donates nothing charges its looks to the side
+    ledger so the lifetime trial count never forgets them (one of the two, never both)."""
+    res: dict[str, Any] = {"donated": 0, "path": None}
+    if cands:
+        try:
+            from research import proposer_common as pc
+            path = pc.donate(SEM_SEAT, cands, max(1, tests_run))
+            res = {**pc.donation_counts(), "path": str(path) if path else None}
+        except Exception as exc:
+            res = {"donated": 0, "path": None,
+                   "error": f"{type(exc).__name__}: {str(exc)[:160]}"}
+    if tests_run > 0 and not res.get("path"):
+        row = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "source": SEM_SEAT,
+               "tests_run": int(tests_run), "by_family": {"exogenous_conditioner": tests_run},
+               "why": "semantic China cells tested; no discovery file carried them this pass"}
+        try:
+            NULL_TRIALS.parent.mkdir(parents=True, exist_ok=True)
+            with NULL_TRIALS.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(row, sort_keys=True) + "\n")
+            res["null_trials_charged"] = int(tests_run)
+        except OSError as exc:
+            res["null_trials_error"] = f"{type(exc).__name__}: {str(exc)[:160]}"
+    return res
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--once", action="store_true")
@@ -1194,6 +1705,11 @@ def main(argv: list[str] | None = None) -> int:
                     help="count the cells this pass would mint and write nothing")
     a = ap.parse_args(argv)
     doc = build(budget_s=a.budget_s, dry_run=a.dry_run)
+    try:
+        doc["semantic"] = semantic_lane(budget_s=a.budget_s * SEM_BUDGET_SHARE,
+                                        dry_run=a.dry_run)
+    except Exception as exc:                 # one lane's defect never costs the pack report
+        doc["semantic"] = {"status": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
     try:
         _write(OUT, doc)
     except OSError as exc:
@@ -1243,6 +1759,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  JUDGED REGISTERS {jr.get('status')}: {str(jr.get('why'))[:150]}")
     dr = doc.get("drain_reachability") or {}
     print(f"  DRAIN REACH {dr.get('status')}: {dr.get('counts')}")
+    sem = doc.get("semantic") or {}
+    print(f"  SEMANTIC (China official): tests {sem.get('tests_run')}, proposed "
+          f"{sem.get('proposed')}, donation {sem.get('donation')}; "
+          + ", ".join(f"{k}={v.get('status')}" for k, v in (sem.get('packs') or {}).items()))
     print(f"written: {OUT}")
     return 0
 

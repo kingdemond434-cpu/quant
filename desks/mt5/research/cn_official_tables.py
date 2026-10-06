@@ -645,7 +645,12 @@ def parse_nbs_easyquery(body: bytes, source_id: str, url: str) -> AdapterResult:
         cname, unit = names.get(zb, ("", None))
         parent = next((p for p in NBS_DATASETS if zb.startswith(p)), "")
         dataset = NBS_DATASETS.get(parent, "nbs")
-        metric = nbs_metric(cname, zb)
+        # The PMI sub-indices are named by the canonical vocabulary the semantic transforms use;
+        # every other node keeps its own NBS code as the metric and its printed name as the
+        # entity, so no keyword match can mislabel a CPI line as a PMI price index.
+        is_pmi = dataset.startswith("pmi")
+        metric = nbs_metric(cname, zb) if is_pmi else zb.lower()
+        entity = dataset if is_pmi else (cname or zb)[:80]
         sched = None
         if dataset.startswith("pmi"):
             # NBS publishes the official PMIs on the LAST DAY of the reference month at 09:30
@@ -655,7 +660,7 @@ def parse_nbs_easyquery(body: bytes, source_id: str, url: str) -> AdapterResult:
             last = month_end(y, m)
             sched = _iso(datetime(last.year, last.month, last.day, 9, 30, tzinfo=CST))
         obs.append(observation(source_id=source_id, dataset_id=f"{source_id}:{dataset}",
-                               entity=dataset, metric=metric, value=v, unit=unit,
+                               entity=entity, metric=metric, value=v, unit=unit,
                                event_time=month_end(*mo), scheduled_time=sched,
                                period=f"{mo[0]:04d}-{mo[1]:02d}",
                                basis=f"NBS {zb} {cname}"[:120]))

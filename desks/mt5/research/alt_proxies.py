@@ -2325,8 +2325,10 @@ TERMS: dict[str, tuple[str, str]] = {
     "imf_portwatch_chokepoints": ("confirmed", "IMF PortWatch public statistics, documented "
                                   "ArcGIS API"),
     "in_gold_imports": ("confirmed", "Government of India press releases (PIB), public"),
-    "cn_sge_premium": ("to_confirm", "SGE site shows only 'All Right Reserved'; no terms or "
-                       "licence page found, no robots.txt"),
+    "cn_sge_premium": ("refused", "SGE market-data licensing page: 'Without the permission of SGE "
+                       "or Information Company, no institution or individual may disseminate, "
+                       "operate or use the trading information of SGE.' Licensed through named "
+                       "vendors only (re-read 2026-10-06)"),
     "gdelt_events_country": ("confirmed", "GDELT: unrestricted use with citation"),
     "wiki_asia_attention": ("confirmed", "Wikimedia pageviews API, CC0"),
     "us_oi_card_spend": ("confirmed", "OI README: 'Anyone is welcome to use this data'"),
@@ -2399,10 +2401,22 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "robots": "www.jnto.go.jp/robots.txt 404 (no rules)",
         "checked_at": _CHK},
     "cn_sge_premium": {
-        "terms_url": "https://www.sge.com.cn/",
-        "terms_quote": "Copyright 2016 上海黄金交易所 All Right Reserved (no terms page found)",
+        "terms_url": "https://en.sge.com.cn/data_Licensed",
+        "terms_quote": ("Without the permission of SGE or Information Company, no institution or "
+                        "individual may disseminate, operate or use the trading information of "
+                        "SGE."),
+        "also_quote": ("SGE has authorized Shanghai Gold Exchange&Communication Co., "
+                       "Ltd.(hereinafter referred to as information Company) as the general agent "
+                       "for the operation and dissemination of the trading information of SGE"),
+        "judgement": ("re-read 2026-10-06 (the 2026-09-30 reading found only the www.sge.com.cn "
+                      "footer 'Copyright 2016 上海黄金交易所 All Right Reserved'). The English "
+                      "site's market-data licensing page names a licensing agent and 19 licensed "
+                      "vendors and bars any use of SGE trading information without permission, "
+                      "which covers the benchmark, the daily quotes and the graph endpoint. "
+                      "REFUSED until the desk holds a licence (directly or through a listed "
+                      "vendor); every organ that touches the host reads `terms_gate`"),
         "robots": "www.sge.com.cn/robots.txt 404 (no rules)",
-        "checked_at": _CHK},
+        "checked_at": "2026-10-06"},
     "cn_nbs_retail": {
         "terms_url": "https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
         "terms_quote": ("用户可以在本网站下载和使用国家统计局发布的统计数据 / "
@@ -2518,6 +2532,34 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "robots": "apis.data.go.kr is the portal's documented Open API (free service key)",
         "checked_at": _CHK},
 }
+
+#: HOSTS GOVERNED BY A TERMS ROW. One decision binds every organ that touches the host: the
+#: audit (2026-10-06, row 8) found `fetch_sge_premium`, `asia_collector` (sge_benchmark /
+#: sge_silver), `world_dataset_hunter` and `check_source_routes` all fetching sge.com.cn while this
+#: table held it `to_confirm`. Each of them now asks `terms_gate` first. Matched on the host's
+#: registrable suffix, so en./www. and any sub-host are governed together.
+TERMS_HOSTS: dict[str, str] = {"sge.com.cn": "cn_sge_premium"}
+
+
+def terms_gate(ref_or_url: str) -> tuple[str, str]:
+    """(state, why) for a TERMS id or a URL. `confirmed` / `to_confirm` / `refused` for a governed
+    id or host, `ungoverned` for a URL on no governed host. FAIL CLOSED: an id this table does not
+    know is `to_confirm`, never permission."""
+    ref = str(ref_or_url or "")
+    if "://" in ref or ref.startswith("//"):
+        host = urllib.parse.urlsplit(ref if "://" in ref else "https:" + ref).netloc.lower()
+        host = host.split(":")[0]
+        sid = next((v for k, v in TERMS_HOSTS.items() if host == k or host.endswith("." + k)),
+                   None)
+        if sid is None:
+            return "ungoverned", ""
+        ref = sid
+    state, why = TERMS.get(ref, ("to_confirm", f"{ref}: no terms row -- fail closed"))
+    ev = TERMS_EVIDENCE.get(ref) or {}
+    if ev.get("terms_url"):
+        why = f"{why} [{ev['terms_url']}, checked {ev.get('checked_at', '?')}]"
+    return state, why
+
 
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
                 for s in (*SOURCES, *SUBSTITUTE_SOURCES))
