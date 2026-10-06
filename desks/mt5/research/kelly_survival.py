@@ -377,6 +377,12 @@ BOOK_MARGIN = 0.04            # solve against 4% so an independent sample still 
 BOOK_STEPS = (0.04, 0.02, 0.01, 0.005, 0.0025)
 BOOK_STARTS = 6
 BOOK_PATHS = 2000
+#: Terms fence (PR #162): a cell only Reddit/StockTwits proposed never enters the book. The merge's
+#: published index wins; until it exists, the docket's own genealogy decides (every row naming the
+#: cell came from a fenced platform). USDJPY.session_range_breakout is the case that put this here.
+TERMS_FENCED_CELLS = BASE / "data" / "hypotheses" / "terms_fenced_cells.json"
+RESEARCH_QUEUE = BASE / "data" / "research_queue.json"
+FENCED_GENEALOGY = ("ext_reddit_", "ext_stocktwits_")
 
 
 def _world_column(cell: str, sym: str, family: str, selector: str, names: list[str]) -> str | None:
@@ -384,6 +390,26 @@ def _world_column(cell: str, sym: str, family: str, selector: str, names: list[s
     naming. rr/wait variants of one cell share the column -- they are one bet bought twice."""
     col = f"{sym}_{family}_{selector}"
     return col if col in names else None
+
+
+def terms_fenced_cells() -> tuple[set[str], str]:
+    """(fenced `SYM.family` cells, where the verdict came from)."""
+    idx = _read_json(TERMS_FENCED_CELLS)
+    if isinstance(idx, dict) and idx.get("cells") is not None:
+        return {str(c) for c in idx["cells"]}, TERMS_FENCED_CELLS.name
+    q = _read_json(RESEARCH_QUEUE)
+    rows = q if isinstance(q, list) else next(
+        (v for v in (q or {}).values() if isinstance(v, list)), [])
+    seen: dict[str, bool] = {}
+    for r in rows:
+        gid = str((r or {}).get("geneology_id") or "")
+        tail = gid.split(":", 1)[-1]
+        parts = tail.split("_", 2)
+        if not tail.startswith("ext_") or len(parts) < 3:
+            continue
+        cell = f"{parts[2].split('_', 1)[0]}.{parts[2].split('_', 1)[-1]}"
+        seen[cell] = seen.get(cell, True) and tail.startswith(FENCED_GENEALOGY)
+    return {c for c, only in seen.items() if only}, f"{RESEARCH_QUEUE.name} genealogy"
 
 
 def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]:
@@ -400,6 +426,7 @@ def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]
     cols: list[str] = []
     rows: list[dict[str, Any]] = []
     policy = str((doc.get("gate_policy") or {}).get("version") or "")
+    fenced, fence_src = terms_fenced_cells()
     for key, c in (doc.get("survivors") or {}).items():
         spec = c.get("shadow_spec") or {}
         parts = str(key).split(".")
@@ -419,6 +446,8 @@ def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]
             row["excluded"] = "banned family"
         elif tf == "M15":
             row["excluded"] = "M15 banned"
+        elif f"{sym.upper()}.{fam}" in fenced:
+            row["excluded"] = f"TERMS_FENCED: proposed only by Reddit/StockTwits ({fence_src})"
         else:
             col = _world_column(str(c.get("cell") or ""), sym, fam, sel, names)
             row["column"] = col

@@ -47,6 +47,8 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(ks, "BOOK_PATHS", 400)
     monkeypatch.setattr(ks, "BOOK_STARTS", 2)
     monkeypatch.setattr(ks, "BOOK_STEPS", (0.02, 0.005))
+    monkeypatch.setattr(ks, "TERMS_FENCED_CELLS", tmp_path / "absent_fence.json")
+    monkeypatch.setattr(ks, "RESEARCH_QUEUE", tmp_path / "absent_queue.json")
     return ks
 
 
@@ -92,3 +94,21 @@ def test_unpriced_certificates_are_replayed_and_join(desk, tmp_path, monkeypatch
     assert rows["external.DDD.carry.p=1"]["family"] == "carry"
     assert rows["external.DDD.carry.p=1"]["store"] == "store.json"
     assert "1 joined" in doc["unpriced"]
+
+
+def test_a_cell_only_reddit_proposed_never_enters_the_book(desk, tmp_path, monkeypatch):
+    queue = tmp_path / "queue.json"
+    queue.write_text(json.dumps([
+        {"geneology_id": "external:ext_reddit_AAA_carry"},
+        {"geneology_id": "external:ext_reddit_BBB_carry"},
+        {"geneology_id": "external:ext_forexfactory_BBB_carry"}]), encoding="utf-8")
+    monkeypatch.setattr(desk, "RESEARCH_QUEUE", queue)
+    doc = desk.solve_book()
+    why = {r["certificate"]: r.get("excluded") for r in doc["screen"]}
+    assert why["a"].startswith("TERMS_FENCED")
+    assert why["b"] is None                           # a lawful source also proposes it
+    assert "AAA_carry_asia" not in doc["fusion"]["heat"]
+    fence = tmp_path / "fence.json"                   # the published index wins over genealogy
+    fence.write_text(json.dumps({"cells": ["BBB.carry"]}), encoding="utf-8")
+    monkeypatch.setattr(desk, "TERMS_FENCED_CELLS", fence)
+    assert desk.terms_fenced_cells()[0] == {"BBB.carry"}
