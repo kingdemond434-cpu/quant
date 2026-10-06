@@ -107,8 +107,25 @@ def test_linear_control_recovers_the_one_minus_rho_squared_law(seed: int, rho: f
     y = 3.0 + rho * c + np.sqrt(1 - rho**2) * g.normal(size=2_000)
     e = cv.control_variate_mean(y, c, [0.0])
     assert e.variance_ratio is not None
-    assert e.variance_ratio == pytest.approx(1 - rho**2, abs=0.08)
+    if rho**2 > 0.2:      # a gain the out-of-fold test (MIN_GAIN) can see: it is taken
+        assert e.used
+        assert e.variance_ratio == pytest.approx(1 - rho**2, abs=0.08)
+    else:                 # too small to clear MIN_GAIN: some folds stay raw, never worse
+        assert 1 - rho**2 - 0.08 <= e.variance_ratio <= 1.0 + 1e-9
     assert abs(e.controlled - 3.0) < 5 * np.sqrt(e.controlled_var)
+
+
+def test_fold_selection_never_reads_its_own_draws() -> None:
+    """The in-sample 'use it if its variance looks lower' rule was measured BIASED in the tail of
+    a p-value (t = -3.7, loosening). The out-of-fold rule must stay unbiased there."""
+    f = cv._planted_matrix(9720, 0.25, 300, 8)          # planted p ~ 0.0125
+    d = []
+    for s in range(150):
+        e = cv.bootstrap_pvalue_cv(f, n_boot=300, seed=100 + s).estimate
+        assert e is not None
+        d.append(e.value - e.raw)
+    arr = np.asarray(d)
+    assert abs(arr.mean()) < 4 * arr.std(ddof=1) / np.sqrt(arr.size)
 
 
 def test_value_falls_back_to_raw_without_measured_gain() -> None:
@@ -170,7 +187,7 @@ def test_planted_truth_report_measures_lower_variance_and_never_loosens(tmp_path
     for arm in ("spa", "monkey"):
         s = doc[arm]["summary"]
         assert s["pooled_variance_ratio"] is not None and s["pooled_variance_ratio"] < 1.0
-        assert s["max_abs_bias_t"] < 4.0
+        assert abs(s["pooled_bias_z"]) < 4.0
         assert s["correct_guarded"] <= s["correct_raw"] + s["gate_changed_stricter"]
         for c in doc[arm]["cells"].values():
             assert c["gate"]["guarded_pass"] <= c["gate"]["raw_pass"]

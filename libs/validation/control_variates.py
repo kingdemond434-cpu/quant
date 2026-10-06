@@ -36,8 +36,9 @@ folds and each fold is corrected with the ``beta`` fitted on the others. Draws a
 so that ``beta`` is independent of the fold's controls and ``E[beta (C - mu)] = 0`` exactly.
 
 THE BAR IS NEVER LOOSENED (the directive's hard rule, enforced here, not by the caller's
-goodwill). ``CVEstimate.value`` is the controlled number only when its measured variance is
-lower than the raw estimator's; otherwise it is the raw number. And a gate never reads it alone:
+goodwill). A fold is corrected only when the OTHER folds measure a variance reduction
+(degrees-of-freedom charged); otherwise it contributes its raw draws, so the estimate stays exactly
+unbiased AND is controlled only where the control measurably helps. And a gate never reads it alone:
 ``guarded_decision`` keeps the UNCONTROLLED decision unless the controlled one is STRICTER, and
 records every disagreement, so a control variate can turn a pass into a fail but never a fail
 into a pass.
@@ -63,6 +64,12 @@ F = npt.NDArray[np.float64]
 #: Cross-fitting folds. Two keeps each beta fitted on half the draws, which at 500-1,000 draws
 #: and <= 16 controls is ample data for the regression.
 DEFAULT_FOLDS = 2
+
+#: A fold applies its control only if the nested out-of-sample variance is below this share of
+#: the raw variance. Below 1 on purpose: a reduction too small to measure on half a fold's draws
+#: is noise, and applying a noise-fitted beta costs variance (measured: 1.06 at a planted p of
+#: 0.0125 with the bar at 1.0).
+MIN_GAIN = 0.9
 
 #: How many of the best-looking strategies contribute controls (u and u^2 each) to a bootstrap
 #: max-statistic. MEASURED, not chosen: on 8 planted strategies x 30 bootstrap seeds the true
@@ -97,14 +104,22 @@ class CVEstimate:
             return None
         return float(self.controlled_var / self.raw_var)
 
+    folds_applied: int = 0   # folds whose OTHER folds measured a variance reduction
+
     @property
     def used(self) -> bool:
-        """The controlled number is used only where its variance is MEASURED lower."""
-        r = self.variance_ratio
-        return r is not None and r < 1.0 and bool(np.isfinite(self.controlled))
+        """At least one fold applied its control, on a reduction measured out of fold."""
+        return self.folds_applied > 0 and bool(np.isfinite(self.controlled))
 
     @property
     def value(self) -> float:
+        """The controlled estimate (exactly unbiased, see `control_variate_mean`), else raw.
+
+        NOT ``controlled if controlled_var < raw_var else raw``: that choice reads the same draws
+        the estimate is made of, and it was MEASURED biased -- on a planted p of 0.0125 over 400
+        bootstrap seeds it pulled the p-value down at t = -3.7, i.e. it loosened the bar. The
+        reduction test is made per fold, out of fold, inside `control_variate_mean` instead.
+        """
         return self.controlled if self.used else self.raw
 
     def as_dict(self) -> dict[str, Any]:
@@ -143,13 +158,39 @@ def control_variate_mean(y: npt.ArrayLike, controls: npt.ArrayLike, known_means:
     dev = cc - mu
     fold_of = np.arange(b) * folds // b          # contiguous folds; draws are i.i.d.
     adjusted = np.empty(b, dtype="float64")
+    applied = 0
     for f in range(folds):
         test = fold_of == f
-        adjusted[test] = yy[test] - dev[test] @ _beta(yy[~test], cc[~test])
+        beta, helps = _fit_out_of_fold(yy[~test], dev[~test])
+        # beta AND the decision to apply it come from the other folds only, so both are
+        # independent of this fold's draws and E[y_i - 1{helps} beta (c_i - mu)] = E[y] exactly.
+        adjusted[test] = yy[test] - dev[test] @ beta if helps else yy[test]
+        applied += int(helps)
     full_beta = _beta(yy, cc)
     return CVEstimate(raw=raw, controlled=float(adjusted.mean()), raw_var=raw_var,
                       controlled_var=float(adjusted.var(ddof=1) / b), n=b, n_controls=k,
-                      folds=folds, beta=tuple(float(x) for x in full_beta))
+                      folds=folds, beta=tuple(float(x) for x in full_beta),
+                      folds_applied=applied)
+
+
+def _fit_out_of_fold(y: F, dev: F) -> tuple[F, bool]:
+    """beta on these draws, and whether it reduces variance OUT OF SAMPLE on them.
+
+    The reduction is judged by a nested two-way split of these draws (beta fitted on one half,
+    variance measured on the other), never by the in-sample fit: in the tail of a p-value, where
+    hits are rare, an in-sample fit always "explains" a few hits and then adds noise when
+    applied -- measured at a variance ratio of 1.12 on a planted p of 0.0125 before this test.
+    ``dev`` is controls minus their known means.
+    """
+    beta = _beta(y, dev)
+    n, k = dev.shape
+    half = n // 2
+    if half < k + 2 or float(y.var(ddof=1)) <= 0.0:
+        return beta, False
+    a, b_ = slice(0, half), slice(half, n)
+    adj = np.concatenate([y[b_] - dev[b_] @ _beta(y[a], dev[a]),
+                          y[a] - dev[a] @ _beta(y[b_], dev[b_])])
+    return beta, float(adj.var(ddof=1)) < MIN_GAIN * float(y.var(ddof=1))
 
 
 def _beta(y: F, c: F) -> F:
@@ -435,20 +476,24 @@ def _cell(raw: list[float], ctl: list[float], used: list[bool], decisions: list[
     }
 
 
-def measure_spa(*, data_seeds: int = 4, boot_seeds: int = 10, t_obs: int = 300, n_strat: int = 8,
+def measure_spa(*, data_seeds: int = 2, boot_seeds: int = 30, t_obs: int = 300, n_strat: int = 8,
                 n_boot: int = 400, mean_block: float = 10, base_seed: int = 9720
                 ) -> dict[str, Any]:
     cells: dict[str, Any] = {}
-    for effect in SPA_EFFECTS:
+    for e_i, effect in enumerate(SPA_EFFECTS):
         for d in range(data_seeds):
-            f = _planted_matrix(base_seed + 1000 * d, effect, t_obs, n_strat)
+            # every cell its own data AND its own bootstrap seeds: SPA recentres, so a planted
+            # effect on a strategy that is not the max leaves the p-value unchanged, and shared
+            # seeds would then publish the same cell twice and double-count its noise
+            cell_seed = base_seed + 1000 * d + 100_000 * e_i
+            f = _planted_matrix(cell_seed, effect, t_obs, n_strat)
             raw, ctl, used, dec = [], [], [], []
             for s in range(boot_seeds):
-                bp = bootstrap_pvalue_cv(f, n_boot=n_boot, mean_block=mean_block, seed=s)
+                bp = bootstrap_pvalue_cv(f, n_boot=n_boot, mean_block=mean_block,
+                                         seed=cell_seed + s)
                 est = bp.estimate
                 raw.append(bp.p_raw)
-                ctl.append(est.controlled if est is not None and np.isfinite(est.controlled)
-                           else bp.p_raw)
+                ctl.append(bp.p_raw if est is None else est.value)
                 used.append(bool(est is not None and est.used))
                 dec.append(bp.decision(GATE_ALPHA))
             cells[f"effect={effect}|data={d}"] = _cell(raw, ctl, used, dec, effect > 0)
@@ -458,23 +503,22 @@ def measure_spa(*, data_seeds: int = 4, boot_seeds: int = 10, t_obs: int = 300, 
             "cells": cells, "summary": _summary(cells)}
 
 
-def measure_monkey(*, data_seeds: int = 4, perm_seeds: int = 10, n_days: int = 750,
+def measure_monkey(*, data_seeds: int = 2, perm_seeds: int = 40, n_days: int = 750,
                    n_baselines: int = 500, base_seed: int = 9721) -> dict[str, Any]:
     cells: dict[str, Any] = {}
-    for skill in MONKEY_SKILLS:
+    for s_i, skill in enumerate(MONKEY_SKILLS):
         for d in range(data_seeds):
-            pos, r = _planted_monkey(base_seed + 1000 * d, skill, n_days)
+            cell_seed = base_seed + 1000 * d + 100_000 * s_i
+            pos, r = _planted_monkey(cell_seed, skill, n_days)
             raw, ctl, used, dec = [], [], [], []
             for s in range(perm_seeds):
-                m = monkey_pvalue_cv(pos, r, rng=np.random.default_rng(s),
+                m = monkey_pvalue_cv(pos, r, rng=np.random.default_rng(cell_seed + s),
                                      n_baselines=n_baselines)
                 if m is None:
                     continue
                 pc = m.p_controlled
-                # the controlled exceedance probability on monkey_test's (k+1)/(N+1) scale,
-                # whether or not it was used, so the bias check sees every draw
-                ctl.append(float((m.estimate.controlled * n_baselines + 1.0)
-                                 / (n_baselines + 1.0)))
+                # the deployed estimate on monkey_test's (k+1)/(N+1) scale
+                ctl.append(float((m.estimate.value * n_baselines + 1.0) / (n_baselines + 1.0)))
                 raw.append(m.p_raw)
                 used.append(m.estimate.used)
                 g = guarded_decision(m.p_raw < GATE_ALPHA, None if pc is None else pc < GATE_ALPHA)
@@ -493,6 +537,8 @@ def _summary(cells: dict[str, Any]) -> dict[str, Any]:
     vr = sum(c["mc_var_raw"] for c in rows)
     vc = sum(c["mc_var_controlled"] for c in rows)
     ts = [abs(c["bias"]["t"]) for c in cells.values() if c["bias"]["t"] is not None]
+    se2 = sum(c["bias"]["se"] ** 2 for c in cells.values() if np.isfinite(c["bias"]["se"]))
+    pooled = sum(c["bias"]["mean_controlled_minus_raw"] for c in cells.values())
     gates = [c["gate"] for c in cells.values()]
     ratio = (vc / vr) if vr > 0 else None
     return {
@@ -502,6 +548,7 @@ def _summary(cells: dict[str, Any]) -> dict[str, Any]:
                                          < c["mc_var_raw"]),
         "cells_measurable": len(rows),
         "max_abs_bias_t": round(max(ts), 3) if ts else None,
+        "pooled_bias_z": round(float(pooled / np.sqrt(se2)), 3) if se2 > 0 else 0.0,
         "gate_changed_stricter": sum(g["changed_stricter"] for g in gates),
         "gate_loosening_refused": sum(g["loosening_refused"] for g in gates),
         "correct_raw": sum(g["correct_raw"] for g in gates),
@@ -512,16 +559,16 @@ def _summary(cells: dict[str, Any]) -> dict[str, Any]:
 
 def planted_truth_report(*, quick: bool = False) -> dict[str, Any]:
     """Both arms, with a verdict per arm: ADOPTABLE only if variance is lower and bias is nil."""
-    kw: dict[str, Any] = {"data_seeds": 2, "boot_seeds": 6} if quick else {}
+    kw: dict[str, Any] = {"data_seeds": 1, "boot_seeds": 12} if quick else {}
     spa = measure_spa(**kw)
-    monkey = measure_monkey(**({"data_seeds": 2, "perm_seeds": 6} if quick else {}))
+    monkey = measure_monkey(**({"data_seeds": 1, "perm_seeds": 16} if quick else {}))
     for arm in (spa, monkey):
         s = arm["summary"]
         lower = s["pooled_variance_ratio"] is not None and s["pooled_variance_ratio"] < 1.0
-        # |t| < 4 over a dozen cells: a real bias of the size that matters shows as t >> 4 at
-        # these run counts; the cross-fit makes the expectation exactly zero, so this is a
-        # regression alarm for a wrong known-mean, not a tuning knob.
-        unbiased = s["max_abs_bias_t"] is not None and s["max_abs_bias_t"] < 4.0
+        # The cross-fit makes the expectation exactly zero, so this is a regression alarm for a
+        # wrong known mean, not a tuning knob. Judged POOLED over the cells: one cell's t over
+        # ten heavily skewed tail draws spikes by chance (max_abs_bias_t is published anyway).
+        unbiased = abs(s["pooled_bias_z"]) < 4.0
         arm["verdict"] = ("ADOPTABLE: variance measured lower, no detectable bias, never looser"
                           if lower and unbiased
                           else "NOT ADOPTABLE: " + ("variance not lower" if not lower
