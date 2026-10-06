@@ -3,10 +3,10 @@
     Register the E8 prop lane's clocks on the trading box. Idempotent; touches only E8-* tasks.
 
 .DESCRIPTION
-    THREE ACTIVE CLOCKS, AND THEY ARE SEPARATE ON PURPOSE.
+    FOUR ACTIVE CLOCKS, AND THEY ARE SEPARATE ON PURPOSE.
 
-        E8-Executor   every 5 min     guard, flatten and manage positions inherited from the
-                                      retired certificate-selected FX book; opens no new FX.
+        E8-Executor   every 5 min     evaluate certified non-gold entries, guard and manage.
+        E8-Book       every hour     refresh certificates against the measured venue catalogue.
         E8-Gold       every 5 min     the same three gold windows as the Fusion book.
         E8-Spreads    at boot         the cost sampler. It is the only measurement of what this
                                       venue actually charges during the hours the book trades,
@@ -75,21 +75,20 @@ function Set-E8Task {
 
 Write-Host "E8 PROP LANE"
 Set-E8Task -Name "E8-Executor" -Script (Join-Path $prop "e8_executor.py") `
-    -ExtraArgs "--manage-only" `
+    -ExtraArgs "--enable-certified-entries" `
     -ScheduleArgs "New-ScheduledTaskTrigger -Once -At (Get-Date).Date -RepetitionInterval (New-TimeSpan -Minutes 5)" `
-    -Why "manage/flatten inherited E8 positions; legacy FX entry is retired"
+    -Why "canonical certified non-gold book; existing E8 account guards and arming marker"
 
 Set-E8Task -Name "E8-Gold" -Script (Join-Path $prop "e8_gold.py") `
     -RequiresDesktop `
     -ScheduleArgs "New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)" `
     -Why "mirror the three Fusion gold windows (sends only while data\E8_GOLD_ARMED exists)"
 
-# Historical task retained as an auditable object, but disabled: regenerating a retired FX book
-# is activity with no consumer and previously caused unintended FX exposure.
-if (Get-ScheduledTask -TaskName "E8-Book" -ErrorAction SilentlyContinue) {
-    Disable-ScheduledTask -TaskName "E8-Book" | Out-Null
-    Write-Host "  disabled E8-Book        retired certificate-selected FX lane"
-}
+Set-E8Task -Name "E8-Book" -Script (Join-Path $prop "e8_book.py") `
+    -RequiresDesktop `
+    -ScheduleArgs "New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(2) -RepetitionInterval (New-TimeSpan -Hours 1)" `
+    -Why "refresh the canonical certificate-selected book against the measured E8 catalogue"
+Enable-ScheduledTask -TaskName "E8-Book" | Out-Null
 
 Set-E8Task -Name "E8-Spreads" -Script (Join-Path $prop "e8_spread_sampler.py") `
     -RequiresDesktop `

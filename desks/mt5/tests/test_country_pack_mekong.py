@@ -46,6 +46,7 @@ from countries.mekong import pack as MK  # type: ignore[import-not-found]  # noq
 from libs.research import country_lab as CL  # noqa: E402
 from libs.research import forests as FORESTS  # noqa: E402
 from libs.research import regional_parity as RP  # noqa: E402
+from libs.research.country_lab import registered_terms_ground  # noqa: E402
 
 ACTOR_FIELDS = ("holds", "forced_to", "when", "information", "constraints", "instruments",
                 "counterparties", "observables", "impact", "persistence", "falsifier")
@@ -285,7 +286,9 @@ def test_all_ten_layers_are_sourced_and_every_gap_names_a_lawful_substitute() ->
         f"blank layers with no declared reason: {blank}")
     assert coverage["n_layers_covered"] + len(MK.LAYER_ABSENCES) == 10
     assert coverage["unexplained_missing"] == []
-    assert coverage["machine_use_forbidden"], "no licensed ground is registered at all"
+    # LAWS §5e (2026-09-23): terms-restricted ground is REGISTERED by its access label and mined;
+    # machine_use_allowed=false is a deleted brake, so the label is what proves it was not omitted.
+    assert registered_terms_ground(MK.SOURCE_CLASSES), "no licensed ground is registered at all"
     assert coverage["low_weight_kept"], "no fringe ground is kept at all, so it was dropped"
     assert len(MK.NO_LAWFUL_GROUND) >= 6, "three frontier economies with fewer than six holes "\
                                           "is a padded table, not a measurement"

@@ -68,7 +68,16 @@ def family_triangle(
     enumerator that found the triangle, never searched here: the correct orientation is a fact
     about the two symbols' names, and a family that tried both would be running two hypotheses
     while reporting one.
+
+    A leg NAMED but not handed over (the judge's build passes `leg_b_symbol` / `leg_c_symbol` and
+    no frames) is read on this frame's own chart by `family_inputs.bars_named`.
     """
+    if leg_b is None or leg_c is None:
+        from mt5desk.family_inputs import bars_named
+        if leg_b is None and leg_b_symbol:
+            leg_b = bars_named(leg_b_symbol, df)
+        if leg_c is None and leg_c_symbol:
+            leg_c = bars_named(leg_c_symbol, df)
     if leg_b is None or leg_c is None or sign_b not in (1, -1) or sign_c not in (1, -1):
         return []
     d = _h1(df)

@@ -48,8 +48,13 @@ def publish(d: dict) -> None:
     try:
         import json as _json
 
+        from research_budget import CONTRACT as _contract
         from research_budget import authority as _authority
         ok, why = _authority()
+        # THE BUDGET'S OWN VERDICT, KEPT APART FROM THE CONTROLLER'S (2026-09-30). `research_budget`
+        # is authoritative only when its contract's held-out arm ADMITTED the uplift it granted;
+        # the combined flag below may also be carried by cycle_pricing obeying the price stack.
+        budget_ok, budget_why = ok, why
         # AND THE WHOLE CYCLE'S PRICES, NOT JUST THESE TWO LEGS (Tier-1 B27, 2026-09-22).
         # `research_budget` knows the two legs whose arms this bandit prices; `cycle_pricing`
         # applies the price stack to EVERY leg's seconds and to the order they run in, and
@@ -68,6 +73,9 @@ def publish(d: dict) -> None:
         budget_doc = _json.loads(p.read_text(encoding="utf-8"))
         budget_doc["authoritative"] = bool(ok)
         budget_doc["authority_evidence"] = why
+        budget_doc["research_budget_authoritative"] = bool(budget_ok)
+        budget_doc["research_budget_why"] = budget_why
+        budget_doc["research_budget_contract"] = dict(_contract)
         p.write_text(_json.dumps(budget_doc, indent=1, default=str), encoding="utf-8")
         # THE REPORT IS THE FULL RUN, NOT THE TRIMMED BUDGET (Tier-1 B11/B12, 2026-09-23).
         #

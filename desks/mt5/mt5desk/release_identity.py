@@ -41,6 +41,7 @@ import json
 import os
 import re
 import subprocess
+import time
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -78,6 +79,31 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    "desks/mt5/reports/markout.json",
+    "desks/mt5/data/placement_interlock.json",
+    "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
+    "desks/mt5/reports/BOX_STATE_FLOW.json",
+    "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+    "desks/mt5/reports/DESK_HEALTH.json",
+    "desks/mt5/data/tier_s/box_evidence.json",
+    "desks/mt5/data/tier_s/live_door.json",
+    "desks/mt5/reports/NULL_LAB.json",
+    "desks/mt5/reports/KNOWN_BY_DATE.json",
+    "desks/mt5/reports/PIT_LAG_CENSUS.json",
+    "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json",
+    "desks/mt5/reports/DSR_INPUTS.json",
+    "desks/mt5/reports/OCCUPANCY_MAP.json",
+    "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
+    "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
+    # The rest of the Tier S promotion door's evidence, on the same sync (2026-09-30).
+    "desks/mt5/data/tier_s/door_verdicts.json",
+    "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
+    "desks/mt5/data/tier_s/RELEASE_STOP.json",
+    "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json",
+    "desks/mt5/reports/REPLICATION.json",
+    # The lockbox v4 re-certification ledger and the re-mint status (2026-09-30).
+    "desks/mt5/reports/LOCKBOX_RECERT.json",
+    "desks/mt5/reports/REMINT_STATUS.json",
 })
 
 #: STATE DIRECTORIES, verbatim from libs/ops/release.STATE_PREFIXES (mirrored, not imported --
@@ -102,11 +128,40 @@ STATE_PREFIXES: tuple[str, ...] = (
     "data/", "reports/", "logs/", "web/", "docs/",
 )
 
+#: STATE ARTIFACTS THAT SIT AT THE DESK ROOT INSTEAD OF UNDER data/, verbatim from
+#: libs/ops/release.STATE_FILES (mirrored, not imported -- see PURE ON PURPOSE above).
+#:
+#: THE MIRROR HAD NO EQUIVALENT OF THIS LIST AT ALL (measured on the box 2026-09-24, recovered
+#: box commit fe09b89b, ported 2026-09-30). `desks/mt5/swap_exposure.json` -- a file the box's
+#: swap organ rewrites every hour, named in `release.STATE_FILES` precisely because it kept
+#: refusing seals -- was classified CODE by the verdict the GATEWAY reads, and sat in
+#: `changed_paths` on the live box while the gold book placed nothing. Every entry is an organ's
+#: output; none is an input the gateway executes. The money path, the judge manifest and the
+#: survivor canon are held to their own per-file digests in step 2 of `verdict`, so naming these
+#: as state loses nothing. `test_hash_and_allowlist_mirror_the_seal` now pins EVERY list this
+#: module mirrors, and the classification itself, against libs/ops/release.
+STATE_FILES: frozenset[str] = frozenset({
+    "context/decision_journal.jsonl",
+    "docs/desk_lessons.jsonl",
+    "desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
+    "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
+    "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json", "desks/mt5/mech_split.json",
+    "desks/mt5/swap_exposure.json",
+    "desks/mt5/docs/TRADE_PATH_REPORT.md",
+})
+
+#: Regenerated build output, verbatim from libs/ops/release.BUILD_PREFIXES: neither code the
+#: gateway executes nor state it carries.
+BUILD_PREFIXES: tuple[str, ...] = ("dist/",)
+
 
 def _is_state_path(rel: str) -> bool:
-    """A repo-relative path that is evidence/record/rendering rather than code."""
+    """A repo-relative path that is evidence/record/rendering (or regenerated build output)
+    rather than code: the same answer as `release.is_state_path(p) or
+    release.is_build_artifact(p)`, which the parity test pins."""
     p = str(rel).replace("\\", "/").lstrip("./")
-    return any(p.startswith(prefix) for prefix in STATE_PREFIXES)
+    return (p in STATE_FILES or any(p.startswith(prefix) for prefix in STATE_PREFIXES)
+            or any(p.startswith(prefix) for prefix in BUILD_PREFIXES))
 
 
 _SHA = re.compile(r"[0-9a-f]{40}")
@@ -163,13 +218,61 @@ class Identity:
 
 
 # --------------------------------------------------------------------------------------- git
+#: HOW LONG TO TRY BEFORE CALLING A MEASUREMENT IMPOSSIBLE (2026-09-24).
+#:
+#: This was 10.0 for every call, and on the trading box that TURNED INTO A REFUSAL. Measured
+#: 18:05:03Z, with nine git processes contending for one repository:
+#:
+#:     running a07f3dad439e != sealed dbbbbdcc4d2f and the diff cannot be taken
+#:     (git absent, or the sealed commit is not in this clone)
+#:
+#: Neither of those things was true. git was present and the sealed commit was right there; the
+#: `git diff --name-only <seal> <head>` over a 24,000-path worktree simply did not finish inside
+#: ten seconds while the adoption, the shadow sync and three agents were all holding the index.
+#: The gateway then refused new risk for that pass on a question nobody had actually answered.
+#:
+#: RAISING THIS DOES NOT WEAKEN THE RAIL, and that distinction is the whole point: an identity
+#: that cannot be measured is still not a licence, and still refuses. All that changes is how
+#: long the desk TRIES before concluding it cannot be measured. A rail that reports UNMEASURED
+#: because it gave up early is not being careful, it is being wrong in the expensive direction.
+#: `rev-parse` keeps the short budget -- it is O(1) and a slow one really is a sick repository.
+DIFF_TIMEOUT_S = 90.0
+
+
+#: HOW MANY TIMES A GIT CALL IS TRIED BEFORE "git is absent" IS BELIEVED (2026-09-24).
+#:
+#: This function gave up after ONE attempt, and on the trading box that turned a busy moment into
+#: a refusal to trade. Measured across 2026-09-24: TWENTY-FIVE gateway passes recorded
+#:
+#:     RELEASE IDENTITY refuses NEW risk: running <sha> != sealed <sha> and the diff cannot be
+#:     taken (git absent, or the sealed commit is not in this clone)
+#:
+#: and the words are self-diagnosing -- `verdict` writes "git absent" only when `source != "git"`,
+#: which means `git rev-parse HEAD` itself returned nothing and the SHA had to be recovered by
+#: reading `.git` directly. git was installed and the sealed commit was present every single
+#: time; with 118 python processes and a dozen git processes on the box, the spawn simply lost.
+#: One failed spawn then skipped the diff entirely and the pass refused.
+#:
+#: RETRYING MEASURES MORE, IT DOES NOT PERMIT MORE. An identity that genuinely cannot be measured
+#: is still not a licence and still refuses -- three failures in a row on a machine where git
+#: works is a real fault worth refusing on. What changes is that a single lost spawn no longer
+#: counts as one. The cost is bounded: three attempts, 0.4s then 0.8s apart, once per pass.
+_GIT_ATTEMPTS = 3
+_GIT_BACKOFF_S = 0.4
+
+
 def _git(args: list[str], root: Path, timeout: float = 10.0) -> str | None:
-    try:
-        r = subprocess.run(["git", "-c", "core.quotepath=off", *args], cwd=str(root),
-                           capture_output=True, text=True, timeout=timeout)
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return r.stdout if r.returncode == 0 else None
+    for attempt in range(_GIT_ATTEMPTS):
+        try:
+            r = subprocess.run(["git", "-c", "core.quotepath=off", *args], cwd=str(root),
+                               capture_output=True, text=True, timeout=timeout)
+        except (OSError, subprocess.SubprocessError):
+            r = None
+        if r is not None and r.returncode == 0:
+            return r.stdout
+        if attempt < _GIT_ATTEMPTS - 1:
+            time.sleep(_GIT_BACKOFF_S * (2 ** attempt))
+    return None
 
 
 def _is_sha(s: str) -> bool:
@@ -445,7 +548,7 @@ def verdict(root: Path | None = None, *, now: datetime | None = None,
     # 1. The SHA. Equality needs nothing; anything else is a diff between two commits.
     ok, why, changed = True, f"running the sealed commit {release_sha[:12]}", []
     if sha != release_sha:
-        out = _git(["diff", "--name-only", release_sha, sha], r)
+        out = _git(["diff", "--name-only", release_sha, sha], r, timeout=DIFF_TIMEOUT_S)
         if out is None:
             ok, why = False, (f"running {sha[:12]} != sealed {release_sha[:12]} and the diff "
                               f"cannot be taken (git {'absent' if source != 'git' else 'failed'}"

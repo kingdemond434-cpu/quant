@@ -149,6 +149,29 @@ def test_git_probe_is_true_in_this_repo() -> None:
     assert ar._git_works(_MAX_AUDIT.parent) is True
 
 
+@pytest.mark.parametrize("snapshot", [[], ["dig-output-uncommitted"]])
+def test_status_failure_after_successful_git_probe_never_clears(snapshot, monkeypatch) -> None:
+    """A working rev-parse does not prove the later status measurement succeeded."""
+    import importlib
+
+    audit = importlib.import_module("scripts.max_audit")
+    monkeypatch.setattr(ar, "_git_works", lambda root=None: True)
+    calls = []
+
+    def refused(defects):
+        calls.append(True)
+        defects.append(("dig-output-unmeasured", "status timed out"))
+
+    monkeypatch.setattr(audit, "check_dig_uncommitted", refused)
+    rc = ar.recheck(snapshot)
+    assert len(calls) == 1
+    assert rc.cleared == []
+    assert not rc.ran
+    assert "status timed out" in rc.why
+    assert rc.unverified == sorted(snapshot or ar.VOLATILE)
+    assert any("UNMEASURED, not clean" in line for line in ar.render(rc))
+
+
 def test_commits_since_is_none_when_unmeasurable() -> None:
     """Unmeasurable must never render as zero -- that would read as 'the tree has not moved'."""
     assert ar.commits_since(None) is None

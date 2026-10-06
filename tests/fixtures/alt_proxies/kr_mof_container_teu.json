@@ -1,0 +1,41 @@
+{
+ "response": {
+  "header": {
+   "resultCode": "00",
+   "resultMsg": "NORMAL SERVICE."
+  },
+  "body": {
+   "items": {
+    "item": [
+     {
+      "useYm": "202508",
+      "prtAtCode": "020",
+      "eContnTeuTotal": "1100000",
+      "tContnTeuTotal": "1120000"
+     },
+     {
+      "useYm": "202508",
+      "prtAtCode": "620",
+      "eContnTeuTotal": "90000",
+      "tContnTeuTotal": "95000"
+     },
+     {
+      "useYm": "202608",
+      "prtAtCode": "020",
+      "eContnTeuTotal": "1150000",
+      "tContnTeuTotal": "1170000"
+     },
+     {
+      "useYm": "202608",
+      "prtAtCode": "620",
+      "eContnTeuTotal": "92000",
+      "tContnTeuTotal": "97000"
+     }
+    ]
+   },
+   "numOfRows": 5000,
+   "pageNo": 1,
+   "totalCount": 4
+  }
+ }
+}

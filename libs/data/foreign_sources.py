@@ -493,7 +493,11 @@ def _tag(block: str, name: str) -> str:
 
 
 def _err(exc: Exception) -> str:
-    return f"{type(exc).__name__}: {str(exc)[:140]}"
+    message = f"{type(exc).__name__}: {str(exc)[:140]}"
+    # HTTPError owns the failed response stream even when urlopen never returns it.
+    if isinstance(exc, urllib.error.HTTPError):
+        exc.close()
+    return message
 
 
 # ------------------------------------------------------------------------------- JAPANESE (ja)

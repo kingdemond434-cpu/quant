@@ -203,7 +203,8 @@ m.main()
             proc.kill()
             proc.wait(timeout=10)
 
-    assert rc == -signal.SIGTERM or rc == 143, f"expected death by SIGTERM, got rc={rc}"
+    expected = {int(signal.SIGTERM)} if os.name == "nt" else {-int(signal.SIGTERM), 143}
+    assert rc in expected, f"expected death by SIGTERM, got rc={rc}"
     saved = json.loads(state.read_text("utf-8"))
     assert saved.get("last_meta_research") == "2026-08-28T12:00:00+00:00", (
         "a duty that completed before the SIGTERM must survive it -- this is the exact loss that "

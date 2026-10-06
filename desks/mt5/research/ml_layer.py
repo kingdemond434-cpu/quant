@@ -165,6 +165,8 @@ def representation_contest(close: np.ndarray, *, window: int = CONTEST_WINDOW,
     would be a verdict about the fixture.
     """
     try:
+        from threadpoolctl import threadpool_limits
+
         from libs.models.embedding import (
             ContrastiveEncoder,
             WindowPCA,
@@ -194,17 +196,21 @@ def representation_contest(close: np.ndarray, *, window: int = CONTEST_WINDOW,
                            "dim": int(dim), "folds": int(folds), "steps": int(steps),
                            "bound": (f"most recent {max_windows} windows, {steps} Adam steps, "
                                      f"{folds} expanding folds -- an hourly leg's budget")}
-    for name, enc in (("window_pca", WindowPCA(dim=dim)),
-                      ("contrastive", ContrastiveEncoder(dim=dim, steps=steps, seed=0))):
-        try:
-            got = representation_gain(w3, fwin, encoder=enc, n_folds=folds)
-        except Exception as exc:
-            out[name] = {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
-            continue
-        out[name] = {kk: got[kk] for kk in ("embedding", "raw", "gain", "verdict", "folds", "n")
-                     if kk in got}
-        if got.get("why"):
-            out[name]["why"] = got["why"]
+    # Small fold matrices run inside an outer parallel research workload. One
+    # native BLAS thread avoids nested thread-pool oversubscription without
+    # changing windows, Adam steps, folds or the scored evidence population.
+    with threadpool_limits(limits=1, user_api="blas"):
+        for name, enc in (("window_pca", WindowPCA(dim=dim)),
+                          ("contrastive", ContrastiveEncoder(dim=dim, steps=steps, seed=0))):
+            try:
+                got = representation_gain(w3, fwin, encoder=enc, n_folds=folds)
+            except Exception as exc:
+                out[name] = {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+                continue
+            out[name] = {kk: got[kk] for kk in ("embedding", "raw", "gain", "verdict", "folds", "n")
+                         if kk in got}
+            if got.get("why"):
+                out[name]["why"] = got["why"]
     a, b = out.get("window_pca", {}), out.get("contrastive", {})
     if isinstance(a.get("gain"), (int, float)) and isinstance(b.get("gain"), (int, float)):
         out["better"] = "contrastive" if b["gain"] > a["gain"] else "window_pca"

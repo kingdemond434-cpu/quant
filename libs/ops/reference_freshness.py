@@ -725,16 +725,6 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "would have retired the whole book. Now require_live_reference(min_rows=50).",
     ),
     DestructivePath(
-        path_id="retire_untradeable.retire",
-        module="desks/mt5/research/retire_untradeable.py",
-        function="retire",
-        removes="survivors dropped from UNIVERSAL_SURVIVORS.json into retired_certificates",
-        reference="desks/mt5/data/universe/universe.json",
-        status="guarded",
-        note="The predicate demands positive venue evidence but READS it out of the registry, "
-             "which was loaded with an unguarded json.loads. Now floored and aged.",
-    ),
-    DestructivePath(
         path_id="purge_untradeable_certs.main",
         module="scripts/purge_untradeable_certs.py",
         function="main",
@@ -1083,6 +1073,18 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
         status="positive",
         note="SEALED and CLEARED: no write, no file, no row leaves any store. Recorded here so "
              "the next audit does not have to re-read the sealed file to find that out.",
+    ),
+    DestructivePath(
+        path_id="external_gauntlet.remint_partition",
+        module="desks/mt5/scripts/external_gauntlet.py",
+        function="remint_partition",
+        removes="survivor rows judged under a superseded attestation, popped from the survivor set",
+        reference="this sweep's own re-judge verdict on the same cell",
+        status="positive",
+        note="SEALED (lockbox v4 re-mint, 2026-10-01). POSITIVE EVIDENCE ONLY: a stale row is "
+             "retired only on a verdict this sweep produced that FAILED it; a row the sweep did "
+             "not reach goes to pending_rejudge and is carried, never dropped, and a universe "
+             "(symbol_eligibility) verdict is not taken as a verdict on the certificate.",
     ),
     DestructivePath(
         path_id="allocator_proof.no_destructive_path",

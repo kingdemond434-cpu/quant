@@ -51,6 +51,14 @@ def _baseline_tree(root: Path) -> None:
     con.execute("insert into discoveries values ('d1', '2026-09-24T01:00:00', 'miner')")
     con.commit()
     con.close()
+    # 7. the SEVENTH AXIS (certificate birth, 2026-09-24): every certificate the canon holds has
+    # a row in the birth record, naming its producer.
+    _write(root / "desks" / "mt5" / "data" / "UNIVERSAL_SURVIVORS.canon.json",
+           json.dumps({"survivors": {"external.OLD.cell": {"hunt": "external",
+                                                           "cell": "OLD.cell"}}}))
+    _write(root / "desks" / "mt5" / "data" / "certificate_provenance.json",
+           json.dumps({"records": {"OLD.cell": {"verdict": "ATTRIBUTED",
+                                                "producer": "miner"}}}))
 
 
 def _plant_five(root: Path) -> None:

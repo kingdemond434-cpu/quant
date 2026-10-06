@@ -102,6 +102,19 @@ def _canon(tmp_path, families: dict[str, int]):
     return p
 
 
+def _axis_canon(tmp_path, rows: list[dict]):
+    survivors = {}
+    for i, row in enumerate(rows):
+        spec = dict(row)
+        fam = str(spec.pop("family"))
+        sym = str(spec.pop("symbol", "EURUSD"))
+        survivors[f"{fam}.{i}"] = {
+            "sym": sym, "shadow_spec": {"symbol": sym, "family": fam, **spec}}
+    p = tmp_path / "axis_canon.json"
+    p.write_text(json.dumps({"n": len(survivors), "survivors": survivors}), "utf-8")
+    return p
+
+
 def test_existing_exposure_is_the_familys_share_of_the_certified_canon(tmp_path) -> None:
     canon = _canon(tmp_path, {"discovered": 32, "session_range_breakout": 20,
                               "overnight_gap_decay": 12, "carry": 1, "dav_range_filter_adx": 1})
@@ -118,6 +131,60 @@ def test_existing_exposure_without_a_family_or_a_canon_is_unmeasured(tmp_path) -
     assert v == 0.0 and "unmeasured" in why
     v, why = af.existing_exposure_term("carry", canon=tmp_path / "absent.json")
     assert v == 0.0 and "unmeasured" in why
+
+
+def test_exact_same_family_axis_pays_full_concentration_charge(tmp_path) -> None:
+    canon = _axis_canon(tmp_path, [
+        {"family": "carry", "symbol": "EURUSD", "session": "asia", "timeframe": "H1"},
+        {"family": "jump", "symbol": "XAUUSD", "session": "london", "timeframe": "M15"},
+    ])
+    value, why = af.existing_exposure_term(
+        "carry", {"session": "asia", "horizon": "H1"}, canon=canon)
+    assert value == pytest.approx(0.5)
+    assert "similarity is 1.000" in why
+
+
+def test_new_session_and_timeframe_relieve_same_family_pressure(tmp_path) -> None:
+    canon = _axis_canon(tmp_path, [
+        {"family": "carry", "symbol": "EURUSD", "session": "asia", "timeframe": "H1"},
+        {"family": "carry", "symbol": "GBPUSD", "session": "london", "timeframe": "H4"},
+        {"family": "jump", "symbol": "XAUUSD", "session": "ny", "timeframe": "M15"},
+    ])
+    # Both declared axes differ from every existing carry certificate: same mechanism, genuinely
+    # new clock/horizon experiment. It is still judged normally; only the search charge is lifted.
+    value, why = af.existing_exposure_term(
+        "carry", {"session": "ny", "horizon": "M5"}, canon=canon)
+    assert value == 0.0
+    assert "similarity is 0.000" in why
+
+
+def test_symbol_rename_alone_does_not_buy_independence_relief(tmp_path) -> None:
+    canon = _axis_canon(tmp_path, [
+        {"family": "carry", "symbol": "EURUSD", "asset_class": "fx",
+         "session": "asia", "timeframe": "H1"},
+    ])
+    value, why = af.existing_exposure_term(
+        "carry", {"instrument": "GBPUSD", "asset_class": "fx",
+                  "session": "asia", "horizon": "H1"}, canon=canon)
+    assert value == pytest.approx(1.0)
+    assert "similarity is 1.000" in why
+
+
+def test_partial_axis_difference_gives_only_proportional_relief(tmp_path) -> None:
+    canon = _axis_canon(tmp_path, [
+        {"family": "carry", "symbol": "EURUSD", "session": "asia", "timeframe": "H1"},
+        {"family": "jump", "symbol": "XAUUSD", "session": "ny", "timeframe": "M15"},
+    ])
+    value, why = af.existing_exposure_term(
+        "carry", {"session": "london", "horizon": "H1"}, canon=canon)
+    assert value == pytest.approx(0.25)  # 1/2 family share x 1/2 axis similarity
+    assert "similarity is 0.500" in why
+
+
+def test_legacy_certificate_without_chart_is_h1_not_unknown(tmp_path) -> None:
+    canon = _axis_canon(tmp_path, [{"family": "carry", "symbol": "EURUSD"}])
+    assert af.existing_exposure_term("carry", {"horizon": "H1"}, canon=canon)[0] == 1.0
+    assert af.existing_exposure_term("carry", {"horizon": "M5"}, canon=canon)[0] == 0.0
 
 
 def test_the_canon_is_re_read_when_it_changes(tmp_path) -> None:
