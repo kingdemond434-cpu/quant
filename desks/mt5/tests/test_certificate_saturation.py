@@ -465,3 +465,15 @@ def test_live_survivor_set_is_read_first_and_every_count_carries_its_basis(
         book={}, previous={}, loader=lambda s: None)
     assert built["certificates"]["basis"] == "git_snapshot"
     assert built["certificates"]["source"].endswith("UNIVERSAL_SURVIVORS.json")
+
+
+def test_duplicate_survivor_share_counts_the_archive_of_saturated_clusters(sat: dict) -> None:
+    dup = sat["duplicate_survivors"]
+    archived = sum(len(v.get("_archive") or []) for v in sat["clusters"].values())
+    assert dup["n_duplicate_survivors"] == archived > 0
+    assert sat["certificates"]["duplicate_survivor_share"] == pytest.approx(archived / 840,
+                                                                            abs=1e-4)
+    # nothing is revoked: every certificate is still counted
+    assert sat["certificates"]["n_certificates"] == 840
+    fresh = _build({"survivors": {"a": _cert("EURUSD", "carry", {})}})
+    assert fresh["certificates"]["duplicate_survivor_share"] == 0.0

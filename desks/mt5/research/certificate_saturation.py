@@ -982,7 +982,9 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
             continue
         certs.append({"key": str(key), "sym": sym, "fam": fam, "params": params, "tf": tf,
                       "sess": sess, "reg": reg, "spec": spec, "edge": cert_edge(cert),
-                      "gated_at": str(cert.get("gated_at") or "")})
+                      "gated_at": str(cert.get("gated_at") or ""),
+                      "src": str(cert.get("source") or cert.get("hunt")
+                                 or str(key).split(".", 1)[0] or UNKNOWN)})
     syms = sorted({c["sym"] for c in certs})
     if coupling_tab is None:
         try:
@@ -1211,6 +1213,22 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
                            if any("|".join(sleeve_identity(x)[:2]) in live_names for x in g))
     n_variants = len({g["cluster"] for g in glist})
     quality = edge_quality(certs, now=now)
+    # DUPLICATE SURVIVORS (producer law 8): certificates that passed every gate into a SATURATED
+    # cluster behind its champion and challengers -- the archive. A share, not a verdict: they stay
+    # certified; the share says how much of the factory's output bought no new bet.
+    dup_keys = {k for v in clusters.values() for k in (v.get("_archive") or [])}
+    by_src: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    for c in certs:
+        by_src[c["src"]][0] += 1
+        by_src[c["src"]][1] += int(c["key"] in dup_keys)
+    duplicate_survivors = {
+        "share": round(len(dup_keys) / n_cert, 4) if n_cert else None,
+        "n_duplicate_survivors": len(dup_keys),
+        "by_producer": {k: {"certificates": n, "duplicates": d, "share": round(d / n, 4)}
+                        for k, (n, d) in sorted(by_src.items()) if n},
+        "rule": ("a certificate archived behind the champion and challengers of a SATURATED "
+                 "cluster; it stays certified and nothing is revoked"),
+    }
     headline = {
         **basis,
         "n_certificates": n_cert,
@@ -1228,6 +1246,7 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
         "independent_streams_status": fdep.get("status"),
         "effective_over_nominal": round(n_eff / n_cert, 4) if n_cert else None,
         "n_saturated_clusters": sum(1 for v in clusters.values() if v["state"] == "SATURATED"),
+        "duplicate_survivor_share": duplicate_survivors["share"],
         "failure_mode_effective_count": round(fm_eff, 3) if fm_eff else None,
         "median_validated_edge_recent": quality.get("median_recent"),
         "median_validated_edge_prior": quality.get("median_prior"),
@@ -1273,6 +1292,7 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
         "empty_cluster_priors": empty_priors,
         "family_split_candidates": split, "family_merge_candidates": merge[:100],
         "breadth_debts": debts,
+        "duplicate_survivors": duplicate_survivors,
     }
 
 
@@ -1781,6 +1801,8 @@ def write_feedback(evidence: Mapping[str, Any], *, path: Path | None = None,
            "status": MEASURED, "map_at": evidence.get("map_at"),
            "certificates": evidence.get("certificates"),
            "duplicate_share": round(total_dup / total_rows, 4) if total_rows else None,
+           # the SURVIVOR side of the same question: certified output that bought no new bet
+           "duplicate_survivors": (doc_map or {}).get("duplicate_survivors"),
            "method_breadth": {"rows_by_method": dict(methods.most_common()),
                               "effective_methods": round(m_eff, 3) if m_eff else None,
                               "note": ("method breadth is NOT alpha breadth (law 18): it is "

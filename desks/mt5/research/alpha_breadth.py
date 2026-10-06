@@ -609,7 +609,7 @@ def _append_history(doc: dict[str, Any]) -> None:
     cert = doc.get("certificates") if isinstance(doc.get("certificates"), dict) else {}
     for k in ("n_certificates", "n_effective_certificates", "n_strategy_variants",
               "n_structural_clusters", "n_economic_clusters", "n_independent_forward_streams",
-              "n_saturated_clusters", "robust_k_eff_book", "stress_k_eff_book",
+              "n_saturated_clusters", "duplicate_survivor_share", "robust_k_eff_book", "stress_k_eff_book",
               "tail_k_eff_book", "median_validated_edge_recent", "basis", "source",
               "source_mtime"):
         if k in cert:
