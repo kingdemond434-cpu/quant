@@ -100,7 +100,39 @@ def lookup(names: Sequence[str], files: Iterable[Path] = ()) -> tuple[str | None
     return None, "absent"
 
 
-SECRET_SUFFIXES = ("_KEY", "_TOKEN", "_SECRET")
+SECRET_SUFFIXES = ("_KEY", "_TOKEN", "_SECRET", "_HASH", "_PASS", "_PASSWORD", "_USER",
+                   "_USERNAME", "_EMAIL", "_MAILADDRESS", "_UA", "_APP_ID")
+#: The key inventory (libs/ops/env_keys_catalog.json): every credential the code reads, by name
+#: and alias. A name it lists is carried even when its suffix is unusual; a name in a refused
+#: group (paid data, banned sources) is never carried, whatever its suffix.
+CATALOG = Path(__file__).with_name("env_keys_catalog.json")
+REFUSED_GROUPS = frozenset({"paid_blocked", "banned"})
+
+
+def _catalog_names() -> tuple[set[str], set[str]]:
+    """(allowed, refused) upper-cased names from the catalog; both empty when it is absent."""
+    allowed: set[str] = set()
+    refused: set[str] = set()
+    try:
+        rows = json.loads(CATALOG.read_text(encoding="utf-8")).get("keys", [])
+    except (OSError, ValueError, AttributeError):
+        return allowed, refused
+    for r in rows if isinstance(rows, list) else []:
+        if not isinstance(r, dict):
+            continue
+        names = {str(n).upper() for n in [r.get("name"), *(r.get("aliases") or [])] if n}
+        (refused if r.get("group") in REFUSED_GROUPS else allowed).update(names)
+    return allowed, refused
+
+
+def is_secret_name(name: str, catalog: tuple[set[str], set[str]] | None = None) -> bool:
+    """A variable a resident should carry to its children: a catalogued credential or a
+    credential-shaped name, and never one the catalog refuses."""
+    allowed, refused = _catalog_names() if catalog is None else catalog
+    up = name.upper()
+    if up in refused:
+        return False
+    return up in allowed or up.endswith(SECRET_SUFFIXES)
 
 
 def _registry_all(hive: str) -> dict[str, str]:
@@ -128,16 +160,18 @@ def _registry_all(hive: str) -> dict[str, str]:
 
 
 def fresh_secrets(existing: dict[str, str] | None = None) -> dict[str, str]:
-    """Secret-looking variables (`*_KEY`, `*_TOKEN`, `*_SECRET`) that the registry holds and the
-    given environment lacks: the keys a `setx /M` added after this process started. A resident
-    merges them into each child's environment, so a key the principal sets reaches the next pass
-    without a reboot. Only fills ABSENT names; never overrides what the process already has."""
+    """Credential variables (`is_secret_name`: catalogued, or credential-shaped like `*_KEY`,
+    `*_TOKEN`, `*_PASSWORD`, `*_USER`) that the registry holds and the given environment lacks:
+    the keys a `setx /M` added after this process started. A resident merges them into each
+    child's environment, so a key the principal sets reaches the next pass without a reboot.
+    Only fills ABSENT names; never overrides what the process already has."""
     env = os.environ if existing is None else existing
     have = {k.upper() for k, v in env.items() if str(v).strip()}
     out: dict[str, str] = {}
+    cat = _catalog_names()
     for hive in ("machine", "user"):
         for name, value in _registry_all(hive).items():
-            if (name.upper().endswith(SECRET_SUFFIXES) and value.strip()
+            if (is_secret_name(name, cat) and value.strip()
                     and name.upper() not in have and name not in out):
                 out[name] = os.path.expandvars(value.strip())
     return out
