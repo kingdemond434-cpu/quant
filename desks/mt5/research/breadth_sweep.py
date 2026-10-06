@@ -176,7 +176,7 @@ CHARTS = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
 #: `family_call.SESSIONS` defines the windows in server hours and applies the filter in the one
 #: call path the gauntlet, the forward clock and the live executor share; here it is only an
 #: identity key on the cell. Daily bars carry no session.
-SESSION_AXIS = ("all", "asia", "london", "ny")
+SESSION_AXIS = ("all", "asia", "london", "ny", "tokyo_fix", "london_fix", "overlap")
 #: Constructors that are not families of their own: they take a spec and build others.
 NOT_A_FAMILY = frozenset({"generic", "formula", "ensemble", "cross_sectional"})
 #: How many new cells one run may merge, most intraday first: the sweep is idempotent, so a

@@ -764,7 +764,7 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
 INTRADAY_CHARTS = ("M1", "M5", "M15", "M30")
 SWING_CHARTS = ("H4", "D1")
 CHARTS = (*INTRADAY_CHARTS, *SWING_CHARTS)
-SESSION_AXIS = ("all", "asia", "london", "ny")
+SESSION_AXIS = ("all", "asia", "london", "ny", "tokyo_fix", "london_fix", "overlap")
 
 
 def _charts_with_bars(symbol: str) -> list[str]:

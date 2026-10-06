@@ -104,9 +104,10 @@ N_MIN = 30
 #: well over N_MIN times on H1 (~3 years) and on M5 (~70 days), bounded so one key costs seconds.
 BAR_TAIL = 20_000
 #: The session axis the producers mint. `all` is never dead and never remapped.
-SESSION_NAMES = ("asia", "london", "ny")
+SESSION_NAMES = ("asia", "london", "ny", "tokyo_fix", "london_fix", "overlap")
 _FALLBACK_SESSIONS: dict[str, tuple[int, int] | None] = {
-    "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None}
+    "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None,
+    "tokyo_fix": (2, 5), "london_fix": (17, 19), "overlap": (15, 18)}
 
 #: Parameters that set an HOUR OF DAY. Matched by name against each family's signature, never
 #: listed per family, so a family that gains one is re-anchorable the day it does.

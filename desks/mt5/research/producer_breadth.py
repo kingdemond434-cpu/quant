@@ -61,7 +61,7 @@ AUTO_LEGS = BASE / "data" / "auto_legs.json"
 RESEARCH = BASE / "research"
 
 UNMEASURED = "UNMEASURED"
-SESSIONS = ("all", "asia", "london", "ny")
+SESSIONS = ("all", "asia", "london", "ny", "tokyo_fix", "london_fix", "overlap")
 LADDER = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
 #: Seat files read per pass, newest first, and the byte ceiling across them. The intelligence
 #: tree is ~3 GB and the build box has 8 GB; a reader that loads it whole is the defect
