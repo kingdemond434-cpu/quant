@@ -162,3 +162,40 @@ def test_the_frontier_has_a_home_on_the_hourly_meta_rnd_leg(name):
     assert meta_rnd.FRONTIER.name == name
     src = (DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
     assert '"meta_rnd", "research/meta_rnd.py", "--once"' in src
+
+
+def _daily(n_days: int, seed: int = 0) -> dict[str, dict[str, float]]:
+    import numpy as np
+    rng = np.random.default_rng(seed)
+    days = [f"2026-{1 + i // 28:02d}-{1 + i % 28:02d}" for i in range(n_days)]
+    return {f"s{k}": {d: float(rng.normal(0.05 * (k - 1), 1.0)) for d in days}
+            for k in range(4)}
+
+
+def test_cadence_and_bound_reads_unmeasured_on_a_short_book():
+    out = meta_rnd.cadence_and_bound(_daily(20))
+    assert out["status"] == "UNMEASURED" and "need" in out["why"]
+
+
+def test_cadence_and_bound_publishes_intervals_turnover_and_a_nonnegative_gap():
+    out = meta_rnd.cadence_and_bound(_daily(150, seed=3), boots=40)
+    assert out["status"] == "MEASURED" and out["days"] == 150
+    c = out["cadence"]
+    assert set(c) == {"1", "5", "20"}
+    assert c["1"]["turnover"] >= c["20"]["turnover"]       # faster re-weights more
+    for row in c.values():
+        lo, hi = row["ci90"]
+        assert lo <= hi
+    assert all(0.0 <= p <= 1.0 for p in out["p_faster_beats_slower"].values())
+    assert out["bound"]["gap"] >= -1e-9                       # the bound bounds the proxy
+    assert "PROXY" in out["subject"]
+
+
+def test_the_frontier_reports_the_cadence_and_bound_rows_when_measured(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_rnd, "DESK", tmp_path)
+    st = meta_rnd.cadence_and_bound(_daily(150, seed=3), boots=20)
+    fr = meta_rnd.frontier({"ordering": {}, "cadence_and_bound": st})
+    rows = {r["id"]: r for r in fr["limitations"]}
+    assert rows["allocator_speed_vs_turnover"]["status"] == "MEASURED"
+    assert rows["optimality_gap"]["status"] == "MEASURED"
+    assert rows["optimality_gap"]["result"]["gap"] >= -1e-9

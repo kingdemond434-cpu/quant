@@ -48,6 +48,7 @@ import json
 import sys
 import time
 from datetime import UTC, datetime
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -429,6 +430,118 @@ def build(budget_s: float = 180.0) -> dict[str, Any]:
     }
 
 
+# ===================================================================== CADENCE AND BOUND
+#: The proxy's units. One R is RISK_PER_R of equity; each unit of weight turned over costs
+#: TURNOVER_COST_R in R. Both are declared assumptions, published with every result.
+RISK_PER_R = 0.005
+TURNOVER_COST_R = 0.02
+CADENCES = (1, 5, 20)
+MIN_DAYS = 60
+
+
+def _matrix(daily: dict[str, dict[str, float]]) -> tuple[list[str], list[str], Any]:
+    import numpy as np
+    sleeves = sorted(k for k, v in daily.items() if isinstance(v, dict) and len(v) >= 10)
+    days = sorted({d for k in sleeves for d in daily[k]})
+    m = np.array([[float(daily[k].get(d, 0.0)) for k in sleeves] for d in days]) \
+        if sleeves and days else np.zeros((0, 0))
+    return sleeves, days, m
+
+
+def _proxy_weights(m: Any, t: int, lookback: int = 20) -> Any:
+    """The PROXY allocator: equal weight over sleeves whose trailing mean R is positive."""
+    import numpy as np
+    past = m[max(0, t - lookback):t]
+    if len(past) == 0:
+        return np.zeros(m.shape[1])
+    on = past.mean(axis=0) > 0
+    return on / on.sum() if on.any() else np.zeros(m.shape[1])
+
+
+def cadence_and_bound(daily: dict[str, dict[str, float]], seed: int = 0,
+                      boots: int = 300) -> dict[str, Any]:
+    """TWO RESEARCH-PROCESS QUESTIONS ON THE RECORDED BOOK.
+
+    CADENCE: does re-weighting faster raise net log growth, or only turnover? The proxy is
+    re-weighted every 1, 5 and 20 days on the same days, net of a turnover charge; a stationary
+    block bootstrap over days gives each cadence's interval and P(faster beats slower).
+
+    BOUND: the hindsight-optimal FIXED fraction per sleeve (long-only, grid-searched on the whole
+    window) is an upper bound no causal fixed-weight rule can beat on that window. The gap from
+    the proxy's realised growth to it is the optimality gap -- a bound, not a target."""
+    import numpy as np
+    sleeves, days, m = _matrix(daily)
+    if len(days) < MIN_DAYS or not sleeves:
+        return {"status": "UNMEASURED",
+                "why": f"{len(days)} recorded day(s) across {len(sleeves)} sleeve(s); need "
+                       f"{MIN_DAYS}"}
+    ret = m * RISK_PER_R
+
+    def run(c: int, idx: Any) -> tuple[Any, float]:
+        w = np.zeros(m.shape[1])
+        g, turn = [], 0.0
+        for j, t in enumerate(idx):
+            if j % c == 0:
+                nw = _proxy_weights(m, int(t))
+                turn += float(np.abs(nw - w).sum())
+                cost = float(np.abs(nw - w).sum()) * TURNOVER_COST_R * RISK_PER_R
+                w = nw
+            else:
+                cost = 0.0
+            g.append(np.log1p(float(ret[int(t)] @ w) - cost))
+        return np.array(g), turn
+
+    base = np.arange(len(days))
+    out: dict[str, Any] = {}
+    for c in CADENCES:
+        g, turn = run(c, base)
+        out[str(c)] = {"mean_log_growth": round(float(g.mean()), 7),
+                       "turnover": round(turn, 3)}
+    rng = np.random.default_rng(seed)
+    block = 10
+    wins = {f"{a}_vs_{b}": 0 for a, b in pairwise(CADENCES)}
+    draws: dict[str, list[float]] = {str(c): [] for c in CADENCES}
+    n = len(days)
+    for _ in range(boots):
+        starts = rng.integers(0, n, size=n // block + 1)
+        idx = np.concatenate([(s + np.arange(block)) % n for s in starts])[:n]
+        means = {c: float(run(c, idx)[0].mean()) for c in CADENCES}
+        for c in CADENCES:
+            draws[str(c)].append(means[c])
+        for a, b in pairwise(CADENCES):
+            wins[f"{a}_vs_{b}"] += int(means[a] > means[b])
+    for c in CADENCES:
+        lo, hi = np.quantile(draws[str(c)], [0.05, 0.95])
+        out[str(c)]["ci90"] = [round(float(lo), 7), round(float(hi), 7)]
+    grid = np.linspace(0.0, 2.0, 21)
+    best_f = np.zeros(m.shape[1])
+
+    def growth(f: Any) -> float:
+        port = ret @ f
+        return float(np.log1p(port).mean()) if np.all(port > -1.0) else -np.inf
+    for _ in range(3):                              # coordinate ascent on the fixed fractions
+        for j in range(m.shape[1]):
+            trial = best_f.copy()
+            scores = []
+            for f in grid:
+                trial[j] = f
+                scores.append(growth(trial))
+            best_f[j] = grid[int(np.argmax(scores))]
+    bound = float(np.log1p(ret @ best_f).mean())
+    realised = out[str(CADENCES[0])]["mean_log_growth"]
+    return {"status": "MEASURED", "days": n, "sleeves": len(sleeves),
+            "subject": "equal weight over trailing-positive sleeves (a PROXY, not pf_allocator)",
+            "assumptions": {"risk_per_r": RISK_PER_R, "turnover_cost_r": TURNOVER_COST_R,
+                            "bootstrap": f"stationary blocks of {block} days x {boots}"},
+            "cadence": out,
+            "p_faster_beats_slower": {k: round(v / boots, 3) for k, v in wins.items()},
+            "bound": {"hindsight_fixed_fraction_log_growth": round(bound, 7),
+                      "proxy_daily_log_growth": realised,
+                      "gap": round(bound - float(realised), 7),
+                      "why": "in-sample hindsight optimum over fixed fractions: an upper bound "
+                             "for any causal fixed-weight rule on this window, never a target"}}
+
+
 # ===================================================================== THE FRONTIER REPORT
 def _rep(name: str) -> Path:
     return DESK / "reports" / name
@@ -473,7 +586,8 @@ LIMITATIONS: tuple[dict[str, Any], ...] = (
     {"id": "allocator_speed_vs_turnover", "owner": "research/rebalance_trigger.py",
      "limit": "a faster rebalance cadence has never been replayed against net results; the "
               "trigger decides per event but no cadence is compared",
-     "artifacts": ("REBALANCE_TRIGGER.json", "ALLOCATOR_PROOF.json"), "challenger": None,
+     "artifacts": ("REBALANCE_TRIGGER.json", "ALLOCATOR_PROOF.json"),
+     "challenger": "cadence",
      "resources": "recorded forward daily R and the live ledger's costs",
      "next": "replay hourly vs daily vs weekly rebalancing of the recorded book: net E[log W] "
              "and turnover per cadence, with a block-bootstrap interval"},
@@ -501,7 +615,7 @@ LIMITATIONS: tuple[dict[str, Any], ...] = (
     {"id": "optimality_gap", "owner": "libs/portfolio/allocator_proof.py",
      "limit": "no allocator decision is compared with a bound (hindsight oracle or the solver's "
               "dual), so the gap to optimal is unknown",
-     "artifacts": ("ALLOCATOR_PROOF.json",), "challenger": None,
+     "artifacts": ("ALLOCATOR_PROOF.json",), "challenger": "bound",
      "resources": "recorded daily R; a hindsight-Kelly solve per window",
      "next": "publish realised log growth against the hindsight-optimal fixed-fraction bound "
              "per window: the gap and its interval"},
@@ -535,6 +649,18 @@ def _challenger_result(cid: str, arts: dict[str, dict[str, Any]],
                 "verdicts": {k: (r or {}).get("verdict") for k, r in v.items()},
                 "uncertainty": "posterior P(worse than leader) per arm; mean and SE of the "
                                "out-of-sample net-gain gap"}
+    if cid in ("cadence", "bound"):
+        st = meta.get("cadence_and_bound") or {}
+        if st.get("status") != "MEASURED":
+            return {"status": "UNMEASURED", "why": st.get("why") or "study not run"}
+        if cid == "cadence":
+            return {"status": "MEASURED", "subject": st["subject"], "cadence": st["cadence"],
+                    "p_faster_beats_slower": st["p_faster_beats_slower"],
+                    "uncertainty": "90% block-bootstrap interval per cadence",
+                    "assumptions": st["assumptions"]}
+        return {"status": "MEASURED", "subject": st["subject"], **st["bound"],
+                "uncertainty": "in-sample bound; the gap is an upper limit on what a better "
+                               "fixed-weight rule could have added on this window"}
     if cid == "reusable_holdout":
         g = (meta.get("ordering") or {}).get("reusable_holdout") or {}
         return {"status": "MEASURED" if g.get("status") in ("VALID", "EXHAUSTED")
@@ -588,6 +714,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--budget-s", type=float, default=180.0)
     a = ap.parse_args(argv)
     doc = build(budget_s=a.budget_s)
+    try:
+        from research import portfolio_evidence as pe
+        doc["cadence_and_bound"] = cadence_and_bound(pe.daily_series())
+    except Exception as exc:
+        doc["cadence_and_bound"] = {"status": "UNMEASURED",
+                                    "why": f"{type(exc).__name__}: {exc}"}
     try:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
