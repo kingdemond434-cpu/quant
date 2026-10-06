@@ -155,11 +155,20 @@ def test_the_queue_reprices_when_a_debt_is_paid(sat: dict[str, Any]) -> None:
     moved = [k for k in before.keys() & after.keys()
              if before[k]["expected_delta_k_eff"] != after[k]["expected_delta_k_eff"]]
     assert moved, "paying a debt repriced nothing"
+    # the published queue changes: the paid debt leaves and its neighbours fall behind
     rows_b, _ = pb.bounties({}, {}, {}, {}, {}, {}, {}, {}, {}, sat)
     rows_a, _ = pb.bounties({}, {}, {}, {}, {}, {}, {}, {}, {}, paid)
+    ids_b = [b["bounty_id"] for b in rows_b if b["kind"] == "breadth_debt"]
+    ids_a = [b["bounty_id"] for b in rows_a if b["kind"] == "breadth_debt"]
+    assert ids_b != ids_a
+    # and the value the queue bids with falls: one stream fewer is missing, neighbours cheaper
+
+    def queue(doc: dict[str, Any]) -> list[dict[str, Any]]:
+        return [{"targets": ["discovery"], "evidence": {"value_units": d["value_units"]}}
+                for d in doc["breadth_debts"]]
     deps = ("discovery",)
-    assert (ra.bids(deps, {}, {}, {"bounties": rows_b}, {}, {})["discovery"]["bid"]
-            != ra.bids(deps, {}, {}, {"bounties": rows_a}, {}, {})["discovery"]["bid"])
+    assert (ra.bids(deps, {}, {}, {"bounties": queue(paid)}, {}, {})["discovery"]["bid"]
+            < ra.bids(deps, {}, {}, {"bounties": queue(sat)}, {}, {})["discovery"]["bid"])
 
 
 # ------------------------------------------------------------------ must-fix 3
