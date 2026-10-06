@@ -607,6 +607,27 @@ def gate_data(child: Mapping[str, Any], ctx: TM.Context) -> tuple[bool, str]:
     return True, f"data:ok ({pit})"
 
 
+def gate_executability(child: Mapping[str, Any]) -> tuple[bool, str]:
+    """Refuse variants the shared replay cannot implement before donating them.
+
+    The gauntlet still owns the verdict. This is only its existing modifier contract
+    applied at the compiler door, with the refusal retained in conversion memory.
+    """
+    from mt5desk import cell_modifiers, families, families_orthogonal
+
+    family = str(child.get("family") or "")
+    fn = getattr(families, f"family_{family}", None)
+    if fn is None:
+        fn = families_orthogonal.ORTHOGONAL_FAMILIES.get(family)
+    if fn is None:
+        return False, f"execution:no_implementation ({family})"
+    _call, mods = cell_modifiers.split(fn, dict(child.get("params") or {}))
+    reason = cell_modifiers.refusal(mods)
+    if reason:
+        return False, f"execution:modifier_unavailable ({reason})"
+    return True, "execution:replayable"
+
+
 def pit_status(child: Mapping[str, Any], ctx: TM.Context) -> str:
     """PIT_BAR_CLOSE for a price-only cell (a bar is knowable at its own close); PIT_STAMPED when
     the conditioning axis file carries `knowable_at`; UNKNOWN otherwise, which the data gate
@@ -658,13 +679,20 @@ def _redundant_keys() -> set[str]:
 def parent_of(disc: Mapping[str, Any], ctx: TM.Context) -> dict[str, Any]:
     """A registry discovery, normalised into the parent the twelve miners read."""
     spec = dict(disc)
+    params = dict(spec.get("params") or {})
     sym = str(spec.get("symbol") or "").upper()
     mid, _why = interpret(str(spec.get("why") or ""), str(spec.get("declared_mechanism") or ""))
     contract = TM.CONTRACTS.get(mid)
     spec["mechanism_id"] = mid
     spec["symbol"] = sym
     spec["asset_class"] = spec.get("asset_class") or ctx.class_of(sym)
-    spec["chart"] = (str(spec.get("chart") or "").upper() or "H1")
+    # A chart is part of the hypothesis identity.  The compiler used to turn an absent chart
+    # into H1 here, so source leads that had never named a clock were tested as H1 strategies
+    # and became indistinguishable from sources that explicitly proposed H1.  Accept every
+    # spelling the intake contract supports, but leave genuine absence blank for `gate_data` to
+    # disposition as `data:no_chart`; absence is a dependency, never a default observation.
+    spec["chart"] = str(spec.get("chart") or spec.get("timeframe")
+                        or params.get("timeframe") or "").upper()
     spec["session"] = str(spec.get("session") or "all").lower() or "all"
     # UNCONDITIONAL IS A VALUE, NOT A BLANK. `grid_cell` renders a falsy axis as the literal
     # "unknown", and an unconditional arm is not an unknown one -- it is the control every
@@ -676,7 +704,7 @@ def parent_of(disc: Mapping[str, Any], ctx: TM.Context) -> dict[str, Any]:
                            or (contract.information if contract else "price_only"))
     spec["economic_actor"] = spec.get("economic_actor") or (contract.actor if contract else "")
     spec["horizon"] = TM.CHART_GRID_HORIZON.get(spec["chart"], "unknown")
-    spec["params"] = dict(spec.get("params") or {})
+    spec["params"] = params
     return spec
 
 
@@ -813,7 +841,12 @@ def complete_inputs(child: dict[str, Any], ctx: TM.Context,
             or (legs_keys and all(params.get(k) for k in legs_keys)):
         return child
     sym = str(child.get("symbol") or "")
-    chart = str(child.get("chart") or params.get("timeframe") or "H1").upper()
+    chart = str(child.get("chart") or params.get("timeframe") or "").upper()
+    if not chart:
+        # `gate_data` will record the canonical `data:no_chart` disposition.  Choosing peers on
+        # H1 first would still perform a hidden clock substitution even though the child later
+        # failed the gate.
+        return child
     pool = sorted({s for syms in ctx.instruments.values() for s in syms
                    if str(s).upper() != sym.upper() and ctx.hypothesis_lane(s)
                    and ctx.has_bars(s, chart)})
@@ -886,6 +919,7 @@ def _dispose(child: dict[str, Any], ctx: TM.Context, *, coverage: Mapping[str, i
     economics is not also a data gap, and reporting it as both would double-count the debt."""
     for gate in (lambda: gate_economic(child, ctx),
                  lambda: gate_data(child, ctx),
+                 lambda: gate_executability(child),
                  lambda: gate_novelty(child, ctx, coverage=coverage, hashes=hashes,
                                       redundant=redundant, conn=conn)):
         ok, why = gate()

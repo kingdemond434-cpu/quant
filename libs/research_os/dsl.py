@@ -102,6 +102,16 @@ def validate(tree: Any, depth: int = 0, seen: list[int] | None = None) -> None:
     args = list(tree[1:])
     if len(args) != arity:
         raise DslError(f"{op} takes {arity} argument(s), got {len(args)}")
+    window_ops = {"lag", "diff", "pct", "roll_mean", "roll_std", "roll_max",
+                  "roll_min", "zscore", "decay"}
+    if op in window_ops:
+        window = args[1]
+        numeric = (isinstance(window, (int, float)) and not isinstance(window, bool)
+                   if op == "decay" else type(window) is int)
+        if not numeric or not 0 < window <= MAX_WINDOW:
+            kind = "number" if op == "decay" else "integer"
+            raise DslError(f"{op} needs a POSITIVE bounded {kind} window; "
+                           "strings, booleans and fractional shifts are refused")
     for a in args:
         if isinstance(a, (list, tuple)):
             validate(a, depth + 1, seen)
@@ -150,11 +160,19 @@ def evaluate(tree: Any, ctx: Ctx) -> pd.Series:
     if op == "rank":
         # CROSS-SECTIONAL, the shape family_generic cannot express. Contemporaneous only.
         s = _series(a, ctx)
-        frame = pd.DataFrame({k: v["close"].astype(float).reindex(idx).ffill()
-                              for k, v in ctx.universe.items() if "close" in v})
-        if frame.empty:
+        if not ctx.universe:
             raise DslError("cross-sectional rank needs a universe; none was supplied")
-        return frame.rank(axis=1, pct=True).reindex(idx).mean(axis=1).where(s.notna())
+        # Rank the requested factor for THIS instrument. The mean of all asset
+        # ranks is constant and contains no cross-sectional information.
+        subject = object()
+        columns = {subject: s}
+        for name, peer in ctx.universe.items():
+            if peer is ctx.primary:
+                continue
+            columns[name] = _series(a, Ctx(primary=peer, universe=ctx.universe)).reindex(idx)
+            columns[name] = columns[name].ffill()
+        frame = pd.DataFrame(columns, index=idx)
+        return frame.rank(axis=1, pct=True)[subject].where(s.notna())
 
     x = _series(a, ctx)
     if op in ("lag", "diff", "pct", "roll_mean", "roll_std", "roll_max", "roll_min",

@@ -31,6 +31,9 @@ import numpy as np
 import pandas as pd
 
 BASE = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(BASE))
+from research.parquet_publication import atomic_parquet  # noqa: E402
+
 UNIVERSE = BASE / "data" / "universe"
 TIMEFRAMES = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
 #: What each pass built or refused, per timeframe -- the organ's attested artifact.
@@ -87,7 +90,7 @@ def main(root: Path = UNIVERSE, out: Path = OUT) -> int:
             print(f"USDX {tf}: not built -- missing leg(s) {missing or 'none (empty join)'}")
             series[tf] = {"built": False, "missing_legs": missing}
             continue
-        frame.to_parquet(root / f"USDX_{tf}.parquet")
+        atomic_parquet(frame, root / f"USDX_{tf}.parquet")
         print(f"USDX {tf}: {len(frame)} bars {frame.index.min()} -> {frame.index.max()}")
         series[tf] = {"built": True, "bars": len(frame), "last_bar": str(frame.index.max())}
     out.parent.mkdir(parents=True, exist_ok=True)

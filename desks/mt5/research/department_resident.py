@@ -146,20 +146,67 @@ def claim_capacity_slot(slots: int = CONCURRENT_PASSES):
     return None
 
 
+def _wait_ticket(dept: str) -> Path:
+    """An OS-visible FIFO ticket; the department singleton permits only one per department."""
+    LOCKS.mkdir(parents=True, exist_ok=True)
+    path = LOCKS / f"dept_wait_{time.time_ns()}_{os.getpid()}_{dept}.ticket"
+    path.touch(exist_ok=False)
+    return path
+
+
+def _ticket_alive(path: Path, pid: int) -> bool:
+    """A crashed waiter must not block the queue forever, including after PID reuse."""
+    try:
+        import psutil
+        proc = psutil.Process(pid)
+        return proc.is_running() and proc.create_time() <= path.stat().st_mtime + 1.0
+    except (ImportError, PermissionError):
+        return True  # unmeasured ownership is not permission to steal another waiter's turn
+    except (OSError, ValueError):
+        return False
+    except Exception as exc:
+        if type(exc).__name__ in ("NoSuchProcess", "ZombieProcess"):
+            return False
+        return True
+
+
+def _oldest_waiter() -> Path | None:
+    """Return the oldest live contender; remove abandoned process tickets only."""
+    contenders: list[tuple[int, str, Path]] = []
+    for path in LOCKS.glob("dept_wait_*.ticket"):
+        try:
+            _, _, stamp, pid, _dept = path.stem.split("_", 4)
+            entered = int(stamp)
+            owner = int(pid)
+            if not _ticket_alive(path, owner):
+                path.unlink(missing_ok=True)
+                continue
+            contenders.append((entered, path.name, path))
+        except (ValueError, OSError):
+            # An unreadable ticket is not evidence of an available slot. Leave it visible.
+            continue
+    return min(contenders)[2] if contenders else None
+
+
 def wait_for_capacity(dept: str, *, slots: int = CONCURRENT_PASSES,
                       poll_s: int = PAUSE_S):
-    """Wait fairly for bounded cross-department capacity without abandoning work."""
+    """Wait FIFO for bounded capacity; reacquiring departments rejoin at the tail."""
     announced = False
-    while True:
-        handle = claim_capacity_slot(slots)
-        if handle is not None:
-            if announced:
-                log(dept, f"capacity available: admitted to one of {slots} department slots")
-            return handle
-        if not announced:
-            log(dept, f"waiting: all {slots} department pass slots are occupied")
-            announced = True
-        time.sleep(max(1, int(poll_s)))
+    ticket = _wait_ticket(dept)
+    try:
+        while True:
+            if _oldest_waiter() == ticket:
+                handle = claim_capacity_slot(slots)
+                if handle is not None:
+                    if announced:
+                        log(dept, f"capacity available: admitted to one of {slots} department slots")
+                    return handle
+            if not announced:
+                log(dept, "waiting: bounded department slots or older pass(es) ahead")
+                announced = True
+            time.sleep(max(1, int(poll_s)))
+    finally:
+        ticket.unlink(missing_ok=True)
 
 
 def _tree_runner():

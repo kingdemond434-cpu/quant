@@ -84,7 +84,7 @@ def test_the_retraction_drops_archive_niches_and_re_parks_registry_rows(tmp_path
     class _Reg:
         @staticmethod
         def connect() -> sqlite3.Connection:
-            return db
+            return sqlite3.connect(tmp_path / "r.sqlite")
 
     fac = ef.Factory.__new__(ef.Factory)
     fac.archive = {"a": {"cell": old["cell"]}, "b": {"cell": new["cell"]}}
@@ -95,3 +95,4 @@ def test_the_retraction_drops_archive_niches_and_re_parks_registry_rows(tmp_path
     assert got["d1"].startswith("WRONG_CLOCK") and got["d2"].startswith("NO_EXECUTOR")
     assert got["d3"].startswith("NO_EXECUTOR")          # rewritten after the fix: left alone
     assert fac.retract_wrong_clock()["registry"] == 0   # idempotent
+    db.close()

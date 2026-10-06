@@ -32,8 +32,8 @@ NON_CODE + `is_state_path`: when the diff release..tip touches no CODE path, the
 release and is adopted whole, which keeps the box's pushes fast-forwarding. Only a tip carrying
 code that no green run has judged is held back, and then the box adopts the release itself.
 
-NEVER STUCK. No production pointer and no release tag yet -> today's behaviour, logged. A gate
-that cannot run (fetch failed, git missing) -> today's behaviour, logged. And an explicit
+FAIL CLOSED. No production pointer/tag or an unverifiable diff -> HOLD, not an untested tip.
+An explicit
 override (`ADOPT_UNRELEASED` flag file, `QUANT_ADOPT_UNRELEASED=1`, `--allow-unreleased`) adopts
 the tip regardless -- a deliberate act with a name, for the day CI is down and a fix must land.
 
@@ -84,11 +84,16 @@ class Git:
 
     def run(self, *args: str, check: bool = True, env: dict[str, str] | None = None
             ) -> subprocess.CompletedProcess[str]:
-        full_env = None
+        # Scheduled adoption is noninteractive. A timed-out HTTPS fetch must
+        # also stop its remote helper, which otherwise outlives the writer lease.
+        from libs.ops.proctree import run as run_process
+
+        full_env = dict(os.environ)
+        full_env.setdefault("GIT_TERMINAL_PROMPT", "0")
+        full_env.setdefault("GCM_INTERACTIVE", "never")
         if env:
-            full_env = dict(os.environ)
             full_env.update(env)
-        r = subprocess.run([release._git_exe(), "-c", "core.quotepath=off", *args],
+        r = run_process([release._git_exe(), "-c", "core.quotepath=off", *args],
                            cwd=self.root, capture_output=True, text=True,
                            timeout=self.timeout, env=full_env)
         if check and r.returncode != 0:
@@ -236,7 +241,8 @@ class PromotionResult:
 
 def _fetch(git: Git, remote: str, branch: str, ref: str) -> str | None:
     """Fetch `branch` into the private `ref`; None when the remote has no such branch."""
-    r = git.run("fetch", "--no-tags", remote, f"+refs/heads/{branch}:{ref}", check=False)
+    r = git.run("fetch", "--no-auto-maintenance", "--no-tags", remote,
+                f"+refs/heads/{branch}:{ref}", check=False)
     if r.returncode != 0:
         msg = (r.stderr or r.stdout)
         if "couldn't find remote ref" in msg or "could not find remote ref" in msg:
@@ -388,13 +394,13 @@ def adoption_decision(git: Git, *, tip: str, release_sha: str | None, release_re
         return mk("OVERRIDE_TIP", tip, f"override: {override}; adopting the branch tip whether "
                   "or not CI has released it")
     if release_sha is None:
-        return mk("LEGACY_TIP", tip, "no production pointer and no release/* tag exists yet; "
-                  "adopting the branch tip as before the release gate")
+        return mk("HOLD", None, "no production pointer and no release/* tag exists yet; "
+                  "holding until a tested release is published")
     try:
         unreleased = code_paths(git.changed(release_sha, tip))
     except GitError as exc:
-        return mk("LEGACY_TIP", tip, f"cannot diff release {release_sha[:12]} against tip "
-                  f"{tip[:12]} ({exc}); adopting the tip as before the release gate")
+        return mk("HOLD", None, f"cannot diff release {release_sha[:12]} against tip "
+                  f"{tip[:12]} ({exc}); holding because release equivalence is unverified")
     if not unreleased:
         return mk("ADOPT_TIP", tip, f"tip {tip[:12]} is release {release_sha[:12]} plus "
                   "seal/state paths only")
@@ -434,7 +440,8 @@ def gate(root: Path, *, branch: str = LIVE_BRANCH, remote: str = "origin",
     ref: str | None = PRODUCTION_BRANCH if prod else None
     if prod is None:
         if fetch:
-            git.run("fetch", "--no-tags", remote, f"+refs/tags/{TAG_PREFIX}*:refs/tags/"
+            git.run("fetch", "--no-auto-maintenance", "--no-tags", remote,
+                    f"+refs/tags/{TAG_PREFIX}*:refs/tags/"
                     f"{TAG_PREFIX}*", check=False)
         newest = newest_release_tag(git.out("tag", "--list", f"{TAG_PREFIX}*").splitlines())
         if newest:

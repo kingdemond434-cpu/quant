@@ -228,7 +228,7 @@ def discover(root: Path) -> list[Extractor]:
     for base in ("libs", "scripts"):
         for path in sorted((root / base).rglob("*.py")):
             relative = path.relative_to(root)
-            rel = str(relative)
+            rel = relative.as_posix()
             # Skip-matching is against the path RELATIVE to the root, never the absolute one: a
             # checkout living under a directory that happens to be named `.claude` (every git
             # worktree here does) would otherwise skip every file in the repo and discover
@@ -240,14 +240,14 @@ def discover(root: Path) -> list[Extractor]:
             try:
                 tree = ast.parse(source)
             except SyntaxError:
-                out.append(Extractor(str(path.relative_to(root)), ("unparseable",), False,
+                out.append(Extractor(path.relative_to(root).as_posix(), ("unparseable",), False,
                                      "module does not parse -- cannot be audited"))
                 continue
             techniques = techniques_in(tree, source)
             if not techniques:
                 continue
             declaration = declaration_in(tree, source)
-            out.append(Extractor(str(path.relative_to(root)), techniques,
+            out.append(Extractor(path.relative_to(root).as_posix(), techniques,
                                  bool(declaration), declaration))
     return out
 

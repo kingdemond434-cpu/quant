@@ -3,10 +3,10 @@
 Scans MQL5.com forum for strategy discussions and ideas.
 """
 
-import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+
 import requests
 
 BASE = Path(__file__).resolve().parent.parent
@@ -46,7 +46,11 @@ def mine_forum(max_pages: int = 3) -> list[dict]:
 def run_and_save() -> list[dict]:
     discoveries = mine_forum()
     out_file = OUT / f"forum_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
-    out_file.write_text(json.dumps(discoveries, indent=2), encoding="utf-8")
+    try:
+        from side_channels.discovery_io import write_discoveries
+    except ModuleNotFoundError:
+        from discovery_io import write_discoveries
+    discoveries = write_discoveries(out_file, discoveries)
     print(f"mql5_forum: {len(discoveries)} discoveries saved")
     return discoveries
 
