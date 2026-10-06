@@ -24,6 +24,11 @@ def test_the_grid_registry_is_fully_declared_and_coherent() -> None:
     # point -- a skipped coverage test is a coverage claim nobody cashed.
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "desks" / "mt5"))
     try:
+        # The orthogonal families register into FAMILY_REGISTRY on import. Import them HERE so
+        # the census sees the whole registry whatever ran first -- this test once passed alone
+        # and failed in the full suite because two families were only present when another
+        # test had imported them.
+        import mt5desk.families_orthogonal  # noqa: F401
         from mt5desk.families import FAMILY_REGISTRY
     except Exception:                                       # pragma: no cover - import env
         pytest.skip("mt5desk.families is not importable on this host")

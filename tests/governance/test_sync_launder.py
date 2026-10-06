@@ -103,3 +103,24 @@ def test_a_clean_history_reports_nothing(repo: Path) -> None:
     out = _run(repo)
     assert out.returncode == 0
     assert "no launder residue" in out.stdout
+
+
+def test_batched_candidates_preserve_single_revision_git_show_scope(repo, monkeypatch):
+    import scripts.check_sync_launder as detector
+
+    _commit(repo, "first.py", "x = 1\n", "desk sync first")
+    _commit(repo, "second.py", "y = 2\n", "hourly sync second")
+    _commit(repo, "other.py", "z = 3\n", "authored change")
+    _git(repo, "rm", "first.py")
+    _git(repo, "commit", "-q", "-m", "authored removal")
+    monkeypatch.setattr(detector, "ROOT", repo)
+    history = detector.subjects()
+    expected = set()
+    for revision, subject in history.items():
+        if detector.is_sync(subject):
+            expected.update(line.strip() for line in detector.git(
+                "show", "--name-only", "--format=", revision).splitlines()
+                            if line.strip().endswith(".py"))
+    expected.intersection_update(detector.git("ls-files").splitlines())
+    assert expected == {"second.py"}
+    assert detector.candidates(history) == expected

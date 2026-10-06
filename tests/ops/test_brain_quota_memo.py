@@ -15,7 +15,10 @@ shell the organs actually source was broken.
 from __future__ import annotations
 
 import json
+import os
+import shlex
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -27,13 +30,18 @@ ENV = ROOT / "ops" / "brain_env.sh"
 
 def _run(script: str, memo: Path, log: Path, **env: str) -> subprocess.CompletedProcess[str]:
     pre = (
-        f'_BRAIN_QUOTA_MEMO="{memo}"; _BRAIN_QUOTA_LOG="{log}"; '
-        f'_BRAIN_NO_DOCTRINE=1; source "{ENV}" >/dev/null 2>&1 || true; '
+        f'_BRAIN_QUOTA_MEMO="{memo.as_posix()}"; _BRAIN_QUOTA_LOG="{log.as_posix()}"; '
+        f'_BRAIN_NO_DOCTRINE=1; source "{ENV.as_posix()}" >/dev/null 2>&1 || true; '
     )
+    if os.name == "nt":
+        # Git Bash has no /usr/bin/python3. Execute the real test interpreter
+        # for the shell organ's JSON writer rather than a Store launcher stub.
+        pre = f'python3() {{ {shlex.quote(Path(sys.executable).as_posix())} "$@"; }}; ' + pre
     out = subprocess.run(
         ["bash", "-c", pre + script],
         capture_output=True, text=True, cwd=ROOT, timeout=120,
-        env={"PATH": "/usr/bin:/bin", "HOME": str(Path.home()), **env},
+        env={"PATH": os.environ["PATH"] if os.name == "nt" else "/usr/bin:/bin",
+             "HOME": str(Path.home()), **env},
     )
     # POSITIVE CONTROL, and it is not decorative: while writing these tests a concurrent pytest
     # run reverted ops/brain_env.sh underneath them, the functions vanished, and every

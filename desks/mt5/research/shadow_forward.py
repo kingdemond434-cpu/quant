@@ -131,6 +131,44 @@ WINDOWS = {
 #: The list stays empty: enrolment is a CERTIFICATE, never a literal a human typed.
 SLEEVES: list[tuple[str, str]] = []
 
+#: Certificates the research-integrity door held on the LAST `certified_sleeves()` pass, each with
+#: its named reason (`research/admission_integrity.py`). Reset every pass, so it always describes
+#: the run that just happened. Only certificates WITHOUT a clock are ever here.
+HELD_AT_INTEGRITY: list[dict] = []
+
+
+def _integrity_door() -> tuple[object | None, set[str], str]:
+    """(gate, keys that already own a clock, why).
+
+    FAIL CLOSED: an unreadable door holds NEW certificates by name rather than waving them
+    through; running clocks are untouched either way."""
+    try:
+        from admission_integrity import IntegrityGate, lane_clock_keys
+    except ImportError:
+        try:
+            from research.admission_integrity import (  # type: ignore[no-redef,unused-ignore]
+                IntegrityGate,
+                lane_clock_keys,
+            )
+        except Exception as exc:
+            return None, set(), f"admission_integrity unimportable: {type(exc).__name__}: {exc}"
+    try:
+        return IntegrityGate.load(), lane_clock_keys(SHADOW_DIR), ""
+    except Exception as exc:
+        return None, set(), f"integrity door unreadable: {type(exc).__name__}: {exc}"
+
+
+def _held(run: dict, key: str, gate: object | None, clocked: set[str], why: str) -> str | None:
+    """The integrity door, asked only for a certificate whose clock does not exist yet."""
+    if key in clocked:
+        return None
+    if gate is None:
+        return f"HELD_INTEGRITY_UNREADABLE: {why}"
+    return gate.hold(str(run.get("certificate") or ""),  # type: ignore[attr-defined]
+                     symbol=run.get("symbol"), family=run.get("family"),
+                     selector=run.get("selector"), side=run.get("side"),
+                     params=run.get("params"))
+
 
 def certified_sleeves() -> list[tuple[str, str, dict]]:
     """Every runnable certificate as (symbol, window, EXACT certified params).
@@ -145,6 +183,12 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     reported and skipped -- a visible wiring gap for the gap-wirer, never a silent guess.
     """
     rows: list[tuple[str, str, dict, str]] = []
+    HELD_AT_INTEGRITY.clear()
+    # THE RESEARCH-INTEGRITY DOOR (2026-09-30). A certificate with NO clock yet starts one only
+    # when the placebo audit shows the certifier caught every planted trap and an independent
+    # rebuild under the same spec is REPLICATED (`research/admission_integrity.py`). A clock that
+    # already runs is never held. Not a quota: no count, no slot, no ranking.
+    gate, clocked, gate_why = _integrity_door()
     try:
         from shadow_admission import authorized_runs
         for run in sorted(authorized_runs(BASE), key=lambda r: (r["symbol"], r["selector"])):
@@ -161,6 +205,13 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                 side = _runnable_side(run, fam)
                 if side is None:
                     continue                # refused and logged by _runnable_side
+                key = sleeve_key(run["symbol"], run["selector"], params, fam, side)
+                reason = _held(run, key, gate, clocked, gate_why)
+                if reason:
+                    HELD_AT_INTEGRITY.append({"certificate": run.get("certificate"),
+                                              "key": key, "reason": reason})
+                    slog(f"HELD {key}: {reason}")
+                    continue
                 rows.append((run["symbol"], run["selector"], params, fam, side,
                              str(run.get("gate_admission") or ""),
                              tuple(run.get("power_deficiencies") or ()),
@@ -189,6 +240,13 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
             side = _runnable_side(run, fam)
             if side is None:
                 continue                    # refused and logged by _runnable_side
+            key = sleeve_key(run["symbol"], run["selector"], dict(run["params"] or {}), fam, side)
+            reason = _held(run, key, gate, clocked, gate_why)
+            if reason:
+                HELD_AT_INTEGRITY.append({"certificate": run.get("certificate"), "key": key,
+                                          "reason": reason})
+                slog(f"HELD {key}: {reason}")
+                continue
             rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side,
                          str(run.get("gate_admission") or ""),
                          tuple(run.get("power_deficiencies") or ()),
@@ -365,6 +423,11 @@ def _family_fn(fam: str):
     So the two registries here are the correct set for THIS engine, and hunt16 is owned by
     qquant_shadow. A hunt16 family arriving here is a routing question, not a resolver gap.
     """
+    # The judge's named exports now include hunt16. They remain owned by the
+    # qquant forward engine; a shared constructor must not create a second clock.
+    from mt5desk.executables import hunt16_families
+    if fam in hunt16_families():
+        return None
     fn = getattr(families, f"family_{fam}", None)
     if fn is None:
         try:
@@ -971,9 +1034,12 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 continue
             # Rebuild whatever this family needs beyond bars, from its own stored params. A
             # family that needs nothing gets an empty dict and is unaffected.
-            from mt5desk.family_inputs import resolve, strip_identity_keys
+            from mt5desk.family_inputs import resolve, runtime_call_params
 
-            call_params = strip_identity_keys(fam, params)
+            call_params = runtime_call_params(fam, params)
+            # family_call.signals, not the family constructor, owns the session filter. The
+            # gauntlet already applies it; dropping this key here made all forward session
+            # variants replay the same unrestricted trades.
             extra, why = resolve(sym, fam, params, h1)
             if extra is None:
                 # SKIP LOUDLY, NEVER RUN SHORT. `family_carry` returns [] without its swap terms,
@@ -1090,6 +1156,12 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             except Exception as exc:
                 slog(f"{key}: frozen-cost lookup failed ({type(exc).__name__}: {exc}); "
                      f"running on live costs this pass")
+            ledger = (SHADOW_DIR / f"ledger_{sym}_{win}.json" if fam == "session_range_breakout"
+                      else SHADOW_DIR / f"ledger_{sym}_{fam}_{win}.json")
+            from research.session_runtime_window import ensure as _ensure_session_window
+            if _ensure_session_window(key, params, st, ledger=ledger):
+                slog(f"{key}: session filter corrected; prior state archived and a "
+                     f"NEW forward window begins at {st['forward_start']}")
             res = run_backtest(h1, sigs, costs)
             # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
             # (2026-08-16); this parameterization's clock was frozen at `forward_start`.
@@ -1119,8 +1191,6 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 f"{len(all_trades) - len(trades)} earlier observation(s) retained as "
                 f"HISTORICAL and "
                 f"excluded from every threshold (they predate pre-registration)")
-            ledger = (SHADOW_DIR / f"ledger_{sym}_{win}.json" if fam == "session_range_breakout"
-                      else SHADOW_DIR / f"ledger_{sym}_{fam}_{win}.json")
             # A trade replayed on the broker's own feed and one replayed on cached
             # or free bars are not the same evidence -- OHLC differ at the tick and
             # spreads differ materially -- so an expectancy averaged across them is
@@ -1194,6 +1264,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     # prints these are, so a real venue change still breaks the clock and an outage
                     # does not. See h1_source.Bars.evidence_venue.
                     data_venue=str(bars.evidence_venue))
+                if st.get("runtime_version"):
+                    _ident["runtime_version"] = st["runtime_version"]
                 _drift = _reg.verify(key, _ident)
                 # A COST CORRECTION IS NOT A STRATEGY CHANGE, and treating it as one kills the
                 # clock permanently. Measured 2026-09-02: all twelve IDENTITY_BROKEN rows had
@@ -1265,7 +1337,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     st.pop("identity_drift", None)
                     st.pop("identity_reason", None)
                 _reg.freeze(key, _ident, forward_start=st.get("forward_start"),
-                            cost_fields=vars(costs))
+                            cost_fields=vars(costs),
+                            runtime_version=st.get("runtime_version"))
                 st["sleeve_id"] = _ident["sleeve_id"]
             except Exception as exc:
                 slog(f"{key}: registry unavailable ({type(exc).__name__}: {exc})")

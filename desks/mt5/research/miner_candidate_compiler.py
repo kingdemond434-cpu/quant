@@ -15,12 +15,15 @@ import json
 import os
 import pathlib
 import sys
+import tempfile
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 if str(BASE) not in sys.path:
     # The hourly service executes this file by path. Python then adds ``research/`` rather than
     # ``desks/mt5/`` to sys.path, so exact recipes otherwise cannot see the family registry and
@@ -367,12 +370,27 @@ def _park_cursor_at(path: Path, row_index: int, deferred_files: int, why: str) -
                          "cursor_prefix_sha256": prefix})
 
 
+def _atomic_json(path: Path, document: dict) -> None:
+    """Publish complete compiler artifacts; interrupted writes preserve the last version."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
+                                         suffix=".tmp", delete=False) as handle:
+            temporary = Path(handle.name)
+            json.dump(document, handle, indent=1, default=str)
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
 def _save_cursor() -> None:
     nxt = _LAST_INTAKE.get("cursor_next")
     if not nxt:
         return
     CURSOR.parent.mkdir(parents=True, exist_ok=True)
-    CURSOR.write_text(json.dumps({
+    _atomic_json(CURSOR, {
         "updated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "next_path": nxt,
         "row_offset": int(_LAST_INTAKE.get("cursor_row_offset") or 0),
@@ -380,7 +398,7 @@ def _save_cursor() -> None:
         "prefix_sha256": _LAST_INTAKE.get("cursor_prefix_sha256"),
         "cycle_cutoff_utc": _LAST_INTAKE.get("cycle_cutoff_utc"),
         "rule": "resume the bounded compiler pass; never restart the corpus at newest row zero",
-    }, indent=1) + "\n", encoding="utf-8")
+    })
 
 #: Artifacts under the intelligence roots that are a miner's OWN BOOKKEEPING, not evidence:
 #: cursors, coverage registries, denylists, run checkpoints, population counts. They are matched
@@ -500,8 +518,10 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                 return found
             if isinstance(row, dict):
                 row = _BLIND.filter(_seat_of(path, row), row)
-            payload = json.dumps(row, sort_keys=True, default=str, separators=(",", ":"))
-            digest = hashlib.sha256(payload.encode()).hexdigest()
+            from libs.data.pit import payload_hash
+
+            # A new ingestion receipt is not a new finding or another search trial.
+            digest = payload_hash(row)
             if digest in seen:
                 continue
             seen.add(digest)
@@ -1496,6 +1516,28 @@ def _lineage(out: Path) -> None:
         print(f"compiler lineage not recorded (non-fatal): {type(exc).__name__}: {exc}")
 
 
+def _graph_snapshot(path: Path | None = None):
+    """Use one coherent history for this batch's annotations.
+
+    The live judge appends while compilation runs. Rechecking its ledger per
+    candidate can repeatedly parse gigabytes and prevent publication altogether.
+    Only the annotations are frozen; record_candidates still appends to the
+    canonical ledger, and the next compiler pass reads the new history.
+    """
+    from libs.research.hypothesis_graph import Graph
+
+    class PassGraph(Graph):
+        _loaded = False
+
+        def rows(self):
+            if not self._loaded:
+                self._snapshot_rows = super().rows()
+                self._loaded = True
+            return self._snapshot_rows
+
+    return PassGraph(path) if path is not None else PassGraph()
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     universe = known_symbols()
@@ -1509,6 +1551,14 @@ def main() -> int:
         sys.path.insert(0, str(ROOT))
     from libs.research.metric_fence import FenceTally
     fence_tally = FenceTally()
+    # THE BUILD-FAILURE BANK (Defect 4): a compiled candidate that is not a buildable spec was
+    # `continue`d past with only a tally. Each one is now recorded with WHICH field it lacked,
+    # and the hourly leg `build_failure_bank` ranks the causes into fix work. Guarded.
+    try:
+        from research.build_failure_bank import Bank as _Bank
+        bank = _Bank("miner_candidate_compiler")
+    except Exception:                                  # pragma: no cover - host-dependent
+        bank = None
     untestable = structurally_untestable_families()
     if untestable:
         print("families routed to DEEPENING (measured untestable at current parameters): "
@@ -1577,13 +1627,23 @@ def main() -> int:
             stats["deepening_recovered"] = int(stats["deepening_recovered"]) + 1
         row_reached_docket = False
         for candidate in produced:
-            valid = (bool(str(candidate.get("symbol") or "").strip())
-                     and bool(str(candidate.get("family") or "").strip())
-                     and isinstance(candidate.get("params"), dict)
-                     and str(candidate.get("mechanism_status") or "").upper() == "NAMED"
-                     and len(str(candidate.get("mechanism_note") or "").strip()) >= 12)
+            lacking = [name for name, ok in (
+                ("symbol", bool(str(candidate.get("symbol") or "").strip())),
+                ("family", bool(str(candidate.get("family") or "").strip())),
+                ("params", isinstance(candidate.get("params"), dict)),
+                ("mechanism_status=NAMED",
+                 str(candidate.get("mechanism_status") or "").upper() == "NAMED"),
+                ("mechanism_note>=12ch",
+                 len(str(candidate.get("mechanism_note") or "").strip()) >= 12)) if not ok]
+            valid = not lacking
+            if bank is not None:
+                bank.attempt()
             if not valid:
                 stats["invalid_cells"] = int(stats["invalid_cells"]) + 1
+                if bank is not None:
+                    bank.record("SPEC_INVALID", "lacks " + ", ".join(lacking),
+                                source=source, symbol=candidate.get("symbol"),
+                                family=candidate.get("family"))
                 continue
             identity = json.dumps({k: candidate[k] for k in ("symbol", "family", "params")},
                                   sort_keys=True, default=str)
@@ -1731,8 +1791,8 @@ def main() -> int:
     # it look like a graph with nothing to say.
     graph_note: dict = {"updated": False, "premortem": False}
     try:
-        from libs.research.hypothesis_graph import Graph, record_candidates
-        g = Graph()
+        from libs.research.hypothesis_graph import record_candidates
+        g = _graph_snapshot()
         for c in candidates.values():
             pf = g.prior_failures(str(c.get("symbol")), str(c.get("family")),
                                   dict(c.get("params") or {}))
@@ -1754,13 +1814,14 @@ def main() -> int:
         # delete a candidate would make the desk's own history a cage (L1.25).
         try:
             from research.failure_prior import multiplier_for
+            prior_table = json.loads((BASE / "data" / "failure_prior.json")
+                                     .read_text("utf-8-sig"))
             reopen_levels = {
                 (str(r.get("feature")), str(r.get("level")))
-                for r in (json.loads((BASE / "data" / "failure_prior.json")
-                                     .read_text("utf-8-sig")).get("reopen") or [])
+                for r in (prior_table.get("reopen") or [])
                 if isinstance(r, dict)}
             for c in candidates.values():
-                mult, why = multiplier_for(c)
+                mult, why = multiplier_for(c, table=prior_table)
                 c["failure_prior"] = mult
                 c["failure_prior_why"] = why
                 c["reopen"] = bool(reopen_levels & {("family", str(c.get("family"))),
@@ -1838,9 +1899,23 @@ def main() -> int:
     disposition_total = converted_total + refusal_total
     producer_debt = [s for s, v in sorted(per_source.items())
                      if int(v["owes_convertible_rows"]) > 0]
-    OUT.write_text(json.dumps({
+    from libs.data.pit import stamp_or_refuse
+
+    # These rules were compiled in this pass; source event dates cannot backdate a rule.
+    candidate_time = datetime.now(UTC).isoformat()
+    emitted, provenance_refused = stamp_or_refuse(
+        [{**candidate, "available_time": candidate_time, "ingested_time": candidate_time}
+         for candidate in ordered], "miner_candidate_compiler")
+    if provenance_refused:
+        raise ValueError(f"Compiler refused {len(provenance_refused)} unstamped rules")
+    emitted_tasks, refused_tasks = stamp_or_refuse(
+        [{**task, "available_time": candidate_time, "ingested_time": candidate_time}
+         for task in deepening.values()], "miner_deepening_queue")
+    if refused_tasks:
+        raise ValueError(f"Compiler refused {len(refused_tasks)} unstamped deepening tasks")
+    _atomic_json(OUT, {
         "compiled_at": now.isoformat(timespec="seconds"),
-        "hypotheses": ordered,
+        "hypotheses": emitted,
         "net_ranking": net_note,
         "per_source": per_source,
         "seats": seats,
@@ -1879,13 +1954,13 @@ def main() -> int:
                      "deepening stays UNRESOLVED and is never forged into strategy yield"),
         },
         "rule": "exact recipe or structured causal data only; no prose-to-family guessing",
-    }, indent=1, default=str), "utf-8")
+    })
     _lineage(OUT)
-    DEEPEN.write_text(json.dumps({
+    _atomic_json(DEEPEN, {
         "built_at": now.isoformat(timespec="seconds"),
-        "tasks": list(deepening.values()),
+        "tasks": emitted_tasks,
         "consumer": "hourly/daily research brains must recover a falsifiable rule or reject",
-    }, indent=1, default=str), "utf-8")
+    })
     # Consumer-owned receipts are emitted only after both canonical output artifacts are durable.
     # The factory producer reconciles these on its next pass; it may never assert its own ACK.
     if factory_receipts:
@@ -1896,6 +1971,8 @@ def main() -> int:
             tmp.write_text(json.dumps(receipt, indent=1) + "\n", "utf-8")
             os.replace(tmp, target)
     _save_cursor()
+    if bank is not None:
+        bank.flush()
     print(f"miner compiler: {sum(int(v['rows']) for v in per_source.values())} row(s) accounted; "
           f"{len(candidates)} executable candidate(s); {len(deepening)} exact-rule task(s)")
     return 0

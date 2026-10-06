@@ -66,7 +66,26 @@ def test_the_principal_can_widen_the_universe_only_through_the_file(tmp_path) ->
     assert lp.refuse(GOLD_M15, pol) is not None       # the M15 ban survives a widened universe
 
 
-def test_the_gateway_door_drops_refused_rows_and_names_them(tmp_path) -> None:
+def test_broker_universe_override_keeps_mechanism_and_identity_restrictions(tmp_path) -> None:
+    p = tmp_path / "live_sleeve_policy.json"
+    p.write_text(json.dumps({"live_symbols": ["*"], "by": "principal test"}), "utf-8")
+    pol = lp.policy(p)
+    assert lp.refuse(FX, pol) is None
+    assert lp.refuse({"symbol": "USDJPY", "family": "session_range_breakout"}, pol) is None
+    assert lp.refuse({"symbol": "EURUSD", "timeframe": "M15"}, pol)
+    assert lp.refuse({"symbol": "EURUSD", "family": "discovered"}, pol)
+    assert lp.refuse({"symbol": ""}, pol)
+
+
+def _restrict_fixture(monkeypatch, tmp_path) -> None:
+    policy_file = tmp_path / "live_sleeve_policy.json"
+    policy_file.write_text(json.dumps({"live_symbols": ["XAUUSD"], "by": "test restriction"}),
+                           encoding="utf-8")
+    monkeypatch.setattr(lp, "POLICY_FILE", policy_file)
+
+
+def test_the_gateway_door_drops_refused_rows_and_names_them(tmp_path, monkeypatch) -> None:
+    _restrict_fixture(monkeypatch, tmp_path)
     f = tmp_path / "sleeves.json"
     f.write_text(json.dumps({"sleeves": [FX, GOLD, GOLD_M15,
                                          {**GOLD, "name": "standby", "status": "STANDBY"}]}),
@@ -82,6 +101,7 @@ def test_the_promoter_writer_retires_a_refused_row_instead_of_writing_it(monkeyp
                                                                          tmp_path) -> None:
     import promoter
 
+    _restrict_fixture(monkeypatch, tmp_path)
     monkeypatch.setattr(promoter, "SLEEVES_FILE", tmp_path / "sleeves.json")
     monkeypatch.setattr(promoter, "plog", lambda *a, **k: None)
     rows = [dict(FX), dict(GOLD), dict(GOLD_M15)]
@@ -96,6 +116,7 @@ def test_the_promoter_writer_retires_a_refused_row_instead_of_writing_it(monkeyp
 def test_a_row_the_policy_refuses_cannot_survive_a_promoter_write(monkeypatch, tmp_path) -> None:
     import promoter
 
+    _restrict_fixture(monkeypatch, tmp_path)
     out = tmp_path / "sleeves.json"
     monkeypatch.setattr(promoter, "SLEEVES_FILE", out)
     monkeypatch.setattr(promoter, "plog", lambda *a, **k: None)

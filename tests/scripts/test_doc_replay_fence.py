@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib.util
 import subprocess
+from functools import partial
 from pathlib import Path
 
 import pytest
@@ -24,6 +25,9 @@ def _load(root: Path):
     mod.ROOT = root
     mod.OUT = root / "fence.json"
     mod.LOG = root / "fence.log"
+    # This fixture has its own Git index. Keep real locking, without contending
+    # for the live desk's machine-wide Windows writer mutex.
+    mod.git_writer_lock = partial(mod.git_writer_lock, mechanism="file")
     return mod
 
 
@@ -87,3 +91,33 @@ def test_the_finding_names_the_commit_that_was_replayed(repo: Path) -> None:
     assert finding is not None
     assert finding["subject"] == "old snapshot"
     assert len(finding["replayed_from"]) == 40
+
+
+def test_contended_fixture_lock_cannot_report_a_successful_heal(repo: Path, monkeypatch) -> None:
+    import json
+
+    from libs.ops.git_writer_lock import git_writer_lock
+
+    doc = repo / "docs" / "GAP_REGISTER.md"
+    doc.write_text("row 1\n", encoding="utf-8")
+    mod = _load(repo)
+    production_timeouts = []
+
+    def bounded_fixture_lock(root, *, timeout_s):
+        production_timeouts.append(timeout_s)
+        return git_writer_lock(root, timeout_s=0.01, mechanism="file")
+
+    with git_writer_lock(repo, timeout_s=0.01, mechanism="file") as owner:
+        assert owner.held
+        with monkeypatch.context() as patch:
+            patch.setattr(mod, "git_writer_lock", bounded_fixture_lock)
+            assert mod.main() == 1
+        assert doc.read_text(encoding="utf-8") == "row 1\n"
+        assert json.loads(mod.OUT.read_text(encoding="utf-8"))["status"] == "HEAL_FAILED"
+        log = mod.LOG.read_text(encoding="utf-8")
+        assert "REPLAY HEAL FAILED" in log
+        assert "REPLAY HEALED" not in log
+        assert "not restored from HEAD" in log
+        assert production_timeouts == [120.0]
+    assert mod.main() == 0
+    assert doc.read_text(encoding="utf-8") == "row 1\nrow 2\n"

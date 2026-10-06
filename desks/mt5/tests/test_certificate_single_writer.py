@@ -54,6 +54,8 @@ def test_universe_job_fills_missing_ladder_instead_of_rewalking_it() -> None:
     assert "research\\expand_universe.py" not in wrapper
     assert "C:\\Program Files\\Python314\\python.exe" in wrapper
     assert '"%PYTHON%" %PYARGS% -u -W ignore' in wrapper
+    assert 'if not "%RCR%"=="0" exit /b %RCR%' in wrapper
+    assert 'if not "%RCR%"=="0" if not "%RCR%"=="2"' not in wrapper
     downloader = _text("scripts/download_all_symbols.py")
     assert 'exclusive_job("fusion_terminal_research_lane"' in downloader
     assert "from research.expand_universe import _pull_bars" in downloader

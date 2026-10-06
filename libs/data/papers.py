@@ -118,7 +118,12 @@ def ssrn(binding: int = 204, *, count: int = 25) -> tuple[list[Paper], str | Non
     except Exception as exc:
         return [], f"{type(exc).__name__}: {str(exc)[:140]}"
     out: list[Paper] = []
-    for p in body.get("papers") or []:
+    rows = body.get("papers") if isinstance(body, dict) else None
+    if not isinstance(rows, list):
+        return [], "ssrn returned no papers list -- response shape changed"
+    for p in rows:
+        if not isinstance(p, dict):
+            continue
         pid = str(p.get("id") or "")
         title = str(p.get("title") or "").strip()
         if not pid or not title:
@@ -127,7 +132,8 @@ def ssrn(binding: int = 204, *, count: int = 25) -> tuple[list[Paper], str | Non
             source="ssrn", ident=pid, title=title,
             url=f"https://papers.ssrn.com/sol3/papers.cfm?abstract_id={pid}",
             abstract=str(p.get("abstract") or "")[:1200],
-            authors=tuple(str(a.get("name") or "") for a in (p.get("authors") or []))[:6],
+            authors=tuple(str(a.get("name") or "") for a in (p.get("authors") or [])
+                          if isinstance(a, dict))[:6],
             published=str(p.get("approved_date") or "")[:10],
         ))
     if not out:
@@ -142,8 +148,15 @@ def openreview(term: str, *, limit: int = 15) -> tuple[list[Paper], str | None]:
     except Exception as exc:
         return [], f"{type(exc).__name__}: {str(exc)[:140]}"
     out: list[Paper] = []
-    for n in body.get("notes") or []:
+    rows = body.get("notes") if isinstance(body, dict) else None
+    if not isinstance(rows, list):
+        return [], "openreview returned no notes list -- response shape changed"
+    for n in rows:
+        if not isinstance(n, dict):
+            continue
         c = n.get("content") or {}
+        if not isinstance(c, dict):
+            continue
         title = str(_val(c.get("title")) or "").strip()
         nid = str(n.get("id") or "")
         if not title or not nid:
@@ -166,7 +179,12 @@ def hackernews(query: str, *, limit: int = 20) -> tuple[list[Paper], str | None]
     except Exception as exc:
         return [], f"{type(exc).__name__}: {str(exc)[:140]}"
     out: list[Paper] = []
-    for h in body.get("hits") or []:
+    rows = body.get("hits") if isinstance(body, dict) else None
+    if not isinstance(rows, list):
+        return [], "hn returned no hits list -- response shape changed"
+    for h in rows:
+        if not isinstance(h, dict):
+            continue
         title = str(h.get("title") or "").strip()
         oid = str(h.get("objectID") or "")
         if not title or not oid:
@@ -263,7 +281,12 @@ def github(query: str, *, kind: str = "repositories", limit: int = 20
     except Exception as exc:
         return [], f"{type(exc).__name__}: {str(exc)[:140]}"
     out: list[Paper] = []
-    for item in body.get("items") or []:
+    rows = body.get("items") if isinstance(body, dict) else None
+    if not isinstance(rows, list):
+        return [], "github returned no items list -- response shape changed"
+    for item in rows:
+        if not isinstance(item, dict):
+            continue
         if kind == "repositories":
             name = str(item.get("full_name") or "")
             if not name:
@@ -274,8 +297,11 @@ def github(query: str, *, kind: str = "repositories", limit: int = 20
                 abstract=str(item.get("description") or "")[:600],
                 published=str(item.get("pushed_at") or "")[:10]))
         else:
-            repo = (item.get("repository") or {}).get("full_name") or ""
+            repository = item.get("repository")
+            repo = repository.get("full_name") or "" if isinstance(repository, dict) else ""
             path = str(item.get("path") or "")
+            if not repo or not path:
+                continue
             out.append(Paper(
                 source="github_code", ident=f"{repo}/{path}", title=f"{repo} :: {path}",
                 url=str(item.get("html_url") or ""), abstract=""))
