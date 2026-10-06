@@ -545,8 +545,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                "BSP surprise can be measured against -- a weaker instrument than a price and "
                "named as such in PH-A"),
     _src("PH-S5", "retail investor and personal finance communities", layer="retail_ecology",
-         roots=("https://www.reddit.com/r/phinvest/", "https://www.reddit.com/r/Philippines/",
-                "https://www.facebook.com/groups/", "https://www.investagrams.com/Forum"),
+         roots=("https://www.facebook.com/groups/", "https://www.investagrams.com/Forum"),
          languages=("en", "fil"), licence="public web; platform terms apply",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
          predictive_state="NARRATIVE_FEATURE",

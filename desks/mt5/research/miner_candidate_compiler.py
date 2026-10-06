@@ -29,6 +29,9 @@ if str(BASE) not in sys.path:
     # ``desks/mt5/`` to sys.path, so exact recipes otherwise cannot see the family registry and
     # are silently routed to deepening instead of the gauntlet.
     sys.path.insert(0, str(BASE))
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))
+from libs.data import terms_fence as _tf  # noqa: E402
 UNIVERSE = BASE / "data" / "universe"
 INTEL_ROOTS = (BASE / "data" / "intelligence", ROOT / "data" / "intelligence")
 OUT = BASE / "data" / "hypotheses" / "miner_candidates.json"
@@ -1516,6 +1519,13 @@ def _lineage(out: Path) -> None:
         print(f"compiler lineage not recorded (non-fatal): {type(exc).__name__}: {exc}")
 
 
+def _new_stats() -> dict[str, object]:
+    return {"rows": 0, "candidates": 0, "deepening": 0, "convertible_rows": 0,
+            "converted_rows": 0, "valid_refusals": 0, "invalid_cells": 0,
+            "unresolved_rows": 0, "deepening_recovered": 0,
+            "deepening_terminal_refusals": 0, "terms_fenced": 0}
+
+
 def _graph_snapshot(path: Path | None = None):
     """Use one coherent history for this batch's annotations.
 
@@ -1540,6 +1550,7 @@ def _graph_snapshot(path: Path | None = None):
 
 def main() -> int:
     now = datetime.now(tz=UTC)
+    terms_fenced: dict[str, int] = {}
     universe = known_symbols()
     candidates: dict[str, dict] = {}
     deepening: dict[str, dict] = {}
@@ -1588,6 +1599,20 @@ def main() -> int:
             print(f"compiler: compile stopped at {COMPILE_SHARE:.0%} of the budget after "
                   f"{_row_k:,} of {len(rows):,} row(s); the rest resume next pass")
             break
+        # THE PLATFORM TERMS FENCE (2026-09-30). A row from a platform whose own agreement bars
+        # the desk's automated use -- `data/intelligence/reddit/`, a deep_forest `route: reddit`
+        # claim, any row whose url is on Reddit or StockTwits (libs/data/terms_fence.py) -- mints
+        # no NEW cell and queues no deepening. It is a VALID REFUSAL with a named, counted reason
+        # (`per_source[...].terms_fenced`, top-level `terms_fence`), never a silent skip. Cells
+        # already judged from such rows keep their verdicts; the docket labels them.
+        fenced = _tf.fenced_row(row, source)
+        if fenced:
+            stats = per_source.setdefault(source, _new_stats())
+            stats["rows"] = int(stats["rows"]) + 1
+            stats["valid_refusals"] = int(stats["valid_refusals"]) + 1
+            stats["terms_fenced"] = int(stats.get("terms_fenced") or 0) + 1
+            terms_fenced[fenced] = terms_fenced.get(fenced, 0) + 1
+            continue
         task_identity = _deepening_task_id(source, row)
         produced, disposition = compile_row(source, row, universe)
         recovered_for_row = recovered_deepening.get(task_identity, [])
@@ -1595,11 +1620,7 @@ def main() -> int:
             produced = [dict(candidate) for candidate in recovered_for_row]
             disposition = "RECOVERED_BY_DEEPENING"
         produced = expand_axes(produced)
-        stats = per_source.setdefault(source, {
-            "rows": 0, "candidates": 0, "deepening": 0, "convertible_rows": 0,
-            "converted_rows": 0, "valid_refusals": 0, "invalid_cells": 0,
-            "unresolved_rows": 0, "deepening_recovered": 0,
-            "deepening_terminal_refusals": 0})
+        stats = per_source.setdefault(source, _new_stats())
         stats["rows"] = int(stats["rows"]) + 1
         deepening_disposition = terminal_deepening.get(task_identity, "")
         terminal_refusal = (not produced and bool(deepening_disposition)
@@ -1929,6 +1950,12 @@ def main() -> int:
         "graph": graph_note,
         "impossible_metrics": fence_tally.to_dict(),
         "rows_accounted": rows_total,
+        # Rows refused by the platform terms fence, per platform (libs/data/terms_fence.py).
+        "terms_fence": {"refused_rows": terms_fenced,
+                        "refused_total": sum(terms_fenced.values()),
+                        "rule": ("a row from a terms-fenced platform mints no new cell and "
+                                 "queues no deepening; it is a counted valid refusal"),
+                        "reasons": {p: _tf.PLATFORMS[p]["reason"] for p in terms_fenced}},
         "executable_candidates": len(candidates),
         "deepening_tasks": len(deepening),
         "conversion_contract": {

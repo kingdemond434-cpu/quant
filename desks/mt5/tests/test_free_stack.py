@@ -355,16 +355,17 @@ def test_families_are_registered_where_the_gauntlet_looks() -> None:
 def test_proposer_grid_has_direct_and_indirect_arms_with_culture(monkeypatch, tmp_path) -> None:
     import free_stack_proposer as P
     monkeypatch.setattr(P, "series_exists", lambda sid: True)
-    cols = {"reddit": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}}}
+    cols = {"gtrends": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}},
+            "reddit": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}}}
     grid, skipped = P.build_grid(cols, P.roster_rows())
-    assert not skipped
+    assert skipped == {"reddit": "terms-fenced: reddit"}      # terms fence, 2026-09-30
     fams = {c["family"] for c in grid}
     assert fams == {"exogenous_conditioner", "alt_series_momentum", "alt_conditioned"}
     assert len(grid) == len(P.CHARTS) * (8 + 8 + len(P.BASES) * len(P.REGIMES))
     for c in grid:
         assert c["source_culture"] == "US" and c["participant_structure"] == "retail_heavy"
         assert c["failure_mode_hypothesis"]
-        assert c["params"]["source"] == "fs_reddit" and c["symbol"] == "XAUUSD"
+        assert c["params"]["source"] == "fs_gtrends" and c["symbol"] == "XAUUSD"
 
 
 # --------------------------------------------------------------------------- benchmark ----

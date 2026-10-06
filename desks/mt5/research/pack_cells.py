@@ -98,6 +98,14 @@ def _write(p: Path, doc: Any) -> None:
     p.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
 
 
+def _fenced_pack(p: dict[str, Any]) -> str | None:
+    try:
+        from libs.data import terms_fence as tf
+    except Exception:
+        return "terms_fence unimportable"            # fail CLOSED: a fence that cannot load
+    return tf.fenced_ground(p) or tf.fenced_source(str(p.get("id") or ""))
+
+
 def packs() -> list[dict[str, Any]]:
     """The registered data packs. One registry row is one pack; transports are not packs."""
     reg = _read(REGISTRY, {}) or {}
@@ -941,6 +949,14 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
         targets = targets_of(p)
         row: dict[str, Any] = {"id": pid, "stage": stage, "targets": targets,
                                "cadence": p.get("cadence")}
+        # THE PLATFORM TERMS FENCE (2026-09-30): a pack on a fenced platform (StockTwits'
+        # stocktwits_macro; libs/data/terms_fence.py) mints no NEW cell from its lake series.
+        fenced = _fenced_pack(p)
+        if fenced:
+            row.update({"reason": f"BLOCKED_WITH_SUBSTITUTE: terms fence ({fenced})",
+                        "terms_fence": fenced})
+            rows.append(row)
+            continue
         if not st:
             row["reason"] = ("UNMEASURED: source_drain has not published a chain state on this "
                              "host, so no pack's stage is known")

@@ -227,7 +227,8 @@ DECLARED_BEATS: tuple[dict[str, Any], ...] = (
     _beat("DarwinexScout", "desks/mt5/side_channels/seed_miners.py", scope="internal"),
     _beat("ForumScout", "desks/mt5/research/deep_forest_miner.py",
           "desks/mt5/side_channels/forexfactory_miner.py",
-          "desks/mt5/side_channels/reddit_miner.py",
+          # reddit_miner.py LEFT THIS BEAT 2026-09-30: it is terms-fenced (Reddit's User
+          # Agreement and Data API terms; libs/data/terms_fence.py) and covers nothing now.
           kinds=("forum", "qa", "community", "social")),
     _beat("CompetitionScout", "desks/mt5/research/deep_forest_miner.py",
           "desks/mt5/scripts/fxblue_track_record_miner.py", kinds=("competition",)),
