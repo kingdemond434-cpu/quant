@@ -41,3 +41,12 @@ def test_registry_is_never_read_off_windows() -> None:
     if sys.platform.startswith("win"):
         pytest.skip("on Windows the registry is real")
     assert es._registry("machine", "PATH") is None
+
+
+def test_fresh_secrets_fills_only_absent_secret_names(monkeypatch: pytest.MonkeyPatch) -> None:
+    hives = {"machine": {"FRED_API_KEY": "k1", "PATH": "C:\\x", "GITHUB_TOKEN": "t",
+                         "OPENROUTER_API_KEY": "new"},
+             "user": {"MY_SECRET": "s", "FRED_API_KEY": "user-copy"}}
+    monkeypatch.setattr(es, "_registry_all", lambda hive: hives[hive])
+    got = es.fresh_secrets({"OPENROUTER_API_KEY": "already", "PATH": "/bin"})
+    assert got == {"FRED_API_KEY": "k1", "GITHUB_TOKEN": "t", "MY_SECRET": "s"}

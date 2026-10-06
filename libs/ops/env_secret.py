@@ -99,6 +99,49 @@ def lookup(names: Sequence[str], files: Iterable[Path] = ()) -> tuple[str | None
     return None, "absent"
 
 
+SECRET_SUFFIXES = ("_KEY", "_TOKEN", "_SECRET")
+
+
+def _registry_all(hive: str) -> dict[str, str]:
+    """Every value of one registry environment hive, or {}. Never raises, never logs."""
+    if not sys.platform.startswith("win"):
+        return {}
+    out: dict[str, str] = {}
+    try:
+        import winreg
+        root = winreg.HKEY_LOCAL_MACHINE if hive == "machine" else winreg.HKEY_CURRENT_USER
+        path = MACHINE_KEY if hive == "machine" else USER_KEY
+        flags = winreg.KEY_READ | getattr(winreg, "KEY_WOW64_64KEY", 0)
+        with winreg.OpenKey(root, path, 0, flags) as k:
+            i = 0
+            while True:
+                try:
+                    n, v, _t = winreg.EnumValue(k, i)
+                except OSError:
+                    break
+                out[str(n)] = str(v or "")
+                i += 1
+    except Exception:
+        return {}
+    return out
+
+
+def fresh_secrets(existing: dict[str, str] | None = None) -> dict[str, str]:
+    """Secret-looking variables (`*_KEY`, `*_TOKEN`, `*_SECRET`) that the registry holds and the
+    given environment lacks: the keys a `setx /M` added after this process started. A resident
+    merges them into each child's environment, so a key the principal sets reaches the next pass
+    without a reboot. Only fills ABSENT names; never overrides what the process already has."""
+    env = os.environ if existing is None else existing
+    have = {k.upper() for k, v in env.items() if str(v).strip()}
+    out: dict[str, str] = {}
+    for hive in ("machine", "user"):
+        for name, value in _registry_all(hive).items():
+            if (name.upper().endswith(SECRET_SUFFIXES) and value.strip()
+                    and name.upper() not in have and name not in out):
+                out[name] = os.path.expandvars(value.strip())
+    return out
+
+
 def presence(names: Sequence[str], files: Iterable[Path] = ()) -> dict[str, object]:
     """Where the key is and how long it is. The value never leaves this function."""
     value, origin = lookup(names, files)

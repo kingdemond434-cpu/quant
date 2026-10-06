@@ -228,6 +228,14 @@ _run_tree = _tree_runner()
 def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S) -> dict:
     """One department pass as a child under HOURLY_PLAN=dept:<name>, BELOW_NORMAL priority."""
     env = dict(os.environ)
+    # A key set with `setx /M` after this resident started is in the registry, not in our
+    # environment; hand it to the child so the pass sees it without a reboot (2026-10-06:
+    # FRED_API_KEY was set "many times" and every pass still read BLOCKED_AUTH).
+    try:
+        from libs.ops.env_secret import fresh_secrets
+        env.update(fresh_secrets(env))
+    except Exception:                                    # pragma: no cover - never blocks a pass
+        pass
     env["HOURLY_PLAN"] = f"dept:{dept}"
     # leg_rotation otherwise treats departments as unbounded, which is false: this child is
     # killed at timeout_s. Deferred work leads the immediately following resident pass.
