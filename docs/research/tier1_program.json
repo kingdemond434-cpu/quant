@@ -9037,6 +9037,39 @@
    "landed": [
     "mass screen 2026-09-30"
    ]
+  },
+  {
+   "id": "ASIA_P5",
+   "item": "The four proprietary PIT latent datasets (China industrial activity, China physical gold demand, Asia industrial export, Asia funding/carry) as vintaged dynamic-factor nowcasts, Asia-native event lifecycle objects, and asia_transmission donating with failure memory (Asia directive 2026-10-05 PARTS XV, XVII, XVIII; audit 2026-10-06 rows 22, 36, 38-42, package P5)",
+   "domain": "U",
+   "phase": 2,
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/macro_state_engine.py:1305 LATENT_SPECS -- the four datasets, every declared input with its axis binding or the package that delivers it",
+    "desks/mt5/research/macro_state_engine.py:1687 nowcast -- one-factor state-space model: PCA loadings shrunk to the declared sign, Kalman filter, per-input news contributions, equal-weight z and PCA baselines",
+    "desks/mt5/research/macro_state_engine.py:1805 build_vintages -- one vintage per release date, re-estimated on the inputs knowable then, appended to data/latent/<dataset>.vintages.jsonl with the universal sensor contract field names",
+    "desks/mt5/research/macro_state_engine.py:1938 axis_doc_latent -- data/axes/latent_<id>.json, read unchanged by alpha_dsl.FieldCatalogue",
+    "desks/mt5/research/macro_state_engine.py:1996 allocation_intel_latent -- reports/LATENT_ALLOCATION_INTEL.json",
+    "desks/mt5/research/macro_state_engine.py:2236 latent_cells -- exogenous_conditioner cells screened, deflated, donated; regime children placebo-gated; every look charged (null passes to data/null_pass_trials.jsonl)",
+    "desks/mt5/research/macro_state_engine.py:2335 build_asia_events -- Asia event objects and the stage-change ledger data/latent/asia_events.jsonl",
+    "libs/regime/event_state.py:352 ASIA_EVENT_RULES -- CFETS fix, LPR, NBS PMI, SHFE weekly stocks, KR 10/20-day exports, KOSPI200 expiry, gotobi",
+    "libs/regime/event_state.py:549 event_lifecycle -- announcement, expectation, release, surprise, revision, decay",
+    "libs/regime/event_state.py:152 relevant -- asset-scoped rows are never global",
+    "desks/mt5/research/state_vector_build.py:257 _asia_rows -- Asia rows join the PRE_EVENT..NORMALIZATION lifecycle per symbol",
+    "desks/mt5/research/state_vector_build.py:492 latent_hints_for -- latent states merged onto the state vector conditioning block",
+    "desks/mt5/research/asia_transmission.py:297 failure_memory -- every chain measurement appended to data/asia_transmission_edges.jsonl and read back",
+    "desks/mt5/research/batteries.py:248 asia_transmission runs with --propose",
+    "desks/mt5/tests/test_asia_latent_datasets.py"
+   ],
+   "scheduled_by": "hourly_cycle:macro_state_engine, hourly_cycle:state_vector, hourly_cycle:organ_battery",
+   "artifact": "desks/mt5/data/latent/latent_cn_industrial.vintages.jsonl + desks/mt5/data/axes/latent_asia_funding.json + desks/mt5/reports/LATENT_ALLOCATION_INTEL.json + desks/mt5/data/latent/asia_events.json",
+   "consumer": "libs/research/alpha_dsl.py FieldCatalogue (axis door); mt5desk/family_exogenous_conditioner.py and the alt: regime modifier in mt5desk/cell_modifiers.py (lake series); desks/mt5/research/state_vector_build.py world_conditioning and event_state -> data/state_vector.json -> pf_allocator; proposer_common.donate -> miner_candidate_compiler",
+   "landed": [
+    "2026-10-06 branch claude/asia-latent-datasets: built and tested on fixtures in the axis-door format; on this host's own data/axes/bis.json the funding state reconstructs 502 vintages over two years"
+   ],
+   "gap": "Runtime yield UNMEASURED until the trading box runs the macro_state_engine leg. Inputs: China industrial has 4 bound hard inputs (FIRMS needs FIRMS_MAP_KEY; MOT port terms to_confirm) and 12 NOT_YET_COLLECTED (packages P2-P4); physical gold has SGE premium BLOCKED_ON_TERMS (to_confirm) and India imports, 8 not collected; Asia export has 7 bound (KR exports, Busan, KR MOF TEU needs DATA_GO_KR_KEY, SingStat, PortWatch Busan/Singapore), 5 not collected; Asia funding has only the two BIS policy differentials, 8 not collected (SHIBOR/DR007, CFETS fix surprise, HIBOR, BOJ/JGB, TFX). CFETS/LPR/PMI/SHFE/expiry/gotobi events have no collected sensor, so their surprise stays UNMEASURED. state_admission's event labeller still reads only the ForexFactory calendar.",
+   "next_step": "Bind each NOT_YET_COLLECTED input's axis in LATENT_SPECS as packages P1-P4/P6 publish it; bind the CFETS fix-surprise and SHFE inventory series as event sensors; extend state_admission's event labeller to asia_schedule rows; read the first box run's MACRO_STATE_ENGINE.json latent_datasets block"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
