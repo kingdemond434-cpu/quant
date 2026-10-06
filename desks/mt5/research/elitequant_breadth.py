@@ -53,19 +53,25 @@ for _p in (str(BASE), str(ROOT)):
 
 from mt5desk import families_cn_cta as cn  # noqa: E402
 from mt5desk import families_elitequant as eq  # noqa: E402
+from mt5desk import families_quantguild as qg  # noqa: E402
 from mt5desk import families_quanttrading as qt  # noqa: E402
 
 #: Every family absorbed from the two curated lists, with its grid and declared culture:
 #: EliteQuant (Western canon), thuquant/awesome-quant (the CN futures CTA canon) and
 #: je-suis-tm/quant-trading (retail chart patterns and the Oil Money commodity-FX residual).
-FAMILIES = {**eq.ELITEQUANT_FAMILIES, **cn.CN_CTA_FAMILIES, **qt.QUANTTRADING_FAMILIES}
-PARAM_GRID = {**eq.PARAM_GRID, **cn.PARAM_GRID, **qt.PARAM_GRID}
-CULTURE = {**eq.CULTURE, **cn.CULTURE, **qt.CULTURE}
+FAMILIES = {**eq.ELITEQUANT_FAMILIES, **cn.CN_CTA_FAMILIES, **qt.QUANTTRADING_FAMILIES,
+            **qg.QUANTGUILD_FAMILIES}
+PARAM_GRID = {**eq.PARAM_GRID, **cn.PARAM_GRID, **qt.PARAM_GRID, **qg.PARAM_GRID}
+CULTURE = {**eq.CULTURE, **cn.CULTURE, **qt.CULTURE, **qg.CULTURE}
 #: Where each family came from, for the donated row's provenance.
 ORIGIN = {**dict.fromkeys(eq.ELITEQUANT_FAMILIES, "github.com/EliteQuant/EliteQuant (Apache-2.0)"),
           **dict.fromkeys(cn.CN_CTA_FAMILIES, "github.com/thuquant/awesome-quant (MIT)"),
           **dict.fromkeys(qt.QUANTTRADING_FAMILIES,
-                          "github.com/je-suis-tm/quant-trading (Apache-2.0)")}
+                          "github.com/je-suis-tm/quant-trading (Apache-2.0)"),
+          # No licence upstream: the two rules are re-derived from the lectures, nothing copied.
+          **dict.fromkeys(qg.QUANTGUILD_FAMILIES,
+                          "github.com/romanmichaelpaolucci/Quant-Guild-Library (no licence; "
+                          "rewritten)")}
 #: Families that read their own second leg keyed by the cell's `symbol` parameter.
 SYMBOL_KEYED = frozenset({"commodity_fx_residual"})
 

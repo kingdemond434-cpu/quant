@@ -197,13 +197,14 @@ _FAMILY_GROUPS: dict[str, str] = {
                                         " mean_reversion_rsi range_reversion",
     "range_reversion price_only market": "engulfing_reversal pin_bar_reversal"
                                          " heikin_ashi_reversal rsi_head_shoulders bollinger_w"
-                                         " ffd_reversion",
+                                         " ffd_reversion kalman_ou_level",
     "breakout_liquidity price_only stop": "anti_donchian_breakout d1_swing_break level_breakout"
                                           " london_ny_breakout opening_range"
                                           " session_range_breakout",
     "breakout_liquidity price_only limit": "failed_breakout",
     # skew_premium (Carver): holders of negatively skewed assets are paid for crash risk.
-    "volatility_shock price_only market": "jump vol_mean_reversion skew_premium",
+    "volatility_shock price_only market": "jump vol_mean_reversion skew_premium"
+                                          " hawkes_jump_switch",
     "volatility_shock price_only stop": "d1_inside volatility_squeeze",
     "regime_transition price_only market": "drawdown_conditional regime_split"
                                            " regime_transition vol_transition"
