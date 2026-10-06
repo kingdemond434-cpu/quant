@@ -225,3 +225,31 @@ def test_an_env_measured_on_another_machine_is_refused(tmp_path) -> None:
     target: dict[str, str] = {}
     assert jt.apply_env(path, target) == {}
     assert target == {}, "an env from a box of another shape is ignored, never applied"
+
+
+# ------------------------------------------- CRO 2026-09-30 gap 2: artifacts before `schtasks`
+def test_every_artifact_is_on_disk_before_the_task_limit_is_queried(tmp_path, monkeypatch) -> None:
+    """The `schtasks` limit query used to run ahead of every write and timed out on the box, so a
+    hung query cost the hour its measurement. Now the env file, JUDGING_RATE and JUDGING_THROUGHPUT
+    exist before the first `schtasks` call, and a limit that moved is written after it."""
+    out, rate, env = (tmp_path / "JT.json", tmp_path / "RATE.json", tmp_path / "env.json")
+    for name, p in (("OUT", out), ("RATE_OUT", rate), ("ENV_FILE", env)):
+        monkeypatch.setattr(jt, name, p)
+    monkeypatch.setattr(jt, "measure_box", lambda now=None: dict(BIG_BOX))
+    monkeypatch.setattr(jt, "declared_costs", lambda: dict(COSTS))
+    monkeypatch.setattr(jt, "measure_queue", lambda: dict(DEEP_QUEUE))
+    monkeypatch.setattr(jt, "measure_rate", lambda q, d, now=None: {"status": "MEASURED"})
+    monkeypatch.setattr(jt, "apply_env", lambda *a, **k: {})
+    monkeypatch.setattr(jt, "apply_machine_env", lambda d, b: {"status": "STUB"})
+    monkeypatch.setattr(jt, "apply_cadence", lambda m, b: {"status": "STUB"})
+    seen: list[tuple[bool, bool, bool]] = []
+
+    def limit(task: str = "") -> float:
+        seen.append((out.exists(), rate.exists(), env.exists()))
+        return 7_200.0
+
+    monkeypatch.setattr(jt, "task_time_limit_s", limit)
+    doc = jt.run(write=True, apply=True)
+    assert seen == [(True, True, True)], "every artifact is published before `schtasks` runs"
+    assert doc["decision"]["task_time_limit_basis"] == "schtasks"
+    assert json.loads(out.read_text("utf-8"))["decision"]["task_time_limit_s"] == 7_200.0

@@ -203,6 +203,8 @@ NON_REGIONAL_NAMES: frozenset[str] = frozenset({
     "discovery_compiler", "pack_cells", "pack_cells.world", "sandbox_runner",
     "independence_intake", "rank_recovery", "timeframe_fanout", "coverage_tensor",
     "cross_sectional_breadth",
+    # the global coverage tensor's missions: desk machinery naming a hole, not a regional ground
+    "global_coverage", "global_coverage_tensor",
     "moat_factory",
     "search_paradigm_census", "execution_alpha_miner", "missed_trade_archaeologist",
     "alpha_evolution", "representation_discovery", "math_lab", "physics_lab",

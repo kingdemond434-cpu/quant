@@ -346,6 +346,10 @@ LEG_LAYER: dict[str, str] = {
     # the same question `source_routes`, `value_of_data` and `unseen_frontier` are information for
     # -- even though the frontier rows it writes become research work downstream. LAWS 5f.
     "coverage_tensor": "information",
+    # THE GLOBAL COVERAGE TENSOR: the same question as `coverage_tensor` on the principal's
+    # fourteen axes, counted on a proven path -- which inputs exist and which have ever reached a
+    # measured outcome. Its missions become research work downstream, as the tensor's do.
+    "global_coverage_tensor": "information",
     # THE COVERAGE DRAIN. The tensor above says which inputs EXIST; this leg spends its hour
     # turning ground the desk already owns and has never read into ground it has actually
     # fetched -- registering every root the country packs declare, resolving the rows that were

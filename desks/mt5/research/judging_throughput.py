@@ -947,14 +947,23 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
     # 67,910 cells never built. This gives the judge the wall clock its own scheduled task already
     # allows and floors it at the sealed default, so it can only ever add time. A query that times
     # out reuses the last limit this organ read on this box, and says so.
-    _limit = task_time_limit_s() if box.get("is_judging_box") else None
-    _limit_basis = "schtasks" if _limit is not None else UNMEASURED
-    if _limit is None and box.get("is_judging_box"):
+    #
+    # NO `schtasks` BEFORE THE ARTIFACTS (CRO 2026-09-30, gap 2). The limit query used to run
+    # here, ahead of every write, and on the box it was one of the calls that timed out. The
+    # published decision now starts from the limit the LAST pass read (named as such), the
+    # artifacts are written, and the fresh `schtasks` read happens inside the bounded apply
+    # phase below -- which rewrites the env file and the report only if the limit moved.
+    _limit: float | None = None
+    _limit_basis = UNMEASURED
+    if box.get("is_judging_box"):
         prev = ((_read_json(OUT, {}) or {}).get("decision") or {}).get("task_time_limit_s")
-        if isinstance(prev, (int, float)) and prev > 0:
-            _limit, _limit_basis = float(prev), "previous_pass (schtasks query unanswered)"
+        if isinstance(prev, (int, float)) and prev >= 0:
+            _limit, _limit_basis = float(prev), "previous_pass (re-read in the apply phase)"
+    # AN UNLIMITED TASK KEEPS ITS BOUNDED BUILD BUDGET (live): the budget this box's env already
+    # carries is read BEFORE this pass rewrites the env, so a limit of 0 -- read now or in the
+    # apply phase -- retains it instead of dropping back to the sealed default.
     _current_budget = None
-    if _limit == 0:
+    if box.get("is_judging_box"):
         previous_env = _read_json(ENV_FILE, {}) or {}
         stamp = previous_env.get("measured_on") or {}
         if (stamp.get("cores") == box.get("cores")
@@ -997,6 +1006,22 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
     if apply:
         _APPLY_DEADLINE[:] = [_time.monotonic() + APPLY_BUDGET_S]
         try:
+            if box.get("is_judging_box"):
+                try:
+                    fresh_limit = task_time_limit_s()
+                except Exception:          # the apply budget ran out: the published limit stands
+                    fresh_limit = None
+                if fresh_limit is not None:
+                    decision["task_time_limit_basis"] = "schtasks"
+                    if fresh_limit != _limit:
+                        _fresh, _fresh_why = fresh_budget_s(fresh_limit, _current_budget)
+                        decision["fresh_budget_s"] = _fresh
+                        decision["fresh_budget_why"] = _fresh_why
+                        decision["task_time_limit_s"] = fresh_limit
+                        if write:
+                            write_env(decision, box=box)
+                            applied["process_env"] = apply_env()
+                            _write_atomic(OUT, payload)
             steps: tuple[tuple[str, Any], ...] = (
                 ("machine_env", lambda: apply_machine_env(decision, box)),
                 ("cadence", lambda: apply_cadence(int(decision["cadence_minutes"]), box)))
