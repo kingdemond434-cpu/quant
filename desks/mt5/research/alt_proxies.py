@@ -819,7 +819,8 @@ def parse_oi_mobility(body: bytes, ctx: Ctx) -> list[Obs]:
 
 def parse_ecos(body: bytes, ctx: Ctx) -> list[Obs]:
     """BOK ECOS StatisticSearch JSON for ONE item (the URL filters to it). TIME is YYYYMM
-    (monthly) or YYYYMMDD; an ECOS error document (RESULT.CODE) parses to nothing."""
+    (monthly) or YYYYMMDD; an ECOS error document (RESULT.CODE) parses to nothing. A table with a
+    second dimension returns one row per ITEM_CODE2 per month; only the total (00) is kept."""
     try:
         doc = json.loads(body.decode("utf-8", errors="replace"))
     except ValueError:
@@ -829,6 +830,8 @@ def parse_ecos(body: bytes, ctx: Ctx) -> list[Obs]:
     for r in rows if isinstance(rows, list) else []:
         if not isinstance(r, dict):
             continue
+        if str(r.get("ITEM_CODE2") or "00") != "00":
+            continue                   # a second dimension's breakdown (은행계/비은행계): keep 합계
         t, v = str(r.get("TIME") or ""), _num(str(r.get("DATA_VALUE") or ""))
         if v is None or not t.isdigit():
             continue
@@ -2010,10 +2013,11 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
         failure_mode_hypothesis=("fails around Chuseok/Lunar New Year month shifts and "
                                  "government consumption-voucher programmes"),
         crowding_prior="low", substitutes_for=_CARD,
-        note=("minimal ECOS reader (no ECOS reader exists in the repo). NO DEFAULT CODES: the "
-              "stat and item codes come only from ALT_ECOS_CARD_STAT / ALT_ECOS_CARD_ITEM, read "
-              "off ECOS StatisticItemList on the box; until both and the key are set the row is "
-              "BLOCKED_ON_KEY / UNCONFIGURED and nothing is requested")),
+        note=("minimal ECOS reader (no ECOS reader exists in the repo). Default codes 601Y003 / "
+              "201010 (personal general-purchase credit-card spend, total of bank and non-bank "
+              "issuers) read off ECOS's own item catalogue (CONFIG_DEFAULTS cites it); "
+              "ALT_ECOS_CARD_STAT / ALT_ECOS_CARD_ITEM override. Without the key the row is "
+              "BLOCKED_ON_KEY and nothing is requested")),
     Source(
         id="jp_meti_retail", name="METI commercial dynamics flash: retail sales YoY (Japan)",
         url=os.environ.get("ALT_METI_RETAIL_URL",
@@ -2318,11 +2322,12 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
                                  "arrivals for reasons the yen already priced, and it prints "
                                  "later than JNTO's estimate"),
         crowding_prior="low", substitutes_for=_TRAVEL,
-        note=("stands in for jp_jnto_arrivals (JNTO site policy refuses reuse). NO DEFAULT "
-              "CODES: statsDataId and cdCat01 of the 出入国管理統計 foreign-entries "
-              "table come only "
-              "from ALT_ESTAT_IMMIG_STATS_ID / ALT_ESTAT_IMMIG_CAT01 (candidate table: statdisp "
-              "0003287527, 港別 出入国者 月次); reuses jp_tokyo_cpi's e-Stat key")),
+        note=("stands in for jp_jnto_arrivals (JNTO site policy refuses reuse). statsDataId "
+              "defaults to 0003449066 (国籍・地域別 入国外国人の在留資格, monthly, read off "
+              "e-Stat's dbview page; CONFIG_DEFAULTS cites it). cdCat01 has NO default: its "
+              "code is not printed on an official page, so the row stays UNCONFIGURED until "
+              "ALT_ESTAT_IMMIG_CAT01 is read from getMetaInfo on the box; reuses jp_tokyo_cpi's "
+              "e-Stat key")),
     Source(
         id="hk_immd_passenger",
         name="HK Immigration daily passenger traffic: mainland visitor arrivals (DATA.GOV.HK)",
@@ -2391,8 +2396,9 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
                                  "prints about seven weeks after the month"),
         crowding_prior="low", substitutes_for=_CARD,
         vintage="current",
-        note=("stands in for mx_antad_sss (ANTAD terms refuse reuse). NO DEFAULT CODE: the BIE "
-              "indicator id comes only from ALT_INEGI_EMEC_ID, and it MUST be the NSA 'serie "
+        note=("stands in for mx_antad_sss (ANTAD terms refuse reuse). NO DEFAULT CODE (no "
+              "official page reachable without a token prints it; CONFIG_DEFAULTS says why): the "
+              "BIE indicator id comes only from ALT_INEGI_EMEC_ID, and it MUST be the NSA 'serie "
               "original' retail index (the YoY transform compares the same month a year apart; "
               "a seasonally adjusted series is revised every month). The BIE API serves the "
               "current vintage only, so history rows are stamped vintage=current and "
@@ -2976,6 +2982,42 @@ ENGINE_ROWS_FILE = DESK / "data" / "paid_data_substitutes_asia_blocked.json"
 ROSTER_FILE = DESK / "data" / "source_rosters" / "asia_paid_substitutes_consumer.yaml"
 
 
+#: Documented defaults for config ids, each read off the provider's own catalogue on 2026-10-06
+#: and cited next to it. The env var of the same name still overrides. An id that could not be
+#: verified from an official page has NO entry here and its row stays UNCONFIGURED.
+CONFIG_DEFAULTS: dict[str, str] = {
+    # BOK ECOS table 601Y003 "7.5.1. 신용카드" (monthly 200301-202606 when read), item 201010
+    # "개인 일반구매 이용금액" (personal general-purchase spend, 백만원): household card spend,
+    # excluding cash advances. Read from the ECOS Open API's own item catalogue:
+    #   https://ecos.bok.or.kr/api/StatisticItemList/sample/json/kr/21/30/601Y003
+    # and served by https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/3/601Y003/M/
+    # 202601/202601/201010 (three rows a month: ITEM_CODE2 00 합계, 10 은행계, 20 비은행계;
+    # parse_ecos keeps 00). The older 601Y002 (by region) ENDS 202308, so it is not used.
+    "ALT_ECOS_CARD_STAT": "601Y003",
+    "ALT_ECOS_CARD_ITEM": "201010",
+    # e-Stat statsDataId 0003449066, 出入国管理統計 "国籍・地域別 入国外国人の在留資格" (monthly,
+    # 2020-06..2026-07 when read; cat01 has the single item 入国外国人, cat02 国籍・地域 with
+    # 総数, cat03 在留資格 with 総数): https://www.e-stat.go.jp/dbview?sid=0003449066
+    # ALT_ESTAT_IMMIG_CAT01 has NO default: the official dbview page names the cat01 item but
+    # does not print its code, and the code is not guessed. Read it on the box with getMetaInfo
+    # (appId + statsDataId=0003449066) and set the env var. Note for whoever does: the full
+    # table is ~209 x 41 x 70 cells, above getStatsData's 100,000-row page, so the request should
+    # also pin cat02/cat03 to their 総数 codes (from the same getMetaInfo reply).
+    "ALT_ESTAT_IMMIG_STATS_ID": "0003449066",
+    # ALT_INEGI_EMEC_ID has NO default: the BIE indicator id of the EMEC retail revenue index
+    # (serie original) is not printed on any INEGI page reachable without a token (the BIE web
+    # app at https://www.inegi.org.mx/app/indicadores/ is a JS shell and the EMEC programme page
+    # https://www.inegi.org.mx/programas/emec/2018/ carries no series keys). Read it from the
+    # BIE catalogue on the box (CL_INDICATOR with INEGI_TOKEN) and set the env var.
+}
+
+
+def config_value(name: str, environ: Any = None) -> str:
+    """The env override if set, else the documented default, else ''."""
+    env: Any = os.environ if environ is None else environ
+    return str(env.get(name) or "").strip() or CONFIG_DEFAULTS.get(name, "")
+
+
 def status_of(src: Source, environ: dict[str, str] | None = None) -> str:
     """One named state per source. Nothing here claims live yield: a source that has not returned
     real data on the box is UNMEASURED_LIVE_YIELD, and the pass report says what it parsed.
@@ -2989,7 +3031,7 @@ def status_of(src: Source, environ: dict[str, str] | None = None) -> str:
                 else f"BLOCKED_ON_TERMS:{src.terms}")
     if src.key_env and not env.get(src.key_env):
         return f"BLOCKED_ON_KEY:{src.key_env}"
-    missing = [e for e in src.config_env if not env.get(e)]
+    missing = [e for e in src.config_env if not config_value(e, env)]
     if missing:
         return "UNCONFIGURED:" + ",".join(missing)
     return "UNMEASURED_LIVE_YIELD"
@@ -3101,7 +3143,7 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
                 Request(f"{src.url}/{now.year - 1}", Ctx(part="prior_year", fetched_at=now))]
     url = src.url.replace("{key}", key).replace("{yyyymm}", now.strftime("%Y%m"))
     for env in src.config_env:
-        code = os.environ.get(env, "").strip()
+        code = config_value(env)
         if not code:
             return []                  # never a request built on a placeholder code
         url = url.replace("{" + env + "}", urllib.parse.quote(code, safe=""))

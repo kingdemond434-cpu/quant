@@ -390,25 +390,45 @@ def test_a_to_confirm_source_is_never_fetched(tmp_path: Path) -> None:
         assert sid in rep["blocked_on_terms"]
 
 
-def test_ecos_never_builds_a_request_on_a_placeholder_code(
-        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_ecos_requests_only_with_the_key_and_defaults_to_the_catalogued_card_series(
+        monkeypatch: pytest.MonkeyPatch) -> None:
     src = A.BY_ID["kr_bok_card_spend"]
     for env in ("ALT_ECOS_CARD_STAT", "ALT_ECOS_CARD_ITEM"):
         monkeypatch.delenv(env, raising=False)
     monkeypatch.delenv("ECOS_API_KEY", raising=False)
     assert A.status_of(src) == "BLOCKED_ON_KEY:ECOS_API_KEY"
     monkeypatch.setenv("ECOS_API_KEY", "k")
-    assert A.status_of(src) == "UNCONFIGURED:ALT_ECOS_CARD_STAT,ALT_ECOS_CARD_ITEM"
-    assert A.requests_for(src, NOW, {}) == []
-    rec = A.collect(A.Paths(tmp_path / "desk"), src, {}, NOW, fetch=True, fixtures=None,
-                    deadline=1e18, getter=lambda u: (_ for _ in ()).throw(AssertionError(u)))
-    assert rec["status"].startswith("UNCONFIGURED")
-    monkeypatch.setenv("ALT_ECOS_CARD_STAT", "901Y999")
-    assert A.requests_for(src, NOW, {}) == []                        # one code is not both
-    monkeypatch.setenv("ALT_ECOS_CARD_ITEM", "I61A")
+    # Key set, no override: the documented default (601Y003 / 201010) is used, not UNCONFIGURED.
     assert A.status_of(src) == "UNMEASURED_LIVE_YIELD"
     (req,) = A.requests_for(src, NOW, {})
+    assert req.url.endswith("/601Y003/M/201801/202609/201010") and "{" not in req.url
+    # The env var still overrides.
+    monkeypatch.setenv("ALT_ECOS_CARD_STAT", "901Y999")
+    monkeypatch.setenv("ALT_ECOS_CARD_ITEM", "I61A")
+    (req,) = A.requests_for(src, NOW, {})
     assert req.url.endswith("/901Y999/M/201801/202609/I61A") and "{" not in req.url
+
+
+def test_ecos_keeps_only_the_total_of_a_second_dimension() -> None:
+    rows = [{"TIME": "202601", "ITEM_CODE2": c, "DATA_VALUE": v}
+            for c, v in (("00", "56946584"), ("10", "32544751"), ("20", "24401833"))]
+    body = json.dumps({"StatisticSearch": {"row": rows}}).encode()
+    obs = A.parse_ecos(body, A.Ctx(fetched_at=NOW))
+    assert [o.value for o in obs] == [56946584.0]
+
+
+def test_estat_immigration_defaults_its_table_but_not_its_unverified_category(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    src = A.BY_ID["jp_estat_immigration"]
+    for env in ("ALT_ESTAT_IMMIG_STATS_ID", "ALT_ESTAT_IMMIG_CAT01"):
+        monkeypatch.delenv(env, raising=False)
+    monkeypatch.setenv("ESTAT_APP_ID", "k")
+    assert A.status_of(src) == "UNCONFIGURED:ALT_ESTAT_IMMIG_CAT01"
+    assert A.requests_for(src, NOW, {}) == []
+    monkeypatch.setenv("ALT_ESTAT_IMMIG_CAT01", "100")
+    assert A.status_of(src) == "UNMEASURED_LIVE_YIELD"
+    (req,) = A.requests_for(src, NOW, {})
+    assert "statsDataId=0003449066" in req.url and "cdCat01=100" in req.url
 
 
 def test_no_source_claims_live_yield_and_dead_archives_never_count_as_live() -> None:
