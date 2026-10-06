@@ -41,6 +41,8 @@ def desk(tmp_path, monkeypatch):
         "c": _cert("CCC", "discovered")}}), encoding="utf-8")
     monkeypatch.setattr(ks, "WORLDS", worlds)
     monkeypatch.setattr(ks, "CERT_CANON", canon)
+    monkeypatch.setattr(ks, "CERT_STORE", tmp_path / "absent_store.json")
+    monkeypatch.setattr(ks, "_replayed_certificates", lambda: ({}, "no replay in tests"))
     monkeypatch.setattr(ks, "LEDGER", tmp_path / "absent.jsonl")
     monkeypatch.setattr(ks, "BOOK_PATHS", 400)
     monkeypatch.setattr(ks, "BOOK_STARTS", 2)
@@ -62,3 +64,31 @@ def test_book_screens_caps_and_survives(desk):
     assert fus["as_estimated"]["p_death"] <= ks.EPS_DEATH
     assert fus["edges_halved"]["p_death"] <= ks.EPS_DEATH
     assert doc["e8"]["status"].startswith("UNMEASURED")
+
+
+def test_unpriced_certificates_are_replayed_and_join(desk, tmp_path, monkeypatch):
+    """A certificate the allocator never priced is priced by replay and can win heat; the store
+    is read before the canon, and a store row without a family field takes it from its key."""
+    import pandas as pd
+    store = tmp_path / "store.json"
+    store.write_text(json.dumps({"survivors": {
+        "external.DDD.carry.p=1": {"sym": "DDD", "cell": "DDD.carry",
+                                   "shadow_spec": {"selector": "asia", "symbol": "DDD"}},
+        "external.EEE.carry.p=2": {"sym": "EEE", "cell": "EEE.carry",
+                                   "shadow_spec": {"selector": "asia", "symbol": "EEE"}}}}),
+        encoding="utf-8")
+    monkeypatch.setattr(desk, "CERT_STORE", store)
+    rng = np.random.default_rng(3)
+    idx = pd.date_range("2024-01-01", periods=400).date
+    series = {"DDD_carry_asia": pd.Series(rng.normal(0.08, 0.3, 400), index=idx),
+              "EEE_carry_asia": pd.Series(rng.normal(-0.05, 0.3, 400), index=idx)}
+    monkeypatch.setattr(desk, "_replayed_certificates", lambda: (series, "test replay"))
+    doc = desk.solve_book()
+    assert doc["status"] == "OK"
+    assert "DDD_carry_asia" in doc["columns"]
+    assert "EEE_carry_asia" not in doc["columns"]          # negative mean never joins
+    assert doc["fusion"]["heat"].get("DDD_carry_asia", 0) > 0
+    rows = {r["certificate"]: r for r in doc["screen"]}
+    assert rows["external.DDD.carry.p=1"]["family"] == "carry"
+    assert rows["external.DDD.carry.p=1"]["store"] == "store.json"
+    assert "1 joined" in doc["unpriced"]
