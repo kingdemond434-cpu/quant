@@ -617,7 +617,9 @@ $reportPaths = @(
     "desks/mt5/data/macro/multiplicity.json",
     "desks/mt5/data/macro/source_credibility.json",
     "desks/mt5/data/macro/taxonomy.json",
-    "desks/mt5/data/intelligence/world/frontier.json"
+    "desks/mt5/data/intelligence/world/frontier.json",
+    # The tradability health verdict, written by the hourly leg of #236 (truth discipline).
+    "desks/mt5/reports/TRADABILITY_HEALTH.json"
 )
 # A NAMED EXCEPTION TO THE CAP, NOT A WIDER CAP. world/frontier.json measured 12,473,842 bytes on
 # the branch (2026-09-28); under the 4 MB cap it would be skipped every pass and never published.
