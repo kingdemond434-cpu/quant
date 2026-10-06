@@ -95,17 +95,9 @@ except Exception:
 #: Conditioned sessions ordered by window start; `all` is the UNCONDITIONAL CONTROL and sits
 #: outside the ladder, because "no session filter" is not adjacent to anything -- it is the arm
 #: every conditioned arm is measured against.
-#: A session whose window sits INSIDE another's (the Tokyo fix in Asia, the London fix and the
-#: overlap in New York) is a sub-window of that session, not the next step along the day, so it
-#: is not on the ladder.
-def _inside(w: tuple[int, int], other: tuple[int, int]) -> bool:
-    return w != other and other[0] <= w[0] and w[1] <= other[1]
-
-
 SESSION_LADDER: tuple[str, ...] = tuple(
-    s for s, w in sorted(((s, w) for s, w in SESSION_WINDOWS.items() if w is not None),
-                         key=lambda kv: kv[1][0])
-    if not any(_inside(w, o) for o in SESSION_WINDOWS.values() if o is not None))
+    s for s, _ in sorted(((s, w) for s, w in SESSION_WINDOWS.items() if w is not None),
+                         key=lambda kv: kv[1][0]))
 
 #: The four conditioning states every price mechanism could plausibly differ across. Two
 #: volatility states and two risk states, and both pairs are TWO-SIDED on purpose: a conditional

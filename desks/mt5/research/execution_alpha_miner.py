@@ -402,13 +402,7 @@ def delayed_vs_immediate_day(sp: dict[str, np.ndarray], masks: dict[str, np.ndar
 # -------------------------------------------------------------------------------- the fills --
 
 def _session_of(hour: int) -> str:
-    """The broad session(s) a fill's hour is in. A sub-window (the Tokyo fix inside Asia, the
-    London fix and the overlap inside New York) has its own cell in `cell_masks`, but would
-    only split a fill bucket its parent already names."""
-    wins = {n: w for n, w in mos.SESSIONS.items() if w}
-    broad = {n: w for n, w in wins.items()
-             if not any(o != w and o[0] <= w[0] and w[1] <= o[1] for o in wins.values())}
-    hit = [name for name, (lo, hi) in broad.items() if lo <= hour < hi]
+    hit = [name for name, (lo, hi) in mos.SESSIONS.items() if lo <= hour < hi]
     return "+".join(sorted(hit)) if hit else "none"
 
 

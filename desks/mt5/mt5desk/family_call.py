@@ -74,18 +74,24 @@ def accepts_side(fn: Any) -> bool:
 #: argument the family sees.
 SESSIONS: dict[str, tuple[int, int] | None] = {
     "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None,
-    # The fine sessions (2026-10-06), in the same SERVER hours (New York + 7h): the Tokyo fix
-    # (09:55 JST is 02:55 winter / 03:55 summer), the London 4pm fix (15:00-17:00 London is
-    # 17-19 server) and the London/New York overlap (08:00-11:00 New York is 15-18 server).
-    # Before this an unknown name filtered nothing, so a cell named for one ran as `all`.
+}
+#: The fine sessions (2026-10-06), in the same SERVER hours (New York + 7h): the Tokyo fix
+#: (09:55 JST is 02:55 winter / 03:55 summer), the London 4pm fix (15:00-17:00 London is 17-19
+#: server) and the London/New York overlap (08:00-11:00 New York is 15-18 server). Each sits
+#: INSIDE a broad session, so they are kept out of `SESSIONS`: that table is the day's partition,
+#: and organs that place one bar in one session (the regime router, the descendant ladder) read
+#: it as such. Before this an unknown name filtered nothing, so a cell named for one ran as `all`.
+FINE_SESSIONS: dict[str, tuple[int, int]] = {
     "tokyo_fix": (2, 5), "london_fix": (17, 19), "overlap": (15, 18),
 }
+#: Every window a cell may be NAMED for: the filter, and every organ that names or anchors a cell.
+WINDOWS: dict[str, tuple[int, int] | None] = {**SESSIONS, **FINE_SESSIONS}
 
 
 def session_window(session: Any) -> tuple[int, int] | None:
     """[start, end) server hours for a session name; None for `all`, missing or unknown."""
     key = str(session or "all").strip().lower()
-    return SESSIONS.get(key)
+    return WINDOWS.get(key)
 
 
 def certified_session(sleeve: dict[str, Any]) -> Any:

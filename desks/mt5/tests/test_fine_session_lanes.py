@@ -33,7 +33,7 @@ def test_the_server_window_contains_the_fix_in_both_seasons() -> None:
     cases = {"tokyo_fix": ("Asia/Tokyo", "09:55"), "london_fix": ("Europe/London", "16:00"),
              "overlap": ("America/New_York", "09:30")}
     for s, (tz, hhmm) in cases.items():
-        lo, hi = family_call.SESSIONS[s] or (0, 0)
+        lo, hi = family_call.WINDOWS[s] or (0, 0)
         for day in ("2026-07-15", "2026-01-15"):
             t = pd.Timestamp(f"{day} {hhmm}", tz=tz).tz_convert("America/New_York")
             server_hour = (t.tz_localize(None) + pd.Timedelta(hours=7)).hour
@@ -49,3 +49,12 @@ def test_every_producer_axis_carries_them() -> None:
                  axis_registry.PROPOSABLE_SESSIONS, qd_frontier.PROPOSABLE_SESSIONS,
                  producer_breadth.SESSIONS):
         assert set(FINE) <= set(axis), axis
+
+
+def test_the_broad_table_stays_the_partition_of_the_day() -> None:
+    """A fine session sits inside a broad one; the organs that place a bar in ONE session read
+    `SESSIONS` as the partition, so the fine windows live beside it, never in it."""
+    assert set(family_call.SESSIONS) == {"asia", "london", "ny", "all"}
+    for s in FINE:
+        assert s not in family_call.SESSIONS
+        assert family_call.WINDOWS[s] == family_call.FINE_SESSIONS[s]

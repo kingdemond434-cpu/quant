@@ -214,8 +214,8 @@ def sessions() -> dict[str, tuple[int, int] | None]:
     the gauntlet, the forward clock and the executor filter on."""
     try:
         _ensure_path()
-        from mt5desk.family_call import SESSIONS
-        return dict(SESSIONS)
+        from mt5desk.family_call import WINDOWS
+        return dict(WINDOWS)
     except Exception:
         return dict(_FALLBACK_SESSIONS)
 
