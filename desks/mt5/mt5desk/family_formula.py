@@ -37,14 +37,36 @@ def family_formula(
     stop_atr: float = 2.0,
     rr: float = 1.5,
     drivers: dict[str, pd.DataFrame] | None = None,
+    population: str | None = None,
 ) -> list[Signal]:
+    # `population` IS PROVENANCE, NOT A PARAMETER (2026-09-30): the search-paradigm census stamps
+    # which search population drew the tree (`"gp"`, ...) into params, where it names the cell.
+    # The family did not accept it, so every such row -- 928 of 944 `formula` rows in the docket
+    # committed 2026-09-29 -- raised TypeError in the judge's build and the forward clock alike
+    # and was parked as NOT_RUN_BUILD_FAILED, a construction failure that was a signature. It is
+    # accepted and ignored: two trees that differ only by the population that found them are the
+    # same rule and trade the same signals.
+    del population
     from libs.research.alpha_grammar import (
         DRIVER_TERMINALS,
         evaluate,
+        from_str,
         is_valid,
         terminal_frames,
         terminals_in,
     )
+    # AND THE SAME ROWS CARRY THE TREE RENDERED, NOT AS THE PREFIX LIST. `alpha_grammar.to_str`
+    # writes "div(open, bars_since_min(high, 5))" and `is_valid` reads a string as a bare TERMINAL
+    # name, so all 928 failed the screen and returned [] -- which, once the signature above stopped
+    # raising, would have moved them from a named build failure to an UNKNOWN "never fires". A
+    # rendered call is parsed back with the grammar's own inverse; a bare terminal ("close") has
+    # no parenthesis and is left as the grammar already reads it; an unparseable string stays
+    # invalid and returns nothing, exactly as before.
+    if isinstance(expr, str) and "(" in expr:
+        try:
+            expr = from_str(expr)
+        except ValueError:
+            return []
     if expr is None or side_mode not in SIDE_MODES or not is_valid(expr):
         return []
     d = _h1(df)

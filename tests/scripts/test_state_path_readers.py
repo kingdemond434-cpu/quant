@@ -35,7 +35,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
 import scripts.check_change_window as cw
 import scripts.check_mechanism_attribution as ma
 import scripts.record_capital_event as rce
@@ -95,7 +94,7 @@ def state_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 def test_every_reader_names_the_written_path_not_the_phantom() -> None:
     # The defect in one line: all four pointed at a file nothing writes.
-    assert str(rce._STATE).endswith(_REL)
+    assert rce._STATE.as_posix().endswith(_REL)
     assert cw._STATE_REL == _REL
     assert _REL in ma._STATE_CANDIDATES
     for mod in (rce, cw, ma):

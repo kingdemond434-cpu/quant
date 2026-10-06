@@ -17,8 +17,23 @@
 ROOT="$(git rev-parse --show-toplevel)"
 "$ROOT/ops/gates.sh" || exit 1
 
-PY="$ROOT/.venv/bin/python"
-[ -x "$PY" ] || PY=python3
+# THE INTERPRETER, ON BOTH KINDS OF HOST (2026-10-01). The trading box is Windows: its venv is
+# .venv/Scripts/python.exe, never .venv/bin/python, and `python3` there may be absent or the
+# Microsoft Store stub, which exits non-zero without running anything -- a law gate that "fails"
+# and refuses the push with no fence having run. So: the venv in either layout first, then the
+# first of python3 / python that actually starts. (Unmeasured on the box; the laptop checks.)
+PY=""
+for cand in "$ROOT/.venv/bin/python" "$ROOT/.venv/Scripts/python.exe"; do
+    [ -x "$cand" ] && { PY="$cand"; break; }
+done
+if [ -z "$PY" ]; then
+    for cand in python3 python; do
+        if command -v "$cand" >/dev/null 2>&1 && "$cand" -c "import sys" >/dev/null 2>&1; then
+            PY="$cand"; break
+        fi
+    done
+fi
+[ -n "$PY" ] || PY=python3
 if ! "$PY" "$ROOT/scripts/run_law_gate.py" --laws-only; then
     echo "" >&2
     echo "PUSH REFUSED: a constitutional law fence is failing (L1.37)." >&2

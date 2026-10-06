@@ -235,7 +235,8 @@ def may(role: str, verb: str, target: str, roles: Iterable[Role] | None = None) 
     `roles` defaults to the static table plus every role registered at runtime (`register`):
     the cohort-blinding seat roles are built from the repository and the seat map, so the organ
     that measured them registers them instead of this module hard-coding a seat list."""
-    for r in (tuple(roles) if roles is not None else ROLES + tuple(_REGISTERED.values())):
+    for r in (tuple(roles) if roles is not None
+              else ROLES + RUNTIME_ROLES + tuple(_REGISTERED.values())):
         if r.name != role:
             continue
         if verb == "read" and any(t in target for t in r.forbid_tokens):
@@ -249,6 +250,37 @@ def may(role: str, verb: str, target: str, roles: Iterable[Role] | None = None) 
             raise FirewallError(f"{role} may not write {target}: {r.sentence}")
         return
     raise FirewallError(f"unknown role {role!r}")
+
+
+#: THE JUDGE, AT THE GATES (layer 12, runtime half). The external gauntlet, the universal gate and
+#: the autodiscovery lockbox call `judge_refusal` on what they read and write. The judge reads the
+#: COMPILED docket, the bars and its own verdicts -- never a raw hypothesis (a seat's donation, the
+#: hypothesis graph, the suggestion trail) and never another organ's sealed lockbox store. Runtime
+#: only: it names no organs, so the static audit and its ratchet are unchanged.
+JUDGE_FORBID_READS: tuple[str, ...] = ("intelligence/", "hypothesis_graph", "suggestion_ledger",
+                                       "kimi_hunt", "LOCKBOX_RESULTS", "lockbox_vault",
+                                       "lockbox_holdout")
+JUDGE = Role("judge", (), forbid_tokens=JUDGE_FORBID_READS,
+             forbid_writes=("sleeves.json", "strategies/", "families/", "pf_allocation"),
+             sentence=("The judge reads the compiled docket and the bars, never raw hypotheses "
+                       "or a sealed lockbox store, and cannot write strategy code, the sleeve "
+                       "book or the allocation."))
+RUNTIME_ROLES: tuple[Role, ...] = (JUDGE,)
+
+
+def judge_refusal(verb: str, target: object) -> str | None:
+    """None when the judge may `verb` `target`; otherwise why the gate REFUSES.
+
+    FAIL CLOSED: a violation, an unknown role or any error inside the check is a refusal -- the
+    gate that asked must refuse rather than pass (a check that could not run vouched for nothing).
+    """
+    try:
+        may("judge", verb, str(target).replace("\\", "/"))
+    except FirewallError as exc:
+        return f"FIREWALL: {exc}"
+    except Exception as exc:  # any failure refuses, never passes
+        return f"FIREWALL_ERROR: {type(exc).__name__}: {exc}"
+    return None
 
 
 _REGISTERED: dict[str, Role] = {}

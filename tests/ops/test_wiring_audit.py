@@ -255,3 +255,34 @@ def test_the_graph_separates_what_imports_from_what_merely_tests() -> None:
     assert overlap, "sanity: some modules are both imported and tested"
     assert not any(i.startswith("tests/") for imps in g.importers.values() for i in imps), (
         "a tests/ file was recorded as an importer")
+
+
+def test_import_scan_keeps_nested_statements_and_skips_expression_trees(tmp_path) -> None:
+    import ast
+
+    from libs.ops.wiring_audit import _imports_of
+
+    source = '''
+import libs.root
+def nested(value):
+    try:
+        with value:
+            from libs.inner import member
+    except Exception:
+        import libs.fallback
+    match value:
+        case 1:
+            from libs.matching import other
+    return [i * i for i in range(1000)]
+'''
+    path = tmp_path / "nested.py"
+    path.write_text(source, encoding="utf-8")
+    expected = set()
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Import):
+            expected.update(a.name for a in node.names if a.name.startswith("libs."))
+        elif (isinstance(node, ast.ImportFrom) and node.level == 0 and node.module
+              and node.module.startswith("libs")):
+            expected.add(node.module)
+            expected.update(f"{node.module}.{a.name}" for a in node.names)
+    assert _imports_of(path) == expected

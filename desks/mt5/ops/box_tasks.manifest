@@ -78,15 +78,15 @@ TASK name="MT5-FusionDeadmanDryRun" trigger="every 5 minutes"     runs="desks/mt
 TASK name="MT5-TerminalBoot"       trigger="at startup"           runs="terminal64.exe"                        installer="NONE" lane="money"
 
 # ---------------------------------------------------------------------------- the research lane
-# THE FIVE THAT `stall_watch` HEALS AND NOTHING HERE INSTALLS. Whether they run hourly -- the
-# standing requirement -- cannot be answered from this repo until these five triggers are read off
-# the box and written down.
-# MT5-Gauntlet now runs through RunGauntlet.cmd, which exports the worker count, memory budget and
-# headroom ceiling that `research/judging_throughput.py` measured off THIS box into the environment
-# the SEALED external_gauntlet.py already reads. The sealed file is never edited; the cadence below
+# THE RESEARCH TASKS THAT `stall_watch` HEALS. The installer owns MT5-Gauntlet; the remaining
+# clocks are observed VPS state until they receive an installer of their own.
+# MT5-Gauntlet now runs through run_sharded_gauntlet.py, which exports the worker count, memory
+# budget and headroom ceiling that `research/judging_throughput.py` measured off THIS box into the
+# environment the SEALED external_gauntlet.py already reads, then invokes its fail-closed shard
+# protocol. The sealed file is never edited; the cadence below
 # is raised to :05 by `judging_throughput.apply_cadence` while the queue is deep and headroom
 # exists, and the manifest records the base trigger.
-TASK name="MT5-Gauntlet"           trigger="every 10 minutes, at :01 (raised to every 5 by judging_throughput while the queue is deep)" runs="desks/mt5/scripts/RunGauntlet.cmd"      installer="NONE" lane="research"
+TASK name="MT5-Gauntlet"           trigger="every 10 minutes, at :01 (raised to every 5 by judging_throughput while the queue is deep)" runs="desks/mt5/scripts/run_sharded_gauntlet.py" organ="desks/mt5/scripts/external_gauntlet.py" installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="research"
 TASK name="MT5-Shadow"             trigger="every 1 hour, at :55" runs="desks/mt5/research/shadow_cycle.py"          installer="NONE" lane="research"
 TASK name="MT5-UniversalGate"      trigger="every 1 hour, at :07" runs="desks/mt5/research/universal_gate.py"        installer="NONE" lane="research"
 TASK name="MT5-QQuantShadow"       trigger="every 30 minutes, at :25" runs="desks/mt5/research/qquant_shadow.py"         installer="NONE" lane="research"
@@ -157,7 +157,19 @@ TASK name="MT5-ContractTerms"      trigger="every 1 hour"          runs="UNKNOWN
 TASK name="MT5-CacheWarm"          trigger="every 30 minutes"      runs="desks/mt5/scripts/warm_gauntlet_cache.py"   installer="desks/mt5/scripts/install_cachewarm_task.ps1" lane="data"
 
 # -------------------------------------------------------------------------------------- ops
-TASK name="MT5-StallWatch"         trigger="every 10 minutes" runs="desks/mt5/scripts/stall_watch.ps1"        installer="NONE" lane="ops"
+TASK name="MT5-StallWatch"         trigger="every 10 minutes" runs="desks/mt5/scripts/stall_watch.ps1"        installer="desks/mt5/scripts/install_stall_watch_task.ps1" lane="ops"
+# MT5-BoxHeartbeat (2026-09-30): the box's outside alarm. Pings its own healthchecks.io check
+# (data/secrets/box_heartbeat_url.json), /fail when research, gateway, watchdog or disk go stale;
+# writes desks/mt5/reports/BOX_HEARTBEAT.json. NOT_ARMED without the secret.
+TASK name="MT5-BoxHeartbeat"       trigger="every 5 minutes"  runs="desks/mt5/scripts/box_heartbeat.py" installer="desks/mt5/scripts/install_box_heartbeat_task.ps1" lane="ops"
+# MT5-OffsiteBackup (2026-09-30): restic, encrypted client-side, of the box-only data (bronze ticks,
+# tape, terminal profile; secrets and accounts.dat excluded). Report OFFSITE_BACKUP.json feeds
+# the encrypted_offbox_backup row of OPS_REDUNDANCY.json.
+TASK name="MT5-OffsiteBackup"      trigger="every 6 hours"    runs="desks/mt5/scripts/offsite_backup.py" installer="desks/mt5/scripts/install_offsite_backup_task.ps1" lane="ops"
+# MT5-PrivateNetAudit (2026-09-30): AUDIT mode only -- writes desks/mt5/data/private_net.json
+# (EXPOSED / PRIVATE) and changes nothing. -Enforce is an operator act with a 15-minute dead-man
+# rollback and is never scheduled. Register: the same script with no switch, daily.
+TASK name="MT5-PrivateNetAudit"    trigger="daily at 06:40"   runs="desks/mt5/scripts/install_private_net.ps1" installer="NONE" lane="ops"
 TASK name="MT5-ReapGitWriters"     trigger="every 15 minutes" runs="scripts/reap_hung_git_writers.py" installer="desks/mt5/scripts/install_reap_git_writers_task.ps1" lane="ops"
 # The post-reboot drill (2026-09-08): read-only apart from re-enabling a Disabled task; records
 # PASS/FAIL to desks/mt5/reports/REBOOT_DRILL.json and raises data/REBOOT_DRILL_ALARM.txt on FAIL.
@@ -221,7 +233,8 @@ TASK name="MT5-NewsDesk" trigger="at system start-up (resident)" runs="desks/mt5
 TASK name="MT5-NoLog" trigger="daily 06:40" runs="desks/mt5/research/no_log.py" installer="NONE" lane="ops"
 TASK name="MT5-RegimeMonitor" trigger="every 15 minutes" runs="desks/mt5/research/regime_monitor.py" installer="NONE" lane="research"
 TASK name="MT5-MoatRecorder-Watchdog" trigger="every 30 minutes" runs="desks/mt5/moat/moat_recorder.py" installer="NONE" lane="data"
-TASK name="E8-Executor" trigger="every 5 minutes" runs="desks/mt5/prop/e8_executor.py --manage-only" installer="desks/mt5/scripts/install_e8_tasks.ps1" lane="prop"
+TASK name="E8-Executor" trigger="every 5 minutes" runs="desks/mt5/prop/e8_executor.py --enable-certified-entries" installer="desks/mt5/scripts/install_e8_tasks.ps1" lane="prop"
+TASK name="E8-Book" trigger="every 1 hour" runs="desks/mt5/prop/e8_book.py" installer="desks/mt5/scripts/install_e8_tasks.ps1" lane="prop"
 TASK name="E8-Spreads" trigger="every 1 hour, at :02" runs="desks/mt5/prop/e8_spread_sampler.py" installer="NONE" lane="prop"
 TASK name="MT5-Healers" trigger="every 1 hour, at :48" runs="ops/run_healers.cmd" installer="NONE" lane="research"
 # Referenced by ops/run_gold_hour_sweep.cmd; not installed on the box 2026-09-16, cadence unknown.
@@ -240,6 +253,11 @@ TASK name="MT5-DashMirror" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" 
 # whole job was pushing artifacts to a VPS that no longer takes them. The manifest went on
 # declaring it, so `check_declared_tasks` reported it absent every pass -- a defect generated by
 # the declaration, not by the box. The installer's own line is the authority here.
+# THE UNIVERSE DEEPENER HAS NO TASK OF ITS OWN (2026-09-30, #104 re-score). Its clock is the daily
+# step `daily_cycle:deepen_bars` (MT5-Daily), which calls `deepen_universe.main(["--budget-s",
+# "1500"])` -- the same argv the old wrapper `ops/run_deepen_universe.cmd` ran. That wrapper was
+# registered by no installer and scheduled by nothing, so it was removed rather than given a
+# task: a second clock for the same pass would contend for the one terminal the gateway uses.
 
 # THE DEPARTMENTS (2026-09-16): each research mission on its own hourly clock at full throughput
 # (HOURLY_PLAN=dept:<name>) as 24/7 RESIDENTS (department_resident.py: singleton lock, a pass

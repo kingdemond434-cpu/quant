@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import sys
+import types
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -20,6 +21,14 @@ def _alloc(**over):
     base = {"book": {}, "marginal_delta_elog": {}, "heat": {"target": 0.20, "total": 0.10}}
     base.update(over)
     return base
+
+
+def test_band_report_ignores_an_unrelated_flat_portfolio_gap_module(monkeypatch):
+    # Side-channel and research organs share this basename in long-lived runners.
+    monkeypatch.setitem(sys.modules, "portfolio_gap", types.ModuleType("portfolio_gap"))
+    report = sc.build(_alloc(), [], ledger=Path("/nonexistent"), now=NOW)
+    assert len(report["bands"]) == 6
+    assert report["measured"] is False
 
 
 def test_bands_carry_the_books_heat_and_the_priced_value() -> None:

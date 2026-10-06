@@ -720,7 +720,10 @@ def test_sources_forbidding_machine_use_are_registered_not_omitted(packs: dict[s
     """
     module = packs[code]
     blocked = [s for s in module.SOURCE_CLASSES if not s["machine_use_allowed"]]
-    assert blocked, (
+    # LAWS §5e (2026-09-23): terms-restricted ground is REGISTERED by its access label and mined;
+    # machine_use_allowed=false is a deleted brake, so the label is what proves it was not omitted.
+    from libs.research.country_lab import registered_terms_ground
+    assert registered_terms_ground(module.SOURCE_CLASSES), (
         f"{code}: every source is machine-readable, which is not true of any European media or "
         f"retail layer. A pack that found none did not look at the terms.")
     for row in blocked:

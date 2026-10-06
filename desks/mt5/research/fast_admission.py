@@ -156,6 +156,10 @@ def screen(rows: list[Any], meta: dict[str, Any]) -> dict[str, Any]:
     every reason is in `REASONS` -- there is no path that refuses on anything else.
     """
     from external_gauntlet import partition_at_economic_prior, timeframe_of
+    try:
+        import rationale_grade as _rg
+    except ImportError:                                  # pragma: no cover - import-context dep
+        from research import rationale_grade as _rg  # type: ignore[no-redef]
 
     t0 = time.time()
     cells: dict[str, dict[str, Any]] = {}
@@ -171,6 +175,26 @@ def screen(rows: list[Any], meta: dict[str, Any]) -> dict[str, Any]:
         key, spec = _cell_key(row, timeframe_of)
         cells.setdefault(key, spec)
     t_group = time.time() - t0
+
+    # THE ECONOMIC-RATIONALE TAG (rationale_grade.py): mechanism / payer / constraint, graded
+    # A/B/C/NONE from the rows that fold into each cell (best row wins). A TAG ON THE SPEC, NEVER
+    # A REFUSAL: it runs beside the fold, adds two keys, and no path below reads it -- the
+    # admissible population is exactly what it was without it. The sealed judge never reads
+    # admissible_docket.json, so its order and gates are untouched.
+    t0 = time.time()
+    for row in rows:
+        if not isinstance(row, dict) or not (row.get("symbol") or row.get("sym")) \
+                or not row.get("family"):
+            continue
+        key, _spec = _cell_key(row, timeframe_of)
+        spec = cells[key]
+        g = _rg.grade(row)
+        spec["rationale_grade"] = _rg.best(spec.get("rationale_grade", "NONE"), g["grade"])
+        spec["rationale_grade_cell_only"] = _rg.best(
+            spec.get("rationale_grade_cell_only", "NONE"), g["grade_cell_only"])
+        if g.get("context"):
+            spec.setdefault("rationale_context", g["context"])
+    t_grade = time.time() - t0
 
     # GATE 0, DELEGATED. This is the sealed judge's own call, on the sealed judge's own specs.
     # It cannot refuse anything the judge would have judged, because it IS what the judge runs.
@@ -212,8 +236,15 @@ def screen(rows: list[Any], meta: dict[str, Any]) -> dict[str, Any]:
         "top_refused_symbols": {
             r: [[s, n] for s, n in refused_symbols[r].most_common(12)] for r in REASONS
         },
+        "rationale_grades": {
+            "raw_cells": _rg.census(s.get("rationale_grade", "NONE") for s in cells.values()),
+            "admissible_cells": _rg.census(s.get("rationale_grade", "NONE") for s in admissible),
+            "admissible_cells_cell_only": _rg.census(
+                s.get("rationale_grade_cell_only", "NONE") for s in admissible),
+            "rule": "a TAG on each cell (research/rationale_grade.py); it refuses nothing",
+        },
         "seconds": {"group": round(t_group, 2), "gate0": round(t_gate0, 2),
-                    "lane": round(t_lane, 2)},
+                    "lane": round(t_lane, 2), "rationale_grade": round(t_grade, 2)},
         "admissible": admissible,
     }
 
@@ -257,6 +288,15 @@ def build(docket: Path = RAW_DOCKET, universe: Path = UNIVERSE) -> dict[str, Any
 
     census = screen(raw, meta if isinstance(meta, dict) else {})
     admissible = census.pop("admissible")
+    # THE RATIONALE CONTRACT, on the bank already in memory (never a second load of it): does
+    # the grade predict certification? Bookkeeping -- a failure here is reported, never raised.
+    try:
+        import rationale_grade as _rg
+        extra = [r for p in (_rg.MINER, _rg.REQUEUE) for r in _rg._rows(_rg._load(p))]
+        census["_rationale_contract"] = _rg.contract(rows=[*raw, *extra])
+    except Exception as exc:  # the screen must publish even if this cannot
+        census["_rationale_contract"] = {"status": "UNMEASURED",
+                                         "why": f"{type(exc).__name__}: {exc}"}
     census["seconds"]["load"] = round(t_load, 2)
     census["seconds"]["total"] = round(sum(census["seconds"].values()), 2)
     return {**base, "status": "MEASURED", **census,
@@ -282,7 +322,17 @@ def main(argv: list[str] | None = None) -> int:
 
     doc = build(args.docket)
     admissible = doc.pop("_admissible_rows", [])
+    rationale = doc.pop("_rationale_contract", None)
     _atomic_json(args.out, doc)
+    if rationale is not None:
+        try:
+            import rationale_grade as _rg
+            _atomic_json(_rg.OUT, {"at": doc["measured_at"], "writer": "research/fast_admission.py",
+                                   "rule": "TAG, NEVER A GATE: grades drop, block and reorder "
+                                           "nothing", "contract": rationale})
+            print(f"rationale grade: {rationale.get('verdict') or rationale.get('why')}")
+        except (ImportError, OSError) as exc:
+            print(f"rationale grade not published: {type(exc).__name__}: {exc}")
     if doc.get("status") == "MEASURED":
         _atomic_json(ADMISSIBLE_DOCKET, {
             "n": len(admissible),

@@ -26,9 +26,9 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, p)
 
 from mt5desk import release_identity as ri  # noqa: E402
-from research import live_manifest  # noqa: E402
 
 from libs.ops import release  # noqa: E402
+from research import live_manifest  # noqa: E402
 
 pytestmark = pytest.mark.skipif(not shutil.which("git"), reason="git required")
 
@@ -305,7 +305,7 @@ def test_smoke_release_passes_on_a_sealed_signed_tree(sealed: Path, tmp_path: Pa
     # A CRLF checkout of the signed judge files is reported, never failed.
     _git(sealed, "checkout", "--", SIZING)
     judge = sealed / "desks/mt5/research/promoter.py"
-    judge.write_bytes(judge.read_bytes().replace(b"\n", b"\r\n"))
+    judge.write_bytes(judge.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
     # The immutable fence itself now hashes CRLF -> LF (scripts/check_immutable_evaluator.py,
     # "Normalising CRLF -> LF makes the hash mean what it always claimed to mean"), so a CRLF
     # checkout is no finding at all -- not even one the smoke has to excuse as `crlf_only`.
@@ -380,8 +380,24 @@ def test_health_summary_reads_the_shadow_cycle_shape(tmp_path: Path,
 
 # ---------------------------------------------------------------------------- parity
 def test_hash_and_allowlist_mirror_the_seal(tmp_path: Path) -> None:
+    """EVERY list this module mirrors, pinned (recovered box commit fe09b89b). The prefix
+    assertion was here and passing while the mirror carried no `STATE_FILES` at all -- which is
+    how `desks/mt5/swap_exposure.json` came to be state to the seal and CODE to the verdict the
+    gateway reads (2026-09-24)."""
     assert ri.NON_CODE == release.NON_CODE
     assert ri.STATE_PREFIXES == release.STATE_PREFIXES
+    assert ri.STATE_FILES == release.STATE_FILES
+    assert ri.BUILD_PREFIXES == release.BUILD_PREFIXES
+    # The classification itself, not just the constants: one rule, same answer.
+    for rel in ("desks/mt5/swap_exposure.json", "desks/mt5/docs/TRADE_PATH_REPORT.md",
+                "dist/quant-platform.zip", "desks/mt5/frontier_intel/data/q.jsonl",
+                "desks/mt5/mt5desk/gateway.py", "libs/portfolio/rails.py",
+                "desks/mt5/docs/DESK_ARCHITECTURE.md"):
+        assert ri._is_state_path(rel) == (
+            release.is_state_path(rel) or release.is_build_artifact(rel)), rel
+    # Code stays code: the mirror widened to name state, never to excuse the money path.
+    assert not ri._is_state_path("desks/mt5/mt5desk/gateway.py")
+    assert not ri._is_state_path("libs/portfolio/rails.py")
     (tmp_path / "a.py").write_bytes(b"x = 1\r\n")
     (tmp_path / "b.py").write_bytes(b"y = 2\n")
     paths = ("a.py", "b.py", "absent.py")

@@ -264,11 +264,12 @@ def test_where_the_floor_does_not_bind_the_old_charge_was_accidentally_right() -
 
 def test_the_exact_charge_also_stops_over_reserving_and_that_frees_book() -> None:
     """The other direction, and it is a GAIN, not a cost. At E=8,000 a 45 USD/oz bracket sizes
-    to the 0.02 floor and runs 0.98% -- while the house nominal reserved 1.23% for it. The old
+    to 0.02 lots and runs 0.98% -- while the house nominal reserved 1.23% for it. The old
     accounting held back budget the trade was never going to use, which could defer a validated
     leg. Nothing about the lot changes; only the number the cap reads."""
     old, new, _, exact_lot = _old_and_new(8_000.0, 45.0)
-    assert exact_lot == dc.gold_min_lot()
+    assert exact_lot == 0.02
+    assert exact_lot >= dc.gold_min_lot()
     assert new < old, (old, new)
 
 

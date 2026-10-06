@@ -14,8 +14,10 @@ XAUUSD sleeves here are challengers (hunt6 generic params) vs the armed
 hunt5-param gold book.
 """
 
+import contextlib
 import json
 import os
+import stat
 import sys
 import time
 import traceback
@@ -46,23 +48,13 @@ SHADOW_START = datetime(2026, 8, 16, tzinfo=UTC)
 
 
 def _write_state(path: Path, state: dict) -> None:
-    """Atomically publish a forward ledger; readers never see torn JSON."""
-    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
-    try:
-        tmp.write_text(json.dumps(state, indent=2), encoding="utf-8")
-        for attempt in range(6):
-            try:
-                os.replace(tmp, path)
-                return
-            except PermissionError:
-                if attempt == 5:
-                    raise
-                time.sleep(0.05 * (2 ** attempt))
-    finally:
-        try:
-            tmp.unlink(missing_ok=True)
-        except OSError:
-            pass
+    """Atomically publish a forward ledger; readers never see torn JSON.
+
+    Merge-on-write when `state` is the pass's tracked working copy (only the rows this pass
+    assigned replace the disk's), else the whole snapshot -- both through the Windows-safe
+    replace in `_atomic_write_text`.
+    """
+    _persist_state(path, state, final=True)
 
 
 def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
@@ -139,6 +131,44 @@ WINDOWS = {
 #: The list stays empty: enrolment is a CERTIFICATE, never a literal a human typed.
 SLEEVES: list[tuple[str, str]] = []
 
+#: Certificates the research-integrity door held on the LAST `certified_sleeves()` pass, each with
+#: its named reason (`research/admission_integrity.py`). Reset every pass, so it always describes
+#: the run that just happened. Only certificates WITHOUT a clock are ever here.
+HELD_AT_INTEGRITY: list[dict] = []
+
+
+def _integrity_door() -> tuple[object | None, set[str], str]:
+    """(gate, keys that already own a clock, why).
+
+    FAIL CLOSED: an unreadable door holds NEW certificates by name rather than waving them
+    through; running clocks are untouched either way."""
+    try:
+        from admission_integrity import IntegrityGate, lane_clock_keys
+    except ImportError:
+        try:
+            from research.admission_integrity import (  # type: ignore[no-redef,unused-ignore]
+                IntegrityGate,
+                lane_clock_keys,
+            )
+        except Exception as exc:
+            return None, set(), f"admission_integrity unimportable: {type(exc).__name__}: {exc}"
+    try:
+        return IntegrityGate.load(), lane_clock_keys(SHADOW_DIR), ""
+    except Exception as exc:
+        return None, set(), f"integrity door unreadable: {type(exc).__name__}: {exc}"
+
+
+def _held(run: dict, key: str, gate: object | None, clocked: set[str], why: str) -> str | None:
+    """The integrity door, asked only for a certificate whose clock does not exist yet."""
+    if key in clocked:
+        return None
+    if gate is None:
+        return f"HELD_INTEGRITY_UNREADABLE: {why}"
+    return gate.hold(str(run.get("certificate") or ""),  # type: ignore[attr-defined]
+                     symbol=run.get("symbol"), family=run.get("family"),
+                     selector=run.get("selector"), side=run.get("side"),
+                     params=run.get("params"))
+
 
 def certified_sleeves() -> list[tuple[str, str, dict]]:
     """Every runnable certificate as (symbol, window, EXACT certified params).
@@ -153,6 +183,12 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     reported and skipped -- a visible wiring gap for the gap-wirer, never a silent guess.
     """
     rows: list[tuple[str, str, dict, str]] = []
+    HELD_AT_INTEGRITY.clear()
+    # THE RESEARCH-INTEGRITY DOOR (2026-09-30). A certificate with NO clock yet starts one only
+    # when the placebo audit shows the certifier caught every planted trap and an independent
+    # rebuild under the same spec is REPLICATED (`research/admission_integrity.py`). A clock that
+    # already runs is never held. Not a quota: no count, no slot, no ranking.
+    gate, clocked, gate_why = _integrity_door()
     try:
         from shadow_admission import authorized_runs
         for run in sorted(authorized_runs(BASE), key=lambda r: (r["symbol"], r["selector"])):
@@ -169,6 +205,13 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                 side = _runnable_side(run, fam)
                 if side is None:
                     continue                # refused and logged by _runnable_side
+                key = sleeve_key(run["symbol"], run["selector"], params, fam, side)
+                reason = _held(run, key, gate, clocked, gate_why)
+                if reason:
+                    HELD_AT_INTEGRITY.append({"certificate": run.get("certificate"),
+                                              "key": key, "reason": reason})
+                    slog(f"HELD {key}: {reason}")
+                    continue
                 rows.append((run["symbol"], run["selector"], params, fam, side,
                              str(run.get("gate_admission") or ""),
                              tuple(run.get("power_deficiencies") or ()),
@@ -197,6 +240,13 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
             side = _runnable_side(run, fam)
             if side is None:
                 continue                    # refused and logged by _runnable_side
+            key = sleeve_key(run["symbol"], run["selector"], dict(run["params"] or {}), fam, side)
+            reason = _held(run, key, gate, clocked, gate_why)
+            if reason:
+                HELD_AT_INTEGRITY.append({"certificate": run.get("certificate"), "key": key,
+                                          "reason": reason})
+                slog(f"HELD {key}: {reason}")
+                continue
             rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side,
                          str(run.get("gate_admission") or ""),
                          tuple(run.get("power_deficiencies") or ()),
@@ -373,6 +423,11 @@ def _family_fn(fam: str):
     So the two registries here are the correct set for THIS engine, and hunt16 is owned by
     qquant_shadow. A hunt16 family arriving here is a routing question, not a resolver gap.
     """
+    # The judge's named exports now include hunt16. They remain owned by the
+    # qquant forward engine; a shared constructor must not create a second clock.
+    from mt5desk.executables import hunt16_families
+    if fam in hunt16_families():
+        return None
     fn = getattr(families, f"family_{fam}", None)
     if fn is None:
         try:
@@ -589,6 +644,153 @@ def clock_breaches() -> dict[str, str]:
     return out
 
 
+#: A PASS THAT IS KILLED MUST STILL HAVE WRITTEN WHAT IT EVALUATED (2026-09-30).
+#:
+#: `main` persisted `shadow_state.json` exactly once, after the last row. Every caller runs it
+#: under a kill: the `enrol_clocks` leg at 2,700 s, `clock_fixer`'s enrolment step at <= 600 s,
+#: the forward-enrolment repair sweep, and MT5-Shadow's four-hour task limit. The book is now
+#: ~850 certificate clocks, each a bar fetch plus a replay, and after 2026-09-28 (1,731 bar files
+#: deleted by the publisher's disk guard, refetched one symbol at a time through the terminal) a
+#: pass is long enough to be cut. A cut pass wrote NOTHING -- not one `last_attempt_at`, not one
+#: `n` -- so the next pass started from the same file, walked the same alphabetical prefix, and
+#: was cut again. Every clock kept the status it last had (ACTIVE) and a tick that only aged:
+#: exactly the ENGINE_SILENT shape `forward_enrolment` now flags, with no error anywhere,
+#: because nothing raised -- the process was simply stopped before its only write.
+#:
+#: Three changes, none of which alters what a row is or how it is evaluated:
+#:   * CHECKPOINT: the state is written every `CHECKPOINT_S` seconds, so a kill costs at most one
+#:     interval of work instead of the whole pass;
+#:   * STALEST FIRST: symbols are visited oldest-`last_attempt_at` first (never-attempted first
+#:     of all), so a pass that is cut still reaches the rows the previous cut pass did not. The
+#:     rule `hourly_cycle.LEG_BUDGET_SEC` states for this very leg -- "either the pass must
+#:     finish, or it must consume its backlog first so that truncation still makes progress" --
+#:     was true of the gauntlet and not of this loop;
+#:   * MERGE ON WRITE: a write re-reads the file and replaces only the rows this pass evaluated.
+#:     Four other organs write this file while a pass runs (retired_clocks evacuation, the
+#:     shadow_cycle forward_start stamp, forward_reconcile, clock_liveness), and a pass that
+#:     wrote back the whole snapshot it read at start silently reverted all of them.
+CHECKPOINT_S = 60.0
+#: Top-level fields of the state file that are not clock rows; always written from this pass.
+_META_KEYS = ("last_run", "updated_at", "configured_sleeves", "gate_blocked_sleeves",
+              "engine_pass")
+
+
+class _TouchedState(dict):
+    """The pass's working copy of the state, remembering every key the loop assigned."""
+
+    def __init__(self, *a, **kw) -> None:
+        super().__init__(*a, **kw)
+        self.touched: set[str] = set()
+
+    def __setitem__(self, key, value) -> None:
+        self.touched.add(key)
+        super().__setitem__(key, value)
+
+
+def _read_state(path: Path, attempts: int = 3) -> dict | None:
+    """The state on disk; `{}` when absent; None when it exists and cannot be read.
+
+    Retried because another organ may be mid-write (a truncating writer, or a Windows sharing
+    violation) -- a transient that must never be read as "the book is empty".
+    """
+    for i in range(max(1, attempts)):
+        if not path.exists():
+            return {}
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            return doc if isinstance(doc, dict) else None
+        except (OSError, ValueError):
+            if i + 1 < attempts:
+                time.sleep(0.5)
+    return None
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Write-then-replace, and survive Windows.
+
+    `os.replace` onto a destination that is READ-ONLY, or held open by a reader without
+    FILE_SHARE_DELETE, raises PermissionError (WinError 5) on Windows while it is legal on POSIX.
+    So: retry briefly, clear the read-only attribute between tries, and as a last resort write
+    the destination in place -- a state file that cannot be published atomically must still be
+    published, because an unwritten state file is what froze the forward book.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(text, encoding="utf-8")
+    try:
+        for i in range(8):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                with contextlib.suppress(OSError):
+                    os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
+                time.sleep(0.1 * (i + 1))
+        path.write_text(text, encoding="utf-8")
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+
+
+def _persist_state(path: Path, state: dict, *, final: bool) -> int:
+    """Merge this pass's evaluated rows into the file on disk and write it. Returns rows written.
+
+    Rows the pass did not assign are taken from DISK (another organ's newer write wins); rows it
+    did assign are taken from the pass. If the file exists but cannot be read, the pass's whole
+    snapshot is written instead -- the pre-merge behaviour, so an unreadable file never costs the
+    rows this pass evaluated.
+    """
+    touched = getattr(state, "touched", None)
+    disk = _read_state(path) if touched is not None else None
+    if disk is None:
+        doc = dict(state)
+    else:
+        doc = dict(disk)
+        for key in touched:
+            if key in state:
+                doc[key] = state[key]
+        for key in _META_KEYS:
+            if key in state:
+                doc[key] = state[key]
+    _atomic_write_text(path, json.dumps(doc, indent=2, default=str))
+    if not final:
+        slog(f"shadow state checkpoint: {len(touched or ())} row(s) of this pass written")
+    return len(doc)
+
+
+def _row_key(row) -> str | None:
+    try:
+        return sleeve_key(row[0], row[1], row[2], row[3] if len(row) > 3 else
+                          "session_range_breakout", row[4] if len(row) > 4 else "LONG")
+    except Exception:
+        return None
+
+
+def _stalest_symbols_first(enrolled: list, state: dict) -> list:
+    """Reorder whole SYMBOL groups so the least-recently evaluated symbol comes first.
+
+    The order inside a symbol is kept (it is what lets one bar fetch serve every variant), and
+    ties keep the alphabetical order, so a pass that finishes does exactly the work it did
+    before. Only a pass that is cut behaves differently: it has spent its time on the rows that
+    waited longest instead of on the same prefix as last time.
+    """
+    groups: dict[str, list] = {}
+    for row in enrolled:
+        groups.setdefault(row[0], []).append(row)
+
+    def _age(rows: list) -> str:
+        stamps = []
+        for row in rows:
+            st = state.get(_row_key(row) or "")
+            stamps.append(str((st or {}).get("last_attempt_at") or "")
+                          if isinstance(st, dict) else "")
+        return min(stamps) if stamps else ""
+
+    order = sorted(groups, key=lambda sym: (_age(groups[sym]), sym))
+    return [row for sym in order for row in groups[sym]]
+
+
+
 def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     """Evaluate a set of forward rows and write their ledger.
 
@@ -603,12 +805,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
 
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     state_path = SHADOW_DIR / ledger
-    state = {}
-    if state_path.exists():
-        try:
-            state = json.loads(state_path.read_text(encoding="utf-8"))
-        except Exception:
-            state = {}
+    state = _TouchedState(_read_state(state_path) or {})
     today = datetime.now(UTC).date().isoformat()
 
     h1_cache = {}
@@ -627,6 +824,9 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     # of a symbol together is what keeps one fetch serving all of them.
     enrolled.sort(key=lambda row: (row[0], timeframe_of(row[2]), row[1], row[3],
                                    repr(sorted(row[2].items()))))
+    enrolled = _stalest_symbols_first(enrolled, state)
+    pass_started = datetime.now(UTC).isoformat(timespec="seconds")
+    last_save = time.monotonic()
     cached_symbol: str | None = None
     breached = clock_breaches()
     if breached:
@@ -635,7 +835,16 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     # replaying any bars so a timeout cannot repeatedly strand the same tail of certificates.
     checkpoint_enrolments(enrolled, state, state_path)
     seen: set[str] = set()
-    for row in enrolled:
+    for i_row, row in enumerate(enrolled):
+        if time.monotonic() - last_save >= CHECKPOINT_S and state.touched:
+            state["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+            state["engine_pass"] = {"started_at": pass_started, "rows_reached": i_row,
+                                    "rows": len(enrolled), "complete": False}
+            try:
+                _persist_state(state_path, state, final=False)
+            except Exception as exc:          # a failed checkpoint never stops the pass
+                slog(f"shadow state checkpoint FAILED ({type(exc).__name__}: {exc})")
+            last_save = time.monotonic()
         # SLICED, NOT DESTRUCTURED. A rigid five-way unpack here would break on any
         # row built by an older `certified_sleeves` -- which is precisely the failure
         # `forward_reconcile._engine_clock_keys` already carries a scar from, where a
@@ -825,9 +1034,12 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 continue
             # Rebuild whatever this family needs beyond bars, from its own stored params. A
             # family that needs nothing gets an empty dict and is unaffected.
-            from mt5desk.family_inputs import resolve, strip_identity_keys
+            from mt5desk.family_inputs import resolve, runtime_call_params
 
-            call_params = strip_identity_keys(fam, params)
+            call_params = runtime_call_params(fam, params)
+            # family_call.signals, not the family constructor, owns the session filter. The
+            # gauntlet already applies it; dropping this key here made all forward session
+            # variants replay the same unrestricted trades.
             extra, why = resolve(sym, fam, params, h1)
             if extra is None:
                 # SKIP LOUDLY, NEVER RUN SHORT. `family_carry` returns [] without its swap terms,
@@ -944,6 +1156,12 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             except Exception as exc:
                 slog(f"{key}: frozen-cost lookup failed ({type(exc).__name__}: {exc}); "
                      f"running on live costs this pass")
+            ledger = (SHADOW_DIR / f"ledger_{sym}_{win}.json" if fam == "session_range_breakout"
+                      else SHADOW_DIR / f"ledger_{sym}_{fam}_{win}.json")
+            from research.session_runtime_window import ensure as _ensure_session_window
+            if _ensure_session_window(key, params, st, ledger=ledger):
+                slog(f"{key}: session filter corrected; prior state archived and a "
+                     f"NEW forward window begins at {st['forward_start']}")
             res = run_backtest(h1, sigs, costs)
             # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
             # (2026-08-16); this parameterization's clock was frozen at `forward_start`.
@@ -973,8 +1191,6 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 f"{len(all_trades) - len(trades)} earlier observation(s) retained as "
                 f"HISTORICAL and "
                 f"excluded from every threshold (they predate pre-registration)")
-            ledger = (SHADOW_DIR / f"ledger_{sym}_{win}.json" if fam == "session_range_breakout"
-                      else SHADOW_DIR / f"ledger_{sym}_{fam}_{win}.json")
             # A trade replayed on the broker's own feed and one replayed on cached
             # or free bars are not the same evidence -- OHLC differ at the tick and
             # spreads differ materially -- so an expectancy averaged across them is
@@ -1048,6 +1264,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     # prints these are, so a real venue change still breaks the clock and an outage
                     # does not. See h1_source.Bars.evidence_venue.
                     data_venue=str(bars.evidence_venue))
+                if st.get("runtime_version"):
+                    _ident["runtime_version"] = st["runtime_version"]
                 _drift = _reg.verify(key, _ident)
                 # A COST CORRECTION IS NOT A STRATEGY CHANGE, and treating it as one kills the
                 # clock permanently. Measured 2026-09-02: all twelve IDENTITY_BROKEN rows had
@@ -1119,7 +1337,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     st.pop("identity_drift", None)
                     st.pop("identity_reason", None)
                 _reg.freeze(key, _ident, forward_start=st.get("forward_start"),
-                            cost_fields=vars(costs))
+                            cost_fields=vars(costs),
+                            runtime_version=st.get("runtime_version"))
                 st["sleeve_id"] = _ident["sleeve_id"]
             except Exception as exc:
                 slog(f"{key}: registry unavailable ({type(exc).__name__}: {exc})")
@@ -1301,7 +1520,10 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     state["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
     state["configured_sleeves"] = len(enrolled)
     state["gate_blocked_sleeves"] = 0
-    _write_state(state_path, state)
+    state["engine_pass"] = {"started_at": pass_started, "rows_reached": len(enrolled),
+                            "rows": len(enrolled), "complete": True,
+                            "finished_at": state["updated_at"]}
+    _persist_state(state_path, state, final=True)
     slog(f"shadow state saved ({len(enrolled)} sleeves, "
          f"{len(enrolled) - len(SLEEVES)} certificate-enrolled)")
     _enrolment_watermark(len(enrolled), ledger)

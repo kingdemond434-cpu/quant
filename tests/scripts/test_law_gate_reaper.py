@@ -28,6 +28,13 @@ _spec.loader.exec_module(law_gate)
 def fake_tmp(tmp_path, monkeypatch):
     """A private tempdir, so the test can never reap a real sibling session's scratch."""
     monkeypatch.setattr(law_gate.tempfile, "gettempdir", lambda: str(tmp_path))
+    monkeypatch.setattr(law_gate, "_checkout_base", lambda: tmp_path)
+    # The producer now sweeps both bases and prunes Git registrations. Keep both
+    # filesystem and Git maintenance inside this fixture's own repository.
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    law_gate.subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    monkeypatch.setattr(sys.modules[__name__], "_ROOT", repo)
     return tmp_path
 
 

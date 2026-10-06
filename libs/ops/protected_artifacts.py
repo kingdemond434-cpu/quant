@@ -44,6 +44,9 @@ __all__ = ["PROTECTED", "Snapshot", "changed", "restore", "snapshot"]
 #: what the failure message prints, and a guard that fires without saying what was lost gets
 #: switched off by the next person who hits it in a hurry.
 PROTECTED: dict[str, str] = {
+    "context/decision_journal.jsonl": (
+        "the canonical decision receipts across controller handoffs. A stale release or a test "
+        "must not erase completed actions, reset their IDs, or rewrite their substance"),
     "docs/research/next_law_number.txt": (
         "the law-number ALLOCATOR. Recomputed from the laws a host can see, it moves DOWN and "
         "hands the next two laws a number already in use -- the one collision it exists to stop"),

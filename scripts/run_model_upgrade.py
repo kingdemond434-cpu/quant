@@ -52,6 +52,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from libs.ops.agent_denials import append_jsonl, denial_rows, parse_stream  # noqa: E402
 from libs.ops.model_chain import (  # noqa: E402
     CHAIN_FILE,
     FAMILY_TIER,
@@ -145,17 +146,34 @@ def _probe_candidates(head: str) -> list[str]:
     return out
 
 
+def ping_argv(model: str) -> list[str]:
+    """The probe's CLI call, scoped to exactly what it needs: NO tools.
+
+    The probe is one prompt answered with one line of text, so the allowlist is empty and the
+    run is one turn. It used to pass the permission-bypass flag, which granted every tool to
+    a call that needs none. stream-json is how a refused call becomes visible (see
+    libs/ops/agent_denials.py); each refusal is logged to data/model_upgrade_log.jsonl.
+    """
+    return ["claude", "-p", _PING, "--model", model,
+            "--output-format", "stream-json", "--verbose",
+            "--allowedTools", "", "--max-turns", "1"]
+
+
 def _ping(model: str, timeout: int = 120) -> tuple[bool, str]:
     """Does this model actually ANSWER for this account? Listing is not entitlement."""
     env = dict(os.environ, ANTHROPIC_MODEL=model)
     try:
-        p = subprocess.run(["claude", "-p", _PING, "--model", model,
-                            "--dangerously-skip-permissions"],
+        p = subprocess.run(ping_argv(model),
                            check=False, capture_output=True, text=True, timeout=timeout, env=env)
     except (OSError, subprocess.TimeoutExpired) as e:
         return False, f"{type(e).__name__}: {e}"[:200]
-    out = (p.stdout or "") + (p.stderr or "")
-    return ("PING-OK" in out), out.strip().splitlines()[-1][:200] if out.strip() else "no output"
+    summary = parse_stream((p.stdout or "").splitlines())
+    append_jsonl(_LOG, denial_rows(summary, surface="model_upgrade_panel", model=model))
+    text = (summary.result_text or "").strip()
+    if not text:
+        out = ((p.stdout or "") + (p.stderr or "")).strip()
+        return False, (out.splitlines()[-1][:200] if out else "no output")
+    return ("PING-OK" in text), text.splitlines()[-1][:200]
 
 
 def _page(msg: str) -> None:

@@ -91,6 +91,36 @@ def test_management_only_never_opens_the_retired_fx_book(
     assert seen["excluded"] == {"XAUUSD"}, "only E8-Gold may manage the canonical gold book"
 
 
+@pytest.mark.parametrize("argv, enabled", [([], False), (["--manage-only"], False),
+                                          (["--enable-certified-entries"], True)])
+def test_entry_authority_is_explicit_and_does_not_arm_the_account(
+        tmp_path, monkeypatch, argv, enabled):
+    monkeypatch.setattr(e8_executor, "OUT", tmp_path / "execution.json")
+    monkeypatch.setattr(e8_executor, "ARMED_MARKER", tmp_path / "absent")
+    venue = object()
+    monkeypatch.setattr(TradeLockerVenue, "connect", lambda self: venue)
+    seen = {}
+
+    def evaluate(actual, *, armed, entry_enabled):
+        assert actual is venue
+        seen.update(armed=armed, enabled=entry_enabled)
+        return {"status": "MANAGEMENT_ONLY", "guard": {
+            "equity": 100000, "room_to_daily_floor": 2500}, "why": "fixture"}
+
+    monkeypatch.setattr(e8_executor, "run", evaluate)
+    assert e8_executor.main(argv) == 0
+    assert seen == {"armed": False, "enabled": enabled}
+
+
+def test_management_and_entry_flags_cannot_be_combined(monkeypatch):
+    def unexpected(self):
+        pytest.fail("contradictory flags must fail before connecting to the venue")
+
+    monkeypatch.setattr(TradeLockerVenue, "connect", unexpected)
+    with pytest.raises(SystemExit):
+        e8_executor.main(["--manage-only", "--enable-certified-entries"])
+
+
 @pytest.fixture(autouse=True)
 def _isolated_basis(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Never let a test touch the real e8_stop_basis.json on the trading box."""

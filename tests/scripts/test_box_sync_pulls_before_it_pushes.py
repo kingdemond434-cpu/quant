@@ -55,12 +55,12 @@ def test_the_pull_runs_before_every_early_exit() -> None:
     src = _src()
     pull = src.index("Sync-Pull -RepoRoot")
     for guard in ('Write-SyncLog "SKIP: none of the tracked',
-                  'Write-SyncLog "no change since last sync"'):
+                  'Write-SyncLog "no new state since last sync'):
         assert pull < src.index(guard), (
             f"the pull now runs AFTER `{guard[14:50]}...` -- a box with nothing to say stops "
             "receiving code, which is how it ended up 41 commits behind while holding live "
             "capital")
-    assert pull < src.index("for ($attempt = 1;"), "the pull moved after the push loop"
+    assert pull < src.index("$ok = Publish-StateOnto -RepoRoot"), "the pull moved after the push"
 
 
 def test_pulling_depends_on_nothing() -> None:
@@ -139,13 +139,13 @@ def test_no_publisher_path_invokes_the_legacy_merge_helper() -> None:
     assert "Merge-FetchHead -RepoRoot" not in src
 
 
-def test_push_rejection_also_delegates_inbound_code() -> None:
+def test_inbound_code_after_a_commit_is_still_left_to_the_adopter() -> None:
+    """The one delivery path never merges; a pass that saw inbound code says the adopter owns it."""
     src = _src()
-    loop = src[src.index("for ($attempt = 1;"):]
-    assert "Request-Adoption -Branch $branch" in loop
-    assert "local state commit is safe; publication resumes after canonical adoption" in loop
-    assert "Merge-FetchHead -RepoRoot" not in loop
-
+    tail = src[src.index("# ONE DELIVERY PATH"):]
+    assert "if ($script:InboundAdoptionRequired)" in tail
+    assert "inbound code is left to MT5-AdoptRelease" in tail
+    assert "Merge-FetchHead -RepoRoot" not in tail
 
 def test_dirty_files_are_parked_and_restored_never_discarded() -> None:
     """universe.json is a protected registry whose records may not vanish, and R0423 forbids
