@@ -123,8 +123,13 @@ def _ind_key(row: Mapping[str, Any]) -> tuple[int, str] | None:
 def has_evidence(row: Mapping[str, Any]) -> bool:
     """Evidence that overturns a near-duplicate rule: measured independence (exception F) on a
     sufficient sample, or a declared QUALITY challenger (exception G)."""
+    ov = row.get("measured_overlap")
+    ovs = _num(ov.get("overlap_score")) if isinstance(ov, Mapping) else _num(ov)
+    # behavioural overlap (drawdown, co-crash, event, regime, signal, lead/lag) above the
+    # independence bound: a low rho alone does not overturn the rule
+    overlaps = ovs is not None and ovs > INDEPENDENT_RHO
     mi = row.get("measured_independence")
-    if isinstance(mi, Mapping):
+    if isinstance(mi, Mapping) and not overlaps:
         n, hi = _num(mi.get("n")), _num(mi.get("rho_upper"))
         if n is not None and hi is not None and n >= MIN_INDEPENDENCE_OBS \
                 and abs(hi) <= INDEPENDENT_RHO:

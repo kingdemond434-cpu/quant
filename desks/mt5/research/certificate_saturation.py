@@ -829,7 +829,8 @@ def sleeve_identity(label: str) -> tuple[str, str, str]:
     return sym, fam, sess
 
 
-def forward_dependence(daily: Mapping[str, Mapping[str, float]]) -> dict[str, Any]:
+def forward_dependence(daily: Mapping[str, Mapping[str, float]], *,
+                       overlap: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """Pairwise realised dependence between forward sleeves at Fisher bounds (law 4, 23).
 
     DEPENDENT when the lower bound reaches REVOKE_RHO; INDEPENDENT only on >= MIN_INDEPENDENCE_OBS
@@ -839,6 +840,19 @@ def forward_dependence(daily: Mapping[str, Mapping[str, float]]) -> dict[str, An
     names = sorted(k for k, v in daily.items() if v)
     pairs: list[dict[str, Any]] = []
     parent = {n: n for n in names}
+    # BEHAVIOURAL OVERLAP (breadth law §4, §15, §16): drawdown, co-crash, event, regime, signal
+    # and lead/lag overlap. A pair whose largest measured term reaches OVERLAP_LINK is one bet
+    # even when its rho is modest; a pair that overlaps above OVERLAP_INDEPENDENT never earns
+    # exception F. Absent terms are UNMEASURED and neither link nor clear a pair.
+    if overlap is None:
+        try:
+            ov = _so().book_overlap(daily)
+        except Exception as exc:                                         # pragma: no cover
+            ov = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:200], "pairs": {}}
+    else:
+        ov = dict(overlap)
+    ov_pairs = ov.get("pairs") if isinstance(ov.get("pairs"), Mapping) else {}
+    link, indep = _so().OVERLAP_LINK, _so().OVERLAP_INDEPENDENT
 
     def find(x: str) -> str:
         while parent[x] != x:
@@ -862,20 +876,41 @@ def forward_dependence(daily: Mapping[str, Mapping[str, float]]) -> dict[str, An
                 continue
             lo, hi = fisher_bounds(rho, len(days))
             measured.update((a, b))
-            if lo >= REVOKE_RHO:
+            o = ov_pairs.get((a, b)) or ov_pairs.get(f"{a}|{b}") or {}
+            score = _num(o.get("overlap_score")) if isinstance(o, Mapping) else None
+            if lo >= REVOKE_RHO or (score is not None and score >= link):
                 state = "DEPENDENT"
                 parent[find(a)] = find(b)
-            elif len(days) >= MIN_INDEPENDENCE_OBS and max(abs(lo), abs(hi)) <= INDEPENDENT_RHO:
+            elif len(days) >= MIN_INDEPENDENCE_OBS and max(abs(lo), abs(hi)) <= INDEPENDENT_RHO \
+                    and (score is None or score <= indep):
                 state = "INDEPENDENT"
             else:
                 state = UNMEASURED
             pairs.append({"a": a, "b": b, "n": len(days), "rho": round(rho, 4),
-                          "lo": round(lo, 4), "hi": round(hi, 4), "state": state})
+                          "lo": round(lo, 4), "hi": round(hi, 4), "state": state,
+                          "overlap_score": score,
+                          "overlap_binding": (o.get("binding_term")
+                                              if isinstance(o, Mapping) else None),
+                          # the C a dependent pair is lifted to: the larger of its rho lower
+                          # bound and its behavioural overlap
+                          "dependence": round(max(lo, score or 0.0), 4)})
     streams: dict[str, list[str]] = defaultdict(list)
     for n in sorted(measured):
         streams[find(n)].append(n)
     status = MEASURED if measured else UNMEASURED
+    worst = ov.get("stream_worst") if isinstance(ov.get("stream_worst"), Mapping) else {}
+    by_identity: dict[str, float] = {}
+    for name, w in worst.items():
+        sym, fam, _ = sleeve_identity(name)
+        sc = _num((w or {}).get("overlap_score"))
+        if sym and fam and sc is not None:
+            k = f"{sym}|{fam}"
+            by_identity[k] = max(by_identity.get(k, 0.0), sc)
     return {"status": status, "pairs": pairs, "n_sleeves_with_measured_pair": len(measured),
+            "overlap": {k: ov.get(k) for k in ("status", "n_streams", "n_pairs",
+                                                "n_pairs_measured", "terms_measured",
+                                                "event_calendar", "n_linked", "rule", "why")},
+            "overlap_by_identity": by_identity,
             "streams": sorted(streams.values(), key=lambda g: (-len(g), g)),
             "n_independent_streams": len(streams) if measured else None,
             "rule": (f"Fisher-z 95%: DEPENDENT at lower bound >= {REVOKE_RHO}; INDEPENDENT only on "
@@ -884,6 +919,14 @@ def forward_dependence(daily: Mapping[str, Mapping[str, float]]) -> dict[str, An
 
 
 # ---------------------------------------------------------------- book-level stress/tail
+def _so() -> Any:
+    try:
+        from research import stream_overlap as so
+    except ImportError:                                                  # pragma: no cover
+        import stream_overlap as so  # type: ignore[import-not-found,no-redef]
+    return so
+
+
 def book_breadth(exposure: Mapping[str, float], panel: Mapping[str, Any]) -> dict[str, Any]:
     """Full, stress and TAIL k_eff of the CERTIFIED book's instrument exposure (law 14, 15, 21).
 
@@ -1126,12 +1169,15 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
             for j in ib:
                 if i == j:
                     continue
-                if p["state"] == "DEPENDENT" and C[i, j] < p["lo"]:
+                dep = float(p.get("dependence", p["lo"]))
+                if p["state"] == "DEPENDENT" and C[i, j] < dep:
                     revocations.append({"a": glist[i]["certs"][0], "b": glist[j]["certs"][0],
                                         "structural_C": round(float(C[i, j]), 4),
-                                        "measured_lower_bound": p["lo"], "n": p["n"],
-                                        "sleeves": [p["a"], p["b"]]})
-                    C[i, j] = C[j, i] = p["lo"]
+                                        "measured_lower_bound": p["lo"],
+                                        "measured_overlap": p.get("overlap_score"),
+                                        "overlap_binding": p.get("overlap_binding"),
+                                        "n": p["n"], "sleeves": [p["a"], p["b"]]})
+                    C[i, j] = C[j, i] = dep
                 elif p["state"] == "INDEPENDENT" and C[i, j] > p["hi"]:
                     credits_f.append({"a": glist[i]["certs"][0], "b": glist[j]["certs"][0],
                                       "structural_C": round(float(C[i, j]), 4),
@@ -1651,6 +1697,12 @@ class Scorer:
         self.struct_keys = {tuple(k) for k in (doc.get("structural_keys") or [])
                             if isinstance(k, list)}
         self._nd_index: Any = None
+        fi = doc.get("forward_independence") if isinstance(doc.get("forward_independence"),
+                                                           Mapping) else {}
+        self._cap_ctx: Any = None
+        self.overlap_by_identity = {str(k): float(v) for k, v in
+                                    ((fi or {}).get("overlap_by_identity") or {}).items()
+                                    if _num(v) is not None}
 
     def near_dup(self, row: Mapping[str, Any]) -> tuple[str, str] | None:
         """The near-duplicate rule `row` breaks against the certified book (law §3), or None."""
@@ -1662,6 +1714,20 @@ class Scorer:
             self._nd = nd
             self._nd_index = nd.Index(self.doc.get("certified_specs") or [])
         return self._nd.near_duplicate(row, self._nd_index)
+
+    def capacity(self, sym: str, ax: Mapping[str, Any]) -> dict[str, Any]:
+        """The six capacity terms in breadth credit (law §15); 1.0 when unreadable."""
+        try:
+            if self._cap_ctx is None:
+                try:
+                    from research import breadth_capacity as bcap
+                except ImportError:
+                    import breadth_capacity as bcap  # type: ignore[import-not-found,no-redef]
+                self._bcap = bcap
+                self._cap_ctx = bcap.Context()
+            return dict(self._bcap.terms(sym, ax, self._cap_ctx))
+        except Exception as exc:                                         # pragma: no cover
+            return {"factor": 1.0, "terms": {}, "unmeasured": {"all": type(exc).__name__}}
 
     def _coup(self, sym: str) -> np.ndarray:
         v = self.sym_cache.get(sym)
@@ -1692,10 +1758,12 @@ class Scorer:
         if hit is not None:
             self.raw_cache[rk] = hit
             return hit
+        cap = self.capacity(sym, ax)
         if not self.g_sym:
             out = {"novelty_credit": 1.0, "effective_local_count": 0.0, "nearest_sim": 0.0,
                    "nearest_cluster": None, "saturated_ground": False, "exceptions": [],
-                   "cluster": cluster_key(ax), "economic": economic_key(ax)}
+                   "cluster": cluster_key(ax), "economic": economic_key(ax),
+                   "capacity_factor": cap["factor"], "capacity_terms": cap["terms"]}
             self.cache[key] = self.raw_cache[rk] = out
             return out
         sims, sims_ff = self._sims(ax)
@@ -1730,7 +1798,8 @@ class Scorer:
                "effective_local_count": round(local, 4),
                "nearest_sim": round(float(full[j]), 4), "nearest_cluster": near_cluster,
                "saturated_ground": sat_ground, "exceptions": exc,
-               "cluster": cluster_key(ax), "economic": economic_key(ax)}
+               "cluster": cluster_key(ax), "economic": economic_key(ax),
+               "capacity_factor": cap["factor"], "capacity_terms": cap["terms"]}
         self.cache[key] = self.raw_cache[rk] = out
         return out
 
@@ -1738,11 +1807,19 @@ class Scorer:
         sym, fam, params, tf, sess, reg = row_fields(row)
         base = dict(self.score_fields(sym, fam, params, tf, sess, reg))
         exc = list(base["exceptions"])
+        # BEHAVIOURAL OVERLAP (breadth law §4, §16): the row's own measured overlap with the
+        # book, else the realised overlap of the forward sleeve that runs this rule on this symbol
+        ov = row.get("measured_overlap")
+        ov_score = _num(ov.get("overlap_score")) if isinstance(ov, Mapping) else _num(ov)
+        if ov_score is None:
+            ov_score = self.overlap_by_identity.get(f"{str(sym).upper()}|{ar._tok(fam)}")
+        so = _so()
         mi = row.get("measured_independence")
         if isinstance(mi, Mapping):
             n, hi = _num(mi.get("n")), _num(mi.get("rho_upper"))
             if n is not None and hi is not None and n >= MIN_INDEPENDENCE_OBS \
-                    and abs(hi) <= INDEPENDENT_RHO:
+                    and abs(hi) <= INDEPENDENT_RHO \
+                    and (ov_score is None or ov_score <= so.OVERLAP_INDEPENDENT):
                 exc.append("F")
         if (_num(row.get("delta_elogw")) or 0.0) > 0 and row.get("delta_elogw_status") == MEASURED:
             exc.append("H")
@@ -1756,6 +1833,12 @@ class Scorer:
         credit = float(base["novelty_credit"])
         if any(e in exc for e in "ABCDEFH"):
             credit = max(credit, EXCEPTION_FLOOR)
+        if ov_score is not None:
+            # a stream that behaves like the book is not new breadth, whatever its axes say
+            base["measured_overlap"] = round(ov_score, 4)
+            credit = min(credit, max(DUPLICATE_TAX_FLOOR, 1.0 - ov_score))
+        # CAPACITY IN BREADTH CREDIT (law §15): breadth the desk cannot hold at size counts less
+        credit *= float(base.get("capacity_factor") or 1.0)
         nd = self.near_dup(row) if self.doc.get("certified_specs") else None
         base["near_duplicate_rule"] = nd[0] if nd else None
         base["near_duplicate_of"] = nd[1] if nd else None
@@ -1836,6 +1919,8 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
     except Exception:
         debt_doc, boost_for = None, (lambda _c, _d: 1.0)
     boosted = 0
+    cap_below = 0
+    cap_terms: Counter[str] = Counter()
     taxed = 0
     tax_sum: Counter[str] = Counter()
     # the duplicate rate each producer was last published at (the tax's rate term)
@@ -1856,7 +1941,9 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
     except Exception:                                                   # pragma: no cover
         marginal_k_eff = None  # type: ignore[assignment]
 
-    def expected_dk(row: Mapping[str, Any], credit: float) -> float | None:
+    future: list[tuple[Mapping[str, Any], str, float, float]] = []
+
+    def expected_dk(row: Mapping[str, Any], credit: float, src: str = "") -> float | None:
         if marginal_k_eff is None or not isinstance(n_book, (int, float)) \
                 or not isinstance(k_book, (int, float)) or n_book <= 0 or k_book <= 0:
             return None
@@ -1866,10 +1953,13 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
             ps = _num(g_yield)
         if ps is None:
             return None
+        rho = max(0.0, min(1.0, 1.0 - credit))
         try:
-            return ps * marginal_k_eff(n_book, k_book, max(0.0, min(1.0, 1.0 - credit)))
+            dk = ps * marginal_k_eff(n_book, k_book, rho)
         except ValueError:
             return None
+        future.append((row, src, ps, rho))
+        return dk
 
     prod: dict[str, dict[str, Any]] = {}
     exc_count: Counter[str] = Counter()
@@ -1882,6 +1972,11 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
             s = sc.score_row(row)
         except Exception:
             continue
+        if float(s.get("capacity_factor") or 1.0) < 1.0:
+            cap_below += 1
+        for t, v in (s.get("capacity_terms") or {}).items():
+            if v is not None:
+                cap_terms[t] += 1
         b = boost_for(s["cluster"], debt_doc) if not s["duplicate"] else 1.0
         if b > 1.0:
             s["breadth_value"] = float(s["breadth_value"]) * b
@@ -1922,7 +2017,7 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
         p["saturated_ground"] += 1 if s["saturated_ground"] else 0
         p["quality"] += row["_satq"]
         p["credit_sum"] += float(s["breadth_value"])
-        edk = expected_dk(row, float(s["novelty_credit"]))
+        edk = expected_dk(row, min(float(s["novelty_credit"]), float(s["breadth_value"])), src)
         if edk is not None:
             p["exp_dk"] += edk
             p["exp_n"] += 1
@@ -1937,6 +2032,36 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
             p["dup_groups"].add(s["nearest_cluster"])
         if s["cluster"] not in sc.clusters:
             p["new_clusters"].add(s["cluster"])
+    # MARGINAL BREADTH AGAINST THE PROJECTED FUTURE BOOK (producer law §11, BREADTH-0278). The
+    # future book is today's certified book plus every docket row's expected survivors: n grows
+    # by sum(P(survivor)) and k_eff by the sum of their positive expected marginals. Each row's
+    # marginal is then re-read against that book, so a row that only looks new because a dozen
+    # rows like it are queued is priced as what it will be when they land. Facts per producer.
+    fut = {"status": UNMEASURED, "why": "no row carried a P(survivor) and a measured book"}
+    if future and isinstance(n_book, (int, float)) and isinstance(k_book, (int, float)) \
+            and marginal_k_eff is not None:
+        n_f = float(n_book) + sum(ps for _, _, ps, _ in future)
+        k_f = float(k_book)
+        for _, _, ps, rho in future:
+            try:
+                k_f += max(0.0, ps * marginal_k_eff(n_book, k_book, rho))
+            except ValueError:
+                continue
+        tot_f = 0.0
+        for _row, src, ps, rho in future:
+            try:
+                dkf = ps * marginal_k_eff(n_f, max(k_f, 1e-9), rho)
+            except ValueError:
+                continue
+            tot_f += dkf
+            pp = prod.get(src)
+            if pp is not None:
+                pp["exp_dk_future"] = pp.get("exp_dk_future", 0.0) + dkf
+        fut = {"status": MEASURED, "n_book": n_book, "k_eff_book": k_book,
+               "n_future": round(n_f, 3), "k_eff_future": round(k_f, 4),
+               "rows": len(future), "expected_delta_k_eff_future": round(tot_f, 6),
+               "rule": ("future book = certified book + the docket's expected survivors "
+                        "(n + sum P, k_eff + sum of positive expected marginals)")}
     n = len(rows)
     spc = float(seconds_per_cell or 0.0)
     producers: dict[str, Any] = {}
@@ -1958,6 +2083,8 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
             "new_structural_clusters": len(p["new_clusters"]),
             "expected_delta_k_eff": (round(p["exp_dk"], 6) if p["exp_n"] else None),
             "expected_delta_k_eff_rows": p["exp_n"],
+            "expected_delta_k_eff_future_book": (round(p["exp_dk_future"], 6)
+                                                 if "exp_dk_future" in p else None),
             "judge_compute_hours": round(hours, 6) if hours else None,
             # per JUDGE hour here; research_auction adds the producer's own generation hours
             "delta_k_eff_per_compute_hour": (round(p["exp_dk"] / hours, 6)
@@ -1980,6 +2107,10 @@ def stamp(rows: list[dict[str, Any]], doc: Mapping[str, Any] | None = None, *,
             "breadth_constrained_mode": (debt_doc or {}).get("breadth_constrained_mode",
                                                              UNMEASURED),
             "mode_boosted_rows": boosted,
+            "future_book": fut,
+            "capacity": {"rows_below_par": cap_below,
+                         "terms_measured": dict(cap_terms),
+                         "rule": "breadth value x product of six capacity terms (floor 0.25)"},
             "duplicate_tax": {"rows_taxed": taxed,
                               "mean_factor": {k: round(v / taxed, 6) for k, v in tax_sum.items()}
                               if taxed else {},
