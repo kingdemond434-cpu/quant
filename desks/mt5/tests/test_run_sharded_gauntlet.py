@@ -25,6 +25,18 @@ def test_retry_count_falls_closed_and_honours_measurement(monkeypatch) -> None:
     assert runner._retry_attempts() == 2
 
 
+def test_parallelism_is_bounded_and_configurable(monkeypatch) -> None:
+    monkeypatch.delenv("GAUNTLET_SHARD_CONCURRENCY", raising=False)
+    assert runner._parallelism(15) == 2
+    assert runner._parallelism(1) == 1
+    monkeypatch.setenv("GAUNTLET_SHARD_CONCURRENCY", "4")
+    assert runner._parallelism(15) == 4
+    monkeypatch.setenv("GAUNTLET_SHARD_CONCURRENCY", "99")
+    assert runner._parallelism(15) == 15
+    monkeypatch.setenv("GAUNTLET_SHARD_CONCURRENCY", "broken")
+    assert runner._parallelism(15) == 1
+
+
 def test_dispatch_runs_every_shard_once(monkeypatch, tmp_path) -> None:
     calls = []
 
