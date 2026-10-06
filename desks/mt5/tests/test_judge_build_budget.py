@@ -57,8 +57,11 @@ def test_the_env_carries_the_budget_only_when_it_is_a_raise() -> None:
             "per_worker_mb": 768, "warm_workers": 1}
     assert "GAUNTLET_FRESH_BUDGET_SEC" not in jt.env_for(base)
     assert "GAUNTLET_FRESH_BUDGET_SEC" not in jt.env_for({**base, "fresh_budget_s": None})
-    assert "GAUNTLET_FRESH_BUDGET_SEC" not in jt.env_for(
-        {**base, "fresh_budget_s": jt.SEALED_FRESH_BUDGET_SEC})
+    # The sealed default IS written explicitly: a machine-wide raise retained from an earlier
+    # pass (8640 s, the source of the 7,800 s pre-warm of 2026-10-06) must be overwritten,
+    # never inherited because the file stayed silent.
+    assert jt.env_for({**base, "fresh_budget_s": jt.SEALED_FRESH_BUDGET_SEC})[
+        "GAUNTLET_FRESH_BUDGET_SEC"] == str(int(jt.SEALED_FRESH_BUDGET_SEC))
     env = jt.env_for({**base, "fresh_budget_s": 8640.0})
     assert env["GAUNTLET_FRESH_BUDGET_SEC"] == "8640"
     assert "GAUNTLET_FRESH_BUDGET_SEC" in jt.ENV_KEYS
