@@ -541,6 +541,49 @@ def from_artifact(name: str, now: datetime) -> tuple[Tally, str]:
 
 
 # ------------------------------------------------------------------ reach
+#: The discovery door's per-write receipts (`side_channels/discovery_io.RECEIPTS`): one line per
+#: `write_discoveries` call naming the producer's seat, rows written and rows quarantined.
+WRITE_RECEIPTS = BASE / "data" / "quarantine" / "write_receipts.jsonl"
+MAX_RECEIPT_BYTES = 16 * 1024 * 1024
+
+
+def quarantine_by_seat(now: datetime, path: Path | None = None,
+                       days: int = 7) -> tuple[dict[str, dict[str, int]], str]:
+    """{seat: {writes, written, quarantined}} over the last `days`, from the door's receipts.
+
+    Read from the TAIL under a byte cap. No receipts file is UNMEASURED with the reason; a seat
+    that wrote and quarantined nothing reads 0, which is a measurement."""
+    p = path or WRITE_RECEIPTS
+    try:
+        size = p.stat().st_size
+        with p.open("rb") as fh:
+            if size > MAX_RECEIPT_BYTES:
+                fh.seek(size - MAX_RECEIPT_BYTES)
+                fh.readline()
+            lines = fh.read().decode("utf-8", "replace").splitlines()
+    except FileNotFoundError:
+        return {}, f"{UNMEASURED}: no write receipts at {p.name} (no miner has written since " \
+                   "the door began recording them)"
+    except OSError as exc:
+        return {}, f"{UNMEASURED}: receipts unreadable ({type(exc).__name__})"
+    since = now - timedelta(days=days)
+    out: dict[str, dict[str, int]] = {}
+    for line in lines:
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        at = _parse_ts(r.get("at")) if isinstance(r, dict) else None
+        if at is None or at < since:
+            continue
+        slot = out.setdefault(str(r.get("producer") or "?").lower(),
+                              {"writes": 0, "written": 0, "quarantined": 0})
+        slot["writes"] += 1
+        slot["written"] += int(r.get("written") or 0)
+        slot["quarantined"] += int(r.get("quarantined") or 0)
+    return out, f"receipts ({len(lines)} line(s) read)"
+
+
 def reachable(families: list[str], lane: list[str]) -> dict[str, Any]:
     """What a producer of `families` could reach: the whole lane, every chart those families
     declare, every session, and the families themselves when buildable."""
@@ -582,6 +625,8 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         for seat in [name, *(row.get("seats") or [])]:
             generators.setdefault(str(seat).lower(), name)
     reg, reg_why = from_registry(generators, now, db)
+    q_seats, q_why = quarantine_by_seat(now)
+    q_claimed: set[str] = set()
     budget = {"left": MAX_SEAT_BYTES_TOTAL}
     rows: dict[str, Any] = {}
     fed: Counter[str] = Counter()
@@ -633,6 +678,13 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
             "clusters_fed": dict(clusters),
             "cap": row.get("cap"), "status": row.get("status"), "change": row.get("change"),
         }
+        seats_here = {str(x).lower() for x in [name, *(row.get("seats") or [])]}
+        q_hit = [q_seats[x] for x in seats_here if x in q_seats]
+        q_claimed |= seats_here & set(q_seats)
+        rows[name]["quarantined_rows_7d"] = (sum(q["quarantined"] for q in q_hit) if q_hit
+                                             else UNMEASURED)
+        rows[name]["discovery_writes_7d"] = (sum(q["writes"] for q in q_hit) if q_hit
+                                             else UNMEASURED)
     try:
         from libs.research.alpha_clusters import CLUSTERS
         every = [c.key for c in CLUSTERS]
@@ -675,6 +727,16 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         "clusters_fed_by": {c: sorted(v) for c, v in sorted(fed_by.items())},
         "empty_clusters_unfed": unfed,
         "family_buildability": fam_census,
+        # THE DISCOVERY DOOR'S QUARANTINE, per producer (2026-10-06): rows a miner produced
+        # that the provenance door refused one by one instead of discarding the whole batch.
+        "quarantined_rows_7d_by_producer": {
+            **{n: r["quarantined_rows_7d"] for n, r in sorted(rows.items())
+               if isinstance(r["quarantined_rows_7d"], int)},
+            **{f"seat:{s}": v["quarantined"] for s, v in sorted(q_seats.items())
+               if s not in q_claimed}},
+        "quarantined_rows_7d": (sum(v["quarantined"] for v in q_seats.values())
+                                if q_seats else UNMEASURED),
+        "quarantine_source": q_why,
     }
     return {
         "generated_at": now.isoformat(timespec="seconds"),

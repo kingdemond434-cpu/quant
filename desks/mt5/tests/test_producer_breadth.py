@@ -332,3 +332,24 @@ def test_the_artifact_is_written_atomically(tmp_path: Path) -> None:
     out = pb.write({"totals": {}, "producers": {}}, tmp_path / "PRODUCER_BREADTH.json")
     assert json.loads(out.read_text()) == {"totals": {}, "producers": {}}
     assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_the_artifact_publishes_quarantined_rows_per_producer(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    now = datetime(2026, 9, 30, 12, tzinfo=UTC)
+    seats = {n: [str(s) for s in (r.get("seats") or [])]
+             for n, r in pb.discovered_producers().items()}
+    name, seat = next((n, s[0]) for n, s in sorted(seats.items()) if s)
+    receipts = tmp_path / "write_receipts.jsonl"
+    receipts.write_text("\n".join(json.dumps(r) for r in [
+        {"at": "2026-09-30T10:00:00+00:00", "producer": seat, "written": 4, "quarantined": 2},
+        {"at": "2026-09-30T11:00:00+00:00", "producer": "orphan_seat", "written": 1,
+         "quarantined": 1}]), encoding="utf-8")
+    monkeypatch.setattr(pb, "WRITE_RECEIPTS", receipts)
+    doc = pb.build(now=now, db=tmp_path / "absent.sqlite")
+    assert doc["producers"][name]["quarantined_rows_7d"] == 2
+    by = doc["totals"]["quarantined_rows_7d_by_producer"]
+    assert by[name] == 2 and by["seat:orphan_seat"] == 1
+    assert doc["totals"]["quarantined_rows_7d"] == 3
+    others = [n for n in doc["producers"] if n != name and seat not in seats.get(n, [])]
+    assert doc["producers"][others[0]]["quarantined_rows_7d"] == pb.UNMEASURED

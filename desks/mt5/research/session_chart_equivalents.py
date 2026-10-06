@@ -368,33 +368,44 @@ def main(argv: list[str] | None = None) -> int:
     doc["new"], refused = stamp_or_refuse(doc["new"], "session_chart_equivalents")
     if refused:
         raise ValueError(f"Chart expansion refused {len(refused)} unstamped candidates")
-    from research.job_lock import exclusive_job
-    from research.merge_hypotheses import _write_docket_atomically
+    from research.merge_hypotheses import merge_or_defer
 
-    with exclusive_job("merge_hypotheses", need_mb=14000) as owned:
-        if not owned:
-            raise RuntimeError("Canonical docket writer lane or memory admission refused")
-        docket = _read_docket()
-        existing = docket["survivors"] if isinstance(docket, dict) else docket
-        known = {_cell(str(row.get("symbol") or row.get("sym") or ""),
-                       str(row.get("family") or ""), row.get("params") or {})
-                 for row in existing if isinstance(row, dict)}
-        added = []
-        for row in doc["new"]:
-            identity = _cell(str(row.get("symbol") or row.get("sym") or ""),
-                             str(row.get("family") or ""), row.get("params") or {})
-            if identity not in known:
-                known.add(identity)
-                added.append(row)
-        if isinstance(docket, dict):
-            docket.setdefault("survivors", []).extend(added)
-            n = len(docket["survivors"])
-        else:
-            docket = list(docket) + added
-            n = len(docket)
-        _write_docket_atomically(DOCKET, docket)
+    # DEFER, NEVER DROP (2026-10-06): a refused writer lane or memory admission is retried with
+    # backoff and then persisted for the next pass of ANY docket writer to merge first.
+    _added, n = merge_or_defer("session_chart_equivalents", doc["new"], _merge_locked, _row_key)
+    if n < 0:
+        print("  docket lane refused after retries; variants DEFERRED to the next pass (not lost)")
+        return 0
     print(f"  appended; docket is now {n} row(s)")
     return 0
+
+
+def _row_key(row: dict[str, Any]) -> str:
+    return _cell(str(row.get("symbol") or row.get("sym") or ""), str(row.get("family") or ""),
+                 row.get("params") or {})
+
+
+def _merge_locked(rows: list[dict[str, Any]]) -> tuple[int, int]:
+    """Append `rows` to the docket under the lane `merge_or_defer` already holds."""
+    from research.merge_hypotheses import _write_docket_atomically
+
+    docket = _read_docket()
+    existing = docket["survivors"] if isinstance(docket, dict) else docket
+    known = {_row_key(row) for row in existing if isinstance(row, dict)}
+    added = []
+    for row in rows:
+        identity = _row_key(row)
+        if identity not in known:
+            known.add(identity)
+            added.append(row)
+    if isinstance(docket, dict):
+        docket.setdefault("survivors", []).extend(added)
+        n = len(docket["survivors"])
+    else:
+        docket = list(docket) + added
+        n = len(docket)
+    _write_docket_atomically(DOCKET, docket)
+    return len(added), n
 
 
 if __name__ == "__main__":

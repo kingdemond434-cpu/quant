@@ -54,8 +54,8 @@ def test_a_family_that_names_the_key_keeps_it() -> None:
 
 
 def test_unapplicable_variants_are_refused_by_name() -> None:
-    assert "risk" in cm.refusal({"regime": "risk_off"})
-    assert "fill model" in cm.refusal({"execution_style": "limit"})
+    assert "risk" in cm.refusal({"regime": "risk_neutral"})
+    assert "fill model" in cm.refusal({"execution_style": "iceberg"})
     assert "conditioning series" in cm.refusal({"conditioner": "carry"})
     assert "residualise" in cm.refusal({"residual": "usd", "residual_tag": "residual"})
     assert cm.refusal({"regime": "high_vol", "side_mode": "revert", "entry_timing": "delayed",
@@ -153,4 +153,88 @@ def test_family_call_applies_the_same_modifiers_the_gauntlet_does():
     selected = fc.signals(fam, bars, side=1, params={"lookback": 3, "selector": "asia"})
     assert selected == plain
     with pytest.raises(ValueError, match="NOT_RUN_MODIFIER"):
-        fc.signals(fam, bars, side=1, params={"regime": "risk_off"})
+        fc.signals(fam, bars, side=1, params={"regime": "risk_neutral"})
+
+
+# ------------------------------------------------------------ states the desk already computes
+def _state_file(tmp_path: Path, bars: pd.DataFrame) -> Path:
+    """A free_states-shaped file: risk-off in the first half, risk-on in the second."""
+    n = len(bars)
+    frame = pd.DataFrame({"gold_risk_off_z": np.where(np.arange(n) < n // 2, 1.0, -1.0),
+                          "gold_macro_stress": np.where(np.arange(n) % 2 == 0, 0.9, 0.1)},
+                         index=bars.index)
+    path = tmp_path / "free_states.parquet"
+    frame.to_parquet(path)
+    return path
+
+
+def test_risk_regimes_use_the_published_risk_state(tmp_path, monkeypatch) -> None:
+    b = _bars(40)
+    monkeypatch.setattr(cm, "STATE_FILE", _state_file(tmp_path, b))
+    sigs = [_sig(b, i) for i in range(len(b))]
+    assert cm.refusal({"regime": "risk_off"}) is None
+    assert cm.refusal({"regime": "risk_on"}) is None
+    off = cm.apply(sigs, b, {"regime": "risk_off"})
+    on = cm.apply(sigs, b, {"regime": "risk_on"})
+    assert [s.time for s in off] == list(b.index[:20])
+    assert [s.time for s in on] == list(b.index[20:])
+
+
+def test_a_stale_or_absent_state_keeps_nothing_and_refuses_by_name(tmp_path, monkeypatch) -> None:
+    b = _bars(40)
+    monkeypatch.setattr(cm, "STATE_FILE", _state_file(tmp_path, b.iloc[:5]))
+    later = [_sig(b, i) for i in range(30, 40)]          # days past the last state print
+    assert cm.apply(later, b, {"regime": "risk_off"}) == []
+    monkeypatch.setattr(cm, "STATE_FILE", tmp_path / "absent.parquet")
+    assert "UNMEASURED" in cm.refusal({"regime": "risk_on"})
+    assert "UNMEASURED" in cm.refusal({"conditioner": "macro"})
+
+
+def test_macro_seasonality_and_microstructure_conditioners_apply(tmp_path, monkeypatch) -> None:
+    from mt5desk.family_generic import _CONTEXTS
+
+    b = _bars(200)
+    monkeypatch.setattr(cm, "STATE_FILE", _state_file(tmp_path, b))
+    sigs = [_sig(b, i) for i in range(len(b))]
+    for cond in ("macro", "seasonality", "microstructure"):
+        assert cm.refusal({"conditioner": cond}) is None, cond
+    macro = cm.apply(sigs, b, {"conditioner": "macro"})
+    assert [s.time for s in macro] == list(b.index[::2])
+    low_liq = pd.Series(_CONTEXTS["low_liquidity"](b), index=b.index).fillna(False)
+    micro = cm.apply(sigs, b, {"conditioner": "microstructure"})
+    assert [s.time for s in micro] == [t for t in b.index if bool(low_liq[t])]
+
+
+def test_limit_style_rests_a_passive_order_at_the_signal_close() -> None:
+    b = _bars(30)
+    resting = _sig(b, 3, trigger=123.0)
+    out = cm.apply([_sig(b, 2), resting], b, {"execution_style": "limit"})
+    assert cm.refusal({"execution_style": "limit"}) is None
+    assert out[0].trigger == float(b["close"].iloc[2]) and out[0].wait_bars == 1
+    assert out[1] == resting                       # an order that already rests is its own type
+
+
+def test_the_engine_fills_the_limit_only_on_a_touch() -> None:
+    from mt5desk.engine import Costs, run_backtest
+
+    idx = pd.date_range("2026-01-01", periods=6, freq="h", tz="UTC")
+    close = np.array([100.0, 100.0, 101.0, 102.0, 103.0, 104.0])
+    b = pd.DataFrame({"open": close, "high": close + 0.2, "low": close - 0.2, "close": close},
+                     index=idx)
+    sig = Signal(time=idx[1], side=1, stop=99.0, target=105.0, ttl_bars=3, tag="t")
+    limited = cm.apply([sig], b, {"execution_style": "limit"})
+    # The next bar opens at 101 and never trades back to 100: no touch, no trade.
+    assert run_backtest(b, limited, Costs()).n == 0
+    assert run_backtest(b, [sig], Costs()).n == 1
+
+
+def test_residual_frame_is_inert_until_the_sealed_patch_lands() -> None:
+    assert "residualise" in cm.refusal({"residual": "gold", "residual_tag": "residual"})
+    b = _bars(400)
+    f = _bars(400).assign(close=lambda d: d["close"] * 1.01)
+    r = cm.residual_frame(b, f, win=50)
+    assert r is not None and (r["high"] >= r["low"]).all()
+    sig = _sig(r, 300)
+    back = cm.residual_signals_to_real([sig], b, r)[0]
+    k = float(r["close"].iloc[300] / b["close"].iloc[300])
+    assert back.stop == pytest.approx(sig.stop / k) and back.time == sig.time

@@ -61,15 +61,79 @@ def test_refused_shared_writer_lane_preserves_bank(kind, monkeypatch, tmp_path):
         yield False
 
     monkeypatch.setattr(job_lock, 'exclusive_job', refused)
+    # Both writers DEFER rather than raising: the bank is untouched and the rows wait on disk
+    # for the next pass of ANY docket writer instead of being lost.
     if kind == 'chart':
-        with pytest.raises(RuntimeError, match='writer lane'):
-            publish()
+        assert publish() == 0
+        assert [c['family'] for c in mh.read_deferred('session_chart_equivalents')] == ['carry']
     else:
-        # The converter DEFERS rather than raising: the bank is untouched and the candidate
-        # waits on disk for the next pass instead of being lost.
         assert publish() == (0, -1)
         assert [c['family'] for c in mh.read_deferred('local_converter')] == ['carry']
     assert bank.read_bytes() == b'[]'
+
+
+def test_any_writer_holding_the_lane_drains_every_other_writers_deferral(monkeypatch, tmp_path):
+    """local_converter runs only from intel_ship_adopt.ps1; its deferral must not wait for it."""
+    from research import breadth_sweep, job_lock
+
+    bank, _ = _publish('converter', monkeypatch, tmp_path)
+    monkeypatch.setattr(sce, 'DOCKET', bank)
+    monkeypatch.setattr(breadth_sweep, 'DOCKET', bank)
+    bank.write_text('[]', encoding='utf-8')
+
+    @contextmanager
+    def refused(*args, **kwargs):
+        yield False
+
+    monkeypatch.setattr(job_lock, 'exclusive_job', refused)
+    assert lc.feed_docket([{'symbols': ['GBPUSD'], 'family': 'carry'}]) == (0, -1)
+    assert sce._merge_locked is not None
+    mh._write_deferred('session_chart_equivalents',
+                       [{'symbol': 'AUDUSD', 'family': 'carry', 'params': {'session': 'asia'}}])
+
+    @contextmanager
+    def owned(name, **kwargs):
+        yield True
+
+    monkeypatch.setattr(job_lock, 'exclusive_job', owned)
+    assert breadth_sweep.apply([{'symbol': 'EURUSD', 'family': 'carry', 'params': {}}]) == (1, 1)
+    syms = sorted(r['symbol'] for r in json.loads(bank.read_text()))
+    assert syms == ['AUDUSD', 'EURUSD', 'GBPUSD']
+    drained = mh.LAST_MERGE['breadth_sweep']['drained_for_others']
+    assert drained['local_converter']['drained'] == 1
+    assert drained['session_chart_equivalents']['drained'] == 1
+    assert not mh.deferred_path('local_converter').exists()
+    assert not mh.deferred_path('session_chart_equivalents').exists()
+
+
+def test_a_drain_that_fails_keeps_the_other_writers_rows(monkeypatch, tmp_path):
+    from research import job_lock
+
+    bank, _ = _publish('converter', monkeypatch, tmp_path)
+    bank.write_text('[]', encoding='utf-8')
+    mh._write_deferred('session_chart_equivalents', [{'symbol': 'AUDUSD', 'family': 'carry'}])
+    monkeypatch.setattr(sce, 'DOCKET', tmp_path / 'unreadable.json')
+    (tmp_path / 'unreadable.json').write_text('[broken', encoding='utf-8')
+
+    @contextmanager
+    def owned(name, **kwargs):
+        yield True
+
+    monkeypatch.setattr(job_lock, 'exclusive_job', owned)
+    lc.feed_docket([{'symbols': ['EURUSD'], 'family': 'carry'}])
+    assert 'why' in mh.LAST_MERGE['local_converter']['drained_for_others'][
+        'session_chart_equivalents']
+    assert mh.read_deferred('session_chart_equivalents') == [
+        {'symbol': 'AUDUSD', 'family': 'carry'}]
+
+
+def test_quarantine_receipts_and_deferrals_are_box_state():
+    from libs.ops.release import is_state_path
+
+    for rel in ('desks/mt5/data/quarantine/discoveries.jsonl',
+                'desks/mt5/data/quarantine/write_receipts.jsonl',
+                'desks/mt5/data/deferred/docket_merge_breadth_sweep.jsonl'):
+        assert is_state_path(rel), rel
 
 
 def test_converter_deferral_is_merged_first_on_the_next_pass(monkeypatch, tmp_path):

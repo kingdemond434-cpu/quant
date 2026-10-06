@@ -115,3 +115,37 @@ def test_bridge_grid_preserves_executable_identity_and_adds_provenance(tmp_path,
     assert {k: saved[0][k] for k in raw[0]} == raw[0]
     assert is_stamped(saved[0])
     assert saved[0]["payload_hash"] == payload_hash(saved[0])
+
+
+def test_every_write_leaves_a_receipt_naming_the_producer(tmp_path: Path) -> None:
+    qpath = tmp_path / "q" / "discoveries.jsonl"
+    rpath = tmp_path / "q" / "write_receipts.jsonl"
+    io.write_discoveries(tmp_path / "seat_a" / "d1.json",
+                         [{"title": "x", "captured_at": "2026-10-03T08:00:00+00:00"}, "bad"],
+                         quarantine=qpath, receipts=rpath)
+    io.write_discoveries(tmp_path / "seat_b" / "d2.json",
+                         [{"title": "y", "captured_at": "2026-10-03T08:00:00+00:00"}],
+                         quarantine=qpath, receipts=rpath)
+    got = [json.loads(x) for x in rpath.read_text("utf-8").splitlines()]
+    assert [(g["producer"], g["artifact"], g["written"], g["quarantined"]) for g in got] == [
+        ("seat_a", "d1.json", 1, 1), ("seat_b", "d2.json", 1, 0)]
+
+
+def test_producer_breadth_publishes_quarantined_rows_per_producer(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from research import producer_breadth as pb
+
+    rpath = tmp_path / "write_receipts.jsonl"
+    now = datetime(2026, 10, 6, 12, tzinfo=UTC)
+    rows = [{"at": "2026-10-06T10:00:00+00:00", "producer": "cot", "written": 5, "quarantined": 2},
+            {"at": "2026-10-05T10:00:00+00:00", "producer": "cot", "written": 4, "quarantined": 1},
+            {"at": "2026-09-01T10:00:00+00:00", "producer": "cot", "written": 9, "quarantined": 9},
+            {"at": "2026-10-06T11:00:00+00:00", "producer": "china", "written": 3,
+             "quarantined": 0}]
+    rpath.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+    got, why = pb.quarantine_by_seat(now, rpath)
+    assert got == {"cot": {"writes": 2, "written": 9, "quarantined": 3},
+                   "china": {"writes": 1, "written": 3, "quarantined": 0}}
+    absent, why = pb.quarantine_by_seat(now, tmp_path / "none.jsonl")
+    assert absent == {} and why.startswith(pb.UNMEASURED)

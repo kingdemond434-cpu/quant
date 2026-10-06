@@ -548,6 +548,11 @@ def apply(new: list[dict], max_new: int = MAX_NEW_PER_RUN) -> tuple[int, int]:
                           lambda rows: _apply_locked(rows, max_new), _docket_key)
 
 
+def _drain_locked(rows: list[dict]) -> tuple[int, int]:
+    """Another writer holding the lane merges this writer's deferred rows: same per-run cap."""
+    return _apply_locked(rows, MAX_NEW_PER_RUN)
+
+
 def _docket_key(r: dict) -> str:
     return json.dumps([r.get("symbol") or r.get("sym"), r.get("family"), r.get("params") or {}],
                       sort_keys=True, default=str)

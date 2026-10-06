@@ -133,6 +133,41 @@ def _write_deferred(writer: str, rows: list[dict[str, Any]]) -> None:
 #: What the last `merge_or_defer` call did, per writer: {"merged": n, "deferred": n, "path": str}.
 LAST_MERGE: dict[str, dict[str, Any]] = {}
 
+#: EVERY WRITER'S LOCKED MERGE, by name, so whichever writer next holds the lane drains the
+#: others' deferrals too. `local_converter` runs only from `intel_ship_adopt.ps1`; without this
+#: its deferred candidates would wait for that script while `breadth_sweep` held the lane hourly.
+DRAINERS: dict[str, tuple[str, str]] = {
+    "breadth_sweep": ("research.breadth_sweep", "_drain_locked"),
+    "local_converter": ("research.local_converter", "_feed_docket_locked"),
+    "session_chart_equivalents": ("research.session_chart_equivalents", "_merge_locked"),
+}
+
+
+def _drain_others(writer: str) -> dict[str, Any]:
+    """Under the lane the caller holds: merge every OTHER writer's deferred rows with that
+    writer's own locked merge, and clear each file that merged. A drain that raises keeps its
+    file (nothing is lost) and is named in the result."""
+    import importlib
+
+    out: dict[str, Any] = {}
+    for other, (module, fn_name) in sorted(DRAINERS.items()):
+        if other == writer or not deferred_path(other).exists():
+            continue
+        rows = read_deferred(other)
+        if not rows:
+            _write_deferred(other, [])
+            continue
+        try:
+            fn = getattr(importlib.import_module(module), fn_name)
+            added, _total = fn(rows)
+        except Exception as exc:                       # the file stays for the next holder
+            out[other] = {"drained": 0, "kept": len(rows),
+                          "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
+            continue
+        _write_deferred(other, [])
+        out[other] = {"drained": len(rows), "added": int(added)}
+    return out
+
 
 def merge_or_defer(writer: str, rows: list[dict[str, Any]],
                    locked_merge: Any, identity: Any, *,
@@ -173,7 +208,8 @@ def merge_or_defer(writer: str, rows: list[dict[str, Any]],
                 if pending:
                     _write_deferred(writer, [])
                 LAST_MERGE[writer] = {"merged": len(combined), "deferred": 0,
-                                      "from_deferral": len(pending), "path": None}
+                                      "from_deferral": len(pending), "path": None,
+                                      "drained_for_others": _drain_others(writer)}
                 return result
         if i + 1 < tries:
             nap(wait * (2 ** i))

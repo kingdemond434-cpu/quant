@@ -28,6 +28,14 @@ from libs.data.pit import stamp_or_refuse  # noqa: E402
 
 #: Every row the door refused, one JSON object per line, with its reason. Append-only.
 QUARANTINE = ROOT / "desks" / "mt5" / "data" / "quarantine" / "discoveries.jsonl"
+#: ONE RECEIPT PER WRITE, whether or not anything was quarantined: the producer (its seat, the
+#: discovery file's directory), the artifact written, and how many rows were written and
+#: quarantined. Written by the one door every miner calls, so every miner reports -- including
+#: one added tomorrow -- and a zero is a MEASURED zero rather than an absence (L1.28a).
+#: `research/producer_breadth.py` publishes the per-producer totals from it.
+#: Both files live under `desks/mt5/data/`, which `libs/ops/release.STATE_PREFIXES` already
+#: classifies as box state: they are the box's own record and cannot be regenerated.
+RECEIPTS = ROOT / "desks" / "mt5" / "data" / "quarantine" / "write_receipts.jsonl"
 
 
 class WrittenDiscoveries(list[dict[str, Any]]):
@@ -49,13 +57,30 @@ def _quarantine(path: Path, bad: list[dict[str, Any]], qpath: Path) -> None:
                                     default=str, ensure_ascii=False) + "\n")
 
 
+def _receipt(path: Path, written: int, quarantined: int, rpath: Path) -> None:
+    try:
+        rpath.parent.mkdir(parents=True, exist_ok=True)
+        with rpath.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({
+                "at": datetime.now(UTC).isoformat(timespec="seconds"),
+                "producer": path.parent.name, "artifact": path.name,
+                "written": int(written), "quarantined": int(quarantined)}) + "\n")
+    except OSError:
+        pass                                   # a receipt never costs the discoveries
+
+
 def write_discoveries(path: Path, rows: list[dict[str, Any]],
-                      quarantine: Path | None = None) -> WrittenDiscoveries:
+                      quarantine: Path | None = None,
+                      receipts: Path | None = None) -> WrittenDiscoveries:
     """Write every good row atomically; quarantine (never raise on) each bad one.
 
     A batch that is not a list at all is still refused whole -- there is no row to keep."""
     if not isinstance(rows, list):
         raise ValueError(f"{path}: discovery batch must be a list of objects")
+    env_dir = os.environ.get("QUANT_DISCOVERY_QUARANTINE_DIR")
+    if quarantine is None and env_dir:
+        # Test isolation (desks/mt5/tests/conftest.py) and any off-box dry run.
+        quarantine = Path(env_dir) / QUARANTINE.name
     qpath = quarantine if quarantine is not None else QUARANTINE
     bad: list[dict[str, Any]] = []
     stamped: list[dict[str, Any]] = []
@@ -75,6 +100,8 @@ def write_discoveries(path: Path, rows: list[dict[str, Any]],
     out = WrittenDiscoveries(stamped)
     out.quarantined = len(bad)
     out.quarantine_path = qpath if bad else None
+    _receipt(path, len(stamped), len(bad), receipts if receipts is not None
+             else (qpath.parent / RECEIPTS.name if quarantine is not None else RECEIPTS))
     if bad and not stamped and path.exists():
         # Nothing good to write: an empty list must not replace what an earlier pass wrote.
         return out
