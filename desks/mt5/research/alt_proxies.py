@@ -1365,7 +1365,7 @@ def rule_pink_sheet(period: date) -> datetime:
     """The Pink Sheet is updated on the second business day of the following month (worldbank.org
     commodity-markets page, 2026-10-06: "Next update: November 3, 2026" for the October release).
     Stamped at 00:00 UTC on the THIRD business day: always after the release, never before it."""
-    nxt = period + timedelta(days=1)
+    nxt = _month_end(period.year, period.month) + timedelta(days=1)   # the month AFTER the period's
     t, n = _utc(nxt.year, nxt.month, 1), 0
     while True:
         if t.weekday() < 5:
