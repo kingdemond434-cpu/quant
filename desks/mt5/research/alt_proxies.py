@@ -2740,7 +2740,7 @@ KR_HK_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
     **{sid: {**_DGH, **_HKMA_LISTING[sid]} for sid in _HKMA_LISTING},
     **{sid: dict(_ECOS_TERMS_ATTEMPT)
        for sid in ("kr_ecos_base_rate", "kr_ecos_call_rate", "kr_ecos_fx_reserves",
-                   "kr_ecos_export_prices")},
+                   "kr_ecos_export_prices", "kr_bok_card_spend")},
     "kr_krx_market_data": {
         "terms_url": "https://openapi.krx.co.kr/contents/OPP/INFO/OPPINFO005.jsp",
         "terms_quote": ("Art. 6(2): API Users may only use the API Service for non-commercial "
@@ -2997,7 +2997,6 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
 }
 
 TERMS.update(KR_HK_TERMS)
-TERMS_EVIDENCE["kr_bok_card_spend"] = dict(_ECOS_TERMS_ATTEMPT)
 
 #: HOSTS GOVERNED BY A TERMS ROW (the mechanism of PR #229, carried here for the KR/HK hosts and
 #: the asia collector's keyed sources; audit of PR #239, 2026-10-06). One decision binds every
@@ -3125,7 +3124,12 @@ SUBSTITUTED_BY: dict[str, tuple[str, ...]] = {
 }
 #: Blocked sources with NO verified lawful substitute, and why (each has a box action queued in
 #: /mnt/project-files/patches/DESKTOP_PASS2_STATUS.md).
+_ECOS_NO_SUB = ("the BOK ECOS terms of use could not be read or quoted (2026-10-06), so the row "
+                "is fenced to_confirm; no other free source publishes the same BOK series under "
+                "quoted reuse terms. Box action: read the ECOS 이용약관 and quote the clause")
 NO_SUBSTITUTE: dict[str, str] = {
+    **dict.fromkeys(("kr_bok_card_spend", "kr_ecos_base_rate", "kr_ecos_call_rate",
+                     "kr_ecos_fx_reserves", "kr_ecos_export_prices"), _ECOS_NO_SUB),
     "in_npci_upi": ("RBI payment-system indicators carry '© Reserve Bank of India. All Rights "
                     "Reserved' and no reuse grant; data.gov.in (GODL) pages are robots-disallowed "
                     "to the authoring fetcher, so no licence text could be read"),

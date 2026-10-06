@@ -236,7 +236,7 @@ def test_keyed_substitutes_block_without_their_key(monkeypatch: pytest.MonkeyPat
                 "DATA_GO_KR_KEY"):
         monkeypatch.delenv(env, raising=False)
     got = {s.id: A.status_of(s) for s in A.SUBSTITUTE_SOURCES if s.key_env}
-    assert got == {"kr_bok_card_spend": "BLOCKED_ON_KEY:ECOS_API_KEY",
+    assert got == {"kr_bok_card_spend": "BLOCKED_ON_TERMS:to_confirm",   # ECOS terms unread
                    "kr_kobis_box_office": "BLOCKED_ON_KEY:KOBIS_API_KEY",
                    "kr_seoul_subway": "BLOCKED_ON_KEY:SEOUL_API_KEY",
                    "jp_estat_immigration": "BLOCKED_ON_KEY:ESTAT_APP_ID",
@@ -376,7 +376,11 @@ def test_a_to_confirm_source_is_never_fetched(tmp_path: Path) -> None:
 
 def test_ecos_never_builds_a_request_on_a_placeholder_code(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    src = A.BY_ID["kr_bok_card_spend"]
+    # the row is fenced on terms (ECOS terms unread, 2026-10-06); the placeholder guard is
+    # exercised on the same row as it would stand once its terms are confirmed
+    assert A.status_of(A.BY_ID["kr_bok_card_spend"]) == "BLOCKED_ON_TERMS:to_confirm"
+    from dataclasses import replace
+    src = replace(A.BY_ID["kr_bok_card_spend"], terms="confirmed")
     for env in ("ALT_ECOS_CARD_STAT", "ALT_ECOS_CARD_ITEM"):
         monkeypatch.delenv(env, raising=False)
     monkeypatch.delenv("ECOS_API_KEY", raising=False)
@@ -529,7 +533,10 @@ NEW_SUBSTITUTES = ("jp_estat_immigration", "hk_immd_passenger", "br_bcb_payments
                    "mx_inegi_emec", "tr_tuik_retail", "kr_mof_container_teu")
 BLOCKED = ("jp_jnto_arrivals", "cn_holiday_spend", "tr_bkm_card", "br_cielo_icva", "mx_antad_sss",
            "cn_maoyan_box_office", "in_npci_upi", "cn_sge_premium", "cn_baidu_migration",
-           "za_beti", "kr_busan_port", "cn_mot_port_weekly")
+           "za_beti", "kr_busan_port", "cn_mot_port_weekly",
+           # ECOS terms unread, fenced 2026-10-06 (audit of PR #239)
+           "kr_bok_card_spend", "kr_ecos_base_rate", "kr_ecos_call_rate", "kr_ecos_fx_reserves",
+           "kr_ecos_export_prices")
 
 
 def test_every_blocked_source_is_substituted_or_says_why_not() -> None:
@@ -559,7 +566,9 @@ def test_a_substituted_source_is_still_never_fetched(tmp_path: Path) -> None:
     rep = A.run(paths, fixtures=FIX, donate=False, now=NOW)
     assert rep["blocked_substituted"]["kr_busan_port"] == ["kr_mof_container_teu",
                                                            "imf_portwatch_ports"]
-    assert set(rep["blocked_unsubstituted"]) == {"in_npci_upi", "za_beti"}
+    assert set(rep["blocked_unsubstituted"]) == set(A.NO_SUBSTITUTE) == {
+        "in_npci_upi", "za_beti", "kr_bok_card_spend", "kr_ecos_base_rate", "kr_ecos_call_rate",
+        "kr_ecos_fx_reserves", "kr_ecos_export_prices"}
     assert rep["sources"]["tr_bkm_card"]["status"].startswith("BLOCKED+SUBSTITUTE:")
     rows = {r["id"]: r for r in A.roster_rows()}
     assert rows["jp_jnto_arrivals"]["substituted_by"] == ["jp_estat_immigration"]
