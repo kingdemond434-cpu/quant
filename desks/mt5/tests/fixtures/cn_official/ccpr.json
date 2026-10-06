@@ -1,0 +1,8 @@
+{"head":{"version":"2.0","provider":"CWAP","req_code":"0","rep_code":"200","rep_message":"","ts":1759713300000,"producer":""},
+ "data":{"lastDate":"2026-10-06 9:15","pairChangeNum":"25"},
+ "records":[
+  {"vrtCode":"USD/CNY","vrtName":"美元/人民币","vrtEName":"USD/CNY","price":"7.1012","bp":"-26","bpDouble":-26.0},
+  {"vrtCode":"EUR/CNY","vrtName":"欧元/人民币","vrtEName":"EUR/CNY","price":"8.3381","bp":"41","bpDouble":41.0},
+  {"vrtCode":"100JPY/CNY","vrtName":"100日元/人民币","vrtEName":"100JPY/CNY","price":"4.8120","bp":"-12","bpDouble":-12.0},
+  {"vrtCode":"AUD/CNY","vrtName":"澳元/人民币","vrtEName":"AUD/CNY","price":"4.6911","bp":"8","bpDouble":8.0}
+ ]}
