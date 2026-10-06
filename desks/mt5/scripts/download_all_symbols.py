@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk.config import desk_root, terminal_path
 from mt5desk.universe_registry import TIMEFRAMES as CANONICAL_TIMEFRAMES
 from mt5desk.universe_registry import cost_fields_from_symbol_info, merge
+from research.parquet_publication import atomic_parquet
 
 # PATHS COME FROM `desk_root()`, NEVER A USERNAME (LAWS §1 anti-hardcode; the helper's own
 # docstring records that twenty-one files hardcoded `C:\\Users\\dell\\...`, "which meant the desk
@@ -357,7 +358,7 @@ for i, (sym_info, tf) in enumerate(jobs):
     df.sort_index(inplace=True)
 
     pq_path = PARQUET_DIR / f"{name}_{tf}.parquet"
-    df.to_parquet(pq_path, engine="pyarrow")
+    atomic_parquet(df, pq_path, engine="pyarrow")
     # A prior negative verdict must not survive after the chart has been filled.
     cell_verdicts[f"{name}_{tf}"] = {
         "verdict": "FILLED", "at": datetime.now(UTC).isoformat(timespec="seconds"),

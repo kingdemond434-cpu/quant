@@ -58,6 +58,7 @@ sys.path.insert(0, str(ROOT))
 from libs.data.pit import census, is_stamped  # noqa: E402
 from libs.data.pit_certificate import CERT_DIR  # noqa: E402
 from libs.data.pit_certificate import census as cert_census  # noqa: E402
+from libs.tiers import data_os  # noqa: E402
 
 #: BOTH TREES THE COMPILER READS, not one. `miner_candidate_compiler.INTEL_ROOTS` globs
 #: desks/mt5/data/intelligence AND data/intelligence, and the two LLM seats donate to the
@@ -72,6 +73,36 @@ OUT = ROOT / "desks" / "mt5" / "reports" / "PIT_CENSUS.json"
 HIGH_WATER = ROOT / "desks" / "mt5" / "data" / "pit_high_water.json"
 CERTIFICATES = CERT_DIR
 INIT_COMMAND = "python scripts/check_pit.py --init"
+#: THE DATASET REGISTRIES whose every entry must carry a declared publication lag (2026-09-30).
+#: Both copies: `tier_s.DATA_REGISTRY` reads the first, the desk root carries the second.
+REGISTRIES = (ROOT / "desks" / "mt5" / "data" / "data_registry.json",
+              ROOT / "desks" / "mt5" / "data_registry.json")
+
+
+def lag_census() -> dict[str, Any]:
+    """KNOWN BY DATE, PER DATASET: every registered dataset against `data_os.declared_lag` (its
+    own `pit.publication_lag_days`, else `data_os.PUBLICATION_LAGS`). A dataset with neither can
+    only be joined by the date it describes, so it FAILS this gate by name.
+
+    THE RATCHET AT ITS TIGHTEST. Every registered dataset carried a declared lag the day this was
+    built, so the tolerance is zero and there is nothing to loosen: no floor file, no flag. A
+    cadence default (`pit_stamp.DEFAULT_LAG_DAYS`) is NOT a declaration -- it is the guess this
+    exists to end. An unreadable registry is UNMEASURED and says so; it is not a pass."""
+    reg: dict[str, Any] = {}
+    read: list[str] = []
+    for p in REGISTRIES:
+        try:
+            doc = json.loads(p.read_text("utf-8"))
+        except (OSError, ValueError):
+            continue
+        ds = doc.get("datasets") if isinstance(doc, dict) else None
+        if isinstance(ds, dict):
+            read.append(p.relative_to(ROOT).as_posix() if p.is_relative_to(ROOT) else str(p))
+            for k, v in ds.items():
+                reg.setdefault(str(k), v if isinstance(v, dict) else {})
+    if not read:
+        return {"status": "UNMEASURED", "why": "no data_registry.json readable", "undeclared": []}
+    return {"status": "MEASURED", "registries": read, **data_os.lag_census(reg)}
 
 
 def _rows(path: Path) -> list[Any]:
@@ -140,7 +171,7 @@ def run() -> dict[str, Any]:
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "total": total,
            "per_source": per_source,
            "unstamped_sources": sorted(s for s, c in per_source.items()
-                                       if (c["stamped_frac"] or 0.0) < 0.5),
+                                       if int(c.get("unstamped_rows") or 0) > 0),
            # WHICH TREES THIS CENSUS ACTUALLY READ. A stamped fraction is meaningless without the
            # population it was taken over, and this census read one of the compiler's two trees
            # until 2026-09-09 -- so the number excluded every LLM seat donation while the judge's
@@ -162,7 +193,10 @@ def run() -> dict[str, Any]:
            # THE DATASET HALF. A stamped row says when the desk could have known it; a certificate
            # says whether the DATASET it came from survived the seven adversarial questions. Both
            # are published here because a pipeline can be perfect at one and empty at the other.
-           "certificates": cert_census(CERTIFICATES)}
+           "certificates": cert_census(CERTIFICATES),
+           # KNOWN BY DATE: every registered dataset's declared publication lag. An undeclared
+           # one fails `main` by name -- see `lag_census`.
+           "publication_lags": lag_census()}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1), "utf-8")
     return doc
@@ -242,6 +276,14 @@ def main(argv: list[str] | None = None) -> int:
     baseline_path = Path(a.baseline) if a.baseline else HIGH_WATER
 
     doc = run()
+    lags = doc["publication_lags"]
+    lag_fail = bool(lags.get("undeclared"))
+    for name in lags.get("undeclared") or []:
+        print(f"PIT LAG UNDECLARED: dataset {name!r} has no publication lag (data_os."
+              "PUBLICATION_LAGS or its registry pit.publication_lag_days) -- it can only be "
+              "joined by the date it describes, which is a look-ahead")
+    if lags.get("status") != "MEASURED":
+        print(f"PIT lag census UNMEASURED: {lags.get('why')}")
     rows = int(doc["total"]["rows"])
     if rows == 0:
         print(f"PIT census UNMEASURED: no discovery rows under {INTEL}. That is not a pass and "
@@ -293,6 +335,10 @@ def main(argv: list[str] | None = None) -> int:
     if frac + 1e-9 < floor:
         print(f"PIT REGRESSION: stamped fraction {frac:.1%} below floor {floor:.1%}")
         return 1
+    if lag_fail:
+        return 1
+    print(f"PIT lags: {len(lags.get('declared') or [])} of {lags.get('n', 0)} registered "
+          "dataset(s) declare a publication lag")
     return 0
 
 

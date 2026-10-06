@@ -56,13 +56,18 @@ def validate_hypothesis(hypothesis_id: str) -> ValidationResult:
     # 5. Classify as validity/power
     # 6. Return structured result
 
-    # This is a placeholder - the real work happens in qquant_gates.py
+    # NOT A PLACEHOLDER VERDICT ANY MORE (2026-09-30). This returned status "PENDING", which a
+    # reader takes for "queued and coming", while nothing here ever runs the gates: the ten-gate
+    # judgement is the sealed gauntlet's (desks/mt5/scripts/external_gauntlet.py), reached through
+    # the docket. The honest reading of this function is UNMEASURED, with the reason carried in
+    # power_deficiencies so it travels with the result.
     return ValidationResult(
         hypothesis_id=hypothesis_id,
         gates={},
         validity_pass=False,
-        power_deficiencies=[],
-        status="PENDING"
+        power_deficiencies=["UNMEASURED: this module runs no gate; the sealed gauntlet judges "
+                            "hypotheses that reach the docket"],
+        status="UNMEASURED"
     )
 
 

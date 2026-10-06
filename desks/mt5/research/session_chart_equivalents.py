@@ -42,6 +42,7 @@ from pathlib import Path
 from typing import Any
 
 BASE = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(BASE.parent.parent))
 SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
 DOCKET = BASE / "data" / "hypotheses" / "external_survivors.json"
 UNIVERSE = BASE / "data" / "universe"
@@ -224,10 +225,21 @@ def _parent_mechanism() -> dict[str, dict[str, Any]]:
     return out
 
 
+def _read_docket() -> list | dict:
+    try:
+        docket = json.loads(DOCKET.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return []
+    if isinstance(docket, list) or (isinstance(docket, dict)
+                                   and isinstance(docket.get("survivors"), list)):
+        return docket
+    raise ValueError("Existing hypothesis docket has an invalid shape; publication withheld")
+
+
 def expand() -> dict[str, Any]:
     """Variants of every certified mechanism, at hours and charts it has not been tried on."""
     surv = (_read(SURVIVORS) or {}).get("survivors") or {}
-    docket = _read(DOCKET, [])
+    docket = _read_docket()
     if isinstance(docket, dict):
         docket = docket.get("survivors", [])
     known = {_cell(str(r.get("symbol")), str(r.get("family")), r.get("params") or {})
@@ -351,14 +363,36 @@ def main(argv: list[str] | None = None) -> int:
         print("  report only; re-run with --apply to append them to the docket")
         return 0
 
-    docket = _read(DOCKET, [])
-    if isinstance(docket, dict):
-        docket.setdefault("survivors", []).extend(doc["new"])
-        n = len(docket["survivors"])
-    else:
-        docket = list(docket) + doc["new"]
-        n = len(docket)
-    DOCKET.write_text(json.dumps(docket, indent=1), encoding="utf-8")
+    from libs.data.pit import stamp_or_refuse
+
+    doc["new"], refused = stamp_or_refuse(doc["new"], "session_chart_equivalents")
+    if refused:
+        raise ValueError(f"Chart expansion refused {len(refused)} unstamped candidates")
+    from research.job_lock import exclusive_job
+    from research.merge_hypotheses import _write_docket_atomically
+
+    with exclusive_job("merge_hypotheses", need_mb=14000) as owned:
+        if not owned:
+            raise RuntimeError("Canonical docket writer lane or memory admission refused")
+        docket = _read_docket()
+        existing = docket["survivors"] if isinstance(docket, dict) else docket
+        known = {_cell(str(row.get("symbol") or row.get("sym") or ""),
+                       str(row.get("family") or ""), row.get("params") or {})
+                 for row in existing if isinstance(row, dict)}
+        added = []
+        for row in doc["new"]:
+            identity = _cell(str(row.get("symbol") or row.get("sym") or ""),
+                             str(row.get("family") or ""), row.get("params") or {})
+            if identity not in known:
+                known.add(identity)
+                added.append(row)
+        if isinstance(docket, dict):
+            docket.setdefault("survivors", []).extend(added)
+            n = len(docket["survivors"])
+        else:
+            docket = list(docket) + added
+            n = len(docket)
+        _write_docket_atomically(DOCKET, docket)
     print(f"  appended; docket is now {n} row(s)")
     return 0
 

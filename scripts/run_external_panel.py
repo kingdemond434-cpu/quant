@@ -293,6 +293,7 @@ def _ask(base_url: str, key: str, model: str, messages: list[dict[str, str]],
         except urllib.error.HTTPError as e:
             if e.code not in _FREE_TRANSIENT or i >= attempts - 1:
                 raise
+            e.close()  # a discarded retry response still owns a file-like body
         except (KeyError, TypeError):
             # 200 whose payload has no usable choices: absent key -> KeyError('choices');
             # `"choices": null` -> TypeError on the [0]. Both mean the upstream failed inside

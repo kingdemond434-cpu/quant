@@ -31,6 +31,39 @@ from libs.moat import registry as R  # noqa: E402
 from research import research_roi as rr  # noqa: E402
 
 
+def test_recipe_variants_reuse_ancestors_without_changing_credit(monkeypatch):
+    calls = []
+
+    def provenance(kind, cid, *, conn):
+        calls.append((kind, cid))
+        return [{"from_kind": "source", "from_id": "source-a"}]
+
+    monkeypatch.setattr(rr.R, "provenance_of", provenance)
+    rows = {"candidates": [{"id": "candidate-a", "symbol": "EURUSD", "family": "carry",
+                            "generator": "miner-a"}]}
+    survivors = [{"cell": key, "symbol": "EURUSD", "family": "carry"}
+                 for key in ("recipe-one", "recipe-two")]
+    result = rr.credit_walk(None, rows, survivors, {"recipe-one": 0.1, "recipe-two": 0.2})
+    assert calls == [("cell", "candidate-a")]
+    assert result["by_source"]["source-a"]["survivors"] == 2.0
+    assert result["by_source"]["source-a"]["delta_elogw"] == pytest.approx(0.3)
+    assert result["by_generator"]["miner-a"]["cells"] == ["recipe-one", "recipe-two"]
+
+
+def test_compact_ancestor_cache_preserves_original_edge_positions(monkeypatch):
+    monkeypatch.setattr(rr.R, "provenance_of", lambda *args, **kwargs: [
+        {"from_kind": "trial", "from_id": "trial-a"},
+        {"from_kind": "discovery", "from_id": "discovery-a"},
+        {"from_kind": "source", "from_id": "source-a"},
+        {"from_kind": "source", "from_id": "source-a"}])
+    rows = {"candidates": [{"id": "candidate-a", "symbol": "EURUSD", "family": "carry"}]}
+    result = rr.credit_walk(None, rows, [{"cell": "candidate-a", "symbol": "EURUSD",
+                                        "family": "carry"}], {"candidate-a": 0.2})
+    assert result["by_source"]["source-a"]["max_hops"] == 3
+    assert result["by_source"]["source-a"]["survivors"] == 1
+    assert result["by_discovery"]["discovery-a"] == 1
+
+
 @pytest.fixture
 def rig(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """A tmp registry and tmp artifacts: nothing reads or writes the box that trades."""
@@ -46,6 +79,21 @@ def rig(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 def _gate_ledger(tmp: Path, rows: list[dict]) -> None:
     rr.GATE_LEDGER.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+
+
+def test_family_trials_streams_all_rows_without_loading_the_ledger(rig, monkeypatch):
+    rr.GATE_LEDGER.write_text(
+        '\n{"family":"carry","passed":true}\ninvalid\n'
+        '{"family":"carry","passed":false}\n{"passed":true}', encoding="utf-8")
+
+    def refuse_bulk_read(*args, **kwargs):
+        raise AssertionError("trial ledger must be streamed")
+
+    monkeypatch.setattr(Path, "read_text", refuse_bulk_read)
+    counts, error = rr.family_trials()
+    assert error is None
+    assert counts == {"carry": {"judged": 2, "passed": 1},
+                      "UNKNOWN": {"judged": 1, "passed": 1}}
 
 
 def _two_hop_survivor() -> tuple[str, str, str]:

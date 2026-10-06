@@ -18,6 +18,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
 for _p in (str(DESK), str(ROOT)):
@@ -49,19 +51,11 @@ def test_the_venue_minimum_is_per_symbol_and_not_a_literal() -> None:
             f"{share_cfd} requires 0.1 on this venue; 0.01 would be rejected, not small")
 
 
-def test_gold_keeps_its_higher_desk_floor_on_the_gold_path() -> None:
-    """A DESK policy floor is not a BROKER floor, and they are enforced in different places.
-
-    The principal set gold at 0.02 on 2026-09-07. That is a policy decision and it lives on the
-    gold path (`gold_min_lot` / `gold_lot`), which is where it has always been enforced.
-    `venue_min_lot` answers the other question -- the smallest ticket the BROKER will accept --
-    and for gold that is 0.01. Folding the policy floor into the venue one raised gold's floor
-    inside `promoted_lot`, a path that has always floored gold at 0.01, and the stop-aware
-    sizing fence caught it immediately.
-    """
-    assert core.gold_min_lot() == 0.02, "the principal's gold floor stands"
+def test_gold_uses_the_authorized_baseline_without_a_special_floor() -> None:
+    """The principal removed the 0.02 exception; the broker minimum remains authoritative."""
+    assert core.gold_min_lot() == 0.01, "the principal removed the special gold floor"
     assert core.venue_min_lot(core.GOLD_SYMBOL) == 0.01, "this is the VENUE's number"
-    assert core.gold_lot(607.68, 20.0) >= 0.02, "the gold path enforces the policy floor"
+    assert core.gold_lot(607.68, 20.0) >= 0.01, "the venue baseline remains"
 
 
 def test_an_unknown_symbol_falls_back_to_the_desk_floor_and_still_trades() -> None:
@@ -98,3 +92,13 @@ def test_the_venue_maximum_still_caps_the_floor() -> None:
                            tick_size=0.00001, volume_min=0.5, volume_step=0.5,
                            volume_max=0.2, risk_frac=0.03, live_n=0)
     assert lots == 0.2
+
+
+@pytest.fixture(autouse=True)
+def _legacy_floors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These pin the PRE-2026-09-29 floors, which remain the documented revert path
+    (data/ALLOCATOR_SOVEREIGN.json {"enabled": false}). Sovereign behaviour is pinned in
+    test_allocator_sovereignty.py."""
+    import mt5desk.decision_core as _dc
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN", False)
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN_FILE", _dc._DESK / "data" / "__absent__.json")

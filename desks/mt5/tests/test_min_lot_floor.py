@@ -199,19 +199,13 @@ def test_nothing_else_on_the_desk_inherits_gold_s_floor() -> None:
             f"the sizer every instrument on the desk shares")
 
 
-# ------------------------------------------------- the GOLD-ONLY exception (principal 2026-09-07)
-def test_gold_has_its_own_higher_floor_and_nothing_else_does() -> None:
-    """Principal: "make gold 0.02 lots instead of 0.01 as exception per trade these live sleeves
-    only". The word that carries the risk is EXCEPTION -- it must not leak to the other lanes.
-
-    The same instruction was applied desk-wide earlier the same day and reverted within hours,
-    because a floor on every promoted sleeve doubles the overshoot on the whole book rather than
-    on the one part of it with forward evidence. This test is what keeps the second attempt
-    scoped where the first one was not.
-    """
-    assert dc.gold_min_lot() > dc.min_lot(), "the gold exception is not above the desk floor"
-    assert dc.gold_min_lot() == pytest.approx(0.02)
-    assert dc.min_lot() == pytest.approx(0.01), "the DESK floor moved; only gold was to change"
+# ------------------------------------------------- principal: allocator sizes from 0.01 baseline
+def test_gold_and_other_lanes_use_the_authorized_baseline(tmp_path, monkeypatch) -> None:
+    """The principal removed the former 0.02 gold exception; sizing still follows policy."""
+    monkeypatch.setattr(dc, "GOLD_MIN_LOT_FILE", tmp_path / "GOLD_MIN_LOT.json")
+    monkeypatch.setattr(dc, "MIN_LOT_FILE", tmp_path / "MIN_LOT.json")
+    assert dc.gold_min_lot() == pytest.approx(0.01)
+    assert dc.min_lot() == pytest.approx(0.01)
 
     small = 300.0
     assert dc.gold_lot(small) == pytest.approx(dc.gold_min_lot())
@@ -273,3 +267,13 @@ def test_the_heat_ledger_bills_gold_at_its_own_floor() -> None:
             assert lot >= dc.gold_min_lot() - 1e-12, (dist, h_i, lot)
     assert '_floor = gold_min_lot() if s.get("lot") == "auto" else min_lot()' in src, (
         "the floor-binding log line reports the wrong floor for the gold lane")
+
+
+@pytest.fixture(autouse=True)
+def _legacy_floors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These pin the PRE-2026-09-29 floors, which remain the documented revert path
+    (data/ALLOCATOR_SOVEREIGN.json {"enabled": false}). Sovereign behaviour is pinned in
+    test_allocator_sovereignty.py."""
+    import mt5desk.decision_core as _dc
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN", False)
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN_FILE", _dc._DESK / "data" / "__absent__.json")

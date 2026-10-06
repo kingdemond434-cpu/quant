@@ -46,6 +46,15 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from mt5desk import families, macro_regime  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from libs.tiers import data_os  # noqa: E402
+
+#: KNOWN-BY-DATE (2026-09-30): the family shifts the anchors by whole days before its causal
+#: join, and it defaulted to ONE -- short of the declared `cross_asset_anchors` lag (a day plus
+#: the broker offset), so a print reached the last hours of the broker day before FRED posted it.
+#: The shift is now the declared lag rounded UP to whole days.
+PUB_LAG_DAYS = -(-int(data_os.lag_of("cross_asset_anchors").total_seconds()) // 86400)
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
@@ -92,7 +101,7 @@ def main() -> int:
 
         for hold_name, hold_bars in HOLDS.items():
             sigs = families.family_macro_swing(
-                h1, series, hold_bars=hold_bars, sign=sign)
+                h1, series, hold_bars=hold_bars, sign=sign, pub_lag_days=PUB_LAG_DAYS)
             res = run_backtest(h1, sigs, costs)
             trades = res.trades
             n = len(trades)

@@ -75,6 +75,16 @@ from mt5desk.family_formula import family_formula  # noqa: E402
 
 from libs.research import alpha_fitness as af  # noqa: E402
 from libs.research import alpha_grammar as ag  # noqa: E402
+
+
+def _bias() -> dict:
+    """The learned grammar (Tier S layers 22/44): operator weights and recurring primitives from
+    judged formulas, or {} (the uniform draw) when absent or stale."""
+    try:
+        from libs.tiers.grammar_bias import bias
+        return bias()
+    except Exception:
+        return {}
 from libs.research import generators as gen  # noqa: E402
 from libs.research import search_populations as spop  # noqa: E402
 from research import proposer_common as pc  # noqa: E402
@@ -906,7 +916,7 @@ def evolve(sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFra
                     b = parents[int(rng.integers(len(parents)))]
                     e, origin = ag.crossover(a[0], b[0], rng, allow_drivers), "crossover"
                 else:
-                    e, origin = ag.mutate(a[0], rng, allow_drivers), "mutate"
+                    e, origin = ag.mutate(a[0], rng, allow_drivers, **_bias()), "mutate"
                 sm = a[1] if rng.random() < 0.8 else str(rng.choice(SIDE_MODES))
             k = f"{ag.key(e)}|{sm}"
             if k in seen or ag.complexity(e) > 14 or isinstance(e, str):
@@ -1012,7 +1022,7 @@ def _population_weights() -> tuple[dict[str, float] | None, str]:
 def random_or_canon(rng: np.random.Generator, allow_drivers: bool) -> ag.Expr:
     if rng.random() < 0.15:
         return json.loads(json.dumps(list(ag.CANON.values())[int(rng.integers(len(ag.CANON)))]))
-    return ag.random_expr(rng, DEPTH, allow_drivers)
+    return ag.random_expr(rng, DEPTH, allow_drivers, **_bias())
 
 
 def reward_term_shares(rows: list[dict]) -> dict[str, object]:

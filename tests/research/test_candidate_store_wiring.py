@@ -104,7 +104,9 @@ def test_promotion_queue_never_falls_back_to_rejected_candidates(monkeypatch):
     monkeypatch.setattr(run_promotion_queue, "_DB", Path(__file__))  # any existing path
     monkeypatch.setattr(
         "libs.autodiscovery.memory.CandidateStore", lambda _db: store, raising=False)
-    monkeypatch.setattr("libs.store.connection.Database", lambda *a, **k: object(), raising=False)
+    from contextlib import nullcontext
+    monkeypatch.setattr("libs.store.connection.Database",
+                        lambda *a, **k: nullcontext(object()), raising=False)
 
     assert run_promotion_queue._candidates() == [], (
         "a store with 1,673 rejects and 0 survivors produced promotion candidates -- the "
@@ -131,7 +133,9 @@ def test_generation_diversity_deliberately_keeps_all(monkeypatch):
     monkeypatch.setattr(run_generation_diversity, "_DB", Path(__file__))
     monkeypatch.setattr(
         "libs.autodiscovery.memory.CandidateStore", lambda _db: store, raising=False)
-    monkeypatch.setattr("libs.store.connection.Database", lambda *a, **k: object(), raising=False)
+    from contextlib import nullcontext
+    monkeypatch.setattr("libs.store.connection.Database",
+                        lambda *a, **k: nullcontext(object()), raising=False)
 
     rows, _gens = run_generation_diversity._batch()
     assert len(rows) == 200, "generation diversity must sample rejects too -- it measures the "\
@@ -163,7 +167,9 @@ def test_a_raising_store_is_reported_with_its_exception(monkeypatch):
         raise AttributeError("'PosixPath' object has no attribute 'execute'")
 
     monkeypatch.setattr("libs.autodiscovery.memory.CandidateStore", _boom, raising=False)
-    monkeypatch.setattr("libs.store.connection.Database", lambda *a, **k: object(), raising=False)
+    from contextlib import nullcontext
+    monkeypatch.setattr("libs.store.connection.Database",
+                        lambda *a, **k: nullcontext(object()), raising=False)
 
     caps, _names, err = max_audit._scored_capacities()
     assert caps == []

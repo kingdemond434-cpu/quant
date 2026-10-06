@@ -270,9 +270,26 @@ def _run_key(run: dict[str, Any]) -> str | None:
         return None
 
 
+def integrity_gate() -> tuple[Any, str]:
+    """The research-integrity door the enrolment engine applies, loaded the same way."""
+    try:
+        from admission_integrity import IntegrityGate
+    except ImportError:
+        try:
+            from research.admission_integrity import (  # type: ignore[no-redef,unused-ignore]
+                IntegrityGate,
+            )
+        except Exception as exc:
+            return None, f"admission_integrity unimportable: {type(exc).__name__}: {exc}"
+    try:
+        return IntegrityGate.load(), ""
+    except Exception as exc:
+        return None, f"integrity door unreadable: {type(exc).__name__}: {exc}"
+
+
 def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
            stamps: dict[tuple[str, str, str, str], str],
-           now: datetime | None = None) -> dict[str, Any]:
+           now: datetime | None = None, gate: Any = None) -> dict[str, Any]:
     """Per certificate: does it have a clock, and how long did it take to get one?
 
     LATENCY IS `enrolled_at - gated_at`, both measured. A row the engine wrote before
@@ -324,6 +341,19 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
             if g is not None:
                 entry["clockless_hours"] = round(max(0.0, (t - g).total_seconds() / 3600.0), 4)
             entry["why"] = "NO CLOCK: certified and accruing no forward evidence"
+            # HELD, NOT MISSING: the research-integrity door decided this certificate may not
+            # START a clock yet (placebo alarm, or no independent replication). That is a named
+            # decision with its reason, not a stall -- it is published apart from `missing` and
+            # never counts as OVERDUE. Scalp recipes run on their own lane's clock.
+            is_scalp = str(run.get("certificate") or "").startswith("scalp.")
+            if gate is not None and not is_scalp:
+                reason = gate.hold(str(run.get("certificate") or ""),
+                                   symbol=run.get("symbol"), family=run.get("family"),
+                                   selector=run.get("selector"), side=run.get("side"),
+                                   params=run.get("params"))
+                if reason:
+                    entry["held"] = reason
+                    entry["why"] = reason
         # IS THE CLOCK ACTUALLY RUNNING? Asked LAST so the blocker's reason wins over the latency
         # note above: a row that is both unstamped and blocked is a blocked row, and the reader
         # needs the blocker.
@@ -355,7 +385,8 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
                 entry["blocker"] = str(row.get("last_error") or "")[:400] or state
         seen.append(entry)
     enrolled = [e for e in seen if e["enrolled"]]
-    missing = [e for e in seen if not e["enrolled"]]
+    held = [e for e in seen if not e["enrolled"] and e.get("held")]
+    missing = [e for e in seen if not e["enrolled"] and not e.get("held")]
     overdue = [e for e in missing
                if isinstance(e["clockless_hours"], float) and e["clockless_hours"] > CYCLE_HOURS]
     # THE POPULATION THE FENCE FAILS ON. Enrolled, not decided, and accruing nothing.
@@ -368,6 +399,7 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
         by_status[name] = by_status.get(name, 0) + 1
     return {
         "n_certificates": len(seen), "n_enrolled": len(enrolled), "n_missing": len(missing),
+        "n_held": len(held), "held": held,
         "n_overdue": len(overdue),
         "n_accruing": len(accruing), "n_blocked": len(blocked), "n_silent": len(silent),
         "silent_tick_hours": SILENT_TICK_HOURS,
@@ -435,7 +467,8 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
     runs, dropped, why = certificates()
     clocks = clock_rows()
     stamps = certification_stamps()
-    body = census(runs, clocks, stamps, now)
+    gate, gate_why = integrity_gate()
+    body = census(runs, clocks, stamps, now, gate=gate)
     # A SILENT ENGINE IS REPAIRED THE SAME WAY A MISSING CLOCK IS: by running the engine now, so
     # its failure lands in this leg's tail (and in `logs/shadow.log`) instead of in nobody's.
     rep = (repair(body["missing"] + body["silent"], deadline) if do_repair and not why
@@ -443,7 +476,7 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
     if rep.get("status") in {"RAN", "RAN_NONZERO"}:
         # RE-MEASURE AFTER THE REPAIR, because the whole point is the state AFTER the sweep. A
         # report that shows the gap it just closed is a report that will be read as a defect.
-        body = census(runs, clock_rows(), stamps, now)
+        body = census(runs, clock_rows(), stamps, now, gate=gate)
     payload: dict[str, Any] = {
         "at": _now(now).isoformat(timespec="seconds"),
         "status": UNMEASURED if why else "MEASURED",
@@ -467,6 +500,8 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
         "dropped_at_admission": dropped[:50],
         "repair": rep,
         "lanes_read": list(LANE_FILES),
+        "integrity": (gate.summary() if gate is not None
+                      else {"status": UNMEASURED, "why": gate_why}),
         "cycle_hours": CYCLE_HOURS,
     }
     payload.update(body)
@@ -479,7 +514,7 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
             from libs.ops.events import leg_events
             leg_events("forward_enrolment", "OK", certificates=payload["n_certificates"],
                        enrolled=payload["n_enrolled"], missing=payload["n_missing"],
-                       overdue=payload["n_overdue"],
+                       overdue=payload["n_overdue"], held=payload.get("n_held"),
                        accruing=payload.get("n_accruing"), blocked=payload.get("n_blocked"))
         except Exception as exc:
             payload["events"] = f"UNMEASURED: {type(exc).__name__}: {exc}"

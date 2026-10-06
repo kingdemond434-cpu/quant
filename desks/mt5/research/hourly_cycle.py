@@ -305,12 +305,18 @@ def publish_state() -> dict:
     publish; that is reported as a skip, never as a failure, so it cannot become noise that
     trains a reader to ignore this leg.
     """
+    # STEP 1 -- THE GATE VERDICT DIGEST, written just before the publisher runs so the push
+    # carries this hour's reasons (2026-09-30). The ledger and the sweep report it digests are
+    # gitignored; the digest is the small committed answer to "which gate killed what, and why".
+    digest = _gate_verdict_digest()
     script = BASE / "scripts" / "sync_shadow_to_git.ps1"
     if not script.exists():
-        return {"skipped": "sync_shadow_to_git.ps1 is absent on this host"}
+        return {"skipped": "sync_shadow_to_git.ps1 is absent on this host",
+                "gate_verdict_digest": digest}
     powershell = shutil.which("powershell") or shutil.which("pwsh")
     if not powershell:
-        return {"skipped": "no PowerShell on this host -- publishing is the trading box's job"}
+        return {"skipped": "no PowerShell on this host -- publishing is the trading box's job",
+                "gate_verdict_digest": digest}
     try:
         r = subprocess.run([powershell, "-NoProfile", "-NonInteractive",
                             "-ExecutionPolicy", "Bypass", "-File", str(script)],
@@ -318,14 +324,50 @@ def publish_state() -> dict:
                            timeout=600, check=False)
     except Exception as exc:
         print(f"publish_state FAILED to start: {type(exc).__name__}: {exc}", flush=True)
-        return {"error": f"{type(exc).__name__}: {exc}"}
+        return {"error": f"{type(exc).__name__}: {exc}", "gate_verdict_digest": digest,
+                "state_flow": _state_flow()}
     tail = (r.stdout or r.stderr or "").strip().splitlines()[-3:]
     if r.returncode != 0:
         # LOUD, because this is the leg that decides whether anybody can SEE the desk. A silent
         # publisher failure is the one that costs eleven days.
         print(f"publish_state FAILED rc={r.returncode}: {' | '.join(tail)}", flush=True)
+    # STEP 3 -- did the state actually leave the box? Measured on origin, not on the exit code.
     return {"exit_code": r.returncode, "tail": tail,
-            "at": datetime.now(UTC).isoformat(timespec="seconds")}
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "gate_verdict_digest": digest, "state_flow": _state_flow()}
+
+
+def _gate_verdict_digest() -> dict:
+    """Write desks/mt5/reports/GATE_VERDICT_DIGEST.json; report its shape. Never raises."""
+    try:
+        import gate_verdict_digest
+        doc = gate_verdict_digest.build()
+        gate_verdict_digest.write(doc)
+        return {"status": doc.get("status"),
+                "ledger_rows": (doc.get("ledger") or {}).get("rows"),
+                "sweep_verdicts": (doc.get("latest_sweep") or {}).get("verdicts")}
+    except Exception as exc:
+        print(f"gate verdict digest FAILED: {type(exc).__name__}: {exc}", flush=True)
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
+def _state_flow() -> dict:
+    """DID THE STATE ACTUALLY LEAVE THE BOX? (2026-09-30).
+
+    The publisher's exit code is not the answer: the last box state sync reached origin on
+    2026-09-12 and the box went on committing locally and exiting for two weeks. This measures
+    the outcome on origin itself, writes desks/mt5/reports/BOX_STATE_FLOW.json (read by
+    stall_watch every ten minutes) and emits STATE_FLOW_STALLED when local state is fresh and
+    origin's copy is not. Never raises.
+    """
+    try:
+        from libs.ops import state_publication
+        doc = state_publication.publish_flow(REPO)
+        return {k: doc.get(k) for k in ("verdict", "why", "published_age_h",
+                                        "local_commits_not_on_origin")}
+    except Exception as exc:
+        print(f"state flow meter FAILED: {type(exc).__name__}: {exc}", flush=True)
+        return {"error": f"{type(exc).__name__}: {exc}"}
 
 
 def _tape_main() -> int:
@@ -515,6 +557,18 @@ def _bandit_budget(leg: str, base: int) -> tuple[int, dict]:
                            "why": f"research_budget unavailable: {type(exc).__name__}: {exc}"}
 
 
+def _bandit_observe(leg: str, rec: dict) -> dict | None:
+    """After a budgeted leg ran: its output onto the budget's trial ledger, when the run was a
+    trial unit (research_budget.observe). This is the measurement the budget's contract is
+    judged on; never fails the pass."""
+    try:
+        import research_budget
+        return research_budget.observe(leg, rec)
+    except Exception as exc:
+        print(f"research_budget observe {leg}: {type(exc).__name__}: {exc}", flush=True)
+        return None
+
+
 def deepen() -> dict:
     """Drain the deepening queue -- THE conversion bottleneck, and it was scheduled nowhere.
 
@@ -556,9 +610,11 @@ def deepen() -> dict:
         _base = int(getattr(deepening_worker, "DEFAULT_LIMIT", 0))
         _lim, _rec = _bandit_budget("deepen", _base)
         _limit = 0 if _base <= 0 else max(1, int(_lim))
-        return {"exit_code": deepening_worker.main(["--limit", str(_limit)]),
+        _rc = deepening_worker.main(["--limit", str(_limit)])
+        return {"exit_code": _rc,
                 "limit": _limit, "limit_is_sentinel": _base <= 0,
                 "bandit_factor": _rec.get("factor"),
+                "budget_trial": _bandit_observe("deepen", _rec),
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
     except SystemExit as exc:                       # argparse exits rather than returning
         return {"exit_code": int(exc.code or 0),
@@ -826,27 +882,56 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
+    # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
+    # ledger append; it must run every hour, so it is core.
+    "dsr_inputs",
+    # Capacity planning and the observed verdict rate must run before every judge pass;
+    # the heavy-plan rotation left its report stale while the gauntlet kept running.
+    "judging_throughput",
+    # A SILENT HALT COSTS A WINDOW AN HOUR (PR #130 audit): the placement-interlock fence ran only
+    # in the law gate's `--rotate` rotation, which reaches a given state fence every few hours.
+    # It reads three small files and writes one, so it runs on BOTH plans, every hour.
+    "placement_interlock",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
     # a certificate minted by that task would wait for one. It reads two small JSON files.
     "canon_publication",
+    # THE LOCKBOX v4 RE-CERTIFICATION LEDGER (pass-2 P0, 2026-09-30), right after the seal it
+    # reads: per canon certificate, lockbox Sharpe before and after the re-mint. Two small JSON
+    # reads, seconds.
+    "lockbox_recert",
     # The cheap half of the Tier-1 B rows: each reads artifacts and writes one, in well under a
     # minute, and the closed-loop attestation that runs in this same plan reads three of them.
     # `regime_hierarchy` and `representation_discovery` fit models and stay on the heavy plan.
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
-    "producer_census", "productivity_census", "preregistration",
+    "producer_census", "productivity_census", "producer_breadth", "preregistration",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
     "alpha_rank", "factory_contracts",
     "cycle_pricing", "causal_invariance",
+    # The bandit's shares, re-derived hourly before the legs that spend them (Tier S).
+    "research_bandit",
+    # THE TIER S DOOR'S WRITER, EVERY HOUR (2026-09-30): the promotion door fails closed on a
+    # verdict older than 6h, so this leg is on the core clock and exempt from rotation
+    # (libs/ops/leg_rotation.ALWAYS_RUN). ~10 min measured end to end under its 1,500 s cap.
+    # THE RESEARCH-LIVE IDENTITY JOIN, before the door that lists its mismatches: a reader of
+    # four artifacts, seconds, so it rides the core clock with the door (`tier_s`).
+    "research_live_identity",
+    "tier_s",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
     "source_evig", "source_drain", "pack_cells", "ground_depth", "timeframe_fanout",
     "fill_recorder", "cost_surfaces",
+    # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
+    # why cells never BUILT, the pathology report classifies the live book's bad fills, the
+    # contracts leg reads every leg's declared experiment against its own report, and the health
+    # board rolls every organ into one verdict. It runs last so it reads this pass.
+    "build_failure_bank", "trade_pathology", "experiment_contracts", "health_board",
     "actor_pressure", "destroyer_pool", "quantbench",
     "evidence_chain", "identity_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
@@ -860,7 +945,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "frontier_unknowns", "frontier_report", "frontier_ontology", "counterfactual_world",
     "strategy_paths", "reclaim_disk", "archive_tape", "queue_cycle",
     # THE 2026-09-16 BLUEPRINT ORGANS (phases C/D of the Tier-1 ledger), all cheap readers.
-    "axis_registry", "tier1_scorecard", "novelty_gate", "forced_flow_calendar", "breadth_ladder",
+    "axis_registry", "tier1_scorecard", "tier1_gap", "novelty_gate", "forced_flow_calendar",
+    "breadth_ladder",
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
     "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
     "research_api_status", "artifact_chain", "residual_queue", "unseen_frontier",
@@ -877,6 +963,16 @@ CORE_LEGS: frozenset[str] = frozenset({
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
     "ops_redundancy", "forward_evidence_tracker",
+    # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
+    # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
+    "kelly_survival",
+    # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
+    "decay_monitor", "fill_markout",
+    # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
+    # and the plain-English desk health check, each seconds, each writing a report that the
+    # `publish_state` leg right after them carries to origin. Before this the fence rode only the
+    # 48h law-gate rotation and the health check ran on no clock at all.
+    "box_state_freshness", "desk_health",
 })
 
 
@@ -915,6 +1011,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
                      "dukascopy_backfill", "synthetic_usdx",
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
+                     # free public POS/card/location/satellite proxies as PIT series
+                     "alt_proxies",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -923,7 +1021,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
-                     "judge_coverage", "orthogonality_yield", "effective_trials"), "data"),
+                     "judge_coverage", "orthogonality_yield", "effective_trials",
+                     "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
@@ -944,14 +1043,17 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "session_structure"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
-    **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
+    **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
+                     "intake_catchup", "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
                      "experiment_cache", "probation", "axis_proposer", "program_alpha_lane",
                      "trajectory_evolution", "descendants", "card_explosion", "alpha_lineage",
                      "alpha_recombination", "graveyard_resurrection", "discovery_compiler",
-                     "conversion_maximiser", "trend_core",
+                     "conversion_maximiser", "conversion_funnel", "trend_core",
+                     # the anchor/exit grid and the empty-cluster forcer: both mint cells
+                     "htf_anchor", "empty_cluster_forcer",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth"),
@@ -959,11 +1061,18 @@ LEG_DEPARTMENT: dict[str, str] = {
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
                      "stop_reverse", "orthogonality", "blind_reviewer", "synthetic_regimes",
+                     "adversary_evolution", "frontier_map", "market_ecology",
+                     "research_diversity_archive", "execution_science",
                      "evaluator_lab", "lead_replication", "science_controller",
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "clock_accrual", "residual_gate",
-                     "fast_admission", "canon_publication", "placebo_audit", "judging_burndown"),
+                     "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
+                     "lockbox_recert",
+                     # each hunted family's own pipeline on null data: the gates' real
+                     # false-positive rate, per family
+                     "null_lab",
+                     "committees", "rejection_throughput"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -977,14 +1086,18 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # Tier-1 B3/B4: the per-asset world model and the learned representation
                      # lane are both about what the market IS, before anything predicts it.
                      "regime_hierarchy", "representation_discovery",
-                     "event_surprise", "cross_asset_graph", "transmission_engine"), "macro"),
+                     "event_surprise", "cross_asset_graph", "transmission_engine",
+                     # the macro-conditioned dip sweep, read point-in-time through the store
+                     "macro_conditioned_sweep",
+                     # the Alpha Capture substitute: public analyst views -> PIT events
+                     "alpha_capture"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
-                     "net_edge", "cost_truth", "cost_surfaces"),
+                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
@@ -1003,11 +1116,14 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_latency",
                      "alpha_replenishment", "research_dashboard",
                      "research_roi", "experiment_spine", "implementer",
-                     "research_debt", "paradigm_router", "meta_controller",
+                     "research_debt", "paradigm_router", "meta_controller", "research_bandit",
                      "ingestion_exploitation", "coverage_tensor", "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
                      "search_paradigm_census", "producer_census", "productivity_census",
+                     # PRODUCER BREADTH: every producer's reach against what it minted -- the
+                     # machine measuring its own breadth, beside the census it complements.
+                     "producer_breadth",
                      # Tier-1 B1/B7/B10/B11: the release bit, the scientists' league table, the
                      # failure prior and the unified EVIG acquisition are all the machine
                      # measuring and scheduling itself.
@@ -1028,8 +1144,15 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # region, stamped at the registry doors. The machine measuring its
                      # own lineage: meta.
                      "attribution_census",
+                     # WHY CELLS NEVER BUILT, WHAT EACH LEG CLAIMS, AND ONE HEALTH VERDICT: the
+                     # machine measuring its own build path, experiments and organs: meta.
+                     "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
-                     "tier5_acceptance", "mission_control"), "meta"),
+                     "tier5_acceptance", "mission_control", "tier_s",
+                     "research_live_identity",
+                     # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
+                     # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
+                     "unknown_census"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
@@ -1042,6 +1165,15 @@ LEG_DEPARTMENT: dict[str, str] = {
     # world that would be mined seventeen times over if each region hunted them itself.
     **dict.fromkeys(("global_research_os", "acquire_datasets", "source_experiment_census",
                      *GLOBAL_FOREST_LEGS), "regions"),
+    # the free stack (2026-09-30): app rankings, CN forums, JP IR, JP patents, trends, congress,
+    # CoinPaprika (crypto CFDs only), Reddit/Telegram, AKShare/TuShare/BaoStock, catalogues --
+    # a global layer, like the forests above; its proposer mints their direct/indirect cells.
+    "free_stack_hunt": "regions", "free_stack_proposer": "regions",
+    # the factory's own throughput benchmark sits with the factory it measures
+    "factory_throughput": "mathlab",
+    # the world dataset hunter: DBnomics' ~80 providers plus the direct public doors, one
+    # breadth-first page per dataset per visit -- a global layer, like the forests above.
+    "world_dataset_hunt": "regions", "world_macro_proposer": "regions",
     # the forest federation: one department per regional civilization, each its own resident
     **{f"forest_{_fid}": _fid for _fid in FOREST_DEPARTMENTS},
     # the read-only join behind the 24/7 dashboard: it measures nothing new, it only puts what
@@ -1593,13 +1725,33 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
     "acquire_datasets": 1_100,
+    # THE WORLD DATASET HUNTER stops itself at --budget-s 900 and writes its catalog, registry
+    # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
+    # Its per-dataset cursor means a short pass still advances the frontier.
+    "world_dataset_hunt": 1_020,
+    # ITS CONSUMER mints world_macro_state cells from the hunter's exposure and stops itself at
+    # --budget-s 900; a symbol cursor carries the sweep across hours.
+    "world_macro_proposer": 1_020,
     # The causal invariance organ stops itself at --budget-s 600 and writes; the cap sits above.
     "causal_invariance": 700,
+    # 28 organs, 416 s measured end to end in the cloud checkout on 2026-09-30 (immune 160 s,
+    # twin 64 s, world_science 58 s); the cap leaves room for the box's larger ledgers (the
+    # gate verdict ledger and hypothesis graph are read in full).
+    "tier_s": 1_500,
+    # THE UNKNOWN-SHARE CENSUS, once per UTC day: a fixed 6,000-cell sample took 1,955 s on the
+    # box. It stops building at UNKNOWN_CENSUS_BUILD_S (1,800) and then carves and names causes;
+    # the cap sits above both and the document is checkpointed, so a kill still publishes.
+    "unknown_census": 2_400,
+    # The null lab stops STARTING draws at --budget-s 600 minus a 30 s margin and then writes;
+    # one draw on a feature-heavy family is ~10 s, so the cap sits above its own budget.
+    "null_lab": 720,
     # THE CONTROL PLANE'S OBSERVE PASS walks ~1,100 components, every watermark, every lease and
     # every mandatory edge. Its own budget is 600 s (it stops itself), so the cycle's cap sits
     # above that: a cap BELOW an organ's own budget is the truncated-job defect that cost this
     # desk eighty-four forward clocks.
     "control_plane": 660,
+    # The committees stop themselves at --budget-s 600 (experiments included); the cap sits above.
+    "committees": 720,
     "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
     "enrol_clocks": 2_700,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
@@ -1607,6 +1759,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
+    # THE MASS SCREEN stops starting symbols at its own --budget-s (MASS_SCREEN_BUDGET_S) and
+    # always writes its artifact; the cap sits above it for the reason `enrol_clocks` was raised.
+    "mass_screen": 1_080,
     # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
     # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
@@ -1660,6 +1815,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # a second; the trading box's million-row docket and ledger scale that linearly. The cap is
     # an order of magnitude above, so a doubled docket is never truncated at the same prefix.
     "judging_burndown": 600,
+    # REJECTION THROUGHPUT streams the same gate ledger once more and the compute ledger once, and
+    # decodes each row; the burn-down's measurement scales to it. Same order-of-magnitude cap.
+    "rejection_throughput": 600,
     # STATE ADMISSION reads the shadow ledgers and the live ledger and judges six dimensions; the
     # daily cycle measured it at 2.1 s. The cap is here so it HAS an entry rather than inheriting
     # SEARCH_BUDGET_SEC by accident, and it is set well above the measurement so a box with more
@@ -1705,6 +1863,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
     "event_surprise": 400,
+    # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
+    "alpha_capture": 420,
+    # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
+    "alt_proxies": 400,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -1716,6 +1878,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Rank recovery stops itself at --budget-s 240: one registry scan, one donor census and a
     # plan walked inside 60% of that. The cap sits above it and must never bind.
     "rank_recovery": 300,
+    # The dead-session-variant remap stops itself at --budget-s 240: one streaming docket read,
+    # oracle measurements for keys never measured, one sidecar write and a bounded donation
+    # through the registry door. The cap sits above it and must never bind.
+    "session_variant_remap": 300,
     # The attribution census stops itself at --budget-s 240: two registry scans and one
     # bounded backfill that commits per chunk and resumes. The cap sits above it.
     "attribution_census": 300,
@@ -1733,10 +1899,18 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # the trading box against 323,313 registry rows and 146,359 ledger rows: under a minute. The
     # cap sits above that for the reason every other leg's does.
     "orthogonality_yield": 300,
+    # The occupancy map reads the docket (~76 MB JSON), the gate ledger, the canon, the forward
+    # clocks and the sleeves, then one daily-return correlation matrix over the docket's symbols.
+    # Measured 2026-09-30 on the build box against 57,538 docket rows: ~8 seconds. The cap sits
+    # above that for the reason every other leg's does.
+    "occupancy_map": 300,
     # Effective trials stops itself at --budget-s 300; its cost is one O(m^2) similarity matrix
     # per grid cell, and grid cells are small (the live docket's largest holds ~470 rows). The cap
     # sits above its own budget for the reason every other leg's does.
     "effective_trials": 700,
+    # DSR inputs reads one sweep report and the trial-Sharpe ledger and writes one JSON; seconds
+    # on the build box. The cap is protection against a damaged file, not a budget.
+    "dsr_inputs": 300,
     # The net-edge spine stops itself at --budget-s 600 and writes NET_EDGE.json plus the
     # intake join file; the cap sits above it so the hour is never cut at the same prefix.
     "net_edge": 700,
@@ -1748,6 +1922,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # plus its ratchet; the cap sits above its own budget for the reason `enrol_clocks` was
     # raised -- a cap below an organ's budget truncates it at the same prefix every hour.
     "conversion_maximiser": 1_000,
+    # The conversion funnel stops itself at --budget-s 240 (a streamed read of the verdict
+    # ledger plus five small artifacts) and checkpoints CONVERSION_FUNNEL.json before the stream.
+    "conversion_funnel": 330,
     # The graph owns a 900 s bounded sweep. The calibration and acceptance organs are artifact
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
@@ -1764,10 +1941,25 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # compute ledger; it finishes in seconds and its own --budget-s 300 bounds a pathological
     # registry, so the cap only has to sit above that.
     "productivity_census": 400,
+    # PRODUCER BREADTH reads the registry with one grouped query and at most 384 MB of seat files
+    # (its own MAX_SEAT_BYTES_TOTAL); measured 0.6 s on a tree without the registry. Generous.
+    "producer_breadth": 300,
+    # THE ANCHOR/EXIT PROPOSER measures its bind census under 240 s and then registers a
+    # 1,200-row slice, which the first pass measured at roughly four rows a second; the cap sits
+    # above census + registration so the slice lands rather than being cut at the same prefix.
+    "htf_anchor": 900,
+    # The forcer reads two reports and writes at most CELLS_PER_CLUSTER rows per cluster.
+    "empty_cluster_forcer": 180,
     # The north star reads ~60 certificates and their instruments' daily bars (measured ~1 s
     # here); the contracts join three JSON artifacts. Both caps are generous and never bind.
     "alpha_rank": 240,
     "factory_contracts": 120,
+    # The four rebuilt readers each read a handful of JSON/JSONL files (measured well under a
+    # second on the build box); the caps only guard a damaged file.
+    "build_failure_bank": 120,
+    "trade_pathology": 120,
+    "experiment_contracts": 240,
+    "health_board": 180,
     # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
     # writes SANDBOX_RUNNER.json; the cap sits above it so it is never cut at the same prefix.
     "sandbox_runner": 1_000,
@@ -1801,6 +1993,13 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "clock_liveness": 420,
     # The expression factory stops itself at --budget-s 600 and writes; the cap sits above it.
     "expression_factory": 720,
+    # THE FREE-STACK HUNTER stops itself at --budget-s 600 and persists its cursor after every
+    # source, so a cut pass still advanced; the cap sits above so the yield artifact is written.
+    "free_stack_hunt": 720,
+    # Its proposer mints a 1,500-row ring slice; the registry write is the long part.
+    "free_stack_proposer": 900,
+    # A reader of the factory's report and journal tail; seconds.
+    "factory_throughput": 180,
     # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
     # writes COEVOLUTION.json; the cap sits above it so it is never cut at the same prefix.
     "coevolution": 1_020,
@@ -2058,6 +2257,131 @@ def orthogonality() -> dict:
     silently shrank the book would be a growth cut with no missed-growth ledger line behind it.
     """
     return _producer("orthogonality", "research/orthogonality.py", "--apply")
+
+
+def null_lab() -> dict:
+    """`null_lab`: every hunted family's OWN pipeline on data where no edge can exist.
+
+    For each family in the docket, one of its own docketed specs goes through
+    `external_gauntlet.build_cell` (read-only, `h1_override`) on block-shuffled bars, a
+    volatility-matched random walk, and its real bars with sign-permuted signals; the engine
+    backtests the cell and the gauntlet's per-cell statistics score it. The draws accumulate in
+    `reports/null_lab_draws.jsonl` (fewest-drawn family and arm first, so the budget goes where
+    the rate is least known) and `reports/NULL_LAB.json` publishes each family's empirical
+    false-positive rate, its null distribution and `exceeds_nominal` as a named defect.
+
+    CONSEQUENCE: the `tier_s` leg (after this one) multiplies that family's online-FDR p-values
+    by its `fpr_charge` (`libs/tiers/online_fdr.charge_null_fpr`), so an easy-to-fool family pays
+    its real price in lifetime alpha-wealth.
+    """
+    return _producer("null_lab", "research/null_lab.py", "--budget-s", "600")
+
+
+def research_live_identity() -> dict:
+    """`research_live_identity`: for every LIVE sleeve, the spec the gateway trades against the
+    spec research certified -- family, symbol, selector, params (recovered the way the gateway
+    recovers them) and code hash (resolved the way the gateway resolves it, against the one the
+    forward clock froze). Writes `reports/RESEARCH_LIVE_IDENTITY.json`; a MISMATCH is a named
+    defect, and the `tier_s` door lists that LIVE row in `data/tier_s/live_door.json`
+    (`promotion_authority.review_live`)."""
+    return _producer("research_live_identity", "research/research_live_identity.py")
+
+
+def macro_conditioned_sweep() -> dict:
+    """`macro_conditioned_sweep`: the dip families on seven macro-mapped symbols, each run plain
+    and conditioned on its named macro driver -- the conditioning state read POINT-IN-TIME through
+    `data_os.store_from_series` / `BitemporalStore.latest_known` at the source's declared lag
+    (`data_os.PUBLICATION_LAGS["cross_asset_anchors"]`). It had never been scheduled, and it joined
+    each signal to its own calendar date's state, computed from that day's close. Stage-A ranking
+    only; `reports/macro_conditioned_sweep.json` carries `pit` counts of what the old join admitted
+    before the print was knowable, and the `tier_s` data-OS organ publishes them."""
+    return _producer("macro_conditioned_sweep", "research/run_macro_conditioned_sweep.py")
+
+
+#: THE UNKNOWN-SHARE CENSUS'S ARTIFACT, the one its own `OUT` names (CRO D3 reads it). Read here
+#: only for the once-a-day gate: the leg itself imports nothing from the census.
+UNKNOWN_CENSUS_OUT = BASE / "reports" / "UNKNOWN_SHARE_CENSUS.json"
+#: Where the census stops BUILDING and carves; the leg's cap (LEG_BUDGET_SEC) sits above it.
+UNKNOWN_CENSUS_BUILD_S = 1_800
+
+
+def _census_ran_on(day: str, path: Path = UNKNOWN_CENSUS_OUT) -> bool:
+    """True when the census document on disk was STARTED on UTC `day` (complete or not)."""
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(doc, dict) and doc.get("utc_day") == day
+
+
+def unknown_census() -> dict:
+    """`unknown_census`: the UNKNOWN share of JUDGED cells on a fixed-seed 6,000-cell docket
+    sample down the judge's own path, once per UTC day (the 43% bottleneck, principal
+    2026-09-30). Read-only; writes `reports/UNKNOWN_SHARE_CENSUS.json`, which CRO D3 reads.
+
+    ITS OWN LEG, NOT A DAILY-CYCLE STEP (measured 2026-09-30). As the `unknown_census` step of
+    `daily_cycle` it had `--budget-s 900` inside the 900 s the hourly cycle gives the WHOLE daily
+    chain, while its memory-sized sample reached ~17k cells on the box and a 6k-cell run took
+    1,955 s -- it could never finish, so the artifact was never written. Here it has a fixed
+    `--n 6000` (~+/-3 pt), a build budget of `UNKNOWN_CENSUS_BUILD_S`, a cap of its own in
+    `LEG_BUDGET_SEC`, and it checkpoints the document (`"complete": false`) as it goes, so even a
+    killed run publishes. A run STARTED today stamps `utc_day` on its first write, and that is the
+    gate: complete or killed, the census runs once per UTC day, never again the same day.
+    """
+    today = datetime.now(UTC).date().isoformat()
+    if _census_ran_on(today):
+        return {"status": "SKIPPED", "why": f"census already started on {today} (once per UTC day)",
+                "at": datetime.now(UTC).isoformat()}
+    return _producer("unknown_census", "scripts/unknown_share_census.py",
+                     "--n", "6000", "--complete-inputs", "--budget-s",
+                     str(UNKNOWN_CENSUS_BUILD_S), "--label", "daily",
+                     "--out", "reports/UNKNOWN_SHARE_CENSUS.json")
+
+
+def tier_s() -> dict:
+    """`tier_s`: the Tier S research institution, one organ per layer (libs/tiers).
+
+    Runs every kernel of the 46-layer programme on the desk's own artifacts: the truth kernel's
+    hash-chained journal and evidence seal, the firewall audit, the sealed planted-trap benchmark
+    (immune score / power), the Red Queen, test invention, online FDR, topology, QD, genomes,
+    theory, prediction accounting, the researcher market, failure memory, the formal protocol
+    model check, chaos drills on copies, replay, the bitemporal audit, the world-edge and
+    cross-science labs, the shadow opportunity exchange, the frontier estimator, the review panel,
+    the epistemic census, the subsystem contracts, the self-model and the twin. It writes
+    reports/tier_s/*, data/tier_s/* and hypothesis rows under data/intelligence/tier_s/ for the
+    compiler. Two of its outputs reach money (2026-09-30): the promoter's door
+    (`libs/tiers/promotion_authority`) withholds on a constitution violation, an unreplicated or
+    FDR-rejected claim and FREEZE; and data/tier_s/allocator_tilts.json tilts `pf_allocator`'s
+    posterior means heat-neutrally (`allocator_evidence.tier_s_factors`). Nothing else it writes
+    is read by sizing, certificates or order flow.
+    """
+    return _producer("tier_s", "research/tier_s.py")
+
+
+def adversary_evolution() -> dict:
+    """`adversary_evolution`: F17's evolving adversary population, persisted each hour."""
+    return _producer("adversary_evolution", "research/adversary_evolution.py", "--apply")
+
+
+def execution_science() -> dict:
+    """`execution_science`: F22 signal-vs-execution attribution (report only)."""
+    return _producer("execution_science", "research/execution_science.py", "--apply")
+
+
+def frontier_map() -> dict:
+    """`frontier_map`: F9's one map of where the desk has and has not looked (report only)."""
+    return _producer("frontier_map", "research/frontier_map.py", "--apply")
+
+
+def market_ecology() -> dict:
+    """`market_ecology`: F15 participant model and edge-decay estimates (report only)."""
+    return _producer("market_ecology", "research/market_ecology.py", "--apply")
+
+
+def research_diversity_archive() -> dict:
+    """`research_diversity_archive`: the research-wide QD archive from experiment evidence."""
+    return _producer("research_diversity_archive", "research/research_diversity_archive.py",
+                     "--once")
 
 
 def lake_promote() -> dict:
@@ -2526,6 +2850,41 @@ def compile_candidates() -> dict:
                      "--budget-s", "600")
 
 
+def catch_up_intake() -> dict:
+    """Publish already waiting discoveries before spending the pass on new searches.
+
+    The normal mine/compile/deepen/merge chain still runs later for this pass's new
+    production. This bounded catch-up uses the same compiler cursor and merger, so
+    existing discoveries need not wait behind hours of generation to reach the judge.
+    Never merge an old compiler artifact after a failed compilation.
+    """
+    from research.job_lock import exclusive_job
+
+    with exclusive_job("miner_candidate_compiler", need_mb=14000) as acquired:
+        if not acquired:
+            return {"status": "SKIPPED", "why": "canonical compiler lane already owned"}
+        compiled = compile_candidates()
+    if compiled.get("exit_code") != 0:
+        return {"status": "FAILED", "compile": compiled,
+                "why": "fresh compilation failed; catch-up merge withheld"}
+    with exclusive_job("merge_hypotheses", need_mb=14000) as acquired:
+        if not acquired:
+            return {"status": "SKIPPED", "compile": compiled,
+                    "why": "canonical merge lane already owned"}
+        merged = _producer("merge_hypotheses", "research/merge_hypotheses.py")
+    return {"status": "OK" if merged.get("exit_code") == 0 else "FAILED",
+            "compile": compiled, "merge": merged}
+
+
+def placement_interlock() -> dict:
+    """`placement_interlock`: has any sleeve been refused in a run with no placement since, or
+    has the release identity stopped allowing new risk? `scripts/check_placement_interlock.py`
+    writes `data/placement_interlock.json`, an alert-ledger entry and a PLACEMENT_* event; on the
+    trading box (by machine id, libs/ops/host_identity) an UNMEASURED verdict fails and is written
+    too. Hourly here, and still in the law gate's rotation (`_STATE_FENCES`)."""
+    return _producer("placement_interlock", "scripts/check_placement_interlock.py")
+
+
 def pit_canaries() -> dict:
     """`pit_canaries`: planted past/now/future rows read point-in-time every hour; green only
     when the future row is invisible at now (closed-loop `truth.pit_canaries_green`)."""
@@ -2551,6 +2910,22 @@ def breadth_sweep() -> dict:
     for, merged into the docket idempotently (principal 2026-09-16: the discovery hunt is banned;
     its volume goes to every other mechanism, all charts, not tons of H1)."""
     return _producer("breadth_sweep", "research/breadth_sweep.py", "--apply")
+
+
+#: The mass screen's own stopping point: it stops STARTING symbols once this is spent and always
+#: writes MASS_SCREEN.json; `LEG_BUDGET_SEC["mass_screen"]` sits above it so the cycle never kills
+#: it mid-write. Its workers are derived inside the organ from MEASURED free cores (psutil).
+MASS_SCREEN_BUDGET_S = 900
+
+
+def mass_screen() -> dict:
+    """`mass_screen`: generate and cheaply screen rule cells in bulk (grammar x symbol x horizon x
+    threshold x side) on the TRAINING window only, charge every screened cell to
+    MASS_SCREEN_TRIALS.jsonl, and forward the BH-FDR, 3x-cost-stressed, day-deduplicated survivors
+    through the registry door into the judge's docket. Artifact: reports/MASS_SCREEN.json."""
+    return _producer("mass_screen", "research/mass_screen.py", "--once",
+                     "--budget-s", "900")  # == MASS_SCREEN_BUDGET_S, literal so the
+    # component registry can read the production args statically (pinned by test_mass_screen)
 
 
 def search() -> dict:
@@ -3259,6 +3634,7 @@ def refresh_regime() -> dict:
 
 
 def main() -> None:
+    os.environ["QUANT_PIPELINE_STARTED_AT"] = datetime.now(UTC).isoformat()
     _plan_words = {"core": "core legs only", "heavy": "research producers only"}
     if HOURLY_PLAN.startswith("dept:"):
         _plan_words[HOURLY_PLAN] = f"department {HOURLY_PLAN.split(':', 1)[1]} only"
@@ -3269,6 +3645,9 @@ def main() -> None:
     rb = _costed("refresh_bars", refresh_bars)
     smoke = _costed("smoke_release", smoke_release)
     h = _costed("health", health)
+    # Drain existing intake before the long research legs. The later pipeline still
+    # compiles and merges discoveries generated during this pass.
+    _costed("intake_catchup", catch_up_intake)
     t = _costed("record_tape", record_tape)
     s = _costed("state_vector", state_vector)
     rg = _costed("regime_monitor", refresh_regime)
@@ -3283,10 +3662,22 @@ def main() -> None:
     # THE BANDIT HAS AUTHORITY HERE (2026-09-16): the seconds this leg spends are its base
     # budget scaled by the bandit's share of the arms it serves (research_budget), recorded in
     # reports/RESEARCH_BUDGET.json so the attestation reads an obeyed price, not a printed one.
+    # THE SHARES THOSE BUDGETS READ, RE-DERIVED EVERY HOUR (Tier S, 2026-09-30). The bandit ran
+    # only inside the daily chain, through `research_bandit.run()`, which never publishes
+    # reports/RESEARCH_BANDIT.json (the path `research_budget` and `cycle_pricing` read) and
+    # never stamps authority -- only `main()` does both. So the budgets below read no shares,
+    # ran at base, and data/research_budget.json said `authoritative: false` from 2026-09-23 on.
+    # This leg runs `main()` before any leg spends: fresh shares this hour, and the authority
+    # stamp read back from the legs that obeyed the previous hour's.
+    rbd = _costed("research_bandit", lambda: _producer("research_bandit",
+                                                       "research/research_bandit.py"))
     _aev_s, _aev_rec = _bandit_budget("alpha_evolution", 240)
     aev = _costed("alpha_evolution", lambda: _producer("alpha_evolution",
                                                         "research/alpha_evolution.py",
                                                         "--budget-s", str(_aev_s)))
+    # ITS OUTPUT, ONTO THE BUDGET'S TRIAL LEDGER: the budget is authoritative only once the
+    # held-out comparison of these rows admits its uplift (research_budget.contract_verdict).
+    _bandit_observe("alpha_evolution", _aev_rec)
     # The closed-loop attestation: every flag derived from another organ's artifact.
     clp = _costed("closed_loop", lambda: _producer("closed_loop", "scripts/check_closed_loop.py"))
     rc = _costed("regime_coverage", regime_coverage)
@@ -3361,8 +3752,21 @@ def main() -> None:
     m = _costed("mine", mine)
     se = _costed("search", search)
     bs = _costed("breadth_sweep", breadth_sweep)
+    # THE MASS SCREEN (2026-09-30): millions of rule cells a day screened on the training window
+    # only, every one charged as a trial, and only the FDR survivors forwarded to the judge. It
+    # runs BEFORE `merge_docket` so the survivors it enqueues reach the docket the same pass.
+    msc = _costed("mass_screen", mass_screen)
+    # DEAD SESSION VARIANTS (Tier S, 2026-09-30): 21% of the judge's UNKNOWNs were asia/london/ny
+    # variants of families that only fire at one hour. The producers now ask the firing-hours
+    # oracle before minting; this leg finds the ones already in the docket (box state, never
+    # rewritten), marks them in data/hypotheses/DEAD_SESSION_VARIANTS.jsonl, donates each one's
+    # live stand-in through the registry door and publishes reports/SESSION_VARIANT_REMAP.json.
+    svr = _costed("session_variant_remap", lambda: _producer(
+        "session_variant_remap", "research/session_variant_remap.py", "--once",
+        "--budget-s", "240"))
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
+    pil = _costed("placement_interlock", placement_interlock)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back
     # to the scientist that proposed each cell, live when the live ledger is thick enough,
@@ -3426,6 +3830,9 @@ def main() -> None:
                                                           "research/live_system_state.py"))
     t1s = _costed("tier1_scorecard", lambda: _producer("tier1_scorecard",
                                                         "research/tier1_scorecard.py"))
+    # THE TIER-1 GAP (2026-09-30): the desk's breadth, mining, judging and conversion beside
+    # tier-1 references, ranked by orders of magnitude short. The CRO noon pass reads it first.
+    t1g = _costed("tier1_gap", lambda: _producer("tier1_gap", "research/tier1_gap.py", "--once"))
     # NOTHING IS PARKED (principal 2026-09-23): every queue in the desk, its depth, its oldest
     # row's age and its measured drain rate, in one artifact. scripts/check_no_queues.py fences it.
     qcn = _costed("queue_census", lambda: _producer("queue_census", "research/queue_census.py",
@@ -3517,6 +3924,13 @@ def main() -> None:
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
     esur = _costed("event_surprise", lambda: _producer(
         "event_surprise", "research/event_surprise.py", "--once", "--budget-s", "300"))
+    # THE ALPHA CAPTURE SUBSTITUTE (2026-09-30): Yahoo upgrades, SEC 8-K guidance, eastmoney,
+    # Naver and TDnet views stored at first_seen_at, tracked at +1/+5/+21 trading days against a
+    # placebo of shifted dates, and emitted as analyst_revision_drift / cross-market lead cells,
+    # the `analyst_views` axis and the allocation-intel report. Each source keeps its own cadence
+    # inside the organ, so an hourly leg fetches only what is due.
+    acap = _costed("alpha_capture", lambda: _producer(
+        "alpha_capture", "research/alpha_capture.py", "--once", "--budget-s", "300"))
     # THE ADVERSARY THAT ATTACKS A HYPOTHESIS BEFORE A TRIAL IS SPENT ON IT (W6): placebo
     # symbol, placebo date, sign flip, neighbouring parameter, excluded window. It records
     # evidence on the registry row and changes no status: the sealed gauntlet and the
@@ -3645,6 +4059,16 @@ def main() -> None:
     # (instrument, session, horizon, exit, state, cross-market); coverage of the axes measured.
     dsc = _costed("descendants", lambda: _producer("descendants", "research/descendants.py",
                                                     "--max-per-root", "4", "--budget-s", "240"))
+    # THE VIDEO-DERIVED ANCHOR/EXIT MECHANISM, ON A CLOCK AT LAST (2026-09-30). The proposer was
+    # written to rotate a 1,200-row slice of its grid per pass and resume where it stopped -- and
+    # nothing ever ran it, so the grid (every hypothesis-lane instrument x H1/H4/D1, plus M15/M30
+    # wherever those bars exist) sat at its first slice: III.16. Discovery, beside descendants.
+    htf = _costed("htf_anchor", lambda: _producer("htf_anchor", "research/htf_anchor_proposer.py"))
+    # THE EMPTY-CLUSTER FORCER (2026-09-30): mints a rotating, least-judged window of cells for a
+    # cluster that a buildable family reaches and nobody mints, and names the sealed-gauntlet
+    # branch a cluster needs when every family it has is unbuildable. It had no caller either.
+    ecf = _costed("empty_cluster_forcer", lambda: _producer(
+        "empty_cluster_forcer", "research/empty_cluster_forcer.py", "--donate"))
     # THE FORWARD SLOT RANKER (C15/W10): slots ranked by P(certify) x dElogW x diversification
     # / time to maturity; REPLACEABLE clocks reported with their missed-growth line, never acted.
     fsr = _costed("forward_slot_ranker", lambda: _producer("forward_slot_ranker",
@@ -3749,6 +4173,13 @@ def main() -> None:
     cvm = _costed("conversion_maximiser", lambda: _producer(
         "conversion_maximiser", "research/conversion_maximiser.py", "--once",
         "--budget-s", "900", "--max-rows", "5000"))
+    # THE CONVERSION FUNNEL (the 25 Sep lane "maximise conversion to certificates", rebuilt
+    # 2026-09-30): mined -> cell -> judged -> verdict class -> PASS -> certificate -> forward
+    # clock, with the count lost at each step by NAMED reason and owner -- the drop-finder the
+    # noon CRO could not read ("build/data failures UNMEASURED"). It runs after the maximiser so
+    # this hour's conversions are in the registry stage. Measurement only; no gate moves.
+    cfn = _costed("conversion_funnel", lambda: _producer(
+        "conversion_funnel", "research/conversion_funnel.py", "--once", "--budget-s", "240"))
     rdb = _costed("research_debt", lambda: _producer("research_debt",
                                                       "research/research_debt.py"))
     # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, principal 2026-09-17). Every ingested unit --
@@ -3818,6 +4249,16 @@ def main() -> None:
     # removed, and certificates per judge-hour from the gate ledger -- and publishes one factor
     # per axis. Both factors are one-sided at or above par, so this can lift a producer's
     # priority and can never lower it, and the 25% floor below is untouched. Data department.
+    # THE OCCUPANCY MAP RUNS BEFORE JUDGE COVERAGE, because the docket order reads it. It grids
+    # strategy space (family x asset class x timeframe x session x horizon), counts tried /
+    # judged / certified / forward / LIVE per cell with the best forward exp_r and hours since
+    # last tried, names the EMPTY and UNDER-TRIED cells next to proven ground, and scores every
+    # docket (family, symbol) by expected correlation to the LIVE book and the certified set.
+    # judge_coverage adds both terms beside marginal k_eff inside each family stream (reorder
+    # only), and this leg donates rows for the best EMPTY cells into the compiler's intake
+    # (add only). Data department, information layer.
+    ocm = _costed("occupancy_map", lambda: _producer("occupancy_map",
+                                                     "research/occupancy_map.py", "--once"))
     oyz = _costed("orthogonality_yield",
                   lambda: _producer("orthogonality_yield",
                                     "research/orthogonality_yield.py",
@@ -3833,6 +4274,14 @@ def main() -> None:
     eft = _costed("effective_trials", lambda: _producer("effective_trials",
                                                         "research/effective_trials.py",
                                                         "--once", "--budget-s", "300"))
+    # DSR INPUTS, MEASURED: harvests the last sweep's judged trial Sharpes into an append-only
+    # ledger and publishes the cross-trial Sharpe variance per family (trailing window) and the
+    # lifetime effective trials per family, with provenance and a content hash, to
+    # reports/DSR_INPUTS.json. The sealed judge (once its patch lands) reads it and fails closed
+    # with `dsr_inputs_unmeasured` when it is absent, stale or does not verify. Data department,
+    # information layer.
+    dsi = _costed("dsr_inputs", lambda: _producer("dsr_inputs", "scripts/measure_dsr_inputs.py",
+                                                  "--once"))
     # GAUNTLET BACKPRESSURE (M23) and MINER SPECIALISATION (M24): the gauntlet talks back and
     # the organisation routes work by measured value per miner per domain. Meta.
     gbp = _costed("gauntlet_backpressure", lambda: _producer("gauntlet_backpressure",
@@ -4002,6 +4451,11 @@ def main() -> None:
     xpf = _costed("expression_factory", lambda: _producer("expression_factory",
                                                            "research/expression_factory.py",
                                                            "--once", "--budget-s", "600"))
+    # ITS BENCHMARK (2026-09-30): candidates per hour against EasyQuant's 32/h, the factory's
+    # stage profile, and the idea-to-verdict latency from its campaign journal. Writes
+    # reports/FACTORY_THROUGHPUT.json.
+    fxt = _costed("factory_throughput", lambda: _producer(
+        "factory_throughput", "research/factory_throughput.py", "--once"))
     # THE PHYSICS LAB (2026-09-22), the mathlab department's institution: two independent
     # civilizations (disjoint seeds) of the nineteen physics traditions plus a rotating slice of
     # the mathematical ones over LOCKBOXED panels; every object becomes a hypothesis card with a
@@ -4048,6 +4502,30 @@ def main() -> None:
     # the OS declares today's needs and before the census measures source-to-experiment closure.
     acq = _costed("acquire_datasets", lambda: _producer(
         "acquire_datasets", "research/acquire_datasets.py"))
+    # THE FREE STACK (2026-09-30, asia gap rows 14-17, 20): every free alt source the gap report
+    # measured MISSING, point-in-time, cursor-based, one yield row per source in
+    # reports/FREE_STACK_YIELD.json; series land in data/lake/series/fs_<id>, catalogue finds
+    # in the world dataset hunter's queue and data_scout/data_prospector's catalogue, and the
+    # allocation state in reports/ALT_REGIME_STATE.json.
+    fsh = _costed("free_stack_hunt", lambda: _producer(
+        "free_stack_hunt", "research/free_stack_hunter.py", "--once", "--budget-s", "600"))
+    # ITS CONSUMER: DIRECT (exogenous_conditioner, alt_series_momentum) and INDIRECT
+    # (alt_conditioned) cells on every mapped hypothesis-lane instrument, a ring slice per pass,
+    # donated to the one gauntlet with every minted cell charged. Writes FREE_STACK_PROPOSER.json.
+    fsp = _costed("free_stack_proposer", lambda: _producer(
+        "free_stack_proposer", "research/free_stack_proposer.py", "--once"))
+    # THE WORLD DATASET HUNTER: discovers, fetches, quality-checks, PIT-stamps and registers
+    # thousands of public datasets (DBnomics backbone + BIS bulk, CFTC, Treasury, FRED, and the
+    # registry's own DISCOVERED rows), then publishes the per-symbol exposure that
+    # `edge_search.resolve_inputs` reads. Writes reports/DATASET_HUNT.json.
+    wdh = _costed("world_dataset_hunt", lambda: _producer(
+        "world_dataset_hunt", "research/world_dataset_hunter.py", "--once", "--budget-s", "900"))
+    # ITS CONSUMER: mints `world_macro_state` cells (a z band on one named world series x
+    # direction x hold) from the exposure the hunter just published, screens and donates them to
+    # the docket; the sealed gauntlet judges them via ORTHOGONAL_FAMILIES. Writes
+    # reports/WORLD_MACRO_PROPOSER.json.
+    wmp = _costed("world_macro_proposer", lambda: _producer(
+        "world_macro_proposer", "research/world_macro_proposer.py", "--once", "--budget-s", "900"))
     # GLOBAL SOURCE-TO-EXPERIMENT CONSERVATION.  All regions use the same measured chain:
     # declaration -> fetch owner -> parser -> feature -> experiment -> evaluator outcome.  This
     # runs after the country OS so newly declared regional sources enter the census in the same
@@ -4448,12 +4926,22 @@ def main() -> None:
     # promotion authority.
     cpub = _costed("canon_publication", lambda: _producer(
         "canon_publication", "research/canon_publication.py"))
+    # THE RE-CERTIFICATION LEDGER, after the seal: every canon certificate's lockbox Sharpe
+    # before (write-once baseline) and after the lockbox v4 re-mint, and whether any was
+    # re-stamped instead of re-judged (exit 3). Read-only; the box's sync publishes it.
+    lrc = _costed("lockbox_recert", lambda: _producer(
+        "lockbox_recert", "research/lockbox_recert.py"))
     # THE BURN-DOWN (principal 2026-09-30: "the backlog burned down faster than creation"). After
     # the judge, so this hour's first rulings are counted this hour: cells whose FIRST real
     # verdict landed in the window against docket rows first seen in it, the backlog from
     # JUDGE_COVERAGE, and the warmer's backlog-first share. Read-only; it throttles nothing.
     jbd = _costed("judging_burndown", lambda: _producer(
         "judging_burndown", "research/judging_burndown.py"))
+    # CONFIDENT KILLS PER DAY, after the judge and the burn-down: the share of this hour's verdicts
+    # that are finished, evidence-backed REJECTs (a measured gate statistic) rather than UNKNOWN /
+    # NOT_RUN postponements. Reads the ledger the burn-down reads; throttles nothing.
+    rjt = _costed("rejection_throughput", lambda: _producer(
+        "rejection_throughput", "research/rejection_throughput.py"))
     # EVERY CERTIFICATE GETS ITS CLOCK THE MOMENT IT EXISTS, with no quota and no waiting queue
     # (principal 2026-09-23: forward evidence is never rationed; forward clocks gather evidence
     # and deploy no capital, so the only thing a slot cap bought was a slower desk). AFTER the
@@ -4614,6 +5102,14 @@ def main() -> None:
     # admission law, no streak, no threshold: it makes the readings hourly, which is the cadence
     # the allocator's own artifact expiry (`decision_core._ALLOC_MAX_AGE_S` = 3600) assumes.
     pr = _costed("promoter", lambda: _producer("promoter", "research/promoter.py"))
+    # THE DEMOTION HALF, ON THE PROMOTION HALF'S CLOCK (2026-09-30). `decay_monitor` had exactly
+    # one clock, `daily_cycle.STEPS`, where it sits behind research steps measured at 9,056 s
+    # under a 900 s hourly budget: `data/decay_live.json` still read 2026-09-04 ("sleeves.json does
+    # not exist") with 40 LIVE rows on the book. It reads the ledger and the roster, applies the
+    # same FADE / RETIRE thresholds it always did, and runs straight after the promoter so the two
+    # writers of `data/sleeves.json` never overlap. No threshold moves; the readings get fresh.
+    dmo = _costed("decay_monitor", lambda: _producer(
+        "decay_monitor", "research/decay_monitor.py"))
     # MOVED BELOW THE GAUNTLET, 2026-09-07. This leg used to sit here at position 8 -- above
     # `merge`, `backtest`, `external_gauntlet` and `recertify_canon`, all of which were added to
     # this roster today. So it enrolled the certificates the canon held at the START of the pass
@@ -4657,6 +5153,19 @@ def main() -> None:
     rxs = _costed("research_exchange_score", research_exchange_score)
     lkp = _costed("lake_promote", lake_promote)
     orth = _costed("orthogonality", orthogonality)
+    # BEFORE tier_s: its online-FDR organ reads NULL_LAB.json and its door reads
+    # RESEARCH_LIVE_IDENTITY.json, and its data-OS organ reads the macro sweep's PIT counts.
+    nlab = _costed("null_lab", null_lab)
+    rlid = _costed("research_live_identity", research_live_identity)
+    mcsw = _costed("macro_conditioned_sweep", macro_conditioned_sweep)
+    # Once per UTC day (the leg gates itself on the document's `utc_day`); meta department.
+    ucen = _costed("unknown_census", unknown_census)
+    tiers = _costed("tier_s", tier_s)
+    advx = _costed("adversary_evolution", adversary_evolution)
+    exsci = _costed("execution_science", execution_science)
+    fmap = _costed("frontier_map", frontier_map)
+    meco = _costed("market_ecology", market_ecology)
+    rdar = _costed("research_diversity_archive", research_diversity_archive)
     sess = _costed("session_allocation", session_allocation)
     sxp = _costed("session_chart_expansion", session_chart_expansion)
     stf = _costed("stamp_freshness", stamp_freshness)
@@ -4667,6 +5176,13 @@ def main() -> None:
     sge = _costed("sge_premium", sge_premium)
     aco = _costed("asia_collector", asia_collector)
     apr = _costed("asia_parser", asia_parser)
+    # FREE PUBLIC ALT-DATA PROXIES (2026-09-30): Korea early exports, TSA throughput, Census
+    # ex-autos retail, JNTO arrivals, Tokyo CPI, FIRMS industrial heat, PortWatch ports and
+    # chokepoints, India gold imports and the recorded SGE premium, each as a PIT series
+    # through the axis door, the lake (exogenous_conditioner / alt conditioners) and
+    # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
+    alp = _costed("alt_proxies", lambda: _producer(
+        "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -4690,6 +5206,12 @@ def main() -> None:
     wse = _costed("weak_signals", weak_signal_ensembles)
     rfx = _costed("residual_factors", residual_factors)
     mko = _costed("markout", markout)
+    # THE FILL JOIN, HOURLY (2026-09-30). `reports/markout.json` -- intents joined to live deals,
+    # n_matched, slippage against the ENTRY -- and `reports/attribution_chain.json` had one
+    # writer, `daily_cycle._markout`, behind the same 900 s-starved chain: n_matched=0 at
+    # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
+    fmk = _costed("fill_markout", lambda: _producer(
+        "fill_markout", "research/daily_cycle.py", "--step", "markout"))
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
@@ -4808,6 +5330,13 @@ def main() -> None:
     # UNMEASURED and every factory runs exactly as it does today.
     prs = _costed("proposer_seat", lambda: _producer(
         "proposer_seat", "libs/research/proposer_seat.py", "--once", "--budget-s", "300"))
+    # THE TWO ADVERSARIAL COMMITTEES (2026-09-25 brief, landed 2026-09-30). Seat roles argue
+    # competing explanations; the deterministic judge picks the cheapest separating falsifiers
+    # and runs them on the gauntlet's own cell. Contracts and kills are defect reports: nothing
+    # is certified, promoted, sized or vetoed. Metered, settled against the graph, and
+    # self-scrapping when its kills stop paying for its calls. Dark seat -> UNMEASURED.
+    cmt = _costed("committees", lambda: _producer(
+        "committees", "research/committees.py", "--once", "--budget-s", "600"))
     # KIMI'S ONLY CLOCK WAS A VPS TIMER (measured 2026-09-23). `quant-kimi-hunter.timer` fires
     # hourly on the VPS; the box that holds the credentials ran it never, so
     # `data/intelligence/kimi` was 240 hours stale on the trading box while deepseek -- whose
@@ -4967,6 +5496,22 @@ def main() -> None:
         "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
+    # THE REBUILT 25-SEP LANES (2026-09-30), after every leg whose output they read:
+    #   build_failure_bank    compile_candidates, run_external_backtest and the sealed gauntlet's
+    #                         report -> why cells never BUILT, ranked into fix work
+    #   trade_pathology       the ledgers fill_recorder joined -> the live book's bad fills by class
+    #   experiment_contracts  every leg's declared hypothesis/metric/falsifier/budget/owner, read
+    #                         against its own report (the fence half runs in the law gate)
+    #   health_board          runtime attestation + events + acceptance + stall_watch + the three
+    #                         readers above -> one verdict per organ; UNMEASURED is never GREEN
+    bfb = _costed("build_failure_bank", lambda: _producer(
+        "build_failure_bank", "research/build_failure_bank.py", "--once"))
+    tpa = _costed("trade_pathology", lambda: _producer(
+        "trade_pathology", "research/trade_pathology.py", "--once"))
+    exc_ = _costed("experiment_contracts", lambda: _producer(
+        "experiment_contracts", "scripts/check_experiment_contracts.py", "--report"))
+    hbd = _costed("health_board", lambda: _producer(
+        "health_board", "research/health_board.py", "--once"))
     # THE ORGAN CENSUS (2026-09-25). Three external reviews asked one closing question -- does
     # every claimed department run, on real data, into the canonical pipeline, with its compute
     # following its survivor yield -- and the desk could not answer it, because its three
@@ -4999,7 +5544,9 @@ def main() -> None:
     #   live_calibration_posterior  kappa = realised / claimed Sharpe per producer, Bayesian;
     #                               bandit.calibration_credit reads it (research budget, live)
     #   constrained_book            every risk clause as a hard constraint in the E[log W]
-    #                               solve, as a SHADOW (constrained_elog.FEEDS_LIVE = False)
+    #                               solve; decides hourly (CONSTRAINED_BOOK_SWITCH.json):
+    #                               fed to pf_allocator only while its robust E[log W] beats
+    #                               the live book's, re-proven by the allocator at adoption
     #   experimental_budget         the principal's override sleeves in their own ledger/budget
     #   ops_redundancy              journal replay, off-box restore drill, terminal health,
     #                               independent price cross-check, duplicate-position count
@@ -5009,6 +5556,12 @@ def main() -> None:
         "live_calibration_posterior", "research/live_calibration_posterior.py"))
     cbk = _costed("constrained_book", lambda: _producer(
         "constrained_book", "research/constrained_book.py"))
+    # MAXIMUM AGGRESSION INSIDE SURVIVAL (principal 2026-09-30): per gold window, the Fusion lot
+    # and the E8 risk fraction with the highest ruin-counted growth (Fusion) or fastest pass (E8)
+    # whose P(death) stays under EPS_STOP. Read by prop/e8_gold.py; absent or stale -> today's
+    # sizing, unchanged.
+    kls = _costed("kelly_survival", lambda: _producer(
+        "kelly_survival", "research/kelly_survival.py"))
     xbg = _costed("experimental_budget", lambda: _producer(
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
@@ -5044,6 +5597,13 @@ def main() -> None:
     # of producers that burned compute for no unique cell, ranked by compute.
     prodc = _costed("productivity_census", lambda: _producer(
         "productivity_census", "research/productivity_census.py", "--once", "--budget-s", "300"))
+    # PRODUCER BREADTH (principal 2026-09-30: every producer at worldwide orthogonal breadth,
+    # every cell testable). Per producer: its clock, last production, cells in 24h/7d, the
+    # symbols/charts/sessions/families covered against what it could reach, the share the SEALED
+    # gauntlet can build, and the clusters fed; totals name the clusters still unfed and why. A
+    # reader of the registry, the seats and the producers' own reports -- seconds, core clock.
+    pbr = _costed("producer_breadth", lambda: _producer(
+        "producer_breadth", "research/producer_breadth.py"))
     # THE NORTH STAR AND THE CONTRACTS (Tier-1 #9/#11, 2026-09-29). `alpha_rank` builds the
     # eight-channel independence graph over every CERTIFIED edge and publishes the effective
     # independent alpha rank with each certificate's marginal contribution, credited to the
@@ -5069,6 +5629,15 @@ def main() -> None:
     rdh = _costed("research_dashboard", lambda: _producer("research_dashboard",
                                                           "research/research_dashboard.py",
                                                           "--once", "--budget-s", "300"))
+    # THE BOX'S STATE FRESHNESS AND THE DESK'S HEALTH, IMMEDIATELY BEFORE PUBLICATION (2026-09-30).
+    # Both write a published report (BOX_STATE_FRESHNESS.json carries CRO D17's
+    # box_state_age_hours and the NOT-ARMED line; DESK_HEALTH.json every PROBLEM/UNKNOWN finding),
+    # so the push below delivers THIS hour's verdicts. The fence exits 1 on STALE/UNMEASURED and
+    # the leg reads FAILED then -- loud, and it gates nothing: `publish_state` runs regardless.
+    bsf = _costed("box_state_freshness", lambda: _producer(
+        "box_state_freshness", "scripts/check_box_state_freshness.py"))
+    dhl = _costed("desk_health", lambda: _producer(
+        "desk_health", "scripts/check_desk_health.py", "--out"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -5077,8 +5646,10 @@ def main() -> None:
                     "health": h, "tape": t, "state_vector": s, "daily": d,
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
-                    "search": se, "breadth_sweep": bs, "candidate_conservation": ccv,
-                    "pit_canaries": pcn, "mutation_yield": myd, "credit_assignment": cra,
+                    "search": se, "breadth_sweep": bs, "mass_screen": msc,
+                    "session_variant_remap": svr, "candidate_conservation": ccv,
+                    "pit_canaries": pcn, "placement_interlock": pil,
+                    "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
                     "research_tree": rtr, "representation_discovery": rpd,
@@ -5086,7 +5657,8 @@ def main() -> None:
                     "axis_registry": axr, "breadth_ladder": bld, "forced_flow_calendar": ffc,
                     "novelty_gate": ngt, "hazard_engine": hze, "posterior_alpha": pal,
                     "semantic_memory": smm, "model_role_benchmark": mrb,
-                    "live_system_state": lss, "tier1_scorecard": t1s, "wiring_ceo": wce,
+                    "live_system_state": lss, "tier1_scorecard": t1s, "tier1_gap": t1g,
+                    "wiring_ceo": wce,
                     "queue_census": qcn,
                     "research_departments": rdp, "qd_frontier": qdf, "blind_reviewer": bvr,
                     "evaluator_lab": evl, "synthetic_regimes": syr, "value_of_data": vod,
@@ -5098,7 +5670,7 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
-                    "event_surprise": esur,
+                    "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
@@ -5110,17 +5682,21 @@ def main() -> None:
                     "program_alpha_lane": pal, "trajectory_evolution": tev,
                     "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
+                    "htf_anchor": htf, "empty_cluster_forcer": ecf,
                     "analyst_pipeline": anp, "knowledge_graph": kng, "card_explosion": mce,
                     "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
                     "forward_exploitation": mfe, "alpha_recombination": mar,
                     "unused_information": mui, "discovery_compiler": dcp,
-                    "conversion_maximiser": cvm, "research_debt": rdb,
+                    "conversion_maximiser": cvm, "conversion_funnel": cfn,
+                    "research_debt": rdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
                     "macro_intelligence": mci, "market_constitution": mcc,
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
                     "coverage_tensor": cov, "coverage_drain": cdr, "judge_coverage": jcv,
                     "orthogonality_yield": oyz, "effective_trials": eft,
+                    "dsr_inputs": dsi,
+                    "occupancy_map": ocm,
                     "gauntlet_backpressure": gbp, "miner_specialisation": msp,
                     "portfolio_bounty": pbt, "research_auction": rau,
                     "bottleneck_law": btl, "drawdown_alpha_miner": dam,
@@ -5136,7 +5712,10 @@ def main() -> None:
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
-                    "acquire_datasets": acq,
+                    "acquire_datasets": acq, "free_stack_hunt": fsh,
+                    "free_stack_proposer": fsp, "factory_throughput": fxt,
+                    "world_dataset_hunt": wdh,
+                    "world_macro_proposer": wmp,
                     "source_experiment_census": sxc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
@@ -5169,6 +5748,11 @@ def main() -> None:
                     "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,
+                    "null_lab": nlab, "research_live_identity": rlid,
+                    "macro_conditioned_sweep": mcsw, "unknown_census": ucen,
+                    "tier_s": tiers, "adversary_evolution": advx,
+                    "execution_science": exsci, "frontier_map": fmap,
+                    "market_ecology": meco, "research_diversity_archive": rdar,
                     "session_allocation": sess,
                     "session_chart_expansion": sxp,
                     "stamp_freshness": stf,
@@ -5178,6 +5762,7 @@ def main() -> None:
                     "asia_plane": asp,
                     "sge_premium": sge,
                     "asia_collector": aco,
+                    "alt_proxies": alp,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,
@@ -5204,11 +5789,13 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
-                    "proposer_seat": prs, "kimi_hunt": kh,
+                    "proposer_seat": prs, "committees": cmt, "kimi_hunt": kh,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
+                    "build_failure_bank": bfb, "trade_pathology": tpa,
+                    "experiment_contracts": exc_, "health_board": hbd,
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
@@ -5220,12 +5807,16 @@ def main() -> None:
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
+                    "kelly_survival": kls,
+                    "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,
-                    "productivity_census": prodc, "input_identity": iid,
+                    "productivity_census": prodc, "producer_breadth": pbr,
+                    "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
+                    "box_state_freshness": bsf, "desk_health": dhl,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
@@ -5233,11 +5824,12 @@ def main() -> None:
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl, "clock_accrual": cac,
                     "external_gauntlet": gt, "fast_admission": fa,
-                    "canon_publication": cpub, "judging_burndown": jbd,
+                    "canon_publication": cpub, "judging_burndown": jbd, "lockbox_recert": lrc,
+                    "rejection_throughput": rjt,
                     "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
-                    "alpha_evolution": aev, "closed_loop": clp,
+                    "alpha_evolution": aev, "research_bandit": rbd, "closed_loop": clp,
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,

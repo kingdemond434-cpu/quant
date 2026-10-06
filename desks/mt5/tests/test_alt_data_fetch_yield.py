@@ -53,11 +53,13 @@ def _http_error(url: str, code: int, headers: dict | None = None) -> urllib.erro
 
 def test_get_retries_a_503_then_reads_the_page_and_counts_it() -> None:
     calls: list[str] = []
+    errors: list[urllib.error.HTTPError] = []
 
     def opener(req, timeout, context):
         calls.append(req.full_url)
         if len(calls) == 1:
-            raise _http_error(req.full_url, 503)
+            errors.append(_http_error(req.full_url, 503))
+            raise errors[-1]
         return _Resp(b"<html>ok</html>", headers={"Content-Type": "text/html; charset=utf-8"})
 
     pf.reset_stats("t1")
@@ -65,17 +67,21 @@ def test_get_retries_a_503_then_reads_the_page_and_counts_it() -> None:
     assert r.ok and r.text == "<html>ok</html>" and r.attempts == 2 and len(calls) == 2
     s = pf.stats("t1")
     assert s["fetches"] == 2 and s["ok"] == 1 and s["http_errors"] == 1 and s["retries"] == 1
+    assert errors[0].fp.closed
 
 
 def test_a_404_is_deterministic_and_is_not_hammered() -> None:
     calls: list[int] = []
+    errors: list[urllib.error.HTTPError] = []
 
     def opener(req, timeout, context):
         calls.append(1)
-        raise _http_error(req.full_url, 404)
+        errors.append(_http_error(req.full_url, 404))
+        raise errors[-1]
 
     r = pf.get("https://a.test/moved", opener=opener, gate=None, sleep=lambda s: None, retries=3)
     assert not r.ok and r.status == 404 and len(calls) == 1
+    assert errors[0].fp.closed
 
 
 def test_a_certificate_the_trust_stores_reject_is_reported_not_retried() -> None:
@@ -346,8 +352,13 @@ def test_the_cycle_exports_its_cap_to_the_child(monkeypatch) -> None:
 
     monkeypatch.setattr(hc, "_run_tree", fake_tree)
     monkeypatch.setattr(hc, "_priced_budget", lambda name, base: (base, {}))
-    hc._producer_impl("deep_forest_miner", "research/deep_forest_miner.py", ("--budget-s", "900"))
-    assert seen["env"]["QUANT_LEG_BUDGET_S"] == "1020" and seen["timeout"] == 1020
+    args = ("--budget-s", "900")
+    hc._producer_impl("deep_forest_miner", "research/deep_forest_miner.py", args)
+    # The cap is the leg's own cap, raised to the organ's self-stop floor (its budget plus the
+    # write margin) when that is higher -- and the child is told exactly the cap it runs under.
+    cap = max(hc.LEG_BUDGET_SEC["deep_forest_miner"], hc._self_stop_floor_s(args))
+    assert cap == 1035
+    assert seen["env"]["QUANT_LEG_BUDGET_S"] == str(cap) and seen["timeout"] == cap
 
 
 def test_child_cpu_is_counted_where_os_times_cannot() -> None:

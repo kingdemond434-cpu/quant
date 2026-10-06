@@ -13,6 +13,7 @@ found), which is why the exit path is asserted rather than assumed.
 """
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -27,7 +28,16 @@ class TestTheScriptExists:
     def test_both_files_are_present_and_executable(self) -> None:
         for p in (GATES, HOOK):
             assert p.exists(), f"{p.relative_to(ROOT)} is missing"
-            assert p.stat().st_mode & 0o111, f"{p.relative_to(ROOT)} is not executable"
+            if os.name == "nt":
+                # NTFS does not expose Unix execute bits. Verify the mode that
+                # Git will deploy to the POSIX host instead.
+                tracked = subprocess.run(
+                    ["git", "-c", f"safe.directory={ROOT.as_posix()}", "ls-files", "--stage",
+                     "--", p.relative_to(ROOT).as_posix()], cwd=ROOT,
+                    capture_output=True, text=True, check=True)
+                assert tracked.stdout.startswith("100755 "), tracked.stdout
+            else:
+                assert p.stat().st_mode & 0o111, f"{p.relative_to(ROOT)} is not executable"
 
     def test_the_hook_delegates_rather_than_duplicating_the_checks(self) -> None:
         """Two copies of the gate list drift, and the copy nobody runs is the one that rots."""

@@ -161,8 +161,16 @@ def test_a_session_family_keeps_sessions_and_never_takes_d1(desk: Any) -> None:
     rep, kept = mce.build(max_per_card=40, budget_s=60.0, dry_run=True)
     charts = {r["spec"]["chart"] for r in kept if r["axis"] == "chart"}
     assert charts and "D1" not in charts
-    assert {r["spec"]["session"] for r in kept if r["axis"] == "session"} == {"asia", "london",
-                                                                             "ny"}
+    # ONE CHILD PER SESSION SLOT, each one able to fire (2026-09-30): asia_momentum fires at a
+    # single Tokyo-session hour, so its london and ny slots are minted as the firing-hours
+    # oracle's stand-ins -- re-homed into the window where it fires -- never as empty windows.
+    sess = [r for r in kept if r["axis"] == "session"]
+    assert len(sess) == 3
+    assert len({json.dumps(r["spec"], sort_keys=True) for r in sess}) == 3
+    assert "asia" in {r["spec"]["session"] for r in sess}
+    for r in sess:
+        if r["spec"]["session"] == "asia" and r["spec"]["params"].get("regime"):
+            assert "never fires" in r["why"]
     assert any(u["what"].startswith("D1 refused") for u in rep["unmeasured"])
 
 
