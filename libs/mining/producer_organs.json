@@ -22,7 +22,8 @@
   "event_response_atlas": "desks/mt5/research/event_response_atlas.py",
   "net_edge": "desks/mt5/research/net_edge_spine.py",
   "alt_proxies": "desks/mt5/research/alt_proxies.py",
-  "alt_proxies_indirect": "desks/mt5/research/alt_proxies.py"
+  "alt_proxies_indirect": "desks/mt5/research/alt_proxies.py",
+  "news_event_stream": "desks/mt5/research/news_event_stream.py"
  },
  "prefixes": {
   "ext_": "desks/mt5/scripts/_retired/convert_to_hypotheses_v4.py"
