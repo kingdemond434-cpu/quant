@@ -657,8 +657,12 @@ def _event_clock(node: EventClock, bars: pd.DataFrame, ex: Extras) -> pd.Series:
         return _nan(idx)
     span = pd.Series(idx).diff().dt.total_seconds().mode()
     step = float(span.iloc[0]) if len(span) and float(span.iloc[0]) > 0 else 3600.0
-    ev = np.sort(np.asarray(pd.DatetimeIndex(times).view("int64"), dtype=np.float64)) / 1e9
-    now = np.asarray(idx.view("int64"), dtype=np.float64) / 1e9
+    # EPOCH SECONDS THROUGH AN EXPLICIT UNIT. A raw int64 view counts in the index's OWN
+    # resolution (ns, us, ms or s -- pandas 3 parses an ISO string and builds date_range in us),
+    # so dividing it by 1e9 silently assumed ns and read a 10-bar distance as 0.01 against a
+    # step measured in true seconds. The calendar and the bars may also differ in resolution.
+    ev = np.sort(np.asarray(pd.DatetimeIndex(times).as_unit("ns").asi8, dtype=np.float64)) / 1e9
+    now = np.asarray(idx.as_unit("ns").asi8, dtype=np.float64) / 1e9
     if node.mode == "since":
         pos = np.searchsorted(ev, now, side="right") - 1
         out = np.where(pos >= 0, (now - ev[np.clip(pos, 0, ev.size - 1)]) / step, np.nan)
