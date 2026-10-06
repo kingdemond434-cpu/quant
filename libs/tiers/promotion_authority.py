@@ -156,7 +156,7 @@ def _suspended_note(organ: str, name: str, why: str) -> None:
         SUSPENDED_LEDGER.parent.mkdir(parents=True, exist_ok=True)
         with SUSPENDED_LEDGER.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, default=str) + "\n")
-    except Exception:  # the note never costs the pass
+    except (OSError, ValueError):  # the note never costs the pass (FirewallError is an OSError)
         pass
 
 
