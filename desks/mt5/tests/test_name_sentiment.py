@@ -49,7 +49,7 @@ def test_ner_guard_maps_companies_not_words() -> None:
     assert set(ns.score_document("Apple shares rally after earnings", "", t)) == {"Apple"}
     # the ticker anywhere in the story releases the guard for the name in another sentence
     got = ns.score_document("Apple beats estimates.", "Analysts on $AAPL were upbeat.", t)
-    assert got["Apple"] > 0.9
+    assert got["Apple"] == pytest.approx(math.tanh((2.5 + 1.5) / 3.0))
     assert ns.score_document("Shoppers target bargains", "", t) == {}
     assert set(ns.score_document("Target cuts guidance as sales slump", "", t)) == {"Target"}
     assert ns.score_document("Target cuts guidance as sales slump", "", t)["Target"] < -0.8
