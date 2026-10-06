@@ -1,0 +1,54 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Goal-Oriented Wave Computing for Direction-of-Arrival Estimation",
+    "summary": "Programmable metasurfaces---arrays of elements whose electromagnetic response can be tuned electronically---can process signals as a wave propagates through or reflects off them, a paradigm known as w",
+    "url": "https://arxiv.org/abs/2610.06839v1",
+    "published": "2026-10-05T17:58:39Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Goal-Oriented Wave Computing for Direction-of-Arrival Estimation",
+    "summary": "Programmable metasurfaces---arrays of elements whose electromagnetic response can be tuned electronically---can process signals as a wave propagates through or reflects off them, a paradigm known as w",
+    "url": "https://arxiv.org/abs/2610.06839v1",
+    "published": "2026-10-05T17:58:39Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Informed Trading model with quantum walks",
+    "summary": "The seminal Kyle model offers a framework to understand the price impact of an informed trader in a market model for a single asset. We study variants in which the asset's future value is modeled by a",
+    "url": "https://arxiv.org/abs/2610.06779v1",
+    "published": "2026-10-05T17:44:00Z",
+    "trading_terms": [
+      "trading"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "The Hardness of Dominant Strategy Mechanism Design, Revisited",
+    "summary": "We study the communication complexity of \\emph{dominant-strategy incentive-compatible} (DSIC) mechanisms for combinatorial auctions. For $\u03b3\\in [\\log m, m]$, let $\\mathsf{DSIC_{GEN}}(m, \u03b3)$, $\\mathsf{D",
+    "url": "https://arxiv.org/abs/2610.06773v1",
+    "published": "2026-10-05T17:41:15Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]
