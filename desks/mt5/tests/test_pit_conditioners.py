@@ -193,3 +193,79 @@ def test_every_pit_axis_has_a_builder(axis: str) -> None:
     import pit_conditioners as pc
 
     assert axis in pc.BUILDERS
+
+
+def _swap_fixture(tmp_path: Path, monkeypatch: Any, *, mode: int, long_: float,
+                  short: float, bis_rows: list[dict] | None = None) -> Any:
+    import pit_conditioners as pc
+
+    swaps = tmp_path / "broker_swaps"
+    swaps.mkdir()
+    caps = [{"kind": "swap_table", "symbols": ["XAUUSD"], "swap_long": long_,
+             "swap_short": short, "found_at": f"2026-08-{d:02d}T06:00:00+00:00"}
+            for d in (26, 27)]
+    (swaps / "discoveries_20260827_0600.json").write_text(json.dumps(caps), "utf-8")
+    (tmp_path / "carry_state.json").write_text(json.dumps(
+        {"symbols": {"XAUUSD": {"swap_mode": mode}}}), "utf-8")
+    uni = tmp_path / "universe"
+    uni.mkdir()
+    (uni / "universe.json").write_text(json.dumps({"XAUUSD": {"tick_size": 0.01}}), "utf-8")
+    idx = pd.date_range("2026-08-20", "2026-08-28", freq="h", tz="UTC")
+    pd.DataFrame({"close": 2600.0}, index=idx).to_parquet(uni / "XAUUSD_H1.parquet")
+    axes = tmp_path / "axes"
+    axes.mkdir()
+    (axes / "bis.json").write_text(json.dumps({"rows": bis_rows or []}), "utf-8")
+    for name, val in (("SWAP_DIR", swaps), ("CARRY_STATE", tmp_path / "carry_state.json"),
+                      ("UNIVERSE_DIR", uni), ("UNIVERSE_JSON", uni / "universe.json"),
+                      ("AXES_DIR", axes),
+                      ("SINCE", pd.Timestamp("2026-01-01", tz="UTC"))):
+        monkeypatch.setattr(pc, name, val)
+    return pc
+
+
+def test_xauusd_carry_is_the_broker_swap_the_desk_actually_pays(tmp_path, monkeypatch) -> None:
+    """The 44 XAUUSD carry refusals: no policy-rate pair speaks for gold, the broker's swap does.
+    POINTS mode: (long - short) * tick / price, annualised; knowable at the capture's found_at."""
+    pc = _swap_fixture(tmp_path, monkeypatch, mode=1, long_=-61.76, short=29.45)
+    got, meta = pc.carry()
+    rows = next(f for f in got if f["key"].iloc[0] == "XAUUSD")
+    assert set(rows["source"]) == {"broker_swap"}
+    want = (-61.76 - 29.45) * 0.01 / 2600.0 * 365.0 * 100.0
+    assert rows["value"].iloc[0] == pytest.approx(want)
+    assert bool(rows["pressed"].iloc[0])                       # |-12.8% p.a.| >= 1.825%
+    assert rows["knowable_at"].iloc[0] == pd.Timestamp("2026-08-26T06:00:00Z")
+    assert rows["stale_after"].iloc[0] == pd.Timestamp("2026-08-31T06:00:00Z")
+    assert meta["n_keys_broker_swap"] == 1
+
+
+def test_an_interest_mode_swap_is_already_annual_percent(tmp_path, monkeypatch) -> None:
+    pc = _swap_fixture(tmp_path, monkeypatch, mode=5, long_=-1.0, short=0.5)
+    rows = next(f for f in pc.carry()[0] if f["key"].iloc[0] == "XAUUSD")
+    assert rows["value"].iloc[0] == pytest.approx(-1.5)
+    assert not bool(rows["pressed"].iloc[0])                   # below the 1.825% floor
+
+
+def test_an_unknown_swap_unit_is_unmeasured_by_name(tmp_path, monkeypatch) -> None:
+    pc = _swap_fixture(tmp_path, monkeypatch, mode=7, long_=-1.0, short=0.5)
+    got, meta = pc.carry()
+    assert not got and meta["state"] == "UNMEASURED"
+    assert "unit not established" in meta["unmeasured"]["XAUUSD"]
+
+
+def test_the_policy_rate_differential_wins_where_bis_has_the_pair(tmp_path, monkeypatch) -> None:
+    bis = [{"symbol": "XAUUSD", "knowable_at": "2026-08-25", "carry_differential": 3.0}]
+    pc = _swap_fixture(tmp_path, monkeypatch, mode=1, long_=-61.76, short=29.45, bis_rows=bis)
+    rows = [f for f in pc.carry()[0] if f["key"].iloc[0] == "XAUUSD"]
+    assert len(rows) == 1 and set(rows[0]["source"]) == {"bis_policy_rates"}
+
+
+def test_a_broker_swap_carry_cell_is_applied_not_refused(tmp_path, monkeypatch) -> None:
+    pc = _swap_fixture(tmp_path, monkeypatch, mode=1, long_=-61.76, short=29.45)
+    out = tmp_path / "pit.parquet"
+    pd.concat(pc.carry()[0]).to_parquet(out, index=False)
+    monkeypatch.setattr(cm, "PIT_FILE", out)
+    mods = {"conditioner": "pit:carry:XAUUSD"}
+    assert cm.refusal(mods) is None
+    inside = _sig(pd.Timestamp("2026-08-28T00:00:00Z"))
+    before = _sig(pd.Timestamp("2026-08-25T00:00:00Z"))       # before the first capture
+    assert [s.time for s in cm.apply([before, inside], pd.DataFrame(), mods)] == [inside.time]
