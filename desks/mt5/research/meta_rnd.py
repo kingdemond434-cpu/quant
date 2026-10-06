@@ -65,6 +65,7 @@ FALSIFIERS_ALT = DESK / "reports" / "FALSIFIERS.json"
 MUTATION_YIELD = DESK / "reports" / "MUTATION_YIELD.json"
 SURVIVORS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 OUT = DESK / "reports" / "META_RND.json"
+FRONTIER = DESK / "reports" / "RESEARCH_FRONTIER.json"
 
 POLICIES = ("catalogue_prior", "measured_kill_rates", "premortem_first", "cheapest_first")
 MIN_ROWS = 5              # replayed certificates below this: the tournament is UNMEASURED
@@ -232,6 +233,42 @@ def replay_orderings(rows: list[dict[str, Any]],
     return out
 
 
+def guarded_winner(rows: list[dict[str, Any]], measured: dict[str, float],
+                   state_path: Path | None = None) -> dict[str, Any]:
+    """The ordering winner chosen through `libs.research.reusable_holdout`. Rows split by their
+    certificate id (a row never changes side); each policy's mean seconds on the training half
+    is answered through Thresholdout against the holdout half. When the study's budget is gone
+    the pick FREEZES at the last guarded winner until fresh rows arrive -- it never silently
+    reverts to selecting on the exhausted rows."""
+    from libs.research import reusable_holdout as rh
+    halves: dict[str, list[dict[str, Any]]] = {"train": [], "holdout": []}
+    for r in rows:
+        halves[rh.split(str(r.get("cert_id") or ""))].append(r)
+    if min(len(halves["train"]), len(halves["holdout"])) < MIN_ROWS:
+        return {"status": "UNMEASURED", "winner": None,
+                "why": f"each half needs {MIN_ROWS} rows (train={len(halves['train'])}, "
+                       f"holdout={len(halves['holdout'])})"}
+    tr = replay_orderings(halves["train"], measured)
+    ho = replay_orderings(halves["holdout"], measured)
+    q = {k: (float(tr[k]["mean_seconds_to_verdict"]), float(ho[k]["mean_seconds_to_verdict"]))
+         for k in POLICIES if tr[k]["mean_seconds_to_verdict"] is not None
+         and ho[k]["mean_seconds_to_verdict"] is not None}
+    if not q:
+        return {"status": "UNMEASURED", "winner": None, "why": "no policy measured on both halves"}
+    scale = sum(v[0] for v in q.values()) / len(q)
+    out = rh.thresholdout("meta_rnd.test_ordering", q, scale=scale, state_path=state_path)
+    answered = {k: v for k, v in out["answers"].items() if v is not None}
+    if answered:
+        winner = min(answered, key=lambda k: float(answered[k]))
+    else:
+        winner = str(_read(OUT).get("ordering", {}).get("winner") or "") or None
+    return {**out, "winner": winner, "n_train": len(halves["train"]),
+            "n_holdout": len(halves["holdout"]),
+            "frozen": not answered,
+            "why": (None if answered else "holdout budget exhausted: the pick is frozen at the "
+                    "last guarded winner until fresh certificate rows rotate in")}
+
+
 def ordering_kill_rates() -> dict[str, float]:
     """THE CONSUMER'S DOOR. `falsifier_run` asks for the winning policy's kill rates and passes
     them to `falsifiers.schedule`. An empty dict leaves the catalogue's declared prior in place,
@@ -338,8 +375,10 @@ def build(budget_s: float = 180.0) -> dict[str, Any]:
     orderings = replay_orderings(rows, measured) if rows else {}
     eligible = {k: v for k, v in orderings.items() if v["verdict"] == "MEASURED"
                 and v["mean_seconds_to_verdict"] is not None}
-    winner = min(eligible, key=lambda k: float(eligible[k]["mean_seconds_to_verdict"])) \
+    raw_winner = min(eligible, key=lambda k: float(eligible[k]["mean_seconds_to_verdict"])) \
         if eligible else None
+    guard = guarded_winner(rows, measured)
+    winner = guard["winner"] if guard.get("winner") else raw_winner
     # The arena's own judge, in its own vocabulary: an arm is "born" per replayed certificate and
     # "certified" when its order reached a kill, so a faster policy that finds nothing does not
     # win by being fast at nothing.
@@ -357,7 +396,10 @@ def build(budget_s: float = 180.0) -> dict[str, Any]:
         "status": "OK" if rows else "UNMEASURED",
         "source": source, "n_replayed": len(rows),
         "ordering": {
-            "policies": orderings, "winner": winner,
+            "policies": orderings, "winner": winner, "raw_winner": raw_winner,
+            # THE SAME ROWS ARE ASKED THE SAME QUESTION EVERY HOUR: the pick goes through a
+            # reusable holdout so it stays an estimate, not a fit to these rows' noise.
+            "reusable_holdout": guard,
             "applied_policy": applied,
             "measured_kill_rates": measured,
             "applied": bool(applied == "measured_kill_rates" and measured),
@@ -387,6 +429,159 @@ def build(budget_s: float = 180.0) -> dict[str, Any]:
     }
 
 
+# ===================================================================== THE FRONTIER REPORT
+def _rep(name: str) -> Path:
+    return DESK / "reports" / name
+
+
+#: One row per limitation of the RESEARCH PROCESS (principal, 2026-10-06: "research the
+#: researcher"). Each names the organ that owns it, the artifact that measures it, and the
+#: experiment that would move it. A row's numbers are READ from its artifact on every pass; an
+#: absent artifact is UNMEASURED, and a challenger nobody has built is NOT_BUILT -- never a pass.
+LIMITATIONS: tuple[dict[str, Any], ...] = (
+    {"id": "dataset_discovery_method", "owner": "research/source_frontier.py, "
+     "research/world_dataset_hunter.py (Breadth)",
+     "limit": "whether catalogue enumeration finds more usable datasets per compute-hour than "
+              "search and crawling has never been compared at matched compute",
+     "artifacts": ("SOURCE_FRONTIER.json", "DATASET_HUNT.json"), "challenger": None,
+     "resources": "both arms' acquisition outcomes per compute-hour (source_frontier's ROI "
+                  "ledger); no new spend",
+     "next": "paired weekly run: equal seconds to DBnomics/BIS catalogue enumeration and to the "
+             "crawler on the same country set; score usable datasets admitted per hour"},
+    {"id": "representation_novelty", "owner": "research/representation_forge.py, "
+     "research/orthogonality_yield.py",
+     "limit": "a new representation is credited by drop-one explained variance, with no "
+              "interval and no comparison between representation methods",
+     "artifacts": ("REPRESENTATION_FORGE.json", "ORTHOGONALITY_YIELD.json"), "challenger": None,
+     "resources": "the forge's own matrices; bootstrap over days",
+     "next": "bootstrap CI on each family's incremental R^2 over the existing factor set, and "
+             "a head-to-head of representation methods at equal feature count"},
+    {"id": "joint_feature_model_search", "owner": "research/factor_model_coevolution.py",
+     "limit": "joint (F, M) search was only ever compared with the base rate",
+     "artifacts": ("COEVOLUTION.json",), "challenger": "method_challenger",
+     "resources": "90 s per pass inside the coevolution leg",
+     "next": "keep the paired runs accruing until the arena separates the arms; then extend "
+             "the matched baseline to model-first"},
+    {"id": "specialist_vs_general_agent", "owner": "libs/ops/llm_seat.py, "
+     "libs/research_os/brain_ab.py",
+     "limit": "cheaper specialist models are refused by policy (llm_seat), so whether one "
+              "completes a task as reliably as a general model is unmeasurable",
+     "artifacts": ("../data/brain_ab.json",), "challenger": None, "blocked_by": "policy",
+     "resources": "a sanctioned A/B seat for one bounded task (extraction), cost logged",
+     "next": "principal-gated: one extraction task routed 50/50 to a specialist and the "
+             "incumbent, scored on the deepening worker's acceptance rate per dollar"},
+    {"id": "allocator_speed_vs_turnover", "owner": "research/rebalance_trigger.py",
+     "limit": "a faster rebalance cadence has never been replayed against net results; the "
+              "trigger decides per event but no cadence is compared",
+     "artifacts": ("REBALANCE_TRIGGER.json", "ALLOCATOR_PROOF.json"), "challenger": None,
+     "resources": "recorded forward daily R and the live ledger's costs",
+     "next": "replay hourly vs daily vs weekly rebalancing of the recorded book: net E[log W] "
+             "and turnover per cadence, with a block-bootstrap interval"},
+    {"id": "adaptive_holdout_reuse", "owner": "research/meta_rnd.py, libs/research/lockbox.py",
+     "limit": "hourly selections reuse the same recorded rows; the lockbox protects one final "
+              "verdict, not a selection rule that runs forever",
+     "artifacts": ("META_RND.json",), "challenger": "reusable_holdout",
+     "resources": "fresh certificate rows; the study budget",
+     "next": "extend the reusable holdout to research_os_archive's champion seating"},
+    {"id": "research_trajectories", "owner": "research/research_os_archive.py, "
+     "research/semantic_memory.py",
+     "limit": "outcomes are kept; the steps, data and decisions that produced them are not "
+              "replayable as procedures",
+     "artifacts": ("RESEARCH_OS_ARCHIVE.json",), "challenger": None,
+     "resources": "the event log and the hypothesis graph already hold the steps",
+     "next": "record each certified and each buried candidate's lineage as a replayable "
+             "procedure and measure reuse yield against cold starts"},
+    {"id": "component_ablation", "owner": "libs/ops/module_rent.py, research/module_rent.py",
+     "limit": "removal is estimated, never performed: no component is switched off on a shadow "
+              "run to measure the loss",
+     "artifacts": ("MODULE_RENT.json",), "challenger": None,
+     "resources": "one shadow pass per component on the build box",
+     "next": "shadow ablation of the lowest-rent research leg for a week; compare survivors "
+             "per compute-hour with and without it"},
+    {"id": "optimality_gap", "owner": "libs/portfolio/allocator_proof.py",
+     "limit": "no allocator decision is compared with a bound (hindsight oracle or the solver's "
+              "dual), so the gap to optimal is unknown",
+     "artifacts": ("ALLOCATOR_PROOF.json",), "challenger": None,
+     "resources": "recorded daily R; a hindsight-Kelly solve per window",
+     "next": "publish realised log growth against the hindsight-optimal fixed-fraction bound "
+             "per window: the gap and its interval"},
+)
+
+
+def _artifact(name: str, now_ts: float) -> dict[str, Any]:
+    p = (DESK / "reports" / name).resolve()
+    doc = _read(p)
+    if not doc:
+        return {"path": str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p),
+                "state": "ABSENT"}
+    try:
+        age_h = round((now_ts - p.stat().st_mtime) / 3600, 2)
+    except OSError:
+        age_h = None
+    return {"path": str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p),
+            "state": "PRESENT", "age_h": age_h, "doc": doc}
+
+
+def _challenger_result(cid: str, arts: dict[str, dict[str, Any]],
+                       meta: dict[str, Any]) -> dict[str, Any]:
+    if cid == "method_challenger":
+        ch = (arts.get("COEVOLUTION.json", {}).get("doc") or {}).get("method_challenger") or {}
+        if not ch:
+            return {"status": "UNMEASURED", "why": "no method_challenger block on the report"}
+        v = (ch.get("verdict") or {}).get("arms") or {}
+        return {"status": "MEASURED" if ch.get("decided") else "UNMEASURED",
+                "runs": ch.get("runs"), "wins": ch.get("wins"),
+                "gap": ch.get("oos_net_gain_gap_joint_minus_sequential"),
+                "verdicts": {k: (r or {}).get("verdict") for k, r in v.items()},
+                "uncertainty": "posterior P(worse than leader) per arm; mean and SE of the "
+                               "out-of-sample net-gain gap"}
+    if cid == "reusable_holdout":
+        g = (meta.get("ordering") or {}).get("reusable_holdout") or {}
+        return {"status": "MEASURED" if g.get("status") in ("VALID", "EXHAUSTED")
+                else "UNMEASURED",
+                "holdout_status": g.get("status"), "budget_left": g.get("budget_left"),
+                "overfit_this_pass": g.get("overfit"), "winner": g.get("winner"),
+                "uncertainty": "Thresholdout's guarantee holds while budget_left > 0"}
+    return {"status": "UNMEASURED"}
+
+
+def frontier(meta: dict[str, Any], now_ts: float | None = None) -> dict[str, Any]:
+    """THE FRONTIER REPORT: per limitation of the research process, what limits it, what was
+    tested, the result and its uncertainty, what it would take to go further, and the next
+    highest-value experiment. Read from artifacts every pass; nothing here is asserted."""
+    now = time.time() if now_ts is None else now_ts
+    rows = []
+    for lim in LIMITATIONS:
+        arts = {a: _artifact(a, now) for a in lim["artifacts"]}
+        if lim.get("challenger"):
+            res = _challenger_result(str(lim["challenger"]), arts, meta)
+            status = res["status"]
+        elif lim.get("blocked_by"):
+            res, status = {"status": "BLOCKED_BY_POLICY"}, "BLOCKED_BY_POLICY"
+        else:
+            res, status = {"status": "NOT_BUILT"}, "NOT_BUILT"
+        rows.append({"id": lim["id"], "owner": lim["owner"], "limit": lim["limit"],
+                     "tested": lim.get("challenger") or "no matched challenger yet",
+                     "result": res, "status": status,
+                     "artifacts": {k: {kk: vv for kk, vv in v.items() if kk != "doc"}
+                                   for k, v in arts.items()},
+                     "resources_to_go_further": lim["resources"],
+                     "next_experiment": lim["next"]})
+    auction = _read(_rep("RESEARCH_AUCTION.json"))
+    counts: dict[str, int] = {}
+    for r in rows:
+        counts[r["status"]] = counts.get(r["status"], 0) + 1
+    return {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "limitations": rows, "counts": counts,
+            "measured_share": round(counts.get("MEASURED", 0) / len(rows), 4),
+            "compute_auction": {"source": "research/research_auction.py",
+                                "state": "PRESENT" if auction else "ABSENT",
+                                "note": "producer competition for compute is the auction's; "
+                                        "this report names experiments, it allocates nothing"},
+            "rule": ("a NOT_BUILT or UNMEASURED row is the measurement, never a pass; the "
+                     "report allocates no compute and moves no gate")}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--once", action="store_true")
@@ -399,6 +594,12 @@ def main(argv: list[str] | None = None) -> int:
     except OSError as exc:
         print(f"meta rnd: could not write {OUT}: {exc}")
         return 1
+    try:
+        fr = frontier(doc)
+        FRONTIER.write_text(json.dumps(fr, indent=1, default=str), encoding="utf-8")
+        print(f"research frontier: {fr['counts']} -> {FRONTIER}")
+    except Exception as exc:                       # the ordering result above still stands
+        print(f"research frontier: FAILED {type(exc).__name__}: {exc}")
     o = doc["ordering"]
     print(f"meta rnd: {doc['n_replayed']} certificate batter(ies) replayed under "
           f"{len(POLICIES)} ordering policies; winner={o['winner']} "
