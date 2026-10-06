@@ -197,7 +197,7 @@ def _anchor(session: Any) -> dict:
     """`{"anchor_hour": h}` when the desk's own session table names one, else nothing. A
     parameter restated here is right the day it is written and forks when the family changes."""
     try:
-        from mt5desk.family_call import SESSIONS
+        from mt5desk.family_call import WINDOWS as SESSIONS
         return {"anchor_hour": int(SESSIONS[str(session)][0])}
     except Exception:
         return {}

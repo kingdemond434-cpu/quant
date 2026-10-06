@@ -103,15 +103,18 @@ CHART_MINUTES = {"M1": 1, "M5": 5, "M15": 15, "M30": 30, "H1": 60, "H4": 240, "D
 DEFAULT_CHART = "H1"
 CHART_ALIAS = {"1M": "M1", "5M": "M5", "15M": "M15", "30M": "M30", "1H": "H1", "60": "H1",
                "4H": "H4", "1D": "D1", "DAILY": "D1", "H01": "H1"}
-#: `overlap` is recorded but never proposed: `family_call.session_filter` has no window for it and
-#: would silently keep every bar, so a proposal naming it would mean `all` while claiming not to.
-SESSIONS = ("all", "asia", "london", "ny", "overlap")
-PROPOSABLE_SESSIONS = ("all", "asia", "london", "ny")
+#: Every session `family_call.SESSIONS` filters is proposable. `overlap` was recorded but never
+#: proposed while the shared filter had no window for it (it silently kept every bar); since
+#: 2026-10-06 it and the two fixes have windows of their own.
+SESSIONS = ("all", "asia", "london", "ny", "tokyo_fix", "london_fix", "overlap")
+PROPOSABLE_SESSIONS = ("all", "asia", "london", "ny", "tokyo_fix", "london_fix", "overlap")
 SESSION_ALIAS = {"asia": "asia", "asian": "asia", "tokyo": "asia", "sydney": "asia",
                  "london": "london", "london_am": "london", "london_pm": "london",
                  "europe": "london", "eu": "london", "frankfurt": "london", "ny": "ny",
                  "new_york": "ny", "newyork": "ny", "us": "ny", "afternoon": "ny", "nyc": "ny",
                  "london_close": "ny", "overlap": "overlap", "london_ny": "overlap",
+                 "tokyo_fix": "tokyo_fix", "tokyo_fixing": "tokyo_fix",
+                 "london_fix": "london_fix", "wmr": "london_fix", "wm_r": "london_fix",
                  "all": "all", "continuous": "all", "any": "all", "none": "all", "": "all"}
 
 HORIZONS = ("intrabar", "sub_4h", "sub_1d", "multi_day", UNKNOWN)

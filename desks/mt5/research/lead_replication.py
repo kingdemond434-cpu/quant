@@ -485,7 +485,7 @@ def declared_params(text: str, allowed: set[str] | None) -> dict[str, float]:
 
 def _session_of(text: str) -> str | None:
     try:
-        from mt5desk.family_call import SESSIONS
+        from mt5desk.family_call import WINDOWS as SESSIONS
         names: tuple[str, ...] = tuple(SESSIONS)
     except Exception:                                  # pragma: no cover - import environment
         names = ("asia", "london", "ny", "all")
