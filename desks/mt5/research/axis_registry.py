@@ -150,7 +150,8 @@ MECHANISM_ACTOR = {
 _FAMILY_GROUPS: dict[str, str] = {
     "trend_persistence price_only market": "anti_three_bar_momentum h4_momentum momentum_volgate"
                                            " multi_speed_trend trend_ma_cross"
-                                           " htf_anchor_trend",
+                                           " htf_anchor_trend parabolic_sar_flip carver_accel"
+                                           " awesome_saucer",
     "trend_persistence price_only stop": "adx_channel_hybrid",
     "trend_persistence price_only limit": "pullback_entry",
     "session_handover price_only market": "asia_momentum clock_transition monday_gap"
@@ -174,7 +175,8 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                      " cross_sectional pca_residual"
                                                      " relative_value style_premia"
                                                      " cross_sectional_class_value"
-                                                     " cross_sectional_class_low_vol",
+                                                     " cross_sectional_class_low_vol"
+                                                     " commodity_fx_residual",
     "relative_value_dislocation microstructure limit": "triangle",
     "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
                                             " gnn_propagation mass_screen_lead",
@@ -193,15 +195,19 @@ _FAMILY_GROUPS: dict[str, str] = {
     "forced_liquidation cross_asset market": "crisis_only_class_defensive",
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"
                                         " mean_reversion_rsi range_reversion",
-    "range_reversion price_only market": "engulfing_reversal pin_bar_reversal",
+    "range_reversion price_only market": "engulfing_reversal pin_bar_reversal"
+                                         " heikin_ashi_reversal rsi_head_shoulders bollinger_w"
+                                         " ffd_reversion",
     "breakout_liquidity price_only stop": "anti_donchian_breakout d1_swing_break level_breakout"
                                           " london_ny_breakout opening_range"
                                           " session_range_breakout",
     "breakout_liquidity price_only limit": "failed_breakout",
-    "volatility_shock price_only market": "jump vol_mean_reversion",
+    # skew_premium (Carver): holders of negatively skewed assets are paid for crash risk.
+    "volatility_shock price_only market": "jump vol_mean_reversion skew_premium",
     "volatility_shock price_only stop": "d1_inside volatility_squeeze",
     "regime_transition price_only market": "drawdown_conditional regime_split"
-                                           " regime_transition vol_transition",
+                                           " regime_transition vol_transition"
+                                           " sadf_explosive",
     "execution_microstructure microstructure market": "liquidity_regime orderflow_imbalance",
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
                                                      " spread_state",
@@ -226,6 +232,17 @@ _FAMILY_GROUPS: dict[str, str] = {
     # `world_macro_state` (2026-09-30) conditions on one hunted world series named on the recipe,
     # the same shape as `exogenous_conditioner`: the series is named, the payer is not.
     f"{UNKNOWN} macro market": "exogenous_conditioner world_macro_state alt_series_momentum",
+    # The EliteQuant / CN-CTA / QuantTrading absorptions (#166, 2026-09-30). Every one enters at
+    # the next open on a closed-bar signal, so the style is `market` for all of them. The CN
+    # canon (Dual Thrust, R-Breaker, King Keltner, 空中花园 open-gap) are range breakouts paid by
+    # the stops parked beyond the range; R-Breaker's reversal mode is a parameter of one family.
+    # The trend, reversion, regime (backward SADF), skew and residual absorptions are listed in
+    # their mechanism's own row above.
+    "breakout_liquidity price_only market": "dual_thrust r_breaker king_keltner sky_garden",
+    # Corwin-Schultz high-low spread: a liquidity shock read off the bar's own range.
+    "execution_microstructure price_only market": "hl_spread_shock",
+    # A zoo alpha's class book names an expression, not a payer: counted UNKNOWN, never guessed.
+    f"{UNKNOWN} cross_asset market": "zoo_alpha_class",
 }
 FAMILY_TABLE: dict[str, tuple[str, str, str]] = {}
 for _key, _fams in _FAMILY_GROUPS.items():
