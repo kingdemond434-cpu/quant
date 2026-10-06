@@ -375,13 +375,32 @@ def _orthogonal_key() -> Any:
     except Exception:
         by_pair = {}
     certified = _certified_family_counts()
+    # EFFECTIVE SATURATION, NOT THE NOMINAL COUNT (anti-saturation law 2026-10-05). With a fresh
+    # certificate saturation map the second key is the cell's NOVELTY CREDIT against the
+    # certified book's effective local density (higher first, two decimals so near-ties fall to
+    # the least-judged key), which separates the 41st USD pair of a saturated breakout cluster
+    # from the first JPY-cross carry cell inside the SAME family. Absent map: the nominal
+    # certified count per family, exactly as before.
+    try:
+        from research.certificate_saturation import scorer
+        sat = scorer()
+    except Exception:
+        sat = None
 
     def key(r: dict) -> tuple:
-        tf = str((r.get("params") or {}).get("timeframe") or "H1")
+        params = r.get("params") or {}
+        tf = str(params.get("timeframe") or "H1")
         fam = str(r["family"])
-        return (_tf_rank(tf), certified.get(fam, 0),
-                by_pair.get((str(r["symbol"]).upper(), fam), 0),
-                r["symbol"], r["family"])
+        sym = str(r["symbol"]).upper()
+        if sat is not None:
+            try:
+                crowd: float = -round(float(sat.score_fields(
+                    sym, fam, params, tf, params.get("session"), None)["novelty_credit"]), 2)
+            except Exception:
+                crowd = float(certified.get(fam, 0))
+        else:
+            crowd = float(certified.get(fam, 0))
+        return (_tf_rank(tf), crowd, by_pair.get((sym, fam), 0), r["symbol"], r["family"])
     return key
 
 

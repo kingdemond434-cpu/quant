@@ -488,7 +488,7 @@ def similarity(a: Mapping[str, str], b: Mapping[str, str], *, factor_free: bool 
             continue
         va, vb = str(a.get(axis, UNKNOWN)), str(b.get(axis, UNKNOWN))
         den += w
-        if va == vb or va == UNKNOWN or vb == UNKNOWN:
+        if va in (vb, UNKNOWN) or vb == UNKNOWN:
             num += w
     return num / den if den else 1.0
 
@@ -641,20 +641,7 @@ def coupling_table(symbols: Iterable[str], loader: Callable[[str], Any] | None =
         res = zz - np.outer(pc, beta)
         rc = np.abs(np.corrcoef(res, rowvar=False))
         explained = float(_s[0] ** 2 / float((_s ** 2).sum()))
-        parent = list(range(len(mem)))
-
-        def find(i: int) -> int:
-            while parent[i] != i:
-                parent[i] = parent[parent[i]]
-                i = parent[i]
-            return i
-        for i in range(len(mem)):
-            for j in range(i + 1, len(mem)):
-                if rc[i, j] >= RESIDUAL_LINK:
-                    parent[find(i)] = find(j)
-        groups: dict[int, list[str]] = defaultdict(list)
-        for i, s in enumerate(mem):
-            groups[find(i)].append(s)
+        groups = _link_groups(mem, rc, RESIDUAL_LINK)
         clusters = sorted((sorted(g) for g in groups.values()), key=lambda g: (-len(g), g))
         for k, g in enumerate(clusters):
             for s in g:
@@ -665,6 +652,25 @@ def coupling_table(symbols: Iterable[str], loader: Callable[[str], Any] | None =
                        "n_residual_clusters": len(clusters)}
     return out, {"status": MEASURED, "factors": detail, "residual_of": residual,
                  "n_symbols": len(names)}
+
+
+def _link_groups(names: list[str], mat: np.ndarray, link: float) -> dict[int, list[str]]:
+    """Single-linkage groups of `names` whose pairwise `mat` entry reaches `link`."""
+    parent = list(range(len(names)))
+
+    def find(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+    for i in range(len(names)):
+        for j in range(i + 1, len(names)):
+            if mat[i, j] >= link:
+                parent[find(i)] = find(j)
+    groups: dict[int, list[str]] = defaultdict(list)
+    for i, s in enumerate(names):
+        groups[find(i)].append(s)
+    return groups
 
 
 def coupling(a: str, b: str, table: Mapping[str, Mapping[str, float]]) -> float:
@@ -1257,8 +1263,8 @@ def _breadth_debts(clusters: Mapping[str, Mapping[str, Any]], glist: list[dict[s
     registered family implements, crossed with the classes the desk may hypothesise on, minus
     what the certified book occupies. Not the full Cartesian product -- only reachable ground."""
     try:
-        from libs.research.breadth_credit import marginal_k_eff
         from libs.research.alpha_clusters import classify_family
+        from libs.research.breadth_credit import marginal_k_eff
     except Exception:                                                   # pragma: no cover
         return []
     occupied = {(v["hierarchy"]["L1"], v["hierarchy"]["L2"], v["hierarchy"]["L3"])
@@ -1371,7 +1377,7 @@ class Scorer:
         self.sig_axes = [dict(zip(SIG_AXES, s, strict=False)) for s in sigs]
         self.vocab: list[dict[str, int]] = []
         mat = np.full((max(len(sigs), 1), len(SIG_AXES)), -1, dtype=int)
-        for a, axis in enumerate(SIG_AXES):
+        for a in range(len(SIG_AXES)):
             voc: dict[str, int] = {}
             for i, s in enumerate(sigs):
                 v = str(s[a]) if a < len(s) else UNKNOWN
@@ -1720,8 +1726,28 @@ def producer_brief(source_token: str = "", *, doc: Mapping[str, Any] | None = No
 
 
 __all__ = [
-    "AXES", "MATERIAL_FALL", "REPORT", "FEEDBACK", "Scorer", "axes_of", "book_breadth", "build",
-    "cluster_key", "coupling", "coupling_table", "credit_for", "factor_of", "family_factor",
-    "forward_dependence", "hierarchy", "load", "novelty_credit", "producer_brief", "publish",
-    "scorer", "similarity", "stamp", "write_feedback",
+    "AXES",
+    "FEEDBACK",
+    "MATERIAL_FALL",
+    "REPORT",
+    "Scorer",
+    "axes_of",
+    "book_breadth",
+    "build",
+    "cluster_key",
+    "coupling",
+    "coupling_table",
+    "credit_for",
+    "factor_of",
+    "family_factor",
+    "forward_dependence",
+    "hierarchy",
+    "load",
+    "novelty_credit",
+    "producer_brief",
+    "publish",
+    "scorer",
+    "similarity",
+    "stamp",
+    "write_feedback",
 ]

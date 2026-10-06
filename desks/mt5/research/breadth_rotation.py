@@ -95,16 +95,48 @@ def judged_counts(path: Path | None = None) -> tuple[dict[str, int], dict[tuple[
     return _judged_at(str(p), mtime)
 
 
-def orthogonal_ring(symbols: Iterable[str], family: str | None = None, *,
-                    counts: tuple[dict[str, int], dict[tuple[str, str], int]] | None = None
-                    ) -> list[str]:
-    """`symbols`, least-judged first (per (symbol, family) when a family is named), then by name.
+def saturation_tier(symbol: str, family: str, sat: Any = None) -> float:
+    """-novelty credit of `family` on `symbol` against the certified book (one decimal, so the
+    tier is coarse and the judged count still orders inside it); 0.0 when the map is UNMEASURED.
 
-    Deduplicated, order-stable for equal counts, and never shorter than its input."""
+    THE ANTI-SATURATION LAW (2026-10-05): a producer's per-pass window should land first on the
+    instruments where ANOTHER copy of this family would be a new bet, and last on the ones where
+    the certified book already holds the same mechanism on the same factor."""
+    if sat is None:
+        return 0.0
+    try:
+        return -round(float(sat.score_fields(str(symbol).upper(), family, {}, None, None,
+                                             None)["novelty_credit"]), 1)
+    except Exception:
+        return 0.0
+
+
+def _saturation_scorer() -> Any:
+    try:
+        from research.certificate_saturation import scorer
+        return scorer()
+    except Exception:
+        try:
+            from certificate_saturation import scorer as _scorer  # type: ignore[import-not-found]
+            return _scorer()
+        except Exception:
+            return None
+
+
+def orthogonal_ring(symbols: Iterable[str], family: str | None = None, *,
+                    counts: tuple[dict[str, int], dict[tuple[str, str], int]] | None = None,
+                    saturation: Any = "auto") -> list[str]:
+    """`symbols`, least-SATURATED first when a family is named (the certified book's effective
+    local density, `saturation_tier`), then least-judged, then by name.
+
+    Deduplicated, order-stable for equal keys, and never shorter than its input. `saturation`
+    is a `certificate_saturation.Scorer`, None to disable, or "auto" to read the published map."""
     by_sym, by_pair = counts if counts is not None else judged_counts()
     uniq = sorted({str(s) for s in symbols if str(s)})
     if family:
-        return sorted(uniq, key=lambda s: (by_pair.get((s.upper(), family), 0), s))
+        sat = _saturation_scorer() if saturation == "auto" else saturation
+        return sorted(uniq, key=lambda s: (saturation_tier(s, family, sat),
+                                           by_pair.get((s.upper(), family), 0), s))
     return sorted(uniq, key=lambda s: (by_sym.get(s.upper(), 0), s))
 
 
