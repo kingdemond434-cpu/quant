@@ -430,6 +430,8 @@ REQUIRED_TASKS: frozenset[str] = frozenset(
 TASK_CANONICAL: dict[str, str] = {
     "MT5-GatewayResident": "resident:gateway",
     "MT5-ClockFixer": "component:control_plane",
+    # the private-network audit task: its organ is the artifact it writes (audit mode only)
+    "MT5-PrivateNetAudit": "task:MT5-PrivateNetAudit:artifact",
     # the departments (discovery rides MT5-Hourly -- see department_task)
     "MT5-Hourly": "resident:dept_discovery",
     "MT5-Dept-Data": "resident:dept_data",
@@ -908,7 +910,9 @@ def _control_room_specs() -> list[ComponentSpec]:
         expected_artifact_schema=f"desks/mt5/reports/{report}",
         owner="daily_cycle", restart_action="restart:task:MT5-Daily",
         criticality="optional", resource_budget={"budget_s": 3600},
-        schedule="MT5-Daily", artifact_class="daily",
+        # the STEP is the clock, as for every organ a daily step reaches: naming the task here
+        # would register a second organ for MT5-Daily beside `daily:<step>` (organ dedupe)
+        schedule=f"daily_cycle:{step}", artifact_class="daily",
         notes=f"run by daily_cycle step `{step}`")
         for organ, report, consumer, step in _CONTROL_ROOM_ORGANS]
     # The private-network AUDIT is PowerShell, so no artifact is parsed out of it; its output is
