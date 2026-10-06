@@ -119,7 +119,8 @@ def dynamic_correlation(a: np.ndarray, b: np.ndarray, *, q: float = 1e-3,
         return out
 
     prod = scaled(a) * scaled(b)
-    return np.clip(local_level(prod, q, 1.0).filt[:, 0], -1.0, 1.0)
+    rho: np.ndarray = np.clip(local_level(prod, q, 1.0).filt[:, 0], -1.0, 1.0)
+    return rho
 
 
 def log_variance_level(r: np.ndarray, q: float = 0.01) -> Filtered:

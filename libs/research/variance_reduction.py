@@ -88,7 +88,8 @@ def inverse_transform(sample: np.ndarray, n: int, rng: np.random.Generator) -> n
     if s.size == 0:
         return np.full(n, np.nan)
     u = rng.uniform(size=n)
-    return np.interp(u, np.linspace(0.0, 1.0, s.size), s)
+    out: np.ndarray = np.interp(u, np.linspace(0.0, 1.0, s.size), s)
+    return out
 
 
 def planted_truth(estimator: Callable[[np.random.Generator], float], truth: float, *,

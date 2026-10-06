@@ -28,7 +28,7 @@ import pandas as pd
 def hurst_variogram(x: np.ndarray, lags: tuple[int, ...] = (1, 2, 4, 8, 16)) -> float:
     """H from the log-log slope of the mean squared increment against the lag."""
     x = np.asarray(x, dtype=float)
-    pts = []
+    pts: list[tuple[float, float]] = []
     for k in lags:
         if x.size <= k + 2:
             break
@@ -36,7 +36,7 @@ def hurst_variogram(x: np.ndarray, lags: tuple[int, ...] = (1, 2, 4, 8, 16)) -> 
         d = d[np.isfinite(d)]
         m = float(np.mean(d * d)) if d.size else 0.0
         if m > 0:
-            pts.append((np.log(k), np.log(m)))
+            pts.append((float(np.log(k)), float(np.log(m))))
     if len(pts) < 3:
         return float("nan")
     a = np.asarray(pts)
@@ -50,7 +50,8 @@ def rolling_hurst(x: np.ndarray, window: int, step: int = 1,
     out = np.full(x.size, np.nan)
     for t in range(window - 1, x.size, step):
         out[t] = hurst_variogram(x[t - window + 1:t + 1], lags)
-    return pd.Series(out).ffill(limit=max(0, step - 1)).to_numpy()
+    filled: np.ndarray = pd.Series(out).ffill(limit=max(0, step - 1)).to_numpy()
+    return filled
 
 
 def realised_log_vol(r: np.ndarray, block: int) -> np.ndarray:
