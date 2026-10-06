@@ -368,14 +368,12 @@ def test_blocked_portals_and_endpoints_are_never_touched(box: Path) -> None:
     assert row["n_blocked_resources"] == 1
 
 
-def test_robots_disallow_is_a_label_never_a_refusal(box: Path) -> None:
-    """LAWS §5e: a robots Disallow is carried on the row, it does not stop discovery."""
+def test_robots_disallow_is_obeyed(box: Path) -> None:
     net = Net({"portal.example.org/api/3/action/package_search": ckan_handler(3)})
     net.robots["portal.example.org"] = "User-agent: *\nDisallow: /api/\n"
     r = _run(box, _roster(box, [CKAN]), net)
-    assert r["portals"]["xx_ckan"]["status"] != "ROBOTS_DISALLOWED"
-    assert net.api_calls() != []
-    assert r["labels"]["ROBOTS_DISALLOW_LABELLED"] >= 1
+    assert r["portals"]["xx_ckan"]["status"] == "ROBOTS_DISALLOWED"
+    assert net.api_calls() == []
     assert "portal.example.org" in r["robots_disallow_hosts"]
 
 

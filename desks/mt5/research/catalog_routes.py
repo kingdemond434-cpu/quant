@@ -39,8 +39,7 @@ advances the cursor without re-reading anything. Bounded timeouts, an HONEST UA 
 desk (never a browser string), a per-host minimum gap, a per-run request cap and a wall-clock
 budget.
 
-ROBOTS, TERMS, MANDATE. robots.txt is read once a week per host and carried as a `terms_note`
-LABEL on rows from that host; under LAWS §5e a Disallow is never read as a refusal. Platforms
+ROBOTS, TERMS, MANDATE. robots.txt is read once a week per host and obeyed. Platforms
 under the shared terms fence (libs/data/terms_fence.py: Reddit, StockTwits, ...) and every
 crypto-exchange host are refused at the request and at the endpoint (the 2026-08-18 MT5 mandate). No credential is ever sent: a keyed portal or resource
 is recorded with access NEEDS_KEY, so the desk can see what a key would buy.
@@ -378,16 +377,18 @@ class Session:
         if is_blocked(host, self.blocked):
             self.refusals["BLOCKED_HOST"] += 1
             return Response(-1, error="BLOCKED_HOST")
-        # ROBOTS IS A LABEL, NEVER A REFUSAL (LAWS §5e names "robots.txt Disallow read as a
-        # refusal" among the deleted brakes). It is read under the desk's own honest UA, recorded
-        # per host, and carried on every row from that host as `terms_note`; an unreadable
-        # robots.txt stops nothing.
+        # ROBOTS IS OBEYED. A Disallow, or a robots.txt that cannot be read, refuses the request
+        # and is counted; the host is also recorded so the report shows what robots cost.
         robots, why = self.allowed_by_robots(url, gap_s, timeout)
-        if robots is None and why == "BUDGET":
-            return None
-        if robots is False:
+        if robots is None:
+            if why == "BUDGET":
+                return None
+            self.refusals[why] += 1
+            return Response(0 if why == "UNREACHABLE" else -1, error=why)
+        if not robots:
             self.robots_disallow.add(host)
-            self.labels["ROBOTS_DISALLOW_LABELLED"] += 1
+            self.refusals["ROBOTS_DISALLOWED"] += 1
+            return Response(-1, error="ROBOTS_DISALLOWED")
         headers = {"User-Agent": UA,
                    "Accept": accept or "application/json, application/ld+json;q=0.9, "
                                        "application/xml;q=0.8, */*;q=0.5"}
@@ -1543,7 +1544,7 @@ def run(budget_s: float = DEFAULT_BUDGET_S, *, fetch: Fetch | None = None,
     for r in rows_all:
         hosts = {host_of(u) for u in [*r.get("endpoints", []), str(r.get("url") or "")] if u}
         if hosts & sess.robots_disallow:
-            r["terms_note"] = "robots Disallow on this host (a label, never a refusal: LAWS 5e)"
+            r["terms_note"] = "robots Disallow on this host (those paths were not fetched)"
     kept, stats = dedup(rows_all, index)
     by_route: dict[str, dict[str, Any]] = {}
     for pid, row in table.items():
