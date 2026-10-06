@@ -329,7 +329,7 @@ def debate(symbol: str, context: list[str], cat: Mapping[str, Mapping[str, Any]]
 
     `left()` is what the pass's call budget has left; no ask starts when it reads 0."""
     meter: dict[str, Any] = {"calls": 0, "trials_charged": 0.0, "by_analyst": {},
-                             "ideas": 0, "reasons": Counter()}
+                             "ideas": 0, "attacks": 0, "reasons": Counter()}
     grammar, valid = _grammar(cat), _valid_cell(cat)
     cells: list[dict[str, Any]] = []
     unexpressed: list[dict[str, Any]] = []
@@ -382,8 +382,8 @@ def debate(symbol: str, context: list[str], cat: Mapping[str, Mapping[str, Any]]
         meter["bear"] = {"verdict": getattr(reply, "verdict", UNMEASURED), "attacks": len(attacks)}
         # A FALSIFIER ATTACK IS A LOOK TOO (audit PR166_v2; standing rule: any committee
         # falsifier counts as a trial): each attack the bear returned, plus any it returned that
-        # failed validation, is charged with the analysts' ideas.
-        meter["ideas"] += len(attacks) + int(getattr(reply, "discarded", 0) or 0)
+        # failed validation, is charged alongside the analysts' ideas.
+        meter["attacks"] += len(attacks) + int(getattr(reply, "discarded", 0) or 0)
         for a in attacks:
             cells[int(a["idx"])].setdefault("red_team", []).append(
                 {"failure_class": a["failure_class"], "attack": str(a["attack"])[:240],
@@ -488,6 +488,7 @@ def run(*, budget_s: float = 420.0, n_symbols: int = 1, calls: int = 10, dry_run
     meters: dict[str, Any] = {}
     spent = {"asks": 0}
     ideas = 0
+    attacks = 0
     with policy as pol:
         def left() -> int:
             used = int(pol["http_calls"]) if pol is not None else spent["asks"]
@@ -511,6 +512,7 @@ def run(*, budget_s: float = 420.0, n_symbols: int = 1, calls: int = 10, dry_run
                                                left=left)
             meters[sym] = meter
             ideas += int(meter["ideas"])
+            attacks += int(meter.get("attacks") or 0)
             cost = pc.cost_frac(sym, meta, d["close"])
             for c in cells:
                 c["proposed_at"] = at
@@ -589,7 +591,7 @@ def run(*, budget_s: float = 420.0, n_symbols: int = 1, calls: int = 10, dry_run
         state["pending"].pop(key, None)
 
     donation: dict[str, Any] = {"status": "DRY_RUN" if dry_run else "NOTHING_NEW"}
-    tests_run = ideas + sum(looks.values())
+    tests_run = ideas + attacks + sum(looks.values())
     path = None
     if matured and not dry_run:
         rows = []
@@ -629,9 +631,11 @@ def run(*, budget_s: float = 420.0, n_symbols: int = 1, calls: int = 10, dry_run
     by_family: Counter[str] = Counter(str(c["family"]) for c in all_cells)
     by_family["analyst_panel/unexpressed"] += len(all_unexpressed)
     by_family["analyst_panel/discarded"] += max(0, ideas - len(all_cells) - len(all_unexpressed))
+    by_family["analyst_panel/falsifier_attacks"] += attacks
     by_family.update({f"{f}": k for f, k in looks.items()})
     by_family = Counter({f: k for f, k in by_family.items() if k})
     trial_row = {"at": at, "source": SOURCE, "ideas_proposed": ideas,
+                 "falsifier_attacks": attacks,
                  "forward_looks": sum(looks.values()), "cells_screened": len(all_cells),
                  "asks": spent["asks"],
                  "http_calls": None if meter_http is None else meter_http["http_calls"],

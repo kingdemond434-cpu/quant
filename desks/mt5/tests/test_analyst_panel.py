@@ -108,7 +108,9 @@ def test_a_proposal_waits_for_post_proposal_evidence_then_donates_on_it(monkeypa
     assert rep["forward_clock"]["queued_this_pass"] == 4
     assert rep["screen_tails"]["contaminated_by_hindsight"] is True
     first = _trials(tmp_path)[-1]
-    assert first["ideas_proposed"] == 8 and first["tests_run"] == 8      # 4 cells + 4 NONE
+    assert first["ideas_proposed"] == 8                                   # 4 cells + 4 NONE
+    assert first["falsifier_attacks"] == 1 and first["tests_run"] == 9    # + the bear's attack
+    assert first["by_family"]["analyst_panel/falsifier_attacks"] == 1
     assert first["by_family"]["analyst_panel/unexpressed"] == 4
     # thirty days on: still under FORWARD_DAYS, still UNMEASURED, still not donated
     when[0] = "2021-05-31T00:00:00+00:00"
