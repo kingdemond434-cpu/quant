@@ -20,6 +20,7 @@ row names, and a wrong id comes back as the publisher's own error, recorded, nev
 from __future__ import annotations
 
 import base64
+import gzip
 import json
 import math
 import os
@@ -78,8 +79,11 @@ def secret_forms(secrets: Iterable[str]) -> list[str]:
     for s in secrets:
         s = str(s or "")
         if s:
-            forms.update({s, urllib.parse.quote_plus(s), urllib.parse.quote(s, safe=""),
-                          urllib.parse.quote(s)})
+            enc = {urllib.parse.quote_plus(s), urllib.parse.quote(s, safe=""),
+                   urllib.parse.quote(s)}
+            # Percent escapes are case-insensitive (RFC 3986 2.1): a server may echo `%2b`.
+            enc |= {re.sub(r"%[0-9A-F]{2}", lambda m: m.group(0).lower(), e) for e in enc}
+            forms.update({s, *enc})
     return sorted(forms, key=len, reverse=True)
 
 
@@ -103,6 +107,15 @@ def scrub_body(body: bytes, secrets: Iterable[str]) -> bytes:
     keys = [str(s) for s in secrets if s]
     if not keys or not body:
         return body
+    if body[:2] == b"\x1f\x8b":
+        # A gzip-encoded body (a .gz download, or Content-Encoding the opener did not undo) is
+        # scrubbed inside and re-compressed only when something changed.
+        try:
+            inner = gzip.decompress(body)
+        except (OSError, EOFError, ValueError):
+            return body
+        clean = scrub_body(inner, keys)
+        return body if clean == inner else gzip.compress(clean, mtime=0)
     out = body
     if b"api_key" in out:
         doc = _json(out)
@@ -127,9 +140,10 @@ class SameHostAuthRedirect(urllib.request.HTTPRedirectHandler):
     urllib copies every ordinary header to the redirect target whatever its host, so a bearer or
     a `Bmx-Token` sent to a vendor would be handed to wherever its 30x points."""
 
-    def __init__(self, drop: Iterable[str] = ()) -> None:
+    def __init__(self, drop: Iterable[str] = (), secrets: Iterable[str] = ()) -> None:
         super().__init__()
         self.drop = CREDENTIAL_HEADERS | {str(h).lower() for h in drop}
+        self.secrets = set(secret_forms(secrets))
 
     def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
                          newurl: str) -> Any:
@@ -141,13 +155,23 @@ class SameHostAuthRedirect(urllib.request.HTTPRedirectHandler):
                 was.scheme == "https" and now.scheme != "https"):
             for name in [h for h in new.headers if h.lower() in self.drop]:
                 del new.headers[name]
+            # A query key travels too when the Location echoes it: drop every query pair the
+            # original request carried, and any whose value is a declared secret.
+            sent = set(urllib.parse.parse_qsl(was.query, keep_blank_values=True))
+            pairs = urllib.parse.parse_qsl(now.query, keep_blank_values=True)
+            keep = [(k, v) for k, v in pairs if (k, v) not in sent and v not in self.secrets
+                    and urllib.parse.quote_plus(v) not in self.secrets]
+            if len(keep) != len(pairs):
+                new.full_url = urllib.parse.urlunsplit(
+                    now._replace(query=urllib.parse.urlencode(keep)))
         return new
 
 
-def keyed_opener(tls: Any = None, drop: Iterable[str] = ()) -> urllib.request.OpenerDirector:
+def keyed_opener(tls: Any = None, drop: Iterable[str] = (),
+                 secrets: Iterable[str] = ()) -> urllib.request.OpenerDirector:
     """An opener for keyed requests: the caller's TLS context and credential-safe redirects."""
     return urllib.request.build_opener(urllib.request.HTTPSHandler(context=tls),
-                                       SameHostAuthRedirect(drop))
+                                       SameHostAuthRedirect(drop, secrets))
 
 
 def _period(text: str) -> date | None:

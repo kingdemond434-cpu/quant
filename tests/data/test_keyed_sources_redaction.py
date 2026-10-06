@@ -72,3 +72,42 @@ def test_credentials_stay_on_a_same_host_redirect_but_not_on_a_downgrade() -> No
     down = _redirect("https://api.darwinex.com/a", "http://api.darwinex.com/b",
                      {"Authorization": f"Bearer {KEY}"})
     assert "Authorization" not in down.headers
+
+
+def test_lowercase_percent_escapes_are_scrubbed() -> None:
+    echoed = urllib.parse.quote_plus(KEY).replace("%2B", "%2b").replace("%2F", "%2f")
+    assert "ab%2bcd" not in ks.redact(f"Location: https://x/?k={echoed}", [KEY])
+
+
+def test_a_gzip_body_is_scrubbed_inside() -> None:
+    import gzip
+    raw = gzip.compress(json.dumps({"request": {"params": {"api_key": KEY}}}).encode())
+    out = ks.scrub_body(raw, [KEY])
+    assert KEY.encode() not in gzip.decompress(out)
+    clean = gzip.compress(b'{"response":{}}')
+    assert ks.scrub_body(clean, [KEY]) is clean
+
+
+def test_a_query_key_never_follows_a_cross_host_redirect() -> None:
+    src = "https://api.eia.gov/v2/x/?" + urllib.parse.urlencode({"api_key": KEY, "f": "w"})
+    dst = "https://mirror.elsewhere.net/x/?" + urllib.parse.urlencode(
+        {"api_key": KEY, "page": "2"})
+    req = urllib.request.Request(src)
+    msg = Message()
+    msg["Location"] = dst
+    new = ks.SameHostAuthRedirect((), [KEY]).redirect_request(
+        req, io.BytesIO(), 302, "Found", msg, dst)
+    assert new is not None
+    assert "api_key" not in new.full_url and "page=2" in new.full_url
+    assert urllib.parse.quote_plus(KEY) not in new.full_url
+
+
+def test_a_same_host_redirect_keeps_its_query() -> None:
+    src = "https://api.eia.gov/v2/x/?api_key=k1"
+    dst = "https://api.eia.gov/v2/y/?api_key=k1"
+    req = urllib.request.Request(src)
+    msg = Message()
+    msg["Location"] = dst
+    new = ks.SameHostAuthRedirect((), ["k1"]).redirect_request(
+        req, io.BytesIO(), 302, "Found", msg, dst)
+    assert new is not None and new.full_url == dst

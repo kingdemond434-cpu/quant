@@ -433,7 +433,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     # cross-host redirect target, so the bearer / declared key header is dropped there.
     from libs.data.keyed_sources import keyed_opener, redact, scrub_body
     place, _, hname = str(src.get("key_in") or "").partition(":")
-    opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else ())
+    opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else (), (_key,))
               if _key else None)
     try:
         with (opener.open(req, timeout=timeout) if opener else
