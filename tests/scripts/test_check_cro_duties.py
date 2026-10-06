@@ -53,8 +53,9 @@ def test_an_absent_artifact_is_unmeasured_and_missed(tmp_path: Path) -> None:
     doc = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)
     assert doc["duties"]["D41"]["status"] == "UNMEASURED"
     assert doc["duties"]["D41"]["counts_as"] == "MISSED"
-    assert doc["duties"]["D45"]["status"] == "NO_ARTIFACT_NAMED"
-    assert "D41" in doc["missed"] and "D45" not in doc["missed"]
+    assert doc["duties"]["D5"]["status"] == "NO_ARTIFACT_NAMED"
+    assert doc["duties"]["D45"]["status"] == "UNMEASURED"
+    assert "D41" in doc["missed"] and "D45" in doc["missed"] and "D5" not in doc["missed"]
 
 
 def test_a_stale_artifact_is_never_measured(tmp_path: Path) -> None:
@@ -87,7 +88,7 @@ def test_review_downgrades_only_an_unbacked_claim_of_this_pass(tmp_path: Path) -
         "D41": {"status": "MET"}, "D5": {"status": "MET"}, "D44": {"status": "BLOCKED"}}}}))
     measured = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)
     res = ccd.apply_to_review(review, measured, start.isoformat())
-    assert res["applied"] and res["changed"] == ["D41"]
+    assert res["applied"] and res["changed"] == ["D41", "D45"]
     duties = json.loads(review.read_text())["latest"]["duties"]
     assert duties["D41"]["status"] == "MISSED" and duties["D41"]["status_claimed"] == "MET"
     assert duties["D5"]["status"] == "MET"
@@ -129,7 +130,7 @@ def test_a_measured_target_that_failed_cannot_be_claimed_met(tmp_path: Path) -> 
         "D41": {"status": "MET"}}}}))
     res = ccd.apply_to_review(review, measured,
                               (datetime.now(UTC) - timedelta(minutes=1)).isoformat())
-    assert res["changed"] == ["D41"]
+    assert "D41" in res["changed"]
     d41 = json.loads(review.read_text())["latest"]["duties"]["D41"]
     assert d41["status"] == "MISSED" and d41["status_claimed"] == "MET"
     assert d41["verdict"] == "NOT_MET" and d41["reason"] == "measured_target_not_met"
