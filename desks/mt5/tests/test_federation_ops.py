@@ -359,3 +359,25 @@ def test_an_account_upstream_watches_the_authors_activity_feed() -> None:
     assert fo.surfaces_for("github:romanmichaelpaolucci") == {
         "commits": "https://github.com/romanmichaelpaolucci.atom"}
     assert fed.SEED_BY_ID["paolucci_github_account"].upstream == "github:romanmichaelpaolucci"
+
+
+def test_a_cell_two_packets_share_is_one_trial_and_one_row(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(xfo, "PACKETS", tmp_path / "packets")
+    monkeypatch.setattr(xfo, "PROCESSED", tmp_path / "packets" / "processed")
+    monkeypatch.setattr(xfo, "DONATIONS", tmp_path / "don")
+    (tmp_path / "packets").mkdir()
+    cell = {"symbol": "EURUSD", "family": "pca_residual", "params": {"entry_z": 2.0}}
+    for i, extra in enumerate(([], [{"symbol": "USDCAD", "family": "pca_residual",
+                                     "params": {"entry_z": 2.0}}])):
+        (tmp_path / "packets" / f"p{i}.json").write_text(json.dumps({
+            "system_id": "quant_guild_library", "run_id": f"r{i}",
+            "candidates": [cell, *extra], "trials_charged": 1 + len(extra)}), encoding="utf-8")
+    state: dict = {}
+    out = xfo.drain_packets(state, apply=True)
+    assert out["donated"] == 2 and out["trials_charged"] == 2 and out["duplicates"] == 1
+    # and a later packet re-proposing it is still not a new trial
+    (tmp_path / "packets" / "p9.json").write_text(json.dumps({
+        "system_id": "quant_guild_library", "run_id": "r9", "candidates": [cell],
+        "trials_charged": 1}), encoding="utf-8")
+    again = xfo.drain_packets(state, apply=True)
+    assert again["donated"] == 0 and again["trials_charged"] == 0
