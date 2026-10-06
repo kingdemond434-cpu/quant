@@ -225,6 +225,9 @@ def build(now: datetime | None = None, conn: Any | None = None,
         "n_certificates": _dct(breadth.get("certificates")).get("n_certificates", UNMEASURED),
         "n_effective_certificates": _dct(breadth.get("certificates")).get(
             "n_effective_certificates", UNMEASURED),
+        # MEASURED only when every certified instrument's coupling was measured from bars
+        "n_effective_status": _dct(breadth.get("certificates")).get(
+            "n_effective_status", UNMEASURED),
         # where those two counts came from: box_live or git_snapshot, with the source and mtime
         "certificates_basis": (
             f"{_dct(breadth.get('certificates')).get('basis')} "
@@ -268,7 +271,8 @@ def build(now: datetime | None = None, conn: Any | None = None,
                        f"live {metrics['live_sleeves']}, forward {metrics['forward_clocks']}, "
                        f"survivors {metrics['survivors']} (N_CERT "
                        f"{metrics['n_certificates']} / N_EFFECTIVE_CERT "
-                       f"{metrics['n_effective_certificates']}, basis "
+                       f"{metrics['n_effective_certificates']} "
+                       f"[{metrics['n_effective_status']}], basis "
                        f"{metrics['certificates_basis']}), n_eff "
                        f"{metrics['effective_independent_bets']}")
     return doc

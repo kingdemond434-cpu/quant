@@ -122,6 +122,25 @@ def yield_by_department(legs: dict[str, str], now: datetime, conn: Any | None = 
     return out
 
 
+def bounty_value(b: dict[str, Any]) -> float:
+    """A bounty's VALUE, not its count (audit must-fix 2, 2026-10-06): a breadth debt is worth its
+    own `value_units` (its dk_eff over one cross-correlated stream's); a bounty that publishes no
+    value counts one unit, exactly as every bounty did before."""
+    v = _dct(b.get("evidence")).get("value_units")
+    if isinstance(v, (int, float)) and math.isfinite(float(v)):
+        return max(0.0, float(v))
+    return 1.0
+
+
+def bounty_bonus_of(value: float) -> float:
+    """Concave in summed value and never flat: BOUNTY_CAP x ln(1 + W x v / CAP) / ln 2. Equal to
+    the old hard cap at the old saturation point (4 units), ABOVE the old linear bonus below it,
+    and still rising past it, so a richer queue always bids more and a paid debt bids less."""
+    if value <= 0:
+        return 0.0
+    return BOUNTY_CAP * math.log1p(BOUNTY_WEIGHT * value / BOUNTY_CAP) / math.log(2.0)
+
+
 def bids(departments: tuple[str, ...], hours: dict[str, float], yields: dict[str, int],
          bounty: dict[str, Any], bottleneck: dict[str, Any],
          replenish: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -147,14 +166,17 @@ def bids(departments: tuple[str, ...], hours: dict[str, float], yields: dict[str
             productivity, prod_basis = 1.0, "cost UNMEASURED (no ledger hours); par"
         else:
             productivity, prod_basis = 1.0, "UNMEASURED; par"
-        n_b = len([b for b in open_b if isinstance(b, dict) and d in _lst(b.get("targets"))])
-        bounty_bonus = min(BOUNTY_CAP, BOUNTY_WEIGHT * n_b)
+        mine = [b for b in open_b if isinstance(b, dict) and d in _lst(b.get("targets"))]
+        n_b = len(mine)
+        value_b = sum(bounty_value(b) for b in mine)
+        bounty_bonus = bounty_bonus_of(value_b)
         bn = float(shift.get(d, 1.0) or 1.0)
         rep = REPLENISH_WEIGHT * gap_pressure if d in ("discovery", "validate") else 0.0
         bid = max(1e-6, productivity) * (1.0 + bounty_bonus) * bn * (1.0 + rep)
         out[d] = {"bid": round(bid, 4), "productivity": round(productivity, 4),
                   "productivity_basis": prod_basis, "hours": round(h, 3), "yield": y,
-                  "bounties_addressed": n_b, "bottleneck_shift": bn,
+                  "bounties_addressed": n_b, "bounty_value": round(value_b, 6),
+                  "bounty_bonus": round(bounty_bonus, 6), "bottleneck_shift": bn,
                   "replenishment_pressure": round(rep, 4)}
     return out
 

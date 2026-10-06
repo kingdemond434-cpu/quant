@@ -115,6 +115,7 @@ def cert_fence(breadth: dict[str, Any], floor_doc: dict[str, Any]) -> dict[str, 
                        cert.get("basis"))
     out: dict[str, Any] = {"n_certificates": n, "n_effective_certificates": n_eff,
                            "basis": basis, "source": cert.get("source"),
+                           "n_effective_status": cert.get("n_effective_status", "UNMEASURED"),
                            "source_mtime": cert.get("source_mtime"),
                            "floor": floor_doc.get("n_effective_cert_floor"),
                            "floor_basis": floor_doc.get("n_effective_cert_floor_basis")}

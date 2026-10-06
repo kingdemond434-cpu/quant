@@ -284,6 +284,19 @@ def temperature(sl: dict[str, Any], saturation: dict[str, Any], feedback: dict[s
             "duplicate_share": dup if isinstance(dup, (int, float)) else None}
 
 
+def _fresh_saturation(path: Path) -> dict[str, Any]:
+    """CERTIFICATE_SATURATION.json through its freshness window (`certificate_saturation.
+    read_fresh`): a map older than the window reads UNMEASURED, never as the old number."""
+    try:
+        try:
+            from research.certificate_saturation import read_fresh
+        except ImportError:
+            from certificate_saturation import read_fresh  # type: ignore[import-not-found,no-redef]
+        return read_fresh(path)
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"saturation map unreadable: {type(exc).__name__}"}
+
+
 def budget_split(temp: dict[str, Any]) -> dict[str, Any]:
     """Breadth law section 16: the adaptive A/B/C/D split from the fired rules."""
     w = dict(BASE_SPLIT)
@@ -306,7 +319,16 @@ def budget_split(temp: dict[str, Any]) -> dict[str, Any]:
                      f"streams heat B; every share in [{SPLIT_FLOOR}, {SPLIT_CAP}]")}
 
 
+#: The subprocess names some legs run under (`hourly_cycle._producer(name, ...)`), mapped to the
+#: leg names the categories use, so the split reaches the process that actually does the work.
+PRODUCER_ALIASES: dict[str, str] = {
+    "deep_forest_miner": "deep_forest", "adversary": "adversaries", "unknowns": "frontier_unknowns",
+    "world_causal_graph": "causal_graph",
+}
+
+
 def category_of(leg: str) -> str | None:
+    leg = PRODUCER_ALIASES.get(leg, leg)
     if leg in FALSIFICATION_LEGS:
         return "D"
     if leg in FRONTIER_LEGS:
@@ -329,7 +351,7 @@ def build() -> dict[str, Any]:
     sl = slope(reads, ledger)
     fac = factors(sl)
     floor = exploration_floor(axis, latest, hist[-1] if hist else None)
-    sat = _read(SATURATION)
+    sat = _fresh_saturation(SATURATION)
     temp = temperature(sl, sat, _read(FEEDBACK), _read(OUT), hist)
     split = budget_split(temp)
     cert = _dict(sat.get("certificates"))
@@ -367,17 +389,38 @@ def budget_factor(leg: str, doc: dict[str, Any] | None = None) -> float:
         base = float(fac.get("exploitation", 1.0) or 1.0)
     else:
         base = 1.0
-    return min(FACTOR_CLIP[1], max(FACTOR_CLIP[0], base * split_factor(leg, d)))
+    # ONE-SIDED (audit must-fix 3, 2026-10-06): the split only ever ADDS. The leg never goes
+    # below the ladder factor LIVE gave it (`base`), whatever share its category lost.
+    return max(base, min(FACTOR_CLIP[1], base * split_factor(leg, d)))
 
 
 def split_factor(leg: str, doc: dict[str, Any]) -> float:
-    """The leg's category share over its base share, square-rooted (1.0 when absent)."""
+    """The leg's category share over its base share, square-rooted, NEVER below 1.0: heating A, C
+    or D funds those legs above par and can no longer trim B (1.0 when absent)."""
     cat = category_of(leg)
     split = _dict(_dict(doc.get("budget_split")).get("split"))
     share = split.get(cat) if cat else None
     if not isinstance(share, (int, float)) or cat is None or BASE_SPLIT.get(cat, 0) <= 0:
         return 1.0
-    return float((float(share) / BASE_SPLIT[cat]) ** 0.5)
+    return max(1.0, float((float(share) / BASE_SPLIT[cat]) ** 0.5))
+
+
+def split_budget(leg: str, doc: dict[str, Any] | None = None) -> tuple[float, dict[str, Any]]:
+    """(factor, record) for an A, C or D leg's own seconds: its split factor (>= 1.0, <= the
+    clip), applied by `hourly_cycle._producer_impl` to the leg's cap AND its `--budget-s`, so the
+    organ actually works longer. B legs are funded through `research_budget` (budget_factor) and
+    get 1.0 here, so no leg is paid twice. Unreadable ladder: 1.0, recorded."""
+    d = doc if doc is not None else _read(OUT)
+    cat = category_of(leg)
+    rec: dict[str, Any] = {"leg": leg, "category": cat}
+    if cat not in ("A", "C", "D"):
+        return 1.0, {**rec, "why": "not an A/C/D leg; B is funded through research_budget"}
+    if not d:
+        return 1.0, {**rec, "why": "BREADTH_LADDER.json unreadable; par"}
+    f = min(FACTOR_CLIP[1], split_factor(leg, d))
+    share = _dict(_dict(d.get("budget_split")).get("split")).get(cat)
+    return f, {**rec, "factor": round(f, 4), "share": share, "base_share": BASE_SPLIT[cat],
+               "why": f"category {cat} share {share} over base {BASE_SPLIT[cat]}, sqrt, >= 1"}
 
 
 def write(doc: dict[str, Any], path: Path | None = None) -> Path:

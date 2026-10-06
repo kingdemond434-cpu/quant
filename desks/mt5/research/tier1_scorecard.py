@@ -210,7 +210,8 @@ def _r01_effective_breadth() -> dict[str, Any]:
                f"{_rel(EFFECTIVE_BREADTH)} {field} (n_nominal={eff.get('n_nominal')}, "
                f"binding={eff.get('binding_reading')}, "
                f"N_CERT={cert.get('n_certificates', 'UNMEASURED')}, "
-               f"N_EFFECTIVE_CERT={cert.get('n_effective_certificates', 'UNMEASURED')}, "
+               f"N_EFFECTIVE_CERT={cert.get('n_effective_certificates', 'UNMEASURED')} "
+               f"[{cert.get('n_effective_status', 'UNMEASURED')}], "
                f"basis={cert.get('basis', 'UNMEASURED')} {cert.get('source')} "
                f"mtime {cert.get('source_mtime')})",
                _stamp(doc))

@@ -125,9 +125,17 @@ def _saturation_scorer() -> Any:
 
 def orthogonal_ring(symbols: Iterable[str], family: str | None = None, *,
                     counts: tuple[dict[str, int], dict[tuple[str, str], int]] | None = None,
-                    saturation: Any = "auto") -> list[str]:
-    """`symbols`, least-SATURATED first when a family is named (the certified book's effective
-    local density, `saturation_tier`), then least-judged, then by name.
+                    saturation: Any = "auto",
+                    visits: dict[str, str] | None = None) -> list[str]:
+    """`symbols`, least-judged first (per (symbol, family) when a family is named), the
+    saturation tier breaking ties INSIDE an equal judged count, then by name.
+
+    NO STARVATION (audit must-fix 4, 2026-10-06). The tier used to LEAD the key, and a walker that
+    stops at a deadline (`regime_split_miner.run`) therefore never reached a symbol in a worse tier:
+    the tier is a property of the certified book, so it does not rotate. It now orders only inside
+    a rotating group. With `visits` (a ring's last-visit stamps, `ring_visits`) the walk is
+    least-recently-VISITED first: every symbol is reached within ceil(n/k) passes of a walker that
+    visits k per pass, and the tier orders each never/equally-visited group.
 
     Deduplicated, order-stable for equal keys, and never shorter than its input. `saturation`
     is a `certificate_saturation.Scorer`, None to disable, or "auto" to read the published map."""
@@ -135,9 +143,49 @@ def orthogonal_ring(symbols: Iterable[str], family: str | None = None, *,
     uniq = sorted({str(s) for s in symbols if str(s)})
     if family:
         sat = _saturation_scorer() if saturation == "auto" else saturation
-        return sorted(uniq, key=lambda s: (saturation_tier(s, family, sat),
-                                           by_pair.get((s.upper(), family), 0), s))
-    return sorted(uniq, key=lambda s: (by_sym.get(s.upper(), 0), s))
+        seen = visits or {}
+        return sorted(uniq, key=lambda s: (str(seen.get(s, "")),
+                                           by_pair.get((s.upper(), family), 0),
+                                           saturation_tier(s, family, sat), s))
+    seen = visits or {}
+    return sorted(uniq, key=lambda s: (str(seen.get(s, "")), by_sym.get(s.upper(), 0), s))
+
+
+#: Per-ring last-visit stamps for walkers that stop at a deadline (`orthogonal_ring(visits=)`).
+RING_VISITS = BASE / "data" / "ring_visits.json"
+
+
+def ring_visits(ring: str, path: Path | None = None) -> dict[str, str]:
+    """`{symbol: last visit ISO stamp}` for `ring`; {} when unread (every symbol never visited)."""
+    try:
+        doc = json.loads((path or RING_VISITS).read_text("utf-8"))
+        got = doc.get(ring) if isinstance(doc, dict) else None
+        return {str(k): str(v) for k, v in got.items()} if isinstance(got, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def mark_ring_visit(ring: str, symbols: Iterable[str], path: Path | None = None,
+                    at: str | None = None) -> None:
+    """Stamp `symbols` as visited now on `ring` (atomic; a failed write only loses recency)."""
+    p = path or RING_VISITS
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+        doc = doc if isinstance(doc, dict) else {}
+    except (OSError, ValueError):
+        doc = {}
+    stamp = at or datetime.now(tz=UTC).isoformat(timespec="microseconds")
+    ring_doc = dict(doc.get(ring) or {})
+    for s in symbols:
+        ring_doc[str(s)] = stamp
+    doc[ring] = ring_doc
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        tmp = p.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, indent=1, sort_keys=True), encoding="utf-8")
+        tmp.replace(p)
+    except OSError:
+        pass
 
 
 def hypothesis_symbols(universe: Path | None = None) -> list[str]:

@@ -709,7 +709,7 @@ def coupling_table(symbols: Iterable[str], loader: Callable[[str], Any] | None =
             x, y = m[both, i], m[both, j]
             if x.std() <= 0 or y.std() <= 0:
                 continue
-            rho = abs(float(np.corrcoef(x, y)[0, 1]))
+            rho = shrink_abs_rho(float(np.corrcoef(x, y)[0, 1]), n)
             if math.isfinite(rho):
                 out[a][names[j]] = round(rho, 4)
                 out[names[j]][a] = round(rho, 4)
@@ -894,6 +894,10 @@ def book_breadth(exposure: Mapping[str, float], panel: Mapping[str, Any]) -> dic
         if not np.all(sd > 0):
             return None
         c = np.abs(np.corrcoef(mat, rowvar=False))
+        bias = math.sqrt(2.0 / (math.pi * mat.shape[0]))       # shrink_abs_rho, vectorised
+        c = np.clip(c - bias, 0.0, None)
+        np.fill_diagonal(c, 1.0)
+        c, _psd = nearest_psd(c, "book_correlation")
         try:
             return round(float(exposure_neff(nominal, x, c)), 4)
         except ValueError:
@@ -930,6 +934,38 @@ def book_breadth(exposure: Mapping[str, float], panel: Mapping[str, Any]) -> dic
 
 
 # ------------------------------------------------------------------------ the build
+def shrink_abs_rho(rho: float, n: int) -> float:
+    """|rho| with its small-sample upward bias removed, shrunk toward 0 (audit should-fix,
+    2026-10-06): E|r| under rho = 0 is sqrt(2 / (pi n)), so pure noise on 60 days reads ~0.10 and
+    enters C as coupling. Subtracting that floor and clipping at 0 is n-weighted shrinkage: a long
+    sample is barely moved, a short one is pulled hard toward independence's reading of 0."""
+    if n <= 1 or not math.isfinite(rho):
+        return 0.0
+    return max(0.0, abs(float(rho)) - math.sqrt(2.0 / (math.pi * n)))
+
+
+def nearest_psd(c: np.ndarray, label: str = "C") -> tuple[np.ndarray, dict[str, Any]]:
+    """(C, record): C unchanged when positive semi-definite, else its nearest PSD correlation
+    matrix (eigenvalues clipped at 0, rescaled to a unit diagonal), with the repair LOGGED.
+    A similarity matrix built pairwise from products of factors is not PSD by construction."""
+    try:
+        ev = np.linalg.eigvalsh(c)
+    except np.linalg.LinAlgError as exc:
+        return c, {"matrix": label, "status": UNMEASURED, "why": f"eigvalsh: {exc}"}
+    rec: dict[str, Any] = {"matrix": label, "size": int(c.shape[0]),
+                           "min_eigenvalue": round(float(ev.min()), 8), "repaired": False}
+    if ev.min() > -1e-9:
+        return c, {**rec, "status": "PSD"}
+    w, v = np.linalg.eigh(c)
+    fixed = (v * np.clip(w, 0.0, None)) @ v.T
+    d = np.sqrt(np.clip(np.diag(fixed), 1e-12, None))
+    fixed = fixed / np.outer(d, d)
+    np.fill_diagonal(fixed, 1.0)
+    rec.update({"status": "REPAIRED", "repaired": True,
+                "max_abs_change": round(float(np.abs(fixed - c).max()), 6)})
+    return fixed, rec
+
+
 def _keff_from(counts: np.ndarray, c: np.ndarray) -> float:
     total = float(counts.sum())
     var = float(counts @ c @ counts)
@@ -1047,6 +1083,7 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
             v = (S[sig_ix[glist[i]["sig"]], sig_ix[glist[j]["sig"]]]
                  * coupling(glist[i]["sym"], glist[j]["sym"], coupling_tab))
             C[i, j] = C[j, i] = v
+    C, psd_structural = nearest_psd(C, "structural_C")
     n_eff_structural = _keff_from(counts, C)
 
     # FORWARD CONFIRMATION (law 23): realised dependence raises C (revokes credit); measured
@@ -1082,12 +1119,11 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
                                       "structural_C": round(float(C[i, j]), 4),
                                       "measured_upper_bound": p["hi"], "n": p["n"]})
                     C[i, j] = C[j, i] = max(0.0, abs(p["hi"]))
-    try:
-        # a mixed adjustment can leave C indefinite; fall back to the structural reading then
-        ev = np.linalg.eigvalsh(C)
-        n_eff = _keff_from(counts, C) if ev.min() > -1e-9 else n_eff_structural
-    except np.linalg.LinAlgError:
-        n_eff = n_eff_structural
+    # a mixed forward adjustment can leave C indefinite: repaired to the nearest PSD matrix and
+    # logged (audit should-fix), rather than silently discarding the forward evidence
+    C, psd_adjusted = nearest_psd(C, "forward_adjusted_C")
+    n_eff = (_keff_from(counts, C) if psd_adjusted.get("status") != UNMEASURED
+             else n_eff_structural)
 
     # clusters: saturation scores (law 6), adaptive saturation (law 20)
     total_judged = sum(int(v) for v in judged.values())
@@ -1229,10 +1265,21 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
         "rule": ("a certificate archived behind the champion and challengers of a SATURATED "
                  "cluster; it stays certified and nothing is revoked"),
     }
+    # N_EFF IS ONLY AS MEASURED AS ITS COUPLING (audit 2026-10-06): an instrument with no bars has
+    # no measured |rho| to anything and couples at the DECLARED prior. The 09-28 canon had 13 of
+    # 27 certified instruments without bars, so its N_EFF was a prior-weighted figure. Any such
+    # instrument labels the headline UNMEASURED with the count; the number stays beside it.
+    cert_syms = sorted({str(g["sym"]).upper() for g in glist})
+    unbarred = [x for x in cert_syms if not (coupling_tab or {}).get(x)]
+    n_eff_status = (MEASURED if cert_syms and not unbarred else
+                    f"{UNMEASURED}: {len(unbarred)} of {len(cert_syms)} certified instruments "
+                    f"without bars couple at the declared prior")
     headline = {
         **basis,
         "n_certificates": n_cert,
         "n_effective_certificates": round(n_eff, 3),
+        "n_effective_status": n_eff_status,
+        "instruments_without_bars": unbarred,
         "n_effective_certificates_structural": round(n_eff_structural, 3),
         "n_strategy_variants": G,
         "n_structural_clusters": n_variants,
@@ -1279,6 +1326,8 @@ def build(*, canon: Any = None, shadow: Any = None, sleeves: Any = None,
                     "certs": glist[i]["certs"][:5]} for i in publish_groups],
         "groups_total": G,
         "coupling": {a: dict(v) for a, v in (coupling_tab or {}).items()},
+        "coupling_rule": "|rho| minus its noise floor sqrt(2/(pi n)), clipped at 0",
+        "psd_check": [psd_structural, psd_adjusted],
         "symbol_clusters": residual,
         "clusters": clusters,
         "forward_independence": {k: v for k, v in fdep.items() if k != "pairs"} | {
@@ -1361,14 +1410,21 @@ def _empty_priors(certs: list[dict[str, Any]], judged: Mapping[tuple[str, str], 
         nc = certs_by.get(k, 0)
         if global_yield is None or meaningful is None:
             decay, status = 1.0, UNMEASURED
-        elif effort < meaningful or nc > 0:
-            decay, status = 1.0, ("OCCUPIED" if nc else "UNDER_SEARCHED")
+        elif nc > 0:
+            decay, status = 1.0, "OCCUPIED"
         else:
+            # CONTINUOUS, NOT A CLIFF (audit should-fix, 2026-10-06). It was 1.0 up to the
+            # meaningful effort and then dropped at once to the posterior ratio (~0.14 at a 1%
+            # desk yield). The posterior ratio is now blended in linearly with the effort's share
+            # of the meaningful effort: 1.0 at zero effort, exactly the old value at the
+            # meaningful effort, the posterior itself beyond it, monotone throughout.
             a0 = global_yield * PRIOR_STRENGTH
             b0 = (1.0 - global_yield) * PRIOR_STRENGTH
             post = (a0 + nc) / (a0 + b0 + effort)
-            decay = min(1.0, max(EXPLORE_FLOOR, post / global_yield))
-            status = "SEARCHED_EMPTY"
+            ratio = min(1.0, max(EXPLORE_FLOOR, post / global_yield))
+            w = min(1.0, effort / float(meaningful)) if meaningful else 1.0
+            decay = 1.0 - w * (1.0 - ratio)
+            status = "SEARCHED_EMPTY" if effort >= meaningful else "UNDER_SEARCHED"
         out[k] = {"certificates": nc, "effort_judged": effort, "meaningful_effort": meaningful,
                   "decay": round(decay, 4), "status": status, "families": fams,
                   "families_fingerprint": fp, "effort_offset": offset,
@@ -1405,16 +1461,29 @@ def _breadth_debts(clusters: Mapping[str, Mapping[str, Any]], glist: list[dict[s
     for (sym, fam), n in judged.items():
         mech, info, _ = ar.classify_family(fam)
         effort[(mech, info, asset_class(sym))] += int(n)
-    try:
-        dk = (marginal_k_eff(max(n_cert, 2), max(n_eff, 1e-6), RHO_CROSS)
-              if n_cert > 1 else 1.0)
-    except ValueError:
-        dk = None
+    def _dk(rho: float) -> float | None:
+        try:
+            return (marginal_k_eff(max(n_cert, 2), max(n_eff, 1e-6), rho)
+                    if n_cert > 1 else 1.0)
+        except ValueError:
+            return None
+
+    # EACH DEBT IS PRICED BY ITS OWN dk_eff (audit must-fix 2, 2026-10-06). The constant RHO_CROSS
+    # price gave every debt the same 0.082, so six debts saturated every bid and nothing repriced.
+    # A missing cluster's expected correlation with the book now rises with how much of its
+    # (payer, information, asset class) the certified book already holds: rho = RHO_CROSS +
+    # (RHO_SAME_FACTOR - RHO_CROSS) x shared/3 against the most similar occupied cluster. Paying
+    # one debt occupies its cluster, which raises `shared` for its neighbours and so reprices them.
+    dk_ref = _dk(RHO_CROSS)
     debts: list[dict[str, Any]] = []
     for (mech, info), fams in sorted(impl.items()):
         for cls in classes:
             if (mech, info, cls) in occupied:
                 continue
+            shared = max((int(m == mech) + int(i == info) + int(c == cls)
+                          for (m, i, c) in occupied), default=0)
+            rho_d = RHO_CROSS + (RHO_SAME_FACTOR - RHO_CROSS) * shared / 3.0
+            dk = _dk(rho_d)
             e = effort.get((mech, info, cls), 0)
             cluster = next((classify_family(f) for f in sorted(fams)
                             if classify_family(f) != "UNCLASSIFIED"), "UNCLASSIFIED")
@@ -1431,7 +1500,11 @@ def _breadth_debts(clusters: Mapping[str, Mapping[str, Any]], glist: list[dict[s
                                              "payer" if occ_l1.get(mech) else
                                              "no certified sleeve holds this payer anywhere"),
                 "expected_delta_k_eff": round(dk, 6) if dk is not None else None,
-                "expected_independence": round(1.0 - RHO_CROSS, 3),
+                "expected_rho_to_book": round(rho_d, 4), "shared_axes_with_book": shared,
+                # value in units of one cross-correlated new stream: what the auction sums
+                "value_units": (round(max(0.0, dk) / dk_ref, 6)
+                                if dk is not None and dk_ref else None),
+                "expected_independence": round(1.0 - rho_d, 3),
                 "required_data": info, "candidate_producers": sorted(fams)[:8],
                 "historical_search_effort": e,
                 "failure_history": ("searched, nothing certified" if e else "never searched"),
@@ -1480,6 +1553,15 @@ def load(path: Path | None = None, *, max_age_h: float = MAX_AGE_H,
     except (TypeError, ValueError):
         return None, f"{p.name} carries no readable timestamp"
     return doc, "fresh"
+
+
+def read_fresh(path: Path | None = None, *, max_age_h: float = MAX_AGE_H,
+               now: datetime | None = None) -> dict[str, Any]:
+    """The map for a reader that wants a dict: the published map when fresh, else an UNMEASURED
+    stub naming why (audit should-fix, 2026-10-06). A map older than its window is never read as
+    the old number -- a stale reading of breadth is not a reading of breadth now (L1.28a)."""
+    doc, why = load(path, max_age_h=max_age_h, now=now)
+    return dict(doc) if doc is not None else {"status": UNMEASURED, "why": why}
 
 
 # ------------------------------------------------------------------------ the scorer

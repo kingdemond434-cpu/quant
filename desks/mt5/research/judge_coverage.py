@@ -1124,8 +1124,37 @@ def saturation_stamp(rows: list[dict[str, Any]], capacity: int | None = None) ->
         return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
 
 
-#: Every ordering stamp the saturation map adds; popped before the docket is written.
+#: Every ordering stamp the saturation map adds; popped before the docket is written, after
+#: `breadth_order_stamp` has carried them onto the row's persisted `breadth_order`.
 _SAT_KEYS = ("_sat", "_satq", "_dup", "_satq_arch")
+
+#: THE PERSISTED BREADTH ORDER (2026-10-06, audit must-fix 1). The judge re-sorts the docket by
+#: its own key, so a rank that lives only in the row's position is lost at the judge. Each written
+#: row carries `breadth_order = {rank, dup, sat, quality, archive}`: `rank` is its position in
+#: this value / novelty order, `dup` the strong-duplicate flag. Order only; no row is removed.
+BREADTH_ORDER_KEY = "breadth_order"
+
+
+def persist_breadth_order(ordered: list[dict[str, Any]]) -> int:
+    """Carry each row's breadth rank onto `breadth_order` and drop the transient ordering terms.
+    A docket the saturation map did not stamp gets no `breadth_order`, so the judge orders it
+    exactly as before. Returns how many rows carry the persisted order."""
+    stamped = any("_sat" in r for r in ordered)
+    for rank, row in enumerate(ordered):
+        if stamped:
+            row[BREADTH_ORDER_KEY] = breadth_order_stamp(row, rank)
+        for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", *_SAT_KEYS):
+            row.pop(_k, None)
+    return len(ordered) if stamped else 0
+
+
+def breadth_order_stamp(row: dict[str, Any], rank: int) -> dict[str, Any]:
+    out: dict[str, Any] = {"rank": int(rank), "dup": int(row.get("_dup") or 0)}
+    if "_sat" in row:
+        out["sat"] = round(float(row["_sat"]), 6)
+    out["quality"] = int(row.get("_satq") or 0)
+    out["archive"] = int(row.get("_satq_arch") or 0)
+    return out
 
 
 def _tf_session_key() -> Any:
@@ -1978,6 +2007,8 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
     backlog. A failure here returns the rows untouched, because an ordering organ must never be
     able to cost the desk a docket (L1.28a).
     """
+    for row in rows:
+        row.pop(BREADTH_ORDER_KEY, None)       # re-stamped every pass, never a stale rank
     try:
         doc = build(rows, now=now)
         if not doc.get("families"):
@@ -2055,12 +2086,13 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
                            "without_saturation": saturation_head(legacy_sat, cap)}
         doc["unrunnable_filtered_from_docket"] = len(blocked)
         for _b in blocked:
+            _b.pop(BREADTH_ORDER_KEY, None)
             for _k in ("_cell", "_keff", "_occ", "_orth", *_SAT_KEYS):
                 _b.pop(_k, None)
-        # `orthogonality` (the published per-row score) is KEPT on the row; the ordering terms go.
-        for row in ordered:
-            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", *_SAT_KEYS):
-                row.pop(_k, None)
+        # `orthogonality` (the published per-row score) is KEPT on the row; the ordering terms go,
+        # EXCEPT the breadth order, which is carried THROUGH the write as `breadth_order`
+        # {rank, dup, sat}: the judge (sealed patch gauntlet_consume_breadth_order) sorts by it.
+        persist_breadth_order(ordered)
         if publish:
             write(doc)
         return ordered, doc

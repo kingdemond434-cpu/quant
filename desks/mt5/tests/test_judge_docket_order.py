@@ -30,7 +30,7 @@ SEALED = (_DESK / "scripts" / "external_gauntlet.py").read_text("utf-8")
 
 
 def test_the_sealed_sort_key_is_still_the_text_this_module_restates() -> None:
-    assert O.SEALED_SORT_KEY_SOURCE in SEALED, (
+    assert any(src in SEALED for src in O.SEALED_SORT_KEY_SOURCES), (
         "external_gauntlet.main's docket sort key changed: re-read it and update "
         "judge_docket_order.order and SEALED_SORT_KEY_SOURCE together")
 
@@ -40,7 +40,7 @@ def test_the_sealed_steps_still_run_in_the_order_restated() -> None:
     marks = ["partition_at_economic_prior(list(cells.values()), meta)",
              "modifier_preflight(_spec)",
              "family_banned(sp.get(\"family\"))",
-             O.SEALED_SORT_KEY_SOURCE,
+             next(src for src in O.SEALED_SORT_KEY_SOURCES if src in SEALED),
              "_ng.screen(_cands)",
              "allocate_by_yield(eligible_specs)",
              "_prewarm_cache(eligible_specs, meta"]

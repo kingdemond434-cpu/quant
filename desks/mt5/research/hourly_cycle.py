@@ -2086,6 +2086,31 @@ def _self_budget_s(args: tuple[str, ...]) -> float | None:
     return None
 
 
+def _split_budget(name: str) -> tuple[float, dict]:
+    """`breadth_ladder.split_budget` for a leg; (1.0, why) on any failure -- never a stall."""
+    try:
+        import breadth_ladder
+        f, rec = breadth_ladder.split_budget(name)
+        return max(1.0, float(f)), rec
+    except Exception as exc:
+        return 1.0, {"leg": name, "why": f"breadth_ladder unavailable: {type(exc).__name__}"}
+
+
+def _scale_budget_arg(args: tuple[str, ...], factor: float) -> tuple[str, ...]:
+    """The same args with `--budget-s N` raised to N x factor (factor >= 1 only; never lowered)."""
+    if factor <= 1.0:
+        return args
+    out = list(args)
+    for i, tok in enumerate(out):
+        if tok == "--budget-s" and i + 1 < len(out):
+            with suppress(TypeError, ValueError):
+                out[i + 1] = str(round(float(out[i + 1]) * factor))
+        elif tok.startswith("--budget-s="):
+            with suppress(TypeError, ValueError):
+                out[i] = f"--budget-s={round(float(tok.split('=', 1)[1]) * factor)}"
+    return tuple(out)
+
+
 def _self_stop_floor_s(args: tuple[str, ...]) -> int:
     """The shortest cap under which an organ with a declared `--budget-s` can still write."""
     own = _self_budget_s(args)
@@ -2123,6 +2148,15 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
     # at a scout budget, and can never reduce the hour's total. An unavailable pricer returns the
     # base unchanged, so this line is exactly what it was whenever the price cannot be read.
     budget, _price_rec = _priced_budget(name, LEG_BUDGET_SEC.get(name, SEARCH_BUDGET_SEC))
+    # THE A/B/C/D SPLIT FUNDS A, C AND D LEGS (audit must-fix 3, 2026-10-06). `breadth_ladder`'s
+    # split reached only the two B legs `research_budget` prices, so heating A and C could only
+    # trim B. An exploration, frontier or falsification leg now gets its category's factor
+    # (>= 1.0, one-sided) on its cap AND on its own `--budget-s`, so it does more work. B is
+    # untouched here.
+    _split_f, _split_rec = _split_budget(name)
+    if _split_f > 1.0:
+        budget = round(budget * _split_f)
+        args = _scale_budget_arg(args, _split_f)
     # THE FLOOR IS ONE-SIDED AND IT IS THE ORGAN'S OWN STOPPING POINT -- see LEG_BUDGET_FLOOR_SEC.
     # AND FOR EVERY LEG THAT DECLARES ITS OWN STOP, THE SAME RULE (noon CRO 2026-09-30: sweep,
     # compile_candidates, descendants, probation, discovery_compiler and conversion_maximiser all
@@ -2152,7 +2186,8 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         # only do that if they survive to here.
         return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
                 "stderr_tail": (r.stderr or "")[-1200:],
-                "budget_s": budget, "at": datetime.now(UTC).isoformat()}
+                "budget_s": budget, "breadth_split": _split_rec,
+                "at": datetime.now(UTC).isoformat()}
     except subprocess.TimeoutExpired:
         return {"exit_code": None, "timeout_s": budget,
                 "note": f"{name} exceeded its cycle budget and was stopped; its partial work is "

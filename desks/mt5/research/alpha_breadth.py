@@ -607,7 +607,8 @@ def _append_history(doc: dict[str, Any]) -> None:
     # N_CERT beside N_EFFECTIVE_CERT in the series too, so the ladder and the CRO can see
     # whether certificates are being minted into new bets or into the same ones.
     cert = doc.get("certificates") if isinstance(doc.get("certificates"), dict) else {}
-    for k in ("n_certificates", "n_effective_certificates", "n_strategy_variants",
+    for k in ("n_certificates", "n_effective_certificates", "n_effective_status",
+              "n_strategy_variants",
               "n_structural_clusters", "n_economic_clusters", "n_independent_forward_streams",
               "n_saturated_clusters", "duplicate_survivor_share", "robust_k_eff_book",
               "stress_k_eff_book",

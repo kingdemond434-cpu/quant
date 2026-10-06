@@ -215,7 +215,8 @@ def bounties(alloc: dict[str, Any], exposure: dict[str, Any], regimes: dict[str,
                     f"need a certified {d.get('mechanism')} edge read from "
                     f"{d.get('information_source')} on {d.get('asset_class')}: "
                     f"{d.get('current_nearest_exposure')}",
-                    {k: d.get(k) for k in ("expected_delta_k_eff", "expected_independence",
+                    {k: d.get(k) for k in ("expected_delta_k_eff", "value_units",
+                                           "expected_rho_to_book", "expected_independence",
                                            "historical_search_effort", "empty_prior_decay",
                                            "hedges_failure_modes", "new_payer",
                                            "candidate_producers", "bounty", "priority")},
@@ -240,7 +241,19 @@ def build(now: datetime | None = None, **docs: dict[str, Any]) -> dict[str, Any]
     at = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
 
     def get(name: str, path: Path) -> dict[str, Any]:
-        return docs[name] if name in docs else _read(path)
+        if name in docs:
+            return docs[name]
+        if name == "saturation":
+            # through its freshness window: a stale map reads UNMEASURED, never the old debts
+            try:
+                try:
+                    from research.certificate_saturation import read_fresh
+                except ImportError:
+                    from certificate_saturation import read_fresh  # type: ignore[no-redef]
+                return read_fresh(path)
+            except Exception:
+                return {}
+        return _read(path)
 
     rows, unmeasured = bounties(get("alloc", ALLOC), get("exposure", EXPOSURE),
                                 get("regimes", REGIMES), get("drawdown", DRAWDOWN),
