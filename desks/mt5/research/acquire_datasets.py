@@ -545,6 +545,21 @@ def _stem(host: str, url: str, member: str) -> str:
     return f"{base[:26]}_{mstem}_{tag}".strip("_")
 
 
+#: Intermediate prints `_accumulate` saw this pass, written by the caller beside the series in
+#: the same guarded persist step (a failure there is a counted refusal, never swallowed).
+_PENDING_REVISIONS: dict[str, pd.DataFrame] = {}
+
+
+def _write_revisions(path: Path) -> None:
+    log = _PENDING_REVISIONS.pop(str(path), None)
+    if log is None:
+        return
+    rev_path = path.with_name(path.stem + ".revisions.parquet")
+    if rev_path.exists():
+        log = pd.concat([pd.read_parquet(rev_path), log], ignore_index=True)
+    log.to_parquet(rev_path)
+
+
 def _accumulate(path: Path, s: pd.Series, seen_at: str,
                 prior_seen_at: str | None) -> tuple[pd.DataFrame, int, int]:
     """Fold a freshly fetched series into what the store already holds, FIRST VALUE WINS.
@@ -585,15 +600,9 @@ def _accumulate(path: Path, s: pd.Series, seen_at: str,
     prev_latest = pd.to_numeric(old.loc[common, "value_latest"], errors="coerce").astype(float)
     moved = (prev_latest - b).abs() > 1e-9 * (1.0 + prev_latest.abs())
     if bool(moved.any()):
-        log = pd.DataFrame({"period": common[moved.to_numpy()],
-                            "value": b[moved].to_numpy(), "seen_at": seen_at})
-        rev_path = path.with_name(path.stem + ".revisions.parquet")
-        try:
-            if rev_path.exists():
-                log = pd.concat([pd.read_parquet(rev_path), log], ignore_index=True)
-            log.to_parquet(rev_path)
-        except Exception:                                               # noqa: BLE001
-            pass
+        _PENDING_REVISIONS[str(path)] = pd.DataFrame({"period": common[moved.to_numpy()],
+                                                      "value": b[moved].to_numpy(),
+                                                      "seen_at": seen_at})
     old.loc[common, "value_latest"] = b
     added = fresh.loc[fresh.index.difference(old.index)]
     merged = pd.concat([old, added]).sort_index()
@@ -686,6 +695,7 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
             frame, revised, added = _accumulate(path, s, seen_at, prior.get("acquired_at"))
             try:
                 frame.to_parquet(path)
+                _write_revisions(path)
             except Exception:
                 _refuse("could not persist")
                 failed_series.append(name)
