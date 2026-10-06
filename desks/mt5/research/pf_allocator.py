@@ -3486,6 +3486,73 @@ def _regime_inputs(daily: pd.DataFrame) -> str:
                  "code": code})
 
 
+#: The env var `allocator_trigger` sets on the solve it launches:
+#: {"request_id": str, "input_versions": {key: "seq:sig"}}. Echoed verbatim into the artifact.
+TRIGGER_REQUEST_ENV = "QUANT_ALLOC_TRIGGER_REQUEST"
+
+
+def _finite_or_none(x: Any) -> float | None:
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return None
+    return v if math.isfinite(v) else None
+
+
+def _atomic_write_text(path: Path, text: str, *, retries: int = 5) -> None:
+    """Temp file + fsync + os.replace, retrying the Windows sharing violation a reader causes."""
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
+        fh.write(text)
+        fh.flush()
+        os.fsync(fh.fileno())
+    for i in range(retries):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            if i == retries - 1:
+                raise
+            time.sleep(0.05 * (i + 1))
+
+
+def decision_identity(world_cache: Mapping[str, Any] | None,
+                      decided: datetime) -> dict[str, Any]:
+    """decision_id, the world fingerprint it was solved on, and the trigger echo when asked.
+
+    The id is unique per pass (time + pid + fingerprint prefix), so two passes can never share
+    one, and the gateway can record which id it consumed. The trigger's request is echoed only
+    when it parses; a malformed request is named, never half-echoed (half an echo would let the
+    trigger mark versions consumed that this pass never saw).
+    """
+    fp = str((world_cache or {}).get("fingerprint") or "")
+    out: dict[str, Any] = {
+        "decision_id": f"{decided:%Y%m%dT%H%M%S%fZ}-{os.getpid()}-{fp[:10] or 'nofp'}",
+        "world_fingerprint": fp or None,
+        "decided_utc": decided.isoformat(),
+    }
+    raw = os.environ.get(TRIGGER_REQUEST_ENV)
+    if raw:
+        try:
+            req = json.loads(raw)
+            rid = req.get("request_id")
+            ver = req.get("input_versions")
+            if isinstance(rid, str) and rid and isinstance(ver, dict):
+                out["trigger_request_id"] = rid
+                out["consumed_input_versions"] = ver
+            else:
+                out["trigger_request_error"] = "request lacks request_id or input_versions"
+        except (ValueError, AttributeError) as exc:
+            out["trigger_request_error"] = f"unparseable: {type(exc).__name__}"
+    return out
+
+
+def decision_state_fingerprint(ev: Sequence[SleeveEvidence], cfg: WorldConfig,
+                               regime_inputs: str = "") -> str:
+    """The fingerprint alone -- the contract name the acceptance suite (PR #198) calls."""
+    return world_fingerprint(ev, cfg, regime_inputs)[0]
+
+
 def world_fingerprint(ev: Sequence[SleeveEvidence], cfg: WorldConfig,
                       regime_inputs: str) -> tuple[str, dict[str, str]]:
     """The decision-state fingerprint of a world population, and its named components.
@@ -3844,10 +3911,12 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                       crisis_prob=crisis_share,
                       **(cov_cal.as_overrides() if cov_cal else {}))
 
-    # REUSED ONLY ON AN EXACT DECISION-STATE FINGERPRINT (see `world_fingerprint`); a miss names
-    # the components that changed in the artifact's `world_cache`, and the write is atomic.
+    # REUSED ONLY ON AN EXACT DECISION-STATE FINGERPRINT (`decision_state_fingerprint`, built by
+    # `world_fingerprint`); a miss names the components that changed in the artifact's
+    # `world_cache`, and the write is atomic.
+    cachef = CACHE / "worlds.npz"
     worlds, world_cache = world_population(mode, ev, cfg, regime_inputs=regime_in,
-                                           regime_diag=regime_diag, cachef=CACHE / "worlds.npz",
+                                           regime_diag=regime_diag, cachef=cachef,
                                            cached=cached_worlds)
     if world_cache["hit"]:
         _log(f"world population reused from cache (fingerprint {world_cache['fingerprint'][:12]})")
@@ -4130,8 +4199,16 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # opportunity cost. The one thing the fill never overrides is the ruin guard below: a
         # filled book that is wiped out in a sampled world is still not a book.
         held_before = book.total_heat
-        book, fill_note = fill_floor(book, ev, verdict.total_heat, ub, family_of,
-                                     cfg=cfg, worlds=worlds)
+        # TWO-SIDED SINCE 2026-10-06: the fill exists to hold the UTILISATION TARGET, so it runs
+        # only when the target is what bound (`binding == "mandate"`, i.e. certified free on the
+        # curve). A growth-optimum or state-curve heat is never forced by relaxing per-sleeve
+        # bounds -- those bounds are survival-derived, and growth does not outrank survival.
+        if verdict.binding == "mandate":
+            book, fill_note = fill_floor(book, ev, verdict.total_heat, ub, family_of,
+                                         cfg=cfg, worlds=worlds)
+        else:
+            fill_note = {"needed": False,
+                         "why": f"heat bound by {verdict.binding}, not the target: no fill"}
         if fill_note.get("needed"):
             _log(f"FLOOR FILL: bounded solve held {held_before:.2%} of the "
                  f"{verdict.total_heat:.2%} resolved; {fill_note}")
@@ -4295,7 +4372,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                 _cbp = _cb_paths(ev, n_paths=400, horizon=max(1, int(NO_TRADE_HORIZON_DAYS)),
                                  worlds=worlds, seed=seed)
                 _cb_book, constrained_feed = _ce.adopt_if_proven(
-                    _sw, funded, _cbp, floor=float(HEAT_TARGET),
+                    _sw, funded, _cbp, floor=float(verdict.floor),
                     score=lambda b: float(score_book(ev, b, cfg=cfg,
                                                      worlds=worlds)["mean_log_growth"]),
                     h_prev=_cb_prev, turnover_cost=TURNOVER_COST_R, seed=seed)
@@ -4817,8 +4894,70 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     except Exception as exc:
         _log(f"capital modifier ledger not written: {type(exc).__name__}: {exc}")
 
+    # THE DECISION HAS AN IDENTITY AND SAYS WHAT IT CONSUMED (2026-10-06). A newer timestamp is
+    # not proof that the triggering input was used; an id that echoes the trigger's request and
+    # the exact input versions it was sent is. The chain this starts -- input versions ->
+    # world fingerprint -> decision_id -> gateway consumed id -> order -> fill -- is what a
+    # reader replays a decision along. Without a trigger request the echo fields are omitted.
+    # STALE CRITICAL INPUT NEVER ADDS RISK (model_roles.staleness_clamp). A critical model whose
+    # input is past its staleness budget, missing or future-dated holds the book: no sleeve rises
+    # above what is held, no new sleeve opens, reductions the solve chose still go through.
+    stale_clamp_doc: dict[str, Any] = {"active": False}
+    try:
+        from research.model_roles import as_of_from_doc, staleness_clamp
+
+        def _doc_of(path: Path) -> tuple[Any, float | None]:
+            try:
+                return json.loads(path.read_text("utf-8")), path.stat().st_mtime
+            except (OSError, ValueError):
+                return None, None
+        _clamp = staleness_clamp({
+            "change_point": as_of_from_doc(*_doc_of(DRIFT)),
+            "bayesian_edge": as_of_from_doc(*_doc_of(POSTERIOR_ALPHA)),
+            "execution_cost": as_of_from_doc(*_doc_of(BASE / "data" / "cost_surface.json")),
+            "liquidity": as_of_from_doc(*_doc_of(BASE / "reports" / "CAPACITY.json"))})
+        stale_clamp_doc = {"active": bool(_clamp.active), "reasons": list(_clamp.reasons)}
+        if _clamp.active and funded:
+            clamped = _clamp.apply_to_book(funded, prev_book)
+            if clamped != funded:
+                sc = score_book(ev, clamped, cfg=cfg, worlds=worlds)
+                book = AllocationResult(
+                    heat=dict(clamped), total_heat=float(sum(clamped.values())),
+                    robust_score=float(sc["robust_score"]),
+                    mean_log_growth=float(sc["mean_log_growth"]),
+                    cvar_log_growth=float(sc["cvar_log_growth"]),
+                    annual_growth_pct=float(sc["annual_growth_pct"]),
+                    prob_annual_loss=float(sc["prob_annual_loss"]),
+                    note="stale critical input: held, no adds")
+                funded = {k: round(v, 6) for k, v in clamped.items() if v > 1e-5}
+            _log(f"stale critical input -> HOLD, no adds: {'; '.join(_clamp.reasons)}")
+    except Exception as exc:
+        stale_clamp_doc = {"active": False, "status": "UNMEASURED",
+                           "why": f"{type(exc).__name__}: {exc}"}
+
+    # THE RECEDING-HORIZON CHALLENGER (multiperiod_worlds.plan_receding): trade now, partially,
+    # wait or hold, on these worlds from the held book, at the resolved heat. Reported beside the
+    # published book -- it sizes nothing until it wins the proof contest like any challenger.
+    receding: dict[str, Any] = {"status": "SKIPPED", "why": f"{mode} clock"}
+    if mode != "fast" and worlds is not None and verdict.total_heat > 0:
+        try:
+            from libs.portfolio.multiperiod_worlds import plan_receding
+            _rh = plan_receding(worlds, prev_book, cap=float(verdict.total_heat),
+                                upper=ub or None, cost_one_way=TURNOVER_COST_R / 2.0,
+                                robust_lambda=cfg.robust_lambda, cvar_alpha=cfg.cvar_alpha)
+            receding = {"status": "MEASURED",
+                        **{k: _rh[k] for k in ("h_now", "path_total_heat", "stage_days",
+                                               "objective", "vs_hold", "optimality_gap",
+                                               "converged", "no_trade_horizon_check")},
+                        "actions": dict(list(_rh["actions"].items())[:40])}
+        except Exception as exc:
+            receding = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
+    _decided = datetime.now(UTC)
+    _trace = decision_identity(world_cache, _decided)
     art: dict[str, Any] = {
-        "generated_utc": datetime.now(UTC).isoformat(),
+        "generated_utc": _decided.isoformat(),
+        **_trace,
         "mode": mode,
         "elapsed_s": round(time.time() - t0, 1),
         "armed": ARMED.exists(),
@@ -4867,7 +5006,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             # thing that bit. A floor nobody audits is a belief; a floor whose cost is on the
             # dashboard every pass is a decision, with the evidence to overturn it.
             **heat_accounting(raw=free.total_heat, robust=verdict.total_heat, curve=curve,
-                              floor=HEAT_TARGET),
+                              floor=float(verdict.floor)),
             # THE CEILING THE BOOK'S INDEPENDENCE EARNED, and the four heats behind it. `binding`
             # above reads "effective_ceiling" when this is what bound rather than the nominal bar.
             "effective_ceiling": round(verdict.effective_ceiling, 6),
@@ -5061,7 +5200,18 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                                          default=None)),
             },
         },
-        "solver": {"iterations": book.iterations, "converged": book.converged},
+        "solver": {"iterations": book.iterations, "converged": book.converged,
+                   # A LOCAL certificate: the objective is non-convex (robust_elog._redundancy),
+                   # so `converged` means a KKT point of the heat set, best of several starts.
+                   "certificate": getattr(book, "certificate", "local_kkt_multistart"),
+                   "optimality_gap": _finite_or_none(getattr(book, "optimality_gap", None)),
+                   "gap_tolerance": _finite_or_none(getattr(book, "gap_tolerance", None)),
+                   "multistart_spread": _finite_or_none(getattr(book, "multistart_spread",
+                                                                None)),
+                   "n_starts": int(getattr(book, "n_starts", 1)),
+                   "budget_hit": bool(getattr(book, "budget_hit", False))},
+        "staleness_clamp": stale_clamp_doc,
+        "receding_horizon": receding,
         # C17: the objective's two non-growth terms, written down instead of folded in, plus the
         # instrument and mechanism tiers as decompositions of the heat already resolved.
         "objective_terms": _objective_terms(funded, ev),
@@ -5070,7 +5220,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "capacity_growth": _capacity_growth(),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(art, indent=2, default=str), encoding="utf-8")
+    # ATOMIC: the gateway and the trigger read this file while it is written; a torn read of a
+    # half-written book is a decision nobody made.
+    _atomic_write_text(OUT, json.dumps(art, indent=2, default=str))
     DONE.write_text(datetime.now(UTC).isoformat(), encoding="utf-8")
 
     # THE FORECAST LOG IS APPEND-ONLY AND IT IS WHAT MAKES THIS LOOP LEARN. `pf_allocation.json`
@@ -5090,6 +5242,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                 "expected_cvar_per_day": art["growth"]["cvar_log_per_day"],
                 "prob_annual_loss": art["growth"]["prob_annual_loss"],
                 "book": funded,
+                "decision_id": art.get("decision_id"),
+                "world_fingerprint": art.get("world_fingerprint"),
                 "regime": dict(probs),
                 "n_universe": len(ev),
             }, default=str) + "\n")
