@@ -193,7 +193,7 @@ def test_xlsx_reader_needs_no_third_party_engine() -> None:
 
 
 def test_printed_dates_are_read_in_the_pages_own_clock() -> None:
-    dt, basis = C.parse_local_datetime("2026-09-19 16:00", 8)
+    dt, _basis = C.parse_local_datetime("2026-09-19 16:00", 8)
     assert dt is not None and dt.isoformat() == "2026-09-19T16:00:00+08:00"
     dt2, basis2 = C.parse_local_datetime("2026年9月19日", 8)
     assert dt2 is not None and dt2.hour == 23 and "date only" in basis2
