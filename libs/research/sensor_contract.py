@@ -456,7 +456,7 @@ class SensorLedger:
         if day not in self._seen:
             ids: set[str] = set()
             path = self._shard(day)
-            if path.exists():
+            if path.is_file():
                 with path.open(encoding="utf-8", errors="replace") as fh:
                     for line in fh:
                         i = line.find('"observation_id": "')
