@@ -30,7 +30,7 @@
   },
   {
    "name": "ECOS_API_KEY",
-   "group": "free_data",
+   "group": "unavailable",
    "cost": "free",
    "machine": "box",
    "signup": "https://ecos.bok.or.kr/api/#/AuthKeyApply",
@@ -40,11 +40,12 @@
     "desks/mt5/research/keyed_sources.py"
    ],
    "owner": "Asian quant practices gap check",
-   "same_key_as": "BOK_API_KEY"
+   "same_key_as": "BOK_API_KEY",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: bis_kr_policy_rate (BIS SDMX, keyless), FRED Korea series (FRED key set), oecd_cli, imf_ifs"
   },
   {
    "name": "BOK_API_KEY",
-   "group": "free_data",
+   "group": "unavailable",
    "cost": "free",
    "machine": "box",
    "signup": "https://ecos.bok.or.kr/api/#/AuthKeyApply",
@@ -53,11 +54,12 @@
     "desks/mt5/research/asia_collector.py"
    ],
    "owner": "Asian quant practices gap check",
-   "same_key_as": "ECOS_API_KEY"
+   "same_key_as": "ECOS_API_KEY",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: bis_kr_policy_rate (BIS SDMX, keyless), FRED Korea series, oecd_cli, imf_ifs"
   },
   {
    "name": "TUSHARE_TOKEN",
-   "group": "free_data",
+   "group": "unavailable",
    "cost": "free (points-tiered)",
    "machine": "box",
    "signup": "https://tushare.pro/register",
@@ -66,11 +68,12 @@
     "libs/data/free_stack.py",
     "desks/mt5/research/asia_collector.py"
    ],
-   "owner": "Asian quant practices gap check"
+   "owner": "Asian quant practices gap check",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: BaoStock (keyless, libs/data/free_stack.py), AKShare (keyless), and the exchanges' own daily pages shfe_daily, dce_daily, czce_daily, cffex_daily"
   },
   {
    "name": "JQ_USER",
-   "group": "blocked_region",
+   "group": "unavailable",
    "cost": "free trial, BLOCKED_REGION (JoinQuant requires a Chinese IP)",
    "machine": "box",
    "signup": "https://www.joinquant.com/default/index/sdk",
@@ -79,11 +82,11 @@
     "libs/data/free_stack.py"
    ],
    "owner": "Asian quant practices gap check",
-   "note": "unavailable from the operator's region; free_stack reads NEEDS_CREDENTIAL and BaoStock + TuShare substitute"
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: BaoStock + AKShare + the SHFE/DCE/CZCE/CFFEX daily pages"
   },
   {
    "name": "JQ_PASS",
-   "group": "blocked_region",
+   "group": "unavailable",
    "cost": "free trial, BLOCKED_REGION (JoinQuant requires a Chinese IP)",
    "machine": "box",
    "signup": "https://www.joinquant.com/default/index/sdk",
@@ -92,7 +95,7 @@
     "libs/data/free_stack.py"
    ],
    "owner": "Asian quant practices gap check",
-   "note": "unavailable from the operator's region; free_stack reads NEEDS_CREDENTIAL and BaoStock + TuShare substitute"
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: BaoStock + AKShare + the SHFE/DCE/CZCE/CFFEX daily pages"
   },
   {
    "name": "ESTAT_APP_ID",
@@ -123,7 +126,7 @@
   },
   {
    "name": "KOBIS_API_KEY",
-   "group": "free_data",
+   "group": "unavailable",
    "cost": "free",
    "machine": "box",
    "signup": "https://www.kobis.or.kr/kobisopenapi/homepg/apikey/ckUser/findApikeyList.do",
@@ -131,11 +134,12 @@
    "readers": [
     "desks/mt5/research/alt_proxies.py"
    ],
-   "owner": "Asian quant practices gap check"
+   "owner": "Asian quant practices gap check",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: kobis_boxoffice_web (KOFIC's public daily box-office page, keyless)"
   },
   {
    "name": "SEOUL_API_KEY",
-   "group": "free_data",
+   "group": "unavailable",
    "cost": "free",
    "machine": "box",
    "signup": "https://data.seoul.go.kr/together/mypage/actkeyMain.do",
@@ -143,11 +147,12 @@
    "readers": [
     "desks/mt5/research/alt_proxies.py"
    ],
-   "owner": "Asian quant practices gap check"
+   "owner": "Asian quant practices gap check",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: no keyless equivalent for Seoul subway/footfall; kr_kosis and kr_customs_20day carry the Korean demand cycle meanwhile"
   },
   {
    "name": "DATA_GO_KR_KEY",
-   "group": "free_data",
+   "group": "unavailable",
    "cost": "free",
    "machine": "box",
    "signup": "https://www.data.go.kr/",
@@ -156,7 +161,7 @@
     "desks/mt5/research/alt_proxies.py"
    ],
    "owner": "Asian quant practices gap check",
-   "note": "use the Decoding (raw) service key"
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: kr_customs_20day and kr_exports_20d (UNIPASS public pages), UN Comtrade (COMTRADE_API_KEY)"
   },
   {
    "name": "INEGI_TOKEN",
@@ -196,7 +201,7 @@
   },
   {
    "name": "KOSIS_API_KEY",
-   "group": "free_data",
+   "group": "unavailable",
    "cost": "free",
    "machine": "box",
    "signup": "https://kosis.kr/openapi/index/index.jsp",
@@ -204,7 +209,8 @@
    "readers": [
     "desks/mt5/research/keyed_sources.py"
    ],
-   "owner": "Global data discovery and use"
+   "owner": "Global data discovery and use",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: kr_kosis public pages, oecd_cli, imf_ifs, FRED Korea series"
   },
   {
    "name": "BLS_API_KEY",
@@ -220,7 +226,7 @@
   },
   {
    "name": "EDINET_API_KEY",
-   "group": "free_data",
+   "group": "unavailable",
    "cost": "free",
    "machine": "box",
    "signup": "https://api.edinet-fsa.go.jp/api/auth/index.aspx?mode=1",
@@ -229,11 +235,12 @@
     "desks/mt5/research/corporate_disclosure.py"
    ],
    "pending_pr": 140,
-   "owner": "Asian quant practices gap check"
+   "owner": "Asian quant practices gap check",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: tdnet_jp_disclosures (JPX TDnet daily listing, keyless)"
   },
   {
    "name": "DART_API_KEY",
-   "group": "free_data",
+   "group": "unavailable",
    "cost": "free",
    "machine": "box",
    "signup": "https://opendart.fss.or.kr/uss/umt/EgovMberInsertView.do",
@@ -242,7 +249,8 @@
     "desks/mt5/research/corporate_disclosure.py"
    ],
    "pending_pr": 140,
-   "owner": "Asian quant practices gap check"
+   "owner": "Asian quant practices gap check",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: krx_kind_disclosures (KRX KIND public disclosure listing, keyless)"
   },
   {
    "name": "JQUANTS_PASSWORD",
@@ -503,7 +511,7 @@
   },
   {
    "name": "CDSE_USERNAME",
-   "group": "free_data",
+   "group": "unavailable",
    "cost": "free account",
    "machine": "box",
    "signup": "https://dataspace.copernicus.eu/",
@@ -516,11 +524,11 @@
     "CDSE_TOKEN"
    ],
    "pending_pr": 218,
-   "note": "or CDSE_CLIENT_ID + CDSE_CLIENT_SECRET"
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: openmeteo_cams_air (Copernicus CAMS NO2/SO2 via Open-Meteo, keyless) and nasa_cmr_s5p_no2 (NASA CMR search keyless; granules with EARTHDATA_TOKEN)"
   },
   {
    "name": "CDSE_PASSWORD",
-   "group": "free_data",
+   "group": "unavailable",
    "cost": "free account",
    "machine": "box",
    "signup": "https://dataspace.copernicus.eu/",
@@ -529,11 +537,12 @@
     "desks/mt5/research/asia_collector.py"
    ],
    "owner": "Asian quant practices gap check",
-   "pending_pr": 218
+   "pending_pr": 218,
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: openmeteo_cams_air and nasa_cmr_s5p_no2"
   },
   {
    "name": "CDSE_CLIENT_ID",
-   "group": "optional_alt",
+   "group": "unavailable",
    "cost": "free account",
    "machine": "box",
    "signup": "https://dataspace.copernicus.eu/",
@@ -542,11 +551,12 @@
     "desks/mt5/research/asia_collector.py"
    ],
    "owner": "Asian quant practices gap check",
-   "pending_pr": 218
+   "pending_pr": 218,
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: openmeteo_cams_air and nasa_cmr_s5p_no2"
   },
   {
    "name": "CDSE_CLIENT_SECRET",
-   "group": "optional_alt",
+   "group": "unavailable",
    "cost": "free account",
    "machine": "box",
    "signup": "https://dataspace.copernicus.eu/",
@@ -555,7 +565,8 @@
     "desks/mt5/research/asia_collector.py"
    ],
    "owner": "Asian quant practices gap check",
-   "pending_pr": 218
+   "pending_pr": 218,
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: openmeteo_cams_air and nasa_cmr_s5p_no2"
   },
   {
    "name": "MYFXBOOK_EMAIL",
@@ -623,7 +634,8 @@
     "desks/mt5/data/paid_substitute_library.json"
    ],
    "owner": "Breadth and tier assessment",
-   "pending_pr": 152
+   "pending_pr": 152,
+   "note": "ACQUIRED 2026-10-06; COMTRADE_API_KEY_SECONDARY is the rotation fallback"
   },
   {
    "name": "ENTSOE_API_TOKEN",
@@ -649,7 +661,8 @@
     "desks/mt5/data/paid_substitute_library.json"
    ],
    "owner": "Breadth and tier assessment",
-   "pending_pr": 152
+   "pending_pr": 152,
+   "note": "ACQUIRED 2026-10-06; also the Copernicus CDSE substitute (Sentinel-5P granules via NASA)"
   },
   {
    "name": "CDSAPI_KEY",
@@ -675,7 +688,8 @@
     "desks/mt5/data/paid_substitute_library.json"
    ],
    "owner": "Breadth and tier assessment",
-   "pending_pr": 152
+   "pending_pr": 152,
+   "note": "USAJOBS also needs USAJOBS_USER_AGENT (the registered email) in the User-Agent header"
   },
   {
    "name": "ADZUNA_APP_KEY",
@@ -688,7 +702,8 @@
     "desks/mt5/data/paid_substitute_library.json"
    ],
    "owner": "Breadth and tier assessment",
-   "pending_pr": 152
+   "pending_pr": 152,
+   "note": "ACQUIRED 2026-10-06; Adzuna also needs ADZUNA_APP_ID (still pending)"
   },
   {
    "name": "PATENTSVIEW_API_KEY",
@@ -779,7 +794,8 @@
     "desks/mt5/data/source_rosters/thuquant.yaml"
    ],
    "owner": "Mine the EliteQuant list",
-   "pending_pr": 166
+   "pending_pr": 166,
+   "note": "ACQUIRED 2026-10-06 20:07"
   },
   {
    "name": "EODHD_API_KEY",
@@ -1025,6 +1041,48 @@
     "desks/mt5/data/credential_registry.json"
    ],
    "owner": "-"
+  },
+  {
+   "group": "free_data",
+   "machine": "box",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152,
+   "name": "COMTRADE_API_KEY_SECONDARY",
+   "cost": "free tier",
+   "signup": "https://comtradedeveloper.un.org/",
+   "unlocks": "UN Comtrade secondary subscription key: rotation fallback when the primary is rate-limited or rotated",
+   "note": "ACQUIRED 2026-10-06"
+  },
+  {
+   "group": "free_data",
+   "machine": "box",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152,
+   "name": "USAJOBS_USER_AGENT",
+   "cost": "free (an email, not a secret)",
+   "signup": "https://developer.usajobs.gov/apirequest/",
+   "unlocks": "the email USAJOBS requires in the User-Agent header beside Authorization-Key",
+   "note": "ACQUIRED 2026-10-06"
+  },
+  {
+   "group": "free_data",
+   "machine": "box",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152,
+   "name": "ADZUNA_APP_ID",
+   "cost": "free tier",
+   "signup": "https://developer.adzuna.com/signup",
+   "unlocks": "Adzuna app id, paired with ADZUNA_APP_KEY",
+   "note": "PENDING: shown on the same Adzuna dashboard page as the key"
   }
  ],
  "config": [
