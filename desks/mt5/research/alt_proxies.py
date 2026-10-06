@@ -1809,14 +1809,19 @@ def _boj_period(t: str, freq: str) -> date | None:
     return None
 
 
-def make_boj_parser(names: dict[str, str]) -> Callable[[bytes, Ctx], list[Obs]]:
+def make_boj_parser(names: dict[str, str], code_env: tuple[str, str] | None = None
+                    ) -> Callable[[bytes, Ctx], list[Obs]]:
     """BOJ stat-search `getDataCode` JSON (API manual, read 2026-10-06): STATUS 200 and a
     RESULTSET of series, each with SERIES_CODE, FREQUENCY and SURVEY_DATES / VALUES (read both
     at the series level and nested under VALUES). `names` maps a series code to the series name;
-    an unmapped code keeps a name derived from the code. Any other STATUS is an error document,
+    an unmapped code keeps a name derived from the code. `code_env` = (env var, series name) maps
+    the code configured on the box, read at parse time. Any other STATUS is an error document,
     which parses to nothing and is reported, never a value."""
 
     def parse(body: bytes, ctx: Ctx) -> list[Obs]:
+        names_now = dict(names)
+        if code_env is not None and os.environ.get(code_env[0], "").strip():
+            names_now[os.environ[code_env[0]].strip()] = code_env[1]
         try:
             doc = json.loads(body.decode("utf-8-sig", errors="replace"))
         except ValueError:
@@ -1830,7 +1835,8 @@ def make_boj_parser(names: dict[str, str]) -> Callable[[bytes, Ctx], list[Obs]]:
             if not isinstance(s, dict):
                 continue
             code = str(s.get("SERIES_CODE") or "")
-            name = names.get(code) or names.get(code.split("'")[-1]) or f"boj_{code.lower()}"
+            name = (names_now.get(code) or names_now.get(code.split("'")[-1])
+                    or f"boj_{code.lower()}")
             inner = s.get("VALUES") if isinstance(s.get("VALUES"), dict) else s
             dates, vals = inner.get("SURVEY_DATES"), inner.get("VALUES")
             if not isinstance(dates, list) or not isinstance(vals, list):
@@ -3082,7 +3088,8 @@ JP_PLANE_SOURCES: tuple[Source, ...] = (
         name="BOJ current-account balances (stat-search; code set on the box)",
         url=BOJ_API.format(db="{ALT_BOJ_CA_DB}", start="201501", code="{ALT_BOJ_CA_CODE}"),
         region="JP", language="en", cadence="daily",
-        parse=make_boj_parser({}), rule=_lag_rule(2, 0, weekday=True), transform="level_dev",
+        parse=make_boj_parser({}, ("ALT_BOJ_CA_CODE", "boj_current_account")),
+        rule=_lag_rule(2, 0, weekday=True), transform="level_dev",
         config_env=("ALT_BOJ_CA_DB", "ALT_BOJ_CA_CODE"), instruments=_JP_FX,
         signal_series=("boj_current_account",),
         mechanism=("current-account balances at the BOJ are yen liquidity itself: a draw-down "
@@ -3095,14 +3102,14 @@ JP_PLANE_SOURCES: tuple[Source, ...] = (
                                  "move the balance with no policy content"),
         crowding_prior="low", data_source=_jp_data_source("boj", "current_account"),
         note=("NO DEFAULT CODE: set ALT_BOJ_CA_DB and ALT_BOJ_CA_CODE from getDataLayer; the "
-              "parser names an unmapped code boj_<code>, so set the code to read the signal "
-              "series under its declared name via ALT_BOJ_CA_CODE")),
+              "configured code is read as the declared signal series")),
     Source(
         id="jp_boj_jgb_holdings",
         name="BOJ holdings of JGBs (Bank of Japan Accounts, stat-search; the Rinban footprint)",
         url=BOJ_API.format(db="{ALT_BOJ_JGB_DB}", start="201501", code="{ALT_BOJ_JGB_CODE}"),
         region="JP", language="en", cadence="10-daily",
-        parse=make_boj_parser({}), rule=_lag_rule(4, 0, weekday=True), transform="level_dev",
+        parse=make_boj_parser({}, ("ALT_BOJ_JGB_CODE", "boj_jgb_holdings")),
+        rule=_lag_rule(4, 0, weekday=True), transform="level_dev",
         config_env=("ALT_BOJ_JGB_DB", "ALT_BOJ_JGB_CODE"), instruments=_JP_FX,
         signal_series=("boj_jgb_holdings",),
         mechanism=("the change in the Bank's JGB holdings is the net of its Rinban purchase "
@@ -3116,14 +3123,6 @@ JP_PLANE_SOURCES: tuple[Source, ...] = (
         crowding_prior="low", data_source=_jp_data_source("boj", "jgb_holdings"),
         note="NO DEFAULT CODE: set ALT_BOJ_JGB_DB / ALT_BOJ_JGB_CODE from getDataLayer (BS01)"),
 )
-#: An unmapped BOJ code is named boj_<code>; the two rows without a default code map their
-#: configured code to the declared signal name at import.
-JP_PLANE_SOURCES = tuple(
-    replace(s, parse=make_boj_parser({os.environ.get(env, ""): s.signal_series[0]}))
-    if (env := {"jp_boj_current_account": "ALT_BOJ_CA_CODE",
-                "jp_boj_jgb_holdings": "ALT_BOJ_JGB_CODE"}.get(s.id)) else s
-    for s in JP_PLANE_SOURCES)
-
 _CHK_JP = "2026-10-06"
 _PDL_EV = {"terms_url": "https://www.mof.go.jp/english/about_mof/notice/index.html",
            "terms_quote": ("Public Data License (Version 1.0; PDL 1.0) applies unless any rights "

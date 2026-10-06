@@ -28,6 +28,15 @@ from research import alt_proxies as A  # noqa: E402
 FIX = ROOT / "tests" / "fixtures" / "alt_proxies"
 NOW = datetime(2026, 9, 30, 12, tzinfo=UTC)
 PLANE_IDS = tuple(s.id for s in A.JP_PLANE_SOURCES)
+#: The codes the fixtures carry for the two rows that have no default code.
+FIXTURE_CODES = {"ALT_BOJ_CA_DB": "BOJCA", "ALT_BOJ_CA_CODE": "SYNTHETIC_CA",
+                 "ALT_BOJ_JGB_DB": "BS01", "ALT_BOJ_JGB_CODE": "SYNTHETIC_JGB"}
+
+
+@pytest.fixture
+def box_codes(monkeypatch: pytest.MonkeyPatch) -> None:
+    for k, v in FIXTURE_CODES.items():
+        monkeypatch.setenv(k, v)
 
 
 def _obs(sid: str) -> list[A.Obs]:
@@ -166,16 +175,18 @@ def test_plane_cells_route_through_the_lane_policy_and_name_their_data_source() 
     assert {c["data_source"] for c in cells} >= {"mof:fx_intervention", "boj:call_rate"}
 
 
-def test_fixture_pass_publishes_axes_and_never_mints(tmp_path: Path) -> None:
+def test_fixture_pass_publishes_axes_and_never_mints(tmp_path: Path, box_codes: None) -> None:
     paths = A.Paths(tmp_path / "desk")
     rep = A.run(paths, fixtures=FIX, donate=False, now=NOW)
     assert rep["direct_cells"]["n"] == 0
     for sid in PLANE_IDS:
-        assert (paths.axes / f"alt_{sid}.json").exists(), sid
+        axis = json.loads((paths.axes / f"alt_{sid}.json").read_text("utf-8"))
+        assert any(k.split(".")[0] in A.BY_ID[sid].signal_series for k in axis["series"]), sid
 
 
 # ---------------------------------------------------------------------------- department
-def test_jp_plane_reports_lanes_events_and_funding_state(tmp_path: Path) -> None:
+def test_jp_plane_reports_lanes_events_and_funding_state(tmp_path: Path,
+                                                         box_codes: None) -> None:
     from countries.jp import official_plane as J
     paths = A.Paths(tmp_path / "desk")
     A.run(paths, fixtures=FIX, donate=False, now=NOW)
