@@ -452,3 +452,23 @@ def test_evig_tells_information_novelty_from_instrument_novelty() -> None:
     assert kr["novelty_used"] == copy["novelty_used"] == 0.5
     assert rows["unlabelled"]["information_novelty"]["status"] == "UNMEASURED"
     assert rows["unlabelled"]["novelty_basis"].startswith("instrument only")
+
+
+def test_evig_a_new_observable_on_a_covered_instrument_outscores_a_mirror() -> None:
+    """The audit's finding 9 (2026-10-06): options skew on gold is new information while a
+    mirror of the collected COT feed is not, though both name only XAUUSD."""
+    sources = [
+        {"id": "cot_gold", "targets": ["XAUUSD"], "observable": "cftc_net_positioning",
+         "mechanism": "positioning", "cadence": "weekly"},
+        {"id": "cot_gold_mirror", "targets": ["XAUUSD"], "observable": "cftc_net_positioning",
+         "mechanism": "positioning", "cadence": "weekly"},
+        {"id": "gold_options_skew", "targets": ["XAUUSD"],
+         "observable": "options_25d_risk_reversal", "mechanism": "options_skew",
+         "cadence": "weekly"},
+    ]
+    rows = {r["id"]: r for r in se.price(sources, {"cot_gold": {"last_status": "COLLECTED"}},
+                                         {})}
+    skew, mirror = rows["gold_options_skew"], rows["cot_gold_mirror"]
+    assert skew["instrument_novelty"] == mirror["instrument_novelty"] == 0.0
+    assert skew["novelty"] > mirror["novelty"] == 0.0
+    assert skew["evig"] > mirror["evig"]

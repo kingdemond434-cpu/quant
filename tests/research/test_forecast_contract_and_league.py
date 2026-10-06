@@ -219,3 +219,9 @@ def test_a_malformed_quantile_map_is_refused(fc, value, must_mention) -> None:
     """Principal 2026-10-06: levels in (0, 1) and values non-decreasing, or it is not a belief."""
     bad = fc.defects(_ok(fc, kind="DISTRIBUTION", value=value))
     assert any(must_mention in d for d in bad), f"{value} -> {bad}"
+
+
+def test_the_audits_three_malformed_maps_are_refused(fc) -> None:
+    """The audit's finding 7 (2026-10-06), verbatim inputs."""
+    for value in ({1.5: 1.0, -0.2: 0.5}, {0.0: 1.0, 1.0: 2.0}, {0.1: 2.0, 0.9: -1.0}):
+        assert fc.defects(_ok(fc, kind="DISTRIBUTION", value=value)), value

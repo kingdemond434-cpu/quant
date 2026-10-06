@@ -22,15 +22,16 @@ THE RATIO, and every term is measured or declared, never invented:
                        already covers. A second feed of a number the desk already has is worth
                        its redundancy, not its content.
            information 1 - the closest similarity of s to any collected source on the four
-                       axes of independence: OBSERVABLE (what is measured: the mechanism's
-                       content words), ORIGIN (country), MEASUREMENT (the plane: official,
+                       axes of independence: OBSERVABLE (what is measured: the declared
+                       `observable` and the mechanism's content words), ORIGIN (country), MEASUREMENT (the plane: official,
                        exchange, physical, flow ...) and TIMING (cadence and publication-lag
                        bucket). A Korean customs print about gold is NEW INFORMATION about an
                        instrument the desk already covers; a second Chinese aggregator copying
                        the same SAFE table is NOT, whatever instruments it names. Only axes both
                        rows declare are compared; with none it is UNMEASURED and N falls back to
                        the instrument share alone.
-           N = mean(instrument, information), declared, floored at 0.05.
+           N = mean(instrument, information), declared, floored at 0.05; published as
+           `novelty`, with both parts beside it.
     P      P(usable): Beta(1+ok, 1+fail) posterior mean from the source's OWN collection history
            in `lake/collector_state.json`. A portal that has answered every time is worth more
            per attempt than one that has never parsed.
@@ -211,13 +212,14 @@ def _lag_bucket(row: dict[str, Any]) -> str | None:
 
 def info_axes(row: dict[str, Any]) -> dict[str, Any]:
     """The four independence axes of one source, each None when the row does not declare it."""
-    obs = _tokens(f"{row.get('mechanism') or ''} {row.get('name') or ''}")
+    obs = _tokens(f"{row.get('observable') or ''} {row.get('mechanism') or ''} "
+                  f"{row.get('name') or ''}")
     cad = str(row.get("cadence") or "").strip().lower()
     lag = _lag_bucket(row)
     return {"observable": obs or None,
             "origin": str(row.get("country") or "").strip().lower() or None,
             "measurement": str(row.get("plane") or "").strip().lower() or None,
-            "timing": (f"{cad}|{lag}" if cad and lag is not None else None)}
+            "timing": ((f"{cad}|{lag}" if lag is not None else cad) if cad else None)}
 
 
 def info_similarity(a: dict[str, Any], b: dict[str, Any]) -> tuple[float | None, dict[str, Any]]:
@@ -301,7 +303,7 @@ def price(sources: list[dict[str, Any]], state: dict[str, Any],
             "targets": targets, "novel_targets": novel,
             "u_prior_sd": round(u, 6), "u_status": ("MEASURED" if prior
                                                     else "UNMEASURED_PRIOR"),
-            "novelty": round(n_instrument, 4), "instrument_novelty": round(n_instrument, 4),
+            "novelty": round(n_share, 4), "instrument_novelty": round(n_instrument, 4),
             "information_novelty": info, "novelty_used": round(n_share, 4),
             "novelty_basis": ("mean(instrument, information)" if info["value"] is not None
                               else "instrument only: information novelty UNMEASURED"),
