@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -61,7 +62,7 @@ def causal_state_means(fwd: np.ndarray, state: np.ndarray, h: int, n_states: int
     return StateMeans(mean, se, total, count)
 
 
-def decomposition(fwd: np.ndarray, state: np.ndarray, n_states: int) -> dict[str, float]:
+def decomposition(fwd: np.ndarray, state: np.ndarray, n_states: int) -> dict[str, Any]:
     """The in-sample law of total variance: the share of Var(R) that E[R | S] explains, with the
     per-state probabilities and means (a report, never a trading input)."""
     fwd = np.asarray(fwd, dtype=float)
