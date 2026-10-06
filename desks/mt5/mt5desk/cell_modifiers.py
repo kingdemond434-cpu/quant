@@ -188,6 +188,113 @@ def _state_refusal(name: str, path: Path | None = None) -> str | None:
     return None
 
 
+#: PER-SYMBOL POINT-IN-TIME CONDITIONERS (2026-10-06). `pit:<axis>:<SYMBOL>` -- the interaction
+#: miner names the symbol, because "is the second participant pressed?" is a question about THIS
+#: instrument's positioning, carry, event calendar or factor. `research/pit_conditioners.py`
+#: publishes the series (COT, BIS policy rates, the FOMC calendar, the residual factors' bars)
+#: with `knowable_at` and `stale_after` per row; a signal reads the last row known at its bar and
+#: keeps nothing once it is stale. A key with no series is refused UNMEASURED by name.
+PIT_PREFIX = "pit:"
+PIT_AXES = frozenset({"positioning", "carry", "event", "cross_asset"})
+PIT_FILE = Path(__file__).resolve().parents[1] / "data" / "states" / "pit_conditioners.parquet"
+_PIT_CACHE: dict[tuple[str, float], Any] = {}
+_METALS = ("XAU", "XAG", "XPT", "XPD", "XCU")
+_US_INDICES = frozenset({"US500", "US30", "NAS100", "US2000", "USTEC", "SPX500", "DJ30"})
+
+
+def _legs(symbol: str) -> tuple[str, str] | None:
+    s = symbol.upper()
+    return (s[:3], s[3:6]) if len(s) == 6 and s.isalpha() else None
+
+
+def pit_key(axis: str, symbol: str) -> str | None:
+    """The series key `symbol` reads on `axis`, or None when the axis cannot speak for it."""
+    sym = str(symbol or "").strip().upper()
+    legs = _legs(sym)
+    if axis in ("positioning", "carry"):
+        return sym or None
+    if axis == "event":
+        usd = (legs is not None and "USD" in legs) or sym in _US_INDICES or sym == "USDX"
+        return "USD" if usd else None
+    if axis == "cross_asset":
+        if sym == "XAUUSD" or sym == "US500":
+            return "usd"
+        if legs is not None and legs[0] in _METALS:
+            return "gold"
+        if legs is not None:
+            return "usd" if "USD" in legs else "equity"
+        if sym == "USDX":
+            return "equity"
+        if sym in _US_INDICES or sym.endswith(("40", "50", "100", "200", "225")):
+            return "equity"
+        return None
+    return None
+
+
+def pit_conditioner(value: Any) -> tuple[str, str] | None:
+    """`pit:<axis>:<SYMBOL>` -> (axis, symbol), else None."""
+    text = str(value if value is not None else "").strip()
+    if not text.lower().startswith(PIT_PREFIX):
+        return None
+    parts = text[len(PIT_PREFIX):].split(":")
+    if len(parts) != 2 or parts[0].lower() not in PIT_AXES or not parts[1]:
+        return None
+    return parts[0].lower(), parts[1].upper()
+
+
+def _pit_frame(path: Path | None = None) -> Any:
+    p = path or PIT_FILE
+    try:
+        key = (str(p), p.stat().st_mtime)
+    except OSError:
+        return None
+    if key not in _PIT_CACHE:
+        _PIT_CACHE.clear()
+        try:
+            frame = pd.read_parquet(p)
+        except Exception:
+            return None
+        for col in ("knowable_at", "stale_after"):
+            t = pd.to_datetime(frame[col], utc=True)
+            frame[col] = t
+        _PIT_CACHE[key] = {k: g.sort_values("knowable_at").reset_index(drop=True)
+                           for k, g in frame.groupby(["axis", "key"])}
+    return _PIT_CACHE[key]
+
+
+def _pit_refusal(axis: str, symbol: str, path: Path | None = None) -> str | None:
+    key = pit_key(axis, symbol)
+    if key is None:
+        return (f"no {axis} series can speak for {symbol} (UNMEASURED): the desk holds no "
+                "source for that instrument on this axis")
+    frames = _pit_frame(path)
+    if frames is None:
+        return (f"the PIT conditioner file {(path or PIT_FILE).name} is not on this box "
+                "(UNMEASURED)")
+    if (axis, key) not in frames:
+        return f"no point-in-time {axis} series for {key} in {(path or PIT_FILE).name} (UNMEASURED)"
+    return None
+
+
+def _pit_rule(axis: str, symbol: str, sigs: list[Any], path: Path | None = None) -> list[Any]:
+    key = pit_key(axis, symbol)
+    frames = _pit_frame(path)
+    if key is None or frames is None or (axis, key) not in frames or not sigs:
+        return []
+    g = frames[(axis, key)]
+    known = pd.DatetimeIndex(g["knowable_at"])
+    out = []
+    for sig in sigs:
+        t = pd.Timestamp(sig.time)
+        t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
+        i = known.searchsorted(t, side="right") - 1
+        if i < 0 or t > g["stale_after"].iloc[i]:
+            continue                       # nothing known yet, or the series stopped arriving
+        if bool(g["pressed"].iloc[i]):
+            out.append(sig)
+    return out
+
+
 ENTRY_TIMINGS = frozenset({"", "instant", "delayed"})
 MARKET_STYLES = frozenset({"", "market"})
 #: A LIMIT VARIANT IS A DECLARED LIMIT ORDER (2026-10-06, audit of #222). The first cut set
@@ -238,6 +345,10 @@ def refusal(mods: dict[str, Any]) -> str | None:
             return f"conditioner={mods['conditioner']!r}: {why}"
     elif cond in CONTEXT_CONDITIONERS:
         pass
+    elif pit_conditioner(mods.get("conditioner")) is not None:
+        why = _pit_refusal(*pit_conditioner(mods.get("conditioner")))  # type: ignore[misc]
+        if why:
+            return f"conditioner={mods['conditioner']!r}: {why}"
     elif "conditioner" in mods:
         spec = alt_conditioner(mods["conditioner"])
         if spec is None:
@@ -331,6 +442,9 @@ def apply(sigs: list, bars: pd.DataFrame, mods: dict[str, Any]) -> list:
         cmask = pd.Series(_CONTEXTS[CONTEXT_CONDITIONERS[cond]](bars),
                           index=bars.index).fillna(False).astype(bool)
         out = [s for s in out if bool(cmask.get(s.time, False))]
+    pit = pit_conditioner(mods.get("conditioner")) if "conditioner" in mods else None
+    if pit is not None:
+        out = _pit_rule(pit[0], pit[1], out)
     spec = alt_conditioner(mods.get("conditioner")) if "conditioner" in mods else None
     if spec is not None:
         out = _alt_filter(out, bars, spec)

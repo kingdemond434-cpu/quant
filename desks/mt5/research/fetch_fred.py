@@ -22,8 +22,13 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-OUT = Path(r"C:\Users\dell\mt5-research\data\lake")
-OUT.mkdir(parents=True, exist_ok=True)
+#: WRITE WHERE THE READER LOOKS (2026-10-06). This was `C:\Users\dell\mt5-research\data\lake`,
+#: the retired laptop's checkout, while `research/free_shadows.py` reads `fred_*.parquet` from the
+#: desk's own `data/lake`. Writer and reader never met, so the FRED half of the state lake was
+#: frozen at whatever the laptop last copied over -- and `data/states/free_states.parquet` ends
+#: 2026-08-14. `fetch_cot.py`, `fetch_cot_disagg.py` and `fetch_tff.py` had the same defect and
+#: were repointed at `config.DATA`; this one was missed. Same fix, same single source of truth.
+OUT = Path(__file__).resolve().parents[1] / "data" / "lake"
 
 SERIES = {
     "DGS2": "2y nominal yield",
@@ -70,6 +75,7 @@ def fetch(sid: str) -> pd.DataFrame:
 
 
 def main() -> None:
+    OUT.mkdir(parents=True, exist_ok=True)
     summary = {}
     for sid, note in SERIES.items():
         try:

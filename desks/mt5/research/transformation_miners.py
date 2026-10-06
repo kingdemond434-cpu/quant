@@ -122,6 +122,9 @@ EXECUTION_VARIANTS: tuple[tuple[str, str], ...] = (("instant", "market"), ("dela
 #: mechanism with a SECOND one; `unknown` is never an interaction partner.
 INFORMATION_AXES: tuple[str, ...] = ("price_only", "cross_asset", "macro", "positioning", "event",
                                      "carry", "microstructure", "seasonality")
+#: The interaction axes whose "pressed" state is per instrument (`cell_modifiers.PIT_AXES`; a
+#: test pins the two equal so this module keeps no import of the desk package).
+PIT_AXES: frozenset[str] = frozenset({"positioning", "carry", "event", "cross_asset"})
 
 
 # --------------------------------------------------------------------------- the contracts
@@ -634,8 +637,13 @@ def mine_interaction(parent: Mapping[str, Any], ctx: Context) -> list[dict[str, 
     """
     pid = str(parent.get("discovery_id") or "")
     own = str(parent.get("information") or "price_only").lower()
+    sym = str(parent.get("symbol") or "").upper()
+    # THE SYMBOL RIDES ON THE CONDITIONER (2026-10-06): positioning, carry, event and cross-asset
+    # pressure is a fact about THIS instrument on THIS date, so the cell names the per-symbol PIT
+    # series it reads (`cell_modifiers.pit_conditioner`). The other axes are global states.
     out = [_child(parent, transformation="interaction", axis="information", information=axis,
-                  params={"conditioner": axis},
+                  params={"conditioner": (f"pit:{axis}:{sym}" if axis in PIT_AXES and sym
+                                          else axis)},
                   why=(f"{parent.get('mechanism_id')} x {axis}: two constraints acting at once is "
                        "a different claim from either alone, and it is the claim with the "
                        "information gain nobody spends trials on"))

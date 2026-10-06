@@ -232,6 +232,11 @@ ORGANS: tuple[Entry, ...] = (
     _e("desks/mt5/research/hour_surface.py", "WHEN the book earns, measured by UTC hour"),
     _e("desks/mt5/research/hour_prior.py", "that surface as the allocation prior the desk reads"),
     _e("desks/mt5/research/axis_ingest_all.py", "ingest every data axis, every pass"),
+    # THE STATE LAKE HAD NO CLOCK (2026-10-06): free_states.parquet ended 2026-08-14 because
+    # its COT/TFF/disaggregated/FRED fetchers ran on no schedule and the builder only at the tail
+    # of the gateway loop's weekly chain. This owns fetch -> free_shadows -> pit_conditioners.
+    _e("desks/mt5/research/state_lake_refresh.py", "the state lake and the per-symbol PIT "
+       "conditioners, refetched and rebuilt"),
     # TEXT AS PIT DAILY SERIES (2026-09-30): event/policy factors tagged from the collected news
     # and Japanese/Korean/Chinese retail blog attention and mood, published to the axis door, the
     # lake (for exogenous_conditioner) and an allocation-intel report. The daily test-and-donate
