@@ -344,15 +344,26 @@ def alfred_key_present() -> bool:
         return False
 
 
+def key_presence() -> dict[str, Any]:
+    """Where the FRED key was found (process | machine | user | file | absent) and its length."""
+    try:
+        sys.path.insert(0, str(DESK / "research"))
+        import fetch_alfred  # type: ignore[import-not-found]
+        return dict(fetch_alfred.key_presence())
+    except Exception as exc:
+        return {"present": False, "origin": UNMEASURED, "why": type(exc).__name__}
+
+
 def refresh_alfred(budget_s: float, series: Sequence[str] | None = None,
                    folder: Path = ALFRED) -> dict[str, Any]:
     """Re-fetch the stale first-print files through the desk's own fetcher, inside a budget.
     No key: BLOCKED_AUTH, nothing fetched, nothing substituted."""
     wanted = sorted(set(series or (r.series for r in RELEASES)))
     if not alfred_key_present():
-        return {"status": "BLOCKED_AUTH", "why": ("FRED_API_KEY is not set on this host; "
-                                                  "first prints come only from ALFRED "
-                                                  "vintages and none is substituted"),
+        return {"status": "BLOCKED_AUTH", "key": key_presence(),
+                "why": ("no FRED key in the process environment, the machine or user registry "
+                        "environment, or a secrets file on this host; first prints come only "
+                        "from ALFRED vintages and none is substituted"),
                 "series": wanted}
     now = time.time()
     stale = [s for s in wanted
@@ -389,7 +400,7 @@ def build(*, now: datetime | None = None, vintages: Path = VINTAGES, alfred: Pat
     rows: list[dict[str, Any]] = []
     sensors: list[dict[str, Any]] = []
     census: dict[str, Any] = {"releases": {}, "consensus_vintages": len(cons),
-                              "alfred_refresh": refreshed}
+                              "alfred_refresh": refreshed, "fred_key": key_presence()}
     z_at_instant: dict[str, dict[str, float | None]] = {}
     frames: dict[str, Any] = {}
     for spec in RELEASES:

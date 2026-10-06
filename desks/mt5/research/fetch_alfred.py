@@ -98,18 +98,38 @@ SERIES = {
 }
 
 
+#: Names the key may have been set under. Windows environment names are case-insensitive.
+KEY_NAMES = ("FRED_API_KEY", "FRED_KEY", "ALFRED_API_KEY")
+
+
+def key_files() -> list[Path]:
+    here = Path(__file__).resolve()
+    root, desk = here.parents[3], here.parents[1]
+    return [root / "secrets" / "fred_api_key", desk / "secrets" / "fred_api_key",
+            root / "data" / "secrets" / "fred.json", root / "data" / "secrets" / "fred_api_key",
+            desk / "data" / "secrets" / "fred.json", desk / "data" / "secrets" / "fred_api_key"]
+
+
 def api_key() -> str | None:
-    """Key from the environment or secrets/. Never logged, never written to a report."""
-    env = os.environ.get("FRED_API_KEY", "").strip()
-    if env:
-        return env
-    for p in (Path(__file__).resolve().parents[3] / "secrets" / "fred_api_key",
-              Path(__file__).resolve().parent.parent / "secrets" / "fred_api_key"):
-        if p.exists():
-            k = p.read_text(encoding="utf-8").strip()
-            if k:
-                return k
-    return None
+    """Key from the process environment, the MACHINE or USER registry environment (`setx /M`
+    never reaches a resident started before it), or a secrets file. Never logged or written."""
+    root = str(Path(__file__).resolve().parents[3])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    try:
+        from libs.ops.env_secret import lookup
+    except Exception:                                    # pragma: no cover - import context
+        return os.environ.get("FRED_API_KEY", "").strip() or None
+    return lookup(KEY_NAMES, key_files())[0]
+
+
+def key_presence() -> dict[str, object]:
+    """Where the key was found and its length -- never the value."""
+    root = str(Path(__file__).resolve().parents[3])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.ops.env_secret import presence
+    return presence(KEY_NAMES, key_files())
 
 
 def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame | None:
