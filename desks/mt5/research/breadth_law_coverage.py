@@ -7,10 +7,17 @@ every hourly pass, and publishes `reports/BREADTH_LAW_COVERAGE.json` for the CRO
     COVERED    the requirement is implemented; `where` is a file:line resolved NOW from an anchor
     PARTIAL    implemented in part (named), or implemented but only its UNMEASURED reading exists
     MISSING    nothing in this tree implements it (the blocker is named)
+    COVERED_SHADOW
+               the row would act on capital, sizing, promotion or live status. It is built as a
+               READ-ONLY SHADOW that measures what enforcing it would have done (with its
+               missed-growth lines) and is never enforced: automatic promotion and growth
+               governance Rule 1 (the reason rides on the row)
     REFUSED_BY_GROWTH_GOVERNANCE
-               the row would act on capital, sizing, promotion or live status, which breadth never
-               does (breadth decides what is hunted and judged next, never what passes); it is
-               recorded, never built
+               a capital-side row with no shadow; recorded, never built
+
+ROWS ANOTHER THREAD OWNS (the audit's `owner_thread`) are never claimed MISSING by this thread:
+a row it has not covered reads PARTIAL with the owner named and the raw reading kept in
+`raw_status`, so the owner sees it and nothing is hidden.
 
 AN ANCHOR IS `path::regex`, resolved to the first matching line each pass. A row claimed COVERED
 whose anchors no longer resolve is DOWNGRADED to PARTIAL with the dead anchor named -- the claim
@@ -36,8 +43,11 @@ ROWS = ROOT / "docs" / "research" / "breadth_law_rows.json"
 OUT = DESK / "reports" / "BREADTH_LAW_COVERAGE.json"
 
 COVERED, PARTIAL, MISSING = "COVERED", "PARTIAL", "MISSING"
+COVERED_SHADOW = "COVERED_SHADOW"
 REFUSED = "REFUSED_BY_GROWTH_GOVERNANCE"
-STATUSES = (COVERED, PARTIAL, MISSING, REFUSED)
+STATUSES = (COVERED, COVERED_SHADOW, PARTIAL, MISSING, REFUSED)
+#: This organ's thread in the audit; rows owned elsewhere are reported, never claimed.
+THIS_THREAD = "Breadth and tier assessment"
 #: The audit's states that already mean "runs on a clock" (L1.49: a built organ is not covered).
 _RUNNING = frozenset({"SCHEDULED", "LIVE", "PROVEN", "PRODUCING_CELLS", "JUDGED", "FORWARD"})
 
@@ -51,6 +61,10 @@ RA = "desks/mt5/research/research_auction.py"
 BO = "desks/mt5/research/portfolio_bounty.py"
 AB = "desks/mt5/research/alpha_breadth.py"
 HC = "desks/mt5/research/hourly_cycle.py"
+SO = "desks/mt5/research/stream_overlap.py"
+CAP = "desks/mt5/research/breadth_capacity.py"
+CCS = "desks/mt5/research/cluster_cap_shadow.py"
+PS = "libs/research/proposer_seat.py"
 CRO = "docs/cro/CRO_CYCLE.md"
 PATCH = "gauntlet_consume_breadth_order.patch (sealed; desktop applies it)"
 
@@ -92,10 +106,12 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0048", COVERED, (f"{CS}::^def factor_of",), ""),
     ("0050", COVERED, (f"{CS}::^def fisher_bounds", f"{CS}::^def shrink_abs_rho",
                        f"{CS}::^MIN_INDEPENDENCE_OBS"), ""),
-    ("0045", MISSING, (), "drawdown-overlap dependence is not measured"),
-    ("0046", MISSING, (), "event-overlap dependence is not measured"),
-    ("0047", MISSING, (), "regime-overlap dependence is not measured"),
-    ("0049", MISSING, (), "lead/lag dependence between held streams is not measured"),
+    ("0045", COVERED, (f"{SO}::out\\[\"drawdown\"\\] = _assoc_lo", f"{CS}::\"dependence\": round"),
+     "drawdown association links a pair as one bet"),
+    ("0046", COVERED, (f"{SO}::out\\[\"event\"\\] = round", f"{SO}::^EVENT_CALENDAR"),
+     "UNMEASURED on a host without data/event_calendar.json"),
+    ("0047", COVERED, (f"{SO}::out\\[\"regime\"\\] = round", f"{SO}::^def regime_labels"), ""),
+    ("0049", COVERED, (f"{SO}::out\\[\"lead_lag\"\\] = round",), ""),
     ("0056", PARTIAL, (f"{CS}::\"L6\":",),
      "level 6 exists; reads UNMEASURED until realised forward clusters exist"),
     ("0051-0055", COVERED, (f"{CS}::^def hierarchy", f"{CS}::^def cluster_key"), ""),
@@ -144,8 +160,8 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0101-0105", COVERED, (f"{CS}::^def factor_of", f"{CS}::^def coupling_table"), ""),
     ("0106", COVERED, (f"{CS}::\"payer\": 3.0",),
      "payer weighs 3.0, the cross-asset label 0.5"),
-    ("0107", MISSING, (), "signal overlap between held streams is not measured"),
-    ("0110", MISSING, (), "regime overlap between held streams is not measured"),
+    ("0107", COVERED, (f"{SO}::out\\[\"signal\"\\] = _assoc_lo",), ""),
+    ("0110", COVERED, (f"{SO}::out\\[\"regime\"\\] = round",), ""),
     ("0111", COVERED, (f"{CS}::\"timeframe\": 0.25",),
      "session 1.0 and chart 0.25 of the similarity: neither is assumed independent"),
     ("0112", COVERED, (f"{CS}::\"n_effective_certificates\": round",), ""),
@@ -197,10 +213,12 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     # ------------------------------------------------------------ PRODUCER-WIDE ENFORCEMENT
     ("0203", PARTIAL, (f"{CS}::\"realised_return_clusters\"",),
      "delivered; reads UNMEASURED until realised clusters exist"),
-    ("0196-0209", PARTIAL, (f"{CS}::^def _book_context", "scripts/kimi_hunter.py::producer_brief",
+    ("0196-0209", COVERED, (f"{CS}::^def publish_briefs", f"{HC}::_env.update\\(_brief_env",
+                            f"{PS}::context=\\[\\*context, \\*brief\\]",
+                            "scripts/kimi_hunter.py::producer_brief",
                             "scripts/run_deepseek_cycle.py::producer_brief"),
-     "the full context is built; the kimi and deepseek seats read it, the other producers "
-     "receive it only as docket order and budget split"),
+     "every hourly producer leg gets QUANT_PRODUCER_BRIEF; every proposer-seat organ, kimi and "
+     "deepseek get the brief in the prompt"),
     ("0210", PARTIAL, (f"{CS}::\"duplicate_budget\"", f"{PB}::^def duplicate_block"),
      "every producer is measured against a duplicate budget; no hard fence on count"),
     ("0213", COVERED, (f"{BD}::^def mode", f"{AB}::^def breadth_debt_pass"),
@@ -216,8 +234,8 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
      "event_surprise / news_reaction named with bounty and bids; missions come from #163"),
     ("0221", MISSING, (), "low-overlap return geometry is not a priority target"),
     ("0223-0224", MISSING, (), "cross-asset residual / relative-value structures not targeted"),
-    ("0243", PARTIAL, ("scripts/kimi_hunter.py::producer_brief",),
-     "two seats query the map before generating; the rest do not"),
+    ("0243", COVERED, (f"{HC}::_env.update\\(_brief_env", f"{PS}::^def breadth_context"),
+     "the launcher and the seat query the breadth graph before any generation"),
     ("0244", COVERED, (f"{CS}::^def is_quality_row",), ""),
     ("0246-0256", COVERED, (f"{ND}::^STRUCTURAL_KEY", f"{ND}::^def structural_key",
                             f"{CS}::structural_duplicate"),
@@ -239,14 +257,16 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
      "provisional credit published; realised credit needs forward streams"),
     ("0276", COVERED, (f"{CS}::forward_adjusted_C",), ""),
     ("0277", COVERED, (f"{CS}::out\\[\"k_eff_stress\"\\] = keff",), ""),
-    ("0278", MISSING, (), "marginal breadth against the candidate future book is not computed"),
+    ("0278", COVERED, (f"{CS}::MARGINAL BREADTH AGAINST THE PROJECTED FUTURE BOOK",
+                       f"{CS}::\"expected_delta_k_eff_future_book\""), ""),
     ("0281-0290", COVERED, (f"{CS}::^FACTOR_FAILURE", f"{CS}::^MECHANISM_FAILURE"),
      "declared per strategy; superseded by measured co-drawdown where ledgers carry it"),
-    ("0293", MISSING, (), "joint drawdowns are not measured"),
-    ("0295", MISSING, (), "co-crash frequency is not measured"),
+    ("0293", COVERED, (f"{SO}::out\\[\"drawdown\"\\] = _assoc_lo",), ""),
+    ("0295", COVERED, (f"{SO}::out\\[\"co_crash\"\\] = _assoc_lo",), ""),
     ("0296", COVERED, (f"{CS}::worst decile: lambda_ij",), ""),
-    ("0297-0298", MISSING, (), "signal and position overlap are not measured per pair"),
-    ("0301", MISSING, (), "event overlap is not measured"),
+    ("0297-0298", COVERED, (f"{SO}::out\\[\"signal\"\\] = _assoc_lo",),
+     "active-day association: label-only differences earn nothing"),
+    ("0301", COVERED, (f"{SO}::out\\[\"event\"\\] = round",), ""),
     ("0302-0316", COVERED, (f"{CS}::\"information_source\", \"family\"",
                             f"{CS}::\"n_information_sources\""),
      "information source is a map axis and an L2 level; empty sources are named debts"),
@@ -254,9 +274,10 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0318-0324", COVERED, (f"{CS}::^def method_of", f"{CS}::^METHOD_TOKENS"),
      "method is recorded and carries zero similarity weight"),
     ("0325", COVERED, (f"{CS}::\"method\": p\\[\"method\"\\]",), ""),
-    ("0326", REFUSED, (f"{CS}::champion_cap",),
-     "research side built (champion cap counts breadth only); a cap on certificates reaching "
-     "LIVE would act on promotion"),
+    ("0326", COVERED_SHADOW, (f"{CS}::champion_cap", f"{CCS}::^REASON",
+                              f"{AB}::cluster_cap_shadow"),
+     "research side enforced (champion cap counts breadth only); the LIVE cap runs in shadow "
+     "with missed-growth lines: automatic promotion and growth governance Rule 1"),
     ("0327", COVERED, (f"{CS}::saturated = n_k >= 2 and value < MATERIAL_FALL",), ""),
     ("0329", COVERED, (f"{CS}::value = clone_credit \\* min\\(yield_ratio",), ""),
     ("0331", COVERED, (f"{CS}::local = \\(float",), ""),
@@ -298,6 +319,19 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
      "saturated work rides as QUALITY or the duplicate tail; no per-organ justification record"),
     # ------------------------------------------------------------ OPEN-ENDED ALPHA BREADTH
     ("0400", COVERED, (f"{CS}::\"failure_mode_effective_count\"",), ""),
+    ("0417-0418", COVERED, (f"{CS}::measured_overlap", f"{SO}::^TERMS"),
+     "novelty credit capped at 1 - behavioural overlap (drawdown / regime)"),
+    ("0422-0423", COVERED, (f"{CS}::measured_overlap", f"{SO}::^TERMS"),
+     "novelty credit capped at 1 - behavioural overlap (co-crash / signal)"),
+    ("0428-0430", COVERED, (f"{SO}::^TERMS", f"{SO}::^def pair_overlap"),
+     "co-crash, drawdown and signal terms of the behavioural distance vector"),
+    ("0432-0433", COVERED, (f"{SO}::^TERMS", f"{SO}::^def pair_overlap"),
+     "regime and event terms of the behavioural distance vector"),
+    ("0554", PARTIAL, (f"{CAP}::\"market_impact\"",),
+     "term wired; UNMEASURED until the fill recorder locates an impact slope"),
+    ("0552-0557", COVERED, (f"{CAP}::^def terms", f"{CS}::CAPACITY IN BREADTH CREDIT"),
+     "capacity, turnover, broker constraints, liquidity and capital efficiency multiply the "
+     "breadth value (floor 0.25)"),
     ("0414", COVERED, (f"{CS}::\"economic_factor\": 1.0",), "breadth value's similarity"),
     ("0419", COVERED, (f"{CS}::\"information_source\": 2.0",), "breadth value's similarity"),
     ("0550", COVERED, (f"{BD}::unrepresented_regimes",), "BREADTH_DEBT.json priority targets"),
@@ -361,6 +395,18 @@ def _audit_where(mods: list[str], root: Path) -> tuple[list[str], list[str]]:
 
 def classify(row: dict[str, Any], idx: dict[int, tuple[str, tuple[str, ...], str]],
              root: Path) -> dict[str, Any]:
+    out = _classify(row, idx, root)
+    owner = str(row.get("owner_thread") or THIS_THREAD)
+    out["owner_thread"] = owner
+    if owner != THIS_THREAD and out["status"] in (PARTIAL, MISSING):
+        out["raw_status"] = out["status"]
+        out["status"] = PARTIAL
+        out["note"] = f"owned by {owner}" + (f"; {out['note']}" if out.get("note") else "")
+    return out
+
+
+def _classify(row: dict[str, Any], idx: dict[int, tuple[str, tuple[str, ...], str]],
+              root: Path) -> dict[str, Any]:
     n = int(str(row["id"]).rsplit("-", 1)[1])
     out: dict[str, Any] = {"id": row["id"], "section": row.get("section"),
                            "requirement": row.get("requirement"),
@@ -370,7 +416,7 @@ def classify(row: dict[str, Any], idx: dict[int, tuple[str, tuple[str, ...], str
         where = [resolve(a, root) for a in anchors]
         dead = [a for a, w in zip(anchors, where, strict=True) if w is None]
         out.update(basis="classified", where=[w for w in where if w], note=note or None)
-        if status == COVERED and (dead or not anchors):
+        if status in (COVERED, COVERED_SHADOW) and (dead or not anchors):
             status = PARTIAL
             out["downgraded"] = f"anchor(s) no longer resolve: {dead}" if dead else "no anchor"
         elif dead:
@@ -419,7 +465,11 @@ def build(*, rows_path: Path | None = None, root: Path | None = None,
         "downgraded": [r["id"] for r in table if r.get("downgraded")],
         "rule": ("COVERED needs a file:line resolved this pass; a dead anchor downgrades the row "
                  "to PARTIAL. Unclassified rows keep the audit's state, mapped mechanically. "
-                 "REFUSED rows would act on capital, sizing, promotion or live status."),
+                 "COVERED_SHADOW rows would act on capital, sizing, promotion or live status and "
+                 "run as a measured shadow only. Rows another thread owns read PARTIAL with the "
+                 "owner named (raw_status keeps the reading)."),
+        "counts_raw": {s: sum(1 for r in table if r.get("raw_status", r["status"]) == s)
+                       for s in STATUSES},
         "rows": table,
     }
 

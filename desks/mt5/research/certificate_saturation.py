@@ -2297,6 +2297,100 @@ def producer_brief(source_token: str = "", *, doc: Mapping[str, Any] | None = No
     }
 
 
+#: Every producer's brief, published once per hourly pass (producer law §1, §5): the hourly
+#: launcher hands its path to every producer leg (QUANT_PRODUCER_BRIEF) and the proposer seat
+#: puts the brief's lines into every research organ's prompt.
+BRIEFS = REPORTS / "PRODUCER_BRIEFS.json"
+
+
+def publish_briefs(*, doc: Mapping[str, Any] | None = None,
+                   feedback: Mapping[str, Any] | None = None,
+                   path: Path | None = None) -> Path | None:
+    """Write the desk-wide brief and each producer's own record to PRODUCER_BRIEFS.json."""
+    desk = producer_brief("", doc=doc, feedback=feedback)
+    if not desk:
+        return None
+    fb = feedback if feedback is not None else _read(FEEDBACK)
+    own: dict[str, Any] = {}
+    for src, r in ((fb or {}).get("producers") or {}).items() if isinstance(fb, Mapping) else []:
+        if isinstance(r, Mapping):
+            own[str(src)] = {k: r.get(k) for k in ("rows", "duplicate_share", "state",
+                                                   "top_clusters", "retarget_to",
+                                                   "duplicate_budget",
+                                                   "duplicate_survivor_share")}
+    out = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+           "desk": {k: v for k, v in desk.items() if k != "own_recent_output"},
+           "producers": own,
+           "rule": "facts only: counts and names, no ranking and no instruction"}
+    p = path or BRIEFS
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(out, default=str), encoding="utf-8")
+    os.replace(tmp, p)
+    return p
+
+
+def brief_for(name: str, *, path: Path | None = None, max_age_h: float = 6.0,
+              now: datetime | None = None) -> dict[str, Any]:
+    """The published brief for producer `name`: the desk facts plus its own record. {} when the
+    file is absent or older than `max_age_h` (a stale brief is not live context)."""
+    d = _read(path or BRIEFS)
+    if not isinstance(d, dict):
+        return {}
+    try:
+        at = datetime.fromisoformat(str(d.get("at")))
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=UTC)
+    except ValueError:
+        return {}
+    if ((now or datetime.now(tz=UTC)) - at).total_seconds() / 3600.0 > max_age_h:
+        return {}
+    tok = str(name or "").lower()
+    own = {k: v for k, v in (d.get("producers") or {}).items()
+           if tok and (tok in str(k).lower() or str(k).lower() in tok)}
+    return {**(d.get("desk") or {}), "own_recent_output": own, "brief_at": d.get("at")}
+
+
+def brief_lines(name: str, *, limit: int = 12, path: Path | None = None) -> list[str]:
+    """The brief as short public-fact lines for a model prompt (proposer seat context)."""
+    b = brief_for(name, path=path)
+    if not b:
+        return []
+    out: list[str] = []
+    own_desk = b.get("desk_owns") if isinstance(b.get("desk_owns"), Mapping) else {}
+    if own_desk:
+        out.append(f"desk holds {own_desk.get('n_certificates')} certificates = "
+                   f"{own_desk.get('n_effective_certificates')} effective bets")
+    sat = [c.get("cluster") for c in (b.get("saturated_clusters") or [])[:4]]
+    if sat:
+        out.append("saturated (avoid near-duplicates): " + "; ".join(map(str, sat)))
+    debts = [x.get("cluster") for x in (b.get("open_breadth_debts") or [])[:4]]
+    if debts:
+        out.append("open breadth debts (mechanism/info/class): " + "; ".join(map(str, debts)))
+    mode = b.get("breadth_constrained_mode") if isinstance(b.get("breadth_constrained_mode"),
+                                                           Mapping) else {}
+    if mode:
+        out.append(f"breadth-constrained mode {mode.get('mode')}; empty clusters: "
+                   + ", ".join(map(str, (mode.get("empty_clusters") or [])[:8])))
+    ctx = b.get("book_context") if isinstance(b.get("book_context"), Mapping) else {}
+    for key, label in (("information_source_clusters", "information sources held"),
+                       ("factor_exposures", "factor exposures held"),
+                       ("temporal_session_clusters", "session clocks held")):
+        rows = ctx.get(key) if isinstance(ctx.get(key), list) else []
+        if rows:
+            out.append(f"{label}: " + ", ".join(
+                f"{next(iter(r.values()))}={r.get('certificates')}" for r in rows[:5]
+                if isinstance(r, Mapping)))
+    hurts = b.get("failure_modes_the_book_holds_most")
+    if hurts:
+        out.append("the book fails most on: " + ", ".join(map(str, hurts)))
+    for src, r in list((b.get("own_recent_output") or {}).items())[:2]:
+        if isinstance(r, Mapping):
+            out.append(f"your recent output ({src}): {r.get('rows')} rows, duplicate share "
+                       f"{r.get('duplicate_share')}, state {r.get('state')}")
+    return [line[:240] for line in out[:limit]]
+
+
 def _book_context(d: Mapping[str, Any], top: int = 12) -> dict[str, Any]:
     """The book a producer is adding to, by every cluster level it can aim at (producer law 1):
     certificates held per information source (L2), economic factor (L4), session/chart/horizon

@@ -2119,6 +2119,13 @@ def _self_stop_floor_s(args: tuple[str, ...]) -> int:
     return int(own + max(WRITE_MARGIN_MIN_S, WRITE_MARGIN_FRAC * own))
 
 
+def _brief_env(name: str) -> dict[str, str]:
+    """QUANT_PRODUCER_BRIEF / QUANT_PRODUCER_NAME / QUANT_PRODUCER_BRIEF_STATUS for one leg."""
+    path = BASE / "reports" / "PRODUCER_BRIEFS.json"
+    return {"QUANT_PRODUCER_BRIEF": str(path), "QUANT_PRODUCER_NAME": str(name),
+            "QUANT_PRODUCER_BRIEF_STATUS": "MEASURED" if path.exists() else "UNMEASURED"}
+
+
 def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
     """The body: resolve the script against both roots and run it under the cycle budget.
 
@@ -2176,6 +2183,14 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         # INSIDE the cap if it knows the cap; the pricer moves it hourly. Read by
         # deep_forest_miner (and anything else that wants to self-stop before the kill).
         _env = {**os.environ, "QUANT_LEG_BUDGET_S": str(int(budget))}
+        # THE BREADTH BRIEF IS HANDED TO EVERY PRODUCER (producer law §1, §5; BREADTH-0196..0209,
+        # 0243). The launcher queries the breadth graph before the producer generates anything:
+        # QUANT_PRODUCER_BRIEF names the hourly PRODUCER_BRIEFS.json (the desk's certified,
+        # forward and live book by mechanism, information source, factor, session and realised
+        # cluster, the saturated clusters, open debts, mode and survivor yield) and
+        # QUANT_PRODUCER_NAME selects this leg's own duplicate record in it
+        # (`certificate_saturation.brief_for(name)`). Facts only; a missing file is UNMEASURED.
+        _env.update(_brief_env(name))
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target), *args],
                            capture_output=True, text=True, cwd=str(root),
                            timeout=budget, check=False, env=_env)

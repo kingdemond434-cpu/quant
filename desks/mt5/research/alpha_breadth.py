@@ -609,6 +609,31 @@ def breadth_debt_pass(sat: dict[str, Any]) -> dict[str, Any]:
     except Exception as exc:
         out = {"breadth_constrained_mode": UNMEASURED,
                "why": f"{type(exc).__name__}: {exc}"[:300]}
+    # every producer's brief (producer law §1, §5), beside the map: the hourly launcher hands its
+    # path to each producer leg and the proposer seat puts its lines into every organ's prompt
+    try:
+        try:
+            from research import certificate_saturation as _cs
+        except ImportError:                                           # pragma: no cover
+            import certificate_saturation as _cs  # type: ignore[import-not-found,no-redef]
+        bp = _cs.publish_briefs(doc=sat if sat.get("status") == MEASURED else None,
+                                path=OUT.parent / _cs.BRIEFS.name)
+        out["producer_briefs"] = str(bp) if bp else UNMEASURED
+    except Exception as exc:
+        out["producer_briefs_why"] = f"{type(exc).__name__}: {exc}"[:300]
+    # the per-cluster cap on LIVE certificates, in SHADOW only (BREADTH-0326): read-only on the
+    # promoter's rows, never enforced (automatic promotion; growth governance Rule 1)
+    try:
+        try:
+            from research import cluster_cap_shadow as ccs
+        except ImportError:                                           # pragma: no cover
+            import cluster_cap_shadow as ccs  # type: ignore[import-not-found,no-redef]
+        sh = ccs.build(sat=sat)
+        ccs.publish(sh, OUT.parent / ccs.OUT.name)
+        out["cluster_cap_shadow"] = {"would_block": sh.get("n_would_block"),
+                                     "status": sh.get("status")}
+    except Exception as exc:
+        out["cluster_cap_shadow_why"] = f"{type(exc).__name__}: {exc}"[:300]
     try:
         try:
             from research import breadth_law_coverage as blc
