@@ -784,7 +784,8 @@ SEEDS: tuple[ExternalSystem, ...] = (
     ExternalSystem("paolucci_qfin", "Q-Fin (Roman Paolucci)", "github:romanmichaelpaolucci/Q-Fin",
                    "shared stochastic-model interface: GBM, Heston, jumps, Monte Carlo pricing",
                    "REBUILT", _s("market_simulation", "simulation_based_inference"),
-                   _s("simulation_world", "model_family"), discovery_source="principal_upload_2026-10-05",
+                   _s("simulation_world", "model_family"),
+                   discovery_source="principal_upload_2026-10-05",
                    lineage_parent="quant_guild_library"),
     ExternalSystem("paolucci_discourses", "discourses (Roman Paolucci)",
                    "github:romanmichaelpaolucci/discourses",
@@ -795,7 +796,8 @@ SEEDS: tuple[ExternalSystem, ...] = (
     ExternalSystem("openterminal", "OpenTerminal (ErTasselli)", "github:ErTasselli/OpenTerminal",
                    "open Bloomberg-style terminal: a provider and function catalogue mined for "
                    "free sources and terminal analytics", "REBUILT",
-                   _s("data_source", "information_acquisition"), _s("data",), discovery_source="principal_header_2026-10-05"),
+                   _s("data_source", "information_acquisition"), _s("data",),
+                   discovery_source="principal_header_2026-10-05"),
 )
 
 SEED_BY_ID: dict[str, ExternalSystem] = {s.system_id: s for s in SEEDS}
