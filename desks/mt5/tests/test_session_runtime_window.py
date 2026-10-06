@@ -62,9 +62,11 @@ def test_all_session_does_not_discard_valid_forward_history(tmp_path: Path) -> N
 
 
 def test_terminal_clock_is_not_reactivated_and_not_frozen(tmp_path: Path) -> None:
-    """PROMOTED and KILL clocks are neither revived nor aborted (audit 2026-10-06): raising made
-    shadow_forward skip the sleeve every pass, so its evidence froze and retirement went blind."""
-    for status in ("KILL", "PROMOTED"):
+    """Every spelling the forward clock calls terminal -- PROMOTED, KILL, KILL_*, PROMOTION
+    CANDIDATE -- is neither revived nor aborted (audit 2026-10-06): raising made shadow_forward
+    skip the sleeve every pass, and an exact-match tuple reset PROMOTION CANDIDATE and KILL_*
+    rows to ACTIVE with n=0."""
+    for status in ("KILL", "PROMOTED", "KILL_DD", "PROMOTION CANDIDATE"):
         state = {"status": status, "n": 50, "runtime_version": None}
         assert not runtime.ensure("x", {"session": "asia"}, state, ledger=tmp_path / "x.json")
         assert state["status"] == status and state["n"] == 50
@@ -73,30 +75,89 @@ def test_terminal_clock_is_not_reactivated_and_not_frozen(tmp_path: Path) -> Non
         assert "forward_start" not in state
 
 
-def test_bytecode_drift_with_the_same_behaviour_keeps_the_clock(tmp_path: Path) -> None:
-    """A new VERSION whose outputs are unchanged (a refactor, a Python upgrade) is not a new
-    rule: the content fingerprint decides, so no session clock restarts on bytecode alone."""
+def test_version_is_the_same_in_every_process() -> None:
+    """The live defect (audit 2026-10-06): `repr` of a comprehension's code object carries a
+    memory address, so VERSION differed per process and every session clock restarted every
+    pass. Three fresh interpreters with three hash seeds must agree."""
+    import os
+    import subprocess
+    code = ("import sys; sys.path[:0]=['.', 'research']; "
+            "import session_runtime_window as s; print(s.VERSION, s.CONTRACT)")
+    seen = {subprocess.run([sys.executable, "-c", code], cwd=DESK, capture_output=True,
+                           text=True, check=True,
+                           env={**os.environ, "PYTHONHASHSEED": str(seed)}).stdout.strip()
+            for seed in (1, 2, 3)}
+    assert seen == {f"{runtime.VERSION} {runtime.CONTRACT}"}
+
+
+def _window_registry(tmp_path: Path, monkeypatch, key: str) -> None:
+    register = tmp_path / "sleeve_registry.json"
+    register.write_text(json.dumps({"sleeves": {key: {
+        "status": "LIVE", "forward_start": "2026-09-20T00:00:00+00:00",
+        "identity": {"family": "cross_asset_residual"}}}}), "utf-8")
+    monkeypatch.setattr(sleeve_registry, "REGISTRY", register)
+
+
+def test_a_behaviour_change_with_the_same_version_restarts(tmp_path: Path, monkeypatch) -> None:
+    """Either trigger restarts: same bytecode name, different outputs, is a new rule."""
+    key = "EURUSD.cross_asset_residual.asia"
+    _window_registry(tmp_path, monkeypatch, key)
+    state = {"status": "ACTIVE", "n": 30, "runtime_version": runtime.VERSION,
+             "runtime_contract": "contract-before-change", "forward_start": "2026-09-20"}
+    assert runtime.ensure(key, {"session": "asia"}, state, ledger=tmp_path / "l.json",
+                          clock_path=tmp_path / "clocks.json",
+                          now=datetime(2026, 10, 6, tzinfo=UTC))
+    assert state["n"] == 0 and state["runtime_contract"] == runtime.CONTRACT
+
+
+def test_a_new_version_with_the_same_behaviour_restarts(tmp_path: Path, monkeypatch) -> None:
+    key = "EURUSD.cross_asset_residual.asia"
+    _window_registry(tmp_path, monkeypatch, key)
     state = {"status": "ACTIVE", "n": 30, "runtime_version": "session-oldbytecode00",
-             "runtime_contract": runtime.CONTRACT, "forward_start": "2026-09-20T00:00:00+00:00"}
+             "runtime_contract": runtime.CONTRACT, "forward_start": "2026-09-20"}
+    assert runtime.ensure(key, {"session": "asia"}, state, ledger=tmp_path / "l.json",
+                          clock_path=tmp_path / "clocks.json",
+                          now=datetime(2026, 10, 6, tzinfo=UTC))
+    assert state["runtime_version"] == runtime.VERSION and state["n"] == 0
+
+
+def test_an_unchanged_window_is_left_alone(tmp_path: Path) -> None:
+    state = {"status": "ACTIVE", "n": 30, "runtime_version": runtime.VERSION}
     assert not runtime.ensure("x", {"session": "asia"}, state, ledger=tmp_path / "x.json")
-    assert state["n"] == 30 and state["forward_start"] == "2026-09-20T00:00:00+00:00"
-
-
-def test_a_legacy_corrected_window_is_adopted_once_never_reset(tmp_path: Path) -> None:
-    state = {"status": "ACTIVE", "n": 30, "runtime_version": "session-oldbytecode00"}
+    assert state["n"] == 30 and state["runtime_contract"] == runtime.CONTRACT
     assert not runtime.ensure("x", {"session": "asia"}, state, ledger=tmp_path / "x.json")
-    assert state["n"] == 30
-    assert state["runtime_contract"] == runtime.CONTRACT
-    assert state["runtime_contract_adopted_from"] == "session-oldbytecode00"
 
 
-def test_a_behaviour_change_moves_the_contract(monkeypatch) -> None:
-    """The fingerprint is of outputs: change what a session keeps and it moves."""
-    from mt5desk import family_call
+def test_the_probe_sees_the_changes_content_alone_missed(monkeypatch) -> None:
+    """Each change the audit found counting under a changed rule moves the fingerprint, and a
+    spelling the helpers ignore does not."""
+    import axis_registry
+    from mt5desk import family_call, family_inputs
     before = runtime.contract_fingerprint()
     assert before == runtime.CONTRACT and before.startswith("contract-")
-    monkeypatch.setitem(family_call.SESSIONS, "asia", (1, 8))
-    assert runtime.contract_fingerprint() != before
+    with monkeypatch.context() as m:
+        m.setitem(family_call.SESSIONS, "overlap", (13, 16))         # an added overlap window
+        assert runtime.contract_fingerprint() != before
+    with monkeypatch.context() as m:
+        m.setitem(family_call.SESSIONS, "tokyo", (0, 8))             # an alias the filter learns
+        assert runtime.contract_fingerprint() != before
+    with monkeypatch.context() as m:
+        m.setattr(runtime, "IDENTITY_KEYS",
+                  frozenset(family_inputs.IDENTITY_KEYS - {"timeframe"}))
+        m.setattr(family_inputs, "IDENTITY_KEYS",
+                  frozenset(family_inputs.IDENTITY_KEYS - {"timeframe"}))   # a dropped key
+        assert runtime.contract_fingerprint() != before
+    with monkeypatch.context() as m:
+        orig = family_call.session_filter
+
+        def minute_aware(sigs, session):
+            return [g for g in orig(sigs, session)
+                    if getattr(getattr(g, "time", None), "minute", 0) == 0]
+        m.setattr(runtime, "session_filter", minute_aware)           # :30 bars treated apart
+        assert runtime.contract_fingerprint() != before
+    with monkeypatch.context() as m:
+        m.setitem(axis_registry.SESSION_ALIAS, "brand_new_alias", "asia")
+        assert runtime.contract_fingerprint() == before              # ignored by the filter
 
 
 def test_terminal_registry_refuses_before_opening_new_clock(
@@ -115,16 +176,11 @@ def test_terminal_registry_refuses_before_opening_new_clock(
     assert state == {"status": "ACTIVE", "n": 50}
 
 
-def test_prior_promotion_candidate_loses_authority_in_new_window(
+def test_an_active_row_loses_authority_in_new_window(
         tmp_path: Path, monkeypatch) -> None:
     key = "EURUSD.cross_asset_residual.asia"
-    register = tmp_path / "sleeve_registry.json"
-    register.write_text(json.dumps({"sleeves": {key: {
-        "status": "LIVE", "forward_start": "2026-09-20T00:00:00+00:00",
-        "identity": {"family": "cross_asset_residual"}
-    }}}), "utf-8")
-    monkeypatch.setattr(sleeve_registry, "REGISTRY", register)
-    state = {"status": "PROMOTION CANDIDATE", "n": 50,
+    _window_registry(tmp_path, monkeypatch, key)
+    state = {"status": "ACTIVE", "n": 50,
              "promotion_authority": True, "order_authority": True}
     assert runtime.ensure(key, {"session": "asia"}, state,
                           ledger=tmp_path / "ledger.json",

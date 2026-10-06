@@ -107,6 +107,13 @@ def _is_terminal(status: object) -> bool:
     text = str(status or "").upper()
     return any(text == name or text.startswith(name + "_") for name in _TERMINAL_STATUSES)
 
+
+def _unmeasured(st: dict, why: str) -> None:
+    """A pass that skips a row says so ON the row (audit 2026-10-06): without this, a skipped
+    row kept the MEASURED stamp of the last pass that evaluated it, so a stale clock read fresh."""
+    st["forward_evidence"] = {"status": "UNMEASURED", "why": why,
+                              "at": datetime.now(UTC).isoformat(timespec="seconds")}
+
 WINDOWS = {
     "asia": {"range_start": 7, "wait_bars": 12, "rr": 2.0, "ttl_bars": 12},
     "london_am": {"range_start": 10, "range_end": 13, "signal_at": 13, "wait_bars": 8,
@@ -873,6 +880,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             _is_banned = False              # no policy module: enrol exactly as before
         if _is_banned:
             if key in state:
+                if isinstance(state[key], dict):
+                    _unmeasured(state[key], f"family {fam!r} is banned; not evaluated")
                 continue                    # residue: apply()/promoter retire it with a reason
             slog(f"REFUSED_BANNED_FAMILY {key}: family {fam!r} is banned; no clock is created")
             continue
@@ -912,6 +921,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             st["status"] = "QUARANTINED_FORWARD_CLOCK_BREACH"
             st["promotion_authority"] = False
             st["order_authority"] = False
+            _unmeasured(st, f"quarantined: {st['quarantine_reason']}")
             state[key] = st
             slog(f"QUARANTINED {key}: {st['quarantine_reason']}")
             continue
@@ -949,6 +959,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 "statistical edge in it (universe_policy.may_hypothesise). The cure is NOT to "
                 "backfill its bars -- it is to stop certifying it. Re-enrolment is deliberate, "
                 "after the registry learns the symbol's asset class.")
+            _unmeasured(st, "refused by universe policy")
             state[key] = st
             slog(f"REFUSED_BY_UNIVERSE_POLICY {key}: {st['last_error']}")
             continue
@@ -1024,6 +1035,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     st["status"] = "BLOCKED_NO_BARS"
                 st["promotion_authority"] = False
                 st["order_authority"] = False
+                _unmeasured(st, f"BLOCKED_NO_BARS: {st['last_error']}")
                 state[key] = st
                 slog(f"{key}: BLOCKED_NO_BARS -- {st['last_error']}")
                 continue
@@ -1031,6 +1043,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             fam_fn = _family_fn(fam)
             if fam_fn is None:
                 slog(f"{key}: constructor for family {fam} vanished; skipping this pass")
+                _unmeasured(st, f"constructor for family {fam} vanished")
+                state[key] = st
                 continue
             # Rebuild whatever this family needs beyond bars, from its own stored params. A
             # family that needs nothing gets an empty dict and is unaffected.
@@ -1101,6 +1115,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                         st.pop("identity_reason", None)
                 if st.get("status") not in _TERMINAL_STATUSES:
                     st["status"] = "BLOCKED_INPUTS_UNAVAILABLE"
+                _unmeasured(st, f"inputs unavailable: {why}")
                 state[key] = st
                 continue
             call_params.update(extra)
