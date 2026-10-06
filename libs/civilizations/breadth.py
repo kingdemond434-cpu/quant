@@ -56,7 +56,9 @@ from typing import Any
 #: budget. The rest keeps its backpressure order; it is screened when it nears the head.
 SCREEN_DEPTH = 20
 SCREEN_MIN = 2_000
-EXPLORATION_EVERY = 10          # a near-duplicate is released 1 in 10 (the exploration floor)
+EXPLORATION_EVERY = 10          # >= 1 near-duplicate per 10 released (the exploration floor)
+#: the screen reads no returns (compiled specs and published canon only), so it is not a trial
+#: under the once-over-the-union charge; the cells it releases are charged when judged
 H1 = "H1"
 
 
@@ -224,27 +226,43 @@ def order(pending: list[dict[str, Any]], budget: int, *, assess: Callable[
     fresh = [c for c in head if not c["_breadth"]["near_duplicate"]]
     dups = [c for c in head if c["_breadth"]["near_duplicate"]]
     fresh.sort(key=lambda c: -float(c["_breadth"]["breadth_score"]))
-    out: list[dict[str, Any]] = []
-    di = 0
-    for c in fresh:
-        if len(out) >= budget:
-            break
-        out.append(c)
-        # the exploration floor: one near-duplicate rides along for every N independent ones
-        if len(out) % EXPLORATION_EVERY == 0 and di < len(dups) and len(out) < budget:
-            out.append(dups[di])
-            di += 1
+    out = interleave(fresh, dups, budget)
     for c in tail:                     # head exhausted: fall back to the backpressure order
         if len(out) >= budget:
             break
         out.append(c)
-    # a queue of nothing but near-duplicates still releases at the floor, never zero
-    if not out and dups and budget:
-        out = dups[:max(1, budget // EXPLORATION_EVERY)]
+    # leftover budget is never left idle: the rest of the near-duplicates fill it, in the
+    # backpressure order (released rows leave the queue, so successive passes rotate through)
+    used = {id(c) for c in out}
+    for c in dups:
+        if len(out) >= budget:
+            break
+        if id(c) not in used:
+            out.append(c)
     return out, {"screened": len(head), "screen_seconds": round(screen_s, 3),
                  "near_duplicates_in_head": len(dups),
                  "duplicate_share_head": round(len(dups) / len(head), 4) if head else None,
                  "unscreened_tail": len(tail)}
+
+
+def interleave(fresh: list[dict[str, Any]], dups: list[dict[str, Any]], budget: int
+               ) -> list[dict[str, Any]]:
+    """Independent candidates first, with the exploration floor ENFORCED: when any
+    near-duplicate is waiting, at least one in every EXPLORATION_EVERY released is one (and at
+    least one per pass), so saturated ground is sampled however few fresh candidates exist."""
+    if budget <= 0:
+        return []
+    floor = min(len(dups), max(1, budget // EXPLORATION_EVERY)) if dups else 0
+    take = fresh[:budget - floor]
+    out: list[dict[str, Any]] = []
+    di = 0
+    for c in take:
+        out.append(c)
+        if len(out) % EXPLORATION_EVERY == EXPLORATION_EVERY - 1 and di < floor:
+            out.append(dups[di])
+            di += 1
+    out.extend(dups[di:floor])
+    return out[:budget]
 
 
 class BreadthLedger:

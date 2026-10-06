@@ -86,9 +86,34 @@ def test_order_puts_independent_first_and_keeps_exploration_floor() -> None:
     assert st["duplicate_share_head"] == 0.5 and st["screened"] == 100
 
 
-def test_all_duplicate_queue_still_releases_at_floor() -> None:
+def test_all_duplicate_queue_uses_the_whole_budget() -> None:
     out, _ = B.order(_cands(50, 1), 30, assess=_assess, base_key=lambda c: c["parked_at"])
-    assert len(out) == 3
+    assert len(out) == 30 and all(c["dup"] for c in out)
+    # oldest first, so the next pass (released rows gone) rotates to the next ones
+    assert [c["candidate_id"] for c in out[:3]] == ["c0", "c1", "c2"]
+
+
+def test_few_fresh_many_duplicates_fills_budget_and_keeps_the_floor() -> None:
+    # the audit's fixture: 5 independent, 100 near-duplicates, budget 50
+    pend = [{"candidate_id": f"f{i}", "parked_at": f"a{i}", "dup": False, "score": 1.0}
+            for i in range(5)] + [{"candidate_id": f"d{i}", "parked_at": f"b{i:03d}",
+                                   "dup": True, "score": 0.0} for i in range(100)]
+    out, _ = B.order(pend, 50, assess=_assess, base_key=lambda c: c["parked_at"])
+    assert len(out) == 50
+    assert sum(not c["dup"] for c in out) == 5
+    assert sum(c["dup"] for c in out) == 45
+
+
+def test_floor_holds_with_one_to_nine_fresh() -> None:
+    for n_fresh in range(1, 10):
+        pend = [{"candidate_id": f"f{i}", "parked_at": f"a{i}", "dup": False, "score": 1.0}
+                for i in range(n_fresh)] + [{"candidate_id": "d0", "parked_at": "b0",
+                                             "dup": True, "score": 0.0}]
+        out, _ = B.order(pend, n_fresh, assess=_assess, base_key=lambda c: c["parked_at"])
+        assert len(out) == n_fresh and sum(c["dup"] for c in out) == 1, n_fresh
+    # and at least one in every ten released, wherever there are near-duplicates waiting
+    out, _ = B.order(_cands(400, 4), 100, assess=_assess, base_key=lambda c: c["parked_at"])
+    assert len(out) == 100 and sum(c["dup"] for c in out) >= 10
 
 
 def test_ledger_report_counts_duplicate_share_and_keff_per_hour(tmp_path: Path) -> None:

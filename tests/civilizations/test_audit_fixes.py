@@ -6,6 +6,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -283,3 +284,33 @@ def test_git_mirror_stores_text_only_under_a_permissive_licence(tmp_path: Path) 
     assert bodies["none"][1]["licence"] == "NONE"
     notices = list((tmp_path / "root" / F.NOTICES).glob("*.txt"))
     assert len(notices) == 2                                        # MIT and GPL texts kept
+
+
+def test_github_search_readme_follows_the_licence_and_reads_extra_queries() -> None:
+    import json as _json
+    import time as _time
+
+    from libs.mining import acquirer as acq
+
+    readme = "Buy when RSI(14) < 30.\nSome verbatim prose that must not be stored."
+    hits = {"items": [
+        {"full_name": "a/mit", "html_url": "https://github.com/a/mit", "license":
+         {"spdx_id": "MIT"}, "pushed_at": "2026-01-01T00:00:00Z", "created_at": "2025"},
+        {"full_name": "b/gpl", "html_url": "https://github.com/b/gpl", "license":
+         {"spdx_id": "GPL-3.0"}, "pushed_at": "2026-01-02T00:00:00Z", "created_at": "2025"}]}
+    seen: list[str] = []
+
+    def get(url: str, headers: Mapping[str, str]) -> acq.HttpResult:
+        seen.append(url)
+        if "api.github.com" in url:
+            return acq.HttpResult(200, _json.dumps(hits))
+        return acq.HttpResult(200, readme)
+
+    src = acq.Source(id="s", fetcher="github_search", config={"queries": []})
+    ctx = acq.FetchContext(http_get=get, deadline=_time.monotonic() + 30)
+    items = list(acq.fetch_github_search(src, {"extra_queries": ["monsoon trading"]}, ctx))
+    assert any("monsoon" in u for u in seen)                 # the cursor's queries are searched
+    mit, gpl = items
+    assert "must not be stored" in mit.body and "[README of a/mit, licence MIT]" in mit.body
+    assert "must not be stored" not in gpl.body and "metadata only" in gpl.body
+    assert "RSI(14)" in gpl.body                              # the facts survive the rewrite
