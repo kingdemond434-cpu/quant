@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 761,
-  "UNMEASURED": 37
+  "NEVER": 764,
+  "UNMEASURED": 38
  },
  "scope": {
-  "attested": 979,
+  "attested": 983,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -273,6 +273,19 @@
     "organs": [
      "executable:desks/mt5/research/dormant_components.py",
      "library:libs/ops/intelligence_inputs.py"
+    ]
+   },
+   {
+    "at": "2026-10-06T20:20:26+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "battery:desks/mt5/research/state_lake_refresh.py",
+     "executable:scripts/lessons.py",
+     "task:E8-Book",
+     "executable:desks/mt5/research/pit_conditioners.py"
     ]
    }
   ]
@@ -25230,6 +25243,118 @@
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
    "measured_at": "2026-10-01T12:25:50+00:00"
+  },
+  {
+   "organ": "battery:desks/mt5/research/state_lake_refresh.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/state_lake_refresh.py"
+   ],
+   "clock": "hourly_cycle:organ_battery",
+   "cadence_s": 61200,
+   "max_silence_s": 122400,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/BATTERY_ORGANS.json",
+   "artifact_declared": "desks/mt5/reports/BATTERY_ORGANS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "battery_rotation_runs",
+   "consumer": "desks/mt5/research/wiring_ceo.py",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T20:20:26+00:00"
+  },
+  {
+   "organ": "executable:scripts/lessons.py",
+   "kind": "executable",
+   "code": [
+    "scripts/lessons.py"
+   ],
+   "clock": "invoked:libs/ops/agent_denials.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/NIGHTLY_CATCHUP.json",
+   "artifact_declared": "desks/mt5/reports/NIGHTLY_CATCHUP.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T20:20:26+00:00"
+  },
+  {
+   "organ": "task:E8-Book",
+   "kind": "task",
+   "code": [
+    "desks/mt5/prop/e8_book.py"
+   ],
+   "clock": "E8-Book",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/E8_BOOK.json",
+   "artifact_declared": "desks/mt5/reports/E8_BOOK.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "task_runs",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T20:20:26+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/pit_conditioners.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/pit_conditioners.py"
+   ],
+   "clock": "invoked:desks/mt5/mt5desk/cell_modifiers.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read UNMEASURED here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/PIT_CONDITIONERS.json",
+   "artifact_declared": "desks/mt5/reports/PIT_CONDITIONERS.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 289,
+   "artifact_bytes": 2441,
+   "artifact_sha256": "e8976d06c9fcdff252484dd1e8d880584a6bfce8c1bc136149a64852d0c91203",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T20:20:26+00:00"
   }
  ],
  "ratchet": {
