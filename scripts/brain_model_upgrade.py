@@ -45,6 +45,7 @@ import re
 import shutil
 import ssl
 import subprocess
+import sys
 import urllib.error
 import urllib.request
 from datetime import UTC, datetime
@@ -52,6 +53,11 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.ops.agent_denials import append_jsonl, denial_rows, parse_stream  # noqa: E402
+
 STATE = ROOT / "data/brain_model_upgrade.json"
 LOG = ROOT / "data/model_upgrade_log.jsonl"
 MODELS_URL = "https://api.anthropic.com/v1/models?limit=100"
@@ -326,20 +332,35 @@ def available_models() -> tuple[list[str], str]:
     return [str(m.get("id", "")) for m in data if m.get("id")], "ok"
 
 
+def probe_argv() -> list[str]:
+    """The probe's CLI call, scoped to exactly what it needs: NO tools, one turn.
+
+    It used to pass the blanket permission-bypass flag, which granted every tool to a call whose
+    whole job is to print one word. stream-json makes a refused call visible; each refusal is
+    logged to data/model_upgrade_log.jsonl as UNMEASURED / counts_as MISSED.
+    """
+    return ["claude", "-p", _PROBE, "--output-format", "stream-json", "--verbose",
+            "--allowedTools", "", "--max-turns", "1"]
+
+
 def probe(model: str, timeout: int = 180) -> tuple[bool, str]:
     """Live-call the candidate through the real CLI the organs use. Verify, then flip."""
     env = {**os.environ, "ANTHROPIC_MODEL": model}
     try:
-        r = subprocess.run(["claude", "-p", _PROBE, "--dangerously-skip-permissions"],
+        r = subprocess.run(probe_argv(),
                            capture_output=True, text=True, timeout=timeout, env=env, check=False)
     except FileNotFoundError:
         return False, "claude CLI not on PATH"
     except subprocess.TimeoutExpired:
         return False, f"timeout after {timeout}s"
-    out = (r.stdout or "") + (r.stderr or "")
-    if "UPGRADE-OK" in out:
+    summary = parse_stream((r.stdout or "").splitlines())
+    append_jsonl(LOG, denial_rows(summary, surface="brain", model=model,
+                                  ts=datetime.now(tz=UTC).isoformat()))
+    text = (summary.result_text or "").strip()
+    if "UPGRADE-OK" in text:
         return True, "UPGRADE-OK"
-    return False, (out.strip().splitlines() or ["no output"])[-1][:110]
+    out = text or ((r.stdout or "") + (r.stderr or "")).strip()
+    return False, (out.splitlines() or ["no output"])[-1][:110]
 
 
 def _log(rec: dict[str, Any]) -> None:
@@ -398,7 +419,7 @@ def main() -> None:
     # `model-upgrade-never-brain` kept firing at the exact moment the loop was working.
     def _save(**extra: Any) -> None:
         STATE.parent.mkdir(parents=True, exist_ok=True)
-        rec = {"checked": datetime.now(tz=UTC).isoformat(), "pinned": incumbents}
+        rec: dict[str, Any] = {"checked": datetime.now(tz=UTC).isoformat(), "pinned": incumbents}
         if adopted:
             rec["already_adopted"] = adopted
         rec.update(extra)

@@ -15,13 +15,30 @@ them on every resume, and handed the synthesis lead two empty files as evidence 
 from __future__ import annotations
 
 import contextlib
+import json
 import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+_REPO = Path(__file__).resolve().parent.parent
+if str(_REPO) not in sys.path:
+    sys.path.insert(0, str(_REPO))
+
+from libs.ops.agent_denials import (  # noqa: E402
+    READ_ONLY_RULES,
+    StreamSummary,
+    brain_argv,
+    denial_log_lines,
+    denial_rows,
+    parse_stream,
+    scoped_claude_args,
+    write_rules,
+)
+
 ROOT = Path("/home/quant/quant-platform")
 OUT = ROOT / "docs/research/deep_sweep"
-CORE = (ROOT / "prompts/deep_sweep_core.txt").read_text("utf-8")
+CORE_FILE = ROOT / "prompts/deep_sweep_core.txt"
 
 SUBSYSTEMS = {
     "alpha-discovery": "Hypothesis diversity, unexplored market behaviors, crowded themes, "
@@ -87,25 +104,76 @@ SUBSYSTEMS = {
 }
 
 
-def _run(prompt: str, timeout: int) -> subprocess.CompletedProcess[str]:
+def _rel(p: Path) -> str:
+    """A path as the CLI's permission rules read it: relative to the working directory (ROOT)."""
+    try:
+        return p.relative_to(ROOT).as_posix()
+    except ValueError:
+        return p.as_posix()
+
+
+def auditor_rules(report: Path) -> list[str]:
+    """An auditor reads anything and writes ONE file: its own report.
+
+    It used to run with the blanket permission-bypass flag, which handed every tool -- writes,
+    pushes, crontab -- to a seat whose brief says READ-ONLY. Now the CLI enforces the brief."""
+    return [*READ_ONLY_RULES, *write_rules(_rel(report))]
+
+
+def synthesis_rules(synth: Path) -> list[str]:
+    """The synthesis lead reads anything, writes its report and the three documents its brief
+    names, and rows its portfolio through recommendations.py (add / report only)."""
+    return [*READ_ONLY_RULES,
+            *write_rules(_rel(synth), "docs/research/TIER1_BENCHMARK.md",
+                         "docs/research/improvement_inbox.md", "data/PRINCIPAL_ACTION.md"),
+            "Bash(.venv/bin/python scripts/recommendations.py add:*)",
+            "Bash(.venv/bin/python scripts/recommendations.py report:*)"]
+
+
+def _allowlist_note(rules: list[str]) -> str:
+    return ("\n\nTOOL ALLOWLIST (enforced by the CLI): " + ", ".join(rules) + ". Anything "
+            "else is refused, and every refused call is recorded as UNMEASURED and counts as "
+            "MISSED -- if a step needs a tool outside this list, write in your report that the "
+            "step is UNMEASURED and why, instead of reaching for it.")
+
+
+def _run(prompt: str, timeout: int, rules: list[str]) -> subprocess.CompletedProcess[str]:
     # DUAL-POOL (2026-07-26): try the fable metered pool FIRST, fall through to the Max seat.
     # Each auditor is its own invocation with its own brain_auth_check, so the 8 auditors
     # AUTO-LOAD-BALANCE across both pools -- the first ones drain fable, the rest land on opus-5.
-    # The sweep lost every auditor at 04:00 racing the cycle and diggers for a single seat.
+    # The chain comes from brain_env.sh -> ops/model_chain.env (single source, 2026-07-30); a
+    # silent auth short-circuit is what made 07-30's four failures undiagnosable, so the wrapper
+    # names it (exit 90).
     return subprocess.run(
-        ["bash", "-c",
-         # The chain comes from brain_env.sh -> ops/model_chain.env (single source, 2026-07-30).
-         # It used to be re-exported here as a literal, which would have pinned the sweep to
-         # yesterday's models the moment run_model_upgrade.py adopted a newer flagship.
-         'source ops/brain_env.sh && '
-         # a silent short-circuit here is what made today's four failures
-         # undiagnosable: no model answered, claude never ran, both streams empty
-         'brain_auth_check || { echo "BRAIN_AUTH_FAILED: no model in '
-         '_BRAIN_MODEL_CHAIN answered -- pool drained or session limit"; '
-         'exit 90; } && '
-         'claude --effort max --append-system-prompt "$_DOCTRINE" -p "$0" '
-         '--dangerously-skip-permissions', prompt],
+        brain_argv("deep_sweep", scoped_claude_args(prompt + _allowlist_note(rules),
+                                                    allowed=rules, effort="max")),
         cwd=ROOT, capture_output=True, text=True, timeout=timeout)
+
+
+def record_denials(r: subprocess.CompletedProcess[str] | None, sidecar: Path,
+                   **context: object) -> tuple[StreamSummary, list[dict[str, object]]]:
+    """Every refused call of one seat: one JSONL row in `<report>.DENIED` and one line in the
+    sweep's log (stdout). A seat with any refusal reads UNMEASURED, never COMPLETE."""
+    summary = parse_stream(((r.stdout if r else "") or "").splitlines())
+    rows = denial_rows(summary, surface="deep_sweep", **context)
+    if rows:
+        with sidecar.open("a", encoding="utf-8") as f:
+            for row in rows:
+                f.write(json.dumps(row, sort_keys=True) + "\n")
+        for line in denial_log_lines(rows):
+            print(f"[deep-sweep] {line}", flush=True)
+    return summary, rows
+
+
+def _denied(report: Path) -> bool:
+    return Path(f"{report}.DENIED").exists()
+
+
+def seat_status(report: Path) -> str:
+    """COMPLETE only when the sentinel is there AND no step of the seat was refused."""
+    if not _complete(report):
+        return "FAILED"
+    return "UNMEASURED" if _denied(report) else "COMPLETE"
 
 
 _SENTINEL = "STATUS: COMPLETE"
@@ -129,10 +197,11 @@ def _complete(report: Path) -> bool:
     return report.stat().st_mtime < _SENTINEL_BORN
 
 
-def run_auditor(key: str, brief: str, stamp: str) -> bool:
+def run_auditor(key: str, brief: str, stamp: str, core: str = "") -> str:
+    """Run one seat; returns COMPLETE, UNMEASURED (a step was refused) or FAILED."""
     report = OUT / f"{stamp}_{key}.md"
     prompt = (
-        f"{CORE}\n\n=== YOUR SUBSYSTEM THIS SWEEP: {key} ===\n{brief}\n\n"
+        f"{core}\n\n=== YOUR SUBSYSTEM THIS SWEEP: {key} ===\n{brief}\n\n"
         f"Work from /home/quant/quant-platform, READ-ONLY (run read/inspect commands freely; "
         f"do NOT modify code/state/cron/git). Apply ALL SIX perspectives and the five-things "
         f"search and the negative-space sweep. WRITE your full report to {report} in the "
@@ -143,9 +212,10 @@ def run_auditor(key: str, brief: str, stamp: str) -> bool:
         f"exhaustive; token cost is not a constraint."
     )
     try:
-        r = _run(prompt, 1800)
+        r = _run(prompt, 1800, auditor_rules(report))
     except subprocess.TimeoutExpired:
         r = None
+    summary, _rows = record_denials(r, Path(f"{report}.DENIED"), seat=key, stamp=stamp)
     ok = _complete(report)
     if not ok:
         # NAME THE STAGE. "Failed with two empty streams" is what today's four auditors
@@ -160,7 +230,7 @@ def run_auditor(key: str, brief: str, stamp: str) -> bool:
                    "logic skips every COMPLETE report, so only the failures re-run")
         else:
             why = f"claude exited {r.returncode}"
-        streams = (f"\n--stdout(tail)--\n{(r.stdout or '')[-900:]}"
+        streams = (f"\n--result(tail)--\n{(summary.result_text or '')[-900:]}"
                    f"\n--stderr(tail)--\n{(r.stderr or '')[-600:]}") if r else ""
         partial = report.stat().st_size if report.exists() else 0
         # Sidecar, NEVER the report itself: the old code overwrote the partial report with
@@ -171,13 +241,14 @@ def run_auditor(key: str, brief: str, stamp: str) -> bool:
             f"# AUDITOR FAILED ({key})\n\nWHY: {why}\n"
             f"partial report bytes preserved in place: {partial} "
             f"(re-runs on resume until its {_SENTINEL} sentinel appears)\n{streams}\n", "utf-8")
-    return ok
+    return seat_status(report)
 
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d")
-    results = []
+    core = CORE_FILE.read_text("utf-8")
+    results: list[tuple[str, str]] = []
     # SEAT ROTATION (E-20, 07-31 synthesis): the dict order ran verbatim every window, so when a
     # window died mid-sweep the SAME tail seats starved every time (position 8 produced nothing
     # for days while position 1 re-ran fine). Rotate the starting seat by date -- deterministic
@@ -191,26 +262,33 @@ def main() -> None:
         # so a sweep killed halfway is CONTINUED by the next invocation (organ_catchup re-fires
         # reset-aware) instead of restarting at auditor one and re-losing the same seat race.
         done = OUT / f"{stamp}_{key}.md"
+        # A finished report whose seat had a refused step stays UNMEASURED on resume: re-running
+        # it would hit the same allowlist, and the refusal is already on record.
         if _complete(done):
-            print(f"[deep-sweep] {key}: already COMPLETE today -- skipping (resume)", flush=True)
-            results.append((key, True))
+            st = seat_status(done)
+            print(f"[deep-sweep] {key}: already {st} today -- skipping (resume)", flush=True)
+            results.append((key, st))
             continue
         print(f"[deep-sweep] auditor: {key}", flush=True)
-        ok = run_auditor(key, brief, stamp)
-        results.append((key, ok))
-        print(f"[deep-sweep] {key}: {'OK' if ok else 'FAILED (recorded)'}", flush=True)
+        st = run_auditor(key, brief, stamp, core)
+        results.append((key, st))
+        print(f"[deep-sweep] {key}: {st if st != 'FAILED' else 'FAILED (recorded)'}", flush=True)
 
-    good = [f"{stamp}_{k}.md" for k, ok in results if ok]
+    good = [f"{stamp}_{k}.md" for k, st in results if st == "COMPLETE"]
+    partial = [f"{stamp}_{k}.md" for k, st in results if st == "UNMEASURED"]
     synth = OUT / f"{stamp}_SYNTHESIS.md"
     if _complete(synth):
         # Synthesis had NO resume check: the 2026-07-30 22:45 window re-launched a full
         # synthesis seat five hours after the 17:00 one wrote STATUS: COMPLETE.
         print("[deep-sweep] synthesis: already COMPLETE today -- skipping (resume)", flush=True)
-    elif good:
+    elif good or partial:
+        unmeasured = (f" These reports are UNMEASURED -- a step of theirs was refused (see the "
+                      f"matching .DENIED file); weigh them as partial evidence: "
+                      f"{', '.join(partial)}." if partial else "")
         sp = (
-            f"{CORE}\n\n=== YOU ARE THE SYNTHESIS LEAD ===\nRead every auditor report in "
-            f"docs/research/deep_sweep/ dated {stamp}: {', '.join(good)}. Produce the honest "
-            f"ceiling map to {synth}:\n"
+            f"{core}\n\n=== YOU ARE THE SYNTHESIS LEAD ===\nRead every auditor report in "
+            f"docs/research/deep_sweep/ dated {stamp}: {', '.join(good + partial)}.{unmeasured} "
+            f"Produce the honest ceiling map to {synth}:\n"
             "(A) Overall verdict + per-subsystem ceiling table (current pct, practical ceiling, "
             "opportunity cost 1y) -- AND re-grade docs/research/TIER1_BENCHMARK.md in the same "
             "session: where auditor evidence moves a layer's tier against the motive-similar "
@@ -245,15 +323,17 @@ def main() -> None:
             "neglect. L1.28b applies to your own output: an un-rowed recommendation is a finding "
             "already leaking."
         )
+        rs: subprocess.CompletedProcess[str] | None = None
         with contextlib.suppress(subprocess.TimeoutExpired):
-            _run(sp, 1800)
+            rs = _run(sp, 1800, synthesis_rules(synth))
+        record_denials(rs, Path(f"{synth}.DENIED"), seat="SYNTHESIS", stamp=stamp)
     # SECOND FAMILY (L1.33 / R0114, shared helper libs/llm/second_opinion.py): all nine seats and
     # the synthesis lead think in the same model family's priors -- the meta-and-blindspots seat
     # included, which is the defect it audits for, applied to itself. Ask the independent family
     # which SUBSYSTEM/seat this sweep cannot see, and record the verdict beside the reports --
     # SOLO when the seat is dark, and a dark partner never breaks the sweep's exit-0 cadence.
+    synth_status = seat_status(synth) if _complete(synth) else "MISSING"
     try:
-        import sys
         root = str(Path(__file__).resolve().parent.parent)   # __file__, so it also works off-VPS
         if root not in sys.path:
             sys.path.insert(0, root)        # run as `python scripts/...`: root is not on sys.path
@@ -261,14 +341,15 @@ def main() -> None:
         consult_second_family(
             "deep_sweep",
             {"stamp": stamp,
-             "auditors": {k: ("COMPLETE" if ok else "FAILED") for k, ok in results},
-             "synthesis": "COMPLETE" if _complete(synth) else "MISSING"},
+             "auditors": dict(results),
+             "synthesis": synth_status},
             artifact=OUT / f"{stamp}_second_family.json")
     except Exception as exc:  # the partner must never break the organ
         print(f"  second family: SKIPPED ({exc})")
-    n_ok = sum(1 for _, ok in results if ok)
-    print(f"[deep-sweep] done: {n_ok}/{len(results)} COMPLETE; "
-          f"synthesis={'yes' if _complete(synth) else 'NO'}", flush=True)
+    n_ok = sum(1 for _, st in results if st == "COMPLETE")
+    n_um = sum(1 for _, st in results if st == "UNMEASURED")
+    print(f"[deep-sweep] done: {n_ok}/{len(results)} COMPLETE, {n_um} UNMEASURED (refused "
+          f"steps); synthesis={synth_status}", flush=True)
 
 
 if __name__ == "__main__":

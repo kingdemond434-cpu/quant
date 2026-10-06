@@ -644,6 +644,11 @@ def _donate(findings: list[dict]) -> Path | None:
             "symbols": [],
             "url": f"kimi://{f.get('date')}/wave{f.get('wave')}/{digest}",
         })
+    from libs.data.pit import stamp_or_refuse
+
+    discoveries, refused = stamp_or_refuse(discoveries, "kimi_k3_deep_forest")
+    if refused:
+        raise ValueError(f"Kimi refused {len(refused)} unstamped discoveries")
     path.write_text(json.dumps({
         "source": "kimi_k3_deep_forest",
         "generated_at": now.isoformat(),

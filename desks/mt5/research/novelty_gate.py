@@ -571,7 +571,8 @@ def _blank_dims() -> dict[str, float | None]:
     return dict.fromkeys(DIMENSIONS)
 
 
-def admit(candidate: dict[str, Any], library: Library | None = None) -> Verdict:
+def admit(candidate: dict[str, Any], library: Library | None = None, *,
+          _readings: dict[int, tuple[set[str], set[str], set[str]]] | None = None) -> Verdict:
     """Screen ONE candidate against the desk's library, before a trial is spent on it.
 
     `library` is optional; pass one (or call `screen`) for a batch, because loading it per call
@@ -579,6 +580,27 @@ def admit(candidate: dict[str, Any], library: Library | None = None) -> Verdict:
     """
     lib = library if library is not None else Library.load()
     cand = _member(candidate, "candidate")
+    # A synchronous batch has a fixed library. Prepare structural readings once
+    # per member rather than retokenizing the same 600 members for every row.
+    # The cache belongs to one screen call; later calls see changed parameters.
+    cand_features = features_of(cand)
+    cand_claim = _claim_tokens(cand)
+    cand_words = _words(cand.text) if cand.text else set()
+
+    def readings(m: Member) -> tuple[set[str], set[str], set[str]]:
+        if _readings is not None and id(m) in _readings:
+            return _readings[id(m)]
+        value = (features_of(m), _claim_tokens(m), _words(m.text) if m.text else set())
+        if _readings is not None:
+            _readings[id(m)] = value
+        return value
+
+    def semantic(m: Member) -> float | None:
+        _, claim, words = readings(m)
+        struct = _jaccard(cand_claim, claim)
+        prose = _jaccard(cand_words, words) if cand.text and m.text else None
+        scores = [s for s in (struct, prose) if s is not None]
+        return max(scores) if scores else None
     comp = complexity_of(cand)
     over = comp > OVERSIZED_AT
     aligned = alignment_of(cand)
@@ -598,8 +620,8 @@ def admit(candidate: dict[str, Any], library: Library | None = None) -> Verdict:
     if exact is not None:
         # Scored anyway, so `by_dimension` counts a short-circuit as MEASURED rather than as a
         # dimension that could not be read -- those are different facts about the gate.
-        dims["feature"] = _jaccard(features_of(cand), features_of(exact))
-        dims["semantic"] = semantic_similarity(cand, exact)
+        dims["feature"] = _jaccard(cand_features, readings(exact)[0])
+        dims["semantic"] = semantic(exact)
         dims["ast"] = ast_similarity(cand, exact)
         dims["returns"] = returns_similarity(cand, exact)
         clock = ""
@@ -616,12 +638,12 @@ def admit(candidate: dict[str, Any], library: Library | None = None) -> Verdict:
     best_dims = _blank_dims()
     region: Member | None = None
     region_score = -1.0
-    cand_feats = features_of(cand)
+    cand_feats = cand_features
 
     for m in lib.compare_set(cand):
         scored = _blank_dims()
-        scored["feature"] = _jaccard(cand_feats, features_of(m))
-        scored["semantic"] = semantic_similarity(cand, m)
+        scored["feature"] = _jaccard(cand_feats, readings(m)[0])
+        scored["semantic"] = semantic(m)
         scored["ast"] = ast_similarity(cand, m)
         cheap = [v for k, v in scored.items() if k in ECONOMIC_DIMS and v is not None]
         score = sum(cheap) / len(cheap) if cheap else -1.0
@@ -638,8 +660,8 @@ def admit(candidate: dict[str, Any], library: Library | None = None) -> Verdict:
     # are the two comparisons where the number can change a verdict.
     if region is not None:
         scored = best_dims if best is region else _blank_dims()
-        scored["feature"] = _jaccard(cand_feats, features_of(region))
-        scored["semantic"] = semantic_similarity(cand, region)
+        scored["feature"] = _jaccard(cand_feats, readings(region)[0])
+        scored["semantic"] = semantic(region)
         scored["ast"] = ast_similarity(cand, region)
         scored["returns"] = returns_similarity(cand, region)
         r = scored["returns"]
@@ -683,7 +705,8 @@ def admit(candidate: dict[str, Any], library: Library | None = None) -> Verdict:
 def screen(rows: list[dict[str, Any]], library: Library | None = None) -> list[Verdict]:
     """Batch: the library is read ONCE, then every row is judged against it."""
     lib = library if library is not None else Library.load()
-    return [admit(r if isinstance(r, dict) else {}, lib) for r in rows]
+    readings: dict[int, tuple[set[str], set[str], set[str]]] = {}
+    return [admit(r if isinstance(r, dict) else {}, lib, _readings=readings) for r in rows]
 
 
 # --------------------------------------------------------------------------- the artifact

@@ -14,7 +14,6 @@ from __future__ import annotations
 import json
 
 import pytest
-
 import scripts.run_model_upgrade as rmu
 
 

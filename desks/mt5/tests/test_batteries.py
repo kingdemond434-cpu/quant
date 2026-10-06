@@ -191,8 +191,9 @@ def test_the_ratchet_may_never_rise_and_no_rostered_or_retired_file_is_unclocked
     unclocked = set(C.census()["unclocked"])
     rostered = {e.path for entries in B.ROSTERS.values() for e in entries}
     assert not (rostered & unclocked), "a rostered organ the census still reads as unclocked"
-    retired = {json.loads(ln)["path"]
-               for ln in (ROOT / "docs" / "research" / "retirements.jsonl")
-               .read_text("utf-8").splitlines() if ln.strip()}
+    rows = [json.loads(ln) for ln in (ROOT / "docs" / "research" / "retirements.jsonl")
+            .read_text("utf-8").splitlines() if ln.strip()]
+    # a PROPOSED row (dormant_components, DP2) awaits a person's decision; it is not retired
+    retired = {r["path"] for r in rows if r.get("path") and r.get("status") != "PROPOSED"}
     assert not (retired & unclocked), "a retired file is still being walked as an executable"
     assert not (retired & rostered), "a file cannot be both retired and rostered"

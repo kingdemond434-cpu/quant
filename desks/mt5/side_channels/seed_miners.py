@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -20,6 +21,8 @@ from pathlib import Path
 import requests
 
 BASE = Path(__file__).resolve().parent.parent
+if str(BASE.parent.parent) not in sys.path:
+    sys.path.insert(0, str(BASE.parent.parent))
 INTEL = BASE / "data" / "intelligence"
 STATE = INTEL / "seed_miners_state.json"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -638,10 +641,13 @@ def _write_rows(name: str, rows_: list[dict], ts: str, results: dict, summary: d
     `counted=True` means the caller already decided this source's ok/raw_only disposition
     (walled and wall-lifted sources), so only the archive and the row total are touched.
     """
+    try:
+        from side_channels.discovery_io import write_discoveries
+    except ModuleNotFoundError:
+        from discovery_io import write_discoveries
     d = INTEL / name
     d.mkdir(parents=True, exist_ok=True)
-    (d / f"discoveries_{ts}.json").write_text(
-        json.dumps(rows_, indent=1, default=str), "utf-8")
+    rows_ = write_discoveries(d / f"discoveries_{ts}.json", rows_)
     results[name] = {"discoveries": rows_, "count": len(rows_)}
     summary["total"] += len(rows_)
     if not counted:

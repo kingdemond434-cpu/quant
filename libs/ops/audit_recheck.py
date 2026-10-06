@@ -71,6 +71,7 @@ from pathlib import Path
 #: its scope is measured rather than remembered.
 VOLATILE: dict[str, str] = {
     "dig-output-uncommitted": "check_dig_uncommitted",
+    "dig-output-unmeasured": "check_dig_uncommitted",
 }
 
 _AUDIT = "scripts.max_audit"
@@ -117,15 +118,11 @@ def commits_since(ran: str | None, root: Path | None = None) -> int | None:
 def _git_works(root: Path | None = None) -> bool:
     """Can git actually run here?
 
-    THIS PROBE IS LOAD-BEARING AND IT IS NOT PARANOIA. `check_dig_uncommitted` ends its git call
-    with `except (OSError, subprocess.SubprocessError): return` and `if out.returncode != 0:
-    return` -- i.e. it emits NO DEFECT when git is unavailable, which is the right call for an
-    audit ("the check does not apply here") and a fabrication risk for THIS module, because a
-    check that returns clean on failure is indistinguishable, to its consumer, from a check that
-    returned clean on success. Without this probe a git outage would render as "every volatile
-    defect was fixed" -- WS-005 arriving through a helper's own swallow rather than through an
-    exception my refusal path can catch. A clean re-measure is only evidence if the instrument
-    was working.
+    The audit now emits UNMEASURED when status fails inside an existing repository. This probe
+    additionally establishes that the repository itself is reachable; an inapplicable check
+    outside a repository cannot prove that a handed defect was fixed. The later status result
+    is checked separately, because a successful rev-parse does not establish that status ran.
+    A clean re-measure is only evidence if the instrument was working.
     """
     try:
         out = subprocess.run(["git", "rev-parse", "--git-dir"], cwd=root or Path.cwd(),
@@ -143,7 +140,7 @@ def _live_volatile_ids(root: Path | None = None) -> tuple[set[str], str]:
     and a re-measure that found nothing are opposite facts (L1.55).
     """
     if not _git_works(root):
-        return set(), ("git unavailable -- the volatile checks return CLEAN when git cannot run, "
+        return set(), ("git unavailable -- no current working-tree measurement, "
                        "so a clean re-measure here would be fabricated rather than measured")
     try:
         import importlib
@@ -152,7 +149,7 @@ def _live_volatile_ids(root: Path | None = None) -> tuple[set[str], str]:
         return set(), f"{_AUDIT} unimportable: {type(exc).__name__}: {exc}"
 
     found: set[str] = set()
-    for did, fname in sorted(VOLATILE.items()):
+    for fname in sorted(set(VOLATILE.values())):
         fn = getattr(audit, fname, None)
         if fn is None:
             return set(), (f"{_AUDIT}.{fname} is gone -- the registry names a check "
@@ -162,7 +159,10 @@ def _live_volatile_ids(root: Path | None = None) -> tuple[set[str], str]:
             fn(defects)
         except Exception as exc:                      # broad ON PURPOSE: reported, not swallowed
             return set(), f"{fname} raised {type(exc).__name__}: {exc}"
-        found |= {d[0] for d in defects if d and d[0] == did}
+        for defect in defects:
+            if defect and defect[0] == "dig-output-unmeasured":
+                return set(), f"{fname} UNMEASURED: {defect[1]}"
+        found |= {d[0] for d in defects if d and d[0] in VOLATILE}
     return found, ""
 
 
@@ -182,7 +182,7 @@ def recheck(live_ids: Iterable[str], ran: str | None = None,
     if why:
         # THE REFUSAL PATH. Every volatile id keeps its snapshot verdict and is flagged. Nothing
         # is cleared on a failed measurement -- that is the direction that buries a live defect.
-        return Recheck(unverified=sorted(snapshot), why=why, commits_since=since)
+        return Recheck(unverified=sorted(snapshot or VOLATILE), why=why, commits_since=since)
 
     return Recheck(
         cleared=sorted(snapshot - found),

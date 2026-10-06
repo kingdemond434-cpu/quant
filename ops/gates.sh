@@ -28,7 +28,37 @@ FULL=0
 
 PY="python"
 [ -x ".venv/bin/python" ] && PY=".venv/bin/python"
+# The trading box is Windows, where the venv lives at .venv/Scripts/python.exe; without this the
+# box's pushes ran these gates on whatever bare `python` was on PATH (2026-10-01).
+[ "$PY" = "python" ] && [ -x ".venv/Scripts/python.exe" ] && PY=".venv/Scripts/python.exe"
 
+# A full gate owns its test options. Inherited --basetemp lets a nested pytest
+# delete its parent's fixtures; inherited -k can turn a full gate into a subset.
+unset PYTEST_ADDOPTS
+export PYTHONUTF8=1
+export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
+export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
+root_test_args=()
+desk_test_args=()
+if [ -n "${QUANT_TEST_WORKERS:-}" ]; then
+  if ! [[ "$QUANT_TEST_WORKERS" =~ ^[1-9][0-9]*$ ]]; then
+    echo "gates: QUANT_TEST_WORKERS must be a positive integer" >&2
+    exit 2
+  fi
+  root_test_args+=(-n "$QUANT_TEST_WORKERS" --dist loadfile)
+  desk_test_args+=(-n "$QUANT_TEST_WORKERS" --dist loadfile)
+fi
+if [ -n "${QUANT_GATE_TMPDIR:-}" ]; then
+  mkdir -p "$QUANT_GATE_TMPDIR" || exit 2
+  root_test_args+=(--basetemp "$QUANT_GATE_TMPDIR/root")
+  desk_test_args+=(--basetemp "$QUANT_GATE_TMPDIR/desk")
+fi
+if [ -n "${QUANT_GATE_EVIDENCE_DIR:-}" ]; then
+  mkdir -p "$QUANT_GATE_EVIDENCE_DIR"
+  root_test_args+=(--junitxml "$QUANT_GATE_EVIDENCE_DIR/root-junit.xml")
+  desk_test_args+=(--junitxml "$QUANT_GATE_EVIDENCE_DIR/desk-junit.xml")
+fi
 fail=0
 run() {
   local name="$1"; shift
@@ -40,6 +70,11 @@ run() {
     printf 'FAIL\n'
     printf '%s\n' "$out" | tail -25 | sed 's/^/      /'
     fail=1
+  fi
+  if [ -n "${QUANT_GATE_EVIDENCE_DIR:-}" ]; then
+    local slug
+    slug=$(printf '%s' "$name" | tr -c 'A-Za-z0-9._-' '_')
+    printf '%s\n' "$out" > "$QUANT_GATE_EVIDENCE_DIR/$slug.txt"
   fi
 }
 
@@ -91,13 +126,20 @@ run "collect (pytest --co)" $PY -m pytest --co -q tests/
 run "types (mypy)"          $PY -m mypy
 
 if [ "$FULL" = "1" ]; then
-  run "tests (pytest)"      $PY -m pytest -q --cov=libs --cov-branch \
-                                --cov-report=json:coverage.json
-  run "coverage floors"     $PY scripts/check_coverage_floors.py --report coverage.json
+  # Match CI's separate Python namespaces, then combine actual branch evidence.
+  # A combined collection can resolve the desk's scripts against root scripts.
+  run "tests (pytest)"      $PY -m pytest -q tests/ \
+                                --cov=libs --cov=desks/mt5/mt5desk --cov=desks/mt5/research --cov-branch \
+                                --cov-report= "${root_test_args[@]}"
+  run "mt5 tests (pytest)"  $PY -m pytest -q desks/mt5/tests/ \
+                                --cov=libs --cov=desks/mt5/mt5desk --cov=desks/mt5/research --cov-branch \
+                                --cov-append --cov-report=json:coverage.json "${desk_test_args[@]}"
+  run "root coverage population" $PY -m coverage json --include='libs/*' -o coverage-libs.json
+  run "coverage floors"     $PY scripts/check_coverage_floors.py --report coverage-libs.json
   # THE MONEY PATH HAS ITS OWN FLOOR, and until 2026-09-23 it ran on no clock at all: the
   # ratchet over the files that move capital was a script nothing invoked (LAWS 7 -- unwired
   # is a defect; L1.49 -- a gate that never ran is a claim the desk cannot cash).
-  run "mt5 money-path floor" $PY scripts/check_mt5_coverage_floor.py
+  run "mt5 money-path floor" $PY scripts/check_mt5_coverage_floor.py --report coverage.json
 else
   echo "  (--full adds the suite + coverage floors; the floors are a RATCHET and a push that"
   echo "   lowers them is a breach, so run it before any commit that touches libs/)"

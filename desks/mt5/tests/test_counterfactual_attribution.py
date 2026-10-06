@@ -293,7 +293,8 @@ def test_dry_run_writes_nothing(tree: Path, capsys: pytest.CaptureFixture[str]) 
 
 
 def test_the_organ_allocates_nothing(tree: Path) -> None:
-    """P1 is REFUSED. Nothing in the artifact may be a capital instruction."""
+    """The organ is evidence, not sizing: capital is the allocator's alone (P1, LANDED in #53).
+    Nothing in the artifact may be a capital instruction."""
     _axis(tree / "data" / "axes" / "shadow_global_risk_appetite.json")
     rep = cfa.build(budget_s=30, apply=False)
     assert rep["allocates_capital"] is False

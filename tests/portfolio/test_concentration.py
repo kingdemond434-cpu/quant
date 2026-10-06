@@ -11,7 +11,6 @@ from itertools import pairwise
 
 import numpy as np
 import pytest
-from tests.portfolio.conftest import constant_correlation
 
 from libs.portfolio.concentration import (
     BRAIN_MAX_WEIGHT,
@@ -23,6 +22,7 @@ from libs.portfolio.concentration import (
     max_weight_for,
 )
 from libs.portfolio.diversification import effective_bets as correlation_blind_bets
+from tests.portfolio.conftest import constant_correlation
 
 
 def _eye(n: int) -> np.ndarray:

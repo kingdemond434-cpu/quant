@@ -5,6 +5,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 DESK = Path(__file__).resolve().parents[1]
 for _p in (str(DESK), str(DESK / "scripts")):
@@ -86,16 +87,46 @@ def test_verify_without_a_baseline_refuses_rather_than_passing(tmp_path, monkeyp
     assert car.main(["--verify"]) == 2
 
 
-def test_capture_then_verify_round_trips_on_the_real_box(tmp_path, monkeypatch):
+def test_capture_then_verify_round_trips_owned_inventory(tmp_path, monkeypatch):
     monkeypatch.setattr(car, "BASELINE", tmp_path / "base.json")
     monkeypatch.setattr(car, "VERDICT", tmp_path / "verdict.json")
+    monkeypatch.setattr(car, "commit_info", lambda: {"status": "MEASURED", "commit_limit_gb": 400.0})
+    monkeypatch.setattr(car, "running_processes", lambda: _snap(["terminal64.exe"], [])['processes'])
+    monkeypatch.setattr(car, "scheduled_tasks", lambda: {"MT5-Gauntlet": {"status": "Ready"}})
+    monkeypatch.setattr(car, "_boot_epoch", lambda: 2000.0)
     assert car.main(["--capture"]) == 0
     doc = json.loads((tmp_path / "base.json").read_text("utf-8"))
     assert doc["commit"]["status"] in {"MEASURED", "UNMEASURED"}
     assert isinstance(doc["tasks"], dict)
     car.main(["--verify"])
     v = json.loads((tmp_path / "verdict.json").read_text("utf-8"))
-    assert v["verdict"] in {"EVERYTHING RETURNED", "SOMETHING DID NOT RETURN"}
+    assert v["verdict"] == "EVERYTHING RETURNED"
+    assert v["tasks_missing"] == []
+    assert doc["tasks"] == {"MT5-Gauntlet": {"status": "Ready"}}
+
+
+def test_scheduled_inventory_parses_only_owned_tasks(monkeypatch):
+    def query(args, **kwargs):
+        assert args == ["schtasks", "/query", "/fo", "LIST", "/v"]
+        assert kwargs['timeout'] > 0
+        return SimpleNamespace(stdout=(
+            "TaskName: \\MT5-Gauntlet\nStatus: Running\nLast Result: 0\n\n"
+            "TaskName: \\Unrelated\nStatus: Ready\n\n"
+            "TaskName: \\MT5-Hourly\nStatus: Disabled\n"))
+    monkeypatch.setattr(car.subprocess, "run", query)
+    tasks = car.scheduled_tasks()
+    assert set(tasks) == {"MT5-Gauntlet", "MT5-Hourly"}
+    assert tasks['MT5-Gauntlet']['status'] == 'Running'
+    assert tasks['MT5-Hourly']['status'] == 'Disabled'
+
+
+def test_scheduled_inventory_timeout_is_unmeasured(monkeypatch):
+    def timeout(*args, **kwargs):
+        raise car.subprocess.TimeoutExpired('schtasks', 600)
+    monkeypatch.setattr(car.subprocess, 'run', timeout)
+    result = car.scheduled_tasks()
+    assert result['__status__']['status'] == 'UNMEASURED'
+    assert 'TimeoutExpired' in result['__status__']['why']
 
 
 def test_it_never_starts_stops_or_repairs_anything():

@@ -242,3 +242,72 @@ def test_factor_corr_abs_is_symmetric_and_bounded() -> None:
     assert c.shape == (4, 4) and np.allclose(c, c.T)
     assert c[0, 1] == pytest.approx(1.0 / 1.1) and c[0, 2] == 0.0 and c[0, 3] == 0.0
     assert np.all(np.diag(c) == 1.0) and c.max() <= 1.0
+
+
+# ------------------------------------------------------------------------------ ALFRED vintages
+def _vintages(tmp_path: Path, sid: str, days: list[str], values: np.ndarray,
+              lag_days: int = 3, revise_by: float | None = None) -> None:
+    """An ALFRED file in `research/fetch_alfred.py`'s own shape: every observation first printed
+    `lag_days` after its period, and (optionally) revised a month later by `revise_by`."""
+    rows = []
+    for d, v in zip(days, values, strict=True):
+        obs = pd.Timestamp(d)
+        rows.append((obs, obs + pd.Timedelta(days=lag_days), float(v)))
+        if revise_by is not None:
+            rows.append((obs, obs + pd.Timedelta(days=lag_days + 30), float(v) + revise_by))
+    df = pd.DataFrame(rows, columns=["observation_date", "realtime_date", "value"])
+    (tmp_path / "alfred").mkdir(exist_ok=True)
+    df.to_parquet(tmp_path / "alfred" / f"{sid}.parquet")
+    macro_state._CACHE["key"] = None
+
+
+def test_no_vintage_falls_back_to_the_current_reader_and_says_so(tmp_path: Path) -> None:
+    p = _archive(tmp_path)
+    doc = macro_state.daily_states(p)
+    assert doc["vintage"] == "current (look-ahead risk)"
+    assert set(doc["vintage_by_series"].values()) == {"current (look-ahead risk)"}
+    snap = macro_state.now(p)
+    assert snap["status"] == "MEASURED" and snap["vintage"] == "current (look-ahead risk)"
+    _w, meta = macro_state.kernel_weights([snap["newest_print"]], p)
+    assert meta["vintage"] == "current (look-ahead risk)"
+
+
+def test_alfred_vintages_are_preferred_and_never_read_a_later_revision(tmp_path: Path) -> None:
+    p = _archive(tmp_path)
+    series = json.loads(p.read_text("utf-8"))["series"]
+    for sid in ("DTWEXBGS", "VIXCLS", "DGS10"):
+        days = [d for d, _v in series[sid]]
+        vals = np.array([v for _d, v in series[sid]], dtype=float)
+        _vintages(tmp_path, sid, days, vals, revise_by=(1000.0 if sid == "DTWEXBGS" else None))
+    rows = macro_state.alfred_rows("DTWEXBGS", tmp_path / "alfred")
+    assert rows is not None
+    first_obs, first_val = series["DTWEXBGS"][0]
+    # the first print, dated the day it was PUBLISHED -- never the period, never the revision
+    published = (pd.Timestamp(first_obs) + pd.Timedelta(days=3)).date().isoformat()
+    assert rows[0] == (published, pytest.approx(first_val))
+    assert all(v < 500.0 for _d, v in rows), "a revision published later leaked in"
+    assert all(d > first_obs for d, _v in rows[:1])
+    doc = macro_state.daily_states(p)
+    assert doc["vintage"] == macro_state.VINTAGE_ALFRED
+    assert doc["vintage_by_series"]["DTWEXBGS"] == macro_state.VINTAGE_ALFRED
+    # no state on a day before anything was published
+    assert first_obs not in doc["states"]["dollar"]
+    assert macro_state.now(p)["vintage"] == macro_state.VINTAGE_ALFRED
+
+
+def test_one_current_series_makes_the_whole_state_current(tmp_path: Path) -> None:
+    p = _archive(tmp_path)
+    series = json.loads(p.read_text("utf-8"))["series"]
+    days = [d for d, _v in series["DTWEXBGS"]]
+    _vintages(tmp_path, "DTWEXBGS", days,
+              np.array([v for _d, v in series["DTWEXBGS"]], dtype=float))
+    doc = macro_state.daily_states(p)
+    assert doc["vintage_by_series"]["DTWEXBGS"] == macro_state.VINTAGE_ALFRED
+    assert doc["vintage_by_series"]["VIXCLS"] == "current (look-ahead risk)"
+    assert doc["vintage"] == "current (look-ahead risk)"
+
+
+def test_a_synthetic_archive_is_never_overlaid_with_the_desks_own_lake(tmp_path: Path) -> None:
+    p = _archive(tmp_path)
+    assert macro_state.alfred_dir_for(p) == tmp_path / "alfred"
+    assert macro_state.alfred_dir_for(macro_state.ARCHIVE) == macro_state.ALFRED_DIR

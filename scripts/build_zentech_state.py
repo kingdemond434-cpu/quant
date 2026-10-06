@@ -288,9 +288,33 @@ def _funnel_docket() -> int | None:
 
 
 def _gate_stat(key: str) -> int | None:
-    doc = _read(DESK / "reports" / "universal_gates_external.json")
-    v = doc.get(key)
-    return int(v) if isinstance(v, (int, float)) else None
+    """Read one top-level gauntlet counter without materialising every verdict.
+
+    ``universal_gates_external.json`` is a campaign ledger, not a dashboard-sized
+    document.  It is currently about 30 MB and one full parse peaks around 101 MB
+    RSS.  The desk-state pull runs under a deliberate 200 MB cgroup ceiling, so
+    loading it once per counter, after the rest of the payload, left the publisher
+    at 190 MB and permanently throttled at ``MemoryHigh`` while the public dashboard
+    served an old snapshot.
+
+    The producer writes pretty-printed JSON with top-level members indented by two
+    spaces.  Scan only that level and stop at the requested scalar.  A changed or
+    malformed format fails closed to UNMEASURED instead of falling back to the
+    memory-heavy full parse.
+    """
+    path = DESK / "reports" / "universal_gates_external.json"
+    prefix = f'  "{key}":'
+    try:
+        with path.open(encoding="utf-8") as handle:
+            for line in handle:
+                if not line.startswith(prefix):
+                    continue
+                raw = line[len(prefix):].strip().removesuffix(",")
+                value = json.loads(raw)
+                return int(value) if isinstance(value, (int, float)) else None
+    except (OSError, json.JSONDecodeError, ValueError, OverflowError):
+        return None
+    return None
 
 
 def _certificate_census(certs: dict[str, Any]) -> dict[str, Any]:

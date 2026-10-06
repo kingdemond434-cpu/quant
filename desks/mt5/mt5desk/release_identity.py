@@ -79,11 +79,31 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    "desks/mt5/reports/markout.json",
     "desks/mt5/data/placement_interlock.json",
     "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
     "desks/mt5/reports/BOX_STATE_FLOW.json",
+    "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+    "desks/mt5/reports/DESK_HEALTH.json",
     "desks/mt5/data/tier_s/box_evidence.json",
     "desks/mt5/data/tier_s/live_door.json",
+    "desks/mt5/reports/NULL_LAB.json",
+    "desks/mt5/reports/KNOWN_BY_DATE.json",
+    "desks/mt5/reports/PIT_LAG_CENSUS.json",
+    "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json",
+    "desks/mt5/reports/DSR_INPUTS.json",
+    "desks/mt5/reports/OCCUPANCY_MAP.json",
+    "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
+    "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
+    # The rest of the Tier S promotion door's evidence, on the same sync (2026-09-30).
+    "desks/mt5/data/tier_s/door_verdicts.json",
+    "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
+    "desks/mt5/data/tier_s/RELEASE_STOP.json",
+    "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json",
+    "desks/mt5/reports/REPLICATION.json",
+    # The lockbox v4 re-certification ledger and the re-mint status (2026-09-30).
+    "desks/mt5/reports/LOCKBOX_RECERT.json",
+    "desks/mt5/reports/REMINT_STATUS.json",
 })
 
 #: STATE DIRECTORIES, verbatim from libs/ops/release.STATE_PREFIXES (mirrored, not imported --
@@ -121,6 +141,8 @@ STATE_PREFIXES: tuple[str, ...] = (
 #: as state loses nothing. `test_hash_and_allowlist_mirror_the_seal` now pins EVERY list this
 #: module mirrors, and the classification itself, against libs/ops/release.
 STATE_FILES: frozenset[str] = frozenset({
+    "context/decision_journal.jsonl",
+    "docs/desk_lessons.jsonl",
     "desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
     "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
     "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json", "desks/mt5/mech_split.json",

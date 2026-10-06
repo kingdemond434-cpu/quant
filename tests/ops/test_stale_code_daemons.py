@@ -38,8 +38,12 @@ def test_proc_start_agrees_with_ps() -> None:
     pid = os.getpid()
     started = _M._proc_start(pid)
     assert started is not None
-    etimes = float(subprocess.run(["ps", "-o", "etimes=", "-p", str(pid)],
-                                  capture_output=True, text=True, check=True).stdout.strip())
+    if os.name == "nt":
+        import psutil
+        etimes = time.time() - psutil.Process(pid).create_time()
+    else:
+        etimes = float(subprocess.run(["ps", "-o", "etimes=", "-p", str(pid)],
+                                     capture_output=True, text=True, check=True).stdout.strip())
     assert abs((time.time() - started) - etimes) <= 2.0
 
 

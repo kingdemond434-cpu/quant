@@ -130,6 +130,30 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    # The markout the same leg writes beside the chain (2026-09-30): the VPS's desk state reads
+    # `matched_fills` from it, and without publication it read a 2026-09-08 stub forever.
+    "desks/mt5/reports/markout.json",
+    # The Tier S box attestation the same sync publishes (2026-09-30). Listed in $relPaths
+    # without being declared here, which test_release_seal names as refusing new risk.
+    # The Tier S measurement reports the same sync publishes (2026-09-30): null lab, the lag
+    # lane's two reports, the occupancy map and its culture pairs, the research/live identity.
+    "desks/mt5/reports/NULL_LAB.json",
+    "desks/mt5/reports/KNOWN_BY_DATE.json",
+    "desks/mt5/reports/PIT_LAG_CENSUS.json",
+    "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json",
+    "desks/mt5/reports/DSR_INPUTS.json",
+    "desks/mt5/reports/OCCUPANCY_MAP.json",
+    "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
+    "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
+    # The rest of the Tier S promotion door's evidence, on the same sync (2026-09-30).
+    "desks/mt5/data/tier_s/door_verdicts.json",
+    "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
+    "desks/mt5/data/tier_s/RELEASE_STOP.json",
+    "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json",
+    "desks/mt5/reports/REPLICATION.json",
+    # The lockbox v4 re-certification ledger and the re-mint status (2026-09-30).
+    "desks/mt5/reports/LOCKBOX_RECERT.json",
+    "desks/mt5/reports/REMINT_STATUS.json",
     # The placement-interlock fence's verdict (scripts/check_placement_interlock.py), published
     # by the same sync so a halt is readable off the box. An output, never an input.
     "desks/mt5/data/placement_interlock.json",
@@ -137,6 +161,10 @@ NON_CODE: frozenset[str] = frozenset({
     # publish_state leg and published on the same wire. Reports about the code, never inputs to it.
     "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
     "desks/mt5/reports/BOX_STATE_FLOW.json",
+    # The freshness fence's report and the desk health report (2026-09-30), written by the hourly
+    # `box_state_freshness` and `desk_health` legs and published on the same wire.
+    "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+    "desks/mt5/reports/DESK_HEALTH.json",
     # The Tier S box attestation and live door, published since 2026-09-30 and never declared
     # here (test_every_path_the_box_publishes_is_declared_non_code was red on the live branch).
     "desks/mt5/data/tier_s/box_evidence.json",
@@ -609,6 +637,8 @@ STATE_PREFIXES: tuple[str, ...] = (
 #: stop, recurring because a later organ chose the same wrong home. Named here rather than
 #: widened into a prefix, for the reason the paragraph above gives.
 STATE_FILES: frozenset[str] = frozenset({
+    "context/decision_journal.jsonl",
+    "docs/desk_lessons.jsonl",
     "desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
     "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
     "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json", "desks/mt5/mech_split.json",

@@ -79,3 +79,19 @@ def test_a_failed_launch_keeps_the_clock_so_the_next_tick_retries(tmp_path, monk
     state: dict = {}
     assert rs.tick_periodic(state, 100_000.0, lambda n, a: None) == []
     assert state == {}
+
+
+def test_rapid_failure_keeps_full_quarantine_after_the_detection_window():
+    state = {"last_spawn": 10_000.0}
+    assert rs.quarantine_deadline(state, 10_030.0) == 11_800.0
+    assert rs.quarantine_deadline(state, 10_181.0) == 11_800.0
+    recovered = dict(state)
+    assert rs.quarantine_deadline(recovered, 11_799.0) == 11_800.0
+    assert rs.quarantine_deadline(recovered, 11_800.0) is None
+
+
+def test_initial_start_and_later_failure_do_not_acquire_a_quarantine():
+    assert rs.quarantine_deadline({}, 10_000.0) is None
+    state = {"last_spawn": 10_000.0}
+    assert rs.quarantine_deadline(state, 10_181.0) is None
+    assert "quarantine_until" not in state

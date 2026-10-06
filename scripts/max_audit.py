@@ -162,18 +162,18 @@ def _converted_axes() -> list[str]:
     # (3) research_memory hypotheses tagged with the axis they screen (the --axis flag)
     try:
         import sqlite3
-        con = sqlite3.connect(str(ROOT / "data/sor_research.sqlite"))
-        for (mj,) in con.execute(
-            "SELECT metrics_json FROM research_memory WHERE category != 'method' "
-            "AND metrics_json IS NOT NULL"
-        ):
-            try:
-                axis = (json.loads(mj) or {}).get("axis")
-            except Exception:
-                axis = None
-            if isinstance(axis, str) and axis.strip():
-                tags.add(axis.strip().lower())
-        con.close()
+        uri = (ROOT / "data/sor_research.sqlite").resolve().as_uri() + "?mode=ro"
+        with contextlib.closing(sqlite3.connect(uri, uri=True)) as con:
+            for (mj,) in con.execute(
+                "SELECT metrics_json FROM research_memory WHERE category != 'method' "
+                "AND metrics_json IS NOT NULL"
+            ):
+                try:
+                    axis = (json.loads(mj) or {}).get("axis")
+                except Exception:
+                    axis = None
+                if isinstance(axis, str) and axis.strip():
+                    tags.add(axis.strip().lower())
     except Exception:
         pass
     return sorted(tags)
@@ -191,9 +191,9 @@ def _trial_mechanisms() -> list[str]:
         if not db.exists():
             continue
         try:
-            con = sqlite3.connect(str(db))
-            rows = con.execute("SELECT family FROM trials_ledger").fetchall()
-            con.close()
+            uri = db.resolve().as_uri() + "?mode=ro"
+            with contextlib.closing(sqlite3.connect(uri, uri=True)) as con:
+                rows = con.execute("SELECT family FROM trials_ledger").fetchall()
             if rows:
                 return [str(r[0]) for r in rows if r[0] is not None]
         except Exception:
@@ -891,6 +891,31 @@ def _live_organs() -> dict[str, list[int]]:
     to a file in this repo.
     """
     out: dict[str, list[int]] = {}
+    if os.name == "nt":
+        try:
+            import psutil  # type: ignore[import-untyped,unused-ignore]
+        except ImportError:
+            return out
+        for proc in psutil.process_iter(["pid", "cmdline"]):
+            try:
+                argv = proc.info["cmdline"] or []
+                if not argv or "python" not in Path(argv[0]).name.lower():
+                    continue
+                if any(a.startswith("--append-system-prompt") for a in argv):
+                    continue
+                for arg in argv[1:]:
+                    if not arg.endswith(".py") or len(arg) > 200:
+                        continue
+                    candidate = Path(arg)
+                    cand = candidate if candidate.is_absolute() else ROOT / candidate
+                    if cand.is_file() and cand.resolve().is_relative_to(ROOT):
+                        rel = cand.resolve().relative_to(ROOT).as_posix()
+                        if not rel.startswith("tests/"):
+                            out.setdefault(rel, []).append(int(proc.info["pid"]))
+                        break
+            except (psutil.NoSuchProcess, psutil.AccessDenied, OSError, ValueError):
+                continue
+        return out
     with contextlib.suppress(OSError):
         for d in Path("/proc").iterdir():
             if not d.name.isdigit():
@@ -996,6 +1021,9 @@ def _proc_start(pid: int) -> float | None:
     the desk reads a missing defect as no defect. None says "this process is gone" in a value the
     type system carries to every caller.
     """
+    if os.name == "nt":
+        from libs.ops.value_staleness import proc_start
+        return proc_start(pid)
     try:
         st = Path(f"/proc/{pid}/stat").read_text("utf-8")
         starttime = int(st[st.rindex(")") + 2:].split()[19])
@@ -2455,8 +2483,9 @@ def check_memory_hygiene(defects) -> None:
     # (b) research_memory must actually be written by the analyst missions that cite it
     try:
         import sqlite3
-        n = sqlite3.connect(str(ROOT / "data/sor_research.sqlite")).execute(
-            "SELECT COUNT(*) FROM research_memory").fetchone()[0]
+        uri = (ROOT / "data/sor_research.sqlite").resolve().as_uri() + "?mode=ro"
+        with contextlib.closing(sqlite3.connect(uri, uri=True)) as con:
+            n = con.execute("SELECT COUNT(*) FROM research_memory").fetchone()[0]
         if n == 0:
             defects.append(("research-memory-unused",
                             "research_memory has 0 rows EVER while mission directives claim "
@@ -2750,10 +2779,12 @@ def check_production(defects) -> None:
     # research_memory must GROW, not just be non-zero (the null-pipe class)
     try:
         import sqlite3
-        n = sqlite3.connect(str(ROOT / "data/sor_research.sqlite")).execute(
-            "SELECT COUNT(*) FROM research_memory WHERE created_at >= datetime('now','-7 days') "
-            "AND category != 'method'"   # exclude meta/seed rows -- a self-referential seed must
-            "").fetchone()[0]             # not green the guard (2026-07-24 audit: 1 seed did)
+        uri = (ROOT / "data/sor_research.sqlite").resolve().as_uri() + "?mode=ro"
+        with contextlib.closing(sqlite3.connect(uri, uri=True)) as con:
+            n = con.execute(
+                "SELECT COUNT(*) FROM research_memory WHERE created_at >= datetime('now','-7 days') "
+                "AND category != 'method'"  # seed rows must not green the production guard
+            ).fetchone()[0]
         if n == 0:
             defects.append(("production-research-memory-flat",
                             "research_memory added 0 rows in 7d -- the conversion loop is not "
@@ -3129,13 +3160,14 @@ def _scored_capacities() -> tuple[list[float], list[str], str]:
     try:
         from libs.autodiscovery.memory import CandidateStore
         from libs.store.connection import Database
-        store = CandidateStore(Database(_CANDIDATE_DB, read_only=True))
         caps, names = [], []
-        for c in store.all():
-            cap = float(getattr(c.metrics, "capacity_usd", 0.0) or 0.0)
-            if cap > 0:
-                caps.append(cap)
-                names.append(str(getattr(getattr(c, "hypothesis", None), "subtype", "") or ""))
+        with Database(_CANDIDATE_DB, read_only=True) as database:
+            store = CandidateStore(database)
+            for c in store.all():
+                cap = float(getattr(c.metrics, "capacity_usd", 0.0) or 0.0)
+                if cap > 0:
+                    caps.append(cap)
+                    names.append(str(getattr(getattr(c, "hypothesis", None), "subtype", "") or ""))
     except Exception as exc:                                    # reported, never hidden
         return [], [], f"{type(exc).__name__}: {exc}"
     return caps, names, ""
@@ -3930,6 +3962,15 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    # DESKTOP-PASS SPECS, claimed as a directory class (2026-10-06). The cloud classifier refuses
+    # money-path edits (gateway, order door, allocator), so the change a cloud thread finds is
+    # handed to the desktop session as a spec in docs/desktop_pass/<topic>/. Each spec is TERMINAL
+    # once the desktop applies it: the code and its drill are then the record. It cannot rot
+    # unseen, because the organ that cites it keeps a FAIL row open until the drill it names
+    # passes (desks/mt5/research/recovery_drills.py: GATEWAY_SPEC, FILL_ORDER_SPEC).
+    "docs/desktop_pass/":
+        "SPEC HANDED TO THE DESKTOP PASS for a money-path change the cloud may not make. Terminal "
+        "on application; until then a FAIL row in reports/RECOVERY_DRILLS.json names it.",
     # THE DERIVED LESSON VAULT, claimed as a DIRECTORY CLASS (2026-09-12). 286 of the 294
     # unclaimed docs artifacts were these. docs/lesson_vault/ is regenerated wholesale by
     # scripts/build_lesson_vault.py from docs/desk_lessons.jsonl, which is the source of truth --
@@ -3947,6 +3988,13 @@ _TERMINAL_ARTIFACTS = {
         "its own: staleness here is staleness of the source, which is governed where the source "
         "is. Claimed as a directory class because the vault takes a new file for every lesson "
         "the desk ever records.",
+    # THE LOCKBOX v4 EVIDENCE (2026-10-01): the measured basis the sealed gate_spec cites for
+    # fixed_variance_of_sharpes 0.0002 and the three lockbox reads. A dated record of one
+    # measurement, terminal once written; a new measurement is a new dated section, not an edit.
+    "docs/research/LOCKBOX_BAR.md":
+        "TERMINAL EVIDENCE: the sealed-suite measurement (cloud grid 2026-09-30, real-judge "
+        "confirmation 15/130 real, 0/318 traps) that desks/mt5/policy/gate_spec.yaml cites for "
+        "its DSR variance and lockbox reads. Governed by the seal on gate_spec, which names it.",
     # AUDIT COMPLETION LEDGERS (2026-09-29). One per external audit: which item landed where,
     # and what is blocked on whom. Claimed as a directory class because each audit adds one.
     "docs/audit/":
@@ -4863,9 +4911,10 @@ def _tmpfs_holders_note() -> str:
         # A lawgate checkout registers at <entry>/t while the entry itself is what holds the RAM,
         # so ownership is matched by CONTAINMENT, not equality: the reclaim command has to name
         # the registered path and the size next to it is the whole subtree's.
-        target = os.path.realpath(r.path).rstrip("/")
+        target = os.path.normcase(os.path.realpath(r.path)).replace("\\", "/").rstrip("/")
         mine = [reg for rp, reg in sorted(owned.items())
-                if rp == target or rp.startswith(target + "/")]
+                if (os.path.normcase(os.path.realpath(rp)).replace("\\", "/") == target
+                    or os.path.normcase(os.path.realpath(rp)).replace("\\", "/").startswith(target + "/"))]
         own = ""
         if mine:
             n_owned += 1
@@ -6640,9 +6689,17 @@ def check_dig_uncommitted(defects) -> None:
     try:
         out = subprocess.run(["git", "status", "--porcelain", "-b", "--", *_DIG_TRACKED],
                              cwd=ROOT, capture_output=True, text=True, timeout=20)
-    except (OSError, subprocess.SubprocessError):
-        return  # no git available -- the check simply does not apply here
+    except (OSError, subprocess.SubprocessError) as exc:
+        if (ROOT / ".git").exists():
+            defects.append(("dig-output-unmeasured",
+                            f"§33: git status UNMEASURED in {ROOT}: {type(exc).__name__}; "
+                            "uncommitted research output was not checked."))
+        return
     if out.returncode != 0:
+        if (ROOT / ".git").exists():
+            defects.append(("dig-output-unmeasured",
+                            f"§33: git status UNMEASURED in {ROOT}: exit {out.returncode}; "
+                            "uncommitted research output was not checked."))
         return
     stale = []
     branch = ""
@@ -7007,7 +7064,7 @@ def check_scheduled_scripts(defects) -> None:
     # written for. The leading greedy class backtracks to the longest prefix, so absolute paths
     # match whole too and are normalised against ROOT below.
     _SCHED_PATH_RE = re.compile(
-        r"[A-Za-z0-9_./-]*(?:scripts|ops|deploy)/[A-Za-z0-9_./-]+\.(?:py|sh)")
+        r"[A-Za-z0-9_:./\\-]*(?:scripts|ops|deploy)[/\\][A-Za-z0-9_./\\-]+\.(?:py|sh)")
 
     def _resolve(tok: str) -> Path:
         """A scheduled token -> the path to stat. Absolute stays absolute unless it is inside
@@ -8726,7 +8783,7 @@ def check_unwired_modules(defects) -> None:
     ]
     for mod in modules:
         importers = [
-            str(f.relative_to(ROOT))
+            f.relative_to(ROOT).as_posix()
             for f in script_files
             if mod in _imports_of(f)
         ]
@@ -8767,14 +8824,15 @@ def check_unwired_modules(defects) -> None:
     }
 
     dead_links = []
+    invoker_text = {f: f.read_text("utf-8", errors="ignore") for f in invoker_files}
     for mod, script in sorted(sole_importer.items()):
         if script in _CALLER_EXEMPT:
             continue
         base = script.rsplit("/", 1)[-1]
         invoked = any(
-            base in f.read_text("utf-8", errors="ignore")
+            base in invoker_text[f]
             for f in invoker_files
-            if str(f.relative_to(ROOT)) != script
+            if f.relative_to(ROOT).as_posix() != script
         )
         if not invoked:
             dead_links.append(f"{script} (sole importer of {mod})")
