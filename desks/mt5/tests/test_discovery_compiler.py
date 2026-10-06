@@ -567,7 +567,7 @@ def test_a_defaulted_chart_survives_discovery_to_candidate_to_docket_row(ctx, mo
     child = next(c for c in children if c.get("chart") == "M15" and c.get("chart_defaulted"))
     row = dc._donation_row({**child, "family": "asia_momentum"}, parent)
 
-    produced, disposition = mcc.compile_row("discovery_compiler", row, {"XAUUSD"})
+    produced, disposition = mcc.compile_row("discovery_compiler", row, {row["symbol"]})
     assert produced, disposition
     expanded = mcc.expand_axes(produced)
     assert expanded
@@ -586,6 +586,6 @@ def test_a_defaulted_chart_survives_discovery_to_candidate_to_docket_row(ctx, mo
     h1_kids, _c, _n = dc.closure(h1_parent, ctx)
     h1_child = next(c for c in h1_kids if c.get("chart") == "H1")
     h1_row = dc._donation_row({**h1_child, "family": "asia_momentum"}, h1_parent)
-    h1_produced, _d = mcc.compile_row("discovery_compiler", h1_row, {"XAUUSD"})
+    h1_produced, _d = mcc.compile_row("discovery_compiler", h1_row, {h1_row["symbol"]})
     assert h1_produced and all(c["chart_defaulted"] is True for c in h1_produced)
     assert all("timeframe" not in c["params"] for c in h1_produced)
