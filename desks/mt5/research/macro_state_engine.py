@@ -2126,7 +2126,7 @@ def direct_latent_cells(spec: LatentSpec, series_root: Path, now: datetime,
 
 
 def regime_children(specs: list[LatentSpec], series_root: Path, state: dict[str, Any],
-                    survivors: Path = SURVIVORS, limit: int = LATENT_CHILDREN_PER_PASS,
+                    survivors: Path | None = None, limit: int = LATENT_CHILDREN_PER_PASS,
                     replay: Any = None) -> tuple[list[dict[str, Any]], int, list[dict[str, Any]],
                                                  dict[str, int]]:
     """Certified parents on each mapped instrument, traded only while a latent level is above
@@ -2140,7 +2140,7 @@ def regime_children(specs: list[LatentSpec], series_root: Path, state: dict[str,
     from libs.research.release_gain import regime_placebo
     from research import alt_proxies
     paths = alt_proxies.Paths(desk=BASE)
-    doc = _read_json(survivors)
+    doc = _read_json(survivors or SURVIVORS)
     parents: dict[str, list[dict[str, Any]]] = {}
     for name, v in sorted(((doc or {}).get("survivors") or {}).items()) \
             if isinstance(doc, dict) else []:
@@ -2216,13 +2216,14 @@ def regime_children(specs: list[LatentSpec], series_root: Path, state: dict[str,
 
 
 def _charge_null(tests_run: int, by_family: dict[str, int], now: datetime,
-                 path: Path = NULL_TRIALS) -> dict[str, Any]:
+                 path: Path | None = None) -> dict[str, Any]:
     """A pass that looked and donated nothing still spent its trials: same side ledger
     `alt_proxies` uses, read by `libs.research.experiment_ledger`."""
     row = {"at": now.isoformat(timespec="seconds"), "source": LATENT_SOURCE,
            "tests_run": int(tests_run),
            "by_family": {k: int(v) for k, v in sorted(by_family.items()) if v},
            "why": "tested latent cells charged; no discovery file carried them this pass"}
+    path = path or NULL_TRIALS
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as fh:
@@ -2332,12 +2333,14 @@ def asia_calendars() -> dict[str, Any]:
 
 
 def build_asia_events(now: datetime, axes_dir: Path, apply: bool,
-                      out_path: Path = ASIA_EVENTS, ledger_path: Path = ASIA_EVENTS_LEDGER,
+                      out_path: Path | None = None, ledger_path: Path | None = None,
                       ) -> dict[str, Any]:
     """Every rule-derived Asian release from 35 days back to 14 ahead, as lifecycle objects
     read against the hard sensors the axis door holds. Stage changes are appended to a ledger
     (history kept); the current set is the file `state_vector_build` reads."""
     from libs.regime.event_state import ASIA_EVENT_RULES, asia_event_objects, asia_schedule
+    out_path = out_path or ASIA_EVENTS
+    ledger_path = ledger_path or ASIA_EVENTS_LEDGER
     rows = asia_schedule(now.date() - timedelta(days=35), now.date() + timedelta(days=14),
                          calendars=asia_calendars())
     docs: dict[str, Any] = {}
@@ -2387,11 +2390,18 @@ def build_asia_events(now: datetime, axes_dir: Path, apply: bool,
 
 # ---------------------------------------------------------------------------- the latent pass
 def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
-                 axes_dir: Path = AXES_DIR, latent_dir: Path = LATENT_DIR,
-                 series_root: Path = LAKE_SERIES, intel_path: Path = LATENT_INTEL,
+                 axes_dir: Path | None = None, latent_dir: Path | None = None,
+                 series_root: Path | None = None, intel_path: Path | None = None,
                  specs: tuple[LatentSpec, ...] = LATENT_SPECS, cells: bool = True,
                  environ: dict[str, str] | None = None) -> dict[str, Any]:
-    """Load, nowcast new vintages, append, publish (axis door, lake, intel), then cells."""
+    """Load, nowcast new vintages, append, publish (axis door, lake, intel), then cells.
+
+    Paths default to the module's globals AT CALL TIME, so a test that redirects them redirects
+    every write this pass makes."""
+    axes_dir = axes_dir or AXES_DIR
+    latent_dir = latent_dir or LATENT_DIR
+    series_root = series_root or LAKE_SERIES
+    intel_path = intel_path or LATENT_INTEL
     deadline = time.monotonic() + max(1.0, float(budget_s))
     docs: dict[str, Any] = {}
     report: dict[str, Any] = {}

@@ -276,8 +276,9 @@ def _edge_stats(e: Any) -> dict[str, Any]:
     return {k: e.get(k) for k in ("verdict", "t", "lag", "direction", "n")}
 
 
-def remember(rows: list[dict[str, Any]], at: str, path: Path = EDGE_LEDGER) -> int:
+def remember(rows: list[dict[str, Any]], at: str, path: Path | None = None) -> int:
     """Append this pass's measurement of every chain -- failures included -- to the ledger."""
+    path = path or EDGE_LEDGER
     lines = [json.dumps({"at": at, "chain": r.get("name"), "driver": r.get("driver"),
                          "target": r.get("target"), "expected": r.get("expected"),
                          "verdict": r.get("verdict"), "why": r.get("why"),
@@ -293,9 +294,10 @@ def remember(rows: list[dict[str, Any]], at: str, path: Path = EDGE_LEDGER) -> i
     return len(lines)
 
 
-def failure_memory(path: Path = EDGE_LEDGER) -> dict[str, dict[str, Any]]:
+def failure_memory(path: Path | None = None) -> dict[str, dict[str, Any]]:
     """Per chain, its whole measured history: how often it held, how often it failed, and the
     last failure's evidence. A success never erases a failure; both are counted."""
+    path = path or EDGE_LEDGER
     out: dict[str, dict[str, Any]] = {}
     try:
         text = path.read_text("utf-8")
@@ -331,8 +333,9 @@ def failure_memory(path: Path = EDGE_LEDGER) -> dict[str, dict[str, Any]]:
     return out
 
 
-def charge_null(tests_run: int, at: str, path: Path = NULL_TRIALS) -> bool:
+def charge_null(tests_run: int, at: str, path: Path | None = None) -> bool:
     """A pass that screened cells and donated none still spent them (experiment_ledger)."""
+    path = path or NULL_TRIALS
     if tests_run <= 0:
         return False
     try:
