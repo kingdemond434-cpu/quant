@@ -909,16 +909,19 @@ def challenger(symbols: list[str] | None = None, budget_s: float = H2H_BUDGET_S,
         if d is not None and len(d) >= MIN_BARS:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
+                prog: dict[str, int] = {}
                 try:
                     row = head_to_head(d.tail(N_BARS), store=fs.FeatureStore(FEATURE_ROOT),
                                        budget_s=budget_s, seed=seed, horizon=HORIZON,
-                                       models=models, symbol=sym)
+                                       models=models, symbol=sym, progress=prog)
                     row["status"] = "RAN"
                 except Exception as exc:
+                    # A run that raised still spent evaluations: charged at the stage's cap.
                     row = {"status": "FAILED", "symbol": sym,
-                           "why": f"{type(exc).__name__}: {exc}"}
+                           "why": f"{type(exc).__name__}: {exc}",
+                           "trials": int(prog.get("spent_bound") or 0)}
     row["at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
-    if row.get("status") == "RAN":
+    if row.get("status") in ("RAN", "FAILED"):
         try:
             H2H.parent.mkdir(parents=True, exist_ok=True)
             with H2H.open("a", encoding="utf-8") as fh:
@@ -934,7 +937,9 @@ def challenger(symbols: list[str] | None = None, budget_s: float = H2H_BUDGET_S,
                 continue
     except OSError:
         pass
-    decided = [h for h in history if h.get("winner") in ("joint", "sequential", "tie")]
+    # Only runs matched on compute are judged; an unmatched or failed run is charged, not scored.
+    decided = [h for h in history if h.get("winner") in ("joint", "sequential", "tie")
+               and h.get("matched_compute", True) is not False]
     wins = {k: sum(1 for h in decided if h["winner"] == k) for k in ("joint", "sequential")}
     arms = {k: {"born": len(decided), "certified": wins[k], "alpha": 1.0 + wins[k],
                 "beta": 1.0 + len(decided) - wins[k], "group": "feature_model_method",
@@ -946,6 +951,8 @@ def challenger(symbols: list[str] | None = None, budget_s: float = H2H_BUDGET_S,
     mean_gap = float(np.mean(gaps)) if gaps else None
     se_gap = float(np.std(gaps, ddof=1) / np.sqrt(len(gaps))) if len(gaps) > 1 else None
     return {"this_pass": row, "runs": len(history), "decided": len(decided), "wins": wins,
+            "unmatched_runs": sum(1 for h in history if h.get("matched_compute") is False),
+            "failed_runs": sum(1 for h in history if h.get("status") == "FAILED"),
             "oos_net_gain_gap_joint_minus_sequential": {
                 "mean": None if mean_gap is None else round(mean_gap, 6),
                 "se": None if se_gap is None else round(se_gap, 6), "n": len(gaps)},

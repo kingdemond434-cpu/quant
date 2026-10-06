@@ -28,8 +28,8 @@ def test_the_sequential_baseline_spends_no_more_than_the_joint_search(tmp_path):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         s = C.sequential(d, store=FeatureStore(tmp_path / "fs"), n_evals=9,
-                         models=("logistic", "hist_gb"))
-    assert 0 < s["pairings_evaluated"] <= 9
+                         models=("logistic", "ridge_sign"))
+    assert s["pairings_evaluated"] == 9                  # equal, not at most
     assert s["reference_model"] == "logistic" and s["best"] is not None
 
 
@@ -38,12 +38,14 @@ def test_head_to_head_selects_on_the_dev_bars_and_scores_once_on_the_untouched_t
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         r = C.head_to_head(d, store=FeatureStore(tmp_path / "fs"), budget_s=30,
-                           models=("logistic", "hist_gb"))
+                           models=("logistic", "ridge_sign"))
     assert r["bars_dev"] + r["bars_test"] == len(d)
-    assert r["evals"]["sequential"] <= r["evals"]["joint"]          # matched compute
+    assert r["matched_compute"] is (r["evals"]["sequential"] == r["evals"]["joint"])
+    assert r["evals"]["sequential"] <= r["evals"]["joint"]
     assert r["joint"]["net_gain"] is not None and r["sequential"]["net_gain"] is not None
     assert r["winner"] in ("joint", "sequential", "tie")
-    assert r["trials"] == r["evals"]["joint"] + r["evals"]["sequential"]
+    assert r["evals"]["tail_scorings"] == 2                     # both tail scorings are trials
+    assert r["trials"] == r["evals"]["joint"] + r["evals"]["sequential"] + 2
 
 
 def test_evaluate_from_row_scores_only_the_tail():
@@ -74,24 +76,37 @@ def test_the_method_challenger_records_every_run_and_lets_the_arena_judge(tmp_pa
     monkeypatch.setattr(fmc, "_symbols", lambda s: (["SYNA"], {}))
     monkeypatch.setattr(fmc, "healthy_zoo_models", lambda m: (("logistic",), {}))
     monkeypatch.setattr(fmc.pc, "bars", lambda s: _bars(days=200, seed=1))
-    outcomes = iter(["sequential"] * 6 + ["joint"])
+    outcomes = iter(["sequential"] * 6 + ["joint", "unmatched", "boom"])
 
-    def fake_h2h(df, **kw):
+    def fake_h2h(df, progress=None, **kw):
         w = next(outcomes)
-        return {"winner": w, "trials": 10,
-                "joint": {"net_gain": 0.001 if w == "joint" else -0.002},
-                "sequential": {"net_gain": -0.001 if w == "joint" else 0.0}}
+        if w == "boom":
+            progress["spent_bound"] = 17
+            raise RuntimeError("store unreadable")
+        return {"winner": "joint" if w == "unmatched" else w, "trials": 10,
+                "matched_compute": w != "unmatched",
+                "joint": {"net_gain": 0.001 if w != "sequential" else -0.002},
+                "sequential": {"net_gain": -0.001 if w != "sequential" else 0.0}}
     monkeypatch.setattr(C, "head_to_head", fake_h2h)
-    for _ in range(7):
+    for _ in range(9):
         ch = fmc.challenger()
-    assert ch["runs"] == 7 and ch["wins"] == {"joint": 1, "sequential": 6}
-    assert ch["trials"] == 10 and ch["applied"] is False
+    assert ch["runs"] == 9 and ch["wins"] == {"joint": 1, "sequential": 6}   # matched only
+    assert ch["unmatched_runs"] == 1 and ch["failed_runs"] == 1
+    assert ch["trials"] == 17 and ch["applied"] is False      # a failed run is still charged
     assert ch["oos_net_gain_gap_joint_minus_sequential"]["n"] == 7
     assert set(ch["verdict"]["arms"]) == {"joint", "sequential"}
+    rows = [json.loads(x) for x in fmc.H2H.read_text().splitlines()]
+    assert sum(int(r.get("trials") or 0) for r in rows) == 8 * 10 + 17
+
+
+def _state(tmp_path):
+    p = tmp_path / "rh.json"
+    rh.init_state(p)
+    return p
 
 
 def test_thresholdout_answers_from_train_until_the_holdout_disagrees(tmp_path):
-    state = tmp_path / "rh.json"
+    state = _state(tmp_path)
     agree = rh.thresholdout("s", {"a": (1.0, 1.0)}, scale=1.0, seed=1, state_path=state)
     assert agree["answers"]["a"] == 1.0 and agree["overfit"] == []
     off = rh.thresholdout("s", {"b": (1.0, 3.0)}, scale=1.0, seed=2, state_path=state)
@@ -100,12 +115,59 @@ def test_thresholdout_answers_from_train_until_the_holdout_disagrees(tmp_path):
 
 
 def test_the_holdout_budget_is_charged_across_passes_and_exhausts(tmp_path):
-    state = tmp_path / "rh.json"
+    state = _state(tmp_path)
     for i in range(3):
         out = rh.thresholdout("s", {"x": (0.0, 10.0)}, scale=1.0, budget=2, seed=i,
                               state_path=state)
     assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None
     assert json.loads(state.read_text())["s"]["questions"] == 3
+
+
+@pytest.mark.parametrize("damage", ["delete", "garbage", "non_int", "not_a_dict"])
+def test_a_damaged_budget_file_reads_exhausted_and_never_refills(tmp_path, damage):
+    state = _state(tmp_path)
+    rh.thresholdout("s", {"x": (0.0, 10.0)}, scale=1.0, budget=1, seed=0, state_path=state)
+    if damage == "delete":
+        state.unlink()
+    elif damage == "garbage":
+        state.write_text("{not json")
+    elif damage == "non_int":
+        state.write_text(json.dumps({"s": {"budget_left": "64", "questions": 1}}))
+    else:
+        state.write_text(json.dumps(["s"]))
+    out = rh.thresholdout("s", {"x": (0.0, 0.0)}, scale=1.0, seed=1, state_path=state)
+    assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None and out["state_error"]
+
+
+def test_an_unsaveable_charge_answers_nothing(tmp_path, monkeypatch):
+    state = _state(tmp_path)
+
+    def refuse(path, doc):
+        raise OSError("read-only")
+    monkeypatch.setattr(rh, "_save", refuse)
+    out = rh.thresholdout("s", {"x": (1.0, 1.0)}, scale=1.0, seed=0, state_path=state)
+    assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None
+
+
+def test_unseeded_noise_differs_between_identical_questions(tmp_path):
+    state = _state(tmp_path)
+    got = {rh.thresholdout("s", {"x": (1.0, 3.0)}, scale=1.0, budget=50,
+                           state_path=state)["answers"]["x"] for _ in range(5)}
+    assert len(got) > 1
+
+
+def test_an_exhausted_study_rotates_to_rows_it_never_saw(tmp_path):
+    state = tmp_path / "rh.json"
+    state.write_text(json.dumps({"meta_rnd.test_ordering@0": {"budget_left": 0,
+                                                              "questions": 64}}))
+    g = meta_rnd.guarded_winner(_rows(60), {}, state_path=state)
+    assert g["status"] == "EXHAUSTED" and g["frozen"]
+    assert g["rotated_to"] == "meta_rnd.test_ordering@1"
+    stale = meta_rnd.guarded_winner(_rows(60), {}, state_path=state)
+    assert stale["status"] == "UNMEASURED" and stale["rows_retired"] == 60
+    fresh = [r | {"cert_id": "n" + r["cert_id"]} for r in _rows(60)]
+    again = meta_rnd.guarded_winner(fresh, {}, state_path=state)
+    assert again["study"] == "meta_rnd.test_ordering@1" and again["status"] == "VALID"
 
 
 def test_a_row_never_changes_sides():
@@ -121,10 +183,12 @@ def _rows(n):
 
 
 def test_meta_rnds_pick_goes_through_the_reusable_holdout(tmp_path):
-    g = meta_rnd.guarded_winner(_rows(60), {}, state_path=tmp_path / "rh.json")
+    g = meta_rnd.guarded_winner(_rows(60), {}, state_path=_state(tmp_path))
     assert g["status"] in ("VALID", "EXHAUSTED") and g["winner"] in meta_rnd.POLICIES
     assert g["n_train"] + g["n_holdout"] == 60
     small = meta_rnd.guarded_winner(_rows(4), {}, state_path=tmp_path / "rh.json")
+    assert meta_rnd.guarded_winner(_rows(60), {}, state_path=tmp_path / "gone.json")[
+        "status"] == "EXHAUSTED"                                  # no state file: closed
     assert small["status"] == "UNMEASURED" and small["winner"] is None
 
 
@@ -187,7 +251,15 @@ def test_cadence_and_bound_publishes_intervals_turnover_and_a_nonnegative_gap():
         lo, hi = row["ci90"]
         assert lo <= hi
     assert all(0.0 <= p <= 1.0 for p in out["p_faster_beats_slower"].values())
-    assert out["bound"]["gap"] >= -1e-9                       # the bound bounds the proxy
+    # The bound is the optimum over constant fractions: no constant book in the box beats it,
+    # whatever the proxy (which re-weights) did -- its gap is signed.
+    import numpy as np
+    _s, _d, m = meta_rnd._matrix(_daily(150, seed=3))
+    ret = m * meta_rnd.RISK_PER_R
+    top = out["bound"]["hindsight_constant_fraction_log_growth"]
+    rng = np.random.default_rng(0)
+    for f in rng.uniform(0, meta_rnd.F_MAX, size=(200, ret.shape[1])):
+        assert float(np.log1p(ret @ f).mean()) <= top + 1e-7
     assert "PROXY" in out["subject"]
 
 
@@ -198,7 +270,7 @@ def test_the_frontier_reports_the_cadence_and_bound_rows_when_measured(tmp_path,
     rows = {r["id"]: r for r in fr["limitations"]}
     assert rows["allocator_speed_vs_turnover"]["status"] == "MEASURED"
     assert rows["optimality_gap"]["status"] == "MEASURED"
-    assert rows["optimality_gap"]["result"]["gap"] >= -1e-9
+    assert isinstance(rows["optimality_gap"]["result"]["gap"], float)
 
 
 def test_representation_methods_compete_on_what_their_candidates_survived(tmp_path,

@@ -236,8 +236,19 @@ def sequential(df: pd.DataFrame, *, store: FeatureStore | None = None, n_evals: 
             break
         chosen = sorted([*chosen, step])
     for m in models:
-        if chosen and time.monotonic() - started < budget_s:
+        if chosen and len(seen) < n_evals and time.monotonic() - started < budget_s:
             _eval(chosen, m)
+    # MATCHED COMPUTE MEANS EQUAL, NOT AT MOST (audit, 2026-10-06). A greedy pass that stops early
+    # spends what is left the way the same researcher would next: every model on the runner-up
+    # feature sets, best first, until the joint arm's count is reached or nothing is left to try.
+    while len(seen) < n_evals and time.monotonic() - started < budget_s:
+        sets = sorted((v for v in list(seen.values()) if v.get("net_gain") is not None),
+                      key=lambda v: -float(v["net_gain"]))
+        todo = [(list(v["fset"]), m) for v in sets for m in models
+                if _key(list(v["fset"]), m) not in seen]
+        if not todo:
+            break
+        _eval(*todo[0])
     ranked = sorted((v for v in seen.values() if v.get("net_gain") is not None),
                     key=lambda v: -float(v["net_gain"]))
     return {"pairings_evaluated": len(seen), "best": ranked[0] if ranked else None,
@@ -248,12 +259,18 @@ def sequential(df: pd.DataFrame, *, store: FeatureStore | None = None, n_evals: 
 def head_to_head(df: pd.DataFrame, *, store: FeatureStore | None = None, pop: int = 8,
                  gens: int = 2, budget_s: float = 90.0, seed: int = 0, horizon: int = 6,
                  models: tuple[str, ...] = tuple(TAX), symbol: str | None = None,
-                 dev_frac: float = 0.6) -> dict[str, Any]:
+                 dev_frac: float = 0.6, progress: dict[str, int] | None = None
+                 ) -> dict[str, Any]:
     """RESEARCH THE RESEARCHER: joint (F, M) search against features-then-model, on the SAME
     bars, the SAME target and the SAME number of evaluations. Both arms select on the first
     `dev_frac` of the bars only; each arm's single winner is then scored ONCE on the untouched
     tail, which neither arm saw while choosing. One run is one paired trial; the verdict across
-    runs is the arena's (`libs/research/arena.judge`), never this function's."""
+    runs is the arena's (`libs/research/arena.judge`), never this function's.
+
+    `progress`, when given, holds an upper bound on the evaluations spent so far at every point,
+    so a run that raises is still charged (`spent_bound`): the stage in flight at its cap."""
+    prog = progress if progress is not None else {}
+    prog["spent_bound"] = pop * gens                    # the joint stage's most, before it runs
     store = store or FeatureStore()
     cut = int(len(df) * dev_frac)
     dev, test = df.iloc[:cut], df.iloc[cut:]           # test: scored once, never selected on
@@ -263,6 +280,7 @@ def head_to_head(df: pd.DataFrame, *, store: FeatureStore | None = None, pop: in
                    horizon=horizon, models=models, symbol=symbol)
     t_joint = time.monotonic() - t0
     n = int(joint.get("pairings_evaluated") or 0)
+    prog["spent_bound"] = n + max(n, 1)                 # the sequential stage at its cap
     t1 = time.monotonic()
     seq = sequential(dev, store=store, n_evals=max(n, 1), budget_s=budget_s / 2,
                      horizon=horizon, models=models, symbol=symbol)
@@ -280,14 +298,26 @@ def head_to_head(df: pd.DataFrame, *, store: FeatureStore | None = None, pop: in
                 "features": best.get("features"), "dev_net_gain": best.get("net_gain")}
 
     jb = (joint.get("best") or [None])[0]
-    a, b = _oos(jb), _oos(seq.get("best"))
+    tail = [0]
+
+    n_seq0 = int(seq.get("pairings_evaluated") or 0)
+    prog["spent_bound"] = n + n_seq0 + 2                # both tail scorings at their cap
+
+    def _scored(best: dict[str, Any] | None) -> dict[str, Any]:
+        if best and best.get("fset") is not None:
+            tail[0] += 1                    # each tail scoring is an evaluation: charged
+        return _oos(best)
+    a, b = _scored(jb), _scored(seq.get("best"))
     ga, gb = a.get("net_gain"), b.get("net_gain")
     winner = None
     if ga is not None and gb is not None:
         winner = "joint" if float(ga) > float(gb) else "sequential" if float(gb) > float(ga) \
             else "tie"
+    n_seq = n_seq0
+    prog["spent_bound"] = n + n_seq + tail[0]
     return {"symbol": symbol, "bars_dev": len(dev), "bars_test": len(test),
-            "evals": {"joint": n, "sequential": int(seq.get("pairings_evaluated") or 0)},
+            "evals": {"joint": n, "sequential": n_seq, "tail_scorings": tail[0]},
+            "matched_compute": n_seq == n,
             "seconds": {"joint": round(t_joint, 3), "sequential": round(t_seq, 3)},
             "joint": a, "sequential": b, "winner": winner,
-            "trials": n + int(seq.get("pairings_evaluated") or 0)}
+            "trials": n + n_seq + tail[0]}

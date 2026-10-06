@@ -16,6 +16,15 @@ must stop selecting on these rows (rotate in fresh ones), never quietly keep goi
 
 STATE IS PER STUDY and persistent, so the budget is charged across passes, not per pass: a study
 that reset its budget every hour would be a lockbox with the lock removed.
+
+IT FAILS CLOSED (audit, 2026-10-06). A missing, unreadable or malformed state file reads as
+EXHAUSTED -- deleting the file must never refill the budget -- and a pass whose charge cannot be
+saved answers nothing. The file is created once, explicitly (`init_state`), and is tracked. The
+noise is drawn from OS entropy: seeding it from the committed state made a repeated question
+get an identical answer, which is exactly the leak the noise is there to close.
+
+ROTATION, NOT A PERMANENT FREEZE. `rotate` retires the row keys an exhausted study was asked
+about and opens the next epoch of the same study on rows it has never seen, with a fresh budget.
 """
 from __future__ import annotations
 
@@ -42,12 +51,32 @@ def split(key: str) -> str:
     return "holdout" if int(hashlib.sha1(key.encode()).hexdigest(), 16) % 2 else "train"
 
 
-def _load(path: Path) -> dict[str, Any]:
+def _load(path: Path) -> dict[str, Any] | None:
+    """The state, or None when it is missing, unreadable or malformed (callers fail closed)."""
     try:
         doc = json.loads(path.read_text(encoding="utf-8"))
-        return doc if isinstance(doc, dict) else {}
     except (OSError, ValueError):
-        return {}
+        return None
+    if not isinstance(doc, dict):
+        return None
+    for k, st in doc.items():
+        if k.startswith("_"):
+            continue
+        if not isinstance(st, dict):
+            return None
+        for f in ("budget_left", "questions"):
+            if f in st and (isinstance(st[f], bool) or not isinstance(st[f], int)):
+                return None
+    return doc
+
+
+def init_state(path: Path | None = None) -> bool:
+    """Create the state file once. Never overwrites: an existing file, valid or not, stays."""
+    p = path or STATE
+    if p.exists():
+        return False
+    _save(p, {"_created": datetime.now(tz=UTC).isoformat(timespec="seconds")})
+    return True
 
 
 def _save(path: Path, doc: Mapping[str, Any]) -> None:
@@ -65,11 +94,17 @@ def thresholdout(study: str, queries: Mapping[str, tuple[float, float]], *, scal
     `scale` puts the threshold and noise in the quantity's own units (e.g. the mean of the train
     values). Returns {answers, overfit, budget_left, status} and charges the persistent budget."""
     path = state_path or STATE
-    doc = _load(path)
+    loaded = _load(path)
+    if loaded is None:
+        return {"study": study, "answers": {k: None for k in queries}, "overfit": [],
+                "budget_left": 0, "budget": budget, "questions_total": None,
+                "status": "EXHAUSTED", "state_error": f"{path.name} missing or malformed: "
+                "the budget fails closed (a deleted file never refills it)"}
+    doc = loaded
     st = dict(doc.get(study) or {})
     left = int(st.get("budget_left", budget))
     asked = int(st.get("questions", 0))
-    rng = np.random.default_rng(seed if seed is not None else asked + 7919 * left)
+    rng = np.random.default_rng(seed)               # None -> OS entropy
     s = abs(float(scale)) or 1.0
     t_hat = threshold * s + rng.laplace(0.0, 2 * sigma * s)
     answers: dict[str, float | None] = {}
@@ -92,9 +127,41 @@ def thresholdout(study: str, queries: Mapping[str, tuple[float, float]], *, scal
     doc[study] = st
     try:
         _save(path, doc)
-        err = None
     except OSError as exc:
-        err = f"{type(exc).__name__}: {exc}"
+        # An uncharged answer is a free look at the holdout: the pass answers nothing.
+        return {"study": study, "answers": {k: None for k in queries}, "overfit": [],
+                "budget_left": 0, "budget": budget, "questions_total": asked,
+                "status": "EXHAUSTED", "state_error": f"{type(exc).__name__}: {exc}"}
     return {"study": study, "answers": answers, "overfit": overfit, "budget_left": left,
             "budget": budget, "questions_total": asked,
-            "status": "EXHAUSTED" if left <= 0 else "VALID", "state_error": err}
+            "status": "EXHAUSTED" if left <= 0 else "VALID", "state_error": None}
+
+
+def epoch(base: str, state_path: Path | None = None) -> tuple[str, set[str]]:
+    """(the current study name for `base`, the row keys earlier epochs retired)."""
+    doc = _load(state_path or STATE) or {}
+    ep = (doc.get("_epochs") or {}).get(base) or {}
+    n = int(ep.get("epoch", 0)) if isinstance(ep.get("epoch", 0), int) else 0
+    return f"{base}@{n}", {str(k) for k in ep.get("retired_keys") or []}
+
+
+def rotate(base: str, used_keys: set[str], state_path: Path | None = None) -> str | None:
+    """Retire `used_keys` and open the next epoch. Returns the new study name, or None when the
+    state cannot be read or saved (the study then stays exhausted -- closed, not reopened)."""
+    path = state_path or STATE
+    doc = _load(path)
+    if doc is None:
+        return None
+    eps = dict(doc.get("_epochs") or {})
+    ep = dict(eps.get(base) or {})
+    n = int(ep.get("epoch", 0)) + 1
+    ep.update(epoch=n, retired_keys=sorted({str(k) for k in ep.get("retired_keys") or []}
+                                           | {str(k) for k in used_keys}),
+              rotated_at=datetime.now(tz=UTC).isoformat(timespec="seconds"))
+    eps[base] = ep
+    doc["_epochs"] = eps
+    try:
+        _save(path, doc)
+    except OSError:
+        return None
+    return f"{base}@{n}"

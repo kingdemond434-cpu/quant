@@ -238,17 +238,25 @@ def guarded_winner(rows: list[dict[str, Any]], measured: dict[str, float],
                    state_path: Path | None = None) -> dict[str, Any]:
     """The ordering winner chosen through `libs.research.reusable_holdout`. Rows split by their
     certificate id (a row never changes side); each policy's mean seconds on the training half
-    is answered through Thresholdout against the holdout half. When the study's budget is gone
-    the pick FREEZES at the last guarded winner until fresh rows arrive -- it never silently
-    reverts to selecting on the exhausted rows."""
+    is answered through Thresholdout against the holdout half.
+
+    When the study's budget is gone the pick FREEZES at the last guarded winner and the study
+    ROTATES: the certificates it was asked about are retired and the next epoch opens, with a
+    fresh budget, on certificates no earlier epoch saw -- so the freeze lasts only until enough
+    fresh rows arrive, and never reverts to selecting on the exhausted rows."""
     from libs.research import reusable_holdout as rh
+    base = "meta_rnd.test_ordering"
+    study, retired = rh.epoch(base, state_path)
+    fresh = [r for r in rows if str(r.get("cert_id") or "") not in retired]
+    last = str(_read(OUT).get("ordering", {}).get("winner") or "") or None
     halves: dict[str, list[dict[str, Any]]] = {"train": [], "holdout": []}
-    for r in rows:
+    for r in fresh:
         halves[rh.split(str(r.get("cert_id") or ""))].append(r)
     if min(len(halves["train"]), len(halves["holdout"])) < MIN_ROWS:
-        return {"status": "UNMEASURED", "winner": None,
-                "why": f"each half needs {MIN_ROWS} rows (train={len(halves['train'])}, "
-                       f"holdout={len(halves['holdout'])})"}
+        return {"status": "UNMEASURED", "winner": last if retired else None, "study": study,
+                "frozen": bool(retired), "rows_retired": len(retired),
+                "why": f"each half needs {MIN_ROWS} rows no earlier epoch saw "
+                       f"(train={len(halves['train'])}, holdout={len(halves['holdout'])})"}
     tr = replay_orderings(halves["train"], measured)
     ho = replay_orderings(halves["holdout"], measured)
     q = {k: (float(tr[k]["mean_seconds_to_verdict"]), float(ho[k]["mean_seconds_to_verdict"]))
@@ -257,17 +265,17 @@ def guarded_winner(rows: list[dict[str, Any]], measured: dict[str, float],
     if not q:
         return {"status": "UNMEASURED", "winner": None, "why": "no policy measured on both halves"}
     scale = sum(v[0] for v in q.values()) / len(q)
-    out = rh.thresholdout("meta_rnd.test_ordering", q, scale=scale, state_path=state_path)
+    out = rh.thresholdout(study, q, scale=scale, state_path=state_path)
     answered = {k: v for k, v in out["answers"].items() if v is not None}
-    if answered:
-        winner = min(answered, key=lambda k: float(answered[k]))
-    else:
-        winner = str(_read(OUT).get("ordering", {}).get("winner") or "") or None
+    winner = min(answered, key=lambda k: float(answered[k])) if answered else last
+    rotated = None
+    if out["status"] == "EXHAUSTED" and out.get("state_error") is None:
+        rotated = rh.rotate(base, {str(r.get("cert_id") or "") for r in fresh}, state_path)
     return {**out, "winner": winner, "n_train": len(halves["train"]),
-            "n_holdout": len(halves["holdout"]),
-            "frozen": not answered,
+            "n_holdout": len(halves["holdout"]), "rows_retired": len(retired),
+            "frozen": not answered, "rotated_to": rotated,
             "why": (None if answered else "holdout budget exhausted: the pick is frozen at the "
-                    "last guarded winner until fresh certificate rows rotate in")}
+                    "last guarded winner and the study rotated to certificates it never saw")}
 
 
 def ordering_kill_rates() -> dict[str, float]:
@@ -378,8 +386,13 @@ def build(budget_s: float = 180.0) -> dict[str, Any]:
                 and v["mean_seconds_to_verdict"] is not None}
     raw_winner = min(eligible, key=lambda k: float(eligible[k]["mean_seconds_to_verdict"])) \
         if eligible else None
-    guard = guarded_winner(rows, measured)
-    winner = guard["winner"] if guard.get("winner") else raw_winner
+    try:
+        guard = guarded_winner(rows, measured)
+    except (OSError, ValueError, TypeError) as exc:
+        guard = {"status": "UNMEASURED", "winner": None, "why": f"{type(exc).__name__}: {exc}"}
+    # The raw winner is reported, never applied: it was selected on rows the holdout no longer
+    # protects. No guarded winner leaves the catalogue's declared prior in place.
+    winner = guard.get("winner")
     # The arena's own judge, in its own vocabulary: an arm is "born" per replayed certificate and
     # "certified" when its order reached a kill, so a faster policy that finds nothing does not
     # win by being fast at nothing.
@@ -458,17 +471,80 @@ def _proxy_weights(m: Any, t: int, lookback: int = 20) -> Any:
     return on / on.sum() if on.any() else np.zeros(m.shape[1])
 
 
+#: Mean block length of the stationary bootstrap, in days.
+BLOCK_MEAN = 10
+#: The constant-fraction bound's box per sleeve (the old grid's range).
+F_MAX = 2.0
+
+
+def _stationary_index(rng: Any, n: int, mean_block: int) -> Any:
+    """Politis-Romano stationary bootstrap: blocks start uniformly, lengths are geometric with
+    mean `mean_block`, indices wrap circularly. Returns n day indices."""
+    import numpy as np
+    out: list[int] = []
+    while len(out) < n:
+        start = int(rng.integers(0, n))
+        length = int(rng.geometric(1.0 / mean_block))
+        out.extend(((start + np.arange(length)) % n).tolist())
+    return np.array(out[:n])
+
+
+def _best_constant_fraction(ret: Any) -> tuple[Any, float, str]:
+    """argmax over f in [0, F_MAX]^k of mean log(1 + ret @ f): concave, so a local optimum from a
+    feasible start is global. Starts from the best point of a coarse grid; the solver's answer is
+    kept only if it is feasible and no worse than that start."""
+    import numpy as np
+    k = ret.shape[1]
+
+    def growth(f: Any) -> float:
+        port = ret @ f
+        return float(np.log1p(port).mean()) if np.all(port > -1.0) else -np.inf
+    start = np.zeros(k)
+    for _ in range(2):
+        for j in range(k):
+            trial = start.copy()
+            vals = []
+            for g in np.linspace(0.0, F_MAX, 11):
+                trial[j] = g
+                vals.append(growth(trial))
+            start[j] = np.linspace(0.0, F_MAX, 11)[int(np.argmax(vals))]
+    best, val, solver = start, growth(start), "grid"
+    try:
+        from scipy.optimize import minimize
+
+        def neg(f: Any) -> float:
+            port = ret @ f
+            if np.any(port <= -1.0):
+                return 1e6
+            return -float(np.log1p(port).mean())
+
+        def grad(f: Any) -> Any:
+            port = np.maximum(ret @ f, -1.0 + 1e-12)
+            return -(ret / (1.0 + port)[:, None]).mean(axis=0)
+        res = minimize(neg, start, jac=grad, method="L-BFGS-B", bounds=[(0.0, F_MAX)] * k)
+        cand = np.clip(res.x, 0.0, F_MAX)
+        if growth(cand) >= val:
+            best, val, solver = cand, growth(cand), "L-BFGS-B (concave, global)"
+    except Exception:
+        pass
+    return best, float(val), solver
+
+
 def cadence_and_bound(daily: dict[str, dict[str, float]], seed: int = 0,
                       boots: int = 300) -> dict[str, Any]:
     """TWO RESEARCH-PROCESS QUESTIONS ON THE RECORDED BOOK.
 
     CADENCE: does re-weighting faster raise net log growth, or only turnover? The proxy is
     re-weighted every 1, 5 and 20 days on the same days, net of a turnover charge; a stationary
-    block bootstrap over days gives each cadence's interval and P(faster beats slower).
+    bootstrap over days (Politis-Romano: geometric block lengths, mean BLOCK_MEAN days, circular)
+    gives each cadence's interval and P(faster beats slower).
 
-    BOUND: the hindsight-optimal FIXED fraction per sleeve (long-only, grid-searched on the whole
-    window) is an upper bound no causal fixed-weight rule can beat on that window. The gap from
-    the proxy's realised growth to it is the optimality gap -- a bound, not a target."""
+    BOUND: the hindsight-optimal CONSTANT fraction per sleeve, long-only in [0, F_MAX], solved to
+    optimality (the mean log growth is concave in the fractions; L-BFGS-B from the best grid
+    point) on the whole window. It is an upper bound for every constant-fraction book on that
+    window -- not for the proxy, which re-weights through time and may beat it, so the gap is
+    signed: positive is growth a constant book left on the table, negative is what the proxy's
+    timing earned over the best constant book. A bound, never a target."""
     import numpy as np
     sleeves, days, m = _matrix(daily)
     if len(days) < MIN_DAYS or not sleeves:
@@ -498,13 +574,12 @@ def cadence_and_bound(daily: dict[str, dict[str, float]], seed: int = 0,
         out[str(c)] = {"mean_log_growth": round(float(g.mean()), 7),
                        "turnover": round(turn, 3)}
     rng = np.random.default_rng(seed)
-    block = 10
+    block = BLOCK_MEAN
     wins = {f"{a}_vs_{b}": 0 for a, b in pairwise(CADENCES)}
     draws: dict[str, list[float]] = {str(c): [] for c in CADENCES}
     n = len(days)
     for _ in range(boots):
-        starts = rng.integers(0, n, size=n // block + 1)
-        idx = np.concatenate([(s + np.arange(block)) % n for s in starts])[:n]
+        idx = _stationary_index(rng, n, block)
         means = {c: float(run(c, idx)[0].mean()) for c in CADENCES}
         for c in CADENCES:
             draws[str(c)].append(means[c])
@@ -513,33 +588,23 @@ def cadence_and_bound(daily: dict[str, dict[str, float]], seed: int = 0,
     for c in CADENCES:
         lo, hi = np.quantile(draws[str(c)], [0.05, 0.95])
         out[str(c)]["ci90"] = [round(float(lo), 7), round(float(hi), 7)]
-    grid = np.linspace(0.0, 2.0, 21)
-    best_f = np.zeros(m.shape[1])
-
-    def growth(f: Any) -> float:
-        port = ret @ f
-        return float(np.log1p(port).mean()) if np.all(port > -1.0) else -np.inf
-    for _ in range(3):                              # coordinate ascent on the fixed fractions
-        for j in range(m.shape[1]):
-            trial = best_f.copy()
-            scores = []
-            for f in grid:
-                trial[j] = f
-                scores.append(growth(trial))
-            best_f[j] = grid[int(np.argmax(scores))]
-    bound = float(np.log1p(ret @ best_f).mean())
+    best_f, bound, solver = _best_constant_fraction(ret)
     realised = out[str(CADENCES[0])]["mean_log_growth"]
     return {"status": "MEASURED", "days": n, "sleeves": len(sleeves),
             "subject": "equal weight over trailing-positive sleeves (a PROXY, not pf_allocator)",
             "assumptions": {"risk_per_r": RISK_PER_R, "turnover_cost_r": TURNOVER_COST_R,
-                            "bootstrap": f"stationary blocks of {block} days x {boots}"},
+                            "bootstrap": f"stationary (geometric blocks, mean {block} days, "
+                                         f"circular) x {boots}"},
             "cadence": out,
             "p_faster_beats_slower": {k: round(v / boots, 3) for k, v in wins.items()},
-            "bound": {"hindsight_fixed_fraction_log_growth": round(bound, 7),
+            "bound": {"hindsight_constant_fraction_log_growth": round(bound, 7),
+                      "fractions": [round(float(x), 4) for x in best_f],
+                      "box": [0.0, F_MAX], "solver": solver,
                       "proxy_daily_log_growth": realised,
                       "gap": round(bound - float(realised), 7),
-                      "why": "in-sample hindsight optimum over fixed fractions: an upper bound "
-                             "for any causal fixed-weight rule on this window, never a target"}}
+                      "why": "in-sample optimum over constant fractions in the box: an upper "
+                             "bound for every constant-fraction book on this window, never a "
+                             "target; the gap is signed because the proxy re-weights"}}
 
 
 # ===================================================================== THE FRONTIER REPORT

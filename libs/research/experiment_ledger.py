@@ -18,6 +18,7 @@ deflate more, never less.
 from __future__ import annotations
 
 import glob
+import hashlib
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -91,7 +92,7 @@ def judged_screened_overlap(screened: dict[str, Any], mass_fam: dict[str, int],
 
 def _note_screened(screened: dict[str, Any], doc: dict[str, Any], n: int,
                    fams: set[str]) -> None:
-    from libs.research.hypothesis_graph import node_id, spec_identity
+    from libs.research.hypothesis_graph import node_id_for_spec, spec_identity
     ids = screened.setdefault("ids", set())
     by_fam = screened.setdefault("by_family", {})
     for r in doc.get("discoveries") or []:
@@ -99,7 +100,7 @@ def _note_screened(screened: dict[str, Any], doc: dict[str, Any], n: int,
             continue
         sym, fam, params = spec_identity(r)
         if sym and fam and params:
-            ids.add(node_id(sym, fam, params))
+            ids.add(node_id_for_spec(r))
     for fam in fams or {"?"}:
         by_fam[fam] = by_fam.get(fam, 0) + n // max(1, len(fams))
 
@@ -114,8 +115,11 @@ def _proposer_counts(screened: dict[str, Any] | None = None) -> tuple[int, dict[
     llm_files: list[tuple[str, Any]] = []
     intel = DESK / "data" / "intelligence"
     # No early return when there is no intelligence dir: the side ledgers below still count.
+    # A union-charged seat's files are skipped only when its union file EXISTS: until the
+    # writer (committee_ensembles, #160) has run, the files' own tests_run is the only charge.
+    union_on = (DESK / COMMITTEE_UNION).is_file()
     for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
-        if Path(f).parent.name in UNION_CHARGED_SEATS:
+        if union_on and Path(f).parent.name in UNION_CHARGED_SEATS:
             continue                       # charged once from its own lifetime union, below
         try:
             doc = json.loads(Path(f).read_text("utf-8"))
@@ -189,8 +193,12 @@ def _proposer_counts(screened: dict[str, Any] | None = None) -> tuple[int, dict[
         for r in rows if isinstance(rows, list) else []:
             if not isinstance(r, dict):
                 continue
-            ident = seat + "|" + str(r.get("url") or r.get("id") or r.get("title")
-                                     or json.dumps(r, sort_keys=True, default=str))
+            # (url, title, body): three ideas citing one URL are three ideas (audit 2026-10-06);
+            # only the stamp fields a re-donation rewrites are left out of the body.
+            body = {k: v for k, v in r.items() if k not in _DONATION_STAMPS}
+            ident = "|".join((seat, str(r.get("url") or ""), str(r.get("title") or ""),
+                              hashlib.sha256(json.dumps(body, sort_keys=True, default=str)
+                                             .encode()).hexdigest()[:20]))
             if ident in seen:
                 continue
             seen.add(ident)
@@ -220,6 +228,9 @@ def _proposer_counts(screened: dict[str, Any] | None = None) -> tuple[int, dict[
     return total, by_fam
 
 
+#: Fields a re-donation of the same idea rewrites; left out of the idea's identity.
+_DONATION_STAMPS = frozenset({"ingested_time", "available_time", "donated_at", "at", "ts",
+                              "generated_utc", "pass_id", "run_id"})
 #: LLM seats whose donation rows are ideas, each charged once (scout_roster names the seats).
 LLM_IDEA_SEATS = frozenset({"kimi", "deepseek", "scheduled_chatgpt", "committees", "openrouter"})
 #: Seats charged from a lifetime union file instead of their discovery files' tests_run.
