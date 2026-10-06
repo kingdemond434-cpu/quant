@@ -327,7 +327,7 @@ def test_index_discovery_never_queries_a_fenced_host(
 # ------------------------------------------------------------------- 4. the hunter prompt ----
 def test_the_hunter_prompt_directs_no_fenced_mining_and_names_the_substitutes() -> None:
     text = (ROOT / "ops" / "gpt_video_hunter_prompt.txt").read_text("utf-8")
-    hunt = text.split("Hunt globally", 1)[1].split("For each, record", 1)[0]
+    hunt = text.split("Hunt globally", 1)[1].split("TERMS-FENCED, NEVER MINED", 1)[0]
     assert "Reddit" not in hunt and "StockTwits" not in hunt and ", X," not in hunt
     assert "Wikipedia pageviews" in text and "GDELT" in text and "TERMS-FENCED" in text
     assert "Reddit-maximal" not in (ROOT / "ops" / "run_cro_ai.sh").read_text("utf-8")
