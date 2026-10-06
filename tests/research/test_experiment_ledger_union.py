@@ -41,6 +41,8 @@ def test_three_ideas_citing_one_url_are_three_ideas(desk: Path) -> None:
     _donate(desk, "deepseek", "2", {"discoveries": [ideas[0] | {"ingested_time": "later"}]})
     _donate(desk, "deepseek", "3", {"discoveries": [ideas[1] | {"found_at": "later",
                                                                 "fetched_at": "x"}]})
+    _donate(desk, "deepseek", "4", {"discoveries": [ideas[2] | {"fetched_utc": "later",
+                                                                "crawled_at": "y"}]})
     assert L._proposer_counts()[0] == base + 3
 
 

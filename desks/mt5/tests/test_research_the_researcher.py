@@ -123,13 +123,11 @@ def test_the_holdout_budget_is_charged_across_passes_and_exhausts(tmp_path):
     assert json.loads(state.read_text())["s"]["questions"] == 3
 
 
-@pytest.mark.parametrize("damage", ["delete", "garbage", "non_int", "not_a_dict"])
+@pytest.mark.parametrize("damage", ["garbage", "non_int", "not_a_dict"])
 def test_a_damaged_budget_file_reads_exhausted_and_never_refills(tmp_path, damage):
     state = _state(tmp_path)
     rh.thresholdout("s", {"x": (0.0, 10.0)}, scale=1.0, budget=1, seed=0, state_path=state)
-    if damage == "delete":
-        state.unlink()
-    elif damage == "garbage":
+    if damage == "garbage":
         state.write_text("{not json")
     elif damage == "non_int":
         state.write_text(json.dumps({"s": {"budget_left": "64", "questions": 1}}))
@@ -139,19 +137,61 @@ def test_a_damaged_budget_file_reads_exhausted_and_never_refills(tmp_path, damag
     assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None and out["state_error"]
 
 
-def test_restoring_the_tracked_stub_never_refills_an_opened_study(tmp_path):
+def test_restoring_or_deleting_the_state_never_refills_an_opened_study(tmp_path):
     state = _state(tmp_path)
     stub = state.read_text()
     rh.thresholdout("s", {"x": (0.0, 10.0)}, scale=1.0, budget=1, seed=0, state_path=state)
     state.write_text(stub)                                      # `git checkout` of the stub
     out = rh.thresholdout("s", {"x": (0.0, 0.0)}, scale=1.0, seed=1, state_path=state)
-    assert out["status"] == "EXHAUSTED" and "opened before" in out["state_error"]
+    assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None   # the register spent it
     state.unlink()                                              # deleted outright: same
     assert rh.thresholdout("s", {"x": (0.0, 0.0)}, scale=1.0, seed=2,
                            state_path=state)["status"] == "EXHAUSTED"
     # A study never opened still gets its budget, on a recreated state.
     assert rh.thresholdout("t", {"x": (1.0, 1.0)}, scale=1.0, seed=3,
                            state_path=state)["status"] == "VALID"
+
+
+def test_an_older_state_snapshot_cannot_refill(tmp_path):
+    state = _state(tmp_path)
+    rh.thresholdout("s", {"a": (1.0, 1.0)}, scale=1.0, budget=2, seed=0, state_path=state)
+    snapshot = state.read_text()                                # budget_left 2 in the state
+    for i in range(2):
+        rh.thresholdout("s", {"x": (0.0, 10.0)}, scale=1.0, budget=2, seed=i + 1,
+                        state_path=state)
+    state.write_text(snapshot)
+    out = rh.thresholdout("s", {"x": (0.0, 10.0)}, scale=1.0, budget=2, seed=9,
+                          state_path=state)
+    assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None
+
+
+def test_a_register_restored_to_its_stub_cannot_refill_what_the_state_holds(tmp_path):
+    state = _state(tmp_path)
+    stub = rh.register_path(state).read_text()
+    rh.thresholdout("s", {"x": (0.0, 10.0)}, scale=1.0, budget=1, seed=0, state_path=state)
+    rh.register_path(state).write_text(stub)
+    out = rh.thresholdout("s", {"x": (0.0, 0.0)}, scale=1.0, budget=1, seed=1, state_path=state)
+    assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None
+
+
+def test_a_missing_register_answers_nothing(tmp_path):
+    state = _state(tmp_path)
+    rh.register_path(state).unlink()
+    out = rh.thresholdout("s", {"x": (1.0, 1.0)}, scale=1.0, seed=0, state_path=state)
+    assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None
+    assert "missing or unreadable" in out["state_error"]
+    assert rh.rotate("s", {"k"}, state) is None
+
+
+def test_an_unwritable_register_answers_nothing(tmp_path, monkeypatch):
+    state = _state(tmp_path)
+    rh.thresholdout("s", {"a": (1.0, 1.0)}, scale=1.0, seed=0, state_path=state)
+
+    def refuse(path, row):
+        raise OSError("read-only")
+    monkeypatch.setattr(rh, "_append", refuse)
+    out = rh.thresholdout("s", {"x": (1.0, 1.0)}, scale=1.0, seed=1, state_path=state)
+    assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None
 
 
 def test_epochs_survive_a_restored_state_file(tmp_path):
@@ -183,6 +223,7 @@ def test_an_exhausted_study_rotates_to_rows_it_never_saw(tmp_path):
     state = tmp_path / "rh.json"
     state.write_text(json.dumps({"meta_rnd.test_ordering@0": {"budget_left": 0,
                                                               "questions": 64}}))
+    rh.init_state(state)                                         # register stub, state kept
     g = meta_rnd.guarded_winner(_rows(60), {}, state_path=state)
     assert g["status"] == "EXHAUSTED" and g["frozen"]
     assert g["rotated_to"] == "meta_rnd.test_ordering@1"
@@ -211,9 +252,14 @@ def test_meta_rnds_pick_goes_through_the_reusable_holdout(tmp_path):
     assert g["n_train"] + g["n_holdout"] == 60
     small = meta_rnd.guarded_winner(_rows(4), {}, state_path=tmp_path / "rh.json")
     gone = tmp_path / "gone.json"                                # a state file lost after the
-    rh.register_path(gone).write_text(json.dumps(                # study opened: closed
-        {"study": "meta_rnd.test_ordering@0"}) + "\n")
-    assert meta_rnd.guarded_winner(_rows(60), {}, state_path=gone)["status"] == "EXHAUSTED"
+    rh.register_path(gone).write_text("\n".join(json.dumps(r) for r in (   # study was spent
+        {"study": "meta_rnd.test_ordering@0", "budget": rh.BUDGET},
+        {"charge": "meta_rnd.test_ordering@0", "spent": rh.BUDGET})) + "\n")
+    lost = meta_rnd.guarded_winner(_rows(60), {}, state_path=gone)
+    assert lost["status"] == "EXHAUSTED"
+    nore = tmp_path / "noregister.json"                          # no register at all: closed,
+    gn = meta_rnd.guarded_winner(_rows(60), {}, state_path=nore)  # and never rotated
+    assert gn["status"] == "EXHAUSTED" and not gn.get("rotated_to")
     assert small["status"] == "UNMEASURED" and small["winner"] is None
 
 
@@ -342,11 +388,18 @@ def test_record_ablation_names_organs_with_no_measured_product(tmp_path, monkeyp
          "admissions_30d": 0},
         {"module": "b.py", "compute_h_30d": 2.0, "candidates_30d": 50, "survivors_30d": 3,
          "admissions_30d": 9},
-        {"module": "c.py", "compute_h_30d": None, "survivors_30d": None}]})
+        {"module": "c.py", "compute_h_30d": None, "survivors_30d": None},
+        {"module": "d.py", "compute_h_30d": 5.0, "candidates_30d": 0, "survivors_30d": 0,
+         "admissions_30d": 0},
+        {"module": "e.py", "compute_h_30d": 1.0, "candidates_30d": 2, "survivors_30d": 0,
+         "admissions_30d": 0}]})
     r = {x["id"]: x for x in meta_rnd.frontier({"ordering": {}})["limitations"]}
     res = r["component_ablation"]["result"]
     assert r["component_ablation"]["status"] == "MEASURED"
-    assert res["organs_measured"] == 2 and res["removable_on_record"] == 1
+    # d.py has no candidates: unbounded, never removable; e.py's 3/2 bound is capped at 1.
+    assert res["organs_measured"] == 4 and res["removable_on_record"] == 2
+    assert res["zero_candidate_unbounded"] == ["d.py"]
+    assert res["top"][1]["survivor_rate_upper_95"] == 1.0
     assert res["top"][0] == {"module": "a.py", "compute_h_30d": 9.0, "candidates_30d": 300,
                              "survivor_rate_upper_95": 0.01}
 
@@ -357,9 +410,13 @@ def test_discovery_methods_are_read_from_the_owners_report(tmp_path, monkeypatch
     assert r["dataset_discovery_method"]["status"] == "UNMEASURED"
     _report(tmp_path, "SOURCE_FRONTIER.json", {"by_discovery_method": [
         {"method": "catalogue", "sources": 200, "testable": 60, "compute_h": 2.0},
-        {"method": "crawl", "sources": 200, "testable": 10, "compute_h": 2.0}]})
+        {"method": "crawl", "sources": 200, "testable": 10, "compute_h": 2.0},
+        {"method": "ask", "sources": 10, "testable": 1, "compute_h": "n/a"}]})
     r = {x["id"]: x for x in meta_rnd.frontier({"ordering": {}})["limitations"]}
-    assert r["dataset_discovery_method"]["result"]["leader"] == "catalogue"
+    res = r["dataset_discovery_method"]["result"]
+    assert res["leader"] == "catalogue" and res["leader_per_h"] == "catalogue"
+    assert res["testable_per_h"] == {"catalogue": 30.0, "crawl": 5.0}
+    assert res["compute_h"] == {"catalogue": 2.0, "crawl": 2.0, "ask": None}
 
 
 def test_mutation_yield_splits_reuse_from_cold_starts():
@@ -376,5 +433,7 @@ def test_the_coevolution_leg_floor_covers_the_challenger():
     src = (DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
     floor = src[src.index("LEG_BUDGET_FLOOR_SEC: dict[str, int] = {"):]
     floor = floor[:floor.index("\n}\n")]
-    assert '"coevolution": 990' in floor
-    assert fmc.BUDGET_S + fmc.H2H_BUDGET_S <= 990
+    assert '"coevolution": 1_140' in floor
+    from research import hourly_cycle as hc
+    assert hc._leg_floor_s("coevolution") >= hc._self_stop_floor_s(
+        ("--budget-s", str(int(fmc.BUDGET_S + fmc.H2H_BUDGET_S))))

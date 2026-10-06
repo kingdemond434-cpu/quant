@@ -269,9 +269,9 @@ def guarded_winner(rows: list[dict[str, Any]], measured: dict[str, float],
     answered = {k: v for k, v in out["answers"].items() if v is not None}
     winner = min(answered, key=lambda k: float(answered[k])) if answered else last
     rotated = None
-    if out["status"] == "EXHAUSTED":
-        # Rotating retires these rows for good and opens a never-seen epoch: the safe direction
-        # whatever exhausted the study (spent budget, or a state file that lost it).
+    if out["status"] == "EXHAUSTED" and out.get("state_error") is None:
+        # GENUINE exhaustion only: the budget was spent. A broken state or register reads
+        # EXHAUSTED too, and rotating on it would retire every fresh certificate each hour.
         rotated = rh.rotate(base, {str(r.get("cert_id") or "") for r in fresh}, state_path)
     return {**out, "winner": winner, "n_train": len(halves["train"]),
             "n_holdout": len(halves["holdout"]), "rows_retired": len(retired),
@@ -760,18 +760,30 @@ def _challenger_result(cid: str, arts: dict[str, dict[str, Any]],
             if not isinstance(r, dict) or not r.get("method"):
                 continue
             n, k = int(r.get("sources") or 0), int(r.get("testable") or 0)
+            try:
+                h = float(r["compute_h"]) if r.get("compute_h") is not None else None
+            except (TypeError, ValueError):
+                h = None
             arms[str(r["method"])] = {"born": n, "certified": min(k, n), "alpha": 1.0 + min(k, n),
                                       "beta": 1.0 + n - min(k, n), "group": "discovery_method",
-                                      "cost_basis": f"{r.get('compute_h')} compute h"}
+                                      "compute_h": h,
+                                      "testable_per_h": (round(min(k, n) / h, 4)
+                                                         if h and h > 0 else None)}
         if not arms:
             return {"status": "UNMEASURED", "why": "SOURCE_FRONTIER.json publishes no "
                     "by_discovery_method block yet (owner: Global data discovery)"}
         v = arena.judge(arms)
+        per_h = {k: a["testable_per_h"] for k, a in arms.items()
+                 if a["testable_per_h"] is not None}
         return {"status": "MEASURED", "verdicts": {k: r["verdict"] for k, r in
                                                    (v.get("arms") or {}).items()},
                 "leader": v.get("leader"),
-                "uncertainty": "Beta posterior testable rate per discovery method; per "
-                               "compute-hour where the owner reports compute_h"}
+                "compute_h": {k: a["compute_h"] for k, a in arms.items()},
+                "testable_per_h": per_h,
+                "leader_per_h": max(per_h, key=lambda k: per_h[k]) if per_h else None,
+                "uncertainty": "Beta posterior testable rate per discovery method; "
+                               "testable_per_h only where the owner reports a numeric compute_h "
+                               "(absent = UNMEASURED cost, never zero)"}
     if cid == "trajectory_reuse":
         rv = (arts.get("MUTATION_YIELD.json", {}).get("doc") or {}).get("reuse_vs_cold") or {}
         arms = {k: {"born": int(a.get("judged") or 0), "certified": int(a.get("certified") or 0),
@@ -795,15 +807,20 @@ def _challenger_result(cid: str, arts: dict[str, dict[str, Any]],
                 and r.get("survivors_30d") is not None and r.get("compute_h_30d")]
         if not rows:
             return {"status": "UNMEASURED", "why": "no organ with a measured 30-day record"}
+        # An organ with zero candidates has no record to judge (unbounded, not useless), so it
+        # is never counted removable -- only zero survivors over n > 0 candidates is evidence.
         dead = sorted((r for r in rows if not r.get("survivors_30d")
-                       and not r.get("admissions_30d")),
+                       and not r.get("admissions_30d") and int(r.get("candidates_30d") or 0) > 0),
                       key=lambda r: -float(r.get("compute_h_30d") or 0))
         hours = sum(float(r.get("compute_h_30d") or 0) for r in dead)
+        unjudged = [r["module"] for r in rows if not r.get("survivors_30d")
+                    and not r.get("admissions_30d") and not int(r.get("candidates_30d") or 0)]
         return {"status": "MEASURED", "organs_measured": len(rows),
-                "removable_on_record": len(dead), "their_compute_h_30d": round(hours, 2),
+                "removable_on_record": len(dead), "zero_candidate_unbounded": unjudged,
+                "their_compute_h_30d": round(hours, 2),
                 "top": [{"module": r["module"], "compute_h_30d": r.get("compute_h_30d"),
                          "candidates_30d": r.get("candidates_30d"),
-                         "survivor_rate_upper_95": (round(3.0 / r["candidates_30d"], 4)
+                         "survivor_rate_upper_95": (round(min(1.0, 3.0 / r["candidates_30d"]), 4)
                                                     if r.get("candidates_30d") else None)}
                         for r in dead[:10]],
                 "uncertainty": "zero survivors in n candidates bounds the survivor rate below "

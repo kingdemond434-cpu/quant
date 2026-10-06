@@ -66,7 +66,10 @@ def test_the_floor_follows_the_budget_that_was_actually_applied(
 
 def test_no_other_leg_gains_a_floor_by_accident() -> None:
     assert hc._leg_floor_s("weak_signals") == 0
-    assert set(hc.LEG_BUDGET_FLOOR_SEC) == {"external_gauntlet"}
+    # coevolution is deliberate: its method challenger runs after its own --budget-s, so the
+    # self-stop floor (read from --budget-s alone) would cut it (audit, 2026-10-06).
+    assert set(hc.LEG_BUDGET_FLOOR_SEC) == {"external_gauntlet", "coevolution"}
+    assert hc._leg_floor_s("coevolution") >= hc._self_stop_floor_s(("--budget-s", "990"))
 
 
 def test_the_base_budget_covers_a_measured_full_pass() -> None:

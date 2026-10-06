@@ -231,7 +231,8 @@ def _proposer_counts(screened: dict[str, Any] | None = None) -> tuple[int, dict[
 #: Fields a re-donation of the same idea rewrites; left out of the idea's identity.
 _DONATION_STAMPS = frozenset({"ingested_time", "available_time", "donated_at", "at", "ts",
                               "generated_utc", "pass_id", "run_id", "found_at", "fetched_at",
-                              "seen_at", "first_seen_at", "last_seen_at", "retrieved_at"})
+                              "seen_at", "first_seen_at", "last_seen_at", "retrieved_at",
+                              "fetched_utc", "crawled_at"})
 #: LLM seats whose donation rows are ideas, each charged once (scout_roster names the seats).
 LLM_IDEA_SEATS = frozenset({"kimi", "deepseek", "scheduled_chatgpt", "committees", "openrouter"})
 #: Seats charged from a lifetime union file instead of their discovery files' tests_run.
