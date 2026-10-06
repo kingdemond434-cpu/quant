@@ -344,6 +344,11 @@ def test_end_to_end_git_lane_routes_parks_releases_and_publishes(tmp_path: Path)
     assert metrics["release"]["released"] >= 1 and metrics["release"]["cells_made"] >= 1
     fams = {c.spec["family"] for c in pipe.cells.all_cells() if c.spec}
     assert "formula" in fams and "mean_reversion_rsi" in fams
+    # the anti-saturation screen ran on the release and its report is published per lane
+    assert metrics["release"]["breadth_screen"]["screened"] >= 1
+    br = json.loads((rep / "CIVILIZATION_BREADTH.json").read_text())
+    assert br["lanes"]["lean_test"]["released"] == metrics["release"]["released"]
+    assert "duplicate_share" in br["lanes"]["lean_test"]
     roi = json.loads((rep / "SOURCE_ROI.json").read_text())["sources"]["lean_test"]
     assert roi["items_seen"] == 3 and roi["cells_emitted"] >= 1
     assert roi["coverage_depth"] == 1.0 and roi["last_seen_version"]
