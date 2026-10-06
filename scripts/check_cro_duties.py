@@ -168,9 +168,12 @@ def measure(rows: Mapping[str, Mapping[str, Any]], spec: Mapping[str, Any],
     for duty, row in rows.items():
         cfg = per.get(duty) or {}
         max_age = float(cfg.get("max_age_h", default_age))
+        # the row's own artifacts first, then any the metrics file names for it -- the place a
+        # publisher's path goes while another branch owns the duty's row in CRO_CYCLE.md
+        named = list(dict.fromkeys([*row["artifacts"], *(cfg.get("artifacts") or [])]))
         arts: dict[str, Any] = {}
         docs: list[Any] = []
-        for rel in row["artifacts"]:
+        for rel in named:
             path = resolve(rel, root)
             if not path.exists():
                 arts[rel] = {"status": "UNMEASURED", "why": "absent on this host"}
@@ -210,12 +213,12 @@ def measure(rows: Mapping[str, Mapping[str, Any]], spec: Mapping[str, Any],
             m.pop("_raw", None)
         missing = [a for a, v in arts.items() if v["status"] != "FRESH"]
         unmeasured = [k for k, v in metrics.items() if v["status"] == "UNMEASURED"]
-        if not row["artifacts"] and int(duty[1:]) >= backed_from:
+        if not named and int(duty[1:]) >= backed_from:
             # an artifact-backed duty whose row names only counters has nothing on this host that
             # can back a MET: that is UNMEASURED, never a free pass (L1.28a)
             status = "UNMEASURED"
             why = "the row names counters but no artifact path; nothing on this host backs them"
-        elif not row["artifacts"]:
+        elif not named:
             # a procedure duty (D1..D14) is judged from the pass's own record, which the CRO
             # scores; this check has nothing to say about it either way
             status, why = "NO_ARTIFACT_NAMED", "the duty row names no artifact to check"

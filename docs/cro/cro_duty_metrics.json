@@ -1,6 +1,6 @@
 {
  "schema": "cro_duty_metrics/1",
- "note": "Which counters each STEP 4B duty must find in its artifacts. The artifacts themselves are read from the duty's row in docs/cro/CRO_CYCLE.md, so a duty row and its check cannot drift. A counter no artifact carries reads UNMEASURED, and an UNMEASURED duty counts as MISSED. Targets are checked only where they are a plain comparison; the rest are the CRO's judgement on the measured values.",
+ "note": "Which counters each STEP 4B duty must find in its artifacts. The artifacts themselves are read from the duty's row in docs/cro/CRO_CYCLE.md, so a duty row and its check cannot drift. A counter no artifact carries reads UNMEASURED, and an UNMEASURED duty counts as MISSED. Targets are checked only where they are a plain comparison; the rest are the CRO's judgement on the measured values. A duty may also list `artifacts` here: they are read after the row's own, which is where a publisher's path goes while another branch owns that duty's row.",
  "default_max_age_h": 26,
  "artifact_backed_from": 15,
  "duties": {
@@ -17,6 +17,38 @@
     }
    ]
   },
+  "D18": {
+   "artifacts": [
+    "reports/DATASET_EXPLOITATION.json"
+   ],
+   "metrics": [
+    "unfed_datasets"
+   ],
+   "targets": [
+    {
+     "metric": "unfed_datasets",
+     "op": "==",
+     "value": 0
+    }
+   ]
+  },
+  "D19": {
+   "artifacts": [
+    "reports/PAID_SOURCES_SUBSTITUTED.json"
+   ],
+   "metrics": [
+    "paid_sources_substituted",
+    "paid_sources_named"
+   ]
+  },
+  "D20": {
+   "artifacts": [
+    "reports/CULTURE_ORTHOGONALITY_VERDICTS.json"
+   ],
+   "metrics": [
+    "culture_orthogonality_verdicts"
+   ]
+  },
   "D21": {
    "max_age_h": 3,
    "metrics": [
@@ -29,6 +61,9 @@
      "op": "==",
      "value": 0
     }
+   ],
+   "artifacts": [
+    "reports/RESEARCH_LIVE_IDENTITY.json"
    ]
   },
   "D37": {

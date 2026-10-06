@@ -148,7 +148,24 @@ def test_an_unstamped_artifact_is_never_fresh_by_mtime(tmp_path: Path) -> None:
     assert d["status"] == "UNMEASURED" and d["counts_as"] == "MISSED"
 
 
-def test_d17_and_d21_name_their_publishing_artifacts() -> None:
+def test_d17_to_d21_name_their_publishing_artifacts() -> None:
     rows = ccd.duty_rows(ccd.CYCLE.read_text("utf-8"))
     assert rows["D17"]["artifacts"] == ["reports/BOX_STATE_FRESHNESS.json"]
-    assert rows["D21"]["artifacts"] == ["reports/RESEARCH_LIVE_IDENTITY.json"]
+    duties = json.loads(ccd.METRICS.read_text("utf-8"))["duties"]
+    assert duties["D18"]["artifacts"] == ["reports/DATASET_EXPLOITATION.json"]
+    assert duties["D19"]["artifacts"] == ["reports/PAID_SOURCES_SUBSTITUTED.json"]
+    assert duties["D20"]["artifacts"] == ["reports/CULTURE_ORTHOGONALITY_VERDICTS.json"]
+    assert duties["D21"]["artifacts"] == ["reports/RESEARCH_LIVE_IDENTITY.json"]
+
+
+def test_artifacts_named_in_the_metrics_file_are_read(tmp_path: Path) -> None:
+    rows = {"D19": {"name": "Paid-substitute coverage", "artifacts": []}}
+    spec = {"artifact_backed_from": 15, "duties": {"D19": {
+        "artifacts": ["reports/PAID_SOURCES_SUBSTITUTED.json"],
+        "metrics": ["paid_sources_substituted"]}}}
+    d = ccd.measure(rows, spec, root=tmp_path)["duties"]["D19"]
+    assert d["status"] == "UNMEASURED" and "absent" in json.dumps(d["artifacts"])
+    _write(tmp_path, "reports/PAID_SOURCES_SUBSTITUTED.json", {"paid_sources_substituted": 3})
+    d = ccd.measure(rows, spec, root=tmp_path)["duties"]["D19"]
+    assert d["status"] == "MEASURED"
+    assert d["metrics"]["paid_sources_substituted"]["value"] == 3
