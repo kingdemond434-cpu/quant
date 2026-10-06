@@ -66,6 +66,11 @@
     "reports/RESEARCH_LIVE_IDENTITY.json"
    ]
   },
+  "D34": {
+   "artifacts": [
+    "reports/JUDGING_QUEUE_AGE.json"
+   ]
+  },
   "D37": {
    "max_age_h": 3,
    "metrics": [
@@ -95,6 +100,9 @@
     "verdicts_committed_per_attempt",
     "build_failures",
     "worker_peak_mb"
+   ],
+   "artifacts": [
+    "reports/JUDGING_QUEUE_AGE.json"
    ]
   },
   "D39": {
