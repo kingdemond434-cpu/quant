@@ -9070,11 +9070,11 @@
    "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/pack_cells.py:1311 (semantic_features)",
-    "desks/mt5/research/pack_cells.py:1473 (cfets_fix_surprise: implied fix, basket beta, surprise pips and z, available after the 01:00 UTC basket bar)",
-    "desks/mt5/research/pack_cells.py:1550 (resolve_targets: universe_policy.may_hypothesise)",
-    "desks/mt5/research/pack_cells.py:1566 (semantic_lane: screen -> deflate -> donate)",
-    "desks/mt5/research/pack_cells.py:1678 (_sem_donate: donation or null_pass_trials charge)",
+    "desks/mt5/research/pack_cells.py:1321 (semantic_features)",
+    "desks/mt5/research/pack_cells.py:1483 (cfets_fix_surprise: implied fix, basket beta, surprise pips and z, available after the 01:00 UTC basket bar)",
+    "desks/mt5/research/pack_cells.py:1560 (resolve_targets: universe_policy.may_hypothesise)",
+    "desks/mt5/research/pack_cells.py:1576 (semantic_lane: screen -> deflate -> donate)",
+    "desks/mt5/research/pack_cells.py:1692 (_sem_donate: donation or null_pass_trials charge)",
     "desks/mt5/tests/test_cn_sge_dislocation.py"
    ],
    "scheduled_by": "hourly_cycle:pack_cells",
@@ -9115,8 +9115,8 @@
    "gate": "none",
    "evidence": [
     "desks/mt5/research/dislocation_lab.py:1327 (HARD_PAIRS: SHFE Au/Ag, INE SC, CNY fix, SGE and the KR/IN/TR physical premiums)",
-    "desks/mt5/research/dislocation_lab.py:1361 (half_life)",
-    "desks/mt5/research/dislocation_lab.py:1477 (hard_dislocations)",
+    "desks/mt5/research/dislocation_lab.py:1362 (half_life)",
+    "desks/mt5/research/dislocation_lab.py:1478 (hard_dislocations)",
     "desks/mt5/mt5desk/families_orthogonal.py:2369 (exogenous_conditioner is an ORTHOGONAL_FAMILIES member: the judge builds the donated cells)",
     "desks/mt5/tests/test_cn_sge_dislocation.py"
    ],
