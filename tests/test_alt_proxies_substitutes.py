@@ -352,7 +352,9 @@ def test_reviewed_terms_carry_evidence() -> None:
         assert ev["robots"] and ev["checked_at"] == "2026-09-30", sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
     confirmed = {s.id for s in A.SOURCES if s.terms == "confirmed"}
-    assert reviewed == confirmed >= {"cn_nbs_retail", *NEW_SUBSTITUTES}   # every confirmed one
+    assert reviewed == confirmed >= {"cn_nbs_retail", *NEW_SUBSTITUTES} - {"za_statssa_retail"}
+    assert "za_statssa_retail" not in confirmed and "TO_CONFIRM" in (
+        A.TERMS_EVIDENCE["za_statssa_retail"]["judgement"])          # mirror-only: fails closed
     for sid in confirmed:
         assert not A.TERMS_EVIDENCE[sid]["terms_quote"].startswith("(not"), sid
 
