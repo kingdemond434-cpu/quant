@@ -293,6 +293,10 @@ def _probe_routes(registry: dict[str, Any], timeout: float) -> list[dict[str, An
         if not isinstance(src, dict):
             continue
         access = str(src.get("access") or "public")
+        if src.get("paid_blocked"):
+            out.append({"name": src.get("id"), "url": src.get("url"), "status": "PAID_BLOCKED",
+                        "access": access, "why": "paid vendor, no licence held: never probed"})
+            continue
         if access in ("key", "paid"):
             # A keyed route with no key is UNCONFIGURED, which is a different fact from a dead
             # one. Probing it would return 401 and pollute the census with an auth failure

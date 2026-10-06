@@ -644,7 +644,9 @@
     "czce_daily",
     "ine_crude"
    ],
-   "why_no_cells": "a TRANSPORT, not a mechanism. It carries other sources' series and mints no hypothesis of its own; the rule it answers to is that every source it serves must be named here, and a transport serving nothing is the same defect as a ground reaching no cell."
+   "why_no_cells": "a TRANSPORT, not a mechanism. It carries other sources' series and mints no hypothesis of its own; the rule it answers to is that every source it serves must be named here, and a transport serving nothing is the same defect as a ground reaching no cell.",
+   "paid_blocked": true,
+   "paid_blocked_note": "PAID_BLOCKED 2026-10-06: no subscription held; the exchanges' own public files (free_stack SHFE/DCE/CZCE/INE fetchers, asia_parser official tables) are the lawful route to the series it would serve"
   },
   {
    "id": "wind",
@@ -667,7 +669,9 @@
     "nbs_pmi",
     "china_customs"
    ],
-   "why_no_cells": "a TRANSPORT, not a mechanism. It carries other sources' series and mints no hypothesis of its own; the rule it answers to is that every source it serves must be named here, and a transport serving nothing is the same defect as a ground reaching no cell."
+   "why_no_cells": "a TRANSPORT, not a mechanism. It carries other sources' series and mints no hypothesis of its own; the rule it answers to is that every source it serves must be named here, and a transport serving nothing is the same defect as a ground reaching no cell.",
+   "paid_blocked": true,
+   "paid_blocked_note": "PAID_BLOCKED 2026-10-06: no subscription held; the exchanges' own public files (free_stack SHFE/DCE/CZCE/INE fetchers, asia_parser official tables) are the lawful route to the series it would serve"
   },
   {
    "id": "boj_timeseries",

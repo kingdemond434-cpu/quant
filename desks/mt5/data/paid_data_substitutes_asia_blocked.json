@@ -12,7 +12,15 @@
    "terms": "refused",
    "blocked_because": "Cielo terms: copying, reproduction or any other use of content is forbidden; content only by the means made available",
    "unsubstituted_because": "",
-   "evidence": "br_bcb_payments: https://dadosabertos.bcb.gov.br/dataset/estatisticas-meios-pagamentos"
+   "evidence": "br_bcb_payments: https://dadosabertos.bcb.gov.br/dataset/estatisticas-meios-pagamentos",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 1,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
   },
   {
    "class": "foot traffic",
@@ -25,7 +33,36 @@
    "terms": "to_confirm",
    "blocked_because": "Baidu terms (baidu.com/duty) blocked by robots.txt, so unread; huiyan has no robots.txt",
    "unsubstituted_because": "",
-   "evidence": "hk_immd_passenger: https://data.gov.hk/en/terms-and-conditions"
+   "evidence": "hk_immd_passenger: https://data.gov.hk/en/terms-and-conditions",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 5,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
+  },
+  {
+   "class": "procurement awards",
+   "paid": "CCGP award notices aggregated into commodity order indices (China) [cn_ccgp_award_indices]",
+   "free": "NBS fixed-asset investment: total, infrastructure, manufacturing (China) [cn_nbs_fai]",
+   "region": "CN",
+   "measure": "infrastructure_awards",
+   "frequency": "monthly",
+   "status": "BLOCKED+SUBSTITUTE:cn_nbs_fai",
+   "terms": "to_confirm",
+   "blocked_because": "CCGP footer '中华人民共和国财政部 版权所有'; no terms or reuse page, no robots.txt",
+   "unsubstituted_because": "",
+   "evidence": "cn_nbs_fai: https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 4,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
   },
   {
    "class": "card",
@@ -38,7 +75,15 @@
    "terms": "refused",
    "blocked_because": "MCT disclaimer: no reprint, link or other copying without written authorisation from the MCT Information Centre",
    "unsubstituted_because": "",
-   "evidence": "cn_nbs_retail: https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html; hk_immd_passenger: https://data.gov.hk/en/terms-and-conditions"
+   "evidence": "cn_nbs_retail: https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html; hk_immd_passenger: https://data.gov.hk/en/terms-and-conditions",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 2,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
   },
   {
    "class": "foot traffic",
@@ -51,7 +96,36 @@
    "terms": "refused",
    "blocked_because": "piaofang.maoyan.com robots.txt disallows automated agents on the dashboard-ajax endpoint",
    "unsubstituted_because": "",
-   "evidence": "hk_immd_passenger: https://data.gov.hk/en/terms-and-conditions"
+   "evidence": "hk_immd_passenger: https://data.gov.hk/en/terms-and-conditions",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 1,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
+  },
+  {
+   "class": "satellite (port / AIS activity)",
+   "paid": "China MOT monthly port cargo and container throughput, by port (xlsx) [cn_mot_port_monthly]",
+   "free": "IMF PortWatch daily port calls [imf_portwatch_ports]",
+   "region": "CN",
+   "measure": "national_cargo_yoy",
+   "frequency": "monthly",
+   "status": "BLOCKED+SUBSTITUTE:imf_portwatch_ports",
+   "terms": "to_confirm",
+   "blocked_because": "MOT disclaimer bars commercial verbatim reprint and claims copyright; it grants no reuse licence",
+   "unsubstituted_because": "",
+   "evidence": "imf_portwatch_ports: https://www.imf.org/external/terms.htm",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 6,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
   },
   {
    "class": "satellite (port / AIS activity)",
@@ -64,7 +138,36 @@
    "terms": "to_confirm",
    "blocked_because": "MOT disclaimer bars commercial verbatim reprint but grants no reuse licence; no robots.txt",
    "unsubstituted_because": "",
-   "evidence": "imf_portwatch_ports: https://www.imf.org/external/terms.htm"
+   "evidence": "imf_portwatch_ports: https://www.imf.org/external/terms.htm",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 2,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
+  },
+  {
+   "class": "corporate supply chain",
+   "paid": "SAMR / Credit China enterprise registration counts (China) [cn_samr_registrations]",
+   "free": "NBS industrial-enterprise profits, total and by sector (China) [cn_nbs_profits]",
+   "region": "CN",
+   "measure": "",
+   "frequency": "monthly",
+   "status": "BLOCKED+SUBSTITUTE:cn_nbs_profits",
+   "terms": "to_confirm",
+   "blocked_because": "SAMR and Credit China: no terms, copyright or reuse page found",
+   "unsubstituted_because": "",
+   "evidence": "cn_nbs_profits: https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 0,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
   },
   {
    "class": "gold premium",
@@ -77,7 +180,57 @@
    "terms": "to_confirm",
    "blocked_because": "SGE site shows only 'All Right Reserved'; no terms or licence page found, no robots.txt",
    "unsubstituted_because": "",
-   "evidence": "in_gold_imports: https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1"
+   "evidence": "in_gold_imports: https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 1,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
+  },
+  {
+   "class": "freight (route indices)",
+   "paid": "Shanghai Shipping Exchange SCFI by route (Shanghai x destination) [cn_sse_scfi_routes]",
+   "free": "BLS PPI: deep sea freight transportation (via FRED, monthly) [us_bls_deepsea_freight]; IMF PortWatch daily chokepoint transits [imf_portwatch_chokepoints]",
+   "region": "CN",
+   "measure": "scfi_composite",
+   "frequency": "weekly",
+   "status": "BLOCKED+SUBSTITUTE:us_bls_deepsea_freight,imf_portwatch_chokepoints",
+   "terms": "to_confirm",
+   "blocked_because": "Shanghai Shipping Exchange: 'All Rights Reserved', no terms or reuse page",
+   "unsubstituted_because": "",
+   "evidence": "us_bls_deepsea_freight: https://www.bls.gov/opub/copyright-information.htm; imf_portwatch_chokepoints: https://www.imf.org/external/terms.htm",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 1,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
+  },
+  {
+   "class": "corporate supply chain",
+   "paid": "Tianyancha enterprise and supply-chain records (paid) [cn_tianyancha_supply]",
+   "free": "NBS industrial-enterprise profits, total and by sector (China) [cn_nbs_profits]",
+   "region": "CN",
+   "measure": "",
+   "frequency": "monthly",
+   "status": "UNCONFIGURED+SUBSTITUTE:cn_nbs_profits",
+   "terms": "to_confirm",
+   "blocked_because": "paid commercial API; no licence held",
+   "unsubstituted_because": "",
+   "evidence": "cn_nbs_profits: https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
+   "rent": {
+    "annual_cost_usd": "UNMEASURED",
+    "unique_axes": 0,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
   },
   {
    "class": "card",
@@ -90,7 +243,36 @@
    "terms": "refused",
    "blocked_because": "npci.org.in robots.txt disallows automated agents on the statistics path and the disclaimer page",
    "unsubstituted_because": "",
-   "evidence": "in_dgi_iip_consumer: https://smartcities.data.gov.in/government-open-data-license-india"
+   "evidence": "in_dgi_iip_consumer: https://smartcities.data.gov.in/government-open-data-license-india",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 1,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
+  },
+  {
+   "class": "options positioning",
+   "paid": "NSE option chain: NIFTY / BANKNIFTY / USDINR (PCR, OI by strike, ATM IV) [in_nse_option_chain]",
+   "free": "",
+   "region": "IN",
+   "measure": "",
+   "frequency": "daily",
+   "status": "BLOCKED_ON_TERMS:refused",
+   "terms": "refused",
+   "blocked_because": "NSE terms: systematic or automated data collection prohibited; no storing or reproduction without written permission",
+   "unsubstituted_because": "no public options-positioning series for India carries reuse terms: NSE refuses automated collection and storage; a licensed NSE data feed is the route, a principal decision (2026-10-06)",
+   "evidence": "",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 0,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
   },
   {
    "class": "foot traffic (travel arrivals)",
@@ -103,7 +285,15 @@
    "terms": "refused",
    "blocked_because": "JNTO site policy: unauthorised duplication or transmission of published works (incl. databases) is copyright infringement",
    "unsubstituted_because": "",
-   "evidence": "jp_estat_immigration: https://www.e-stat.go.jp/terms-of-use"
+   "evidence": "jp_estat_immigration: https://www.e-stat.go.jp/terms-of-use",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 1,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
   },
   {
    "class": "satellite (port / AIS activity)",
@@ -116,7 +306,36 @@
    "terms": "to_confirm",
    "blocked_because": "BPA copyright policy / KOGL mark not found; robots.txt only names Yeti and Googlebot",
    "unsubstituted_because": "",
-   "evidence": "kr_mof_container_teu: https://www.data.go.kr/data/15059131/openapi.do; imf_portwatch_ports: https://www.imf.org/external/terms.htm"
+   "evidence": "kr_mof_container_teu: https://www.data.go.kr/data/15059131/openapi.do; imf_portwatch_ports: https://www.imf.org/external/terms.htm",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 1,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
+  },
+  {
+   "class": "search attention",
+   "paid": "Naver DataLab search attention by topic (Korea) [kr_naver_datalab]",
+   "free": "Asian-language Wikipedia attention (ja/zh/ko pageviews) [wiki_asia_attention]",
+   "region": "KR",
+   "measure": "fx_rel",
+   "frequency": "weekly",
+   "status": "BLOCKED+SUBSTITUTE:wiki_asia_attention",
+   "terms": "to_confirm",
+   "blocked_because": "Naver Developers terms could not be read (site blocked to the authoring fetcher); accepted at app registration on the box",
+   "unsubstituted_because": "",
+   "evidence": "wiki_asia_attention: https://dumps.wikimedia.org/other/pageviews/readme.html",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 7,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
   },
   {
    "class": "card",
@@ -129,7 +348,15 @@
    "terms": "refused",
    "blocked_because": "ANTAD terms: copy only for personal use; electronic reproduction, publication or distribution prohibited",
    "unsubstituted_because": "",
-   "evidence": "mx_inegi_emec: https://www.inegi.org.mx/inegi/terminos.html"
+   "evidence": "mx_inegi_emec: https://www.inegi.org.mx/inegi/terminos.html",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 1,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
   },
   {
    "class": "card",
@@ -142,7 +369,15 @@
    "terms": "refused",
    "blocked_because": "BKM legal notice: no copying or reproduction without prior written permission; no commercial use",
    "unsubstituted_because": "",
-   "evidence": "tr_tuik_retail: https://www.tuik.gov.tr/Kurumsal/Yasal_Uyari"
+   "evidence": "tr_tuik_retail: https://www.tuik.gov.tr/Kurumsal/Yasal_Uyari",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 1,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
   },
   {
    "class": "card",
@@ -155,7 +390,55 @@
    "terms": "to_confirm",
    "blocked_because": "PayInc site is a JS app; no terms page or robots.txt could be read",
    "unsubstituted_because": "",
-   "evidence": "za_statssa_retail: https://nationalgovernment.co.za/department_annual/531/2024-statistics-south-africa-(stats-sa)-annual-report.pdf"
+   "evidence": "za_statssa_retail: https://nationalgovernment.co.za/department_annual/531/2024-statistics-south-africa-(stats-sa)-annual-report.pdf",
+   "rent": {
+    "annual_cost_usd": 0,
+    "unique_axes": 1,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED",
+    "rule": "information per unit of rent: a paid source renews only on measured survivors per dollar against its free substitutes"
+   }
+  },
+  {
+   "class": "exchange market data (CN futures, ticks)",
+   "paid": "RQData / RiceQuant [rqdata]",
+   "free": "",
+   "region": "CN",
+   "measure": "",
+   "frequency": "on demand",
+   "status": "PAID_BLOCKED",
+   "terms": "paid_blocked",
+   "blocked_because": "paid subscription, no licence held; the exchanges' own public files (free_stack SHFE/DCE/CZCE/INE fetchers) are the lawful route",
+   "unsubstituted_because": "paid subscription, no licence held; the exchanges' own public files (free_stack SHFE/DCE/CZCE/INE fetchers) are the lawful route",
+   "evidence": "desks/mt5/data/asia_sources.json (paid_blocked: true)",
+   "rent": {
+    "annual_cost_usd": "UNMEASURED",
+    "unique_axes": 0,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED"
+   }
+  },
+  {
+   "class": "institutional China data terminal",
+   "paid": "Wind API [wind]",
+   "free": "",
+   "region": "CN",
+   "measure": "",
+   "frequency": "on demand",
+   "status": "PAID_BLOCKED",
+   "terms": "paid_blocked",
+   "blocked_because": "paid subscription, no licence held; NBS/SAFE/CFETS official releases (this organ and asia_parser) are the lawful route",
+   "unsubstituted_because": "paid subscription, no licence held; NBS/SAFE/CFETS official releases (this organ and asia_parser) are the lawful route",
+   "evidence": "desks/mt5/data/asia_sources.json (paid_blocked: true)",
+   "rent": {
+    "annual_cost_usd": "UNMEASURED",
+    "unique_axes": 0,
+    "cells_tested": "UNMEASURED",
+    "survivors": "UNMEASURED",
+    "cost_per_survivor_usd": "UNMEASURED"
+   }
   }
  ],
  "library_rows": [
@@ -187,6 +470,71 @@
    "owner": "asia_gap_thread",
    "substitutes_for_blocked": [
     "br_cielo_icva"
+   ]
+  },
+  {
+   "id": "asia_cn_nbs_fai",
+   "name": "NBS fixed-asset investment: total, infrastructure, manufacturing (China)",
+   "publisher_type": "statistics_office_or_central_bank",
+   "url": "https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
+   "endpoint": "https://www.stats.gov.cn/sj/zxfb/",
+   "classes": [
+    "procurement"
+   ],
+   "region": "CN",
+   "frequency": "monthly",
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "zh"
+   ],
+   "instruments": [
+    "AUDUSD",
+    "CHINAH",
+    "XCUUSD"
+   ],
+   "participant_structure": "policy_driven",
+   "licence": "National Bureau of Statistics of China releases (public)",
+   "terms": "confirmed",
+   "terms_quote": "用户可以在本网站下载和使用国家统计局发布的统计数据",
+   "credit": "数据来源：国家统计局 (Source: National Bureau of Statistics of China)",
+   "consumer": "desks/mt5/research/alt_proxies.py",
+   "owner": "asia_gap_thread",
+   "substitutes_for_blocked": [
+    "cn_ccgp_award_indices"
+   ]
+  },
+  {
+   "id": "asia_cn_nbs_profits",
+   "name": "NBS industrial-enterprise profits, total and by sector (China)",
+   "publisher_type": "statistics_office_or_central_bank",
+   "url": "https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
+   "endpoint": "https://www.stats.gov.cn/sj/zxfb/",
+   "classes": [
+    "corporate_activity"
+   ],
+   "region": "CN",
+   "frequency": "monthly",
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "zh"
+   ],
+   "instruments": [
+    "AUDUSD",
+    "CHINAH",
+    "HK50"
+   ],
+   "participant_structure": "institutional",
+   "licence": "National Bureau of Statistics of China releases (public)",
+   "terms": "confirmed",
+   "terms_quote": "用户可以在本网站下载和使用国家统计局发布的统计数据",
+   "credit": "数据来源：国家统计局 (Source: National Bureau of Statistics of China)",
+   "consumer": "desks/mt5/research/alt_proxies.py",
+   "owner": "asia_gap_thread",
+   "substitutes_for_blocked": [
+    "cn_samr_registrations",
+    "cn_tianyancha_supply"
    ]
   },
   {
@@ -257,6 +605,37 @@
    ]
   },
   {
+   "id": "asia_imf_portwatch_chokepoints",
+   "name": "IMF PortWatch daily chokepoint transits",
+   "publisher_type": "statistics_office_or_central_bank",
+   "url": "https://www.imf.org/external/terms.htm",
+   "endpoint": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query",
+   "classes": [
+    "macro"
+   ],
+   "region": "GLOBAL",
+   "frequency": "daily",
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XBRUSD",
+    "XTIUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "IMF PortWatch open data (free, attribution required)",
+   "terms": "confirmed",
+   "terms_quote": "Users may download, extract, copy, create derivative works, publish, distribute, and sell Data obtained from IMF Sites, including for commercial purposes",
+   "credit": "Source: International Monetary Fund (IMF PortWatch).",
+   "consumer": "desks/mt5/research/alt_proxies.py",
+   "owner": "asia_gap_thread",
+   "substitutes_for_blocked": [
+    "cn_sse_scfi_routes"
+   ]
+  },
+  {
    "id": "asia_imf_portwatch_ports",
    "name": "IMF PortWatch daily port calls",
    "publisher_type": "statistics_office_or_central_bank",
@@ -283,6 +662,7 @@
    "consumer": "desks/mt5/research/alt_proxies.py",
    "owner": "asia_gap_thread",
    "substitutes_for_blocked": [
+    "cn_mot_port_monthly",
     "cn_mot_port_weekly",
     "kr_busan_port"
    ]
@@ -472,6 +852,68 @@
    "owner": "asia_gap_thread",
    "substitutes_for_blocked": [
     "tr_bkm_card"
+   ]
+  },
+  {
+   "id": "asia_us_bls_deepsea_freight",
+   "name": "BLS PPI: deep sea freight transportation (via FRED, monthly)",
+   "publisher_type": "statistics_office_or_central_bank",
+   "url": "https://www.bls.gov/opub/copyright-information.htm",
+   "endpoint": null,
+   "classes": [
+    "shipping_freight"
+   ],
+   "region": "US",
+   "frequency": "monthly",
+   "auth": "free_key",
+   "auth_env": "FRED_API_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "AUDUSD",
+    "CHINAH",
+    "XCUUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "US BLS public domain data (cite BLS); FRED API terms and notice",
+   "terms": "confirmed",
+   "terms_quote": "You are free to use our public domain material without specific permission, although we do ask that you cite the Bureau of Labor Statistics as the source.",
+   "credit": "Source: U.S. Bureau of Labor Statistics, PPI Deep Sea Freight Transportation (PCU483111483111), via FRED. This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis.",
+   "consumer": "desks/mt5/research/alt_proxies.py",
+   "owner": "asia_gap_thread",
+   "substitutes_for_blocked": [
+    "cn_sse_scfi_routes"
+   ]
+  },
+  {
+   "id": "asia_wiki_asia_attention",
+   "name": "Asian-language Wikipedia attention (ja/zh/ko pageviews)",
+   "publisher_type": "statistics_office_or_central_bank",
+   "url": "https://dumps.wikimedia.org/other/pageviews/readme.html",
+   "endpoint": null,
+   "classes": [
+    "macro"
+   ],
+   "region": "ASIA",
+   "frequency": "daily",
+   "auth": "none",
+   "auth_env": "",
+   "languages": [
+    "ja/zh/ko"
+   ],
+   "instruments": [
+    "USDJPY"
+   ],
+   "participant_structure": "retail_heavy",
+   "licence": "Wikimedia pageviews API (CC0 data); no key",
+   "terms": "confirmed",
+   "terms_quote": "All Analytics datasets are available under the Creative Commons CC0 dedication.",
+   "credit": "",
+   "consumer": "desks/mt5/research/alt_proxies.py",
+   "owner": "asia_gap_thread",
+   "substitutes_for_blocked": [
+    "kr_naver_datalab"
    ]
   },
   {

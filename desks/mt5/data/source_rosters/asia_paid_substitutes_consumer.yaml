@@ -40,6 +40,14 @@ sources:
     coverage, and when GDELT's source list or translation pipeline changes, which moves tone for no reason
     in the markets
   crowding_prior: medium
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 26
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   credit: The GDELT Project, https://www.gdeltproject.org/
   substitutes_for: RavenPack-style news analytics (event counts, tone, themes per entity)
   fetcher: owned
@@ -75,6 +83,14 @@ sources:
   failure_mode_hypothesis: fails when bots or a main-page feature inflate views, and zh.wikipedia is blocked
     in mainland China so its readers are TW/HK/diaspora, not the onshore retail base
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 9
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substitutes_for: RavenPack-style news analytics (event counts, tone, themes per entity)
   fetcher: owned
   owner: asia_gap_thread
@@ -111,6 +127,14 @@ sources:
   failure_mode_hypothesis: 'fails because the feed ENDED (last rows 2024-06): it is a 2020-2024 backfill
     for history-only tests, and it over-weights the pandemic regime in any fit'
   crowding_prior: high
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 3
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   credit: Opportunity Insights Economic Tracker (Chetty, Friedman, Stepner and the OI Team), https://tracktherecovery.org
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
@@ -147,6 +171,14 @@ sources:
   failure_mode_hypothesis: fails around Chuseok/Lunar New Year month shifts and government consumption-voucher
     programmes
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
   owner: asia_gap_thread
@@ -180,6 +212,14 @@ sources:
   - retail_heavy
   failure_mode_hypothesis: fails when fuel subsidies or a consumption-tax change move nominal sales mechanically
   crowding_prior: medium
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   credit: 出典：『商業動態統計』（経済産業省）
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
@@ -215,6 +255,14 @@ sources:
   failure_mode_hypothesis: fails when the January-February combined print and base effects dominate, and
     when stimulus is already announced
   crowding_prior: high
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
   owner: asia_gap_thread
@@ -250,6 +298,14 @@ sources:
   failure_mode_hypothesis: fails when holiday length changes (the calendar is set by the State Council
     each year) and when official tallies are managed upward
   crowding_prior: medium
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 2
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substituted_by:
   - cn_nbs_retail
   - hk_immd_passenger
@@ -287,6 +343,14 @@ sources:
   failure_mode_hypothesis: fails because structural adoption growth dominates YoY; a surprise is small
     against the trend and festivals shift it
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substituted_by:
   - in_dgi_iip_consumer
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
@@ -323,6 +387,14 @@ sources:
   failure_mode_hypothesis: 'fails because nominal growth is mostly inflation: the surprise is dominated
     by CPI, not demand'
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substituted_by:
   - tr_tuik_retail
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
@@ -359,6 +431,14 @@ sources:
   failure_mode_hypothesis: fails when calendar (working-day) effects and Black Friday timing dominate
     the month
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substituted_by:
   - br_bcb_payments
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
@@ -394,6 +474,14 @@ sources:
   - institutional
   failure_mode_hypothesis: fails around Easter and El Buen Fin timing shifts
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substituted_by:
   - mx_inegi_emec
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
@@ -429,6 +517,14 @@ sources:
   - physical_flow
   failure_mode_hypothesis: fails under load-shedding months and payday-calendar shifts
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substituted_by:
   - za_statssa_retail
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
@@ -466,6 +562,14 @@ sources:
   failure_mode_hypothesis: 'fails because the feed ENDED (2022-10): a pandemic-era history for history-only
     tests'
   crowding_prior: high
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 2
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   credit: Opportunity Insights Economic Tracker (Chetty, Friedman, Stepner and the OI Team), https://tracktherecovery.org
   substitutes_for: foot-traffic / location panels (SafeGraph, Placer.ai)
   fetcher: owned
@@ -501,6 +605,14 @@ sources:
   failure_mode_hypothesis: fails when one blockbuster release dominates a week and holiday dates shift
     against the 364-day comparison
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substitutes_for: foot-traffic / location panels (SafeGraph, Placer.ai)
   fetcher: owned
   owner: asia_gap_thread
@@ -535,6 +647,14 @@ sources:
   - physical_flow
   failure_mode_hypothesis: fails on public-holiday misalignment and fare changes that move ridership mechanically
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   credit: '출처: 서울 열린데이터광장 (data.seoul.go.kr), 공공누리 제1유형'
   substitutes_for: foot-traffic / location panels (SafeGraph, Placer.ai)
   fetcher: owned
@@ -569,6 +689,14 @@ sources:
   failure_mode_hypothesis: fails when release-slate timing (Spring Festival films) dominates, and when
     the dashboard's anti-scraping changes the response
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substituted_by:
   - hk_immd_passenger
   substitutes_for: foot-traffic / location panels (SafeGraph, Placer.ai)
@@ -605,6 +733,14 @@ sources:
   failure_mode_hypothesis: fails around the lunar calendar (Spring Festival moves each year) and when
     Baidu suspends the map, as it has before
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 5
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substituted_by:
   - hk_immd_passenger
   substitutes_for: foot-traffic / location panels (SafeGraph, Placer.ai)
@@ -640,6 +776,14 @@ sources:
   failure_mode_hypothesis: fails when transhipment re-routing (Red Sea, US tariffs) moves Busan's share
     rather than total trade
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substituted_by:
   - kr_mof_container_teu
   - imf_portwatch_ports
@@ -676,6 +820,14 @@ sources:
   - policy_driven
   failure_mode_hypothesis: fails under route shifts (Red Sea diversions) that add transhipment
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substitutes_for: satellite / AIS activity panels (Orbital Insight, SpaceKnow)
   fetcher: owned
   owner: asia_gap_thread
@@ -709,6 +861,14 @@ sources:
   - policy_driven
   failure_mode_hypothesis: fails around Spring Festival and typhoon port closures
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 2
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substituted_by:
   - imf_portwatch_ports
   substitutes_for: satellite / AIS activity panels (Orbital Insight, SpaceKnow)
@@ -748,6 +908,14 @@ sources:
   failure_mode_hypothesis: fails when visa policy or a China group-tour ban moves arrivals for reasons
     the yen already priced, and it prints later than JNTO's estimate
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   credit: このサービスは、政府統計総合窓口(e-Stat)のAPI機能を使用していますが、サービスの内容は国によって保証されたものではありません。 / This service uses API
     functions from e-Stat, however its contents are not guaranteed by government.
   substitutes_for: travel-arrival panels (JNTO estimates, ForwardKeys / OAG arrivals)
@@ -787,6 +955,14 @@ sources:
   failure_mode_hypothesis: fails when border policy (visa schemes, quarantine) or a new crossing moves
     the count mechanically, and on lunar-calendar holiday shifts against the 364-day comparison
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 2
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substitutes_for: foot-traffic / location panels (SafeGraph, Placer.ai)
   fetcher: owned
   owner: asia_gap_thread
@@ -821,6 +997,14 @@ sources:
   failure_mode_hypothesis: fails because Pix adoption growth dominates the nominal value, and on working-day
     and Black Friday calendar shifts
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
   owner: asia_gap_thread
@@ -857,6 +1041,14 @@ sources:
   failure_mode_hypothesis: fails around Easter and El Buen Fin timing shifts, and it prints about seven
     weeks after the month
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   vintage: current
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
@@ -893,6 +1085,14 @@ sources:
   failure_mode_hypothesis: fails when a minimum-wage step or a tax change moves volume mechanically, and
     it prints later than BKM
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
   owner: asia_gap_thread
@@ -929,6 +1129,14 @@ sources:
   failure_mode_hypothesis: fails when transhipment re-routing (Red Sea, US tariffs) moves Korean ports'
     share rather than total trade
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   substitutes_for: satellite / AIS activity panels (Orbital Insight, SpaceKnow)
   fetcher: owned
   owner: asia_gap_thread
@@ -966,6 +1174,14 @@ sources:
   failure_mode_hypothesis: fails when festival timing (Diwali in October or November) moves production
     between months, and on a base-year revision (2011-12 to 2022-23) that breaks the YoY comparison
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 2
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   credit: 'Ministry of Statistics and Programme Implementation, Index of Industrial Production (use-based),
     data.gov.in. Published under the Government Open Data License - India: https://data.gov.in/government-open-data-license-india'
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
@@ -1004,10 +1220,290 @@ sources:
   failure_mode_hypothesis: fails under load-shedding months and on Black Friday and SASSA grant-payment
     calendar shifts, and it prints about seven weeks after the month, later than BETI
   crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
   credit: 'Source: Statistics South Africa (Stats SA), P6242.1 Retail trade sales. The analysis is the
     result of the user''s independent processing of the data.'
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
   owner: asia_gap_thread
   cadence_minutes: 43200
+  kind: mechanics
+- id: cn_mot_port_monthly
+  name: China MOT monthly port cargo and container throughput, by port (xlsx)
+  url: https://xxgk.mot.gov.cn/zhengceapp/863/868/list_7234.html
+  region: CN
+  language: zh
+  cadence: monthly
+  auth: none
+  licence: 'Ministry of Transport of the PRC public statistics (terms not granted: see TERMS)'
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: BLOCKED+SUBSTITUTE:imf_portwatch_ports
+  terms: to_confirm
+  mechanism: 'the transport ministry''s monthly port table counts cargo tonnes and boxes port by port:
+    dry-bulk ports (Tangshan, Rizhao, Qingdao) are iron-ore and coal arrivals, container ports are export
+    volume, and their divergence separates industrial input demand from export demand weeks before customs
+    values'
+  payer: China-trade proxies (AUD, copper, HK) waiting for value-based customs data
+  constraint: customs prints values, monthly and late; tonnes and boxes lead them
+  source_culture: CN/zh
+  participant_structure:
+  - physical_flow
+  - policy_driven
+  failure_mode_hypothesis: fails around Spring Festival (January-February combined base) and typhoon closures,
+    and when transhipment double-counts boxes
+  crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 6
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
+  substituted_by:
+  - imf_portwatch_ports
+  substitutes_for: satellite / AIS activity panels (Orbital Insight, SpaceKnow)
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 43200
+  kind: mechanics
+- id: us_bls_deepsea_freight
+  name: 'BLS PPI: deep sea freight transportation (via FRED, monthly)'
+  url: https://api.stlouisfed.org/fred/series/observations
+  region: US
+  language: en
+  cadence: monthly
+  auth: key
+  auth_env: FRED_API_KEY
+  licence: US BLS public domain data (cite BLS); FRED API terms and notice
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: BLOCKED_ON_KEY:FRED_API_KEY
+  terms: confirmed
+  mechanism: 'the producer price of deep-sea freight is what ocean carriers bill, an official monthly
+    index of the container and bulk rate cycle: a freight-cost impulse is Asian export demand meeting
+    vessel supply'
+  payer: trade-cycle and commodity-FX holders reading spot-rate headlines only
+  constraint: official price indices print monthly; spot rates are licensed
+  source_culture: US/en
+  participant_structure:
+  - physical_flow
+  - institutional
+  failure_mode_hypothesis: fails because it blends routes and contract types, so a single-lane spike (Red
+    Sea) is diluted; preliminary prints revise four months later
+  crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 1
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
+  credit: 'Source: U.S. Bureau of Labor Statistics, PPI Deep Sea Freight Transportation (PCU483111483111),
+    via FRED. This product uses the FRED® API but is not endorsed or certified by the Federal Reserve
+    Bank of St. Louis.'
+  vintage: current
+  substitutes_for: container freight route indices (SCFI/CCFI, Drewry WCI, Freightos FBX)
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 43200
+  kind: mechanics
+- id: cn_nbs_fai
+  name: 'NBS fixed-asset investment: total, infrastructure, manufacturing (China)'
+  url: https://www.stats.gov.cn/sj/zxfb/
+  region: CN
+  language: zh
+  cadence: monthly
+  auth: none
+  licence: National Bureau of Statistics of China releases (public)
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  terms: confirmed
+  mechanism: infrastructure investment is the steel- and copper-intensive order book that procurement
+    awards record notice by notice; its year-to-date pace against its own run-rate is the construction-demand
+    state
+  payer: iron-ore, copper and AUD holders reading stimulus headlines, not spend
+  constraint: local-government spending is announced long before it is spent
+  source_culture: CN/zh
+  participant_structure:
+  - policy_driven
+  - physical_flow
+  failure_mode_hypothesis: fails when the infrastructure definition (口径) is revised and on year-to-date
+    base effects early in the year
+  crowding_prior: medium
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 4
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
+  credit: '数据来源：国家统计局 (Source: National Bureau of Statistics of China)'
+  substitutes_for: public-procurement award analytics (CCGP award aggregators)
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 43200
+  kind: mechanics
+- id: cn_nbs_profits
+  name: NBS industrial-enterprise profits, total and by sector (China)
+  url: https://www.stats.gov.cn/sj/zxfb/
+  region: CN
+  language: zh
+  cadence: monthly
+  auth: none
+  licence: National Bureau of Statistics of China releases (public)
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  terms: confirmed
+  mechanism: 'sector profits of steel mills, smelters and miners are the margin state of the commodity
+    chain: mills squeezed cut ore purchases, smelters flush add capacity -- corporate activity aggregated
+    by sector, never one company'
+  payer: commodity and China-equity holders pricing output volumes, not margins
+  constraint: listed-company reports are quarterly; the sector aggregate is monthly
+  source_culture: CN/zh
+  participant_structure:
+  - institutional
+  - policy_driven
+  failure_mode_hypothesis: fails when sample changes (enterprises entering or leaving the 规模以上 threshold)
+    move the base, and on price effects that are not activity
+  crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 5
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
+  credit: '数据来源：国家统计局 (Source: National Bureau of Statistics of China)'
+  substitutes_for: corporate supply-chain registries (Tianyancha, Qichacha)
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 43200
+  kind: mechanics
+- id: cn_s5p_no2_clusters
+  name: Copernicus Sentinel-5P NO2 over named Chinese industrial clusters (CDSE)
+  url: https://sh.dataspace.copernicus.eu/api/v1/statistics
+  region: CN
+  language: en
+  cadence: daily
+  auth: key
+  auth_env: CDSE_TOKEN
+  licence: Copernicus Sentinel data licence (free, full, open; attribution)
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: BLOCKED_ON_KEY:CDSE_TOKEN
+  terms: confirmed
+  mechanism: tropospheric NO2 over a steel, refining or port cluster against its own seasonal and weekday
+    baseline is combustion activity, and the share of clusters running above baseline is industrial breadth
+    seen from orbit
+  payer: iron-ore, copper, crude and AUD holders waiting for monthly output data
+  constraint: official output prints monthly and three weeks late
+  source_culture: CN/zh
+  participant_structure:
+  - physical_flow
+  - policy_driven
+  failure_mode_hypothesis: fails under winter heating and meteorology (boundary-layer trapping), output
+    curbs for air-quality events, and city emissions inside a city-seat box
+  crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 4
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
+  credit: Contains modified Copernicus Sentinel data [year]
+  substitutes_for: satellite / AIS activity panels (Orbital Insight, SpaceKnow)
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 1440
+  kind: mechanics
+- id: kr_naver_datalab
+  name: Naver DataLab search attention by topic (Korea)
+  url: https://openapi.naver.com/v1/datalab/search
+  region: KR
+  language: ko
+  cadence: weekly
+  auth: key
+  auth_env: NAVER_CLIENT_ID
+  licence: Naver Developers Open API (registered client id/secret; terms unread here)
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: BLOCKED+SUBSTITUTE:wiki_asia_attention
+  terms: to_confirm
+  mechanism: 'Korean households search the won, chips, loans, flats and prices before they act: attention
+    relative to a stable anchor, its acceleration and its surprise are local retail pressure the English
+    tape does not read'
+  payer: won and Korea-exposed holders who price institutional flow only
+  constraint: retail acts with a lag; institutions ignore search volume
+  source_culture: KR/ko
+  participant_structure:
+  - retail_heavy
+  failure_mode_hypothesis: fails when a celebrity or news story hijacks a keyword and when the anchor's
+    own volume shifts
+  crowding_prior: low
+  rent:
+    annual_cost_usd: 0
+    unique_axes: 7
+    cells_tested: UNMEASURED
+    survivors: UNMEASURED
+    cost_per_survivor_usd: UNMEASURED
+    rule: 'information per unit of rent: a paid source renews only on measured survivors per dollar against
+      its free substitutes'
+  substituted_by:
+  - wiki_asia_attention
+  substitutes_for: search-attention panels (Baidu Index, Naver DataLab)
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 10080
   kind: mechanics

@@ -1,0 +1,352 @@
+{
+ "note": "Named industrial-cluster points for NASA FIRMS and Copernicus Sentinel-5P reads in desks/mt5/research/alt_proxies.py. Each point is the coordinate printed on the cited Wikipedia page (read 2026-10-06 through the page's own coordinate line); most are a city or district seat, NOT a plant fence line, so a box of +-radius_deg around it holds the plant AND urban emitters. That is why the reads are anomalies against the cluster's own seasonal and weekday baseline, never levels, and why a city-centre point is never read as national output. Add facilities here, never in code.",
+ "checked_at": "2026-10-06",
+ "radius_deg": 0.25,
+ "facilities": [
+  {
+   "id": "tangshan",
+   "name": "Tangshan steel and Jingtang port cluster",
+   "types": [
+    "steel",
+    "port"
+   ],
+   "lat": 39.62944,
+   "lon": 118.17389,
+   "province": "Hebei",
+   "operators": "Hesteel Tangsteel, Shougang Jingtang (Caofeidian), Tangshan port",
+   "source": "https://en.wikipedia.org/wiki/Tangshan",
+   "coordinate_basis": "municipal government seat"
+  },
+  {
+   "id": "handan",
+   "name": "Handan steel cluster",
+   "types": [
+    "steel"
+   ],
+   "lat": 36.601,
+   "lon": 114.487,
+   "province": "Hebei",
+   "operators": "Hesteel Hansteel",
+   "source": "https://en.wikipedia.org/wiki/Handan",
+   "coordinate_basis": "city coordinate as printed"
+  },
+  {
+   "id": "anshan",
+   "name": "Anshan steel cluster",
+   "types": [
+    "steel"
+   ],
+   "lat": 41.108,
+   "lon": 122.994,
+   "province": "Liaoning",
+   "operators": "Ansteel",
+   "source": "https://en.wikipedia.org/wiki/Anshan",
+   "coordinate_basis": "municipal government seat"
+  },
+  {
+   "id": "benxi",
+   "name": "Benxi steel cluster",
+   "types": [
+    "steel"
+   ],
+   "lat": 41.3039,
+   "lon": 123.7649,
+   "province": "Liaoning",
+   "operators": "Benxi Steel",
+   "source": "https://en.wikipedia.org/wiki/Benxi",
+   "coordinate_basis": "city centre"
+  },
+  {
+   "id": "wuhan_qingshan",
+   "name": "Wuhan Qingshan steel works",
+   "types": [
+    "steel"
+   ],
+   "lat": 30.6306637,
+   "lon": 114.4046131,
+   "province": "Hubei",
+   "operators": "Baowu WISCO Qingshan works",
+   "source": "https://en.wikipedia.org/wiki/Qingshan_District,_Wuhan",
+   "coordinate_basis": "map reference cited on the page"
+  },
+  {
+   "id": "zhangjiagang",
+   "name": "Zhangjiagang steel cluster",
+   "types": [
+    "steel",
+    "port"
+   ],
+   "lat": 31.8767,
+   "lon": 120.556,
+   "province": "Jiangsu",
+   "operators": "Shagang, Zhangjiagang port",
+   "source": "https://en.wikipedia.org/wiki/Zhangjiagang",
+   "coordinate_basis": "city centre"
+  },
+  {
+   "id": "maanshan",
+   "name": "Ma'anshan steel cluster",
+   "types": [
+    "steel"
+   ],
+   "lat": 31.669,
+   "lon": 118.507,
+   "province": "Anhui",
+   "operators": "Masteel",
+   "source": "https://en.wikipedia.org/wiki/Ma%27anshan",
+   "coordinate_basis": "municipal government seat"
+  },
+  {
+   "id": "baotou",
+   "name": "Baotou steel and aluminium cluster",
+   "types": [
+    "steel",
+    "aluminium"
+   ],
+   "lat": 40.6213,
+   "lon": 109.9532,
+   "province": "Inner Mongolia",
+   "operators": "Baotou Steel, Baotou aluminium smelters",
+   "source": "https://en.wikipedia.org/wiki/Baotou",
+   "coordinate_basis": "municipal government seat"
+  },
+  {
+   "id": "rizhao",
+   "name": "Rizhao steel and ore port cluster",
+   "types": [
+    "steel",
+    "port"
+   ],
+   "lat": 35.417,
+   "lon": 119.527,
+   "province": "Shandong",
+   "operators": "Rizhao Steel, Rizhao port (iron ore)",
+   "source": "https://en.wikipedia.org/wiki/Rizhao",
+   "coordinate_basis": "municipal government seat"
+  },
+  {
+   "id": "guixi",
+   "name": "Guixi copper smelter",
+   "types": [
+    "copper"
+   ],
+   "lat": 28.2925,
+   "lon": 117.2454,
+   "province": "Jiangxi",
+   "operators": "Jiangxi Copper Guixi smelter",
+   "source": "https://en.wikipedia.org/wiki/Guixi",
+   "coordinate_basis": "city coordinate as printed"
+  },
+  {
+   "id": "tongling",
+   "name": "Tongling copper cluster",
+   "types": [
+    "copper"
+   ],
+   "lat": 30.945,
+   "lon": 117.811,
+   "province": "Anhui",
+   "operators": "Tongling Nonferrous smelters",
+   "source": "https://en.wikipedia.org/wiki/Tongling",
+   "coordinate_basis": "municipal government seat"
+  },
+  {
+   "id": "jinchang",
+   "name": "Jinchang nickel-copper cluster",
+   "types": [
+    "copper",
+    "nickel"
+   ],
+   "lat": 38.5214,
+   "lon": 102.188,
+   "province": "Gansu",
+   "operators": "Jinchuan Group",
+   "source": "https://en.wikipedia.org/wiki/Jinchang",
+   "coordinate_basis": "municipal government seat"
+  },
+  {
+   "id": "huangshi",
+   "name": "Huangshi/Daye copper and steel cluster",
+   "types": [
+    "copper",
+    "steel"
+   ],
+   "lat": 30.2011,
+   "lon": 115.039,
+   "province": "Hubei",
+   "operators": "Daye Nonferrous, Daye Special Steel",
+   "source": "https://en.wikipedia.org/wiki/Huangshi",
+   "coordinate_basis": "city centre"
+  },
+  {
+   "id": "zouping",
+   "name": "Zouping aluminium cluster",
+   "types": [
+    "aluminium"
+   ],
+   "lat": 36.863,
+   "lon": 117.743,
+   "province": "Shandong",
+   "operators": "Weiqiao / China Hongqiao smelters",
+   "source": "https://en.wikipedia.org/wiki/Zouping",
+   "coordinate_basis": "city coordinate as printed"
+  },
+  {
+   "id": "maoming",
+   "name": "Maoming refining cluster",
+   "types": [
+    "refining"
+   ],
+   "lat": 21.6627,
+   "lon": 110.9255,
+   "province": "Guangdong",
+   "operators": "Sinopec Maoming refinery and petrochemicals",
+   "source": "https://en.wikipedia.org/wiki/Maoming",
+   "coordinate_basis": "municipal government seat"
+  },
+  {
+   "id": "daishan",
+   "name": "Zhoushan Daishan refining cluster",
+   "types": [
+    "refining"
+   ],
+   "lat": 30.2603,
+   "lon": 122.204,
+   "province": "Zhejiang",
+   "operators": "Zhejiang Petrochemical (Yushan island)",
+   "source": "https://en.wikipedia.org/wiki/Daishan_County",
+   "coordinate_basis": "county coordinate as printed"
+  },
+  {
+   "id": "dalian",
+   "name": "Dalian refining and port cluster",
+   "types": [
+    "refining",
+    "port"
+   ],
+   "lat": 38.9,
+   "lon": 121.6,
+   "province": "Liaoning",
+   "operators": "PetroChina Dalian refinery, Dalian port",
+   "source": "https://en.wikipedia.org/wiki/Dalian",
+   "coordinate_basis": "municipal government seat"
+  },
+  {
+   "id": "shenmu",
+   "name": "Shenmu coal cluster",
+   "types": [
+    "coal"
+   ],
+   "lat": 38.81944,
+   "lon": 110.48972,
+   "province": "Shaanxi",
+   "operators": "Shendong coalfield mines",
+   "source": "https://en.wikipedia.org/wiki/Shenmu",
+   "coordinate_basis": "city coordinate as printed"
+  },
+  {
+   "id": "jungar",
+   "name": "Jungar coal cluster",
+   "types": [
+    "coal"
+   ],
+   "lat": 39.867,
+   "lon": 111.233,
+   "province": "Inner Mongolia",
+   "operators": "Jungar coalfield mines",
+   "source": "https://en.wikipedia.org/wiki/Jungar_Banner",
+   "coordinate_basis": "banner coordinate as printed"
+  },
+  {
+   "id": "datong",
+   "name": "Datong coal cluster",
+   "types": [
+    "coal"
+   ],
+   "lat": 40.097,
+   "lon": 113.367,
+   "province": "Shanxi",
+   "operators": "Datong coal mines",
+   "source": "https://en.wikipedia.org/wiki/Datong",
+   "coordinate_basis": "municipal government seat"
+  },
+  {
+   "id": "qingdao",
+   "name": "Qingdao port",
+   "types": [
+    "port"
+   ],
+   "lat": 36.0669,
+   "lon": 120.3827,
+   "province": "Shandong",
+   "operators": "Qingdao port (Qianwan, Dongjiakou)",
+   "source": "https://en.wikipedia.org/wiki/Qingdao",
+   "coordinate_basis": "municipal government seat; the port areas lie within the box"
+  },
+  {
+   "id": "tianjin_port",
+   "name": "Port of Tianjin",
+   "types": [
+    "port"
+   ],
+   "lat": 38.97583,
+   "lon": 117.7875,
+   "province": "Tianjin",
+   "operators": "Port of Tianjin",
+   "source": "https://en.wikipedia.org/wiki/Port_of_Tianjin",
+   "coordinate_basis": "port coordinate as printed"
+  },
+  {
+   "id": "ningbo_zhoushan",
+   "name": "Port of Ningbo-Zhoushan",
+   "types": [
+    "port"
+   ],
+   "lat": 29.933,
+   "lon": 121.833,
+   "province": "Zhejiang",
+   "operators": "Ningbo-Zhoushan port",
+   "source": "https://en.wikipedia.org/wiki/Port_of_Ningbo-Zhoushan",
+   "coordinate_basis": "port coordinate as printed"
+  },
+  {
+   "id": "yangshan",
+   "name": "Shanghai Yangshan port",
+   "types": [
+    "port"
+   ],
+   "lat": 30.617,
+   "lon": 122.067,
+   "province": "Shanghai",
+   "operators": "Yangshan deep-water port",
+   "source": "https://en.wikipedia.org/wiki/Yangshan_Port",
+   "coordinate_basis": "port coordinate as printed"
+  },
+  {
+   "id": "guangzhou",
+   "name": "Guangzhou port area",
+   "types": [
+    "port"
+   ],
+   "lat": 23.13,
+   "lon": 113.26,
+   "province": "Guangdong",
+   "operators": "Port of Guangzhou",
+   "source": "https://en.wikipedia.org/wiki/Guangzhou",
+   "coordinate_basis": "city coordinate as printed; Nansha lies ~50 km south, outside a 0.25 degree box"
+  },
+  {
+   "id": "shenzhen",
+   "name": "Shenzhen port area",
+   "types": [
+    "port"
+   ],
+   "lat": 22.54667,
+   "lon": 114.05444,
+   "province": "Guangdong",
+   "operators": "Shekou, Chiwan, Yantian (partly)",
+   "source": "https://en.wikipedia.org/wiki/Shenzhen",
+   "coordinate_basis": "civic centre"
+  }
+ ]
+}

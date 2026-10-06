@@ -358,6 +358,14 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                            "access": access,
                            "collected_utc": datetime.now(UTC).isoformat(timespec="seconds")}
 
+    # PAID AND BLOCKED (2026-10-06): a paid vendor the public/licensed-only rule bars (no licence
+    # held: RQData, Wind) is never fetched, whatever key happens to be in the environment.
+    if src.get("paid_blocked"):
+        rec.update({"status": "PAID_BLOCKED",
+                    "why": ("paid vendor with no licence held: public or licensed data only, so "
+                            "it is never fetched; " + str(src.get("paid_blocked_note") or ""))})
+        return rec
+
     if access in ("key", "paid") and not _key_present(src):
         rec.update({"status": "UNCONFIGURED", "key_env": src.get("key_env"),
                     "why": (f"declares {access} access and {src.get('key_env') or 'no key env'} "
@@ -625,7 +633,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"asia collector: {len(rows)} attempted of {len(sources)} -> {dict(census)}")
     for st in ("COLLECTED", "NEEDS_PARSER", "ROUTE_CHANGED", "HTTP_ERROR", "UNREACHABLE",
-               "UNCONFIGURED", "BLOCKED_BY_ROBOTS"):
+               "UNCONFIGURED", "PAID_BLOCKED", "BLOCKED_BY_ROBOTS"):
         rs = [r for r in rows if r.get("status") == st]
         if not rs:
             continue

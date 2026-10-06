@@ -172,6 +172,11 @@ class Paths:
         return self.desk / "data" / "null_pass_trials.jsonl"
 
     @property
+    def sensor_dir(self) -> Path:
+        """Per-source §2.5 sensor records (`sensor_records`), the newest points per series."""
+        return self.desk / "data" / "alt_proxies" / "sensor"
+
+    @property
     def sge_premium(self) -> Path:
         return self.desk / "data" / "lake" / "sge_premium.parquet"
 
@@ -459,6 +464,9 @@ def parse_firms(body: bytes, ctx: Ctx) -> list[Obs]:
         return []
     counts: dict[date, float] = {}
     frp: dict[date, float] = {}
+    cells: dict[tuple[float, float], set[date]] = {}
+    hits: list[tuple[date, tuple[float, float], str]] = []
+    typed = False
     for r in csv.DictReader(io.StringIO(text)):
         conf = str(r.get("confidence") or "").strip().lower()
         if conf in ("l", "low"):
@@ -472,14 +480,34 @@ def parse_firms(body: bytes, ctx: Ctx) -> list[Obs]:
         counts[d] = counts.get(d, 0.0) + 1.0
         f = _num(str(r.get("frp") or ""))
         frp[d] = frp.get(d, 0.0) + (f or 0.0)
+        la, lo = _num(str(r.get("latitude") or "")), _num(str(r.get("longitude") or ""))
+        if la is not None and lo is not None:
+            cell = (round(la, 2), round(lo, 2))
+            cells.setdefault(cell, set()).add(d)
+            typed = typed or "type" in r
+            hits.append((d, cell, str(r.get("type") or "").strip()))
     days = sorted(counts)
     if ctx.start is not None and ctx.end is not None:
         days = [ctx.start + timedelta(days=i) for i in range((ctx.end - ctx.start).days + 1)]
+    # INDUSTRIAL vs TRANSIENT. A furnace, coke oven or flare burns at the same ~1 km cell day
+    # after day; crop-residue and wild fires move. A detection is `persistent` when its 0.01-deg
+    # cell is hot on >= 3 distinct days of this file. When the archive's `type` column is present
+    # (0 vegetation fire, 2 other static land source), vegetation fires are counted apart.
+    pers: dict[date, float] = {}
+    veg: dict[date, float] = {}
+    for d, cell, typ in hits:
+        if len(cells[cell]) >= 3 and typ != "0":
+            pers[d] = pers.get(d, 0.0) + 1.0
+        if typ == "0":
+            veg[d] = veg.get(d, 0.0) + 1.0
     part = ctx.part or "area"
     out: list[Obs] = []
     for d in days:
         out.append(Obs(f"{part}_count", d, counts.get(d, 0.0)))
         out.append(Obs(f"{part}_frp", d, round(frp.get(d, 0.0), 3)))
+        out.append(Obs(f"{part}_persistent_count", d, pers.get(d, 0.0)))
+        if typed:
+            out.append(Obs(f"{part}_veg_count", d, veg.get(d, 0.0)))
     return out
 
 
@@ -505,15 +533,36 @@ def _slug(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", s.lower()).strip("_")
 
 
+#: PortWatch vessel-type and tonnage fields kept for the major Chinese ports (series suffix).
+PORTWATCH_SEGMENTS = {"portcalls_container": "calls_container",
+                      "portcalls_dry_bulk": "calls_dry_bulk", "portcalls_tanker": "calls_tanker",
+                      "import": "import_t", "export": "export_t"}
+
+
 def parse_portwatch_ports(body: bytes, ctx: Ctx) -> list[Obs]:
-    """IMF PortWatch Daily_Ports_Data: port calls per port per day (AIS-derived)."""
+    """IMF PortWatch Daily_Ports_Data: port calls per port per day (AIS-derived). A China-wide
+    page (`ctx.part` cn_page*) names its series `cn_<port>_portcalls`, and for the major ports
+    adds the vessel-type split (container / dry bulk / tanker calls) and estimated import and
+    export tonnes. Field names follow the Daily_Ports_Data layer; a field absent from the reply
+    is simply not emitted (UNCONFIRMED against a live China-wide reply)."""
+    cn = (ctx.part or "").startswith("cn_")
     out: list[Obs] = []
     for a in _arcgis_rows(body):
         d = _arcgis_date(a.get("date"))
         name = str(a.get("portname") or "")
         v = _num(str(a.get("portcalls") if a.get("portcalls") is not None else ""))
-        if d and name and v is not None:
-            out.append(Obs(f"{_slug(name)}_portcalls", d, v))
+        if not (d and name and v is not None):
+            continue
+        slug = _slug(name)
+        if not cn:
+            out.append(Obs(f"{slug}_portcalls", d, v))
+            continue
+        out.append(Obs(f"cn_{slug}_portcalls", d, v))
+        if slug in PORTWATCH_CN_MAJOR:
+            for fld, suf in PORTWATCH_SEGMENTS.items():
+                x = _num(str(a.get(fld) if a.get(fld) is not None else ""))
+                if x is not None:
+                    out.append(Obs(f"cn_{slug}_{suf}", d, x))
     return out
 
 
@@ -755,7 +804,15 @@ WIKI_ASIA_ARTICLES: tuple[tuple[str, str, str], ...] = (
     ("ja_boj", "ja.wikipedia", "日本銀行"), ("ja_nikkei", "ja.wikipedia", "日経平均株価"),
     ("zh_pboc", "zh.wikipedia", "中国人民银行"), ("zh_rmb", "zh.wikipedia", "人民币"),
     ("zh_hsi", "zh.wikipedia", "恒生指数"), ("ko_bok", "ko.wikipedia", "한국은행"),
-    ("ko_kospi", "ko.wikipedia", "코스피"))
+    ("ko_kospi", "ko.wikipedia", "코스피"),
+    # The lawful substitute for the Baidu Index keyword basket (黄金 美元 失业 铜价 钢材 原油 汽油
+    # 电动车 经济衰退 房价...): the zh.wikipedia article for each topic. Titles UNCONFIRMED from
+    # the authoring box (zh.wikipedia unreachable); a missing article is reported, not fatal.
+    ("zh_kw_gold", "zh.wikipedia", "金"), ("zh_kw_usd", "zh.wikipedia", "美元"),
+    ("zh_kw_unemployment", "zh.wikipedia", "失业"), ("zh_kw_copper", "zh.wikipedia", "铜"),
+    ("zh_kw_steel", "zh.wikipedia", "钢"), ("zh_kw_oil", "zh.wikipedia", "石油"),
+    ("zh_kw_gasoline", "zh.wikipedia", "汽油"), ("zh_kw_ev", "zh.wikipedia", "电动汽车"),
+    ("zh_kw_recession", "zh.wikipedia", "经济衰退"), ("zh_kw_property", "zh.wikipedia", "房地产"))
 WIKI_URL = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{project}/"
             "all-access/user/{title}/daily/{start}/{end}")
 
@@ -1286,6 +1343,559 @@ def parse_mot_port(body: bytes, ctx: Ctx) -> list[Obs]:
     return out
 
 
+# ============================================================ PHYSICAL-ECONOMY EXHAUST (P4)
+# Ports by port, freight by route, power by fuel, procurement by commodity basket, corporate
+# activity by sector, thermal and NO2 by named facility, Korean search attention by topic. Every
+# parser here emits named series only; nothing is aggregated across pages at parse time except
+# what one document holds whole (one monthly port table, one release).
+def _xlsx_sheets(body: bytes) -> list[list[list[str]]]:
+    """A stdlib .xlsx reader: shared strings + every worksheet in order, as rows of cell text.
+    Cached values only (formulas are never evaluated). A non-zip or a member larger than 64 MB
+    uncompressed is nothing."""
+    import xml.etree.ElementTree as ET
+    import zipfile
+    try:
+        z = zipfile.ZipFile(io.BytesIO(body))
+    except (zipfile.BadZipFile, ValueError):
+        return []
+    m = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+    if any(i.file_size > 64 * 1024 * 1024 for i in z.infolist()):
+        return []
+    names = z.namelist()
+    shared: list[str] = []
+    try:
+        if "xl/sharedStrings.xml" in names:
+            for si in ET.fromstring(z.read("xl/sharedStrings.xml")).iter(f"{m}si"):
+                shared.append("".join(t.text or "" for t in si.iter(f"{m}t")))
+        sheets = sorted((n for n in names if re.fullmatch(r"xl/worksheets/sheet\d+\.xml", n)),
+                        key=lambda n: int(re.sub(r"\D", "", n.rsplit("/", 1)[1]) or 0))
+        book: list[list[list[str]]] = []
+        for sh in sheets:
+            rows: list[list[str]] = []
+            book.append(rows)
+            for r in ET.fromstring(z.read(sh)).iter(f"{m}row"):
+                cells: dict[int, str] = {}
+                for c in r.findall(f"{m}c"):
+                    letters = re.match(r"[A-Z]+", c.get("r") or "")
+                    col = 0
+                    for ch in letters.group(0) if letters else "":
+                        col = col * 26 + (ord(ch) - 64)
+                    col = col - 1 if col else len(cells)
+                    v = c.find(f"{m}v")
+                    t = c.get("t")
+                    if t == "s" and v is not None and (v.text or "").isdigit():
+                        k = int(v.text or 0)
+                        text = shared[k] if k < len(shared) else ""
+                    elif t == "inlineStr":
+                        text = "".join(x.text or "" for x in c.iter(f"{m}t"))
+                    else:
+                        text = v.text or "" if v is not None else ""
+                    cells[col] = text.strip()
+                rows.append([cells.get(i, "") for i in range(max(cells) + 1)] if cells else [])
+    except (ET.ParseError, KeyError, ValueError):
+        return []
+    return book
+
+
+#: MOT monthly port table names -> series slug. Only these ports are emitted; an unmapped row is
+#: not guessed at. North/south and commodity membership are declared, not inferred.
+CN_PORTS: dict[str, str] = {
+    "全国": "national", "总计": "national", "全国合计": "national", "全国总计": "national",
+    "沿海合计": "coastal",
+    "内河合计": "inland", "上海": "shanghai", "宁波舟山": "ningbo_zhoushan",
+    "宁波-舟山": "ningbo_zhoushan", "青岛": "qingdao", "天津": "tianjin", "大连": "dalian",
+    "广州": "guangzhou", "深圳": "shenzhen", "日照": "rizhao", "唐山": "tangshan",
+    "营口": "yingkou", "秦皇岛": "qinhuangdao", "烟台": "yantai", "连云港": "lianyungang",
+    "厦门": "xiamen", "福州": "fuzhou", "泉州": "quanzhou", "湛江": "zhanjiang",
+    "北部湾": "beibu_gulf", "黄骅": "huanghua", "锦州": "jinzhou", "丹东": "dandong",
+    "威海": "weihai", "东莞": "dongguan", "珠海": "zhuhai", "苏州": "suzhou", "南通": "nantong"}
+CN_NORTH_PORTS = frozenset({"dalian", "yingkou", "jinzhou", "dandong", "qinhuangdao", "tangshan",
+                            "huanghua", "tianjin", "yantai", "weihai", "qingdao", "rizhao",
+                            "lianyungang"})
+CN_SOUTH_PORTS = frozenset({"shanghai", "ningbo_zhoushan", "xiamen", "fuzhou", "quanzhou",
+                            "guangzhou", "shenzhen", "dongguan", "zhuhai", "zhanjiang",
+                            "beibu_gulf"})
+#: Dry-bulk (iron ore, coal) heavy ports: the commodity-port activity basket.
+CN_COMMODITY_PORTS = frozenset({"tangshan", "rizhao", "qingdao", "tianjin", "dalian", "huanghua",
+                                "qinhuangdao", "yingkou", "lianyungang"})
+
+
+def _implied_yoy(rows: list[tuple[float, float]]) -> float | None:
+    """Aggregate YoY of a basket from (level, yoy %) pairs: this year's sum over the implied
+    prior-year sum (level / (1 + yoy/100)). Never an average of percentages."""
+    cur = prev = 0.0
+    for lvl, yoy in rows:
+        if yoy <= -100.0:
+            return None
+        cur += lvl
+        prev += lvl / (1.0 + yoy / 100.0)
+    return (cur / prev - 1.0) * 100.0 if rows and prev > 0 else None
+
+
+def parse_mot_port_monthly(body: bytes, ctx: Ctx) -> list[Obs]:
+    """MOT monthly 港口货物、集装箱吞吐量 workbook (.xlsx). Format, as the MOT list describes the
+    release: one sheet per measure, a title naming the year-month and the measure (货物 = cargo
+    in 万吨; 集装箱 = containers in 万TEU), then one row per port: name, this month, this month's
+    YoY %, year-to-date, YTD YoY %. Per mapped port: level and YoY; plus national throughput,
+    container-port breadth (share of mapped coastal container ports with YoY > 0), commodity-
+    port cargo YoY, north and south cargo YoY and their gap, and bulk-minus-container YoY."""
+    blocks = [[r for r in sh if r] for sh in _xlsx_sheets(body)]
+    got: dict[str, dict[str, tuple[float, float]]] = {"cargo": {}, "teu": {}}
+    period: date | None = None
+    for blk in blocks:
+        head = " ".join(" ".join(r) for r in blk[:4])
+        ym = re.search(r"(\d{4})\s*年\s*(\d{1,2})\s*月", head)
+        if not ym or not 1 <= int(ym.group(2)) <= 12:
+            continue
+        p = _month_end(int(ym.group(1)), int(ym.group(2)))
+        if period is not None and p != period:
+            continue                                     # one month per workbook
+        period = p
+        kind = "teu" if re.search(r"集装箱|TEU|标箱", head, re.I) else "cargo"
+        for r in blk:
+            name = re.sub(r"[\s　]+", "", r[0] if r else "").removesuffix("港")
+            slug = CN_PORTS.get(name)
+            nums = [x for x in (_num(c) for c in r[1:]) if x is not None]
+            if slug and len(nums) >= 2:
+                got[kind].setdefault(slug, (nums[0], nums[1]))
+    if period is None:
+        return []
+    out: list[Obs] = []
+    unit = {"cargo": "cargo_10kt", "teu": "teu_10k"}
+    for kind, ports in got.items():
+        for slug, (lvl, yoy) in sorted(ports.items()):
+            out.append(Obs(f"{slug}_{unit[kind]}", period, lvl))
+            out.append(Obs(f"{slug}_{kind}_yoy", period, yoy))
+    cargo, teu = got["cargo"], got["teu"]
+    box = [yoy for s, (_l, yoy) in teu.items() if s in CN_NORTH_PORTS | CN_SOUTH_PORTS]
+    if len(box) >= 5:
+        out.append(Obs("container_port_breadth", period, sum(y > 0 for y in box) / len(box)))
+    for name, members in (("commodity_ports", CN_COMMODITY_PORTS), ("north", CN_NORTH_PORTS),
+                          ("south", CN_SOUTH_PORTS)):
+        sel = [v for s, v in cargo.items() if s in members]
+        if len(sel) >= 3 and (agg := _implied_yoy(sel)) is not None:
+            out.append(Obs(f"{name}_cargo_yoy", period, round(agg, 4)))
+    n, s_ = ([v for s, v in cargo.items() if s in grp] for grp in (CN_NORTH_PORTS, CN_SOUTH_PORTS))
+    if len(n) >= 3 and len(s_) >= 3:
+        a, b = _implied_yoy(n), _implied_yoy(s_)
+        if a is not None and b is not None:
+            out.append(Obs("north_minus_south_cargo_yoy", period, round(a - b, 4)))
+    if "national" in cargo and "national" in teu:
+        out.append(Obs("bulk_minus_container_yoy", period,
+                       round(cargo["national"][1] - teu["national"][1], 4)))
+    return out
+
+
+_SSE_DATE = re.compile(r"(20\d{2})-(\d{2})-(\d{2})")
+_SSE_ROW = re.compile(r"<tr[^>]*>(.*?)</tr>", re.S | re.I)
+_SSE_CELL = re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>", re.S | re.I)
+
+
+def parse_sse_routes(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Shanghai Shipping Exchange SCFI table as its page renders it (columns, verbatim from
+    en.sse.net.cn/indices/scfinew.jsp: Description | Unit | Weighting | Previous Index | Current
+    Index | Compare With Last Week; the period is the Friday printed beside it). One series per
+    ROUTE, never one blended index: origin Shanghai x destination x unit is the series name.
+    The previous-index column is the prior Friday's value as reprinted (a revision check)."""
+    raw = body.decode("utf-8", errors="replace")
+    dm = _SSE_DATE.search(_text(body))
+    if not dm:
+        return []
+    try:
+        cur = date(int(dm.group(1)), int(dm.group(2)), int(dm.group(3)))
+    except ValueError:
+        return []
+    out: list[Obs] = []
+    for row in _SSE_ROW.findall(raw):
+        cells = [_text(c.encode()) for c in _SSE_CELL.findall(row)]
+        if len(cells) < 5:
+            continue
+        prev, now_v = _num(cells[3]), _num(cells[4])
+        if now_v is None:
+            continue
+        desc = cells[0].lower()
+        unit = re.sub(r"[^a-z]", "", cells[1].lower()).replace("usd", "usd_")
+        if "comprehensive" in desc or "composite" in desc:
+            name = "scfi_composite"
+        else:
+            dest = _slug(re.sub(r"\(.*?\)|service", "", desc))
+            if not dest:
+                continue
+            name = f"shanghai__{dest}__{unit or 'index'}"
+        out.append(Obs(name, cur, now_v))
+        if prev is not None:
+            out.append(Obs(name, cur - timedelta(days=7), prev))
+    return _first_per_key(out)
+
+
+def parse_bls_deepsea(body: bytes, ctx: Ctx) -> list[Obs]:
+    """The BLS deep-sea-freight PPI (PCU483111483111) as FRED serves it."""
+    return parse_fred_obs(body, Ctx(part="deep_sea_freight_ppi", fetched_at=ctx.fetched_at))
+
+
+def parse_fred_obs(body: bytes, ctx: Ctx) -> list[Obs]:
+    """FRED `series/observations` JSON (`observations[].date`, `.value`, '.' = missing) for ONE
+    series, named by `ctx.part` (default `value`). Monthly dates are month starts; the period is
+    the month's end."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    obs = doc.get("observations") if isinstance(doc, dict) else None
+    out: list[Obs] = []
+    for o in obs if isinstance(obs, list) else []:
+        v = _num(str((o or {}).get("value") or ""))
+        try:
+            d = date.fromisoformat(str((o or {}).get("date") or "")[:10])
+        except ValueError:
+            continue
+        if v is not None:
+            out.append(Obs(ctx.part or "value", _month_end(d.year, d.month), v))
+    return out
+
+
+#: NBS release tables and sentences: series key -> the row label printed in the release.
+NBS_PRODUCTS: dict[str, str] = {
+    "crude_steel": "粗钢", "steel_products": "钢材", "cement": "水泥",
+    "nonferrous10": "十种有色金属", "primary_aluminium": "原铝", "autos": "汽车",
+    "nev": "新能源汽车", "power_gen": "规模以上工业发电量", "thermal_power": "火力发电量",
+    "hydro_power": "水力发电量", "nuclear_power": "核能发电量", "wind_power": "风力发电量",
+    "solar_power": "太阳能发电量", "raw_coal": "原煤", "crude_oil": "原油",
+    "crude_run": "原油加工量", "natural_gas": "天然气"}
+_NBS_MONTH = re.compile(r"(\d{4})\s*年\s*(?:1\s*[—\-－–~]+\s*)?(\d{1,2})\s*月份?")  # noqa: RUF001
+_NBS_SIGN = r"(增长|下降)"
+_NBS_IP = re.compile(r"规模以上工业增加值(?:同比)?(?:实际)?" + _NBS_SIGN + r"\s*([\d.]+)\s*%")
+_NBS_POWER = re.compile(r"规上工业发电量\s*([\d.]+)\s*亿千瓦时\s*[，,]?\s*同比" + _NBS_SIGN  # noqa: RUF001
+                        + r"\s*([\d.]+)\s*%")
+_NBS_FUEL = re.compile(
+    r"(火电|水电|核电|风电|太阳能发电)\s*(?:同比)?" + _NBS_SIGN + r"\s*([\d.]+)\s*%")
+_NBS_DAILY = re.compile(r"日均发电\s*([\d.]+)\s*亿千瓦时")
+_NBS_PMI = re.compile(r"制造业采购经理指数\s*[（(]\s*PMI\s*[）)]\s*为\s*([\d.]+)\s*%")  # noqa: RUF001
+_FUEL_KEY = {"火电": "thermal_power", "水电": "hydro_power", "核电": "nuclear_power",
+             "风电": "wind_power", "太阳能发电": "solar_power"}
+
+
+def _nbs_period_pub(text: str) -> tuple[date | None, datetime | None]:
+    """The release's own month (the first 'YYYY年M月份' or 'YYYY年1—M月份') and its own stamp
+    ('2026/09/15 10:00' Beijing, or '2026年09月15日'), converted to UTC."""
+    pm = _NBS_MONTH.search(text)
+    period = None
+    if pm and 1 <= int(pm.group(2)) <= 12:
+        period = _month_end(int(pm.group(1)), int(pm.group(2)))
+    pub = None
+    st = re.search(r"(20\d{2})[/年-](\d{1,2})[/月-](\d{1,2})日?\s*(\d{1,2}):(\d{2})", text)
+    try:
+        if st:
+            pub = _utc(int(st.group(1)), int(st.group(2)), int(st.group(3)), int(st.group(4)),
+                       int(st.group(5))) - timedelta(hours=8)
+        elif (dm := _CN_DATE.search(text)):
+            pub = _utc(int(dm.group(1)), int(dm.group(2)), int(dm.group(3)), 2)
+    except ValueError:
+        pub = None
+    if period is not None and pub is not None and not (
+            period < pub.date() <= period + timedelta(days=MAX_PUB_LAG_D)):
+        pub = None
+    return period, pub
+
+
+def _signed2(word: str, v: str) -> float | None:
+    x = _num(v)
+    return None if x is None else (-x if word == "下降" else x)
+
+
+def parse_nbs_industry(body: bytes, ctx: Ctx) -> list[Obs]:
+    """NBS monthly industrial-production and energy-production releases (and the PMI release's
+    headline). Table rows read as '<label>(<unit>) <month value> <YoY %>' (the release's own
+    layout: 指标 | M月 | 同比增长(%) | 1-M月 | 同比增长(%)); the energy release's sentences
+    ('规上工业发电量9438亿千瓦时,同比下降0.8%;日均发电304.4亿千瓦时', '火电同比下降4.3%,水电
+    增长2.8%...') fill what the table lacks. Derived on the same page: industrial-power residual
+    (generation YoY minus industrial value-added YoY) and power-minus-production divergence
+    (generation YoY minus the mean YoY of crude steel, cement and ten non-ferrous metals)."""
+    text = _text(body)
+    period, pub = _nbs_period_pub(text)
+    if period is None:
+        return []
+    out: list[Obs] = []
+    vals: dict[str, float] = {}
+    for key, label in NBS_PRODUCTS.items():
+        m = re.search(r"(?<![一-鿿])" + re.escape(label)
+                      + r"\s*[（(][^）)]{1,10}[）)]\s+(-?[\d.]+)\s+(-?[\d.]+)", text)  # noqa: RUF001
+        if m and (lv := _num(m.group(1))) is not None and (y := _num(m.group(2))) is not None:
+            vals[f"{key}_level"], vals[f"{key}_yoy"] = lv, y
+    if (pw := _NBS_POWER.search(text)):
+        lv2, y2 = _num(pw.group(1)), _signed2(pw.group(2), pw.group(3))
+        if lv2 is not None and y2 is not None:
+            vals.setdefault("power_gen_level", lv2)
+            vals.setdefault("power_gen_yoy", y2)
+    for fm in _NBS_FUEL.finditer(text):
+        if (y3 := _signed2(fm.group(2), fm.group(3))) is not None:
+            vals.setdefault(f"{_FUEL_KEY[fm.group(1)]}_yoy", y3)
+    if (dl := _NBS_DAILY.search(text)) and (d := _num(dl.group(1))) is not None:
+        vals["power_daily_avg"] = d
+    if (ip := _NBS_IP.search(text)) and (y4 := _signed2(ip.group(1), ip.group(2))) is not None:
+        vals["ip_va_yoy"] = y4
+    if (pmi := _NBS_PMI.search(text)) and (p := _num(pmi.group(1))) is not None:
+        vals["mfg_pmi"] = p
+    if "power_gen_yoy" in vals and "ip_va_yoy" in vals:
+        vals["industrial_power_residual"] = round(vals["power_gen_yoy"] - vals["ip_va_yoy"], 4)
+    heavy = [vals[k] for k in ("crude_steel_yoy", "cement_yoy", "nonferrous10_yoy") if k in vals]
+    if "power_gen_yoy" in vals and len(heavy) == 3:
+        vals["power_minus_heavy_output_yoy"] = round(vals["power_gen_yoy"] - sum(heavy) / 3, 4)
+    for k, v in sorted(vals.items()):
+        out.append(Obs(k, period, v, pub))
+    return out
+
+
+_FAI_TOTAL = re.compile(r"全国固定资产投资[（(]不含农户[）)]\s*([\d.]+)\s*亿元\s*[，,]?\s*同比"  # noqa: RUF001
+                        + _NBS_SIGN + r"\s*([\d.]+)\s*%")
+_FAI_PART = {
+    "infra_ytd_yoy": re.compile(r"基础设施投资(?:[（(][^）)]*[）)])?\s*(?:同比)?" + _NBS_SIGN  # noqa: RUF001
+                                + r"\s*([\d.]+)\s*%"),
+    "manuf_ytd_yoy": re.compile(r"制造业投资\s*(?:同比)?" + _NBS_SIGN + r"\s*([\d.]+)\s*%"),
+    "realestate_ytd_yoy": re.compile(
+        r"房地产开发投资\s*(?:同比)?" + _NBS_SIGN + r"\s*([\d.]+)\s*%"),
+    "fai_mom": re.compile(r"从环比看\s*[，,]?\s*\d{1,2}\s*月份固定资产投资[（(]不含农户[）)]\s*"  # noqa: RUF001
+                          + _NBS_SIGN + r"\s*([\d.]+)\s*%")}
+
+
+def parse_nbs_fai(body: bytes, ctx: Ctx) -> list[Obs]:
+    """NBS fixed-asset-investment release ('1—8月份,全国固定资产投资(不含农户)293092亿元,同比
+    下降7.2%', '基础设施投资(口径详见附注1)同比下降4.0%', '从环比看,8月份固定资产投资(不含
+    农户)下降0.5%'). Year-to-date YoY as printed; the month's own MoM where printed. The national
+    infrastructure-order proxy the CCGP award indices would have measured by basket."""
+    text = _text(body)
+    if "固定资产投资" not in text:
+        return []
+    period, pub = _nbs_period_pub(text)
+    if period is None:
+        return []
+    out: list[Obs] = []
+    if (t := _FAI_TOTAL.search(text)):
+        lv, y = _num(t.group(1)), _signed2(t.group(2), t.group(3))
+        if lv is not None and y is not None:
+            out += [Obs("fai_ytd_100m", period, lv, pub), Obs("fai_ytd_yoy", period, y, pub)]
+    for key, pat in _FAI_PART.items():
+        if (m := pat.search(text)) and (v := _signed2(m.group(1), m.group(2))) is not None:
+            out.append(Obs(key, period, v, pub))
+    return out
+
+
+NBS_SECTORS: dict[str, str] = {
+    "ferrous_smelting": "黑色金属冶炼和压延加工业",
+    "nonferrous_smelting": "有色金属冶炼和压延加工业",
+    "coal_mining": "煤炭开采和洗选业", "electrical_machinery": "电气机械和器材制造业",
+    "oil_gas_extraction": "石油和天然气开采业", "chemicals": "化学原料和化学制品制造业",
+    "electronics": "计算机、通信和其他电子设备制造业", "autos": "汽车制造业",
+    "ferrous_mining": "黑色金属矿采选业"}
+_PROFIT_YTD = re.compile(r"实现利润总额\s*([\d.]+)\s*亿元\s*[，,]?\s*同比" + _NBS_SIGN  # noqa: RUF001
+                         + r"\s*([\d.]+)\s*%")
+_PROFIT_MONTH = re.compile(r"\d{1,2}\s*月份\s*[，,]?\s*规模以上工业企业利润(?:同比)?" + _NBS_SIGN  # noqa: RUF001
+                           + r"\s*([\d.]+)\s*%")
+
+
+def parse_nbs_profits(body: bytes, ctx: Ctx) -> list[Obs]:
+    """NBS industrial-enterprise profits release: total profit YTD (100m yuan and YoY), the
+    month's own YoY, and sector profit YoY from the sector table (row: sector | revenue | YoY % |
+    profit | YoY %; the profit YoY is the fourth number). Sector-level corporate activity --
+    the aggregate the directive asks for in place of single-company supply-chain records."""
+    text = _text(body)
+    if "利润" not in text:
+        return []
+    period, pub = _nbs_period_pub(text)
+    if period is None:
+        return []
+    out: list[Obs] = []
+    if (t := _PROFIT_YTD.search(text)):
+        lv, y = _num(t.group(1)), _signed2(t.group(2), t.group(3))
+        if lv is not None and y is not None:
+            out += [Obs("profit_ytd_100m", period, lv, pub), Obs("profit_ytd_yoy", period, y, pub)]
+    if (mm := _PROFIT_MONTH.search(text)) and (v := _signed2(mm.group(1), mm.group(2))) is not None:
+        out.append(Obs("profit_month_yoy", period, v, pub))
+    for key, label in NBS_SECTORS.items():
+        m = re.search(re.escape(label) + r"\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)",
+                      text)
+        if m and (y5 := _num(m.group(4))) is not None:
+            out.append(Obs(f"{key}_profit_ytd_yoy", period, y5, pub))
+    return out
+
+
+#: CCGP award-notice baskets: basket -> ((ascii id, search keyword), ...). A keyword is a
+#: commodity-intensity proxy (steel structures for steel, cable for copper, roads and bridges for
+#: infrastructure, substations and PV for energy); the index is the count of award notices.
+CCGP_BASKETS: dict[str, tuple[tuple[str, str], ...]] = {
+    "steel": (("gangjiegou", "钢结构"), ("gangcai", "钢材")),
+    "copper": (("dianlan", "电缆"), ("tongcai", "铜材")),
+    "infrastructure": (("daolu", "道路工程"), ("qiaoliang", "桥梁")),
+    "energy": (("biandianzhan", "变电站"), ("guangfu", "光伏"))}
+CCGP_URL = ("http://search.ccgp.gov.cn/bxsearch?searchtype=1&page_index=1&bidSort=0&pinMu=0"
+            "&bidType=7&kw={kw}&start_time={start}&end_time={end}&timeType=6&displayZone="
+            "&zoneId=&pppStatus=0&agentName=")
+CN_PROVINCES = ("北京", "天津", "河北", "山西", "内蒙古", "辽宁", "吉林", "黑龙江", "上海", "江苏",
+                "浙江", "安徽", "福建", "江西", "山东", "河南", "湖北", "湖南", "广东", "广西",
+                "海南", "重庆", "四川", "贵州", "云南", "西藏", "陕西", "甘肃", "青海", "宁夏",
+                "新疆")
+_CCGP_LI = re.compile(r"<li[^>]*>(.*?)</li>", re.S | re.I)
+_CCGP_TOTAL = re.compile(r"共找到\s*(?:<[^>]+>\s*)*([\d,]+)\s*(?:<[^>]+>\s*)*条")
+_CCGP_TIME = re.compile(r"(20\d{2})\.(\d{2})\.(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?")
+
+
+def ccgp_items(body: bytes) -> list[dict[str, Any]]:
+    """Award notices on one CCGP search-result page, as fields: title, publication_time (UTC),
+    buyer, agency, notice_type, province, municipality (the buyer's 市/州 when it names one),
+    project_class (货物类/工程类/服务类). Supplier, award value and duration are on the detail
+    page and are NOT read here (UNMEASURED, never guessed)."""
+    out: list[dict[str, Any]] = []
+    for li in _CCGP_LI.findall(body.decode("utf-8", errors="replace")):
+        text = _text(li.encode())
+        tm = _CCGP_TIME.search(text)
+        if not tm:
+            continue
+        title_m = re.search(r"<a[^>]*>(.*?)</a>", li, re.S)
+        buyer = re.search(r"采购人[：:]\s*([^|｜\s]+)", text)  # noqa: RUF001
+        agency = re.search(r"代理机构[：:]\s*([^|｜\s]+)", text)  # noqa: RUF001
+        prov = next((p for p in CN_PROVINCES if re.search(r"(?:\||｜)\s*" + p + r"\s*(?:\||｜)",  # noqa: RUF001
+                                                          text + "|")), None)
+        cls = re.search(r"(货物类|工程类|服务类)", text)
+        city = re.search(r"([一-鿿]{2,6}?[市州盟])", buyer.group(1)) if buyer else None
+        try:
+            t = _utc(*(int(tm.group(i)) for i in range(1, 6))) - timedelta(hours=8)
+        except ValueError:
+            continue
+        out.append({"title": _text((title_m.group(1) if title_m else "").encode())[:200],
+                    "publication_time": t.isoformat(timespec="minutes"),
+                    "buyer": buyer.group(1).strip() if buyer else None,
+                    "agency": agency.group(1).strip() if agency else None,
+                    "notice_type": "中标公告" if "中标" in text else
+                    ("成交公告" if "成交" in text else None),
+                    "province": prov, "municipality": city.group(1) if city else None,
+                    "project_class": cls.group(1) if cls else None})
+    return out
+
+
+def parse_ccgp_awards(body: bytes, ctx: Ctx) -> list[Obs]:
+    """One CCGP search (award notices, one keyword, one calendar month; `ctx.part` =
+    'basket:id:YYYY-MM'): the result count printed as '共找到 N 条' is that keyword's award count
+    for the month, and the provinces on the first page are its (first-page) breadth."""
+    parts = (ctx.part or "").split(":")
+    tot = _CCGP_TOTAL.search(body.decode("utf-8", errors="replace"))
+    if len(parts) != 3 or not tot or not re.fullmatch(r"\d{4}-\d{2}", parts[2]):
+        return []
+    basket, kid, ym = parts
+    period = _month_end(int(ym[:4]), int(ym[5:]))
+    n = _num(tot.group(1))
+    if n is None:
+        return []
+    items = ccgp_items(body)
+    provs = {i["province"] for i in items if i.get("province")}
+    out = [Obs(f"{basket}__{kid}_awards", period, n)]
+    if items:
+        out.append(Obs(f"{basket}__{kid}_provinces_p1", period, float(len(provs))))
+    return out
+
+
+def parse_s5p_stats(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Sentinel Hub Statistical API reply (CDSE) for one facility box (`ctx.part`): per daily
+    interval, the mean tropospheric NO2 column (mol/m2 -> umol/m2) of the valid pixels. A day
+    with more than half its pixels masked (cloud, no overpass) is not a value: it is skipped,
+    never zero-filled. The valid share is published beside it."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    rows = doc.get("data") if isinstance(doc, dict) else None
+    part = ctx.part or "area"
+    out: list[Obs] = []
+    for r in rows if isinstance(rows, list) else []:
+        try:
+            d = date.fromisoformat(str(((r or {}).get("interval") or {}).get("from") or "")[:10])
+        except ValueError:
+            continue
+        outs = (r.get("outputs") or {}) if isinstance(r, dict) else {}
+        band = next(iter(((outs.get("no2") or outs.get("default") or {}).get("bands") or {})
+                         .values()), None)
+        st = (band or {}).get("stats") or {}
+        mean, n = _num(str(st.get("mean"))), _num(str(st.get("sampleCount")))
+        nod = _num(str(st.get("noDataCount") or 0)) or 0.0
+        if mean is None or not n or n <= 0:
+            continue
+        valid = max(0.0, (n - nod) / n)
+        if valid < 0.5:
+            continue
+        out.append(Obs(f"{part}_no2_umol", d, round(mean * 1e6, 4)))
+        out.append(Obs(f"{part}_no2_valid_share", d, round(valid, 4)))
+    return out
+
+
+#: Naver DataLab keyword groups (Korean). Every request carries the ANCHOR group, and a topic's
+#: value is its ratio over the anchor's in the same reply: DataLab rescales each reply so its
+#: largest point is 100, and the ratio of two groups in one reply is invariant to that rescale.
+NAVER_ANCHOR = ("anchor", ("네이버",))
+NAVER_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("fx", ("환율", "원달러환율", "달러")),
+    ("semiconductor", ("반도체", "메모리 반도체", "HBM")),
+    ("household_leverage", ("가계대출", "주택담보대출", "대출금리")),
+    ("property", ("아파트값", "집값", "부동산")),
+    ("recession", ("경기침체", "불황", "실업")),
+    ("inflation", ("물가", "인플레이션", "금리인상")),
+    ("energy", ("유가", "전기요금", "휘발유 가격")))
+NAVER_URL = "https://openapi.naver.com/v1/datalab/search"
+
+
+def parse_naver_datalab(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Naver DataLab search-trend reply (`results[].title/keywords/data[].period/ratio`, weekly
+    timeUnit). Each topic's weekly ratio over the anchor's ratio in the same reply, dated at the
+    week's LAST day (Naver labels the week by its first). A week with a zero anchor is skipped."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    res = doc.get("results") if isinstance(doc, dict) else None
+    if not isinstance(res, list):
+        return []
+    series: dict[str, dict[date, float]] = {}
+    for r in res:
+        title = str((r or {}).get("title") or "")
+        for p in (r or {}).get("data") or []:
+            v = _num(str((p or {}).get("ratio")))
+            with contextlib.suppress(ValueError):
+                d = date.fromisoformat(str((p or {}).get("period") or "")[:10])
+                if v is not None and title:
+                    series.setdefault(title, {})[d] = v
+    anchor = series.get(NAVER_ANCHOR[0])
+    if not anchor:
+        return []
+    unit = str(doc.get("timeUnit") or "week")
+    span = 6 if unit == "week" else 0
+    out: list[Obs] = []
+    for title, pts in sorted(series.items()):
+        if title == NAVER_ANCHOR[0]:
+            continue
+        for d, v in sorted(pts.items()):
+            a = anchor.get(d)
+            end = d + timedelta(days=span)
+            if a and a > 0 and end < ctx.fetched_at.date():
+                out.append(Obs(f"{_slug(title)}_rel", end, round(v / a, 6)))
+    return out
+
+
+def load_clusters(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """The named industrial-cluster registry (desks/mt5/data/industrial_clusters.json): id ->
+    {bbox (W,S,E,N), types, province, source}. Read at use, never hard-coded."""
+    doc = _read_json(path or DESK / "data" / "industrial_clusters.json", {})
+    r = float((doc or {}).get("radius_deg") or 0.25) if isinstance(doc, dict) else 0.25
+    out: dict[str, dict[str, Any]] = {}
+    for f in (doc or {}).get("facilities") or [] if isinstance(doc, dict) else []:
+        try:
+            lat, lon = float(f["lat"]), float(f["lon"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        out[str(f["id"])] = {"bbox": (round(lon - r, 4), round(lat - r, 4), round(lon + r, 4),
+                                      round(lat + r, 4)),
+                             "types": tuple(f.get("types") or ()),
+                             "province": f.get("province"), "source": f.get("source")}
+    return out
+
+
 # ------------------------------------------------ lawful substitutes for BLOCKED sources
 def parse_estat_level(body: bytes, ctx: Ctx) -> list[Obs]:
     """e-Stat getStatsData JSON for a LEVEL table (the immigration statistics' foreign entries).
@@ -1670,6 +2280,12 @@ class Source:
     #: first (history) fetch is that vintage, not what was known at the time. Published with the
     #: series (axis file, roster) so no reader mistakes a backfill for a first release.
     vintage: str = ""
+    #: Further env vars that must ALL be set beside key_env (a client id needs its secret).
+    key_also: tuple[str, ...] = ()
+    #: Env groups that satisfy key_env when the token helper can mint from them (CDSE).
+    key_alts: tuple[tuple[str, ...], ...] = ()
+    #: A paid vendor with no licence held: UNCONFIGURED (never BLOCKED_ON_TERMS) and never fetched.
+    paid_licence: bool = False
 
     def instruments_for(self, series: str) -> dict[str, int]:
         for prefix, m in self.series_instruments.items():
@@ -1801,7 +2417,8 @@ SOURCES: tuple[Source, ...] = (
         url=FIRMS_URL, region="CN", language="en", cadence="daily", parse=parse_firms,
         rule=_lag_rule(1, 12), transform="anomaly_daily", key_env="FIRMS_MAP_KEY",
         instruments={"XCUUSD": 1, "AUDUSD": 1, "CHINAH": 1, "HK50": 1},
-        signal_series=("total_count",),
+        signal_series=("total_count", "facility_thermal_breadth", "steel_thermal_breadth",
+                       "facility_thermal_anomaly_pct"),
         mechanism=("VIIRS thermal detections inside declared steel, coke and smelter footprints "
                    "are blast-furnace and coke-oven activity, observed daily from orbit before "
                    "any NBS output print"),
@@ -1824,8 +2441,13 @@ SOURCES: tuple[Source, ...] = (
             "shanghai": {"XCUUSD": 1, "AUDUSD": 1, "CHINAH": 1},
             "ningbo": {"XCUUSD": 1, "AUDUSD": 1, "CHINAH": 1},
             "busan": {"USDKRW": -1},
-            "singapore": {"XTIUSD": 1, "AUDUSD": 1}},
-        signal_series=("port_hedland_portcalls", "shanghai_portcalls", "busan_portcalls"),
+            "singapore": {"XTIUSD": 1, "AUDUSD": 1},
+            "cn_tanker": {"XTIUSD": 1, "XBRUSD": 1},
+            "cn_bulk": {"AUDUSD": 1, "XCUUSD": 1},
+            "cn_": {"AUDUSD": 1, "XCUUSD": 1, "CHINAH": 1}},
+        signal_series=("port_hedland_portcalls", "shanghai_portcalls", "busan_portcalls",
+                       "cn_total_portcalls", "cn_port_breadth", "cn_north_minus_south_calls",
+                       "cn_bulk_minus_container_share", "cn_tanker_share"),
         mechanism=("AIS-counted port calls are physical trade volume by port, weekly and "
                    "public, ahead of customs values"),
         payer="commodity-FX and metals holders pricing monthly trade and PMI releases",
@@ -1951,10 +2573,14 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
         instruments={"USDJPY": -1},
         series_instruments={"ja_boj": {"USDJPY": -1, "EURJPY": -1},
                             "ja_nikkei": {"JPN225": -1},
+                            "zh_basket": {"USDCNH": 1, "XAUUSD": 1, "AUDUSD": -1},
+                            "zh_kw_gold": {"XAUUSD": 1},
+                            "zh_kw_copper": {"XCUUSD": 1},
                             "zh_": {"USDCNH": 1, "HK50": -1, "CHINAH": -1},
                             "ko_": {"USDKRW": 1}},
         signal_series=("ja_boj_views", "ja_nikkei_views", "zh_pboc_views", "zh_rmb_views",
-                       "zh_hsi_views", "ko_bok_views", "ko_kospi_views"),
+                       "zh_hsi_views", "ko_bok_views", "ko_kospi_views", "zh_basket_breadth",
+                       "zh_basket_anomaly_pct"),
         mechanism=("a Japanese, Chinese or Korean reader looks up the central bank, the currency "
                    "or the index in their own language before acting; an attention spike in the "
                    "local language is local retail attention the English Wikipedia list misses"),
@@ -2513,6 +3139,286 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
               "analysis is the desk's own independent processing of the data'")),
 )
 
+# ---------------------------------------------------------------------------- physical exhaust (P4)
+_FREIGHT = "container freight route indices (SCFI/CCFI, Drewry WCI, Freightos FBX)"
+_CORP = "corporate supply-chain registries (Tianyancha, Qichacha)"
+_PROC = "public-procurement award analytics (CCGP award aggregators)"
+_SEARCH = "search-attention panels (Baidu Index, Naver DataLab)"
+NBS_LIST_URL = "https://www.stats.gov.cn/sj/zxfb/"
+CDSE_STATS_URL = "https://sh.dataspace.copernicus.eu/api/v1/statistics"
+S5P_EVALSCRIPT = ("//VERSION=3\nfunction setup(){return {input:[{bands:[\"NO2\",\"dataMask\"]}],"
+                  "output:[{id:\"no2\",bands:1,sampleType:\"FLOAT32\"},{id:\"dataMask\",bands:1}]};}"
+                  "\nfunction evaluatePixel(s){return {no2:[s.NO2],dataMask:[s.dataMask]};}")
+
+PHYSICAL_SOURCES: tuple[Source, ...] = (
+    Source(
+        id="cn_mot_port_monthly",
+        name="China MOT monthly port cargo and container throughput, by port (xlsx)",
+        url=os.environ.get("ALT_CN_MOT_MONTHLY_URL",
+                           "https://xxgk.mot.gov.cn/zhengceapp/863/868/list_7234.html"),
+        region="CN", language="zh", cadence="monthly", parse=parse_mot_port_monthly,
+        rule=_lag_rule(30, 0, weekday=True), transform="given",
+        instruments={"AUDUSD": 1, "XCUUSD": 1, "CHINAH": 1, "USDCNH": -1},
+        series_instruments={"commodity_ports": {"AUDUSD": 1, "AUS200": 1, "XCUUSD": 1},
+                            "container_port_breadth": {"CHINAH": 1, "HK50": 1, "USDCNH": -1},
+                            "north_minus_south": {"AUDUSD": 1, "XCUUSD": 1},
+                            "bulk_minus_container": {"AUDUSD": 1, "XCUUSD": 1}},
+        signal_series=("national_cargo_yoy", "national_teu_yoy", "commodity_ports_cargo_yoy",
+                       "container_port_breadth", "north_minus_south_cargo_yoy",
+                       "bulk_minus_container_yoy"),
+        mechanism=("the transport ministry's monthly port table counts cargo tonnes and boxes "
+                   "port by port: dry-bulk ports (Tangshan, Rizhao, Qingdao) are iron-ore and coal "
+                   "arrivals, container ports are export volume, and their divergence separates "
+                   "industrial input demand from export demand weeks before customs values"),
+        payer="China-trade proxies (AUD, copper, HK) waiting for value-based customs data",
+        constraint="customs prints values, monthly and late; tonnes and boxes lead them",
+        licence="Ministry of Transport of the PRC public statistics (terms not granted: see TERMS)",
+        source_culture="CN/zh", participant_structure=("physical_flow", "policy_driven"),
+        failure_mode_hypothesis=("fails around Spring Festival (January-February combined base) "
+                                 "and typhoon closures, and when transhipment double-counts boxes"),
+        crowding_prior="low", substitutes_for=_SAT,
+        note=("the monthly 港口货物、集装箱吞吐量 workbook linked from the MOT list; the "
+              "parser reads the .xlsx itself (stdlib). BLOCKED until MOT terms grant reuse; the "
+              "flip is one TERMS line. Release rule +30 days, late-biased (UNMEASURED on box)")),
+    Source(
+        id="cn_sse_scfi_routes",
+        name="Shanghai Shipping Exchange SCFI by route (Shanghai x destination)",
+        url="https://en.sse.net.cn/indices/scfinew.jsp", region="CN", language="en",
+        cadence="weekly", parse=parse_sse_routes, rule=_lag_rule(0, 12, weekday=True),
+        transform="given", instruments={"CHINAH": 1, "AUDUSD": 1},
+        signal_series=("scfi_composite",),
+        mechanism=("the spot container rate out of Shanghai by destination is export demand "
+                   "against vessel supply, route by route"),
+        payer="trade-cycle holders reading a single blended freight headline",
+        constraint="freight contracts reprice weekly; trade data monthly",
+        licence="Shanghai Shipping Exchange (All Rights Reserved; no reuse terms found)",
+        source_culture="CN/zh", participant_structure=("physical_flow",),
+        failure_mode_hypothesis="fails when carriers' blank sailings move rates without demand",
+        crowding_prior="medium",
+        note=("page is JS-rendered; the parser reads the rendered table layout. BLOCKED on terms; "
+              "route granularity is lost in the substitute (a national freight PPI)")),
+    Source(
+        id="us_bls_deepsea_freight",
+        name="BLS PPI: deep sea freight transportation (via FRED, monthly)",
+        url=("https://api.stlouisfed.org/fred/series/observations?series_id=PCU483111483111"
+             "&api_key={key}&file_type=json&observation_start=2008-01-01"),
+        region="US", language="en", cadence="monthly", parse=parse_bls_deepsea,
+        rule=_lag_rule(20, 13, weekday=True), transform="yoy_monthly", key_env="FRED_API_KEY",
+        instruments={"AUDUSD": 1, "CHINAH": 1, "XCUUSD": 1},
+        signal_series=("deep_sea_freight_ppi",),
+        mechanism=("the producer price of deep-sea freight is what ocean carriers bill, an "
+                   "official monthly index of the container and bulk rate cycle: a freight-cost "
+                   "impulse is Asian export demand meeting vessel supply"),
+        payer="trade-cycle and commodity-FX holders reading spot-rate headlines only",
+        constraint="official price indices print monthly; spot rates are licensed",
+        licence="US BLS public domain data (cite BLS); FRED API terms and notice",
+        source_culture="US/en", participant_structure=("physical_flow", "institutional"),
+        failure_mode_hypothesis=("fails because it blends routes and contract types, so a "
+                                 "single-lane spike (Red Sea) is diluted; preliminary prints "
+                                 "revise four months later"),
+        crowding_prior="low", substitutes_for=_FREIGHT, vintage="current",
+        note=("stands in for the SCFI/CCFI/WCI/FBX route indices, whose terms bar reuse: a "
+              "NATIONAL aggregate, so route x origin x destination is NOT preserved by it. "
+              "FRED serves the current vintage; history rows are backfill")),
+    Source(
+        id="cn_nbs_industry_power",
+        name="NBS industrial production, energy production and PMI releases (China)",
+        url=os.environ.get("ALT_NBS_LIST_URL", NBS_LIST_URL), region="CN", language="zh",
+        cadence="monthly", parse=parse_nbs_industry, rule=_lag_rule(17, 2, weekday=True),
+        transform="given",
+        instruments={"AUDUSD": 1, "XCUUSD": 1, "CHINAH": 1, "USDCNH": -1},
+        series_instruments={"crude_steel": {"AUDUSD": 1, "AUS200": 1},
+                            "primary_aluminium": {"XALUSD": -1},
+                            "nonferrous10": {"XCUUSD": 1, "XZNUSD": 1},
+                            "raw_coal": {"AUDUSD": -1},
+                            "crude_run": {"XTIUSD": 1, "XBRUSD": 1},
+                            "thermal_power": {"AUDUSD": 1, "XNGUSD": 1},
+                            "power_gen": {"AUDUSD": 1, "XCUUSD": 1, "CHINAH": 1},
+                            "industrial_power_residual": {"AUDUSD": 1, "XCUUSD": 1},
+                            "power_minus_heavy": {"AUDUSD": -1, "XCUUSD": -1}},
+        signal_series=("power_gen_yoy", "thermal_power_yoy", "hydro_power_yoy",
+                       "crude_steel_yoy", "nonferrous10_yoy", "crude_run_yoy", "raw_coal_yoy",
+                       "industrial_power_residual", "power_minus_heavy_output_yoy", "mfg_pmi"),
+        mechanism=("generation by fuel is the economy's metered load: thermal burn against hydro "
+                   "is coal demand, generation against industrial value added is the part of "
+                   "the output print electricity does not confirm, and steel, aluminium and "
+                   "crude runs are the commodity demand the AUD and metals price"),
+        payer="China-proxy holders pricing the value-added headline alone",
+        constraint="stimulus and commodity positioning reprice at monthly data dates only",
+        licence="National Bureau of Statistics of China releases (public)",
+        source_culture="CN/zh", participant_structure=("policy_driven", "physical_flow"),
+        failure_mode_hypothesis=("fails in drought or flood months when hydro swaps with thermal "
+                                 "for weather reasons, and on the January-February combined print"),
+        crowding_prior="medium",
+        note=("list page -> release pages whose title names the release (FOLLOW below), newest "
+              "first, older list pages walked by a cursor; page stamp (Beijing) is the release")),
+    Source(
+        id="cn_nbs_fai",
+        name="NBS fixed-asset investment: total, infrastructure, manufacturing (China)",
+        url=os.environ.get("ALT_NBS_LIST_URL", NBS_LIST_URL), region="CN", language="zh",
+        cadence="monthly", parse=parse_nbs_fai, rule=_lag_rule(17, 2, weekday=True),
+        transform="given",
+        instruments={"AUDUSD": 1, "XCUUSD": 1, "CHINAH": 1},
+        series_instruments={"infra": {"AUDUSD": 1, "XCUUSD": 1, "AUS200": 1},
+                            "realestate": {"AUDUSD": 1, "CHINAH": 1, "HK50": 1}},
+        signal_series=("infra_ytd_yoy", "manuf_ytd_yoy", "fai_ytd_yoy", "fai_mom"),
+        mechanism=("infrastructure investment is the steel- and copper-intensive order book "
+                   "that procurement awards record notice by notice; its year-to-date pace "
+                   "against its own run-rate is the construction-demand state"),
+        payer="iron-ore, copper and AUD holders reading stimulus headlines, not spend",
+        constraint="local-government spending is announced long before it is spent",
+        licence="National Bureau of Statistics of China releases (public)",
+        source_culture="CN/zh", participant_structure=("policy_driven", "physical_flow"),
+        failure_mode_hypothesis=("fails when the infrastructure definition (口径) is revised "
+                                 "and on year-to-date base effects early in the year"),
+        crowding_prior="medium", substitutes_for=_PROC,
+        note=("stands in for ccgp_award_indices (CCGP terms grant no reuse): national, by sector, "
+              "so provincial breadth and the commodity baskets are NOT preserved by it")),
+    Source(
+        id="cn_nbs_profits",
+        name="NBS industrial-enterprise profits, total and by sector (China)",
+        url=os.environ.get("ALT_NBS_LIST_URL", NBS_LIST_URL), region="CN", language="zh",
+        cadence="monthly", parse=parse_nbs_profits, rule=_lag_rule(30, 2, weekday=True),
+        transform="given",
+        instruments={"AUDUSD": 1, "CHINAH": 1, "HK50": 1},
+        series_instruments={"ferrous_smelting": {"AUDUSD": 1, "AUS200": 1},
+                            "nonferrous_smelting": {"XCUUSD": 1, "XALUSD": 1},
+                            "coal_mining": {"AUDUSD": 1},
+                            "oil_gas": {"XTIUSD": 1}},
+        signal_series=("profit_ytd_yoy", "profit_month_yoy", "ferrous_smelting_profit_ytd_yoy",
+                       "nonferrous_smelting_profit_ytd_yoy", "coal_mining_profit_ytd_yoy"),
+        mechanism=("sector profits of steel mills, smelters and miners are the margin state of "
+                   "the commodity chain: mills squeezed cut ore purchases, smelters flush add "
+                   "capacity -- corporate activity aggregated by sector, never one company"),
+        payer="commodity and China-equity holders pricing output volumes, not margins",
+        constraint="listed-company reports are quarterly; the sector aggregate is monthly",
+        licence="National Bureau of Statistics of China releases (public)",
+        source_culture="CN/zh", participant_structure=("institutional", "policy_driven"),
+        failure_mode_hypothesis=("fails when sample changes (enterprises entering or leaving "
+                                 "the 规模以上 threshold) move the base, and on price effects "
+                                 "that are not activity"),
+        crowding_prior="low", substitutes_for=_CORP,
+        note=("stands in for Tianyancha / Qichacha (paid, unconfigured) and SAMR / Credit China "
+              "/ CNINFO (no reuse terms): sector aggregates only; supplier and customer links "
+              "are NOT preserved by it")),
+    Source(
+        id="cn_tianyancha_supply", name="Tianyancha enterprise and supply-chain records (paid)",
+        url="https://open.tianyancha.com/", region="CN", language="zh", cadence="monthly",
+        parse=None, rule=_lag_rule(30, 0, weekday=True), transform="given",
+        key_env="TIANYANCHA_TOKEN", instruments={"CHINAH": 1},
+        signal_series=(),
+        mechanism=("registrations, tenders, supplier and customer links aggregated by sector are "
+                   "corporate activity before it reaches any official count"),
+        payer="China-equity holders waiting for quarterly reports",
+        constraint="a paid licence; no contract held",
+        licence="Tianyancha commercial API (paid licence; none held)",
+        source_culture="CN/zh", participant_structure=("institutional",),
+        failure_mode_hypothesis="fails when registry noise (shell entities) dominates counts",
+        crowding_prior="low", paid_licence=True,
+        note="UNCONFIGURED: no licence; asia_sources `tianyancha_supply` carries the same state"),
+    Source(
+        id="cn_samr_registrations",
+        name="SAMR / Credit China enterprise registration counts (China)",
+        url="https://www.samr.gov.cn/", region="CN", language="zh", cadence="monthly",
+        parse=None, rule=_lag_rule(30, 0, weekday=True), transform="given",
+        instruments={"CHINAH": 1}, signal_series=(),
+        mechanism=("new market-entity registrations by sector are the entry side of corporate "
+                   "activity"),
+        payer="China-equity holders", constraint="published irregularly, by press conference",
+        licence="SAMR / Credit China (no reuse terms found)",
+        source_culture="CN/zh", participant_structure=("policy_driven",),
+        failure_mode_hypothesis="fails when registration campaigns, not activity, move counts",
+        crowding_prior="low", note="no terms page found on either site: never fetched"),
+    Source(
+        id="cn_ccgp_award_indices",
+        name="CCGP award notices aggregated into commodity order indices (China)",
+        url=CCGP_URL, region="CN", language="zh", cadence="monthly", parse=parse_ccgp_awards,
+        rule=_lag_rule(5, 0, weekday=True), transform="yoy_monthly",
+        instruments={"AUDUSD": 1, "XCUUSD": 1, "USDCNH": -1, "CHINAH": 1},
+        series_instruments={"steel": {"AUDUSD": 1, "AUS200": 1},
+                            "copper": {"XCUUSD": 1, "AUDUSD": 1},
+                            "energy": {"XCUUSD": 1, "XALUSD": 1}},
+        signal_series=("infrastructure_awards", "steel_awards", "copper_awards", "energy_awards"),
+        mechanism=("award notices for steel structures, cable, roads and substations are the "
+                   "state's commodity-intensive order book, counted the month they are signed"),
+        payer="iron-ore, copper and AUD holders reading stimulus announcements",
+        constraint="the official investment print is monthly and year-to-date",
+        licence="China Government Procurement Network (MOF, 版权所有; no reuse terms found)",
+        source_culture="CN/zh", participant_structure=("policy_driven", "physical_flow"),
+        failure_mode_hypothesis=("fails when notice-posting rules change and when the search "
+                                 "counts duplicates across amendments"),
+        crowding_prior="low",
+        note=("one search per keyword per month; counts from '共找到 N 条', first-page provinces "
+              "as breadth. Values, suppliers and durations live on detail pages and are not "
+              "read. BLOCKED on terms")),
+    Source(
+        id="cn_s5p_no2_clusters",
+        name="Copernicus Sentinel-5P NO2 over named Chinese industrial clusters (CDSE)",
+        url=CDSE_STATS_URL, region="CN", language="en", cadence="daily",
+        parse=parse_s5p_stats, rule=_lag_rule(5, 0), transform="anomaly_daily",
+        key_env="CDSE_TOKEN",
+        instruments={"AUDUSD": 1, "XCUUSD": 1, "CHINAH": 1},
+        series_instruments={"steel_": {"AUDUSD": 1, "AUS200": 1},
+                            "refining_": {"XTIUSD": 1, "XBRUSD": 1},
+                            "port_": {"AUDUSD": 1, "CHINAH": 1}},
+        signal_series=("steel_no2_breadth", "refining_no2_breadth", "port_no2_breadth",
+                       "all_no2_breadth"),
+        mechanism=("tropospheric NO2 over a steel, refining or port cluster against its own "
+                   "seasonal and weekday baseline is combustion activity, and the share of "
+                   "clusters running above baseline is industrial breadth seen from orbit"),
+        payer="iron-ore, copper, crude and AUD holders waiting for monthly output data",
+        constraint="official output prints monthly and three weeks late",
+        licence="Copernicus Sentinel data licence (free, full, open; attribution)",
+        source_culture="CN/zh", participant_structure=("physical_flow", "policy_driven"),
+        failure_mode_hypothesis=("fails under winter heating and meteorology (boundary-layer "
+                                 "trapping), output curbs for air-quality events, and city "
+                                 "emissions inside a city-seat box"),
+        crowding_prior="low", substitutes_for=_SAT,
+        key_alts=(("CDSE_CLIENT_ID", "CDSE_CLIENT_SECRET"), ("CDSE_USERNAME", "CDSE_PASSWORD")),
+        note=("Sentinel Hub Statistical API on CDSE, one POST per facility (OFFL NO2, daily "
+              "intervals, cloud-masked days skipped). Token from CDSE_TOKEN; libs.ops."
+              "token_refresh (PR #218) mints it from long-lived credentials when that lands")),
+    Source(
+        id="kr_naver_datalab",
+        name="Naver DataLab search attention by topic (Korea)",
+        url=NAVER_URL, region="KR", language="ko", cadence="weekly",
+        parse=parse_naver_datalab, rule=_lag_rule(1, 0, weekday=True), transform="level_dev",
+        key_env="NAVER_CLIENT_ID", key_also=("NAVER_CLIENT_SECRET",),
+        instruments={"USDKRW": 1},
+        series_instruments={"semiconductor": {"USDKRW": -1, "NAS100": 1},
+                            "inflation": {"USDKRW": -1}, "energy": {"XTIUSD": 1}},
+        signal_series=("fx_rel", "semiconductor_rel", "household_leverage_rel", "property_rel",
+                       "recession_rel", "inflation_rel", "energy_rel"),
+        mechanism=("Korean households search the won, chips, loans, flats and prices before "
+                   "they act: attention relative to a stable anchor, its acceleration and its "
+                   "surprise are local retail pressure the English tape does not read"),
+        payer="won and Korea-exposed holders who price institutional flow only",
+        constraint="retail acts with a lag; institutions ignore search volume",
+        licence="Naver Developers Open API (registered client id/secret; terms unread here)",
+        source_culture="KR/ko", participant_structure=("retail_heavy",),
+        failure_mode_hypothesis=("fails when a celebrity or news story hijacks a keyword and "
+                                 "when the anchor's own volume shifts"),
+        crowding_prior="low", substitutes_for=_SEARCH,
+        note=("two POSTs per pass (anchor + up to four topic groups each), weekly since 2016; "
+              "value = topic ratio / anchor ratio in the same reply. Low-prior conditioning only "
+              "until validated")),
+    Source(
+        id="in_nse_option_chain",
+        name="NSE option chain: NIFTY / BANKNIFTY / USDINR (PCR, OI by strike, ATM IV)",
+        url="https://www.nseindia.com/option-chain", region="IN", language="en", cadence="daily",
+        parse=None, rule=_lag_rule(1, 12), transform="given",
+        instruments={"USDINR": 1}, signal_series=(),
+        mechanism=("put-call ratio, open interest by strike and ATM implied volatility are "
+                   "positioning and hedging demand in Indian index and rupee options"),
+        payer="INR and India-exposed holders without options-flow state",
+        constraint="option positioning reprices daily",
+        licence="NSE terms of use: no automated collection, no storage without written permission",
+        source_culture="IN/en", participant_structure=("institutional", "retail_heavy"),
+        failure_mode_hypothesis="fails around expiry weeks when OI rolls mechanically",
+        crowding_prior="medium",
+        note="REFUSED by NSE terms (TERMS_EVIDENCE); a licensed NSE data feed is the only route"),
+)
+
 #: THE TERMS GATE, FAIL CLOSED. `confirmed` only where the licence is plainly open: government
 #: open data under a stated open licence, CC/CC0 data, public statistics behind a documented API,
 #: or a publisher's written "anyone may use this". Everything else is `to_confirm` until a human
@@ -2580,6 +3486,28 @@ TERMS: dict[str, tuple[str, str]] = {
                             "documented OGD API (free key)"),
     "za_statssa_retail": ("confirmed", "Stats SA publication notice: users may apply or process "
                           "the data with Stats SA acknowledged; no sale without permission"),
+    # ---- physical exhaust (P4), reviewed 2026-10-06
+    "cn_mot_port_monthly": ("to_confirm", "MOT disclaimer bars commercial verbatim reprint and "
+                            "claims copyright; it grants no reuse licence"),
+    "cn_sse_scfi_routes": ("to_confirm", "Shanghai Shipping Exchange: 'All Rights Reserved', no "
+                           "terms or reuse page"),
+    "us_bls_deepsea_freight": ("confirmed", "BLS public domain ('free to use ... without specific "
+                               "permission'), served by the FRED API with its notice"),
+    "cn_nbs_industry_power": ("confirmed", "NBS terms of service (as cn_nbs_retail): download and "
+                              "use of NBS's own statistics welcomed with attribution"),
+    "cn_nbs_fai": ("confirmed", "NBS terms of service (as cn_nbs_retail)"),
+    "cn_nbs_profits": ("confirmed", "NBS terms of service (as cn_nbs_retail)"),
+    "cn_tianyancha_supply": ("to_confirm", "paid commercial API; no licence held"),
+    "cn_samr_registrations": ("to_confirm", "SAMR and Credit China: no terms, copyright or reuse "
+                              "page found"),
+    "cn_ccgp_award_indices": ("to_confirm", "CCGP footer '中华人民共和国财政部 版权所有'; no "
+                              "terms or reuse page, no robots.txt"),
+    "cn_s5p_no2_clusters": ("confirmed", "Copernicus Sentinel data licence: free, full and open; "
+                            "reproduction, distribution, adaptation allowed with attribution"),
+    "kr_naver_datalab": ("to_confirm", "Naver Developers terms could not be read (site blocked "
+                         "to the authoring fetcher); accepted at app registration on the box"),
+    "in_nse_option_chain": ("refused", "NSE terms: systematic or automated data collection "
+                            "prohibited; no storing or reproduction without written permission"),
 }
 TERMS_VALUES = ("confirmed", "to_confirm", "refused")
 
@@ -2627,6 +3555,16 @@ _OI_EV: dict[str, str] = {
                "Team), https://tracktherecovery.org"),
     "checked_at": _CHK,
 }
+_CHK2 = "2026-10-06"
+#: The NBS evidence every NBS row shares (the retail row's, re-read for the same site).
+_NBS_EV: dict[str, str] = {
+    "terms_url": "https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
+    "terms_quote": "用户可以在本网站下载和使用国家统计局发布的统计数据",
+    "judgement": ("the same NBS terms as cn_nbs_retail (exclusions a-f re-read 2026-09-30): the "
+                  "industrial-production, energy, investment, profit and PMI releases are NBS's "
+                  "own signed public statistics"),
+    "robots": "www.stats.gov.cn/robots.txt 404 (no rules)",
+    "credit": "数据来源：国家统计局 (Source: National Bureau of Statistics of China)"}  # noqa: RUF001
 TERMS_EVIDENCE: dict[str, dict[str, str]] = {
     "cn_maoyan_box_office": {
         "terms_url": "https://piaofang.maoyan.com/i/rules/privacy-agreement?pid=64",
@@ -2902,6 +3840,83 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "robots": "openapi.seoul.go.kr is the documented Open API (free key)",
         "credit": "출처: 서울 열린데이터광장 (data.seoul.go.kr), 공공누리 제1유형",
         "checked_at": _CHK},
+    # ---- physical exhaust (P4): read 2026-10-06 with the fetcher this session had
+    "cn_mot_port_monthly": {
+        "terms_url": "https://www.mot.gov.cn/wangzhangongneng/202512/t20251216_4181727.html",
+        "terms_quote": ("任何媒体、互联网站和商业机构不得利用本网站发布的内容进行商业性的原版原式地"
+                        "转载，也不得歪曲和篡改本网站所发布的内容。 / 本网站所涉及到的版权归本网站"  # noqa: RUF001
+                        "所属"),
+        "judgement": ("re-read 2026-10-06: the disclaimer claims copyright and bars commercial "
+                      "verbatim reprint; it grants no reuse of the statistics. Stays to_confirm "
+                      "(fail closed) until a human settles it; the parser is ready"),
+        "robots": "www.mot.gov.cn/robots.txt 404 (no rules)",
+        "checked_at": _CHK2},
+    "cn_sse_scfi_routes": {
+        "terms_url": "https://en.sse.net.cn/",
+        "terms_quote": ("(© 2001-2026 Shanghai Shipping Exchange Institute(Prep.) All Rights "
+                        "Reserved. -- no terms, disclaimer or reuse page linked)"),
+        "robots": "the SCFI page is JS-rendered (querySCFI2); no robots rule read",
+        "checked_at": _CHK2},
+    "us_bls_deepsea_freight": {
+        "terms_url": "https://www.bls.gov/opub/copyright-information.htm",
+        "terms_quote": ("You are free to use our public domain material without specific "
+                        "permission, although we do ask that you cite the Bureau of Labor "
+                        "Statistics as the source."),
+        "api_terms_url": "https://fred.stlouisfed.org/docs/api/terms_of_use.html",
+        "api_terms_quote": ("Before using data series owned by third parties for anything other "
+                            "than your own personal use, you must contact the data owner to "
+                            "obtain permission."),
+        "judgement": ("the data owner is BLS, whose copyright page grants use without specific "
+                      "permission; FRED is the transport and its notice is carried. api.bls.gov "
+                      "itself is robots-disallowed to fetchers, so it is not used"),
+        "robots": "api.stlouisfed.org is the documented FRED API (free key)",
+        "credit": ("Source: U.S. Bureau of Labor Statistics, PPI Deep Sea Freight Transportation "
+                   "(PCU483111483111), via FRED. This product uses the FRED® API but is not "
+                   "endorsed or certified by the Federal Reserve Bank of St. Louis."),
+        "checked_at": _CHK2},
+    "cn_samr_registrations": {
+        "terms_url": "https://www.samr.gov.cn/",
+        "terms_quote": ("(not found: no copyright, terms or disclaimer statement in the served "
+                        "home pages of samr.gov.cn or creditchina.gov.cn)"),
+        "robots": "home pages fetched 2026-10-06; no rule read",
+        "checked_at": _CHK2},
+    "cn_ccgp_award_indices": {
+        "terms_url": "http://www.ccgp.gov.cn/",
+        "terms_quote": "© 1999-2025 中华人民共和国财政部 版权所有 (no terms or reuse page linked)",
+        "robots": ("www.ccgp.gov.cn/robots.txt 404; search.ccgp.gov.cn answered "
+                   "'您的访问过于频繁,请稍后再试。' (rate limit) to one request"),
+        "checked_at": _CHK2},
+    "cn_s5p_no2_clusters": {
+        "terms_url": "https://dataspace.copernicus.eu/terms-and-conditions",
+        "terms_quote": ("The access and use of Copernicus Sentinel data is available on a free, "
+                        "full and open basis through the Copernicus Data Space Ecosystem"),
+        "licence_url": "https://ads.atmosphere.copernicus.eu/licences/ec-sentinel",
+        "licence_quote": ("reproduction; distribution; communication to the public; adaptation, "
+                          "modification and combination with other data and information"),
+        "robots": "sh.dataspace.copernicus.eu is the documented Sentinel Hub API (CDSE account)",
+        "credit": "Contains modified Copernicus Sentinel data [year]",
+        "checked_at": _CHK2},
+    "kr_naver_datalab": {
+        "terms_url": "https://developers.naver.com/products/terms/",
+        "terms_quote": ("(not readable: developers.naver.com was blocked to the authoring "
+                        "fetcher on 2026-10-06)"),
+        "robots": "not read",
+        "checked_at": _CHK2},
+    "in_nse_option_chain": {
+        "terms_url": "https://www.nseindia.com/static/nse-terms-of-use",
+        "terms_quote": ("User is prohibited to conduct any systematic or automated data "
+                        "collection activities (including scraping, data mining, data extraction "
+                        "and data harvesting) on or in relation to our Website / Mobile "
+                        "Application."),
+        "robots": "not needed: the terms refuse automated collection outright",
+        "checked_at": _CHK2},
+    "cn_tianyancha_supply": {
+        "terms_url": "https://open.tianyancha.com/",
+        "terms_quote": "(paid commercial API: a licence contract is the terms; none held)",
+        "robots": "not fetched",
+        "checked_at": _CHK2},
+    **{sid: {**_NBS_EV, "checked_at": _CHK2}
+       for sid in ("cn_nbs_industry_power", "cn_nbs_fai", "cn_nbs_profits")},
     "sg_port_throughput": {
         "terms_url": "https://singstat.gov.sg/our-services-tools-surveys/singstat-mobile-app/tou",
         "terms_quote": ("Use of Datasets provided in this application is subject to the terms "
@@ -2916,7 +3931,7 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
 }
 
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
-                for s in (*SOURCES, *SUBSTITUTE_SOURCES))
+                for s in (*SOURCES, *SUBSTITUTE_SOURCES, *PHYSICAL_SOURCES))
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
 BY_ID = {s.id: s for s in SOURCES}
 
@@ -2939,14 +3954,55 @@ SUBSTITUTED_BY: dict[str, tuple[str, ...]] = {
     "cn_baidu_migration": ("hk_immd_passenger",),
     "kr_busan_port": ("kr_mof_container_teu", "imf_portwatch_ports"),
     "cn_mot_port_weekly": ("imf_portwatch_ports",),
+    "cn_mot_port_monthly": ("imf_portwatch_ports",),
+    "cn_sse_scfi_routes": ("us_bls_deepsea_freight", "imf_portwatch_chokepoints"),
+    "cn_ccgp_award_indices": ("cn_nbs_fai",),
+    "cn_tianyancha_supply": ("cn_nbs_profits",),
+    "cn_samr_registrations": ("cn_nbs_profits",),
+    "kr_naver_datalab": ("wiki_asia_attention",),
 }
 #: Blocked sources with NO verified lawful substitute, and why (each has a box action queued in
 #: /mnt/project-files/patches/DESKTOP_PASS2_STATUS.md).
-NO_SUBSTITUTE: dict[str, str] = {}
+NO_SUBSTITUTE: dict[str, str] = {
+    "in_nse_option_chain": ("no public options-positioning series for India carries reuse terms: "
+                            "NSE refuses automated collection and storage; a licensed NSE data "
+                            "feed is the route, a principal decision (2026-10-06)")}
+#: Paid vendors barred by the public/licensed-only rule (no licence held). They live as rows of
+#: asia_sources.json (`paid_blocked: true`), which asia_collector never fetches; they are listed
+#: here so the paid-substitute engine rows name them. Nothing in this organ fetches them.
+PAID_BLOCKED: dict[str, dict[str, str]] = {
+    "rqdata": {"name": "RQData / RiceQuant", "class": "exchange market data (CN futures, ticks)",
+               "status": "PAID_BLOCKED",
+               "why": ("paid subscription, no licence held; the exchanges' own public files "
+                       "(free_stack SHFE/DCE/CZCE/INE fetchers) are the lawful route")},
+    "wind": {"name": "Wind API", "class": "institutional China data terminal",
+             "status": "PAID_BLOCKED",
+             "why": ("paid subscription, no licence held; NBS/SAFE/CFETS official releases (this "
+                     "organ and asia_parser) are the lawful route")}}
 #: How the last two gaps (NPCI UPI, BETI) were closed on 2026-09-30: every candidate searched, its
 #: URL and why it was taken or rejected. Kept as the closing evidence (report: /mnt/project-files/
 #: reports/asia_source_terms_2026-09-30.md).
 SUBSTITUTE_SEARCH: dict[str, tuple[tuple[str, str, str], ...]] = {
+    "cn_sse_scfi_routes": (
+        ("BLS PPI deep sea freight (FRED)", "https://www.bls.gov/opub/copyright-information.htm",
+         "TAKEN: public domain; national aggregate, so route granularity is lost"),
+        ("Drewry World Container Index", "https://www.drewry.co.uk/supply-chain-advisors/supply-"
+         "chain-expertise/world-container-index-assessed-by-drewry", "rejected: no use statement "
+         "on the WCI page and drewry.co.uk terms are robots-disallowed to fetchers (unread)"),
+        ("Freightos Baltic Index (FBX)", "https://www.balticexchange.com/en/news-and-events/news/"
+         "member-news/2018/freightos-balticglobalcontainerindexnowavailable.html", "rejected: "
+         "distributed under Baltic Exchange / Barchart data licences; freightos.com terms 404"),
+        ("IMF PortWatch chokepoint transits", "https://www.imf.org/external/terms.htm",
+         "TAKEN: route-level volume (transits per chokepoint), not rates"),
+    ),
+    "cn_tianyancha_supply": (
+        ("NBS industrial profits by sector", "https://www.stats.gov.cn/wzgl/202302/"
+         "t20230217_1912857.html", "TAKEN: sector-level corporate activity, NBS terms"),
+        ("CNINFO announcements", "https://www.cninfo.com.cn/new/index", "rejected: '深圳证券信息"
+         "有限公司 版权所有' and a liability disclaimer; no reuse grant"),
+        ("SAMR / Credit China registrations", "https://www.samr.gov.cn/", "rejected: no terms "
+         "page found on either site"),
+    ),
     "in_npci_upi": (
         ("data.gov.in use-based IIP (GODL)", "https://smartcities.data.gov.in/government-open-"
          "data-license-india", "TAKEN: GODL text read on a data.gov.in property and on the "
@@ -3025,16 +4081,53 @@ def status_of(src: Source, environ: dict[str, str] | None = None) -> str:
     env: Any = os.environ if environ is None else environ
     if src.archive_until:
         return f"DEAD:{src.archive_until}"
+    if src.paid_licence and not (src.key_env and env.get(src.key_env)):
+        subs = SUBSTITUTED_BY.get(src.id)
+        return (f"UNCONFIGURED+SUBSTITUTE:{','.join(subs)}" if subs
+                else f"UNCONFIGURED:{src.key_env}")
     if src.terms != "confirmed":
         subs = SUBSTITUTED_BY.get(src.id)
         return (f"BLOCKED+SUBSTITUTE:{','.join(subs)}" if subs
                 else f"BLOCKED_ON_TERMS:{src.terms}")
-    if src.key_env and not env.get(src.key_env):
-        return f"BLOCKED_ON_KEY:{src.key_env}"
+    for k in (src.key_env, *src.key_also) if src.key_env else ():
+        if not env.get(k) and not (k == src.key_env and _alt_key_ready(src, env)):
+            return f"BLOCKED_ON_KEY:{k}"
     missing = [e for e in src.config_env if not config_value(e, env)]
     if missing:
         return "UNCONFIGURED:" + ",".join(missing)
     return "UNMEASURED_LIVE_YIELD"
+
+
+def _token_helper() -> Any:
+    """`libs.ops.token_refresh.get_token` when that module is on this tree (PR #218), else None.
+    TODO(#218): once merged, drop the env fallback in `source_key` and this guard."""
+    try:
+        import importlib
+        return importlib.import_module("libs.ops.token_refresh").get_token
+    except Exception:
+        return None
+
+
+def _alt_key_ready(src: Source, env: Any) -> bool:
+    """A long-lived credential group stands in for a short-lived token ONLY when the helper that
+    mints from it is present; otherwise the token itself is required."""
+    return bool(src.key_alts and _token_helper() is not None
+                and any(all(env.get(k) for k in grp) for grp in src.key_alts))
+
+
+def source_key(src: Source) -> str:
+    """The credential a request carries, from env only and never logged. CDSE_TOKEN goes through
+    the token helper when it is merged (it refreshes from long-lived credentials); until then
+    the pasted CDSE_TOKEN is read as before."""
+    if not src.key_env:
+        return ""
+    helper = _token_helper() if src.key_alts else None
+    if helper is not None:
+        with contextlib.suppress(Exception):
+            res = helper(src.key_env)
+            if getattr(res, "ok", False) and getattr(res, "token", ""):
+                return str(res.token)
+    return os.environ.get(src.key_env, "")
 
 
 def is_dead(src: Source) -> bool:
@@ -3051,8 +4144,11 @@ def _tls() -> Any:
 
 
 def _redact(url: str, src: Source) -> str:
-    key = os.environ.get(src.key_env or "", "") if src.key_env else ""
-    return url.replace(key, f"<{src.key_env}>") if key else url
+    for k in (src.key_env, *src.key_also) if src.key_env else ():
+        key = os.environ.get(k or "", "")
+        if key:
+            url = url.replace(key, f"<{k}>")
+    return url
 
 
 def http_get(url: str) -> tuple[bytes, str]:
@@ -3081,16 +4177,28 @@ def vault(paths: Paths, src: Source, body: bytes, url: str, ctype: str,
 class Request:
     url: str
     ctx: Ctx
+    #: A POST body (JSON) and its headers; credentials ride ONLY in headers, never in `url`.
+    data: bytes | None = None
+    headers: dict[str, str] = field(default_factory=dict)
+
+
+def http_send(req: Request) -> tuple[bytes, str]:
+    """POST `req.data` with `req.headers` (the S5P statistics and Naver DataLab calls)."""
+    r = urllib.request.Request(req.url, data=req.data, method="POST",
+                               headers={"User-Agent": UA, "Accept": "application/json",
+                                        "Content-Type": "application/json", **req.headers})
+    with urllib.request.urlopen(r, timeout=TIMEOUT, context=_tls()) as resp:
+        return resp.read(MAX_BYTES), str(resp.headers.get("Content-Type") or "")
 
 
 def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
     """The requests one pass makes for a source. Paged and area sources expand here."""
-    key = os.environ.get(src.key_env or "", "") if src.key_env else ""
+    key = source_key(src)
     if src.id == "cn_firms_industrial":
         out: list[Request] = []
         end = (now - timedelta(days=1)).date()
         start = end - timedelta(days=9)
-        for name, box in FIRMS_CLUSTERS.items():
+        for name, box in firms_areas().items():
             bbox = ",".join(str(x) for x in box)
             out.append(Request(FIRMS_URL.format(key=key, product="VIIRS_SNPP_NRT", bbox=bbox,
                                                 days=10, day=start.isoformat()),
@@ -3101,7 +4209,7 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
         bf_end = date.fromisoformat(cur) if cur else start - timedelta(days=1)
         if bf_end > (now - timedelta(days=3 * 365)).date():
             bf_start = bf_end - timedelta(days=9)
-            for name, box in FIRMS_CLUSTERS.items():
+            for name, box in firms_areas().items():
                 bbox = ",".join(str(x) for x in box)
                 out.append(Request(FIRMS_URL.format(key=key, product="VIIRS_SNPP_SP", bbox=bbox,
                                                     days=10, day=bf_start.isoformat()),
@@ -3119,9 +4227,19 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
                 "outFields": "date,portname,portcalls,n_total", "orderByFields": "date",
                 "resultOffset": offset, "resultRecordCount": 2000, "f": "json"})
             reqs.append(Request(f"{src.url}?{q}", Ctx(part=f"page{offset}", fetched_at=now)))
+        if src.id == "imf_portwatch_ports":
+            reqs += _portwatch_cn_requests(src, now, state)
         return reqs
     if src.id == "gdelt_events_country":
         return _gdelt_requests(src, now, state)
+    if src.id == "cn_ccgp_award_indices":
+        return _ccgp_requests(src, now, state)
+    if src.id == "cn_s5p_no2_clusters":
+        return _s5p_requests(src, key, now, state)
+    if src.id == "kr_naver_datalab":
+        return _naver_requests(src, now)
+    if src.id in FOLLOW:
+        return _list_requests(src, now, state)
     if src.id in DATED_SOURCES:
         recent, lag, back = DATED_SOURCES[src.id]
         return _dated_requests(src, key, now, state, recent=recent, lag=lag, back=back)
@@ -3148,6 +4266,160 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
             return []                  # never a request built on a placeholder code
         url = url.replace("{" + env + "}", urllib.parse.quote(code, safe=""))
     return [Request(url, Ctx(fetched_at=now))]
+
+
+def firms_areas() -> dict[str, tuple[float, float, float, float]]:
+    """FIRMS footprints: the five legacy boxes (their history keeps its names) plus every named
+    facility in the cluster registry."""
+    out = dict(FIRMS_CLUSTERS)
+    for fid, f in load_clusters().items():
+        out.setdefault(fid, f["bbox"])
+    return out
+
+
+#: China-wide PortWatch query: every Chinese port PortWatch publishes (ISO3 = 'CHN'), read from
+#: a resumable date cursor so a pass re-reads the last 14 days (late AIS) plus what is new.
+PORTWATCH_CN_PAGES = 40
+PORTWATCH_CN_DEPTH_D = 800
+#: Ports whose vessel-type split (container / dry bulk / tanker calls, import and export tonnes)
+#: is kept; every other Chinese port keeps its total calls only (store size).
+PORTWATCH_CN_MAJOR = frozenset({"shanghai", "ningbo_zhoushan", "qingdao", "tianjin", "dalian",
+                                "guangzhou", "shenzhen", "rizhao", "tangshan", "xiamen",
+                                "yingkou", "lianyungang", "qinhuangdao", "yantai", "zhanjiang"})
+
+
+def _portwatch_cn_requests(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
+    cur = state.get("cn_since")
+    floor = (now - timedelta(days=PORTWATCH_CN_DEPTH_D)).date()
+    since = max(floor, date.fromisoformat(cur) - timedelta(days=14)) if cur else floor
+    state["cn_since_next"] = (now - timedelta(days=1)).date().isoformat()
+    reqs = []
+    for k in range(PORTWATCH_CN_PAGES):
+        q = urllib.parse.urlencode({
+            "where": f"ISO3 = 'CHN' AND date >= timestamp '{since.isoformat()} 00:00:00'",
+            "outFields": "*", "orderByFields": "date,portname",
+            "resultOffset": k * 2000, "resultRecordCount": 2000, "f": "json"})
+        reqs.append(Request(f"{src.url}?{q}", Ctx(part=f"cn_page{k * 2000}", fetched_at=now)))
+    return reqs
+
+
+CCGP_BACK_DEPTH_M = 36
+
+
+def _months_back(d: date, n: int) -> date:
+    y, m = d.year, d.month - n
+    while m <= 0:
+        y, m = y - 1, m + 12
+    return date(y, m, 1)
+
+
+def _ccgp_requests(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
+    """Last month and the one before it re-read (late postings are revisions), plus ONE older
+    month per pass walking back from `back_to`, 36 months deep."""
+    this = date(now.year, now.month, 1)
+    months = [_months_back(this, 1), _months_back(this, 2)]
+    cur = state.get("ccgp_back_to")
+    nxt = date.fromisoformat(cur) if cur else _months_back(this, 3)
+    if nxt >= _months_back(this, CCGP_BACK_DEPTH_M):
+        months.append(nxt)
+        state["ccgp_back_to_next"] = _months_back(nxt, 1).isoformat()
+    out = []
+    for m0 in months:
+        end = _month_end(m0.year, m0.month)
+        for basket, kws in CCGP_BASKETS.items():
+            for kid, kw in kws:
+                out.append(Request(src.url.format(kw=urllib.parse.quote(kw),
+                                                  start=m0.strftime("%Y:%m:%d"),
+                                                  end=end.strftime("%Y:%m:%d")),
+                                   Ctx(part=f"{basket}:{kid}:{m0:%Y-%m}", fetched_at=now)))
+    return out
+
+
+S5P_TYPES = ("steel", "refining", "port", "copper", "aluminium", "coal")
+
+
+def _s5p_requests(src: Source, key: str, now: datetime, state: dict[str, Any]) -> list[Request]:
+    """One Statistical-API POST per facility over the last 10 days (OFFL lands within ~5), plus a
+    30-day backfill window walking back from `s5p_back_to`, three years deep."""
+    end = (now - timedelta(days=1)).date()
+    windows = [(end - timedelta(days=9), end)]
+    cur = state.get("s5p_back_to")
+    bf_end = date.fromisoformat(cur) if cur else windows[0][0] - timedelta(days=1)
+    if bf_end > (now - timedelta(days=3 * 365)).date():
+        windows.append((bf_end - timedelta(days=29), bf_end))
+        state["s5p_back_to_next"] = (bf_end - timedelta(days=30)).isoformat()
+    out = []
+    for fid, f in load_clusters().items():
+        if not set(f["types"]) & set(S5P_TYPES):
+            continue
+        for a, b in windows:
+            body = {"input": {"bounds": {"bbox": list(f["bbox"]), "properties": {
+                        "crs": "http://www.opengis.net/def/crs/EPSG/0/4326"}},
+                              "data": [{"type": "sentinel-5p-l2",
+                                        "dataFilter": {"timeliness": "OFFL"}}]},
+                    "aggregation": {"timeRange": {"from": f"{a.isoformat()}T00:00:00Z",
+                                                  "to": f"{(b + timedelta(days=1)).isoformat()}"
+                                                        "T00:00:00Z"},
+                                    "aggregationInterval": {"of": "P1D"},
+                                    "evalscript": S5P_EVALSCRIPT, "resx": 0.05, "resy": 0.05}}
+            out.append(Request(src.url, Ctx(part=fid, start=a, end=b, fetched_at=now),
+                               data=json.dumps(body).encode(),
+                               headers={"Authorization": f"Bearer {key}"} if key else {}))
+    return out
+
+
+def _naver_requests(src: Source, now: datetime) -> list[Request]:
+    """Weekly attention since 2016, the anchor group in every reply (<= 5 groups per call)."""
+    cid = os.environ.get("NAVER_CLIENT_ID", "")
+    sec = os.environ.get("NAVER_CLIENT_SECRET", "")
+    out = []
+    for k in range(0, len(NAVER_GROUPS), 4):
+        groups = [NAVER_ANCHOR, *NAVER_GROUPS[k:k + 4]]
+        body = {"startDate": "2016-01-04", "endDate": now.date().isoformat(), "timeUnit": "week",
+                "keywordGroups": [{"groupName": g, "keywords": list(kw)} for g, kw in groups]}
+        out.append(Request(src.url, Ctx(part=f"groups{k}", fetched_at=now),
+                           data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+                           headers={"X-Naver-Client-Id": cid, "X-Naver-Client-Secret": sec}))
+    return out
+
+
+#: Release-list sources: the list page links each release; a link whose text carries one of these
+#: words is followed (newest first, never twice). A followed page that parses to nothing has its
+#: own links read once more (MOT: list -> notice -> .xlsx attachment).
+FOLLOW: dict[str, tuple[str, ...]] = {
+    "cn_nbs_industry_power": ("规模以上工业增加值", "能源生产情况", "采购经理指数"),
+    "cn_nbs_fai": ("固定资产投资",),
+    "cn_nbs_profits": ("工业企业利润",),
+    "cn_mot_port_monthly": ("港口货物", "集装箱吞吐量", ".xlsx")}
+FOLLOW_PER_PASS = 8
+LIST_BACK_PAGES = 24
+_HREF = re.compile(r"<a\s[^>]*href=[\"']([^\"'#]+)[\"'][^>]*>(.*?)</a>", re.S | re.I)
+
+
+def _list_requests(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
+    """The list page, plus ONE older list page per pass (index_<k>.html) walking back."""
+    out = [Request(src.url, Ctx(part="list", fetched_at=now))]
+    k = int(state.get("list_back") or 1)
+    if src.url.endswith("/") and k <= LIST_BACK_PAGES:
+        out.append(Request(f"{src.url}index_{k}.html", Ctx(part="list", fetched_at=now)))
+        state["list_back_next"] = k + 1
+    return out
+
+
+def follow_links(src: Source, body: bytes, base: str, seen: Iterable[str]) -> list[str]:
+    """Links on a list/notice page whose anchor text or target carries a FOLLOW word, absolute,
+    unseen, in page order (lists are newest first)."""
+    words = FOLLOW.get(src.id, ())
+    done = set(seen)
+    out: list[str] = []
+    for href, txt in _HREF.findall(body.decode("utf-8", errors="replace")):
+        label = _text(txt.encode()) + " " + href
+        if not any(w in label for w in words):
+            continue
+        url = urllib.parse.urljoin(base, _html.unescape(href.strip()))
+        if url.startswith(("http://", "https://")) and url not in done and url not in out:
+            out.append(url)
+    return out
 
 
 #: Per-date sources: (recent days re-read each pass, publication lag in days, backfill days per
@@ -3319,6 +4591,7 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                 mb = _mean(base)
                 x = v - mb if len(base) >= 5 and mb is not None else None
             pace.append(x)
+        fac = factory_features(vals, periods, src.cadence)
         surprises: list[float] = []
         pts: list[dict[str, Any]] = []
         prior_x: list[float] = []
@@ -3350,24 +4623,300 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                 "value": r["value_first"],
                 "pace": None if x is None else round(x, 6),
                 "surprise": None if surprise is None else round(surprise, 6),
-                "surprise_z": None if z is None else round(z, 4)})
+                "surprise_z": None if z is None else round(z, 4),
+                **fac[i],
+                "value_last": r.get("value_last", r["value_first"]),
+                "n_revisions": int(r.get("n_revisions") or 0)})
         out[name] = pts
     # FIRMS: a total across the declared footprints, per day, from the per-cluster counts.
     if src.id == "cn_firms_industrial":
         out.update(_firms_total(src, out))
+    if src.id in AGGREGATES:
+        out.update(AGGREGATES[src.id](src, out))
     return out
 
 
+# ============================================================================ the factory
+#: Same-period-a-year-earlier windows (days either side) per cadence, and the weekday fallback.
+SEASONAL_TOL_D = {"daily": 3, "weekly": 4, "10-daily": 6, "monthly": 3, "event": 7}
+SEASONAL_YEARS = 3
+FACTORY_MIN_N = 8
+
+
+def factory_features(vals: list[float], periods: list[date], cadence: str
+                     ) -> list[dict[str, Any]]:
+    """The alt-data factory's five objects per point, each from a STRICT PREFIX in availability
+    order (index < i), so nothing is known before its own release:
+
+      delta, acceleration   change on the prior released point, and the change of that change
+      seasonal_expected     mean of the same period 1..3 years earlier (daily/weekly: 364-day
+                            steps, weekday-aligned), else the same weekday over the prior 8 weeks
+                            for daily data (`seasonal_basis` says which); None when neither exists
+      raw_surprise          value - seasonal_expected
+      seasonal_z            raw_surprise / sd of the prior raw surprises (>= 8 of them)
+      percentile            rank of the value among all prior values (>= 8 of them)
+
+    The REVISION object is not here: a revision is known only at its own revision_time, so it
+    rides the sensor record (revision_delta, knowable_at = revision_time), never this row."""
+    pos: dict[date, int] = {}
+    for i, p in enumerate(periods):
+        pos.setdefault(p, i)
+    tol = SEASONAL_TOL_D.get(cadence, 3)
+    step = 364 if cadence in ("daily", "weekly") else 365
+    out: list[dict[str, Any]] = []
+    raws: list[float] = []
+    prev_delta: float | None = None
+    for i, v in enumerate(vals):
+        delta = v - vals[i - 1] if i >= 1 else None
+        accel = delta - prev_delta if delta is not None and prev_delta is not None else None
+        prev_delta = delta
+        same: list[float] = []
+        for k in range(1, SEASONAL_YEARS + 1):
+            tgt = periods[i] - timedelta(days=step * k)
+            if cadence == "monthly":
+                y, m = periods[i].year - k, periods[i].month
+                tgt = _month_end(y, m)
+            for off in sorted(range(-tol, tol + 1), key=abs):
+                j = pos.get(tgt + timedelta(days=off))
+                if j is not None and j < i:
+                    same.append(vals[j])
+                    break
+        basis = "same_period_prior_years" if same else None
+        if not same and cadence == "daily":
+            same = [vals[j] for k in range(1, 9)
+                    if (j := pos.get(periods[i] - timedelta(days=7 * k))) is not None and j < i]
+            basis = "same_weekday_8w" if len(same) >= 4 else None
+            same = same if basis else []
+        exp = _mean(same)
+        raw = v - exp if exp is not None else None
+        sd = _sd(raws) if len(raws) >= FACTORY_MIN_N else None
+        sz = raw / sd if raw is not None and sd else None
+        if raw is not None:
+            raws.append(raw)
+        prior = vals[:i]
+        pct = ((sum(1 for x in prior if x <= v) / len(prior))
+               if len(prior) >= FACTORY_MIN_N else None)
+        out.append({"delta": None if delta is None else round(delta, 6),
+                    "acceleration": None if accel is None else round(accel, 6),
+                    "seasonal_expected": None if exp is None else round(exp, 6),
+                    "seasonal_basis": basis,
+                    "raw_surprise": None if raw is None else round(raw, 6),
+                    "seasonal_z": None if sz is None else round(sz, 4),
+                    "percentile": None if pct is None else round(pct, 4)})
+    return out
+
+
+def _synthetic(src: Source, rows: dict[str, dict[str, Any]], suffix: str = "_agg"
+               ) -> dict[str, list[dict[str, Any]]]:
+    """Feature points for derived series (the store shape build_points reads), built under a
+    sub-source id so no aggregate recurses."""
+    if not rows:
+        return {}
+    sub = Source(**{**src.__dict__, "id": src.id + suffix})
+    return build_points(sub, rows)
+
+
+def _row(series: str, d: str, v: float, members: list[dict[str, Any]]) -> dict[str, Any]:
+    """A derived point is published when its LAST member is, and first seen when its last member
+    was: never before any input it is made of."""
+    pub = max(str(p["published_time"]) for p in members)
+    seen = max(str(p.get("first_seen_at") or "") for p in members) or None
+    basis = "page" if all(p.get("published_basis") == "page" for p in members) else "release_rule"
+    return {"series": series, "period": d, "value_first": v, "value_last": v,
+            "first_seen_at": seen, "published_time": pub, "published_basis": basis}
+
+
+def breadth_rows(per: dict[str, list[dict[str, Any]]], members: list[str], name: str, *,
+                 recent: int = 7, base: int = 90, min_share: float = 0.6
+                 ) -> dict[str, dict[str, Any]]:
+    """Facility / port BREADTH per day: the share of members whose mean over the last `recent`
+    points is above their own mean over the `base` points before that (each member against its
+    own history, so a big city never outweighs a small mill). A day is published only when at
+    least `min_share` of the members have a reading; plus the mean anomaly (%) beside it."""
+    anom: dict[str, dict[str, tuple[float, dict[str, Any]]]] = {}
+    for m in members:
+        pts = sorted(per.get(m) or [], key=lambda p: p["d"])
+        vals = [float(p["value"]) for p in pts]
+        for i, p in enumerate(pts):
+            rec = vals[max(0, i - recent + 1): i + 1]
+            bas = vals[max(0, i - recent + 1 - base): max(0, i - recent + 1)]
+            mb = _mean(bas)
+            if len(bas) >= 28 and mb:
+                anom.setdefault(p["d"], {})[m] = ((_mean(rec) or 0.0) / mb - 1.0, p)
+    out: dict[str, dict[str, Any]] = {}
+    need = max(1, math.ceil(min_share * len(members)))
+    for d, got in anom.items():
+        if len(got) < need:
+            continue
+        xs = [a for a, _p in got.values()]
+        ps = [p for _a, p in got.values()]
+        out[f"{name}_breadth|{d}"] = _row(f"{name}_breadth", d,
+                                          round(sum(x > 0 for x in xs) / len(xs), 4), ps)
+        out[f"{name}_anomaly_pct|{d}"] = _row(f"{name}_anomaly_pct", d,
+                                              round(100.0 * sum(xs) / len(xs), 4), ps)
+    return out
+
+
+def _agg_firms(src: Source, per: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    """Thermal breadth over the named-facility registry (persistent detections only, so crop and
+    wild fires do not count), by facility type and overall."""
+    reg = load_clusters()
+    rows: dict[str, dict[str, Any]] = {}
+    groups: dict[str, list[str]] = {"facility": list(reg)}
+    for fid, f in reg.items():
+        for t in f["types"]:
+            groups.setdefault(t, []).append(fid)
+    for g, ids in groups.items():
+        if len(ids) >= 2:
+            rows.update(breadth_rows(per, [f"{i}_persistent_count" for i in ids],
+                                     f"{g}_thermal"))
+    return _synthetic(src, rows)
+
+
+def _agg_s5p(src: Source, per: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    """NO2 breadth by facility type and overall: the share of clusters above their own baseline."""
+    reg = load_clusters()
+    rows: dict[str, dict[str, Any]] = {}
+    groups: dict[str, list[str]] = {"all": [i for i, f in reg.items()
+                                            if set(f["types"]) & set(S5P_TYPES)]}
+    for fid, f in reg.items():
+        for t in f["types"]:
+            if t in S5P_TYPES:
+                groups.setdefault(t, []).append(fid)
+    for g, ids in groups.items():
+        if len(ids) >= 2:
+            rows.update(breadth_rows(per, [f"{i}_no2_umol" for i in ids], f"{g}_no2"))
+    return _synthetic(src, rows)
+
+
+def _agg_portwatch(src: Source, per: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    """China-wide port features from the per-port PortWatch panel: national calls (days on which
+    at least 80% of the ports ever seen reported), north share and north-minus-south, container
+    and dry-bulk shares of the major ports' calls and their gap, port breadth."""
+    cn = {k[3:-len("_portcalls")]: v for k, v in per.items()
+          if k.startswith("cn_") and k.endswith("_portcalls")}
+    if not cn:
+        return {}
+    by_day: dict[str, dict[str, dict[str, Any]]] = {}
+    for port, pts in cn.items():
+        for p in pts:
+            by_day.setdefault(p["d"], {})[port] = p
+    need = math.ceil(0.8 * len(cn))
+    rows: dict[str, dict[str, Any]] = {}
+    for d, got in by_day.items():
+        if len(got) < need:
+            continue
+        ps = list(got.values())
+        tot = sum(float(p["value"]) for p in ps)
+        rows[f"cn_total_portcalls|{d}"] = _row("cn_total_portcalls", d, tot, ps)
+        nth = [float(p["value"]) for k, p in got.items() if k in CN_NORTH_PORTS]
+        sth = [float(p["value"]) for k, p in got.items() if k in CN_SOUTH_PORTS]
+        if nth and sth and tot > 0:
+            rows[f"cn_north_share|{d}"] = _row("cn_north_share", d, round(sum(nth) / tot, 6), ps)
+            rows[f"cn_north_minus_south_calls|{d}"] = _row(
+                "cn_north_minus_south_calls", d, sum(nth) - sum(sth), ps)
+    seg: dict[str, dict[str, float]] = {}
+    seg_pts: dict[str, list[dict[str, Any]]] = {}
+    for k, pts in per.items():
+        for suf in ("calls_container", "calls_dry_bulk", "calls_tanker"):
+            if k.startswith("cn_") and k.endswith("_" + suf):
+                for p in pts:
+                    seg.setdefault(p["d"], {}).setdefault(suf, 0.0)
+                    seg[p["d"]][suf] += float(p["value"])
+                    seg_pts.setdefault(p["d"], []).append(p)
+    for d, sv in seg.items():
+        t = sum(sv.values())
+        if t > 0 and len(sv) == 3:
+            c, b = sv["calls_container"] / t, sv["calls_dry_bulk"] / t
+            rows[f"cn_container_share|{d}"] = _row("cn_container_share", d, round(c, 6),
+                                                   seg_pts[d])
+            rows[f"cn_bulk_minus_container_share|{d}"] = _row(
+                "cn_bulk_minus_container_share", d, round(b - c, 6), seg_pts[d])
+            rows[f"cn_tanker_share|{d}"] = _row("cn_tanker_share", d,
+                                                round(sv["calls_tanker"] / t, 6), seg_pts[d])
+    rows.update(breadth_rows(per, [f"cn_{p}_portcalls" for p in cn], "cn_port", min_share=0.8))
+    return _synthetic(src, rows)
+
+
+def _agg_ccgp(src: Source, per: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    """Basket order indices: the month's award count summed over the basket's keywords (a month
+    is published only when EVERY keyword was read), mean first-page provincial breadth, and the
+    all-basket infrastructure order index."""
+    rows: dict[str, dict[str, Any]] = {}
+    months: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    for basket, kws in CCGP_BASKETS.items():
+        by: dict[str, list[dict[str, Any]]] = {}
+        for kid, _kw in kws:
+            for p in per.get(f"{basket}__{kid}_awards") or []:
+                by.setdefault(p["d"], []).append(p)
+        for d, ps in by.items():
+            if len(ps) == len(kws):
+                rows[f"{basket}_awards|{d}"] = _row(f"{basket}_awards", d,
+                                                    sum(float(p["value"]) for p in ps), ps)
+                months.setdefault(d, {})[basket] = ps
+        for d in by:
+            br = [p for kid, _kw in kws for p in per.get(f"{basket}__{kid}_provinces_p1") or []
+                  if p["d"] == d]
+            if len(br) == len(kws):
+                rows[f"{basket}_provincial_breadth|{d}"] = _row(
+                    f"{basket}_provincial_breadth", d,
+                    round(sum(float(p["value"]) for p in br) / len(br) / len(CN_PROVINCES), 4),
+                    br)
+    for d, got in months.items():
+        if len(got) == len(CCGP_BASKETS):
+            ps = [p for v in got.values() for p in v]
+            rows[f"all_order_index|{d}"] = _row("all_order_index", d,
+                                                sum(float(p["value"]) for p in ps), ps)
+    return _synthetic(src, rows)
+
+
+def _agg_wiki(src: Source, per: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    """The lawful Baidu-basket substitute: breadth across the Chinese-language keyword articles
+    (share above their own baseline) and the mean anomaly -- relative attention, never a level."""
+    members = [f"{lab}_views" for lab, proj, _t in WIKI_ASIA_ARTICLES
+               if proj == "zh.wikipedia" and lab.startswith("zh_kw_")]
+    return _synthetic(src, breadth_rows(per, members, "zh_basket")) if len(members) >= 3 else {}
+
+
+def _agg_nbs(src: Source, per: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    """Power-PMI divergence: z(generation YoY) minus z(PMI - 50), each standardised over its own
+    prior points only, on months where both printed."""
+    pg = {p["d"]: p for p in per.get("power_gen_yoy") or []}
+    pm = {p["d"]: p for p in per.get("mfg_pmi") or []}
+    rows: dict[str, dict[str, Any]] = {}
+    hist_a: list[float] = []
+    hist_b: list[float] = []
+    for d in sorted(set(pg) & set(pm)):
+        a, b = float(pg[d]["value"]), float(pm[d]["value"]) - 50.0
+        if len(hist_a) >= FACTORY_MIN_N:
+            sa, sb = _sd(hist_a), _sd(hist_b)
+            ma, mb = _mean(hist_a) or 0.0, _mean(hist_b) or 0.0
+            if sa and sb:
+                rows[f"power_pmi_divergence|{d}"] = _row(
+                    "power_pmi_divergence", d, round((a - ma) / sa - (b - mb) / sb, 4),
+                    [pg[d], pm[d]])
+        hist_a.append(a)
+        hist_b.append(b)
+    return _synthetic(src, rows)
+
+
+AGGREGATES: dict[str, Callable[[Source, dict[str, list[dict[str, Any]]]], dict[str, Any]]] = {
+    "cn_firms_industrial": _agg_firms, "cn_s5p_no2_clusters": _agg_s5p,
+    "imf_portwatch_ports": _agg_portwatch, "cn_ccgp_award_indices": _agg_ccgp,
+    "wiki_asia_attention": _agg_wiki, "cn_nbs_industry_power": _agg_nbs}
+
+
 def _firms_total(src: Source, per: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    ncl = len(FIRMS_CLUSTERS)
+    legacy = {f"{c}_count" for c in FIRMS_CLUSTERS}
     days: dict[str, dict[str, Any]] = {}
     for name, pts in per.items():
-        if not name.endswith("_count"):
+        if name not in legacy:
             continue
         for p in pts:
             e = days.setdefault(p["d"], {"n": 0, "v": 0.0, "p": p})
             e["n"] += 1
             e["v"] += float(p["value"])
-    ncl = len(FIRMS_CLUSTERS)
     store = {f"total_count|{d}": {"series": "total_count", "period": d, "value_first": e["v"],
                                    "value_last": e["v"],
                                    "first_seen_at": e["p"]["first_seen_at"],
@@ -3395,8 +4944,8 @@ def axis_doc(src: Source, points: dict[str, list[dict[str, Any]]], now: datetime
     alpha_dsl.axis_fields, world_model.load_inputs and representation_forge read unchanged."""
     series: dict[str, Any] = {}
     for name, pts in sorted(points.items()):
-        for col in ("value", "pace", "surprise_z"):
-            keep = [{"d": p["d"], "v": p[col], "available_time": p["available_time"],
+        for col in ("value", "pace", "surprise_z", "acceleration", "seasonal_z"):
+            keep = [{"d": p["d"], "v": p.get(col), "available_time": p["available_time"],
                      "published_time": p["published_time"], "event_time": p["event_time"],
                      "first_seen_at": p["first_seen_at"], "revision_time": p["revision_time"],
                      "vintage_id": p["vintage_id"], "pit_quality": p["pit_quality"]}
@@ -3412,10 +4961,69 @@ def axis_doc(src: Source, points: dict[str, list[dict[str, Any]]], now: datetime
             "cadence": src.cadence, "n_series": len(series),
             "pit_fields": ["event_time", "published_time", "available_time", "first_seen_at",
                            "revision_time", "vintage_id"],
-            "shape": "series[<series>.<value|pace|surprise_z>].points, joined on available_time",
+            "shape": ("series[<series>.<value|pace|surprise_z|acceleration|seasonal_z>].points, "
+                      "joined on available_time"),
             "vintage_note": ("first value seen is the value; a revision is recorded with its own "
                              "revision_time and never back-dated"),
             "series": series}
+
+
+#: The universal sensor contract (MANDATE 2026-10-06 §2.5), field for field. A field this organ
+#: cannot know is None, never a stand-in: no consensus is held, so `consensus` is None and
+#: `expected_value` is the run-rate expectation the surprise was measured against.
+SENSOR_FIELDS: tuple[str, ...] = (
+    "sensor_id", "source_id", "dataset_id", "observation_id", "entity", "geography",
+    "asset_domain", "metric", "value", "unit", "event_time", "scheduled_time",
+    "publication_time", "knowable_at", "received_at", "parse_complete_at", "expected_value",
+    "consensus", "seasonal_expected", "raw_surprise", "surprise_z", "percentile", "delta",
+    "acceleration", "revision_of", "revision_delta", "source_confidence",
+    "measurement_uncertainty", "commercial_rights", "licence", "provenance_hash", "raw_pointer")
+SENSOR_KEEP = 60
+
+
+def sensor_records(src: Source, points: dict[str, list[dict[str, Any]]]
+                   ) -> list[dict[str, Any]]:
+    """Each point as a §2.5 observation (the newest SENSOR_KEEP per series; the full history is
+    the vintage store and the lake CSV). A revision is its OWN observation (`revision_of` names
+    the first, `revision_delta` = last - first, `knowable_at` = its revision_time), never a
+    rewrite of the first value."""
+    out: list[dict[str, Any]] = []
+    rights = {"confirmed": "reuse_confirmed", "to_confirm": "unconfirmed",
+              "refused": "refused"}.get(src.terms, "unconfirmed")
+    for name, pts in sorted(points.items()):
+        for p in pts[-SENSOR_KEEP:]:
+            oid = f"{src.id}|{name}|{p['d']}"
+            pace, sur = p.get("pace"), p.get("surprise")
+            base = {
+                "sensor_id": f"alt_proxies:{src.id}:{name}", "source_id": src.id,
+                "dataset_id": lake_file(src, name), "observation_id": oid,
+                "entity": name, "geography": src.region, "asset_domain": "macro_physical",
+                "metric": name, "value": p["value"], "unit": None,
+                "event_time": p["event_time"], "scheduled_time": None,
+                "publication_time": p["published_time"], "knowable_at": p["available_time"],
+                "received_at": p.get("first_seen_at"),
+                "parse_complete_at": p.get("first_seen_at"),
+                "expected_value": (None if pace is None or sur is None
+                                   else round(float(pace) - float(sur), 6)),
+                "consensus": None, "seasonal_expected": p.get("seasonal_expected"),
+                "raw_surprise": p.get("raw_surprise"), "surprise_z": p.get("surprise_z"),
+                "percentile": p.get("percentile"), "delta": p.get("delta"),
+                "acceleration": p.get("acceleration"), "revision_of": None,
+                "revision_delta": None,
+                "source_confidence": ("page_stamp" if p.get("published_basis") == "page"
+                                      else "release_rule"),
+                "measurement_uncertainty": None, "commercial_rights": rights,
+                "licence": src.licence, "provenance_hash": p.get("vintage_id"),
+                "raw_pointer": f"data/lake/vault/alt_{src.id}/"}
+            out.append(base)
+            last = p.get("value_last")
+            if p.get("revision_time") and last is not None and p.get("n_revisions"):
+                out.append({**base, "observation_id": oid + "|rev", "value": last,
+                            "revision_of": oid,
+                            "revision_delta": round(float(last) - float(p["value"]), 6),
+                            "knowable_at": p["revision_time"], "received_at": p["revision_time"],
+                            "parse_complete_at": p["revision_time"]})
+    return out
 
 
 def credit_of(sid: str) -> str:
@@ -3442,7 +5050,13 @@ def write_lake_series(paths: Paths, src: Source, points: dict[str, list[dict[str
                             "retrieval_time": p["retrieval_time"],
                             "revision_time": p["revision_time"], "source_id": src.id,
                             "vintage_id": p["vintage_id"], "value": p["value"], "pace": p["pace"],
-                            "surprise_z": p["surprise_z"], "pit_quality": p["pit_quality"]}
+                            "surprise_z": p["surprise_z"], "pit_quality": p["pit_quality"],
+                            # the factory's objects (sensor-contract names), all PIT on the row
+                            "knowable_at": p["available_time"], "received_at": p["retrieval_time"],
+                            "delta": p.get("delta"), "acceleration": p.get("acceleration"),
+                            "seasonal_expected": p.get("seasonal_expected"),
+                            "raw_surprise": p.get("raw_surprise"),
+                            "seasonal_z": p.get("seasonal_z"), "percentile": p.get("percentile")}
                            for p in pts])
         target = paths.series / f"{lake_file(src, name)}.csv"
         tmp = target.with_suffix(f".tmp{os.getpid()}")
@@ -3579,33 +5193,50 @@ def gain_tests(paths: Paths, points_by_source: dict[str, dict[str, list[dict[str
     Only instruments the two-lane order lets this family mint on are tested (share CFDs go to
     the equity hand-off), and a DEAD source is never tested: its conditioner can never fire."""
     from libs.research.release_gain import release_gain
-    cells: list[tuple[str, str, str]] = []
+    cells: list[tuple[str, str, str, str]] = []
     for sid, per in points_by_source.items():
         src = BY_ID[sid]
         if is_dead(src):
             continue
         for series in src.signal_series:
             if per.get(series):
-                cells.extend((sid, series, sym) for sym in src.instruments_for(series)
-                             if may_mint(sym))
+                for col in signal_columns(src):
+                    cells.extend((sid, series, sym, col) for sym in src.instruments_for(series)
+                                 if may_mint(sym))
     out: dict[str, dict[str, Any]] = {}
     closes: dict[str, Any] = {}
-    for sid, series, sym in cells:
+    for sid, series, sym, col in cells:
         if sym not in closes:
             closes[sym] = _bars_close(paths, sym)
         close = closes[sym]
-        key = f"{sid}|{series}|{sym}"
+        key = gain_key(sid, series, sym, col)
         if close is None:
             out[key] = {"verdict": UNMEASURED, "why": f"no {sym}_H1 bars on this box"}
             continue
         pts = points_by_source[sid][series]
-        ev = [(p["available_time"], float(p["surprise_z"])) for p in pts
-              if p.get("surprise_z") is not None]
+        ev = [(p["available_time"], float(p[col])) for p in pts if p.get(col) is not None]
         res = release_gain(ev, close, horizon_bars=HORIZON_BARS, n_cells=len(cells)).as_dict()
         res["backfill_share"] = (round(sum(1 for p in pts if p["pit_quality"] == "backfill")
                                        / len(pts), 3) if pts else None)
         out[key] = res
     return out
+
+
+#: Sources whose cells test the factory's seasonal surprise beside the run-rate surprise: the
+#: physical-exhaust rows and the panels they extended. Each column is its own charged trial.
+FACTORY_SIGNAL_SOURCES = frozenset({
+    "cn_mot_port_monthly", "us_bls_deepsea_freight", "cn_nbs_industry_power", "cn_nbs_fai",
+    "cn_nbs_profits", "cn_ccgp_award_indices", "cn_s5p_no2_clusters", "kr_naver_datalab",
+    "cn_firms_industrial", "imf_portwatch_ports", "wiki_asia_attention", "cn_sse_scfi_routes"})
+
+
+def signal_columns(src: Source) -> tuple[str, ...]:
+    return ("surprise_z", "seasonal_z") if src.id in FACTORY_SIGNAL_SOURCES else ("surprise_z",)
+
+
+def gain_key(sid: str, series: str, sym: str, col: str = "surprise_z") -> str:
+    """`sid|series|sym` for the run-rate surprise (the historic key), `sid|series#col|sym` else."""
+    return f"{sid}|{series}|{sym}" if col == "surprise_z" else f"{sid}|{series}#{col}|{sym}"
 
 
 def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
@@ -3615,18 +5246,21 @@ def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[s
     for key, g in sorted(gains.items()):
         if g.get("verdict") != "PASS" or not g.get("ic"):
             continue
-        sid, series, sym = key.split("|")
+        sid, series_col, sym = key.split("|")
+        series, _, col = series_col.partition("#")
+        col = col or "surprise_z"
         src = BY_ID[sid]
         if is_dead(src) or not may_mint(sym):
             continue
         side = 1 if float(g["ic"]) > 0 else -1
-        params = {"source": lake_file(src, series), "signal": "surprise_z",
+        params = {"source": lake_file(src, series), "signal": col,
                   "transform": "level_z", "threshold": 1.0, "side_when_high": side,
                   "lag_hours": 24, "ttl_bars": HORIZON_BARS}
         out.append({
             "source": SOURCE, "kind": "hypothesis", "symbol": sym, "symbols": [sym],
             "family": "exogenous_conditioner", "params": params, "url": "",
-            "cell": f"{sym}.exogenous_conditioner.{lake_file(src, series)}",
+            "cell": (f"{sym}.exogenous_conditioner.{lake_file(src, series)}"
+                     + ("" if col == "surprise_z" else f".{col}")),
             "title": f"{src.name}: {series} surprise -> {sym} ({'+' if side > 0 else '-'})"[:120],
             "available_time": now.isoformat(timespec="seconds"),
             "event_time": now.isoformat(timespec="seconds"),
@@ -3848,7 +5482,7 @@ def _donate(paths: Paths, source: str, cands: list[dict[str, Any]], tests_run: i
 # ============================================================================ the pass
 def _load_fixture(fixtures: Path, src: Source, req: Request, i: int) -> bytes | None:
     for name in (f"{src.id}.{i}", src.id):
-        for ext in ("html", "json", "csv", "txt"):
+        for ext in ("html", "json", "csv", "txt", "xlsx"):
             p = fixtures / f"{name}.{ext}"
             if p.exists() and (i == 0 or name != src.id):
                 return p.read_bytes()
@@ -3857,7 +5491,8 @@ def _load_fixture(fixtures: Path, src: Source, req: Request, i: int) -> bytes | 
 
 def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             fetch: bool, fixtures: Path | None, deadline: float,
-            getter: Callable[[str], tuple[bytes, str]] = http_get) -> dict[str, Any]:
+            getter: Callable[[str], tuple[bytes, str]] = http_get,
+            sender: Callable[[Request], tuple[bytes, str]] = http_send) -> dict[str, Any]:
     """Fetch (or read fixtures), parse, and merge into the source's vintage store."""
     rec: dict[str, Any] = {"id": src.id, "status": status_of(src)}
     store_p = paths.obs_dir / f"{src.id}.json"
@@ -3866,6 +5501,10 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec.update({"status": status_of(src), "requests": 0,
                     "why": (f"terms {src.terms}: not fetched until a human confirms the "
                             f"licence ({TERMS.get(src.id, ('', 'unknown'))[1]})"),
+                    "store_rows": len(store)})
+        return rec
+    if src.paid_licence and status_of(src).startswith("UNCONFIGURED"):
+        rec.update({"requests": 0, "why": "paid licence not held: never fetched",
                     "store_rows": len(store)})
         return rec
     if src.parse is None:                  # a local read of a series another organ fetches
@@ -3893,24 +5532,40 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     reqs = requests_for(src, now, sst)
-    parsed = fetched = 0
+    parsed = fetched = followed = 0
     errors: list[str] = []
-    for i, req in enumerate(reqs):
+    exhausted: set[str] = set()
+    queue = list(reqs)
+    seen = list(sst.get("followed") or [])
+    i = 0
+    while queue:
+        req = queue.pop(0)
         if time.monotonic() > deadline:
             errors.append("budget reached: the remaining requests are owed to the next pass")
             break
+        group = req.ctx.part.rstrip("0123456789").removesuffix("page")
+        if src.id.startswith("imf_portwatch") and group in exhausted:
+            continue
         body: bytes | None = None
         if fixtures is not None:
             body = _load_fixture(fixtures, src, req, i)
+            i += 1
             if body is None:
                 continue
         elif fetch:
             try:
-                body, ctype = getter(req.url)
+                body, ctype = sender(req) if req.data is not None else getter(req.url)
                 fetched += 1
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
                 errors.append(f"{type(exc).__name__}: {_redact(str(exc), src)[:120]}")
+                if isinstance(exc, urllib.error.HTTPError):
+                    exc.close()
+                if req.ctx.part.startswith("follow") and req.url in seen:
+                    seen.remove(req.url)                 # a failed release page is retried
+                if src.id == "wiki_asia_attention" and getattr(exc, "code", None) == 404:
+                    errors.pop()                         # an absent article is a fact, not a
+                    rec.setdefault("missing", []).append(req.ctx.part)   # failed pass
                 continue
         if body is None:
             continue
@@ -3921,10 +5576,25 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["merge"]["added"] += m["added"]
         rec["merge"]["revised"] += m["revised"]
         if src.id.startswith("imf_portwatch") and not obs:
-            break                                              # paging exhausted
+            exhausted.add(group)                               # paging exhausted
+        if group == "cn_" and obs:
+            sst["cn_read"] = True
+        if (src.id in FOLLOW and fixtures is None and not obs
+                and req.ctx.part in ("list", "follow1")):
+            for url in follow_links(src, body, req.url, seen)[:FOLLOW_PER_PASS - followed]:
+                followed += 1
+                seen.append(url)
+                queue.append(Request(url, Ctx(part="follow1" if req.ctx.part == "list"
+                                              else "follow2", fetched_at=now)))
+    if not sst.pop("cn_read", False):
+        sst.pop("cn_since_next", None)          # the China query read nothing: cursor holds
+    if src.id in FOLLOW:
+        sst["followed"] = seen[-400:]
+        rec["followed"] = followed
     if src.id == "cn_firms_industrial" and "firms_backfill_to_next" in sst and not errors:
         sst["firms_backfill_to"] = sst.pop("firms_backfill_to_next")
-    for k in ("backfill_to_next", "full_done_next"):
+    for k in ("backfill_to_next", "full_done_next", "cn_since_next", "ccgp_back_to_next",
+              "s5p_back_to_next", "list_back_next"):
         if k in sst:
             nxt = sst.pop(k)
             if not errors and fixtures is None and fetch:
@@ -4200,6 +5870,10 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
             if not dry_run:
                 _atomic(paths.axes / f"alt_{src.id}.json", axis_doc(src, pts, now))
                 rec["lake_series"] = write_lake_series(paths, src, pts)
+                _atomic(paths.sensor_dir / f"{src.id}.json",
+                        {"contract": "MANDATE 2026-10-06 §2.5", "fields": list(SENSOR_FIELDS),
+                         "at": now.isoformat(timespec="seconds"),
+                         "records": sensor_records(src, pts)})
         rec["series"] = {k: len(v) for k, v in sorted(pts.items())}
         records[src.id] = rec
     gains = gain_tests(paths, points_by_source) if points_by_source else {}
@@ -4313,6 +5987,33 @@ def _cursor(s: Source) -> str:
     return "vintage store keyed series|period (append-only)"
 
 
+#: Annual cost of a source in USD where a price is HELD. Every source this organ fetches is free
+#: (0); a paid vendor with no quote held is UNMEASURED, never a guessed price.
+ANNUAL_COST_USD: dict[str, Any] = {
+    "cn_tianyancha_supply": UNMEASURED, "rqdata": UNMEASURED, "wind": UNMEASURED}
+
+
+def rent_of(sid: str, n_axes: int, report: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The RENT row (audit row 51): annual cost, unique axes (signal series), cells tested and
+    gain-test survivors from the last pass's report on THIS box, and cost per survivor. No
+    report here -> cells and survivors are UNMEASURED (a verdict, not a zero)."""
+    cost = ANNUAL_COST_USD.get(sid, 0)
+    gains = (report or {}).get("gain_tests") or {}
+    mine = {k: g for k, g in gains.items() if k.split("|", 1)[0] == sid}
+    tested = sum(1 for g in mine.values() if (g or {}).get("verdict") in
+                 ("PASS", "FAIL", "UNDERPOWERED"))
+    passed = sum(1 for g in mine.values() if (g or {}).get("verdict") == "PASS")
+    have = bool(report)
+    per = (UNMEASURED if not have or not isinstance(cost, (int, float))
+           else (None if not passed else round(float(cost) / passed, 2)))
+    return {"annual_cost_usd": cost, "unique_axes": int(n_axes),
+            "cells_tested": tested if have else UNMEASURED,
+            "survivors": passed if have else UNMEASURED,
+            "cost_per_survivor_usd": per,
+            "rule": ("information per unit of rent: a paid source renews only on measured "
+                     "survivors per dollar against its free substitutes")}
+
+
 def roster_rows(sources: Iterable[Source] = SOURCES,
                 environ: dict[str, str] | None = None) -> list[dict[str, Any]]:
     """One roster row per source, for the mining roster (the same metadata the cells carry)."""
@@ -4328,7 +6029,8 @@ def roster_rows(sources: Iterable[Source] = SOURCES,
                      "pit": ("available_time = page publication stamp else release-calendar rule "
                              "(late-biased); first_seen_at = vault fetch instant"),
                      "uses": uses, "consumer": "desks/mt5/research/alt_proxies.py",
-                     "status": status_of(s, environ), "terms": s.terms, **_meta(s)})
+                     "status": status_of(s, environ), "terms": s.terms, **_meta(s),
+                     "rent": rent_of(s.id, len(s.signal_series), _rent_report())})
         if credit_of(s.id):
             rows[-1]["credit"] = credit_of(s.id)
         if s.vintage:
@@ -4339,6 +6041,13 @@ def roster_rows(sources: Iterable[Source] = SOURCES,
             rows[-1].update({"substitutes_for": s.substitutes_for, "fetcher": "owned",
                              "owner": "asia_gap_thread"})
     return rows
+
+
+def _rent_report() -> dict[str, Any] | None:
+    """The last pass's report on this box, or None (the committed roster is written off-box, so
+    its rent cells read UNMEASURED there)."""
+    doc = _read_json(DEFAULT_PATHS.report, None)
+    return doc if isinstance(doc, dict) and doc.get("gain_tests") is not None else None
 
 
 def substitute_roster_rows(environ: dict[str, str] | None = None) -> list[dict[str, Any]]:
@@ -4372,6 +6081,9 @@ def roster_file_rows() -> list[dict[str, Any]]:
                     row["auth_env"] = key
             elif k == "participant_structure":
                 row[k] = list(v)
+            elif k == "rent":
+                row[k] = {**v, "cells_tested": UNMEASURED, "survivors": UNMEASURED,
+                          "cost_per_survivor_usd": UNMEASURED}     # committed: off-box
             else:
                 row[k] = v
         row["cadence_minutes"] = _CADENCE_MIN.get(str(r["cadence"]), 1440)
@@ -4387,9 +6099,14 @@ def engine_rows() -> dict[str, Any]:
     free-source library (data/paid_substitute_library.json), ready to merge once #152 lands.
     Every blocked source is marked BLOCKED+SUBSTITUTE:<ids> or BLOCKED_ON_TERMS (unsubstituted)."""
     klass = {_CARD: "card", _FOOT: "foot traffic", _SAT: "satellite (port / AIS activity)",
-             _NEWS: "news", _TRAVEL: "foot traffic (travel arrivals)", _GOLD: "gold premium"}
-    blocked_class = {"jp_jnto_arrivals": _TRAVEL, "cn_sge_premium": _GOLD}
-    rows: list[dict[str, str]] = []
+             _NEWS: "news", _TRAVEL: "foot traffic (travel arrivals)", _GOLD: "gold premium",
+             _FREIGHT: "freight (route indices)", _CORP: "corporate supply chain",
+             _PROC: "procurement awards", _SEARCH: "search attention"}
+    blocked_class = {"jp_jnto_arrivals": _TRAVEL, "cn_sge_premium": _GOLD,
+                     "cn_sse_scfi_routes": _FREIGHT, "cn_ccgp_award_indices": _PROC,
+                     "cn_tianyancha_supply": _CORP, "cn_samr_registrations": _CORP,
+                     "kr_naver_datalab": _SEARCH, "in_nse_option_chain": "options positioning"}
+    rows: list[dict[str, Any]] = []
     for sid in sorted({*SUBSTITUTED_BY, *NO_SUBSTITUTE}):
         src = BY_ID[sid]
         paid_cls = src.substitutes_for or blocked_class.get(sid, "")
@@ -4407,7 +6124,19 @@ def engine_rows() -> dict[str, Any]:
             "unsubstituted_because": NO_SUBSTITUTE.get(sid, ""),
             "evidence": "; ".join(f"{x}: {TERMS_EVIDENCE[x]['terms_url']}" for x in subs
                                   if x in TERMS_EVIDENCE),
+            "rent": rent_of(sid, len(src.signal_series)) | {
+                "cells_tested": UNMEASURED, "survivors": UNMEASURED,
+                "cost_per_survivor_usd": UNMEASURED},
         })
+    for vid, v in sorted(PAID_BLOCKED.items()):
+        rows.append({"class": v["class"], "paid": f"{v['name']} [{vid}]", "free": "",
+                     "region": "CN", "measure": "", "frequency": "on demand",
+                     "status": v["status"], "terms": "paid_blocked",
+                     "blocked_because": v["why"], "unsubstituted_because": v["why"],
+                     "evidence": "desks/mt5/data/asia_sources.json (paid_blocked: true)",
+                     "rent": {"annual_cost_usd": ANNUAL_COST_USD.get(vid, UNMEASURED),
+                              "unique_axes": 0, "cells_tested": UNMEASURED,
+                              "survivors": UNMEASURED, "cost_per_survivor_usd": UNMEASURED}})
     lib: list[dict[str, Any]] = []
     for x in sorted({x for v in SUBSTITUTED_BY.values() for x in v}):
         s = BY_ID[x]
@@ -4418,7 +6147,9 @@ def engine_rows() -> dict[str, Any]:
             "url": ev.get("terms_url") or s.url.split("?")[0],
             "endpoint": None if "{" in s.url else s.url,
             "classes": [{_CARD: "card_consumer", _FOOT: "foot_traffic", _SAT: "shipping_ais",
-                         _TRAVEL: "foot_traffic", _GOLD: "commodities_physical"}.get(
+                         _TRAVEL: "foot_traffic", _GOLD: "commodities_physical",
+                         _FREIGHT: "shipping_freight", _CORP: "corporate_activity",
+                         _PROC: "procurement", _SEARCH: "search_attention"}.get(
                              s.substitutes_for, "macro")],
             "region": s.region, "frequency": s.cadence,
             "auth": "free_key" if s.key_env else "none", "auth_env": s.key_env or "",
