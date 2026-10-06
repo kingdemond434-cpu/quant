@@ -88,6 +88,16 @@ ASIA_SOURCES = DATA / "asia_sources.json"
 FOREST_SOURCES = DATA / "deep_forest_sources.json"
 GATE_LEDGER = DATA / "hypotheses" / "gate_verdict_ledger.jsonl"
 REPORT = REPORTS / "CULTURE_ORTHOGONALITY.json"
+#: CRO duty D20's counter (`culture_orthogonality_verdicts`), rewritten with REPORT every pass.
+VERDICTS_REPORT = REPORTS / "CULTURE_ORTHOGONALITY_VERDICTS.json"
+#: The breadth thread's per-culture summary (#139 `research/cell_culture_index.py`): cells and
+#: judged cells by `source_culture`. Absent until #139 is on LIVE; then cells/judged read it.
+CELL_CULTURE_SUMMARY = REPORTS / "CELL_CULTURE.json"
+#: Jurisdictions of the crowded Western canon -- `libs/research/cell_culture.WESTERN` (#139),
+#: copied so the counter runs before that module is on LIVE; the import wins when it is.
+WESTERN = frozenset({"US", "CA", "GB", "EA", "EU", "DE", "FR", "IT", "ES", "NL", "BE", "AT",
+                     "IE", "PT", "FI", "CH", "SE", "NO", "DK", "IS", "LU", "AU", "NZ"})
+INDEX_ABSENT = "CELL_CULTURE_INDEX not yet on live (#139)"
 #: The breadth thread's per-cell culture index (`libs/research/cell_culture.py`, hourly backfill),
 #: keyed by cell id. First existing path wins; absent means every culture is derived here.
 CELL_CULTURE_INDEX_PATHS = (DATA / "CELL_CULTURE_INDEX.jsonl",
@@ -972,6 +982,116 @@ def docket_culture(doc: Any, why: str) -> dict[str, Any]:
             "pair_counts": doc.get("pair_counts"), "key_groups": keys}
 
 
+# ------------------------------------------------------------------------------ CRO D20
+def _western() -> frozenset[str]:
+    try:
+        from libs.research.cell_culture import WESTERN as w
+        return frozenset(w)
+    except Exception:
+        return WESTERN
+
+
+def _summary_counts(summary: Any, key: str) -> dict[str, int] | None:
+    if not isinstance(summary, dict) or not isinstance(summary.get(key), dict):
+        return None
+    out: dict[str, int] = {}
+    for c, n in summary[key].items():
+        code = _culture_code(c) or UNMEASURED
+        if isinstance(n, int):
+            out[code] = out.get(code, 0) + n
+    return out
+
+
+def verdicts_counter(doc: Mapping[str, Any], summary: Any = None, *,
+                     now: datetime | None = None) -> dict[str, Any]:
+    """CRO duty D20, per source_culture: cells, judged, survivors, the orthogonality verdict
+    against WESTERN-sourced survivors, and the non-Western share.
+
+    Survivors and pair verdicts come from this organ's own pass (`doc`). Cells and judged come
+    from #139's CELL_CULTURE.json summary; absent, they are UNMEASURED with INDEX_ABSENT, never
+    0. A culture's verdict vs Western is read from its same-mechanism pairs with a Western
+    survivor: ORTHOGONAL when every measured one DIVERGES, SAME_EDGE when every measured one is
+    SAME_EDGE, MIXED otherwise, UNMEASURED when no such pair was measurable."""
+    west = _western()
+    if summary is None:
+        summary = _read(CELL_CULTURE_SUMMARY)
+    cells = _summary_counts(summary, "by_culture")
+    judged = _summary_counts(summary, "judged_by_culture")
+    have_index = cells is not None
+    why_cells = "" if have_index else INDEX_ABSENT
+    surv = {c: int(v.get("survivors") or 0) for c, v in (doc.get("per_culture") or {}).items()}
+    vs: dict[str, dict[str, Any]] = {}
+    for p in doc.get("pairs") or []:
+        ca, cb = (list(p.get("cultures") or []) + [None, None])[:2]
+        for mine, other in ((ca, cb), (cb, ca)):
+            if mine is None or other not in west or mine in west:
+                continue
+            v = vs.setdefault(str(mine), {DIVERGE: 0, SAME_EDGE: 0, UNMEASURED: 0, "rho": []})
+            key = str(p.get("verdict") or UNMEASURED)
+            v[key] = v.get(key, 0) + 1
+            if p.get("verdict") in (DIVERGE, SAME_EDGE) and _num(p.get("rho")) is not None:
+                v["rho"].append(float(p["rho"]))
+    cultures = sorted({*surv, *vs, *(cells or {}), *(judged or {})})
+    rows: dict[str, Any] = {}
+    for c in cultures:
+        is_w = c in west
+        v = vs.get(c)
+        if is_w:
+            verdict, why = "REFERENCE", "Western-sourced: the reference set"
+        elif c == UNMEASURED:
+            verdict, why = UNMEASURED, "no culture on these cells"
+        elif not v or not (v[DIVERGE] or v[SAME_EDGE]):
+            verdict = UNMEASURED
+            why = (f"{v[UNMEASURED]} pair(s) with a Western survivor, none with enough "
+                   f"overlap" if v else "no same-mechanism pair with a Western survivor")
+        else:
+            verdict = ("ORTHOGONAL" if not v[SAME_EDGE] else
+                       SAME_EDGE if not v[DIVERGE] else "MIXED")
+            why = f"{v[DIVERGE]} DIVERGE, {v[SAME_EDGE]} SAME_EDGE, {v[UNMEASURED]} UNMEASURED"
+        rhos = sorted(v["rho"]) if v else []
+        rows[c] = {
+            "western": is_w if c != UNMEASURED else None,
+            "cells": cells.get(c, 0) if cells is not None else UNMEASURED,
+            "judged": judged.get(c, 0) if judged is not None else UNMEASURED,
+            "survivors": surv.get(c, 0),
+            "verdict_vs_western": verdict, "why": why,
+            "pairs_vs_western": ({k: v[k] for k in (DIVERGE, SAME_EDGE, UNMEASURED)}
+                                 if v else {DIVERGE: 0, SAME_EDGE: 0, UNMEASURED: 0}),
+            "median_rho_vs_western": (round(rhos[len(rhos) // 2], 4) if rhos else UNMEASURED),
+        }
+
+    def share(counts: Mapping[str, int] | None) -> Any:
+        if counts is None:
+            return UNMEASURED
+        known = {c: n for c, n in counts.items() if c not in (UNMEASURED, "GLOBAL")}
+        tot = sum(known.values())
+        return round(sum(n for c, n in known.items() if c not in west) / tot, 4) if tot \
+            else UNMEASURED
+    n_verdicts = sum(1 for r in rows.values()
+                     if r["verdict_vs_western"] in ("ORTHOGONAL", SAME_EDGE, "MIXED"))
+    return {
+        "generated_at": (now or datetime.now(tz=UTC)).isoformat(timespec="seconds"),
+        "organ": "culture_orthogonality", "duty": "D20",
+        "metric": "culture_orthogonality_verdicts",
+        "culture_orthogonality_verdicts": n_verdicts,
+        "cultures_without_verdict": sorted(c for c, r in rows.items()
+                                           if r["verdict_vs_western"] == UNMEASURED
+                                           and c != UNMEASURED),
+        "cells_source": (str(CELL_CULTURE_SUMMARY) if have_index else UNMEASURED),
+        "cells_why": why_cells,
+        "non_western_share": {"cells": share(cells) if have_index else UNMEASURED,
+                              "judged": share(judged) if have_index else UNMEASURED,
+                              "survivors": share(surv),
+                              "basis": "of cells whose jurisdiction is known (GLOBAL excluded)"},
+        "western": sorted(west),
+        "pair_counts": doc.get("pair_counts"),
+        "pairs_read": len(doc.get("pairs") or []),
+        "pairs_cap": MAX_PAIRS_PUBLISHED,
+        "per_culture": rows,
+        "source_report": str(REPORT),
+    }
+
+
 # ------------------------------------------------------------------------------ writing
 def write(doc: Mapping[str, Any], path: Path | None = None) -> Path:
     target = path or REPORT
@@ -987,6 +1107,7 @@ def run(*, docket: Iterable[Mapping[str, Any]] | None = None, dry_run: bool = Fa
     doc = build(docket=docket)
     if not dry_run:
         write(doc)
+        write(verdicts_counter(doc), VERDICTS_REPORT)
     return doc
 
 
