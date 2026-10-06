@@ -192,10 +192,10 @@ def _measure(root: Path, doc: dict[str, Any], *, ref: str | None, threshold_h: f
         # fence FRESH at 4.3h while the newest box-authored commit on any published path was
         # bcbec41f0 of 2026-09-24. A stamp counts only when the newest commit touching its file
         # at the ref is a box identity's; anyone else's write is listed, never believed.
-        rc_a, who = _git(root, "log", "-1", "--format=%an", use, "--", rel)
-        if rc_a != 0 or box_author.lower() not in who.strip().lower():
-            if who.strip():
-                not_box_written[rel] = who.strip()
+        rc_a, writer = _git(root, "log", "-1", "--format=%an", use, "--", rel)
+        if rc_a != 0 or box_author.lower() not in writer.strip().lower():
+            if writer.strip():
+                not_box_written[rel] = writer.strip()
             continue
         rc, text = _git(root, "show", f"{use}:{rel}")
         if rc != 0:
