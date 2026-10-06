@@ -851,19 +851,13 @@ def expand_axes(cands: list[dict]) -> list[dict]:
             _charts = [c for c in chart_order(sym, _charts) if c in _charts]
         except Exception:
             pass
-        # ONLY THE CHARTS THE FAMILY CAN EXPRESS (2026-10-06). `FAMILY_TIMEFRAMES` declares,
-        # with the reason, that a bar-for-bar join or a daily conditioner is meaningless below
-        # the hour; minting those cells anyway put 2,170 rows in the docket the judge could only
-        # refuse. The declared charts are minted; an undeclared family keeps every chart.
-        try:
-            from mt5desk.families_orthogonal import timeframe_domain
-            _domain = set(timeframe_domain(fam))
-        except Exception:
-            _domain = {*_charts, "H1"}
-        _tfs = [t for t in [*_charts, "H1"] if t in _domain]
-        # A family declared only on charts this expansion does not enumerate (D1-only, H4-only)
-        # is minted on its declared charts rather than vanishing: the count never falls to zero.
-        for tf in _tfs or sorted(_domain):
+        # EVERY CHART IS MINTED, EXPRESSIBLE OR NOT (2026-10-06, audit M1 on #206). A family's
+        # `FAMILY_TIMEFRAMES` domain is NOT a mint filter here: narrowing this loop to it cut
+        # ~2,170 rows per hour-class out of the mint, which the never-reduce-mining law forbids.
+        # A cell the sealed judge cannot express is held at the MERGE instead
+        # (`gauntlet_buildability.screen_rows` in merge_hypotheses), where it is kept out of the
+        # judge's docket and charged in the trial census -- the count minted never falls.
+        for tf in [*_charts, "H1"]:
             chart_base = dict(base)
             if tf != "H1":
                 chart_base["timeframe"] = tf

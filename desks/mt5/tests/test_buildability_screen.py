@@ -105,18 +105,47 @@ def test_the_compiler_mints_an_exact_recipe_as_buildable_cells() -> None:
     assert disp2 == "EXACT_RECIPE" and len(keep) == 1 and "fx" in keep[0]["buildability"]
 
 
-def test_axis_expansion_never_mints_a_chart_the_family_declares_inexpressible(
-        monkeypatch) -> None:
+def _expand(monkeypatch, cands: list[dict]) -> list[dict]:
     monkeypatch.setattr(mcc, "_charts_with_bars", lambda s: ["M5", "M15", "M30"])
     monkeypatch.setattr(mcc, "_invariance", lambda s, f: None)
     monkeypatch.setattr(mcc, "_session_slots", lambda f, b, s: [("all", b, None)])
-    out = mcc.expand_axes([{"symbol": "AUDCAD", "family": "relative_value", "params": {}},
-                           {"symbol": "AUDCAD", "family": "session_range_breakout",
-                            "params": {}}])
-    rv = {c["axis"]["chart"] for c in out if c["family"] == "relative_value"}
-    srb = {c["axis"]["chart"] for c in out if c["family"] == "session_range_breakout"}
-    assert rv == {"H1"}
-    assert srb == {"M5", "M15", "M30", "H1"}          # an undeclared family keeps every chart
+    return mcc.expand_axes(cands)
+
+
+def test_axis_expansion_mints_every_chart_exactly_as_live_does(monkeypatch) -> None:
+    """Audit M1 on #206: the mint is never narrowed to a family's declared charts. LIVE's rule is
+    one cell per chart with bars, plus H1, per session slot -- for every family alike."""
+    cands = [{"symbol": "AUDCAD", "family": "relative_value", "params": {}},
+             {"symbol": "AUDCAD", "family": "session_range_breakout", "params": {}},
+             {"symbol": "XAUUSD", "family": "macro_conditional", "params": {}}]
+    out = _expand(monkeypatch, cands)
+    live_count = len(cands) * len(["M5", "M15", "M30", "H1"])          # LIVE's enumeration
+    assert len(out) == live_count
+    for fam in ("relative_value", "session_range_breakout", "macro_conditional"):
+        assert {c["axis"]["chart"] for c in out if c["family"] == fam} == {
+            "M5", "M15", "M30", "H1"}
+
+
+def test_the_mint_count_does_not_read_the_family_timeframe_domain(monkeypatch) -> None:
+    from mt5desk import families_orthogonal as fo
+    cands = [{"symbol": "AUDCAD", "family": "relative_value", "params": {}}]
+    before = len(_expand(monkeypatch, cands))
+    monkeypatch.setattr(fo, "timeframe_domain", lambda fam: ("D1",))
+    assert len(_expand(monkeypatch, cands)) == before
+
+
+def test_inexpressible_charts_are_minted_then_held_and_charged_at_the_merge(
+        tmp_path, monkeypatch) -> None:
+    out = _expand(monkeypatch, [{"symbol": "AUDCAD", "family": "relative_value",
+                                 "params": {}}])
+    rows = [{"symbol": c["symbol"], "family": c["family"], "params": c["params"]} for c in out]
+    keep, refused = gb.screen_rows(rows)
+    assert len(keep) + len(refused) == len(rows)                       # nothing vanishes
+    assert {str(r["params"].get("timeframe") or "H1") for r in keep} == {"H1"}
+    assert refused and all(r["refusal_verdict"] == gb.TIMEFRAME_REFUSED for r in refused)
+    rep = mh.record_screened_refusals(refused, tmp_path / mh.SCREENED_REFUSED_NAME,
+                                      "2026-10-06T00:00:00+00:00")
+    assert rep["new_cells"] == len(refused)                            # every one charged
 
 
 def _refused_rows() -> list[dict]:
