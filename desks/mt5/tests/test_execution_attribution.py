@@ -320,11 +320,14 @@ class _BracketMT5:
 
 def _bracket_env(tmp_path, mt5):
     import time
+
+    from mt5desk import decision_core as _dc
     decisions: list[dict] = []
     env = _gateway_func("place_bracket", "_record_intent", "_intent_id", "_minute_of",
                         "_sleeve_identity", "order_comment", "owned_tags",
                         ns={"mt5": mt5, "time": time, "MAGIC": 341953, "now": lambda: _STAMP,
                             "_DESK_STALE": None, "COMMENT_MAX": 29,
+                            "sleeve_tag": _dc.sleeve_tag, "sleeve_tags": _dc.sleeve_tags,
                             "_send_error": lambda result: None,
                             "INTENTS": tmp_path / "intents.jsonl",
                             "_state_vector_id": lambda: "sv1", "_release_id": lambda: "rel1",

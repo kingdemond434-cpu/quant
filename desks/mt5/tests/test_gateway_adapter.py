@@ -829,7 +829,10 @@ def test_the_scalp_tag_is_the_lane_s_own_and_only_the_scalp_lane_s() -> None:
     assert ns["scalp_position_tags"]([{"name": "gold_asia"}, {"name": "x", "exec": "family_market"},
                                       {"exec": "scalp_market"}]) == frozenset()
     tag = ns["scalp_position_tags"]([{"name": "a" * 40, "exec": "scalp_market"}])
-    assert tag == frozenset({("DW" + "a" * 40)[:29]})            # the venue's measured 29-char comment
+    # the venue's measured 29-char comment: the collision-free tag, plus the legacy truncation
+    # positions opened before 2026-10-06 still carry
+    assert tag == frozenset({("DW" + "a" * 40)[:29], dc.sleeve_tag("a" * 40)})
+    assert all(len(t) <= 29 for t in tag)
 
 
 def test_position_bars_use_the_broker_clock_not_wall_clock() -> None:
