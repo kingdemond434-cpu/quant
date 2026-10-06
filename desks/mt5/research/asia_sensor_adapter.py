@@ -672,7 +672,9 @@ def restamp_corrections(ledger: sc.SensorLedger, obs: list[sc.SensorObservation]
         if o.value is None or o.kind == "document" or k is None or o.event_time == UNMEASURED:
             out.append(o)
             continue
-        held = ledger.as_of(o.sensor_id, o.entity, o.metric, o.event_time, o.knowable_at)
+        # the vintage the ledger keys by knowable_at: the WORLD clock, not the desk's receipt
+        held = ledger.as_of(o.sensor_id, o.entity, o.metric, o.event_time, o.knowable_at,
+                            basis="world")
         if (not held or held["knowable_at"] != o.knowable_at or held["value"] == o.value
                 or held["observation_id"] == o.observation_id):
             out.append(o)

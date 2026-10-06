@@ -369,7 +369,7 @@ def test_alt_proxies_revision_correction_and_rerun_make_no_vintage_conflict(
     assert held["knowable_at"] > "2026-09-21T09:00:00+00:00"   # strictly later than corrected
     # the old vintage still answers for the instant before the correction was seen
     before = led.as_of("asia.alt_proxies:kr_exports_early", "KR", "exports", "2026-09-20",
-                       "2026-09-22T00:00:00Z")
+                       "2026-09-22T00:00:00Z", basis="world")
     assert before is not None and before["value"] == 160.0
     rerun = ad.run(desk, ledger_root=root, report=tmp_path / "rep3.json",
                    now=NOW + timedelta(hours=2))
@@ -428,11 +428,20 @@ def test_as_of_on_adapter_rows_answers_nothing_before_knowable_at(tmp_path: Path
     for r in rows:
         k = sc.parse_time(r["knowable_at"])
         assert k is not None
+        rx = sc.parse_time(r["received_at"])
+        assert rx is not None
         args = (r["sensor_id"], r["entity"], r["metric"], r["event_time"])
-        assert led.as_of(*args, k - timedelta(seconds=1)) is None
-        got = led.as_of(*args, k)
+        # world basis: invisible before knowable_at, visible at it
+        assert led.as_of(*args, k - timedelta(seconds=1), basis="world") is None
+        got = led.as_of(*args, k, basis="world")
         assert got is not None and got["value"] == r["value"]
         assert got["knowable_at"] == r["knowable_at"]
+        # desk basis (the default): invisible until the desk ALSO held it
+        held = max(k, rx)
+        assert led.as_of(*args, held - timedelta(seconds=1)) is None
+        desk_got = led.as_of(*args, held)
+        assert desk_got is not None and desk_got["value"] == r["value"]
+        assert desk_got["received_at"] == r["received_at"]
         latest = led.latest(*args)
         assert latest is not None and latest["knowable_at"] == r["knowable_at"]
         assert sc.usable_at(r, k - timedelta(seconds=1)) is False
@@ -484,8 +493,15 @@ def test_an_intraday_read_is_held_until_a_refetch_after_the_local_close(tmp_path
     assert row["attributes"]["first_read_at"] == "2026-09-01T02:00:00+00:00"
     led = sc.SensorLedger(root)
     args = (row["sensor_id"], row["entity"], row["metric"], row["event_time"])
-    assert led.as_of(*args, "2026-09-01T15:59:58Z") is None
-    got = led.as_of(*args, "2026-09-01T15:59:59Z")
+    # world basis: the CN close is invisible before the Shanghai day ends
+    assert led.as_of(*args, "2026-09-01T03:00:00Z", basis="world") is None
+    assert led.as_of(*args, "2026-09-01T15:59:58Z", basis="world") is None
+    got = led.as_of(*args, "2026-09-01T15:59:59Z", basis="world")
+    assert got is not None and got["value"] == 3.6
+    # desk basis: invisible until its received_at (the 19:00Z re-fetch)
+    assert led.as_of(*args, "2026-09-01T15:59:59Z") is None
+    assert led.as_of(*args, "2026-09-01T18:59:59Z") is None
+    got = led.as_of(*args, "2026-09-01T19:00:00Z")
     assert got is not None and got["value"] == 3.6
     again = ad.run(desk, ledger_root=root, report=tmp_path / "rep2.json",
                    now=datetime(2026, 9, 2, 1, 0, tzinfo=UTC))
