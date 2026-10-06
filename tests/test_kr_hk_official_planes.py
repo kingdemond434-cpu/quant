@@ -258,7 +258,11 @@ def test_one_ecos_key_name_with_the_old_name_as_alias(monkeypatch: pytest.Monkey
     assert row["key_env"] == "ECOS_API_KEY" and row["key_env_aliases"] == ["BOK_API_KEY"]
     assert {s.key_env for s in A.SOURCES if s.id.startswith("kr_ecos_")} == {"ECOS_API_KEY"}
     monkeypatch.delenv("ECOS_API_KEY", raising=False)
-    assert A.status_of(A.BY_ID["kr_ecos_call_rate"]) == "BLOCKED_ON_KEY:ECOS_API_KEY"
+    # terms come first: fenced on terms even before the key question is asked
+    assert A.status_of(A.BY_ID["kr_ecos_call_rate"]) == "BLOCKED_ON_TERMS:to_confirm"
+    from dataclasses import replace
+    assert A.status_of(replace(A.BY_ID["kr_ecos_call_rate"], terms="confirmed"),
+                       {}) == "BLOCKED_ON_KEY:ECOS_API_KEY"
 
 
 def test_refused_registry_rows_are_refused_not_relabelled() -> None:
