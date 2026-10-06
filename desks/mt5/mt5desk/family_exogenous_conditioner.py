@@ -146,9 +146,12 @@ def family_exogenous_conditioner(
     history. Nothing here reads price except to size the stop and to place the order.
 
     `trade_from` (an ISO timestamp on the bar clock) silences every bar at or before it. A producer
-    that LEARNED `side_when_high` on history through some date sets it to that date, so the judge
-    sees only bars the choice never touched: a side picked on the first half and then scored on
-    that same half is a two-way search reported as one trial. Empty means the whole history.
+    that LEARNED `side_when_high` sets it to the last time any training LABEL reads: with forward
+    labels that is the end of the purged span (an event's label closes `horizon` bars after it,
+    so the producer keeps only events whose label closed by `trade_from` --
+    `institutional_footprint.learn_side`), never merely the last training event. Then no bar
+    the choice read is a bar the judge scores; a side picked on a span and scored on it is a
+    two-way search reported as one trial. Empty means the whole history.
     """
     cond = conditioner(source, signal, transform, lag_hours=lag_hours, z_window=z_window,
                        root=series_root)

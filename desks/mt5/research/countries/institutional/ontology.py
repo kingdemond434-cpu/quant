@@ -120,6 +120,9 @@ def roles_of(row: dict[str, Any]) -> set[str]:
 # --------------------------------------------------------------------------- coverage statuses
 #: Exactly one status per (jurisdiction x source class) cell. `UNSEARCHED` is not one of the
 #: principal's seven: it is the honest reading of a cell nobody has looked at yet, and it is RED.
+#: `UNMEASURED` (the eighth, audit of #237) is a cell a hand ruling claims to close without
+#: citing evidence (`ruled_status`): the grid really publishes it, so it is a coverage status --
+#: OPEN (never in CLOSED_STATUSES) and asked for in the search queue.
 COVERAGE_STATUSES: tuple[str, ...] = (
     "ACTIVE",                     # ingested, and a consumer has read it
     "DISCOVERED_NOT_INGESTED",    # exists and is public; no fetch or no consumer yet
@@ -128,6 +131,7 @@ COVERAGE_STATUSES: tuple[str, ...] = (
     "NOT_PUBLISHED",              # searched; the jurisdiction does not publish it
     "TESTED_NO_INFORMATION",      # ingested and judged; no incremental information
     "NOT_RELEVANT",               # no MT5 transmission from this jurisdiction for this class
+    "UNMEASURED",                 # a ruling claims it closed but cites nothing: OPEN (L1.28a)
 )
 UNSEARCHED = "UNSEARCHED"
 #: Statuses that close a cell. Everything else is open work for the source frontier.

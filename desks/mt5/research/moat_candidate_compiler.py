@@ -322,7 +322,7 @@ def claim_and_donate(conn: Any, *, per_department: int | None = None,
         fam, sym = str(r.get("family") or ""), str(r.get("symbol") or "")
         if not fam or not sym:
             continue
-        cands.append(pc.candidate(
+        cand = pc.candidate(
             SOURCE, sym, fam, params, str(r.get("mechanism") or ""),
             f"{sym} {fam}: claimed by {r['_department']} from the moat exchange",
             {"candidate_id": r.get("id"), "grid_cell": r.get("grid_cell"),
@@ -330,7 +330,9 @@ def claim_and_donate(conn: Any, *, per_department: int | None = None,
              "novelty_vs_live": r.get("novelty_vs_live"),
              "novelty_vs_graveyard": r.get("novelty_vs_graveyard"),
              "expected_return_independence": r.get("expected_return_independence"),
-             "search_count": r.get("search_count")}))
+             "search_count": r.get("search_count")})
+        cand.update(claim_lineage(r.get("lineage_json")))
+        cands.append(cand)
     path = pc.donate(SOURCE, cands, len(claimed)) if cands else None
     out["status"] = "CLAIMED"
     out["claimed"] = len(claimed)
@@ -338,6 +340,26 @@ def claim_and_donate(conn: Any, *, per_department: int | None = None,
     out["donation_path"] = str(path) if path else None
     out["refusals"] = pc.donation_counts()
     return out
+
+
+#: The claim-selection fields a producer may declare in a candidate's lineage. They ride onto the
+#: donation row TOP-LEVEL, where `miner_candidate_compiler._claim_lineage` stamps them on every
+#: compiled cell and `libs.research.trial_ledger.trial_from_record` charges the family's
+#: `claim_selection_trials` once. Without this lift a producer's declared search (the footprint's
+#: two-way side choice) stopped at the registry and was charged nowhere.
+CLAIM_FIELDS: tuple[str, ...] = ("claim_family", "breadth_unit", "claim_selection_trials")
+
+
+def claim_lineage(blob: Any) -> dict[str, Any]:
+    """The claim fields of a registry row's `lineage_json`; {} when it declares none."""
+    lin = _read_params(blob)
+    out = {k: lin[k] for k in CLAIM_FIELDS if lin.get(k) not in (None, "")}
+    if "claim_selection_trials" in out:
+        try:
+            out["claim_selection_trials"] = max(0, int(out["claim_selection_trials"]))
+        except (TypeError, ValueError):
+            out.pop("claim_selection_trials")
+    return out if out.get("claim_family") else {}
 
 
 def _read_params(blob: Any) -> dict[str, Any]:

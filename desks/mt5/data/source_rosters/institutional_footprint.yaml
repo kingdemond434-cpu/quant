@@ -16,6 +16,9 @@
 #                      ACTIVE_CANDIDATE (a fetch recipe or an existing lane feeds it). ACTIVE is never
 #                      declared: the engine MEASURES it (a lake frame on disk AND cells enqueued).
 #   features           the engine features this row feeds (ontology.LATENT_STATES evidence keys)
+#   url_scope          `shared_portal` when the row's url is ALSO another row's url (a hub or gateway,
+#                      not this dataset's own page); `url_scope_reason` names the rows sharing it.
+#                      url_confidence `unverified`: the page resolved but its content was not read
 #   fetch              a recipe the engine knows how to run; rows without one wait for a scout
 #   culture fields     source_culture / participant_structure / failure_mode_hypothesis / crowding_prior
 #                      (the #139 cell culture schema), stamped on every cell the row produces
@@ -480,6 +483,8 @@ sources:
   source_class: physical_inventory
   role: exchange
   url: https://www.cmegroup.com/clearing/operations-and-deliveries/nymex-delivery-notices.html
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.us.cme.delivery_notices); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -532,6 +537,8 @@ sources:
   source_class: physical_inventory
   role: exchange
   url: https://www.cmegroup.com/clearing/operations-and-deliveries/nymex-delivery-notices.html
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.us.cme.comex_warehouse_stocks); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -2663,6 +2670,8 @@ sources:
   source_class: index_mechanical
   role: exchange
   url: https://www.spglobal.com/spdji/en/index-announcements/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ca.sp_dji.sp_tsx_index_announcements); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -4011,6 +4020,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://www.bankofengland.co.uk/boeapps/database/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.uk.boe.bankstats_mfi_balance_sheet); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -4595,6 +4606,8 @@ sources:
   source_class: participant_type_flow
   role: exchange
   url: https://www.jpx.co.jp/english/markets/statistics-derivatives/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.jp.jpx.oi_by_participant); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 4
   declared_status: DISCOVERED_NOT_INGESTED
@@ -4908,6 +4921,8 @@ sources:
   source_class: futures_positioning
   role: exchange
   url: https://www.shfe.com.cn/eng/Market/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (shfe_warehouse); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -4956,6 +4971,8 @@ sources:
   source_class: physical_inventory
   role: exchange
   url: https://www.shfe.com.cn/eng/Market/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (shfe_member_rank); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5001,6 +5018,8 @@ sources:
   source_class: futures_positioning
   role: exchange
   url: https://www.ine.cn/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.cn.ine.warrants); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5043,6 +5062,8 @@ sources:
   source_class: physical_inventory
   role: exchange
   url: https://www.ine.cn/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.cn.ine.daily_ranking); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5082,6 +5103,8 @@ sources:
   source_class: futures_positioning
   role: exchange
   url: http://www.dce.com.cn/DCE/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.cn.dce.warrants); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5124,6 +5147,8 @@ sources:
   source_class: physical_inventory
   role: exchange
   url: http://www.dce.com.cn/DCE/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.cn.dce.daily_ranking); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5163,6 +5188,8 @@ sources:
   source_class: futures_positioning
   role: exchange
   url: http://www.czce.com.cn/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.cn.zce.warrants); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5204,6 +5231,8 @@ sources:
   source_class: physical_inventory
   role: exchange
   url: http://www.czce.com.cn/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.cn.zce.daily_ranking); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5442,6 +5471,8 @@ sources:
   source_class: fx_settlement_fixing
   role: exchange
   url: https://www.chinamoney.com.cn/english/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.cn.cfets.interbank_repo, institutional.cn.cfets.shibor_dr_fixings); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5559,6 +5590,8 @@ sources:
   source_class: securities_lending_short
   role: exchange
   url: https://www.hkex.com.hk/Market-Data/Statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.hk.hkex.ccp_pfmi_disclosure); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5595,6 +5628,8 @@ sources:
   source_class: futures_positioning
   role: exchange
   url: https://www.hkex.com.hk/Market-Data/Statistics/Derivatives-Market
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.hk.hkex.index_options_daily_report); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5633,6 +5668,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.hkma.gov.hk/eng/data-publications-and-research/data-and-statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.hk.hkma.monthly_statistical_bulletin, institutional.hk.hkma.official_reserve_assets); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5712,6 +5749,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://ecos.bok.or.kr/api/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.kr.bok.fx_bank_derivatives_turnover, institutional.kr.bok.depository_corporations, institutional.kr.bok.money_market_rates, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5863,6 +5902,8 @@ sources:
   source_class: participant_type_flow
   role: exchange
   url: https://www.twse.com.tw/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.tw.twse.short_sale_sbl_balances, institutional.tw.twse.attention_disposition_securities); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5904,7 +5945,7 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.cbc.gov.tw/tw/np-644-1.html
-  url_confidence: dataset
+  url_confidence: unverified
   evidence: 'UNVERIFIED 2026-10-06: CBC foreign-exchange reserves page, linked from cbc.gov.tw/en; it resolved but the content is rendered by script and could not be read. Replaces the CBC home page'
   frequency: monthly
   publication_lag_days: 5
@@ -5944,6 +5985,8 @@ sources:
   source_class: futures_positioning
   role: exchange
   url: https://www.nseindia.com/all-reports-derivatives
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ind.nse.fo_options_oi); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6218,6 +6261,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://www.mas.gov.sg/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sg.mas.bank_balance_sheets); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6795,6 +6840,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://www.bcb.gov.br/en/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.br.bcb.selic_repo_operations, institutional.br.bcb.fx_auctions_interventions); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6832,6 +6879,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://www.banxico.org.mx/SieInternet/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.mx.banxico.derivatives_market_statistics, institutional.mx.banxico.repo_money_market, institutional.mx.banxico.tiie_funding_rate, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6869,6 +6918,8 @@ sources:
   source_class: futures_positioning
   role: exchange
   url: https://www.mexder.com.mx/wb/MEX/estadisticas
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.mx.mexder.options_volume_oi); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6906,6 +6957,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://data.snb.ch/en/topics/snb/cube/snbfxint
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ch.snb.foreign_currency_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6981,6 +7034,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.riksbank.se/en-gb/statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.se.riksbank_scb.financial_market_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -7168,6 +7223,8 @@ sources:
   source_class: futures_positioning
   role: exchange
   url: https://www.dgcx.ae/market-data/daily-reports
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ae.dgcx.daily_reports_options); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -7206,6 +7263,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://evds2.tcmb.gov.tr/index.php?/evds/serieMarket
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.tr.cbrt.weekly_international_reserves, institutional.tr.cbrt.omo_balance_sheet); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -7245,6 +7304,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://nbp.pl/en/statistic-and-financial-reporting/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.pl.nbp.investment_fund_statistics, institutional.pl.nbp.mfi_balance_sheet, institutional.pl.nbp.money_market_rates, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -7612,6 +7673,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.bankofengland.co.uk/boeapps/database/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.uk.boe.database_capital_flows); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -8556,6 +8619,8 @@ sources:
   source_class: enforcement_archaeology
   role: regulator
   url: https://www.esma.europa.eu/document/annual-report-administrative-and-criminal-sanctions-and-other-administrative-measures-under
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.dk.esma.dk_mar_sanctions); it is a shared portal or hub, not a page of this dataset alone'
   frequency: annual
   publication_lag_days: 180
   declared_status: DISCOVERED_NOT_INGESTED
@@ -8695,6 +8760,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://www.esma.europa.eu/publications-and-data/databases-and-registers
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.pl.esma.pl_major_holdings); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -9186,6 +9253,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://data.snb.ch/en/topics/snb/cube/snbfxint
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ch.snb.fx_interventions); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -9593,6 +9662,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.riksbank.se/en-gb/statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.se.riksbank.fx_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10117,6 +10188,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://www.ssb.no/en/statbank
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.no.ssb.banks_mortgage_companies, institutional.no.ssb.balance_of_payments, institutional.no.ssb.insurance_pension_funds); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10209,6 +10282,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: treasury
   url: https://www.ssb.no/en/statbank
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.no.ssb.securities_funds, institutional.no.ssb.balance_of_payments, institutional.no.ssb.insurance_pension_funds); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10253,6 +10328,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://www.norges-bank.no/en/topics/Statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.no.norges_bank.liquidity_operations, institutional.no.norges_bank.exchange_rates); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10339,6 +10416,8 @@ sources:
   source_class: beneficial_ownership
   role: exchange
   url: https://live.euronext.com/en/markets/oslo
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.no.euronext_oslo.newsweb_pdmr_buybacks); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10383,6 +10462,8 @@ sources:
   source_class: corporate_flow
   role: exchange
   url: https://live.euronext.com/en/markets/oslo
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.no.euronext_oslo.newsweb_flagging); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10425,6 +10506,8 @@ sources:
   source_class: cross_border_capital
   role: treasury
   url: https://www.ssb.no/en/statbank
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.no.ssb.securities_funds, institutional.no.ssb.banks_mortgage_companies, institutional.no.ssb.insurance_pension_funds); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 50
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10470,6 +10553,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.norges-bank.no/en/topics/Statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.no.norges_bank.nowa, institutional.no.norges_bank.exchange_rates); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10559,6 +10644,8 @@ sources:
   source_class: enforcement_archaeology
   role: regulator
   url: https://www.finanstilsynet.no/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.no.finanstilsynet.licensed_entities); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10601,6 +10688,8 @@ sources:
   source_class: fx_settlement_fixing
   role: central_bank
   url: https://www.norges-bank.no/en/topics/Statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.no.norges_bank.nowa, institutional.no.norges_bank.liquidity_operations); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10646,6 +10735,8 @@ sources:
   source_class: pension_insurance
   role: treasury
   url: https://www.ssb.no/en/statbank
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.no.ssb.securities_funds, institutional.no.ssb.banks_mortgage_companies, institutional.no.ssb.balance_of_payments); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10690,6 +10781,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://www.finanstilsynet.no/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.no.finanstilsynet.market_conduct_decisions); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10732,6 +10825,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.dk.nationalbanken.securities_statistics, institutional.dk.nationalbanken.destr, institutional.dk.nationalbanken.balance_of_payments, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10782,6 +10877,8 @@ sources:
   source_class: fund_holdings
   role: central_bank
   url: https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.dk.nationalbanken.investment_fund_statistics, institutional.dk.nationalbanken.destr, institutional.dk.nationalbanken.balance_of_payments, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -10878,6 +10975,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.dk.nationalbanken.investment_fund_statistics, institutional.dk.nationalbanken.securities_statistics, institutional.dk.nationalbanken.balance_of_payments, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11053,6 +11152,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.dk.nationalbanken.investment_fund_statistics, institutional.dk.nationalbanken.securities_statistics, institutional.dk.nationalbanken.destr, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 40
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11103,6 +11204,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.dk.nationalbanken.investment_fund_statistics, institutional.dk.nationalbanken.securities_statistics, institutional.dk.nationalbanken.destr, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11294,6 +11397,8 @@ sources:
   source_class: enforcement_archaeology
   role: regulator
   url: https://www.esma.europa.eu/document/annual-report-administrative-and-criminal-sanctions-and-other-administrative-measures-under
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ea.esma.mar_sanctions_annual_report); it is a shared portal or hub, not a page of this dataset alone'
   frequency: annual
   publication_lag_days: 180
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11336,6 +11441,8 @@ sources:
   source_class: fx_settlement_fixing
   role: central_bank
   url: https://www.nationalbanken.dk/en/news-and-knowledge/data-and-statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.dk.nationalbanken.investment_fund_statistics, institutional.dk.nationalbanken.securities_statistics, institutional.dk.nationalbanken.destr, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11569,6 +11676,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://www.sedlabanki.is/hagtolur/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.is.cbi.banking_system_statistics, institutional.is.cbi.interbank_market, institutional.is.cbi.balance_of_payments_nonresident_holdings, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 35
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11615,6 +11724,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.sedlabanki.is/hagtolur/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.is.cbi.investment_fund_statistics, institutional.is.cbi.interbank_market, institutional.is.cbi.balance_of_payments_nonresident_holdings, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11660,6 +11771,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://www.sedlabanki.is/hagtolur/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.is.cbi.investment_fund_statistics, institutional.is.cbi.banking_system_statistics, institutional.is.cbi.balance_of_payments_nonresident_holdings, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11705,6 +11818,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://www.sedlabanki.is/hagtolur/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.is.cbi.investment_fund_statistics, institutional.is.cbi.banking_system_statistics, institutional.is.cbi.interbank_market, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11752,6 +11867,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.sedlabanki.is/gjaldeyrismal/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.is.cbi.fx_market_intervention); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11797,6 +11914,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.sedlabanki.is/gjaldeyrismal/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.is.cbi.fx_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11888,6 +12007,8 @@ sources:
   source_class: pension_insurance
   role: central_bank
   url: https://www.sedlabanki.is/hagtolur/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.is.cbi.investment_fund_statistics, institutional.is.cbi.banking_system_statistics, institutional.is.cbi.interbank_market, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11933,6 +12054,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://nbp.pl/en/statistic-and-financial-reporting/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.pl.nbp.reserves, institutional.pl.nbp.mfi_balance_sheet, institutional.pl.nbp.money_market_rates, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -11980,6 +12103,8 @@ sources:
   source_class: fund_holdings
   role: regulator
   url: https://www.knf.gov.pl/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.pl.knf.net_short_positions, institutional.pl.knf.sanctions_announcements, institutional.pl.knf.pension_insurance_statistics, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12027,6 +12152,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://nbp.pl/en/statistic-and-financial-reporting/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.pl.nbp.reserves, institutional.pl.nbp.investment_fund_statistics, institutional.pl.nbp.money_market_rates, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 25
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12073,6 +12200,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://nbp.pl/en/statistic-and-financial-reporting/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.pl.nbp.reserves, institutional.pl.nbp.investment_fund_statistics, institutional.pl.nbp.mfi_balance_sheet, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12120,6 +12249,8 @@ sources:
   source_class: securities_lending_short
   role: short_position
   url: https://www.knf.gov.pl/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.pl.knf.fund_portfolio_statistics, institutional.pl.knf.sanctions_announcements, institutional.pl.knf.pension_insurance_statistics, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12210,6 +12341,8 @@ sources:
   source_class: beneficial_ownership
   role: regulator
   url: https://www.esma.europa.eu/publications-and-data/databases-and-registers
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ea.esma.databases_registers); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 4
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12295,6 +12428,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://nbp.pl/en/statistic-and-financial-reporting/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.pl.nbp.reserves, institutional.pl.nbp.investment_fund_statistics, institutional.pl.nbp.mfi_balance_sheet, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12529,6 +12664,8 @@ sources:
   source_class: enforcement_archaeology
   role: regulator
   url: https://www.knf.gov.pl/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.pl.knf.fund_portfolio_statistics, institutional.pl.knf.net_short_positions, institutional.pl.knf.pension_insurance_statistics, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12619,6 +12756,8 @@ sources:
   source_class: pension_insurance
   role: regulator
   url: https://www.knf.gov.pl/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.pl.knf.fund_portfolio_statistics, institutional.pl.knf.net_short_positions, institutional.pl.knf.sanctions_announcements, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12665,6 +12804,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://www.knf.gov.pl/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.pl.knf.fund_portfolio_statistics, institutional.pl.knf.net_short_positions, institutional.pl.knf.sanctions_announcements, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12707,6 +12848,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://www.cnb.cz/arad/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.cz.cnb.securities_holdings_statistics, institutional.cz.cnb.mfi_balance_sheet, institutional.cz.cnb.pension_insurance_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 35
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12762,6 +12905,8 @@ sources:
   source_class: fund_holdings
   role: central_bank
   url: https://www.cnb.cz/arad/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.cz.cnb.investment_fund_statistics, institutional.cz.cnb.mfi_balance_sheet, institutional.cz.cnb.pension_insurance_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 35
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12818,6 +12963,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.cnb.cz/arad/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.cz.cnb.investment_fund_statistics, institutional.cz.cnb.securities_holdings_statistics, institutional.cz.cnb.pension_insurance_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12872,6 +13019,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://www.cnb.cz/en/statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.cz.cnb.balance_of_payments, institutional.cz.cnb.fx_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12926,6 +13075,8 @@ sources:
   source_class: securities_lending_short
   role: short_position
   url: https://www.cnb.cz/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cz.cnb.central_storage_major_holdings, institutional.cz.cnb.central_storage_pdmr, institutional.cz.cnb.supervisory_sanctions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -12978,6 +13129,8 @@ sources:
   source_class: beneficial_ownership
   role: regulator
   url: https://www.cnb.cz/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cz.cnb.net_short_positions, institutional.cz.cnb.central_storage_pdmr, institutional.cz.cnb.supervisory_sanctions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 4
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13031,6 +13184,8 @@ sources:
   source_class: corporate_flow
   role: regulator
   url: https://www.cnb.cz/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cz.cnb.net_short_positions, institutional.cz.cnb.central_storage_major_holdings, institutional.cz.cnb.supervisory_sanctions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13083,6 +13238,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://www.cnb.cz/en/statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.cz.cnb.money_market_rates, institutional.cz.cnb.fx_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 40
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13187,6 +13344,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.cnb.cz/en/statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.cz.cnb.money_market_rates, institutional.cz.cnb.balance_of_payments); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13297,6 +13456,8 @@ sources:
   source_class: enforcement_archaeology
   role: regulator
   url: https://www.cnb.cz/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cz.cnb.net_short_positions, institutional.cz.cnb.central_storage_major_holdings, institutional.cz.cnb.central_storage_pdmr, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13404,6 +13565,8 @@ sources:
   source_class: pension_insurance
   role: central_bank
   url: https://www.cnb.cz/arad/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.cz.cnb.investment_fund_statistics, institutional.cz.cnb.securities_holdings_statistics, institutional.cz.cnb.mfi_balance_sheet); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13458,6 +13621,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://www.cnb.cz/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cz.cnb.net_short_positions, institutional.cz.cnb.central_storage_major_holdings, institutional.cz.cnb.central_storage_pdmr, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13510,6 +13675,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://statisztika.mnb.hu/publikacios-temak/penzugyi-intezmenyek-merlegei
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.hu.mnb.credit_institutions_balance_sheet); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 35
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13619,6 +13786,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://statisztika.mnb.hu/publikacios-temak/penzugyi-intezmenyek-merlegei
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.hu.mnb.investment_fund_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13725,6 +13894,8 @@ sources:
   source_class: securities_lending_short
   role: short_position
   url: https://www.mnb.hu/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.hu.mnb.oam_major_holdings, institutional.hu.mnb.oam_pdmr_buybacks, institutional.hu.mnb.supervisory_decisions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13775,6 +13946,8 @@ sources:
   source_class: beneficial_ownership
   role: regulator
   url: https://www.mnb.hu/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.hu.mnb.net_short_positions, institutional.hu.mnb.oam_pdmr_buybacks, institutional.hu.mnb.supervisory_decisions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 4
   declared_status: DISCOVERED_NOT_INGESTED
@@ -13826,6 +13999,8 @@ sources:
   source_class: corporate_flow
   role: regulator
   url: https://www.mnb.hu/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.hu.mnb.net_short_positions, institutional.hu.mnb.oam_major_holdings, institutional.hu.mnb.supervisory_decisions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -14088,6 +14263,8 @@ sources:
   source_class: enforcement_archaeology
   role: regulator
   url: https://www.mnb.hu/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.hu.mnb.net_short_positions, institutional.hu.mnb.oam_major_holdings, institutional.hu.mnb.oam_pdmr_buybacks, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -14245,6 +14422,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://www.mnb.hu/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.hu.mnb.net_short_positions, institutional.hu.mnb.oam_major_holdings, institutional.hu.mnb.oam_pdmr_buybacks, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -14343,6 +14522,8 @@ sources:
   source_class: futures_positioning
   role: derivatives_reports
   url: https://www.jpx.co.jp/english/markets/statistics-derivatives/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.jp.jpx.investor_type_derivatives); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -14436,6 +14617,8 @@ sources:
   source_class: otc_swaps
   role: central_bank
   url: https://www.boj.or.jp/en/statistics/index.htm
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.jp.boj.flow_of_funds, institutional.jp.boj.bank_balance_sheets, institutional.jp.boj.tokyo_fx_rates_and_turnover); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 90
   declared_status: DISCOVERED_NOT_INGESTED
@@ -14528,6 +14711,8 @@ sources:
   source_class: fund_holdings
   role: central_bank
   url: https://www.boj.or.jp/en/statistics/index.htm
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.jp.boj.otc_derivatives_survey, institutional.jp.boj.bank_balance_sheets, institutional.jp.boj.tokyo_fx_rates_and_turnover); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 80
   declared_status: DISCOVERED_NOT_INGESTED
@@ -14575,6 +14760,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.boj.or.jp/en/statistics/index.htm
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.jp.boj.otc_derivatives_survey, institutional.jp.boj.flow_of_funds, institutional.jp.boj.tokyo_fx_rates_and_turnover); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 25
   declared_status: DISCOVERED_NOT_INGESTED
@@ -14935,6 +15122,8 @@ sources:
   source_class: fx_settlement_fixing
   role: central_bank
   url: https://www.boj.or.jp/en/statistics/index.htm
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.jp.boj.otc_derivatives_survey, institutional.jp.boj.flow_of_funds, institutional.jp.boj.bank_balance_sheets); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15070,6 +15259,8 @@ sources:
   source_class: futures_positioning
   role: derivatives_reports
   url: http://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.kr.krx.kospi200_options_oi, institutional.kr.krx.short_selling_balance, institutional.kr.krx.index_constituent_changes); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15118,6 +15309,8 @@ sources:
   source_class: options_positioning
   role: exchange
   url: http://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.kr.krx.derivatives_oi_by_investor, institutional.kr.krx.short_selling_balance, institutional.kr.krx.index_constituent_changes); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15165,6 +15358,8 @@ sources:
   source_class: otc_swaps
   role: central_bank
   url: https://ecos.bok.or.kr/api/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.kr.bok.ecos, institutional.kr.bok.depository_corporations, institutional.kr.bok.money_market_rates, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15256,6 +15451,8 @@ sources:
   source_class: fund_holdings
   role: regulator
   url: https://www.fss.or.kr/fss/eng/main/main.do
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.kr.fss.fisis_institution_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 14
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15302,6 +15499,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://ecos.bok.or.kr/api/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.kr.bok.ecos, institutional.kr.bok.fx_bank_derivatives_turnover, institutional.kr.bok.money_market_rates, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15392,6 +15591,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://ecos.bok.or.kr/api/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.kr.bok.ecos, institutional.kr.bok.fx_bank_derivatives_turnover, institutional.kr.bok.depository_corporations, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15438,6 +15639,8 @@ sources:
   source_class: securities_lending_short
   role: short_position
   url: http://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.kr.krx.derivatives_oi_by_investor, institutional.kr.krx.kospi200_options_oi, institutional.kr.krx.index_constituent_changes); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 2
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15483,6 +15686,8 @@ sources:
   source_class: beneficial_ownership
   role: fund_filings
   url: https://dart.fss.or.kr/dsab007/main.do
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.kr.fss.dart_insider_and_buyback); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 5
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15527,6 +15732,8 @@ sources:
   source_class: corporate_flow
   role: regulator
   url: https://dart.fss.or.kr/dsab007/main.do
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.kr.fss.dart_large_holding); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 5
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15569,6 +15776,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://ecos.bok.or.kr/api/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.kr.bok.ecos, institutional.kr.bok.fx_bank_derivatives_turnover, institutional.kr.bok.depository_corporations, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 4
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15657,6 +15866,8 @@ sources:
   source_class: index_mechanical
   role: exchange
   url: http://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.kr.krx.derivatives_oi_by_investor, institutional.kr.krx.kospi200_options_oi, institutional.kr.krx.short_selling_balance); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15790,6 +16001,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://www.fss.or.kr/fss/eng/main/main.do
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.kr.fss.foreign_investment_trend); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 90
   declared_status: DISCOVERED_NOT_INGESTED
@@ -15951,7 +16164,7 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: dataset
+  url_confidence: unverified
   evidence: 'UNVERIFIED 2026-10-06: CBC FX derivatives trading-volume page, linked from cbc.gov.tw/en; it resolved but the content is rendered by script. Replaces the CBC home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
@@ -15966,6 +16179,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://www.sitca.org.tw/ROC/Industry/IN2001.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.tw.sitca.fund_stock_holdings); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 15
   declared_status: DISCOVERED_NOT_INGESTED
@@ -16011,6 +16226,8 @@ sources:
   source_class: fund_holdings
   role: fund_filings
   url: https://www.sitca.org.tw/ROC/Industry/IN2001.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.tw.sitca.fund_flows); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 15
   declared_status: DISCOVERED_NOT_INGESTED
@@ -16081,7 +16298,7 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: dataset
+  url_confidence: unverified
   evidence: 'UNVERIFIED 2026-10-06: CBC Financial Statistics Monthly page, linked from cbc.gov.tw/en; it resolved but the content is rendered by script. Replaces the CBC home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
@@ -16168,7 +16385,7 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: dataset
+  url_confidence: unverified
   evidence: 'UNVERIFIED 2026-10-06: CBC interbank overnight call-loan rate page, linked from cbc.gov.tw/en; it resolved but the content is rendered by script. Replaces the CBC home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
@@ -16183,6 +16400,8 @@ sources:
   source_class: securities_lending_short
   role: short_position
   url: https://www.twse.com.tw/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.tw.twse.three_institutional_flows, institutional.tw.twse.attention_disposition_securities); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -16489,6 +16708,8 @@ sources:
   source_class: enforcement_archaeology
   role: exchange
   url: https://www.twse.com.tw/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.tw.twse.three_institutional_flows, institutional.tw.twse.short_sale_sbl_balances); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -16561,7 +16782,7 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-  url_confidence: dataset
+  url_confidence: unverified
   evidence: 'UNVERIFIED 2026-10-06: CBC NTD/USD daily closing rate and turnover page, linked from cbc.gov.tw/en; it resolved but the content is rendered by script. Replaces the CBC home page'
   access: free_public
   found_by: coverage_sweep_2026-09-30
@@ -16663,6 +16884,8 @@ sources:
   source_class: options_positioning
   role: derivatives_reports
   url: https://www.hkex.com.hk/Market-Data/Statistics/Derivatives-Market
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.hk.hkex.derivatives_oi); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -16802,6 +17025,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.hkma.gov.hk/eng/data-publications-and-research/data-and-statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.hk.hkma.aggregate_balance, institutional.hk.hkma.official_reserve_assets); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -16894,6 +17119,8 @@ sources:
   source_class: settlement_fails
   role: clearing_house
   url: https://www.hkex.com.hk/Market-Data/Statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.hk.hkex.short_selling); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -16938,6 +17165,8 @@ sources:
   source_class: beneficial_ownership
   role: fund_filings
   url: https://www.hkexnews.hk/index.htm
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.hk.hkex.buyback_and_issuance_returns); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -16987,6 +17216,8 @@ sources:
   source_class: corporate_flow
   role: exchange
   url: https://www.hkexnews.hk/index.htm
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.hk.hkex.disclosure_of_interests); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -17034,6 +17265,8 @@ sources:
   source_class: cross_border_capital
   role: treasury
   url: https://www.censtatd.gov.hk/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.hk.censtatd.gold_trade_by_country); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 80
   declared_status: DISCOVERED_NOT_INGESTED
@@ -17080,6 +17313,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.hkma.gov.hk/eng/data-publications-and-research/data-and-statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.hk.hkma.aggregate_balance, institutional.hk.hkma.monthly_statistical_bulletin); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -17126,6 +17361,8 @@ sources:
   source_class: physical_inventory
   role: physical_market
   url: https://www.censtatd.gov.hk/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.hk.censtatd.bop_iip); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 25
   declared_status: DISCOVERED_NOT_INGESTED
@@ -17440,6 +17677,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.amcm.gov.mo/pt/publications-statistics/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.mo.amcm.monetary_bills_operations, institutional.mo.amcm.insurance_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 40
   declared_status: DISCOVERED_NOT_INGESTED
@@ -17583,6 +17822,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.amcm.gov.mo/pt/publications-statistics/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.mo.amcm.monetary_financial_statistics, institutional.mo.amcm.insurance_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -17631,6 +17872,8 @@ sources:
   source_class: pension_insurance
   role: regulator
   url: https://www.amcm.gov.mo/pt/publications-statistics/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.mo.amcm.monetary_financial_statistics, institutional.mo.amcm.monetary_bills_operations); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 90
   declared_status: DISCOVERED_NOT_INGESTED
@@ -17902,6 +18145,8 @@ sources:
   source_class: repo_collateral
   role: exchange
   url: https://www.chinamoney.com.cn/english/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.cn.cfets.fx_market, institutional.cn.cfets.shibor_dr_fixings); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -17947,6 +18192,8 @@ sources:
   source_class: money_market_plumbing
   role: exchange
   url: https://www.chinamoney.com.cn/english/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.cn.cfets.fx_market, institutional.cn.cfets.interbank_repo); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -18036,6 +18283,8 @@ sources:
   source_class: beneficial_ownership
   role: exchange
   url: http://www.cninfo.com.cn/new/index
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.cn.cninfo.buyback_unlock_issuance); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -18080,6 +18329,8 @@ sources:
   source_class: corporate_flow
   role: exchange
   url: http://www.cninfo.com.cn/new/index
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.cn.cninfo.equity_change_reports); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -19272,6 +19523,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.bi.go.id/en/statistik/ekonomi-keuangan/seki/default.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.idn.bi.seki_money_market); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -19315,6 +19568,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://www.bi.go.id/en/statistik/ekonomi-keuangan/seki/default.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.idn.bi.seki_bank_balance_sheet); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -19709,6 +19964,8 @@ sources:
   source_class: options_positioning
   role: exchange
   url: https://www.nseindia.com/all-reports-derivatives
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ind.nse.participant_oi); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -20499,6 +20756,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://www.mas.gov.sg/-/media/mas/news-and-publications/surveys/asset-management/singapore-asset-management-survey-2023.pdf
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sg.mas.asset_mgmt_survey_actor_map); it is a shared portal or hub, not a page of this dataset alone'
   frequency: annual
   publication_lag_days: 210
   declared_status: DISCOVERED_NOT_INGESTED
@@ -20543,6 +20802,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.mas.gov.sg/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sg.mas.fx_funding); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -20629,6 +20890,8 @@ sources:
   source_class: beneficial_ownership
   role: exchange
   url: https://www.sgx.com/securities/company-announcements
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sg.sgx.buyback_insider_notices); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 2
   declared_status: DISCOVERED_NOT_INGESTED
@@ -20673,6 +20936,8 @@ sources:
   source_class: corporate_flow
   role: exchange
   url: https://www.sgx.com/securities/company-announcements
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sg.sgx.substantial_shareholder_notices); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -21071,6 +21336,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://www.mas.gov.sg/-/media/mas/news-and-publications/surveys/asset-management/singapore-asset-management-survey-2023.pdf
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sg.mas.asset_mgmt_survey_flows); it is a shared portal or hub, not a page of this dataset alone'
   frequency: annual
   publication_lag_days: 210
   declared_status: DISCOVERED_NOT_INGESTED
@@ -21157,6 +21424,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.bnm.gov.my/publications/mhs
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.my.bnm.nonresident_holdings); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -21286,6 +21555,8 @@ sources:
   source_class: beneficial_ownership
   role: exchange
   url: https://www.bursamalaysia.com/market_information/announcements/company_announcement
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.my.bursa.buyback_director_dealings); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -21331,6 +21602,8 @@ sources:
   source_class: corporate_flow
   role: exchange
   url: https://www.bursamalaysia.com/market_information/announcements/company_announcement
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.my.bursa.substantial_shareholder_notices); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -21373,6 +21646,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://www.bnm.gov.my/publications/mhs
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.my.bnm.monthly_highlights_banking); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -21911,6 +22186,8 @@ sources:
   source_class: beneficial_ownership
   role: exchange
   url: https://dps.psx.com.pk/announcements/companies
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.pk.psx.company_announcements_buybacks); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 2
   declared_status: DISCOVERED_NOT_INGESTED
@@ -21954,6 +22231,8 @@ sources:
   source_class: corporate_flow
   role: exchange
   url: https://dps.psx.com.pk/announcements/companies
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.pk.psx.company_announcements_holdings); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -22045,6 +22324,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.sbp.org.pk/ecodata/index2.asp
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.pk.sbp.interbank_exchange_rates); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 2
   declared_status: DISCOVERED_NOT_INGESTED
@@ -22278,6 +22559,8 @@ sources:
   source_class: fx_settlement_fixing
   role: central_bank
   url: https://www.sbp.org.pk/ecodata/index2.asp
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.pk.sbp.fx_reserves_weekly); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -22415,6 +22698,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://www.cbsl.gov.lk/en/statistic/statistical-tables/financial-sector
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.lk.cbsl.financial_sector_epf_insurance); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -22511,6 +22796,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://www.cbsl.gov.lk/en/statistics/economic-indicators/daily-indicators
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.lk.cbsl.daily_indicators_omo, institutional.lk.cbsl.daily_indicators_fx); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -22560,6 +22847,8 @@ sources:
   source_class: cross_border_capital
   role: treasury
   url: https://www.cbsl.gov.lk/en/statistics/economic-indicators/weekly-indicators
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.lk.cbsl.weekly_indicators_cse_flows); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -22658,6 +22947,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.cbsl.gov.lk/en/statistics/economic-indicators/daily-indicators
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.lk.cbsl.daily_indicators_money_market, institutional.lk.cbsl.daily_indicators_fx); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -22706,6 +22997,8 @@ sources:
   source_class: participant_type_flow
   role: central_bank
   url: https://www.cbsl.gov.lk/en/statistics/economic-indicators/weekly-indicators
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.lk.cbsl.weekly_indicators_foreign_flows); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -22800,6 +23093,8 @@ sources:
   source_class: fx_settlement_fixing
   role: central_bank
   url: https://www.cbsl.gov.lk/en/statistics/economic-indicators/daily-indicators
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.lk.cbsl.daily_indicators_money_market, institutional.lk.cbsl.daily_indicators_omo); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -22848,6 +23143,8 @@ sources:
   source_class: pension_insurance
   role: central_bank
   url: https://www.cbsl.gov.lk/en/statistic/statistical-tables/financial-sector
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.lk.cbsl.financial_sector_unit_trusts); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -23362,6 +23659,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://www.nrb.org.np/category/current-macroeconomic-situation/?department=red
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.np.nrb.macro_situation_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -23409,6 +23708,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.nrb.org.np/category/current-macroeconomic-situation/?department=red
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.np.nrb.macro_situation_bop); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -23727,6 +24028,8 @@ sources:
   source_class: cross_border_capital
   role: treasury
   url: https://www.bsp.gov.ph/SitePages/Statistics/Statistics.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ph.bsp.banking_statistics, institutional.ph.bsp.philpass_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 20
   declared_status: DISCOVERED_NOT_INGESTED
@@ -23770,6 +24073,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.bsp.gov.ph/SitePages/Statistics/Statistics.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ph.bsp.bop_portfolio_flows, institutional.ph.bsp.philpass_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -23813,6 +24118,8 @@ sources:
   source_class: money_market_plumbing
   role: custodian_settlement
   url: https://www.bsp.gov.ph/SitePages/Statistics/Statistics.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ph.bsp.bop_portfolio_flows, institutional.ph.bsp.banking_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -24462,6 +24769,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://sbv.gov.vn/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.vn.sbv.central_exchange_rate, institutional.vn.sbv.balance_of_payments, institutional.vn.sbv.credit_institution_statistics, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -24504,6 +24813,8 @@ sources:
   source_class: fx_settlement_fixing
   role: central_bank
   url: https://sbv.gov.vn/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.vn.sbv.open_market_operations, institutional.vn.sbv.balance_of_payments, institutional.vn.sbv.credit_institution_statistics, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -24547,6 +24858,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://sbv.gov.vn/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.vn.sbv.open_market_operations, institutional.vn.sbv.central_exchange_rate, institutional.vn.sbv.credit_institution_statistics, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 90
   declared_status: DISCOVERED_NOT_INGESTED
@@ -24590,6 +24903,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://sbv.gov.vn/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.vn.sbv.open_market_operations, institutional.vn.sbv.central_exchange_rate, institutional.vn.sbv.balance_of_payments, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -24632,6 +24947,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://sbv.gov.vn/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.vn.sbv.open_market_operations, institutional.vn.sbv.central_exchange_rate, institutional.vn.sbv.balance_of_payments, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -25660,6 +25977,8 @@ sources:
   source_class: futures_positioning
   role: derivatives_reports
   url: https://www.nzx.com/markets/nzx-dairy-derivatives/marketdata
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.nz.nzx.dairy_options_oi); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -25706,6 +26025,8 @@ sources:
   source_class: options_positioning
   role: exchange
   url: https://www.nzx.com/markets/nzx-dairy-derivatives/marketdata
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.nz.nzx.dairy_derivatives_oi); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -26187,6 +26508,8 @@ sources:
   source_class: beneficial_ownership
   role: exchange
   url: https://www.nzx.com/markets/NZSX/announcements
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.nz.nzx.director_dealings_buybacks); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -26358,6 +26681,8 @@ sources:
   source_class: corporate_flow
   role: exchange
   url: https://www.nzx.com/markets/NZSX/announcements
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.nz.nzx.nzsx_announcements); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -27902,6 +28227,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://nbg.gov.ge/en/statistics/statistics-data
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ge.nbg.money_market_refinancing); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -27988,6 +28315,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://nbg.gov.ge/en/statistics/statistics-data
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ge.nbg.statistics_data); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -28441,6 +28770,8 @@ sources:
   source_class: fund_holdings
   role: fund_filings
   url: https://www.sedarplus.ca/landingpage/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ca.csa.sedarplus_early_warning_reports); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -28628,6 +28959,8 @@ sources:
   source_class: beneficial_ownership
   role: regulator
   url: https://www.sedarplus.ca/landingpage/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ca.csa.sedarplus_fund_portfolio_disclosure); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 2
   declared_status: DISCOVERED_NOT_INGESTED
@@ -28863,6 +29196,8 @@ sources:
   source_class: index_mechanical
   role: exchange
   url: https://www.spglobal.com/spdji/en/index-announcements/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.us.sp_dji.index_changes); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 5
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29146,6 +29481,8 @@ sources:
   source_class: futures_positioning
   role: derivatives_reports
   url: https://www.b3.com.br/pt_br/market-data-e-indices/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.br.b3.options_open_interest, institutional.br.b3.otc_registered_derivatives, institutional.br.b3.securities_lending_open_positions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29193,6 +29530,8 @@ sources:
   source_class: options_positioning
   role: exchange
   url: https://www.b3.com.br/pt_br/market-data-e-indices/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.br.b3.futures_oi_by_participant, institutional.br.b3.otc_registered_derivatives, institutional.br.b3.securities_lending_open_positions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29238,6 +29577,8 @@ sources:
   source_class: otc_swaps
   role: exchange
   url: https://www.b3.com.br/pt_br/market-data-e-indices/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.br.b3.futures_oi_by_participant, institutional.br.b3.options_open_interest, institutional.br.b3.securities_lending_open_positions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 10
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29371,6 +29712,8 @@ sources:
   source_class: hedge_fund_leverage
   role: regulator
   url: https://dados.cvm.gov.br/dados/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.br.cvm.ipe_relevant_holdings, institutional.br.cvm.vlmo_insider_positions, institutional.br.cvm.sanctioning_proceedings, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29459,6 +29802,8 @@ sources:
   source_class: repo_collateral
   role: custodian_settlement
   url: https://www.bcb.gov.br/en/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.br.bcb.fx_flow, institutional.br.bcb.fx_auctions_interventions); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29503,6 +29848,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://www3.bcb.gov.br/sgspub/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.br.bcb.international_reserves_daily); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29547,6 +29894,8 @@ sources:
   source_class: securities_lending_short
   role: short_position
   url: https://www.b3.com.br/pt_br/market-data-e-indices/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.br.b3.futures_oi_by_participant, institutional.br.b3.options_open_interest, institutional.br.b3.otc_registered_derivatives, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29590,6 +29939,8 @@ sources:
   source_class: settlement_fails
   role: clearing_house
   url: https://www.b3.com.br/pt_br/market-data-e-indices/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.br.b3.futures_oi_by_participant, institutional.br.b3.options_open_interest, institutional.br.b3.otc_registered_derivatives, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29634,6 +29985,8 @@ sources:
   source_class: beneficial_ownership
   role: regulator
   url: https://dados.cvm.gov.br/dados/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.br.cvm.fund_monthly_profile, institutional.br.cvm.vlmo_insider_positions, institutional.br.cvm.sanctioning_proceedings, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29677,6 +30030,8 @@ sources:
   source_class: corporate_flow
   role: regulator
   url: https://dados.cvm.gov.br/dados/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.br.cvm.fund_monthly_profile, institutional.br.cvm.ipe_relevant_holdings, institutional.br.cvm.sanctioning_proceedings, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 10
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29719,6 +30074,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www3.bcb.gov.br/sgspub/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.br.bcb.sgs_overnight_funding); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29763,6 +30120,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.bcb.gov.br/en/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.br.bcb.fx_flow, institutional.br.bcb.selic_repo_operations); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29900,6 +30259,8 @@ sources:
   source_class: index_mechanical
   role: exchange
   url: https://www.b3.com.br/pt_br/market-data-e-indices/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.br.b3.futures_oi_by_participant, institutional.br.b3.options_open_interest, institutional.br.b3.otc_registered_derivatives, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -29943,6 +30304,8 @@ sources:
   source_class: enforcement_archaeology
   role: regulator
   url: https://dados.cvm.gov.br/dados/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.br.cvm.fund_monthly_profile, institutional.br.cvm.ipe_relevant_holdings, institutional.br.cvm.vlmo_insider_positions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30075,6 +30438,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://dados.cvm.gov.br/dados/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.br.cvm.fund_monthly_profile, institutional.br.cvm.ipe_relevant_holdings, institutional.br.cvm.vlmo_insider_positions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30117,6 +30482,8 @@ sources:
   source_class: options_positioning
   role: exchange
   url: https://www.mexder.com.mx/wb/MEX/estadisticas
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.mx.mexder.volume_oi); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30161,6 +30528,8 @@ sources:
   source_class: otc_swaps
   role: central_bank
   url: https://www.banxico.org.mx/SieInternet/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.mx.banxico.fx_positioning, institutional.mx.banxico.repo_money_market, institutional.mx.banxico.tiie_funding_rate, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30206,6 +30575,8 @@ sources:
   source_class: fund_flows
   role: regulator
   url: https://cnbv.gob.mx/Paginas/Informacion-Estadistica.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.mx.cnbv.banking_sector_statistics, institutional.mx.cnbv.investment_adviser_registry); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30293,6 +30664,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: regulator
   url: https://cnbv.gob.mx/Paginas/Informacion-Estadistica.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.mx.cnbv.investment_fund_statistics, institutional.mx.cnbv.investment_adviser_registry); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30337,6 +30710,8 @@ sources:
   source_class: repo_collateral
   role: central_bank
   url: https://www.banxico.org.mx/SieInternet/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.mx.banxico.fx_positioning, institutional.mx.banxico.derivatives_market_statistics, institutional.mx.banxico.tiie_funding_rate, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30381,6 +30756,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://www.banxico.org.mx/SieInternet/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.mx.banxico.fx_positioning, institutional.mx.banxico.derivatives_market_statistics, institutional.mx.banxico.repo_money_market, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30426,6 +30803,8 @@ sources:
   source_class: beneficial_ownership
   role: exchange
   url: https://www.bmv.com.mx/es/emisoras/informcioncorporativa/GMEXICO-6008-CGEN_CAPIT
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.mx.bmv.issuer_capital_buybacks); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30469,6 +30848,8 @@ sources:
   source_class: corporate_flow
   role: exchange
   url: https://www.bmv.com.mx/es/emisoras/informcioncorporativa/GMEXICO-6008-CGEN_CAPIT
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.mx.bmv.issuer_corporate_events); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30511,6 +30892,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.banxico.org.mx/SieInternet/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.mx.banxico.fx_positioning, institutional.mx.banxico.derivatives_market_statistics, institutional.mx.banxico.repo_money_market, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 2
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30555,6 +30938,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.banxico.org.mx/SieInternet/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.mx.banxico.fx_positioning, institutional.mx.banxico.derivatives_market_statistics, institutional.mx.banxico.repo_money_market, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30776,6 +31161,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://cnbv.gob.mx/Paginas/Informacion-Estadistica.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.mx.cnbv.investment_fund_statistics, institutional.mx.cnbv.banking_sector_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30819,6 +31206,8 @@ sources:
   source_class: futures_positioning
   role: derivatives_reports
   url: https://matbarofex.com.ar/documentos/investigacion/informe-mensual-financiero-marzo-2025
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ar.a3.options_volume_oi); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 10
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30867,6 +31256,8 @@ sources:
   source_class: options_positioning
   role: exchange
   url: https://matbarofex.com.ar/documentos/investigacion/informe-mensual-financiero-marzo-2025
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ar.a3.futures_volume_oi); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 10
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30957,6 +31348,8 @@ sources:
   source_class: fund_holdings
   role: regulator
   url: https://www.argentina.gob.ar/cnv
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.ar.cnv.relevant_facts_holdings, institutional.ar.cnv.issuer_filings_buybacks, institutional.ar.cnv.sanctions_sumarios, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -30999,6 +31392,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.bcra.gob.ar/PublicacionesEstadisticas/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ar.bcra.fx_market_balance, institutional.ar.bcra.fx_purchases_sales); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31041,6 +31436,8 @@ sources:
   source_class: repo_collateral
   role: central_bank
   url: https://api.bcra.gob.ar/estadisticas/v3.0/monetarias
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ar.bcra.monetary_series_api, institutional.ar.bcra.international_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31084,6 +31481,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://api.bcra.gob.ar/estadisticas/v3.0/monetarias
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ar.bcra.pases_cauciones_rates, institutional.ar.bcra.international_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31127,6 +31526,8 @@ sources:
   source_class: beneficial_ownership
   role: regulator
   url: https://www.argentina.gob.ar/cnv
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.ar.cnv.fci_portfolios_aif, institutional.ar.cnv.issuer_filings_buybacks, institutional.ar.cnv.sanctions_sumarios, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31170,6 +31571,8 @@ sources:
   source_class: corporate_flow
   role: regulator
   url: https://www.argentina.gob.ar/cnv
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.ar.cnv.fci_portfolios_aif, institutional.ar.cnv.relevant_facts_holdings, institutional.ar.cnv.sanctions_sumarios, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31212,6 +31615,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://www.bcra.gob.ar/PublicacionesEstadisticas/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ar.bcra.financial_entities_information, institutional.ar.bcra.fx_purchases_sales); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31299,6 +31704,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://api.bcra.gob.ar/estadisticas/v3.0/monetarias
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ar.bcra.pases_cauciones_rates, institutional.ar.bcra.monetary_series_api); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 2
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31342,6 +31749,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.bcra.gob.ar/PublicacionesEstadisticas/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ar.bcra.financial_entities_information, institutional.ar.bcra.fx_market_balance); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31521,6 +31930,8 @@ sources:
   source_class: enforcement_archaeology
   role: regulator
   url: https://www.argentina.gob.ar/cnv
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.ar.cnv.fci_portfolios_aif, institutional.ar.cnv.relevant_facts_holdings, institutional.ar.cnv.issuer_filings_buybacks, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31649,6 +32060,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://www.argentina.gob.ar/cnv
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.ar.cnv.fci_portfolios_aif, institutional.ar.cnv.relevant_facts_holdings, institutional.ar.cnv.issuer_filings_buybacks, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31693,6 +32106,8 @@ sources:
   source_class: otc_swaps
   role: derivatives_reports
   url: https://si3.bcentral.cl/Siete/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cl.bcch.liquidity_repo_operations, institutional.cl.bcch.interbank_rate_pdbc, institutional.cl.bcch.balance_of_payments_portfolio, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31824,6 +32239,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: regulator
   url: https://www.cmfchile.cl/portal/estadisticas/617/w3-channel.html
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cl.cmf.control_holdings_disclosures, institutional.cl.cmf.related_party_transactions, institutional.cl.cmf.sanctions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31867,6 +32284,8 @@ sources:
   source_class: repo_collateral
   role: central_bank
   url: https://si3.bcentral.cl/Siete/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cl.bcch.derivatives_market, institutional.cl.bcch.interbank_rate_pdbc, institutional.cl.bcch.balance_of_payments_portfolio, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31910,6 +32329,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://si3.bcentral.cl/Siete/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cl.bcch.derivatives_market, institutional.cl.bcch.liquidity_repo_operations, institutional.cl.bcch.balance_of_payments_portfolio, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31953,6 +32374,8 @@ sources:
   source_class: beneficial_ownership
   role: regulator
   url: https://www.cmfchile.cl/portal/estadisticas/617/w3-channel.html
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cl.cmf.bank_financial_statistics, institutional.cl.cmf.related_party_transactions, institutional.cl.cmf.sanctions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -31996,6 +32419,8 @@ sources:
   source_class: corporate_flow
   role: regulator
   url: https://www.cmfchile.cl/portal/estadisticas/617/w3-channel.html
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cl.cmf.bank_financial_statistics, institutional.cl.cmf.control_holdings_disclosures, institutional.cl.cmf.sanctions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 2
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32038,6 +32463,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://si3.bcentral.cl/Siete/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cl.bcch.derivatives_market, institutional.cl.bcch.liquidity_repo_operations, institutional.cl.bcch.interbank_rate_pdbc, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 50
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32125,6 +32552,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.bcentral.cl/web/banco-central/areas/estadisticas
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.cl.bcch.fx_intervention_operations); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32167,6 +32596,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.bcentral.cl/web/banco-central/areas/estadisticas
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.cl.bcch.international_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32253,6 +32684,8 @@ sources:
   source_class: enforcement_archaeology
   role: regulator
   url: https://www.cmfchile.cl/portal/estadisticas/617/w3-channel.html
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cl.cmf.bank_financial_statistics, institutional.cl.cmf.control_holdings_disclosures, institutional.cl.cmf.related_party_transactions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32296,6 +32729,8 @@ sources:
   source_class: fx_settlement_fixing
   role: central_bank
   url: https://si3.bcentral.cl/Siete/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cl.bcch.derivatives_market, institutional.cl.bcch.liquidity_repo_operations, institutional.cl.bcch.interbank_rate_pdbc, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32381,6 +32816,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://www.cmfchile.cl/portal/estadisticas/617/w3-channel.html
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.cl.cmf.bank_financial_statistics, institutional.cl.cmf.control_holdings_disclosures, institutional.cl.cmf.related_party_transactions, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32425,6 +32862,8 @@ sources:
   source_class: futures_positioning
   role: central_bank
   url: https://www.banrep.gov.co/sites/default/files/paginas/forwOCT2020.pdf
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.co.banrep.forward_market_report); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32473,6 +32912,8 @@ sources:
   source_class: otc_swaps
   role: derivatives_reports
   url: https://www.banrep.gov.co/sites/default/files/paginas/forwOCT2020.pdf
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.co.banrep.derivatives_report_futures); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32520,6 +32961,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://www.superfinanciera.gov.co/publicaciones/61326/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.co.sfc.fic_portfolio_composition); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32563,6 +33006,8 @@ sources:
   source_class: fund_holdings
   role: regulator
   url: https://www.superfinanciera.gov.co/publicaciones/61326/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.co.sfc.fic_investment_portfolios_flows); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32648,6 +33093,8 @@ sources:
   source_class: repo_collateral
   role: custodian_settlement
   url: https://www.banrep.gov.co/es/estadisticas
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.co.banrep.ibr_interbank_rates, institutional.co.banrep.bop_portfolio_flows, institutional.co.banrep.international_reserves, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32691,6 +33138,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://www.banrep.gov.co/es/estadisticas
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.co.banrep.oma_repo_dcv, institutional.co.banrep.bop_portfolio_flows, institutional.co.banrep.international_reserves, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32734,6 +33183,8 @@ sources:
   source_class: beneficial_ownership
   role: regulator
   url: https://www.superfinanciera.gov.co/publicaciones/10084734/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.co.sfc.rnve_issuer_corporate_actions); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32777,6 +33228,8 @@ sources:
   source_class: corporate_flow
   role: regulator
   url: https://www.superfinanciera.gov.co/publicaciones/10084734/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.co.sfc.rnve_relevant_information); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32819,6 +33272,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://www.banrep.gov.co/es/estadisticas
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.co.banrep.oma_repo_dcv, institutional.co.banrep.ibr_interbank_rates, institutional.co.banrep.international_reserves, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32906,6 +33361,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.banrep.gov.co/es/estadisticas
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.co.banrep.oma_repo_dcv, institutional.co.banrep.ibr_interbank_rates, institutional.co.banrep.bop_portfolio_flows, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -32949,6 +33406,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.banrep.gov.co/es/estadisticas
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.co.banrep.oma_repo_dcv, institutional.co.banrep.ibr_interbank_rates, institutional.co.banrep.bop_portfolio_flows, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -33250,6 +33709,8 @@ sources:
   source_class: otc_swaps
   role: derivatives_reports
   url: https://www.bcrp.gob.pe/estadisticas/cuadros-de-la-nota-semanal.html
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.pe.bcrp.repo_operations, institutional.pe.bcrp.international_reserves, institutional.pe.bcrp.fx_intervention); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -33346,6 +33807,8 @@ sources:
   source_class: fund_holdings
   role: regulator
   url: https://www.gob.pe/smv
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.pe.smv.hechos_importancia, institutional.pe.smv.sanctions, institutional.pe.smv.agent_registry); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -33393,6 +33856,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: regulator
   url: https://www.sbs.gob.pe/app/stats_net/stats/EstadisticaSistemaAFPs.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.pe.sbs.fx_reference_rate); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -33437,6 +33902,8 @@ sources:
   source_class: repo_collateral
   role: central_bank
   url: https://www.bcrp.gob.pe/estadisticas/cuadros-de-la-nota-semanal.html
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.pe.bcrp.fx_forwards_nota_semanal, institutional.pe.bcrp.international_reserves, institutional.pe.bcrp.fx_intervention); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -33529,6 +33996,8 @@ sources:
   source_class: beneficial_ownership
   role: regulator
   url: https://www.gob.pe/smv
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.pe.smv.mutual_fund_portfolios, institutional.pe.smv.sanctions, institutional.pe.smv.agent_registry); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -33719,6 +34188,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.bcrp.gob.pe/estadisticas/cuadros-de-la-nota-semanal.html
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.pe.bcrp.fx_forwards_nota_semanal, institutional.pe.bcrp.repo_operations, institutional.pe.bcrp.fx_intervention); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -33766,6 +34237,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.bcrp.gob.pe/estadisticas/cuadros-de-la-nota-semanal.html
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.pe.bcrp.fx_forwards_nota_semanal, institutional.pe.bcrp.repo_operations, institutional.pe.bcrp.international_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -33863,6 +34336,8 @@ sources:
   source_class: enforcement_archaeology
   role: regulator
   url: https://www.gob.pe/smv
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.pe.smv.mutual_fund_portfolios, institutional.pe.smv.hechos_importancia, institutional.pe.smv.agent_registry); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -33911,6 +34386,8 @@ sources:
   source_class: fx_settlement_fixing
   role: regulator
   url: https://www.sbs.gob.pe/app/stats_net/stats/EstadisticaSistemaAFPs.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.pe.sbs.banking_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -34000,6 +34477,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://www.gob.pe/smv
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.pe.smv.mutual_fund_portfolios, institutional.pe.smv.hechos_importancia, institutional.pe.smv.sanctions); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -34048,6 +34527,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://contenido.bce.fin.ec/home1/estadisticas/bolmensual/IEMensual.jsp
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.ec.bce.reference_rates_liquidity, institutional.ec.bce.international_reserves, institutional.ec.bce.weekly_balance_sheet); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -34093,6 +34574,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://contenido.bce.fin.ec/home1/estadisticas/bolmensual/IEMensual.jsp
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.ec.bce.monthly_statistical_bulletin_banks, institutional.ec.bce.international_reserves, institutional.ec.bce.weekly_balance_sheet); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 10
   declared_status: DISCOVERED_NOT_INGESTED
@@ -34276,6 +34759,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://contenido.bce.fin.ec/home1/estadisticas/bolmensual/IEMensual.jsp
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.ec.bce.monthly_statistical_bulletin_banks, institutional.ec.bce.reference_rates_liquidity, institutional.ec.bce.weekly_balance_sheet); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -34322,6 +34807,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://contenido.bce.fin.ec/home1/estadisticas/bolmensual/IEMensual.jsp
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.ec.bce.monthly_statistical_bulletin_banks, institutional.ec.bce.reference_rates_liquidity, institutional.ec.bce.international_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -34460,6 +34947,8 @@ sources:
   source_class: fund_flows
   role: regulator
   url: https://www.asfi.gob.bo/pb/estadisticas-mercado-valores
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.bo.asfi.fund_portfolio_composition); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -34506,6 +34995,8 @@ sources:
   source_class: fund_holdings
   role: fund_filings
   url: https://www.asfi.gob.bo/pb/estadisticas-mercado-valores
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.bo.asfi.securities_market_funds); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -35867,6 +36358,8 @@ sources:
   source_class: futures_positioning
   role: derivatives_reports
   url: https://www.saudiexchange.sa/wps/portal/saudiexchange/ourmarkets/derivative-market-watch/derivative-market-performance?locale=en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sa.saudi_exchange.derivatives_market_performance_options); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -35912,6 +36405,8 @@ sources:
   source_class: options_positioning
   role: exchange
   url: https://www.saudiexchange.sa/wps/portal/saudiexchange/ourmarkets/derivative-market-watch/derivative-market-performance?locale=en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sa.saudi_exchange.derivatives_market_performance_futures); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -35955,6 +36450,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://cma.org.sa/en/Market/Reports/Pages/default.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sa.cma.annual_report_cmi_counts); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -35998,6 +36495,8 @@ sources:
   source_class: fund_holdings
   role: fund_filings
   url: https://www.saudiexchange.sa/wps/portal/saudiexchange/newsandreports/reports-publications/market-reports
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sa.saudi_exchange.detailed_daily_report); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -36042,6 +36541,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.sama.gov.sa/en-US/Statistics/Pages/MonthlyStatistics.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.sa.sama.interbank_saibor_money_supply, institutional.sa.sama.monthly_bulletin_sama_balance_sheet); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -36086,6 +36587,8 @@ sources:
   source_class: repo_collateral
   role: central_bank
   url: https://www.sama.gov.sa/en-US/EconomicReports/pages/database.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sa.sama.balance_of_payments); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -36128,6 +36631,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://www.sama.gov.sa/en-US/Statistics/Pages/MonthlyStatistics.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.sa.sama.commercial_banks_balance_sheet, institutional.sa.sama.monthly_bulletin_sama_balance_sheet); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -36343,6 +36848,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://www.sama.gov.sa/en-US/EconomicReports/pages/database.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sa.sama.repo_reverse_repo_operations); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 90
   declared_status: DISCOVERED_NOT_INGESTED
@@ -36388,6 +36895,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.sama.gov.sa/en-US/Statistics/Pages/MonthlyStatistics.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.sa.sama.commercial_banks_balance_sheet, institutional.sa.sama.interbank_saibor_money_supply); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -36477,6 +36986,8 @@ sources:
   source_class: participant_type_flow
   role: exchange
   url: https://www.saudiexchange.sa/wps/portal/saudiexchange/newsandreports/reports-publications/market-reports
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sa.saudi_exchange.weekly_ownership_by_investor_type); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -36648,6 +37159,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://cma.org.sa/en/Market/Reports/Pages/default.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sa.cma.investment_funds_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: annual
   publication_lag_days: 150
   declared_status: DISCOVERED_NOT_INGESTED
@@ -36734,6 +37247,8 @@ sources:
   source_class: options_positioning
   role: derivatives_reports
   url: https://www.dgcx.ae/market-data/daily-reports
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ae.dgcx_dme.volume_oi); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -36822,6 +37337,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.centralbank.ae/media/ntxjmjmt/statistical-bulletin-april-2026.pdf
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ae.cbuae.statistical_bulletin_foreign_assets, institutional.ae.cbuae.balance_sheet_foreign_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -36949,6 +37466,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://www.centralbank.ae/media/ntxjmjmt/statistical-bulletin-april-2026.pdf
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ae.cbuae.statistical_bulletin_banking, institutional.ae.cbuae.balance_sheet_foreign_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -37035,6 +37554,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.centralbank.ae/media/ntxjmjmt/statistical-bulletin-april-2026.pdf
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ae.cbuae.statistical_bulletin_banking, institutional.ae.cbuae.statistical_bulletin_foreign_assets); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -37392,6 +37913,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.cbk.gov.kw/en/statistics-and-publication/bulletins-and-periodicals/monthly-monetary-statistical-bulletin
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.gulf.cbk.monthly_monetary_bulletin_cbk_balance_sheet); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -37436,6 +37959,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.cbk.gov.kw/en/statistics-and-publication/bulletins-and-periodicals/monthly-monetary-statistical-bulletin
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.gulf.cbk.monthly_monetary_bulletin_banks); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -37483,6 +38008,8 @@ sources:
   source_class: futures_positioning
   role: derivatives_reports
   url: https://market.tase.co.il/en/market_data/derivatives/001/major_data/details/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.il.tase.ta35_derivatives_options); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -37529,6 +38056,8 @@ sources:
   source_class: options_positioning
   role: exchange
   url: https://market.tase.co.il/en/market_data/derivatives/001/major_data/details/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.il.tase.ta35_derivatives_futures); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -37622,6 +38151,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://www.isa.gov.il/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.il.isa.enforcement_decisions, institutional.il.isa.license_holders_registry); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 15
   declared_status: DISCOVERED_NOT_INGESTED
@@ -37759,6 +38290,8 @@ sources:
   source_class: repo_collateral
   role: central_bank
   url: https://www.boi.org.il/en/economic-roles/financial-markets/monetary-instruments/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.il.boi.fx_intervention_monetary_ops); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -37848,6 +38381,8 @@ sources:
   source_class: beneficial_ownership
   role: fund_filings
   url: https://maya.tase.co.il/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.il.tase_maya.corporate_immediate_reports); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -37891,6 +38426,8 @@ sources:
   source_class: corporate_flow
   role: exchange
   url: https://maya.tase.co.il/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.il.tase_maya.interested_party_holdings); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38022,6 +38559,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.boi.org.il/en/economic-roles/financial-markets/monetary-instruments/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.il.boi.monetary_instruments_repo); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38159,6 +38698,8 @@ sources:
   source_class: enforcement_archaeology
   role: regulator
   url: https://www.isa.gov.il/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.il.isa.mutual_fund_data, institutional.il.isa.license_holders_registry); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38292,6 +38833,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://www.isa.gov.il/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.il.isa.mutual_fund_data, institutional.il.isa.enforcement_decisions); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38380,6 +38923,8 @@ sources:
   source_class: futures_positioning
   role: derivatives_reports
   url: https://www.borsaistanbul.com/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.tr.borsa_istanbul.viop_options_oi, institutional.tr.borsa_istanbul.short_sale_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38429,6 +38974,8 @@ sources:
   source_class: options_positioning
   role: exchange
   url: https://www.borsaistanbul.com/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.tr.borsa_istanbul.viop_futures_oi, institutional.tr.borsa_istanbul.short_sale_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38475,6 +39022,8 @@ sources:
   source_class: otc_swaps
   role: regulator
   url: https://www.bddk.org.tr/BultenHaftalik/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.tr.bddk.weekly_bulletin_balance_sheet); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38520,6 +39069,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://spk.gov.tr/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.tr.spk.weekly_bulletin_sanctions, institutional.tr.spk.licensed_institutions); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38566,6 +39117,8 @@ sources:
   source_class: fund_holdings
   role: custodian_settlement
   url: https://www.mkk.com.tr/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.tr.mkk.foreign_investor_transactions); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 15
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38613,6 +39166,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: regulator
   url: https://www.bddk.org.tr/BultenHaftalik/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.tr.bddk.weekly_bulletin_derivatives); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38658,6 +39213,8 @@ sources:
   source_class: repo_collateral
   role: clearing_house
   url: https://www.takasbank.com.tr/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.tr.takasbank.ccp_disclosures); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38750,6 +39307,8 @@ sources:
   source_class: securities_lending_short
   role: short_position
   url: https://www.borsaistanbul.com/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.tr.borsa_istanbul.viop_futures_oi, institutional.tr.borsa_istanbul.viop_options_oi); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38793,6 +39352,8 @@ sources:
   source_class: settlement_fails
   role: clearing_house
   url: https://www.takasbank.com.tr/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.tr.takasbank.money_market_repo); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38835,6 +39396,8 @@ sources:
   source_class: beneficial_ownership
   role: regulator
   url: https://www.kap.org.tr/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.tr.kap.insider_buyback_issuance); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38878,6 +39441,8 @@ sources:
   source_class: corporate_flow
   role: regulator
   url: https://www.kap.org.tr/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.tr.kap.major_shareholding_notifications); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38920,6 +39485,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://evds2.tcmb.gov.tr/index.php?/evds/serieMarket
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.tr.cbrt.fx_positions, institutional.tr.cbrt.omo_balance_sheet); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -38966,6 +39533,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://evds2.tcmb.gov.tr/index.php?/evds/serieMarket
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.tr.cbrt.fx_positions, institutional.tr.cbrt.weekly_international_reserves); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39057,6 +39626,8 @@ sources:
   source_class: participant_type_flow
   role: custodian_settlement
   url: https://www.mkk.com.tr/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.tr.mkk.investor_holdings_by_type); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 15
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39145,6 +39716,8 @@ sources:
   source_class: enforcement_archaeology
   role: regulator
   url: https://spk.gov.tr/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.tr.spk.monthly_bulletin_funds, institutional.tr.spk.licensed_institutions); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39279,6 +39852,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://spk.gov.tr/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.tr.spk.monthly_bulletin_funds, institutional.tr.spk.weekly_bulletin_sanctions); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39322,6 +39897,8 @@ sources:
   source_class: fund_flows
   role: fund_filings
   url: https://fra.gov.eg/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.eg.fra.enforcement_decisions, institutional.eg.fra.insurance_statistics, institutional.eg.fra.licensed_entities); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39365,6 +39942,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.cbe.org.eg/en/economic-research/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.eg.cbe.open_market_operations, institutional.eg.cbe.conia_interbank, institutional.eg.cbe.balance_of_payments, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39407,6 +39986,8 @@ sources:
   source_class: repo_collateral
   role: central_bank
   url: https://www.cbe.org.eg/en/economic-research/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.eg.cbe.monthly_statistical_bulletin_banks, institutional.eg.cbe.conia_interbank, institutional.eg.cbe.balance_of_payments, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39449,6 +40030,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://www.cbe.org.eg/en/economic-research/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.eg.cbe.monthly_statistical_bulletin_banks, institutional.eg.cbe.open_market_operations, institutional.eg.cbe.balance_of_payments, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39492,6 +40075,8 @@ sources:
   source_class: beneficial_ownership
   role: exchange
   url: https://www.egx.com.eg/en/homepage.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.eg.egx.disclosures_corporate_actions, institutional.eg.egx.trading_by_nationality_investor_type, institutional.eg.egx.index_methodology); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39535,6 +40120,8 @@ sources:
   source_class: corporate_flow
   role: exchange
   url: https://www.egx.com.eg/en/homepage.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.eg.egx.disclosures_major_holders, institutional.eg.egx.trading_by_nationality_investor_type, institutional.eg.egx.index_methodology); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39577,6 +40164,8 @@ sources:
   source_class: cross_border_capital
   role: central_bank
   url: https://www.cbe.org.eg/en/economic-research/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.eg.cbe.monthly_statistical_bulletin_banks, institutional.eg.cbe.open_market_operations, institutional.eg.cbe.conia_interbank, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: quarterly
   publication_lag_days: 90
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39621,6 +40210,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.cbe.org.eg/en/economic-research/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.eg.cbe.monthly_statistical_bulletin_banks, institutional.eg.cbe.open_market_operations, institutional.eg.cbe.conia_interbank, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39707,6 +40298,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.cbe.org.eg/en/economic-research/statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 5 other row(s) (institutional.eg.cbe.monthly_statistical_bulletin_banks, institutional.eg.cbe.open_market_operations, institutional.eg.cbe.conia_interbank, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39798,6 +40391,8 @@ sources:
   source_class: participant_type_flow
   role: exchange
   url: https://www.egx.com.eg/en/homepage.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.eg.egx.disclosures_major_holders, institutional.eg.egx.disclosures_corporate_actions, institutional.eg.egx.index_methodology); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39842,6 +40437,8 @@ sources:
   source_class: index_mechanical
   role: exchange
   url: https://www.egx.com.eg/en/homepage.aspx
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.eg.egx.disclosures_major_holders, institutional.eg.egx.disclosures_corporate_actions, institutional.eg.egx.trading_by_nationality_investor_type); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39884,6 +40481,8 @@ sources:
   source_class: enforcement_archaeology
   role: regulator
   url: https://fra.gov.eg/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.eg.fra.mutual_fund_reports, institutional.eg.fra.insurance_statistics, institutional.eg.fra.licensed_entities); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39927,6 +40526,8 @@ sources:
   source_class: pension_insurance
   role: regulator
   url: https://fra.gov.eg/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.eg.fra.mutual_fund_reports, institutional.eg.fra.enforcement_decisions, institutional.eg.fra.licensed_entities); it is a shared portal or hub, not a page of this dataset alone'
   frequency: annual
   publication_lag_days: 120
   declared_status: DISCOVERED_NOT_INGESTED
@@ -39969,6 +40570,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://fra.gov.eg/en/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.eg.fra.mutual_fund_reports, institutional.eg.fra.enforcement_decisions, institutional.eg.fra.insurance_statistics); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -40057,6 +40660,8 @@ sources:
   source_class: fund_holdings
   role: fund_filings
   url: https://www.ammc.ma/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ma.ammc.threshold_crossings, institutional.ma.ammc.licensed_entities); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -40101,6 +40706,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://www.bkam.ma/en/Statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.ma.bam.open_market_operations, institutional.ma.bam.monia_interbank, institutional.ma.bam.official_reserves, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -40149,6 +40756,8 @@ sources:
   source_class: repo_collateral
   role: central_bank
   url: https://www.bkam.ma/en/Statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.ma.bam.monetary_statistics_banks, institutional.ma.bam.monia_interbank, institutional.ma.bam.official_reserves, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -40197,6 +40806,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://www.bkam.ma/en/Statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.ma.bam.monetary_statistics_banks, institutional.ma.bam.open_market_operations, institutional.ma.bam.official_reserves, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -40246,6 +40857,8 @@ sources:
   source_class: beneficial_ownership
   role: regulator
   url: https://www.ammc.ma/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ma.ammc.opcvm_asset_composition, institutional.ma.ammc.licensed_entities); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -40380,6 +40993,8 @@ sources:
   source_class: official_reserves
   role: central_bank
   url: https://www.bkam.ma/en/Statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.ma.bam.monetary_statistics_banks, institutional.ma.bam.open_market_operations, institutional.ma.bam.monia_interbank, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -40429,6 +41044,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://www.bkam.ma/en/Statistics
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 4 other row(s) (institutional.ma.bam.monetary_statistics_banks, institutional.ma.bam.open_market_operations, institutional.ma.bam.monia_interbank, ...); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -40608,6 +41225,8 @@ sources:
   source_class: adviser_topology
   role: regulator
   url: https://www.ammc.ma/en
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ma.ammc.opcvm_asset_composition, institutional.ma.ammc.threshold_crossings); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -40922,6 +41541,8 @@ sources:
   source_class: beneficial_ownership
   role: exchange
   url: https://www.jse.co.za/market-data/market-announcements
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.za.jse.sens_director_dealings); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -40967,6 +41588,8 @@ sources:
   source_class: corporate_flow
   role: exchange
   url: https://www.jse.co.za/market-data/market-announcements
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.za.jse.sens_holdings_notifications); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -41968,6 +42591,8 @@ sources:
   source_class: physical_inventory
   role: physical_market
   url: https://eiti.org/countries
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.sahel_coast.eiti.niger_uranium_production); it is a shared portal or hub, not a page of this dataset alone'
   frequency: annual
   publication_lag_days: 365
   declared_status: DISCOVERED_NOT_INGESTED
@@ -42019,6 +42644,8 @@ sources:
   source_class: otc_swaps
   role: derivatives_reports
   url: https://fmdqgroup.com/exchange/market-turnover/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ng.fmdq.repo_turnover); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 15
   declared_status: DISCOVERED_NOT_INGESTED
@@ -42063,6 +42690,8 @@ sources:
   source_class: repo_collateral
   role: exchange
   url: https://fmdqgroup.com/exchange/market-turnover/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ng.fmdq.fx_derivatives_turnover); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 15
   declared_status: DISCOVERED_NOT_INGESTED
@@ -42193,6 +42822,8 @@ sources:
   source_class: dealer_bank_balance_sheet
   role: central_bank
   url: https://statistics.cbn.gov.ng/shop
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.ng.cbn.statistics_db_money_market_rates, institutional.ng.cbn.statistics_db_govt_securities_omo, institutional.ng.cbn.statistics_db_exchange_rates); it is a shared portal or hub, not a page of this dataset alone'
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -42235,6 +42866,8 @@ sources:
   source_class: money_market_plumbing
   role: central_bank
   url: https://statistics.cbn.gov.ng/shop
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.ng.cbn.statistics_db_monetary_banking, institutional.ng.cbn.statistics_db_govt_securities_omo, institutional.ng.cbn.statistics_db_exchange_rates); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 2
   declared_status: DISCOVERED_NOT_INGESTED
@@ -42278,6 +42911,8 @@ sources:
   source_class: central_bank_operations
   role: central_bank
   url: https://statistics.cbn.gov.ng/shop
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.ng.cbn.statistics_db_monetary_banking, institutional.ng.cbn.statistics_db_money_market_rates, institutional.ng.cbn.statistics_db_exchange_rates); it is a shared portal or hub, not a page of this dataset alone'
   frequency: weekly
   publication_lag_days: 3
   declared_status: DISCOVERED_NOT_INGESTED
@@ -42321,6 +42956,8 @@ sources:
   source_class: fx_settlement_fixing
   role: central_bank
   url: https://statistics.cbn.gov.ng/shop
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 3 other row(s) (institutional.ng.cbn.statistics_db_monetary_banking, institutional.ng.cbn.statistics_db_money_market_rates, institutional.ng.cbn.statistics_db_govt_securities_omo); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -42539,6 +43176,8 @@ sources:
   source_class: beneficial_ownership
   role: exchange
   url: https://ngxgroup.com/exchange/data/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ng.ngx.insider_dealing_notifications); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -42582,6 +43221,8 @@ sources:
   source_class: corporate_flow
   role: exchange
   url: https://ngxgroup.com/exchange/data/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.ng.ngx.corporate_disclosures_holdings); it is a shared portal or hub, not a page of this dataset alone'
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -43405,6 +44046,8 @@ sources:
   source_class: futures_positioning
   role: derivatives_reports
   url: https://www.nse.co.ke/dataservices/market-statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ke.nse_ke.next_options_on_futures, institutional.ke.nse_ke.market_statistics_foreign_participation); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -43449,6 +44092,8 @@ sources:
   source_class: options_positioning
   role: derivatives_reports
   url: https://www.nse.co.ke/dataservices/market-statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ke.nse_ke.next_futures_price_watch, institutional.ke.nse_ke.market_statistics_foreign_participation); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -43492,6 +44137,8 @@ sources:
   source_class: participant_type_flow
   role: exchange
   url: https://www.nse.co.ke/dataservices/market-statistics/
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 2 other row(s) (institutional.ke.nse_ke.next_futures_price_watch, institutional.ke.nse_ke.next_options_on_futures); it is a shared portal or hub, not a page of this dataset alone'
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -44800,6 +45447,8 @@ sources:
   source_class: physical_inventory
   role: physical_market
   url: https://eiti.org/countries
+  url_scope: shared_portal
+  url_scope_reason: 'this URL is also the atlas page of 1 other row(s) (institutional.copperbelt.eiti.copperbelt_mining_production); it is a shared portal or hub, not a page of this dataset alone'
   frequency: annual
   publication_lag_days: 365
   declared_status: DISCOVERED_NOT_INGESTED
