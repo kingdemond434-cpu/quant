@@ -3962,6 +3962,15 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    # DESKTOP-PASS SPECS, claimed as a directory class (2026-10-06). The cloud classifier refuses
+    # money-path edits (gateway, order door, allocator), so the change a cloud thread finds is
+    # handed to the desktop session as a spec in docs/desktop_pass/<topic>/. Each spec is TERMINAL
+    # once the desktop applies it: the code and its drill are then the record. It cannot rot
+    # unseen, because the organ that cites it keeps a FAIL row open until the drill it names
+    # passes (desks/mt5/research/recovery_drills.py: GATEWAY_SPEC, FILL_ORDER_SPEC).
+    "docs/desktop_pass/":
+        "SPEC HANDED TO THE DESKTOP PASS for a money-path change the cloud may not make. Terminal "
+        "on application; until then a FAIL row in reports/RECOVERY_DRILLS.json names it.",
     # THE DERIVED LESSON VAULT, claimed as a DIRECTORY CLASS (2026-09-12). 286 of the 294
     # unclaimed docs artifacts were these. docs/lesson_vault/ is regenerated wholesale by
     # scripts/build_lesson_vault.py from docs/desk_lessons.jsonl, which is the source of truth --
