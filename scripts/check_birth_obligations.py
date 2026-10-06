@@ -38,6 +38,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -482,6 +483,98 @@ AXES: tuple[Axis, ...] = (
 )
 
 
+# ------------------------------------------------------- attestation rows are appended, never edited
+#: The branch the box trades. A runtime_state row that exists there is a sealed record of what the
+#: attesting host measured; a PR may APPEND rows (`runtime_attestation --only-missing`) but never
+#: rewrite one. Override with QUANT_LIVE_REF (a ref this clone can resolve).
+LIVE_REF = "origin/claude/llm-auto-upgrade-verify-gcjac3"
+RUNTIME_REL = "docs/research/runtime_state.json"
+#: Fields of an existing row that may change WITHOUT a full re-attestation. runtime_attestation
+#: has no partial re-attestation: `--only-missing` leaves every existing row byte-identical and
+#: `generated_at` untouched, and only a full pass on the attesting host rewrites rows -- and that
+#: pass always stamps a new, later `generated_at`. So the one declared re-attestation is the
+#: WHOLE document with a newer `generated_at`, and no single field is exempt.
+REATTEST_FIELDS: frozenset[str] = frozenset()
+
+
+def _git(root: Path, *args: str) -> str | None:
+    try:
+        r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True,
+                           timeout=60, encoding="utf-8", errors="replace")
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return r.stdout if r.returncode == 0 else None
+
+
+def attestation_edits(base: dict[str, Any], cur: dict[str, Any]) -> list[str]:
+    """Rows of `base` that `cur` removed or rewrote, unless `cur` is a full re-attestation."""
+    b_at, c_at = _ts_key(base.get("generated_at")), _ts_key(cur.get("generated_at"))
+    if b_at is not None and c_at is not None and c_at > b_at:
+        return []                       # a full pass re-attested every row: rewrites are its own
+    cur_rows = {str(r.get("organ")): r for r in cur.get("organs") or [] if isinstance(r, dict)}
+    edits: list[str] = []
+    for row in base.get("organs") or []:
+        if not isinstance(row, dict):
+            continue
+        organ = str(row.get("organ"))
+        now = cur_rows.get(organ)
+        if now is None:
+            edits.append(f"{organ}: row removed")
+            continue
+        changed = sorted(k for k in set(row) | set(now)
+                         if row.get(k) != now.get(k) and k not in REATTEST_FIELDS)
+        if changed:
+            edits.append(f"{organ}: edited in place ({', '.join(changed[:6])})")
+    return edits
+
+
+def _ts_key(x: Any) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(x).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def check_attestation_rows(root: Path, ref: str | None = None) -> dict[str, Any]:
+    """Compare this tree's runtime_state.json with the one at the merge base of HEAD and LIVE.
+
+    Measured 2026-10-06: commit e499d3020 added a path to the `code` list of the LIVE row
+    `leg:external_gauntlet` by hand, with `generated_at` unchanged, and this fence exited 0 --
+    a sealed record rewritten with no attesting pass behind it. UNMEASURED (never a pass) when
+    git, the ref or either document cannot be read here."""
+    ref = ref or os.environ.get("QUANT_LIVE_REF") or LIVE_REF
+    out: dict[str, Any] = {"ref": ref, "edits": []}
+    head = _git(root, "rev-parse", "--verify", "-q", "HEAD")
+    target = _git(root, "rev-parse", "--verify", "-q", f"{ref}^{{commit}}")
+    if not head or not target:
+        out.update(verdict=UNMEASURED, why=f"git or ref {ref} not resolvable in {root}")
+        return out
+    base_sha = (_git(root, "merge-base", "HEAD", target.strip()) or "").strip()
+    if not base_sha:
+        out.update(verdict=UNMEASURED, why=f"no merge base between HEAD and {ref}")
+        return out
+    out["base"] = base_sha
+    raw = _git(root, "show", f"{base_sha}:{RUNTIME_REL}")
+    if raw is None:
+        out.update(verdict="measured", why=f"{RUNTIME_REL} absent at the base: nothing to edit")
+        return out
+    try:
+        base_doc = json.loads(raw)
+    except ValueError:
+        out.update(verdict=UNMEASURED, why=f"{RUNTIME_REL} at {base_sha[:10]} does not parse")
+        return out
+    cur_doc = _json(root / RUNTIME_REL)
+    if not isinstance(base_doc, dict) or not isinstance(cur_doc, dict):
+        out.update(verdict=UNMEASURED, why=f"{RUNTIME_REL} unreadable in this tree")
+        return out
+    edits = attestation_edits(base_doc, cur_doc)
+    out.update(verdict="measured", edits=edits,
+               why=(f"{len(edits)} existing row(s) edited against {base_sha[:10]}" if edits else
+                    f"every row at {base_sha[:10]} is intact (appends only)"))
+    return out
+
+
 def measure(root: Path | None = None, *, floors: Path | None = None) -> dict[str, Any]:
     base = Path(root or ROOT)
     stored = _json(floors or (base / "docs" / "research" / "birth_obligations.json"))
@@ -612,6 +705,13 @@ def main(argv: list[str] | None = None) -> int:
     _name_safe_stdout()             # before the first print: this fence's job is to NAME things
     root = Path(a.root or ROOT)
     doc = measure(root)
+    rows = check_attestation_rows(root)
+    doc["attestation_rows"] = rows
+    if rows["edits"]:
+        doc["failures"].append(
+            f"runtime_state: {len(rows['edits'])} existing attestation row(s) rewritten without "
+            f"a re-attestation (rows are APPENDED with runtime_attestation --only-missing, never "
+            f"edited): " + "; ".join(rows["edits"][:5]))
     if a.with_fences:
         doc["fences"] = run_fences(root)
         for name, r in doc["fences"].items():
@@ -627,6 +727,8 @@ def main(argv: list[str] | None = None) -> int:
         write_floor(doc, (root / "docs" / "research" / "birth_obligations.json"))
         print(f"   floor written: {len(doc['axes'])} axes")
         return 0
+    if not a.json:
+        print(f"birth attestation_rows -- {rows['verdict']}: {rows['why']}")
     for f in doc["failures"]:
         print(f"   FAILED {f}")
     return 2 if doc["failures"] else 0

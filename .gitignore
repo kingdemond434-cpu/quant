@@ -250,6 +250,16 @@ desks/mt5/data/daily_cycle_state.json
 desks/mt5/data/task_queue.jsonl
 # box-local append-only ledger behind reports/DSR_INPUTS.json (its sha256 is in the report)
 desks/mt5/data/dsr_trial_sharpes.jsonl
+# Box-local append-only audit trails of two #117 organs (audit 2026-10-06: both were neither
+# tracked nor ignored, so every pass left the box's tree dirty). Each is read ONLY by the organ
+# that writes it, on the host that writes it -- build_failure_bank.py folds build_failures.jsonl
+# into reports/BUILD_FAILURE_BANK.json, and check_experiment_contracts.py --report folds its
+# own experiment_contract_history.jsonl into reports/EXPERIMENT_CONTRACTS.json -- and no organ
+# reads either from git, so committing them would only ship one host's history to the other.
+desks/mt5/data/build_failures.jsonl
+desks/mt5/data/experiment_contract_history.jsonl
+# The root controller's gate-calibration output, same reason (read by no organ from git).
+logs/gate_calibration.json
 desks/mt5/data/task_queue.subs.json
 desks/mt5/data/task_queue.watermark
 

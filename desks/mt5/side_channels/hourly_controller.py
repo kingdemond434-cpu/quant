@@ -43,6 +43,18 @@ from hypothesis_schema import HypothesisCard, Origin, Mechanism, MarketContext, 
 import sys
 sys.path.insert(0, "/home/quant/quant-platform/desks/mt5")
 from research.qquant_shadow import main as run_qquant_shadow
+UNMEASURED = "UNMEASURED"
+
+
+def phase_count(phases: dict, phase: str, key: str) -> int | str:
+    """A phase's count, or UNMEASURED when the phase did not measure it -- never a 0 (L1.28a)."""
+    d = phases.get(phase)
+    if not isinstance(d, dict) or d.get("status") == UNMEASURED or d.get("error"):
+        return UNMEASURED
+    v = d.get(key)
+    return v if isinstance(v, int) and not isinstance(v, bool) else UNMEASURED
+
+
 @dataclass
 class HourlyConfig:
     """Configuration for the hourly cycle."""
@@ -142,8 +154,8 @@ class HourlySurvivorAcquisition:
             "cycle_id": cycle_id,
             "start_time": self.cycle_start.isoformat(),
             "phases": {},
-            "hypotheses_discovered": 0,
-            "hypotheses_queued": 0,
+            "hypotheses_discovered": UNMEASURED,
+            "hypotheses_queued": UNMEASURED,
             "budget_used_usd": 0.0,
             "errors": [],
         }
@@ -183,8 +195,11 @@ class HourlySurvivorAcquisition:
             results["phases"]["attribute"] = self._phase_attribute()
             # Background tasks (async)
             self._run_background_tasks()
-            results["hypotheses_discovered"] = results["phases"].get("extract", {}).get("hypotheses", 0)
-            results["hypotheses_queued"] = results["phases"].get("queue", {}).get("queued", 0)
+            # UNMEASURED STAYS UNMEASURED END TO END (audit 2026-10-06). `.get(..., 0)` turned
+            # the queue phase's explicit UNMEASURED into "0 queued" in the cycle log every hour.
+            results["hypotheses_discovered"] = phase_count(results["phases"], "extract",
+                                                           "hypotheses")
+            results["hypotheses_queued"] = phase_count(results["phases"], "queue", "queued")
         except Exception as e:
             error = {"phase": "controller", "error": str(e), "traceback": traceback.format_exc()}
             results["errors"].append(error)
@@ -196,7 +211,7 @@ class HourlySurvivorAcquisition:
         self._save_state()
         # Log cycle
         self._log_cycle(results)
-        print(f"\nCYCLE COMPLETE: {results.get('hypotheses_discovered', 0)} hypotheses, {results.get('hypotheses_queued', 0)} queued")
+        print(f"\nCYCLE COMPLETE: {results.get('hypotheses_discovered', UNMEASURED)} hypotheses, {results.get('hypotheses_queued', UNMEASURED)} queued")
         print(f"Duration: {results['duration_seconds']:.1f}s")
         return results
     # ==================== PHASE IMPLEMENTATIONS ====================

@@ -199,11 +199,60 @@ def test_REGRESSION_STILL_EXITS_NONZERO(monkeypatch, tmp_path) -> None:  # type:
     assert "BREACH" in out and "MONEY PATH" in out
 
 
-def test_THE_SLACK_BAND_IS_NOT_A_BREACH(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
-    """Coverage moves with test ordering and optional-dependency skips. A floor that fires on noise
-    gets deleted, which is worse than a floor set one point low."""
-    code, _out, _ = _run(monkeypatch, tmp_path, _rec(89.06, 59.59, None), _report(88.5, 59.0))
+def test_A_READING_UNDER_THE_FLOOR_IS_A_BREACH_EVEN_BY_A_HAIR(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """Audit 2026-10-06 (a8731a236): the combined suites read libs at 86.43% against an 86.48%
+    floor and PASSED on a 1.0pp slack band. A floor you may sit under is not a floor: noise is now
+    absorbed on the way up (RAISE_HEADROOM), so any reading below the floor fails."""
+    code, out, _ = _run(monkeypatch, tmp_path, _rec(86.48, 59.59, None), _report(86.43, 59.59))
+    assert code == 1
+    assert "86.43% fell below its 86.48% mark" in out
+    assert C.SLACK == 0.0
+
+
+def test_breaches_for_is_strict_and_skips_a_changed_population() -> None:
+    now = {"repo_pct": 86.43, "money_path_pct": 50.0}
+    floors = {"repo_pct": 86.48, "money_path_pct": 60.0}
+    b = C.breaches_for(now, floors)
+    assert len(b) == 2
+    assert len(C.breaches_for(now, floors, population_changed=True)) == 1
+    assert C.breaches_for({"repo_pct": 86.48, "money_path_pct": 60.0}, floors) == []
+
+
+def test_auto_ratchet_raises_by_margin_less_headroom_and_never_lowers() -> None:
+    floors = {"repo_pct": 86.48, "money_path_pct": 89.44, "superseded_money_path": {"pct": 1}}
+    now = {"repo_pct": 87.10, "money_path_pct": 89.80, "money_path_missing": []}
+    out, rose = C.auto_ratchet(floors, now)
+    assert out["repo_pct"] == round(87.10 - C.RAISE_HEADROOM, 2)       # beat by >= margin
+    assert out["money_path_pct"] == 89.44                               # beat by < margin
+    assert out["superseded_money_path"] == {"pct": 1}
+    assert len(rose) == 1 and floors["repo_pct"] == 86.48               # input not mutated
+    low, rose = C.auto_ratchet(floors, {"repo_pct": 70.0, "money_path_pct": 10.0,
+                                        "money_path_missing": []})
+    assert low == floors and rose == []
+    big = {"repo_pct": 99.0, "money_path_pct": 99.0, "money_path_missing": ["x.py"]}
+    out, _ = C.auto_ratchet(floors, big)
+    assert out["money_path_pct"] == 89.44, "a partial money path never raises its floor"
+    out, _ = C.auto_ratchet(floors, {**big, "money_path_missing": []}, population_changed=True)
+    assert out["money_path_pct"] == 89.44, "a changed population is migrated by --update only"
+
+
+def test_a_plain_run_raises_the_floor_and_stamps_the_raise(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """L1.50: no floor had risen in 58 days because a raise needed someone to pass --update."""
+    old = (datetime.now(tz=UTC) - timedelta(days=58)).isoformat()
+    code, out, after = _run(monkeypatch, tmp_path, _rec(86.48, 59.59, old), _report(90.0, 59.8))
     assert code == 0
+    assert "RATCHET RAISED" in out
+    assert after["high_water"]["repo_pct"] == round(90.0 - C.RAISE_HEADROOM, 2)
+    assert after["high_water"]["money_path_pct"] == 59.59
+    assert after["last_raised"] != old
+
+
+def test_a_plain_run_inside_the_margin_writes_nothing(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    old = (datetime.now(tz=UTC) - timedelta(days=3)).isoformat()
+    rec = _rec(89.9, 59.9, old)
+    code, out, after = _run(monkeypatch, tmp_path, rec, _report(90.0, 60.0))
+    assert code == 0 and "RATCHET RAISED" not in out
+    assert after == rec
 
 
 # --------------------------------------------------------------- the target is printed every run

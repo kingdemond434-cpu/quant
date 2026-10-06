@@ -6,6 +6,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -91,3 +92,61 @@ def test_registry_is_valid_json_with_a_ratchet() -> None:
     d = json.loads(ec.REGISTRY.read_text("utf-8"))
     assert isinstance(d.get("grandfathered_max"), int)
     assert len(d["grandfathered"]) <= d["grandfathered_max"]
+
+
+# ------------------------------------------- the uncontracted ratchet (audit 2026-10-06)
+
+
+def _resolved(legs: list[str]) -> dict:
+    return {leg: ec.resolve(leg, None, budget_s=60, department="meta") for leg in legs}
+
+
+def test_ratchet_fails_a_new_uncontracted_leg_or_a_rising_count() -> None:
+    """The fence exited 0 with 26 uncontracted and 354 grandfathered; with a committed baseline
+    a leg uncontracted that the baseline does not name, or a count above it, is a breach."""
+    reg = {"grandfathered": ["g"], "grandfathered_max": 1,
+           "uncontracted_baseline": ["a"], "uncontracted_max": 1}
+    probs, summary = ck.check(reg, ["g", "a"], _resolved(["g", "a"]))
+    assert probs == [] and summary["uncontracted_new"] == ["a"]
+    probs, _ = ck.check(reg, ["g", "a", "new"], _resolved(["g", "a", "new"]))
+    assert any("not in the committed uncontracted baseline: new" in p for p in probs)
+    assert any("rose to 2 above the ratchet 1" in p for p in probs)
+    grown = {**reg, "grandfathered": ["g", "h"]}
+    probs, _ = ck.check(grown, ["g", "h", "a"], _resolved(["g", "h", "a"]))
+    assert any("above its ratchet" in p for p in probs)
+
+
+def test_ratchet_tightens_when_counts_fall_and_never_rises() -> None:
+    reg = {"legs": {"a": {"hypothesis": "x"}}, "grandfathered": ["g", "h"],
+           "grandfathered_max": 2, "uncontracted_baseline": ["a", "b"], "uncontracted_max": 2}
+    legs = ["g", "h", "b"]                         # `a` unregistered, nothing healed
+    _probs, summary = ck.check({**reg, "legs": {}}, legs, _resolved(legs))
+    summary["healed_awaiting_update"] = ["h"]      # h gained a contract
+    moved = ck.tighten(reg, summary)
+    assert reg["grandfathered"] == ["g"] and reg["grandfathered_max"] == 1
+    assert reg["uncontracted_baseline"] == ["b"] and reg["uncontracted_max"] == 1
+    assert moved
+    assert ck.tighten(reg, {"uncontracted_new": ["b", "zz"],
+                            "healed_awaiting_update": []}) == []
+    assert reg["uncontracted_max"] == 1 and reg["uncontracted_baseline"] == ["b"]
+
+
+def test_fence_main_writes_the_tightened_baseline(tmp_path: Path, monkeypatch: Any) -> None:
+    reg_p = tmp_path / "reg.json"
+    reg_p.write_text(json.dumps({"legs": {}, "grandfathered": ["g"], "grandfathered_max": 5,
+                                 "uncontracted_baseline": ["a", "b"], "uncontracted_max": 2}),
+                     "utf-8")
+    monkeypatch.setattr(ck, "registered_legs", lambda root=None: ["g", "a"])
+    monkeypatch.setattr(ck, "cycle_tables", lambda: ({}, {}, 60))
+    assert ck.main(["--registry", str(reg_p)]) == 0
+    after = json.loads(reg_p.read_text("utf-8"))
+    assert after["grandfathered_max"] == 1
+    assert after["uncontracted_baseline"] == ["a"] and after["uncontracted_max"] == 1
+    monkeypatch.setattr(ck, "registered_legs", lambda root=None: ["g", "a", "c"])
+    assert ck.main(["--registry", str(reg_p)]) == 1
+
+
+def test_live_registry_commits_the_uncontracted_baseline() -> None:
+    d = json.loads(ec.REGISTRY.read_text("utf-8"))
+    assert isinstance(d.get("uncontracted_baseline"), list)
+    assert d["uncontracted_max"] == len(d["uncontracted_baseline"])

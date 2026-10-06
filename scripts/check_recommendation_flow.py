@@ -57,6 +57,7 @@ REPORT_REL = "desks/mt5/reports/RECOMMENDATION_FLOW.json"
 CADENCE_H = 3.0
 
 OK, FAIL = 0, 1
+UNMEASURED = "UNMEASURED"
 
 
 def _load(p: Path) -> Any:
@@ -83,6 +84,17 @@ def _cadence() -> float:
 
 
 def build_report(root: Path, require_state: bool = False) -> dict[str, Any]:
+    if not (root / LEDGER_REL).exists():
+        # ABSENT IS UNMEASURED, NEVER A CRASH AND NEVER EMPTY (audit 2026-10-06): this path used
+        # to fall through to the unreadable branch, whose report carries no counts, and `main`
+        # then died on KeyError 'n_open' -- the verdict was a traceback.
+        why = (f"{LEDGER_REL} is absent on this host: no row can be judged, so the drain is "
+               "UNMEASURED (not empty, not caught up)")
+        return {"status": "UNMEASURED", "ledger_absent": True,
+                "measured_at": datetime.now(tz=UTC).isoformat(), "cadence_h": None,
+                "ledger_stale_h": None, "last_drain_at": None, "n_rows": None, "n_open": None,
+                "n_open_without_owner": None, "open_without_owner": [], "ratchet_floor": None,
+                "failures": [], "unmeasured": [why], "require_state": require_state}
     ledger = _load(root / LEDGER_REL)
     if not isinstance(ledger, dict) or not isinstance(ledger.get("recommendations"), list):
         return {"status": "UNREADABLE", "detail": f"{LEDGER_REL} is missing or unparseable -- "
@@ -173,17 +185,24 @@ def main(argv: list[str] | None = None) -> int:
     if a.json:
         print(json.dumps(rep, indent=1))
     else:
-        print(f"recommendation flow: {rep['status']} -- {rep['n_open']} open of "
-              f"{rep['n_rows']}, stale {rep['ledger_stale_h']}h of {rep['cadence_h']:g}h, "
-              f"{rep['n_open_without_owner']} without an owner")
-        for f in rep["failures"]:
+        cad = rep.get("cadence_h")
+        print(f"recommendation flow: {rep['status']} -- {rep.get('n_open', UNMEASURED)} open of "
+              f"{rep.get('n_rows', UNMEASURED)}, stale {rep.get('ledger_stale_h')}h of "
+              f"{f'{cad:g}' if isinstance(cad, (int, float)) else UNMEASURED}h, "
+              f"{rep.get('n_open_without_owner', UNMEASURED)} without an owner")
+        for f in rep.get("failures") or []:
             print(f"  FAIL  {f}")
-        for u in rep["unmeasured"]:
+        if rep.get("detail"):
+            print(f"  {rep['detail']}")
+        for u in rep.get("unmeasured") or []:
             print(f"  UNMEASURED  {u}")
         print(f"  -> {out}")
     if a.report_only:
         return OK
-    return FAIL if rep["failures"] or rep["status"] == "UNREADABLE" else OK
+    # An absent ledger is UNMEASURED, and a fence never resolves an unmeasured subject to a pass
+    # (L1.28a / L1.49): it exits non-zero, with the reason printed rather than a traceback.
+    return (FAIL if rep["failures"] or rep["status"] == "UNREADABLE" or rep.get("ledger_absent")
+            else OK)
 
 
 if __name__ == "__main__":

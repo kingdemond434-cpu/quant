@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -140,3 +141,64 @@ def test_every_axis_names_the_fence_that_already_owns_it() -> None:
         assert (ROOT / "scripts" / ax.fence[0]).is_file(), ax.fence[0]
     gate = (ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
     assert "check_birth_obligations.py" in gate, "the fence must run on the law gate"
+
+
+# ------------------------------- attestation rows are appended, never edited (audit 2026-10-06)
+
+def _rs(at: str, rows: list[dict]) -> dict:
+    return {"generated_at": at, "organs": rows}
+
+
+def test_an_in_place_row_edit_is_named_and_an_append_is_not() -> None:
+    """e499d3020 added a path to the LIVE row leg:external_gauntlet's `code` list by hand, with
+    generated_at unchanged; the fence exited 0."""
+    row = {"organ": "leg:external_gauntlet", "code": ["a.py"], "state": "LIVE"}
+    base = _rs("2026-10-05T10:00:00+00:00", [row])
+    edited = _rs("2026-10-05T10:00:00+00:00", [{**row, "code": ["a.py", "b.py"]}])
+    assert birth.attestation_edits(base, edited) == [
+        "leg:external_gauntlet: edited in place (code)"]
+    appended = _rs("2026-10-05T10:00:00+00:00", [dict(row), {"organ": "leg:new"}])
+    assert birth.attestation_edits(base, appended) == []
+    removed = _rs("2026-10-05T10:00:00+00:00", [])
+    assert birth.attestation_edits(base, removed) == ["leg:external_gauntlet: row removed"]
+    # a full re-attestation stamps a LATER generated_at and owns every row it rewrites
+    reattested = _rs("2026-10-05T11:00:00+00:00", [{**row, "state": "STALE"}])
+    assert birth.attestation_edits(base, reattested) == []
+    # an older stamp is not a re-attestation
+    older = _rs("2026-10-05T09:00:00+00:00", [{**row, "state": "STALE"}])
+    assert birth.attestation_edits(base, older) != []
+    assert not birth.REATTEST_FIELDS
+
+
+def _git(root: Path, *args: str) -> None:
+    import subprocess
+    subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True,
+                   env={"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+                        "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t",
+                        "PATH": __import__("os").environ.get("PATH", ""),
+                        "HOME": str(root)})
+
+
+def test_check_against_the_merge_base_fails_a_committed_edit(tmp_path: Path, monkeypatch: Any,
+                                                              capsys: Any) -> None:
+    rel = tmp_path / "docs" / "research" / "runtime_state.json"
+    row = {"organ": "leg:x", "code": ["x.py"]}
+    _write(rel, json.dumps(_rs("2026-10-05T10:00:00+00:00", [row])))
+    _git(tmp_path, "init", "-q", "-b", "live")
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "live")
+    _git(tmp_path, "checkout", "-q", "-b", "pr")
+    ok = birth.check_attestation_rows(tmp_path, ref="live")
+    assert ok["verdict"] == "measured" and ok["edits"] == []
+    _write(rel, json.dumps(_rs("2026-10-05T10:00:00+00:00", [{**row, "code": ["x.py", "y.py"]}])))
+    _git(tmp_path, "commit", "-q", "-am", "hand edit")
+    bad = birth.check_attestation_rows(tmp_path, ref="live")
+    assert bad["edits"] == ["leg:x: edited in place (code)"]
+    monkeypatch.setenv("QUANT_LIVE_REF", "live")
+    assert birth.main(["--root", str(tmp_path)]) == 2
+    assert "rewritten without a re-attestation" in capsys.readouterr().out
+
+
+def test_no_git_is_unmeasured_never_a_pass_or_a_failure(tmp_path: Path) -> None:
+    r = birth.check_attestation_rows(tmp_path, ref="nope")
+    assert r["verdict"] == birth.UNMEASURED and r["edits"] == []

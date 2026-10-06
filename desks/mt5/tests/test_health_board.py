@@ -76,3 +76,51 @@ def test_absent_sources_are_unmeasured(tmp_path: Path) -> None:
                    stall=tmp_path / "d", readers={"x": tmp_path / "X.json"})
     assert doc["desk_verdict"] == hb.UNMEASURED
     assert "Desk verdict: UNMEASURED" in hb.render_md(doc)
+
+
+# ------------------------------------------------- audit 2026-10-06: readers and token matching
+
+
+def test_reader_green_only_on_fresh_parseable_artifact_with_its_counter(tmp_path: Path) -> None:
+    """Existence proved nothing: a stale FAIL file and a bare `{}` both read GREEN."""
+    fresh = _write(tmp_path / "F.json", {"at": _now(), "status": "MEASURED", "n_trades": 151})
+    r = hb.judge_reader("trade_pathology", fresh)
+    assert r["verdict"] == hb.GREEN and r["counter_value"] == 151
+    cases = {
+        "absent": tmp_path / "ABSENT.json",
+        "empty": _write(tmp_path / "E.json", {}),
+        "stale": _write(tmp_path / "S.json", {"at": _now(30), "status": "MEASURED",
+                                               "n_trades": 3}),
+        "no_counter": _write(tmp_path / "N.json", {"at": _now(), "status": "MEASURED"}),
+        "no_time": _write(tmp_path / "T.json", {"status": "MEASURED", "n_trades": 3}),
+        "own_unmeasured": _write(tmp_path / "U.json", {"at": _now(), "status": "UNMEASURED",
+                                                       "n_trades": 0}),
+    }
+    (tmp_path / "BAD.json").write_text("{not json", "utf-8")
+    cases["unparseable"] = tmp_path / "BAD.json"
+    for why, p in cases.items():
+        assert hb.judge_reader("trade_pathology", p)["verdict"] == hb.UNMEASURED, why
+    assert hb.judge_reader("unknown_reader", fresh)["verdict"] == hb.UNMEASURED
+
+
+def test_reader_partial_or_failing_status_is_amber(tmp_path: Path) -> None:
+    for st in ("PARTIAL", "FAILED"):
+        p = _write(tmp_path / f"{st}.json", {"at": _now(), "status": st, "n_trades": 151})
+        assert hb.judge_reader("trade_pathology", p)["verdict"] == hb.AMBER, st
+
+
+def test_experiment_contracts_reader_needs_registered_not_a_status(tmp_path: Path) -> None:
+    p = _write(tmp_path / "EC.json", {"at": _now(), "registered": 394})
+    assert hb.judge_reader("experiment_contracts", p)["verdict"] == hb.GREEN
+
+
+def test_fail_words_match_whole_tokens_never_substrings() -> None:
+    """"RED" sits inside "MEASURED" and "UNMEASURED": substring matching scored them AMBER."""
+    for ok in ("MEASURED", "UNMEASURED", "OK", "PASS", "REDUCED", "TIRED"):
+        assert not hb.is_failure_reading(ok), ok
+    for bad in ("FAIL", "FAILED", "RED", "status: RED", "BREACH", "leg_FAILED", "REJECTED"):
+        assert hb.is_failure_reading(bad), bad
+    row = {"state": "LIVE", "kind": "leg", "last_reading": "MEASURED"}
+    assert hb.judge(row, {"kind": "LEG_DONE"})[0] == hb.GREEN
+    row["last_reading"] = "RED"
+    assert hb.judge(row, {"kind": "LEG_DONE"})[0] == hb.AMBER
