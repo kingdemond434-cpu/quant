@@ -416,14 +416,23 @@
     "window": 720,
     "refit_stride": 24,
     "entry_z": 2.0,
-    "ttl_bars": 48
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
    },
    "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
    "title": "US500 pca_residual (B-SQS-13)",
    "card_id": "B-SQS-13",
    "licence": "NONE",
-   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual.",
-   "translation_note": "card params adapted to the registered family: factor_symbols"
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
   },
   {
    "symbol": "NAS100",
@@ -432,14 +441,23 @@
     "window": 720,
     "refit_stride": 24,
     "entry_z": 2.0,
-    "ttl_bars": 48
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
    },
    "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
    "title": "NAS100 pca_residual (B-SQS-13)",
    "card_id": "B-SQS-13",
    "licence": "NONE",
-   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual.",
-   "translation_note": "card params adapted to the registered family: factor_symbols"
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
   },
   {
    "symbol": "US2000",
@@ -448,14 +466,23 @@
     "window": 720,
     "refit_stride": 24,
     "entry_z": 2.0,
-    "ttl_bars": 48
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
    },
    "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
    "title": "US2000 pca_residual (B-SQS-13)",
    "card_id": "B-SQS-13",
    "licence": "NONE",
-   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual.",
-   "translation_note": "card params adapted to the registered family: factor_symbols"
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
   },
   {
    "symbol": "EUSTX50",
@@ -464,14 +491,23 @@
     "window": 720,
     "refit_stride": 24,
     "entry_z": 2.0,
-    "ttl_bars": 48
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
    },
    "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
    "title": "EUSTX50 pca_residual (B-SQS-13)",
    "card_id": "B-SQS-13",
    "licence": "NONE",
-   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual.",
-   "translation_note": "card params adapted to the registered family: factor_symbols"
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
   },
   {
    "symbol": "HK50",
@@ -480,14 +516,23 @@
     "window": 720,
     "refit_stride": 24,
     "entry_z": 2.0,
-    "ttl_bars": 48
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
    },
    "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
    "title": "HK50 pca_residual (B-SQS-13)",
    "card_id": "B-SQS-13",
    "licence": "NONE",
-   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual.",
-   "translation_note": "card params adapted to the registered family: factor_symbols"
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
   },
   {
    "symbol": "UST10Y",
@@ -496,14 +541,23 @@
     "window": 720,
     "refit_stride": 24,
     "entry_z": 2.0,
-    "ttl_bars": 48
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
    },
    "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
    "title": "UST10Y pca_residual (B-SQS-13)",
    "card_id": "B-SQS-13",
    "licence": "NONE",
-   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual.",
-   "translation_note": "card params adapted to the registered family: factor_symbols"
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
   },
   {
    "symbol": "XAUUSD",
@@ -512,14 +566,23 @@
     "window": 720,
     "refit_stride": 24,
     "entry_z": 2.0,
-    "ttl_bars": 48
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
    },
    "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
    "title": "XAUUSD pca_residual (B-SQS-13)",
    "card_id": "B-SQS-13",
    "licence": "NONE",
-   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual.",
-   "translation_note": "card params adapted to the registered family: factor_symbols"
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
   },
   {
    "symbol": "XTIUSD",
@@ -528,14 +591,23 @@
     "window": 720,
     "refit_stride": 24,
     "entry_z": 2.0,
-    "ttl_bars": 48
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
    },
    "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
    "title": "XTIUSD pca_residual (B-SQS-13)",
    "card_id": "B-SQS-13",
    "licence": "NONE",
-   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual.",
-   "translation_note": "card params adapted to the registered family: factor_symbols"
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
   }
  ],
  "trials_charged": 33,

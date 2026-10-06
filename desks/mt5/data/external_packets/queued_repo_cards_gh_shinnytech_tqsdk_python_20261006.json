@@ -114,7 +114,8 @@
     "lookback": 720,
     "entry_z": 2.0,
     "exit_z": 0.5,
-    "ttl_bars": 240
+    "ttl_bars": 240,
+    "peer_symbol": "XTIUSD"
    },
    "mechanism": "Distance pairs and ratio pairs: (a) z-normalise each leg's last 30 daily closes, spread = n1 - n2, enter when the spread is beyond 2 std of its window, exit within 0.5 std, 10-day time stop, 5% stop; (b) cu-al-spread: z of the contract-value ratio over 30 days, threshold 2, exit |z|<0.5 -- but the source goes LONG the rich leg (z>2 -> long Cu, short Al), i.e. ratio MOMENTUM, the opposite of (a).",
    "title": "XBRUSD relative_value (QR-A-TQ-006)",
@@ -129,7 +130,8 @@
     "lookback": 720,
     "entry_z": 2.0,
     "exit_z": 0.5,
-    "ttl_bars": 240
+    "ttl_bars": 240,
+    "peer_symbol": "XAUUSD"
    },
    "mechanism": "Distance pairs and ratio pairs: (a) z-normalise each leg's last 30 daily closes, spread = n1 - n2, enter when the spread is beyond 2 std of its window, exit within 0.5 std, 10-day time stop, 5% stop; (b) cu-al-spread: z of the contract-value ratio over 30 days, threshold 2, exit |z|<0.5 -- but the source goes LONG the rich leg (z>2 -> long Cu, short Al), i.e. ratio MOMENTUM, the opposite of (a).",
    "title": "XAGUSD relative_value (QR-A-TQ-006)",
@@ -144,7 +146,8 @@
     "lookback": 720,
     "entry_z": 2.0,
     "exit_z": 0.5,
-    "ttl_bars": 240
+    "ttl_bars": 240,
+    "peer_symbol": "XCUUSD"
    },
    "mechanism": "Distance pairs and ratio pairs: (a) z-normalise each leg's last 30 daily closes, spread = n1 - n2, enter when the spread is beyond 2 std of its window, exit within 0.5 std, 10-day time stop, 5% stop; (b) cu-al-spread: z of the contract-value ratio over 30 days, threshold 2, exit |z|<0.5 -- but the source goes LONG the rich leg (z>2 -> long Cu, short Al), i.e. ratio MOMENTUM, the opposite of (a).",
    "title": "XALUSD relative_value (QR-A-TQ-006)",
@@ -159,7 +162,8 @@
     "lookback": 720,
     "entry_z": 2.0,
     "exit_z": 0.5,
-    "ttl_bars": 240
+    "ttl_bars": 240,
+    "peer_symbol": "XPTUSD"
    },
    "mechanism": "Distance pairs and ratio pairs: (a) z-normalise each leg's last 30 daily closes, spread = n1 - n2, enter when the spread is beyond 2 std of its window, exit within 0.5 std, 10-day time stop, 5% stop; (b) cu-al-spread: z of the contract-value ratio over 30 days, threshold 2, exit |z|<0.5 -- but the source goes LONG the rich leg (z>2 -> long Cu, short Al), i.e. ratio MOMENTUM, the opposite of (a).",
    "title": "XPDUSD relative_value (QR-A-TQ-006)",
@@ -174,7 +178,8 @@
     "lookback": 720,
     "entry_z": 2.0,
     "exit_z": 0.5,
-    "ttl_bars": 240
+    "ttl_bars": 240,
+    "peer_symbol": "AUDUSD"
    },
    "mechanism": "Distance pairs and ratio pairs: (a) z-normalise each leg's last 30 daily closes, spread = n1 - n2, enter when the spread is beyond 2 std of its window, exit within 0.5 std, 10-day time stop, 5% stop; (b) cu-al-spread: z of the contract-value ratio over 30 days, threshold 2, exit |z|<0.5 -- but the source goes LONG the rich leg (z>2 -> long Cu, short Al), i.e. ratio MOMENTUM, the opposite of (a).",
    "title": "NZDUSD relative_value (QR-A-TQ-006)",

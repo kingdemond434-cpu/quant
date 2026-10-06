@@ -10,7 +10,8 @@
     "lookback": 480,
     "entry_z": 1.0,
     "exit_z": 0.0,
-    "ttl_bars": 24
+    "ttl_bars": 24,
+    "peer_symbol": "AUDUSD"
    },
    "mechanism": "Long-only 'buy yesterday's loser' of a correlated pair, gated on correlation stress: each day hold whichever of KO/PEP had the lower previous-day return, but only when the 9-day rolling correlation of their 19-day returns is below 0.9; a losing day is held one more day.",
    "title": "NZDUSD relative_value (QR-A-QN-001)",
@@ -25,7 +26,8 @@
     "lookback": 480,
     "entry_z": 1.0,
     "exit_z": 0.0,
-    "ttl_bars": 24
+    "ttl_bars": 24,
+    "peer_symbol": "XAUUSD"
    },
    "mechanism": "Long-only 'buy yesterday's loser' of a correlated pair, gated on correlation stress: each day hold whichever of KO/PEP had the lower previous-day return, but only when the 9-day rolling correlation of their 19-day returns is below 0.9; a losing day is held one more day.",
    "title": "XAGUSD relative_value (QR-A-QN-001)",
@@ -40,7 +42,8 @@
     "lookback": 480,
     "entry_z": 1.0,
     "exit_z": 0.0,
-    "ttl_bars": 24
+    "ttl_bars": 24,
+    "peer_symbol": "US500"
    },
    "mechanism": "Long-only 'buy yesterday's loser' of a correlated pair, gated on correlation stress: each day hold whichever of KO/PEP had the lower previous-day return, but only when the 9-day rolling correlation of their 19-day returns is below 0.9; a losing day is held one more day.",
    "title": "NAS100 relative_value (QR-A-QN-001)",
@@ -55,7 +58,8 @@
     "lookback": 480,
     "entry_z": 1.0,
     "exit_z": 0.0,
-    "ttl_bars": 24
+    "ttl_bars": 24,
+    "peer_symbol": "GER40"
    },
    "mechanism": "Long-only 'buy yesterday's loser' of a correlated pair, gated on correlation stress: each day hold whichever of KO/PEP had the lower previous-day return, but only when the 9-day rolling correlation of their 19-day returns is below 0.9; a losing day is held one more day.",
    "title": "EUSTX50 relative_value (QR-A-QN-001)",
