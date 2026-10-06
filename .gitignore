@@ -469,3 +469,4 @@ desks/mt5/data/import_stems_cache.json
 # The universal sensor ledger's day shards, clock rows and revision index are box-local state
 # that grows every day; the hourly `sensor_ledger` leg publishes reports/SENSOR_LEDGER.json.
 desks/mt5/data/sensors/
+!desks/mt5/reports/SENSOR_LEDGER.json
