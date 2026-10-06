@@ -874,6 +874,24 @@ def explicit_specs() -> list[ComponentSpec]:
             criticality="required", resource_budget={},
             schedule="MT5-GatewayResident", artifact_class="fifteen_minute",
             notes="resident loop; the task is its keep-alive, the pass is run_gateway_loop's"),
+        # THE PRE-PUSH SCOPE CLASSIFIER (2026-10-06). It decides whether a push skips gates.sh
+        # and the law gate, so a skip must leave evidence: every verdict is written to
+        # data/push_scope.json (gitignored host state -- writing it never dirties the tree a push
+        # is judging). Declared here because hook:pre-push declares no output, and an executable
+        # with no artifact has nothing the runtime attestation can hash.
+        ComponentSpec(
+            component_id="executable:scripts/push_scope.py",
+            kind="executable", host="any",
+            code_paths=("scripts/push_scope.py",),
+            outputs=("data/push_scope.json",),
+            cadence_s=None, timeout_s=120,
+            progress_metric="hook_runs",
+            owner="git", restart_action="git config core.hooksPath ops/githooks",
+            criticality="optional", resource_budget={"budget_s": 120},
+            schedule="git-hook:pre-push", artifact_class=UNMEASURED,
+            notes=("run by ops/githooks/pre-push on every push; exit 0 = state-only (gates "
+                   "skipped), 1 = run the gates; the last verdict and the skip/run tally land "
+                   "in data/push_scope.json")),
     ]
 
 

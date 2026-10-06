@@ -78,7 +78,15 @@ def release_authority() -> dict[str, Any]:
                 out["tested_sha_why"] = f"gate attestation {gres} on the running sha, {gage / 3600:.1f}h old"
     if ident and tested.upper() == "UNMEASURED":
         out["tested_sha_why"] = "release_identity reports tested_sha UNMEASURED: no suite attestation is bound to the seal"
-    rel = _read(DESK / "data" / "RELEASE.json") or _read(ROOT / "RELEASE.json") or {}
+    # The seal the BOX runs: RELEASE.json when the box sealed it, else the box's published
+    # BOX_RELEASE_SEAL.json (off the box, origin's RELEASE.json is CI's seal), 2026-10-06.
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.ops.release import box_release_view
+        rel = box_release_view(ROOT)[0] or {}
+    except Exception:
+        rel = _read(DESK / "data" / "RELEASE.json") or _read(ROOT / "RELEASE.json") or {}
     sealed = str(rel.get("code_sha") or rel.get("sha") or "")
     # THE BOX COMMITS STATE ON TOP OF THE SEALED CODE (Adopt-And-Seal: "plus seal/state commits
     # only"), so its HEAD is never the sealed sha itself. The sealed code is running when the

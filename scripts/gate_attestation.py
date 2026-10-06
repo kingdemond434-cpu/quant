@@ -22,6 +22,7 @@ import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "gate_attestation.json"
@@ -49,14 +50,50 @@ def _git(*args: str) -> str:
     return r.stdout.rstrip("\n") if r.returncode == 0 else ""
 
 
-#: Paths whose dirtiness says nothing about what CODE was tested. Mirrors
-#: `libs/ops/release.py:STATE_PREFIXES`, duplicated so this script runs on a bare checkout.
+#: Paths whose dirtiness says nothing about what CODE was tested. The authority is
+#: `libs/ops/release.is_state_path` (STATE_PREFIXES + STATE_FILES), the one classification the
+#: seal, Adopt-Release and the gateway share; this mirror is used only when libs/ cannot be
+#: imported, and tests/scripts/test_gate_attestation_code_identity.py pins it equal.
+#:
+#: WHY THE MIRROR HAD TO BE WHOLE (measured on the box 2026-10-06 15:43Z: release 659bf9ddb3cb
+#: adopted and sealed, `tested` false -- gates green on code tree e32ad9b77db4, box tree
+#: c9e138c447cc). The old copy carried eight prefixes and no exact files. It missed
+#: `desks/mt5/frontier_intel/data/`, `desks/mt5/side_channels/data/` and every STATE_FILES entry
+#: (gateway_state.json, swap_exposure.json, the decision journal...). Adopt-Release keeps the
+#: box's version of every path release.py calls state and the box commits them hourly, so each
+#: such commit moved `code_hash` -- the attestation went stale on a state write it was built to
+#: survive, while not one line of code had changed.
 _STATE_PREFIXES = ("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+                   "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
                    "data/", "reports/", "logs/", "web/", "docs/")
+_STATE_FILES = frozenset({
+    "context/decision_journal.jsonl", "docs/desk_lessons.jsonl",
+    "desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
+    "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
+    "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json", "desks/mt5/mech_split.json",
+    "desks/mt5/swap_exposure.json", "desks/mt5/docs/TRADE_PATH_REPORT.md",
+})
+
+
+def _mirror_is_state(rel: str) -> bool:
+    return rel in _STATE_FILES or any(rel.startswith(pre) for pre in _STATE_PREFIXES)
+
+
+def _authority() -> Any:
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.ops.release import is_state_path
+    except Exception:
+        return _mirror_is_state
+    return is_state_path
+
+
+_IS_STATE = _authority()
 
 
 def _is_state(rel: str) -> bool:
-    return any(rel.startswith(pre) for pre in _STATE_PREFIXES)
+    return bool(_IS_STATE(rel))
 
 
 def _tracked_py() -> set[str]:
