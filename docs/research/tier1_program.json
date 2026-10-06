@@ -9051,13 +9051,14 @@
     "desks/mt5/scripts/fxblue_mechanism_summary.py",
     "desks/mt5/research/deep_forest_miner.py",
     "desks/mt5/research/failure_prior.py",
-    "desks/mt5/research/daily_cycle.py",
+    "desks/mt5/research/daily_cycle.py:372 (book_forensics in _proposers; run() builds the genome)",
+    "desks/mt5/ops/box_tasks.manifest:215 (MT5-Daily runs daily_cycle.py)",
     "desks/mt5/tests/test_trader_genome.py"
    ],
-   "scheduled_by": "daily_cycle:_proposers, MT5-FrontierAudit",
+   "scheduled_by": "daily_cycle:_proposers, MT5-Daily",
    "artifact": "desks/mt5/reports/TRADER_GENOME.json",
    "consumer": "desks/mt5/data/trader_genome_priors.json -> desks/mt5/research/failure_prior.py public_graveyard (FAILURE_PRIOR.json); proposer_common.donate -> intelligence/trader_genome/discoveries_* -> miner_candidate_compiler -> gauntlet; desks/mt5/data/trader_genome.parquet (the dataset)",
-   "gap": "Built and scheduled 2026-10-06; derived outputs fail closed on terms. FX Blue terms are UNREAD (robots.txt refuses the terms page from the build host) so its 352 rows (21 alive, 160 graveyard, 171 shells) are held BLOCKED_ON_TERMS; MQL5 is REFUSED by its Terms of Use 3.7/3.9 and never enters; Darwinex/Collective2/Myfxbook seats are walled (no records). Competition tables (deep-forest competition grounds) are parsed from the next box run onward; live yield UNMEASURED.",
+   "gap": "Built and scheduled 2026-10-06 on MT5-Daily (daily_cycle _proposers -> book_forensics.run; MT5-FrontierAudit runs only the own-book forensics, without --genome). Derived outputs fail closed on terms. FX Blue terms are UNREAD (robots.txt refuses /terms and /legal/terms from the build host, re-tried 2026-10-06, not bypassed) so its rows are held BLOCKED_ON_TERMS; MQL5 is REFUSED by its Terms of Use 3.7/3.9; Collective2 is REFUSED by its Terms of Service s.7/s.9 (derivative works from platform content); Darwinex stays to_confirm (website terms robots-refused; DARWIN API T&C limit data to internal use inside a registered Application the desk does not hold); Myfxbook is walled. PIT: harvest-decided outcome labels (DORMANT/ALIVE/DELISTED) and competition rankings are knowable from the harvest/fetch. Every screen and contrast is charged, null passes to null_pass_trials.jsonl. Competition tables parse from the next box run; live yield UNMEASURED.",
    "next_step": "Principal: read fxblue.com terms and each competition ground's terms; record confirmed + URL + verbatim quote in book_forensics.TERMS / TERMS_EVIDENCE. The next daily cycle then publishes base rates, failure memory and screened cells.",
    "landed": [
     "trader genome 2026-10-06"

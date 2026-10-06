@@ -117,8 +117,11 @@ def test_genome_keeps_the_graveyard_and_stamps_publication(corpus: Path) -> None
     assert by["fxblue:t-10"]["outcome"] == "DORMANT"
     assert by["fxblue:gone-1"]["outcome"] == "DELISTED"
     assert by["fxblue:shell-1"]["outcome"] == "SHELL"
-    # PIT: knowable from the statement's own publication date, not the harvest
-    assert by["fxblue:t-0"]["knowable_from"].startswith("2026-08-20")
+    # PIT: a label read off the statement's own numbers is knowable from its publication date
+    assert by["fxblue:m-0"]["knowable_from"].startswith("2026-08-20")
+    assert by["fxblue:m-0"]["label_decided_at"] == "publication"
+    # ... a label decided AT the harvest (ALIVE / DORMANT / DELISTED) only from the harvest
+    assert by["fxblue:t-0"]["knowable_from"].startswith("2026-08-27")
     assert by["fxblue:gone-1"]["knowable_from"].startswith("2026-08-27")
     assert all(r["terms_status"] == "to_confirm" for r in rows)
 
@@ -127,6 +130,7 @@ def test_as_of_drops_rows_not_yet_published(corpus: Path) -> None:
     rows, _ = bf.build_genome([corpus], competition_path=corpus.parent / "none.jsonl")
     early = bf.as_of(rows, datetime(2026, 8, 21, tzinfo=UTC))
     assert early and all(not r["trader_id"].endswith("gone-1") for r in early)
+    assert {r["outcome"] for r in early} == {"BLOWN"}
     assert bf.as_of(rows, datetime(2020, 1, 1, tzinfo=UTC)) == []
 
 
@@ -210,7 +214,10 @@ def test_competition_table_keeps_the_blown(tmp_path: Path,
     led.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", "utf-8")
     g = bf._competition_rows(led)
     assert sum(1 for r in g if r["dead"]) == 1
-    assert all(r["knowable_from"] == "2026-09-30" for r in g)
+    # rankings are republished in place: knowable from the FETCH, never the page's meta date
+    assert all(r["knowable_from"] == "2026-10-06T00:00:00+00:00" for r in g)
+    assert all(r["knowable_from"] == "2026-10-06T00:00:00+00:00" for r in rows)
+    assert bf.as_of(g, datetime(2026, 10, 1, tzinfo=UTC)) == []
     assert bf.terms_of(g[0]["source"]) == "to_confirm"
 
 
@@ -234,3 +241,79 @@ def test_daily_cycle_runs_the_genome() -> None:
     src = (DESK / "research" / "daily_cycle.py").read_text("utf-8")
     assert '"book_forensics"' in src
     assert callable(bf.run)
+
+
+def test_dormant_label_does_not_look_ahead(tmp_path: Path) -> None:
+    """DORMANT needs harvest - 180d; the statement's last_update is far earlier. A backtest
+    standing at the last_update must not see the DORMANT label."""
+    row = _statement("d-1", profits=_trend_profits(), last_month="2025/05", balance=1500.0,
+                     closed=100.0, dd=-12.0, last_update="2025/05/31")
+    p = tmp_path / "track_records_dormant.jsonl"
+    p.write_text(json.dumps(row) + "\n", "utf-8")
+    rows, _ = bf.build_genome([p], competition_path=tmp_path / "none.jsonl")
+    (r,) = rows
+    assert r["outcome"] == "DORMANT" and r["published_time"].startswith("2025-05-31")
+    assert r["knowable_from"].startswith("2026-08-27") and r["label_decided_at"] == "harvest"
+    assert bf.as_of(rows, datetime(2025, 6, 1, tzinfo=UTC)) == []
+    assert bf.as_of(rows, datetime(2026, 8, 28, tzinfo=UTC)) == rows
+
+
+def test_null_pass_is_charged_to_the_lifetime_count(corpus: Path, tmp_path: Path,
+                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    """A pass that screens and contrasts but passes nothing still charges every look, through
+    the desk's one null-pass helper, into the ledger experiment_ledger reads."""
+    from libs.research import experiment_ledger as el
+
+    from research import proposer_common as pc
+    monkeypatch.setitem(bf.TERMS, "fxblue", ("confirmed", "test"))
+    desk = tmp_path / "desks" / "mt5"
+    monkeypatch.setattr(bf, "NULL_TRIALS", desk / "data" / "null_pass_trials.jsonl")
+    monkeypatch.setattr(el, "DESK", desk)
+    monkeypatch.setattr(pc, "UNI", tmp_path / "no_bars")
+    donated: list[object] = []
+    monkeypatch.setattr(pc, "donate", lambda *a, **k: donated.append(a))
+    rows, _ = bf.build_genome([corpus], competition_path=tmp_path / "none.jsonl")
+    rates = bf.base_rates(rows)
+    before, _ = el._proposer_counts()
+    rep = bf.propose(rows, rates, bf.priors(rows, rates), write=True)
+    assert rep["cells_proposed"] == 0 and donated == []            # nothing to donate ...
+    assert rates["n_contrasts"] > 0
+    assert rep["charge"]["null_trials_charged"] == rates["n_contrasts"]   # ... still charged
+    (line,) = (desk / "data" / "null_pass_trials.jsonl").read_text("utf-8").splitlines()
+    led = json.loads(line)
+    assert led["source"] == bf.SOURCE and led["tests_run"] == rates["n_contrasts"]
+    assert led["by_family"] == {"genome_contrast": rates["n_contrasts"]}
+    after, by_fam = el._proposer_counts()
+    assert after - before == rates["n_contrasts"]
+    assert by_fam["genome_contrast"] == rates["n_contrasts"]
+    # a second null pass appends, never overwrites
+    bf.propose(rows, rates, bf.priors(rows, rates), write=True)
+    assert len((desk / "data" / "null_pass_trials.jsonl").read_text("utf-8").splitlines()) == 2
+
+
+def test_terms_evidence_is_recorded_for_every_seat_read() -> None:
+    assert bf.TERMS["collective2"][0] == "refused"
+    assert "derivative works" in bf.TERMS_EVIDENCE["collective2"]["quote"]
+    assert bf.TERMS["darwinex"][0] == "to_confirm"
+    assert "internal" in bf.TERMS_EVIDENCE["darwinex"]["quote"]
+    assert bf.TERMS["fxblue"][0] == "to_confirm"
+    for k in ("collective2", "darwinex", "fxblue"):
+        assert bf.TERMS_EVIDENCE[k]["url"].startswith("https://")
+
+
+def test_genome_has_its_own_clock_and_attestation_row() -> None:
+    """The genome's clock is daily_cycle._proposers on MT5-Daily, never MT5-FrontierAudit
+    (whose wrapper runs book_forensics without --genome)."""
+    from desks.mt5.ops.components import explicit_specs
+    spec = next(s for s in explicit_specs() if s.component_id == "daily:proposers:trader_genome")
+    assert spec.outputs[0] == "desks/mt5/reports/TRADER_GENOME.json"
+    assert spec.restart_action == "restart:task:MT5-Daily"
+    cmd = (ROOT / "ops" / "run_frontier_audit.cmd").read_text("utf-8")
+    assert "--genome" not in cmd
+    led = json.loads((ROOT / "docs" / "research" / "tier1_program.json").read_text("utf-8"))
+    gen1 = next(it for it in led["items"] if it["id"] == "GEN1")
+    assert "MT5-FrontierAudit" not in gen1["scheduled_by"]
+    assert "daily_cycle:_proposers" in gen1["scheduled_by"] and "MT5-Daily" in gen1["scheduled_by"]
+    state = json.loads((ROOT / "docs" / "research" / "runtime_state.json").read_text("utf-8"))
+    rows = [r for r in state["organs"] if r["organ"] == "daily:proposers:trader_genome"]
+    assert rows and rows[0]["artifact_declared"] == "desks/mt5/reports/TRADER_GENOME.json"

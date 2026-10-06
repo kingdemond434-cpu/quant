@@ -858,6 +858,27 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule=f"invoked:{VPS_DAILY}", artifact_class="daily",
             notes=("step breadth_ledger of the VPS daily cycle (ops/crontab.manifest 02:00 and "
                    "quant-cro.timer 08:01), run with cwd at the repo root")),
+        # THE PUBLIC TRADER GENOME'S CLOCK AND ARTIFACT (2026-10-06, audit row 35). The genome is
+        # built by book_forensics.run(), which daily_cycle's `_proposers` step imports by name
+        # (`__import__`), so the reach walk never sees the edge and credits book_forensics.py to
+        # ops/run_frontier_audit.cmd -- which runs it WITHOUT --genome and never writes the
+        # genome. Declared here, on the step's own code path, so book_forensics.py stays the
+        # reached executable it is (own-book forensics, BOOK_FORENSICS.json) and the genome's
+        # two outputs carry their own attestation row.
+        ComponentSpec(
+            component_id="daily:proposers:trader_genome",
+            kind="daily_step", host="box",
+            code_paths=("desks/mt5/research/daily_cycle.py",),
+            outputs=("desks/mt5/reports/TRADER_GENOME.json",
+                     "desks/mt5/data/trader_genome_priors.json"),
+            consumers=("desks/mt5/research/failure_prior.py",),
+            cadence_s=86_400, timeout_s=3_600, progress_metric=UNMEASURED,
+            expected_artifact_schema="desks/mt5/reports/TRADER_GENOME.json",
+            owner="daily_cycle", restart_action="restart:task:MT5-Daily",
+            criticality="optional", resource_budget={"budget_s": 3600},
+            schedule="daily_cycle:proposers", artifact_class="daily",
+            notes=("book_forensics.run() inside daily_cycle._proposers on MT5-Daily: the "
+                   "alive+dead genome, its base rates, priors and screened cells")),
         ComponentSpec(
             component_id="resident:gateway",
             kind="task", host="box",

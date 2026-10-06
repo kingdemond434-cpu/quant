@@ -1510,8 +1510,10 @@ def competition_rows(page: str, *, ground: str, url: str, published_time: str | 
 
     A table qualifies when its header names a competitor column and at least one of NAV /
     return / drawdown. Values are kept verbatim beside their parse; an unparseable number is
-    None, never zero. PIT: a row is knowable from the page's own published time when it states
-    one, else from the fetch -- never earlier.
+    None, never zero. PIT: a row is knowable from the FETCH (`knowable_from` = available_time).
+    Ranking tables are republished in place under one URL, so the page's meta date says when the
+    page was first published, not when THESE standings were; the row a fetch reads may be weeks
+    newer than that date. `published_time` is kept as provenance only.
     """
     out: list[dict[str, Any]] = []
     for t in _tables(page):
@@ -1556,6 +1558,7 @@ def competition_rows(page: str, *, ground: str, url: str, published_time: str | 
                                 "NAV/return at the blow-up floor" if outcome == "BLOWN" else
                                 "listed in the ranking"),
                 "published_time": published_time, "available_time": available_time,
+                "knowable_from": available_time,
                 "row_hash": hashlib.sha256(f"{url}|{raw}".encode()).hexdigest()[:16],
                 "raw": raw[:400]})
     return out

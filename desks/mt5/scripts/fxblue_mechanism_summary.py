@@ -257,13 +257,32 @@ def _load_records(paths: list[Path] | None = None) -> list[dict]:
     return list(best.values())
 
 
+#: OUTCOME LABELS DECIDED AT THE HARVEST, NOT AT PUBLICATION. DORMANT needs harvest minus
+#: DORMANT_AFTER, ALIVE needs a trade inside that same window, and DELISTED is the harvester
+#: finding the page gone. A row carrying one of these labels could not have been read before the
+#: harvest, so stamping it at the earlier `last_update` would let a backtest at that date see a
+#: label that did not yet exist (the graveyard looking ahead). BLOWN, EMPTIED and SHELL are read
+#: off the statement's own published numbers and stay knowable from publication.
+HARVEST_DECIDED = frozenset({"DORMANT", "ALIVE", "DELISTED"})
+
+
+def _knowable_from(outcome: str, published: datetime | None,
+                   harvested: datetime | None) -> str | None:
+    """When the row, label included, became knowable. Unknowable -> None (as_of drops it)."""
+    if outcome in HARVEST_DECIDED:
+        return harvested.isoformat() if harvested else None
+    at = published or harvested
+    return at.isoformat() if at else None
+
+
 def genome_records(paths: list[Path] | None = None) -> list[dict]:
     """One genome row per FX Blue account -- the living AND the graveyard.
 
     PIT: `published_time` is the statement's own last update (the latest instant its numbers
     describe and the earliest the public could have read them); `available_time` is the
     harvest. A row is knowable from `knowable_from` = the published time when the statement
-    gives one, else the harvest -- never earlier.
+    gives one, else the harvest -- never earlier -- EXCEPT when its outcome label is decided at
+    the harvest (DORMANT, ALIVE, DELISTED: see `HARVEST_DECIDED`), when it is the harvest.
     """
     rev = _reverse()
     out: list[dict] = []
@@ -315,8 +334,8 @@ def genome_records(paths: list[Path] | None = None) -> list[dict]:
             "survival_days": (last - first).days if first and last else None,
             "published_time": published.isoformat() if published else None,
             "available_time": harvested.isoformat() if harvested else None,
-            "knowable_from": (published or harvested).isoformat()
-            if (published or harvested) else None,
+            "label_decided_at": "harvest" if outcome in HARVEST_DECIDED else "publication",
+            "knowable_from": _knowable_from(outcome, published, harvested),
             **{k: sig.get(k) for k in ("n_trades_sampled", "win_rate", "payoff_ratio", "skew",
                                        "tail_ratio", "median_hold_raw", "max_dd_pct",
                                        "top_symbol_share", "session", "session_share",

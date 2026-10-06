@@ -71,6 +71,9 @@ GENOME_REPORT = DESK / "reports" / "TRADER_GENOME.json"
 PRIORS = DESK / "data" / "trader_genome_priors.json"
 COMPETITION = DESK / "data" / "trader_genome_competition.jsonl"
 INTEL = DESK / "data" / "intelligence"
+#: Side ledger of looks from passes that donated nothing; experiment_ledger adds it to the
+#: lifetime trial count (written through alt_proxies._donate, the desk's one null-pass helper).
+NULL_TRIALS = DESK / "data" / "null_pass_trials.jsonl"
 SOURCE = "trader_genome"
 
 
@@ -212,8 +215,12 @@ TERMS: dict[str, tuple[str, str]] = {
                      "reproducing site content"),
     "mql5_survivors": ("refused", "MQL5 Terms of Use 3.7 / 3.9 / 3.13 (same site as "
                        "mql5_signals)"),
-    "darwinex": ("to_confirm", "seat records only fetch errors; terms not read"),
-    "collective2": ("to_confirm", "seat walled (HTTP 403); terms not read"),
+    "darwinex": ("to_confirm", "website terms refused to this host by robots.txt "
+                 "(2026-10-06); the DARWIN API T&C limit Darwinex Data to 'internal purposes' "
+                 "within a registered Application, which the desk does not hold (no key) -- "
+                 "not a clause permitting automated use of the public site's statistics"),
+    "collective2": ("refused", "Collective2 Terms of Service s.9 forbid derivative works from "
+                    "platform content and s.7 forbid scraping protected material"),
     "myfxbook": ("to_confirm", "seat walled (Cloudflare managed challenge, never bypassed); no "
                  "public-systems API; terms not read"),
 }
@@ -230,7 +237,23 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                   "adapt, translate, prepare derivative works from ...\"")},
     "fxblue": {
         "url": "https://www.fxblue.com/terms", "checked": "2026-10-06",
-        "quote": "NOT READ: the fetch was refused by the site's robots.txt from this host"},
+        "quote": ("NOT READ: the fetch was refused by the site's robots.txt from this host "
+                  "(re-tried 2026-10-06 at /terms and /legal/terms; same refusal, not "
+                  "bypassed)")},
+    "darwinex": {
+        "url": "https://darwinex.com/cs/legal/darwin-api-conditions", "checked": "2026-10-06",
+        "quote": ("DARWIN API T&C: \"You may only use such Darwinex Data for your internal "
+                  "purposes or within your Application\"; \"you will not disclose, sell or "
+                  "transfer any Darwinex Data without our prior written consent\". Website "
+                  "terms (darwinex.com/legal, /legal/terms-of-use) NOT READ: robots.txt refused "
+                  "the fetch, not bypassed. Fenced: no clause permits automated use of the "
+                  "public site, and the API route needs an account the desk does not hold")},
+    "collective2": {
+        "url": "https://collective2.com/terms-of-service", "checked": "2026-10-06",
+        "quote": ("s.7: \"scrape, copy, resell, or redistribute paid strategy content or other "
+                  "protected material except as expressly allowed\"; s.9: \"you may not copy, "
+                  "modify, distribute, license, sell, reverse engineer, or create derivative "
+                  "works from the Service or platform content\"")},
 }
 #: The seats the genome census reads, so a walled seat is a counted absence, not a silence.
 SEATS = ("fxblue", "mql5_signals", "mql5_survivors", "darwinex", "collective2",
@@ -308,7 +331,9 @@ def _competition_rows(path: Path | None = None) -> list[dict[str, Any]]:
             "profitable": (ret > 0) if isinstance(ret, (int, float)) else None,
             "first_active": None, "last_active": None, "survival_days": None,
             "published_time": r.get("published_time"), "available_time": r.get("available_time"),
-            "knowable_from": r.get("published_time") or r.get("available_time"),
+            # THE FETCH, NEVER THE PAGE'S META DATE: rankings are republished in place, so the
+            # meta date predates the standings the fetch read (deep_forest_miner.competition_rows).
+            "knowable_from": r.get("available_time"),
             "n_trades_sampled": 0, "win_rate": None, "payoff_ratio": None, "skew": None,
             "tail_ratio": None, "median_hold_raw": None, "max_dd_pct": dd,
             "top_symbol_share": None, "session": None, "session_share": None,
@@ -621,10 +646,34 @@ def propose(rows: list[dict[str, Any]], rates: dict[str, Any], pri: dict[str, An
                            "screened": [{k: r.get(k) for k in (
                                "cell", "style", "screened", "n_independent", "t_gross",
                                "t_deflated_sweep", "proposed")} for r in swept]}
-    if write and cands:
-        rep["donated"] = str(pc.donate(SOURCE, cands, n_looks))
-        rep["donation"] = pc.donation_counts()
+    if write:
+        # EVERY LOOK IS CHARGED, NULL PASSES INCLUDED. A pass whose screens and contrasts
+        # passed nothing writes no discovery file, so its looks would vanish from the lifetime
+        # count; the desk's one helper for that (alt_proxies._donate) donates when there is
+        # something to donate and otherwise appends the looks to null_pass_trials.jsonl, which
+        # experiment_ledger adds to the lifetime total. Exactly one of the two carries them.
+        by_family: dict[str, int] = {}
+        for r in screened:
+            by_family[str(r["family"])] = by_family.get(str(r["family"]), 0) + 1
+        if rates.get("n_contrasts"):
+            by_family["genome_contrast"] = int(rates["n_contrasts"])
+        rep["charge"] = _charge(cands, n_looks, by_family)
+        if rep["charge"].get("path"):
+            rep["donated"] = rep["charge"]["path"]
+            rep["donation"] = pc.donation_counts()
     return rep
+
+
+def _charge(cands: list[dict[str, Any]], n_looks: int,
+            by_family: dict[str, int]) -> dict[str, Any]:
+    """Donate the candidates, or charge the null pass to NULL_TRIALS (never neither)."""
+    from research import alt_proxies as ap
+    paths = ap.Paths(NULL_TRIALS.parent.parent)
+    if paths.null_trials != NULL_TRIALS:            # the helper's ledger IS the desk's ledger
+        raise RuntimeError(f"null-pass ledger mismatch: {paths.null_trials} != {NULL_TRIALS}")
+    out: dict[str, Any] = ap._donate(paths, SOURCE, cands, n_looks, by_family,
+                                     datetime.now(tz=UTC))
+    return out
 
 
 def genome(write: bool = True, budget_s: float = 900.0, *,
@@ -653,7 +702,9 @@ def genome(write: bool = True, budget_s: float = 900.0, *,
         "rules": {"dormant_after_days": 180, "emptied_share": 0.05,
                   "graveyard": ["DELISTED", "BLOWN", "EMPTIED", "DORMANT"],
                   "success": "alive AND profitable, over alive + dead",
-                  "pit": "knowable_from = publication date when stated, else the harvest"},
+                  "pit": ("knowable_from = publication date when stated, else the harvest; "
+                          "harvest-decided outcome labels (DORMANT/ALIVE/DELISTED) and "
+                          "competition rankings (republished in place) = the harvest/fetch")},
         "artifacts": {"dataset": str(GENOME.relative_to(ROOT)),
                       "priors": str(PRIORS.relative_to(ROOT))},
     }
