@@ -438,6 +438,16 @@ def _terms_state(src: dict[str, Any], url: str) -> tuple[str, str]:
             return "unreadable", f"terms table unimportable ({type(exc).__name__}); fail closed"
         return "ungoverned", ""
     state, why = terms_gate(ref) if ref else terms_gate(url)
+    if state in ("ungoverned", "to_confirm") and not ref:
+        # THE ONE PRIVATE-USE EXCEPTION (J-Quants): a managed token provider whose recorded
+        # verdict is `confirmed_private_use` passes ONLY while that verdict's recorded condition
+        # stands (`token_refresh.terms_ok`). Every other keyed source keeps the gate above.
+        prov = _token_refresh.PROVIDERS.get(str(src.get("key_env") or ""))
+        if (prov is not None
+                and _token_refresh.TERMS.get(prov.name, ("", ""))[0] == _token_refresh.PRIVATE_USE
+                and _token_refresh.terms_ok(prov)):
+            return _token_refresh.PRIVATE_USE, ("token_refresh: confirmed for private use under "
+                                                "its recorded condition; nothing reaches git")
     if state == "ungoverned" and _is_keyed(src):
         return "to_confirm", ("keyed source with no terms decision: a credential is sent only "
                               "under confirmed terms")
