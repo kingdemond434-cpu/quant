@@ -35,7 +35,7 @@ def test_unavailable_paid_and_banned_are_never_asked(tmp_path: Path) -> None:
 
 
 def test_a_rejected_key_is_needed_even_though_it_is_set(tmp_path: Path) -> None:
-    doc = _doc(tmp_path, {n for n in kn.env_keys.key_names()}, ASIA_COLLECTOR={"rows": [
+    doc = _doc(tmp_path, set(kn.env_keys.key_names()), ASIA_COLLECTOR={"rows": [
         {"id": "eia_energy", "access": "key", "status": "HTTP_ERROR", "http": 401,
          "key_env": "EIA_API_KEY"}]})
     assert [i["name"] for i in doc["items"]] == ["EIA_API_KEY"]
