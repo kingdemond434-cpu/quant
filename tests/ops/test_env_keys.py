@@ -1,4 +1,4 @@
-"""read_key reaches a key set with setx /M after the process started, and the catalog is complete."""
+"""read_key reaches a key set with setx /M after the process started; the catalog is complete."""
 
 from __future__ import annotations
 

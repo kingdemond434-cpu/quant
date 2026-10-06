@@ -22,7 +22,6 @@ registry's old "blocked" note was the website host, not api.stlouisfed.org).
 from __future__ import annotations
 
 import json
-import os
 import sys
 import urllib.parse
 import urllib.request

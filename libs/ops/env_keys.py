@@ -30,7 +30,9 @@ _MACHINE_ENV = r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
 
 
 def _reg_value(hive: Any, subkey: str, name: str) -> str:
-    import winreg  # type: ignore[import-not-found,unused-ignore]
+    if sys.platform != "win32":
+        return ""
+    import winreg
 
     try:
         with winreg.OpenKey(hive, subkey) as k:
@@ -47,7 +49,7 @@ def registry_sources(name: str) -> list[tuple[str, str]]:
     """Every registry scope holding ``name`` as (scope, value). Empty off Windows."""
     if sys.platform != "win32":
         return []
-    import winreg  # type: ignore[import-not-found,unused-ignore]
+    import winreg
 
     out: list[tuple[str, str]] = []
     v = _reg_value(winreg.HKEY_LOCAL_MACHINE, _MACHINE_ENV, name)

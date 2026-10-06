@@ -17,13 +17,14 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from libs.ops.env_keys import CATALOG_PATH, catalog, registry_sources  # noqa: E402
+from libs.ops.env_keys import CATALOG_PATH, catalog, registry_sources
 
 
-def _row(name: str) -> dict[str, object]:
+def _row(name: str) -> dict[str, Any]:
     proc = (os.environ.get(name) or "").strip()
     scopes = registry_sources(name)
     where = (["process"] if proc else []) + [s for s, _ in scopes]
