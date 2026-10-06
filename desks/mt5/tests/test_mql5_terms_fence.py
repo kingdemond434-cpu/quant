@@ -11,8 +11,10 @@ from __future__ import annotations
 
 import http.client
 import importlib
+import importlib.util
 import json
 import sys
+import types
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -136,7 +138,14 @@ def test_the_survivor_hunters_fetch_helpers_refuse(tmp_path: Path,
 
 
 # ---------------------------------------------------------------------- the other fetch paths
-def test_strategy_source_miners_refuse(tmp_path: Path, no_network: list[str]) -> None:
+def test_strategy_source_miners_refuse(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                       no_network: list[str]) -> None:
+    """Unscheduled, and they import bs4 -- stubbed where it is absent, so the fence is still
+    exercised; the parser is never reached because nothing is fetched."""
+    if importlib.util.find_spec("bs4") is None:
+        stub = types.ModuleType("bs4")
+        stub.BeautifulSoup = object  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "bs4", stub)
     from side_channels.sources.strategy import (
         mql5_articles,
         mql5_codebase,
