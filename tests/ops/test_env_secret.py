@@ -46,7 +46,9 @@ def test_registry_is_never_read_off_windows() -> None:
     assert es._registry("machine", "PATH") is None
 
 
-def test_fresh_secrets_fills_only_absent_secret_names(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_fresh_secrets_fills_only_absent_secret_names(monkeypatch: pytest.MonkeyPatch,
+                                                     tmp_path: Path) -> None:
+    monkeypatch.setattr(es, "CATALOG", tmp_path / "absent.json")     # the suffix rule alone
     hives = {"machine": {"FRED_API_KEY": "k1", "PATH": "C:\\x", "GITHUB_TOKEN": "t",
                          "OPENROUTER_API_KEY": "new"},
              "user": {"MY_SECRET": "s", "FRED_API_KEY": "user-copy"}}
@@ -55,28 +57,37 @@ def test_fresh_secrets_fills_only_absent_secret_names(monkeypatch: pytest.Monkey
     assert got == {"FRED_API_KEY": "k1", "GITHUB_TOKEN": "t", "MY_SECRET": "s"}
 
 
-def test_fresh_secrets_carries_logins_and_catalogued_names_but_never_refused(
+def test_with_the_catalog_only_catalogued_names_are_carried(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Audit #204: login-shaped names ride into LLM seats and miners only when catalogued; an MT5
+    or broker login that is not in the inventory never leaves the registry."""
     cat = tmp_path / "env_keys_catalog.json"
     cat.write_text(json.dumps({"keys": [
-        {"name": "ODD_CREDENTIAL", "group": "free_data"},
+        {"name": "FRED_API_KEY", "group": "free_data"},
+        {"name": "JQ_USER", "group": "unavailable"}, {"name": "JQ_PASS", "group": "unavailable"},
+        {"name": "ESTAT_APP_ID", "group": "free_data"},
+        {"name": "JQUANTS_MAILADDRESS", "group": "legacy", "aliases": ["JQUANTS_EMAIL"]},
+        {"name": "MYFXBOOK_PASSWORD", "group": "account_free"},
+        {"name": "ODD_FEED_SECRET", "group": "free_data", "status": "BLOCKED_ON_TERMS"},
         {"name": "PAID_VENDOR_KEY", "group": "paid_blocked"},
         {"name": "REDDIT_SECRET", "group": "banned", "aliases": ["REDDIT_PASSWORD"]}]}))
     monkeypatch.setattr(es, "CATALOG", cat)
-    hives = {"machine": {"JQ_USER": "u", "JQ_PASS": "p", "ESTAT_APP_ID": "a",
-                         "QUANT_EDGAR_UA": "ua", "CDSE_USERNAME": "c", "MYFXBOOK_EMAIL": "e",
-                         "JQUANTS_MAILADDRESS": "m", "TELEGRAM_API_HASH": "h",
-                         "ODD_CREDENTIAL": "o", "PAID_VENDOR_KEY": "x", "REDDIT_PASSWORD": "r",
+    hives = {"machine": {"FRED_API_KEY": "k", "JQ_USER": "u", "JQ_PASS": "p",
+                         "ESTAT_APP_ID": "a", "JQUANTS_EMAIL": "m",
+                         "MYFXBOOK_PASSWORD": "x", "ODD_FEED_SECRET": "o",
+                         "PAID_VENDOR_KEY": "x", "REDDIT_PASSWORD": "r",
+                         "MT5_PASSWORD": "broker", "MT5_LOGIN_USER": "123",
+                         "BROKER_EMAIL": "e", "UNLISTED_API_KEY": "z",
                          "USERNAME": "dell", "COMPUTERNAME": "box"},
              "user": {}}
     monkeypatch.setattr(es, "_registry_all", lambda hive: hives[hive])
-    got = es.fresh_secrets({})
-    assert set(got) == {"JQ_USER", "JQ_PASS", "ESTAT_APP_ID", "QUANT_EDGAR_UA", "CDSE_USERNAME",
-                        "MYFXBOOK_EMAIL", "JQUANTS_MAILADDRESS", "TELEGRAM_API_HASH",
-                        "ODD_CREDENTIAL"}
+    assert set(es.fresh_secrets({})) == {"FRED_API_KEY", "JQ_USER", "JQ_PASS", "ESTAT_APP_ID",
+                                         "JQUANTS_EMAIL"}
 
 
-def test_missing_catalog_falls_back_to_suffixes(monkeypatch: pytest.MonkeyPatch,
-                                               tmp_path: Path) -> None:
+def test_without_the_catalog_only_api_key_shapes_are_carried(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(es, "CATALOG", tmp_path / "absent.json")
-    assert es.is_secret_name("FRED_API_KEY") and not es.is_secret_name("PATH")
+    assert es.is_secret_name("FRED_API_KEY") and es.is_secret_name("GITHUB_TOKEN")
+    for name in ("PATH", "MT5_PASSWORD", "BROKER_USER", "JQ_PASS", "MYFXBOOK_SESSION"):
+        assert not es.is_secret_name(name)
