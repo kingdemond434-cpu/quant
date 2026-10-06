@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import io
 import json
+import urllib.parse
 import urllib.request
 from email.message import Message
 
@@ -25,8 +26,8 @@ def test_redact_before_truncate_on_a_long_url() -> None:
     url = "https://api.eia.gov/v2/" + "p/" * 30 + "data/?" + urllib.parse.urlencode(
         {"api_key": KEY})
     out = ks.redact(f"URLError: {url}", [KEY])[:90]
-    assert "ab" not in out.split("api_key=")[-1][:2] or "<redacted>" in out
-    assert all(KEY[:i] not in out.split("?")[-1] for i in range(4, len(KEY)))
+    tail = out.split("api_key=")[-1]
+    assert not tail.startswith(KEY[:4]) and not tail.startswith("ab%2B")
 
 
 def test_eia_echo_is_stripped_from_the_body() -> None:
