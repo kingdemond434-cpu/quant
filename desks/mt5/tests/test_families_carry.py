@@ -124,8 +124,9 @@ def test_dollar_basket_follows_the_class_average(world):
     assert fc.family_dollar_carry_basket(d, symbol="EURUSD", min_afd=0.01) == []
 
 
-def test_good_and_bad_books_split_the_class(world):
+def test_good_and_bad_books_split_the_class(world, monkeypatch):
     d, write = world
+    monkeypatch.setattr(xs, "MIN_MEMBERS", 3)        # each book holds half of a 7-member class
     write("EURUSD", RANKED)
     good = fc.family_good_bad_carry(d, symbol="EURUSD", book="good", quantile=0.5)
     bad = fc.family_good_bad_carry(d, symbol="EURUSD", book="bad", quantile=0.5)
