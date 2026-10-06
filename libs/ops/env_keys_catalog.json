@@ -357,14 +357,14 @@
    "cost": "free",
    "machine": "box+vps",
    "signup": "https://github.com/settings/personal-access-tokens/new",
-   "unlocks": "repo miners and paper code search at 5000 req/h instead of 60",
+   "unlocks": "the box's git push (it has no other non-interactive credential) and repo/paper miners at 5000 req/h",
    "readers": [
     "desks/mt5/research/repo_miner.py",
     "libs/data/papers.py",
     "desks/mt5/side_channels/github_miner.py"
    ],
    "owner": "Mine the EliteQuant list",
-   "note": "fine-grained token, public repositories read-only, no write scopes",
+   "note": "fine-grained token, only kingdemond434-cpu/quant, Contents: Read and write; public repos stay readable",
    "file_fallback": "~/.gh_token"
   },
   {
