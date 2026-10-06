@@ -283,7 +283,9 @@ def static_rung(rd: Reader, row: dict[str, Any],
     # module does not connect it to anything.
     importers = sorted({rel for rel, txt in corpus for s in stems
                         if rel not in owners and re.search(
-                            rf"(^\s*(from|import)\s+[\w.]*\b{re.escape(s)}\b)|([\w/]+/{re.escape(s)}\.py)",
+                            rf"(^\s*from\s+[\w.]+\s+import\s+[^\n]*\b{re.escape(s)}\b)"
+                            rf"|(^\s*(from|import)\s+[\w.]*\b{re.escape(s)}\b)"
+                            rf"|([\w/]+/{re.escape(s)}\.py)",
                             txt, re.MULTILINE)})
     if importers:
         return "WIRED", [*why, f"imported by {', '.join(importers[:3])} but no declared clock "
