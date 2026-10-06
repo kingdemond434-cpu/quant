@@ -100,6 +100,28 @@ def test_every_archive_member_becomes_its_own_dataset(desk):
     assert members == {"table_0.csv", "table_1.csv", "table_2.csv"}
 
 
+def test_archive_members_are_capped_on_inflated_bytes_and_per_window(monkeypatch):
+    """A member is read in chunks and abandoned past the cap; a window stops at its cumulative
+    budget and the cursor resumes at the member it did not read."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("bomb.csv", b"0" * (3 << 20))           # 3 MiB that deflates to a few KB
+        for i in range(4):
+            z.writestr(f"t{i}.csv", _csv(30, 1, shift=i).decode())
+    raw = buf.getvalue()
+    assert A._read_member(raw, "bomb.csv", limit=1 << 20) is None
+    assert A._read_member(raw, "t0.csv", limit=1 << 20) is not None
+    size = len(A._read_member(raw, "t0.csv") or b"")
+    monkeypatch.setattr(A, "MAX_BYTES", 1 << 20)
+    monkeypatch.setattr(A, "WINDOW_BYTES", 2 * size + 1)
+    names = A._archive_members(raw)
+    assert "bomb.csv" not in names                           # an honest declared size is refused early
+    out, nxt, left = A._tables(raw, "https://example.test/b.zip", start=0, budget=16)
+    assert len(out) <= 2 and nxt < len(names) and left == len(names) - nxt
+    out2, nxt2, _ = A._tables(raw, "https://example.test/b.zip", start=nxt, budget=16)
+    assert nxt2 > nxt
+
+
 def test_first_value_wins_revisions_are_counted_and_new_points_appended(desk):
     url = "https://example.test/rev.csv"
     desk["urls"] = [url]

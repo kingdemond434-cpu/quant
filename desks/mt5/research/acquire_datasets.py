@@ -58,10 +58,10 @@ STORE = DESK / "data" / "acquired"
 REGISTRY = STORE / "registry.json"
 REPORT = DESK / "reports" / "dataset_acquisition.json"
 
-#: A real browser UA. Measured on this box: the default urllib agent draws 403s from several
-#: statistics sites, which read downstream as dead sources rather than as a rejected header.
-_UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
-       "Chrome/124.0 Safari/537.36")
+#: An HONEST UA that names the desk, never a browser string. The default urllib agent draws 403s
+#: from some statistics sites; a named agent is the polite answer to that, a disguise is not. A
+#: site that refuses it is recorded as refusing, which is the truth.
+_UA = "quant-desk-dataset-acquirer/1.0 (public statistical data; internal research use)"
 
 FETCH_TIMEOUT_S = 25
 MAX_BYTES = 60 * 1024 * 1024          #: real statistical archives are tens of MB
@@ -79,6 +79,9 @@ MIN_DATED_ROWS = 8
 COLUMNS_PER_RUN = 64
 #: Archive members parsed per file per run, resumed by cursor like the columns.
 MEMBERS_PER_RUN = 16
+#: Decompressed bytes one archive window may read in total. The per-member cap is MAX_BYTES and is
+#: enforced on the bytes actually inflated, never on the size the archive declares.
+WINDOW_BYTES = 2 * MAX_BYTES
 REFRESH_AFTER_S = 3600                #: an hourly owner must revisit changing public series
 REFUSED_RETRY_S = 24 * 3600           #: bad pages yield their seat to the rest of the world
 
@@ -251,12 +254,19 @@ def _archive_members(raw: bytes) -> list[str]:
     return [i.filename for i in sorted(infos, key=lambda i: (-i.file_size, i.filename))]
 
 
-def _read_member(raw: bytes, name: str) -> bytes | None:
+def _read_member(raw: bytes, name: str, limit: int = MAX_BYTES) -> bytes | None:
+    """The member's bytes, inflated in chunks and abandoned the moment they pass `limit`. The
+    declared `file_size` is the archive's claim, and a zip bomb lies in it."""
     import zipfile
     try:
-        with zipfile.ZipFile(io.BytesIO(raw)) as z:
-            return z.read(name)
-    except (zipfile.BadZipFile, OSError, ValueError, KeyError):
+        with zipfile.ZipFile(io.BytesIO(raw)) as z, z.open(name) as fh:
+            buf = bytearray()
+            while chunk := fh.read(1 << 20):
+                buf += chunk
+                if len(buf) > limit:
+                    return None
+            return bytes(buf)
+    except (zipfile.BadZipFile, OSError, ValueError, KeyError, EOFError):
         return None
 
 
@@ -275,14 +285,23 @@ def _tables(raw: bytes, url: str, *, start: int = 0, budget: int = MEMBERS_PER_R
     members = _archive_members(raw)
     window = members[start:start + max(budget, 1)]
     out: list[tuple[str, pd.DataFrame]] = []
+    spent = 0
+    read = 0
     for name in window:
-        body = _read_member(raw, name)
+        if spent >= WINDOW_BYTES:
+            break                       # the cursor stops here; the next run resumes at `name`
+        limit = min(MAX_BYTES, WINDOW_BYTES - spent)
+        body = _read_member(raw, name, limit)
+        if body is None and limit < MAX_BYTES:
+            break                       # too big for what is left of this window, not too big
+        read += 1
         if body is None:
             continue
+        spent += len(body)
         df = _parse(body, f"{url}#{name}")
         if df is not None and not df.empty:
             out.append((name, df))
-    nxt = start + len(window)
+    nxt = start + read
     return out, nxt, max(len(members) - nxt, 0)
 
 
@@ -694,8 +713,8 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
             seen_at = datetime.now(UTC).isoformat(timespec="seconds")
             frame, revised, added = _accumulate(path, s, seen_at, prior.get("acquired_at"))
             try:
+                _write_revisions(path)      # the log first: a series never outruns its history
                 frame.to_parquet(path)
-                _write_revisions(path)
             except Exception:
                 _refuse("could not persist")
                 failed_series.append(name)
