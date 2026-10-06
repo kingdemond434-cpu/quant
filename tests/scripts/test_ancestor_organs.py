@@ -20,6 +20,7 @@ Both are pinned below.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import sys
 import tempfile
@@ -32,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import scripts.calibrate_gauntlet as CG
 import scripts.run_ancestors as RA
+
 from libs.hypmax.genealogy import BREEDING_MIN_STAGE, Lineage, Specimen, breed, lineage_report
 from libs.hypmax.laboratory import detection_floor, false_positive_rate
 
@@ -309,11 +311,11 @@ def test_an_empty_table_counts_as_uninstrumented(tmp_path, monkeypatch) -> None:
     that exists, a process that exits clean, and nothing produced."""
     import sqlite3
     db = tmp_path / "m.sqlite"
-    with sqlite3.connect(db) as c:
+    with contextlib.closing(sqlite3.connect(db)) as c, c:
         c.execute("create table fills (id integer)")
     monkeypatch.setattr(AL, "METRICS", db)
     assert AL._exists("desk_metrics:fills") is False
-    with sqlite3.connect(db) as c:
+    with contextlib.closing(sqlite3.connect(db)) as c, c:
         c.execute("insert into fills values (1)")
     assert AL._exists("desk_metrics:fills") is True
 

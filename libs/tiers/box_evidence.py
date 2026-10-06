@@ -24,18 +24,21 @@ from __future__ import annotations
 
 import hashlib
 import json
-import socket
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from libs.ops import host_identity
 
 ROOT = Path(__file__).resolve().parents[2]
 DESK = ROOT / "desks" / "mt5"
 LEDGER = ROOT / "docs" / "research" / "tier_s_program.json"
 CONTRACTS = DESK / "reports" / "tier_s" / "CONTRACTS.json"
 OUT = DESK / "data" / "tier_s" / "box_evidence.json"
-#: the Contabo trading box (CLAUDE.md, measured 2026-09-24): the only host whose word counts
-TRADING_HOST = "vmi3571445"
+#: the Contabo trading box (CLAUDE.md, measured 2026-09-24): the only host whose word counts.
+#: Kept as the display name; the IDENTITY is the machine id in config/trading_host.json, read by
+#: `libs/ops/host_identity` -- one helper for every fence, never a hostname prefix.
+TRADING_HOST = host_identity.trading_hostname()
 MAX_AGE_H = 6.0
 #: the verifier's named outputs (2026-09-30): each is gitignored or box-local where it is
 #: written, so the box's evidence file carries a digest of each -- stamp, hash and headline
@@ -49,7 +52,26 @@ PUBLISHED: dict[str, str] = {
     "research_budget": "desks/mt5/data/research_budget.json",
     "door_verdicts": "desks/mt5/data/tier_s/door_verdicts.json",
     "CONTRACTS": "desks/mt5/reports/tier_s/CONTRACTS.json",
+    # the rest of what `promotion_authority` reads to withhold a promotion (2026-09-30)
+    "live_door": "desks/mt5/data/tier_s/live_door.json",
+    "PROMOTION_FREEZE": "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
+    "RELEASE_STOP": "desks/mt5/data/tier_s/RELEASE_STOP.json",
+    "REPLICATION": "desks/mt5/reports/REPLICATION.json",
 }
+#: THE TIER S EVIDENCE THE BOX'S SYNC CARRIES WHOLE (2026-09-30): this attestation and the six
+#: files the promotion door reads. Each must be in `sync_shadow_to_git.ps1`'s $relPaths, in BOTH
+#: seal lists' NON_CODE and not gitignored -- tests/ops/test_tier_s_evidence_publication.py
+#: fails on any one missing, because a file absent from any of the three never reaches git and
+#: the attestation above is then the only word off the box.
+SYNCED: tuple[str, ...] = (
+    "desks/mt5/data/tier_s/box_evidence.json",
+    "desks/mt5/data/tier_s/live_door.json",
+    "desks/mt5/data/tier_s/door_verdicts.json",
+    "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
+    "desks/mt5/data/tier_s/RELEASE_STOP.json",
+    "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json",
+    "desks/mt5/reports/REPLICATION.json",
+)
 #: whole documents small enough, and consequential enough, to carry verbatim
 VERBATIM = frozenset({"allocator_tilts"})
 
@@ -127,16 +149,21 @@ def layer_evidence(layer: dict[str, Any], verdicts: dict[str, Any], root: Path,
 
 
 def attest(*, root: Path = ROOT, out: Path | None = None, host: str | None = None,
-           now: datetime | None = None) -> dict[str, Any]:
+           machine_id: str | None = None, now: datetime | None = None) -> dict[str, Any]:
     """Measure every layer on this host and write the evidence file."""
     now = now or datetime.now(UTC)
     ledger = _json(root / LEDGER.relative_to(ROOT)) or {}
     verdicts = (_json(root / CONTRACTS.relative_to(ROOT)) or {}).get("layers") or {}
     rows = {str(r.get("id")): layer_evidence(r, verdicts, root, now)
             for r in ledger.get("layers") or []}
+    ident = (host_identity.identify() if host is None
+             else host_identity.classify(machine_id, host))
     doc = {"generated_utc": now.isoformat(timespec="seconds"),
-           "host": host or socket.gethostname(), "trading_host": TRADING_HOST,
-           "counts_toward_done": (host or socket.gethostname()).lower().startswith(TRADING_HOST),
+           "host": ident.hostname, "trading_host": TRADING_HOST,
+           "machine_id": ident.machine_id, "host_identity": ident.as_dict(),
+           # Evidence GRANTS credit, so only a confirmed identity counts: an unrecorded or
+           # unreadable id is UNMEASURED and earns nothing (libs/ops/host_identity).
+           "counts_toward_done": ident.confirmed_trading,
            "n_ok": sum(1 for v in rows.values() if v["ok"]), "layers": rows,
            "published": {k: digest(root / rel, verbatim=k in VERBATIM)
                          for k, rel in PUBLISHED.items()}}
@@ -152,7 +179,9 @@ def attested(doc: Any) -> set[str]:
     """The layer ids a committed evidence file attests from the trading box."""
     if not isinstance(doc, dict):
         return set()
-    if not str(doc.get("host") or "").lower().startswith(TRADING_HOST):
+    # Keyed on the machine id the box wrote, checked against the committed record. A doc with no
+    # id, or a checkout with none recorded, is UNMEASURED and attests nothing -- never a hostname.
+    if host_identity.is_recorded_trading_id(doc.get("machine_id")) is not True:
         return set()
     return {lid for lid, v in (doc.get("layers") or {}).items()
             if isinstance(v, dict) and v.get("ok") is True}

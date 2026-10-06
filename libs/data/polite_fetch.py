@@ -280,9 +280,14 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
             resp.status = int(exc.code)
             resp.error = f"HTTP {exc.code}"
             _stat(leg, http_errors=1, error=f"HTTP {exc.code}")
+            # HTTPError also owns the response stream. Release it on both a terminal
+            # rejection and a retry, rather than leaving the socket to garbage collection.
+            try:
+                wait = _retry_after(getattr(exc, "headers", None))
+            finally:
+                exc.close()
             if exc.code not in RETRY_STATUS:
                 break
-            wait = _retry_after(getattr(exc, "headers", None))
             if gate is not None and host:
                 gate.penalise(host, wait or backoff_s * (2 ** attempt))
         except Exception as exc:

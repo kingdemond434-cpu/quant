@@ -382,7 +382,7 @@ def _wrap_for_rc(cmd: str, token: str, at: str) -> str:
     return (f"( {cmd}\n )\n"
             "__rc=$?\n"
             "printf '{\"token\":\"%s\",\"at\":\"%s\",\"rc\":%s}\\n' "
-            f"'{token}' '{at}' \"$__rc\" >> '{OUTCOMES}'\n")
+            f"'{token}' '{at}' \"$__rc\" >> '{OUTCOMES.as_posix()}'\n")
 
 
 def red_rows(within_h: float = 26.0, now: datetime | None = None) -> dict[str, dict[str, object]]:

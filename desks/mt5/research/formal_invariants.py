@@ -267,8 +267,6 @@ _LIFECYCLE_WRITERS: dict[str, str] = {
         "moves rows the enrolment engine can never run into their own file; mints nothing",
     "desks/mt5/research/forward_reconcile.py":
         "retires clocks and records the reason; never adds a survivor key",
-    "desks/mt5/research/retire_untradeable.py":
-        "retires rows whose symbol the account cannot trade; never adds one",
     "scripts/purge_untradeable_certs.py":
         "retires certificates whose symbol the broker does not list, archived never deleted",
     "libs/research/memory.py":
@@ -290,6 +288,10 @@ _INERT_WRITERS: dict[str, str] = {
     "desks/mt5/scripts/add_shadow_specs.py":
         "a one-off whose path is hardcoded to /home/quant/quant-platform -- the VPS. It cannot "
         "write this box's registry, and on the VPS it would write a tree the box does not read",
+    "desks/mt5/research/_retired/retire_untradeable.py":
+        "RETIRED 2026-09-30 (docs/research/retirements.jsonl): no scheduled caller, and a "
+        "certificate-retiring path is not given a clock for its own sake. It retires rows and "
+        "never adds one; revived only when a scheduled caller needs it",
 }
 
 #: The ONLY modules that may put a new key into `survivors`. One entry is the invariant.

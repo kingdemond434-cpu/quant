@@ -44,6 +44,24 @@ def test_variants_are_charged_against_their_parent_and_nothing_is_dropped() -> N
     assert [r["_variant"] for r in rows] == [0, 1, 1, 0]
 
 
+def test_a_new_chart_or_session_is_a_distinct_structural_cell() -> None:
+    rows = [
+        {"family": "carry", "symbol": "EURUSD", "horizon": "sub_4h",
+         "params": {"rr": 1.0, "session": "asia"}, "_cell": "a"},
+        {"family": "carry", "symbol": "EURUSD", "horizon": "sub_4h",
+         "params": {"rr": 1.1, "session": "asia"}, "_cell": "b"},
+        {"family": "carry", "symbol": "EURUSD", "horizon": "sub_4h",
+         "params": {"rr": 1.0, "session": "london"}, "_cell": "c"},
+        {"family": "carry", "symbol": "EURUSD", "horizon": "sub_4h",
+         "params": {"rr": 1.0, "session": "asia", "timeframe": "M5"}, "_cell": "d"},
+    ]
+    split = jc.variant_split(rows, {"a", "b", "c", "d"})
+    assert [r["_variant"] for r in rows] == [0, 1, 0, 0]
+    assert split["distinct_grid_cells"] == 1
+    assert split["distinct_structural_cells"] == 3
+    assert len(jc.coverage_order(rows, {"carry": 4}, {"a", "b", "c", "d"})) == 4
+
+
 def test_the_order_ranks_an_unseen_mechanism_above_a_variant_and_keeps_every_row() -> None:
     rows = [_row("carry", "eurusd", "sub_4h", "2026-09-01", "a"),
             _row("carry", "eurusd", "sub_4h", "2026-09-02", "b"),

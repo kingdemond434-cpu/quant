@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from tests.portfolio.conftest import constant_correlation, make_alpha
 
 from libs.portfolio.analytics import allocate_capital
 from libs.portfolio.covariance import covariance_from_alphas
 from libs.portfolio.hrp import hrp_weights
 from libs.portfolio.risk_parity import allocate_risk, risk_parity_weights
 from libs.risk.risk_budget import risk_contributions
+from tests.portfolio.conftest import constant_correlation, make_alpha
 
 
 def test_risk_parity_diagonal_is_inverse_vol() -> None:

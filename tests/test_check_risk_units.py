@@ -212,9 +212,13 @@ def test_a_stale_snapshot_is_its_own_status(tmp_path, monkeypatch):
 
 
 def test_the_live_run_writes_its_artifact():
-    assert CRU.main() == 0
+    rows, _skipped = CRU.measure_divergence()
+    age = CRU.snapshot_age_days(rows)
+    assert rows and age is not None, "the checked-in venue snapshot must be measurable"
+    expected = "SNAPSHOT-STALE" if age > CRU.SNAPSHOT_MAX_AGE_DAYS else "OK"
+    assert CRU.main() == (0 if expected == "OK" else 2)
     payload = json.loads(CRU.OUT.read_text(encoding="utf-8"))
-    assert payload["status"] == "OK"
+    assert payload["status"] == expected
     assert payload["law"] == "L1.67"
     assert payload["symbols_priced"] > 0
     assert payload["sizing_call_sites"] > 0

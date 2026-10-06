@@ -113,6 +113,12 @@ def test_hourly_pipeline_runs_both_frontiers_on_desk_box() -> None:
 
 
 def test_hourly_merge_refuses_stale_producer_artifacts(monkeypatch, tmp_path) -> None:
+    from libs.moat import registry
+
+    # The eighth merger input is a registry too. Redirect it with the JSON docket
+    # so this contract never opens or evolves the populated VPS registry.
+    monkeypatch.setattr(registry, "_PATH", tmp_path / "alpha_registry.sqlite")
+    monkeypatch.setattr(registry, "BACKUP", tmp_path / "absent_registry_backup")
     hyp = tmp_path / "hypotheses"
     hyp.mkdir()
     row = {"symbol": "EURUSD", "family": "discovered", "params": {"feature": "ret_24"}}
@@ -136,6 +142,11 @@ def test_hourly_merge_refuses_stale_producer_artifacts(monkeypatch, tmp_path) ->
     assert report["source_state"]["edge_search_results.json"] == "STALE_SKIPPED"
     assert report["per_source"]["edge_search_results.json"] == -2
     assert all(row["producer"] != "edge_search_results.json" for row in rows)
+    # PRE-REGISTERED BEFORE THE JUDGE READS IT, into the ledger beside the redirected docket --
+    # never the desk's own (every path in the merge's prereg step hangs off HYP).
+    assert report["preregistration"]["status"] == "APPLIED", report["preregistration"]
+    assert all(r["prereg_status"] == "PREREGISTERED" and r["prereg_hash"] for r in rows)
+    assert report["preregistration"]["docket"]["rows"] == len(rows)
 
 
 def test_mechanism_prior_is_not_invented_for_price_shape() -> None:

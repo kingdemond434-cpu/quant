@@ -38,6 +38,8 @@ CHAIN_PATHS = (
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    # the markout the same leg writes; the VPS reads matched_fills from it (2026-09-30)
+    "desks/mt5/reports/markout.json",
 )
 
 

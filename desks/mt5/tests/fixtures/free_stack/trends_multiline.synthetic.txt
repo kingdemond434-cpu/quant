@@ -1,0 +1,2 @@
+)]}',
+{"default": {"timelineData": [{"time": "1789862400", "value": [40], "isPartial": false}, {"time": "1789948800", "value": [44], "isPartial": false}, {"time": "1790035200", "value": [60], "isPartial": false}, {"time": "1790121600", "value": [55], "isPartial": false}, {"time": "1790208000", "value": [70], "isPartial": false}, {"time": "1790294400", "value": [99], "isPartial": true}]}}

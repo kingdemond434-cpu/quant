@@ -7,6 +7,7 @@ reads exactly like a desk that has certified nothing.
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -21,6 +22,23 @@ from research.portfolio_gap import (  # noqa: E402
     parse_cell,
     sleeve_axes,
 )
+
+
+def test_loader_preserves_certified_recipe_for_allocator(tmp_path, monkeypatch):
+    from research import portfolio_gap
+
+    params = {"rr": 2.5, "wait_bars": 12, "timeframe": "M5",
+              "factor_symbols": ["USDZAR", "USDJPY"]}
+    path = tmp_path / "certificates.json"
+    path.write_text(json.dumps({"survivors": {"recipe": {
+        "cell": "NZDSGD.cross_asset_residual",
+        "shadow_spec": {"symbol": "NZDSGD", "family": "cross_asset_residual",
+                        "selector": "asia", "side": "SHORT", "params": params}}}}))
+    monkeypatch.setattr(portfolio_gap, "SURVIVORS", path)
+    rows = portfolio_gap.load_survivors()
+    assert len(rows) == 1
+    assert rows[0]["params"] == params
+    assert rows[0]["side"] == "SHORT"
 
 
 def test_hunt_cell_shape_parses() -> None:
