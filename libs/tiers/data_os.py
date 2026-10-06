@@ -380,6 +380,13 @@ PUBLICATION_LAGS: dict[str, dict[str, Any]] = {
     "gdelt": {"lag_s": 3600, "valid": "event time",
               "basis": "15-minute update cadence; one bar is conservative",
               "knowledge_column": "published_time", "readers": ("gdelt",)},
+    # the ECB axis (`data/axes/ecb.json`, `series[name].points [{d, v}]`): `d` is the REFERENCE
+    # date, not a publication stamp (Tier S AC3, 2026-10-06)
+    "ecb_axis": {"lag_s": 27 * 3600, "valid": "reference date of the ECB print",
+                 "basis": "assumed, conservative: the euro reference rates print about 16:00 CET "
+                          "on the day and the AAA curve estimates the next TARGET day; one day "
+                          "plus the broker offset covers both",
+                 "assumed": True, "readers": ("axes/ecb", "ecb.json")},
     # ---- THE CERTIFICATE PATH'S OWN INPUTS (2026-09-30). `edge_search.resolve_inputs` feeds
     # every `discovered` cell with an `ext_` feature, in the gauntlet (`build_cell`) and on the
     # forward/live path (`family_inputs.resolve`). These four were read there with no
@@ -431,6 +438,19 @@ FRED_SERIES_LAGS: dict[str, dict[str, Any]] = {
                   "basis": "assumed, conservative: IMF primary commodity prices, monthly, "
                            "stamped at month START and released the following month",
                   "assumed": True},
+    # the two collector series (`scripts/collect_fred_macro._SERIES`) that are NOT published
+    # daily, found by the AC3 producer census (2026-10-06): read under the 27h daily lag, a
+    # monthly M2 print and a weekly-posted dollar index reached bars weeks / days early
+    "DTWEXBGS": {"lag_s": 8 * 86400, "valid": "the daily observation date",
+                 "basis": "assumed, conservative: the broad dollar index is DAILY data posted "
+                          "WEEKLY (Federal Reserve H.10, Mondays, for the week before), so a "
+                          "Monday value is first public the following Monday; 8 days covers it "
+                          "and the broker offset",
+                 "assumed": True},
+    "M2SL": {"lag_s": 60 * 86400, "valid": "first day of the reference month",
+             "basis": "assumed, conservative: H.6 money stock, monthly, month-start stamp, "
+                      "released in the fourth week of the following month",
+             "assumed": True},
     "IR3TIB01JPM156N": {"lag_s": 75 * 86400, "valid": "first day of the reference month",
                         "basis": "assumed, conservative: OECD MEI monthly, month-start stamp, "
                                  "released one to two months later",
@@ -480,34 +500,119 @@ def lag_of(source: str, series_id: str | None = None) -> timedelta:
     return timedelta(seconds=float(lag["lag_s"]))
 
 
-def known_series(series: Any, source: str, series_id: str | None = None) -> Any:
-    """A valid-dated pandas Series RE-INDEXED ON KNOWLEDGE TIME (valid + declared lag), so any
-    causal alignment after it (`reindex(..., method="ffill")`, `searchsorted`, `merge_asof`) can
-    only hand a bar a value that was already published. The index keeps its tz convention: the
-    shift is a pure offset, so a caller's clock-matching is untouched."""
+def effective_lag(source: str, series_id: str | None = None,
+                  min_lag: timedelta | None = None) -> timedelta:
+    """The lag a PIT read applies: the declared one (`lag_of`), or a reader's own stricter floor
+    when it has one. NEVER SHORTER than the declaration: a reader's constant can only push a value
+    later (`orthogonal_sweep.COT_RELEASE_LAG_DAYS` past the W-FRI label), and a constant shorter
+    than the declaration (`MACRO_PUBLICATION_LAG_D` = 24h against fred_macro's 27h) is overruled
+    by it rather than trusted."""
+    lag = lag_of(source, series_id)
+    return max(lag, min_lag) if min_lag is not None else lag
+
+
+def _utc(t: Any) -> Any:
     import pandas as pd
 
-    delta = pd.Timedelta(lag_of(source, series_id))
-    out = series.copy()
-    out.index = out.index + delta
-    return out
+    ts = pd.Timestamp(t)
+    return ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+
+
+def _on_clock(stamps: Sequence[Any], like: Any) -> Any:
+    """UTC stamps as a DatetimeIndex on `like`'s tz convention (naive stays naive, as UTC)."""
+    import pandas as pd
+
+    idx = pd.DatetimeIndex(pd.to_datetime(list(stamps), utc=True)) if len(stamps) else \
+        pd.DatetimeIndex([], tz="UTC")
+    tz = getattr(like, "tz", None)
+    return idx.tz_convert(tz) if tz is not None else idx.tz_localize(None)
+
+
+def known_series(series: Any, source: str, series_id: str | None = None, *,
+                 min_lag: timedelta | None = None) -> Any:
+    """A valid-dated pandas Series RE-INDEXED ON KNOWLEDGE TIME, READ THROUGH THE BITEMPORAL
+    STORE, so any causal alignment after it (`reindex(..., method="ffill")`, `searchsorted`,
+    `merge_asof`) can only hand a bar a value that was already published.
+
+    THE STORE IS THE READ (Tier S AC3, 2026-10-06). The series becomes `BitemporalStore` rows
+    (`store_from_series`: valid = its index, knowledge = valid + `effective_lag`) and each output
+    point is `latest_known` AT its own knowledge time -- so a value is only ever the newest one
+    the desk could have held then, and a repeated valid stamp is a REVISION (the later row wins
+    from its own knowledge time, never retroactively). Missing values are not knowledge and are
+    not carried. The index keeps the caller's tz convention."""
+    import pandas as pd
+
+    store = store_from_series(series, source=source, entity="_", attribute="_",
+                              series_id=series_id, min_lag=min_lag)
+    kts = sorted({k for d in store.rows if (k := parse_t(d.knowledge_time)) is not None})
+    got = store.latest_known("_", "_", kts)
+    pairs = [(t, d.value) for t, d in zip(kts, got, strict=True) if d is not None]
+    idx = _on_clock([t for t, _ in pairs], series.index)
+    vals = [v for _, v in pairs]
+    try:
+        return pd.Series(vals, index=idx, name=series.name, dtype=series.dtype)
+    except (TypeError, ValueError):
+        return pd.Series(vals, index=idx, name=series.name)
 
 
 def known_as_of(series: Any, source: str, as_of: datetime,
-                series_id: str | None = None) -> Any:
-    """The rows of a valid-dated Series that were KNOWABLE at `as_of` (knowledge time <= as_of),
-    still on their valid-time index. For a reader whose join is deliberately contemporaneous
-    (an ex-post exposure regression pairs day-t returns with day-t factor moves) but whose run
-    must never see a print published after the moment it describes."""
+                series_id: str | None = None, *, min_lag: timedelta | None = None) -> Any:
+    """The rows of a valid-dated Series that were KNOWABLE at `as_of`, still on their valid-time
+    index, answered by `BitemporalStore.as_of`. For a reader whose join is deliberately
+    contemporaneous (an ex-post exposure regression pairs day-t returns with day-t factor moves)
+    but whose run must never see a print published after the moment it describes. Each valid
+    stamp carries the latest revision known at `as_of`; a missing value is not a print."""
     import pandas as pd
 
-    ts = pd.Timestamp(as_of)
-    idx = series.index
-    if getattr(idx, "tz", None) is None:
-        ts = ts.tz_convert("UTC").tz_localize(None) if ts.tzinfo is not None else ts
-    elif ts.tzinfo is None:
-        ts = ts.tz_localize("UTC")
-    return series[idx + pd.Timedelta(lag_of(source, series_id)) <= ts]
+    store = store_from_series(series, source=source, entity="_", attribute="_",
+                              series_id=series_id, min_lag=min_lag)
+    known = store.as_of(_utc(as_of).isoformat(), entity="_", attribute="_")
+    rows = sorted((d for d in known.values() if parse_t(d.valid_time) is not None),
+                  key=lambda d: parse_t(d.valid_time))  # type: ignore[arg-type,return-value]
+    idx = _on_clock([d.valid_time for d in rows], series.index)
+    vals = [d.value for d in rows]
+    try:
+        return pd.Series(vals, index=idx, name=series.name, dtype=series.dtype)
+    except (TypeError, ValueError):
+        return pd.Series(vals, index=idx, name=series.name)
+
+
+def pit_align(series: Any, index: Any, *, source: str, series_id: str | None = None,
+              min_lag: timedelta | None = None) -> Any:
+    """A valid-dated Series carried onto a bar `index` AS KNOWN AT EACH BAR: every bar reads
+    `BitemporalStore.latest_known` at its own stamp -- the newest valid point whose knowledge
+    time (valid + `effective_lag`) is at or before the bar, NaN while nothing was knowable. The
+    bitemporal replacement for `shift(lag)` + `reindex(...).ffill()`: a bar exactly at the
+    knowledge instant may read it, one before may not. Bars on a naive index are read as UTC."""
+    import pandas as pd
+
+    store = store_from_series(series, source=source, entity="_", attribute="_",
+                              series_id=series_id, min_lag=min_lag)
+    try:
+        q = pd.DatetimeIndex(index)
+        q = q.tz_localize("UTC") if q.tz is None else q.tz_convert("UTC")
+        when = list(q.to_pydatetime())
+    except (TypeError, ValueError):
+        when = [_utc(t).to_pydatetime() for t in index]
+    got = store.latest_known("_", "_", when)
+    return pd.Series([float("nan") if d is None else d.value for d in got], index=index,
+                     name=series.name, dtype=float)
+
+
+#: THE DESK'S AXIS FILES whose points are stamped with the date they DESCRIBE (`{d, v}`), and the
+#: declared source each one's knowledge time comes from. The cot/bis axes carry `knowable_at` on
+#: every row and need no entry: their stamp already is the knowledge time.
+AXIS_SOURCES: dict[str, str] = {"fred": "fred_macro", "ecb": "ecb_axis"}
+
+
+def known_axis_series(axis: str, series_id: str, series: Any) -> Any:
+    """An axis series (`data/axes/<axis>.json`) re-indexed on its KNOWLEDGE time through the
+    bitemporal store (`known_series`). A FRED id with its own cadence entry uses that lag. An axis
+    whose rows are already knowable-stamped is returned unchanged."""
+    src = AXIS_SOURCES.get(str(axis))
+    if src is None:
+        return series
+    return known_series(series, src, series_id=str(series_id) if src == "fred_macro" else None)
 
 
 def assumed_lags() -> dict[str, str]:
@@ -530,10 +635,13 @@ def assumed_lags() -> dict[str, str]:
 CERTIFICATE_INPUTS: dict[str, dict[str, Any]] = {
     "_macro_series": {"module": "desks/mt5/research/orthogonal_sweep.py",
                       "families": ("macro_conditional",), "sources": ("fred_macro",),
-                      "route": "orthogonal_sweep.MACRO_PUBLICATION_LAG_D shift before the ffill"},
+                      "route": "data_os.pit_align (BitemporalStore.latest_known at each bar) at "
+                               "max(declared fred_macro lag, MACRO_PUBLICATION_LAG_D)"},
     "_cot_frame": {"module": "desks/mt5/research/orthogonal_sweep.py",
                    "families": ("cot_positioning",), "sources": ("cot_fx", "cot"),
-                   "route": "orthogonal_sweep.COT_RELEASE_LAG_DAYS past the W-FRI label"},
+                   "route": "data_os.known_series (store-backed) from the Tuesday report "
+                            "date at max(declared cot_fx lag, COT_RELEASE_LAG_DAYS past the "
+                            "W-FRI label)"},
     "_event_index": {"module": "desks/mt5/research/orthogonal_sweep.py",
                      "families": ("event_reaction",), "sources": ("event_calendar",),
                      "route": "scheduled event time (knowledge column `event_date`)"},
@@ -607,6 +715,21 @@ READER_ROUTES: dict[str, dict[str, Any]] = {
 }
 
 
+#: MACRO / ALT PRODUCERS WHOSE READ IS DECLARED, NOT ROUTED (Tier S AC3). The producer census in
+#: `scripts/check_known_by_date.py` classes every research-side macro/alt producer by read path;
+#: one whose path the census cannot see in its own text is declared here with its basis, and it
+#: is COUNTED OUTSIDE THE STORE (never as bitemporal). `assumed` is flagged.
+PRODUCER_ROUTES: dict[str, dict[str, Any]] = {
+    "desks/mt5/research/pf_allocator.py": {
+        "route": "via_provider", "sources": ("fred_macro",), "assumed": True,
+        "basis": "sealed money-path file: reads the macro kernel only through "
+                 "libs.portfolio.macro_state (ALFRED vintages via load_pit where a vintage file "
+                 "exists, the current-vintage fallback stamped VINTAGE_CURRENT); its own reindex "
+                 "joins certified return columns, not macro values. Routing that provider onto "
+                 "the bitemporal store is money-path work, out of a research session's reach"},
+}
+
+
 #: sources that ARE the broker's bars: known at bar close, which every family already respects by
 #: acting on closed bars -- a provider reading only these applies no lag in its own body
 BAR_SOURCES: frozenset[str] = frozenset({"mt5_h1_universe", "xauusd_scalp_bars"})
@@ -636,27 +759,35 @@ def certificate_input_lags(family: str, params: Mapping[str, Any] | None = None
             "assumed": sorted(s for s, v in lags.items() if v.get("assumed"))}
 
 
-def store_from_series(series: Any, *, source: str, entity: str, attribute: str) -> Any:
+def store_from_series(series: Any, *, source: str, entity: str, attribute: str,
+                      series_id: str | None = None, min_lag: timedelta | None = None) -> Any:
     """A valid-dated pandas Series as BITEMPORAL rows: valid time = its index, knowledge time =
-    valid + the source's declared lag. The one door a research reader uses to turn a dataset it
-    would otherwise join by date into one it can only read as of what was known."""
+    valid + the source's declared lag (a FRED `series_id` with its own cadence entry uses that;
+    `min_lag` can only lengthen it, `effective_lag`). The one door a research reader uses to turn
+    a dataset it would otherwise join by date into one it can only read as of what was known. A
+    valid stamp seen again is a later REVISION of the same point (revision 1, 2, ...)."""
+    from libs.tiers.bitemporal import BitemporalStore, Datum
+    if declared_lag(source) is None:
+        raise KeyError(f"source {source!r} has no declared publication lag")
+    delta = effective_lag(source, series_id, min_lag)
     import pandas as pd
 
-    from libs.tiers.bitemporal import BitemporalStore, Datum
-    lag = declared_lag(source)
-    if lag is None:
-        raise KeyError(f"source {source!r} has no declared publication lag")
-    delta = pd.Timedelta(seconds=float(lag["lag_s"]))
     store = BitemporalStore()
-    for t, val in series.items():
+    seen: dict[str, int] = {}
+    try:                                         # one vectorised UTC conversion, not one per row
+        idx = pd.DatetimeIndex(series.index)
+        idx = idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
+        stamps = list(idx.to_pydatetime())
+    except (TypeError, ValueError):
+        stamps = [_utc(t).to_pydatetime() for t in series.index]
+    for ts, val in zip(stamps, series.tolist(), strict=True):
         if val is None or (isinstance(val, float) and val != val):
             continue
-        ts = pd.Timestamp(t)
-        ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
-        store.add(Datum(entity=entity, attribute=attribute,
-                        value=val.item() if hasattr(val, "item") else val,
-                        valid_time=ts.isoformat(), knowledge_time=(ts + delta).isoformat(),
-                        source=source, latency_s=float(lag["lag_s"])))
+        vt = ts.isoformat()
+        rev = seen[vt] = seen.get(vt, -1) + 1
+        store.add(Datum(entity=entity, attribute=attribute, value=val,
+                        valid_time=vt, knowledge_time=(ts + delta).isoformat(),
+                        source=source, revision=rev, latency_s=delta.total_seconds()))
     return store
 
 
