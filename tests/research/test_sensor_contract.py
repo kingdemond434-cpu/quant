@@ -302,3 +302,19 @@ def test_the_pre_vintage_index_form_is_still_read(tmp_path) -> None:
     led.index_path.write_text(json.dumps({key: [first.observation_id, 120.0, 0,
                                                 [first.observation_id]]}), encoding="utf-8")
     assert sc.SensorLedger(tmp_path).append([first])["duplicates"] == 1
+
+
+def test_rows_since_streams_only_new_whole_lines(tmp_path) -> None:
+    led = sc.SensorLedger(tmp_path)
+    led.append([_payrolls(120.0, received=T0 + timedelta(seconds=30))])
+    day = T0.date().isoformat()
+    rows, off = led.rows_since(day)
+    assert len(rows) == 1 and off > 0
+    assert led.rows_since(day, off) == ([], off)
+    led.append([_payrolls(95.0, received=T0 + timedelta(seconds=90),
+                          knowable=T0 + timedelta(seconds=60))])
+    with led._shard(day).open("a", encoding="utf-8") as fh:
+        fh.write('{"partial": ')                          # a row still being written
+    more, off2 = led.rows_since(day, off)
+    assert [r["value"] for r in more] == [95.0] and off2 > off
+    assert led.rows_since(day, 10 ** 9)[0][0]["value"] == 120.0   # rotated: restart
