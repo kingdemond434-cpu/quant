@@ -9048,17 +9048,45 @@
    "scheduled_by": "hourly_cycle:alt_proxies",
    "artifact": "desks/mt5/reports/ALT_PROXIES.json",
    "evidence": [
-    "desks/mt5/research/hourly_cycle.py:5127 -- the leg (the alt_proxies producer, --once --budget-s 300)",
-    "desks/mt5/research/alt_proxies.py:4136 -- run(): one pass over every source; a to_confirm or refused source is never fetched",
-    "desks/mt5/research/alt_proxies.py:4219 -- the report written to desks/mt5/reports/ALT_PROXIES.json (Paths.report)",
-    "desks/mt5/research/alt_proxies.py:2978 -- status_of(): DEAD, BLOCKED+SUBSTITUTE, BLOCKED_ON_TERMS, BLOCKED_ON_KEY, UNCONFIGURED or UNMEASURED_LIVE_YIELD, one named state per source",
-    "desks/mt5/research/alt_proxies.py:2922 -- SUBSTITUTED_BY: all twelve terms-blocked sources substituted (NO_SUBSTITUTE empty since 2026-10-01: India use-based IIP on data.gov.in (GODL) for NPCI UPI, Stats SA retail trade sales for BETI)",
-    "desks/mt5/research/alt_proxies.py:2623 -- TERMS_EVIDENCE: a verbatim terms quote and URL for every confirmed source, credit lines carried into the axis files and roster rows",
-    "libs/research/layers.py:266 -- layer: information",
+    "desks/mt5/research/hourly_cycle.py:5174 -- the leg (the alt_proxies producer, --once --budget-s 300)",
+    "desks/mt5/research/alt_proxies.py:5853 -- run(): one pass over every source; a to_confirm or refused source is never fetched",
+    "desks/mt5/research/alt_proxies.py:5940 -- the report written to desks/mt5/reports/ALT_PROXIES.json (Paths.report)",
+    "desks/mt5/research/alt_proxies.py:4077 -- status_of(): DEAD, UNCONFIGURED+SUBSTITUTE, BLOCKED+SUBSTITUTE, BLOCKED_ON_TERMS, BLOCKED_ON_KEY, UNCONFIGURED or UNMEASURED_LIVE_YIELD, one named state per source",
+    "desks/mt5/research/alt_proxies.py:3944 -- SUBSTITUTED_BY: every terms-blocked source substituted except in_nse_option_chain (NO_SUBSTITUTE since 2026-10-06: NSE terms refuse automated collection and no lawful India options-positioning feed was found)",
+    "desks/mt5/research/alt_proxies.py:3568 -- TERMS_EVIDENCE: a verbatim terms quote and URL for every confirmed source, credit lines carried into the axis files and roster rows",
+    "libs/research/layers.py:267 -- layer: information",
     "LIVE YIELD UNMEASURED: the fetchers were built against fixtures because the authoring container cannot reach the hosts; the report says so in live_yield until the box runs the leg with its keys"
    ],
    "consumer": "desks/mt5/data/digests/asia_alt_data_digest.json (written by libs/research/asia_alt_digest.py, section alt_proxies, on every non-dry pass) and the reviewer; the same pass writes the axis files, lake series and ALT_PROXIES_ALLOCATION_INTEL.json beside it",
    "tests": [
+    "tests/test_alt_proxies.py",
+    "tests/test_alt_proxies_substitutes.py"
+   ]
+  },
+  {
+   "id": "ALT2",
+   "item": "The physical exhaust of the alt_proxies leg (2026-10-06): China ports (MOT monthly xlsx terms-gated, PortWatch over every Chinese port with segment calls), freight (SCFI routes terms-gated, BLS deep-sea freight PPI via FRED as substitute), NBS industry/power, FAI and profits, CCGP award indices terms-gated, FIRMS and Sentinel-5P NO2 over a cited facility registry with breadth, Naver DataLab, Tianyancha paid path UNCONFIGURED, NSE option chain refused on terms, rqdata/wind PAID_BLOCKED; every series carries the factory objects (delta, acceleration, seasonal surprise, percentile, revision) and a MANDATE §2.5 sensor record, every roster row a rent column.",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:alt_proxies",
+   "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+   "evidence": [
+    "desks/mt5/research/hourly_cycle.py:5174 -- the same leg runs every source below (no new leg, no new executable)",
+    "desks/mt5/research/alt_proxies.py:3153 -- PHYSICAL_SOURCES: the twelve rows, each behind the terms gate",
+    "desks/mt5/research/alt_proxies.py:1881 -- load_clusters(): desks/mt5/data/industrial_clusters.json, 26 named facilities with cited coordinates",
+    "desks/mt5/research/alt_proxies.py:4646 -- factory_features(): delta, acceleration, seasonal_expected, raw_surprise, seasonal_z, percentile over a strict prefix",
+    "desks/mt5/research/alt_proxies.py:4903 -- AGGREGATES: facility / port / basket breadth and anomaly series",
+    "desks/mt5/research/alt_proxies.py:4984 -- sensor_records(): the §2.5 contract, revisions as their own rows",
+    "desks/mt5/research/alt_proxies.py:5873 -- the pass writes desks/mt5/data/alt_proxies/sensor/<source>.json",
+    "desks/mt5/research/alt_proxies.py:3973 -- PAID_BLOCKED: rqdata and wind, listed in the engine rows and never fetched",
+    "desks/mt5/research/alt_proxies.py:5996 -- rent_of(): annual cost, unique axes, cells tested, survivors, cost per survivor",
+    "LIVE YIELD UNMEASURED: every parser was built against a synthetic fixture in the publisher's documented layout; the sensor directory has no scheduled reader yet (the lake series and axis files carry the same factory columns to the screen)"
+   ],
+   "consumer": "desks/mt5/data/digests/asia_alt_data_digest.json (libs/research/asia_alt_digest.py reads the pass report); the factory columns reach the screen through the axis files (libs/research/alpha_dsl.axis_fields) and lake series the same pass writes",
+   "tests": [
+    "tests/test_alt_proxies_physical.py",
     "tests/test_alt_proxies.py",
     "tests/test_alt_proxies_substitutes.py"
    ]
