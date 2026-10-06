@@ -23,7 +23,7 @@ WHAT IT PRODUCES, per mapped product and trading day (keys `<product>_<metric>`)
     curve        ret (log settle / pre-settle of the dominant contract -- no roll artefact),
                  settle, oi, vol, ts_slope (next/front - 1), roll_yield (annualised
                  log(front/next)), curv ((front - 2 mid + far) / front)
-    positioning  long_c5/c10/c20, short_c5/c10/c20, vol_c20 (top-k share of the product's OI or
+    positioning  long_c5/c20, short_c5/c20, vol_c20 (top-k share of the product's OI or
                  volume), net_top5, net_top20 ((top long - top short) / OI), long_hhi, short_hhi
                  (HHI of the top-20 list), conc_disp (long_c20 - short_c20), state_net (the
                  tracked state-owned brokers' net, a LOWER BOUND: a member outside a top-20
@@ -72,7 +72,7 @@ BJT = timedelta(hours=8)
 #: Release hour (Beijing) assumed when a roster row declares none: a conservative upper bound.
 DEFAULT_RELEASE_BJT = "20:00"
 DEFAULT_BACKFILL_DAYS = 800          # weekdays (~3 years: the seasonal surprise needs two prior)
-DEFAULT_DAYS_PER_PASS = 15
+DEFAULT_DAYS_PER_PASS = 40
 DEFAULT_MAX_SECONDS = 150.0
 Z_WINDOW = 60                        # observations; a z needs the FULL window (deterministic)
 DIV_STEP = 5                         # observations in a divergence leg's change / return
@@ -574,7 +574,7 @@ def rank_features(book: Mapping[str, Mapping[str, tuple[float, float]]], oi: flo
     out: dict[str, float] = {}
     lo, sh, vb = book.get("long") or {}, book.get("short") or {}, book.get("vol") or {}
     if oi and oi > 0 and lo and sh:
-        for k in (5, 10, 20):
+        for k in (5, 20):
             out[f"long_c{k}"] = round(_top(lo, k) / oi, 6)
             out[f"short_c{k}"] = round(_top(sh, k) / oi, 6)
         out["net_top5"] = round((_top(lo, 5) - _top(sh, 5)) / oi, 6)
@@ -626,8 +626,9 @@ def _z_series(vals: Sequence[float | None]) -> list[float | None]:
     return zs
 
 
-DERIVE_BASES = ("_long_c20", "_short_c20", "_net_top20", "_long_c5", "_short_c5",
-                "_state_net", "_wr", "_inv", "_oi")
+#: Change and acceleration are stored for these only (each derived key is a line per day in the
+#: store; the top-5 shares and OI enter through the divergence and the families' own deltas).
+DERIVE_BASES = ("_long_c20", "_short_c20", "_net_top20", "_state_net", "_wr", "_inv")
 _DERIVED_TAGS = ("_d1", "_d2", "_seas_surp", "_seas_z", "_px_div")
 
 
