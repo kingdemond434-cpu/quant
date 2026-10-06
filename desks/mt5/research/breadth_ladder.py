@@ -346,6 +346,9 @@ def build() -> dict[str, Any]:
         "temperature": temp, "budget_split": split,
         "certificates": {"n_certificates": cert.get("n_certificates"),
                          "n_effective_certificates": cert.get("n_effective_certificates"),
+                         "certificates_basis": cert.get("basis"),
+                         "certificates_source": cert.get("source"),
+                         "certificates_source_mtime": cert.get("source_mtime"),
                          "basis": ("CERTIFICATE_SATURATION.json" if cert
                                    else "UNMEASURED: no saturation map")},
         "rule": ("research is paid in n_eff per compute-hour: a stalled ladder moves budget to "

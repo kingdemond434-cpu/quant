@@ -610,7 +610,8 @@ def _append_history(doc: dict[str, Any]) -> None:
     for k in ("n_certificates", "n_effective_certificates", "n_strategy_variants",
               "n_structural_clusters", "n_economic_clusters", "n_independent_forward_streams",
               "n_saturated_clusters", "robust_k_eff_book", "stress_k_eff_book",
-              "tail_k_eff_book", "median_validated_edge_recent"):
+              "tail_k_eff_book", "median_validated_edge_recent", "basis", "source",
+              "source_mtime"):
         if k in cert:
             row[k] = cert.get(k)
     HISTORY.parent.mkdir(parents=True, exist_ok=True)
