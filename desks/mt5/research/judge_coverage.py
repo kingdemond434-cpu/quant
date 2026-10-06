@@ -1095,6 +1095,79 @@ def occupancy_stamp(rows: list[dict[str, Any]]) -> dict[str, Any]:
         return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
 
 
+def _saturation() -> Any:
+    """The certificate saturation map (research/certificate_saturation.py), or None."""
+    for mod in ("research.certificate_saturation", "certificate_saturation"):
+        try:
+            return __import__(mod, fromlist=["stamp"])
+        except Exception:
+            continue
+    return None
+
+
+def saturation_stamp(rows: list[dict[str, Any]], capacity: int | None = None) -> dict[str, Any]:
+    """Stamp `_sat` (breadth value = novelty credit against the CERTIFIED book's effective local
+    density), `_satq` (QUALITY / replacement channel) and `_dup` (strong duplicate in saturated
+    ground, no exception A-H) from reports/CERTIFICATE_SATURATION.json, and return the evidence
+    with per-producer feedback. Read as a published artifact: absent or stale stamps nothing and
+    every row ranks exactly as before. Never raises, never removes a row (L1.28a)."""
+    cs = _saturation()
+    if cs is None:
+        return {"status": "UNMEASURED", "why": "research/certificate_saturation.py did not import"}
+    try:
+        spc = judge_seconds_per_cell(capacity) if capacity else None
+        return dict(cs.stamp(rows, seconds_per_cell=spc))
+    except Exception as exc:
+        for r in rows:
+            for k in _SAT_KEYS:
+                r.pop(k, None)
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+
+
+#: Every ordering stamp the saturation map adds; popped before the docket is written.
+_SAT_KEYS = ("_sat", "_satq", "_dup", "_satq_arch")
+
+
+def quality_share() -> float:
+    """The protected QUALITY / REPLACEMENT share of each family stream (law section 15): the
+    ladder's adaptive B budget (research/breadth_ladder.py `budget_split`), bounded to
+    [QUALITY_SHARE_BOUNDS]; the default when the ladder is unreadable."""
+    try:
+        doc = json.loads((REPORTS / "BREADTH_LADDER.json").read_text("utf-8"))
+        v = float(((doc.get("budget_split") or {}).get("split") or {}).get("B"))
+        if math.isfinite(v):
+            return min(max(v, QUALITY_SHARE_BOUNDS[0]), QUALITY_SHARE_BOUNDS[1])
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    return QUALITY_SHARE_DEFAULT
+
+
+#: A breadth-only docket leaves a mediocre incumbent untouched forever (law section 15), so
+#: quality challengers keep this share of every family stream whenever they exist.
+QUALITY_SHARE_DEFAULT = 0.2
+QUALITY_SHARE_BOUNDS = (0.1, 0.5)
+
+
+def _row_value(row: dict[str, Any]) -> float:
+    """VALUE inside a family stream (law section 15):
+
+        P_SURVIVOR (the row's own premortem, 1.0 when absent) x BREADTH_VALUE (novelty credit)
+        x (1 + max(0, marginal k_eff + occupancy + orthogonality))   [portfolio need]
+
+    The family's own P(survivor), edge value and effective-trial charge are constant inside a
+    stream and are applied by `rank_by_value` at the family level. NOT divided by bar cost: that
+    would bury every intraday chart, and timeframe breadth is a standing order of its own."""
+    pm = row.get("premortem")
+    p = pm.get("p_survivor") if isinstance(pm, dict) else None
+    try:
+        p_s = min(max(float(p), 0.0), 1.0) if p is not None else 1.0
+    except (TypeError, ValueError):
+        p_s = 1.0
+    need = (float(row.get("_keff") or 0.0) + float(row.get("_occ") or 0.0)
+            + float(row.get("_orth") or 0.0))
+    return p_s * float(row.get("_sat", 1.0)) * (1.0 + max(0.0, need))
+
+
 def _keff_summary(keff: dict[str, Any]) -> dict[str, Any]:
     """The compact k_eff block JUDGE_COVERAGE.json carries; the full table has its own report."""
     if keff.get("status") != "MEASURED":
@@ -1134,6 +1207,12 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
     values, median = family_value()
     occ = family_breadth()
     certified_shares, certified_n = certified_family_shares()
+    # EFFECTIVE, NOT NOMINAL (anti-saturation law section 18): 1 + mean novelty credit of the
+    # family's stamped rows, measured against the certified book's effective local density.
+    # Falls back to the nominal canon share below when the saturation map is unmeasured.
+    _cs = _saturation()
+    sat_f = _cs.family_factor(rows) if (_cs is not None and any("_sat" in r for r in rows)) \
+        else {}
     signals = producer_signals()
     # MARGINAL k_eff PER FAMILY (research/docket_keff.py): 1 + max(0, mean cell priority) over the
     # rows `build` stamped. One-sided like the two factors above, and exactly 1.0 for rows that
@@ -1163,6 +1242,9 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
         # so neither the family floor nor any cell's eligibility is reduced. The candidate-level
         # scorer separately recognises a new session/chart/regime inside an incumbent family.
         cert_breadth = 2.0 - cert_share if cert_share is not None else 1.0
+        breadth_basis = "NOMINAL_CANON_SHARE" if cert_share is not None else "UNMEASURED"
+        if fam in sat_f:
+            cert_breadth, breadth_basis = float(sat_f[fam]), "EFFECTIVE_SATURATION_MAP"
         ev_cell = (float(pr["p_optimistic"]) * value * (1.0 + breadth) * ortho_f * cert_f
                    * kf * cert_breadth)
         rl = realised.get(fam) or {}
@@ -1184,6 +1266,7 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
                                        if cert_share is not None else None),
             "certified_breadth_factor": round(cert_breadth, 6),
             "certified_breadth_status": "MEASURED" if certified_n else "UNMEASURED",
+            "certified_breadth_basis": breadth_basis,
             # THE TWO SIGNALS THE PRINCIPAL ORDERED COMPUTE STEERED BY (2026-09-23), measured per
             # producer in `orthogonality_yield` and published here beside the number they moved.
             # `breadth_gain` above stays exactly as it was -- it reads the LIVE BOOK's clusters and
@@ -1347,7 +1430,9 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
                    unjudged_ids: set[str] | None = None, *,
                    demote_variants: bool = True,
                    use_keff: bool = True,
-                   use_occupancy: bool = True) -> list[dict[str, Any]]:
+                   use_occupancy: bool = True,
+                   use_saturation: bool = True,
+                   quality: float | None = None) -> list[dict[str, Any]]:
     """Weighted interleave of the families, so EVERY PREFIX of the docket is family-balanced.
 
     Each family is emitted on its own virtual clock ticking at 1/quota, and the family whose next
@@ -1371,6 +1456,15 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
     simply added to it; unstamped rows score 0 and keep their place. `use_occupancy=False`
     reproduces the order before these two terms existed.
 
+    THE ANTI-SATURATION LAW (2026-10-05). With `use_saturation`, the tie-break term becomes the
+    row's VALUE (`_row_value`: premortem P(survivor) x novelty credit against the certified
+    book's effective local density x (1 + the k_eff/occupancy/orthogonality need)), a STRONG
+    DUPLICATE (`_dup`: saturated ground, no exception A-H) ranks after every non-duplicate of its
+    stream's same freshness, and QUALITY / REPLACEMENT rows (`_satq`) are served on their own
+    protected share `quality` of each stream (default `quality_share()`), challengers of an
+    archived variant last. Unstamped rows score par and keep their place; `use_saturation=False`
+    reproduces the order before this law.
+
     No row is dropped. A family with no quota still ships, after the quota'd stream, because the
     docket this returns is the whole docket and the judge's budget -- not this order -- decides
     where the hour stops.
@@ -1389,13 +1483,19 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
         keff = -float(row.get("_keff") or 0.0) if use_keff else 0.0
         if use_occupancy:
             keff -= float(row.get("_occ") or 0.0) + float(row.get("_orth") or 0.0)
-        return (fresh, variant, keff, str(row.get("first_seen") or "9999"))
+        if use_saturation and "_sat" in row:
+            return (fresh, int(row.get("_dup") or 0), int(row.get("_satq_arch") or 0), variant,
+                    -_row_value(row), str(row.get("first_seen") or "9999"))
+        return (fresh, 0, 0, variant, keff, str(row.get("first_seen") or "9999"))
 
     streams: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
         streams.setdefault(str(row.get("family") or ""), []).append(row)
+    q_share = (quality_share() if quality is None else float(quality)) if use_saturation else 0.0
     for fam in streams:
         streams[fam].sort(key=rank)
+        if q_share > 0.0 and any(r.get("_satq") for r in streams[fam]):
+            streams[fam] = _protect_quality(streams[fam], ids, q_share)
 
     # Virtual finish time of each family's next row; a family with no quota rides at weight 1 so
     # it is still interleaved rather than appended in a block.
@@ -1412,6 +1512,30 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
         if nxt < len(streams[fam]):
             w = float(max(quota.get(fam, 0), 1))
             heapq.heappush(heap, (vtime + 1.0 / w, fam, nxt))
+    return out
+
+
+def _protect_quality(stream: list[dict[str, Any]], ids: set[str],
+                     share: float) -> list[dict[str, Any]]:
+    """Interleave a family stream's QUALITY rows at `share` of every prefix (fresh rows first,
+    then already-judged rows), each sub-stream keeping its own order. Breadth rows fill every
+    slot the quality channel cannot. Same rows, same count."""
+    def fresh(r: dict[str, Any]) -> bool:
+        return not ids or str(r.get("_cell") or "") in ids
+
+    out: list[dict[str, Any]] = []
+    for want_fresh in (True, False):
+        q = [r for r in stream if bool(r.get("_satq")) and fresh(r) == want_fresh]
+        b = [r for r in stream if not r.get("_satq") and fresh(r) == want_fresh]
+        qi = bi = 0
+        while qi < len(q) or bi < len(b):
+            served = qi + bi
+            if qi < len(q) and (bi >= len(b) or qi < share * (served + 1)):
+                out.append(q[qi])
+                qi += 1
+            else:
+                out.append(b[bi])
+                bi += 1
     return out
 
 
@@ -1499,6 +1623,10 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     keff = keff_stamp(rows)
     # OCCUPANCY + ORTHOGONALITY, stamped beside k_eff (research/occupancy_map.py). Reorders only.
     occ = occupancy_stamp(rows)
+    # CERTIFICATE SATURATION, stamped beside k_eff and occupancy (research/
+    # certificate_saturation.py): novelty credit, duplicate and quality-channel marks. Reorders
+    # only; the producer feedback it returns is published by `write`.
+    sat = saturation_stamp(rows, capacity)
     ranking = rank_by_value(backlog, rows, capacity)
     quota = allocate(backlog, capacity, ranking=ranking)
     judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
@@ -1733,6 +1861,10 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "keff_order": _keff_summary(keff),
         "_keff_detail": keff,
         "occupancy_order": occ,
+        "saturation_order": {k: v for k, v in sat.items() if k != "producers"},
+        "_saturation_detail": sat,
+        # N_CERTIFICATES IS NEVER QUOTED WITHOUT N_EFFECTIVE_CERTIFICATES (law section 13).
+        "certificates": sat.get("certificates") or {"status": "UNMEASURED"},
         # THE BARS THE JUDGE ASKED FOR AND DID NOT HAVE, per symbol and chart: the demand the
         # bar refresh reads (research/refresh_bars.py) so a missing chart is fetched, not waited on.
         "bars_wanted": dict(sorted(bars_wanted.items(), key=lambda kv: -kv[1])),
@@ -1802,6 +1934,16 @@ def _row_sym(row: dict[str, Any]) -> str:
     return str(row.get("sym") or row.get("symbol") or "")
 
 
+def saturation_head(rows: list[dict[str, Any]], n: int) -> dict[str, Any]:
+    """What the judge's first `n` rows hold under the saturation law: strong duplicates, quality
+    challengers and the mean breadth value -- the evidence that the order moved."""
+    head = rows[:max(int(n), 0)]
+    vals = [float(r["_sat"]) for r in head if "_sat" in r]
+    return {"rows": len(head), "strong_duplicates": sum(1 for r in head if r.get("_dup")),
+            "quality_rows": sum(1 for r in head if r.get("_satq")),
+            "mean_breadth_value": round(sum(vals) / len(vals), 6) if vals else None}
+
+
 def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
                  now: datetime | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """THE INTAKE CALL. Return the docket re-ordered for coverage, and the table it implies.
@@ -1842,7 +1984,7 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
         split = variant_split(judgeable, ids)
         cap = int((doc.get("totals") or {}).get("capacity_measured") or 0)
         before = coverage_order(judgeable, quota, ids, demote_variants=False, use_keff=False,
-                                use_occupancy=False)
+                                use_occupancy=False, use_saturation=False)
         ordered_j = coverage_order(judgeable, quota, ids)
         # NEVER-FIRING GROUND TO THE TAIL (2026-09-30). Order only; every row stays.
         dead = never_fire_pairs(bank, fired_pairs())
@@ -1883,13 +2025,18 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
                      "and horizon ranks below an unseen mechanism inside its own family stream. "
                      "The queue is uncapped and no row is dropped; only the order changes"),
         }
+        sat = doc.get("saturation_order") or {}
+        if sat.get("status") == "MEASURED":
+            legacy_sat = coverage_order(judgeable, quota, ids, use_saturation=False)
+            sat["head"] = {"capacity": cap, "shipped": saturation_head(ordered_j, cap),
+                           "without_saturation": saturation_head(legacy_sat, cap)}
         doc["unrunnable_filtered_from_docket"] = len(blocked)
         for _b in blocked:
-            for _k in ("_cell", "_keff", "_occ", "_orth"):
+            for _k in ("_cell", "_keff", "_occ", "_orth", *_SAT_KEYS):
                 _b.pop(_k, None)
         # `orthogonality` (the published per-row score) is KEPT on the row; the ordering terms go.
         for row in ordered:
-            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth"):
+            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", *_SAT_KEYS):
                 row.pop(_k, None)
         if publish:
             write(doc)
@@ -1903,6 +2050,14 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
     """Publish the table and advance the ratchet. A ratchet write is the NEXT reading's baseline."""
     target = report or REPORT
     target.parent.mkdir(parents=True, exist_ok=True)
+    sat = doc.pop("_saturation_detail", None)
+    if isinstance(sat, dict) and sat.get("status") == "MEASURED" and report is None:
+        cs = _saturation()
+        if cs is not None:
+            try:
+                cs.write_feedback(sat)
+            except OSError as exc:
+                doc.setdefault("saturation_order", {})["feedback_error"] = type(exc).__name__
     keff = doc.pop("_keff_detail", None)
     if isinstance(keff, dict) and keff.get("status") == "MEASURED" and report is None:
         dk = _docket_keff()

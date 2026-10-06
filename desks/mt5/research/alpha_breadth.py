@@ -497,8 +497,16 @@ def run(write_queue: bool = True) -> dict[str, Any]:
     overlap["would_raise_headline_to"] = (
         overlap["n_eff"] if (overlap["n_eff"] is not None and k_head is not None
                              and overlap["n_eff"] > k_head) else None)
+    # THE CERTIFICATE SATURATION MAP (anti-saturation law, 2026-10-05). N_CERTIFICATES is never
+    # published without N_EFFECTIVE_CERTIFICATES beside it: the map is built on this same leg so
+    # the docket, the producers and the CRO read one measurement per hour. A failure here is
+    # UNMEASURED with its reason and never touches the readings above.
+    saturation = certificate_saturation_pass()
     doc: dict[str, Any] = {
         "generated_utc": datetime.now(tz=UTC).isoformat(),
+        "certificates": saturation.get("certificates") or {"status": "UNMEASURED"},
+        "certificate_saturation": {k: saturation.get(k) for k in
+                                   ("status", "why", "line", "report", "at")},
         "gaps": gaps,
         "timestamp_overlap": overlap,
         "factor_rank": factor_rank,
@@ -548,6 +556,37 @@ def run(write_queue: bool = True) -> dict[str, Any]:
     return doc
 
 
+def certificate_saturation_pass() -> dict[str, Any]:
+    """Build and publish `reports/CERTIFICATE_SATURATION.json` (research/certificate_saturation).
+
+    Inputs this leg already holds are passed in: the forward sleeves' daily R (L6 and forward
+    revocation) and the certified book's instrument panel (stress and tail k_eff). Never raises.
+    """
+    try:
+        try:
+            from research import certificate_saturation as cs
+        except ImportError:                                           # pragma: no cover
+            import certificate_saturation as cs  # type: ignore[import-not-found,no-redef]
+        doc = cs.build(forward_daily=daily_sleeve_returns())
+        if doc.get("status") == MEASURED:
+            exposure: dict[str, float] = defaultdict(float)
+            for g in doc.get("groups") or []:
+                exposure[str(g.get("sym"))] += 1.0
+            panel, _dropped = _daily_panel(sorted(exposure))
+            book = cs.book_breadth(dict(exposure), panel)
+            doc["book_breadth"] = book
+            cert = doc.setdefault("certificates", {})
+            cert["robust_k_eff_book"] = book.get("robust_k_eff")
+            cert["stress_k_eff_book"] = book.get("k_eff_stress")
+            cert["tail_k_eff_book"] = book.get("k_eff_tail")
+        path = cs.publish(doc)
+        return {"status": doc.get("status"), "why": doc.get("why"), "line": doc.get("line"),
+                "at": doc.get("at"), "certificates": doc.get("certificates"),
+                "report": str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)}
+    except Exception as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
+
+
 def _append_history(doc: dict[str, Any]) -> None:
     """One row per run, so the number the principal wants doubled has something to double against.
 
@@ -563,6 +602,15 @@ def _append_history(doc: dict[str, Any]) -> None:
         "n_clusters_empty": len(doc["clusters"]["empty_in_both"]),
         "n_eff_time": (doc.get("timestamp_overlap") or {}).get("n_eff"),
     }
+    # N_CERT beside N_EFFECTIVE_CERT in the series too, so the ladder and the CRO can see
+    # whether certificates are being minted into new bets or into the same ones.
+    cert = doc.get("certificates") if isinstance(doc.get("certificates"), dict) else {}
+    for k in ("n_certificates", "n_effective_certificates", "n_strategy_variants",
+              "n_structural_clusters", "n_economic_clusters", "n_independent_forward_streams",
+              "n_saturated_clusters", "robust_k_eff_book", "stress_k_eff_book",
+              "tail_k_eff_book", "median_validated_edge_recent"):
+        if k in cert:
+            row[k] = cert.get(k)
     HISTORY.parent.mkdir(parents=True, exist_ok=True)
     with HISTORY.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, default=str) + "\n")
