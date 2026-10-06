@@ -278,7 +278,7 @@ sources:
      config: {feeds: [
        "http://export.arxiv.org/api/query?search_query=all:%22formulaic%20alpha%22&sortBy=submittedDate&max_results=50",
        "http://export.arxiv.org/api/query?search_query=all:%22alpha%20mining%22&sortBy=submittedDate&max_results=50",
-       "http://export.arxiv.org/api/query?search_query=au:Kakushadze&sortBy=submittedDate&max_results=50",
+       "http://export.arxiv.org/api/query?search_query=all:%22statistical%20arbitrage%22%20AND%20all:%22alpha%22&sortBy=submittedDate&max_results=50",
        "http://export.arxiv.org/api/query?search_query=all:%22factor%20mining%22%20AND%20all:genetic&sortBy=submittedDate&max_results=50",
        "http://export.arxiv.org/api/query?search_query=all:%22alpha%20factor%22%20AND%20all:%22large%20language%22&sortBy=submittedDate&max_results=50"]}}
   - {id: wq_repos, civilization: worldquant, url: "https://github.com/search?q=worldquant+brain", owner: civilizations/worldquant,
