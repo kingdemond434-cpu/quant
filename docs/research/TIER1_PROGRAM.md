@@ -2802,10 +2802,10 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - landed: ten-layer verification measured rather than asserted, 2026-09-23
 - **AS1 Asia directive completion audit (PART XXXVII), ASIA INTELLIGENCE dashboard (PART XXXIX) and the XLIV feedback-loop proofs (EVIG -> collection order, ROI -> research budget, native-language forest rotation)** — PARTIAL
   - gap: runtime UNMEASURED off the box: every Asia artifact the audit reads is written on the trading box; on the authoring host 35 of 55 rows read UNMEASURED and the three proofs read UNMEASURED until the decision ledgers accumulate. Forward/live per requirement stay UNMEASURED until source-to-clock lineage is published.
-  - scripts/check_asia_directive.py:259 (static_rung: code lifts a row at most to SCHEDULED)
-  - scripts/check_asia_directive.py:627 (judge: every higher rung read from a runtime artifact; absent -> UNMEASURED; failed XLIV verification held at RUNNING)
-  - scripts/check_asia_directive.py:438 (proof_evig_order: decision ledger joined with the collector's DEFERRED set)
-  - scripts/check_asia_directive.py:494 (proof_roi_budget: roi-only vs flat budget, adequate sample, the forest ran on it)
+  - scripts/check_asia_directive.py:300 (static_rung: code lifts a row at most to SCHEDULED)
+  - scripts/check_asia_directive.py:718 (judge: every higher rung read from a runtime artifact; absent -> UNMEASURED; failed XLIV verification held at RUNNING)
+  - scripts/check_asia_directive.py:479 (proof_evig_order: decision ledger joined with the collector's DEFERRED set)
+  - scripts/check_asia_directive.py:535 (proof_roi_budget: roi-only vs flat budget, adequate sample, the forest ran on it)
   - clock: hourly_cycle:asia_completion_audit · artifact: desks/mt5/reports/ASIA_COMPLETION_AUDIT.json + desks/mt5/data/evig_order_decisions.jsonl + desks/mt5/data/roi_budget_decisions.jsonl + desks/mt5/data/deep_forest_rotation.jsonl · consumer: desks/mt5/research/desk_dashboard_state.py (sections.asia_intelligence -> web/dashboard.html) + scripts/run_law_gate.py (check_asia_directive --fence prints the summary)
   - next: box: let one hourly pass write the three decision ledgers and ASIA_COMPLETION_AUDIT.json; read the census and the XLIV proof verdicts; the rows the other Asia packages (P1-P6, P8) land move up the ladder without a code change here
   - landed: completion audit + dashboard + decision ledgers 2026-10-06

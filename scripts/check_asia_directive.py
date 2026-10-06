@@ -11,9 +11,14 @@ PRODUCING_CELLS, JUDGED, FORWARD, LIVE, PROVEN, BLOCKED, UNMEASURED. Never colla
 'implemented'." Each item carries owner module, scheduler, input and output artifact, freshness,
 last successful run, cells emitted, cells judged, survivors, blocker and next repair.
 
-THE REQUIREMENTS ARE DATA. `desks/mt5/data/asia_directive_requirements.json` holds one row per
-requirement (the 55 rows of the 2026-10-06 diff report), each naming the RUNTIME artifacts that
-would prove its state. Adding a requirement is a data edit; this file never hard-codes one.
+THE REQUIREMENTS ARE DATA, AND THEY ARE THE PROJECT AUDIT'S OWN. `desks/mt5/data/
+asia_directive_requirements.json` holds the ASIA-xxxx rows of the project completion audit
+(`reports/completion_audit/mandate_files_<date>.json`), vendored by `--import-audit PATH` so the box
+reads them without the project share. There is no parallel requirement list: each row keeps the
+audit's id, text, state, modules, clock and artifacts, and the file's `overlays` (the runtime
+evidence specs of the 2026-10-06 diff report, attached by regex + PART) add the artifacts that
+would PROVE a row. The checker re-derives every row's state on the same ladder names the audit
+uses and publishes the delta against the audit's state (same / up / down / unconfirmed / changed).
 
 CODE CAN ONLY GET A ROW TO SCHEDULED. The static rungs come from the tree: ABSENT (owner module or
 its declared code marker missing), CODED (the module and marker exist), WIRED (another module
@@ -82,6 +87,28 @@ SCHEDULER_FILES = {
     "battery": "desks/mt5/research/batteries.py",
     "fence": "scripts/run_law_gate.py",
 }
+#: "audit:<text>" is a clock the project audit names that is not an hourly_cycle leg (a box task,
+#: a VPS timer, a department resident). It is taken as found on the audit's word -- the runtime
+#: rungs above SCHEDULED still need an artifact, so the trust buys at most SCHEDULED.
+SCHEDULER_KINDS = frozenset(SCHEDULER_FILES) | {"audit"}
+#: Audit clock texts that name no clock.
+NO_CLOCK = re.compile(r"^\s*(none\b|n/?a\b|see dedicated rows|law\b|-+\s*$)", re.IGNORECASE)
+AUDIT_ID_PREFIX = "ASIA-"
+#: Text kept per imported row, so the vendored file stays small enough to read every hour.
+IMPORT_TEXT_CHARS = 400
+IMPORT_EVIDENCE_CHARS = 240
+#: Region from the requirement's own words (first match wins); GLOBAL otherwise.
+REGION_WORDS: tuple[tuple[str, str], ...] = (
+    ("JP", r"\bjapan|\bjpx\b|\bboj\b|\bjgb\b|j.?quants|\btse\b|\btocom\b|\bosaka\b|\bnikkei"),
+    ("KR", r"\bkorea|\bkrx\b|\bbok\b|\becos\b|\bkospi|\bnaver\b"),
+    ("HK", r"\bhong kong|\bhkma\b|\bhibor\b|\bhkex\b|\bhang seng|\bcnh\b|stock connect"),
+    ("SG", r"\bsingapore|\bsgx\b|\bmas\b"),
+    ("TW", r"\btaiwan|\btwse\b|\btaifex\b"),
+    ("CN", r"\bchin|\bpboc\b|\bsafe\b|\bcfets\b|\bsge\b|\bshanghai|\bshfe\b|\bine\b|\bdce\b"
+           r"|\bczce\b|\bgfex\b|\bcffex\b|\bnbs\b|\bcny\b|\brmb\b|\byuan\b|\bbaidu\b|\bcustoms\b"
+           r"|\bdr007\b|\bshibor\b|tianyancha|\bweibo\b|\bwechat\b"),
+    ("ASIA", r"\basia|\basean\b|\bindia|\bindonesia|\bmalaysia|\bthai|\bvietnam|\bphilippin"),
+)
 #: Where an importer of an owner module is looked for (WIRED). Bounded so the hourly pass is cheap.
 WIRING_DIRS = ("desks/mt5/research", "desks/mt5/scripts", "desks/mt5/mt5desk", "libs", "scripts")
 #: ROI proof: a forest's ROI is read as an adequate sample only past this many routed trials.
@@ -119,6 +146,7 @@ class Reader:
         self.now = time.time() if now is None else float(now)
         self._json: dict[str, Any] = {}
         self._text: dict[str, str | None] = {}
+        self.memo: dict[str, Any] = {}
 
     def path(self, rel: str) -> Path:
         return self.root / rel
@@ -245,6 +273,8 @@ def _wiring_corpus(rd: Reader) -> list[tuple[str, str]]:
 
 def scheduler_found(rd: Reader, entry: str) -> bool:
     kind, _, name = entry.partition(":")
+    if kind == "audit":
+        return bool(name.strip()) and not NO_CLOCK.match(name)
     rel = SCHEDULER_FILES.get(kind)
     src = rd.text(rel) if rel else None
     if not src or not name:
@@ -256,9 +286,24 @@ def scheduler_found(rd: Reader, entry: str) -> bool:
     return f'"{name}"' in src or f"'{name}'" in src
 
 
+def _importers(rd: Reader, corpus: list[tuple[str, str]], stem: str) -> list[str]:
+    """Files that import `stem` (memoised per pass: 1,944 rows share a few hundred modules)."""
+    key = f"importers:{stem}"
+    if key not in rd.memo:
+        rx = re.compile(rf"(^\s*from\s+[\w.]+\s+import\s+[^\n]*\b{re.escape(stem)}\b)"
+                        rf"|(^\s*(from|import)\s+[\w.]*\b{re.escape(stem)}\b)"
+                        rf"|([\w/]+/{re.escape(stem)}\.py)", re.MULTILINE)
+        rd.memo[key] = [rel for rel, txt in corpus if stem in txt and rx.search(txt)]
+    return list(rd.memo[key])
+
+
 def static_rung(rd: Reader, row: dict[str, Any],
                 corpus: list[tuple[str, str]]) -> tuple[str, list[str]]:
     why: list[str] = []
+    if row.get("hold_absent"):
+        return "ABSENT", ["the project completion audit found this ABSENT and no code marker in "
+                          "the tree lifts it (a module that merely exists nearby is not the "
+                          "requirement)"]
     owners = [str(o) for o in row.get("owner") or []]
     if not owners:
         return "ABSENT", ["no owner module is named: nothing in the tree claims this requirement"]
@@ -281,12 +326,8 @@ def static_rung(rd: Reader, row: dict[str, Any],
     stems = {Path(o).stem for o in owners if rd.path(o).exists() and o.endswith(".py")}
     # An IMPORT or a path handed to a runner, never a mention in prose: a docstring naming a
     # module does not connect it to anything.
-    importers = sorted({rel for rel, txt in corpus for s in stems
-                        if rel not in owners and re.search(
-                            rf"(^\s*from\s+[\w.]+\s+import\s+[^\n]*\b{re.escape(s)}\b)"
-                            rf"|(^\s*(from|import)\s+[\w.]*\b{re.escape(s)}\b)"
-                            rf"|([\w/]+/{re.escape(s)}\.py)",
-                            txt, re.MULTILINE)})
+    importers = sorted({rel for s in stems for rel in _importers(rd, corpus, s)
+                        if rel not in owners})
     if importers:
         return "WIRED", [*why, f"imported by {', '.join(importers[:3])} but no declared clock "
                                f"runs it ({', '.join(sched) or 'none declared'})"]
@@ -624,6 +665,56 @@ def _sum(vals: Iterable[int | None]) -> int | None:
     return sum(known) if known else None
 
 
+def probe_ceiling(probes: list[dict[str, Any]]) -> str:
+    """The highest rung a row's declared probes CAN measure. A generic JSON artifact proves the
+    organ ran; a table proves data; only the pack chain and the gain tests see a judge; only a
+    decision ledger proves a loop. Above its ceiling a row is never measured down, only
+    left unconfirmed."""
+    best = "SCHEDULED"
+    for p in probes:
+        kind = str(p.get("kind"))
+        if kind == "proof":
+            rung = "PROVEN"
+        elif kind in ("pack_cells", "alt_proxies"):
+            rung = "JUDGED"
+        elif kind in ("free_stack", "asia_plane"):
+            rung = "PRODUCING_CELLS"
+        elif kind == "collector":
+            rung = "RUNNING"
+        elif p.get("cells_key"):
+            rung = "PRODUCING_CELLS"
+        elif p.get("rows_key") or str(p.get("artifact", "")).endswith((".parquet", ".jsonl",
+                                                                          ".csv")):
+            rung = "PRODUCING_DATA"
+        else:
+            rung = "RUNNING"
+        if RANK[rung] > RANK[best]:
+            best = rung
+    return best
+
+
+def delta(audit_state: str | None, state: str, reached: str, ceiling: str) -> tuple[str, str]:
+    """This pass's state against the project audit's, on the same ladder names."""
+    if not audit_state:
+        return "unaudited", "the row carries no audit state"
+    if state == audit_state:
+        return "same", ""
+    if state == UNMEASURED:
+        return "unconfirmed", (f"the audit says {audit_state}; no evidence artifact is present on "
+                               f"this host (the code reached {reached})")
+    if state == "BLOCKED":
+        return "down", f"measured BLOCKED; the audit says {audit_state}"
+    if audit_state in ("BLOCKED", UNMEASURED) or audit_state not in RANK:
+        return "changed", f"the audit says {audit_state}; measured {state} here"
+    if RANK[state] > RANK[audit_state]:
+        return "up", f"measured {state}; the audit says {audit_state}"
+    if RANK[state] >= RANK[ceiling] and (RANK[state] >= RANK["RUNNING"] or ceiling == "WIRED"):
+        return "unconfirmed", (f"measured {state}, the most this row's declared clock and "
+                               f"artifacts can show; the audit's {audit_state} rests on evidence "
+                               "the row does not declare")
+    return "down", f"measured {state}; the audit says {audit_state}"
+
+
 def judge(rd: Reader, row: dict[str, Any], corpus: list[tuple[str, str]],
           runtime: dict[str, dict[str, Any]], now: datetime,
           proof_cache: dict[str, dict[str, Any]]) -> dict[str, Any]:
@@ -634,7 +725,10 @@ def judge(rd: Reader, row: dict[str, Any], corpus: list[tuple[str, str]],
         if kind == "proof":
             probes.append(probe_proof(rd, p, now, proof_cache))
         elif kind in PROBES:
-            probes.append(PROBES[kind](rd, p))
+            key = "probe:" + json.dumps(p, sort_keys=True, default=str)
+            if key not in rd.memo:
+                rd.memo[key] = PROBES[kind](rd, p)
+            probes.append(dict(rd.memo[key]))
     present = [p for p in probes if p["present"]]
     sched = [str(s) for s in row.get("scheduler") or []]
     legs = [s.split(":", 1)[1] for s in sched if s.startswith(("hourly:", "own_clock:"))]
@@ -656,7 +750,13 @@ def judge(rd: Reader, row: dict[str, Any], corpus: list[tuple[str, str]],
     reached = rung
     verify = row.get("verify") if isinstance(row.get("verify"), dict) else None
     verify_out: dict[str, Any] | None = None
-    if RANK[rung] < RANK["SCHEDULED"]:
+    if (not row.get("owner") and not row.get("hold_absent")
+            and row.get("audit_state") not in (None, "ABSENT")):
+        state = UNMEASURED
+        why[:] = [f"the audit grades this {row.get('audit_state')} but names no module, clock or "
+                  "artifact for it (a law, a negative constraint or a roll-up of other rows): "
+                  "nothing here can re-derive it, so it is UNMEASURED, not ABSENT"]
+    elif RANK[rung] < RANK["SCHEDULED"]:
         state = rung
     elif not present and not rt_live:
         state = UNMEASURED
@@ -684,6 +784,11 @@ def judge(rd: Reader, row: dict[str, Any], corpus: list[tuple[str, str]],
         if blocked and RANK[reached] <= RANK["RUNNING"]:
             state = "BLOCKED"
     keys = {k: bool(os.environ.get(k)) for k in row.get("key_env") or []}
+    ceiling = probe_ceiling(list(row.get("probes") or []))
+    if not row.get("probes") and not sched:
+        ceiling = "WIRED"                   # no clock and no artifact: code is all it can show
+    audit_state = row.get("audit_state")
+    d_kind, d_why = delta(str(audit_state) if audit_state else None, state, reached, ceiling)
     last_ok = ok_runs[-1] if ok_runs else None
     if last_ok is None and newest is not None:
         last_ok = (datetime.fromtimestamp(rd.now, tz=UTC)
@@ -693,6 +798,10 @@ def judge(rd: Reader, row: dict[str, Any], corpus: list[tuple[str, str]],
         last_basis = "runtime_state last_run_at (outcome ok)" if last_ok else UNMEASURED
     return {
         "id": row["id"], "report_row": row.get("report_row"), "title": row.get("title"),
+        "source": row.get("source") or "", "part": row.get("part"),
+        "owner_thread": row.get("owner_thread") or "", "overlays": row.get("overlays") or [],
+        "audit_state": audit_state or UNMEASURED, "delta": d_kind, "delta_why": d_why,
+        "probe_ceiling": ceiling,
         "parts": row.get("parts") or [], "xliv": bool(row.get("xliv")),
         "region": row.get("region"), "package": row.get("package") or "",
         "state": state, "rung_reached": reached, "static_rung": rung,
@@ -804,8 +913,8 @@ def load_requirements(rd: Reader) -> tuple[list[dict[str, Any]], list[str]]:
         if rid in seen:
             errors.append(f"{rid}: duplicate id")
         seen.add(rid)
-        if not r.get("probes"):
-            errors.append(f"{rid}: names no evidence artifact (probes)")
+        if r.get("audit_state") and r["audit_state"] not in LADDER:
+            errors.append(f"{rid}: audit state {r['audit_state']!r} is not on the ladder")
         for p in r.get("probes") or []:
             k = str(p.get("kind"))
             if k not in PROBES and k != "proof":
@@ -815,11 +924,152 @@ def load_requirements(rd: Reader) -> tuple[list[dict[str, Any]], list[str]]:
             if k == "proof" and p.get("proof") not in PROOFS:
                 errors.append(f"{rid}: unknown proof {p.get('proof')!r}")
         for s in r.get("scheduler") or []:
-            if str(s).partition(":")[0] not in SCHEDULER_FILES:
+            if str(s).partition(":")[0] not in SCHEDULER_KINDS:
                 errors.append(f"{rid}: scheduler {s!r} names no known clock kind")
+    for o in doc.get("overlays") or []:
+        try:
+            re.compile(str(o.get("match") or ""))
+        except re.error as exc:
+            errors.append(f"overlay {o.get('key')}: bad match regex ({exc})")
     if not rows:
-        errors.append("no requirements")
+        errors.append("no requirements (run --import-audit on the project completion audit)")
     return rows, errors
+
+
+# ------------------------------------------------------------------ importing the project audit
+def audit_part(source: str) -> str | None:
+    m = re.search(r"\bPART ([IVXL]+)\b", source or "")
+    return m.group(1) if m else None
+
+
+def region_of(text: str) -> str:
+    for code, words in REGION_WORDS:
+        if re.search(words, text or "", re.IGNORECASE):
+            return code
+    return "GLOBAL"
+
+
+def hourly_legs(src: str) -> set[str]:
+    return set(re.findall(r"""_costed\(\s*["'](\w+)["']""", src or ""))
+
+
+def parse_clock(text: str, legs: set[str]) -> list[str]:
+    """The audit's clock text as scheduler entries: every hourly_cycle leg it names (checked
+    against the tree), else the text itself as an audit-named clock, else nothing."""
+    text = str(text or "").strip()
+    if not text or NO_CLOCK.match(text):
+        return []
+    named = []
+    for tok in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", text):
+        if tok in legs and f"hourly:{tok}" not in named:
+            named.append(f"hourly:{tok}")
+    return named or [f"audit:{text[:160]}"]
+
+
+def _evidence_probe(path: str) -> dict[str, Any] | None:
+    path = str(path or "").strip()
+    if not path or any(c in path for c in "<>*{}") or path.endswith("/") or not Path(path).suffix:
+        return None
+    return {"kind": "artifact", "artifact": path}
+
+
+def _clip(text: Any, n: int) -> str:
+    t = " ".join(str(text or "").split())
+    return t if len(t) <= n else t[: n - 3] + "..."
+
+
+def overlay_hits(overlays: list[dict[str, Any]], text: str, part: str | None) -> list[dict[str, Any]]:
+    out = []
+    for o in overlays:
+        parts = o.get("match_parts") or []
+        if parts and part not in parts:
+            continue
+        if o.get("match") and re.search(str(o["match"]), text, re.IGNORECASE):
+            out.append(o)
+    return out
+
+
+def import_audit(audit_doc: dict[str, Any], req_doc: dict[str, Any],
+                 hourly_src: str) -> dict[str, Any]:
+    """Vendor the audit's ASIA rows as the requirement set, with the overlays attached."""
+    overlays = [o for o in req_doc.get("overlays") or [] if isinstance(o, dict)]
+    legs = hourly_legs(hourly_src)
+    rows: list[dict[str, Any]] = []
+    for a in audit_doc.get("requirements") or []:
+        if not isinstance(a, dict) or not str(a.get("id", "")).startswith(AUDIT_ID_PREFIX):
+            continue
+        text = f"{a.get('requirement', '')} {a.get('source', '')}"
+        part = audit_part(str(a.get("source") or ""))
+        hits = overlay_hits(overlays, text, part)
+        owner: list[str] = []
+        for m in [*(str(x).rsplit(":", 1)[0] if re.search(r":\d+$", str(x)) else str(x)
+                    for x in a.get("module") or []),
+                  *(str(x) for o in hits for x in o.get("owner") or [])]:
+            if m and m not in owner:
+                owner.append(m)
+        sched = parse_clock(str(a.get("scheduler") or ""), legs)
+        for o in hits:
+            sched += [str(x) for x in o.get("scheduler") or [] if str(x) not in sched]
+        probes: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        declared = list(a.get("output_artifacts") or []) or list(a.get("input_artifacts") or [])
+        for p in [*(p for o in hits for p in o.get("probes") or []),
+                  *filter(None, (_evidence_probe(x) for x in declared))]:
+            k = json.dumps(p, sort_keys=True)
+            bare = p.get("kind") == "artifact" and len(p) == 2
+            if k not in seen and not (bare and str(p.get("artifact")) in {
+                    str(q.get("artifact")) for q in probes}):
+                seen.add(k)
+                probes.append(dict(p))
+        markers = [m for o in hits for m in o.get("code_markers") or []]
+        first = hits[0] if hits else {}
+        region = region_of(str(a.get("requirement") or ""))
+        if region == "GLOBAL" and first.get("region") not in (None, "", "GLOBAL"):
+            region = str(first["region"])
+        row: dict[str, Any] = {
+            "id": a["id"], "source": _clip(a.get("source"), 160), "part": part,
+            "title": _clip(a.get("requirement"), IMPORT_TEXT_CHARS),
+            "audit_state": a.get("state"), "owner_thread": _clip(a.get("owner_thread"), 80),
+            "region": region, "overlays": [str(o.get("key")) for o in hits],
+            "report_row": first.get("report_row"), "package": first.get("package") or "",
+            "xliv": any(o.get("xliv") for o in hits) or part == "XLIV",
+            "owner": owner, "scheduler": sched,
+            "scheduler_text": _clip(a.get("scheduler"), 200),
+            "inputs": list(a.get("input_artifacts") or []),
+            "outputs": list(a.get("output_artifacts") or []),
+            "probes": probes,
+            "blocker": _clip(a.get("blocker"), IMPORT_EVIDENCE_CHARS),
+            "next_repair": _clip(a.get("next_repair"), IMPORT_EVIDENCE_CHARS),
+            "audit_evidence": _clip(a.get("evidence"), IMPORT_EVIDENCE_CHARS),
+        }
+        for k in ("verify", "proxy", "key_env", "consumer", "box", "baseline"):
+            if k in first:
+                row[k] = first[k]
+        if markers:
+            row["code_markers"] = markers
+        if a.get("state") == "ABSENT" and not markers:
+            row["hold_absent"] = True
+        rows.append(row)
+    out = {k: v for k, v in req_doc.items() if k != "requirements"}
+    out["audit_source"] = {"path": str(audit_doc.get("_path") or ""),
+                           "generated_at": audit_doc.get("generated_at"),
+                           "live_sha": audit_doc.get("live_sha"),
+                           "rows": len(rows)}
+    out["requirements"] = rows
+    return out
+
+
+def _write_requirements(doc: dict[str, Any], root: Path) -> Path:
+    out = root / REQS_REL
+    lines = [f" {json.dumps(r, ensure_ascii=True, sort_keys=False)}" for r in doc["requirements"]]
+    head = {k: v for k, v in doc.items() if k != "requirements"}
+    body = json.dumps(head, indent=1, ensure_ascii=True)
+    text = body[:-2] + ',\n "requirements": [\n' + ",\n".join(lines) + "\n ]\n}\n"
+    json.loads(text)                                    # never write a file the checker can't read
+    tmp = out.with_suffix(".json.tmp")
+    tmp.write_text(text, "utf-8")
+    os.replace(tmp, out)
+    return out
 
 
 def summary_lines(doc: dict[str, Any]) -> list[str]:
@@ -827,14 +1077,23 @@ def summary_lines(doc: dict[str, Any]) -> list[str]:
     lines = [f"ASIA DIRECTIVE COMPLETION AUDIT {doc.get('at')} on {doc.get('host')}: "
              f"{doc.get('n_items')} requirements -- "
              + ", ".join(f"{s} {c[s]}" for s in LADDER if c.get(s))]
+    dc = doc.get("delta_census") or {}
+    src = _dict(doc.get("audit_source")).get("path") or "?"
+    lines.append(f"against the project audit ({src}): "
+                 + ", ".join(f"{k} {v}" for k, v in sorted(dc.items())))
     proofs = doc.get("proofs") or {}
     lines.append("XLIV proofs: " + ", ".join(f"{k}={v.get('verdict')}"
                                              for k, v in sorted(proofs.items())))
-    xl = [i for i in doc.get("items") or [] if i.get("xliv")]
-    lines.append("XLIV items: " + ", ".join(f"{i['id']} {i['state']}" for i in xl))
+    xl = Counter(i["state"] for i in doc.get("items") or [] if i.get("xliv"))
+    lines.append("XLIV rows: " + ", ".join(f"{s} {xl[s]}" for s in LADDER if xl.get(s)))
+    down = [i["id"] for i in doc.get("items") or [] if i.get("delta") == "down"]
+    if down:
+        lines.append(f"measured BELOW the audit ({len(down)}): {', '.join(down[:15])}"
+                     + (" ..." if len(down) > 15 else ""))
     um = [i["id"] for i in doc.get("items") or [] if i.get("state") == UNMEASURED]
     if um:
-        lines.append(f"UNMEASURED on this host ({len(um)}): {', '.join(um)} -- read them on the box")
+        lines.append(f"UNMEASURED on this host ({len(um)}): {', '.join(um[:15])}"
+                     + (" ..." if len(um) > 15 else "") + " -- read them on the box")
     return lines
 
 
@@ -843,6 +1102,8 @@ def audit(root: Path = ROOT, now: datetime | None = None) -> dict[str, Any]:
     nowdt = now or datetime.now(tz=UTC)
     rd = Reader(root, nowdt.timestamp())
     reqs, errors = load_requirements(rd)
+    meta = _dict(rd.json(REQS_REL))
+    audit_census = Counter(str(r.get("audit_state")) for r in reqs if r.get("audit_state"))
     corpus = _wiring_corpus(rd)
     runtime, rt_meta = _runtime_rows(rd)
     cache: dict[str, dict[str, Any]] = {}
@@ -853,8 +1114,9 @@ def audit(root: Path = ROOT, now: datetime | None = None) -> dict[str, Any]:
         reg = by_region.setdefault(str(i.get("region") or "?"),
                                    {"items": 0, "states": Counter(), "observations": None,
                                     "cells_emitted": None, "cells_judged": None,
-                                    "survivors": None})
+                                    "survivors": None, "delta": Counter()})
         reg["items"] += 1
+        reg["delta"][i["delta"]] += 1
         reg["states"][i["state"]] += 1
         for k in ("observations", "cells_emitted", "cells_judged", "survivors"):
             v = i[k]
@@ -862,6 +1124,7 @@ def audit(root: Path = ROOT, now: datetime | None = None) -> dict[str, Any]:
                 reg[k] = (reg[k] or 0) + v
     for reg in by_region.values():
         reg["states"] = dict(reg["states"])
+        reg["delta"] = dict(reg["delta"])
         for k in ("observations", "cells_emitted", "cells_judged", "survivors"):
             if reg[k] is None:
                 reg[k] = UNMEASURED
@@ -879,12 +1142,16 @@ def audit(root: Path = ROOT, now: datetime | None = None) -> dict[str, Any]:
         "ladder": list(LADDER),
         "n_items": len(items),
         "census": {s: census.get(s, 0) for s in LADDER},
+        "audit_source": meta.get("audit_source"),
+        "audit_census": {s: audit_census.get(s, 0) for s in LADDER},
+        "delta_census": dict(sorted(Counter(i["delta"] for i in items).items())),
         "by_region": by_region,
         "by_package": by_package,
         "proofs": cache,
         "asia_sources": asia_sources(rd),
         "items": items,
-        "rule": ("code lifts a row at most to SCHEDULED; every higher rung is read from a runtime "
+        "rule": ("the requirement set is the project completion audit's ASIA rows; "
+                 "code lifts a row at most to SCHEDULED; every higher rung is read from a runtime "
                  "artifact; an absent artifact is UNMEASURED; a failed XLIV verification holds a "
                  "row at RUNNING; forward/live per requirement are UNMEASURED until lineage from "
                  "a source to a clock is published"),
@@ -919,7 +1186,22 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--fence", action="store_true",
                     help="validate the requirement file and print the last summary (law gate)")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--import-audit", metavar="PATH",
+                    help="vendor the ASIA-xxxx rows of a project completion audit JSON as the "
+                         "requirement set (keeps the file's overlays)")
     a = ap.parse_args(argv)
+    if a.import_audit:
+        src = Path(a.import_audit)
+        audit_doc = json.loads(src.read_text("utf-8"))
+        audit_doc["_path"] = src.name
+        req_doc = _dict(json.loads((ROOT / REQS_REL).read_text("utf-8")))
+        doc = import_audit(audit_doc, req_doc, Reader(ROOT).text(SCHEDULER_FILES["hourly"]) or "")
+        out = _write_requirements(doc, ROOT)
+        n = len(doc["requirements"])
+        lifted = sum(1 for r in doc["requirements"] if r.get("overlays"))
+        print(f"imported {n} {AUDIT_ID_PREFIX}xxxx rows from {src.name} ({lifted} carry an "
+              f"overlay) -> {out}")
+        return 0 if n else 1
     if a.fence or a.summary:
         rd = Reader(ROOT)
         _rows, errors = load_requirements(rd)

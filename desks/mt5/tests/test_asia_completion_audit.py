@@ -69,21 +69,103 @@ def _item(root: Path) -> dict[str, Any]:
 
 
 # ------------------------------------------------------------------------- the real data file
-def test_the_requirement_file_covers_every_report_row_and_is_well_formed() -> None:
+def test_the_requirement_file_is_the_project_audits_asia_rows() -> None:
     rd = CAD.Reader(_ROOT)
     rows, errors = CAD.load_requirements(rd)
     assert errors == []
-    assert len(rows) == 55
-    assert sorted(r["report_row"] for r in rows) == list(range(1, 56))
-    xliv = {r["id"] for r in rows if r.get("xliv")}
-    # the directive's XLIV list: latent state, dislocation lab, SGE, SHFE ranks, SHFE warehouse,
-    # SAFE, CFETS, ports, procurement, Tianyancha, Copernicus/FIRMS, Baidu, JQuants/BOJ/KRX/HKMA,
-    # trader genome, EVIG, ROI, deep forest
-    for rid in ("R38", "R37", "R08", "R11", "R12", "R01", "R03", "R18", "R24", "R23", "R25",
-                "R26", "R27", "R29", "R30", "R31", "R33", "R35", "R43", "R44", "R45"):
-        assert rid in xliv, rid
-    for r in rows:
-        assert r["probes"], f"{r['id']} names no evidence artifact"
+    ids = [r["id"] for r in rows]
+    # no parallel requirement list: the 1,944 ASIA-xxxx rows of the project completion audit
+    assert len(ids) == 1944 and len(set(ids)) == 1944
+    assert all(i.startswith(CAD.AUDIT_ID_PREFIX) for i in ids)
+    assert all(r["audit_state"] in CAD.LADDER for r in rows)
+    doc = rd.json(CAD.REQS_REL)
+    keys = {o["key"] for o in doc["overlays"]}
+    # the diff report's XLIV evidence specs are all attached as overlays: latent state,
+    # dislocation lab, SGE, SHFE ranks, SHFE warehouse, SAFE, CFETS, ports, procurement,
+    # Tianyancha, Copernicus/FIRMS, Baidu, JQuants/BOJ/KRX/HKMA, trader genome, EVIG, ROI, forest
+    for k in ("R38", "R37", "R08", "R11", "R12", "R01", "R03", "R18", "R24", "R23", "R25",
+              "R26", "R27", "R29", "R30", "R31", "R33", "R35", "R43", "R44", "R45", "R49", "R50"):
+        assert k in keys, k
+    used = {k for r in rows for k in r.get("overlays") or []}
+    assert {"R43", "R44", "R45", "R49", "R50"} <= used
+    by_id = {r["id"]: r for r in rows}
+    # PART XXXVII's audit row and PART XXXIX's dashboard rows are lifted only by a code marker
+    assert "R49" in by_id["ASIA-0931"]["overlays"] and not by_id["ASIA-0931"].get("hold_absent")
+    assert "R50" in by_id["ASIA-0958"]["overlays"]
+
+
+def _audit_row(**kw: Any) -> dict[str, Any]:
+    base = {"id": "ASIA-0007", "source": "DIRECTIVE.md PART I A 3",
+            "requirement": "Collect NBS retail sales for China with release history.",
+            "state": "SCHEDULED", "owner_thread": "data",
+            "module": ["desks/mt5/research/alt_proxies.py:12"],
+            "scheduler": "hourly leg alt_proxies (L5174)",
+            "input_artifacts": [], "output_artifacts": ["desks/mt5/reports/ALT_PROXIES.json",
+                                                        "desks/mt5/data/lake/series/<source>.parquet"],
+            "blocker": "", "next_repair": "", "evidence": "x"}
+    base.update(kw)
+    return base
+
+
+def test_import_maps_an_audit_row_and_attaches_its_overlay() -> None:
+    overlay = {"key": "R06", "match": r"retail sales", "match_parts": ["I"], "xliv": False,
+               "region": "CN", "package": "P3", "report_row": 6,
+               "owner": ["desks/mt5/research/pack_cells.py"], "scheduler": ["hourly:pack_cells"],
+               "probes": [{"kind": "alt_proxies", "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+                           "ids": ["cn_nbs_retail"]}],
+               "verify": {"kind": "min_rows", "min_rows": 12}}
+    other = {"key": "R99", "match": r"retail sales", "match_parts": ["IX"], "probes": []}
+    audit_doc = {"generated_at": "2026-10-06T00:00:00Z", "requirements": [
+        _audit_row(), _audit_row(id="MT5-0001"),
+        _audit_row(id="ASIA-0008", state="ABSENT", requirement="Build a JGB curve state.",
+                   source="DIRECTIVE.md PART IX", scheduler="NONE", module=[]),
+        _audit_row(id="ASIA-0009", requirement="Daily Korean flow", scheduler="MT5-Gauntlet task")]}
+    hourly = 'a = _costed("alt_proxies", f)\nb = _costed("pack_cells", g)\n'
+    doc = CAD.import_audit(audit_doc, {"ladder": list(CAD.LADDER), "overlays": [overlay, other]},
+                           hourly)
+    rows = {r["id"]: r for r in doc["requirements"]}
+    assert set(rows) == {"ASIA-0007", "ASIA-0008", "ASIA-0009"}          # ASIA rows only
+    r = rows["ASIA-0007"]
+    assert r["audit_state"] == "SCHEDULED" and r["part"] == "I" and r["region"] == "CN"
+    assert r["overlays"] == ["R06"]                                       # PART gates R99 out
+    assert r["owner"] == ["desks/mt5/research/alt_proxies.py", "desks/mt5/research/pack_cells.py"]
+    assert r["scheduler"] == ["hourly:alt_proxies", "hourly:pack_cells"]
+    kinds = [(p["kind"], p["artifact"]) for p in r["probes"]]
+    # the overlay's probe wins over the bare artifact probe; a templated path is not a probe
+    assert kinds == [("alt_proxies", "desks/mt5/reports/ALT_PROXIES.json")]
+    assert r["verify"]["min_rows"] == 12 and r["package"] == "P3"
+    a = rows["ASIA-0008"]
+    assert a["hold_absent"] and a["scheduler"] == [] and a["region"] == "JP"
+    assert rows["ASIA-0009"]["scheduler"] == ["audit:MT5-Gauntlet task"]
+    assert rows["ASIA-0009"]["region"] == "KR"
+    assert doc["audit_source"]["rows"] == 3
+
+
+def test_the_delta_against_the_audit(tmp_path: Path) -> None:
+    _tree(tmp_path)
+    _w(tmp_path, "desks/mt5/research/user.py", "import alt_proxies\n")
+    _w(tmp_path, "desks/mt5/reports/ALT_PROXIES.json",
+       {"sources": [{"id": "cn_nbs_retail", "status": "COLLECTED", "store_rows": 40}]})
+    _reqs(tmp_path, [
+        _row(id="ASIA-0001", audit_state="RUNNING"),                       # measured higher
+        _row(id="ASIA-0002", audit_state="PRODUCING_DATA"),                # same
+        _row(id="ASIA-0003", audit_state="SCHEDULED", hold_absent=True),   # held ABSENT: down
+        _row(id="ASIA-0004", audit_state="LIVE", probes=[], scheduler=[]),  # code only: unconfirmed
+        _row(id="ASIA-0005", audit_state="PROVEN", owner=[], probes=[], scheduler=[]),
+        _row(id="ASIA-0006", audit_state="JUDGED",
+             probes=[{"kind": "artifact", "artifact": "desks/mt5/reports/NOPE.json"}]),
+    ])
+    doc = CAD.audit(tmp_path, NOW)
+    got = {i["id"]: (i["state"], i["delta"]) for i in doc["items"]}
+    assert got["ASIA-0001"] == ("PRODUCING_DATA", "up")
+    assert got["ASIA-0002"] == ("PRODUCING_DATA", "same")
+    assert got["ASIA-0003"] == ("ABSENT", "down")
+    assert got["ASIA-0004"] == ("WIRED", "unconfirmed")
+    assert got["ASIA-0005"] == ("UNMEASURED", "unconfirmed")               # never ABSENT
+    assert got["ASIA-0006"] == ("UNMEASURED", "unconfirmed")
+    assert doc["delta_census"]["unconfirmed"] == 3
+    assert doc["audit_census"]["PROVEN"] == 1
+    assert any("against the project audit" in line for line in doc["summary"])
 
 
 # ------------------------------------------------------------------------------- the ladder
