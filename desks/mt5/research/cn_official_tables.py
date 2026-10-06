@@ -76,6 +76,16 @@ CONTRACT_FIELDS: tuple[str, ...] = (
 #: URL, so a source is read by a bespoke shape only because someone wrote that down.
 ADAPTERS: tuple[str, ...] = ("chinamoney", "nbs_easyquery", "safe", "pboc_omo", "customs")
 
+#: THE TERMS DECISION EACH ADAPTER'S PUBLISHER IS HELD TO (audit hold 2026-10-06, MUST 1). Every
+#: registry row that declares one of these adapters carries the same id as its `terms_ref`, and
+#: the collector asks `alt_proxies.terms_gate` before any request: only `confirmed` is fetched
+#: (NBS today); CFETS reads `refused`, and PBOC / SAFE / Customs `to_confirm` -- BLOCKED_ON_TERMS
+#: with no request sent until their pages are read and quoted.
+ADAPTER_TERMS: dict[str, str] = {
+    "chinamoney": "cn_cfets_chinamoney", "nbs_easyquery": "cn_nbs_official",
+    "safe": "cn_safe_official", "pboc_omo": "cn_pboc_official", "customs": "cn_customs_official",
+}
+
 
 @dataclass
 class AdapterResult:

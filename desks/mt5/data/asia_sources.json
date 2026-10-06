@@ -188,7 +188,8 @@
    "mechanism": "corporate FX demand imbalance is RMB pressure before it is a price; the offshore rate and Asia-risk FX carry it",
    "why": "SAFE publishes settlement/sales, cross-border receipts and payments, reserves and BOP -- the positioning and liquidity backdrop behind the fixing",
    "adapter": "safe",
-   "parse_note": "cn_official_tables.parse_safe: the index hands its release articles to the collector; each article's inline months table (and its .xlsx attachment) is melted into long observations with the section kept (\u7ed3\u6c47/\u4ee3\u5ba2\u7ed3\u6c47 vs \u552e\u6c47/\u4ee3\u5ba2\u552e\u6c47), unit and printed PubDate; a legacy .xls needs xlrd and reads NEEDS_PARSER by name"
+   "parse_note": "cn_official_tables.parse_safe: the index hands its release articles to the collector; each article's inline months table (and its .xlsx attachment) is melted into long observations with the section kept (\u7ed3\u6c47/\u4ee3\u5ba2\u7ed3\u6c47 vs \u552e\u6c47/\u4ee3\u5ba2\u552e\u6c47), unit and printed PubDate; a legacy .xls needs xlrd and reads NEEDS_PARSER by name",
+   "terms_ref": "cn_safe_official"
   },
   {
    "id": "safe_cross_border",
@@ -210,7 +211,8 @@
    ],
    "mechanism": "the payment imbalance leads the flow that moves the offshore rate",
    "adapter": "safe",
-   "parse_note": "cn_official_tables.parse_safe: the index hands its release articles to the collector; each article's inline months table (and its .xlsx attachment) is melted into long observations with the section kept (\u7ed3\u6c47/\u4ee3\u5ba2\u7ed3\u6c47 vs \u552e\u6c47/\u4ee3\u5ba2\u552e\u6c47), unit and printed PubDate; a legacy .xls needs xlrd and reads NEEDS_PARSER by name"
+   "parse_note": "cn_official_tables.parse_safe: the index hands its release articles to the collector; each article's inline months table (and its .xlsx attachment) is melted into long observations with the section kept (\u7ed3\u6c47/\u4ee3\u5ba2\u7ed3\u6c47 vs \u552e\u6c47/\u4ee3\u5ba2\u552e\u6c47), unit and printed PubDate; a legacy .xls needs xlrd and reads NEEDS_PARSER by name",
+   "terms_ref": "cn_safe_official"
   },
   {
    "id": "safe_reserves",
@@ -231,7 +233,8 @@
    ],
    "mechanism": "official gold accumulation is a persistent, price-insensitive bid; the reserve line is the only public read on it",
    "adapter": "safe",
-   "parse_note": "cn_official_tables.parse_safe: the index hands its release articles to the collector; each article's inline months table (and its .xlsx attachment) is melted into long observations with the section kept (\u7ed3\u6c47/\u4ee3\u5ba2\u7ed3\u6c47 vs \u552e\u6c47/\u4ee3\u5ba2\u552e\u6c47), unit and printed PubDate; a legacy .xls needs xlrd and reads NEEDS_PARSER by name"
+   "parse_note": "cn_official_tables.parse_safe: the index hands its release articles to the collector; each article's inline months table (and its .xlsx attachment) is melted into long observations with the section kept (\u7ed3\u6c47/\u4ee3\u5ba2\u7ed3\u6c47 vs \u552e\u6c47/\u4ee3\u5ba2\u552e\u6c47), unit and printed PubDate; a legacy .xls needs xlrd and reads NEEDS_PARSER by name",
+   "terms_ref": "cn_safe_official"
   },
   {
    "id": "pboc_open_market",
@@ -255,7 +258,8 @@
    "adapter": "pboc_omo",
    "url_was": "http://www.pbc.gov.cn/zhengcehuobisi/125207/125213/125431/index.html",
    "route_note": "the OMO announcement list (\u516c\u5f00\u5e02\u573a\u4e1a\u52a1\u4ea4\u6613\u516c\u544a); the column landing page above it carries no operations. Route from the PBOC site structure, UNVERIFIED from the build host (proxy refuses pbc.gov.cn): the first box pass measures it",
-   "parse_note": "cn_official_tables.parse_pboc_omo: index -> announcements; each announcement -> amount by tenor, rate, maturing amount, net injection (net is UNMEASURED when the text names no maturity)"
+   "parse_note": "cn_official_tables.parse_pboc_omo: index -> announcements; each announcement -> amount by tenor, rate, maturing amount, net injection (net is UNMEASURED when the text names no maturity)",
+   "terms_ref": "cn_pboc_official"
   },
   {
    "id": "pboc_survey_stats",
@@ -276,7 +280,8 @@
     "Copper",
     "XAUUSD"
    ],
-   "mechanism": "Chinese credit creation leads the industrial demand that prices the metals complex and the commodity currencies"
+   "mechanism": "Chinese credit creation leads the industrial demand that prices the metals complex and the commodity currencies",
+   "terms_ref": "cn_pboc_official"
   },
   {
    "id": "cfets_fixing",
@@ -299,7 +304,8 @@
    "mechanism": "the fixing SURPRISE -- parity against the model-implied level -- is the policy signal; the level itself is not",
    "route_note": "the PORTAL page carries no table -- it is JavaScript-rendered -- and its data comes from this JSON endpoint. Verified HTTP 200 application/json 2026-09-15. A NO_TABLE verdict from asia_parser means exactly this: the source needs a DECLARED api route, not a cleverer parser.",
    "adapter": "chinamoney",
-   "parse_note": "cn_official_tables.parse_chinamoney: data.lastDate is the 09:15 Beijing fix instant; each daily payload is a vintage in the append-only ledger, so the parity HISTORY grows one day per fetch and pack_cells models the fix SURPRISE from it"
+   "parse_note": "cn_official_tables.parse_chinamoney: data.lastDate is the 09:15 Beijing fix instant; each daily payload is a vintage in the append-only ledger, so the parity HISTORY grows one day per fetch and pack_cells models the fix SURPRISE from it",
+   "terms_ref": "cn_cfets_chinamoney"
   },
   {
    "id": "chinabond_curve",
@@ -344,7 +350,8 @@
    "adapter": "nbs_easyquery",
    "url_was": "https://data.stats.gov.cn/english/",
    "route_note": "the easyquery cube needs m=QueryData&dbcode=hgyd and the indicator in dfwds (A0B01 = manufacturing PMI and its sub-indices, last 36 months); the bare landing page answers HTML. Query vocabulary from the NBS data portal, UNVERIFIED from the build host: the first box pass measures it",
-   "parse_note": "cn_official_tables.parse_nbs_easyquery: datanodes x wdnodes -> one observation per sub-index per month, scheduled 09:30 Beijing on the last day of the reference month"
+   "parse_note": "cn_official_tables.parse_nbs_easyquery: datanodes x wdnodes -> one observation per sub-index per month, scheduled 09:30 Beijing on the last day of the reference month",
+   "terms_ref": "cn_nbs_official"
   },
   {
    "id": "nbs_industrial",
@@ -368,7 +375,8 @@
    "adapter": "nbs_easyquery",
    "url_was": "https://data.stats.gov.cn/english/easyquery.htm?cn=A01",
    "route_note": "easyquery cube for the hgyd industrial node A02 (children resolved from wdnodes); UNVERIFIED from the build host",
-   "parse_note": "cn_official_tables.parse_nbs_easyquery"
+   "parse_note": "cn_official_tables.parse_nbs_easyquery",
+   "terms_ref": "cn_nbs_official"
   },
   {
    "id": "china_customs",
@@ -391,7 +399,8 @@
    ],
    "mechanism": "physical import QUANTITY is demand stripped of price; iron ore and copper tonnage read Australian export revenue directly",
    "adapter": "customs",
-   "parse_note": "cn_official_tables.parse_customs: the statistics index hands its monthly tables (\u8fdb\u53e3/\u51fa\u53e3\u4e3b\u8981\u5546\u54c1\u91cf\u503c\u8868, \u56fd\u522b) to the collector; each table -> quantity, value and unit value per commodity (x country x port where the table prints them), period and direction read from the title"
+   "parse_note": "cn_official_tables.parse_customs: the statistics index hands its monthly tables (\u8fdb\u53e3/\u51fa\u53e3\u4e3b\u8981\u5546\u54c1\u91cf\u503c\u8868, \u56fd\u522b) to the collector; each table -> quantity, value and unit value per commodity (x country x port where the table prints them), period and direction read from the title",
+   "terms_ref": "cn_customs_official"
   },
   {
    "id": "sge_benchmark",
@@ -1165,7 +1174,8 @@
     "AUDUSD",
     "XTIUSD"
    ],
-   "mechanism": "rail tonnage is bulk commodity movement inland: coal and ore that have landed and are being consumed, which the import number cannot distinguish from stockpiling"
+   "mechanism": "rail tonnage is bulk commodity movement inland: coal and ore that have landed and are being consumed, which the import number cannot distinguish from stockpiling",
+   "terms_ref": "cn_nbs_official"
   },
   {
    "id": "cn_power_output",
@@ -1185,7 +1195,8 @@
     "Copper",
     "XTIUSD"
    ],
-   "mechanism": "industrial power draw is the least-massaged production proxy China publishes; smelting and steel are electricity before they are metal"
+   "mechanism": "industrial power draw is the least-massaged production proxy China publishes; smelting and steel are electricity before they are metal",
+   "terms_ref": "cn_nbs_official"
   },
   {
    "id": "shfe_delivery",
@@ -1328,7 +1339,8 @@
    ],
    "mechanism": "the commodity-by-origin breakdown says WHOSE export revenue moved, which the aggregate cannot; Australian iron ore and Chilean copper are different currencies",
    "adapter": "customs",
-   "route_note": "stats.customs.gov.cn is a form-driven query tool (HS x partner x registration place); its result-table shape is parsed by the customs adapter, but the query route itself needs a box probe -- until then this row yields the landing page and reads NO_TABLE by name"
+   "route_note": "stats.customs.gov.cn is a form-driven query tool (HS x partner x registration place); its result-table shape is parsed by the customs adapter, but the query route itself needs a box probe -- until then this row yields the landing page and reads NO_TABLE by name",
+   "terms_ref": "cn_customs_official"
   },
   {
    "id": "sse_freight_indices",
@@ -4996,7 +5008,8 @@
    },
    "window_days_back": 60,
    "window_days_fwd": 0,
-   "route_note": "ChinaMoney's own front-end history endpoint (POST form startDate/endDate/currency, as its parity-history page calls it). UNVERIFIED from the build host (proxy refuses chinamoney): the first box pass measures it; declared expect any so a changed route reads NO_TABLE, not a fatal ROUTE_CHANGED"
+   "route_note": "ChinaMoney's own front-end history endpoint (POST form startDate/endDate/currency, as its parity-history page calls it). UNVERIFIED from the build host (proxy refuses chinamoney): the first box pass measures it; declared expect any so a changed route reads NO_TABLE, not a fatal ROUTE_CHANGED",
+   "terms_ref": "cn_cfets_chinamoney"
   },
   {
    "id": "cn_shibor",
@@ -5018,7 +5031,8 @@
    ],
    "mechanism": "onshore funding cost by tenor: curve slope and curvature are the liquidity state CNH carry trades off",
    "adapter": "chinamoney",
-   "route_note": "the JSON the ChinaMoney SHIBOR page loads; UNVERIFIED from the build host"
+   "route_note": "the JSON the ChinaMoney SHIBOR page loads; UNVERIFIED from the build host",
+   "terms_ref": "cn_cfets_chinamoney"
   },
   {
    "id": "nbs_pmi_nonmfg",
@@ -5041,7 +5055,8 @@
    ],
    "mechanism": "services and construction activity: the construction sub-index is the property/infrastructure demand that clears against steel and copper",
    "adapter": "nbs_easyquery",
-   "route_note": "easyquery A0B02; UNVERIFIED from the build host"
+   "route_note": "easyquery A0B02; UNVERIFIED from the build host",
+   "terms_ref": "cn_nbs_official"
   },
   {
    "id": "nbs_prices",
@@ -5063,7 +5078,8 @@
    ],
    "mechanism": "PPI is the industrial pricing power the metals complex and the commodity currencies trade; CPI the policy-room constraint behind CNH",
    "adapter": "nbs_easyquery",
-   "route_note": "easyquery hgyd node A01 (price indices), children resolved from wdnodes; UNVERIFIED from the build host"
+   "route_note": "easyquery hgyd node A01 (price indices), children resolved from wdnodes; UNVERIFIED from the build host",
+   "terms_ref": "cn_nbs_official"
   }
  ],
  "miners": {

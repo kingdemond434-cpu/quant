@@ -66,7 +66,16 @@ def test_the_floor_follows_the_budget_that_was_actually_applied(
 
 def test_no_other_leg_gains_a_floor_by_accident() -> None:
     assert hc._leg_floor_s("weak_signals") == 0
-    assert set(hc.LEG_BUDGET_FLOOR_SEC) == {"external_gauntlet"}
+    assert set(hc.LEG_BUDGET_FLOOR_SEC) == {"external_gauntlet", "pack_cells"}
+
+
+def test_pack_cells_cap_covers_its_pass_and_its_semantic_lane() -> None:
+    """240 s pack pass + 84 s semantic lane (audit hold 2026-10-06): the cap is 420, never the
+    300 its `--budget-s` alone implied, and the pass budget itself is not shrunk."""
+    assert hc._leg_floor_s("pack_cells") == 420
+    assert hc._self_stop_floor_s(("--once", "--budget-s", "240")) == 300
+    src = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    assert '"pack_cells", "research/pack_cells.py", "--once", "--budget-s", "240"' in src
 
 
 def test_the_base_budget_covers_a_measured_full_pass() -> None:

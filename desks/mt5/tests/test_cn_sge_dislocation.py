@@ -79,6 +79,83 @@ def test_every_organ_that_knows_an_sge_url_reads_blocked_on_terms(
     assert R.probe(route)["status"] == "BLOCKED_ON_TERMS"
 
 
+#: Every China official host the registry fetches, and the terms id its rows carry.
+CN_OFFICIAL_HOSTS = {
+    "chinamoney.com.cn": "cn_cfets_chinamoney", "pbc.gov.cn": "cn_pboc_official",
+    "safe.gov.cn": "cn_safe_official", "customs.gov.cn": "cn_customs_official",
+    "stats.gov.cn": "cn_nbs_official",
+}
+
+
+def _registry() -> list[dict[str, Any]]:
+    doc = json.loads((_DESK / "data" / "asia_sources.json").read_text(encoding="utf-8"))
+    return [r for r in doc["sources"] if isinstance(r, dict)]
+
+
+def test_every_cn_official_row_names_its_terms_row_with_quoted_evidence() -> None:
+    """Audit hold 2026-10-06 MUST 1: each host is governed, each registry row on it carries the
+    same `terms_ref`, every adapter maps to it, and every decision cites a URL and a quote."""
+    from research import cn_official_tables as C
+    for host, tid in CN_OFFICIAL_HOSTS.items():
+        assert A.TERMS_HOSTS[host] == tid
+        state, why = A.terms_gate(tid)
+        assert state in A.TERMS_VALUES and why
+        ev = A.GATE_TERMS_EVIDENCE[tid]
+        assert ev["terms_url"].startswith("http") and ev["terms_quote"] and ev["checked_at"]
+    assert set(C.ADAPTER_TERMS.values()) <= set(CN_OFFICIAL_HOSTS.values())
+    on_hosts = 0
+    for r in _registry():
+        host = (r.get("url") or "").split("/")[2] if "://" in (r.get("url") or "") else ""
+        tid = next((v for k, v in CN_OFFICIAL_HOSTS.items()
+                    if host == k or host.endswith("." + k)), None)
+        if tid is None:
+            continue
+        on_hosts += 1
+        assert r.get("terms_ref") == tid, r["id"]
+        if r.get("adapter"):
+            assert C.ADAPTER_TERMS[r["adapter"]] == tid, r["id"]
+    assert on_hosts >= 16
+    # the decisions as read on 2026-10-06
+    assert A.terms_gate("cn_cfets_chinamoney")[0] == "refused"
+    assert "written permission from CFETS" in A.GATE_TERMS_EVIDENCE["cn_cfets_chinamoney"][
+        "terms_quote"]
+    assert A.terms_gate("cn_nbs_official")[0] == "confirmed"
+    assert A.terms_gate("https://data.stats.gov.cn/easyquery.htm")[0] == "confirmed"
+    for tid in ("cn_pboc_official", "cn_safe_official", "cn_customs_official"):
+        assert A.terms_gate(tid)[0] == "to_confirm", tid
+
+
+def test_each_cn_host_without_confirmed_terms_sends_no_request(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    def _no_net(*_a: Any, **_k: Any) -> Any:
+        raise AssertionError("a terms-blocked host was requested")
+    monkeypatch.setattr(AC, "_robots_allows", _no_net)
+    monkeypatch.setattr(AC.urllib.request, "urlopen", _no_net)
+    blocked = 0
+    for r in _registry():
+        ref = r.get("terms_ref")
+        if ref not in CN_OFFICIAL_HOSTS.values() or A.terms_gate(str(ref))[0] == "confirmed":
+            continue
+        rec = AC.collect_one(r)
+        assert rec["status"] == "BLOCKED_ON_TERMS", (r["id"], rec)
+        assert rec["terms"] == A.terms_gate(str(ref))[0]
+        blocked += 1
+        # the same decision binds by HOST, with no terms_ref on the row
+        bare = {k: v for k, v in r.items() if k != "terms_ref"}
+        assert AC.collect_one(bare)["status"] == "BLOCKED_ON_TERMS", r["id"]
+    assert blocked >= 10           # SAFE x3, PBOC x2, CFETS x3, customs x2
+
+
+def test_cny_fix_pair_is_blocked_on_cfets_terms(tmp_path: Path) -> None:
+    lab = DL.hard_dislocations(DL.Paths(tmp_path / "desk"), dry_run=True,
+                               bars_fn=lambda _s: None)
+    row = lab["pairs"]["cny_fix_cnh"]
+    assert row["status"] == "BLOCKED_ON_TERMS" and row["terms"] == "refused"
+    # no free_stack roster on this desk: the fs_* inputs fail closed, by name
+    assert lab["pairs"]["shfe_gold_london"]["status"] == "BLOCKED_ON_TERMS"
+    assert "free_stack:akshare" in lab["pairs"]["shfe_gold_london"]["why"]
+
+
 def test_sge_main_fetches_nothing_while_terms_are_refused(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     def _no_net(*_a: Any, **_k: Any) -> Any:
@@ -268,6 +345,11 @@ def _desk_with_onshore(tmp: Path, xau: pd.DataFrame, cnh: pd.DataFrame) -> Path:
                          "available_time": (d + pd.Timedelta(hours=31)).tz_localize("UTC"),
                          "shfe_au_ret": lev[-1] - lev[-2]})
     pd.DataFrame(rows).to_parquet(series / "fs_akshare.parquet", index=False)
+    # the fs_* inputs are terms-gated on their free_stack roster row: carry the real one
+    real = json.loads((_DESK / "data" / "free_stack_sources.json").read_text(encoding="utf-8"))
+    ak = [r for r in real["sources"] if r.get("id") == "akshare"]
+    (desk / "data" / "free_stack_sources.json").write_text(json.dumps({"sources": ak}),
+                                                           encoding="utf-8")
     return root
 
 

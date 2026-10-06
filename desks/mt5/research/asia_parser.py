@@ -860,6 +860,16 @@ def append_vintage(root: str, observations: list[dict[str, Any]], *, sid: str,
             basis = f"declared lag {lag}d (first vintage: history the desk never saw live)"
         else:
             cand, basis = received, "first seen at receipt"
+        if prev is not None:
+            # A REVISION IS NEVER BACKDATED (audit hold 2026-10-06, MUST 3). A changed value
+            # whose printed stamp is at or before the previous vintage's receipt carries the
+            # ORIGINAL release's stamp (the source re-served the same page with a new number), so
+            # the earliest the desk could have known the new value is its own receipt. An
+            # unreadable previous receipt fails the same way: receipt, never the earlier stamp.
+            prev_recv = _ts(prev.get("received_at"))
+            if prev_recv is None or cand <= prev_recv:
+                cand, basis = received, ("revision received after the previous vintage; its "
+                                         "printed stamp is not later than that receipt")
         knowable = min(cand, received)
         row = dict(o)
         row.update({

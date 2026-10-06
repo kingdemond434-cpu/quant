@@ -1325,14 +1325,22 @@ HARD_Z_WINDOW = 60
 HARD_MIN_POINTS = 40
 HARD_GRID = {"threshold": (1.0, 1.5), "side_when_high": (1, -1)}
 HARD_PAIRS: dict[str, dict[str, Any]] = {
+    # The fs_* onshore returns are free_stack's `akshare` roster row (libs/data/free_stack.py
+    # CN_MARKET: Sina SHFE/INE daily klines); `free_stack:<id>` is resolved against that roster's
+    # own `machine_use_allowed` and licence by `_input_terms`.
     "shfe_gold_london": {"kind": "return_basis", "onshore": "shfe_au_ret",
-                         "offshore": "XAUUSD", "targets": ("XAUUSD",)},
+                         "offshore": "XAUUSD", "targets": ("XAUUSD",),
+                         "terms_ref": "free_stack:akshare"},
     "shfe_silver_london": {"kind": "return_basis", "onshore": "shfe_ag_ret",
-                           "offshore": "XAGUSD", "targets": ("XAGUSD",)},
+                           "offshore": "XAGUSD", "targets": ("XAGUSD",),
+                           "terms_ref": "free_stack:akshare"},
     "ine_brent": {"kind": "return_basis", "onshore": "ine_sc_ret", "offshore": "XBRUSD",
-                  "targets": ("XBRUSD", "XTIUSD")},
+                  "targets": ("XBRUSD", "XTIUSD"), "terms_ref": "free_stack:akshare"},
+    # The CFETS central parity is CFETS market data: its terms read `refused` (2026-10-06,
+    # alt_proxies.GATE_TERMS["cn_cfets_chinamoney"]), so this pair is BLOCKED_ON_TERMS by name.
     "cny_fix_cnh": {"kind": "level", "series": "cfets_fix__sem",
-                    "column": "fix_vs_cnh_gap_pips", "targets": ("USDCNH",)},
+                    "column": "fix_vs_cnh_gap_pips", "targets": ("USDCNH",),
+                    "terms_ref": "cn_cfets_chinamoney"},
     "sge_london": {"kind": "level", "series": "sge_premium_features",
                    "column": "premium_usd_oz", "targets": ("XAUUSD",),
                    "terms_ref": "cn_sge_premium"},
@@ -1440,11 +1448,36 @@ def _level_basis(series_dir: Path, spec: dict[str, Any]) -> tuple[pd.DataFrame |
     return f, MEASURED, f"{fp.name}:{col}"
 
 
+FREE_STACK_PREFIX = "free_stack:"
+
+
+def _input_terms(ref: str, desk: Path) -> tuple[str, str]:
+    """(state, why) for a HARD_PAIRS input's `terms_ref`. `free_stack:<id>` reads that row of
+    data/free_stack_sources.json: `confirmed` only when the roster row says
+    `machine_use_allowed: true` (its licence text rides along); an absent row, an unreadable
+    roster or any other value is `to_confirm` -- fail closed. Any other ref is alt_proxies'."""
+    if not ref.startswith(FREE_STACK_PREFIX):
+        from research.alt_proxies import terms_gate
+        return terms_gate(ref)
+    rid = ref[len(FREE_STACK_PREFIX):]
+    roster = desk / "data" / "free_stack_sources.json"
+    try:
+        doc = json.loads(roster.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return "to_confirm", f"{ref}: roster unreadable ({type(exc).__name__}); fail closed"
+    rows = doc.get("sources") if isinstance(doc, dict) else doc
+    row = next((r for r in rows or [] if isinstance(r, dict) and r.get("id") == rid), None)
+    if row is None:
+        return "to_confirm", f"{ref}: no free_stack roster row; fail closed"
+    if row.get("machine_use_allowed") is True:
+        return "confirmed", f"{ref}: roster machine_use_allowed; licence: {row.get('licence')}"
+    return "to_confirm", f"{ref}: roster machine_use_allowed={row.get('machine_use_allowed')!r}"
+
+
 def hard_dislocations(paths: Paths, *, dry_run: bool = False, budget_s: float = 120.0,
                       bars_fn: Any = None, clock_root: Path | None = None) -> dict[str, Any]:
     """Every HARD_PAIRS spread: build, publish, screen, deflate, donate (or charge the nulls)."""
     from research import pack_cells as PK
-    from research.alt_proxies import terms_gate
     t0 = time.monotonic()
     series_dir = paths.desk / "data" / "lake" / "series"
     load = bars_fn or (lambda s: _load_bars(paths, s))
@@ -1455,7 +1488,7 @@ def hard_dislocations(paths: Paths, *, dry_run: bool = False, budget_s: float = 
         row: dict[str, Any] = {"targets": list(spec["targets"])}
         pairs[name] = row
         if spec.get("terms_ref"):
-            state, why = terms_gate(str(spec["terms_ref"]))
+            state, why = _input_terms(str(spec["terms_ref"]), paths.desk)
             row["terms"] = state
             if state != "confirmed":
                 row.update({"status": "BLOCKED_ON_TERMS", "why": why[:240]})

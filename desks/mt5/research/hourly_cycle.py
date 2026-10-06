@@ -2039,6 +2039,10 @@ LEG_BUDGET_FLOOR_SEC: dict[str, int] = {
     # the SEALED DEFAULT and `_leg_floor_s` raises it to whatever `judging_throughput` actually
     # put in the environment this hour -- a floor read off the run, not off a claim.
     "external_gauntlet": 2_700,
+    # pack_cells runs its `--budget-s 240` pack pass AND THEN the semantic lane at
+    # SEM_BUDGET_SHARE (0.35) of it, 84 s more, before it writes PACK_CELLS.json. The `--budget-s`
+    # floor (240 + 60 = 300) killed it inside the semantic lane; 420 covers 324 s plus the write.
+    "pack_cells": 420,
 }
 
 

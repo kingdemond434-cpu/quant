@@ -104,6 +104,22 @@ def test_a_revision_appends_and_the_first_release_view_keeps_the_original(lake: 
     assert rev[0]["provenance_hash"] and rev[0]["raw_pointer"]
 
 
+def test_a_revision_is_never_backdated_to_the_original_publication(lake: Path) -> None:
+    """The revised page prints the SAME 09:15 stamp (01:15 UTC) as the first release; the new
+    value was first held at 05:00 UTC, so that is its knowable instant -- not 01:15."""
+    _vault(lake, "cfets_fixing", _ccpr("2026-10-06", "7.1012"), "2026-10-06T01:20:00+00:00", URL)
+    AP.parse_all()
+    _vault(lake, "cfets_fixing", _ccpr("2026-10-06", "7.1020"), "2026-10-06T05:00:00+00:00", URL)
+    AP.parse_all()
+    rows = AP.read_ledger("cfets_fixing")
+    rev = next(r for r in rows if r["revision_number"] == 1)
+    first = next(r for r in rows if r["observation_id"] == rev["revision_of"])
+    assert first["knowable_at"].startswith("2026-10-06T01:15")
+    assert rev["knowable_at"] == rev["received_at"]
+    assert rev["knowable_at"].startswith("2026-10-06T05:00")
+    assert "revision" in rev["knowable_basis"]
+
+
 def test_generic_snapshot_tables_become_a_series(lake: Path) -> None:
     for i, (day, val) in enumerate((("2026-10-01", "10"), ("2026-10-02", "12"))):
         body = f"member,volume\nA,{val}\nB,{int(val) + 1}\nC,{int(val) + 2}\n".encode()
