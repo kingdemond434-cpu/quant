@@ -930,7 +930,7 @@ def live_heat_ceiling(heat: dict) -> tuple[float, str]:
                  f"{surv.get('why') or 'survival constraint'}")
 
 
-def verify_heat_ceiling(cap: float, cap_why: str, heat: dict,
+def verify_heat_ceiling(cap: float, cap_why: str, heat: dict[str, Any],
                         surface: object) -> tuple[float, str]:
     """The ceiling after the money path checks the allocator's claim against its own evidence.
 
