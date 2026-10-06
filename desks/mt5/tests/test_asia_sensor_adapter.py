@@ -517,13 +517,14 @@ def test_a_missing_index_keeps_the_cursor_and_refeeds_nothing(tmp_path: Path) ->
     n = len(_all_rows(root))
     (root / "latest_numeric.json").unlink()
     doc = ad.run(desk, ledger_root=root, report=rep, now=NOW + timedelta(hours=1))
-    assert doc["ledger_status"] == "INDEX_MISSING"
+    assert doc["ledger_status"].startswith("INDEX_MISSING")
     # the cursor is kept: no store is re-fed because the index went missing
     assert all(v["status"] == "UNCHANGED" for k, v in doc["stores"].items()
                if k in first["stores_seen"])
     assert doc["totals"].get("appended", 0) == 0
     rep.unlink()           # and with no cursor either, the append dedupes every re-sent row
     bare = ad.run(desk, ledger_root=root, report=rep, now=NOW + timedelta(hours=2))
-    assert bare["ledger_status"] == "INDEX_MISSING"
+    # the contract rebuilt the index on the previous pass, so it is present again
+    assert bare["ledger_status"] == "OK"
     assert bare["totals"]["appended"] == 0 and bare["totals"]["conflicts"] == 0
     assert len(_all_rows(root)) == n

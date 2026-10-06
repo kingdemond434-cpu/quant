@@ -734,22 +734,24 @@ def settle_intraday(obs: list[sc.SensorObservation], store_time: datetime | None
 
 
 def ledger_state(ledger: sc.SensorLedger) -> str:
-    """The ledger's index state, read through what #208 exposes (`latest_index`, which raises
-    LedgerIndexCorrupt; `index_path`; `obs_dir`). EMPTY: no index and no shards -- a new ledger,
-    the only state that re-feeds every store. INDEX_MISSING: shards exist but no index file
-    (documents only, or a lost index) -- the cursor is KEPT, so only stores that changed are
-    sent, and the append dedupes them by observation id per receipt-day shard. INDEX_CORRUPT:
-    nothing is appended this pass, the index is never reset. OK otherwise."""
+    """The ledger's index state this pass, from #208's own behaviour (never a local copy):
+    `latest_index` raises LedgerIndexCorrupt on an unreadable index and REBUILDS an absent one
+    from the shards. So, checked before that first load:
+      EMPTY          no index and no shards: a new ledger, the ONLY state that re-feeds stores;
+      INDEX_MISSING  shards but no index file: the contract rebuilt it from the shards, the
+                     cursor is KEPT (no re-feed) and any re-sent row is a duplicate of the
+                     rebuilt index;
+      INDEX_CORRUPT  the pass completes, appends nothing, and never resets the index;
+      OK             otherwise."""
+    missing = not ledger.index_path.exists()
+    shards = ledger.obs_dir.is_dir() and any(ledger.obs_dir.glob("*.jsonl"))
     try:
-        held = ledger.latest_index()
+        ledger.latest_index()
     except sc.LedgerIndexCorrupt as exc:
         return f"INDEX_CORRUPT: {str(exc)[:160]}"
-    if held:
-        return "OK"
-    shards = ledger.obs_dir.is_dir() and any(ledger.obs_dir.glob("*.jsonl"))
-    if ledger.index_path.exists():
-        return "OK" if not shards else "OK (index holds no numeric key)"
-    return "INDEX_MISSING" if shards else "EMPTY"
+    if missing:
+        return "INDEX_MISSING: rebuilt by the contract from the shards" if shards else "EMPTY"
+    return "OK"
 
 
 def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float = 60.0,
