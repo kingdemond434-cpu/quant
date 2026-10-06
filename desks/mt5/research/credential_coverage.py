@@ -268,8 +268,13 @@ def main(argv: list[str] | None = None) -> int:
     if a.markdown:
         Path(a.markdown).parent.mkdir(parents=True, exist_ok=True)
         Path(a.markdown).write_text(markdown(doc), "utf-8")
+    # KEYS_NEEDED.json (principal 2026-10-06: an alert whenever a key is needed). Derived from
+    # the report just written plus the keyed and Asia legs' own; names and links only.
+    from libs.ops import keys_needed
+    need = keys_needed.build()
+    keys_needed.write(need)
     print(f"credential_coverage: {doc['status_counts']}; {len(doc['name_mismatches'])} name "
-          "mismatches")
+          f"mismatches; {need['n']} key(s) needed")
     return 0
 
 
