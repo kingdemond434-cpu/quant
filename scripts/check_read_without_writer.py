@@ -172,7 +172,7 @@ def scan() -> dict:
             on_disk.add(p.name)
         if p.suffix not in _SUFFIXES:
             continue
-        rel = str(p.relative_to(ROOT))
+        rel = p.relative_to(ROOT).as_posix()
         reads, writes, named = _classify(p)
         for n in named:
             mentions[n] = mentions.get(n, 0) + 1

@@ -22,6 +22,40 @@ import pytest
 from scripts import disk_guard
 
 
+@pytest.fixture(autouse=True)
+def windows_fixture_process_snapshot(monkeypatch, tmp_path):
+    if os.name == "nt":
+        import ctypes
+        from ctypes import wintypes
+
+        # Probe the actual fixture files with native exclusive-open semantics.
+        # Foreign-process handle enumeration crashes Python 3.14.0 on this host;
+        # an existing reader must instead refuse our real share-mode-zero open.
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                                      ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD,
+                                      wintypes.HANDLE]
+        kernel.CreateFileW.restype = wintypes.HANDLE
+        kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel.CloseHandle.restype = wintypes.BOOL
+        invalid = ctypes.c_void_p(-1).value
+
+        def held_files():
+            held = set()
+            for path in tmp_path.rglob("*"):
+                if not path.is_file():
+                    continue
+                handle = kernel.CreateFileW(str(path), 0x80000000, 0, None, 3, 0x80, None)
+                if handle == invalid:
+                    held.add(str(path))  # Sharing/access failure protects the file.
+                else:
+                    assert kernel.CloseHandle(handle)
+            return held
+
+        monkeypatch.setattr(disk_guard, "_open_files", held_files)
+        monkeypatch.setattr(disk_guard, "_cwds", lambda: {os.getcwd()})
+
+
 def _age(path: Path, hours: float) -> None:
     old = time.time() - hours * 3600.0
     os.utime(path, (old, old))
@@ -106,6 +140,17 @@ def test_nested_stale_scratch_is_reached(tmproot):
 def test_mem_available_is_read_and_positive():
     """The arm's instrument. 0.0 means blind, which the report escalates rather than passes."""
     assert disk_guard.mem_available_mb() > 0.0
+
+
+def test_unmeasured_open_file_census_preserves_stale_scratch(tmproot, monkeypatch):
+    stale = tmproot / "old.bin"
+    stale.write_bytes(b"valuable")
+    _age(stale, 500.0)
+    monkeypatch.setattr(disk_guard, "_open_files", lambda: None)
+    actions = []
+    assert disk_guard.reap_tmpfs(datetime.now(tz=UTC), actions) == (0, 0)
+    assert stale.exists()
+    assert "UNMEASURED" in actions[0]
 
 
 def test_unreadable_meminfo_is_a_defect_not_a_pass(tmp_path, monkeypatch):

@@ -115,6 +115,13 @@ def _owner_alive(pid: int) -> bool | None:
     """
     if pid <= 0:
         return None
+    if sys.platform == "win32":
+        try:
+            import psutil
+
+            return psutil.pid_exists(pid)
+        except (ImportError, OSError):
+            return None
     try:
         os.kill(pid, 0)
     except ProcessLookupError:

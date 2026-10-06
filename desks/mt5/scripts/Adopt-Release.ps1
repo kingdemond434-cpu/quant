@@ -103,6 +103,13 @@
     Adopt the FETCH_HEAD already on disk instead of fetching first. For a
     rerun, or a box whose network is the thing that is broken.
 
+.PARAMETER Target
+    Adopt exactly this commit instead of FETCH_HEAD. Adopt-And-Seal passes the
+    commit the release gate chose (`scripts/release_promotion.py gate`: the
+    branch tip when it is a green release plus box state, else the newest
+    release itself), together with -NoFetch because the gate has already
+    fetched it. The commit must already be in this clone.
+
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File desks\mt5\scripts\Adopt-Release.ps1
 #>
@@ -110,7 +117,8 @@
 param(
     [string] $RepoRoot,
     [string] $Branch,
-    [switch] $NoFetch
+    [switch] $NoFetch,
+    [string] $Target
 )
 
 $ErrorActionPreference = "Stop"
@@ -285,6 +293,40 @@ function Invoke-Git {
     return $out
 }
 
+function Invoke-GuardedIndexCommit {
+    # Windows porcelain commit refreshes the evidence lake and has crashed with
+    # C0000005 after adoption. Commit the already staged tree, with the actual
+    # repository guards and an atomic old-value ref check; never skip validation.
+    param([string] $Message)
+    $beforeHead = (Invoke-Git @("rev-parse", "HEAD")).Trim()
+    $branchRef = (Invoke-Git @("symbolic-ref", "-q", "HEAD")).Trim()
+    if (-not $beforeHead -or -not $branchRef) { throw "Cannot commit a detached or unmeasured adoption" }
+    $beforeTree = (Invoke-Git @("write-tree")).Trim()
+    $guardPython = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+    $guardArgs = @()
+    if (-not (Test-Path -LiteralPath $guardPython)) {
+        if (Get-Command py -ErrorAction SilentlyContinue) { $guardPython = "py"; $guardArgs = @("-3") }
+        else { $guardPython = "python" }
+    }
+    foreach ($relativeGuard in @("scripts/moneypath_precommit_guard.py", "scripts/check_protected_records.py")) {
+        $guardPath = Join-Path $RepoRoot $relativeGuard
+        if (-not (Test-Path -LiteralPath $guardPath)) { throw "Adoption guard missing: $relativeGuard" }
+        $previousPreference = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        try {
+            $guardOutput = @(& $guardPython @guardArgs $guardPath 2>&1 | ForEach-Object { "$_" })
+            $guardResult = $LASTEXITCODE
+        } finally { $ErrorActionPreference = $previousPreference }
+        $guardOutput | ForEach-Object { Write-Host ("  " + $_) }
+        if ($guardResult -ne 0) { throw "Adoption guard refused: $relativeGuard (exit $guardResult)" }
+    }
+    $afterTree = (Invoke-Git @("write-tree")).Trim()
+    if ($afterTree -ne $beforeTree) { throw "Adoption guards changed the staged tree; no commit recorded" }
+    $commit = (Invoke-Git @("commit-tree", $beforeTree, "-p", $beforeHead, "-m", $Message)).Trim()
+    if ($commit -notmatch '^[0-9a-f]{40}$') { throw "Adoption commit-tree returned no measured commit" }
+    Invoke-Git @("update-ref", $branchRef, $commit, $beforeHead) | Out-Null
+}
+
 function Invoke-GitBytes {
     # BYTE-EXACT, and it has to be. PowerShell 5.1's `>` writes UTF-16 and
     # Out-File writes a BOM; either one changes the content, so the file would
@@ -332,7 +374,9 @@ function Get-WorktreeBytes {
             throw ("cat-file {0}:{1} failed: {2}" -f $Rev, $Path, $r.Error)
         }
     }
-    return $r.Bytes
+    # PowerShell enumerates an empty array into no pipeline output, yielding null
+    # at the caller. A zero-byte Git blob is a real file, not a missing buffer.
+    return ,$r.Bytes
 }
 
 function Write-InPlace {
@@ -436,7 +480,8 @@ $StatePrefixes = @("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/", "
 # MIRRORS libs/ops/release.STATE_FILES -- a test pins the two lists to each other. The eighth
 # entry was measured 2026-09-23: an otherwise clean adoption refused to seal on swap_exposure.json,
 # which the box rewrites hourly beside the code.
-$StateFiles = @("desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
+$StateFiles = @("context/decision_journal.jsonl", "docs/desk_lessons.jsonl",
+                "desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
                 "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
                 "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json",
                 "desks/mt5/mech_split.json", "desks/mt5/swap_exposure.json",
@@ -636,7 +681,15 @@ if (-not $NoFetch) {
                "common cause on this box -- see docs/BOX_PERMISSIONS.md")
     }
 }
-$target = (Invoke-Git @("rev-parse", "FETCH_HEAD")).Trim()
+# A TARGET PINNED BY THE RELEASE GATE WINS OVER FETCH_HEAD (2026-09-30). The gate fetched the
+# tip and the production pointer into refs/quant/release-gate/* and chose which one this box may
+# run; FETCH_HEAD would name the raw tip, which is exactly what the gate exists to hold back.
+if ($Target) {
+    $target = (Invoke-Git @("rev-parse", "--verify", "$Target^{commit}")).Trim()
+    Write-Host "  target pinned by the release gate"
+} else {
+    $target = (Invoke-Git @("rev-parse", "FETCH_HEAD")).Trim()
+}
 $head   = (Invoke-Git @("rev-parse", "HEAD")).Trim()
 Write-Host ("  head   {0}" -f $head.Substring(0, 12))
 Write-Host ("  target {0}" -f $target.Substring(0, 12))
@@ -685,6 +738,41 @@ if ($ancestorRc -eq 0) {
 }
 if ($ancestorRc -ne 1) {
     Write-Host "  WARNING: could not measure whether origin is behind HEAD; adopting as before"
+}
+
+# ---- 0b. THE TARGET'S JUDGE MUST BE SEALED BEFORE ANY OF IT LANDS (2026-09-30) ----
+# Origin carried a broken seal for about two minutes (4678fe4f at 515d665e, until fc6c34e5
+# re-signed it), and this script checked neither CI nor the seal: an adoption at :12 inside that
+# window would have landed an unsigned judge on the box that trades. `check_target_seal.py`
+# hashes the fetched COMMIT's frozen judge files against the manifest that commit carries, using
+# the union of this checkout's and the target's frozen lists. Anything but SEALED refuses here,
+# before a byte is written: the running release, its seal and the gateway stay exactly as they
+# are, and the next hourly pass adopts once origin is re-signed. Exit 7 so Adopt-And-Seal can say
+# what happened instead of reporting a partial adoption.
+$sealCheck = Join-Path $RepoRoot "scripts\check_target_seal.py"
+if (Test-Path $sealCheck) {
+    $sealPy = Join-Path $RepoRoot ".venv\Scripts\python.exe"; $sealPyArgs = @()
+    if (-not (Test-Path $sealPy)) {
+        if (Get-Command py -ErrorAction SilentlyContinue) { $sealPy = "py"; $sealPyArgs = @("-3") }
+        else { $sealPy = "python" }
+    }
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $sealOut = @(& $sealPy @sealPyArgs $sealCheck $target 2>&1 | ForEach-Object { "$_" })
+        $sealRc = $LASTEXITCODE
+    } catch {
+        $sealOut = @("check_target_seal.py could not run: " + $_.Exception.Message)
+        $sealRc = 2
+    } finally { $ErrorActionPreference = $prevEap }
+    $sealOut | ForEach-Object { Write-Host ("  " + $_) }
+    if ($sealRc -ne 0) {
+        Write-Host ("  REFUSING target {0}: its judge is not sealed (rc {1}); keeping the current release" -f
+                    $target.Substring(0, 12), $sealRc)
+        exit 7
+    }
+} else {
+    Write-Host "  check_target_seal.py absent in this checkout (pre-gate release); adopting without the seal check this once"
 }
 
 # ---- 1. THE BOX'S OWN UNCOMMITTED STATE, COMMITTED AS ITSELF -----------------
@@ -814,6 +902,50 @@ if ($dirty.Count -gt 0) {
     if ($dirtyCode.Count -gt 0) {
         Write-Host ("  REFUSING: {0} local code path(s) are dirty; a release may not overwrite unknown code" -f $dirtyCode.Count)
         $dirtyCode | ForEach-Object { Write-Host ("    {0}" -f $_) }
+
+        # PUBLISH THE REFUSAL BEFORE EXITING (2026-10-03). This preflight deliberately runs
+        # before any adoption write, but it also used to run before the only
+        # ADOPTION_STATE.json writer near the end of this script. The scheduled adopter then
+        # refused the current 28 dirty code paths every hour while its machine-readable report
+        # remained frozen four days earlier on one unrelated path and an obsolete target.
+        # `plumbing_watchdog.check_adoption_partial` consumes this file, so the early exit made
+        # the real blocker invisible to the canonical issue path even though the console knew it.
+        #
+        # This report grants no recovery permission and changes no path: it records exactly the
+        # ambiguity that is causing the fail-closed exit. The later full report still replaces it
+        # after an adoption reaches the write/verify stages.
+        $preflightState = [ordered]@{
+            measured_at = (Get-Date).ToUniversalTime().ToString("o")
+            branch      = $Branch
+            head        = (Invoke-Git @("rev-parse", "HEAD")).Trim()
+            head_before = $head
+            target      = $target
+            sealed      = $false
+            ok          = $false
+            stage       = "preflight-dirty-code"
+            counts      = [ordered]@{
+                written = 0; added = 0; removed = 0; untracked = 0
+                shipped_elsewhere = 0; kept_state = $dirtyState.Count; repair_passes = 0
+                code_drift = $dirtyCode.Count; state_drift = $dirtyState.Count
+                discovery_drift = 0; unwritable = 0
+            }
+            code_drift  = @($dirtyCode)
+            unwritable  = @()
+            state_drift = @($dirtyState | Select-Object -First 200)
+            shipped_by  = "MT5-IntelShip / desks/mt5/scripts/intel_ship_adopt.ps1 (intel-ship/send)"
+        }
+        $preflightReportDir = Join-Path $RepoRoot "desks\mt5\reports"
+        try {
+            if (-not (Test-Path -LiteralPath $preflightReportDir)) {
+                New-Item -ItemType Directory -Force -Path $preflightReportDir | Out-Null
+            }
+            [System.IO.File]::WriteAllText(
+                (Join-Path $preflightReportDir "ADOPTION_STATE.json"),
+                ($preflightState | ConvertTo-Json -Depth 6),
+                (New-Object System.Text.UTF8Encoding($false)))
+        } catch {
+            Write-Host ("  could not write preflight ADOPTION_STATE.json: {0}" -f $_.Exception.Message)
+        }
         exit 1
     }
 }
@@ -1048,8 +1180,7 @@ if ($staged.Count -gt 0) {
 $pending = @(Invoke-Git @("diff", "--cached", "--name-only") |
              ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
 if ($pending.Count -gt 0) {
-    Invoke-Git @("commit", "-m",
-        ("Adopt {0} in place; NTFS entry corruption blocks unlink" -f $target.Substring(0, 12))) | Out-Null
+    Invoke-GuardedIndexCommit -Message ("Adopt {0} in place; NTFS entry corruption blocks unlink" -f $target.Substring(0, 12))
     Write-Host ("  committed {0} path(s)" -f $pending.Count)
 }
 
@@ -1159,7 +1290,7 @@ while ($drift.Count -gt 0 -and $repairPasses -lt 2) {
     $pendingRepair = @(Invoke-Git @("diff", "--cached", "--name-only") |
                        ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
     if ($pendingRepair.Count -gt 0) {
-        Invoke-Git @("commit", "-m",
+        Invoke-GuardedIndexCommit -Message (
             ("Adopt {0} in place (repair pass {1}); paths that lost an index.lock race" -f
              $target.Substring(0, 12), $repairPasses)) | Out-Null
         Write-Host ("    committed {0} path(s) on the repair pass" -f $pendingRepair.Count)

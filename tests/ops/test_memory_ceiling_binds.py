@@ -62,6 +62,8 @@ def test_an_unbindable_ceiling_is_reported(monkeypatch) -> None:  # type: ignore
             return 0, "MemoryMax=99999999999"
         return 0, "MemoryMax=infinity"
 
+    monkeypatch.setattr(Path, "read_text", lambda self, *a, **k:
+                        "MemTotal: 4000000 kB\nSwapTotal: 0 kB\n")
     monkeypatch.setattr(mod, "_run", fake_run)
     found = mod.check_memory_ceilings()
     assert len(found) == 1, found
@@ -80,6 +82,8 @@ def test_a_ceiling_that_actually_binds_is_not_a_finding(monkeypatch) -> None:  #
             return 0, "bounded.service enabled enabled\n"
         return 0, "MemoryMax=104857600"  # 100 MB, below any real box
 
+    monkeypatch.setattr(Path, "read_text", lambda self, *a, **k:
+                        "MemTotal: 4000000 kB\nSwapTotal: 0 kB\n")
     monkeypatch.setattr(mod, "_run", fake_run)
     assert mod.check_memory_ceilings() == []
 
@@ -87,6 +91,8 @@ def test_a_ceiling_that_actually_binds_is_not_a_finding(monkeypatch) -> None:  #
 def test_an_unreadable_meminfo_is_unmeasured_never_clean(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     """L1.28a. 'we cannot count it' and 'it is fine' must never render identically."""
     mod = _module()
+    monkeypatch.setattr(Path, "read_text", lambda self, *a, **k:
+                        (_ for _ in ()).throw(OSError("meminfo unavailable")))
     monkeypatch.setattr(mod, "_run", lambda cmd, timeout=60: (1, ""))
     found = mod.check_memory_ceilings()
     assert found and "UNMEASURED" in found[0], found
@@ -95,6 +101,9 @@ def test_an_unreadable_meminfo_is_unmeasured_never_clean(monkeypatch) -> None:  
 def test_this_box_has_no_unbindable_ceiling_left() -> None:
     """The live assertion. Reads the real host, so it fails if one is reintroduced anywhere."""
     mod = _module()
+    if not Path("/proc/meminfo").exists():
+        assert any("UNMEASURED" in finding for finding in mod.check_memory_ceilings())
+        return
     meminfo = Path("/proc/meminfo").read_text("utf-8")
     total = int(re.search(r"MemTotal:\s+(\d+)", meminfo).group(1))  # type: ignore[union-attr]
     assert total > 0

@@ -1,0 +1,5 @@
+{
+  "_doc": "The trading box's stable machine id, read by libs/ops/host_identity.py. machine_id is /etc/machine-id (Linux) or HKLM\\SOFTWARE\\Microsoft\\Cryptography\\MachineGuid (Windows). Null until recorded ON the box with `python -m libs.ops.host_identity --record`; until then every host reads UNMEASURED and the hostname is a reported fallback, never the identity. The box's measured id is also published in desks/mt5/data/placement_interlock.json (host.machine_id).",
+  "hostname": "vmi3571445",
+  "machine_id": null
+}

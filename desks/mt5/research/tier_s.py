@@ -74,6 +74,7 @@ from libs.tiers import (  # noqa: E402
     opportunity_exchange,
     prediction_accounting,
     red_queen,
+    regression_stop,
     replay,
     researcher_market,
     review_panel,
@@ -1323,7 +1324,16 @@ def organ_online_fdr() -> dict[str, Any]:
         n_graph += 1
         tests.append(online_fdr.Test(test_id=nid, at=str(r.get("at") or ""), p=1.0,
                                      family=str(r.get("family") or "")))
+    # THE NULL LAB'S PRICE (desks/mt5/research/null_lab.py, hourly): a family whose own gate
+    # passes its null above the nominal level has its p-values multiplied by the measured charge
+    # before the replay, so it spends the lifetime budget at its REAL false-positive rate.
+    from libs.research import null_lab
+    null_doc = _read(REPORTS / "NULL_LAB.json")
+    tests, null_charge = online_fdr.charge_null_fpr(tests, null_lab.charges(null_doc))
+    null_charge["source"] = ("reports/NULL_LAB.json" if isinstance(null_doc, dict)
+                             else "UNMEASURED: reports/NULL_LAB.json absent")
     res = online_fdr.replay(tests)
+    res["null_lab"] = null_charge
     rows = res.pop("rows")
     over = [r for r in rows if r["over_budget"]]
     _write(OUT_DIR / "ONLINE_FDR_ROWS.json", {"generated_utc": NOW.isoformat(),
@@ -2969,8 +2979,20 @@ def organ_data_os() -> dict[str, Any]:
     sweep = _read(REPORTS / "edges_macro_fusion_sweep.json")
     pit_reads = (sweep.get("pit") if isinstance(sweep, dict) else None) or {
         "status": data_os.UNMEASURED, "why": "edges_macro_fusion_sweep.json absent or pre-PIT"}
+    # KNOWN-BY-DATE: every registered dataset's declared publication lag (data_os
+    # .PUBLICATION_LAGS or its own pit block), and the research readers routed through the store.
+    reg_doc = _read(DATA_REGISTRY)
+    reg = reg_doc.get("datasets") if isinstance(reg_doc, dict) else None
+    lags = (data_os.lag_census(reg) if isinstance(reg, dict) else
+            {"status": data_os.UNMEASURED, "why": "data_registry.json absent"})
+    macro_sweep = _read(REPORTS / "macro_conditioned_sweep.json")
+    pit_reads = {"edges_macro_fusion_sweep": pit_reads,
+                 "macro_conditioned_sweep": ((macro_sweep.get("pit") if isinstance(
+                     macro_sweep, dict) else None) or {
+                     "status": data_os.UNMEASURED,
+                     "why": "macro_conditioned_sweep.json absent or pre-PIT"})}
     return {"pit_audits": audits, "sources": sources, "gate_yield": yields,
-            "pit_reads": pit_reads,
+            "pit_reads": pit_reads, "publication_lags": lags,
             "acquisition": {"scored_on": {"rankers": "own_metric", "landed": "gate_yield"},
                             "open": len(ranking), "registered_now": made,
                             "resolved_now": n_res, "calibration": cal, "top": ranking[:25],
@@ -3881,8 +3903,22 @@ def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
     arena = _judge_validators(out, st.get("challengers") or [],
                               bool(sealed_now.get("blocked")))
     rb = twin.rollback_plan(_release_history())
+    # THE AUTOMATIC REGRESSION STOP (gap B): the current sealed release judged on its forward
+    # residual R against the previous one; a regression stops promotion under it, rolls back the
+    # unsealed code in one commit and writes the sealed remainder as a patch
+    # (libs/tiers/regression_stop.py -> data/tier_s/RELEASE_STOP.json)
+    try:
+        stop = regression_stop.run(live_rows(), _release_history(), shadow_rows())
+        stop_view = {k: stop.get(k) for k in ("state", "release", "why", "rollback",
+                                              "sealed_patch")}
+        stop_view["regression"] = {k: (stop.get("regression") or {}).get(k)
+                                   for k in ("verdict", "n_current", "n_previous", "t",
+                                             "difference", "why")}
+    except Exception as exc:                       # never costs the twin
+        stop_view = {"state": "ERROR", "why": f"{type(exc).__name__}: {exc}"}
     runs = shadow.get("runs") or []
     return {"challengers": out[-30:], "rollback": rb, "shadow_desk": shadow,
+            "regression_stop": stop_view,
             "shadow_consumer": consumed, "validator_arena": arena,
             "metric": {"challengers": len(out),
                        "shadow_rejected": len(consumed.get("rejected") or []),
@@ -4356,6 +4392,18 @@ def _door_input_health() -> dict[str, Any]:
             "grace_h": DOOR_INPUT_GRACE_H, "defects": defects}
 
 
+def _attest(errors: dict[str, str]) -> bool:
+    """Write data/tier_s/box_evidence.json on this host; record a failure under `box_evidence`."""
+    try:
+        from libs.tiers import box_evidence
+        box_evidence.attest()
+        errors.pop("box_evidence", None)
+        return True
+    except Exception as exc:                        # host dependent; recorded, never raised
+        errors["box_evidence"] = f"{type(exc).__name__}: {exc}"
+        return False
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--only", default="", help="comma-separated organ names")
@@ -4388,6 +4436,13 @@ def main(argv: list[str] | None = None) -> int:
     def want(n: str) -> bool:
         return not only or n in only
 
+    if not only:
+        # ATTEST FIRST AS WELL AS LAST (2026-09-30). The attestation used to be written only after
+        # the last organ, so a full pass killed at its leg cap (1,500 s; the box's ledgers are
+        # larger than the cloud's 607 s run) left NO box_evidence.json at all and the sync had
+        # nothing to carry. This early write records the previous pass's artifacts with their
+        # real ages -- stale layers read stale, never DONE -- and the write at the end replaces it.
+        _attest(errors)
     plan: list[tuple[str, Callable[[], dict[str, Any]]]] = [
         ("truth_kernel", organ_truth_kernel), ("firewall", organ_firewall),
         ("immune", organ_immune), ("red_queen", organ_red_queen),
@@ -4440,16 +4495,18 @@ def main(argv: list[str] | None = None) -> int:
         summary["door_inputs"] = _door_input_health()
         _write(SUMMARY, summary)
         # A layer is DONE only on the trading box's own evidence (libs/tiers/box_evidence).
-        try:
-            from libs.tiers import box_evidence
-            box_evidence.attest()
-        except Exception as exc:                    # pragma: no cover - host dependent
-            errors["box_evidence"] = f"{type(exc).__name__}: {exc}"
+        # A failed attestation used to land in `errors` AFTER the summary was written, so the
+        # one defect that keeps every layer from DONE was recorded nowhere: now it re-writes
+        # the summary with the error named.
+        if not _attest(errors):
+            summary["errors"] = {k: v.splitlines()[0] for k, v in errors.items()}
+            _write(SUMMARY, summary)
     door_defects = list((summary.get("door_inputs") or {}).get("defects") or [])
     print(json.dumps({"total_seconds": summary["total_seconds"],
                       "errors": list(summary["errors"]),
                       "door_input_defects": door_defects}), flush=True)
-    if errors and len(errors) == len(timings):
+    organ_errors = [k for k in errors if k in timings]
+    if organ_errors and len(organ_errors) == len(timings):
         return 1
     # A DOOR INPUT MISSING PAST ITS GRACE FAILS THE LEG, so the hourly report carries the defect
     # (exit code and stderr tail) instead of a quiet line in a JSON file: meanwhile every

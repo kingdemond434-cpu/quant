@@ -167,7 +167,12 @@ def run(root: Path, out: Path | None = None) -> dict[str, Any]:
     failures += c_fail
     checks["compile"] = {"ok": not c_fail, "n": n_compiled}
 
-    i_fail, skipped, n_imported = _import_all()
+    # Import checks and immutable source scans are independent; every result still binds.
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        immutable_job = pool.submit(_immutable, root)
+        i_fail, skipped, n_imported = _import_all()
+        im_fail, imm = immutable_job.result()
     failures += i_fail
     checks["imports"] = {"ok": not i_fail, "n": n_imported, "skipped": len(skipped)}
 
@@ -175,7 +180,6 @@ def run(root: Path, out: Path | None = None) -> dict[str, Any]:
     failures += id_fail
     checks["identity"] = ident
 
-    im_fail, imm = _immutable(root)
     failures += im_fail
     checks["immutable"] = imm
 

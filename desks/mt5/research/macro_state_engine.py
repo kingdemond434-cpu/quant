@@ -280,12 +280,24 @@ def fred_levels() -> dict[str, tuple[tuple[str, ...], tuple[float, ...]]]:
     here are DIFFERENCES of levels (the 10y breakeven is DGS10 - DFII10) and a difference of
     percentile ranks is not a spread.
     """
+    out: dict[str, tuple[tuple[str, ...], tuple[float, ...]]] = {}
+    # ALFRED FIRST (2026-09-30): the same point-in-time overlay `macro_state` reads, so a series
+    # with a vintage file is its first-release path dated by publication, and the rest are the
+    # current vintage -- `fred_vintages()` says which is which.
+    try:
+        from libs.portfolio.macro_state import load_pit
+        series, _newest, _v = load_pit()
+        for sid, rows in series.items():
+            if rows:
+                out[str(sid)] = (tuple(r[0] for r in rows), tuple(r[1] for r in rows))
+        return out
+    except Exception:                                                   # pragma: no cover - env
+        pass
     try:
         from libs.portfolio.macro_state import resolve_archive
         doc = _read_json(resolve_archive())
     except Exception:                                                   # pragma: no cover - env
         doc = None
-    out: dict[str, tuple[tuple[str, ...], tuple[float, ...]]] = {}
     if not isinstance(doc, dict):
         return out
     for sid, pts in (doc.get("series") or {}).items():
@@ -303,6 +315,21 @@ def fred_levels() -> dict[str, tuple[tuple[str, ...], tuple[float, ...]]]:
         if rows:
             out[str(sid)] = (tuple(r[0] for r in rows), tuple(r[1] for r in rows))
     return out
+
+
+def fred_vintages() -> dict[str, Any]:
+    """Which vintage each FRED series in `fred_levels` is: ALFRED point-in-time, or the current
+    vintage stamped 'current (look-ahead risk)'. The report carries it so no reader treats a
+    revised series as point-in-time."""
+    try:
+        from libs.portfolio.macro_state import VINTAGE_ALFRED, VINTAGE_CURRENT, load_pit
+        _s, _n, by_sid = load_pit()
+    except Exception as exc:                                            # pragma: no cover - env
+        return {"vintage": "current (look-ahead risk)", "by_series": {},
+                "why": f"{type(exc).__name__}: {exc}"}
+    overall = (VINTAGE_ALFRED if by_sid and all(v == VINTAGE_ALFRED for v in by_sid.values())
+               else VINTAGE_CURRENT)
+    return {"vintage": overall, "by_series": by_sid}
 
 
 def rank_window() -> int:
@@ -1208,7 +1235,8 @@ def build(*, budget_s: float = 600.0, max_donations: int = MAX_DONATIONS, p_max:
                                                   "no instrument can be routed to a region"},
                    "fred_archive": {"status": "present" if fred_levels() else "absent",
                                     "n_series": len(fred_levels()),
-                                    "why": "" if fred_levels() else "no FRED archive on this box"}},
+                                    "why": "" if fred_levels() else "no FRED archive on this box",
+                                    **fred_vintages()}},
         "blocks": blocks, "blocks_summary": summary, "registry_census": census,
         "global_factors": global_factors(blocks),
         "edge_changes": {**counts, "by_kind": by_kind, "rows": rows[:200],

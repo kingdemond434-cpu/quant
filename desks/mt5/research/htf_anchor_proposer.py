@@ -59,6 +59,10 @@ HYP = BASE / "data" / "hypotheses"
 CENSUS = HYP / "exit_operator_bind_census.json"
 MINT = HYP / "htf_anchor_mint.json"
 SEAT = "video_anchor_exit"
+#: The video's own search: its Sharpe 1.87 was the best of ~200 variations. Declared on every row
+#: so the whole grid is ONE claim family charged these trials ONCE (libs.research.claim_selection)
+#: -- the 25,520 cells this proposer put in the bank were one breadth unit, not 25,520.
+SOURCE_SELECTION_TRIALS = 200
 
 #: The charts the mechanism is minted on. Declaring `timeframe` in params SUPPRESSES the
 #: compiler's 16-way (chart x session) fan-out, which is deliberate: this conversion declares its
@@ -253,6 +257,7 @@ def _row(sym: str, family: str, params: dict[str, Any], note: str) -> dict[str, 
         "title": f"{family} on {sym} {params.get('timeframe', 'H1')} -- video-derived anchor/exit",
         "url": "",
         "source": SEAT,
+        "claim_selection_trials": SOURCE_SELECTION_TRIALS,
         "event_time": None,
     }
 
@@ -337,6 +342,17 @@ def main(argv: list[str] | None = None) -> int:
     CURSOR.write_text(json.dumps({"at": nxt, "of": len(every),
                                   "written": time.strftime("%Y-%m-%dT%H:%M:%SZ",
                                                            time.gmtime())}), "utf-8")
+    # THE WHOLE GRID IS ONE CLAIM FAMILY, REGISTERED WHOLE (libs.research.claim_selection). Every
+    # cell of `every` -- including the ones judged on earlier passes and long gone from the docket
+    # -- is entered under one claim_family with its genome id, and the family is charged the
+    # video's ~200-trial selection ONCE in the lifetime ledger. A fault here costs the lineage
+    # record and is printed; it never costs the mint.
+    try:
+        from libs.research.claim_selection import register_grid
+        lineage = register_grid(every)
+    except Exception as exc:
+        lineage = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"htf_anchor_proposer: claim-family registration failed: {lineage['status']}")
     path = donate(source=SEAT, candidates=cands, tests_run=len(census.get("rows", [])))
     counts = donation_counts()
     doc = {
@@ -352,6 +368,7 @@ def main(argv: list[str] | None = None) -> int:
         "refused_unstamped": counts.get("refused_unstamped", 0),
         "contract": str(path) if path else None,
         "census": str(CENSUS),
+        "claim_lineage": lineage,
         "prior": ("the source video reported Sharpe 1.87 as the MAXIMUM of ~200 searched "
                   "variations with no multiplicity charge, on one single-name equity; its own "
                   "Monte Carlo median was ~1.30. Recorded so the 1.87 is never read as evidence."),

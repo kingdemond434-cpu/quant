@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns="http://purl.org/rss/1.0/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<channel rdf:about="https://b.hatena.ne.jp/search/text?q=%E5%86%86%E5%AE%89"><title>はてなブックマーク - 検索結果</title></channel>
+<item rdf:about="https://example-blog.hatenablog.com/entry/2026/09/29/yen">
+<title>&#x5186;&#x5B89;&#x304C;&#x6B62;&#x307E;&#x3089;&#x306A;&#x3044;&#x3001;&#x30C9;&#x30EB;&#x5186;&#x7206;&#x4E0A;&#x3052;</title>
+<link>https://example-blog.hatenablog.com/entry/2026/09/29/yen</link>
+<description>円安がさらに進んで含み益。日経平均も上昇。</description>
+<dc:creator>fx_taro</dc:creator>
+<dc:date>2026-09-29T21:15:00+09:00</dc:date>
+</item>
+<item rdf:about="https://kabu-note.example.jp/nikkei-crash">
+<title>日経平均が暴落、損切りしました</title>
+<link>https://kabu-note.example.jp/nikkei-crash</link>
+<description>日本株は弱気。</description>
+<dc:creator>kabu_hanako</dc:creator>
+<dc:date>2026-09-29T15:40:00+09:00</dc:date>
+</item>
+</rdf:RDF>

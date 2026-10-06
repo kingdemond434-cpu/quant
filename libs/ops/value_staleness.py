@@ -290,7 +290,16 @@ def proc_start(pid: int) -> float | None:
                      for ln in Path("/proc/stat").read_text("utf-8").splitlines()
                      if ln.startswith("btime "))
     except (OSError, ValueError, StopIteration, IndexError):
-        return None
+        if os.name != "nt":
+            return None
+        try:
+            import psutil  # type: ignore[import-untyped,unused-ignore]
+        except ImportError:
+            return None
+        try:
+            return float(psutil.Process(pid).create_time())
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            return None
     # POSIX-ONLY: reached only after /proc/stat parsed, which cannot happen on
     # Windows. float() makes the Any from sysconf explicit rather than leaked.
     ticks = float(os.sysconf("SC_CLK_TCK"))  # type: ignore[attr-defined,unused-ignore]

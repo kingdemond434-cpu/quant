@@ -11,15 +11,13 @@ is a test of the fallback, which is the rule `breadth_sweep` already states for 
 families, applied here to every producer.
 
 MEASURED 2026-09-30 by building real cells through the sealed `build_cell` on this tree's bars
-(pinned by `desks/mt5/tests/test_producer_breadth`, so the day the gauntlet is re-signed with the
-missing branch the test fails and this table is corrected rather than silently stale):
-
-    lead_lag         the gauntlet has no `lead_lag` branch, so `driver` is never loaded: 0 signals
-                     on GBPUSD<-EURUSD where the family, handed the driver, gives 3,670.
-    event_reaction   the branch EXISTS but passes `orthogonal_sweep._event_index()` -- a bare
-                     DatetimeIndex -- while the family reads MAPPINGS carrying `symbol` and `at`
-                     and skips anything else, and `symbol` is never passed: 0 signals, always.
-    execution_state  no branch, so `surface` is never loaded: 0 signals.
+(pinned by `desks/mt5/tests/test_producer_breadth`): `lead_lag` and `execution_state` had no
+branch, so their driver and surface were never loaded, and `event_reaction`'s branch handed a bare
+DatetimeIndex with no `symbol`, so all three built ZERO signals. Sealed pass 2 (76895fedc,
+2026-10-01) re-signed the gauntlet with a `lead_lag` and an `execution_state` branch and an
+`event_reaction` branch that passes `events_for_symbol(events, sym)` with `symbol=sym`. The first
+two are picked up from the source; the declared defect is retired. The tests now pin the
+re-signed truth, so a gauntlet that loses a branch fails them the same way.
 
 WHAT IS DERIVED AND WHAT IS DECLARED. The set of families whose inputs the gauntlet loads is READ
 from `build_cell`'s own source (its `family == "x"` / `family in {...}` branches), so a re-signed
@@ -77,14 +75,7 @@ EXOGENOUS = "exogenous"
 
 #: Branches that exist in `build_cell` and hand the family an input it cannot read. Declared,
 #: because a wrong shape is not visible in the branch's text; each is proved by a test.
-SEALED_INPUT_DEFECTS: dict[str, str] = {
-    "event_reaction": (
-        "external_gauntlet.build_cell passes `orthogonal_sweep._event_index()` (a DatetimeIndex "
-        "of bare timestamps) as `events` and never passes `symbol`; `family_event_reaction` "
-        "reads mappings carrying `symbol` and `at` and skips every other element, so every cell "
-        "builds with ZERO signals. Remedy (principal-gated, the gauntlet is sealed): pass "
-        "symbol-tagged event mappings and `symbol=sym` in the event_reaction branch."),
-}
+SEALED_INPUT_DEFECTS: dict[str, str] = {}
 
 
 @lru_cache(maxsize=1)
@@ -268,6 +259,15 @@ def cell_verdict(family: str, params: dict[str, Any] | None = None,
     if blank:
         return MISSING_PARAMS, (f"{family} is {information_class(family, p)}: the cell names an "
                                 f"empty series in {blank}, so the family would read nothing")
+    if family == "clock_transition":
+        from mt5desk.family_clock_transition import CATALOGUE, MODES
+        label, hour = p.get("label"), p.get("stamp_hour")
+        if label not in CATALOGUE:
+            return MISSING_PARAMS, "clock_transition requires a named catalogue label"
+        if isinstance(hour, bool) or not isinstance(hour, int) or not 0 <= hour <= 23:
+            return MISSING_PARAMS, "clock_transition requires an explicit broker stamp_hour 0..23"
+        if p.get("mode", "out_of") not in MODES:
+            return MISSING_PARAMS, "clock_transition mode is not in its registered modes"
     return BUILDABLE, why
 
 

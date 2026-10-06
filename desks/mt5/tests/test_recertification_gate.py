@@ -15,6 +15,11 @@ from pathlib import Path
 
 import pytest
 
+# The Tier S door fails closed on absent verifier inputs; these promoter tests are not about
+# the door, so they run against fresh, clean verifier artifacts (desks/mt5/tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("fresh_tier_s_door")
+
+
 _DESK = Path(__file__).resolve().parents[1]
 for _p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
     if _p not in sys.path:
@@ -25,6 +30,19 @@ import promoter  # noqa: E402
 _KEY = "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
 _SPEC = {"symbol": "AUDNZD", "selector": "afternoon", "condition": "NORMAL_DAY",
          "family": "dav_range_filter_adx", "is_universe": False, "side": "SHORT"}
+
+
+@pytest.fixture(autouse=True)
+def _tier_s_door_open(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The Tier S door is granted here exactly as the gate authority and the allocator are.
+
+    Since 7de6ccca7 (2026-09-30) `promotion_authority.block` withholds with DOOR_ERROR whenever
+    REPLICATION.json (or another required verdict file) is absent or stale -- which it always is
+    in a checkout, because the hourly verifiers write it on the box. That is correct fail-closed
+    behaviour, pinned in `test_tier_s_door.py`; this file is about the RECERTIFICATION gate, so
+    the door is opened here and its interaction is pinned once, below, with the door CLOSED.
+    """
+    monkeypatch.setattr(promoter, "tier_s_block", lambda _name: None)
 
 
 def _audit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, status: str,
@@ -96,6 +114,23 @@ def test_a_stale_audit_is_reported_not_binding(tmp_path, monkeypatch) -> None:
     sleeves: list[dict] = []
     promoter.promote_generic(sleeves, _candidate(), set(), _authority())
     assert [s["name"] for s in sleeves] == [_KEY]
+
+
+def test_a_passing_recertification_does_not_open_a_closed_tier_s_door(tmp_path,
+                                                                        monkeypatch) -> None:
+    # STILL_PASSES clears the recert gate only; the Tier S door still withholds the new row.
+    _audit(tmp_path, monkeypatch, "STILL_PASSES")
+    monkeypatch.setattr(promoter, "load_cert_specs", lambda: {_KEY: _SPEC})
+    monkeypatch.setattr(promoter, "_record_tier_s_block", lambda *_a, **_kw: None)
+    why = ("DOOR_ERROR: the replication check raised DoorReadError: REPLICATION.json absent: "
+           "its hourly verifier has not reported; withheld until it runs clean")
+    monkeypatch.setattr(promoter, "tier_s_block", lambda _name: why)
+    sleeves: list[dict] = []
+    q = _candidate()
+    assert promoter.promote_generic(sleeves, q, set(), _authority(),
+                                    view=_admitting_view(0.021)) is True
+    assert sleeves == []
+    assert q[_KEY]["status"] == "BLOCKED_TIER_S" and q[_KEY]["gate_reason"] == why
 
 
 def test_prefixed_and_bare_certificate_names_match() -> None:

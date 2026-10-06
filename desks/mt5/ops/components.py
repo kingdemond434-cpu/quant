@@ -232,6 +232,14 @@ def leg_names() -> list[str]:
     return sorted(set(re.findall(r'_costed\("([^"]+)"', _hourly_source())))
 
 
+#: A LEG WHOSE REAL CLOCK IS A BOX TASK (2026-09-30). `issue_board` is still costed in the hourly
+#: cycle, but it sits behind the forty-odd legs before it and the #104 re-score read it silent
+#: since 09-12; the run that lands is MT5-ResearchReports (`scripts/run_research_reports.py`,
+#: BOARD_NAME), which refreshes the board after its producers every pass. The schedule is written
+#: as the registry writes every box task -- the bare task name, as `MT5-ClockFixer` is.
+LEG_TASK_CLOCK: dict[str, str] = {"issue_board": "MT5-ResearchReports"}
+
+
 def hourly_leg_specs() -> list[ComponentSpec]:
     """One spec per hourly leg. Cadence is the cycle's own hour; the budget is the leg's."""
     mod = _hourly_module()
@@ -278,9 +286,11 @@ def hourly_leg_specs() -> list[ComponentSpec]:
                 if producer_file else f"restart:resident:dept_{department}"),
             criticality="optional",
             resource_budget={"budget_s": timeout, "cpu": "below_normal"},
-            schedule=f"hourly_cycle:{leg}",
+            schedule=LEG_TASK_CLOCK.get(leg, f"hourly_cycle:{leg}"),
             artifact_class="hourly",
-            notes=f"department {department}"))
+            notes=(f"department {department}; clocked by box task {LEG_TASK_CLOCK[leg]} "
+                   f"(also costed as hourly leg {leg})" if leg in LEG_TASK_CLOCK
+                   else f"department {department}")))
     return specs
 
 
@@ -294,6 +304,74 @@ def daily_step_names() -> tuple[str, ...]:
     m = re.search(r"^STEPS\s*=\s*\((.*?)\n\n", src, re.S | re.M)
     body = m.group(1) if m else src
     return tuple(dict.fromkeys(re.findall(r'\(\s*"([a-z0-9_]+)"\s*,\s*_', body)))
+
+
+@lru_cache(maxsize=1)
+def daily_step_imports() -> dict[str, str]:
+    """dotted import -> the daily STEP whose function imports it (first step wins, STEPS order).
+
+    KEYED BY THE DOTTED NAME, NOT THE STEM (2026-09-30). `_module_rent` runs
+    `from libs.ops import module_rent` and `_module_rent_research` runs a bare `import
+    module_rent` (the research directory is on the step's path). Keyed by stem, both collapsed to
+    `module_rent`, the first step won, and `research/module_rent.py` was declared on
+    `daily_cycle:module_rent` -- a step that never imports it. The keys are now
+    `libs.ops.module_rent` and `module_rent`; `daily_step_of` picks the most-qualified match.
+
+    THE CLOCK A DAILY STEP LENDS IS THE STEP, NOT WHOEVER THE WALK POPPED FIRST (#104 re-score,
+    2026-09-30). `research/deepen_universe.py` runs once a day as `daily_cycle:deepen_bars`, which
+    imports it inside `_deepen_bars`. The reach walk is a stack, so the first reacher it popped
+    was `scripts/check_desk_module_drift.py` -- a fence that merely LISTS the path -- and the
+    registry, the runtime attestation and RUNTIME_STATE.md all declared the deepener's clock as
+    `invoked:scripts/check_desk_module_drift.py`. A step's import is the edge that runs it.
+    """
+    try:
+        tree = ast.parse(DAILY.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, SyntaxError, ValueError):
+        return {}
+    fn_imports: dict[str, list[str]] = {}
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            names: list[str] = []
+            for sub in ast.walk(node):
+                if isinstance(sub, ast.Import):
+                    names += [a.name for a in sub.names]
+                elif isinstance(sub, ast.ImportFrom):
+                    if sub.module:
+                        names.append(sub.module)
+                    prefix = f"{sub.module}." if sub.module else ""
+                    names += [prefix + a.name for a in sub.names]
+            fn_imports[node.name] = names
+    step_fn: list[tuple[str, str]] = []
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(
+                isinstance(t, ast.Name) and t.id == "STEPS" for t in node.targets) \
+                and isinstance(node.value, ast.Tuple):
+            for elt in node.value.elts:
+                if isinstance(elt, ast.Tuple) and len(elt.elts) == 2 \
+                        and isinstance(elt.elts[0], ast.Constant) \
+                        and isinstance(elt.elts[1], ast.Name):
+                    step_fn.append((str(elt.elts[0].value), elt.elts[1].id))
+    out: dict[str, str] = {}
+    for step, fn in step_fn:
+        for name in fn_imports.get(fn, ()):
+            out.setdefault(name, step)
+    return out
+
+
+def daily_step_of(rel: str) -> str | None:
+    """The daily step that imports the file at `rel`, by its most-qualified dotted match.
+
+    `libs/ops/module_rent.py` matches `libs.ops.module_rent` (step `module_rent`) ahead of the
+    bare `module_rent` (step `module_rent_research`); `desks/mt5/research/module_rent.py` matches
+    only the bare name, which is the import that actually runs it."""
+    dotted = rel[:-3] if rel.endswith(".py") else rel
+    dotted = dotted.replace("/", ".")
+    best: tuple[int, str] | None = None
+    for name, step in daily_step_imports().items():
+        if dotted == name or dotted.endswith("." + name):
+            if best is None or len(name) > best[0]:
+                best = (len(name), step)
+    return best[1] if best else None
 
 
 def daily_step_specs() -> list[ComponentSpec]:
@@ -335,6 +413,89 @@ REQUIRED_TASKS: frozenset[str] = frozenset(
 )
 
 
+#: ONE ORGAN, ONE ID (2026-09-30). A manifest task that an explicit spec already models under a
+#: canonical organ id is that organ, not a second one: `task:MT5-GatewayResident` and
+#: `resident:gateway` both ran desks/mt5/research/gateway_resident.py on the same task, so the
+#: census counted the gateway resident twice and the attestation carried two rows for one clock.
+#: The canonical id keeps the task as its `schedule` and its restart action; the manifest row is
+#: skipped here instead of being registered beside it.
+#:
+#: EVERY RESIDENT, NOT ONLY THE GATEWAY (2026-09-30). The same double entry held for the control
+#: plane (`task:MT5-ClockFixer` beside `component:control_plane`) and for every department,
+#: forest and moat-swarm resident, whose keep-alive task was registered a second time as
+#: `task:<name>` running the very script the resident spec already owns. The list is written out
+#: because the registry must be readable without importing the swarm or forest runtimes, and
+#: `task_canonical_gaps()` -- pinned by `tests/ops/test_organ_dedupe.py` -- fails the suite the
+#: day a new resident's task is added without its line here.
+TASK_CANONICAL: dict[str, str] = {
+    "MT5-GatewayResident": "resident:gateway",
+    "MT5-ClockFixer": "component:control_plane",
+    # the departments (discovery rides MT5-Hourly -- see department_task)
+    "MT5-Hourly": "resident:dept_discovery",
+    "MT5-Dept-Data": "resident:dept_data",
+    "MT5-Dept-Execution": "resident:dept_execution",
+    "MT5-Dept-Forward": "resident:dept_forward",
+    "MT5-Dept-Intel": "resident:dept_intel",
+    "MT5-Dept-Japan": "resident:dept_japan",
+    "MT5-Dept-Macro": "resident:dept_macro",
+    "MT5-Dept-Mathlab": "resident:dept_mathlab",
+    "MT5-Dept-Meta": "resident:dept_meta",
+    "MT5-Dept-Regions": "resident:dept_regions",
+    "MT5-Dept-Rest": "resident:dept_rest",
+    "MT5-Dept-Validate": "resident:dept_validate",
+    # the forests with a resident of their own
+    "MT5-Forest-Africa": "resident:dept_africa",
+    "MT5-Forest-Asean": "resident:dept_asean",
+    "MT5-Forest-China": "resident:dept_china",
+    "MT5-Forest-Europe": "resident:dept_europe",
+    "MT5-Forest-Korea": "resident:dept_korea",
+    "MT5-Forest-Latam": "resident:dept_latam",
+    "MT5-Forest-Mena": "resident:dept_mena",
+    "MT5-Forest-NorthAmerica": "resident:dept_north_america",
+    "MT5-Forest-Oceania": "resident:dept_oceania",
+    "MT5-Forest-RussiaCis": "resident:dept_russia_cis",
+    "MT5-Forest-SouthAsia": "resident:dept_south_asia",
+    # the moat swarms
+    "MT5-Moat-Exploit": "resident:moat_exploit",
+    "MT5-Moat-Explore": "resident:moat_explore",
+    "MT5-Moat-Resurrect": "resident:moat_resurrect",
+}
+
+
+def task_canonical_gaps(path: Path | None = None) -> dict[str, list[str]]:
+    """Every way the one-organ-one-id rule can be broken, measured from the specs themselves.
+
+    `unlisted`   a manifest task that a resident or explicit organ keeps alive (its `schedule`
+                 and its `restart:task:` action both name the task) with no TASK_CANONICAL line,
+                 so the manifest task would be registered as a second organ beside it.
+    `dangling`   a TASK_CANONICAL line whose organ does not exist or does not name the task as
+                 its schedule, so the skip would drop an organ instead of deduplicating one.
+    `unclaimed`  a script the skipped task runs that is not its canonical organ's entrypoint
+                 (code_paths[0]): the dedupe would turn a clocked file into an undeclared
+                 executable, or scheduler_gen would render the task running a different file.
+    """
+    runs: dict[str, set[str]] = {}
+    for row in manifest_rows(path):
+        name = row.get("name") or ""
+        r = row.get("runs") or ""
+        if name:
+            runs.setdefault(name, set())
+            if r and r != "UNKNOWN" and (ROOT / r).exists():
+                runs[name].add(r)
+    organs = {s.component_id: s for s in (*explicit_specs(), *resident_specs())}
+    unlisted = sorted(
+        f"{s.schedule} -> {cid}" for cid, s in organs.items()
+        if s.schedule in runs and s.restart_action == f"restart:task:{s.schedule}"
+        and TASK_CANONICAL.get(s.schedule) != cid)
+    dangling = sorted(
+        f"{task} -> {cid}" for task, cid in TASK_CANONICAL.items()
+        if cid not in organs or organs[cid].schedule != task)
+    unclaimed = sorted(
+        f"{task}: {script}" for task, cid in TASK_CANONICAL.items() if cid in organs
+        for script in runs.get(task, ()) if organs[cid].code_paths[:1] != (script,))
+    return {"unlisted": unlisted, "dangling": dangling, "unclaimed": unclaimed}
+
+
 def manifest_task_specs(path: Path | None = None) -> list[ComponentSpec]:
     """One spec per manifest task. Several manifest lines can share a name (MT5-CostState runs
     three scripts); they collapse to one component owning three code paths, which is what the
@@ -352,6 +513,8 @@ def manifest_task_specs(path: Path | None = None) -> list[ComponentSpec]:
             cur["runs"].append(runs)
     out: list[ComponentSpec] = []
     for name, row in sorted(by_name.items()):
+        if name in TASK_CANONICAL:
+            continue   # modelled once, under its canonical organ id
         cadence = cadence_from_trigger(row["trigger"])
         required = name in REQUIRED_TASKS or row["lane"] in REQUIRED_LANES
         out.append(ComponentSpec(
@@ -641,14 +804,20 @@ def explicit_specs() -> list[ComponentSpec]:
         ComponentSpec(
             component_id="component:control_plane",
             kind="task", host="box",
-            code_paths=("desks/mt5/research/control_plane.py",
+            # THE TASK'S ENTRYPOINT COMES FIRST. This is MT5-ClockFixer's one organ id
+            # (TASK_CANONICAL), and scheduler_gen renders a task's `runs` and its XML command from
+            # code_paths[0] and production_args -- so they are what the task actually runs:
+            # clock_fixer.py --budget-s 600, the apply pass (it heartbeats this id itself). The
+            # observe pass, control_plane.py --once, is leg:control_plane's own spec.
+            code_paths=("desks/mt5/research/clock_fixer.py",
+                        "desks/mt5/research/control_plane.py",
                         "libs/ops/control_plane/reconciler.py"),
             inputs=("desks/mt5/data/watermarks/", "desks/mt5/data/lineage.sqlite"),
             outputs=("desks/mt5/reports/CONTROL_PLANE.json",),
             consumers=("scripts/check_closed_loop.py", "desks/mt5/research/clock_fixer.py"),
             cadence_s=900, timeout_s=720,
             progress_metric="reconcile_passes",
-            production_args=("--once", "--budget-s", "600"),
+            production_args=("--budget-s", "600"),
             expected_artifact_schema="desks/mt5/reports/CONTROL_PLANE.json",
             owner="meta", restart_action="restart:task:MT5-ClockFixer",
             criticality="required",
@@ -671,7 +840,52 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="invoked:clock_liveness", artifact_class="fifteen_minute",
             notes=("not an independent timer: clock_liveness invokes it only for identities "
                    "proved frozen, and proves repair by the clock watermark advancing")),
+        # THE BREADTH LEDGER'S CLOCK, DECLARED BECAUSE THE REACH WALK NAMED THE WRONG ONE
+        # (2026-09-30). The walk credits a script to whichever file that names it pops first, and
+        # for this one that was a docstring citation in docket_keff (alpha_breadth cites it too),
+        # neither of which can run a script. What runs it is the VPS daily cycle's step table
+        # (step `breadth_ledger`), on the 02:00 crontab line and `quant-cro.timer` at 08:01.
+        # `test_component_registry_clocks` pins both halves against their sources.
+        ComponentSpec(
+            component_id="executable:scripts/report_breadth.py",
+            kind="executable", host="vps",
+            code_paths=("scripts/report_breadth.py",),
+            outputs=("web/breadth_ledger.json",),
+            cadence_s=86_400, timeout_s=120,
+            progress_metric=UNMEASURED,
+            owner="daily_research_cycle", restart_action=UNMEASURED,
+            criticality="optional", resource_budget={"budget_s": 120},
+            schedule=f"invoked:{VPS_DAILY}", artifact_class="daily",
+            notes=("step breadth_ledger of the VPS daily cycle (ops/crontab.manifest 02:00 and "
+                   "quant-cro.timer 08:01), run with cwd at the repo root")),
+        ComponentSpec(
+            component_id="resident:gateway",
+            kind="task", host="box",
+            code_paths=("desks/mt5/research/gateway_resident.py",),
+            inputs=("desks/mt5/data/sleeves.json",),
+            # The resident's work is the gateway pass it drives; every pass that reaches the
+            # venue publishes the desk-staleness verdict, so that file's age IS the resident's
+            # heartbeat (and the one MT5-BoxHeartbeat watches from outside).
+            outputs=("desks/mt5/reports/DESK_STALE.json",),
+            consumers=("desks/mt5/scripts/box_heartbeat.py",),
+            cadence_s=600, timeout_s=None, progress_metric="gateway_passes",
+            expected_artifact_schema="desks/mt5/reports/DESK_STALE.json",
+            owner="lane:ops", restart_action="restart:task:MT5-GatewayResident",
+            criticality="required", resource_budget={},
+            schedule="MT5-GatewayResident", artifact_class="fifteen_minute",
+            notes="resident loop; the task is its keep-alive, the pass is run_gateway_loop's"),
     ]
+
+
+#: The VPS's daily research cycle: a step table of scripts it runs by subprocess.
+VPS_DAILY = "scripts/daily_research_cycle.py"
+
+
+def vps_daily_step(rel: str, root: Path | None = None) -> str | None:
+    """The step name under which the VPS daily cycle runs `rel`, read from its own step table."""
+    text = _read_text((root or ROOT) / VPS_DAILY)
+    m = re.search(r'\(\s*"([a-z0-9_]+)"\s*,\s*"' + re.escape(rel) + r'[\s"]', text)
+    return m.group(1) if m else None
 
 
 # ------------------------------------------------------------------- everything else, named
@@ -1195,9 +1409,22 @@ def reach_specs(reg: Registry, root: Path | None = None,
                     reached[target] = ("executable", rel)
                     frontier.append(target)
     out: list[ComponentSpec] = []
+    daily_rel = DAILY.relative_to(ROOT).as_posix() if DAILY.is_relative_to(ROOT) else ""
     for rel, (kind, via) in sorted(reached.items()):
         if rel not in exes:
             continue                     # a pure library: not an executable, nothing to claim
+        step = daily_step_of(rel)
+        if step and daily_rel and daily_rel in _REACHERS.get(rel, ()):
+            # A daily step imports it: that step IS its clock (see `daily_step_imports`).
+            out.append(ComponentSpec(
+                component_id=f"{kind}:{rel}",
+                kind=kind, host="box", code_paths=(rel,),
+                cadence_s=86_400, timeout_s=3_600, progress_metric=UNMEASURED,
+                owner="daily_cycle", restart_action="restart:task:MT5-Daily",
+                criticality="optional", resource_budget={"budget_s": 3600},
+                schedule=f"daily_cycle:{step}", artifact_class="daily",
+                notes=f"REACHED: imported by daily step `{step}` in {daily_rel}, runs when it runs"))
+            continue
         out.append(ComponentSpec(
             component_id=f"{kind}:{rel}",
             kind=kind, host="any", code_paths=(rel,),
@@ -1340,7 +1567,7 @@ def _declare_own_artifacts(reg: Registry, root: Path | None = None) -> None:
             if s.outputs or s.kind not in ("library", "executable"):
                 continue
             prefix, _, via = s.schedule.partition(":")
-            if prefix not in ("import", "invoked"):
+            if prefix not in ("import", "invoked", "daily_cycle"):
                 continue
             # The scheduling reacher first; any other reacher that binds an artifact otherwise,
             # so the proof does not depend on which reacher the walk happened to pop first.

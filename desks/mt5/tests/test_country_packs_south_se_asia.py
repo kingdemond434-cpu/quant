@@ -503,7 +503,10 @@ def test_fringe_material_is_kept_and_forbidden_material_is_registered_not_omitte
         assert s["predictive_state"] in {"NARRATIVE_FEATURE", "UNTESTED", "NOT_PREDICTIVE"}, (
             f"{code}: {s['id']} is low-credibility and claims to be PREDICTIVE without a test")
     blocked = [s for s in sources if not s["machine_use_allowed"]]
-    assert blocked, (
+    # LAWS §5e (2026-09-23): terms-restricted ground is REGISTERED by its access label and mined;
+    # machine_use_allowed=false is a deleted brake, so the label is what proves it was not omitted.
+    from libs.research.country_lab import registered_terms_ground
+    assert registered_terms_ground(sources), (
         f"{code}: no source is registered as machine-use-forbidden. Every one of these countries "
         f"has licensed assessment data that would be the ideal input and whose terms forbid "
         f"extraction; recording none of it means the substitution was never a decision")

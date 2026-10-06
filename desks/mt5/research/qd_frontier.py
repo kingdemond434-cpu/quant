@@ -559,11 +559,23 @@ def proposal(niche: dict[str, str], family: str | None, symbols: list[str], work
         params["timeframe"] = chart
     if sess != "all":
         params["session"] = sess
-    return {"kind": "hypothesis", "family": family, "symbols": symbols, "params": params,
-            "timeframe": chart, "session": sess, "source": f"qd_frontier:{worker}", "why": why,
-            "axis_cell": ar.axis_cell(symbols[0], family, params, chart, sess),
-            "selector_mode": worker, "rank_score": round(float(score), 5),
-            "niche": niche_key(niche)}
+    # A dead window is proposed as the cell that can fire in it (`family_firing.live_session`);
+    # the niche the row was aimed at is kept on the row, so the arm's accounting is unchanged.
+    remap = None
+    try:
+        from libs.research.family_firing import live_session
+        params, sess, remap = live_session(family, params, sess,
+                                           symbols[0] if symbols else None)
+    except ImportError:
+        pass
+    row = {"kind": "hypothesis", "family": family, "symbols": symbols, "params": params,
+           "timeframe": chart, "session": sess, "source": f"qd_frontier:{worker}", "why": why,
+           "axis_cell": ar.axis_cell(symbols[0], family, params, chart, sess),
+           "selector_mode": worker, "rank_score": round(float(score), 5),
+           "niche": niche_key(niche)}
+    if remap:
+        row["session_remap"] = remap
+    return row
 
 
 def _take(out: dict[str, list[dict[str, Any]]], worker: str, row: dict[str, Any] | None,

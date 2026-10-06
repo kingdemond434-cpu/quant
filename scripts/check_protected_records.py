@@ -153,7 +153,10 @@ def _bodies(rel: str, text: str) -> dict[str, str]:
         # The substance, not the bookkeeping: a record may gain tags, an enforcer or a recurrence
         # count without being a different record. What must not change under a fixed id is what
         # the record ASSERTS.
-        body = "\u0000".join(str(d.get(k, "")) for k in ("lesson", "evidence", "text", "claim"))
+        fields = (("title", "decision", "why", "by", "owner", "at", "evidence")
+                  if rel == "context/decision_journal.jsonl"
+                  else ("lesson", "evidence", "text", "claim"))
+        body = "\u0000".join(str(d.get(k, "")) for k in fields)
         out[str(d["id"])] = hashlib.sha256(body.encode("utf-8")).hexdigest()[:16]
     return out
 

@@ -44,13 +44,13 @@ The earlier scoring (4 criteria, at `adaba442`) is in git history and summarised
 What stops rows reaching DONE, in order of how many rows each blocks:
 
 1. **No box evidence (R, almost every row).** The box has not yet committed anything produced by the merged code. No `data/tier_s/box_evidence.json` from vmi3571445 exists. The committed `sleeves.json` and `RELEASE.json` date from 09-28. `UNIVERSAL_SURVIVORS.json` still holds the 58 v2-policy certificates, none re-certified under the v4 lockbox. The only Tier S outputs come from a cloud run that marks itself `counts_toward_done: false`.
-2. **Law gate red and no green CI on LIVE (C, every row).** See "C on LIVE". There is also one money-path test failure under the CI pin: `test_gauntlet_annotations::test_run_gauntlet_result_carries_independence_and_the_trial_ledger` still pins the lockbox behaviour from before #52.
+2. **No green CI on LIVE (C, every row).** The law gate's birth-obligation breach is fixed on LIVE (584498cfc, 14be56cb1), so `--laws-only` passes. It still goes red about 2h after every cloud attestation, because `check_runtime_attestation` judges staleness on host `vm`; the structural fix is routed to Institutional. CI on LIVE is red on the same set every PR shows. `mt5-money-path` fails the promoter, recertification, marginal-admission and certificate tests: 29 of these fail on `REPLICATION.json absent`, and #113's fixture fixes them. It also fails the country-pack registry tests and `test_gauntlet_annotations`. `quality` fails 15 tests, among them the Tier-1 checker's 21 LIEs (fixed by #135 or #117), the dashboard pages and `test_live_infrastructure_is_not_published`.
 3. **Hand-set bars presented as measured.** The DSR variance is 0.0002 in `gate_spec.yaml:70`, set by hand on the same benchmark that reports the success. `effective_trials.py:309` still falls back to 0.014863, and `gate_spec.yaml` is not in the sealed manifest. The "15/130 real, 0/318 traps" result appears only in a commit message: the `dsr/LOCKBOX_BAR.md` the code cites does not exist. `universal_gate.py:280` still judges the lockbox as Sharpe ≥ 0 while stamping its report v4.
 4. **Outputs nothing reads, and gaps that let exposure back in.** `live_door.json` has no reader, so the door never reviews rows that are already LIVE. S01 does not reach the gauntlet. S12 `firewall.may` is called only inside Tier S. An exchange zero lowers the mean, not the weight, and `book_fallback` funds it again (pf_allocator 2123–2140, 4015–4023). `split_fills` is only a hook, and matched fills are 0. Rollback is manual.
 5. **Committed state contradicts the rules.** 24 LIVE rows are the banned `discovered` family. 31 are admission UNMEASURED and kept indefinitely. The promoter never reads `principal_override`. `certificate_truth --apply` has never run. `research_budget` is `authoritative:false`. The Tier-1 ledger's P1 and P13 rows still say those refusals are pinned, while #53 dropped the 0.02 gold floor under sovereignty and arms the margin clause by default. `check_tier1_program.py` exits 1.
 6. **Still missing everywhere:** CS5, D7 and D9 (UNMEASURED and override sleeves keep their risk) and DP2 (dormant components removed).
 
-**Capital event to watch at the first box pass.** #53's cost-basis demotion is wired into `save_sleeves`. With `universe.json` present, 27 LIVE rows pass on the universe and 1 on clock identity, so 12 demote to STANDBY on the next promoter pass. All 12 are banned `discovered` rows on zero-spread FX majors, so the demotion is intended. A checkout without `universe.json` would show all 40 demoting. Separately, the Tier S door withholds every new LIVE row as DOOR_ERROR until the box has run both `tier_s` and `replication_civilization` once. Both are now always-run legs.
+**Capital event to watch at the first box pass.** #53's cost-basis demotion is wired into `save_sleeves`. With `universe.json` present, 27 LIVE rows pass on the universe and 1 on clock identity, so 12 demote to STANDBY on the next promoter pass. All 12 are banned `discovered` rows on zero-spread FX majors, so the demotion is intended. A checkout without `universe.json` would show all of them demoting. `sleeves.json` now holds 66 rows: 39 LIVE, 26 STANDBY and 1 NORMAL_DAY. Separately, the Tier S door withholds every new LIVE row as DOOR_ERROR until the box has run both `tier_s` and `replication_civilization` once. Both are now always-run legs.
 
 ## Routing
 
@@ -60,6 +60,24 @@ What stops rows reaching DONE, in order of how many rows each blocks:
 
 
 ## Re-verification log
+
+### 2026-09-30 16:10Z: builder batches #104 and #113–#148 (LIVE `14be56cb1`)
+
+Twenty-six PRs were re-scored against LIVE by read-only passes: #104 (merged), #113, #117–#120, #123–#125, #127, #129–#140, #142–#145, #147 and #148. **None moves a row to DONE, and the headline is unchanged: 0 DONE, 130 PARTIAL, 4 MISSING, 1 EXCLUDED, 3 TIME-BOUND.** Every open PR still lacks box evidence (R), and none is merged (D). The full per-PR findings went to the owners through the coordinator. Scratch reports are in the verifier thread.
+
+Corrections to this matrix:
+
+- **T is overstated on LIVE** for CS1/D1/AC1/I2, I5/DP7/CS3, I1 and DP11. The 29 promoter tests those rows cite fail on any clean LIVE checkout (`REPLICATION.json absent`) and pass only on #113.
+- **L15 lost C at #130 `aac670ba` and got it back at `86716a68`.** The placement-interlock fence still only reports, so A stays ✗. After 24h a fully dead gateway reads UNMEASURED, which exits 0.
+- **I10 lost C at #133 `8c1ca077`** (law gate red) and got it back at `5b3def4a`.
+- **DP4 would lose A if #143 merged as it stands.** Its stage-1 screen is miscalibrated: a planted t≈3 edge is rejected and only t≈10 passes. A stage-1 reject is demoted to tier 4, which is never judged, so the screen acts as a kill.
+
+Defects found in this pass, beyond what the builders claimed:
+
+- **Sealed judge, desktop pass 2:** the 3x cost-stress arm prices from a 0 median spread on 14 FX majors (`external_gauntlet.py:347/686/2417`). On EURUSD the stress arm reads better than the base arm.
+- **Money path:** #132's filled-leg check matches only side and price within 0.05, so a stale fill on another instrument can cancel a live bracket. #145 marks 601 variants DEAD that still fire, among them two ten-gate-certified sleeves.
+- **Box state:** the state push has been refused since 09-11 by the pre-push law gate (`ops/githooks/pre-push:22-26`). #99 and #141 detect the stall but do not cure it, and the durable cure (a state-only lane) is the principal's call.
+- **Placeholder claims:** `live_door.json` still has no reader, and seven LIVE rows are code-hash MISMATCH. #137's 14,794 producers come from about 51 code paths. #131's placebo gate covers one of its four admission paths.
 
 ### 2026-09-30 13:30Z: full re-score after the sealed merge (LIVE `d30be2ce`, checked again at tip `aadf1e49`)
 

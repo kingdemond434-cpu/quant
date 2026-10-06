@@ -75,6 +75,17 @@ def test_a_genuinely_empty_parameterisation_is_accepted(docket):
     assert got == {}, why
 
 
+def test_fusion_reconstruction_keeps_certified_session_for_shared_filter(monkeypatch):
+    from mt5desk import family_inputs
+    monkeypatch.setattr(gw, "_params_match_certificate", lambda *_: True)
+    monkeypatch.setattr(family_inputs, "resolve", lambda *_: ({}, "ok"))
+    sleeve = {"symbol": "EURUSD", "family": "trend_ma_cross",
+              "params": {"timeframe": "M5", "session": "london", "fast": 10}}
+    params, why = gw._family_call_params(sleeve, "trend_ma_cross", object())
+    assert why == ""
+    assert params == {"session": "london", "fast": 10}
+
+
 def test_a_cell_absent_from_the_docket_FAILS_CLOSED(docket):
     """The original defect was calling a parameterised family with {}. Never re-introduce it."""
     docket([{"symbol": "OTHER", "family": "discovered", "params": {"feature": "x"}}])

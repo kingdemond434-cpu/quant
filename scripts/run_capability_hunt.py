@@ -46,6 +46,15 @@ if not _ROOT.exists():                                     # dev/CI checkout
 # window) and pages-but-does-not-block, so a governance fault never silences an organ.
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.agent_denials import (  # noqa: E402
+    READ_ONLY_RULES,
+    brain_argv,
+    denial_log_lines,
+    denial_rows,
+    parse_stream,
+    scoped_claude_args,
+    write_rules,
+)
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 from libs.research.second_family import ask_second_family  # noqa: E402
 
@@ -339,14 +348,55 @@ def _record_yield(root: Path, entry: dict[str, object]) -> None:
     p.write_text(json.dumps(hist, indent=2), "utf-8")
 
 
-def _claude(prompt: str, timeout: int = 2400) -> tuple[bool, str]:
-    r = subprocess.run(
-        ["bash", "-c",
-         'source ops/brain_env.sh && brain_auth_check || { echo BRAIN_AUTH_FAILED; exit 90; } && '
-         'claude --effort max --append-system-prompt "$_DOCTRINE" -p "$0" '
-         '--dangerously-skip-permissions', prompt],
-        cwd=_ROOT, capture_output=True, text=True, timeout=timeout)
-    return r.returncode == 0, (r.stdout or "") + (r.stderr or "")[-400:]
+#: STAGE 1 (the Claude proposer) is READ-ONLY by its brief, so the CLI makes it read-only too.
+PROPOSER_RULES: list[str] = list(READ_ONLY_RULES)
+
+#: STAGE 3 (the builder) edits by design -- script, artifact, law, manifest line, tests -- so it
+#: gets path-scoped edit rules over exactly the trees its brief names, the commands its brief
+#: tells it to run, and a plain (never forced) commit and push. Not acceptEdits: an edit outside
+#: these paths is refused and recorded. The sealed doctrine, data/secrets and the deadman rail
+#: stay refused through NEVER_RULES whatever this list says.
+BUILDER_RULES: list[str] = [
+    *READ_ONLY_RULES,
+    *write_rules("scripts/**", "libs/**", "tests/**", "desks/mt5/research/**",
+                 "desks/mt5/tests/**", "docs/CONSTITUTION.md", "docs/research/**",
+                 "ops/crontab.manifest", "data/**"),
+    "Bash(.venv/bin/python -m pytest:*)",
+    "Bash(.venv/bin/python scripts/*)",
+    "Bash(git add:*)", "Bash(git commit -m:*)", "Bash(git push origin:*)",
+]
+
+
+def _allowlist_note(rules: list[str]) -> str:
+    return ("\n\nTOOL ALLOWLIST (enforced by the CLI): " + ", ".join(rules) + ". Anything "
+            "else is refused, and every refused call is recorded as UNMEASURED and counts as "
+            "MISSED -- if a step needs a tool outside this list, record that step as UNMEASURED "
+            "and why, instead of reaching for it.")
+
+
+def claude_argv(prompt: str, rules: list[str]) -> list[str]:
+    """The scoped call: it used to pass the blanket permission-bypass flag."""
+    return brain_argv("capability_hunt",
+                      scoped_claude_args(prompt + _allowlist_note(rules), allowed=rules,
+                                         effort="max"))
+
+
+def _claude(prompt: str, timeout: int = 2400, *, rules: list[str], stage: str = "",
+            stamp: str = "", slot: int = 0) -> tuple[bool, str, list[dict[str, object]]]:
+    """(ok, text, denial rows). A run with ANY refused call is not ok: its step is UNMEASURED."""
+    try:
+        r = subprocess.run(claude_argv(prompt, rules), cwd=_ROOT, capture_output=True,
+                           text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return False, f"TIMEOUT after {timeout}s", []
+    summary = parse_stream((r.stdout or "").splitlines())
+    rows = denial_rows(summary, surface="capability_hunt", stage=stage, stamp=stamp, slot=slot)
+    for line in denial_log_lines(rows):
+        print(f"[hunt] {stage}: {line}", flush=True)
+    text = summary.result_text or ""
+    if not text:
+        text = ((r.stdout or "")[-400:] + (r.stderr or "")[-400:]).strip()
+    return r.returncode == 0 and not rows, text, rows
 
 
 def _gpt(prompt: str) -> tuple[bool, str]:
@@ -384,9 +434,17 @@ def main() -> int:
         return 0
 
     # STAGE 1+2: both families propose INDEPENDENTLY -- neither sees the other's answer.
-    ok_a, a = _claude(brief + "\n\nWork READ-ONLY: propose only, do not modify anything.", 1500)
+    ok_a, a, denied_a = _claude(
+        brief + "\n\nWork READ-ONLY: propose only, do not modify anything.", 1500,
+        rules=PROPOSER_RULES, stage="propose", stamp=stamp, slot=args.slot)
     ok_g, b = _gpt(brief)
-    if not ok_a:
+    if denied_a:
+        # UNMEASURED, not failed and not clean: the proposal text is kept, labelled, because a
+        # refused novelty check makes the proposal unverified rather than worthless.
+        a = (f"(Claude seat UNMEASURED: {len(denied_a)} tool call(s) refused -- "
+             f"{'; '.join(str(d['tool']) + ': ' + str(d['input_summary']) for d in denied_a)}. "
+             f"Treat its novelty check as not done.)\n\n{a}")
+    elif not ok_a:
         a = f"(Claude seat failed: {a[-300:]})"
     if not ok_g:
         # HONEST DEGRADATION: a dead GPT seat does not cancel the hunt -- it runs single-family
@@ -399,10 +457,17 @@ def main() -> int:
         f"## B -- GPT-9 family (independent)\n\n{b}\n", "utf-8")
 
     # STAGE 3: adjudicate + BUILD. Proposal without implementation is the defect (L1.28b).
-    ok_b, out = _claude(_BUILD_BRIEF.format(a=a, b=b, report=report), 3000)
+    ok_b, out, denied_b = _claude(_BUILD_BRIEF.format(a=a, b=b, report=report), 3000,
+                                  rules=BUILDER_RULES, stage="build", stamp=stamp, slot=args.slot)
+    denied = denied_a + denied_b
     status = {"stamp": stamp, "slot": args.slot, "lens": lens,
               "claude_proposed": ok_a, "gpt_proposed": ok_g,
               "cross_family": ok_a and ok_g, "built": ok_b and report.exists(),
+              # A refused step is never success: the run reads UNMEASURED and every refused
+              # call is a row in the hunt history (data/capability_hunt_history.json).
+              "verdict": "UNMEASURED" if denied else ("BUILT" if ok_b and report.exists()
+                                                       else "NOT-BUILT"),
+              "permission_denials": denied,
               "report": str(report), "generated": datetime.now(tz=UTC).isoformat()}
     (_ROOT / "data/capability_hunt.json").write_text(json.dumps(status, indent=2), "utf-8")
     _record_yield(_ROOT, status)

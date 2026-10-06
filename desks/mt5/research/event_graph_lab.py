@@ -635,10 +635,15 @@ def live_sleeves(path: Path = SLEEVES) -> list[dict[str, Any]]:
             and str(r.get("status") or "").upper() in ("LIVE", "STANDBY")]
 
 
-def record_verdicts(rows: Sequence[Mapping[str, Any]], *, conn: Any, dry_run: bool
-                    ) -> dict[str, int]:
+def record_verdicts(rows: Sequence[Mapping[str, Any]], *, conn: Any, dry_run: bool,
+                    graph_path: Path | None = None) -> dict[str, int]:
     """Candidate rows get the EXTENSIONS columns (status untouched); sleeves go to research
-    memory; every row is a gate reading on the hypothesis graph."""
+    memory; every row is a gate reading on the hypothesis graph.
+
+    `graph_path` REDIRECTS THE GRAPH, and exists because nothing could: this wrote to the desk's
+    real `hypothesis_graph.jsonl` unconditionally, so the suite's planted `TESTFX` cells landed
+    there as causal readings -- 10 rows measured 2026-09-30, five suite runs of two cells each.
+    None means the desk's ledger, which is what production wants."""
     out = {"candidates": 0, "sleeves": 0, "graph": 0}
     if dry_run:
         return out
@@ -668,12 +673,13 @@ def record_verdicts(rows: Sequence[Mapping[str, Any]], *, conn: Any, dry_run: bo
             continue
     try:
         from libs.research import hypothesis_graph as hg
+        g = hg.Graph(graph_path) if graph_path is not None else None
         out["graph"] = hg.record_causal_verdicts(
             [{"symbol": r.get("symbol"), "family": r.get("family"),
               "params": r.get("params") or {}, "verdict": r.get("verdict"),
               "failing_test": r.get("failing_test"), "effect": r.get("effect"),
               "eligible": r.get("eligible"), "source": SOURCE} for r in rows
-             if r.get("symbol") and r.get("family")])
+             if r.get("symbol") and r.get("family")], graph=g)
     except Exception:
         pass
     return out
@@ -737,7 +743,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
           store: Path = STORE, cursor_path: Path = CURSOR, report: Path = REPORT,
           intel_dir: Path = INTEL, max_edges: int = MAX_EDGES_PER_PASS,
           max_candidates: int = MAX_CANDIDATES_PER_PASS,
-          max_donations: int = MAX_DONATIONS_PER_PASS) -> dict[str, Any]:
+          max_donations: int = MAX_DONATIONS_PER_PASS,
+          graph_path: Path | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     deadline = t0 + max(1.0, float(budget_s))
     notes: list[str] = []
@@ -784,7 +791,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                 notes.append("budget: sleeves left for the next pass")
                 break
             adjudications.append(adjudicate_sleeve(row, bars_loader=bars_loader, seed=i))
-        recorded = record_verdicts(adjudications, conn=c, dry_run=dry_run)
+        recorded = record_verdicts(adjudications, conn=c, dry_run=dry_run,
+                                   graph_path=graph_path)
     finally:
         if opened and c is not None:
             try:

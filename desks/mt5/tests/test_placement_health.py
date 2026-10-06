@@ -284,3 +284,106 @@ def test_without_a_pass_stamp_the_old_per_call_count_stands(gw):
     st = {}
     gw["note_placement"](st, "a", _rej())
     assert gw["note_placement"](st, "b", _rej()) is False
+
+
+# ---------------------------------------------- the order door's own refusals (2026-09-30)
+
+def _door_refused(reason="duplicate_of_in_doubt"):
+    return [{"side": side, "retcode": None, "comment": "order_door: duplicate",
+             "door_refused": True, "door_reason": reason}
+            for side in ("buy_stop", "sell_stop")]
+
+
+@pytest.mark.parametrize("reason", ["duplicate_of_in_doubt", "in_doubt_venue_unreadable"])
+def test_door_refusals_never_advance_the_pause_counter_but_are_logged(gw, reason):
+    """Nothing reached the venue; passes of door refusals must never auto-pause the desk."""
+    st = {}
+    passes = gw["MAX_TOTAL_REJECTIONS"] + 1
+    for _ in range(passes):
+        assert gw["note_placement"](st, "asia", _door_refused(reason)) is True
+    assert st.get("placement_health", {}).get("consecutive_total_rejections", 0) == 0
+    assert not gw["PAUSED"].exists()
+    assert sum("ORDER DOOR REFUSED" in ln and reason in ln for ln in gw["_logged"]) == 2 * passes
+
+
+def test_real_broker_failures_still_pause_alongside_door_refusals(gw):
+    """A pass holding a door refusal AND a broker rejection is still a failed pass."""
+    st = {}
+    mixed = [_door_refused()[0], _rej()[1]]
+    gw["note_placement"](st, "asia", mixed)
+    assert gw["note_placement"](st, "asia", mixed) is False
+    assert gw["PAUSED"].exists()
+
+
+def test_the_gateway_tags_only_the_doors_own_refusals():
+    """`place_bracket` marks a leg door_refused from the refusal's own `door_own` flag. The door
+    sets it on its duplicate and unsettled-in-doubt refusals only; a broker-check rejection
+    carries the broker's retcode, is not the door's own, and counts."""
+    from types import SimpleNamespace
+
+    from mt5desk import order_door as door
+    assert '"door_refused": getattr(res, "door_own", False) is True' in _SRC
+
+    class _Venue:
+        TRADE_ACTION_DEAL = 1
+        def __init__(self, check_rc):
+            self.check_rc = check_rc
+        def order_check(self, req):
+            return SimpleNamespace(retcode=self.check_rc, comment="c")
+        def orders_get(self, **_):
+            return (SimpleNamespace(ticket=9, comment="c1", magic=1),)
+        def positions_get(self, **_):
+            return ()
+        def history_deals_get(self, *a):
+            return ()
+        def order_send(self, req):
+            return None
+
+    req = {"action": 1, "symbol": "X", "volume": 0.1, "type": 0, "sl": 1.0, "magic": 1,
+           "comment": "c1"}
+    chk = door.send(_Venue(10019), req)
+    assert chk.door_own is False and door.is_door_own_refusal(chk) is False
+    door.send(_Venue(0), req)                        # None -> in doubt; the venue shows it landed
+    dup = door.send(_Venue(0), req)
+    assert dup.door_reason == "duplicate_of_in_doubt"
+    assert dup.door_own is True and door.is_door_own_refusal(dup) is True
+    assert door.is_door_own_refusal(SimpleNamespace(retcode=10006)) is False
+    door._MEMORY_IN_DOUBT.clear()
+
+
+def test_two_passes_of_broker_check_rejections_pause_the_desk(gw):
+    """A venue whose `order_check` refuses every new order still pauses the desk. The door's
+    `broker_check_rejected` refusal carries the broker's retcode and is not the door's own, so
+    two such passes, shaped exactly as `place_bracket` records them, reach the pause."""
+    from types import SimpleNamespace
+
+    from mt5desk import order_door as door
+
+    class _Venue:
+        TRADE_ACTION_DEAL = 1
+        def order_check(self, req):
+            return SimpleNamespace(retcode=10017, comment="Trade disabled")
+        def order_send(self, req):
+            raise AssertionError("a refused open must never reach order_send")
+
+    def _pass():
+        legs = []
+        for side, typ in (("buy_stop", 4), ("sell_stop", 5)):
+            res = door.send(_Venue(), {"action": 5, "symbol": "X", "volume": 0.1, "type": typ,
+                                       "price": 1.0, "sl": 0.9, "magic": 1,
+                                       "comment": f"c-{side}"})
+            assert res.door_reason == "broker_check_rejected" and res.door_own is False
+            legs.append({"side": side, "retcode": res.retcode, "comment": res.comment,
+                         "door_refused": getattr(res, "door_own", False) is True,
+                         "door_reason": getattr(res, "door_reason", None)})
+        return legs
+
+    st = {"placement_pass": "p1"}
+    assert gw["note_placement"](st, "asia", _pass()) is True
+    assert not gw["PAUSED"].exists()
+    st["placement_pass"] = "p2"
+    assert gw["note_placement"](st, "asia", _pass()) is False
+    assert gw["PAUSED"].exists()
+    assert st["placement_health"]["consecutive_total_rejections"] == gw["MAX_TOTAL_REJECTIONS"]
+    assert not any("ORDER DOOR REFUSED" in ln for ln in gw["_logged"])
+    door._MEMORY_IN_DOUBT.clear()

@@ -334,30 +334,22 @@ def _unknowns() -> dict[str, Any]:
     AN EMPTY LEDGER IS NOT A CLEAN BILL. A desk with no recorded assumptions has unrecorded ones,
     so the report says that in those words rather than reporting zero.
     """
+    # RETIRED AS AN INPUT READ (2026-09-30, docs/research/retirements.jsonl). The ledger file this
+    # read had no writer anywhere in the repository (the R0228 phantom class), and none is
+    # derivable: an Item in a belief state REQUIRES a falsifier, and no artifact on this desk
+    # records beliefs with falsifiers (docs/desk_lessons.jsonl: 0 of 388 lessons carry one).
+    # Minting falsifiers to fill the file would manufacture the evidence the ledger exists to
+    # demand. So the capability reports UNMEASURED by name, every cycle, instead of reading a
+    # path nothing writes and calling the empty default a finding.
     try:
-        from libs.research.unknowns import Item, summarise
+        from libs.research.unknowns import summarise
     except ImportError as e:
         return _cap("unknowns_ledger", "ERROR", f"import failed: {e}")
-    raw = _read("data/unknowns.json") or {}
-    rows = raw.get("items") if isinstance(raw, dict) else None
-    items = []
-    for r in rows or []:
-        if not isinstance(r, dict):
-            continue
-        try:
-            items.append(Item(
-                key=str(r["key"]), state=str(r["state"]), statement=str(r.get("statement", "")),
-                falsifier=str(r.get("falsifier", "")),
-                depends_on_it=tuple(str(x) for x in (r.get("depends_on_it") or [])),
-                needs_data=tuple(str(x) for x in (r.get("needs_data") or [])),
-                evidence=str(r.get("evidence", "")), trigger=str(r.get("trigger", ""))))
-        except (KeyError, ValueError):
-            # A row the ledger's own constructor refuses is a DEFECT IN THE ROW, not a reason to
-            # drop the whole ledger -- most often a belief written with no falsifier.
-            continue
-    rep = summarise(items)
-    return _cap("unknowns_ledger", "ACTIVE" if items else "NO-INPUT", str(rep["headline"]),
-                report=rep)
+    rep = summarise([])
+    return _cap("unknowns_ledger", "NO-INPUT",
+                "UNMEASURED -- capability retired as an input read 2026-09-30: no organ records "
+                "desk beliefs with falsifiers, so no unknowns ledger can be derived. "
+                f"{rep['headline']}", report=rep, retired="docs/research/retirements.jsonl")
 
 
 def _source_roi() -> dict[str, Any]:
@@ -508,8 +500,23 @@ def _capability_regression() -> dict[str, Any]:
                 str(rep["headline"]), report=rep)
 
 
+def _derive_inputs() -> dict[str, Any]:
+    """Write the three inputs below from the artifacts they are derived from, on this organ's own
+    clock, so the capabilities that read them are never reading a path nothing writes (R0228).
+    A failure is recorded as ERROR and the readers then say NO-INPUT -- never a silent skip."""
+    try:
+        from libs.ops.intelligence_inputs import write_all
+        counts = write_all()
+    except Exception as e:  # one derivation must not take the cycle with it
+        return _cap("input_derivation", "ERROR", f"{type(e).__name__}: {e}")
+    return _cap("input_derivation", "ACTIVE",
+                "derived cadence production, capability snapshots and strategy horizons from "
+                "the compute ledger and the decay monitor", counts=counts)
+
+
 def main() -> int:
     caps = [
+        _derive_inputs(),
         _dormancy(),
         _orphan_chain(),
         _unknowns(),

@@ -100,6 +100,26 @@ THE WORK, IN ORDER
    started. Establish why, and make a cycle that cannot complete SAY so with a reason rather than
    leaving complete false and a -1.
 
+7. NAMED PUBLIC LEADS -- CONVERT, DO NOT SUMMARIZE (restored 2026-09-30; dropped by the
+   09-08 repair-only rewrite for no mandate reason, and research generation is never reduced).
+   For named discovery routers @L1vsun, @shmidtqq and @antpalkin (docs/research/GPT_HUNTER_SOURCES.json,
+   hunted by scripts/gpt_hunter.py), follow outbound citations into papers/appendices,
+   repos/forks/notebooks, datasets, failures and validation/falsification; route qualified
+   mechanisms through the existing hypothesis/conversion pipeline and immediately IMPLEMENT and TEST
+   the highest E[log W] uplift / total conversion cost challenger. BLOCKED access is never a clean null.
+   Surface summaries and passive reading lists fail this duty.
+   Treat the Alert_Attention_5905 submitted-post feed, r/Forven, the Forven launch thread and its
+   public repository, and Kakushadze/Serur's 151 Trading Strategies SSRN mechanism index as
+   mandatory public-source grounds. Summarize copyrighted material; never redistribute it.
+   Deduplicate its MT5-transferable mechanisms against the existing paths; block roll-yield and
+   calendar-spread cards until real futures-curve data exists (BLOCKED, never a spot-CFD proxy).
+   Read data/intelligence/mt5_external_intake.json after the hunter: run every exact QUEUED recipe
+   through the existing factory and turn each BLOCKED_IMPLEMENTATION item into a preregistered MT5
+   challenger or an evidence-based reject. Do not leave it as a chat summary. For reciprocal-licence
+   code such as AGPL Forven, mine architecture and failures but implement independently rather than
+   copying source. The MT5 tick tape feeds tick-pressure hypotheses: verify it is growing first.
+   Every lead stays inside the MT5/Fusion universe; none is a crypto-exchange hunt.
+
 ================================================================================
 HOW TO REPORT
 ================================================================================

@@ -3,9 +3,14 @@
 Builds data/states/*.parquet - self-made information states from the free
 lakes (CFTC legacy/TFF/disaggregated + FRED + H1 universe). Every state is
 POINT-IN-TIME safe:
-  - COT/TFF states activate at report_date + 6 days (Monday-open publication
-    convention, same as the COT signal families)
-  - FRED daily states activate at the next H1 bar after the FRED value date
+  - COT/TFF states activate at report_date + max(6 days, the declared CFTC lag)
+    (Monday-open publication convention, same as the COT signal families)
+  - FRED states activate at the first H1 bar after value date + the DECLARED lag
+    (`libs.tiers.data_os.lag_of("fred_macro", series_id)`: 27h for the daily market
+    series, the cadence entry in `data_os.FRED_SERIES_LAGS` for weekly/monthly ones).
+    Until 2026-09-30 a daily print dated D reached the 01:00 bar of D itself -- a day
+    before FRED posts it -- and a monthly print dated at month START reached the whole
+    month it describes.
   - percentiles are TRAILING (min 2y of history) - never full-sample
 No state ever uses information unavailable at its own timestamp.
 
@@ -25,6 +30,14 @@ import numpy as np
 import pandas as pd
 
 BASE = Path(__file__).resolve().parent.parent
+if str(BASE.parents[1]) not in sys.path:
+    sys.path.insert(0, str(BASE.parents[1]))
+
+from libs.tiers import data_os  # noqa: E402
+
+#: the COT activation offset: the desk's Monday-open convention, never earlier than the declared
+#: CFTC publication lag (`data_os.PUBLICATION_LAGS["cot_fx"]`)
+COT_ACTIVATION = max(timedelta(days=6), data_os.lag_of("cot_fx"))
 OUT = BASE / "data" / "states"
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -63,11 +76,16 @@ def reindex_ff(s: pd.Series, idx: pd.DatetimeIndex, ffill: bool = True) -> pd.Se
     return out
 
 
-def ff_daily(sr: pd.Series, idx: pd.DatetimeIndex) -> pd.Series:
+def ff_daily(sr: pd.Series, idx: pd.DatetimeIndex,
+             series_id: str | None = None) -> pd.Series:
     """Daily series -> H1 index, PIT-safe: the value dated D applies to the
-    first bar strictly AFTER D (no exact-match reindex, which silently fails
-    when bar timestamps never equal midnight)."""
+    first bar strictly AFTER its knowledge time (no exact-match reindex, which
+    silently fails when bar timestamps never equal midnight). A FRED `series_id`
+    moves D to D + its declared publication lag first; a broker price series
+    (no id) is known at its own stamp."""
     src = sr.dropna()
+    if series_id is not None:
+        src = data_os.known_series(src, "fred_macro", series_id)
     if src.empty:
         return pd.Series(np.nan, index=idx, dtype=float)
     pos = idx.searchsorted(src.index, side="right")
@@ -83,7 +101,7 @@ def cot_net_pct(legacy_df: pd.DataFrame, col: str, idx: pd.DatetimeIndex,
     df = df[df[col] != 0].sort_values("report_date").set_index("report_date")
     net = df[col].replace(0, np.nan).ffill()
     pct = pct_trailing(net, min_years * 52)
-    ts = pct.index + timedelta(days=6)
+    ts = pct.index + COT_ACTIVATION
     return reindex_ff(pd.Series(pct.to_numpy(), index=ts), idx)
 
 
@@ -112,7 +130,7 @@ def main() -> None:
         df = df[(df[oi] > 0)].sort_values("report_date").set_index("report_date")
         net = (df[col_l] - df[col_s]) / df[oi]
         pct = pct_trailing(net, 156)
-        ts = pct.index + timedelta(days=6)
+        ts = pct.index + COT_ACTIVATION
         return reindex_ff(pd.Series(pct.to_numpy(), index=ts), jidx)
 
     s["jpy_tff_dealer_net_pct"] = tff_net_pct("dealer_l", "dealer_s", "oi")
@@ -127,8 +145,8 @@ def main() -> None:
                       - leg_jpy["noncomm_positions_short_all"])
     s["jpy_legacy_net_pct"] = cot_net_pct(leg_jpy, "net", jidx)
 
-    jpy_3m = ff_daily(fr["IR3TIB01JPM156N"]["value"], jidx)
-    us2y = ff_daily(fr["DGS2"]["value"], jidx)
+    jpy_3m = ff_daily(fr["IR3TIB01JPM156N"]["value"], jidx, "IR3TIB01JPM156N")
+    us2y = ff_daily(fr["DGS2"]["value"], jidx, "DGS2")
     diff = (us2y - jpy_3m).dropna()
     s["jpy_rates_z"] = ((diff - diff.rolling(365 * 24, min_periods=52 * 24).mean())
                         / diff.rolling(365 * 24, min_periods=52 * 24).std())
@@ -149,7 +167,7 @@ def main() -> None:
         df = df[(df[oi] > 0)].sort_values("report_date").set_index("report_date")
         net = (df[col_l] - df[col_s]) / df[oi]
         pct = pct_trailing(net, 156)
-        ts = pct.index + timedelta(days=6)
+        ts = pct.index + COT_ACTIVATION
         return reindex_ff(pd.Series(pct.to_numpy(), index=ts), idx)
 
     leg_gold = legacy["gold"]
@@ -170,7 +188,7 @@ def main() -> None:
         sub = sub[sub["open_interest_all"] > 0].sort_values("report_date").set_index("report_date")
         net = (sub[cl] - sub[cs]) / sub["open_interest_all"]
         pct = pct_trailing(net, 156)
-        ts = pct.index + timedelta(days=6)
+        ts = pct.index + COT_ACTIVATION
         s[tag] = reindex_ff(pd.Series(pct.to_numpy(), index=ts), xidx)
 
     s["gold_physical_paper"] = (
@@ -178,10 +196,10 @@ def main() -> None:
         + s["gold_disagg_swap_net_pct"].fillna(0.5) * 0.3
         + (1 - s["gold_legacy_lm_net_pct"].fillna(0.5)) * 0.2)
 
-    vix = ff_daily(fr["VIXCLS"]["value"], xidx)
-    credit = ff_daily(fr["BAMLH0A0HYM2"]["value"], xidx)
-    real_y = ff_daily(fr["DFII10"]["value"], xidx)
-    usd = ff_daily(fr["DTWEXBGS"]["value"], xidx)
+    vix = ff_daily(fr["VIXCLS"]["value"], xidx, "VIXCLS")
+    credit = ff_daily(fr["BAMLH0A0HYM2"]["value"], xidx, "BAMLH0A0HYM2")
+    real_y = ff_daily(fr["DFII10"]["value"], xidx, "DFII10")
+    usd = ff_daily(fr["DTWEXBGS"]["value"], xidx, "DTWEXBGS")
     ratio = (xau["close"] / ff_daily(pd.read_parquet(UNI / "XAGUSD_H1.parquet").sort_index()["close"], xidx))
 
     def z(sr: pd.Series, win: int = 365 * 24) -> pd.Series:
@@ -194,12 +212,12 @@ def main() -> None:
     s["gold_risk_off_z"] = (z(vix) + z(credit)).fillna(0.0)
     s["gold_macro_stress"] = (z(vix).fillna(0) * 0.4 + z(credit).fillna(0) * 0.25
                               - z(real_y).fillna(0) * 0.2 + z(usd).fillna(0) * 0.15)
-    s["usd_liquidity_z"] = z(ff_daily(fr["WALCL"]["value"], xidx))
+    s["usd_liquidity_z"] = z(ff_daily(fr["WALCL"]["value"], xidx, "WALCL"))
 
-    aud = ff_daily(fr["DEXUSAL"]["value"], xidx)
-    cad = ff_daily(fr["DEXCAUS"]["value"], xidx)
-    nzd = ff_daily(fr["DEXUSNZ"]["value"], xidx)
-    copper = ff_daily(fr["PCOPPUSDM"]["value"], xidx)
+    aud = ff_daily(fr["DEXUSAL"]["value"], xidx, "DEXUSAL")
+    cad = ff_daily(fr["DEXCAUS"]["value"], xidx, "DEXCAUS")
+    nzd = ff_daily(fr["DEXUSNZ"]["value"], xidx, "DEXUSNZ")
+    copper = ff_daily(fr["PCOPPUSDM"]["value"], xidx, "PCOPPUSDM")
     cc = (z(aud) + z(cad) + z(nzd) + z(copper)) / 4
     s["cc_physical_z"] = cc
 
