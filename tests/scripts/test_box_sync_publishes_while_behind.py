@@ -85,7 +85,7 @@ def test_every_report_survives_gitignore() -> None:
 def test_being_behind_no_longer_exits_before_staging() -> None:
     src = _src()
     pull = src.index("Sync-Pull -RepoRoot $RepoRoot -Branch $branch")
-    add = src.index("$addRc = Git-In-Repo")
+    add = src.index("$addRc = Invoke-GitWriteRetry")
     between = src[pull:add]
     assert "exit 0" not in between.replace('"SKIP: none of the tracked', ""
                                            ).split("if ($existing.Count -eq 0)")[0], (
