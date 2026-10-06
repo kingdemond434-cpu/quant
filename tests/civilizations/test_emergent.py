@@ -53,3 +53,18 @@ def test_emergent_class_is_a_consumed_outcome() -> None:
     assert O.EMERGENT_CLASS in O.OUTCOMES and O.CONSUMERS[O.EMERGENT_CLASS]
     row = O.Outcome(O.EMERGENT_CLASS, 1.0, ["monsoon rainfall"]).as_row()
     assert json.dumps(row)
+
+
+def test_two_processes_merge_their_observations(tmp_path: Path) -> None:
+    a, b = EM.EmergentLexicon(tmp_path), EM.EmergentLexicon(tmp_path)
+    for i in range(3):
+        a.observe("monsoon rainfall moves sugar futures", source_id="la", uri=f"a{i}")
+        b.observe("monsoon rainfall moves sugar futures", source_id="lb", uri=f"b{i}")
+    a.sync()
+    a.save()
+    b.sync()
+    b.save()
+    c = EM.EmergentLexicon(tmp_path)
+    row = c.lex["monsoon rainfall"]
+    assert row["df"] == 6 and set(row["sources"]) == {"la", "lb"}
+    assert "monsoon rainfall" in b.promote()               # 6 items, 2 lanes: born

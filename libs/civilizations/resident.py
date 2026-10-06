@@ -816,6 +816,7 @@ class Resident:
     def ontology_frontier(self, pipeline: Any) -> dict[str, Any]:
         """Promote recurring unknown concepts to emergent classes and point the frontier
         search at them and at the coverage tensor's missions (ONTOLOGY_FRONTIER.json)."""
+        self.emergent.sync()
         born = self.emergent.promote()
         pruned = self.emergent.prune()
         self.emergent.save()

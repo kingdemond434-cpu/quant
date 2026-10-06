@@ -89,6 +89,20 @@ def terms(text: str, *, topics: Iterable[str] = (), cap_chars: int = 20_000) -> 
     return {t for t in out if not _known(t)}
 
 
+def _bump(book: dict[str, dict[str, Any]], term: str, *, at: str, df: int = 1,
+          source_id: str | None = None, uri: str | None = None,
+          sources: Iterable[str] = (), examples: Iterable[str] = ()) -> None:
+    row = book.setdefault(term, {"df": 0, "sources": [], "first_seen": at, "examples": []})
+    row["df"] += df
+    row["first_seen"] = min(str(row["first_seen"]), at)
+    for sid in [*sources, *([source_id] if source_id else [])]:
+        if sid not in row["sources"] and len(row["sources"]) < MAX_SOURCES_KEPT:
+            row["sources"].append(sid)
+    for u in [*examples, *([uri] if uri else [])]:
+        if len(row["examples"]) < 3 and u not in row["examples"]:
+            row["examples"].append(u)
+
+
 class EmergentLexicon:
     """The residue lexicon and the classes it has given birth to (both durable JSON)."""
 
@@ -99,6 +113,9 @@ class EmergentLexicon:
         self.lex: dict[str, dict[str, Any]] = self._load(self.lex_path)
         self.classes: dict[str, dict[str, Any]] = self._load(self.cls_path)
         self.observed = 0
+        # what THIS process observed since its last sync: the resident and the hourly leg each
+        # hold a lexicon, so a save merges its delta into the file instead of overwriting it
+        self.delta: dict[str, dict[str, Any]] = {}
 
     @staticmethod
     def _load(p: Path) -> dict[str, dict[str, Any]]:
@@ -115,13 +132,18 @@ class EmergentLexicon:
         for t in terms(text, topics=topics):
             if self.exclude is not None and self.exclude.search(t):
                 continue
-            row = self.lex.setdefault(t, {"df": 0, "sources": [], "first_seen": at,
-                                          "examples": []})
-            row["df"] += 1
-            if source_id not in row["sources"] and len(row["sources"]) < MAX_SOURCES_KEPT:
-                row["sources"].append(source_id)
-            if uri and len(row["examples"]) < 3 and uri not in row["examples"]:
-                row["examples"].append(uri)
+            for book in (self.lex, self.delta):
+                _bump(book, t, at=at, source_id=source_id, uri=uri)
+
+    def sync(self) -> None:
+        """Re-read the files, add this process's delta, keep every class either side holds."""
+        disk = self._load(self.lex_path)
+        for t, d in self.delta.items():
+            _bump(disk, t, at=str(d["first_seen"]), df=int(d["df"]), sources=d["sources"],
+                  examples=d["examples"])
+        self.lex = disk
+        self.classes = {**self.classes, **self._load(self.cls_path)}
+        self.delta = {}
 
     def match(self, text: str) -> list[str]:
         """Emergent classes whose term appears in `text` (the ROUTE step)."""
