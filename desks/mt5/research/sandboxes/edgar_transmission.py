@@ -23,7 +23,6 @@ dollar index into a burst. The gauntlet judges every one.
 from __future__ import annotations
 
 import json
-import os
 from collections import Counter
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -136,7 +135,12 @@ def run(bundle: A.ResearchBundle, ctx: CellContext) -> ExternalResearchPacket:
     fetched: dict[str, Any] = {"attempted": False, "why": ""}
     network_ok = ctx.network_allowed and fed.POLICY.network == "allowlist"
     if network_ok and not ctx.dry_run:
-        ua = os.environ.get("QUANT_EDGAR_UA", "")
+        # EVERY NAME THE DESK HAS USED FOR THIS ONE CONTACT STRING (libs/data/credentials.py):
+        # this file's QUANT_EDGAR_UA, the principal's SEC_EDGAR_USER_AGENT, the disclosure lane's
+        # SEC_EDGAR_UA -- one set name lights every EDGAR reader, registry included.
+        from libs.ops.env_keys import read_key
+        ua = next((v for v in map(read_key, ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT",
+                                             "SEC_EDGAR_UA")) if v), "")
         allowed, why = machine_use_allowed(FULL_TEXT)
         if not ua:
             fetched = {"attempted": False, "why": "no User-Agent configured (QUANT_EDGAR_UA); SEC "

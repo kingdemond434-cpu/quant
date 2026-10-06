@@ -634,7 +634,8 @@ SEC_PHRASES: dict[int, tuple[str, ...]] = {
 
 def fetch_sec(get: Getter, state: dict[str, Any], deadline: float, *, now: datetime
               ) -> tuple[list[AnalystView], dict[str, Any]]:
-    ua = read_key("QUANT_EDGAR_UA")
+    ua = next((v for v in map(read_key, ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT",
+                                         "SEC_EDGAR_UA")) if v), "")
     if not ua:
         return [], {"status": "UNCONFIGURED", "attempted": 0,
                     "why": "no QUANT_EDGAR_UA: the SEC's fair-access policy requires a declared "
