@@ -162,10 +162,11 @@ def test_the_receipts_rotate_by_size_and_the_totals_stay_exact(tmp_path: Path,
         io.write_discoveries(tmp_path / f"seat_{k % 2}" / f"d{k}.json",
                              [{"title": "x", "captured_at": "2026-10-03T08:00:00+00:00"},
                               "bad"], quarantine=qpath, receipts=rpath)
-    assert rpath.stat().st_size < 2 * 400 and (rpath.parent / (rpath.name + ".1")).exists()
+    segs = [s for s in (rpath.parent / (rpath.name + ".1"), rpath) if s.exists()]
+    assert all(s.stat().st_size < 2 * 400 for s in segs)
+    assert (rpath.parent / (rpath.name + ".1")).exists()
     totals = json.loads(io.totals_path(rpath).read_text("utf-8"))
-    live = [json.loads(x) for seg in (rpath.parent / (rpath.name + ".1"), rpath)
-            for x in seg.read_text("utf-8").splitlines()]
+    live = [json.loads(x) for seg in segs for x in seg.read_text("utf-8").splitlines()]
     writes = sum(v["writes"] for v in totals["by_producer"].values()) + len(live)
     quarantined = (sum(v["quarantined"] for v in totals["by_producer"].values())
                    + sum(r["quarantined"] for r in live))
