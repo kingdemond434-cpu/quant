@@ -223,9 +223,12 @@ def replay_orderings(rows: list[dict[str, Any]],
             secs.append(spent)
             kills += 1 if killed else 0
         n = len(secs)
+        mean = sum(secs) / n if n else 0.0
+        se = (sum((x - mean) ** 2 for x in secs) / (n - 1) / n) ** 0.5 if n > 1 else None
         out[policy] = {
             "n_rows": n, "n_killed": kills,
-            "mean_seconds_to_verdict": round(sum(secs) / n, 4) if n else None,
+            "mean_seconds_to_verdict": round(mean, 4) if n else None,
+            "se_seconds": round(se, 6) if se is not None else None,
             "total_seconds": round(sum(secs), 3),
             "verdict": "MEASURED" if n >= MIN_ROWS else "UNMEASURED",
             "why": (None if n >= MIN_ROWS else
@@ -264,8 +267,23 @@ def guarded_winner(rows: list[dict[str, Any]], measured: dict[str, float],
          and ho[k]["mean_seconds_to_verdict"] is not None}
     if not q:
         return {"status": "UNMEASURED", "winner": None, "why": "no policy measured on both halves"}
-    scale = sum(v[0] for v in q.values()) / len(q)
-    out = rh.thresholdout(study, q, scale=scale, state_path=state_path)
+    # CALIBRATED TO THIS STATISTIC'S OWN NOISE (audit, 2026-10-07), not the paper's [0,1] setting:
+    # under no overfitting, train minus holdout is noise with s.e. sqrt(se_tr^2 + se_ho^2). The
+    # threshold sits at two of those (so an honest policy rarely spends budget) and the Laplace
+    # noise at half of one. Unmeasurable noise falls back to the paper's fractions, and says so.
+    null = [((tr[k].get("se_seconds") or 0.0) ** 2 + (ho[k].get("se_seconds") or 0.0) ** 2) ** 0.5
+            for k in q if tr[k].get("se_seconds") is not None
+            and ho[k].get("se_seconds") is not None]
+    noise = max(null) if null else 0.0
+    if noise > 0:
+        out = rh.thresholdout(study, q, scale=1.0, threshold=2.0 * noise, sigma=0.5 * noise,
+                              state_path=state_path)
+        basis = "2x / 0.5x the null s.e. of train minus holdout (seconds)"
+    else:
+        scale = sum(v[0] for v in q.values()) / len(q)
+        out = rh.thresholdout(study, q, scale=scale, state_path=state_path)
+        basis = "FALLBACK: the paper's fractions of the mean (noise unmeasurable)"
+    out = {**out, "calibration": basis}
     answered = {k: v for k, v in out["answers"].items() if v is not None}
     winner = min(answered, key=lambda k: float(answered[k])) if answered else last
     rotated = None
@@ -656,8 +674,9 @@ LIMITATIONS: tuple[dict[str, Any], ...] = (
     {"id": "allocator_speed_vs_turnover", "owner": "research/rebalance_trigger.py",
      "limit": "a faster rebalance cadence has never been replayed against net results; the "
               "trigger decides per event but no cadence is compared",
-     "artifacts": ("REBALANCE_TRIGGER.json", "ALLOCATOR_PROOF.json"),
-     "challenger": "cadence",
+     "artifacts": ("META_RND.json",), "challenger": "cadence",
+     "measured_on": "the PROXY allocator (equal weight over trailing-positive sleeves) in "
+                    "META_RND.json, NOT rebalance_trigger or pf_allocator",
      "resources": "recorded forward daily R and the live ledger's costs",
      "next": "replay hourly vs daily vs weekly rebalancing of the recorded book: net E[log W] "
              "and turnover per cadence, with a block-bootstrap interval"},
@@ -688,7 +707,9 @@ LIMITATIONS: tuple[dict[str, Any], ...] = (
     {"id": "optimality_gap", "owner": "libs/portfolio/allocator_proof.py",
      "limit": "no allocator decision is compared with a bound (hindsight oracle or the solver's "
               "dual), so the gap to optimal is unknown",
-     "artifacts": ("ALLOCATOR_PROOF.json",), "challenger": "bound",
+     "artifacts": ("META_RND.json",), "challenger": "bound",
+     "measured_on": "the PROXY allocator's realised growth in META_RND.json, NOT "
+                    "allocator_proof or pf_allocator's decisions",
      "resources": "recorded daily R; a hindsight-Kelly solve per window",
      "next": "publish realised log growth against the hindsight-optimal fixed-fraction bound "
              "per window: the gap and its interval"},
@@ -832,7 +853,11 @@ def _challenger_result(cid: str, arts: dict[str, dict[str, Any]],
                 else "UNMEASURED",
                 "holdout_status": g.get("status"), "budget_left": g.get("budget_left"),
                 "overfit_this_pass": g.get("overfit"), "winner": g.get("winner"),
-                "uncertainty": "Thresholdout's guarantee holds while budget_left > 0"}
+                "calibration": g.get("calibration"),
+                "uncertainty": "budget_left > 0 is NECESSARY for Thresholdout's bound, not "
+                               "sufficient: the bound assumes independent rows and a large "
+                               "holdout, and certificate rows are neither; read VALID as "
+                               "'adaptive reuse still braked', never as unbiased answers"}
     return {"status": "UNMEASURED"}
 
 
@@ -853,6 +878,7 @@ def frontier(meta: dict[str, Any], now_ts: float | None = None) -> dict[str, Any
             res, status = {"status": "NOT_BUILT"}, "NOT_BUILT"
         rows.append({"id": lim["id"], "owner": lim["owner"], "limit": lim["limit"],
                      "tested": lim.get("challenger") or "no matched challenger yet",
+                     "measured_on": lim.get("measured_on") or "the owner's own artifacts",
                      "result": res, "status": status,
                      "artifacts": {k: {kk: vv for kk, vv in v.items() if kk != "doc"}
                                    for k, v in arts.items()},

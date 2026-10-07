@@ -23,9 +23,19 @@ nothing. THE REGISTER IS THE LEDGER: an append-only file beside the state
 (`register_path`, tracked, on the box's state wire) records every study opened, every charge
 and every epoch rotated, and a study's budget is the SMALLER of what the state and the register
 say -- so restoring either file from git, deleting the state, or an older snapshot of it can
-never refill a study. A missing or unreadable register answers nothing.
+never refill a study. A missing or unreadable register answers nothing. The register has an
+untracked twin under the gitignored `data/` (`mirror_path`), and the register read is the union
+of both: restoring the state AND the tracked register to their stubs together still cannot
+refill a study, because no git operation touches the mirror.
 The noise is drawn from OS entropy: seeding it from the committed state made a repeated question
 get an identical answer, which is exactly the leak the noise is there to close.
+
+WHAT IT DOES NOT PROMISE. The paper's bound holds for rows drawn independently, for a statistic
+of bounded sensitivity, and with an error that grows as the budget grows relative to the holdout's
+size. Certificate rows are neither independent nor identically distributed (they arrive in time,
+from shared families), and a few dozen holdout rows is far from the paper's thousands. So a VALID
+status means "the budget is not spent", which is necessary for the guarantee and not sufficient:
+it is a brake on adaptive reuse, never a certificate that the answers are unbiased.
 
 ROTATION, NOT A PERMANENT FREEZE. `rotate` retires the row keys an exhausted study was asked
 about and opens the next epoch of the same study on rows it has never seen, with a fresh budget.
@@ -44,8 +54,16 @@ from typing import Any
 import numpy as np
 
 STATE = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / "reusable_holdout.json"
+#: THE UNTRACKED WITNESS (audit, 2026-10-07). Under the repo's gitignored `data/`, so no git
+#: checkout, adoption or stub restore touches it: with the tracked register AND the state both
+#: restored to their stubs, this copy still holds every charge, and the budget stays spent.
+MIRROR_DIR = Path(__file__).resolve().parents[2] / "data" / "reusable_holdout"
 
-#: Defaults from the paper's worked setting, as fractions of the quantity's own scale.
+#: FALLBACK parameters only: the paper's illustrative setting (T=0.04, sigma=0.01, budget 64 for a
+#: [0,1] statistic over a large holdout), as fractions of the quantity's own scale. They are NOT
+#: calibrated to any statistic here; a caller that can measure its statistic's sampling noise
+#: passes `threshold`/`sigma` derived from it (meta_rnd.guarded_winner does), and the result
+#: says which basis was used.
 THRESHOLD = 0.04
 SIGMA = 0.01
 BUDGET = 64
@@ -82,21 +100,50 @@ def register_path(state_path: Path) -> Path:
     return state_path.with_name(state_path.stem + "_studies.jsonl")
 
 
-def _register(state_path: Path) -> list[dict[str, Any]] | None:
-    """The register's rows, or None when it is missing or unreadable (callers fail closed)."""
-    try:
-        rows = [json.loads(ln) for ln in register_path(state_path).read_text("utf-8").splitlines()
-                if ln.strip()]
-    except (OSError, ValueError):
-        return None
+def mirror_path(state_path: Path) -> Path:
+    """The untracked copy of the register: under the gitignored `data/` for the desk's own state,
+    beside the state for any other (tests, scratch) so each study set keeps its own witness."""
+    name = state_path.stem + "_studies.mirror.jsonl"
+    return MIRROR_DIR / name if state_path.resolve() == STATE.resolve() \
+        else state_path.with_name(name)
+
+
+def _rows(path: Path) -> list[dict[str, Any]]:
+    rows = [json.loads(ln) for ln in path.read_text("utf-8").splitlines() if ln.strip()]
     return [r for r in rows if isinstance(r, dict)]
 
 
+def _register(state_path: Path) -> list[dict[str, Any]] | None:
+    """The UNION of the tracked register and its untracked mirror, each row once; None when the
+    tracked register is missing or either copy is unreadable (callers fail closed). A mirror that
+    does not exist yet is an empty witness, never an error."""
+    try:
+        tracked = _rows(register_path(state_path))
+    except (OSError, ValueError):
+        return None
+    mirror = mirror_path(state_path)
+    try:
+        extra = _rows(mirror) if mirror.exists() else []
+    except (OSError, ValueError):
+        return None
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for r in tracked + extra:
+        key = str(r.get("id") or json.dumps(r, sort_keys=True, default=str))
+        if key not in seen:
+            seen.add(key)
+            out.append(r)
+    return out
+
+
 def _append(state_path: Path, row: Mapping[str, Any]) -> None:
-    reg = register_path(state_path)
-    with reg.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps({**row, "at": datetime.now(tz=UTC).isoformat(timespec="seconds")})
-                 + "\n")
+    """Append to BOTH witnesses. Each row carries a unique id so the union counts it once."""
+    line = json.dumps({**row, "id": os.urandom(8).hex(),
+                       "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}) + "\n"
+    for p in (register_path(state_path), mirror_path(state_path)):
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("a", encoding="utf-8") as fh:
+            fh.write(line)
 
 
 def _register_left(rows: list[dict[str, Any]], study: str, budget: int) -> tuple[int, bool]:
@@ -192,6 +239,7 @@ def thresholdout(study: str, queries: Mapping[str, tuple[float, float]], *, scal
         return closed(f"{type(exc).__name__}: {exc}", asked)
     return {"study": study, "answers": answers, "overfit": overfit, "budget_left": left,
             "budget": budget, "questions_total": asked,
+            "threshold_abs": round(threshold * s, 6), "sigma_abs": round(sigma * s, 6),
             "status": "EXHAUSTED" if left <= 0 else "VALID", "state_error": None}
 
 

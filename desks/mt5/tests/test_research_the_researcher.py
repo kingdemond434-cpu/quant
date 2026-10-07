@@ -48,6 +48,25 @@ def test_head_to_head_selects_on_the_dev_bars_and_scores_once_on_the_untouched_t
     assert r["trials"] == r["evals"]["joint"] + r["evals"]["sequential"] + 2
 
 
+def test_a_run_that_raises_is_charged_the_evaluations_it_started(tmp_path, monkeypatch):
+    calls = {"n": 0}
+
+    def fake_eval(*a, **k):
+        calls["n"] += 1
+        return {"net_gain": 0.001 * calls["n"], "model": a[2], "verdict": "MEASURED"}
+
+    def boom(*a, **k):
+        raise RuntimeError("sequential arm died")
+    monkeypatch.setattr(C, "evaluate", fake_eval)
+    monkeypatch.setattr(C, "sequential", boom)
+    prog: dict = {}
+    with pytest.raises(RuntimeError):
+        C.head_to_head(_bars(days=120, seed=2), store=FeatureStore(tmp_path / "fs"),
+                       budget_s=30, models=("logistic", "ridge_sign"), progress=prog)
+    assert prog["evals"] == calls["n"] > 0                  # exactly what the joint arm started
+    assert prog["spent_bound"] >= prog["evals"]             # the cap is only ever an upper bound
+
+
 def test_evaluate_from_row_scores_only_the_tail():
     class Store:
         def matrix(self, df, specs):
@@ -81,7 +100,7 @@ def test_the_method_challenger_records_every_run_and_lets_the_arena_judge(tmp_pa
     def fake_h2h(df, progress=None, **kw):
         w = next(outcomes)
         if w == "boom":
-            progress["spent_bound"] = 17
+            progress["evals"], progress["spent_bound"] = 5, 17
             raise RuntimeError("store unreadable")
         return {"winner": "joint" if w == "unmatched" else w, "trials": 10,
                 "matched_compute": w != "unmatched",
@@ -92,11 +111,11 @@ def test_the_method_challenger_records_every_run_and_lets_the_arena_judge(tmp_pa
         ch = fmc.challenger()
     assert ch["runs"] == 9 and ch["wins"] == {"joint": 1, "sequential": 6}   # matched only
     assert ch["unmatched_runs"] == 1 and ch["failed_runs"] == 1
-    assert ch["trials"] == 17 and ch["applied"] is False      # a failed run is still charged
+    assert ch["trials"] == 5 and ch["applied"] is False       # charged what it spent, not 17
     assert ch["oos_net_gain_gap_joint_minus_sequential"]["n"] == 7
     assert set(ch["verdict"]["arms"]) == {"joint", "sequential"}
     rows = [json.loads(x) for x in fmc.H2H.read_text().splitlines()]
-    assert sum(int(r.get("trials") or 0) for r in rows) == 8 * 10 + 17
+    assert sum(int(r.get("trials") or 0) for r in rows) == 8 * 10 + 5
 
 
 def _state(tmp_path):
@@ -172,6 +191,32 @@ def test_a_register_restored_to_its_stub_cannot_refill_what_the_state_holds(tmp_
     rh.register_path(state).write_text(stub)
     out = rh.thresholdout("s", {"x": (0.0, 0.0)}, scale=1.0, budget=1, seed=1, state_path=state)
     assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None
+
+
+def test_restoring_both_stubs_together_cannot_refill(tmp_path):
+    state = _state(tmp_path)
+    stub_s, stub_r = state.read_text(), rh.register_path(state).read_text()
+    rh.thresholdout("s", {"x": (0.0, 10.0)}, scale=1.0, budget=1, seed=0, state_path=state)
+    state.write_text(stub_s)                                   # both tracked files restored
+    rh.register_path(state).write_text(stub_r)
+    out = rh.thresholdout("s", {"x": (0.0, 0.0)}, scale=1.0, budget=1, seed=1, state_path=state)
+    assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None   # the mirror held it
+    assert rh.mirror_path(state).exists()
+
+
+def test_the_desks_mirror_lives_under_the_gitignored_data_dir():
+    m = rh.mirror_path(rh.STATE)
+    assert m.parent == rh.MIRROR_DIR and rh.MIRROR_DIR.parts[-2] == "data"
+    import subprocess
+    root = rh.STATE.parents[3]
+    rel = m.relative_to(root).as_posix()
+    assert subprocess.run(["git", "check-ignore", "-q", rel], cwd=root).returncode == 0
+
+
+def test_the_ordering_holdout_is_calibrated_to_its_own_noise(tmp_path):
+    g = meta_rnd.guarded_winner(_rows(60), {}, state_path=_state(tmp_path))
+    assert g["calibration"].startswith("2x") or g["calibration"].startswith("FALLBACK")
+    assert g["threshold_abs"] >= 0 and g["sigma_abs"] >= 0
 
 
 def test_a_missing_register_answers_nothing(tmp_path):
@@ -274,6 +319,14 @@ def test_the_frontier_report_names_every_limitation_and_never_passes_an_absence(
         assert r["next_experiment"] and r["resources_to_go_further"] and r["limit"]
         assert all(a["state"] == "ABSENT" for a in r["artifacts"].values())
     assert fr["measured_share"] == 0.0
+
+
+def test_proxy_studies_never_name_the_real_allocator_as_measured(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_rnd, "DESK", tmp_path)
+    rows = {r["id"]: r for r in meta_rnd.frontier({"ordering": {}})["limitations"]}
+    for rid in ("allocator_speed_vs_turnover", "optimality_gap"):
+        assert "PROXY" in rows[rid]["measured_on"]
+        assert set(rows[rid]["artifacts"]) == {"META_RND.json"}
 
 
 def test_the_frontier_reads_the_method_challenger_when_it_has_run(tmp_path, monkeypatch):

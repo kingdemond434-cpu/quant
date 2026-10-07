@@ -916,10 +916,12 @@ def challenger(symbols: list[str] | None = None, budget_s: float = H2H_BUDGET_S,
                                        models=models, symbol=sym, progress=prog)
                     row["status"] = "RAN"
                 except Exception as exc:
-                    # A run that raised still spent evaluations: charged at the stage's cap.
+                    # A run that raised still spent evaluations: charged exactly the ones it
+                    # started (audit, 2026-10-07), never the stage's cap.
                     row = {"status": "FAILED", "symbol": sym,
                            "why": f"{type(exc).__name__}: {exc}",
-                           "trials": int(prog.get("spent_bound") or 0)}
+                           "trials": int(prog.get("evals") or 0),
+                           "spent_bound": int(prog.get("spent_bound") or 0)}
     row["at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
     if row.get("status") in ("RAN", "FAILED"):
         try:
