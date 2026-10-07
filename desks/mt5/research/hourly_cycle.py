@@ -1117,7 +1117,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "alpha_replenishment", "research_dashboard",
                      "research_roi", "experiment_spine", "implementer",
                      "research_debt", "paradigm_router", "meta_controller", "research_bandit",
-                     "ingestion_exploitation", "coverage_tensor", "research_evolution",
+                     "ingestion_exploitation", "coverage_tensor", "regional_parity",
+                     "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
                      "search_paradigm_census", "producer_census", "productivity_census",
@@ -1890,6 +1891,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # cap below an organ's budget truncates it at the same prefix every hour, and for a drain
     # that would mean the same rows at the head of the queue never being reached.
     "coverage_drain": 1_000,
+    # Regional parity reads every pack and two reports and writes three small files; measured
+    # at ~10 s on a build box. The cap sits above its own --budget-s for the usual reason.
+    "regional_parity": 400,
     # Judge coverage stops itself at --budget-s 120; it reads two files and sorts. The cap sits
     # above its own budget for the reason every other leg's does.
     "judge_coverage": 300,
@@ -4230,6 +4234,15 @@ def main() -> None:
     cdr = _costed("coverage_drain", lambda: _producer("coverage_drain",
                                                        "research/coverage_drain.py",
                                                        "--once", "--budget-s", "900"))
+    # REGIONAL PARITY BY EQUIVALENCE (global directive CORE LAW + PARTS II/III/XXXIII; completion
+    # audit 2026-10-06 rank 11). Every country x information class disposed against the frozen
+    # equivalence ontology -- COVERED only with ingestion-ledger proof, DECLARED, a known public
+    # equivalent nobody declared, NO_EQUIVALENT with its reason, or UNMEASURED -- projected from
+    # the tensor above and the packs, with a ranked missing-cell queue and the known equivalents
+    # handed to acquire_datasets as `discoveries_parity_*.json`. Reads; decides nothing.
+    rpp = _costed("regional_parity", lambda: _producer("regional_parity",
+                                                        "research/regional_parity_pass.py",
+                                                        "--once", "--budget-s", "300"))
     # THE JUDGE TESTS 100% OF WHAT THE DESK MINES (principal 2026-09-23). Measured from 120,000
     # gate verdicts: 18% of the judge went to `discovered` -- banned from live capital, 0 passes
     # -- while `cross_asset_residual` (55,190 mined), `overnight_drift` (26,721) and
@@ -5703,6 +5716,7 @@ def main() -> None:
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
                     "coverage_tensor": cov, "coverage_drain": cdr, "judge_coverage": jcv,
+                    "regional_parity": rpp,
                     "orthogonality_yield": oyz, "effective_trials": eft,
                     "dsr_inputs": dsi,
                     "occupancy_map": ocm,

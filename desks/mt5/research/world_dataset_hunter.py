@@ -64,7 +64,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from collections.abc import Callable, Iterable
 from datetime import UTC, date, datetime, timedelta
 from functools import lru_cache
@@ -970,8 +970,39 @@ def _due(row: dict[str, Any], now: datetime) -> bool:
     return nxt is None or nxt <= now
 
 
+#: One seat in this many of the never-fetched tier goes to a dataset that could answer an
+#: UNMEASURED regional-parity cell (`regional_parity_pass` writes the targets). A SHARE, not a
+#: queue jump: the pass fetches exactly as many datasets as before, the refresh tier is untouched,
+#: and an unused share flows straight back to the relevance order.
+PARITY_EVERY = 4
+
+
+def _parity_matchers() -> list[tuple[re.Pattern[str], tuple[str, ...]]]:
+    """(class terms, country names) for every class with UNMEASURED cells; [] when absent."""
+    doc = _read_json(DESK / "data" / "parity_hunt_targets.json", None)
+    out: list[tuple[re.Pattern[str], tuple[str, ...]]] = []
+    for spec in dict((doc or {}).get("classes") or {}).values() if isinstance(doc, dict) else ():
+        try:
+            rx = re.compile(str(spec.get("terms") or ""), re.IGNORECASE)
+        except (re.error, AttributeError):
+            continue
+        names = tuple(str(n).lower() for n in spec.get("country_names") or () if str(n).strip())
+        if rx.pattern and names:
+            out.append((rx, names))
+    return out
+
+
+def _parity_match(name: str, where: str, matchers: list[tuple[re.Pattern[str], tuple[str, ...]]]
+                  ) -> bool:
+    """A dataset answers a parity target when its NAME matches the class and its name, provider
+    or provider region names a country still unmeasured on that class."""
+    low = f"{name} {where}".lower()
+    return any(rx.search(name) and any(n in low for n in names) for rx, names in matchers)
+
+
 def _fetch_order(cat: dict[str, Any], now: datetime) -> list[str]:
-    """Never-fetched first, then due-for-refresh; within each, highest MT5 relevance first."""
+    """Never-fetched first, then due-for-refresh; within each, highest MT5 relevance first --
+    with one seat in PARITY_EVERY of the never-fetched tier reserved for regional parity."""
     rows = []
     for key, row in cat["datasets"].items():
         if row.get("source") != "dbnomics" or not _due(row, now):
@@ -980,7 +1011,32 @@ def _fetch_order(cat: dict[str, Any], now: datetime) -> list[str]:
         rows.append((0 if not row.get("fetched_at") else 1, fails,
                      -float(row.get("score") or 0.0), key))
     rows.sort()
-    return [r[-1] for r in rows]
+    order = [r[-1] for r in rows]
+    matchers = _parity_matchers()
+    if not matchers:
+        return order
+    fresh = [k for k in order if not cat["datasets"][k].get("fetched_at")]
+    rest = order[len(fresh):]
+    providers = cat.get("providers") or {}
+
+    def where(k: str) -> str:
+        p = providers.get(str(cat["datasets"][k].get("provider") or "")) or {}
+        return f"{p.get('name') or ''} {p.get('region') or ''}"
+
+    lane = [k for k in fresh
+            if _parity_match(str(cat["datasets"][k].get("name") or ""), where(k), matchers)]
+    if not lane:
+        return order
+    picked = set(lane)
+    others = deque(k for k in fresh if k not in picked)
+    queue = deque(lane)
+    merged: list[str] = []
+    while queue or others:
+        if queue and (len(merged) % PARITY_EVERY == PARITY_EVERY - 1 or not others):
+            merged.append(queue.popleft())
+        else:
+            merged.append(others.popleft())
+    return merged + rest
 
 
 def _load_frame(path: Path) -> Any:
