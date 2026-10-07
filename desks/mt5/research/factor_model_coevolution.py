@@ -86,6 +86,9 @@ SOURCE = "factor_model_coevolution"
 KIND = "model_pairing"
 REPORT = _DESK / "reports" / "COEVOLUTION.json"
 TRIALS = _DESK / "data" / "coevolution_trials.jsonl"
+#: RESEARCH THE RESEARCHER: one paired joint-vs-sequential run per pass, append-only.
+H2H = _DESK / "data" / "coevolution_h2h.jsonl"
+H2H_BUDGET_S = 90.0
 #: Residual rows pooled across instruments before the residual study runs. Pooling is what makes
 #: the `asset` and `country` axes informative at all: within one symbol they are constants.
 RESIDUAL_POOL_MAX = 4000
@@ -886,6 +889,80 @@ def run_all(symbols: list[str] | None = None, budget_s: float = BUDGET_S, seed: 
     return merged
 
 
+def challenger(symbols: list[str] | None = None, budget_s: float = H2H_BUDGET_S,
+               seed: int = 0) -> dict[str, Any]:
+    """THE METHOD ON TRIAL. This module's premise (RD-Agent(Q)) is that searching features and
+    models JOINTLY beats choosing features first and a model afterwards. That premise had never
+    been tested: `evolve` was only ever compared with the base rate. Each pass runs one paired
+    trial (`coevolution.head_to_head`: same bars, same target, same evaluation count, winners
+    scored once on an untouched tail) on a rotating book instrument, appends it to H2H, and the
+    arena judges the two methods across every recorded run. The verdict is published, not fed:
+    it is evidence for the owner of this module, and UNMEASURED until the arena's floor."""
+    from libs.research import arena
+    from libs.research.coevolution import head_to_head
+    todo, _chosen = _symbols(symbols)
+    models, _aside = healthy_zoo_models(None)
+    row: dict[str, Any] = {"status": "UNMEASURED", "why": "no instrument with enough bars"}
+    if todo and models:
+        sym = todo[(seed + int(time.time() // 3600)) % len(todo)]
+        d = pc.bars(sym)
+        if d is not None and len(d) >= MIN_BARS:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                prog: dict[str, int] = {}
+                try:
+                    row = head_to_head(d.tail(N_BARS), store=fs.FeatureStore(FEATURE_ROOT),
+                                       budget_s=budget_s, seed=seed, horizon=HORIZON,
+                                       models=models, symbol=sym, progress=prog)
+                    row["status"] = "RAN"
+                except Exception as exc:
+                    # A run that raised still spent evaluations: charged at the stage's cap.
+                    row = {"status": "FAILED", "symbol": sym,
+                           "why": f"{type(exc).__name__}: {exc}",
+                           "trials": int(prog.get("spent_bound") or 0)}
+    row["at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    if row.get("status") in ("RAN", "FAILED"):
+        try:
+            H2H.parent.mkdir(parents=True, exist_ok=True)
+            with H2H.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(row, default=str) + "\n")
+        except OSError as exc:
+            row["ledger_error"] = f"{type(exc).__name__}: {exc}"
+    history: list[dict[str, Any]] = []
+    try:
+        for line in H2H.read_text(encoding="utf-8").splitlines():
+            try:
+                history.append(json.loads(line))
+            except ValueError:
+                continue
+    except OSError:
+        pass
+    # Only runs matched on compute are judged; an unmatched or failed run is charged, not scored.
+    decided = [h for h in history if h.get("winner") in ("joint", "sequential", "tie")
+               and h.get("matched_compute", True) is not False]
+    wins = {k: sum(1 for h in decided if h["winner"] == k) for k in ("joint", "sequential")}
+    arms = {k: {"born": len(decided), "certified": wins[k], "alpha": 1.0 + wins[k],
+                "beta": 1.0 + len(decided) - wins[k], "group": "feature_model_method",
+                "cost_basis": "matched evaluation count; winner scored once out of sample"}
+            for k in ("joint", "sequential")}
+    gaps = [float(h["joint"]["net_gain"]) - float(h["sequential"]["net_gain"])
+            for h in decided if h.get("joint", {}).get("net_gain") is not None
+            and h.get("sequential", {}).get("net_gain") is not None]
+    mean_gap = float(np.mean(gaps)) if gaps else None
+    se_gap = float(np.std(gaps, ddof=1) / np.sqrt(len(gaps))) if len(gaps) > 1 else None
+    return {"this_pass": row, "runs": len(history), "decided": len(decided), "wins": wins,
+            "unmatched_runs": sum(1 for h in history if h.get("matched_compute") is False),
+            "failed_runs": sum(1 for h in history if h.get("status") == "FAILED"),
+            "oos_net_gain_gap_joint_minus_sequential": {
+                "mean": None if mean_gap is None else round(mean_gap, 6),
+                "se": None if se_gap is None else round(se_gap, 6), "n": len(gaps)},
+            "verdict": arena.judge(arms), "ledger": str(H2H),
+            "trials": int(row.get("trials") or 0),
+            "applied": False,
+            "rule": ("published, never fed: a TRAILS verdict for the joint arm is a finding about "
+                     "this module's method for its owner, not a switch")}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--symbol", action="append", default=None)
@@ -902,10 +979,24 @@ def main() -> int:
                     help="skip the synthetic-world rediscovery score")
     ap.add_argument("--no-heavy", action="store_true",
                     help="refuse every heavy backend; the pure-Python fallbacks carry the run")
+    ap.add_argument("--no-challenger", action="store_true",
+                    help="skip the joint-vs-sequential method trial")
     a = ap.parse_args()
     doc = run_all(symbols=a.symbol, budget_s=a.budget_s, seed=a.seed, pop=a.pop, gens=a.gens,
                   write_queue=not a.no_queue, closure=not a.no_closure,
                   allow_heavy=not a.no_heavy, worlds=not a.no_worlds)
+    if not a.no_challenger:
+        try:
+            ch = challenger(symbols=a.symbol, seed=a.seed)
+        except Exception as exc:
+            ch = {"status": "FAILED", "why": f"{type(exc).__name__}: {exc}"}
+        doc["method_challenger"] = ch
+        # Every evaluation either arm made is a trial, charged with the rest of the pass.
+        doc["tests_run"] = int(doc.get("tests_run") or 0) + int(ch.get("trials") or 0)
+        REPORT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        tp = ch.get("this_pass") or {}
+        print(f"  METHOD   joint-vs-sequential {tp.get('status')} winner={tp.get('winner')} "
+              f"runs={ch.get('runs')} wins={ch.get('wins')}")
     print(f"COEVOLUTION  {doc.get('symbols_swept', 0)} symbols "
           f"[{doc['symbols']['source']}], {doc.get('tests_run', 0)} bred pairings, "
           f"{doc.get('n_tasks', 0)} {KIND} tasks")

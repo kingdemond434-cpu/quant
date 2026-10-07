@@ -18,6 +18,7 @@ deflate more, never less.
 from __future__ import annotations
 
 import glob
+import hashlib
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -42,18 +43,91 @@ def _graph_counts() -> tuple[int, dict[str, int]]:
     return sum(by_fam.values()), by_fam
 
 
-def _proposer_counts() -> tuple[int, dict[str, int]]:
-    """`tests_run` on every discovery file, attributed to the families it proposed."""
+def _graph_judged() -> dict[str, str]:
+    """Judged node id -> family.
+
+    A graph node id IS the spec identity (`hypothesis_graph.node_id` over symbol, family and
+    params), so a judged cell joins a screened one by spec, never by a donation's own row id."""
+    try:
+        from libs.research.hypothesis_graph import Graph
+        g = Graph()
+        cur = g.current()
+    except Exception:
+        return {}
+    return {i: str(r.get("family") or "?") for i, r in cur.items()
+            if r.get("fate") in ("FAILED", "BURIED", "CERTIFIED", "JUDGED")}
+
+
+def judged_screened_overlap(screened: dict[str, Any], mass_fam: dict[str, int],
+                            judged: dict[str, str] | None = None) -> dict[str, int]:
+    """Per family, the judged cells that were ALREADY charged as screened (audit, 2026-10-06).
+
+    A proposer's `tests_run` counts every cell it screened, the ones it donated included; the
+    compiler turns a donation into a docket cell, the gauntlet judges it, and the old join charged
+    it a second time as a graph node. The same for a mass-screen cell forwarded to the judge.
+
+    THE JOIN IS ON SPEC IDENTITY. `screened["ids"]` holds the node id of every donated row that
+    names symbol, family and params, from a file whose `tests_run` was charged; a judged node is
+    already charged exactly when its id is one of them. NOT by seat: the compiler expands one
+    donated row into cells along chart/session axes the proposer never screened, and those are
+    new trials. Each identity is subtracted once however many seats donated it, and never more
+    per family than the proposers charged -- the double count over-deflated, so the correction
+    must never under-charge. Mass-screen
+    families exist only through the mass screen, so their judged cells are capped at its count."""
+    judged = _graph_judged() if judged is None else judged
+    ids = set(screened.get("ids") or ())
+    charged = dict(screened.get("by_family") or {})
+    out: dict[str, int] = {}
+    for i, fam in judged.items():
+        if i in ids:
+            out[fam] = out.get(fam, 0) + 1
+    out = {f: min(k, int(charged.get(f, k))) for f, k in out.items()}
+    for fam, m in mass_fam.items():
+        j = sum(1 for f in judged.values() if f == fam)
+        k = min(j - out.get(fam, 0), m)
+        if k > 0:
+            out[fam] = out.get(fam, 0) + k
+    return {f: k for f, k in out.items() if k > 0}
+
+
+def _note_screened(screened: dict[str, Any], doc: dict[str, Any], n: int,
+                   fams: set[str]) -> None:
+    from libs.research.hypothesis_graph import node_id_for_spec, spec_identity
+    ids = screened.setdefault("ids", set())
+    by_fam = screened.setdefault("by_family", {})
+    for r in doc.get("discoveries") or []:
+        if not isinstance(r, dict):
+            continue
+        sym, fam, params = spec_identity(r)
+        if sym and fam and params:
+            ids.add(node_id_for_spec(r))
+    for fam in fams or {"?"}:
+        by_fam[fam] = by_fam.get(fam, 0) + n // max(1, len(fams))
+
+
+def _proposer_counts(screened: dict[str, Any] | None = None) -> tuple[int, dict[str, int]]:
+    """`tests_run` on every discovery file, attributed to the families it proposed.
+
+    `screened`, when given, is filled with the spec ids and per-family charge of every
+    `tests_run` file: `judged_screened_overlap` needs to know WHICH screened cells the judge saw."""
     total = 0
     by_fam: dict[str, int] = {}
+    llm_files: list[tuple[str, Any]] = []
     intel = DESK / "data" / "intelligence"
     # No early return when there is no intelligence dir: the side ledgers below still count.
+    # A union-charged seat's files are skipped only when its union file EXISTS: until the
+    # writer (committee_ensembles, #160) has run, the files' own tests_run is the only charge.
+    union_on = (DESK / COMMITTEE_UNION).is_file()
     for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
+        if union_on and Path(f).parent.name in UNION_CHARGED_SEATS:
+            continue                       # charged once from its own lifetime union, below
         try:
             doc = json.loads(Path(f).read_text("utf-8"))
         except (OSError, ValueError):
             continue
         if not isinstance(doc, dict) or not isinstance(doc.get("tests_run"), (int, float)):
+            if Path(f).parent.name in LLM_IDEA_SEATS:
+                llm_files.append((Path(f).parent.name, doc))
             continue
         n = int(doc["tests_run"])
         total += n
@@ -61,6 +135,8 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
                 if isinstance(r, dict) and r.get("family")}
         for fam in fams or {"?"}:
             by_fam[fam] = by_fam.get(fam, 0) + n // max(1, len(fams))
+        if screened is not None:
+            _note_screened(screened, doc, n, fams)
     # FACTOR x MODEL PAIRINGS ARE TRIALS TOO. Co-evolution writes no discovery file (a pairing is
     # not a cell), so its ledger is read here and charged to the model_pairing family.
     try:
@@ -107,7 +183,59 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             by_fam[fam] = by_fam.get(fam, 0) + 1
     except (OSError, ValueError, TypeError):
         pass
+    # EVERY LLM IDEA IS A TRIAL (audit, 2026-10-06). An LLM seat's donation carries no
+    # `tests_run`: the seat looked at the world and kept these ideas out of everything it
+    # considered, so each idea is charged once at donation -- identity-deduplicated across files,
+    # so a re-donated idea is not charged twice. (The analyst panel's own side ledger is #166's.)
+    seen: set[str] = set()
+    for seat, doc in llm_files:
+        rows = doc.get("discoveries") if isinstance(doc, dict) else doc
+        for r in rows if isinstance(rows, list) else []:
+            if not isinstance(r, dict):
+                continue
+            # (url, title, body): three ideas citing one URL are three ideas (audit 2026-10-06);
+            # only the stamp fields a re-donation rewrites are left out of the body.
+            body = {k: v for k, v in r.items() if k not in _DONATION_STAMPS}
+            ident = "|".join((seat, str(r.get("url") or ""), str(r.get("title") or ""),
+                              hashlib.sha256(json.dumps(body, sort_keys=True, default=str)
+                                             .encode()).hexdigest()[:20]))
+            if ident in seen:
+                continue
+            seen.add(ident)
+            fam = str(r.get("family") or "llm_idea")
+            total += 1
+            by_fam[fam] = by_fam.get(fam, 0) + 1
+    # EVERY COMMITTEE FALSIFIER LOOK IS A TRIAL. The committees keep the lifetime union of
+    # (cell, seat) looks at return data; each distinct line is charged exactly once here, and the
+    # committees' discovery files are skipped above so nothing is counted twice.
+    try:
+        looks = {ln.strip() for ln in (DESK / COMMITTEE_UNION).read_text("utf-8").splitlines()
+                 if ln.strip()}
+    except OSError:
+        looks = set()
+    total += len(looks)
+    if looks:
+        by_fam["committee_falsifier"] = by_fam.get("committee_falsifier", 0) + len(looks)
+    # THE METHOD TRIAL'S EVALUATIONS (factor_model_coevolution.challenger): both arms' pairings.
+    try:
+        for ln in (DESK / "data" / "coevolution_h2h.jsonl").read_text("utf-8").splitlines():
+            row = json.loads(ln) if ln.strip() else None
+            k = int(row.get("trials") or 0) if isinstance(row, dict) else 0
+            total += k
+            by_fam["model_pairing"] = by_fam.get("model_pairing", 0) + k
+    except (OSError, ValueError, TypeError):
+        pass
     return total, by_fam
+
+
+#: Fields a re-donation of the same idea rewrites; left out of the idea's identity.
+_DONATION_STAMPS = frozenset({"ingested_time", "available_time", "donated_at", "at", "ts",
+                              "generated_utc", "pass_id", "run_id"})
+#: LLM seats whose donation rows are ideas, each charged once (scout_roster names the seats).
+LLM_IDEA_SEATS = frozenset({"kimi", "deepseek", "scheduled_chatgpt", "committees", "openrouter"})
+#: Seats charged from a lifetime union file instead of their discovery files' tests_run.
+UNION_CHARGED_SEATS = frozenset({"committee_ensembles"})
+COMMITTEE_UNION = Path("data") / "committees" / "trial_union.txt"     # under DESK
 
 
 #: THE MASS SCREEN'S TRIAL LEDGER (desks/mt5/research/mass_screen.py). Every rule cell it screens
@@ -165,24 +293,32 @@ def _prereg_counts() -> int:
 
 def lifetime(write: bool = True) -> dict[str, Any]:
     g_total, g_fam = _graph_counts()
-    p_total, p_fam = _proposer_counts()
+    screened: dict[str, Any] = {}
+    p_total, p_fam = _proposer_counts(screened)
     m_total, m_fam = _mass_screen_counts()
+    overlap = judged_screened_overlap(screened, m_fam)
+    overlap = {f: min(k, g_fam.get(f, 0)) for f, k in overlap.items()}
+    o_total = sum(overlap.values())
     for fam, k in m_fam.items():
         p_fam[fam] = p_fam.get(fam, 0) + k
     p_total += m_total
     s_total, s_fam = _claim_selection_counts()
     prereg = _prereg_counts()
     fams = sorted(set(g_fam) | set(p_fam) | set(s_fam))
-    by_fam = {f: int(g_fam.get(f, 0) + p_fam.get(f, 0) + s_fam.get(f, 0)) for f in fams}
+    by_fam = {f: int(g_fam.get(f, 0) - overlap.get(f, 0) + p_fam.get(f, 0) + s_fam.get(f, 0))
+              for f in fams}
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(),
-           "lifetime_trials": int(g_total + p_total + s_total),
+           "lifetime_trials": int(g_total - o_total + p_total + s_total),
            "judged_cells": g_total, "screened_cells": p_total,
+           "judged_already_screened": o_total,
            "source_selection_trials": s_total, "preregistered_cards": prereg,
            "mass_screen_cells": m_total,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
                     "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl) + "
-                    "each claim family's stated source selection, once; "
+                    "each claim family's stated source selection, once; a judged cell its "
+                    "proposer or "
+                    "the mass screen already charged is not charged again; "
                     "consumers may only deflate MORE with it, never less")}
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)
