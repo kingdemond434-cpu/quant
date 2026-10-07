@@ -1906,7 +1906,7 @@ def cache_save(key: str, ds1, ds3) -> None:
         tmp = CACHE_DIR / f"{key}.{os.getpid()}.tmp"
         with open(tmp, "wb") as fh:
             _np.savez_compressed(fh,
-                                 dates=pd.to_datetime(common).astype("int64").to_numpy(),
+                                 dates=pd.to_datetime(common).as_unit("ns").asi8,
                                  v1=ds1.reindex(common).to_numpy(float),
                                  v3=ds3.reindex(common).to_numpy(float))
         os.replace(tmp, final)
@@ -2810,11 +2810,34 @@ def _cell_local_stages(c: dict, arr: np.ndarray, x3_ds, meta: dict) -> dict:
     union. Everything returned here is a function of (cell, its 1x development series, its 3x
     development series, meta) alone, which is what lets a shard compute it and the merge use it
     unchanged.
+
+    THE SERIES-ONLY STAGES ARE CHECKPOINTED BY CONTENT (2026-10-06). `in_sample_screen`, `cpcv`,
+    `walk_forward`, `stress_costs` and `expected_value` read the two VALUE arrays and nothing
+    else, so `_pure_stages_cached` keys them by those values and the code that computes them and
+    reuses a prior result byte for byte. Every sweep re-rules every cached cell, and before this
+    each one paid CPCV and walk-forward again on a series it had already ruled that data-day.
+    `economic_prior` (the cell's own mechanism status) and `swap_cost` (the registry basis and a
+    LIVE terminal reading) are recomputed every time, so nothing time-varying is ever frozen.
     """
+    pure = _pure_stages_cached(arr, x3_ds)
+    stages = {
+        "economic_prior": economic_prior(c),
+        "in_sample_screen": pure["in_sample_screen"],
+        "cpcv": pure["cpcv"],
+        "walk_forward": pure["walk_forward"],
+        "stress_costs": pure["stress_costs"],
+        "expected_value": pure["expected_value"],
+    }
+    ev = float(arr.mean())
+    _swap_cost_stage(stages, c, ev, meta)
+    return stages
+
+
+def _pure_local_stages(arr: np.ndarray, x3_ds: Any) -> dict[str, Any]:
+    """The cell-local gates that are functions of the series VALUES alone (see above)."""
     # In-sample
     sr = sharpe_ratio(arr)
     stages = {
-        "economic_prior": economic_prior(c),
         "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
     }
 
@@ -2853,7 +2876,77 @@ def _cell_local_stages(c: dict, arr: np.ndarray, x3_ds, meta: dict) -> dict:
     # Expected Value
     ev = float(arr.mean())
     stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
+    return stages
 
+
+#: WHERE THE SERIES-ONLY STAGES ARE CHECKPOINTED: under the cell cache, so they are ignored by git
+#: and pruned with it (three days by mtime, the same rule the series cache follows).
+STAGE_CACHE_DIR = CACHE_DIR / "stages"
+_STAGE_FINGERPRINT: list[str | None] = []
+#: Hits, misses and unreadable entries this process saw; a shard carries them into the merge.
+STAGE_CACHE_STATS: dict[str, int] = {"hit": 0, "miss": 0, "error": 0}
+
+
+def _stage_fingerprint() -> str | None:
+    """The code that computes the cached stages: this function's source and the three validation
+    modules it calls. A changed gate is a new fingerprint, so no stale result is ever served. An
+    unreadable source DISABLES the cache (None) rather than guessing a fingerprint."""
+    if not _STAGE_FINGERPRINT:
+        try:
+            h = hashlib.sha256(inspect.getsource(_pure_local_stages).encode("utf-8"))
+            h.update(repr((WF_SPLITS, WF_MIN_STABILITY)).encode("utf-8"))
+            for obj in (CPCV, sharpe_ratio, WalkForwardEngine):
+                h.update(Path(inspect.getfile(obj)).read_bytes())
+            _STAGE_FINGERPRINT.append(h.hexdigest()[:24])
+        except (OSError, TypeError):
+            _STAGE_FINGERPRINT.append(None)
+    return _STAGE_FINGERPRINT[0]
+
+
+def _stage_key(arr: np.ndarray, x3_ds: Any) -> str | None:
+    fp = _stage_fingerprint()
+    if fp is None:
+        return None
+    h = hashlib.sha256(fp.encode("utf-8"))
+    a = np.ascontiguousarray(np.asarray(arr, dtype=float))
+    h.update(f"1x:{a.shape}".encode())
+    h.update(a.tobytes())
+    if x3_ds is None:
+        h.update(b"3x:none")
+    else:
+        x = np.ascontiguousarray(np.asarray(x3_ds.to_numpy(float), dtype=float))
+        h.update(f"3x:{x.shape}".encode())
+        h.update(x.tobytes())
+    return h.hexdigest()
+
+
+def _pure_stages_cached(arr: np.ndarray, x3_ds: Any) -> dict[str, Any]:
+    """`_pure_local_stages`, served from the content-addressed checkpoint when it holds the key."""
+    key = _stage_key(arr, x3_ds)
+    path = STAGE_CACHE_DIR / key[:2] / f"{key}.pkl" if key else None
+    if path is not None and path.exists():
+        try:
+            got = _unpickle(path)
+            if isinstance(got, dict) and set(got) == {"in_sample_screen", "cpcv", "walk_forward",
+                                                      "stress_costs", "expected_value"}:
+                STAGE_CACHE_STATS["hit"] += 1
+                return got
+        except Exception:
+            pass
+        STAGE_CACHE_STATS["error"] += 1
+    STAGE_CACHE_STATS["miss"] += 1
+    got = _pure_local_stages(arr, x3_ds)
+    if path is not None:
+        try:
+            _pickle_atomic(path, got)
+        except OSError:
+            STAGE_CACHE_STATS["error"] += 1
+    return got
+
+
+def _swap_cost_stage(stages: dict[str, Any], c: dict[str, Any], ev: float,
+                     meta: dict[str, Any]) -> None:
+    """Gate `swap_cost`, recomputed on every ruling: it reads the registry and the live terminal."""
     # SWAP, WHICH THE ENGINE DOES NOT MODEL AT ALL (added 2026-09-14).
     #
     # `mt5desk.engine.Costs` carries spread_per_lot, commission_per_lot, contract_oz and
@@ -2906,7 +2999,6 @@ def _cell_local_stages(c: dict, arr: np.ndarray, x3_ds, meta: dict) -> dict:
                 f"UNMEASURED cost fails closed: {_basis['why']}; "
                 f"live: {_cost.get('why') or 'unread'}"),
     }
-    return stages
 
 
 def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
@@ -3058,6 +3150,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         # candidate remains visible and the authority file is still published intact.
         pbo_val, pbo_ok = 1.0, False
         spa_p, spa_ok = 1.0, False
+        spa_cv: dict[str, Any] | None = None   # no bootstrap ran, so there is nothing to control
         print("  PBO: 1.0000 (FAIL: requires >=2 strategies)")
         print("  SPA: p=1.0000 (FAIL: requires >=2 strategies)")
     else:
@@ -3069,7 +3162,31 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         spa = hansen_spa(matrix)
         spa_p = float(spa.p_value)
         spa_ok = spa_p < SPA_ALPHA
-        print(f"  SPA: p={spa_p:.4f} ({'PASS' if spa_ok else 'FAIL'})")
+        # ROMAN-0972: the same 1,000 draws with exact-expectation control variates, RECORDED
+        # beside the raw verdict and never acting on it (audit 2026-10-07: a stricter-only guard
+        # flipped 23 of 400 correct passes at p~0.048 with no missed-growth line). `would_change`
+        # marks every disagreement in EITHER direction, so a would-pass is missed-growth evidence
+        # and a would-fail is measured before any authority is proposed. The import sits inside
+        # the try, so the patch is safe before libs/validation/control_variates.py lands; any
+        # failure here is a diagnostic and the raw decision stands.
+        try:
+            from libs.validation.control_variates import bootstrap_pvalue_cv
+            _cv = bootstrap_pvalue_cv(matrix)
+            _d = _cv.decision(SPA_ALPHA)
+            _pc = _cv.p_controlled
+            _reproduced = bool(_cv.p_raw == spa_p)
+            spa_cv = {k: v for k, v in _d.items() if k != "passed"}
+            spa_cv["guarded_passed"] = _d.get("passed")
+            spa_cv["raw_reproduced"] = _reproduced
+            spa_cv["variance_ratio"] = (None if _cv.estimate is None
+                                        else _num(_cv.estimate.variance_ratio))
+            spa_cv["would_change"] = bool(_reproduced and _pc is not None
+                                          and ((_pc < SPA_ALPHA) != spa_ok))
+            spa_cv["authority"] = "record-only"
+        except Exception as _cv_exc:  # a diagnostic: the raw decision stands
+            spa_cv = _unmeasured(f"control variate: {type(_cv_exc).__name__}: {_cv_exc}")
+        print(f"  SPA: p={spa_p:.4f} ({'PASS' if spa_ok else 'FAIL'}; "
+              f"controlled p={spa_cv.get('p_controlled')})")
 
     # 3x cost series
     daily_x3 = _cell_series_x3(cells)
@@ -3122,7 +3239,8 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
 
         # PBO + SPA (program-level)
         stages["pbo"] = {"passed": pbo_ok, "pbo": round(pbo_val, 4)}
-        stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(spa_p, 4)}
+        stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(spa_p, 4),
+                                       **({} if spa_cv is None else {"control_variate": spa_cv})}
 
         # CPCV, walk-forward, stress costs (cell-local)
         for _k in CELL_LOCAL_MID:
@@ -3536,6 +3654,11 @@ def main():
         for _f in CACHE_DIR.glob("*.npz"):
             if _t.time() - _f.stat().st_mtime > 3 * 86400:
                 _f.unlink(missing_ok=True)
+        # The series-only stage checkpoints follow the same three-day rule (content-addressed:
+        # a new data-day is a new series and a new key, so an old entry is never read again).
+        for _f in STAGE_CACHE_DIR.glob("*/*.pkl"):
+            if _t.time() - _f.stat().st_mtime > 3 * 86400:
+                _f.unlink(missing_ok=True)
     except OSError:
         pass
     # SYMBOL ORDER IS A PERFORMANCE CONTRACT, NOT A PREFERENCE. build_cell -> resolve_inputs
@@ -3630,9 +3753,25 @@ def main():
             _judged_in_bucket[_bucket(_sp)] = _judged_in_bucket.get(_bucket(_sp), 0) + 1
 
     # INTRADAY BEFORE H1 AND D1 (principal 2026-09-16: "more priority to intraday than h1s").
-    def _tf_rank(sp: dict) -> int:
+    # UNDER-TARGET (chart, session) BUCKETS BEFORE EITHER (principal 2026-10-06: "all
+    # timeframes ... its fr sessions too ... basically all breadths targetted"). The hourly census
+    # (`breadth_rotation.tf_session_census`, published in PRODUCER_BREADTH.json) names the buckets
+    # whose discovery or judged share is under an equal share; within the never-judged tier their
+    # cells are reached first, and the intraday ranking holds inside each census tier. No census,
+    # or an unimportable module, maps every cell to 0 and the order is exactly the previous one.
+    try:
+        from research.breadth_rotation import tf_session_key as _tsk
+        _census_tier = _tsk()
+    except Exception:
+        def _census_tier(_sp: dict) -> int:
+            return 0
+
+    def _tf_rank(sp: dict) -> tuple[int, int]:
         _tf = timeframe_of(sp.get("params"), str(sp.get("family") or ""))
-        return 0 if _tf in ("M1", "M5", "M15", "M30") else (1 if _tf == "H4" else 2)
+        _row = {"family": sp.get("family"),
+                "params": {**(sp.get("params") or {}), "timeframe": _tf}}
+        return (_census_tier(_row),
+                0 if _tf in ("M1", "M5", "M15", "M30") else (1 if _tf == "H4" else 2))
 
     # THE CEO DOCKET IS AUTHORITATIVE OVER THE ORDER (closed-loop
     # `research.frontier_scheduler_authoritative`, 2026-09-16). Its proposals name families;
@@ -3756,12 +3895,28 @@ def main():
     # deadline is `_build_t0 + FRESH_BUILD_BUDGET_SEC`, the loop's own clock, so the two share
     # one budget rather than stacking to ninety minutes and breaking the hourly cadence.
     # With WORKERS == 1 this block is skipped and the sweep is byte-for-byte what it was.
+    # THE SHARDED SWEEP RULES ONE EPOCH (`_epoch_plan`): an unfinished epoch's frozen plan is
+    # resumed, so shards that already finished are never rerun, and only the cells of shards that
+    # have not finished are pre-warmed. Cells of the docket outside the epoch are DEFERRED exactly
+    # as a build-budget deferral is: work not yet done, recorded UNMEASURED, never dropped.
+    _epoch: dict[str, Any] | None = None
+    _overflow: list[dict[str, Any]] = []
+    if _SHARD is not None:
+        _epoch = _epoch_plan(eligible_specs, meta)
+        eligible_specs = _epoch["specs"]
+        _overflow = _epoch["overflow"]
     _prewarm = None
     if WORKERS > 1 and len(eligible_specs) > 1:
-        _prewarm = _prewarm_cache(eligible_specs, meta, _build_t0 + FRESH_BUILD_BUDGET_SEC)
+        if _epoch is None:
+            _prewarm = _prewarm_cache(eligible_specs, meta, _build_t0 + FRESH_BUILD_BUDGET_SEC)
+        elif len(_epoch["pending_specs"]) > 1:
+            # Only the shards that have not finished are worth warming.
+            _prewarm = _prewarm_cache(_epoch["pending_specs"], meta,
+                                      _build_t0 + FRESH_BUILD_BUDGET_SEC)
         # THE POOL'S BUILDS COUNT AS BUILDS. Without this the cursor never advances and the
         # docket never rotates -- see `_prewarm_cache.summary["built_symbols"]`.
-        _built_syms |= set(_prewarm.get("built_symbols") or ())
+        if _prewarm is not None:
+            _built_syms |= set(_prewarm.get("built_symbols") or ())
     # STAGE 0, REPORT-ONLY (V8). `stage0_prefilter` says why it cannot be more than that here:
     # a spec carries no return stream, and the cells that do (cached series) have already paid
     # their build. It judges every cached series on the loop's cached branch below, counts what
@@ -3779,7 +3934,7 @@ def main():
         # exactly one shard and restores the plan's order. No shard computes a program-level
         # number: `run_gauntlet` below does, once, on the union.
         _sh = _run_shards(eligible_specs, meta, _build_t0)
-        cell_objs, deferred = _sh["cell_objs"], _sh["deferred"]
+        cell_objs, deferred = _sh["cell_objs"], _sh["deferred"] + _overflow
         blocked_build.extend(_sh["blocked"])
         cache_hits, built_fresh = _sh["cache_hits"], _sh["built_fresh"]
         _mem_deferred = _sh["mem_deferred"]
@@ -3846,6 +4001,11 @@ def main():
     # invisible and a docket quietly stops converging.
     result["n_cells_deferred_memory_budget"] = _mem_deferred
     result["memory_budget_mb"] = MEMORY_BUDGET_MB
+    if _epoch is not None:
+        # Of the deferred count above, how many were outside this sweep's epoch (and why).
+        result["n_cells_deferred_epoch"] = len(_overflow)
+        result["epoch"] = _epoch["info"]
+    result["stage_cache"] = dict(STAGE_CACHE_STATS)
     # WHAT THE POOL DID, in the report beside the budgets that bounded it -- so "42 judged" can
     # be read against "N workers warmed M cells" rather than guessed at from wall time.
     result["workers"] = WORKERS
@@ -4468,16 +4628,194 @@ class ShardMergeError(RuntimeError):
     """A shard's output is missing, stale, duplicated or inconsistent with the plan."""
 
 
+def _spec_ident(spec: dict[str, Any]) -> str:
+    """A spec's cell id (the partition key and the epoch's membership key)."""
+    try:
+        return str(cell_id({"sym": spec.get("sym"), "family": spec.get("family"),
+                            "params": spec.get("params") or {}}))
+    except Exception:
+        return (f"{spec.get('sym')}.{spec.get('family')}."
+                f"{json.dumps(spec.get('params') or {}, sort_keys=True, default=str)}")
+
+
 def shard_of(spec: dict, n_shards: int) -> int:
     """The ONE shard that rules `spec`: sha256 of its cell id, mod N. Stable across processes,
     hosts and Python hash seeds, so every shard computes the same partition from the same plan."""
-    try:
-        name = cell_id({"sym": spec.get("sym"), "family": spec.get("family"),
-                        "params": spec.get("params") or {}})
-    except Exception:
-        name = (f"{spec.get('sym')}.{spec.get('family')}."
-                f"{json.dumps(spec.get('params') or {}, sort_keys=True, default=str)}")
+    name = _spec_ident(spec)
     return int(hashlib.sha256(str(name).encode("utf-8")).hexdigest()[:16], 16) % int(n_shards)
+
+
+# ------------------------------------------------------------------ resumable epochs (2026-10-06)
+#: THE RESTART LOOP THIS ENDS, measured on the trading box 2026-10-06: every MT5-Gauntlet attempt
+#: spent ~7,800-8,000 s pre-warming, launched 15 shards over 584,979 planned cells, lost five of
+#: them to ArrayMemoryError, and -- correctly, fail-closed -- published nothing. The NEXT attempt
+#: then deleted the ten finished shard files at the top of `_run_shards`, re-planned from a docket
+#: that had grown in the meantime, and repeated the whole sweep. Certificates sat at 847.
+#:
+#: AN EPOCH IS ONE FROZEN PLAN THAT SURVIVES THE PROCESS. Its specs, order, meta, shard count and
+#: law are written once (`epoch.pkl`, plus `epoch.json` for the launcher), and every invocation
+#: until it publishes rules THAT plan: a shard whose output for the epoch is on disk (its
+#: `shard_<k>.done.json` names the epoch token, the phase and the cut) is not dispatched again, and
+#: only the unfinished shards' cells are pre-warmed. Publication is unchanged and still fail-closed:
+#: `_shard_collect` verifies every shard's file exactly as before, and the merge computes every
+#: program-level number ONCE on the union of the epoch's cells -- the trial census, the campaign
+#: charge, PBO, SPA, the lockbox cut and gate 9 -- so a resumed epoch rules exactly what an
+#: uninterrupted sweep of the same plan rules. The per-cell deflated-Sharpe charge stays
+#: max(campaign, family lifetime, desk LIFETIME UNION), the union read from the experiment ledger,
+#: so every cell is still charged every trial the desk ever ran, once.
+#:
+#: The epoch is cleared only after `main` has published; a crash anywhere before that (a shard, or
+#: the merge itself) keeps it. It is discarded, never resumed, when the shard count, the protocol
+#: or the lockbox law changed, when it is older than GAUNTLET_EPOCH_MAX_AGE_SEC, or after
+#: EPOCH_MAX_MERGE_FAILURES merges of it failed with every shard present.
+#:
+#: THE STREAMING BOUND, OPTIONAL. GAUNTLET_SWEEP_CELLS caps how many of the ordered eligible cells
+#: a NEW epoch takes (the judge's own order: re-mint, never-judged, intraday, CEO families,
+#: least-covered bucket, rotation). The rest are DEFERRED and recorded UNMEASURED, exactly the
+#: deferral the build and memory budgets already make: a cell outside the epoch was never in the
+#: union, so no union-level number is computed without it that would have been computed with it.
+#: Unset (the default), the epoch is the whole eligible docket, byte-for-byte today's plan.
+SHARD_RESUME = 1
+EPOCH_MAX_AGE_SEC = float(os.environ.get("GAUNTLET_EPOCH_MAX_AGE_SEC", "86400"))
+EPOCH_MAX_MERGE_FAILURES = 3
+
+
+def _sweep_cells_bound() -> int | None:
+    raw = os.environ.get("GAUNTLET_SWEEP_CELLS", "").strip()
+    if not raw:
+        return None
+    try:
+        v = int(float(raw))
+    except ValueError:
+        return None
+    return v if v > 0 else None
+
+
+def _epoch_token(specs: list[dict[str, Any]], n: int, lockbox_frac: float) -> str:
+    h = hashlib.sha256(f"{SHARD_PROTOCOL}:{SHARD_RESUME}:{int(n)}:{lockbox_frac!r}".encode())
+    for sp in specs:
+        h.update(_spec_ident(sp).encode("utf-8"))
+        h.update(b"\0")
+    return h.hexdigest()[:16]
+
+
+def _json_atomic(path: Path, doc: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(doc, default=str), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def _shard_done(shard_dir: Path, k: int) -> dict[str, Any]:
+    """Shard k's sidecar: {token, phase, cut} of the output on disk, or {} when there is none."""
+    try:
+        doc = json.loads((shard_dir / f"shard_{k}.done.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(doc, dict) or not (shard_dir / f"shard_{k}.pkl").exists():
+        return {}
+    return doc
+
+
+def _mark_done(shard_dir: Path, k: int, token: str, phase: str, cut: object = None) -> None:
+    _json_atomic(shard_dir / f"shard_{k}.done.json",
+                 {"token": token, "k": int(k), "phase": phase, "cut": str(cut),
+                  "at": datetime.now(UTC).isoformat(timespec="seconds")})
+
+
+def _clear_shard_files(shard_dir: Path) -> None:
+    for f in (list(shard_dir.glob("shard_*.pkl")) + list(shard_dir.glob("shard_*.done.json"))
+              + list(shard_dir.glob("plan_*.pkl")) + list(shard_dir.glob("*.tmp"))
+              + [shard_dir / "cut.pkl", shard_dir / "plan.pkl"]):
+        f.unlink(missing_ok=True)
+
+
+def _clear_epoch(shard_dir: Path) -> None:
+    _clear_shard_files(shard_dir)
+    for f in (shard_dir / "epoch.pkl", shard_dir / "epoch.json"):
+        f.unlink(missing_ok=True)
+
+
+def _epoch_plan(eligible_specs: list[dict[str, Any]], meta: dict[str, Any]) -> dict[str, Any]:
+    """The cells THIS sharded sweep rules: the unfinished epoch's frozen plan, or a new one.
+
+    Returns the epoch's specs (in plan order), the eligible specs OUTSIDE it (deferred by the
+    caller), the specs of shards that have not finished (the only ones worth pre-warming) and an
+    `info` block for the report. Stores the epoch on `_SHARD` for `_run_shards`.
+    """
+    cfg: dict[str, Any] = _SHARD if _SHARD is not None else {}
+    n = int(cfg["n"])
+    shard_dir = Path(cfg.get("dir") or SHARD_DIR)
+    shard_dir.mkdir(parents=True, exist_ok=True)
+    from research.gate_policy import LOCKBOX_FRAC
+    lock_frac = float(constitution_thresholds(LOCKBOX_FRAC)["lockbox_min_fraction"])
+    old = None
+    if (shard_dir / "epoch.pkl").exists():
+        try:
+            old = _unpickle(shard_dir / "epoch.pkl")
+        except Exception:
+            old = None
+    why_new = "no unfinished epoch"
+    if isinstance(old, dict):
+        if old.get("protocol") != SHARD_PROTOCOL or old.get("resume") != SHARD_RESUME:
+            why_new = "the shard protocol changed"
+        elif int(old.get("n", -1)) != n:
+            why_new = f"the shard count changed ({old.get('n')} -> {n})"
+        elif old.get("lockbox_frac") != lock_frac:
+            why_new = "the lockbox law changed"
+        elif time.time() - float(old.get("created") or 0.0) > EPOCH_MAX_AGE_SEC:
+            why_new = f"the epoch is older than {EPOCH_MAX_AGE_SEC:.0f}s"
+        elif int(old.get("merge_failures") or 0) >= EPOCH_MAX_MERGE_FAILURES:
+            why_new = f"{old.get('merge_failures')} merges of it failed with every shard present"
+        else:
+            why_new = ""
+    if isinstance(old, dict) and not why_new:
+        ep = old
+        resumed = True
+    else:
+        bound = _sweep_cells_bound()
+        specs = list(eligible_specs if bound is None else eligible_specs[:bound])
+        ep = {"protocol": SHARD_PROTOCOL, "resume": SHARD_RESUME, "n": n,
+              "token": _epoch_token(specs, n, lock_frac), "created": time.time(),
+              "lockbox_frac": lock_frac, "meta": meta, "specs": specs, "bound": bound,
+              "merge_failures": 0}
+        _clear_epoch(shard_dir)
+        _pickle_atomic(shard_dir / "epoch.pkl", ep)
+        resumed = False
+    specs = list(ep["specs"])
+    _json_atomic(shard_dir / "epoch.json",
+                 {"token": ep["token"], "n": n, "cells": len(specs), "created": ep["created"],
+                  "bound": ep.get("bound"), "merge_failures": int(ep.get("merge_failures") or 0)})
+    members = {_spec_ident(sp) for sp in specs}
+    overflow = [sp for sp in eligible_specs if _spec_ident(sp) not in members]
+    done = {k for k in range(n) if _shard_done(shard_dir, k).get("token") == ep["token"]}
+    pending_specs = [sp for sp in specs if shard_of(sp, n) not in done]
+    info = {"token": ep["token"], "resumed": resumed,
+            "why_new": why_new or None, "cells": len(specs), "bound": ep.get("bound"),
+            "deferred_outside_epoch": len(overflow), "shards_finished_before": sorted(done),
+            "age_seconds": round(time.time() - float(ep["created"]), 1),
+            "merge_failures": int(ep.get("merge_failures") or 0)}
+    cfg["epoch"] = ep
+    print(f"EPOCH {ep['token']}: {'RESUMED' if resumed else 'NEW (' + why_new + ')'} -- "
+          f"{len(specs)} cell(s) in the plan, {len(done)}/{n} shard(s) already finished, "
+          f"{len(pending_specs)} cell(s) left to pre-warm, {len(overflow)} deferred outside it")
+    return {"specs": specs, "overflow": overflow, "pending_specs": pending_specs, "info": info}
+
+
+def _dispatch_pending(dispatch: Any, shard_dir: Path, n: int, phase: str, ks: list[int]) -> None:
+    """Run `phase` on shards `ks` only. A dispatcher that takes `ks` gets exactly those; an older
+    one (`dispatch(shard_dir, n, phase)`) runs every shard, which recomputes finished shards
+    identically -- slower, never different."""
+    if not ks:
+        return
+    try:
+        takes_ks = "ks" in inspect.signature(dispatch).parameters
+    except (TypeError, ValueError):
+        takes_ks = False
+    if takes_ks:
+        dispatch(shard_dir, n, phase, ks=list(ks))
+    else:
+        dispatch(shard_dir, n, phase)
 
 
 def _pickle_atomic(path: Path, obj: object) -> None:
@@ -4525,7 +4863,15 @@ def shard_worker(shard_dir: Path | str, k: int, phase: str = "build") -> dict:
     if phase != "build":
         raise ValueError(f"unknown shard phase {phase!r}")
     build_t0 = float(plan["build_t0"])
-    mine = [(i, sp) for i, sp in enumerate(plan["specs"]) if shard_of(sp, n) == k]
+    # ITS OWN SLICE OF THE PLAN, when the merge wrote slices: before 2026-10-06 every shard
+    # unpickled all 584,979 planned specs to keep the 1/N it owns -- a fixed per-process cost
+    # paid N times over on the box that then ran out of memory.
+    if plan.get("specs") is None:
+        mine = list(_unpickle(shard_dir / f"plan_{k}.pkl"))
+        if any(shard_of(sp, n) != k for _i, sp in mine):
+            raise ShardMergeError(f"plan_{k}.pkl holds a cell shard {k} does not own")
+    else:
+        mine = [(i, sp) for i, sp in enumerate(plan["specs"]) if shard_of(sp, n) == k]
     # NO POOL HERE. The merging process ran the pre-warm pool over the WHOLE plan before any shard
     # started, in the plan's order and against the same deadline, exactly as the unsharded sweep
     # does -- so a shard finds the pool's cells cached and defers what the pool did not reach, for
@@ -4568,8 +4914,10 @@ def shard_worker(shard_dir: Path | str, k: int, phase: str = "build") -> dict:
             dates.update(d.index)
     out = {"protocol": SHARD_PROTOCOL, "token": plan["token"], "k": k, "n": n, "pid": os.getpid(),
            "phase": "build", "rows": rows, "built_syms": sorted(built_syms),
-           "dates": list(dates), "build_seconds": round(time.time() - t0, 3)}
+           "dates": list(dates), "build_seconds": round(time.time() - t0, 3),
+           "build_peak_rss_mb": round(_rss_mb(), 1)}
     _pickle_atomic(shard_dir / f"shard_{k}.pkl", out)
+    _mark_done(shard_dir, k, plan["token"], "build")
     print(f"SHARD {k}/{n} build: {len(rows)} planned cell(s), {len(cells)} built in "
           f"{out['build_seconds']:.1f}s")
     return {"k": k, "n": n, "phase": "build", "seconds": out["build_seconds"]}
@@ -4583,8 +4931,13 @@ def _shard_rule(shard_dir: Path, plan: dict, k: int, meta: dict, t0: float) -> d
         raise ShardMergeError("cut.pkl belongs to another plan")
     cut = got["cut"]
     out = _unpickle(shard_dir / f"shard_{k}.pkl")
+    if out.get("token") == plan["token"] and out.get("phase") == "rule" and out.get("cut") == cut:
+        # ALREADY RULED AT THIS CUT (its sidecar was lost between the two writes): idempotent.
+        _mark_done(shard_dir, k, plan["token"], "rule", cut)
+        return {"k": k, "phase": "rule", "cells_ruled": out.get("cells_ruled")}
     if out.get("token") != plan["token"] or out.get("phase") != "build":
         raise ShardMergeError(f"shard {k} has no build output for this plan")
+    stats0 = dict(STAGE_CACHE_STATS)
     n_local = 0
     for row in out["rows"]:
         if row["kind"] != "cell":
@@ -4608,8 +4961,11 @@ def _shard_rule(shard_dir: Path, plan: dict, k: int, meta: dict, t0: float) -> d
         c["_shard_ds3"] = None
     out.update(phase="rule", cut=cut, cells_ruled=n_local,
                seconds=round(out.get("build_seconds", 0.0) + time.time() - t0, 3),
-               peak_rss_mb=round(_rss_mb(), 1))
+               peak_rss_mb=round(_rss_mb(), 1),
+               stage_cache={key: STAGE_CACHE_STATS[key] - stats0.get(key, 0)
+                            for key in STAGE_CACHE_STATS})
     _pickle_atomic(shard_dir / f"shard_{k}.pkl", out)
+    _mark_done(shard_dir, k, plan["token"], "rule", cut)
     print(f"SHARD {k}/{plan['n']} rule: {n_local} cell(s) ruled cell-locally")
     return {"k": k, "phase": "rule", "cells_ruled": n_local}
 
@@ -4645,9 +5001,12 @@ def _shard_collect(shard_dir: Path, plan: dict, phase: str = "rule") -> dict:
         if not f.exists():
             raise ShardMergeError(f"shard {k}/{n} wrote no output; nothing is published")
         out = _unpickle(f)
+        # A shard already RULED holds its build output too (the dates and every row), so the
+        # build collection of a resumed epoch accepts it; the rule collection never accepts less.
+        ok_phases = ("build", "rule") if phase == "build" else (phase,)
         if (out.get("protocol") != SHARD_PROTOCOL or out.get("token") != plan["token"]
                 or int(out.get("k", -1)) != k or int(out.get("n", -1)) != n
-                or out.get("phase") != phase):
+                or out.get("phase") not in ok_phases):
             raise ShardMergeError(f"shard {k}/{n} output is stale, unfinished ({out.get('phase')}"
                                   f" != {phase}) or belongs to another plan")
         if phase == "rule" and out.get("cut") != plan.get("cut"):
@@ -4666,7 +5025,9 @@ def _shard_collect(shard_dir: Path, plan: dict, phase: str = "rule") -> dict:
         built_syms |= set(out.get("built_syms") or ())
         dates.update(out.get("dates") or ())
         reports.append({"k": k, "planned": len(out["rows"]), "ruled": out.get("cells_ruled"),
-                        "seconds": out.get("seconds"), "peak_rss_mb": out.get("peak_rss_mb")})
+                        "seconds": out.get("seconds"), "peak_rss_mb": out.get("peak_rss_mb"),
+                        "build_peak_rss_mb": out.get("build_peak_rss_mb"),
+                        "stage_cache": out.get("stage_cache")})
     missing = len(specs) - len(rows_by_idx)
     if missing:
         raise ShardMergeError(f"{missing} planned cell(s) came back from no shard")
@@ -4693,47 +5054,88 @@ def _shard_collect(shard_dir: Path, plan: dict, phase: str = "rule") -> dict:
 
 
 def _run_shards(eligible_specs: list, meta: dict, build_t0: float) -> dict:
-    """Write the plan, hand it to the launcher's dispatcher, and collect. Called from `main`."""
-    cfg = _SHARD or {}
+    """Write the epoch's plan, dispatch only its UNFINISHED shards, and collect. From `main`.
+
+    Shards that finished in an earlier invocation of the same epoch are not dispatched again
+    (`_epoch_plan`); `_shard_collect` still verifies every shard's file against the plan before
+    anything is merged, so a resumed epoch is held to exactly the fail-closed check a fresh one is.
+    """
+    cfg: dict[str, Any] = _SHARD or {}
     n = int(cfg["n"])
     shard_dir = Path(cfg.get("dir") or SHARD_DIR)
     shard_dir.mkdir(parents=True, exist_ok=True)
-    for f in (list(shard_dir.glob("shard_*.pkl")) + list(shard_dir.glob("*.tmp"))
-              + [shard_dir / "cut.pkl"]):
-        f.unlink(missing_ok=True)
-    token = hashlib.sha256(f"{os.getpid()}:{time.time_ns()}:{len(eligible_specs)}".encode()
-                           ).hexdigest()[:16]
-    # THE HELD-OUT SHARE OF THE LAW IN FORCE (S01), resolved once for the plan: the union cut
-    # here and every shard's per-cell cut use it, and `run_gauntlet` resolves the same law in the
-    # merge -- a law that changed in between moves its cut, and the merge refuses the sweep.
-    from research.gate_policy import LOCKBOX_FRAC
-    _lock_frac = float(constitution_thresholds(LOCKBOX_FRAC)["lockbox_min_fraction"])
+    ep = cfg.get("epoch")
+    if ep is None:
+        # A direct caller that did not plan an epoch: one is made from these specs now.
+        _epoch_plan(eligible_specs, meta)
+        ep = cfg["epoch"]
+    token = str(ep["token"])
+    specs = list(ep["specs"])
+    _lock_frac = float(ep["lockbox_frac"])
     plan = {"protocol": SHARD_PROTOCOL, "n": n, "token": token, "build_t0": float(build_t0),
-            "owner_pid": os.getpid(), "meta": meta, "specs": list(eligible_specs),
+            "owner_pid": os.getpid(), "meta": ep.get("meta", meta), "specs": specs,
             "lockbox_frac": _lock_frac}
-    _pickle_atomic(shard_dir / "plan.pkl", plan)
-    print(f"SHARDED SWEEP: {len(eligible_specs)} planned cell(s) across {n} shard(s)")
-    t0 = time.time()
+    # THE SHARDS READ A HEADER AND THEIR OWN SLICE, never the whole plan (see `shard_worker`).
+    for f in shard_dir.glob("*.tmp"):
+        f.unlink(missing_ok=True)
+    slices: dict[int, list[tuple[int, dict[str, Any]]]] = {k: [] for k in range(n)}
+    for i, sp in enumerate(specs):
+        slices[shard_of(sp, n)].append((i, sp))
+    for k in range(n):
+        _pickle_atomic(shard_dir / f"plan_{k}.pkl", slices[k])
+    _pickle_atomic(shard_dir / "plan.pkl", {**plan, "specs": None})
     dispatch = cfg["dispatch"]
-    dispatch(shard_dir, n, "build")  # type: ignore[operator]
+
+    def _phase_of(k: int) -> str:
+        d = _shard_done(shard_dir, k)
+        return str(d.get("phase") or "") if d.get("token") == token else ""
+
+    resumed_build = [k for k in range(n) if _phase_of(k) in ("build", "rule")]
+    resumed_rule = [k for k in range(n) if _phase_of(k) == "rule"]
+    print(f"SHARDED SWEEP: {len(specs)} planned cell(s) across {n} shard(s); epoch {token}: "
+          f"{len(resumed_build)} built and {len(resumed_rule)} ruled in an earlier invocation")
+    t0 = time.time()
+    _dispatch_pending(dispatch, shard_dir, n, "build",
+                      [k for k in range(n) if _phase_of(k) not in ("build", "rule")])
     t_build = time.time() - t0
-    built = _shard_collect(shard_dir, plan, phase="build")
-    # THE ONE LOCKBOX CUT, from the union of every shard's dates -- the same calendar
-    # `run_gauntlet` builds from the same series (`lockbox_cut` reads only each series' index).
     from research.gate_policy import lockbox_cut
 
     class _Dates:
         def __init__(self, index: list) -> None:
             self.index = index
 
-    plan["cut"] = lockbox_cut([_Dates(list(built["dates"]))], frac=_lock_frac)
+    # THE ONE LOCKBOX CUT, from the union of every shard's dates -- the same calendar
+    # `run_gauntlet` builds from the same series (`lockbox_cut` reads only each series' index).
+    # A shard ruled in an earlier invocation at ANOTHER cut is stale (a shard built since moved
+    # the union's calendar): it is rebuilt and the cut re-taken, once; a cut that still moves
+    # refuses the sweep rather than ruling the union on two calendars.
+    for attempt in range(2):
+        built = _shard_collect(shard_dir, plan, phase="build")
+        cut = lockbox_cut([_Dates(list(built["dates"]))], frac=_lock_frac)
+        stale = [k for k in range(n) if _phase_of(k) == "rule"
+                 and _shard_done(shard_dir, k).get("cut") != str(cut)]
+        if not stale:
+            break
+        if attempt:
+            raise ShardMergeError(f"the union's lockbox cut moved again after rebuilding shards "
+                                  f"{stale}; refusing to rule one union on two calendars")
+        print(f"SHARDED SWEEP: shard(s) {stale} were ruled at another lockbox cut; rebuilding")
+        for k in stale:
+            for f in (shard_dir / f"shard_{k}.pkl", shard_dir / f"shard_{k}.done.json"):
+                f.unlink(missing_ok=True)
+        _dispatch_pending(dispatch, shard_dir, n, "build", stale)
+    plan["cut"] = cut
     _pickle_atomic(shard_dir / "cut.pkl", {"token": token, "cut": plan["cut"]})
-    dispatch(shard_dir, n, "rule")  # type: ignore[operator]
+    _dispatch_pending(dispatch, shard_dir, n, "rule",
+                      [k for k in range(n) if _phase_of(k) != "rule"])
     got = _shard_collect(shard_dir, plan, phase="rule")
     got["report"].update(dispatch_seconds=round(time.time() - t0, 3),
-                         build_phase_seconds=round(t_build, 3), lockbox_cut=str(plan["cut"]))
-    for f in [*shard_dir.glob("shard_*.pkl"), shard_dir / "cut.pkl"]:
-        f.unlink(missing_ok=True)
+                         build_phase_seconds=round(t_build, 3), lockbox_cut=str(plan["cut"]),
+                         epoch=token, shards_resumed_built=resumed_build,
+                         shards_resumed_ruled=resumed_rule)
+    # The shard files are KEPT until `main` has published (`run_sharded` clears the epoch then):
+    # a merge that dies after this point resumes from here instead of re-running every shard.
+    cfg["collected"] = True
     return got
 
 
@@ -4744,7 +5146,10 @@ def run_sharded(n_shards: int, dispatch, shard_dir: Path | str | None = None,
     `dispatch(shard_dir, n, phase)` must run `shard_worker(shard_dir, k, phase)` for every k in
     0..n-1 (in any order, concurrently or not) and return when all have finished. It is called
     twice, `build` then `rule`; the merge verifies the
-    result rather than trusting it. Returns 0 after a sweep and 75 when the lane was not granted.
+    result rather than trusting it. A dispatcher that also accepts a keyword `ks` is handed only
+    the shards of the epoch that have not finished that phase (`_dispatch_pending`); one that does
+    not is called as before and recomputes finished shards identically. Returns 0 after a sweep
+    and 75 when the lane was not granted.
     `need_mb` is the admission ask for the whole sharded sweep (default: this process's budget).
     """
     global _SHARD
@@ -4762,13 +5167,32 @@ def run_sharded(n_shards: int, dispatch, shard_dir: Path | str | None = None,
         with exclusive_job("external_gauntlet", need_mb=0) as acquired:
             if not acquired:
                 return 75
-            _SHARD = {"n": int(n_shards), "dispatch": dispatch,
-                      "dir": Path(shard_dir) if shard_dir else SHARD_DIR}
+            _dir = Path(shard_dir) if shard_dir else SHARD_DIR
+            _SHARD = {"n": int(n_shards), "dispatch": dispatch, "dir": _dir}
             try:
                 main()
+            except BaseException:
+                # EVERY SHARD PRESENT AND THE MERGE STILL FAILED: counted on the epoch, which is
+                # discarded after EPOCH_MAX_MERGE_FAILURES rather than retried forever.
+                if _SHARD.get("collected"):
+                    _count_merge_failure(_dir)
+                raise
+            else:
+                # PUBLISHED (or halted before ruling anything): the epoch is done.
+                if _SHARD.get("collected"):
+                    _clear_epoch(_dir)
             finally:
                 _SHARD = None
             return 0
+
+
+def _count_merge_failure(shard_dir: Path) -> None:
+    try:
+        ep = _unpickle(shard_dir / "epoch.pkl")
+        ep["merge_failures"] = int(ep.get("merge_failures") or 0) + 1
+        _pickle_atomic(shard_dir / "epoch.pkl", ep)
+    except Exception:
+        pass
 
 
 def _build_specs(eligible_specs: list, meta: dict, _build_t0: float, _stage0: dict,

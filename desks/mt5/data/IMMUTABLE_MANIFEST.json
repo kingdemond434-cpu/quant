@@ -1,8 +1,8 @@
 {
- "signed_utc": "2026-10-04T21:09:49.553374+00:00",
+ "signed_utc": "2026-10-07T06:49:47.240803+00:00",
  "signed_by": "principal",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "d0919bfc921dac2c",
+  "desks/mt5/scripts/external_gauntlet.py": "8fb334d07cb6d9f0",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",
