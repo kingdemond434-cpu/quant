@@ -105,6 +105,12 @@ def lane(A: Any, src: Any, paths: Any, gains: dict[str, Any]
                              "(every look charged as a trial; PASS only is donated)"},
            "uses": ["direct_cells", "indirect_cells (params.conditioner)", "allocation_intel"],
            "unmeasured": unmeasured}
+    if getattr(src, "data_source", ""):
+        row["data_source"] = src.data_source
+    # A fenced lane's lawful stand-in and its #152 verdict (COVERED only when measured).
+    cands = (getattr(A, "SUBSTITUTE_CANDIDATES", {}) or {}).get(src.id) or {}
+    if cands:
+        row["substitute_candidates"] = [A.substitute_check(src.id, x) for x in cands]
     return row, pts
 
 

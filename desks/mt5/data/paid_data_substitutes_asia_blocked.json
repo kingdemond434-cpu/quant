@@ -115,7 +115,7 @@
    "status": "BLOCKED_ON_TERMS:to_confirm",
    "terms": "to_confirm",
    "blocked_because": "BOK ECOS Open API: a documented free-key API is not a licence; the terms of use were never read or quoted (re-audited 2026-10-06, see KR_HK_TERMS_EVIDENCE)",
-   "unsubstituted_because": "the BOK ECOS terms of use could not be read or quoted (2026-10-06), so the row is fenced to_confirm; no other free source publishes the same BOK series under quoted reuse terms. Box action: read the ECOS 이용약관 and quote the clause",
+   "unsubstituted_because": "the BOK ECOS terms of use could not be read: ecos.bok.or.kr/api is a client-side single-page app and the box's fetch returned only the page title (2026-10-07), so the row is fenced to_confirm; no other free source publishes this BOK series under quoted reuse terms (BIS WS_CBPOL carries the policy rate only). Box action: read the ECOS 이용약관 in a browser and quote the permitting clause",
    "evidence": ""
   },
   {
@@ -141,8 +141,9 @@
    "status": "BLOCKED_ON_TERMS:to_confirm",
    "terms": "to_confirm",
    "blocked_because": "BOK ECOS Open API: terms of use not read, no permitting clause quoted (2026-10-06)",
-   "unsubstituted_because": "the BOK ECOS terms of use could not be read or quoted (2026-10-06), so the row is fenced to_confirm; no other free source publishes the same BOK series under quoted reuse terms. Box action: read the ECOS 이용약관 and quote the clause",
-   "evidence": ""
+   "unsubstituted_because": "candidate bis_kr_policy_rate UNMEASURED (identity_by_publisher): COVERED only at corr >= 0.5 with n >= 12 against the original",
+   "evidence": "",
+   "candidates": "bis_kr_policy_rate: UNMEASURED (identity_by_publisher; corr=UNMEASURED, n=UNMEASURED)"
   },
   {
    "class": "",
@@ -154,8 +155,9 @@
    "status": "BLOCKED_ON_TERMS:to_confirm",
    "terms": "to_confirm",
    "blocked_because": "BOK ECOS Open API: terms of use not read, no permitting clause quoted (2026-10-06)",
-   "unsubstituted_because": "the BOK ECOS terms of use could not be read or quoted (2026-10-06), so the row is fenced to_confirm; no other free source publishes the same BOK series under quoted reuse terms. Box action: read the ECOS 이용약관 and quote the clause",
-   "evidence": ""
+   "unsubstituted_because": "candidate bis_kr_policy_rate UNMEASURED (nearest_lawful_proxy): COVERED only at corr >= 0.5 with n >= 12 against the original",
+   "evidence": "",
+   "candidates": "bis_kr_policy_rate: UNMEASURED (nearest_lawful_proxy; corr=UNMEASURED, n=UNMEASURED)"
   },
   {
    "class": "",
@@ -167,7 +169,7 @@
    "status": "BLOCKED_ON_TERMS:to_confirm",
    "terms": "to_confirm",
    "blocked_because": "BOK ECOS Open API: terms of use not read, no permitting clause quoted (2026-10-06)",
-   "unsubstituted_because": "the BOK ECOS terms of use could not be read or quoted (2026-10-06), so the row is fenced to_confirm; no other free source publishes the same BOK series under quoted reuse terms. Box action: read the ECOS 이용약관 and quote the clause",
+   "unsubstituted_because": "the BOK ECOS terms of use could not be read: ecos.bok.or.kr/api is a client-side single-page app and the box's fetch returned only the page title (2026-10-07), so the row is fenced to_confirm; no other free source publishes this BOK series under quoted reuse terms (BIS WS_CBPOL carries the policy rate only). Box action: read the ECOS 이용약관 in a browser and quote the permitting clause",
    "evidence": ""
   },
   {
@@ -180,7 +182,7 @@
    "status": "BLOCKED_ON_TERMS:to_confirm",
    "terms": "to_confirm",
    "blocked_because": "BOK ECOS Open API: terms of use not read, no permitting clause quoted (2026-10-06)",
-   "unsubstituted_because": "the BOK ECOS terms of use could not be read or quoted (2026-10-06), so the row is fenced to_confirm; no other free source publishes the same BOK series under quoted reuse terms. Box action: read the ECOS 이용약관 and quote the clause",
+   "unsubstituted_because": "the BOK ECOS terms of use could not be read: ecos.bok.or.kr/api is a client-side single-page app and the box's fetch returned only the page title (2026-10-07), so the row is fenced to_confirm; no other free source publishes this BOK series under quoted reuse terms (BIS WS_CBPOL carries the policy rate only). Box action: read the ECOS 이용약관 in a browser and quote the permitting clause",
    "evidence": ""
   },
   {
