@@ -1118,13 +1118,15 @@ _STANCE_RE: dict[str, re.Pattern[str]] = {s: _lex_pattern(t) for s, t in _STANCE
 
 #: DIRECTION of a claim, for contradiction. Up and down, plus an explicit denial.
 _DIRECTION_TERMS: dict[str, tuple[str, ...]] = {
-    "up": ("rise", "rises", "rose", "risen", "increase", "increases", "increased", "higher",
+    "up": ("rise", "rises", "rose", "risen", "raises", "raised", "boosts", "boosted",
+           "increase", "increases", "increased", "higher",
            "jump", "jumps", "jumped", "surge", "surges", "surged", "climb", "climbs", "climbed",
            "beat", "beats", "above expectations", "accelerated", "accelerates", "上升", "上涨",
            "增加", "上昇", "増加", "上回", "вырос", "выросла", "рост", "sube", "subió",
            "aumentó", "aumento", "hausse", "augmente", "augmenté", "steigt", "gestiegen",
            "anstieg", "ارتفاع", "ارتفع", "상승", "증가"),
-    "down": ("fall", "falls", "fell", "fallen", "decrease", "decreases", "decreased", "lower",
+    "down": ("fall", "falls", "fell", "fallen", "cuts", "reduces", "reduced", "lowers",
+             "lowered", "decrease", "decreases", "decreased", "lower",
              "drop", "drops", "dropped", "decline", "declines", "declined", "plunge", "plunged",
              "slump", "slumped", "miss", "missed", "below expectations", "slowed", "slows",
              "下降", "下跌", "减少", "下落", "減少", "下回", "упал", "упала", "снижение",
@@ -1460,6 +1462,34 @@ def novelty_components(event: Mapping[str, Any],
                                         f"stance {last[0]} -> {stance}", stance=stance,
                                         prior=last[0], prior_ref=last[1])
 
+    # contradiction --------------------------------------------------------------------------
+    direction = event.get("direction") or direction_of(text)
+    if direction is None:
+        out["contradiction"] = _comp(None, "UNMEASURED: the document states no direction")
+    else:
+        last_d = None
+        for r in reversed(story):
+            d = r.get("direction") or direction_of(_row_text(r))
+            if d and d != "denial":
+                last_d = (d, _row_ref(r))
+                break
+        asserted = next((r for r in reversed(story)
+                         if (r.get("direction") or direction_of(_row_text(r))) != "denial"),
+                        None)
+        if last_d is None and direction == "denial" and asserted is not None:
+            # A denial contradicts the claim it denies whether or not that claim had a sign.
+            out["contradiction"] = _comp(1.0, "a denial of an earlier assertion on this story",
+                                         direction=direction, prior="assertion",
+                                         contradicts=_row_ref(asserted))
+        elif last_d is None:
+            out["contradiction"] = _comp(0.0, "nothing directional earlier on this story",
+                                         direction=direction)
+        else:
+            opposed = direction == "denial" or direction != last_d[0]
+            out["contradiction"] = _comp(float(opposed), f"{last_d[0]} -> {direction}",
+                                         direction=direction, prior=last_d[0],
+                                         contradicts=last_d[1] if opposed else "")
+
     # confirmation ---------------------------------------------------------------------------
     src = str(event.get("source_id") or "").strip()
     if not src:
@@ -1473,7 +1503,10 @@ def novelty_components(event: Mapping[str, Any],
         sources = {str(r.get("source_id") or "") for r in story} - {""}
         copy_of = [(_row_ref(r), sim_of[id(r)]) for r in story
                    if is_copy(sim_of.get(id(r), 0.0), figs, _figures(r))]
-        if src in sources:
+        if (out["contradiction"].get("score") or 0.0) >= 1.0:
+            out["confirmation"] = _comp(0.0, "it contradicts the story; it does not confirm it",
+                                        independent_sources=len(sources))
+        elif src in sources:
             out["confirmation"] = _comp(0.0, "this source already carried the story: an echo",
                                         independent_sources=len(sources))
         elif copy_of:
@@ -1484,27 +1517,8 @@ def novelty_components(event: Mapping[str, Any],
             out["confirmation"] = _comp(1.0, f"a new independent source joins {len(sources)} "
                                         "earlier on this story",
                                         independent_sources=len(sources) + 1,
-                                        confirms=[_row_ref(r) for r in story][-4:])
-
-    # contradiction --------------------------------------------------------------------------
-    direction = event.get("direction") or direction_of(text)
-    if direction is None:
-        out["contradiction"] = _comp(None, "UNMEASURED: the document states no direction")
-    else:
-        last_d = None
-        for r in reversed(story):
-            d = r.get("direction") or direction_of(_row_text(r))
-            if d and d != "denial":
-                last_d = (d, _row_ref(r))
-                break
-        if last_d is None:
-            out["contradiction"] = _comp(0.0, "nothing directional earlier on this story",
-                                         direction=direction)
-        else:
-            opposed = direction == "denial" or direction != last_d[0]
-            out["contradiction"] = _comp(float(opposed), f"{last_d[0]} -> {direction}",
-                                         direction=direction, prior=last_d[0],
-                                         contradicts=last_d[1] if opposed else "")
+                                        confirms=[_row_ref(r) for r in story
+                                                  if str(r.get("source_id") or "") != src][-4:])
 
     # revision -------------------------------------------------------------------------------
     same_event = [r for r in window if eid and str(r.get("event_id") or "") == eid]

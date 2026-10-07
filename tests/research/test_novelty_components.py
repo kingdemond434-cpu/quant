@@ -200,3 +200,13 @@ def test_a_near_verbatim_line_with_a_changed_figure_is_a_revision_not_a_copy() -
     assert "copy" not in conf["basis"]
     assert eo.is_copy(0.99, [(2.1, "%")], [(2.1, "%")])
     assert not eo.is_copy(0.99, [(1.6, "%")], [(2.1, "%")])
+
+
+def test_a_denial_contradicts_an_unsigned_claim_and_never_confirms_it() -> None:
+    window = [_row("Ministry announces new export quota", kind="tariffs", ents=("CN",),
+                   src="wire")]
+    denial = _row("Ministry denies any new export quota", kind="tariffs", ents=("CN",),
+                  src="ministry")
+    con = _c(denial, window, "contradiction")
+    assert con["score"] == 1.0 and con["prior"] == "assertion"
+    assert _c(denial, window, "confirmation")["score"] == 0.0
