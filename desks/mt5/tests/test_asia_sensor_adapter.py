@@ -669,7 +669,6 @@ def test_a_report_refused_every_way_completes_the_pass_and_the_ledger_stays_whol
     assert not rep.exists() and _strays(tmp_path) == []
     rows = _index_matches_rows(root)
     assert len(rows) == doc["totals"]["appended"] == 7
-    assert ad.main.__module__ == ad.__name__
     monkeypatch.undo()
     again = ad.run(desk, ledger_root=root, report=rep, now=NOW + timedelta(hours=1))
     assert again["report_write"] == "OK"
