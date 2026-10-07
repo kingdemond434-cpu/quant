@@ -35,6 +35,8 @@ LEGS = ({"acquire_datasets": "regions", "dukascopy_backfill": "data", "lake_prom
 def _world(tmp: Path, urls: list[str]) -> Path:
     d = tmp / "world"
     d.mkdir()
+    if not urls:  # no crawler output at all: the stage's artifact is ABSENT, not empty
+        return d
     (d / f"discoveries_{(NOW - timedelta(hours=3)).strftime('%Y%m%d_%H%M')}.json").write_text(
         json.dumps([{"host": "h", "endpoints": urls}]), "utf-8")
     return d
