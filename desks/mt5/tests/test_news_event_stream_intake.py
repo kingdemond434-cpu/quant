@@ -366,3 +366,27 @@ def test_file_grounds_are_read_in_bounded_slices(desk: Path,
     sizes = [len([x for x in nes.collect_items(cursor=cur) if x.origin == "moat_normalized"])
              for _ in range(4)]
     assert sizes == [3, 3, 1, 0]
+
+
+def test_every_event_row_and_observation_carries_the_novelty_vector(desk: Path) -> None:
+    """DATA-30: the eleven axes reach the event rows, the sensor ledger and the intake report,
+    and a revised figure on the same story reads as numerically new on the next pass."""
+    _write_captures([_capture(1, "US CPI rose 3.1% as inflation surprise hits", "reuters")],
+                    nes.NEWS_CAPTURES)
+    nes.run(budget_s=0)
+    _write_captures([_capture(2, "US CPI revised to 3.4% in inflation surprise", "bls")],
+                    nes.NEWS_CAPTURES)
+    out = nes.run(budget_s=0, now=NOW + timedelta(minutes=1))
+    (row,) = out["events"]
+    vec = row["novelty_vector"]
+    assert set(vec) == set(nes.onto.NOVELTY_COMPONENTS)
+    assert vec["numerical"] == 1.0
+    assert row["figures"] == [[3.4, "%"]]
+    census = out["novelty_components"]
+    assert census["documents"] == 1
+    assert census["axes"]["numerical"]["measured"] == 1
+    assert census["axes"]["policy_state"]["mean"] == nes.UNMEASURED
+    intake = json.loads(nes.INTAKE_REPORT.read_text())
+    assert intake["novelty_components"]["axes"]["numerical"]["mean"] == 1.0
+    ledger = "\n".join(p.read_text() for p in nes.SENSOR_ROOT.rglob("*.jsonl"))
+    assert '"novelty_vector"' in ledger
