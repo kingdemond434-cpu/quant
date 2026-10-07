@@ -111,22 +111,74 @@ def _escape_pattern(form: str) -> re.Pattern[str]:
 MAX_INFLATE = 64 * 1024 * 1024
 
 
-def _inflate(body: bytes, wbits: int) -> tuple[bytes, bool]:
-    """(bytes inflated, complete?) -- bounded by MAX_INFLATE; a truncated or corrupt stream
-    yields what decoded before the fault, which is everything anyone could ever read from it."""
+#: Compression layers a scrub will unwrap (a gzip inside a gzip member, ...); deeper is refused.
+MAX_NESTING = 8
+
+
+def _one(body: bytes, wbits: int, budget: int) -> tuple[bytes, bool, bytes]:
+    """ONE stream: (bytes inflated, complete?, bytes after it). Bounded by `budget`; a truncated
+    or corrupt stream yields what decoded before the fault, which is everything anyone could
+    ever read from it."""
     d = zlib.decompressobj(wbits)
     try:
-        out = d.decompress(body, MAX_INFLATE)
-        return out, d.eof and not d.unconsumed_tail
+        out = d.decompress(body, max(budget, 1))
     except zlib.error:
-        return b"", False
+        return b"", False, b""
+    whole = d.eof and not d.unconsumed_tail
+    return out, whole, d.unused_data if d.eof else b""
 
 
 def _is_zlib(body: bytes) -> bool:
     return len(body) > 2 and body[0] & 0x0F == 8 and (body[0] << 8 | body[1]) % 31 == 0
 
 
-def scrub_body(body: bytes, secrets: Iterable[str], encoding: str = "") -> bytes:
+def _scrub_streams(body: bytes, keys: list[str], enc: str, depth: int,
+                   budget: list[int]) -> bytes:
+    """Every stream in a compressed body, scrubbed on its own (re-audits of #252).
+
+    A reader decodes gzip members back to back, and bytes after a stream may be another gzip
+    member, a zlib stream or plain text, so each piece is recognised by its own magic and
+    scrubbed through `scrub_body` -- which also unwraps a compressed payload INSIDE a member.
+    The body is returned unchanged when nothing was found and every stream was whole; otherwise
+    each piece is stored re-compressed from its scrubbed bytes, and anything past a broken
+    stream or the inflate bound is dropped (no reader could decode it either)."""
+    parts: list[bytes] = []
+    changed = False
+    rest, first = body, True
+    while rest:
+        if budget[0] <= 0:
+            changed = True
+            break
+        if rest[:2] == b"\x1f\x8b" or (first and enc in ("gzip", "x-gzip")):
+            wbits = 31
+        elif (first and enc == "deflate") or _is_zlib(rest):
+            wbits = 15
+        else:
+            tail = _scrub_text(rest, keys)
+            changed |= tail != rest
+            parts.append(tail)
+            break
+        inner, whole, after = _one(rest, wbits, budget[0])
+        if wbits == 15 and not inner and not whole:
+            inner, whole, after = _one(rest, -15, budget[0])
+            if not inner and not whole and not (first and enc == "deflate"):
+                # zlib-looking bytes that do not inflate are plain text
+                tail = _scrub_text(rest, keys)
+                changed |= tail != rest
+                parts.append(tail)
+                break
+        budget[0] -= len(inner)
+        clean = scrub_body(inner, keys, _depth=depth + 1, _budget=budget)
+        changed |= clean != inner or not whole
+        parts.append(gzip.compress(clean, mtime=0) if wbits == 31 else zlib.compress(clean))
+        if not whole:
+            break
+        rest, first = after, False
+    return b"".join(parts) if changed else body
+
+
+def scrub_body(body: bytes, secrets: Iterable[str], encoding: str = "", *, _depth: int = 0,
+               _budget: list[int] | None = None) -> bytes:
     """A response body with any echoed credential removed BEFORE it reaches a vault or the lake.
 
     EIA v2 echoes the request back under `request.params`, `api_key` included; that param is
@@ -135,36 +187,35 @@ def scrub_body(body: bytes, secrets: Iterable[str], encoding: str = "") -> bytes
     unchanged (same bytes, same content hash).
 
     COMPRESSED BODIES (audit of #252): gzip and zlib/deflate are recognised by their magic or by
-    `encoding` (the Content-Encoding header) and inflated with a bound; a truncated or corrupt
-    stream is scrubbed on what decodes and, when anything was found or the stream was broken,
-    stored re-compressed from the scrubbed bytes. Brotli needs the `brotli` module; without it
-    a `br` body is refused (empty), never stored unread."""
+    `encoding` (the Content-Encoding header) and inflated with one MAX_INFLATE bound shared by
+    every stream and layer; see `_scrub_streams`. Brotli needs the `brotli` module; without it
+    a `br` body is refused (empty), never stored unread. Past MAX_NESTING layers, refused."""
     keys = [str(s) for s in secrets if s]
     if not keys or not body:
         return body
-    enc = (encoding or "").strip().lower()
-    if body[:2] == b"\x1f\x8b" or enc in ("gzip", "x-gzip"):
-        inner, whole = _inflate(body, 31)
-        clean = scrub_body(inner, keys)
-        return body if whole and clean == inner else gzip.compress(clean, mtime=0)
-    if enc == "deflate" or _is_zlib(body):
-        inner, whole = _inflate(body, 15)
-        if not inner and not whole:
-            inner, whole = _inflate(body, -15)
-        if inner or enc == "deflate":    # zlib-looking bytes that do not inflate are plain
-            clean = scrub_body(inner, keys)
-            return body if whole and clean == inner else zlib.compress(clean)
+    if _depth > MAX_NESTING:
+        return b""
+    budget = _budget if _budget is not None else [MAX_INFLATE]
+    enc = (encoding or "").strip().lower() if _depth == 0 else ""
+    if (body[:2] == b"\x1f\x8b" or enc in ("gzip", "x-gzip", "deflate")
+            or _is_zlib(body)):
+        return _scrub_streams(body, keys, enc, _depth, budget)
     if enc == "br":
         try:
             import brotli  # type: ignore[import-not-found]
         except ImportError:
             return b""
         try:
-            inner = brotli.decompress(body)[:MAX_INFLATE]
+            inner = brotli.decompress(body)[:budget[0]]
         except Exception:
             return b""
-        clean = scrub_body(inner, keys)
+        budget[0] -= len(inner)
+        clean = scrub_body(inner, keys, _depth=_depth + 1, _budget=budget)
         return body if clean == inner else brotli.compress(clean)
+    return _scrub_text(body, keys)
+
+
+def _scrub_text(body: bytes, keys: list[str]) -> bytes:
     out = body
     if b"api_key" in out:
         doc = _json(out)
