@@ -227,39 +227,12 @@ def mine_mql5_signals() -> list[dict]:
     card also ships `<input value="[ts,val,ts,val,...]">`, a weekly equity curve for the signal,
     which the desk was fetching per-signal or not at all. A track record is the payload; the
     link was only ever the pointer.
+
+    FENCED (mql5_terms, ToU 3.7/3.9/3.13): returns the refusal row with no request, even when
+    called directly rather than through the walled sweep.
     """
-    out: list[dict] = []
-    for platform in ("mt5", "mt4"):
-        html = fetch(f"https://www.mql5.com/en/signals/{platform}")
-        before = len(out)
-        for card in html.split('<div class="signal-card">')[1:]:
-            m = re.search(r'href="/en/signals/(\d+)', card)
-            if not m:
-                continue
-            sid = m.group(1)
-            title = re.search(r'signal-card__title-wrapper">([^<]{2,120})<', card)
-            author = re.search(r'signal-card__author__item">([^<]{1,80})<', card)
-            growth = re.search(r'signal-card__growth-value[^>]*>([-\d.]+)%<', card)
-            rating = re.search(r'g-rating__info">([\d.]+) \((\d+)\)<', card)
-            curve = re.search(r'<input value="\[([\d,.\-]{20,4000})\]"', card)
-            pts = []
-            if curve:
-                nums = [float(x) for x in curve.group(1).split(",") if x]
-                pts = [[int(nums[k]), nums[k + 1]] for k in range(0, len(nums) - 1, 2)]
-            out.append(row("mql5_signals", "track_record",
-                           title.group(1).strip() if title else f"signal {sid}",
-                           f"https://www.mql5.com/en/signals/{sid}",
-                           platform=platform, signal_id=sid,
-                           author=author.group(1).strip() if author else "",
-                           growth_pct=float(growth.group(1)) if growth else None,
-                           rating=float(rating.group(1)) if rating else None,
-                           rating_n=int(rating.group(2)) if rating else None,
-                           equity_w1=pts))
-        if len(out) == before:
-            out.append(row("mql5_signals", "raw_capture", f"signals/{platform} page shape "
-                           "drifted", f"https://www.mql5.com/en/signals/{platform}",
-                           html[:1200], needs_selector_work=True))
-    return out[:160]
+    return [mql5_terms.refusal_row("mql5_signals")]
+
 
 # ---------------------------------------------------------------- S10 Myfxbook outlook
 def mine_myfxbook_outlook() -> list[dict]:
@@ -620,9 +593,8 @@ def mine_propfirm_boards() -> list[dict]:
                 u.rstrip("/").rsplit("/", 1)[-1].replace("-", " "), u) for u in take]
 
 def mine_mql5_survivors() -> list[dict]:
-    """S++ flagship: phenotype-screened MQL5 survivor hunt (own module, richest ground)."""
-    from mql5_survivor_hunter import run_and_save as _hunt
-    return _hunt()
+    """FENCED (mql5_terms): the MQL5 survivor hunt makes no request; refusal row only."""
+    return [mql5_terms.refusal_row("mql5_survivors")]
 
 
 def mine_regional_survivors() -> list[dict]:

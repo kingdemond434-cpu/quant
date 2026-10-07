@@ -400,3 +400,14 @@ def test_cohort_never_refetches_an_mql5_member(tmp_path: Path, monkeypatch: pyte
     assert ci.observe_due(reg) == 0                # retired: never due again
     rows = [json.loads(x) for x in ci.OBS.read_text("utf-8").splitlines()]
     assert {r["verdict"] for r in rows} == {mql5_terms.STATUS}
+
+
+def test_seed_miners_mql5_functions_refuse_when_called_directly(no_network: list[str]) -> None:
+    """The walled sweep never calls them; a direct call still fetches nothing."""
+    import seed_miners as sm
+    for fn, source in ((sm.mine_mql5_signals, "mql5_signals"),
+                       (sm.mine_mql5_survivors, "mql5_survivors")):
+        rows = fn()
+        assert [r["source"] for r in rows] == [source]
+        assert rows[0]["verdict"] == mql5_terms.STATUS and rows[0]["kind"] == "walled"
+    assert no_network == []
