@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import zlib
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -36,5 +37,8 @@ def noise_series(n: int = 3000, seed: int = 0) -> MarketSeries:
 
 def noise_provider(seed: int = 0):
     def provider(symbol: str) -> MarketSeries:
-        return noise_series(seed=seed + hash(symbol) % 100)
+        # zlib.crc32, not hash(): str hashes are salted per process (PYTHONHASHSEED), so
+        # hash(symbol) % 100 drew a different noise path on every CI run. One of the 100
+        # offsets (38, for EURUSD) yields a lone survivor on D1 noise, a ~1% red per run.
+        return noise_series(seed=seed + zlib.crc32(symbol.encode()) % 100)
     return provider

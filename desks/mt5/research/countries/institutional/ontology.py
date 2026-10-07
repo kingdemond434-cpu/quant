@@ -27,6 +27,7 @@ price behaviour -- never as a signed number the public data cannot support.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 # --------------------------------------------------------------------------- the frozen classes
@@ -119,6 +120,9 @@ def roles_of(row: dict[str, Any]) -> set[str]:
 # --------------------------------------------------------------------------- coverage statuses
 #: Exactly one status per (jurisdiction x source class) cell. `UNSEARCHED` is not one of the
 #: principal's seven: it is the honest reading of a cell nobody has looked at yet, and it is RED.
+#: `UNMEASURED` (the eighth, audit of #237) is a cell a hand ruling claims to close without
+#: citing evidence (`ruled_status`): the grid really publishes it, so it is a coverage status --
+#: OPEN (never in CLOSED_STATUSES) and asked for in the search queue.
 COVERAGE_STATUSES: tuple[str, ...] = (
     "ACTIVE",                     # ingested, and a consumer has read it
     "DISCOVERED_NOT_INGESTED",    # exists and is public; no fetch or no consumer yet
@@ -127,12 +131,56 @@ COVERAGE_STATUSES: tuple[str, ...] = (
     "NOT_PUBLISHED",              # searched; the jurisdiction does not publish it
     "TESTED_NO_INFORMATION",      # ingested and judged; no incremental information
     "NOT_RELEVANT",               # no MT5 transmission from this jurisdiction for this class
+    "UNMEASURED",                 # a ruling claims it closed but cites nothing: OPEN (L1.28a)
 )
 UNSEARCHED = "UNSEARCHED"
 #: Statuses that close a cell. Everything else is open work for the source frontier.
 CLOSED_STATUSES: frozenset[str] = frozenset({
     "ACTIVE", "BLOCKED_SUBSTITUTE", "PAID_PUBLIC_PROXY", "NOT_PUBLISHED",
     "TESTED_NO_INFORMATION", "NOT_RELEVANT"})
+
+#: A RULING CLOSES A CELL ONLY ON EVIDENCE (audit of #159, 2026-10-06). A hand ruling that cites
+#: nothing -- an empty `evidence`, a bare "well-known", a note that the page was not fetched -- or a
+#: BLOCKED_SUBSTITUTE / PAID_PUBLIC_PROXY ruling that names no substitute, is an ABSENT reading,
+#: and absence never resolves to clean (L1.28a). Such a ruling reads UNMEASURED: open, counted, and
+#: asked for in the search queue until it carries a citation (or its substitute).
+UNMEASURED = "UNMEASURED"
+#: Rulings whose status asserts a stand-in must name it.
+SUBSTITUTE_STATUSES: frozenset[str] = frozenset({"BLOCKED_SUBSTITUTE", "PAID_PUBLIC_PROXY"})
+_WELL_KNOWN = re.compile(r"^\s*well[\s-]*known\b[\s;:,.()\-]*", re.I)
+_NOT_FETCHED = re.compile(r"^\(?\s*not\s+(?:re-?)?fetched\b.*$", re.I | re.S)
+
+
+def evidence_cited(evidence: Any) -> bool:
+    """True when `evidence` names something a reader could check. Empty, a bare "well-known", or
+    "well-known" followed only by a not-fetched note cite nothing."""
+    if not isinstance(evidence, str):
+        return False
+    rest = _WELL_KNOWN.sub("", evidence.strip(), count=1).strip()
+    rest = _NOT_FETCHED.sub("", rest).strip(" ;:,.()-")
+    return bool(rest)
+
+
+def ruling_defect(ruling: Any) -> str:
+    """Why a ruling cannot close its cell or role; "" when it can."""
+    if not isinstance(ruling, dict):
+        return "ruling carries no evidence (bare status)"
+    status = str(ruling.get("status") or "")
+    if status not in CLOSED_STATUSES:
+        return ""                  # an open status closes nothing, so it needs no proof
+    if not evidence_cited(ruling.get("evidence")):
+        return "ruling cites no evidence"
+    if status in SUBSTITUTE_STATUSES and not str(ruling.get("substitute") or "").strip():
+        return f"{status} names no substitute"
+    return ""
+
+
+def ruled_status(ruling: Any) -> str:
+    """The status a hand ruling may stand at: its own when it is evidenced, else UNMEASURED."""
+    if ruling_defect(ruling):
+        return UNMEASURED
+    return str(ruling.get("status") or UNMEASURED)
+
 
 # --------------------------------------------------------------------------- jurisdictions
 #: The jurisdictions the atlas is enforced over, each bound to the country pack (or region pack)
@@ -372,6 +420,7 @@ def as_dict() -> dict[str, Any]:
     """The whole ontology as plain data, for the coverage report and the tests."""
     return {"source_classes": SOURCE_CLASSES, "jurisdiction_roles": JURISDICTION_ROLES,
             "coverage_statuses": COVERAGE_STATUSES, "unsearched": UNSEARCHED,
+            "unmeasured": UNMEASURED,
             "jurisdictions": JURISDICTIONS, "actors": ACTORS, "latent_states": LATENT_STATES,
             "dealer_gamma_scenarios": DEALER_GAMMA_SCENARIOS, "feature_family": FEATURE_FAMILY,
             "commodity_triangulation": COMMODITY_TRIANGULATION,

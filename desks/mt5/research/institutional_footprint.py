@@ -85,6 +85,13 @@ TRANSFORMS_RAW: tuple[tuple[str, float], ...] = (("level_z", 1.0), ("delta_z", 1
 #: cell key carries no side, so a cell is charged once whichever side it learned.
 TRAIN_FRACTION = 0.5
 MIN_TRAIN_EVENTS = 30
+#: The side search is a two-way choice (+1 or -1), so it is charged as TWO selection trials:
+#: carried as `claim_selection_trials` in the cell's lineage, lifted onto the donation by the moat
+#: exchange, stamped by the miner compiler and charged once per claim family by the trial ledger.
+SIDE_SELECTION_TRIALS = 2
+#: The cells ledger's spec. A ledger without it (or with another) was written before the cells
+#: carried a purged `trade_from`; its keys are re-minted once under this spec (`emit_cells`).
+EMITTED_SPEC = "purged_trade_from/1"
 #: Observations the rolling percentile and z are measured over (156 weeks ~ 3 years of COT).
 ROLL = 156
 MIN_OBS = 20
@@ -1047,8 +1054,18 @@ def learn_side(source: str, signal: str, transform: str, threshold: float, symbo
     The family reads the conditioner exactly as `conditioner()` builds it (same transform, same
     publication-day lag) and goes `side_when_high` when it is above +threshold and the opposite
     below -threshold. So the edge is side_when_high * E[sign(m) * forward return | |m| >= thr];
-    its sign on the first TRAIN_FRACTION of the joint history is the side. The span after
-    `train_end` never touches the choice, so the gauntlet's out-of-sample stays out of sample.
+    its sign over the events of the first TRAIN_FRACTION of the joint history is the side.
+
+    PURGED (audit of #237, 2026-10-06). An event's label is the log return over the NEXT
+    `horizon_bars` bars, so an event at `train_end` minus one bar reads a close well after
+    `train_end`. Training therefore keeps only events whose label ENDS at or before `train_end`
+    (the close `horizon_bars` later is stamped <= train_end); the last `horizon_bars` events
+    before the cut are dropped, not scored. `emit_cells` hands `train_end` to the family as
+    `trade_from`, which silences every bar at or before it, so no close the choice read is a
+    bar the gauntlet judges: two price paths identical through `train_end` choose the same side
+    whatever happens after it. The two-way choice is ALSO charged as two selection trials
+    (`SIDE_SELECTION_TRIALS`, carried as `claim_selection_trials` on the cell's lineage to
+    `libs.research.trial_ledger`), so the search is counted, not only fenced.
     None -- no cell this pass -- when the family, the bars or MIN_TRAIN_EVENTS are missing."""
     if cond is None:
         fn = _conditioner_fn()
@@ -1059,21 +1076,26 @@ def learn_side(source: str, signal: str, transform: str, threshold: float, symbo
     close = bars["close"].astype(float)
     close = close[~close.index.duplicated(keep="last")].sort_index()
     fwd = np.log(close.shift(-horizon_bars) / close)
+    # When each label is KNOWN: the stamp of the close it ends on. The purge reads this.
+    label_end = pd.Series(close.index, index=close.index).shift(-horizon_bars)
     try:
         m = cond.reindex(cond.index.union(close.index)).ffill().reindex(close.index)
     except (TypeError, ValueError):
         return None
-    joint = pd.DataFrame({"m": m, "fwd": fwd}).dropna()
+    joint = pd.DataFrame({"m": m, "fwd": fwd, "label_end": label_end}).dropna()
     if joint.empty:
         return None
     cut = joint.index[0] + (joint.index[-1] - joint.index[0]) * TRAIN_FRACTION
-    train = joint[joint.index <= cut]
+    # Purged: an event whose forward label ends after the cut read a bar the judge scores.
+    train = joint[joint["label_end"] <= cut]
     ev = train[train["m"].abs() >= abs(float(threshold))]
     if len(ev) < MIN_TRAIN_EVENTS:
         return None
     edge = float((np.sign(ev["m"]) * ev["fwd"]).mean())
     return {"side": 1 if edge >= 0 else -1, "train_end": pd.Timestamp(cut).isoformat(),
-            "train_events": len(ev), "train_edge": round(edge, 6)}
+            "train_events": len(ev), "train_edge": round(edge, 6),
+            "purged_horizon_bars": int(horizon_bars),
+            "selection_trials": SIDE_SELECTION_TRIALS}
 
 
 def _credit(credited: dict[str, str], ids: Iterable[str]) -> None:
@@ -1083,20 +1105,89 @@ def _credit(credited: dict[str, str], ids: Iterable[str]) -> None:
             credited[i] = at
 
 
+def side_claim_family(source: str, signal: str, transform: str, symbol: str) -> str:
+    """The claim family of one learned side: every chart of (source, signal, transform, symbol)
+    trades the SAME side, chosen once, so they share one family and its two trials are charged
+    once (`libs.research.trial_ledger` charges a family's largest stated selection, never per
+    cell). Deterministic, so a re-mint lands in the family it was first charged to."""
+    sentence = f"side of {source}|{signal}|{transform}|{symbol}"
+    try:
+        from libs.research.claim_selection import claim_family_id
+        return claim_family_id(LEG, sentence)
+    except ImportError:                                    # pragma: no cover - same formula
+        import hashlib
+        return "claim:" + hashlib.sha256(f"{LEG}|{sentence}".encode()).hexdigest()[:16]
+
+
+def _legacy_twin(params: Mapping[str, Any], symbol: str, chart: str) -> tuple[bool, list[str]]:
+    """For a key minted before EMITTED_SPEC: (the purged rule is already in the registry, ids of
+    this cell's other QUEUED footprint rows). The first means nothing need be enqueued -- the
+    #237 cell and the purged one are the same rule, so re-enqueueing would only raise its
+    search_count. The second are the unpurged bets the re-mint replaces before any judge claims
+    them; a row already claimed, donated or judged is left as the record it is."""
+    from libs.moat import registry as R
+    h = R.content_hash("exogenous_conditioner", symbol, params, chart, "", "", chart)
+    c = R.connect()
+    try:
+        have = c.execute("SELECT 1 FROM research_candidates WHERE content_hash=?",
+                         (h,)).fetchone() is not None
+        rows = c.execute(
+            "SELECT id, params_json, content_hash FROM research_candidates WHERE origin=? AND "
+            "family='exogenous_conditioner' AND symbol=? AND chart=? AND status='queued'",
+            (LEG, symbol, chart)).fetchall()
+    finally:
+        c.close()
+    stale = []
+    for r in rows:
+        try:
+            q = json.loads(r["params_json"] or "{}")
+        except (TypeError, ValueError):
+            continue
+        if (str(r["content_hash"]) != h and isinstance(q, dict)
+                and all(q.get(k) == params.get(k) for k in ("source", "signal", "transform"))):
+            stale.append(str(r["id"]))
+    return have, stale
+
+
+def _supersede(ids: Iterable[str], by: str) -> int:
+    from libs.moat import registry as R
+    n = 0
+    for i in ids:
+        n += int(R.mark_candidate(i, "superseded", failure_class=f"superseded_by:{by}"))
+    return n
+
+
 def emit_cells(plans: list[dict[str, Any]], *, deadline: float, dry_run: bool = False,
                side_fn: Callable[..., dict[str, Any] | None] | None = None) -> dict[str, Any]:
     """Through the one door, once per cell key, ever. The key carries no side (a cell is ONE
     bet with its learned side), so no pass inflates a search count and no mirror is charged.
 
     `credited` maps each atlas id to the last time it was FED: a cell enqueued from it, or a
-    pass that found every cell it owes already enqueued. ACTIVE reads that stamp (30 days)."""
+    pass that found every cell it owes already enqueued. ACTIVE reads that stamp (30 days).
+
+    THE ONE MIGRATION (audit of #237). A ledger written without `spec == EMITTED_SPEC` holds keys
+    minted before cells carried a purged `trade_from` (#159: no trade_from at all; #237 before
+    the purge: a side trained on labels reaching past it). Those keys leave the done-set ONCE
+    and are re-minted under the purged rule; the spec is then written, so it never repeats. No
+    duplicate trial is charged: a purged rule already in the registry is not re-enqueued (no
+    search_count rise), the unpurged rows still QUEUED are marked `superseded` so they never
+    reach a judge beside their replacement, and the side's two trials ride one claim family per
+    (source, signal, transform, symbol), charged once however often it is minted."""
     side_fn = side_fn or learn_side
     prev = _read_json(EMITTED, {})
-    done = set(prev.get("keys") or [])
+    if prev.get("spec") == EMITTED_SPEC:
+        done = set(prev.get("keys") or [])
+        legacy = set(prev.get("legacy_pending") or []) - done
+    else:
+        done = set()
+        legacy = set(prev.get("keys") or [])
+    migrated = dict(prev.get("migration") or {}) if prev.get("spec") == EMITTED_SPEC else {}
+    migrated.setdefault("from_keys", len(legacy))
     raw_credit = prev.get("credited") or {}
     credited: dict[str, str] = (dict(raw_credit) if isinstance(raw_credit, Mapping)
                                 else {})  # a list from the pre-decay ledger carries no time
     made = created = skipped = unlearned = 0
+    remint_new = remint_same = superseded = 0
     errors: list[str] = []
     culture_rows: list[dict[str, Any]] = []
     for p in plans:
@@ -1122,38 +1213,66 @@ def emit_cells(plans: list[dict[str, Any]], *, deadline: float, dry_run: bool = 
                 if dry_run:
                     continue
                 side = int(learned["side"])
+                params = {"source": p["source"], "signal": p["signal"], "transform": tf,
+                          "threshold": thr, "side_when_high": side,
+                          "trade_from": str(learned["train_end"])}
+                family_id = side_claim_family(p["source"], p["signal"], tf, p["symbol"])
                 try:
+                    stale: list[str] = []
+                    if key in legacy:
+                        have, stale = _legacy_twin(params, p["symbol"], chart)
+                        if have:
+                            remint_same += 1
+                            superseded += _supersede(stale, "existing purged rule")
+                            done.add(key)
+                            fed += 1
+                            continue
                     from libs.moat.registry import enqueue_candidate
+                    hz = int(learned.get("purged_horizon_bars") or 24)
                     mech = (f"{p['signal']} of {p['source']} (public institutional footprint) "
                             f"conditions {p['symbol']}: side {side:+d} when high, the side "
-                            f"learned on data through {learned['train_end'][:10]} "
-                            f"({learned['train_events']} events); only later data judges it")
+                            f"learned on events whose {hz}-bar label closed by "
+                            f"{learned['train_end'][:10]} "
+                            f"({learned['train_events']} events); only later bars are judged")
                     cid, new = enqueue_candidate(
-                        family="exogenous_conditioner", symbol=p["symbol"],
-                        params={"source": p["source"], "signal": p["signal"],
-                                "transform": tf, "threshold": thr, "side_when_high": side},
+                        family="exogenous_conditioner", symbol=p["symbol"], params=params,
                         origin=LEG, mechanism=mech, chart=chart, horizon=chart,
                         source_id=p["source_id"], generator=LEG, department="information",
                         asset_class="", transformation="institutional_state"
                         if p["kind"] == "state" else "institutional_series",
                         required_data=[f"desks/mt5/data/lake/series/{p['source']}.csv"],
                         pit_status="STAMPED", causal_rationale=mech,
+                        # THE SIDE SEARCH IS CHARGED (audit of #237): two trials, one family.
+                        lineage={"claim_family": family_id, "breadth_unit": family_id,
+                                 "claim_selection_trials": SIDE_SELECTION_TRIALS,
+                                 "selection": "two-way side choice on the purged train span"},
                         falsifier=(f"the {tf} of {p['source']}.{p['signal']} beyond {thr:g} has "
                                    f"no measurable relation to {p['symbol']} at {chart} after "
                                    f"{learned['train_end'][:10]}"), **p["culture"])
                     created += int(bool(new))
+                    if key in legacy:
+                        remint_new += 1
+                        superseded += _supersede(stale, cid)
                     done.add(key)
                     fed += 1
                     culture_rows.append({"cell_id": cid, "source_id": p["source_id"],
                                          "source_ids": p["source_ids"], "inputs": p["inputs"],
-                                         "side_fit": learned, "origin": LEG, **p["culture"]})
+                                         "side_fit": learned, "claim_family": family_id,
+                                         "origin": LEG, **p["culture"]})
                 except Exception as exc:
                     errors.append(f"{key}: {type(exc).__name__}: {str(exc)[:60]}")
         if owed and fed == owed and not dry_run:
             _credit(credited, p["source_ids"])
+    for k, v in (("reminted", remint_new), ("already_purged", remint_same),
+                 ("superseded", superseded)):
+        migrated[k] = int(migrated.get(k) or 0) + v
+    pending = legacy - done                     # legacy keys this pass did not reach yet
+    migrated["pending"] = len(pending)
     if not dry_run:
         _write_json(EMITTED, {"at": now_utc().isoformat(timespec="seconds"),
-                              "keys": sorted(done), "credited": dict(sorted(credited.items()))})
+                              "spec": EMITTED_SPEC, "keys": sorted(done),
+                              "legacy_pending": sorted(pending), "migration": migrated,
+                              "credited": dict(sorted(credited.items()))})
         if culture_rows:
             CULTURE_LOG.parent.mkdir(parents=True, exist_ok=True)
             with CULTURE_LOG.open("a", encoding="utf-8") as fh:
@@ -1161,6 +1280,7 @@ def emit_cells(plans: list[dict[str, Any]], *, deadline: float, dry_run: bool = 
                     fh.write(json.dumps(c, ensure_ascii=False) + "\n")
     return {"cells_attempted": made, "cells_created": created, "already_enqueued": skipped,
             "side_not_learned": unlearned, "errors": errors[:5], "n_errors": len(errors),
+            "migration": migrated,
             "sources_planned": sorted({p["source_id"] for p in plans}),
             "sources_credited": dict(sorted(credited.items()))}
 
@@ -1244,6 +1364,34 @@ def frame_refreshed_at(r: Mapping[str, Any]) -> datetime | None:
     return datetime.fromtimestamp(max(times), tz=UTC) if times else None
 
 
+def was_fetched(r: Mapping[str, Any], fetch_state: Mapping[str, Any], *,
+                now: datetime | None = None) -> bool:
+    """True only when the row has been read RECENTLY and the latest read WORKED (audit of #237).
+
+    A row with an engine recipe needs its latest fetch to be outcome OK, to have landed rows, and
+    to be inside ACTIVE_WINDOW (30 days, the same window ACTIVE decays on). A frame left on disk
+    by a fetch that has since failed or gone stale is history, not a reading: counting it
+    resolved a broken source to a covered view (L1.28a). A row the engine holds no fetch state
+    for and owes no recipe -- read from another lane's frame (`lake_parquet`: that lane fetches)
+    -- needs that frame refreshed inside the same window. A declared row nobody fetched is
+    False."""
+    now = now or now_utc()
+    kind = str((r.get("fetch") or {}).get("kind") or "")
+    st = fetch_state.get(str(r["id"]))
+    if st or kind in RECIPES:
+        # The engine fetched it (or owes the fetch): its LATEST outcome is the only reading.
+        if not isinstance(st, Mapping) or str(st.get("outcome") or "") != "OK":
+            return False
+        try:
+            if int(st.get("rows") or 0) <= 0:
+                return False
+        except (TypeError, ValueError):
+            return False
+        return _fresh(st.get("at"), now)
+    refreshed = frame_refreshed_at(r)
+    return refreshed is not None and _fresh(refreshed, now)
+
+
 def row_status(r: Mapping[str, Any], fetch_state: Mapping[str, Any],
                watch_state: Mapping[str, Any], credited: Mapping[str, Any] | set[str],
                *, now: datetime | None = None) -> str:
@@ -1263,6 +1411,10 @@ def row_status(r: Mapping[str, Any], fetch_state: Mapping[str, Any],
                     "TESTED_NO_INFORMATION", "NOT_RELEVANT"):
         return declared
     return "DISCOVERED_NOT_INGESTED"
+
+
+def _as_ruling(v: Any) -> Any:
+    return dict(v) if isinstance(v, Mapping) else v
 
 
 def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | None = None,
@@ -1285,6 +1437,7 @@ def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | Non
                                         "BLOCKED_SUBSTITUTE", "WATCH", "NOT_PUBLISHED",
                                         "NOT_RELEVANT"))}
     status_of = {str(r["id"]): row_status(r, fs, ws, em) for r in rows}
+    fetched = {str(r["id"]): was_fetched(r, fs) for r in rows}
     grid: dict[str, dict[str, dict[str, Any]]] = {}
     roles: dict[str, dict[str, list[str]]] = {}
     for j in onto.coverage_jurisdictions():
@@ -1299,7 +1452,8 @@ def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | Non
                 if st == "WATCH":
                     st = "DISCOVERED_NOT_INGESTED"
             elif ruled:
-                st = str(ruled.get("status") if isinstance(ruled, Mapping) else ruled)
+                # A ruling closes its cell only on evidence; an uncited one is UNMEASURED.
+                st = onto.ruled_status(_as_ruling(ruled))
             elif j != "global" and cls in onto.GLOBAL_ONLY_CLASSES:
                 st = "NOT_RELEVANT"
             else:
@@ -1313,9 +1467,20 @@ def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | Non
     for j in grid.values():
         for c in j.values():
             counts[c["status"]] = counts.get(c["status"], 0) + 1
+    def _role_closed(key: str) -> bool:
+        r = role_rul.get(key)
+        return bool(r) and onto.ruled_status(_as_ruling(r)) in onto.CLOSED_STATUSES
+
     queue = []
     for j, cells in grid.items():
         for cls, c in cells.items():
+            if c["status"] == onto.UNMEASURED and not c["sources"]:
+                why = onto.ruling_defect(_as_ruling(rul.get(f"{j}|{cls}")))
+                queue.append({"jurisdiction": j, "source_class": cls, "ruling_defect": why,
+                              "ask": f"the {j} x {cls} ruling stands UNMEASURED ({why}): cite "
+                                     "the page or instrument it rests on, or name its "
+                                     "substitute, else search the class again"})
+                continue
             if c["status"] != onto.UNSEARCHED:
                 continue
             peers = [pid for jj, cc in grid.items() if jj != j for pid in cc[cls]["sources"]][:3]
@@ -1328,23 +1493,35 @@ def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | Non
         if j == "global" or j in onto.REGION_PACKS:
             continue          # region packs owe classes, not a national institution set
         for role, ids in rr.items():
-            if not ids and not role_rul.get(f"{j}|{role}"):
+            if not ids and not _role_closed(f"{j}|{role}"):
+                why = (onto.ruling_defect(_as_ruling(role_rul[f"{j}|{role}"]))
+                       if role_rul.get(f"{j}|{role}") else "")
                 queue.append({"jurisdiction": j, "role": role,
+                              **({"ruling_defect": why} if why else {}),
                               "ask": f"name {j}'s {role.replace('_', ' ')} and its public "
-                                     "datasets, or rule that it publishes none"})
+                                     "datasets, or rule that it publishes none"
+                                     + (f" (the standing ruling is UNMEASURED: {why})"
+                                        if why else "")})
     tri = {}
     for com, views in onto.COMMODITY_TRIANGULATION.items():
         tri[com] = {v: {i: status_of.get(i, "NOT_IN_ATLAS") for i in ids}
                     for v, ids in views.items()}
+        # A view is COVERED only by a row read RECENTLY and SUCCESSFULLY (`was_fetched`: latest
+        # fetch OK with rows, inside ACTIVE_WINDOW). DISCOVERED_NOT_INGESTED is a row nobody has
+        # read; a stale or failing one is history. Counting either resolved an absent reading to
+        # a covered view (L1.28a).
         tri[com]["views_covered"] = sum(
-            1 for v, ids in views.items()
-            if any(status_of.get(i) in ("ACTIVE", "DISCOVERED_NOT_INGESTED") for i in ids))
+            1 for v, ids in views.items() if any(fetched.get(i) for i in ids))
     return {"grid": grid, "status_counts": counts, "roles": roles,
             "role_gaps": {j: sorted(k for k, v in rr.items()
-                                    if not v and not role_rul.get(f"{j}|{k}"))
+                                    if not v and not _role_closed(f"{j}|{k}"))
                           for j, rr in roles.items()},
-            "role_rulings": {k: (v.get("status") if isinstance(v, Mapping) else str(v))
-                             for k, v in role_rul.items()},
+            "role_rulings": {k: onto.ruled_status(_as_ruling(v)) for k, v in role_rul.items()},
+            "rulings_unmeasured": {
+                "cells": sum(1 for v in rul.values()
+                             if onto.ruled_status(_as_ruling(v)) == onto.UNMEASURED),
+                "roles": sum(1 for v in role_rul.values()
+                             if onto.ruled_status(_as_ruling(v)) == onto.UNMEASURED)},
             "row_status": status_of, "search_queue": queue, "triangulation": tri,
             "n_cells": sum(len(v) for v in grid.values())}
 
@@ -1471,6 +1648,7 @@ def run(budget_s: float = 300.0, *, offline: bool = False, dry_run: bool = False
                                         and r["id"] not in urls),
                        "broken": broken},
         "role_rulings_n": len(cov["role_rulings"]),
+        "rulings_unmeasured": cov["rulings_unmeasured"],
         "search_queue_by_class": _count_by(cov["search_queue"], "source_class"),
         "search_queue_by_role": _count_by(cov["search_queue"], "role"),
         "search_queue_head": cov["search_queue"][:40],

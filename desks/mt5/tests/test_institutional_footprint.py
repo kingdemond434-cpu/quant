@@ -78,10 +78,14 @@ def test_every_state_names_known_actors_and_tradable_assets() -> None:
         assert st["evidence"] and all(sign in (1, -1) and w > 0 for _k, sign, w in st["evidence"])
 
 
-def test_seven_statuses_and_unsearched_is_not_one_of_them() -> None:
-    assert len(onto.COVERAGE_STATUSES) == 7
+def test_eight_statuses_and_unsearched_is_not_one_of_them() -> None:
+    # The principal's seven plus UNMEASURED, which the grid really publishes (an uncited ruling).
+    assert len(onto.COVERAGE_STATUSES) == 8
+    assert onto.UNMEASURED in onto.COVERAGE_STATUSES
+    assert onto.UNMEASURED not in onto.CLOSED_STATUSES          # open, asked for, never clean
     assert onto.UNSEARCHED not in onto.COVERAGE_STATUSES
     assert set(onto.COVERAGE_STATUSES) >= onto.CLOSED_STATUSES
+    assert onto.as_dict()["coverage_statuses"] == onto.COVERAGE_STATUSES
 
 
 # ------------------------------------------------------------------ states
@@ -423,8 +427,9 @@ def test_a_role_ruling_closes_the_role_gap(lake: Path) -> None:
     rows = ifp.load_roster()
     open_ = ifp.coverage(rows, rulings={})["role_gaps"]
     j, gaps = next((j, g) for j, g in open_.items() if g and j in onto.JURISDICTION_CODES)
-    ruled = {"cells": {}, "roles": {f"{j}|{gaps[0]}": {"status": "NOT_PUBLISHED",
-                                                       "reason": "none"}}}
+    ruled = {"cells": {}, "roles": {f"{j}|{gaps[0]}": {
+        "status": "NOT_PUBLISHED", "reason": "none",
+        "evidence": "https://www.example.gov/statistics"}}}
     cov = ifp.coverage(rows, rulings=ruled)
     assert gaps[0] not in cov["role_gaps"][j]
     assert not any(q.get("jurisdiction") == j and q.get("role") == gaps[0]
@@ -439,3 +444,342 @@ def test_an_atlas_url_is_verified_on_the_box_and_a_dead_one_is_re_asked(lake: Pa
     assert st[rows[0]["id"]]["status"] == "BROKEN"
     st = ifp.verify_urls(rows, lambda url: (200, b"ok", ""), deadline=1e18)
     assert st[rows[0]["id"]]["status"] == "VERIFIED"
+
+
+# ------------------------------------------------------------------ audit follow-ups (#159 v3)
+def test_the_learned_side_is_judged_only_after_the_span_that_chose_it(
+        lake: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The side is chosen on the first TRAIN_FRACTION; every gate must then score only bars the
+    choice never saw. The cell carries `train_end` as `trade_from`, and the family honours it."""
+    import inspect
+
+    from mt5desk.family_exogenous_conditioner import family_exogenous_conditioner
+    calls: list[dict[str, Any]] = []
+
+    def fake_enqueue(**kw: Any) -> tuple[str, bool]:
+        calls.append(kw)
+        return f"cand{len(calls)}", True
+    import libs.moat.registry as reg
+    monkeypatch.setattr(reg, "enqueue_candidate", fake_enqueue)
+    plans = [{"source": "s", "signal": "p_x", "symbol": "XAUUSD", "source_id": "a",
+              "source_ids": ["a"], "inputs": [], "kind": "state", "culture": {}}]
+    cut = "2024-03-01T00:00:00+00:00"
+    learned = {"side": 1, "train_end": cut, "train_events": 40, "train_edge": 0.001}
+    ifp.emit_cells(plans, deadline=1e18, side_fn=lambda *a, **k: learned)
+    assert calls and all(c["params"]["trade_from"] == cut for c in calls)
+    accepted = set(inspect.signature(family_exogenous_conditioner).parameters)
+    assert all(set(c["params"]) <= accepted for c in calls)       # the gauntlet can call it
+
+    # The family: an always-extreme conditioner fires on every bar, so the cut is the only filter.
+    idx = pd.date_range("2024-01-01", periods=24 * 120, freq="h", tz="UTC")
+    root = tmp_path / "series_fam"
+    root.mkdir()
+    days = pd.date_range("2023-06-01", "2024-05-01", freq="D", tz="UTC")
+    vals = np.where(np.arange(len(days)) % 2 == 0, 1.0, 1.1)
+    pd.DataFrame({"available_time": days.astype(str), "v": vals}).to_csv(
+        root / "s.csv", index=False)
+    px = 100 + np.cumsum(np.full(len(idx), 0.01))
+    bars = pd.DataFrame({"open": px, "high": px + 0.5, "low": px - 0.5, "close": px}, index=idx)
+    every = family_exogenous_conditioner(bars, source="s", signal="v", transform="delta",
+                                         threshold=0.05, series_root=root)
+    later = family_exogenous_conditioner(bars, source="s", signal="v", transform="delta",
+                                         threshold=0.05, series_root=root, trade_from=cut)
+    assert any(s.time <= pd.Timestamp(cut) for s in every)
+    assert later and all(s.time > pd.Timestamp(cut) for s in later)
+    assert len(later) < len(every)
+    # An unreadable cut refuses rather than judging the training span.
+    assert family_exogenous_conditioner(bars, source="s", signal="v", transform="delta",
+                                        threshold=0.05, series_root=root,
+                                        trade_from="not a date") == []
+
+
+def test_triangulation_counts_only_views_that_were_fetched(lake: Path) -> None:
+    """A DISCOVERED_NOT_INGESTED row nobody has read covers no view (L1.28a)."""
+    com, views = next(iter(onto.COMMODITY_TRIANGULATION.items()))
+    ids = [i for v in views.values() for i in v]
+    rows = [{"id": i, "jurisdiction": "global", "source_class": "physical_inventory",
+             "declared_status": "DISCOVERED_NOT_INGESTED"} for i in ids]
+    cov = ifp.coverage(rows, rulings={})
+    assert cov["triangulation"][com]["views_covered"] == 0
+    first_ids = next(iter(views.values()))
+    at = ifp.now_utc().isoformat(timespec="seconds")
+    fs = {first_ids[0]: {"at": at, "rows": 12, "outcome": "OK"}}
+    cov = ifp.coverage(rows, fetch_state=fs, rulings={})
+    assert cov["triangulation"][com]["views_covered"] == sum(
+        1 for v in views.values() if first_ids[0] in v) >= 1
+    # A fetch that landed nothing is not a reading either.
+    fs = {first_ids[0]: {"at": at, "rows": 0, "outcome": "EMPTY"}}
+    assert ifp.coverage(rows, fetch_state=fs, rulings={})["triangulation"][com][
+        "views_covered"] == 0
+
+
+def test_an_uncited_ruling_leaves_its_class_unmeasured(lake: Path) -> None:
+    """A ruling that cites nothing, or a BLOCKED_SUBSTITUTE that names no substitute, is an absent
+    reading: the cell stays open as UNMEASURED and is asked for, never closed."""
+    rows = ifp.load_roster()
+    base = ifp.coverage(rows, rulings={})
+    j, cls = next((j, c) for j, cells in base["grid"].items() if j in onto.JURISDICTION_CODES
+                  for c, v in cells.items() if v["status"] == onto.UNSEARCHED)
+    for bad in ({"status": "NOT_PUBLISHED", "reason": "r", "evidence": ""},
+                {"status": "NOT_PUBLISHED", "reason": "r", "evidence": "well-known"},
+                {"status": "NOT_PUBLISHED", "reason": "r",
+                 "evidence": "well-known; not re-fetched (sweep network blocked 2026-10-01)"},
+                {"status": "BLOCKED_SUBSTITUTE", "reason": "r", "substitute": "",
+                 "evidence": "https://example.org/terms"},
+                "NOT_PUBLISHED"):
+        cov = ifp.coverage(rows, rulings={"cells": {f"{j}|{cls}": bad}, "roles": {}})
+        assert cov["grid"][j][cls]["status"] == onto.UNMEASURED, bad
+        assert onto.UNMEASURED not in onto.CLOSED_STATUSES
+        assert any(q.get("jurisdiction") == j and q.get("source_class") == cls
+                   and q.get("ruling_defect") for q in cov["search_queue"]), bad
+    good = {"status": "BLOCKED_SUBSTITUTE", "reason": "r", "substitute": "institutional.x.y.z",
+            "evidence": "https://example.org/terms"}
+    cov = ifp.coverage(rows, rulings={"cells": {f"{j}|{cls}": good}, "roles": {}})
+    assert cov["grid"][j][cls]["status"] == "BLOCKED_SUBSTITUTE"
+    assert onto.evidence_cited("well-known: FCA PS21/20 and PS24/14")
+
+
+def test_an_uncited_role_ruling_leaves_the_role_gap_open(lake: Path) -> None:
+    rows = ifp.load_roster()
+    open_ = ifp.coverage(rows, rulings={})["role_gaps"]
+    j, gaps = next((j, g) for j, g in open_.items() if g and j in onto.JURISDICTION_CODES)
+    ruled = {"cells": {}, "roles": {f"{j}|{gaps[0]}": {"status": "NOT_PUBLISHED",
+                                                       "reason": "none", "evidence": ""}}}
+    cov = ifp.coverage(rows, rulings=ruled)
+    assert gaps[0] in cov["role_gaps"][j]
+    assert cov["role_rulings"][f"{j}|{gaps[0]}"] == onto.UNMEASURED
+    assert cov["rulings_unmeasured"]["roles"] == 1
+
+
+def test_the_committed_rulings_close_only_on_evidence() -> None:
+    """Every committed ruling that closes a class carries a citation, and every substitute status
+    names its substitute -- or it reads UNMEASURED. Pins the rule to the real file."""
+    doc = json.loads((DESK / "data" / "institutional_coverage_rulings.json").read_text("utf-8"))
+    for sec in ("cells", "roles"):
+        for key, r in doc[sec].items():
+            st = onto.ruled_status(r)
+            if st in onto.CLOSED_STATUSES:
+                assert onto.evidence_cited(r.get("evidence")), key
+                if st in onto.SUBSTITUTE_STATUSES:
+                    assert str(r.get("substitute") or "").strip(), key
+
+
+# ------------------------------------------------------------------ audit follow-ups (#237 HOLD)
+def _paths_split_at_train_end(jump: float) -> tuple[Any, Any, Any]:
+    """A conditioner that is always high and a price that drifts up gently through the training
+    span, then JUMPS by `jump` (log) on the first bar after it."""
+    n = 4000
+    idx = pd.date_range("2024-01-01", periods=n, freq="h", tz="UTC")
+    m = pd.Series(2.0, index=idx)
+    steps = np.full(n, 1e-4)
+    # joint drops the last 24 bars (no label); the cut is the midpoint of what remains.
+    first_after = int(np.searchsorted(idx, idx[0] + (idx[n - 25] - idx[0]) * ifp.TRAIN_FRACTION,
+                                      side="right"))
+    steps[first_after] = jump
+    return pd.Series(100 * np.exp(np.cumsum(steps)), index=idx), m, idx
+
+
+def test_two_paths_identical_through_train_end_choose_the_same_side() -> None:
+    """THE AUDIT'S CASE. Two price paths identical through train_end and different only after it
+    must yield the same side: no bar the judge scores (everything after train_end, which the cell
+    carries as trade_from) may reach the choice. Unpurged, the last 24 training events read the
+    post-cut jump through their 24-bar labels and the two paths chose OPPOSITE sides."""
+    up, m, idx = _paths_split_at_train_end(+0.5)
+    down, _, _ = _paths_split_at_train_end(-0.5)
+    a = ifp.learn_side("s", "c", "level_z", 1.0, "XAUUSD", bars=pd.DataFrame({"close": up}),
+                       cond=m)
+    b = ifp.learn_side("s", "c", "level_z", 1.0, "XAUUSD", bars=pd.DataFrame({"close": down}),
+                       cond=m)
+    assert a is not None and b is not None
+    cut = pd.Timestamp(a["train_end"])
+    assert a["train_end"] == b["train_end"]
+    assert (up[up.index <= cut] == down[down.index <= cut]).all()      # identical through cut
+    assert not (up[up.index > cut] == down[down.index > cut]).all()     # and not after it
+    assert a["side"] == b["side"] == 1
+    assert a["train_events"] == b["train_events"]
+    # Every training label closed by train_end: the event count is exactly the bars whose
+    # close 24 bars later is stamped at or before the cut.
+    pos = np.arange(len(idx) - 24)
+    assert a["train_events"] == int((idx[pos + 24] <= cut).sum())
+    assert a["purged_horizon_bars"] == 24
+    # The test bites: the unpurged estimator (events up to the cut, labels running past it)
+    # really does flip between the two paths.
+    def unpurged(close: Any) -> int:
+        fwd = np.log(close.shift(-24) / close).dropna()
+        return 1 if float(fwd[fwd.index <= cut].mean()) >= 0 else -1
+    assert unpurged(up) != unpurged(down)
+
+
+def test_the_cell_carries_its_side_search_as_two_selection_trials(
+        lake: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[dict[str, Any]] = []
+
+    def fake_enqueue(**kw: Any) -> tuple[str, bool]:
+        calls.append(kw)
+        return f"cand{len(calls)}", True
+    import libs.moat.registry as reg
+    monkeypatch.setattr(reg, "enqueue_candidate", fake_enqueue)
+    plans = [{"source": "s", "signal": "p_x", "symbol": "XAUUSD", "source_id": "a",
+              "source_ids": ["a"], "inputs": [], "kind": "state", "culture": {}}]
+    learned = {"side": 1, "train_end": "2024-03-01T00:00:00+00:00", "train_events": 40,
+               "train_edge": 0.001}
+    ifp.emit_cells(plans, deadline=1e18, side_fn=lambda *a, **k: learned)
+    assert calls and all(c["lineage"]["claim_selection_trials"] == 2 for c in calls)
+    fam_of = {(c["params"]["transform"], c["chart"]): c["lineage"]["claim_family"] for c in calls}
+    for tf, _thr in ifp.TRANSFORMS_STATE:
+        # One side choice per (source, signal, transform, symbol): every chart shares its family.
+        assert len({f for (t, _c), f in fam_of.items() if t == tf}) == 1
+    assert len(set(fam_of.values())) == len(ifp.TRANSFORMS_STATE)
+
+
+@pytest.fixture()
+def registry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
+    import libs.moat.registry as reg
+    monkeypatch.setattr(reg, "BACKUP", tmp_path / "no_backup.sqlite")
+    reg.set_path(tmp_path / "alpha_registry.sqlite")
+    try:
+        yield reg
+    finally:
+        reg.set_path(None)
+
+
+def _plans() -> list[dict[str, Any]]:
+    return [{"source": "s", "signal": "p_x", "symbol": "XAUUSD", "source_id": "a",
+             "source_ids": ["a"], "inputs": [], "kind": "state", "culture": {}}]
+
+
+def test_cells_minted_without_trade_from_are_reminted_once_and_charged_once(
+        lake: Path, registry: Any) -> None:
+    """#159 without #237 enqueued cells with no trade_from and wrote a ledger with no spec. The
+    first pass under the purge re-mints each such key ONCE with a purged trade_from, supersedes
+    the unpurged row still queued (so the judge never sees both), and writes the spec so the
+    migration never repeats. A key whose purged rule is already in the registry is not enqueued
+    again -- not even as a search_count bump."""
+    tf0, thr0 = ifp.TRANSFORMS_STATE[0]
+    keys = [f"s|p_x|{tf}|XAUUSD|{ch}" for tf, _t in ifp.TRANSFORMS_STATE for ch in ifp.CHARTS]
+    legacy_ids = {}
+    for tf, thr in ifp.TRANSFORMS_STATE:
+        for ch in ifp.CHARTS:
+            cid, _ = registry.enqueue_candidate(
+                family="exogenous_conditioner", symbol="XAUUSD",
+                params={"source": "s", "signal": "p_x", "transform": tf, "threshold": thr,
+                        "side_when_high": -1},
+                origin=ifp.LEG, mechanism="legacy", chart=ch, horizon=ch)
+            legacy_ids[(tf, ch)] = cid
+    learned = {"side": 1, "train_end": "2024-03-01T00:00:00+00:00", "train_events": 40,
+               "train_edge": 0.001, "purged_horizon_bars": 24}
+    # One key's purged rule is already in the registry (minted by #237 before this pass).
+    ch0 = ifp.CHARTS[0]
+    have_id, _ = registry.enqueue_candidate(
+        family="exogenous_conditioner", symbol="XAUUSD",
+        params={"source": "s", "signal": "p_x", "transform": tf0, "threshold": thr0,
+                "side_when_high": 1, "trade_from": learned["train_end"]},
+        origin=ifp.LEG, mechanism="237", chart=ch0, horizon=ch0)
+    ifp.EMITTED.parent.mkdir(parents=True, exist_ok=True)
+    ifp.EMITTED.write_text(json.dumps({"keys": keys, "credited": {}}), "utf-8")
+
+    out = ifp.emit_cells(_plans(), deadline=1e18, side_fn=lambda *a, **k: learned)
+    mig = out["migration"]
+    assert mig["from_keys"] == len(keys)
+    assert mig["already_purged"] == 1 and mig["reminted"] == len(keys) - 1
+    assert mig["superseded"] == len(keys) and mig["pending"] == 0
+    c = registry.connect()
+    try:
+        rows = [dict(r) for r in c.execute(
+            "SELECT id, status, params_json, search_count, lineage_json FROM research_candidates")]
+    finally:
+        c.close()
+    by_id = {r["id"]: r for r in rows}
+    assert all(by_id[i]["status"] == "superseded" for i in legacy_ids.values())
+    live = [r for r in rows if r["status"] == "queued"]
+    assert len(live) == len(keys)                              # one bet per key, never two
+    assert all(json.loads(r["params_json"])["trade_from"] == learned["train_end"] for r in live)
+    assert by_id[have_id]["search_count"] == 1                 # not re-enqueued, not re-searched
+    doc = json.loads(ifp.EMITTED.read_text("utf-8"))
+    assert doc["spec"] == ifp.EMITTED_SPEC and sorted(doc["keys"]) == sorted(keys)
+    # ONCE: the next pass re-mints nothing and charges nothing.
+    again = ifp.emit_cells(_plans(), deadline=1e18, side_fn=lambda *a, **k: learned)
+    assert again["cells_attempted"] == 0 and again["cells_created"] == 0
+    c = registry.connect()
+    try:
+        assert c.execute("SELECT COUNT(*) FROM research_candidates").fetchone()[0] == len(rows)
+    finally:
+        c.close()
+
+
+def test_the_side_search_charge_lands_in_the_trial_ledger(
+        lake: Path, registry: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """END TO END: emit_cells -> registry lineage_json -> the moat exchange's donation row ->
+    miner_candidate_compiler's claim stamp -> libs.research.trial_ledger. The two-way side choice
+    arrives as claim_selection_trials = 2 and is charged ONCE per (source, signal, transform,
+    symbol) family, on top of the family's own tests."""
+    from libs.research import trial_ledger as tl
+    from research import miner_candidate_compiler as mcc
+    from research import moat_candidate_compiler as moat
+    from research import proposer_common as pc
+    learned = {"side": 1, "train_end": "2024-03-01T00:00:00+00:00", "train_events": 40,
+               "train_edge": 0.001, "purged_horizon_bars": 24}
+    ifp.emit_cells(_plans(), deadline=1e18, side_fn=lambda *a, **k: learned)
+    donated: list[dict[str, Any]] = []
+    monkeypatch.setattr(moat, "departments", lambda: ("information",))
+    def fake_donate(src: str, cands: list[dict[str, Any]], n: int) -> None:
+        donated.extend(cands)
+    monkeypatch.setattr(pc, "donate", fake_donate)
+    monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": len(donated)})
+    moat.claim_and_donate(registry.connect(), per_department=1000)
+    n_cells = len(ifp.TRANSFORMS_STATE) * len(ifp.CHARTS)
+    assert len(donated) == n_cells
+    assert all(d["claim_selection_trials"] == 2 and d["claim_family"] for d in donated)
+    compiled = []
+    for d in donated:
+        cands, why = mcc.compile_row(moat.SOURCE, d, {"XAUUSD"})
+        assert why == "EXACT_RECIPE", why
+        compiled.extend(cands)
+    assert compiled and all(c["claim_selection_trials"] == 2 for c in compiled)
+    census = tl.effective_independent_tests(compiled)
+    fams = {ifp.side_claim_family("s", "p_x", tf, "XAUUSD") for tf, _t in ifp.TRANSFORMS_STATE}
+    assert set(census.families) == fams
+    for f in fams:
+        charge = census.families[f]
+        assert charge.selection_trials == 2                      # charged once, not per chart
+        assert charge.n_nominal == len(ifp.CHARTS) + 2
+    assert census.n_nominal == n_cells + 2 * len(fams)
+
+
+def test_a_view_is_fetched_only_while_its_latest_fetch_is_ok_and_fresh(lake: Path) -> None:
+    from datetime import timedelta
+    now = ifp.now_utc()
+    row = {"id": "institutional.us.x.y", "fetch": {"kind": "fred_csv"}}
+    fresh = now.isoformat(timespec="seconds")
+    stale = (now - timedelta(days=31)).isoformat(timespec="seconds")
+    assert ifp.was_fetched(row, {row["id"]: {"at": fresh, "rows": 9, "outcome": "OK"}})
+    assert not ifp.was_fetched(row, {row["id"]: {"at": stale, "rows": 9, "outcome": "OK"}})
+    assert not ifp.was_fetched(row, {row["id"]: {"at": fresh, "rows": 0, "outcome": "EMPTY"}})
+    # A frame on disk from an earlier fetch does not survive a failing latest fetch.
+    ifp.write_frame(row["id"], pd.DataFrame({"event_time": ["2026-09-01"], "v": [1.0]}),
+                    lag_hours=24)
+    assert not ifp.was_fetched(row, {row["id"]: {"at": fresh, "rows": 0,
+                                                 "outcome": "ERROR HTTPError: 503"}})
+    assert not ifp.was_fetched(row, {})                      # a recipe nobody ran
+    # A row the engine holds no state for (another lane fetches it) needs a fresh frame.
+    other = {"id": "institutional.us.x.z"}
+    assert not ifp.was_fetched(other, {})
+    ifp.write_frame(other["id"], pd.DataFrame({"event_time": ["2026-09-01"], "v": [1.0]}),
+                    lag_hours=24)
+    assert ifp.was_fetched(other, {})
+
+
+def test_every_row_on_a_shared_url_says_so() -> None:
+    """A URL that is the atlas page of more than one row is a hub, not a dataset page: every such
+    row carries url_scope shared_portal and the reason, and no row with its own URL does. An
+    UNVERIFIED page claims no dataset confidence."""
+    from collections import Counter
+    rows = ifp.load_roster()
+    n = Counter(str(r["url"]) for r in rows)
+    for r in rows:
+        shared = n[str(r["url"])] > 1
+        assert (r.get("url_scope") == "shared_portal") == shared, r["id"]
+        if shared:
+            assert str(r.get("url_scope_reason") or "").strip(), r["id"]
+        if str(r.get("evidence") or "").startswith("UNVERIFIED"):
+            assert r.get("url_confidence") != "dataset", r["id"]
