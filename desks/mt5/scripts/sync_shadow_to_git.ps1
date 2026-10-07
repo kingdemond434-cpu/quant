@@ -596,6 +596,24 @@ $reportPaths = @(
     # THE UNIVERSAL SENSOR LEDGER'S DIGEST (2026-10-06): its day shards are box-local and
     # gitignored, so this hourly summary (leg sensor_ledger) is what readers off the box get.
     "desks/mt5/reports/SENSOR_LEDGER.json",
+    "desks/mt5/reports/WORLD_SENSOR_INTAKE.json",
+    "desks/mt5/reports/MARKET_STATE.json",
+    "desks/mt5/reports/PHYSICAL_STATE.json",
+    "desks/mt5/reports/VOL_CONDITIONER.json",
+    "desks/mt5/reports/SENSOR_CONTRACTS.json",
+    "desks/mt5/reports/OPTION_CHAINS.json",
+    "desks/mt5/reports/PRICED_IN.json",
+    "desks/mt5/reports/NAME_SENTIMENT.json",
+    "desks/mt5/reports/MODEL_DISAGREEMENT.json",
+    "desks/mt5/reports/REGIME_PROBABILITIES.json",
+    "desks/mt5/reports/NEWS_HAWKES.json",
+    "desks/mt5/reports/LATENT_STATES.json",
+    "desks/mt5/reports/IMPLIED_MOVE.json",
+    "desks/mt5/reports/OWN_RISK_INDEX.json",
+    "desks/mt5/reports/TAIWAN_OPTIONS.json",
+    "desks/mt5/reports/PIT_AUDIT.json",
+    "desks/mt5/reports/alfred_vintages.json",
+    "desks/mt5/reports/WORLD_CAUSAL_GRAPH.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable

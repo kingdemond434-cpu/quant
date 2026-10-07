@@ -268,3 +268,22 @@ def test_the_ground_only_names_instruments_this_desk_could_trade() -> None:
         assert g.what and g.vol_ticker.startswith("^")
         for tenor in g.term:
             assert tenor in va.TENOR_DAYS, f"{tenor} has no declared tenor"
+
+
+def test_a_held_source_is_never_fetched(monkeypatch) -> None:
+    """Coordinator, 2026-10-07: terms fail closed, so a held index source is not even asked."""
+
+    src = va.YahooVolSource(admit=lambda s: False)
+
+    def boom(*_a, **_k):
+        raise AssertionError("fetched a held source")
+
+    monkeypatch.setattr(src, "_chart", boom)
+    assert src.series("^VIX") is None
+    assert src.held["^VIX"] == "yahoo:cboe_indices fred:VIXCLS"
+    assert va.terms_admit("yahoo:cboe_indices") is False
+    assert va.terms_admit("fred:VIXCLS") is False
+    calls: list[str] = []
+    ok = va.YahooVolSource(admit=lambda s: True)
+    monkeypatch.setattr(ok, "_chart", lambda t, r: calls.append(r) or {"2026-01-02": 20.0})
+    assert ok.series("^VIX") == {"2026-01-02": 20.0} and calls

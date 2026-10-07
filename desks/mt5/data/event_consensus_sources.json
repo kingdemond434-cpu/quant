@@ -10,18 +10,19 @@
       "machine_use_allowed": true,
       "licence": "public JSON feed of the Forex Factory calendar; numbers are read and tested, the feed itself is not redistributed",
       "refetch_s": 21600,
-      "fields": {"release_keys": ["country", "title"], "date": "date", "actual": "actual",
-                 "consensus": "forecast", "provides": "consensus"}
+      "fields": {"release_keys": ["country", "title"], "date": "date",
+                 "consensus": "forecast", "provides": "consensus"},
+      "actual_note": "QG-OT-003 (2026-10-06): the feed never carries the released actual (1,380 captured vintage rows, 0 with an actual); the actual half is ALFRED's first print (macro/release_vintages.py)"
     },
     {
       "id": "ff_calendar_nextweek",
       "name": "Forex Factory weekly calendar feed (next week)",
-      "url": "https://nfs.faireconomy.media/ff_calendar_nextweek.json",
+      "retired": {"at": "2026-10-06", "card": "QG-OT-003", "url_was": "https://nfs.faireconomy.media/ff_calendar_nextweek.json", "evidence": "the box's own fetch: 'HTTPError: 404 Client Error: Not Found for url: https://nfs.faireconomy.media/ff_calendar_nextweek.json' (data/intelligence/forexfactory/discoveries_20260910_0801.json); the export exists only as a this-week snapshot"},
       "access": "public",
       "machine_use_allowed": true,
       "licence": "public JSON feed of the Forex Factory calendar; numbers are read and tested, the feed itself is not redistributed",
       "refetch_s": 43200,
-      "fields": {"release_keys": ["country", "title"], "date": "date", "actual": "actual",
+      "fields": {"release_keys": ["country", "title"], "date": "date",
                  "consensus": "forecast", "provides": "consensus"}
     },
     {
