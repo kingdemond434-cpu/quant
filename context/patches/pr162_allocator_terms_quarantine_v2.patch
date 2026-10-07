@@ -1,0 +1,127 @@
+diff --git a/desks/mt5/research/pf_allocator.py b/desks/mt5/research/pf_allocator.py
+index 898bbb0b4..64ed9538d 100644
+--- a/desks/mt5/research/pf_allocator.py
++++ b/desks/mt5/research/pf_allocator.py
+@@ -319,6 +319,34 @@ def build_evidence(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, dict
+     return daily, forward
+ 
+ 
++#: The certificates PR #162 holds (terms_fence.QUARANTINED_CERTIFICATES), restated so a fence
++#: that does not load fails closed on THESE alone: (symbol, family, window, params).
++TERMS_QUARANTINE_FALLBACK: tuple[tuple[str, str, str, dict[str, float]], ...] = tuple(
++    ("USDJPY", "session_range_breakout", "asia", p) for p in (
++        {}, {"rr": 1.5, "wait_bars": 12}, {"rr": 2.0, "wait_bars": 12},
++        {"rr": 2.5, "wait_bars": 12}))
++
++
++def _terms_fallback(sv: dict[str, Any]) -> str | None:
++    """The fail-closed refusal for a survivor on the fallback list, else None."""
++    def _norm(p: Any) -> dict[str, float]:
++        out: dict[str, float] = {}
++        for k, v in (p.items() if isinstance(p, dict) else []):
++            if k == "timeframe":
++                continue
++            try:
++                out[str(k)] = float(v)
++            except (TypeError, ValueError):
++                continue
++        return out
++    key = (str(sv.get("symbol") or "").upper(), str(sv.get("family") or ""),
++           str(sv.get("window") or ""), _norm(sv.get("params")))
++    if any(key[:3] == q[:3] and key[3] == q[3] for q in TERMS_QUARANTINE_FALLBACK):
++        return ("DOOR_ERROR: terms fence did not load; a known Reddit-lineage certificate is held "
++                "(fail closed on the quarantined keys only)")
++    return None
++
++
+ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
+     """Daily-R series for every sleeve that has cleared the ten gates, replayed the gauntlet's way.
+ 
+@@ -357,8 +385,31 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
+     out: dict[str, pd.Series] = {}
+     survivors = load_survivors()
+     acct["certificates"] = len(survivors)
++    # THE TERMS QUARANTINE (PR #162, libs/data/terms_fence.py; apply after #162): a certificate
++    # judged under a fenced lineage is not priced, so it can take no capital until it is
++    # re-certified. Checked BEFORE the (symbol, family, window) dedupe so a clean certificate of
++    # the same sleeve still prices. A fence that does not load FAILS CLOSED ON THE QUARANTINED
++    # KEYS ONLY (`_terms_fallback`); every other certificate is priced. What it holds is billed by
++    # the `terms_lineage_quarantine` rail (libs/portfolio/rails.py; missed_growth).
++    try:
++        from libs.data import terms_fence as _tf
++        _tq_of = lambda sv: _tf.quarantined_certificate(  # noqa: E731
++            spec=sv, gated_at=sv.get("gated_at"))
++        acct["terms_fence"] = "libs.data.terms_fence"
++    except Exception as exc:
++        _tq_of = _terms_fallback
++        acct["terms_fence"] = f"fallback list ({type(exc).__name__}: {exc})"
++    acct["terms_quarantined"] = {}
+     for sv in survivors:
+         sym, fam, win = sv.get("symbol", ""), sv.get("family", ""), sv.get("window", "")
++        try:
++            _tq = _tq_of(sv)
++        except Exception as exc:
++            _tq = _terms_fallback(sv) or None
++            acct["refused"].setdefault("terms_fence", f"{type(exc).__name__}: {exc}")
++        if _tq:
++            acct["terms_quarantined"][f"{sym}_{fam}_{win}:{sv.get('params')}"] = _tq
++            continue
+         if not sym or not fam or (sym, fam, win) in seen:
+             continue
+         seen.add((sym, fam, win))
+diff --git a/desks/mt5/tests/test_allocator_terms_quarantine.py b/desks/mt5/tests/test_allocator_terms_quarantine.py
+new file mode 100644
+index 000000000..09c680876
+--- /dev/null
++++ b/desks/mt5/tests/test_allocator_terms_quarantine.py
+@@ -0,0 +1,50 @@
++"""The allocator's terms door (PR #162 audit v2): a fence that does not load holds the
++quarantined certificates ONLY; every other certificate is still priced."""
++from __future__ import annotations
++
++import sys
++import types
++from pathlib import Path
++
++import pandas as pd
++import pytest
++
++_DESK = Path(__file__).resolve().parents[1]
++for _p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
++
++pfa = pytest.importorskip("pf_allocator")
++
++
++def test_an_unloadable_fence_prices_everything_but_the_quarantined(monkeypatch):
++    survivors = [
++        {"symbol": "USDJPY", "family": "session_range_breakout", "window": "asia",
++         "params": {"rr": 2.5, "wait_bars": 12}},
++        {"symbol": "EURZAR", "family": "overnight_gap_decay", "window": "asia", "params": {}},
++        {"symbol": "XAUUSD", "family": "session_range_breakout", "window": "asia",
++         "params": {"rr": 2.5, "wait_bars": 12}}]
++    gap = types.ModuleType("research.portfolio_gap")
++    gap.load_survivors = lambda: survivors
++    eg = types.ModuleType("external_gauntlet")
++    eg.build_cell = lambda sym, fam, params, meta: {"df": None, "sigs": [1], "costs": None}
++    eg.daily_series = lambda df, sigs, costs: pd.Series(
++        [0.1, -0.05, 0.2], index=pd.to_datetime(["2026-01-01", "2026-01-02", "2026-01-05"]))
++    monkeypatch.setitem(sys.modules, "research.portfolio_gap", gap)
++    monkeypatch.setitem(sys.modules, "external_gauntlet", eg)
++    monkeypatch.setitem(sys.modules, "libs.data", types.ModuleType("libs.data"))
++    monkeypatch.delitem(sys.modules, "libs.data.terms_fence", raising=False)
++    out, acct = pfa.certified_evidence()
++    assert set(out) == {"EURZAR_overnight_gap_decay_asia", "XAUUSD_session_range_breakout_asia"}
++    assert acct["terms_fence"].startswith("fallback list")
++    assert list(acct["terms_quarantined"]) == [
++        "USDJPY_session_range_breakout_asia:{'rr': 2.5, 'wait_bars': 12}"]
++    assert acct["priced"] == 2
++
++
++def test_the_fallback_matches_on_params_not_just_the_cell():
++    held = {"symbol": "USDJPY", "family": "session_range_breakout", "window": "asia",
++            "params": {"rr": "2.5", "wait_bars": 12, "timeframe": "H1"}}
++    other = {**held, "params": {"rr": 3.0, "wait_bars": 12}}
++    assert pfa._terms_fallback(held)
++    assert pfa._terms_fallback(other) is None

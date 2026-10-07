@@ -1,0 +1,202 @@
+diff --git a/desks/mt5/data/live_sleeve_policy.json b/desks/mt5/data/live_sleeve_policy.json
+index e9ea211bf..412f64a9c 100644
+--- a/desks/mt5/data/live_sleeve_policy.json
++++ b/desks/mt5/data/live_sleeve_policy.json
+@@ -25,5 +25,14 @@
+  "evidence_caveat": "ZERO realised fills on the live Fusion account for any yen cross, ever -- verified four ways (live_ledger.jsonl had 151/151 deals across 12 symbols, none JPY; autopsies.jsonl and fill_corpus.jsonl agreed). This row is sized off certified 2,107-day backtest evidence under 3x cost stress, NOT off realised fills, and NOT off the frozen 2026-09-16 shadow ledgers. The desk's own multiplicity charge at n_trials=203 already takes USDJPY's gross edge 0.1641 to a net 0.08175 with verdict NET_POSITIVE_UNCONFIRMED and net_is_bound=true -- a heavier charge than max-of-four, already applied, which USDJPY clears and GBPJPY nearly fails (DSR 0.9522).",
+  "why_not_all_four": "EURJPY against GBPJPY measures +0.891 and the pairwise block runs +0.81 to +0.89, so libs/validation/effective_sample.cross_dependence_deflator(4, 0.891) = 0.273 -- the four crosses are about 1.1 independent bets, not four. EFFECTIVE_BREADTH.json puts all four in one cluster (session_liquidity). Gold against the block is -0.117 (the mean of four rhos spanning -0.39 to +0.08, n=12-14, not distinguishable from zero), so gold plus ONE cross is diversification and gold plus four is one bet bought four times.",
+  "rule": "no sleeve outside live_symbols may hold capital or place an order in the live account; no sleeve on a banned timeframe for its symbol may either; and where live_sleeves names a symbol, only the sleeves it lists may hold capital on that symbol -- a symbol absent from live_sleeves is unrestricted. Enforced in desks/mt5/mt5desk/live_policy.py at the gateway's roster admission (decision_core.load_sleeves_verbose) and the promoter's writer (research/promoter._apply_live_policy); this file is the live override the box reads without a redeploy.",
+- "name_note": "USDJPY.asia#rr=2.5 is the forward clock's own key for rr=2.5, wait_bars=12 (wait_bars 12 is the asia window default, so the key omits it) and the name the promoter writes on the LIVE row; the explicit rr25_wb12 alias is kept for any writer that uses it. Added 2026-10-01: with only the alias listed, no writer could ever produce an admitted row and Fusion could not trade the approved sleeve."
++ "name_note": "USDJPY.asia#rr=2.5 is the forward clock's own key for rr=2.5, wait_bars=12 (wait_bars 12 is the asia window default, so the key omits it) and the name the promoter writes on the LIVE row; the explicit rr25_wb12 alias is kept for any writer that uses it. Added 2026-10-01: with only the alias listed, no writer could ever produce an admitted row and Fusion could not trade the approved sleeve.",
++ "quarantined_sleeves": {
++  "USDJPY.asia#rr=2.5": "Reddit lineage (certificate external.USDJPY.session_range_breakout.rr=2.5_wb=12 and its rr/wb siblings were judged on the ext_reddit_USDJPY_session_range_breakout docket card); held out under the principal's 2026-09-30 Reddit exclusion until the same cell is re-certified on its forexfactory + central_bank proposals (PR #162 data/hypotheses/terms_recert_queue.json; gated_at after 2026-10-06T00:00Z)",
++  "usdjpy_session_range_breakout_asia_rr25_wb12": "Reddit lineage (certificate external.USDJPY.session_range_breakout.rr=2.5_wb=12 and its rr/wb siblings were judged on the ext_reddit_USDJPY_session_range_breakout docket card); held out under the principal's 2026-09-30 Reddit exclusion until the same cell is re-certified on its forexfactory + central_bank proposals (PR #162 data/hypotheses/terms_recert_queue.json; gated_at after 2026-10-06T00:00Z)",
++  "usdjpy_session_range_breakout_asia_session_range_breakout": "Reddit lineage (certificate external.USDJPY.session_range_breakout.rr=2.5_wb=12 and its rr/wb siblings were judged on the ext_reddit_USDJPY_session_range_breakout docket card); held out under the principal's 2026-09-30 Reddit exclusion until the same cell is re-certified on its forexfactory + central_bank proposals (PR #162 data/hypotheses/terms_recert_queue.json; gated_at after 2026-10-06T00:00Z)",
++  "usdjpy_session_range_breakout_asia_5_wb_12": "Reddit lineage (certificate external.USDJPY.session_range_breakout.rr=2.5_wb=12 and its rr/wb siblings were judged on the ext_reddit_USDJPY_session_range_breakout docket card); held out under the principal's 2026-09-30 Reddit exclusion until the same cell is re-certified on its forexfactory + central_bank proposals (PR #162 data/hypotheses/terms_recert_queue.json; gated_at after 2026-10-06T00:00Z)",
++  "usdjpy_session_range_breakout_asia_0_wb_12": "Reddit lineage (certificate external.USDJPY.session_range_breakout.rr=2.5_wb=12 and its rr/wb siblings were judged on the ext_reddit_USDJPY_session_range_breakout docket card); held out under the principal's 2026-09-30 Reddit exclusion until the same cell is re-certified on its forexfactory + central_bank proposals (PR #162 data/hypotheses/terms_recert_queue.json; gated_at after 2026-10-06T00:00Z)"
++ },
++ "lineage_quarantine": "2026-10-07 (PR #162 audit v2): a LINEAGE quarantine, not a symbol ban. The cell USDJPY.session_range_breakout was also proposed by external_central_bank (BoJ policy decisions) and external_forexfactory (USD event calendar) in data/hypotheses/external_20260825_2054.json; only the certificates judged on the Reddit card are held. live_sleeves.USDJPY is the principal's 2026-09-24 one-sleeve choice and is unchanged, so the clean re-certification of that same rr=2.5 cell is admitted the moment it is judged.",
++ "missed_growth": "rail terms_lineage_quarantine (libs/portfolio/rails.py, measured by research/missed_growth.measure_terms_quarantine). Priced on the git snapshot by research/kelly_survival.py --book, 2026-10-06: Fusion carried USDJPY SRB rr2.5 at ~1.9% heat; leave-one-out re-solve dE[log W] +0.08%/day, dk_eff +0.13; E8 ~0.10% daily risk. That growth is forgone until re-certification."
+ }
+diff --git a/desks/mt5/mt5desk/live_policy.py b/desks/mt5/mt5desk/live_policy.py
+index e9cf084d9..922b21ccd 100644
+--- a/desks/mt5/mt5desk/live_policy.py
++++ b/desks/mt5/mt5desk/live_policy.py
+@@ -97,6 +97,10 @@ class Policy:
+     banned_execs: frozenset[str] = DEFAULT_BANNED_EXECS
+     live_sleeves: Mapping[str, frozenset[str]] = field(
+         default_factory=lambda: dict(DEFAULT_LIVE_SLEEVES))
++    #: LINEAGE QUARANTINE (PR #162 audit v2, 2026-10-07): sleeve name -> why. A DENY by name,
++    #: so a certificate judged under a terms-fenced lineage is held out without closing its
++    #: symbol: a clean re-certification of the same cell is a different row and is admitted.
++    quarantined_sleeves: Mapping[str, str] = field(default_factory=dict)
+     source: str = "defaults"
+     by: str = ORDER
+ 
+@@ -106,6 +110,7 @@ class Policy:
+                 "banned_families": sorted(self.banned_families),
+                 "banned_execs": sorted(self.banned_execs),
+                 "live_sleeves": {k: sorted(v) for k, v in self.live_sleeves.items()},
++                "quarantined_sleeves": dict(self.quarantined_sleeves),
+                 "source": self.source, "by": self.by}
+ 
+ 
+@@ -142,8 +147,11 @@ def policy(path: Path | None = None) -> Policy:
+             # could turn a truncated edit into an unrestricted symbol is the one not taken.
+             if isinstance(names, list):
+                 live_sl[str(sym).upper()] = frozenset(str(n) for n in names)
+-    return Policy(live, banned_tf, banned_fam, banned_exec, live_sl, source=str(p),
+-                  by=str(doc.get("by") or ORDER))
++    quar = doc.get("quarantined_sleeves")
++    quarantined = ({str(k): str(v) for k, v in quar.items()} if isinstance(quar, dict) else
++                   {str(k): "lineage quarantine" for k in quar} if isinstance(quar, list) else {})
++    return Policy(live, banned_tf, banned_fam, banned_exec, live_sl, quarantined,
++                  source=str(p), by=str(doc.get("by") or ORDER))
+ 
+ 
+ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
+@@ -156,6 +164,9 @@ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
+     sym = str(row.get("symbol") or "").strip().upper()
+     if not sym:
+         return "row carries no symbol; it cannot be admitted to the live account"
++    name = str(row.get("name") or "").strip()
++    if name and name in p.quarantined_sleeves:
++        return f"{name} is lineage-quarantined: {p.quarantined_sleeves[name]}"
+     if "*" not in p.live_symbols and sym not in p.live_symbols:
+         return (f"{sym} is outside the live sleeve universe {sorted(p.live_symbols)} -- {p.by}")
+     tf = str(row.get("timeframe") or row.get("chart") or "").strip().upper()
+@@ -170,11 +181,9 @@ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
+     if ex and ex in p.banned_execs:
+         return f"exec lane {ex!r} is stood down -- {EXEC_ORDER}"
+     allowed = p.live_sleeves.get(sym)
+-    if allowed is not None:
+-        name = str(row.get("name") or "").strip()
+-        if name not in allowed:
+-            return (f"{sym} admits only {sorted(allowed)} for live capital; {name!r} is a "
+-                    f"different parameter set on the same instrument -- {p.by}")
++    if allowed is not None and name not in allowed:
++        return (f"{sym} admits only {sorted(allowed)} for live capital; {name!r} is a "
++                f"different parameter set on the same instrument -- {p.by}")
+     return None
+ 
+ 
+diff --git a/desks/mt5/research/missed_growth.py b/desks/mt5/research/missed_growth.py
+index 46cf9aa92..e26ae1c62 100644
+--- a/desks/mt5/research/missed_growth.py
++++ b/desks/mt5/research/missed_growth.py
+@@ -504,6 +504,38 @@ def measure_tier_s_block(r: Any, alloc: dict[str, Any],
+             "mean_withheld_r": round(m, 5), "value_logw_per_veto": round(-m * q, 6)}
+ 
+ 
++#: The quarantined certificates when libs/data/terms_fence (PR #162) is not importable here.
++TERMS_QUARANTINE_FALLBACK = tuple(
++    f"external.USDJPY.session_range_breakout{sfx}"
++    for sfx in ("", ".rr=1.5_wb=12", ".rr=2.0_wb=12", ".rr=2.5_wb=12"))
++
++
++def measure_terms_quarantine(r: Any, alloc: dict[str, Any],
++                             _fv: dict[str, Any]) -> dict[str, Any]:
++    """What the terms lineage quarantine forgoes: each held certificate's certified 3x-cost
++    expectancy (R per trade) times one sleeve's heat in the current book. A mandate is never
++    walked; this prices it."""
++    try:
++        from libs.data import terms_fence
++        keys = tuple(terms_fence.QUARANTINED_CERTIFICATES)
++        src = "libs.data.terms_fence"
++    except Exception:
++        keys, src = TERMS_QUARANTINE_FALLBACK, "fallback list (terms_fence not importable)"
++    surv = (_json(BASE / "reports" / "UNIVERSAL_SURVIVORS.json").get("survivors")
++            or _json(BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json").get("survivors") or {})
++    held = {k: ((surv.get(k) or {}).get("gates") or {}).get("stress_costs", {}).get("exp_x3")
++            for k in keys if k in surv}
++    priced = [float(v) for v in held.values() if isinstance(v, (int, float))]
++    if not priced:
++        return {"verdict": NOT_BINDING if not held else UNMEASURED, "n": len(held),
++                "source": src, "why": "no held certificate carries a 3x-cost expectancy here"}
++    q = float(np.mean(list((alloc.get("book") or {}).values()) or [0.0]))
++    m = float(np.mean(priced))
++    return {"verdict": COSTS if m > 0 else EARNS, "n": len(held), "source": src,
++            "mean_held_exp_x3_r": round(m, 5), "value_logw_per_trade": round(m * q, 6),
++            "held": sorted(held)}
++
++
+ def _bill_door_error(rows: list[dict[str, Any]], heat_per_sleeve: float) -> dict[str, Any]:
+     """THE COST OF FAILING CLOSED, BILLED PER INPUT (gap E, 2026-09-30).
+ 
+diff --git a/desks/mt5/tests/test_lineage_quarantine.py b/desks/mt5/tests/test_lineage_quarantine.py
+new file mode 100644
+index 000000000..1a7cfa030
+--- /dev/null
++++ b/desks/mt5/tests/test_lineage_quarantine.py
+@@ -0,0 +1,51 @@
++"""The terms quarantine is a LINEAGE quarantine (PR #162 audit v2, 2026-10-07): the Reddit-judged
++USDJPY certificates are refused by name, the symbol stays open, and the forgone growth is a rail."""
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++_DESK = Path(__file__).resolve().parents[1]
++for _p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
++
++from mt5desk import live_policy  # noqa: E402
++
++
++def _pol(tmp_path, doc):
++    p = tmp_path / "pol.json"
++    p.write_text(json.dumps(doc), encoding="utf-8")
++    return live_policy.policy(p)
++
++
++def test_a_quarantined_name_is_refused_and_its_symbol_stays_open(tmp_path):
++    pol = _pol(tmp_path, {"live_symbols": ["USDJPY"], "quarantined_sleeves": {
++        "USDJPY.asia#rr=2.5": "reddit lineage"}})
++    why = live_policy.refuse({"symbol": "USDJPY", "name": "USDJPY.asia#rr=2.5"}, pol)
++    assert why and "lineage-quarantined" in why and "reddit lineage" in why
++    assert live_policy.refuse({"symbol": "USDJPY", "name": "usdjpy_clean_recert"}, pol) is None
++
++
++def test_the_shipped_policy_holds_every_reddit_judged_name_and_keeps_the_allowlist():
++    pol = live_policy.policy()
++    for name in ("USDJPY.asia#rr=2.5", "usdjpy_session_range_breakout_asia_rr25_wb12",
++                 "usdjpy_session_range_breakout_asia_session_range_breakout",
++                 "usdjpy_session_range_breakout_asia_5_wb_12",
++                 "usdjpy_session_range_breakout_asia_0_wb_12"):
++        assert name in pol.quarantined_sleeves
++    assert pol.live_sleeves.get("USDJPY")          # the principal's one-sleeve choice, unchanged
++    assert live_policy.refuse({"symbol": "XAUUSD", "name": "gold_asia"}, pol) is None
++
++
++def test_the_quarantine_is_a_billed_rail():
++    import missed_growth
++
++    from libs.portfolio import rails
++    r = rails.rail("terms_lineage_quarantine")
++    assert r.kind == "mandate" and r.measure in missed_growth.MEASURES
++    out = missed_growth.MEASURES[r.measure](r, {"book": {"a": 0.05}}, {})
++    assert out["verdict"] in (missed_growth.COSTS, missed_growth.EARNS,
++                              missed_growth.NOT_BINDING, missed_growth.UNMEASURED)
++    assert out.get("source")
+diff --git a/libs/portfolio/rails.py b/libs/portfolio/rails.py
+index fe51762ce..ecdc2bb27 100644
+--- a/libs/portfolio/rails.py
++++ b/libs/portfolio/rails.py
+@@ -167,6 +167,15 @@ RAILS: tuple[Rail, ...] = (
+     Rail("e8_unowned_position_block", "integrity",
+          "prop.e8_gold._retry_failed_legs <- position_since_failure",
+          "measure_e8_unowned_block"),
++    # THE TERMS LINEAGE QUARANTINE (PR #162 audit v2, 2026-10-07). A certificate judged on a
++    # Reddit/StockTwits docket card takes no capital until the same cell is re-certified on a
++    # lawful lineage. A mandate (platform terms), not tunable; billed so the growth it forgoes is
++    # a ledger line, not a silence: each quarantined certificate's certified 3x-cost expectancy
++    # times one sleeve's heat, per trade.
++    Rail("terms_lineage_quarantine", "mandate",
++         "live_policy.quarantined_sleeves + promoter.terms_quarantine + "
++         "pf_allocator.certified_evidence <- libs.data.terms_fence",
++         "measure_terms_quarantine"),
+ )
+ 
+ _CACHE: dict[str, Any] = {"mtime": None, "doc": {}}
