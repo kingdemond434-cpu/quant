@@ -47,7 +47,8 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
     total = 0
     by_fam: dict[str, int] = {}
     intel = DESK / "data" / "intelligence"
-    # No early return when there is no intelligence dir: the side ledgers below still count.
+    # An absent intelligence tree means no DISCOVERY FILES, not no trials: the pairing and basket
+    # ledgers below are charged regardless (glob over a missing directory is simply empty).
     for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
         try:
             doc = json.loads(Path(f).read_text("utf-8"))
@@ -103,6 +104,22 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             if not isinstance(row, dict) or row.get("donated"):
                 continue
             fam = str(row.get("family") or "?").rsplit(":", 1)[-1]
+            total += 1
+            by_fam[fam] = by_fam.get(fam, 0) + 1
+    except (OSError, ValueError, TypeError):
+        pass
+    # BASKETS JUDGED AS ONE CELL ARE TRIALS OF THEIR FAMILY (recovered box patch 13). The basket
+    # judge calls the sealed `run_gauntlet` directly and writes no gate ledger, so its baskets
+    # never reach the hypothesis graph; it records one row per DISTINCT basket identity instead,
+    # and each row is charged here to the family it trades.
+    try:
+        for ln in (DESK / "data" / "srb_basket_trials.jsonl").read_text("utf-8").splitlines():
+            if not ln.strip():
+                continue
+            row = json.loads(ln)
+            if not isinstance(row, dict):
+                continue
+            fam = str(row.get("family") or "?")
             total += 1
             by_fam[fam] = by_fam.get(fam, 0) + 1
     except (OSError, ValueError, TypeError):

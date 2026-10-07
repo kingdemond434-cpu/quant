@@ -370,7 +370,7 @@ def measure_queue() -> dict[str, Any]:
     out: dict[str, Any] = {"status": UNMEASURED, "depth": UNMEASURED,
                            "gates_per_hour": UNMEASURED, "workers_last_sweep": UNMEASURED,
                            "source": str(BACKPRESSURE), **_breach_backlog(),
-                           **_burndown()}
+                           **_burndown(), **_judge_environment()}
     if not isinstance(doc, dict) or not doc:
         out["why"] = f"{BACKPRESSURE.name} absent or unreadable: queue depth is UNMEASURED"
         return out
@@ -441,6 +441,31 @@ def _burndown() -> dict[str, Any]:
             "burndown_needed_first_rulings_per_hour":
                 bd.get("needed_first_rulings_per_hour", UNMEASURED),
             "burndown_source": BURNDOWN.name}
+
+
+#: The judge's ENVIRONMENT (`scripts/gauntlet_guard.py`, leg `gauntlet_guard`, recovered box patch
+#: 08): commit headroom, torn universe frames and how many passes reached the epilogue. Read here,
+#: never written here -- and REPORTED ONLY. A pass that died on the commit ceiling is not a reason
+#: to size the judge down; the sizing above is one-way and this changes no worker count.
+GAUNTLET_PASSES = BASE / "reports" / "GAUNTLET_PASSES.json"
+
+
+def _judge_environment() -> dict[str, Any]:
+    """Whether the judge's passes reach their epilogue, from the guard. Absent is UNMEASURED."""
+    doc = _read_json(GAUNTLET_PASSES, None)
+    if not isinstance(doc, dict):
+        return {"judge_env_status": UNMEASURED,
+                "judge_env_why": (f"{GAUNTLET_PASSES.name} absent: the judge's environment is "
+                                  f"UNMEASURED, which is never clean")}
+    commit = doc.get("commit") if isinstance(doc.get("commit"), dict) else {}
+    frames = doc.get("frame_integrity") if isinstance(doc.get("frame_integrity"), dict) else {}
+    return {"judge_env_status": "MEASURED",
+            "judge_env_reach_rate": doc.get("reach_rate", UNMEASURED),
+            "judge_env_passes_closed": doc.get("passes_closed", UNMEASURED),
+            "judge_env_commit_headroom_gb": commit.get("headroom_gb", UNMEASURED),
+            "judge_env_commit_ceiling_touched": commit.get("peak_touched_ceiling", UNMEASURED),
+            "judge_env_torn_frames": frames.get("n_torn", UNMEASURED),
+            "judge_env_source": GAUNTLET_PASSES.name}
 
 
 def _breach_backlog() -> dict[str, Any]:
