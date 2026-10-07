@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import math
 import sys
 import time
 from datetime import UTC, datetime
@@ -84,6 +85,18 @@ def _read(path: Path) -> dict[str, Any]:
         return {}
 
 
+def _count(v: Any) -> int:
+    """A count, tolerantly: NaN, None, junk and negatives read 0 here, where 0 already means "no
+    input flow" and marks the transition UNMEASURED -- never an exception that blanks the law."""
+    if isinstance(v, bool):
+        return 0
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return 0
+    return int(f) if math.isfinite(f) and f > 0 else 0
+
+
 def registry_counts(conn: Any | None = None) -> dict[str, int]:
     """The funnel's counts, straight from the registry tables. Missing tables count zero and are
     named in `unmeasured` by the caller."""
@@ -94,7 +107,7 @@ def registry_counts(conn: Any | None = None) -> dict[str, int]:
         def q(sql: str) -> int:
             try:
                 row = c.execute(sql).fetchone()
-                return int(row[0] or 0) if row is not None else 0
+                return _count(row[0]) if row is not None else 0
             except Exception:
                 return 0
         out["discovered"] = q("SELECT COUNT(*) FROM discoveries")
@@ -118,7 +131,7 @@ def roster_counts(sleeves_doc: dict[str, Any], survivors_doc: dict[str, Any]) ->
     rows = _lst(sleeves_doc.get("sleeves"))
     status = [str(r.get("status") or "") for r in rows if isinstance(r, dict)]
     sv = survivors_doc.get("survivors")
-    n_cert = len(sv) if isinstance(sv, (dict, list)) else int(survivors_doc.get("n") or 0)
+    n_cert = len(sv) if isinstance(sv, (dict, list)) else _count(survivors_doc.get("n"))
     return {"certified": n_cert, "forward": status.count("STANDBY") + status.count("LIVE"),
             "live": status.count("LIVE")}
 
@@ -166,17 +179,21 @@ def compute_shift(bind: dict[str, Any] | None) -> dict[str, float]:
 def merge_funnel(shift: dict[str, float], funnel: dict[str, Any] | None,
                  departments: tuple[str, ...] = ()) -> dict[str, float]:
     """The law's shift and the full funnel's, the MAXIMUM per department (neither can cut), then
-    the exploration guard over the union so the merged shift starves no discovery department."""
+    the guard over the AUCTION's department list so the merged shift takes compute from no
+    generating department (`full_funnel.generating_departments`: everyone but meta, rest and
+    execution)."""
     import full_funnel
     merged = dict(shift)
     for d, f in _dct((funnel or {}).get("compute_shift")).items():
         try:
-            merged[str(d)] = max(float(merged.get(str(d), 1.0)), float(f))
+            x = float(f)
         except (TypeError, ValueError):
             continue
-    protected = _lst(_dct((funnel or {}).get("route")).get("protected_exploration")) \
-        or list(full_funnel.EXPLORATION_DEPARTMENTS)
-    return full_funnel.exploration_guard(merged, set(departments) | set(merged), protected)
+        if math.isfinite(x):
+            merged[str(d)] = max(float(merged.get(str(d), 1.0)), x)
+    base = tuple(departments) or tuple(merged)
+    return full_funnel.exploration_guard(merged, base,
+                                         full_funnel.generating_departments(base))
 
 
 def build(now: datetime | None = None, conn: Any | None = None,
@@ -197,12 +214,16 @@ def build(now: datetime | None = None, conn: Any | None = None,
     bind = binding(trans)
     shift = compute_shift(bind)
     if funnel is True:
+        t_f = time.perf_counter()
         try:
             import full_funnel
             funnel = full_funnel.build(now=now, conn=conn)
         except Exception as exc:  # the full funnel is a second measurement, never a blocker
-            funnel = None
-            unmeasured.append(f"full funnel not measured: {type(exc).__name__}: {exc}")
+            why = f"full funnel not measured: {type(exc).__name__}: {exc}"
+            unmeasured.append(why)
+            # PUBLISHED AS UNMEASURED, NOT SKIPPED: skipping left the last good file on disk
+            # reading as current. The stub is stamped now and carries the reason.
+            funnel = _funnel_unmeasured(now, why, t_f)
     if isinstance(funnel, dict):
         departments: tuple[str, ...] = ()
         with contextlib.suppress(Exception):
@@ -235,6 +256,36 @@ def build(now: datetime | None = None, conn: Any | None = None,
     return doc
 
 
+def _funnel_unmeasured(now: datetime | None, why: str, t0: float) -> dict[str, Any]:
+    when = now or datetime.now(tz=UTC)
+    try:
+        import full_funnel
+        return full_funnel.unmeasured_doc(when, why, t0)
+    except Exception:
+        return {"at": when.isoformat(timespec="seconds"), "stages": {}, "transitions": [],
+                "limiting": None, "compute_shift": {}, "unmeasured": [why],
+                "headline": f"UNMEASURED: {why}",
+                "cost": {"wall_s": round(time.perf_counter() - t0, 3)}}
+
+
+def failed_doc(now: datetime | None, exc: BaseException) -> dict[str, Any]:
+    """What the leg publishes when the law itself could not be built: both files, stamped now,
+    UNMEASURED with the reason -- and no shift, so nothing downstream acts on a ghost."""
+    why = f"bottleneck law not built: {type(exc).__name__}: {exc}"
+    at = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    return {"at": at, "counts": {}, "transitions": [], "binding": None, "compute_shift": {},
+            "unmeasured": [why], "funnel": _funnel_unmeasured(now, why, time.perf_counter()),
+            "funnel_headline": f"UNMEASURED: {why}", "headline": f"UNMEASURED: {why}"}
+
+
+def _peak_mb() -> float | str:
+    try:
+        import full_funnel
+        return full_funnel._peak_mb()
+    except Exception:
+        return "UNMEASURED"
+
+
 def publish(doc: dict[str, Any], out: Path = OUT, funnel_out: Path | None = None) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
@@ -260,9 +311,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=OUT)
     a = ap.parse_args(argv)
     t0 = time.monotonic()
-    doc = build()
+    try:
+        doc = build()
+    except Exception as exc:  # the leg ALWAYS publishes: an absent file reads as yesterday's
+        doc = failed_doc(None, exc)
     doc["elapsed_s"] = round(time.monotonic() - t0, 3)
     doc["budget_s"] = a.budget_s
+    # THE LEG'S OWN PRICE, IN ITS ARTIFACT, so the box reports what the hour paid for it.
+    doc["cost"] = {"wall_s": doc["elapsed_s"], "peak_rss_mb": _peak_mb(),
+                   "basis": "time.monotonic around build(); process peak RSS"}
     publish(doc, a.out)
     print(f"bottleneck law: {doc['headline']}")
     print(f"full funnel: {doc['funnel_headline']}")

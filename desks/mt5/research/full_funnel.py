@@ -37,13 +37,21 @@ never zero (L1.28a), and a transition with an UNMEASURED side is never the limit
 transition whose artifacts are older than STALE_AFTER_H is still reported but cannot move compute:
 a stale feeder is a plumbing finding, not a demand signal.
 
-PROTECTED EXPLORATION. Every stage keeps STAGE_FLOOR of the attention plan and discovery keeps
-EXPLORATION_FLOOR on top of it, whatever binds (`stage_shares`). In the compute that actually
-moves, `exploration_guard` raises each exploration department's factor to the geometric mean of
-all factors, which is the exact amount that keeps its post-clearing auction share where it would
-have been with no shift at all (the auction divides every bid by that geometric mean). Every factor
-here is >= 1.0: nothing is cut, total mining is never reduced, and the auction's own [0.5, 2.0]
-clip remains the last floor.
+PROTECTED EXPLORATION AND MINING. Every stage keeps STAGE_FLOOR of the attention plan and
+discovery keeps EXPLORATION_FLOOR on top of it, whatever binds (`stage_shares`). In the compute
+that actually moves, `exploration_guard` raises EVERY GENERATING department's factor (all but the
+NON_GENERATING roles meta, rest and execution -- by role, so japan and every forest are in it) to
+the geometric mean of the auction's factors, which is the exact amount that keeps its cleared
+auction factor at or above where it would have been with no shift (the auction divides every bid
+by that geometric mean). Only the three non-generating roles pay. Every factor here is >= 1.0 and
+the auction's own [0.5, 2.0] clip remains the last floor.
+
+ROBUSTNESS. Counts are parsed tolerantly (`_num`): a NaN or junk cell is unparseable, counted as
+such, and never raises. A stage whose measurement raises anyway is UNMEASURED with the exception
+as its reason (`_safe`); the funnel is always built and always published, and when it cannot be
+built at all `unmeasured_doc` is published in its place, stamped now. A transition with no ratio
+moves nothing, and a stage with no timestamp has an UNMEASURED age, not a stale one. `cost`
+records the build's wall time and the process's peak memory in the artifact.
 
     desks/mt5/reports/FUNNEL_BOTTLENECK.json   written by the hourly `bottleneck_law` leg
 """
@@ -55,7 +63,8 @@ import json
 import math
 import re
 import sys
-from collections.abc import Iterable, Mapping
+import time
+from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -100,10 +109,19 @@ FALLBACK: dict[str, str] = {
     "tested_hypotheses->qualified_forecasts": "validate",
     "qualified_forecasts->portfolio_decisions": "forward",
 }
-#: The legs that DISCOVER; their departments, plus these, are the protected exploration set.
+#: The legs that DISCOVER; their departments, plus these, are the exploration set the attention
+#: plan reports. Compute protection is wider: see NON_GENERATING.
 EXPLORATION_LEGS: tuple[str, ...] = ("world_crawler", "deep_forest", "free_stack_hunt",
                                      "world_dataset_hunt")
 EXPLORATION_DEPARTMENTS: tuple[str, ...] = ("intel", "discovery")
+#: THE ONLY DEPARTMENTS THAT MAY PAY FOR A SHIFT, BY ROLE (audit of #272, 2026-10-07). They
+#: generate nothing the funnel counts: `meta` measures the desk, `rest` renders its state, and
+#: `execution` prices and routes what is already certified. Every OTHER department -- the ones
+#: that mine, acquire, hunt a region or a forest, judge, or run forward clocks -- is a generating
+#: department and is protected, whatever its name. Protection by a name pattern (`forest_*`)
+#: left `japan_department` unprotected; a role list cannot, because a new department is
+#: generating unless it is added here on purpose. Mining is never reduced to fund a shift.
+NON_GENERATING: frozenset[str] = frozenset({"meta", "rest", "execution"})
 STAGE_FLOOR = 0.05          #: every stage's reserved share of the attention plan
 EXPLORATION_FLOOR = 0.15    #: discovery's extra reserve, held whatever binds
 MAX_SHIFT = 2.0             #: bottleneck_law.MAX_SHIFT; the auction clips at 2.0 anyway
@@ -115,6 +133,26 @@ _STAMP = re.compile(r"(\d{8})_(\d{4})")
 
 def _dct(v: Any) -> dict[str, Any]:
     return v if isinstance(v, dict) else {}
+
+
+def _num(v: Any) -> int | None:
+    """A row count, tolerantly: an int, a finite float or a numeric string becomes an int; None,
+    NaN, infinities, booleans and junk become None (the caller decides what None means -- it is
+    never silently a zero). One bad cell must not blank the funnel."""
+    if isinstance(v, bool) or v is None:
+        return None
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return int(f) if math.isfinite(f) else None
+
+
+def _rows(meta: Any) -> int:
+    """Rows of one registry entry for SUMS and FLOORS: an unparseable count adds nothing and
+    never clears a floor (the entry is listed as `rows_unparseable` by the caller)."""
+    n = _num(_dct(meta).get("rows"))
+    return n if n is not None and n > 0 else 0
 
 
 def _read(path: Path) -> dict[str, Any] | None:
@@ -218,7 +256,9 @@ def measure_acquisition(acquired: dict[str, Any] | None, now: datetime) -> dict[
                  if (t := _ts(_dct(m).get("acquired_at"))) is not None and t >= cut)
     return {"stage": "acquisition", "measured": True, "count": len(series), "unit": "series",
             "urls": fetched_urls, "names": set(series),
-            "rows": sum(int(_dct(m).get("rows") or 0) for m in series.values()),
+            "rows": sum(_rows(m) for m in series.values()),
+            "rows_unparseable": sum(1 for m in series.values()
+                                    if _num(_dct(m).get("rows")) is None),
             "throughput_7d": recent, "as_of": _iso(_ts(acquired.get("updated_at"))),
             "components": {"urls_fetched": len(fetched_urls), "urls_attempted": len(by_url)},
             "basis": ["data/acquired/registry.json:series"]}
@@ -229,22 +269,24 @@ def measure_usable(acquired: dict[str, Any] | None, now: datetime,
     if acquired is None:
         return _unmeasured("usable_observations", "data/acquired/registry.json absent or "
                                                   "unreadable")
-    floor = int(min_rows if min_rows is not None else _min_rows())
+    floor = _num(min_rows if min_rows is not None else _min_rows()) or MIN_ROWS_DEFAULT
     series = _dct(acquired.get("series"))
     usable = {n: _dct(m) for n, m in series.items()
-              if _dct(m).get("pit_authority") is True and int(_dct(m).get("rows") or 0) >= floor
+              if _dct(m).get("pit_authority") is True and _rows(m) >= floor
               and _dct(m).get("first") and _dct(m).get("last")}
     cut = now - timedelta(days=7)
     recent = sum(1 for m in usable.values()
                  if (t := _ts(m.get("acquired_at"))) is not None and t >= cut)
     return {"stage": "usable_observations", "measured": True, "count": len(usable),
             "unit": "series", "names": set(usable),
-            "observations": sum(int(m.get("rows") or 0) for m in usable.values()),
+            "observations": sum(_rows(m) for m in usable.values()),
             "throughput_7d": recent, "as_of": _iso(_ts(acquired.get("updated_at"))),
             "components": {"no_pit_authority": sum(1 for m in series.values()
                                                    if _dct(m).get("pit_authority") is not True),
                            "below_min_rows": sum(1 for m in series.values()
-                                                 if int(_dct(m).get("rows") or 0) < floor),
+                                                 if _rows(m) < floor),
+                           "rows_unparseable": sum(1 for m in series.values()
+                                                   if _num(_dct(m).get("rows")) is None),
                            "min_rows": floor},
             "basis": ["data/acquired/registry.json:series[pit_authority, rows, first, last]"]}
 
@@ -335,11 +377,11 @@ def measure_tested(conn: Any | None, usable_names: Iterable[str], now: datetime,
             row = c.execute(sql, a).fetchone()
             return row[0] if row is not None else None
         try:
-            total = int(one("SELECT COUNT(*) FROM research_candidates") or 0)
-            judged = int(one("SELECT COUNT(*) FROM research_candidates WHERE judged_at IS NOT "
-                             "NULL AND judged_at!=''") or 0)
-            recent = int(one("SELECT COUNT(*) FROM research_candidates WHERE judged_at >= ?",
-                             (now - timedelta(days=7)).isoformat()) or 0)
+            total = _num(one("SELECT COUNT(*) FROM research_candidates")) or 0
+            judged = _num(one("SELECT COUNT(*) FROM research_candidates WHERE judged_at IS NOT "
+                              "NULL AND judged_at!=''")) or 0
+            recent = _num(one("SELECT COUNT(*) FROM research_candidates WHERE judged_at >= ?",
+                              (now - timedelta(days=7)).isoformat())) or 0
             last = one("SELECT MAX(judged_at) FROM research_candidates")
         except Exception as exc:
             return _unmeasured("tested_hypotheses",
@@ -466,7 +508,13 @@ def measure_qualified(survivors: dict[str, Any] | None, shadow_dir: Path,
                            components={"forward_clocks_accruing": len(clocks)})
     sv = survivors.get("survivors")
     rows = sv if isinstance(sv, dict) else {}
-    n = len(sv) if isinstance(sv, (dict, list)) else int(survivors.get("n") or 0)
+    n_decl = _num(survivors.get("n"))
+    if not isinstance(sv, (dict, list)) and n_decl is None:
+        return _unmeasured("qualified_forecasts", "reports/UNIVERSAL_SURVIVORS.json holds neither "
+                                                  "a survivors list nor a count n (a document "
+                                                  "with no count is not a zero)",
+                           components={"forward_clocks_accruing": len(clocks)})
+    n = len(sv) if isinstance(sv, (dict, list)) else int(n_decl or 0)
     gated = [t for r in rows.values() if isinstance(r, dict)
              if (t := _ts(r.get("gated_at"))) is not None]
     # THE 7-DAY RATE IS MEASURED ONLY WHEN EVERY CERTIFICATE CARRIES ITS gated_at: a partial
@@ -546,12 +594,16 @@ def _advanced(name: str, up: dict[str, Any], down: dict[str, Any]) -> int | None
         return len(set(up.get("names") or ()) & set(down.get("names") or ()))
     if name == "usable_observations->tested_hypotheses":
         return len(set(down.get("series_fed") or ()))
-    return min(int(down["count"]), int(up["count"]))
+    a, b = _num(down.get("count")), _num(up.get("count"))
+    return None if a is None or b is None else min(a, b)
 
 
 def _stale(stage: dict[str, Any], now: datetime) -> bool:
+    """Stale only on a timestamp that IS old. A stage with no timestamp has an UNMEASURED age
+    (reported as `age_unmeasured` on its transitions), never a stale one: calling it stale would
+    hide a real zero behind "plumbing" and stop the shift that zero calls for."""
     t = _ts(stage.get("as_of"))
-    return t is None or (now - t).total_seconds() > STALE_AFTER_H * 3600
+    return t is not None and (now - t).total_seconds() > STALE_AFTER_H * 3600
 
 
 def transitions(stages: Mapping[str, dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
@@ -560,7 +612,7 @@ def transitions(stages: Mapping[str, dict[str, Any]], now: datetime) -> list[dic
         name = f"{a}->{b}"
         up, down = stages[a], stages[b]
         adv = _advanced(name, up, down)
-        n_in = int(up["count"]) if up.get("measured") else None
+        n_in = _num(up.get("count")) if up.get("measured") else None
         measured = adv is not None and n_in is not None and n_in > 0
         why = None
         if not measured:
@@ -572,6 +624,8 @@ def transitions(stages: Mapping[str, dict[str, Any]], now: datetime) -> list[dic
                     "advanced": adv if adv is not None else UNMEASURED,
                     "ratio": ratio, "unit": up.get("unit"), "measured": measured,
                     "stale": measured and (_stale(up, now) or _stale(down, now)),
+                    "age_unmeasured": measured and (_ts(up.get("as_of")) is None
+                                                    or _ts(down.get("as_of")) is None),
                     "backlog": (max(n_in - adv, 0) if measured and adv is not None and n_in
                                 else None),
                     "reason": why})
@@ -585,7 +639,8 @@ def limiting(trans: list[dict[str, Any]]) -> dict[str, Any] | None:
     if not measured:
         return None
     fresh = [t for t in measured if not t["stale"]]
-    return min(fresh or measured, key=lambda t: (float(t["ratio"]), -int(t["backlog"] or 0)))
+    return min(fresh or measured,
+               key=lambda t: (float(t["ratio"]), -(_num(t.get("backlog")) or 0)))
 
 
 # ------------------------------------------------------------------------ the shift
@@ -604,26 +659,54 @@ def routed_departments(stage: str, legs: Mapping[str, str]) -> tuple[list[str], 
 
 
 def exploration_departments(legs: Mapping[str, str]) -> list[str]:
+    """The discovering departments, for the attention plan's report. Compute protection does not
+    use this list: it uses `generating_departments`, which is wider and role-derived."""
     return sorted({*EXPLORATION_DEPARTMENTS,
-                   *(legs[lg] for lg in EXPLORATION_LEGS if lg in legs),
-                   *(d for lg, d in legs.items() if lg.startswith("forest_"))})
+                   *(legs[lg] for lg in EXPLORATION_LEGS if lg in legs)})
+
+
+def generating_departments(departments: Iterable[str]) -> list[str]:
+    """Every department except the NON_GENERATING roles: the set no shift may take compute from.
+    Japan, every region and forest, data, macro, mathlab, validate and forward are in it by
+    construction, because membership is the ABSENCE of a non-generating role, not a name match."""
+    return sorted({str(d) for d in departments} - NON_GENERATING)
+
+
+def _factor(v: Any) -> float:
+    f = _num(v) if isinstance(v, str) else v
+    try:
+        x = float(f)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return 1.0
+    return x if math.isfinite(x) and x >= 1.0 else 1.0
 
 
 def exploration_guard(shift: Mapping[str, float], departments: Iterable[str],
                       protected: Iterable[str]) -> dict[str, float]:
-    """Raise each protected department to the geometric mean of every department's factor.
+    """Raise each protected department to the geometric mean of the auction's factors.
 
-    The auction clears factor_d = bid_d * shift_d / gmean(bid * shift). A protected department
-    whose shift equals gmean(shift) clears exactly where it would have with no shift at all, so
-    a shift toward the limiting stage is paid for by nobody in exploration. Iterated to the fixed
-    point gmean^(n-k) = product of the unprotected shifts. Only ever RAISES a factor."""
-    depts = sorted(set(departments) | set(shift))
-    prot = set(protected) & set(depts)
-    out = {d: max(1.0, float(shift.get(d, 1.0) or 1.0)) for d in depts}
-    if not depts or not prot or len(prot) == len(depts):
+    The auction clears factor_d = clip(bid_d * shift_d / gmean(bid * shift)) over ITS OWN
+    department list, and gmean(bid * shift) = gmean(bid) * gmean(shift). A protected department
+    whose shift is at least gmean(shift) therefore clears at or above where it would have with no
+    shift at all (the clip is monotone), so a shift is paid for only by the unprotected. The
+    mean is taken over `departments` -- the auction's list -- when one is given; a key outside it
+    is carried at its own factor and does not move the mean, exactly as `clear` ignores it.
+    Iterated to the fixed point; when nobody is unprotected, everyone is lifted to the maximum
+    (a shift nobody may pay for is a uniform raise, which clears to no change). Only RAISES."""
+    base = sorted({str(d) for d in departments}) or sorted(shift)
+    out = {str(d): _factor(v) for d, v in shift.items()}
+    for d in base:
+        out.setdefault(d, 1.0)
+    prot = set(protected) & set(base)
+    if not base or not prot:
         return {d: round(v, 4) for d, v in out.items()}
-    for _ in range(200):
-        g = math.exp(sum(math.log(v) for v in out.values()) / len(out))
+    if prot == set(base):
+        top = max(out[d] for d in base)
+        for d in base:
+            out[d] = top
+        return {d: math.ceil(v * 10_000) / 10_000 for d, v in out.items()}
+    for _ in range(500):
+        g = math.exp(sum(math.log(out[d]) for d in base) / len(base))
         moved = False
         for p in prot:
             if out[p] < g - 1e-12:
@@ -659,8 +742,12 @@ def compute_shift(limit: dict[str, Any] | None, legs: Mapping[str, str],
     elif limit.get("stale"):
         route["why"] = (f"{limit['stage']} is the lowest ratio but its artifacts are older than "
                         f"{STALE_AFTER_H:.0f} h: a stale feeder is a plumbing finding, not demand")
+    elif not isinstance(limit.get("ratio"), (int, float)) or isinstance(limit.get("ratio"), bool) \
+            or not math.isfinite(float(limit["ratio"])):
+        route["why"] = (f"{limit.get('stage')} has no measured ratio: an unknown conversion is "
+                        "no demand signal, so nothing shifts (it is not read as zero)")
     else:
-        f = round(min(MAX_SHIFT, 1.0 + max(0.0, 1.0 - float(limit["ratio"] or 0.0))), 4)
+        f = round(min(MAX_SHIFT, 1.0 + max(0.0, 1.0 - float(limit["ratio"]))), 4)
         d_list, routed = routed_departments(str(limit["stage"]), legs)
         for d in d_list:
             shift[d] = max(shift.get(d, 1.0), f)
@@ -668,15 +755,60 @@ def compute_shift(limit: dict[str, Any] | None, legs: Mapping[str, str],
                  "data_stage": str(limit["stage"]).startswith(("discovery->", "acquisition->")),
                  "why": f"{limit['stage']} converts {limit['ratio']} of {limit['in']} "
                         f"{limit['unit']}(s)"}
-    protected = exploration_departments(legs)
+    protected = generating_departments(depts)
     guarded = exploration_guard(shift, depts, protected)
-    route["protected_exploration"] = protected
+    route["protected"] = protected
+    route["protected_exploration"] = exploration_departments(legs)
+    route["may_pay"] = sorted(set(depts) & NON_GENERATING)
     return guarded, route
 
 
 # ------------------------------------------------------------------------------ build
 def _public(stage: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in stage.items() if k not in ("urls", "names", "series_fed")}
+
+
+def _safe(stage: str, fn: Callable[[], dict[str, Any]]) -> dict[str, Any]:
+    try:
+        out = fn()
+    except Exception as exc:
+        return _unmeasured(stage, f"measurement failed: {type(exc).__name__}: {exc}")
+    return out if isinstance(out, dict) else _unmeasured(stage, "measurement returned nothing")
+
+
+def _peak_mb() -> float | str:
+    """This process's peak resident memory in MB: psutil's peak working set on Windows (the box),
+    ru_maxrss on POSIX; UNMEASURED when neither can be read."""
+    with contextlib.suppress(Exception):
+        import psutil
+        mi = psutil.Process().memory_info()
+        peak = getattr(mi, "peak_wset", None)
+        if peak:
+            return round(float(peak) / 2**20, 1)
+    with contextlib.suppress(Exception):
+        import resource
+        kb = float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+        return round(kb / (2**20 if sys.platform == "darwin" else 2**10), 1)
+    return UNMEASURED
+
+
+def cost(t0: float) -> dict[str, Any]:
+    """What the measurement cost, written INTO the artifact so the box reports its own price."""
+    return {"wall_s": round(time.perf_counter() - t0, 3), "peak_rss_mb": _peak_mb(),
+            "basis": "time.perf_counter around build(); process peak RSS (psutil peak_wset on "
+                     "Windows, getrusage ru_maxrss on POSIX) -- the leg's process, not the funnel "
+                     "alone"}
+
+
+def unmeasured_doc(now: datetime, why: str, t0: float | None = None) -> dict[str, Any]:
+    """The document published when the funnel could not be built at all: an honest UNMEASURED
+    stamped NOW, so yesterday's numbers never sit on disk looking current."""
+    return {"at": now.isoformat(timespec="seconds"), "stages": {
+        s: {"stage": s, "measured": False, "count": UNMEASURED, "reason": why} for s in STAGES},
+        "transitions": [], "limiting": None, "compute_shift": {},
+        "route": {"applied": False, "why": why}, "stage_shares": stage_shares(None),
+        "unmeasured": [why], "headline": f"UNMEASURED: {why}",
+        "cost": cost(t0 if t0 is not None else time.perf_counter())}
 
 
 def build(now: datetime | None = None, conn: Any | None = None, *,
@@ -688,28 +820,37 @@ def build(now: datetime | None = None, conn: Any | None = None, *,
           legs: tuple[dict[str, str], tuple[str, ...]] | None = None) -> dict[str, Any]:
     """`True` for a document argument means "read it from its owning artifact"; None means
     absent (UNMEASURED); a dict is injected."""
+    t0 = time.perf_counter()
     now = now or datetime.now(tz=UTC)
     acq = _read(ACQUIRED) if acquired is True else acquired
     grd = _read(GROUNDS) if grounds is True else grounds
     srv = _read(SURVIVORS) if survivors is True else survivors
     slv = _read(SLEEVES) if sleeves is True else sleeves
-    st: dict[str, dict[str, Any]] = {
-        "discovery": measure_discovery(world_dir, acq if isinstance(acq, dict) else None,
-                                       grd if isinstance(grd, dict) else None, now),
-        "acquisition": measure_acquisition(acq if isinstance(acq, dict) else None, now),
-    }
-    st["usable_observations"] = with_bars(
-        measure_usable(acq if isinstance(acq, dict) else None, now), measure_mt5_bars(bar_dir, now))
-    st["tested_hypotheses"] = measure_tested(conn, st["usable_observations"].get("names") or (),
-                                             now)
-    st["qualified_forecasts"] = measure_qualified(srv if isinstance(srv, dict) else None,
-                                                  shadow_dir, now)
-    st["portfolio_decisions"] = measure_decisions(slv if isinstance(slv, dict) else None,
-                                                  forecast_path, decision_path, now)
-    trans = transitions(st, now)
-    lim = limiting(trans)
+    a = acq if isinstance(acq, dict) else None
+    st: dict[str, dict[str, Any]] = {}
+    # ONE BAD CELL NEVER BLANKS THE FUNNEL (audit of #272). Each stage is measured on its own;
+    # a measurement that raises becomes that stage's UNMEASURED with the exception as its reason,
+    # and the other five -- and the publish -- go ahead.
+    st["discovery"] = _safe("discovery", lambda: measure_discovery(
+        world_dir, a, grd if isinstance(grd, dict) else None, now))
+    st["acquisition"] = _safe("acquisition", lambda: measure_acquisition(a, now))
+    st["usable_observations"] = _safe("usable_observations", lambda: with_bars(
+        measure_usable(a, now), measure_mt5_bars(bar_dir, now)))
+    st["tested_hypotheses"] = _safe("tested_hypotheses", lambda: measure_tested(
+        conn, st["usable_observations"].get("names") or (), now))
+    st["qualified_forecasts"] = _safe("qualified_forecasts", lambda: measure_qualified(
+        srv if isinstance(srv, dict) else None, shadow_dir, now))
+    st["portfolio_decisions"] = _safe("portfolio_decisions", lambda: measure_decisions(
+        slv if isinstance(slv, dict) else None, forecast_path, decision_path, now))
     leg_map, depts = legs if legs is not None else leg_departments()
-    shift, route = compute_shift(lim, leg_map, depts)
+    try:
+        trans = transitions(st, now)
+        lim = limiting(trans)
+        shift, route = compute_shift(lim, leg_map, depts)
+    except Exception as exc:
+        trans, lim = [], None
+        shift, route = compute_shift(None, leg_map, depts)
+        route["why"] = f"transitions not computable: {type(exc).__name__}: {exc}; no shift"
     unmeasured = [f"{s}: {st[s]['reason']}" for s in STAGES if not st[s]["measured"]]
     doc: dict[str, Any] = {
         "at": now.isoformat(timespec="seconds"), "stages": {s: _public(st[s]) for s in STAGES},
@@ -718,14 +859,16 @@ def build(now: datetime | None = None, conn: Any | None = None, *,
         "floors": {"stage": STAGE_FLOOR, "exploration": EXPLORATION_FLOOR,
                    "auction_clip": [0.5, 2.0]},
         "unmeasured": unmeasured,
+        "cost": cost(t0),
         "consumer": ("bottleneck_law.build merges compute_shift (max per department) into "
                      "BOTTLENECK_LAW.compute_shift -> research_auction.bids -> "
                      "research_budget.budget_s next epoch; research_dashboard"),
         "rule": ("each stage is read from the artifact that owns it; an absent one is UNMEASURED "
                  "and never limiting; the limiting transition is the lowest fresh out/in share "
                  "in the upstream unit; its downstream organs' departments rise to "
-                 "1+(1-ratio) <= 2.0; exploration departments are raised to the geometric mean "
-                 "so their cleared share never falls; no factor is below 1.0"),
+                 "1+(1-ratio) <= 2.0; every generating department (all but meta, rest, "
+                 "execution) is raised to the geometric mean so its cleared share never falls; "
+                 "no factor is below 1.0"),
     }
     if lim is None:
         doc["headline"] = (f"UNMEASURED: no transition measurable ({len(unmeasured)} stage(s) "
