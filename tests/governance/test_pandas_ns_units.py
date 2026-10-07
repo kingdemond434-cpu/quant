@@ -56,6 +56,9 @@ ALLOW: dict[tuple[str, str], str] = {
 PENDING: dict[tuple[str, str], str] = {
     ("desks/mt5/scripts/external_gauntlet.py", "pd.to_datetime(common).astype('int64')"):
         "SEALED: /mnt/project-files/patches/pandas_ns_units.patch",
+    ("libs/data/pit_certificate.py", "idx.dropna().astype('int64')"):
+        "IMMUTABLE RAIL (libs/research/immutable_rails.py, point_in_time_requirements): "
+        "/mnt/project-files/patches/pandas_ns_units.patch",
     ("desks/mt5/research/replication_civilization.py", "stamps[keep].astype('int64')"):
         "PR #240 (claude/replication-bars-ns)",
 }
