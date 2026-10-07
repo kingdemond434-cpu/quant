@@ -108,11 +108,15 @@ def save_hypotheses() -> None:
     hypotheses = convert_discoveries()
 
     out_file = OUT / f"external_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
-    out_file.write_text(json.dumps(hypotheses, indent=2), encoding="utf-8")
+    try:
+        from side_channels.discovery_io import write_discoveries
+    except ModuleNotFoundError:
+        from discovery_io import write_discoveries
+    hypotheses = write_discoveries(out_file, hypotheses)
     print(f"Generated {len(hypotheses)} hypotheses from external discoveries")
 
     latest = OUT / "latest_external.json"
-    latest.write_text(json.dumps(hypotheses, indent=2), encoding="utf-8")
+    write_discoveries(latest, hypotheses)
 
 
 if __name__ == "__main__":

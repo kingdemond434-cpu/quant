@@ -510,6 +510,10 @@ NOT_SOURCED_HERE = {
     "lead_lag": "the driver and the lag are measured by cross_asset_graph on the information "
                 "graph; a sweep that paired every symbol with every other would be an uncharged "
                 "search over pairs",
+    "world_macro_state": "the world series is named on the recipe by world_macro_proposer, which "
+                         "reads the world dataset hunter's per-symbol exposure and charges its own "
+                         "band x direction x hold grid; a sweep that paired every symbol with "
+                         "every ingested series would be an uncharged search over thousands",
     "gnn_propagation": "the peer panel and the model configuration are named by "
                        "research/learned_miners, which walk-forwards every configuration once "
                        "per panel and charges configurations x symbols x thresholds as trials; "
@@ -548,6 +552,14 @@ NOT_SOURCED_HERE = {
                              "clock; a sweep enumerating them over bars would be inventing which "
                              "pack series conditions which instrument. Called blind it has no "
                              "source and returns [] on every symbol",
+    # The free-stack alt families (mt5desk/family_alt_series.py). Their series and column are
+    # named by research/free_stack_proposer from what the hunter published and the instruments it
+    # mapped, and that proposer charges its own grid through `tests_run`.
+    **dict.fromkeys(("alt_series_momentum", "alt_conditioned"),
+                    "the series, column and mapped instrument are named by "
+                    "research/free_stack_proposer from the hunter's published columns, and it "
+                    "charges its own grid; called blind here it has no source and returns [] on "
+                    "every symbol"),
     # The within-class rank legs (mt5desk/families_cross_sectional.py). Each loads its own class
     # panel from `symbol`, so nothing is unsuppliable -- but the grid is (class member x family x
     # params) and research/cross_sectional_breadth enumerates it, measures every cell's firing

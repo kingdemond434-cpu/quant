@@ -85,6 +85,7 @@ def test_freeze_is_called_with_a_cost_basis(monkeypatch, tmp_path):
             calls.append({"key": key, "ident": ident, "cost_fields": cost_fields})
 
     monkeypatch.setattr(heal, "reg", _Reg)
+    monkeypatch.setattr(heal, "execution_identity", lambda spec, fields: spec)
     monkeypatch.setattr(heal, "cost_fields_for",
                         lambda sym: {"spread_per_lot": 3.0, "commission_per_lot": 2.0,
                                      "contract_oz": 100.0, "quote_per_account": 1.15844})

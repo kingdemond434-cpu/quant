@@ -54,7 +54,13 @@ def read_journal(path: Path = JOURNAL) -> list[dict[str, Any]]:
 
 
 def next_id(rows: list[dict[str, Any]], day: str) -> str:
-    n = sum(1 for r in rows if str(r.get("id", "")).startswith(f"D-{day}-"))
+    prefix = f"D-{day}-"
+    serials = [int(suffix) for r in rows
+               if str(r.get("id", "")).startswith(prefix)
+               and (suffix := str(r["id"])[len(prefix):]).isdigit()]
+    # Recovery and handoff can leave gaps. Counting receipts reuses an existing
+    # high serial, silently giving two decisions one identity.
+    n = max(serials, default=0)
     return f"D-{day}-{n + 1:03d}"
 
 

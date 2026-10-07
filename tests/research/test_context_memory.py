@@ -33,6 +33,22 @@ def test_decide_appends_with_sequential_ids(tmp_path):
     assert r1["id"].endswith("-001") and r2["id"].endswith("-002")
 
 
+def test_recovered_journal_gaps_never_reuse_a_receipt_id(tmp_path):
+    day = CTX["datetime"].now(CTX["UTC"]).strftime("%Y%m%d")
+    rows = [{"id": f"D-{day}-001"}, {"id": f"D-{day}-018"},
+            {"id": f"D-{day}-019"}, {"id": "D-19990101-999"},
+            {"id": f"D-{day}-malformed"}]
+    j = tmp_path / "recovered.jsonl"
+    original = "".join(json.dumps(row) + "\n" for row in rows)
+    j.write_text(original, encoding="utf-8")
+    a = argparse.Namespace(title="t", decision="d", why="w", by="me", owner="",
+                           evidence=[], supersedes="")
+    first, second = CTX["decide"](a, j), CTX["decide"](a, j)
+    assert first["id"] == f"D-{day}-020"
+    assert second["id"] == f"D-{day}-021"
+    assert j.read_text(encoding="utf-8").startswith(original)
+
+
 def test_rationale_sync_refreshes_generated_block_and_keeps_human_text(tmp_path):
     s = tmp_path / "sleeves.json"
     out = tmp_path / "sleeves"

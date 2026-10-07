@@ -89,7 +89,7 @@ def _ledger_by_band(path: Path, hour_of: Any) -> dict[str, dict[str, float]]:
 
 def build(alloc: dict[str, Any], survivors: list[dict[str, Any]],
           ledger: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
-    from portfolio_gap import BANDS, band_of, sleeve_axes, window_hours
+    from desks.mt5.research.portfolio_gap import BANDS, band_of, sleeve_axes, window_hours
     now = now or datetime.now(tz=UTC)
     hours = window_hours()
     book = {str(k): float(v) for k, v in (alloc.get("book") or {}).items()}

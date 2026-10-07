@@ -113,6 +113,12 @@ rem code, rebuilds every promoted certificate from its frozen spec and is compar
 rem trade with the original. Daily, not hourly: it reloads every certified chart's bars.
 call :run "desks\mt5\research\independent_verifier.py" --apply --budget-s 1200
 call :run "desks\mt5\research\quantbench.py" --apply
+rem DORMANT COMPONENTS (DP2, 2026-09-30). The dead-architecture census names UNREACHED organs
+rem every run and nobody acted on the list. This takes the ones that ALSO have no clock in the
+rem component registry and no artifact update in 14 days (disk and git) and files each one to
+rem docs/research/retirements.jsonl as PROPOSED, with its evidence. It deletes, moves and
+rem unschedules nothing; a person accepts or rejects each proposal.
+call :run "desks\mt5\research\dormant_components.py" --apply
 rem DR DRILL (audit item 19): journal replay, restore from the off-box copy and the duplicate-position
 rem guard, daily, against the committed stores -- never the live terminal.
 call :run "desks\mt5\scripts\dr_drill.py"

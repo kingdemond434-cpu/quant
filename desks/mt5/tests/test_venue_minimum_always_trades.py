@@ -51,19 +51,11 @@ def test_the_venue_minimum_is_per_symbol_and_not_a_literal() -> None:
             f"{share_cfd} requires 0.1 on this venue; 0.01 would be rejected, not small")
 
 
-def test_gold_keeps_its_higher_desk_floor_on_the_gold_path() -> None:
-    """A DESK policy floor is not a BROKER floor, and they are enforced in different places.
-
-    The principal set gold at 0.02 on 2026-09-07. That is a policy decision and it lives on the
-    gold path (`gold_min_lot` / `gold_lot`), which is where it has always been enforced.
-    `venue_min_lot` answers the other question -- the smallest ticket the BROKER will accept --
-    and for gold that is 0.01. Folding the policy floor into the venue one raised gold's floor
-    inside `promoted_lot`, a path that has always floored gold at 0.01, and the stop-aware
-    sizing fence caught it immediately.
-    """
-    assert core.gold_min_lot() == 0.02, "the principal's gold floor stands"
+def test_gold_uses_the_authorized_baseline_without_a_special_floor() -> None:
+    """The principal removed the 0.02 exception; the broker minimum remains authoritative."""
+    assert core.gold_min_lot() == 0.01, "the principal removed the special gold floor"
     assert core.venue_min_lot(core.GOLD_SYMBOL) == 0.01, "this is the VENUE's number"
-    assert core.gold_lot(607.68, 20.0) >= 0.02, "the gold path enforces the policy floor"
+    assert core.gold_lot(607.68, 20.0) >= 0.01, "the venue baseline remains"
 
 
 def test_an_unknown_symbol_falls_back_to_the_desk_floor_and_still_trades() -> None:

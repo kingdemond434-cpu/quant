@@ -246,6 +246,55 @@ def build_primitives(df, symbol: str, extra: dict | None = None) -> dict:
 
 
 
+def _data_os():
+    """`libs.tiers.data_os`, importable from BOTH contexts this module runs in (the VPS checks
+    import `research.edge_search`; the box's forward engine puts `desks/mt5/research` itself on
+    sys.path), so the repo root is added when it is missing."""
+    import sys
+    root = str(Path(__file__).resolve().parents[3])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.tiers import data_os
+    return data_os
+
+
+def _known(series, source: str, index):
+    """A valid-dated series re-labelled on its KNOWLEDGE time (`data_os.known_series`), each
+    label that falls inside `index` snapped FORWARD to the first bar at or after it. The one door
+    every dated external input of the certificate path goes through.
+
+    WHY SNAP, AND WHY ONLY FORWARD. `build_primitives` aligns extras by EXACT stamp and then
+    forward-fills, and a CFTC knowledge time (Saturday 00:00) matches no FX bar: an unsnapped
+    series would read as all-NaN and silently drop the feature -- the cell would vanish instead
+    of becoming honest. Snapping to the first bar AT OR AFTER the knowledge time can only make a
+    value later, never earlier, and the series stays one observation per report, so a weekly
+    print is never counted as 168 hourly ones.
+    """
+    import pandas as pd
+    known = _match_clock(_data_os().known_series(series.sort_index(), source), index)
+    if len(index):
+        labels = list(known.index)
+        for i, t in enumerate(labels):
+            if index[0] <= t <= index[-1]:
+                labels[i] = index[int(index.searchsorted(t, side="left"))]
+        known = pd.Series(known.to_numpy(), index=pd.DatetimeIndex(labels), name=known.name)
+    return known[~known.index.duplicated(keep="last")]
+
+
+def _snapshot_known_at(doc: dict, index):
+    """The `updated` stamp of a snapshot as a Timestamp on `index`'s tz convention, or None."""
+    import pandas as pd
+    raw = doc.get(_data_os().PUBLICATION_LAGS["macro_state"]["knowledge_column"])
+    try:
+        ts = pd.Timestamp(raw)
+    except (TypeError, ValueError):
+        return None
+    if ts is pd.NaT or raw is None:
+        return None
+    ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+    return ts if getattr(index, "tz", None) is not None else ts.tz_localize(None)
+
+
 def _match_clock(series, index):
     """Put `series` on the same tz-awareness as `index` WITHOUT moving a single timestamp.
 
@@ -476,11 +525,19 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
             extra["swap_diff"] = s
 
     # --- macro and positioning ---------------------------------------------------------------
+    # KNOWN-BY-DATE (2026-09-30). A snapshot is known when it was WRITTEN, so a scalar it holds
+    # is admitted on bars at or after its own `updated` stamp and is NaN before it -- never
+    # broadcast back across history, which applied today's reading to every bar ever traded
+    # (`data_os.PUBLICATION_LAGS["macro_state"]`, flagged `assumed`). An undated snapshot has no
+    # knowledge time and contributes nothing.
     macro = _read(BASE / "data" / "macro_state.json")
     if isinstance(macro, dict):
+        known_at = _snapshot_known_at(macro, index)
         for k, v in list(macro.items())[:6]:
-            if isinstance(v, (int, float)) and not isinstance(v, bool):
-                extra[f"macro_{k}"] = pd.Series(float(v), index=index)
+            if known_at is not None and isinstance(v, (int, float)) \
+                    and not isinstance(v, bool):
+                extra[f"macro_{k}"] = pd.Series(float(v), index=index).where(
+                    index >= known_at)
     # THE SEARCH LEG HAS BEEN BLIND TO COT FOR ITS WHOLE LIFE, and the three filenames below are
     # why: nothing in this repository has ever written `cot.json`, `cot_tff.json` or
     # `cot_disagg.json`. The only two mentions of them anywhere are this loop and the identical
@@ -500,9 +557,16 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
     if zcache.exists():
         try:
             frame = pd.read_parquet(zcache, columns=[symbol])
-            series = frame[symbol].astype(float).dropna().resample("W-FRI").last().dropna()
+            # KNOWN-BY-DATE (2026-09-30). The cache is indexed on the report's TUESDAY and
+            # forward-filled daily; resampled to W-FRI the label was Friday 00:00, ~20 hours
+            # before the CFTC publishes that Tuesday's report -- and `build_primitives` ffills
+            # it onto every bar, so every `ext_cot_net` cell the gauntlet certified and the
+            # forward clock traded read positioning a day before it existed. W-TUE keeps the
+            # label ON the report date (valid time), and `data_os.known_series` moves it to
+            # valid + the declared CFTC lag, so the ffill can only reach a bar after release.
+            series = frame[symbol].astype(float).dropna().resample("W-TUE").last().dropna()
             if len(series) >= 52:                      # a year of reports or it is not a series
-                extra["cot_net"] = series
+                extra["cot_net"] = _known(series, "cot_fx", index)
         except Exception:
             pass                                       # no COT for this symbol; the rest resolve
 
@@ -520,7 +584,8 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
                              if c in cdf.columns), None)
                 if tcol and ncol:
                     cdf.index = pd.to_datetime(cdf[tcol], utc=True, errors="coerce")
-                    extra["cot_net"] = cdf[ncol].astype(float).dropna()
+                    extra["cot_net"] = _known(cdf[ncol].astype(float).dropna(), "cot",
+                                              index)
                     break
             except Exception:
                 continue

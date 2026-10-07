@@ -37,6 +37,29 @@ if str(DESK.parent.parent) not in sys.path:
 
 import novelty_gate as ng  # noqa: E402
 
+
+def test_batch_preparation_preserves_verdicts_and_refreshes_mutated_library(monkeypatch):
+    members = [ng._member({"symbol": "EURUSD", "family": "carry", "params": {"rr": r},
+                           "hypothesis": "interest differential", "session": "asia"},
+                          "survivor", key=f"member-{r}") for r in (1.5, 1.6, 2.5)]
+    lib = ng.Library(members=members)
+    rows = [{"symbol": "EURUSD", "family": "carry", "params": {"rr": r},
+             "session": "asia", "hypothesis": "interest differential"}
+            for r in (1.5, 1.55, 3.0)]
+    expected = [ng.admit(row, lib) for row in rows]
+    original = ng.features_of
+    calls = []
+
+    def measured(member):
+        calls.append(member)
+        return original(member)
+
+    monkeypatch.setattr(ng, "features_of", measured)
+    assert ng.screen(rows, lib) == expected
+    assert all(sum(item is m for item in calls) <= 1 for m in members)
+    members[0].params["feature"] = "new_primitive"
+    assert ng.screen(rows, lib) == [ng.admit(row, lib) for row in rows]
+
 INCUMBENT = {
     "sym": "XAUUSD",
     "cell": "XAUUSD.session_range_breakout.rr=1.5_wb=12",

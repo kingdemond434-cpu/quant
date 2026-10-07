@@ -99,14 +99,15 @@ def enqueue(queue: TaskQueue, found: list[Finding], *, org: Org | None = None,
                     "worked on, rather than the head of a backlog nobody reads")}
 
 
-def progress(queue: TaskQueue, root: Path) -> dict[str, Any]:
+def progress(queue: TaskQueue, root: Path, *, observed: list[Finding] | None = None
+             ) -> dict[str, Any]:
     """What the campaign has actually moved, which is not the same as what it has queued."""
     tasks = list(queue.tasks().values())
     mine = [t for t in tasks if t.kind in (WIRE_KIND, RETIRE_KIND)]
     done = [t for t in mine if t.state == "DONE"]
     dead = [t for t in mine if t.state == "DEAD"]
     open_ = [t for t in mine if t.state in ("READY", "LEASED")]
-    remaining = len(findings(root))
+    remaining = len(findings(root) if observed is None else observed)
     return {
         "remaining_unreachable": remaining,
         "queued_open": len(open_),
@@ -133,4 +134,6 @@ def run(root: Path, queue: TaskQueue, *, batch: int = BATCH) -> dict[str, Any]:
     swept = org.sweep_dead(queue)
     return {"audit_total": len(found), **got,
             "escalated": swept["escalated"], "not_escalated": swept["not_escalated"],
-            "progress": progress(queue, root)}
+            # Queueing and escalation change the queue, not source wiring. Reuse
+            # this pass's fresh census; the next pass measures the tree again.
+            "progress": progress(queue, root, observed=found)}

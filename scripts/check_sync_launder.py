@@ -113,10 +113,11 @@ def subjects() -> dict[str, str]:
 def candidates(subs: dict[str, str]) -> set[str]:
     """Every tracked .py a sync commit ever touched. Derived, never listed."""
     files: set[str] = set()
-    for h, s in subs.items():
-        if not is_sync(s):
-            continue
-        for f in git("show", "--name-only", "--format=", h).splitlines():
+    syncs = [h for h, subject in subs.items() if is_sync(subject)]
+    # The same `git show` semantics for every revision, with fewer process starts.
+    # Bounded batches fit Windows' command-line limit even for long SHA histories.
+    for start in range(0, len(syncs), 128):
+        for f in git("show", "--name-only", "--format=", *syncs[start:start + 128]).splitlines():
             f = f.strip()
             if f.endswith(".py"):
                 files.add(f)

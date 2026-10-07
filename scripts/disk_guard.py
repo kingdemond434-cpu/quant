@@ -202,6 +202,13 @@ def rollup(src_dir: Path, cutoff: str, actions: list[str]) -> int:
 def mem_available_mb() -> float:
     """MemAvailable in MB. Returns 0.0 when unreadable -- UNMEASURED is never a clean verdict
     (L1.28a), and a guard that cannot read the resource it guards must say so, not pass."""
+    if sys.platform == "win32":
+        try:
+            import psutil
+
+            return float(psutil.virtual_memory().available) / (1024.0 * 1024.0)
+        except (ImportError, OSError, ValueError):
+            return 0.0
     try:
         for line in Path("/proc/meminfo").read_text("utf-8").splitlines():
             if line.startswith("MemAvailable:"):
@@ -211,12 +218,16 @@ def mem_available_mb() -> float:
     return 0.0
 
 
-def _open_files() -> set[str]:
+def _open_files() -> set[str] | None:
     """Every path any visible process currently holds open. Cheap (~one readlink per fd) and
     the difference between a janitor and an outage: age alone cannot tell a dead seat's
     leftovers from a live seat's in-progress download."""
     held: set[str] = set()
-    for proc in Path("/proc").iterdir():
+    try:
+        processes = list(Path("/proc").iterdir())
+    except OSError:
+        return None
+    for proc in processes:
         if not proc.name.isdigit():
             continue
         try:
@@ -253,10 +264,14 @@ def tmpfs_worktrees(repo: Path) -> list[Path]:
     return found
 
 
-def _cwds() -> set[str]:
+def _cwds() -> set[str] | None:
     """Every visible process's cwd -- a worktree someone is standing in is never reclaimed."""
     out: set[str] = set()
-    for proc in Path("/proc").iterdir():
+    try:
+        processes = list(Path("/proc").iterdir())
+    except OSError:
+        return None
+    for proc in processes:
         if not proc.name.isdigit():
             continue
         try:
@@ -278,6 +293,9 @@ def reap_tmpfs_worktrees(now: datetime, repo: Path, actions: list[str], *,
     freed = 0
     removed = 0
     cwds = _cwds()
+    if cwds is None:
+        actions.append("tmpfs-worktree: process cwd census UNMEASURED -- nothing reclaimed")
+        return 0, 0
     for wt in tmpfs_worktrees(repo):
         if not wt.exists():
             continue
@@ -327,6 +345,9 @@ def reap_tmpfs(now: datetime, actions: list[str], *,
     if not TMP_DIR.is_dir():
         return 0, 0
     held = _open_files()
+    if held is None:
+        actions.append("tmpfs: open-file census UNMEASURED -- nothing reclaimed")
+        return 0, 0
     # A registered worktree is a CHECKOUT, not scratch. Unlinking its files would leave git
     # advertising a tree of phantom deletions; `reap_tmpfs_worktrees` removes it wholesale or
     # not at all.

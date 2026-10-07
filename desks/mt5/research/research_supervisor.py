@@ -256,6 +256,19 @@ def _switched_off() -> str:
     return ""
 
 
+def quarantine_deadline(st: dict, now: float) -> float | None:
+    """Remember a rapid failure's full 30-minute backoff across ticks and restarts."""
+    deadline = float(st.get("quarantine_until", 0) or 0)
+    if deadline > now:
+        return deadline
+    last = float(st.get("last_spawn", 0) or 0)
+    if last and now - last < 180:
+        deadline = last + 1800
+        st["quarantine_until"] = deadline
+        return deadline
+    return None
+
+
 def main() -> int:
     if _switched_off():
         log(f"supervisor: disabled (data/{_switched_off()} present)")
@@ -303,10 +316,17 @@ def main() -> int:
             if is_running(t["match"]):
                 continue
             st = state.get(t["name"], {})
-            last = float(st.get("last_spawn", 0) or 0)
-            if now - last < 180:
+            previous_deadline = st.get("quarantine_until")
+            deadline = quarantine_deadline(st, now)
+            if deadline is not None:
+                if deadline != previous_deadline:
+                    state[t["name"]] = st
+                    try:
+                        STATE.write_text(json.dumps(state), encoding="utf-8")
+                    except OSError as exc:
+                        log(f"supervisor: quarantine state NOT written: {exc!r}")
                 log(f"supervisor: {t['name']} keeps dying, quarantined until "
-                    f"{datetime.fromtimestamp(last + 1800, UTC).isoformat()}")
+                    f"{datetime.fromtimestamp(deadline, UTC).isoformat()}")
                 continue
             try:
                 CHILD_LOGS.mkdir(parents=True, exist_ok=True)

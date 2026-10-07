@@ -49,6 +49,8 @@ def test_specs_are_derived_from_every_declared_clock():
     assert REG.get("resident:gateway").schedule == "MT5-GatewayResident"
     assert REG.get("task:MT5-GatewayResident") is None
     assert REG.get("component:control_plane").schedule == "MT5-ClockFixer"
+    assert REG.get("task:MT5-ClockFixer") is None
+    assert REG.get("task:MT5-Dept-Intel") is None and REG.get("resident:dept_intel") is not None
     gauntlet = REG.get("leg:external_gauntlet")
     # DERIVED, NEVER ASSERTED. This read `== 2 * 3600` -- a literal that happened to equal the
     # derivation only while the judge's cycle budget was under 3,600 s. When the budget was

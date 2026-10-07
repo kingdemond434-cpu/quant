@@ -2,7 +2,7 @@
 
 Generated 2026-09-23T05:13:24+00:00 by `desks/mt5/research/cost_truth.py` (hourly leg `cost_truth`). DERIVED -- edit the organ, never this page.
 
-Account **495044** (Fusion Markets Pty Ltd, FusionMarkets-Live, EUR), terminal MEASURED, 433 deals, 78 symbols, 8 with a realised reading.
+The live account (Fusion Markets Pty Ltd, FusionMarkets-Live, EUR), terminal MEASURED, 433 deals, 78 symbols, 8 with a realised reading.
 
 ## The commission term, which is ~98% of the charged cost
 

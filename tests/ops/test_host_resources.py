@@ -50,6 +50,7 @@ class TestMountResolution:
         Getting this backwards reports the ROOT filesystem's type for a tmpfs path, which is how a
         tmpfs stops being measured at all.
         """
+        monkeypatch.setattr(os.path, "realpath", lambda path: path)
         monkeypatch.setattr(hr, "_MOUNTS", Path("/dev/null"))
         monkeypatch.setattr(Path, "read_text", lambda self, *a, **k: (
             "/dev/sda1 / ext4 rw 0 0\n"
@@ -59,6 +60,7 @@ class TestMountResolution:
 
     def test_prefix_is_not_a_substring_match(self, monkeypatch):
         """`/tmpfoo` is NOT under `/tmp`, and a naive startswith says it is."""
+        monkeypatch.setattr(os.path, "realpath", lambda path: path)
         monkeypatch.setattr(hr, "_MOUNTS", Path("/dev/null"))
         monkeypatch.setattr(Path, "read_text", lambda self, *a, **k: (
             "/dev/sda1 / ext4 rw 0 0\n"
@@ -146,7 +148,7 @@ class TestPressureNoteIsSafeOnTheFailurePath:
         monkeypatch.setattr(Path, "read_text",
                             lambda self, *a, **k: (_ for _ in ()).throw(OSError("no /proc")))
         monkeypatch.setattr(os, "statvfs",
-                            lambda _p: (_ for _ in ()).throw(OSError("gone")))
+                            lambda _p: (_ for _ in ()).throw(OSError("gone")), raising=False)
         note = hr.pressure_note()
         assert note and "unknown" in note
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from tests.risk.conftest import correlated_returns
 
 from libs.risk.correlation import (
     average_off_diagonal,
@@ -15,6 +14,7 @@ from libs.risk.correlation import (
     stressed_correlation,
 )
 from libs.risk.heat import PositionHeat, calculate_heat, check_heat_limits
+from tests.risk.conftest import correlated_returns
 
 
 def test_rolling_correlation_shape_and_range() -> None:
