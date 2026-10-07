@@ -743,6 +743,12 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
         # top-level `parent` of an arbitrary crawler row is NOT lineage and is not read here.
         **{k: row[k] for k in ("lineage", "operator", "mutated_from", "parent_ids")
            if row.get(k)},
+        # AND THE UPSTREAM ROW IT WAS BUILT FROM (audit S1, PR #253). A donor holding many rows
+        # (alt_proxies: the Pink Sheet, SingStat, Korean customs) names the row in
+        # `source_row_id` and its `<provider>:<dataset>` in `data_source`; the registry credits
+        # `<donor>:<source_row_id>` (proposer_common.credit_source_id), and the compiled
+        # candidate keeps both so a docket reader can attribute it without the registry.
+        **{k: row[k] for k in ("source_row_id", "data_source") if row.get(k)},
     }
 
 

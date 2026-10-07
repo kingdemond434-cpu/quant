@@ -240,7 +240,10 @@ def _alt_proxy_regions() -> dict[str, str]:
     for s in A.SOURCES:
         reg = ALT_PROXY_REGION.get(s.id) or REGION_OF.get(str(s.region).strip().lower())
         if reg:
-            for key in (s.id, f"alt_{s.id}", f"{A.SOURCE}:{s.id}", A.data_source_of(s)):
+            # `<donor>:<id>` is the registry source the donation door credits a row's cells to
+            # (proposer_common.credit_source_id), for the direct and the conditioned donor.
+            for key in (s.id, f"alt_{s.id}", f"{A.SOURCE}:{s.id}",
+                        f"{A.INDIRECT_SOURCE}:{s.id}", A.data_source_of(s)):
                 out[key.lower()] = reg
     return out
 

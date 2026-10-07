@@ -16,7 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -546,6 +546,28 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     return path
 
 
+def credit_source_id(source: str, candidate: Mapping[str, Any]) -> str:
+    """The registry source a donated row is credited to: `<donor>:<source_row_id>` when the row
+    names the upstream row it was built from, else the donor itself.
+
+    WHY A ROW ID, AND WHY THIS SHAPE (audit S1 on PR #253, 2026-10-07). An organ that donates
+    cells from many upstream rows -- alt_proxies holds the World Bank Pink Sheet, two SingStat
+    tables, Korean customs and more -- was credited as ONE source, so the delayed-credit walk,
+    `research_roi.region_of` and the Asian forward record could never tell which row a survivor
+    came from: a SingStat survivor and a Korean one landed on the same multi-region donor and
+    routed to no forest at all. The `<donor>:<id>` form is the registry's existing convention
+    (`prediction_markets:<category>`, `forest:<forest>:<layer>`, `deep_forest:<ground>`), so
+    every reader that already handles those ids handles this one. The donor-level count is not
+    lost: `generator`, `origin` and the intake file all stay keyed by the bare donor."""
+    row_id = str(candidate.get("source_row_id") or "").strip()
+    return f"{source}:{row_id}" if row_id else source
+
+
+def donor_of(source_id: str) -> str:
+    """The donor half of a `credit_source_id` (the id itself when it carries no row)."""
+    return str(source_id or "").split(":", 1)[0]
+
+
 def _record_in_registry(source: str, candidates: list[dict]) -> None:
     """EVERY MINER WRITES THE CANONICAL REGISTRY (principal 2026-09-17). Each donated row is
     one DiscoveryObject in state QUEUED (it is compiled and in the docket's intake) and one
@@ -585,19 +607,26 @@ def _record_in_registry(source: str, candidates: list[dict]) -> None:
                     family = str(c.get("family") or "")
                     params = c.get("params") if isinstance(c.get("params"), dict) else {}
                     mechanism = str(c.get("mechanism") or "")
+                    credited = credit_source_id(source, c)
                     did, _ = reg.record_discovery(
-                        source_id=source, source_type=origin.lower(), mechanism=mechanism,
+                        source_id=credited, source_type=origin.lower(), mechanism=mechanism,
                         origin=origin, generator=source, assets=[symbol],
                         exact_rule=json.dumps({"family": family, "params": params},
                                               sort_keys=True, default=str),
                         economic_rationale=str(c.get("title") or "")[:300], conn=conn)
                     reg.set_discovery_state(did, "QUEUED", possible_cells=1, generated_cells=1,
                                             compiled_cells=1, queued_cells=1, conn=conn)
-                    reg.enqueue_candidate(
+                    cid, created = reg.enqueue_candidate(
                         family=family, symbol=symbol, params=params, origin=origin,
-                        mechanism=mechanism, status="donated", generator=source, source_id=source,
-                        discovery_id=did, transformation="compiled",
+                        mechanism=mechanism, status="donated", generator=source,
+                        source_id=credited, discovery_id=did, transformation="compiled",
                         chart=str(c.get("chart") or c.get("timeframe") or ""), conn=conn)
+                    if not created and credited != source:
+                        # The rule was already queued (an earlier donation, before rows carried
+                        # their id): the row-level discovery still reaches the cell, so the
+                        # credit walk finds it. The edge is INSERT OR IGNORE, so re-donating the
+                        # same row each hour writes nothing new.
+                        reg.link("discovery", did, "cell", cid, "compiled", conn=conn)
         finally:
             conn.close()
         el = _time.perf_counter() - t0

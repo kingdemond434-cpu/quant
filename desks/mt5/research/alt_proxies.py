@@ -3508,6 +3508,9 @@ def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[s
                                                "placebo_abs_ic_p95", "backfill_share",
                                                "horizon_bars", "min_detectable_ic", "why")},
             "data_source": data_source_of(src), "attribution": attribution_of(src, now),
+            # THE ROW, NOT THE ORGAN, EARNS THE CREDIT: the donation door records this cell's
+            # registry source as `alt_proxies:<id>` (proposer_common.credit_source_id).
+            "source_row_id": sid,
             "provenance": {"organ": "alt_proxies", "use": "direct_cells", "source_id": sid,
                            "series": series, **_meta(src)}})
     return out
@@ -3638,7 +3641,7 @@ def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict
                 "falsifier": ("the conditioned child's gauntlet verdict is no better than its "
                               "certified parent's on the same window"),
                 "parent": par["name"], "data_source": data_source_of(src),
-                "attribution": attribution_of(src, now),
+                "attribution": attribution_of(src, now), "source_row_id": sid,
                 "provenance": {"organ": "alt_proxies", "use": "indirect_cells",
                                "source_id": sid, "series": series, **_meta(src)}})
             minted.append((out[-1], par, src, series, op))
