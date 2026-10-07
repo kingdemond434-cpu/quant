@@ -40,6 +40,22 @@ sys.path.insert(0, str(ROOT / "desks" / "mt5"))
 from research.mt5_session import attach_or_initialize  # noqa: E402
 
 
+def _position(p: object) -> dict[str, object]:
+    """One open position as the ledger row; a field the terminal did not supply reads None."""
+    def f(name: str) -> float | None:
+        v = getattr(p, name, None)
+        return round(float(v), 5) if v is not None else None
+    opened = getattr(p, "time", None)
+    kind = getattr(p, "type", None)
+    return {"ticket": getattr(p, "ticket", None), "symbol": getattr(p, "symbol", None),
+            "side": None if kind is None else ("buy" if int(kind) == 0 else "sell"),
+            "volume": f("volume"), "price_open": f("price_open"),
+            "sl": f("sl") or None, "tp": f("tp") or None,
+            "swap": f("swap"), "profit": f("profit"), "magic": getattr(p, "magic", None),
+            "opened_at": (datetime.fromtimestamp(int(opened), tz=UTC).isoformat()
+                          if opened else None)}
+
+
 def main() -> int:
     try:
         import MetaTrader5 as mt5
@@ -98,15 +114,7 @@ def main() -> int:
                          if getattr(info, "margin_level", None) else None),
         "swap": round(sum(float(getattr(p, "swap", 0.0) or 0.0) for p in positions), 2),
         "today_swap": round(sum(float(getattr(d, "swap", 0.0) or 0.0) for d in deals), 2),
-        "positions": [{"ticket": int(p.ticket), "symbol": str(p.symbol),
-                       "side": "buy" if int(p.type) == 0 else "sell",
-                       "volume": float(p.volume), "price_open": float(p.price_open),
-                       "sl": float(p.sl or 0.0) or None, "tp": float(p.tp or 0.0) or None,
-                       "swap": round(float(getattr(p, "swap", 0.0) or 0.0), 2),
-                       "profit": round(float(getattr(p, "profit", 0.0) or 0.0), 2),
-                       "magic": int(getattr(p, "magic", 0) or 0),
-                       "opened_at": datetime.fromtimestamp(int(p.time), tz=UTC).isoformat()}
-                      for p in positions],
+        "positions": [_position(p) for p in positions],
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     tmp = OUT.with_suffix(".json.tmp")
