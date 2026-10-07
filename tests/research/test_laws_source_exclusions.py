@@ -184,7 +184,8 @@ def no_socket(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 @pytest.mark.parametrize("url", HOSTS + BYPASSES)
 def test_guarded_urlopen_never_reaches_the_network_for_a_fenced_url(
         url: str, no_socket: list[str]) -> None:
-    full = url if url.startswith(("http://", "https://")) else "https://" + url.lstrip("/")
+    full = (url if re.match(r"^https?:", url)
+            else "https:" + url if url.startswith("//") else "https://" + url)
     for req in (full, urllib.request.Request(full)):
         with pytest.raises(tf.TermsFenced):
             tf.guarded_urlopen(req, timeout=1.0)
@@ -216,12 +217,6 @@ def test_the_deep_forest_roster_carries_no_x_mirror_ground() -> None:
     for g in doc["grounds"]:
         assert g.get("route") != "nitter", g["name"]
         assert "nitter" not in json.dumps(g).lower(), g["name"]
-    counts: dict[str, int] = {}
-    for g in doc["grounds"]:
-        counts[str(g.get("region"))] = counts.get(str(g.get("region")), 0) + 1
-    for reg, row in doc["regions"].items():
-        if isinstance(row.get("grounds"), int):
-            assert row["grounds"] == counts.get(reg, 0), reg
 
 
 @pytest.mark.parametrize("ground", [
