@@ -96,8 +96,8 @@ def test_cells_go_through_the_one_registry_door(monkeypatch: Any) -> None:
     monkeypatch.setattr(reg, "enqueue_candidate",
                         lambda **kw: (calls.append({"kind": "cell", **kw}), ("C1", True))[1])
     # a confirmed terms row (a quoted clause) is the only verdict that mints
-    res = pc.emit_for({"id": "p", "targets": ["XAUUSD"], "terms_ref": "us_tsa_throughput",
-                       "url": "https://example.org/p"}, ["v"], ["XAUUSD"], dry_run=False)
+    res = pc.emit_for({"id": "p", "targets": ["XAUUSD"],
+                       "url": "https://www.federalreserve.gov/p"}, ["v"], ["XAUUSD"], dry_run=False)
     assert res["emitted"] == len(pc.TRANSFORMS) * len(pc.CHARTS)
     cells = [c for c in calls if c["kind"] == "cell"]
     assert len(cells) == res["emitted"]

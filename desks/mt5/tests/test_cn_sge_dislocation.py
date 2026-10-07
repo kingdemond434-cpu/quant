@@ -699,10 +699,9 @@ def test_nbs_cells_carry_the_credit_on_every_donation_path(
     for k in seen:
         _assert_nbs_credit(k["lineage"]["attribution"])
     seen.clear()
-    # a confirmed row that obliges no credit mints with no lineage credit; an ungoverned host
+    # a confirmed, quoted row that obliges no credit mints with no lineage credit; an ungoverned host
     # (no quoted clause) mints nothing at all
-    PK.emit_for({"id": "plain", "terms_ref": "us_tsa_throughput", "url": "https://example.org/a"},
-                ["x"], ["USDCNH"])
+    PK.emit_for({"id": "plain", "url": "https://www.federalreserve.gov/a"}, ["x"], ["USDCNH"])
     assert seen and all("lineage" not in k for k in seen)
     seen.clear()
     res = PK.emit_for({"id": "plain", "url": "https://example.org/a"}, ["x"], ["USDCNH"])

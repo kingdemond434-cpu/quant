@@ -451,16 +451,7 @@ PACK_HOST_TERMS: dict[str, dict[str, str]] = {'abs.gov.au': {'attribution': 'Sou
                                   'rights are indicated.',
                    'terms_url': 'https://www.customs.go.jp/copyright_e.htm',
                    'verdict': 'confirmed'},
- 'customs.go.kr': {'box_action': 'Read the terms of use / copyright page of '
-                                 'https://www.customs.go.kr/english/main.do on the box and quote '
-                                 'the clause governing reuse of its data',
-                   'checked_at': '2026-10-07',
-                   'fetch_status': 'FETCH_BLOCKED',
-                   'judgement': 'TO_CONFIRM (FETCH_BLOCKED): robots.txt connect timeout (also '
-                                'governs unipass.customs.go.kr)',
-                   'terms_quote': '',
-                   'terms_url': 'https://www.customs.go.kr/english/main.do',
-                   'verdict': 'to_confirm'},
+ 'customs.go.kr': {'adopt': 'kr_exports_early'},
  'customs.gov.ru': {'box_action': 'Read the terms of use / copyright page of '
                                   'https://customs.gov.ru/statistic on the box and quote the '
                                   'clause governing reuse of its data',
@@ -536,14 +527,7 @@ PACK_HOST_TERMS: dict[str, dict[str, str]] = {'abs.gov.au': {'attribution': 'Sou
              'terms_quote': '',
              'terms_url': 'https://www.dgcx.ae/market-data',
              'verdict': 'to_confirm'},
- 'e-stat.go.jp': {'also_quote': 'The user must cite the source when using the Content.',
-                  'attribution': 'Source: e-Stat (Portal Site of Official Statistics of Japan)',
-                  'checked_at': '2026-10-07',
-                  'judgement': 'CONFIRMED: the quoted clause permits use of the data, including '
-                               "the desk's own-account analysis",
-                  'terms_quote': 'Commercial use of Content is also permitted.',
-                  'terms_url': 'https://www.e-stat.go.jp/en/terms-of-use',
-                  'verdict': 'confirmed'},
+ 'e-stat.go.jp': {'adopt': 'jp_estat_immigration'},
  'eaindustry.nic.in': {'checked_at': '2026-10-07',
                        'judgement': 'TO_CONFIRM: a Disclaimer link exists but its text was not '
                                     'read; no reuse, licence or copyright clause was found on the '
@@ -852,17 +836,7 @@ PACK_HOST_TERMS: dict[str, dict[str, str]] = {'abs.gov.au': {'attribution': 'Sou
             'terms_quote': '',
             'terms_url': 'https://www.ine.cn/disclaimer/',
             'verdict': 'to_confirm'},
- 'inegi.org.mx': {'also_quote': 'Debe otorgar los créditos correspondientes al INEGI como autor, '
-                                'y cuando técnicamente sea posible, mencionar la fuente de '
-                                'extracción de la información.',
-                  'attribution': 'Fuente: INEGI, <nombre del producto>',
-                  'checked_at': '2026-10-07',
-                  'judgement': 'CONFIRMED: the quoted clause permits use of the data, including '
-                               "the desk's own-account analysis",
-                  'terms_quote': 'Puede explotar comercialmente la información, utilizándola como '
-                                 'insumo para generar otros productos o servicios.',
-                  'terms_url': 'https://www.inegi.org.mx/inegi/terminos.html',
-                  'verdict': 'confirmed'},
+ 'inegi.org.mx': {'adopt': 'mx_inegi_emec'},
  'ins.ci': {'box_action': 'Read the terms of use / copyright page of https://www.ins.ci/ on the '
                           'box and quote the clause governing reuse of its data',
             'checked_at': '2026-10-07',
