@@ -1,4 +1,4 @@
-"""LAWS §5e carries the principal's 2026-09-30 source exclusions, and every route is fenced.
+"""The principal's 2026-09-30 source exclusions are recorded, and every route is fenced.
 
 The ruling: no Reddit or StockTwits at all, no paid X and no Discord user token; Wikipedia
 pageviews and GDELT replace their attention signal; the terms gate fails closed. Before this the
@@ -29,7 +29,9 @@ from libs.data import free_stack as fs  # noqa: E402
 from libs.data import terms_fence as tf  # noqa: E402
 from libs.research import access_classifier as ac  # noqa: E402
 
-LAWS = (ROOT / "docs" / "LAWS.md").read_text("utf-8")
+#: The ruling's record is the fence's own docstring; LAWS §5e itself is not edited by a session.
+EXCLUSIONS = tf.__doc__ or ""
+LAWS_TEXT = (ROOT / "docs" / "LAWS.md").read_text("utf-8")
 HOSTS = ("https://www.reddit.com/r/Gold/new.json", "https://old.reddit.com/r/x",
          "https://redd.it/abc", "https://stocktwits.com/symbol/XAUUSD",
          "https://api.stocktwits.com/api/2/streams/symbol/AAPL.json",
@@ -42,18 +44,11 @@ HOSTS = ("https://www.reddit.com/r/Gold/new.json", "https://old.reddit.com/r/x",
          "https://api.x.com/2/users/by/username/x")
 
 
-def _section_5e() -> str:
-    m = re.search(r"^## 5e\..*?(?=^## 5f\.)", LAWS, flags=re.S | re.M)
-    assert m, "LAWS §5e is missing"
-    return m.group(0)
-
-
-def test_5e_names_every_excluded_source_both_substitutes_and_the_fence() -> None:
-    text = _section_5e()
-    assert "NAMED SOURCE EXCLUSIONS" in text and "2026-09-30" in text
-    for name in ("Reddit, all of it", "StockTwits, all of it", "paid X/Twitter",
-                 "Discord user token", "Wikipedia", "GDELT", "fails closed",
-                 tf.BLOCKED_WITH_SUBSTITUTE, tf.BLOCKED_TERMS, "libs/data/terms_fence.py"):
+def test_the_record_names_every_excluded_source_both_substitutes_and_the_fence() -> None:
+    text = EXCLUSIONS
+    assert "2026-09-30" in text
+    for name in ("Reddit and its mirrors", "StockTwits", "no paid X", "Discord user token",
+                 "Wikipedia pageviews", "GDELT", "fails closed", tf.BLOCKED_WITH_SUBSTITUTE):
         assert name in text, name
     assert (ROOT / "libs" / "data" / "terms_fence.py").is_file()
     assert (ROOT / "tests" / "research" / "test_reddit_terms_fence.py").is_file()
@@ -62,7 +57,7 @@ def test_5e_names_every_excluded_source_both_substitutes_and_the_fence() -> None
 def test_the_five_acts_stay_five() -> None:
     """The exclusions are sources the principal named, not a sixth refused act."""
     assert len(ac.HARD_BOUNDARY) == 5 and ac.HARD_BOUNDARY_COUNT == 5
-    assert "the one standing amendment" in _section_5e()
+    assert "NAMED SOURCE EXCLUSIONS" not in LAWS_TEXT     # §5e stays the principal's to amend
 
 
 @pytest.mark.parametrize("url", HOSTS)

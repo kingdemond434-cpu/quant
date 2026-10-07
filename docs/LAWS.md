@@ -493,36 +493,13 @@ subjects it may not read:
 If a page is behind a login or a paywall the desk does not break in — and the **open surface of
 that same domain is mined like any other**. Everything reachable without breaking in is mined.
 Those five acts are the whole of the restriction: **there is no sixth, and the absence of a rule
-is a permission, not a reason for caution** (the principal's named source exclusions below are
-the one standing amendment). The labels PRIVATE, CONFIDENTIAL_MNPI and
+is a permission, not a reason for caution.** The labels PRIVATE, CONFIDENTIAL_MNPI and
 STOLEN_UNAUTHORIZED carry these five acts, are refused with the reason recorded, and are the only
 refusals in the desk.
 
 Enforced by `libs/research/access_classifier.py` (`PRINCIPLE`, `HARD_BOUNDARY`,
 `HARD_BOUNDARY_COUNT`, `REMOVED_BRAKES`, `ROUTING`), `desks/mt5/research/evidence_router.py`, the
 ingestion law (§5c) and `tests/research/test_access_routing.py`.
-
-**THE PRINCIPAL'S NAMED SOURCE EXCLUSIONS (principal's ruling, 2026-09-30; AMENDS the "no sixth"
-sentence above for these sources only).** The five refused ACTS stay exactly five and the
-`HARD_BOUNDARY` count stays pinned. Separately, the principal has excluded specific SOURCES by
-name, on their terms, and these are not mined, fetched, compiled or tested in any form:
-
-- **Reddit, all of it** (every subreddit, the API, Pushshift and mirrors of it);
-- **StockTwits, all of it**;
-- **paid X/Twitter** access, and the **Discord user token**.
-
-Their attention signal is replaced by the public substitutes the same ruling named: **Wikipedia
-pageviews and GDELT**. The terms gate for these hosts **fails closed**: an excluded host is
-refused before any request, with the ruling recorded as the status (`BLOCKED_WITH_SUBSTITUTE`
-while a lawful substitute is wired, `BLOCKED_TERMS` otherwise), never quietly downgraded to a
-weight. Rows already held from these platforms mint no new cell; existing verdicts keep their
-lineage label and earn no delayed credit. Private
-and paid data stay blocked unless licensed; free keys the desk registers itself count as licensed
-access. This is a ruling by the principal, not a brake a session derived, so the REMOVED_BRAKES
-paragraph above does not reach it; equally, no session may extend the list by analogy. A new
-excluded source needs the principal's own words. Enforced by `libs/data/terms_fence.py` and
-`tests/research/test_reddit_terms_fence.py`, and pinned here by
-`tests/research/test_laws_source_exclusions.py`.
 
 ## 5f. THE MAXIMUM FORM (principal's standing order, 2026-09-17, permanent)
 
