@@ -2371,10 +2371,6 @@ TERMS: dict[str, tuple[str, str]] = {
                       "allowed with credit"),
     "tr_tuik_retail": ("confirmed", "TÜİK legal notice: reuse without permission, source cited"),
     "kr_mof_container_teu": ("confirmed", "data.go.kr: 이용허락범위 제한 없음 (unrestricted)"),
-    # Read from the axis door (data/axes/bis.json) by macro_state_engine's latent datasets, not
-    # fetched here; its row lives in this table so the one terms gate binds it too.
-    "bis_policy_rates": ("confirmed", "BIS Data Portal terms: use of the statistics is "
-                         "unrestricted, BIS cited as source"),
 }
 TERMS_VALUES = ("confirmed", "to_confirm", "refused")
 
@@ -2521,6 +2517,18 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                          "별도의 신청절차 없이 이용 가능"),
         "robots": "apis.data.go.kr is the portal's documented Open API (free service key)",
         "checked_at": _CHK},
+}
+
+#: AXIS-ONLY TERMS. Sources this organ never fetches (no `Source` row, so never in BY_ID) whose
+#: data another organ reads from an axis door -- macro_state_engine's latent datasets read BIS
+#: policy rates from data/axes/bis.json. They are judged by the same verdict vocabulary
+#: (TERMS_VALUES) and carry verbatim evidence, but live apart from TERMS so TERMS stays exactly
+#: one row per fetched source. A source in neither table is unknown, i.e. blocked.
+AXIS_TERMS: dict[str, tuple[str, str]] = {
+    "bis_policy_rates": ("confirmed", "BIS Data Portal terms: use of the statistics is "
+                         "unrestricted, BIS cited as source"),
+}
+AXIS_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
     "bis_policy_rates": {
         "terms_url": "https://data.bis.org/help/legal",
         "terms_quote": ("The use of the statistics is unrestricted, provided that: ... if the "

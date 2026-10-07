@@ -421,7 +421,8 @@ def test_edge_scan_keeps_its_whole_budget_whatever_the_latent_build_costs(
                         "skipped_budget": 0, "n_perm": n_perm}
 
     monkeypatch.setattr(mse, "build_latent", fake_latent)
-    monkeypatch.setattr(mse, "build_asia_events", lambda now, axes, apply: {"n_events": 0})
+    monkeypatch.setattr(mse, "build_asia_events",
+                        lambda now, axes, apply, deadline=None: {"n_events": 0})
     monkeypatch.setattr(mse, "build_blocks", lambda: ({}, {"n_blocks": 0}, {}))
     monkeypatch.setattr(mse, "graph_pairs", lambda: ([{"src": "A", "dst": "B"}], {}))
     monkeypatch.setattr(mse, "hunt_edges", fake_hunt)
@@ -447,11 +448,28 @@ def test_the_cli_and_the_hourly_leg_carry_the_latent_budget_on_top() -> None:
 def test_the_latent_build_stops_inside_its_own_budget(world: Path,
                                                       monkeypatch: pytest.MonkeyPatch) -> None:
     import types
-    clock = _Clock(step=5.0)                    # every clock read costs 5 s; the budget is 1 s
+    clock = _Clock()                            # time passes only when an input is loaded
     monkeypatch.setattr(mse, "time", types.SimpleNamespace(monotonic=clock.monotonic))
-    rep = mse.build_latent(NOW, budget_s=1.0, apply=True, cells=False,
-                           specs=(mse.LATENT_BY_ID["asia_export"],), environ={})
+    real_load = mse.load_input
+    loaded: list[str] = []
+
+    def slow_load(inp: Any, *a: Any) -> Any:    # the first load spends the whole 1 s budget
+        loaded.append(inp.id)
+        clock.jump(10.0)
+        return real_load(inp, *a)
+
+    monkeypatch.setattr(mse, "load_input", slow_load)
+    spec0 = mse.LATENT_BY_ID["asia_export"]
+    rep = mse.build_latent(NOW, budget_s=1.0, apply=True, cells=False, specs=(spec0,),
+                           environ={})
     ds = rep["datasets"]["asia_export"]
+    # Input loading is bounded: one input loaded, every later one NAMED as skipped.
+    assert loaded == [spec0.inputs[0].id]
+    later = [f"asia_export.{i.id}" for i in spec0.inputs[1:]]
+    assert rep["skipped_inputs"]["inputs"] == later and rep["skipped_inputs"]["n"] == len(later)
+    assert all(r["status"] == "SKIPPED_BUDGET" for r in ds["inputs"][1:])
+    assert all(rep["fed"]["datasets"][k]["status"] != "FED" for k in later)
+    # ... and the vintage build stops on the same deadline, owing what it did not reach.
     assert ds["new_vintages"] == 0 and ds["release_dates_owed"] > 0
     # Cells past the deadline are named, never screened, and charge nothing.
     spec = mse.LATENT_BY_ID["asia_export"]
@@ -521,12 +539,80 @@ def test_real_reads_go_to_the_dataset_use_census_under_its_own_ids(
     assert rep["fed"]["census_record"].startswith("recorded")
 
 
-def test_bis_terms_are_confirmed_with_evidence_in_the_one_terms_table() -> None:
+def test_bis_terms_are_confirmed_with_evidence_in_the_axis_terms_table() -> None:
     from research import alt_proxies as ap
-    assert ap.TERMS["bis_policy_rates"][0] == "confirmed"
-    ev = ap.TERMS_EVIDENCE["bis_policy_rates"]
+    # Axis-only: never fetched by alt_proxies, so never a TERMS row (TERMS == BY_ID holds).
+    assert "bis_policy_rates" not in ap.TERMS and "bis_policy_rates" not in ap.BY_ID
+    assert ap.AXIS_TERMS["bis_policy_rates"][0] == "confirmed"
+    assert set(ap.AXIS_TERMS) == set(ap.AXIS_TERMS_EVIDENCE)
+    assert all(v[0] in ap.TERMS_VALUES for v in ap.AXIS_TERMS.values())
+    ev = ap.AXIS_TERMS_EVIDENCE["bis_policy_rates"]
     assert ev["terms_url"].startswith("https://") and "unrestricted" in ev["terms_quote"]
     assert mse._terms("bis_policy_rates") == "confirmed"
     assert mse._terms("no_such_source") == "unknown_source"
     bis = [i for i in mse.LATENT_BY_ID["asia_funding"].inputs if i.axis == "bis"]
     assert bis and all(i.terms_source == "bis_policy_rates" for i in bis)
+
+
+def test_a_bis_input_is_blocked_when_its_axis_terms_row_is_absent(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import alt_proxies as ap
+    monkeypatch.setattr(ap, "AXIS_TERMS", {})
+    assert mse._terms("bis_policy_rates") == "unknown_source"
+
+
+# --------------------------------------------------------------- fed block: timestamps (D18)
+def _consumed(fed: bool = False) -> dict[str, dict[str, Any]]:
+    inp = mse.LATENT_BY_ID["asia_export"].inputs[0]
+    return {f"asia_export.{inp.id}": {"inp": inp, "rec": {"status": "ABSENT"}, "fed": fed}}
+
+
+def test_a_naive_last_fed_at_is_read_as_utc_and_says_so() -> None:
+    key = next(iter(_consumed()))
+    naive = (NOW - timedelta(hours=2)).replace(tzinfo=None).isoformat(timespec="seconds")
+    got = mse.fed_block(_consumed(), {key: naive}, NOW)        # used to raise TypeError
+    row = got["datasets"][key]
+    assert row["status"] == "FED" and "UTC" in row["tz_assumed"]
+    old = (NOW - timedelta(hours=30)).replace(tzinfo=None).isoformat(timespec="seconds")
+    assert mse.fed_block(_consumed(), {key: old}, NOW)["datasets"][key]["status"] == "STALE"
+
+
+def test_a_future_last_fed_at_is_a_defect_never_fed() -> None:
+    key = next(iter(_consumed()))
+    for future in ((NOW + timedelta(hours=3)).isoformat(timespec="seconds"),
+                   (NOW + timedelta(hours=3)).replace(tzinfo=None).isoformat()):
+        got = mse.fed_block(_consumed(), {key: future}, NOW)
+        row = got["datasets"][key]
+        assert row["status"] == "DEFECT" and "future" in row["defect"]
+        assert row["last_fed_at"] is None                      # never carried into state
+        assert key in {u["dataset"] for u in got["unfed"]} and got["unfed_count"] == 1
+
+
+# ------------------------------------------------------- Asia events: bounded by the deadline
+def test_the_asia_events_step_is_bounded_by_the_latent_deadline(
+        world: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    out, led = tmp_path / "ev.json", tmp_path / "ev.jsonl"
+    rep = mse.build_asia_events(NOW, world / "axes", True, out_path=out, ledger_path=led,
+                                deadline=0.0)
+    assert rep["status"].startswith("SKIPPED_BUDGET") and rep["sensors_not_reached"]
+    assert not out.exists() and not led.exists()               # nothing partial published
+    # build() never starts the step once the latent build has spent its budget.
+    import types
+    clock = _Clock()
+    monkeypatch.setattr(mse, "time", types.SimpleNamespace(monotonic=clock.monotonic))
+
+    def spent_latent(now: datetime, *, budget_s: float, apply: bool) -> dict[str, Any]:
+        clock.jump(budget_s + 1.0)
+        return {"datasets": {}}
+
+    monkeypatch.setattr(mse, "build_latent", spent_latent)
+    monkeypatch.setattr(mse, "build_asia_events",
+                        lambda *a, **k: pytest.fail("Asia events ran past the latent deadline"))
+    monkeypatch.setattr(mse, "build_blocks", lambda: ({}, {"n_blocks": 0}, {}))
+    monkeypatch.setattr(mse, "graph_pairs", lambda: ([], {}))
+    monkeypatch.setattr(mse, "global_factors", lambda blocks: {})
+    monkeypatch.setattr(mse, "fred_levels", lambda: {})
+    monkeypatch.setattr(mse, "fred_vintages", lambda: {})
+    monkeypatch.setattr(mse, "_registry", lambda: {})
+    got = mse.build(budget_s=600.0, apply=False, latent_budget_s=150.0)
+    assert got["asia_events"]["status"].startswith("SKIPPED_BUDGET")

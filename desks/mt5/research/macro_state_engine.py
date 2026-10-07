@@ -1475,13 +1475,14 @@ def _iso_t(v: Any) -> datetime | None:
 def _terms(source_id: str) -> str:
     """The alt_proxies TERMS verdict for a source; anything unreadable is NOT confirmed. A source
     that alt_proxies does not fetch itself (BIS, read from the axis door) is judged by its row in
-    the same TERMS table; a source in neither is `unknown_source`, i.e. blocked."""
+    alt_proxies.AXIS_TERMS (the axis-only terms table, same verdict vocabulary, verbatim evidence
+    in AXIS_TERMS_EVIDENCE); a source in neither is `unknown_source`, i.e. blocked."""
     try:
         from research import alt_proxies
         src = alt_proxies.BY_ID.get(source_id)
         if src is not None:
             return str(src.terms)
-        row = alt_proxies.TERMS.get(source_id)
+        row = alt_proxies.AXIS_TERMS.get(source_id)
         return str(row[0]) if row is not None else "unknown_source"
     except Exception as exc:                                            # pragma: no cover - env
         return f"unreadable:{type(exc).__name__}"
@@ -2357,10 +2358,14 @@ def asia_calendars() -> dict[str, Any]:
 
 def build_asia_events(now: datetime, axes_dir: Path, apply: bool,
                       out_path: Path | None = None, ledger_path: Path | None = None,
-                      ) -> dict[str, Any]:
+                      deadline: float | None = None) -> dict[str, Any]:
     """Every rule-derived Asian release from 35 days back to 14 ahead, as lifecycle objects
     read against the hard sensors the axis door holds. Stage changes are appended to a ledger
-    (history kept); the current set is the file `state_vector_build` reads."""
+    (history kept); the current set is the file `state_vector_build` reads.
+
+    Bounded by the latent build's `deadline`: past it no further sensor is read and NOTHING is
+    published or appended (events judged against a partial sensor set would record wrong
+    stages); the sensors not reached are named and the previous file stands."""
     from libs.regime.event_state import ASIA_EVENT_RULES, asia_event_objects, asia_schedule
     out_path = out_path or ASIA_EVENTS
     ledger_path = ledger_path or ASIA_EVENTS_LEDGER
@@ -2369,8 +2374,12 @@ def build_asia_events(now: datetime, axes_dir: Path, apply: bool,
     docs: dict[str, Any] = {}
     sensors: dict[str, list[dict[str, Any]]] = {}
     sensor_state: dict[str, str] = {}
+    not_reached: list[str] = []
     for rule in ASIA_EVENT_RULES:
-        if not rule.sensor or rule.sensor in sensors:
+        if not rule.sensor or rule.sensor in sensors or rule.sensor in not_reached:
+            continue
+        if deadline is not None and time.monotonic() > deadline:
+            not_reached.append(rule.sensor)
             continue
         stem, _, key = rule.sensor.partition(":")
         if stem not in docs:
@@ -2381,6 +2390,11 @@ def build_asia_events(now: datetime, axes_dir: Path, apply: bool,
         sensors[rule.sensor] = [p for p in (pts or []) if isinstance(p, dict)]
         sensor_state[rule.sensor] = (f"{len(sensors[rule.sensor])} points" if pts else
                                      f"UNMEASURED: data/axes/{stem}.json has no `{key}` here")
+    if not_reached:
+        return {"status": "SKIPPED_BUDGET: latent budget spent before every sensor was read; "
+                          "nothing published, the previous file stands",
+                "sensors_not_reached": not_reached, "sensors": sensor_state,
+                "n_events": 0, "appended_to_ledger": 0, "path": None}
     objs = asia_event_objects(now, rows, sensors)
     stages: dict[str, int] = {}
     for o in objs:
@@ -2426,22 +2440,45 @@ def fed_block(consumed: dict[str, dict[str, Any]], prior: dict[str, Any], now: d
     window = timedelta(hours=FED_WINDOW_H)
     rows: dict[str, dict[str, Any]] = {}
     unfed: list[dict[str, Any]] = []
+    now_utc = now if now.tzinfo else now.replace(tzinfo=UTC)
     for key, c in sorted(consumed.items()):
         inp: LatentInput = c["inp"]
         rec: dict[str, Any] = c["rec"]
         last = at if c["fed"] else (prior.get(key) if isinstance(prior.get(key), str) else None)
-        try:
-            age_ok = last is not None and now - datetime.fromisoformat(last) <= window
-        except ValueError:
-            age_ok, last = False, None
+        tz_assumed = False
+        defect = ""
+        age_ok = False
+        if last is not None and not c["fed"]:
+            try:
+                t = datetime.fromisoformat(last.replace("Z", "+00:00"))
+            except ValueError:
+                t, defect = None, f"unparseable last_fed_at {last!r}"
+            if t is not None and t.tzinfo is None:
+                # A naive stamp is read as UTC, and the row says so; never a TypeError that
+                # kills the pass.
+                t, tz_assumed = t.replace(tzinfo=UTC), True
+            if t is not None and t > now_utc:
+                defect = f"last_fed_at {last} is in the future of this pass ({at})"
+            elif t is not None:
+                age_ok = now_utc - t <= window
         # Consumed inside the window (this pass or an earlier one) is FED; consumed once but
-        # not inside the window is STALE; never consumed is UNFED. Both of the last count.
-        status = "FED" if (c["fed"] or age_ok) else ("UNFED" if last is None else "STALE")
+        # not inside the window is STALE; never consumed is UNFED. A stamp that cannot be
+        # read or lies in the future is a DEFECT, never FED. All but FED count as unfed.
+        if defect:
+            # The bad stamp is named in `defect` and NOT carried forward in state.json, so it
+            # can never age into a FED reading later.
+            status, last = "DEFECT", None
+        else:
+            status = "FED" if (c["fed"] or age_ok) else ("UNFED" if last is None else "STALE")
         rows[key] = {"dataset_id": f"latent_{key.split('.', 1)[0]}", "input": inp.id,
                      "axis": inp.axis or None,
                      "census_id": f"axis:{inp.axis}" if inp.axis else None,
                      "status": status, "last_fed_at": last, "consumed_this_pass": c["fed"],
                      "input_status": rec.get("status")}
+        if tz_assumed:
+            rows[key]["tz_assumed"] = "UTC: the stored last_fed_at carried no offset"
+        if defect:
+            rows[key]["defect"] = defect
         if status != "FED":
             unfed.append({"dataset": key, "kind": "latent_input", "status": status,
                           "last_fed_at": last,
@@ -2496,11 +2533,22 @@ def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
     report: dict[str, Any] = {}
     ledgers: dict[str, list[dict[str, Any]]] = {}
     consumed: dict[str, dict[str, Any]] = {}
+    skipped_inputs: list[str] = []
     for spec in specs:
         recs: list[dict[str, Any]] = []
         prep: list[_Prepared] = []
         for inp in spec.inputs:
-            obs, rec = load_input(inp, axes_dir, docs, environ)
+            obs: list[dict[str, Any]]
+            rec: dict[str, Any]
+            if time.monotonic() > deadline:
+                # Past the latent budget no further input is LOADED; it is named, never
+                # silently dropped, and the dataset rule below reads it as not fed this pass.
+                obs, rec = [], {"input": inp.id, "label": inp.label, "kind": inp.kind,
+                                "status": "SKIPPED_BUDGET",
+                                "why": "latent budget spent: not loaded this pass"}
+                skipped_inputs.append(f"{spec.id}.{inp.id}")
+            else:
+                obs, rec = load_input(inp, axes_dir, docs, environ)
             recs.append(rec)
             consumed[f"{spec.id}.{inp.id}"] = {"inp": inp, "rec": rec, "fed": bool(obs)}
             if obs:
@@ -2574,6 +2622,9 @@ def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
                 "path": str(intel_path) if apply else None,
                 "n_instruments": len(intel["instruments"])},
             "fed": fed, "cells": cell_rep,
+            "skipped_inputs": {"n": len(skipped_inputs), "inputs": skipped_inputs,
+                               "why": ("latent budget spent before these inputs were loaded"
+                                       if skipped_inputs else "")},
             "rule": ("one vintage per release date, re-estimated on the data knowable at that "
                      "date and appended; no price series fused; not-yet-collected inputs are "
                      "named with the package that delivers them")}
@@ -2594,8 +2645,14 @@ def build(*, budget_s: float = 600.0, max_donations: int = MAX_DONATIONS, p_max:
         latent = build_latent(now, budget_s=max(1.0, float(latent_budget_s)), apply=apply)
     except Exception as exc:                                            # pragma: no cover - env
         latent = {"status": f"UNMEASURED: {type(exc).__name__}: {str(exc)[:200]}"}
+    latent_deadline = t0 + max(1.0, float(latent_budget_s))
     try:
-        asia_events = build_asia_events(now, AXES_DIR, apply)
+        if time.monotonic() > latent_deadline:
+            asia_events = {"status": "SKIPPED_BUDGET: latent budget spent before the Asia "
+                                     "events step; nothing published, the previous file stands",
+                           "n_events": 0, "appended_to_ledger": 0, "path": None}
+        else:
+            asia_events = build_asia_events(now, AXES_DIR, apply, deadline=latent_deadline)
     except Exception as exc:                                            # pragma: no cover - env
         asia_events = {"status": f"UNMEASURED: {type(exc).__name__}: {str(exc)[:200]}"}
     latent_spent = time.monotonic() - t0
