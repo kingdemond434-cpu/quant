@@ -1,0 +1,397 @@
+[
+  {
+    "source": "youtube",
+    "title": "EURUSD CLOSE SELL | -109 pts | 05 OCT 2026 20:03:46 | EURUSD Journal",
+    "channel": "EURUSD Journal",
+    "url": "https://youtube.com/watch?v=ldrAFWyaGP4",
+    "published": "2026-10-07T15:40:37Z",
+    "symbols": [
+      "EURUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "EURUSD OPEN BUY | 05 OCT 2026 20:03:47 | EURUSD Journal",
+    "channel": "EURUSD Journal",
+    "url": "https://youtube.com/watch?v=JKLOm9DPSuQ",
+    "published": "2026-10-07T15:39:49Z",
+    "symbols": [
+      "EURUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "EURUSD OPEN SELL | 05 OCT 2026 19:00:01 | EURUSD Journal",
+    "channel": "EURUSD Journal",
+    "url": "https://youtube.com/watch?v=_2Lz9UeQcDw",
+    "published": "2026-10-07T15:38:25Z",
+    "symbols": [
+      "EURUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "EURUSD CLOSE BUY | -145 pts | 05 OCT 2026 18:30:01 | EURUSD Journal",
+    "channel": "EURUSD Journal",
+    "url": "https://youtube.com/watch?v=aNU2SrUrmik",
+    "published": "2026-10-07T15:36:26Z",
+    "symbols": [
+      "EURUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "EURUSD OPEN BUY | 05 OCT 2026 18:38:15 | EURUSD Journal",
+    "channel": "EURUSD Journal",
+    "url": "https://youtube.com/watch?v=7I-HuUpXFEU",
+    "published": "2026-10-07T15:37:22Z",
+    "symbols": [
+      "EURUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "LIVE XAUUSD GOLD ANALYSIS FORECAST 07/10/2026 WEDNSDAY  #XAUUSD  #xauusd #LIVEGOLDTRADING",
+    "channel": " Forex Ideas",
+    "url": "https://youtube.com/watch?v=49RBuwDf2KU",
+    "published": "2026-10-07T15:33:52Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "XAUUSD LIVE TRADING - FOREX SIGNALS DAY  7/10/2026 - LUCAS GOLD LEGEND #livetrading #forex #trader",
+    "channel": "LUCAS GOLD LEGEND",
+    "url": "https://youtube.com/watch?v=BKQchxXeU78",
+    "published": "2026-10-07T15:30:39Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "Golden Gold Trading Strategy - XAUUSD Secret PAID Strategy FREE ",
+    "channel": "Trading Engineers",
+    "url": "https://youtube.com/watch?v=-NX39c6YabY",
+    "published": "2026-10-07T15:07:01Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "Why Does Your Stop Loss Keep Getting Hit? (XAUUSD Analysis)",
+    "channel": "Pips Trap",
+    "url": "https://youtube.com/watch?v=0HDq618PD8I",
+    "published": "2026-10-07T14:40:28Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "ICT"
+    ],
+    "confidence": 0.35
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udcc8Before You Trade GOLD: 7 Things Every Trader Should Know | XAUUSD",
+    "channel": "HENG FOREX95",
+    "url": "https://youtube.com/watch?v=YQTbd6zSzcw",
+    "published": "2026-10-07T14:39:03Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udc06 Trade Gold Faster With Jaguar Expert Advisor. #algorithmictrading #xauusd #forexea",
+    "channel": "Jaguar EAs Family",
+    "url": "https://youtube.com/watch?v=kB8dbJfQVoo",
+    "published": "2026-10-07T14:33:13Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "ICT"
+    ],
+    "confidence": 0.35
+  },
+  {
+    "source": "youtube",
+    "title": "Gold Price Today: Floor Breaks Before Fed Minutes (7 Oct) | XAUUSD #Shorts",
+    "channel": "The Trading Nexus",
+    "url": "https://youtube.com/watch?v=IN-Ptbn7tUg",
+    "published": "2026-10-07T14:32:31Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "retest",
+      "flag"
+    ],
+    "confidence": 0.5
+  },
+  {
+    "source": "youtube",
+    "title": "FOMC Minutes What EURUSD and Gold Need Next",
+    "channel": "Anzo Capital Global",
+    "url": "https://youtube.com/watch?v=A8s2SASJxSQ",
+    "published": "2026-10-07T14:29:28Z",
+    "symbols": [
+      "EURUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "VELYTIX \u2013 \u062a\u0637\u0628\u064a\u0642 \u0623\u0646\u062f\u0631\u0648\u064a\u062f \u0644\u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0630\u0647\u0628 \u0648\u0627\u0644\u0628\u064a\u062a\u0643\u0648\u064a\u0646 \ud83d\udcca | \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0633\u0648\u0642 #xauusd #cryptocurrency #algotrading",
+    "channel": "ProTraders",
+    "url": "https://youtube.com/watch?v=AWDADzJYhXU",
+    "published": "2026-10-07T14:28:29Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "Why this level matters #xauusd #gold #forex #strategy #daytrading #live #viral",
+    "channel": "forex gold hunter ",
+    "url": "https://youtube.com/watch?v=zY7unobZCO8",
+    "published": "2026-10-07T14:28:09Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 LIVE: Gold (XAUUSD), Crypto &amp; Forex Trading | Scalping &amp; Price Action Strategy #forex #crypto",
+    "channel": "Trading Edge 2016",
+    "url": "https://youtube.com/watch?v=sDOxHVSgAl4",
+    "published": "2026-10-06T19:52:17Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "Forex Live Trading Today | Gold &amp; Bitcoin Signals | XAUUSD | BTCUSD\ud83d\udd34 Welcome",
+    "channel": "TK ",
+    "url": "https://youtube.com/watch?v=dEP7B-vYlb0",
+    "published": "2026-10-06T06:34:28Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.4
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 LIVE: Gold (XAUUSD), Crypto &amp; Forex Trading | Scalping &amp; Price Action Strategy #forex #crypto",
+    "channel": "Trading Edge 2016",
+    "url": "https://youtube.com/watch?v=8iOZ5LObJVw",
+    "published": "2026-10-06T03:32:10Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "Copy of Forex Live Trading Today | Gold &amp; Bitcoin Signals | XAUUSD | BTCUSD\ud83d\udd34 Welcome",
+    "channel": "TK ",
+    "url": "https://youtube.com/watch?v=voFy0567Uv4",
+    "published": "2026-10-06T01:25:37Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.4
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 LIVE: Gold (XAUUSD), Crypto &amp; Forex Trading | Scalping &amp; Price Action Strategy #forex #crypto",
+    "channel": "Trading Edge 2016",
+    "url": "https://youtube.com/watch?v=DPTANlECwgI",
+    "published": "2026-10-05T19:12:34Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "LIVE XAUUSD TRADING | GOLD , BTC | Live Forex Trading \ud83d\ude80  @BullishMasterFX @bullishbullmaster",
+    "channel": "Bullish Master FX",
+    "url": "https://youtube.com/watch?v=F19PPYuN55I",
+    "published": "2026-10-02T12:54:33Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udc06 Trade Gold Faster With Jaguar Expert Advisor. #algorithmictrading #xauusd #forexea",
+    "channel": "Jaguar EAs Family",
+    "url": "https://youtube.com/watch?v=kB8dbJfQVoo",
+    "published": "2026-10-07T14:33:13Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "ICT"
+    ],
+    "confidence": 0.35
+  },
+  {
+    "source": "youtube",
+    "title": "What If You Trade Against the Trend? +600% NAS100 Backtest! -Deadzone Strategy",
+    "channel": "TradeSmart",
+    "url": "https://youtube.com/watch?v=iBtzA93Fvew",
+    "published": "2026-10-07T14:00:16Z",
+    "symbols": [
+      "NAS100"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "SMA",
+      "zone"
+    ],
+    "confidence": 0.5
+  },
+  {
+    "source": "youtube",
+    "title": "GOLD Live Trading Today | XAUUSD Live Trading Session | 06/10/26 | Wealth Secret",
+    "channel": "TK ",
+    "url": "https://youtube.com/watch?v=KdVQA6xlVd4",
+    "published": "2026-10-07T04:19:38Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.4
+  },
+  {
+    "source": "youtube",
+    "title": "GOLD Live Trading Today | XAUUSD Live Trading Session | 06/10/26 | Wealth Secret",
+    "channel": "TK ",
+    "url": "https://youtube.com/watch?v=LHhrf3-4mPA",
+    "published": "2026-10-07T03:51:30Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.4
+  },
+  {
+    "source": "youtube",
+    "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+    "channel": "Live Forex Trading",
+    "url": "https://youtube.com/watch?v=uzrILOmOHns",
+    "published": "2026-10-06T17:00:09Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "$1,000 FROM NFP? // FTMO 10K CHALLEGE // EP 14 PT 2",
+    "channel": "Trading Sergeant-FX JNL",
+    "url": "https://youtube.com/watch?v=1jpvjilNkAM",
+    "published": "2026-10-07T12:00:06Z",
+    "symbols": [
+      "USDJPY"
+    ],
+    "timeframes": [
+      "position"
+    ],
+    "patterns": [],
+    "confidence": 0.30000000000000004
+  },
+  {
+    "source": "youtube",
+    "title": "NFP, CPI, FOMC Forex News Impact Explained #forex #gold #xauusd #CPI #fomc  #nfp",
+    "channel": "Legacy Empire",
+    "url": "https://youtube.com/watch?v=MTTS20kIaos",
+    "published": "2026-10-07T09:47:31Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 BTC Live trading 386 / 07.10.2026 #bitcoin  #nfp  #forex #gold #gbpjpytrading  #crypto",
+    "channel": "UpDown FX",
+    "url": "https://youtube.com/watch?v=hVOjqhvYBls",
+    "published": "2026-10-07T02:56:00Z",
+    "symbols": [
+      "GBPJPY"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  }
+]
