@@ -635,7 +635,10 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
 
     # H*_t: the current state's own growth curve, inside the band the two bars leave open.
     h_state, state_why, state_detail = state_target(
-        curves, state, floor=floor, ceiling=max(floor, min(op_ceiling, eff_cap)), fallback=curve)
+        curves, state, floor=floor, ceiling=max(floor, op_ceiling), fallback=curve)
+    # The effective-heat cap is applied AFTER the state moves heat, not inside the state's band:
+    # clipping the band first made a state that wants MORE look like a state that wants less,
+    # and a cap would have been reported as a state headwind instead of by its own name.
     if curves or state:
         reasons.append(state_why)
 
