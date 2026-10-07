@@ -165,7 +165,8 @@ ADJUDICATE with the desk's own discipline, then BUILD.
  4. RUN IT. If its first run reports a defect, that is success, not failure -- record it. If its
     first run reports OK on an empty measurement set, FIX THAT FIRST: unmeasured must never read
     as fine (L1.28a).
- 5. Verify the tree: pytest on the suites you touched, build_enforcement_matrix (zero orphans),
+ 5. Verify the tree: ruff and mypy (`.venv/bin/python -m ruff check .`, `-m mypy <files>`),
+    pytest on the suites you touched, build_enforcement_matrix (zero orphans),
     check_scheduler_manifest, check_timidity_language. Then commit and push to master with a
     message naming what was missing and what it would have caught.
  6. Row anything you deliberately did NOT build via scripts/recommendations.py, with the reason.
@@ -356,13 +357,22 @@ PROPOSER_RULES: list[str] = list(READ_ONLY_RULES)
 #: tells it to run, and a plain (never forced) commit and push. Not acceptEdits: an edit outside
 #: these paths is refused and recorded. The sealed doctrine, data/secrets and the deadman rail
 #: stay refused through NEVER_RULES whatever this list says.
+#: WIDENED TO THE BRIEF (2026-10-06 audit of #179): the brief tells the builder to fix defects
+#: wherever they are (step 7, the money path included, behind check_change_window), to schedule
+#: what it builds (an ops/*.sh runner beside its manifest line) and to verify the tree -- so the
+#: desk package `desks/mt5/mt5desk/**`, the `ops/*.sh` runners, ruff, mypy and `git fetch` (the
+#: push needs a current origin) are on the list. Refused before this, each was a step the brief
+#: demanded and the CLI silently dropped.
 BUILDER_RULES: list[str] = [
     *READ_ONLY_RULES,
     *write_rules("scripts/**", "libs/**", "tests/**", "desks/mt5/research/**",
-                 "desks/mt5/tests/**", "docs/CONSTITUTION.md", "docs/research/**",
-                 "ops/crontab.manifest", "data/**"),
+                 "desks/mt5/tests/**", "desks/mt5/mt5desk/**", "docs/CONSTITUTION.md",
+                 "docs/research/**", "ops/crontab.manifest", "ops/*.sh", "data/**"),
     "Bash(.venv/bin/python -m pytest:*)",
+    "Bash(.venv/bin/python -m ruff:*)",
+    "Bash(.venv/bin/python -m mypy:*)",
     "Bash(.venv/bin/python scripts/*)",
+    "Bash(git fetch:*)",
     "Bash(git add:*)", "Bash(git commit -m:*)", "Bash(git push origin:*)",
 ]
 

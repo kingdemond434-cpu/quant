@@ -388,7 +388,7 @@ NODES: tuple[Node, ...] = (
     # gateway asks `release_identity.verdict()` every pass and opens nothing new on a refusal;
     # the verdict file rides the box's git sync so every brain can read it, and the hourly smoke
     # test proves the money-path modules on the box import and match the seal.
-    # The signed money-path manifest: `--sign` is a person's act after a reviewed change; the
+    # The hash-sealed judge manifest: `--sign` is a person's act after a reviewed change; the
     # release seal and the box smoke test both verify against it.
     Node("immutable_evaluator", "scripts/check_immutable_evaluator.py",
          writes=("desks/mt5/data/IMMUTABLE_MANIFEST.json",)),

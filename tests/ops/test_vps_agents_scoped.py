@@ -182,7 +182,14 @@ def test_the_hunt_proposer_is_read_only_and_the_builder_is_path_scoped() -> None
     assert not any("git" in r and ("push" in r or "commit" in r or "add" in r)
                    for r in ch.PROPOSER_RULES)
     writes = [r for r in ch.BUILDER_RULES if r.startswith(("Edit(", "Write("))]
-    assert writes and all("**" in r or r.endswith((".md)", ".manifest)")) for r in writes)
+    assert writes and all("**" in r or r.endswith((".md)", ".manifest)", "ops/*.sh)"))
+                          for r in writes)
+    # widened to the brief (2026-10-06): the desk package, the runners, ruff, mypy, git fetch
+    for need in ("Edit(desks/mt5/mt5desk/**)", "Write(desks/mt5/mt5desk/**)", "Edit(ops/*.sh)",
+                 "Write(ops/*.sh)", "Bash(.venv/bin/python -m ruff:*)",
+                 "Bash(.venv/bin/python -m mypy:*)", "Bash(git fetch:*)"):
+        assert need in ch.BUILDER_RULES, need
+        assert need not in ch.PROPOSER_RULES, need
     for never in ("ops/principal_doctrine.txt", "data/secrets", "run_deadman_switch"):
         assert not any(r in (f"Edit({never})", f"Write({never})") for r in ch.BUILDER_RULES)
         assert any(never in r for r in ad.NEVER_RULES)

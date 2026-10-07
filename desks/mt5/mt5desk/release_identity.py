@@ -3,7 +3,7 @@ new position may be opened.
 
 THE INVARIANT (principal's audit, 2026-09-05): at all times
 
-    running box SHA == RELEASE.code_sha == signed money-path SHA == tested SHA == merged SHA
+    running box SHA == RELEASE.code_sha == hash-sealed money-path SHA == tested SHA == merged SHA
 
 and anything else means the gateway refuses NEW risk -- open positions are still managed, stops
 still ratchet, brackets still expire; nothing new is entered. The audit found the desk running
@@ -20,10 +20,10 @@ binary is not on the scheduled task's PATH, HEAD is resolved from `.git` directl
 THREE OUTCOMES, ONE LICENCE.
     ok          the running SHA is the sealed commit, or differs from it only by the manifest and
                 the box's own state-sync commits (the `non_code` set the seal recorded), AND the
-                money-path files on disk hash to what the seal recorded, AND the signed judge
+                money-path files on disk hash to what the seal recorded, AND the sealed judge
                 manifest is the sealed one.
     refused     measured, and the answer is no: unreleased code, a file edited on the box, a
-                re-signed judge the release does not know.
+                re-sealed judge the release does not know.
     unmeasured  the SHA or the release could not be read. Also no. An unmeasured identity is not
                 a licence; it is the absence of one.
 
@@ -577,7 +577,7 @@ def verdict(root: Path | None = None, *, now: datetime | None = None,
     imm_rec = (rec.get("immutable_manifest") or {}).get("sha256_16")
     if imm_rec and _sha256_16(IMMUTABLE_REL, r) != imm_rec:
         ok = False
-        why += "; the signed judge manifest on disk is not the one the release sealed"
+        why += "; the hash-sealed judge manifest on disk is not the one the release sealed"
     canon_rec = rec.get("canon_sha256")
     if canon_rec:
         b = _read(CANON_REL, r)

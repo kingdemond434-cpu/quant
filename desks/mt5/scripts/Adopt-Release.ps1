@@ -576,7 +576,7 @@ function Sync-IndexMode {
 # sync once removed 1,078 lines from gateway.py -- and it cannot tell that sync apart from this
 # script.
 #
-# But this script is the OPPOSITE of the thing being fenced. It applies a SIGNED, SEALED release
+# But this script is the OPPOSITE of the thing being fenced. It applies an HMAC-SEALED release
 # that origin already holds, verifies the tree matches the ref byte for byte, and refuses to seal
 # when it does not. Running it without the documented override produced exactly that refusal:
 #
@@ -592,7 +592,7 @@ function Sync-IndexMode {
 #
 # The escape hatch the guard's own docstring names is set here, for this process only. It is not a
 # weakening: the verification below is strictly stronger than the guard, because it compares the
-# whole tree against a signed ref rather than pattern-matching paths.
+# whole tree against a sealed ref rather than pattern-matching paths.
 $env:QUANT_ALLOW_SSH_PY = "1"
 $env:QUANT_ALLOW_EVIDENCE_FALL = "1"
 $env:ALLOW_PROTECTED_RECORD_LOSS = "1"
@@ -742,12 +742,12 @@ if ($ancestorRc -ne 1) {
 
 # ---- 0b. THE TARGET'S JUDGE MUST BE SEALED BEFORE ANY OF IT LANDS (2026-09-30) ----
 # Origin carried a broken seal for about two minutes (4678fe4f at 515d665e, until fc6c34e5
-# re-signed it), and this script checked neither CI nor the seal: an adoption at :12 inside that
-# window would have landed an unsigned judge on the box that trades. `check_target_seal.py`
+# re-sealed it), and this script checked neither CI nor the seal: an adoption at :12 inside that
+# window would have landed an unsealed judge on the box that trades. `check_target_seal.py`
 # hashes the fetched COMMIT's frozen judge files against the manifest that commit carries, using
 # the union of this checkout's and the target's frozen lists. Anything but SEALED refuses here,
 # before a byte is written: the running release, its seal and the gateway stay exactly as they
-# are, and the next hourly pass adopts once origin is re-signed. Exit 7 so Adopt-And-Seal can say
+# are, and the next hourly pass adopts once origin is re-sealed. Exit 7 so Adopt-And-Seal can say
 # what happened instead of reporting a partial adoption.
 $sealCheck = Join-Path $RepoRoot "scripts\check_target_seal.py"
 if (Test-Path $sealCheck) {
@@ -1121,7 +1121,7 @@ if ($kept.Count -gt 0) {
 #
 # THE COST WAS NOT THE VAULT NOTE. Adopt-Release is the ONLY durable path from origin to the
 # trading box, so while it exited 1 the box ran last night's engines: a census fix, a parity
-# fix, an executor fix and a prop-book fix all sat on origin, pushed and gated and signed, and
+# fix, an executor fix and a prop-book fix all sat on origin, pushed and gated and sealed, and
 # none of them were executing. Nothing said so -- the task table shows "Ready" and the failure
 # is one line of stderr inside a 6,000-path log.
 #
@@ -1131,7 +1131,7 @@ if ($kept.Count -gt 0) {
 if ($staged.Count -gt 0) {
     for ($c = 0; $c -lt $staged.Count; $c += 200) {
         $chunk = @($staged.GetRange($c, [Math]::Min(200, $staged.Count - $c)))
-        # Every path in this list was enumerated from the signed target diff. Some target-tracked
+        # Every path in this list was enumerated from the sealed target diff. Some target-tracked
         # audit artifacts are ignored on the live box to prevent local generators re-adding
         # scratch copies; without -f Git refuses those legitimate incoming paths and strands the
         # entire release. Force applies only to these exact, already-enumerated pathspecs.

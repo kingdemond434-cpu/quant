@@ -39,7 +39,7 @@ for p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from libs.portfolio.rails import CALIBRATION, RAILS, calibration  # noqa: E402
+from libs.portfolio.rails import CALIBRATION, RAILS, Rail, calibration  # noqa: E402
 
 LEDGER = BASE / "data" / "missed_growth.jsonl"
 OUT = BASE / "reports" / "MISSED_GROWTH.json"
@@ -590,7 +590,79 @@ def measure_e8_unowned_block(r: Any, _alloc: dict[str, Any],
                     "published rather than priced as zero")}
 
 
+#: The enrolment census: its `held` rows are what the research-integrity door deferred.
+FORWARD_ENROLMENT = BASE / "reports" / "FORWARD_ENROLMENT.json"
+
+
+def measure_replication_hold(r: Any, _alloc: dict[str, Any],
+                             _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the replication hold defers (rail `replication_hold`, PENDING_SEAL_RAILS until the
+    sealed register carries it): forward clocks NOT started while a certificate of a
+    family with a written replication rule waits for its REPLICATED verdict.
+
+    THE RAIL, PRECISELY. `admission_integrity.IntegrityGate.hold` keeps a NEW certificate off its
+    forward clock until an independent rebuild agrees; a family with no rule proceeds, so this
+    only ever defers families the lane can judge. A clock deploys no capital, so the direct cost
+    is EVIDENCE TIME: `deferred_clock_hours` sums each held certificate's clockless hours. Turning
+    that into log-wealth needs the forward expectancy those clocks would have shown and the
+    promotion lag it adds, which no held row carries yet -- so a binding hold is UNMEASURED with
+    the count and the hours published, never priced as zero. Placebo-alarm holds are a statement
+    about the certifier and are reported apart (`n_placebo_held`), not billed to this rail.
+    """
+    doc = _json(FORWARD_ENROLMENT)
+    if not doc:
+        return {"verdict": UNMEASURED,
+                "why": "no reports/FORWARD_ENROLMENT.json on this host: the census has not run, "
+                       "so what the hold deferred is unknown"}
+    rows = [x for x in (doc.get("held") or []) if isinstance(x, dict)]
+    repl = [x for x in rows if not str(x.get("held") or "").startswith("HELD_PLACEBO")]
+    placebo = len(rows) - len(repl)
+    _i = doc.get("integrity")
+    integ: dict[str, Any] = _i if isinstance(_i, dict) else {}
+    proceeded = integ.get("n_proceeded_without_rule")
+    if not repl:
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True, "n_held": 0,
+                "n_placebo_held": placebo, "n_proceeded_without_rule": proceeded,
+                "why": "no certificate is waiting on a replication verdict this pass"}
+    hours = [float(x["clockless_hours"]) for x in repl
+             if isinstance(x.get("clockless_hours"), (int, float))]
+    fams: dict[str, int] = {}
+    for x in repl:
+        f = str(x.get("family") or "")
+        fams[f] = fams.get(f, 0) + 1
+    return {"verdict": UNMEASURED, "n_held": len(repl), "n_placebo_held": placebo,
+            "n_proceeded_without_rule": proceeded, "held_by_family": fams,
+            "deferred_clock_hours": round(sum(hours), 2),
+            "max_wait_hours": round(max(hours), 2) if hours else None,
+            "names": [str(x.get("key")) for x in repl[:50]],
+            "ledger_line": {"n_held": len(repl), "deferred_clock_hours": round(sum(hours), 2),
+                            "held_by_family": fams, "n_proceeded_without_rule": proceeded,
+                            "unit": "forward clock-hours deferred"},
+            "why": (f"{len(repl)} certificate(s) of replicable families wait for a REPLICATED "
+                    f"verdict, {sum(hours):.1f} forward clock-hours deferred; pricing that in "
+                    f"log-wealth needs the forward expectancy the deferred clocks would carry, "
+                    f"which no held row has yet. Published, not priced as zero.")}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
+
+#: RAILS AWAITING THE SEALED REGISTER. `libs/portfolio/rails.py` is in the immutable manifest, so a
+#: cloud session cannot add a rail to it; a rail listed here is measured and ledgered by this loop
+#: exactly as a registered one is until the desktop pass registers it there (patch
+#: `patches/audit-governance/rails_replication_hold.patch`), after which the register's own entry
+#: wins and this one is skipped by name. Growth Governance asks for the ledger line NOW, not after
+#: the seal.
+PENDING_SEAL_RAILS: tuple[Rail, ...] = (
+    Rail("replication_hold", "gate",
+         "admission_integrity.IntegrityGate.hold <- replication_civilization verdicts",
+         "measure_replication_hold"),
+)
+
+
+def all_rails() -> tuple[Rail, ...]:
+    """The register plus every rail still awaiting it, never twice."""
+    have = {r.name for r in RAILS}
+    return (*RAILS, *(r for r in PENDING_SEAL_RAILS if r.name not in have))
 
 
 # --------------------------------------------------------------------------- the ledger
@@ -623,13 +695,19 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     have_today = {(r.get("rail"), r.get("day")) for r in existing}
     new = []
     live: dict[str, dict[str, Any]] = {}
-    for r in RAILS:
+    rails_now = all_rails()
+    for r in rails_now:
         m = MEASURES[r.measure](r, alloc, fv)
         live[r.name] = m
         if m.get("sample") and (r.name, day) not in have_today:
             new.append({"day": day, "rail": r.name,
                         "value": float(m.get("value_logw_per_day", 0.0)),
                         "at": datetime.now(tz=UTC).isoformat()})
+        elif isinstance(m.get("ledger_line"), dict) and (r.name, day) not in have_today:
+            # A BINDING RAIL THAT CANNOT BE PRICED YET still gets its line: what it deferred, in
+            # its own units, with `value: null` -- never a 0.0 that would read as "cost nothing".
+            new.append({"day": day, "rail": r.name, "value": None, "unpriced": True,
+                        **m["ledger_line"], "at": datetime.now(tz=UTC).isoformat()})
     if new and write:
         LEDGER.parent.mkdir(parents=True, exist_ok=True)
         with LEDGER.open("a", encoding="utf-8") as fh:
@@ -638,12 +716,14 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     rows = existing + new
     # 2. verdicts from the accumulated samples (or the direct measurement for vetoes)
     verdicts: dict[str, dict[str, Any]] = {}
-    for r in RAILS:
+    for r in rails_now:
         m = live[r.name]
         if r.measure == "measure_veto" or r.measure == "measure_shrinkage":
             verdicts[r.name] = {"kind": r.kind, **m}
             continue
-        samples = [float(x["value"]) for x in rows if x.get("rail") == r.name]
+        # unpriced lines (value null) are a record of what was deferred, not a sample
+        samples = [float(x["value"]) for x in rows if x.get("rail") == r.name
+                   and isinstance(x.get("value"), (int, float))]
         if m.get("verdict") == UNMEASURED and not samples:
             verdicts[r.name] = {"kind": r.kind, **m}
             continue
@@ -654,7 +734,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     cal = calibration()
     changed = []
     tasks = []
-    for r in RAILS:
+    for r in rails_now:
         v = verdicts[r.name].get("verdict")
         if v != COSTS:
             continue

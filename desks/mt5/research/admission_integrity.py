@@ -42,6 +42,20 @@ next pass; a certificate the replication lane marks REPLICATED (under the SAME s
 enrols on the next pass. The replication lane judges never-judged certificates FIRST, so a new
 certificate waits about one hour, not a full rotation.
 
+THE HOLD IS SCOPED TO FAMILIES THAT CAN BE REPLICATED (post-merge audit, 2026-10-06). The
+replication lane rebuilds only the families its spec book (`replication_civilization.SPEC_BOOK`)
+has a written rule for -- six of the desk's ~28 families when this was measured. A certificate of
+any other family can NEVER read REPLICATED, so holding it "until replicated" was a permanent veto
+on its forward clock with no proof that it raises robust forward E[log W] (Growth Governance
+Rule 1). Such a certificate now PROCEEDS to its clock and is counted, by name, in
+`summary()["proceeded_without_rule"]`; only a family the lane can actually judge waits for its
+verdict. The placebo alarm is a statement about the certifier, not the family, and still holds
+every new certificate. What the hold defers is billed as rail `replication_hold`, measured by
+`research/missed_growth.measure_replication_hold` from the held rows the enrolment census
+publishes (listed in `missed_growth.PENDING_SEAL_RAILS` until the sealed `libs/portfolio/rails.py`
+register carries it). If the spec book cannot be read, the rule set is UNMEASURED and
+the door keeps its fail-closed behaviour for every family, said in the summary.
+
 A LIBRARY, NOT AN ORGAN: it runs on the clocks of the three organs that import it (the enrolment
 engine, the qquant lane and the `forward_enrolment` census, which publishes `summary()` in
 reports/FORWARD_ENROLMENT.json under `integrity`).
@@ -73,6 +87,29 @@ UNREACHED, STALE_SPEC = "UNREACHED", "STALE_SPEC"
 HELD_PLACEBO = "HELD_PLACEBO_ALARM"
 HELD_UNREPLICATED = "HELD_UNREPLICATED"
 HELD_MISMATCH = "HELD_REPLICATION_MISMATCH"
+#: The family an absent family field means (see `spec_fingerprint`).
+DEFAULT_FAMILY = "session_range_breakout"
+
+
+def replication_rule_families() -> tuple[frozenset[str] | None, str]:
+    """The families the replication lane has a WRITTEN rule for, read off its spec book.
+
+    `(None, why)` when the book cannot be imported: the rule set is then UNMEASURED and the
+    caller must not read it as "no family has a rule"."""
+    try:
+        from replication_civilization import (  # type: ignore[import-not-found,unused-ignore]
+            SPEC_BOOK,
+        )
+    except ImportError:
+        try:
+            from research.replication_civilization import (  # type: ignore[no-redef,unused-ignore]
+                SPEC_BOOK,
+            )
+        except Exception as exc:
+            return None, f"replication spec book unimportable: {type(exc).__name__}: {exc}"
+    except Exception as exc:
+        return None, f"replication spec book unimportable: {type(exc).__name__}: {exc}"
+    return frozenset(str(k) for k in SPEC_BOOK), "replication_civilization.SPEC_BOOK"
 
 
 def _read(path: Path) -> Any:
@@ -151,17 +188,32 @@ class IntegrityGate:
     alarm: dict[str, Any] = field(default_factory=dict)
     verdicts: dict[str, dict[str, Any]] = field(default_factory=dict)
     replication_source: str = ""
+    #: Families with a written replication rule. None = UNMEASURED (book unreadable, or a gate
+    #: built by hand): the hold then applies to every family, as it did before the scoping.
+    rule_families: frozenset[str] | None = None
+    rule_source: str = ""
+    #: certificate -> reason, for every certificate this gate held on this pass (idempotent).
+    held: dict[str, str] = field(default_factory=dict)
+    #: certificate -> family, for every certificate released ONLY because its family has no
+    #: replication rule (it could never read REPLICATED, so holding it would be a permanent veto).
+    proceeded_without_rule: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def load(cls, *, placebo: Path | None = None, verdicts: Path | None = None,
-             now: datetime | None = None) -> IntegrityGate:
+             now: datetime | None = None,
+             rule_families: frozenset[str] | None = None) -> IntegrityGate:
         vp = Path(verdicts or REPLICATION_VERDICTS)
         doc = _read(vp)
         rows = (doc.get("certificates") if isinstance(doc, dict) else None) or {}
+        if rule_families is None:
+            fams, rule_source = replication_rule_families()
+        else:
+            fams, rule_source = frozenset(rule_families), "given"
         return cls(alarm=placebo_alarm(placebo, now),
                    verdicts={str(k): v for k, v in rows.items() if isinstance(v, dict)},
                    replication_source=(vp.name if isinstance(doc, dict)
-                                       else f"{vp.name} absent"))
+                                       else f"{vp.name} absent"),
+                   rule_families=fams, rule_source=rule_source)
 
     def replication(self, certificate: str, fingerprint: str) -> tuple[str, str]:
         row = self.verdicts.get(str(certificate))
@@ -180,10 +232,27 @@ class IntegrityGate:
     def hold(self, certificate: str, *, symbol: Any, family: Any, selector: Any, side: Any,
              params: Mapping[str, Any] | None) -> str | None:
         """None = the certificate may start a clock; otherwise the named reason it waits."""
+        cert = str(certificate)
+        reason = self._decide(cert, symbol=symbol, family=family, selector=selector, side=side,
+                              params=params)
+        if reason:
+            self.held[cert] = reason
+        else:
+            self.held.pop(cert, None)
+        return reason
+
+    def _decide(self, cert: str, *, symbol: Any, family: Any, selector: Any, side: Any,
+                params: Mapping[str, Any] | None) -> str | None:
         if self.alarm.get("blocks"):
             return f"{HELD_PLACEBO}: {self.alarm.get('why')}"
+        fam = str(family or DEFAULT_FAMILY)
+        if self.rule_families is not None and fam not in self.rule_families:
+            # NO WRITTEN RULE, NO HOLD: the lane can never replicate this family, so waiting for
+            # its verdict would be a veto with no exit. Proceed, and be counted by name.
+            self.proceeded_without_rule[cert] = fam
+            return None
         fp = spec_fingerprint(symbol, family, selector, side, params)
-        verdict, why = self.replication(certificate, fp)
+        verdict, why = self.replication(cert, fp)
         if verdict == REPLICATED:
             return None
         if verdict == MISMATCH:
@@ -197,12 +266,25 @@ class IntegrityGate:
         for row in self.verdicts.values():
             v = str(row.get("verdict") or UNMEASURED)
             counts[v] = counts.get(v, 0) + 1
+        by_kind: dict[str, int] = {}
+        for reason in self.held.values():
+            k = reason.split(":")[0].split(" (")[0]
+            by_kind[k] = by_kind.get(k, 0) + 1
         return {"placebo_alarm": self.alarm, "replication_source": self.replication_source,
                 "replication_verdicts": counts,
+                "rule_families": (sorted(self.rule_families)
+                                  if self.rule_families is not None else UNMEASURED),
+                "rule_source": self.rule_source or UNMEASURED,
+                "n_held": len(self.held), "held_by_kind": by_kind,
+                "n_proceeded_without_rule": len(self.proceeded_without_rule),
+                "proceeded_without_rule": dict(sorted(self.proceeded_without_rule.items())[:200]),
+                "missed_growth_rail": "replication_hold",
                 "rule": ("a NEW certificate starts a forward clock only when the latest placebo "
-                         "audit shows the certifier admitted no planted trap AND an independent "
-                         "rebuild under the same spec fingerprint is REPLICATED; running clocks "
-                         "are never touched; no quota, no count, no ranking")}
+                         "audit shows the certifier admitted no planted trap AND, for a family "
+                         "the replication lane has a written rule for, an independent rebuild "
+                         "under the same spec fingerprint is REPLICATED; a family with no rule "
+                         "proceeds (it could never be replicated); running clocks are never "
+                         "touched; no quota, no count, no ranking")}
 
 
 def lane_clock_keys(shadow_dir: Path | None = None,

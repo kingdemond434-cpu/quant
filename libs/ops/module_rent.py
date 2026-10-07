@@ -263,7 +263,7 @@ INFRASTRUCTURE: dict[str, str] = {
                "counterfactual book to compare against -- only no book",
     "release": "the release identity that authorises a live order; without it the deadman "
                "refuses to arm and the desk is flat by construction",
-    "immutable_evaluator": "the signature that makes a judge's verdict admissible; without it "
+    "immutable_evaluator": "the hash seal that makes a judge's verdict admissible; without it "
                            "no certificate carries authority, so nothing reaches capital to bill",
 }
 

@@ -6,7 +6,7 @@ rem correct, and neither had a caller outside its own test. Two complete guards 
 rem an unreviewed process and the files that size real positions, and the box never asked either
 rem one a question. This asks, every 15 minutes.
 rem
-rem Exit 1 means money-path drift, an unsigned release, or an adoption that would overwrite
+rem Exit 1 means money-path drift, an un-MACed release, or an adoption that would overwrite
 rem unpushed work. MT5-NeverStale reads the artifact.
 setlocal
 set "PYTHONPATH=C:\opt\quant;C:\opt\quant\desks\mt5"

@@ -159,3 +159,81 @@ def test_lane_clock_keys_reads_every_lane(tmp_path, status):
     keys = ai.lane_clock_keys(tmp_path)
     assert "s1" in keys
     assert ("A.asia" in keys) is (status == "ACTIVE")
+
+
+# ---------------------------------------------------------------- 2026-10-06 audit: scoped hold
+def test_the_hold_applies_only_to_families_the_replication_lane_has_a_rule_for(tmp_path):
+    """Growth Governance Rule 1: a family with no written replication rule can never read
+    REPLICATED, so holding it would be a permanent veto. It proceeds and is counted by name."""
+    clear = _placebo(tmp_path, "OK", [])
+    gate = ai.IntegrityGate.load(placebo=clear, now=NOW, verdicts=_verdicts(tmp_path, {}),
+                                 rule_families=frozenset({"overnight_gap_decay"}))
+    kw = {"symbol": "EURUSD", "selector": "asia", "side": None, "params": {}}
+    assert gate.hold("ruled", family="overnight_gap_decay", **kw).startswith(
+        ai.HELD_UNREPLICATED)
+    assert gate.hold("unruled", family="dav_range_filter_adx", **kw) is None
+    s = gate.summary()
+    assert s["n_held"] == 1 and s["held_by_kind"] == {ai.HELD_UNREPLICATED: 1}
+    assert s["proceeded_without_rule"] == {"unruled": "dav_range_filter_adx"}
+    assert s["n_proceeded_without_rule"] == 1 and s["missed_growth_rail"] == "replication_hold"
+    # asking twice does not double-count; an absent family is the breakout, which has a rule
+    gate.hold("ruled", family="overnight_gap_decay", **kw)
+    assert gate.summary()["n_held"] == 1
+    br = ai.IntegrityGate.load(placebo=clear, now=NOW, verdicts=_verdicts(tmp_path, {}),
+                               rule_families=frozenset({"session_range_breakout"}))
+    assert br.hold("b", family=None, **kw) is not None
+    # the placebo alarm is about the certifier, so it still holds a family with no rule
+    alarm = ai.IntegrityGate.load(placebo=_placebo(tmp_path, "GATE_BLIND", ["x"]), now=NOW,
+                                  verdicts=_verdicts(tmp_path, {}), rule_families=frozenset())
+    assert alarm.hold("u", family="dav_range_filter_adx", **kw).startswith(ai.HELD_PLACEBO)
+
+
+def test_the_live_rule_set_is_the_replication_spec_book():
+    import replication_civilization as rc
+    fams, src = ai.replication_rule_families()
+    assert fams == frozenset(rc.SPEC_BOOK) and src.endswith("SPEC_BOOK")
+    assert ai.IntegrityGate.load(placebo=Path("/nonexistent"), now=NOW).rule_families == fams
+
+
+def test_an_unreadable_rule_book_keeps_the_hold_for_every_family_and_says_so(tmp_path):
+    gate = ai.IntegrityGate(alarm={"blocks": False}, rule_families=None)
+    assert gate.hold("x", symbol="EURUSD", family="anything", selector="", side=None,
+                     params={}) is not None
+    assert gate.summary()["rule_families"] == ai.UNMEASURED
+
+
+def test_the_hold_has_a_missed_growth_line(tmp_path, monkeypatch):
+    import missed_growth as mg
+    [r] = [x for x in mg.all_rails() if x.name == "replication_hold"]
+    assert r.measure == "measure_replication_hold" and r.measure in mg.MEASURES
+    assert len([x for x in mg.all_rails() if x.name == "replication_hold"]) == 1
+    monkeypatch.setattr(mg, "FORWARD_ENROLMENT", tmp_path / "absent.json")
+    assert mg.measure_replication_hold(r, {}, {})["verdict"] == mg.UNMEASURED
+    doc = {"held": [{"key": "k1", "family": "overnight_gap_decay", "clockless_hours": 5.0,
+                     "held": "HELD_UNREPLICATED (UNREACHED): x"},
+                    {"key": "k2", "family": "monday_gap", "clockless_hours": 2.5,
+                     "held": "HELD_REPLICATION_MISMATCH: y"},
+                    {"key": "k3", "family": "dow_effect", "clockless_hours": 9.0,
+                     "held": "HELD_PLACEBO_ALARM: z"}],
+           "integrity": {"n_proceeded_without_rule": 7}}
+    p = tmp_path / "FORWARD_ENROLMENT.json"
+    p.write_text(json.dumps(doc), "utf-8")
+    monkeypatch.setattr(mg, "FORWARD_ENROLMENT", p)
+    m = mg.measure_replication_hold(r, {}, {})
+    assert m["verdict"] == mg.UNMEASURED and m["n_held"] == 2 and m["n_placebo_held"] == 1
+    assert m["deferred_clock_hours"] == 7.5 and m["n_proceeded_without_rule"] == 7
+    assert m["ledger_line"]["deferred_clock_hours"] == 7.5
+    # the binding hold lands in the ledger as an UNPRICED line (value null, never 0.0)
+    ledger = tmp_path / "missed_growth.jsonl"
+    monkeypatch.setattr(mg, "LEDGER", ledger)
+    monkeypatch.setattr(mg, "OUT", tmp_path / "MISSED_GROWTH.json")
+    monkeypatch.setattr(mg, "CALIBRATION", tmp_path / "rail_calibration.json")
+    monkeypatch.setattr(mg, "ALLOC", tmp_path / "absent_alloc.json")
+    out = mg.run(write=True, today="2026-10-06")
+    rows = [json.loads(ln) for ln in ledger.read_text("utf-8").splitlines() if ln.strip()]
+    [line] = [x for x in rows if x["rail"] == "replication_hold"]
+    assert line["value"] is None and line["unpriced"] and line["n_held"] == 2
+    assert out["rails"]["replication_hold"]["verdict"] == mg.UNMEASURED
+    p.write_text(json.dumps({"held": [], "integrity": {}}), "utf-8")
+    m = mg.measure_replication_hold(r, {}, {})
+    assert m["verdict"] == mg.NOT_BINDING and m["sample"] and m["value_logw_per_day"] == 0.0

@@ -3,7 +3,7 @@
 not touch an immutable rail.
 
 WHAT THIS ADDS TO THE EVALUATOR, AND WHAT IT DELIBERATELY DOES NOT. `check_immutable_evaluator`
-hashes the judge files into a signed manifest; this fence RE-USES that mechanism (it imports the
+hashes the judge files into a sealed manifest; this fence RE-USES that mechanism (it imports the
 evaluator by path and calls its `check()`, so there is one seal and one manifest) and adds the
 question the seal cannot answer: which ORGAN made a change. The meta-evolution layer
 (`desks/mt5/research/research_evolution.py`) records every mutation it applies with the paths and

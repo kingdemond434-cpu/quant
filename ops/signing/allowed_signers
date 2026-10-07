@@ -1,1 +1,17 @@
+# NOT WIRED (2026-10-06 audit). Nothing on this desk reads this file, and no desk commit is
+# git-signed: `git log --format=%G?` reads N for every desk-authored commit (the E rows are
+# GitHub's own merge-commit signatures, made with GitHub's key, not the desk's). What the release
+# tooling actually does is HASH-SEAL (IMMUTABLE_MANIFEST, money_path_hash) and HMAC-SEAL
+# (RELEASE.json via libs/ops/release_signing.py, a box-local key in data/secrets/); it never
+# calls `git verify-commit`. Do not describe either as "signed" commits.
+#
+# WHAT REAL GIT SIGNING WOULD NEED (a key on the box; a cloud session cannot provision one):
+#   1. an ssh key generated ON the box, private half never leaving it (ssh-keygen -t ed25519);
+#   2. on every committing clone: git config gpg.format ssh, git config user.signingkey <pub>,
+#      git config commit.gpgsign true (the box's seal and sync commits included);
+#   3. this file listing that public key (principal identity first), and
+#      git config gpg.ssh.allowedSignersFile ops/signing/allowed_signers on every VERIFYING clone;
+#   4. verification wired where code is adopted: Adopt-Release.ps1 / release_authority.py run
+#      `git verify-commit <target>` and refuse an unsigned or unknown-signer target, with a test.
+# Until all four exist, the line below is an inert record of an old migration key.
 quant-desk@localhost ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ9yFoZcY2En478LWStPTUTlJyI19zukE40523+U558x contabo-old-to-newbox-migration

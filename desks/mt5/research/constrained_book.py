@@ -26,7 +26,11 @@ robust E[log W] beats the traded book's (dE > 0 with the bootstrap interval excl
 more ruinous, never below the heat floor, on a fresh world population). The decision is written
 to reports/CONSTRAINED_BOOK_SWITCH.json; `research/pf_allocator.py` reads it and adopts the
 constrained book only after re-contesting it on its own paths (`constrained_elog.adopt_if_proven`).
-There is no hand switch: `constrained_elog.FEEDS_LIVE` is the fiat switch and stays False.
+There is no hand switch. `constrained_elog.FEEDS_LIVE` reads True because the principal
+approved this proof-switch feed on decision card
+cmsg_012XFUfE12Rvggnu86fDb8prK1fwX89R4zYEM2v8JJ4bJ3 (Allow, 2026-10-06T15:50:31Z): pf_allocator
+may adopt the constrained book whenever its robust E[log W] is higher, within the survival
+limits. The constant gates nothing; the hourly decision above is still the only way it feeds.
 
     python desks/mt5/research/constrained_book.py
 """
@@ -207,7 +211,8 @@ def build(now: datetime | None = None, *, seed: int = 0) -> dict[str, Any]:
     from libs.portfolio import constrained_elog as ce
     base: dict[str, Any] = {"generated_utc": now.isoformat(timespec="seconds"),
                             "feeds_live": False,
-                            "fiat_switch": ce.FEEDS_LIVE,
+                            "principal_approved": ce.FEEDS_LIVE,
+                            "principal_approval": dict(ce.PRINCIPAL_APPROVAL),
                             "source": {"worlds": str(WORLDS.relative_to(ROOT)),
                                        "allocation": str(ALLOCATION.relative_to(ROOT))}}
     doc = _build(base, now, seed=seed, t0=t0)
