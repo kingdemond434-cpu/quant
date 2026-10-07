@@ -304,7 +304,7 @@ def test_reads_before_the_first_capture_are_unmeasured(tmp_path, monkeypatch):
     assert acquisition.as_of("x", T1 + pd.Timedelta(hours=1)) == s.iloc[-1]
 
 
-def _revised_run(tmp_path, monkeypatch, frames):
+def _revised_run(tmp_path, monkeypatch, frames, suffix=""):
     """Run acquire() once per (capture time, frame) on the Treasury seed alone."""
     url = acquisition.TREASURY_CURVE
     monkeypatch.setattr(acquisition, "STORE", tmp_path)
@@ -314,7 +314,8 @@ def _revised_run(tmp_path, monkeypatch, frames):
     monkeypatch.setattr(acquisition, "_endpoints", lambda limit: [(url, "home.treasury.gov")])
     monkeypatch.setattr(acquisition, "_fetch", lambda u: (b"data", "csv"))
     monkeypatch.setattr(acquisition, "_dated", lambda df: df)
-    monkeypatch.setattr(acquisition, "_numeric_series", lambda df, stem: {stem: df["value"]})
+    monkeypatch.setattr(acquisition, "_numeric_series",
+                        lambda df, stem: {f"{stem}{suffix}": df["value"]})
     out = []
     for at, frame in frames:
         monkeypatch.setattr(acquisition, "_parse", lambda raw, u, f=frame: f.to_frame())
@@ -353,3 +354,142 @@ def test_the_vintage_view_earns_authority_once_it_reaches_the_floor(tmp_path, mo
                     "publication_lag_s": 172800}, hist.to_frame(),
                    now=frames[-1][0].to_pydatetime())
     assert "revision" in raw.failures()
+
+
+# ---- ARCH-26: archival vintages from ALFRED (fixtures: this container's proxy blocks the API)
+LAG2 = 2 * 86400
+
+
+def _alfred_rows(obs_dates, vintages):
+    """ALFRED output_type=1 rows. `vintages` maps observation date -> [(realtime_start, value)]."""
+    rows = []
+    for d in obs_dates:
+        for rt, val in vintages.get(d, []):
+            rows.append({"realtime_start": rt, "realtime_end": "9999-12-31", "date": d,
+                         "value": "." if val is None else str(val)})
+    return acquisition.alfred_frame(rows)
+
+
+def _publisher(dates, values):
+    return pd.Series(values, index=pd.DatetimeIndex(dates, tz="UTC"), name="value")
+
+
+def _fixture(n=30):
+    days = [d.strftime("%Y-%m-%d") for d in pd.bdate_range("2025-01-02", periods=n)]
+    vint = {d: [((pd.Timestamp(d) + pd.offsets.BDay(1)).strftime("%Y-%m-%d"), 4.0 + i / 100)]
+            for i, d in enumerate(days)}
+    pub = _publisher(days, [4.0 + i / 100 for i in range(n)])
+    return days, vint, pub
+
+
+def test_an_alfred_vintage_is_never_usable_before_its_realtime_start(tmp_path):
+    days, vint, pub = _fixture()
+    path = tmp_path / "v.parquet"
+    rep = acquisition.ingest_alfred(path, pub, _alfred_rows(days, vint), LAG2, 0.0051, "DGS10")
+    assert rep["status"] == "INGESTED" and rep["verified"] == 30 and rep["mismatches"] == 0
+    store = acquisition.read_vintages(path)
+    assert set(store["source"]) == {"alfred"}
+    view = acquisition.vintage_view(acquisition.vintage_frame(store, LAG2))
+    d0 = days[0]
+    rt0 = vint[d0][0][0]
+    usable = acquisition.alfred_capture_time(rt0, LAG2)
+    assert usable == pd.Timestamp(rt0).tz_localize("America/New_York").tz_convert("UTC") \
+        + pd.Timedelta(seconds=LAG2)
+    bars = pd.DatetimeIndex([usable - pd.Timedelta(minutes=1), usable])
+    joined = acquisition._join(view, bars)
+    assert pd.isna(joined.iloc[0]), "nothing before the archive says the value existed"
+    assert joined.iloc[1] == 4.0
+    # idempotent: a second ingest appends nothing and rewrites nothing
+    again = acquisition.ingest_alfred(path, pub, _alfred_rows(days, vint), LAG2, 0.0051, "DGS10")
+    assert again["appended"] == 0
+    pd.testing.assert_frame_equal(acquisition.read_vintages(path), store)
+
+
+def test_a_later_alfred_vintage_does_not_leak_backwards(tmp_path):
+    days, vint, pub = _fixture()
+    last = days[-1]
+    first_rt = vint[last][0][0]
+    later_rt = (pd.Timestamp(first_rt) + pd.Timedelta(days=10)).strftime("%Y-%m-%d")
+    vint[last] = [(first_rt, 3.10), (later_rt, float(pub.iloc[-1]))]  # revised to the current
+    path = tmp_path / "v.parquet"
+    acquisition.ingest_alfred(path, pub, _alfred_rows(days, vint), LAG2, 0.0051, "DGS10")
+    view = acquisition.vintage_view(acquisition.vintage_frame(acquisition.read_vintages(path),
+                                                              LAG2))
+    t1 = acquisition.alfred_capture_time(first_rt, LAG2)
+    t2 = acquisition.alfred_capture_time(later_rt, LAG2)
+    bars = pd.date_range(t1, t2 + pd.Timedelta(days=1), freq="6h")
+    joined = acquisition._join(view, bars)
+    assert (joined[bars < t2] == 3.10).all(), "the first print is what the desk had"
+    assert (joined[bars >= t2] == float(pub.iloc[-1])).all()
+
+
+def test_alfred_is_cross_checked_against_the_publisher(tmp_path):
+    days, vint, pub = _fixture(40)
+    bad = pub.copy()
+    bad.iloc[5] += 0.25                                   # one date disagrees: excluded, recorded
+    rep = acquisition.ingest_alfred(tmp_path / "a.parquet", bad, _alfred_rows(days, vint),
+                                    LAG2, 0.0051, "DGS10")
+    assert rep["status"] == "INGESTED" and rep["mismatches"] == 1
+    assert rep["mismatch_sample"][0]["date"] == days[5]
+    assert days[5] not in {str(d.date()) for d in
+                           acquisition.read_vintages(tmp_path / "a.parquet")["event_time"]}
+    wrong = pub * 1.5                                      # a different series: nothing taken
+    rep = acquisition.ingest_alfred(tmp_path / "b.parquet", wrong, _alfred_rows(days, vint),
+                                    LAG2, 0.0051, "DGS10")
+    assert rep["status"] == "REJECTED" and not (tmp_path / "b.parquet").exists()
+
+
+@pytest.mark.parametrize(("sid", "notes", "held"), [
+    ("VIXCLS", "", True), ("BAMLH0A0HYM2", "", True),
+    ("DGS10", "Copyright, 2024, ICE Data Indices", True),
+    ("DGS10", None, True),
+    ("DGS10", "For further information see the H.15 release notes.", False),
+])
+def test_fred_copyrighted_series_stay_held(sid, notes, held):
+    assert (acquisition.alfred_held(sid, notes) is not None) is held
+
+
+def test_the_seed_map_is_identity_only():
+    t = acquisition.TREASURY_CURVE
+    assert acquisition.alfred_id(t, "home_treasury_gov_x_10_Yr") == "DGS10"
+    assert acquisition.alfred_id(t, "home_treasury_gov_x_1_Yr") == "DGS1"
+    assert acquisition.alfred_id(t, "home_treasury_gov_x_2_Mo") is None
+    assert acquisition.alfred_id(acquisition.EIA_WTI_SPOT, "www_eia_gov_RWTCd_x") == "DCOILWTICO"
+    assert acquisition.alfred_id(acquisition.BIS_POLICY_RATES, "data_bis_org_x") is None
+
+
+def test_acquire_ingests_alfred_depth_and_never_writes_the_key(tmp_path, monkeypatch):
+    days, vint, pub = _fixture(260)
+    monkeypatch.setattr(acquisition, "MIN_ROWS", 200)
+    monkeypatch.setattr(acquisition, "_alfred_key", lambda: "KEY-SECRET-123")
+    monkeypatch.setattr(acquisition, "_alfred_notes", lambda sid, key: "H.15 notes")
+    seen = []
+
+    def fetch(sid, key):
+        seen.append((sid, key))
+        return _alfred_rows(days, vint)
+    monkeypatch.setattr(acquisition, "_alfred_fetch", fetch)
+    captures = [(pd.Timestamp("2026-10-07 09:00", tz="UTC"), pub),
+                (pd.Timestamp("2026-10-08 09:00", tz="UTC"), pub)]
+    # the publisher's file names its column `10 Yr`, as Treasury's CSV does
+    runs = _revised_run(tmp_path, monkeypatch, captures, suffix="_10_Yr")
+    first, second = runs
+    assert first["alfred"]["status"] == "INGESTED" and first["alfred"]["series_id"] == "DGS10"
+    assert seen == [("DGS10", "KEY-SECRET-123")], "fetched once; INGESTED is not re-asked"
+    assert first["vintage_observations"] >= 200, "the archive's instants are real depth"
+    assert first["pit_authority"] is False and first["pit_blocking"] == ["schema"]
+    assert second["pit_authority"] is True, second["pit_blocking"]
+    assert "KEY-SECRET-123" not in (tmp_path / "registry.json").read_text()
+    store = acquisition.read_vintages(acquisition.vintage_path(next(iter(
+        json.loads((tmp_path / "registry.json").read_text())["series"]))))
+    assert set(store["source"]) == {"capture", "alfred"}
+    assert second["vintage_appended"] == 0, "the live re-read matched: nothing new captured"
+
+
+def test_no_key_is_unmeasured_and_retried_next_run(tmp_path, monkeypatch):
+    days, vint, pub = _fixture(30)
+    monkeypatch.setattr(acquisition, "_alfred_key", lambda: None)
+    runs = _revised_run(tmp_path, monkeypatch,
+                        [(pd.Timestamp("2026-10-07 09:00", tz="UTC"), pub)], suffix="_10_Yr")
+    a = runs[0]["alfred"]
+    assert a["status"] == "UNMEASURED" and "retry_after" not in a

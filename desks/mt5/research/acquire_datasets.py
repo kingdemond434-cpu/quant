@@ -26,6 +26,7 @@ Nothing here retries forever or downloads something it has not measured first.
 """
 from __future__ import annotations
 
+import contextlib
 import glob
 import io
 import json
@@ -459,7 +460,7 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
 #:
 #: That view carries its vintage on the row (`vintage`, `available_time`), so the certifier grades
 #: `revision` PASS for it -- and only for it: the as-published file of a revised source still FAILS.
-VINTAGE_COLUMNS = ("event_time", "value", "captured_at")
+VINTAGE_COLUMNS = ("event_time", "value", "captured_at", "source")
 
 
 def vintage_path(name: str) -> Path:
@@ -477,12 +478,25 @@ def read_vintages(path: Path) -> pd.DataFrame:
     if not path.exists():
         return pd.DataFrame({"event_time": pd.DatetimeIndex([], tz="UTC"),
                              "value": pd.Series([], dtype=float),
-                             "captured_at": pd.DatetimeIndex([], tz="UTC")})
+                             "captured_at": pd.DatetimeIndex([], tz="UTC"),
+                             "source": pd.Series([], dtype=str)})
     v = pd.read_parquet(path)
     v["event_time"] = pd.to_datetime(v["event_time"], utc=True)
     v["captured_at"] = pd.to_datetime(v["captured_at"], utc=True)
     v["value"] = v["value"].astype(float)
+    if "source" not in v.columns:
+        v["source"] = "capture"
     return v[list(VINTAGE_COLUMNS)].reset_index(drop=True)
+
+
+def _append(path: Path, old: pd.DataFrame, new: pd.DataFrame) -> int:
+    """Old rows exactly as they were, then the new ones. The ONLY writer of the store."""
+    out = pd.concat([old, new], ignore_index=True) if len(old) else new
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.stem}.tmp.parquet")   # ignored like the store itself
+    out.to_parquet(tmp, index=False)
+    os.replace(tmp, path)
+    return len(out)
 
 
 def _same(a: float, b: float) -> bool:
@@ -497,11 +511,15 @@ def capture_vintages(path: Path, series: pd.Series, captured_at: datetime) -> di
     old = read_vintages(path)
     now = pd.Timestamp(captured_at).tz_convert("UTC") if pd.Timestamp(captured_at).tzinfo \
         else pd.Timestamp(captured_at, tz="UTC")
-    if len(old):
-        now = max(now, old["captured_at"].max())
+    live = old[old["source"] == "capture"]
+    if len(live):
+        now = max(now, live["captured_at"].max())
     known: dict[pd.Timestamp, float] = {}
-    for e, val in zip(old["event_time"], old["value"], strict=True):
-        known[e] = float(val)                     # append order: the last vintage wins
+    # the LATEST CAPTURED vintage of each event is what a re-read is compared against -- by
+    # capture time, not file order, because archival (ALFRED) rows are appended with past times
+    hist = old.sort_values("captured_at", kind="stable")
+    for e, val in zip(hist["event_time"], hist["value"], strict=True):
+        known[e] = float(val)
     s = series.astype(float)
     idx = _utc_index(s.index)
     rows: list[tuple[pd.Timestamp, float]] = []
@@ -514,17 +532,13 @@ def capture_vintages(path: Path, series: pd.Series, captured_at: datetime) -> di
             revisions += int(prior is not None)
             rows.append((e, float(val)))
             known[e] = float(val)
-    first = old["captured_at"].min() if len(old) else (now if rows else None)
+    first = live["captured_at"].min() if len(live) else (now if rows else None)
     if rows:
         new = pd.DataFrame({"event_time": pd.DatetimeIndex([r[0] for r in rows]),
                             "value": [r[1] for r in rows],
-                            "captured_at": pd.DatetimeIndex([now] * len(rows))})
-        out = pd.concat([old, new], ignore_index=True) if len(old) else new
-        path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_name(f"{path.stem}.tmp.parquet")   # ignored like the store itself
-        out.to_parquet(tmp, index=False)
-        os.replace(tmp, path)
-        total = len(out)
+                            "captured_at": pd.DatetimeIndex([now] * len(rows)),
+                            "source": ["capture"] * len(rows)})
+        total = _append(path, old, new)
     else:
         total = len(old)
     return {"appended": len(rows), "revisions": revisions, "rows": total,
@@ -596,6 +610,217 @@ def as_of(name: str, at: datetime) -> float | str:
     if s is None or s.empty or pd.isna(s.iloc[0]):
         return UNMEASURED
     return float(s.iloc[0])
+
+
+# ------------------------------------------------------------- archival vintages from ALFRED
+#: HONEST DEPTH, NOT BACKFILL. A live capture can only start today. Where an ARCHIVE recorded
+#: what was published and when, its vintages are real point-in-time history: ALFRED (FRED's
+#: vintage archive) gives every observation's `realtime_start`, the date that value first
+#: appeared. Each archival vintage enters the store as source="alfred" with
+#:     captured_at = realtime_start at 00:00 America/New_York, in UTC, + the declared lag
+#: so it is never usable before the archive says it existed, and a later archival vintage is
+#: usable only from its own realtime_start -- the same no-backwards rule as a live capture.
+#:
+#: Mapped only where FRED carries THE SAME numbers as the publisher's file:
+#:   Treasury par curve  -> DGS* (H.15's constant maturities are read off this curve)
+#:   EIA Cushing WTI     -> DCOILWTICO (FRED republishes EIA's RWTC)
+#:   BIS policy rates    -> none: FRED's policy-rate series come from other compilers, so a
+#:                          match would be coincidence, not identity.
+#: and accepted only after a cross-check against the publisher's own values (ALFRED_MIN_MATCH of
+#: at least ALFRED_MIN_OVERLAP overlapping dates within the tolerance); mismatched dates are
+#: excluded and recorded. FRED's copyrighted series stay HELD: VIX *CLS and BAML by name, and any
+#: series whose own FRED notes carry a copyright notice.
+ALFRED_OBSERVATIONS = "https://api.stlouisfed.org/fred/series/observations"
+ALFRED_SERIES = "https://api.stlouisfed.org/fred/series"
+_TREASURY_TENORS = {"1_Mo": "DGS1MO", "3_Mo": "DGS3MO", "6_Mo": "DGS6MO", "1_Yr": "DGS1",
+                    "2_Yr": "DGS2", "3_Yr": "DGS3", "5_Yr": "DGS5", "7_Yr": "DGS7",
+                    "10_Yr": "DGS10", "20_Yr": "DGS20", "30_Yr": "DGS30"}
+#: Both publishers quote two decimals; anything past half a cent / half a basis point is not the
+#: same number.
+ALFRED_TOLERANCE = {TREASURY_CURVE: 0.0051, EIA_WTI_SPOT: 0.0051}
+ALFRED_MIN_MATCH = 0.99
+ALFRED_MIN_OVERLAP = 20
+ALFRED_RETRY_S = 7 * 24 * 3600
+_ALFRED_HELD = re.compile(r"^(VIX\w*CLS|BAML\w*)$", re.IGNORECASE)
+_ET = "America/New_York"
+
+
+def alfred_id(url: str, name: str) -> str | None:
+    """The FRED series carrying the same numbers as this acquired series, or None."""
+    if url == EIA_WTI_SPOT:
+        return "DCOILWTICO"
+    if url == TREASURY_CURVE:
+        for col, sid in _TREASURY_TENORS.items():
+            if name.endswith("_" + col):
+                return sid
+    return None
+
+
+def alfred_held(series_id: str, notes: str | None) -> str | None:
+    """Why a FRED series may not be used, or None. Held by name (VIX *CLS, BAML) whatever its
+    notes say; held when its notes carry a copyright notice; held when the notes could not be
+    read (an unread licence is not a cleared one)."""
+    if _ALFRED_HELD.match(series_id):
+        return f"{series_id}: held by project policy (FRED copyrighted family)"
+    if notes is None:
+        return f"{series_id}: FRED notes unreadable -- copyright not cleared"
+    if re.search(r"copyright|\u00a9|\(c\)\s*\d{4}", notes, re.IGNORECASE):
+        return f"{series_id}: FRED notes carry a copyright notice"
+    return None
+
+
+def _alfred_key() -> str | None:
+    """The FRED key, from the places the repo's FRED readers already use: FRED_API_KEY, then
+    `secrets/fred_api_key` (fetch_alfred.api_key), then `data/secrets/fred.json` {"key": ...}
+    (scripts/collect_fred_macro.py). Read here rather than by importing fetch_alfred, whose import
+    creates its lake directory. The key goes to the request and nowhere else -- never logged,
+    never written to the registry or a report."""
+    env = os.environ.get("FRED_API_KEY", "").strip()
+    if env:
+        return env
+    repo = DESK.parents[1]
+    for path in (repo / "secrets" / "fred_api_key", DESK / "secrets" / "fred_api_key"):
+        with contextlib.suppress(OSError):
+            k = path.read_text("utf-8").strip()
+            if k:
+                return k
+    with contextlib.suppress(OSError, ValueError, AttributeError):
+        k = str(json.loads((repo / "data" / "secrets" / "fred.json").read_text("utf-8"))
+                .get("key") or "").strip()
+        if k:
+            return k
+    return None
+
+
+def _alfred_notes(series_id: str, key: str) -> str | None:
+    import requests
+    r = requests.get(ALFRED_SERIES, params={"series_id": series_id, "api_key": key,
+                                            "file_type": "json"}, timeout=60)
+    if r.status_code != 200:
+        return None
+    rows = r.json().get("seriess") or []
+    return str(rows[0].get("notes") or "") if rows else None
+
+
+def _alfred_fetch(series_id: str, key: str) -> pd.DataFrame:
+    """Every vintage, one row per (observation, vintage): output_type=1 with the FULL realtime
+    span -- omitting the span returns only today's revised vintage with a 200 (see
+    fetch_alfred.fetch_vintages). Paged; a daily series is tens of thousands of rows."""
+    import requests
+    rows: list[dict[str, Any]] = []
+    offset = 0
+    while True:
+        r = requests.get(ALFRED_OBSERVATIONS, params={
+            "series_id": series_id, "api_key": key, "file_type": "json", "output_type": 1,
+            "realtime_start": "1776-07-04", "realtime_end": "9999-12-31",
+            "limit": 100000, "offset": offset}, timeout=120)
+        r.raise_for_status()
+        doc = r.json()
+        page = doc.get("observations") or []
+        rows.extend(page)
+        offset += len(page)
+        if not page or offset >= int(doc.get("count") or 0):
+            break
+    return alfred_frame(rows)
+
+
+def alfred_frame(rows: list[dict[str, Any]]) -> pd.DataFrame:
+    """ALFRED rows -> observation_date, realtime_start, value. FRED's "." (no value) is dropped."""
+    df = pd.DataFrame(rows, columns=["realtime_start", "date", "value"])
+    df = df[df["value"].astype(str) != "."]
+    out = pd.DataFrame({
+        "observation_date": pd.to_datetime(df["date"], errors="coerce", utc=True),
+        "realtime_start": pd.to_datetime(df["realtime_start"], errors="coerce"),
+        "value": pd.to_numeric(df["value"], errors="coerce")})
+    return out.dropna().reset_index(drop=True)
+
+
+def alfred_capture_time(realtime_start: Any, lag_s: float | None) -> pd.Timestamp:
+    """00:00 America/New_York on the vintage date, in UTC, plus the declared publication lag."""
+    day = pd.Timestamp(realtime_start).normalize()
+    if day.tzinfo is not None:
+        day = day.tz_localize(None)
+    return day.tz_localize(_ET).tz_convert("UTC") + pd.Timedelta(seconds=float(lag_s or 0))
+
+
+def ingest_alfred(path: Path, publisher: pd.Series, vint: pd.DataFrame, lag_s: float | None,
+                  tol: float, series_id: str) -> dict[str, Any]:
+    """Cross-check ALFRED against the publisher, then append its vintages as source="alfred".
+    Append-only, idempotent (an (event, capture) pair already stored is not stored again)."""
+    pub = publisher.astype(float)
+    pub.index = _utc_index(pub.index).normalize()
+    pub = pub[~pub.index.duplicated(keep="last")]
+    v = vint.copy()
+    v["observation_date"] = _utc_index(v["observation_date"]).normalize()
+    current = v.sort_values("realtime_start").groupby("observation_date")["value"].last()
+    both = current.index.intersection(pub.index)
+    diff = (current.loc[both] - pub.loc[both]).abs()
+    bad = diff[diff > tol]
+    rep: dict[str, Any] = {"series_id": series_id, "overlap": len(both),
+                           "verified": int(len(both) - len(bad)), "mismatches": len(bad),
+                           "mismatch_sample": [
+                               {"date": str(d.date()), "alfred": float(current.loc[d]),
+                                "publisher": float(pub.loc[d])} for d in bad.index[:5]],
+                           "tolerance": tol}
+    share = (rep["verified"] / len(both)) if len(both) else 0.0
+    rep["match_share"] = round(share, 6)
+    if len(both) < ALFRED_MIN_OVERLAP or share < ALFRED_MIN_MATCH:
+        rep["status"] = "REJECTED"
+        rep["why"] = (f"{len(both)} overlapping date(s), {share:.2%} within {tol}: needs "
+                      f">= {ALFRED_MIN_OVERLAP} and >= {ALFRED_MIN_MATCH:.0%} -- not the same "
+                      "series, so none of its history is taken")
+        return rep
+    keep = v[~v["observation_date"].isin(bad.index)]
+    rep["unverified_outside_publisher_span"] = int(
+        (~keep["observation_date"].isin(pub.index)).groupby(keep["observation_date"]).any().sum())
+    cap = pd.DatetimeIndex([alfred_capture_time(t, lag_s) for t in keep["realtime_start"]])
+    new = pd.DataFrame({"event_time": pd.DatetimeIndex(keep["observation_date"]),
+                        "value": keep["value"].astype(float).round(6).to_numpy(),
+                        "captured_at": cap, "source": ["alfred"] * len(keep)})
+    old = read_vintages(path)
+    seen = set(zip(old.loc[old["source"] == "alfred", "event_time"],
+                   old.loc[old["source"] == "alfred", "captured_at"], strict=True))
+    new = new[[(e, c) not in seen for e, c in zip(new["event_time"], new["captured_at"],
+                                                   strict=True)]]
+    rep["appended"] = len(new)
+    if len(new):
+        _append(path, old, new.reset_index(drop=True))
+    rep["first_realtime"] = str(keep["realtime_start"].min().date()) if len(keep) else None
+    rep["status"] = "INGESTED"
+    return rep
+
+
+def alfred_step(url: str, name: str, s: pd.Series, prior: dict[str, Any],
+                run_at: datetime) -> dict[str, Any] | None:
+    """One series' archival ingest, at most once a week until it lands. Never raises."""
+    sid = alfred_id(url, name)
+    if sid is None:
+        return None
+    last = prior.get("alfred") if isinstance(prior.get("alfred"), dict) else {}
+    if last.get("status") == "INGESTED":
+        return last
+    # a REJECTED, HELD or unreachable answer is re-asked weekly; a missing key every run, so the
+    # day a key is installed is the day the archive is read
+    if last.get("retry_after"):
+        if pd.Timestamp(run_at) < pd.Timestamp(str(last["retry_after"])):
+            return last
+    out: dict[str, Any] = {"series_id": sid, "at": run_at.isoformat(timespec="seconds")}
+    key = _alfred_key()
+    if not key:
+        return {**out, "status": UNMEASURED, "why": "no FRED key (FRED_API_KEY or secrets/)"}
+    retry = {"retry_after": (pd.Timestamp(run_at) + pd.Timedelta(seconds=ALFRED_RETRY_S))
+             .isoformat()}
+    try:
+        held = alfred_held(sid, _alfred_notes(sid, key))
+        if held:
+            return {**out, **retry, "status": "HELD", "why": held}
+        rep = ingest_alfred(vintage_path(name), s, _alfred_fetch(sid, key),
+                            _PUBLICATION_LAG_S.get(url), ALFRED_TOLERANCE.get(url, 0.0051), sid)
+        return {**out, **rep, **(retry if rep.get("status") != "INGESTED" else {})}
+    except Exception as exc:                                                # noqa: BLE001
+        # the message is the exception's type only: a requests error can echo the URL, key
+        return {**out, **retry, "status": UNMEASURED,
+                "why": f"ALFRED unreachable: {type(exc).__name__}"}
 
 
 def acquire(limit: int = MAX_PER_RUN, *, now: datetime | None = None) -> dict[str, Any]:
@@ -671,6 +896,7 @@ def acquire(limit: int = MAX_PER_RUN, *, now: datetime | None = None) -> dict[st
                 vin = {"error": f"{type(exc).__name__}: {exc}"}
                 _refuse("vintage not captured")
             served_vintage = _REVISED.get(url) is True and "error" not in vin
+            alfred = alfred_step(url, name, s, prior, run_at) if served_vintage else None
             lag_decl = _PUBLICATION_LAG_S.get(url)
             vin_obs = 0
             try:
@@ -731,6 +957,7 @@ def acquire(limit: int = MAX_PER_RUN, *, now: datetime | None = None) -> dict[st
                 "vintage_schema_hash": (new_hash if served_vintage
                                         else prior.get("vintage_schema_hash")),
                 "vintage_error": vin.get("error"),
+                "alfred": alfred,
             }
             new_series.append(name)
             persisted.append(name)

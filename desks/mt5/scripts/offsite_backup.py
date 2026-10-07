@@ -64,6 +64,12 @@ SOURCES: tuple[str, ...] = (
     str(ROOT / "data" / "tape"),
     str(BASE / "data" / "tape"),
     os.path.expandvars(r"%APPDATA%\MetaQuotes\Terminal"),
+    # FIRST-SEEN VINTAGES (ARCH-26, 2026-10-07): `acquire_datasets` appends what each publisher's
+    # file said every time the box read it. The store is gitignored (it is parquet) and cannot be
+    # re-downloaded -- a publisher that restates history no longer serves its old values -- so a
+    # lost disk would lose every revised source's point-in-time record AND the authority earned
+    # on it. Small (a few rows a series a day); restic deduplicates the unchanged prefix.
+    str(BASE / "data" / "acquired" / "vintages"),
 )
 #: Never shipped, whatever the config says.
 EXCLUDES: tuple[str, ...] = ("**/secrets/**", "**/accounts.dat", "**/*.lock", "**/logs/**")

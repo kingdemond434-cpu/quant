@@ -155,3 +155,18 @@ def test_restore_drill_identical_is_by_content_and_full_path(tmp_path: Path) -> 
     rep = ob.restore_drill("restic", {}, swapped, NOW)
     # EURUSD's file is MISSING, never graded against GBPUSD's same-named file
     assert rep["counts"]["MISSING"] == 1 and rep["counts"]["IDENTICAL"] == 1, rep
+
+
+def test_the_vintage_store_is_backed_up_and_never_excluded() -> None:
+    """ARCH-26: first-seen vintages are gitignored box state that no publisher will serve again.
+    The path the acquirer actually writes must sit under a backed-up source, and no hard
+    exclusion may drop it."""
+    import fnmatch
+    sys.path.insert(0, str(ROOT / "desks" / "mt5"))
+    from research import acquire_datasets as acq
+
+    store = Path(acq.vintage_path("series_x")).resolve()
+    covered = [s for s in ob.SOURCES if store.is_relative_to(Path(s).resolve())]
+    assert covered, f"{store} is under no offsite_backup source"
+    rel = store.as_posix()
+    assert not [e for e in ob.EXCLUDES if fnmatch.fnmatch(rel, e)], "an exclusion drops it"
