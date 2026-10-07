@@ -69,7 +69,8 @@ INCUMBENT = {
 SLEEVE = {"name": "eur_carry_asia", "symbol": "EURNOK", "family": "carry", "session": "asia",
           "params": {"input_symbol": "EURNOK"}, "status": "LIVE"}
 JUDGED = {"at": "2026-09-15T04:37:37+00:00", "cell": "AUDCAD.overnight_gap_decay.p=deadbeef0",
-          "sym": "AUDCAD", "family": "overnight_gap_decay", "passed": False}
+          "sym": "AUDCAD", "family": "overnight_gap_decay", "passed": False,
+          "terminal_gate": "cpcv"}
 
 
 def _library(monkeypatch: Any, tmp_path: Path, *, survivors: Any = None, sleeves: Any = None,
@@ -253,6 +254,24 @@ def test_an_exact_cell_identity_is_redundant_without_four_numbers(monkeypatch, t
     assert v.twin == "AUDCAD.overnight_gap_decay.p=deadbeef0"
     assert "exact cell identity" in v.why
     assert "answered question" in v.why
+
+
+def test_an_exact_twin_whose_verdict_is_unknown_is_never_excluded(monkeypatch, tmp_path):
+    """UNKNOWN is the judge's unmeasured path: the question was not answered, so the cell is
+    not an exact twin and the re-test is admitted. A later RULING on the same cell still is."""
+    unknown = {**JUDGED, "terminal_gate": "UNKNOWN"}
+    bare = {**JUDGED, "cell": "AUDCAD.overnight_gap_decay.p=feedface1"}
+    bare.pop("terminal_gate")
+    _library(monkeypatch, tmp_path, judged=[unknown, bare])
+    lib = ng.Library.load()
+    assert lib.counts["judged"] == 0 and lib.counts["judged_unknown_skipped"] == 2
+    for cell in (unknown["cell"], bare["cell"]):
+        v = ng.admit({"sym": "AUDCAD", "family": "overnight_gap_decay", "cell": cell}, lib)
+        assert "exact cell identity" not in v.why, cell
+    _library(monkeypatch, tmp_path, judged=[unknown, JUDGED])
+    lib = ng.Library.load()
+    v = ng.admit({"sym": "AUDCAD", "family": "overnight_gap_decay", "cell": JUDGED["cell"]}, lib)
+    assert v.verdict == "REDUNDANT" and "exact cell identity" in v.why
 
 
 def test_complexity_flags_an_oversized_candidate(monkeypatch, tmp_path):

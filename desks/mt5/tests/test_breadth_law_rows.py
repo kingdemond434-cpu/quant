@@ -56,6 +56,27 @@ def test_equivalent_indicator_and_genuine_difference() -> None:
     assert nd.rule_between(_spec("EURUSD", tf="D1", rr=2.0, wait_bars=4, stop=1.0), CERT) is None
 
 
+def test_symbol_rule_never_crosses_an_economic_factor() -> None:
+    """The same rule on another ticker is a near-duplicate only inside one factor / cluster."""
+    same = {**_spec("GBPUSD", rr=2.0, wait_bars=4, stop=1.0), "economic_factor": "USD"}
+    cert = {**CERT, "economic_factor": "USD"}
+    assert nd.rule_between(same, cert) == "symbol"
+    gold = {**_spec("XAUUSD", rr=2.0, wait_bars=4, stop=1.0),
+            "economic_factor": "PRECIOUS_REAL_YIELD"}
+    assert nd.rule_between(gold, cert) is None
+    assert nd.near_duplicate(gold, nd.Index([cert])) is None
+    # a declared symbol cluster wins over the factor: same factor, different cluster -> no rule
+    a = {**same, "symbol_cluster": "c1"}
+    b = {**cert, "symbol_cluster": "c2"}
+    assert nd.rule_between(a, b) is None
+    assert nd.rule_between({**a, "symbol_cluster": "c2"}, b) == "symbol"
+    # an unknown factor never satisfies the rule by itself
+    u1 = {**_spec("FOO1", rr=2.0, wait_bars=4, stop=1.0), "economic_factor": "UNKNOWN"}
+    u2 = {**_spec("FOO2", rr=2.0, wait_bars=4, stop=1.0), "economic_factor": "UNKNOWN"}
+    nd._FACTOR_CACHE.update({"FOO1": "", "FOO2": ""})
+    assert nd.rule_between(u1, u2) is None
+
+
 def test_evidence_overturns_a_near_duplicate_rule() -> None:
     idx = nd.Index([CERT])
     twin = _spec("GBPUSD", rr=2.0, wait_bars=4, stop=1.0)
@@ -305,11 +326,49 @@ def test_coverage_table_resolves_anchors_and_downgrades_a_dead_one(tmp_path: Pat
     assert by["BREADTH-9001"]["status"] == blc.COVERED
     assert by["BREADTH-9001"]["where"] == ["m.py:2"]
     assert by["BREADTH-9002"]["status"] == blc.PARTIAL and by["BREADTH-9002"]["downgraded"]
-    assert by["BREADTH-9003"]["status"] == blc.COVERED
+    # the audit's anchor proves only that m.py exists: never COVERED on that alone
+    assert by["BREADTH-9003"]["status"] == blc.PARTIAL
+    assert by["BREADTH-9003"]["evidence"].startswith("FILE_EXISTENCE_ONLY")
     assert by["BREADTH-9004"]["status"] == blc.PARTIAL
     assert doc["downgraded"] == ["BREADTH-9002"]
+    assert doc["file_existence_only"] == 1
     p = blc.publish(doc, tmp_path / "BREADTH_LAW_COVERAGE.json")
     assert json.loads(p.read_text("utf-8"))["n_rows"] == 4
+
+
+def test_a_comment_or_string_stub_never_satisfies_covered(tmp_path: Path, monkeypatch) -> None:
+    """The anchor must be a node in the syntax tree: def, call, assignment or return."""
+    (tmp_path / "s.py").write_text(
+        '"""Module docstring: def implemented_law says it is done."""\n'
+        "# implemented_law(x) is here, honest\n"
+        "'implemented_law stub'\n"
+        "y = 2  # implemented_law in a trailing comment\n"
+        "def real():\n"
+        '    """implemented_law, again only words."""\n'
+        "    return compute_law(1)\n"
+        "TABLE = {'law_key': 1}\n", "utf-8")
+    (tmp_path / "doc.md").write_text("STEP 9 reads implemented_law\n", "utf-8")
+    assert blc.resolve("s.py::implemented_law", tmp_path) is None
+    assert blc.resolve("s.py::^def real", tmp_path) == "s.py:5"
+    assert blc.resolve("s.py::compute_law", tmp_path) == "s.py:7"
+    assert blc.resolve("s.py::'law_key'", tmp_path) == "s.py:8"
+    assert blc.resolve("doc.md::implemented_law", tmp_path) == "doc.md:1"
+    rows = {"rows": [{"id": f"BREADTH-{i}", "section": "S §1", "requirement": "r",
+                      "audit_state": "ABSENT"} for i in range(9101, 9106)]}
+    rp = tmp_path / "rows.json"
+    rp.write_text(json.dumps(rows), "utf-8")
+    monkeypatch.setattr(blc, "CLASSIFICATION", (
+        ("9101", blc.COVERED, ("s.py::implemented_law",), ""),          # comment / docstring
+        ("9102", blc.COVERED, ("s.py::",), ""),                          # file exists
+        ("9103", blc.COVERED, ("doc.md::implemented_law",), ""),         # document text only
+        ("9104", blc.COVERED, ("s.py::compute_law", "doc.md::STEP 9"), ""),
+        ("9105", blc.COVERED_SHADOW, ("doc.md::STEP 9",), ""),
+    ))
+    by = {r["id"]: r for r in blc.build(rows_path=rp, root=tmp_path)["rows"]}
+    for i in (9101, 9102, 9103, 9105):
+        assert by[f"BREADTH-{i}"]["status"] == blc.PARTIAL, i
+        assert by[f"BREADTH-{i}"]["downgraded"], i
+    assert by["BREADTH-9104"]["status"] == blc.COVERED
 
 
 def test_the_real_table_covers_all_635_rows_with_no_dead_anchor() -> None:

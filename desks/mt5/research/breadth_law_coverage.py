@@ -23,15 +23,22 @@ AN ANCHOR IS `path::regex`, resolved to the first matching line each pass. A row
 whose anchors no longer resolve is DOWNGRADED to PARTIAL with the dead anchor named -- the claim
 is only as good as the code still being there, so a deletion shows up as a coverage fall the same
 hour, never as a stale green row. Rows this module does not classify explicitly keep the audit's
-reading mapped mechanically (SCHEDULED and later -> COVERED when the audit's module still exists,
-CODED/UNMEASURED -> PARTIAL, ABSENT -> MISSING), and say so in `basis`.
+reading mapped mechanically (SCHEDULED and later -> PARTIAL, because the audit's anchor proves only
+that a module exists; CODED/UNMEASURED -> PARTIAL; ABSENT -> MISSING), and say so in `basis`.
+
+AN ANCHOR MUST BE CODE (audit of 2026-10-07). In a .py file a pattern resolves only on a line
+inside a syntax-tree node -- a def or class header, a call, an assignment or a return -- and
+before any comment on that line: a comment, a docstring or a bare string never carries COVERED.
 
 Facts only. Nothing here changes an order, a gate, a trial charge, capital or sizing.
 """
 from __future__ import annotations
 
+import ast
+import io
 import json
 import re
+import tokenize
 from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
@@ -96,7 +103,7 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0035", COVERED, (f"{ND}::return \"equivalent_indicator\"", f"{CS}::near_duplicate_rule"),
      ""),
     ("0036", COVERED, (f"{ND}::return \"renamed_source\"", f"{CS}::near_duplicate_rule"), ""),
-    ("0037", COVERED, (f"{CS}::PREREGISTERED 2026-10-06",),
+    ("0037", COVERED, (f"{CS}::^WEIGHTS: dict",),
      "structural similarity reads spec axes only; weights preregistered"),
     ("0038", COVERED, (f"{CS}::^def forward_dependence",), ""),
     ("0039-0040", COVERED, (f"{CS}::out\\[\"k_eff_stress\"\\] = keff",),
@@ -193,8 +200,9 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0161", COVERED, (f"{CS}::^INDEPENDENT_RHO",), ""),
     ("0154", COVERED, (f"{ND}::return \"renamed_source\"",), ""),
     ("0156", COVERED, (f"{ND}::return \"symbol\"",), ""),
-    ("0162-0172", COVERED, (f"{CRO}::STEP 4D", f"{CRO}::BREADTH_LAW_COVERAGE"),
-     "the noon CRO step reads the map, saturation, debts, split, mode and this table"),
+    ("0162-0172", PARTIAL, (f"{CRO}::STEP 4D", f"{CRO}::BREADTH_LAW_COVERAGE"),
+     "procedure text only: the noon CRO step reads the map, saturation, debts, split, mode and "
+     "this table, but no code checks the step ran (a document is not a code anchor)"),
     ("0175", COVERED, (f"{CS}::\"n_effective_certificates\": round",), ""),
     ("0176", COVERED, (f"{CS}::\"n_payer_clusters\"",), ""),
     ("0178", COVERED, (f"{CS}::\"n_independent_forward_streams\"",), ""),
@@ -257,13 +265,14 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
      "provisional credit published; realised credit needs forward streams"),
     ("0276", COVERED, (f"{CS}::forward_adjusted_C",), ""),
     ("0277", COVERED, (f"{CS}::out\\[\"k_eff_stress\"\\] = keff",), ""),
-    ("0278", COVERED, (f"{CS}::MARGINAL BREADTH AGAINST THE PROJECTED FUTURE BOOK",
+    ("0278", COVERED, (f"{CS}::n_f = float\\(n_book\\)",
                        f"{CS}::\"expected_delta_k_eff_future_book\""), ""),
     ("0281-0290", COVERED, (f"{CS}::^FACTOR_FAILURE", f"{CS}::^MECHANISM_FAILURE"),
      "declared per strategy; superseded by measured co-drawdown where ledgers carry it"),
     ("0293", COVERED, (f"{SO}::out\\[\"drawdown\"\\] = _assoc_lo",), ""),
     ("0295", COVERED, (f"{SO}::out\\[\"co_crash\"\\] = _assoc_lo",), ""),
-    ("0296", COVERED, (f"{CS}::worst decile: lambda_ij",), ""),
+    ("0296", COVERED, (f"{CS}::out\\[\"k_eff_tail\"\\]",),
+     "two-sided worst-decile co-exceedance in book_breadth"),
     ("0297-0298", COVERED, (f"{SO}::out\\[\"signal\"\\] = _assoc_lo",),
      "active-day association: label-only differences earn nothing"),
     ("0301", COVERED, (f"{SO}::out\\[\"event\"\\] = round",), ""),
@@ -329,7 +338,8 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
      "regime and event terms of the behavioural distance vector"),
     ("0554", PARTIAL, (f"{CAP}::\"market_impact\"",),
      "term wired; UNMEASURED until the fill recorder locates an impact slope"),
-    ("0552-0557", COVERED, (f"{CAP}::^def terms", f"{CS}::CAPACITY IN BREADTH CREDIT"),
+    ("0552-0557", COVERED, (f"{CAP}::^def terms",
+                            f"{CS}::credit \\*= float\\(base.get\\(\"capacity_factor\""),
      "capacity, turnover, broker constraints, liquidity and capital efficiency multiply the "
      "breadth value (floor 0.25)"),
     ("0414", COVERED, (f"{CS}::\"economic_factor\": 1.0",), "breadth value's similarity"),
@@ -361,27 +371,82 @@ def _index() -> dict[int, tuple[str, tuple[str, ...], str]]:
 
 
 _FILES: dict[str, list[str] | None] = {}
+#: Per .py file: line -> the column where a comment starts (or None), and the set of lines that
+#: lie inside a code node (a def/class header, a call, an assignment or a return). None when the
+#: file does not parse -- then no anchor in it can resolve.
+_CODE: dict[str, tuple[dict[int, int], frozenset[int]] | None] = {}
+#: The node kinds an anchor may land on (the audit of 2026-10-07: a comment or a string stub
+#: never satisfies COVERED; the anchor must be a node in the syntax tree).
+CODE_NODES = (ast.Call, ast.Assign, ast.AnnAssign, ast.AugAssign, ast.Return)
+
+
+def _code_map(text: str) -> tuple[dict[int, int], frozenset[int]] | None:
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return None
+    lines: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            first = min([node.lineno] + [d.lineno for d in node.decorator_list])
+            body0 = node.body[0].lineno if node.body else node.lineno + 1
+            lines.update(range(first, max(body0, node.lineno + 1)))
+        elif isinstance(node, CODE_NODES):
+            lines.update(range(node.lineno, (node.end_lineno or node.lineno) + 1))
+    comments: dict[int, int] = {}
+    try:
+        for tok in tokenize.generate_tokens(io.StringIO(text).readline):
+            if tok.type == tokenize.COMMENT:
+                comments[tok.start[0]] = tok.start[1]
+    except (tokenize.TokenError, IndentationError):                     # pragma: no cover
+        return None
+    return comments, frozenset(lines)
+
+
+def is_code_anchor(anchor: str) -> bool:
+    """A .py anchor with a pattern: the only kind that can carry a COVERED row by itself."""
+    path, _, pat = anchor.partition("::")
+    return path.endswith(".py") and bool(pat)
 
 
 def resolve(anchor: str, root: Path | None = None) -> str | None:
-    """`path::regex` -> `path:line` of the first matching line, or None."""
+    """`path::regex` -> `path:line` of the first match, or None.
+
+    In a .py file the match must lie in a node of the syntax tree -- a def or class header, a
+    call, an assignment or a return -- and before any comment on its line. A comment, a
+    docstring or a bare string statement never resolves. Other files (the CRO procedure, a
+    JSON registry) resolve on text, and `path::` (no pattern) only proves the file exists;
+    neither carries COVERED alone (see `_classify`)."""
     path, _, pat = anchor.partition("::")
     base = root or ROOT
     key = f"{base}/{path}"
     if key not in _FILES:
         try:
-            _FILES[key] = (base / path).read_text("utf-8", errors="replace").splitlines()
+            text = (base / path).read_text("utf-8", errors="replace")
         except OSError:
             _FILES[key] = None
+        else:
+            _FILES[key] = text.splitlines()
+            if path.endswith(".py"):
+                _CODE[key] = _code_map(text)
     lines = _FILES[key]
     if lines is None:
         return None
     if not pat:
         return f"{path}:1"
+    code = _CODE.get(key) if path.endswith(".py") else None
+    if path.endswith(".py") and code is None:
+        return None
     rx = re.compile(pat)
     for n, line in enumerate(lines, 1):
-        if rx.search(line):
-            return f"{path}:{n}"
+        m = rx.search(line)
+        if not m:
+            continue
+        if code is not None:
+            comments, ok = code
+            if n not in ok or (n in comments and m.start() >= comments[n]):
+                continue
+        return f"{path}:{n}"
     return None
 
 
@@ -419,20 +484,33 @@ def _classify(row: dict[str, Any], idx: dict[int, tuple[str, tuple[str, ...], st
         if status in (COVERED, COVERED_SHADOW) and (dead or not anchors):
             status = PARTIAL
             out["downgraded"] = f"anchor(s) no longer resolve: {dead}" if dead else "no anchor"
+        elif status in (COVERED, COVERED_SHADOW) and not any(map(is_code_anchor, anchors)):
+            status = PARTIAL
+            out["downgraded"] = ("no anchor is a code node: a file's existence or a document's "
+                                 "text never carries COVERED alone")
         elif dead:
             out["dead_anchors"] = dead
         out["status"] = status
         return out
     st = str(row.get("audit_state") or "")
     ok, dead = _audit_where(list(row.get("audit_module") or []), root)
+    file_only = False
     if st in _RUNNING and ok:
-        status = COVERED
+        # The audit's anchor is a module path (mostly `:1`): it proves the file exists, never
+        # that the requirement is implemented in it. File existence alone is PARTIAL until a
+        # classified code anchor replaces it.
+        status = PARTIAL
+        file_only = True
     elif st == "ABSENT" or (st in _RUNNING and not ok and dead):
         status = MISSING if st == "ABSENT" else PARTIAL
     else:
         status = PARTIAL if st else MISSING
     out.update(status=status, basis="audit_state_mapped", where=ok,
                note=row.get("audit_blocker") or None)
+    if file_only:
+        out["evidence"] = ("FILE_EXISTENCE_ONLY: the audit's anchor proves the module exists, "
+                           "not that the requirement is implemented; PARTIAL until a "
+                           "classified code anchor replaces it")
     if dead:
         out["dead_anchors"] = dead
     return out
@@ -442,6 +520,7 @@ def build(*, rows_path: Path | None = None, root: Path | None = None,
           now: datetime | None = None) -> dict[str, Any]:
     base = root or ROOT
     _FILES.clear()
+    _CODE.clear()
     try:
         src = json.loads((rows_path or ROWS).read_text("utf-8"))
     except (OSError, ValueError) as exc:
@@ -463,8 +542,12 @@ def build(*, rows_path: Path | None = None, root: Path | None = None,
         "counts_by_basis": dict(Counter(r["basis"] for r in table)),
         "counts_by_part": {k: {s: v.get(s, 0) for s in STATUSES} for k, v in by_sec.items()},
         "downgraded": [r["id"] for r in table if r.get("downgraded")],
-        "rule": ("COVERED needs a file:line resolved this pass; a dead anchor downgrades the row "
-                 "to PARTIAL. Unclassified rows keep the audit's state, mapped mechanically. "
+        "file_existence_only": sum(1 for r in table if r.get("evidence")),
+        "rule": ("COVERED needs a file:line resolved this pass ON A CODE NODE (a def, call, "
+                 "assignment or return in the syntax tree; never a comment or string stub); a "
+                 "dead anchor downgrades the row to PARTIAL, and so does a row whose only "
+                 "evidence is a file's existence or a document's text. Unclassified rows keep the "
+                 "audit's state, mapped mechanically, and never read COVERED on it. "
                  "COVERED_SHADOW rows would act on capital, sizing, promotion or live status and "
                  "run as a measured shadow only. Rows another thread owns read PARTIAL with the "
                  "owner named (raw_status keeps the reading)."),

@@ -2,7 +2,8 @@
 
 THE LAW (2026-10-05, ANTI-SATURATION §3). A candidate that differs from a certified sleeve ONLY by
 
-    symbol            the same rule, parameters, chart and clock on another ticker
+    symbol            the same rule, parameters, chart and clock on another ticker that loads on
+                      the SAME economic factor or symbol cluster (never across factors)
     small_param       every parameter within PARAM_BAND (10%) of the certified one
     small_stop        only stop-like parameters differ, each within STOP_BAND (25%)
     minor_tf_shift    the same rule on the adjacent chart (M15 vs M30, H1 vs H4)
@@ -78,6 +79,41 @@ def _params(row: Mapping[str, Any]) -> dict[str, Any]:
     return {str(k): v for k, v in (p or {}).items() if k not in ("timeframe", "session")}
 
 
+def _factor(row: Mapping[str, Any]) -> str:
+    """The economic factor or symbol cluster a row's instrument loads on. A declared
+    `symbol_cluster` (the measured residual clustering) wins over a declared `economic_factor`,
+    which wins over the saturation map's structural `factor_of`. Unknown reads "" -- and an
+    unknown factor never satisfies the symbol rule (an unmeasured axis never makes two rows
+    look identical by itself)."""
+    for k in ("symbol_cluster", "factor_residual", "economic_factor"):
+        v = row.get(k)
+        if v and str(v).upper() != "UNKNOWN":
+            return str(v)
+    sym = _sym(row)
+    if not sym:
+        return ""
+    if sym not in _FACTOR_CACHE:
+        try:
+            try:
+                from research import certificate_saturation as cs
+            except ImportError:                                          # pragma: no cover
+                import certificate_saturation as cs  # type: ignore[import-not-found,no-redef]
+            f = str(cs.factor_of(sym))
+        except Exception:                                                # pragma: no cover
+            f = ""
+        _FACTOR_CACHE[sym] = "" if f.upper() == "UNKNOWN" else f
+    return _FACTOR_CACHE[sym]
+
+
+_FACTOR_CACHE: dict[str, str] = {}
+
+
+def same_factor(a: Mapping[str, Any], b: Mapping[str, Any]) -> bool:
+    """True when both rows' instruments load on the same KNOWN economic factor or cluster."""
+    fa, fb = _factor(a), _factor(b)
+    return bool(fa) and fa == fb
+
+
 def _canon(params: Mapping[str, Any]) -> str:
     return json.dumps(dict(params), sort_keys=True, default=str)
 
@@ -149,7 +185,11 @@ def rule_between(cand: Mapping[str, Any], cert: Mapping[str, Any]) -> str | None
     if f1 == f2 and s1 == s2 and t1 == t2 and same_clock and _canon(p1) == _canon(p2):
         # The identical spec, whatever label (producer, source) it arrives under.
         return "renamed_source"
-    if f1 == f2 and s1 != s2 and t1 == t2 and same_clock and _canon(p1) == _canon(p2):
+    if f1 == f2 and s1 != s2 and t1 == t2 and same_clock and _canon(p1) == _canon(p2) \
+            and same_factor(cand, cert):
+        # The symbol rule stays inside one economic factor / symbol cluster: the same rule on
+        # EURUSD and GBPUSD (both USD) is a near-duplicate; on EURUSD and XAUUSD it is not --
+        # a different factor is a different bet, never a renamed one.
         return "symbol"
     if f1 == f2 and s1 == s2 and t1 == t2 and same_clock and set(p1) == set(p2):
         diff = [k for k in p1 if p1[k] != p2[k]]
@@ -254,5 +294,6 @@ __all__ = [
     "indicator_class",
     "near_duplicate",
     "rule_between",
+    "same_factor",
     "structural_key",
 ]
