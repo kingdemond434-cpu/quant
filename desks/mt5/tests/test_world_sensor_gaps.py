@@ -139,6 +139,34 @@ def test_a_populated_host_measures_every_gap_with_numbers(tmp_path: Path) -> Non
     assert set(doc["open"]) >= {"news_throughput", "event_allocator_reaction"}
 
 
+def test_the_gap_closes_when_the_allocator_watches_the_request_and_answers_it(
+        tmp_path: Path) -> None:
+    # The real watch list (watched=None reads allocator_trigger.sources()) names the request.
+    assert any("allocator_resolve_request" in w for w in wsg._watched_paths())
+    p = _populate(tmp_path)
+    data = p.desk / "data"
+    # Watched, requests lodged this week, no event-triggered solve yet: still open.
+    g = wsg.build(now=NOW, paths=p, providers=PROVIDERS)["gaps"]["event_allocator_reaction"]
+    assert g["metrics"]["allocator_listens_to_news"] is True
+    assert g["metrics"]["requests_7d"] == 3 and g["open"] is True
+    # The allocator answers one: closed.
+    with (data / "allocator_reactions.jsonl").open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"at": (NOW - timedelta(minutes=50)).isoformat(),
+                             "kind": "news_resolve_request", "latency_s": 12.0}) + "\n")
+    g = wsg.build(now=NOW, paths=p, providers=PROVIDERS)["gaps"]["event_allocator_reaction"]
+    assert g["metrics"]["event_triggered_solves_7d"] == 1 and g["open"] is False
+
+
+def test_a_watched_request_with_nothing_lodged_this_week_is_closed(tmp_path: Path) -> None:
+    p = _populate(tmp_path)
+    (p.desk / "data" / "allocator_resolve_queue.jsonl").write_text(json.dumps(
+        {"at": (NOW - timedelta(days=9)).isoformat(), "event_id": "old"}) + "\n", "utf-8")
+    g = wsg.build(now=NOW, paths=p, providers=PROVIDERS,
+                  watched=["desks/mt5/data/allocator_resolve_request.json"])
+    ar = g["gaps"]["event_allocator_reaction"]
+    assert ar["metrics"]["requests_7d"] == 0 and ar["open"] is False
+
+
 def test_the_sensor_ledger_leg_writes_the_gaps_report(tmp_path: Path,
                                                       monkeypatch: pytest.MonkeyPatch) -> None:
     calls: dict[str, Any] = {}

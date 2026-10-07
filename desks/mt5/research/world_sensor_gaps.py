@@ -54,8 +54,8 @@ TARGETS: dict[str, str] = {
     "broad_m1_tick": "M1 coverage >= 50% of the universe and ticks younger than 24 h",
     "measured_reactions": "atlas younger than 48 h with >= 1 cell clearing cost and Bonferroni",
     "event_capital_authority": ">= 1 LIVE sleeve or certified cell from an event family",
-    "event_allocator_reaction": "the allocator watches the news re-solve request and >= 1 "
-                                "event-triggered solve in 7 d",
+    "event_allocator_reaction": "the allocator watches the news re-solve request, and a 7 d "
+                                "with requests has >= 1 event-triggered solve",
     "config_only_providers": "0 configured providers with no observed row",
 }
 EVENT_MARKERS = ("event", "news", "surprise", "earnings", "release", "exogenous_conditioner",
@@ -419,9 +419,21 @@ def event_allocator_reaction(ctx: Ctx) -> dict[str, Any]:
         for k in ("news", "event", "resolve_request", "world_state"))]
     ev7 = [r for r in ev if (_t(r.get("at")) or ctx.now - timedelta(days=30)) >= since7]
     lat = [float(r["latency_s"]) for r in ev7 if isinstance(r.get("latency_s"), int | float)]
+    requests_7d = sum(1 for t in q_times if t >= since7) if queue is not None else None
+    # OPEN when nothing watches the request (it is consumed by nothing), or when it is watched
+    # and requests were lodged in the window with no event-triggered solve to show for them.
+    # Watched with no request lodged in 7 d is closed: the wiring is there and there was nothing
+    # to consume. Watched with the queue absent leans on the reaction log alone.
+    if not listens:
+        open_ = True
+    elif requests_7d is None:
+        open_ = not ev7
+    else:
+        open_ = requests_7d > 0 and not ev7
     m = {"requests_total": len(q) if queue is not None else UNMEASURED,
          "requests_24h": sum(1 for t in q_times if t >= since24) if queue is not None
          else UNMEASURED,
+         "requests_7d": requests_7d if requests_7d is not None else UNMEASURED,
          "request_newest_age_s": _age_s(ctx.now, max(q_times, default=None)),
          "allocator_reactions_total": len(react) if react is not None else UNMEASURED,
          "event_triggered_solves_7d": len(ev7) if react is not None else UNMEASURED,
@@ -429,8 +441,7 @@ def event_allocator_reaction(ctx: Ctx) -> dict[str, Any]:
          "allocator_watches": watched,
          "allocator_listens_to_news": listens}
     return _measured([_rel(ctx.paths.resolve_queue), _rel(ctx.paths.reactions),
-                      "desks/mt5/research/allocator_trigger.py:sources()"], m,
-                     not (listens and ev7))
+                      "desks/mt5/research/allocator_trigger.py:sources()"], m, open_)
 
 
 def _declared_providers(paths: Paths) -> dict[str, list[str]]:
