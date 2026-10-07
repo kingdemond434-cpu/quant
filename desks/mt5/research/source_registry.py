@@ -780,6 +780,17 @@ def _p_ind(r: dict[str, Any]) -> float:
     return float(entry["p"]) if isinstance(entry, dict) else -1.0
 
 
+def source_event_quality() -> dict[str, Any]:
+    """The per-(source, event class) table from the macro event and sensor ledgers; a failure
+    is UNMEASURED with its reason, never an empty table that reads as measured."""
+    try:
+        from macro import source_event_quality as seq
+        return seq.build()
+    except Exception as exc:
+        return {"status": "UNMEASURED",
+                "why": f"source_event_quality failed: {type(exc).__name__}: {str(exc)[:120]}"}
+
+
 def build() -> tuple[dict[str, Any], dict[str, Any]]:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     rows, seed_meta = seed()
@@ -840,6 +851,10 @@ def build() -> tuple[dict[str, Any], dict[str, Any]]:
         # much of each per-source quality field is actually measured. Both may only rise.
         "discovery_cube": cube,
         "quality_coverage": q_cov,
+        # DATA-31 (2026-10-07): the NEWS and SENSOR sources, per source AND event class --
+        # confirmation, revision, unique information, latency, lead/lag, false positives and
+        # incremental predictive value (accuracy and speed separately)
+        "source_event_quality": source_event_quality(),
         "artifacts": {"registry": str(REGISTRY), "report": str(REPORT)}, "rule": rule,
     }
     return {"at": now, "n_sources": len(rows), "sources": rows, "rule": rule}, report
@@ -853,6 +868,7 @@ def _summary(registry: dict[str, Any], report: dict[str, Any], wrote: bool) -> l
 
     top = report["top_by_roi"][0] if report["top_by_roi"] else None
     gaps, un = report["language_gaps"], report["unmeasured"]
+    seq = report.get("source_event_quality") or {}
     return [
         f"source registry: {report['n_sources']} sources  "
         + "  ".join(f"{k}={v}" for k, v in list(report["by_kind"].items())[:6]),
@@ -871,7 +887,9 @@ def _summary(registry: dict[str, Any], report: dict[str, Any], wrote: bool) -> l
         f"  UNMEASURED: {un['n_sources_without_a_ground']} without a ground, "
         f"{un['n_sources_without_a_cost']} without a cost, "
         f"{un['n_sources_unscheduled']} unscheduled; quality measured share "
-        + " ".join(f"{k}={v}" for k, v in report["quality_coverage"].items()),
+        + " ".join(f"{k}={v}" for k, v in report["quality_coverage"].items())
+        + f"; source x event class {seq.get('n_cells', 0)} cell(s)"
+        + (f" {seq.get('status')}" if seq.get("status") else ""),
         f"  {'wrote' if wrote else 'DRY RUN, wrote nothing:'} {REGISTRY}  {REPORT}",
     ]
 
