@@ -305,9 +305,9 @@ def test_evig_is_proven_only_when_it_changed_what_was_fetched(tmp_path: Path) ->
     assert proof["verdict"] == "PROVEN"
     assert proof["measures"]["fetched_because_of_evig"] == ["c", "d"]
     assert proof["measures"]["deferred_because_of_evig"] == ["a", "b"]
-    # Item 2: the proof holds, but the row has no data, cells, judgements or forward/live
+    # Item 2: the proof holds, but the row has no cells, judgements or forward/live
     # lineage of its own -- a proof never lifts a row past the rungs below it.
-    assert it["state"] == "RUNNING" and it["rungs_held"]["PROVEN"] is True
+    assert it["state"] == "PRODUCING_DATA" and it["rungs_held"]["PROVEN"] is True
     assert "every lower rung must hold" in " ".join(it["why"])
     # the budget never bound: positions moved, no fetch differed
     coll["rows"] = [{"id": i, "status": "COLLECTED"} for i in ("d", "c", "a", "b")]
