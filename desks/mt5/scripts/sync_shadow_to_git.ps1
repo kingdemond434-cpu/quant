@@ -593,6 +593,12 @@ $reportPaths = @(
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
     "desks/mt5/reports/FORWARD_CLOCK_LEDGER.json",
     "desks/mt5/reports/shadow/precert_shadow_state.json",
+    # THE REUSABLE HOLDOUT'S BUDGET (2026-10-07). meta_rnd charges every adaptive question it asks
+    # of the certified rows here; the studies register is the append-only ledger and the state is its
+    # cache. Both must reach origin, or the next adoption restores the tracked stub on the box and
+    # the budget reads as never spent off it (libs/research/reusable_holdout.py). State, not code.
+    "desks/mt5/data/reusable_holdout.json",
+    "desks/mt5/data/reusable_holdout_studies.jsonl",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable

@@ -98,6 +98,9 @@ SETTLEMENTS = STATE_DIR / "settlements.jsonl"
 STATE = STATE_DIR / "state.json"
 PREMORTEMS = STATE_DIR / "premortems.json"
 DONATE_DIR = BASE / "data" / "intelligence" / "committees"
+#: The lifetime union of looks at return data, shared with committee_ensembles: the experiment
+#: ledger charges each distinct line once (libs/research/experiment_ledger.COMMITTEE_UNION).
+TRIAL_UNION = STATE_DIR / "trial_union.txt"
 REPORT = BASE / "reports" / "COMMITTEES.json"
 THROUGHPUT = BASE / "reports" / "JUDGING_THROUGHPUT.json"
 
@@ -555,6 +558,35 @@ def run_experiments(s: Subject, verdict: Mapping[str, Any], deadline: float, *,
             "seconds": round(time.monotonic() - t0, 3)}
 
 
+def falsifier_looks(s: Subject, outcome: Mapping[str, Any]) -> set[str]:
+    """The falsifier looks at this cell's returns that actually ran (PASS or FAIL), one per
+    (cell, falsifier). A falsifier that was NOT_REACHED or UNMEASURED looked at nothing."""
+    try:
+        from libs.research.hypothesis_graph import node_id
+        cell = node_id(s.symbol, s.family, s.params)
+    except Exception:
+        cell = s.subject_id
+    return {f"{cell}|falsifier:{n}" for n, r in (outcome.get("results") or {}).items()
+            if isinstance(r, Mapping) and r.get("verdict") in ("PASS", "FAIL")}
+
+
+def charge_looks(looks: set[str], write: bool, union: Path | None = None) -> dict[str, Any]:
+    """MULTIPLE-TESTING CHARGE (audit, 2026-10-07). Each falsifier look is a trial, charged at
+    its original count: once over the lifetime union, so a re-look on the same cell with the same
+    falsifier is never charged again and nothing is inflated."""
+    union = union or TRIAL_UNION
+    try:
+        known = set(union.read_text(encoding="utf-8").split())
+    except OSError:
+        known = set()
+    new = sorted(looks - known)
+    if write and new:
+        union.parent.mkdir(parents=True, exist_ok=True)
+        with union.open("a", encoding="utf-8") as fh:
+            fh.write("\n".join(new) + "\n")
+    return {"looks_this_pass": len(looks), "new_in_union": len(new)}
+
+
 # ------------------------------------------------------------------------------ the contract
 def contract(s: Subject, said: Sequence[Mapping[str, Any]], verdict: Mapping[str, Any],
              outcome: Mapping[str, Any], meter: Mapping[str, Any], model: str) -> dict[str, Any]:
@@ -748,6 +780,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
                                    "decides. No committee certifies, promotes, sizes, ranks "
                                    "or vetoes."), "committees": {}}
     new_contracts: list[dict[str, Any]] = []
+    looks: set[str] = set()
     donations: list[dict[str, Any]] = []
     calls_left = max(0, int(calls))
     for name in COMMITTEES:
@@ -790,6 +823,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
                        if name == SCIENTIFIC else
                        {"status": "DONATED", "why": "competing mechanisms enter the docket as "
                                                      "candidates; the gauntlet judges them"})
+            looks |= falsifier_looks(s, outcome)
             c = contract(s, said, verdict, outcome, meter, model)
             new_contracts.append(c)
             seen.add(s.fingerprint())
@@ -826,6 +860,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
                              "at": c["at"]}
              for c in all_contracts if c.get("graph_id") and (c.get("judge") or {}).get(
                  "lead_class")}
+    doc["falsifier_trials"] = charge_looks(looks, write)
     doc.update({"new_contracts": len(new_contracts), "settled_this_pass": len(fresh),
                 "donations": len(donations), "premortem_hints": len(hints),
                 "seconds": round(time.monotonic() - t0, 3)})
