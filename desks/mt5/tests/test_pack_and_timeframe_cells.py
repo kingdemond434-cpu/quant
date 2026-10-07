@@ -75,9 +75,10 @@ def test_every_pack_at_zero_carries_a_named_reason(monkeypatch: Any, tmp_path: P
 def test_an_unmeasured_chain_is_not_an_empty_eligible_set(monkeypatch: Any) -> None:
     """L1.28a: absence never resolves to a clean verdict. No chain state means UNMEASURED per
     pack, not 'no pack qualifies'."""
-    # a registry pack always names its URL; one with no terms mapping at all fails closed
+    # a registry pack always names its URL; only a CONFIRMED terms row reaches the chain check
+    # (an ungoverned host is BLOCKED_ON_TERMS:ungoverned, which is a different named reason)
     monkeypatch.setattr(pc, "packs", lambda: [{"id": "a", "targets": ["XAUUSD"],
-                                              "url": "https://example.org/a"}])
+                                              "url": "https://data.stats.gov.cn/a"}])
     monkeypatch.setattr(pc, "chain", dict)
     monkeypatch.setattr(pc, "_registry_counts", lambda: ({}, ""))
     doc = pc.build(budget_s=5.0, dry_run=True)
@@ -94,14 +95,40 @@ def test_cells_go_through_the_one_registry_door(monkeypatch: Any) -> None:
                         lambda **kw: (calls.append({"kind": "discovery", **kw}), ("D1", True))[1])
     monkeypatch.setattr(reg, "enqueue_candidate",
                         lambda **kw: (calls.append({"kind": "cell", **kw}), ("C1", True))[1])
-    res = pc.emit_for({"id": "p", "targets": ["XAUUSD"], "url": "https://example.org/p"}, ["v"],
-                      ["XAUUSD"], dry_run=False)
+    # a confirmed terms row (a quoted clause) is the only verdict that mints
+    res = pc.emit_for({"id": "p", "targets": ["XAUUSD"], "terms_ref": "us_tsa_throughput",
+                       "url": "https://example.org/p"}, ["v"], ["XAUUSD"], dry_run=False)
     assert res["emitted"] == len(pc.TRANSFORMS) * len(pc.CHARTS)
     cells = [c for c in calls if c["kind"] == "cell"]
     assert len(cells) == res["emitted"]
     assert {c["chart"] for c in cells} == set(pc.CHARTS)
     assert all(c["source_id"] == "p" for c in cells)
     assert all(c["origin"] == "pack_cells" for c in cells)
+
+
+def test_an_ungoverned_pack_mints_nothing(monkeypatch: Any, tmp_path: Path) -> None:
+    """CONFIRMED ONLY (#229 ruling, 2026-10-07): terms fail closed and need a quoted clause. A
+    pack whose host no terms row governs has none, so it mints 0 cells and names the reason
+    BLOCKED_ON_TERMS:ungoverned -- through emit_for and through build alike."""
+    assert pc.PACK_MINT_VERDICTS == frozenset({"confirmed"})
+    calls: list[dict[str, Any]] = []
+    import libs.moat.registry as reg
+    monkeypatch.setattr(reg, "record_discovery",
+                        lambda **kw: (calls.append(kw), ("D1", True))[1])
+    monkeypatch.setattr(reg, "enqueue_candidate", lambda **kw: (calls.append(kw), ("C1", True))[1])
+    pack = {"id": "u", "targets": ["XAUUSD"], "url": "https://example.org/u.csv"}
+    assert pc.pack_terms(pack)["terms"] == "ungoverned"
+    res = pc.emit_for(pack, ["v"], ["XAUUSD"], dry_run=False)
+    assert res["emitted"] == 0 and res["status"] == "BLOCKED_ON_TERMS:ungoverned"
+    assert calls == []
+    monkeypatch.setattr(pc, "packs", lambda: [pack])
+    monkeypatch.setattr(pc, "chain", lambda: {"u": {"stage_reached": "represented"}})
+    monkeypatch.setattr(pc, "series_path", lambda pid: None)
+    monkeypatch.setattr(pc, "_registry_counts", lambda: ({}, ""))
+    doc = pc.build(budget_s=5.0, dry_run=True)
+    row = doc["rows"][0]
+    assert row["status"] == "BLOCKED_ON_TERMS:ungoverned" and row.get("emitted", 0) == 0
+    assert doc["n_eligible"] == 0 and calls == []
 
 
 # ------------------------------------------------------- pack_cells, world lane
