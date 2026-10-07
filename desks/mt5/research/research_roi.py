@@ -67,6 +67,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.moat import registry as R  # noqa: E402
+from libs.ops.ledger_rotation import rotate_if_over  # noqa: E402
 
 DATA, REPORTS = DESK / "data", DESK / "reports"
 FORWARD_DATA = DATA / "forward_reconcile.json"
@@ -89,7 +90,8 @@ CAPITAL_OUT = DATA / "roi_capital_evidence.json"
 #: one it wrote (after, what `libs/research/forests.py` reads), the ROI-only allocation and the
 #: FLAT-ROI counterfactual; `scripts/check_asia_directive.py` joins it with data/forest_runs.jsonl.
 BUDGET_DECISIONS = DATA / "roi_budget_decisions.jsonl"
-BUDGET_DECISIONS_KEEP_BYTES = 2 * 1024 * 1024
+#: Past this size the ledger is ROTATED whole to a dated archive (never truncated).
+BUDGET_DECISIONS_ROTATE_BYTES = 2 * 1024 * 1024
 REPORT = REPORTS / "RESEARCH_ROI.json"
 #: The meta-evolution layer's population: each research-machinery variant names the host
 #: generator it configured and when it was activated; its fitness is that host's delayed
@@ -1057,17 +1059,9 @@ def _append_budget_decision(rec: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(rec, default=str) + "\n")
-        if path.stat().st_size > BUDGET_DECISIONS_KEEP_BYTES:
-            lines = path.read_text("utf-8", errors="replace").splitlines()
-            _atomic_write_text(path, "\n".join(lines[len(lines) // 2:]) + "\n")
+        rotate_if_over(path, BUDGET_DECISIONS_ROTATE_BYTES)      # archive whole, drop nothing
     except OSError as exc:
         print(f"research roi: budget decision not recorded ({type(exc).__name__}: {exc})")
-
-
-def _atomic_write_text(path: Path, text: str) -> None:
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(text, encoding="utf-8")
-    tmp.replace(path)
 
 
 def parity_overlay(forest: dict[str, Any], *, conn: sqlite3.Connection | None = None,

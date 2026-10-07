@@ -97,6 +97,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "side_channels"), str
         sys.path.insert(0, p)
 
 from libs.data import polite_fetch as pf  # noqa: E402
+from libs.ops.ledger_rotation import rotate_if_over  # noqa: E402
 from libs.research import mechanism_claims as mc  # noqa: E402
 
 SOURCE = "deep_forest"
@@ -1877,7 +1878,8 @@ def _runs_path() -> Path:
 #: Grounds that were scheduled and not worked this run: not an attempt in any language.
 NOT_ATTEMPTED = frozenset({"SKIPPED", "BUDGET_EXHAUSTED", "UNMEASURED"})
 ROTATION_NAME = "deep_forest_rotation.jsonl"
-ROTATION_KEEP_BYTES = 2 * 1024 * 1024
+#: Past this size the run ledger is ROTATED whole to a dated archive (never truncated).
+ROTATION_ROTATE_BYTES = 2 * 1024 * 1024
 
 
 def _rotation_path() -> Path:
@@ -1920,9 +1922,7 @@ def _append_rotation(doc: dict[str, Any], grounds_status: list[dict[str, Any]],
         with p.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(rotation_record(doc, grounds_status, order),
                                 ensure_ascii=False, default=str) + "\n")
-        if p.stat().st_size > ROTATION_KEEP_BYTES:          # keep the newest half
-            lines = p.read_text("utf-8", errors="replace").splitlines()
-            _atomic_text(p, "\n".join(lines[len(lines) // 2:]) + "\n")
+        rotate_if_over(p, ROTATION_ROTATE_BYTES)            # archive whole, drop nothing
 
 
 def _vector_stats_path() -> Path:

@@ -61,6 +61,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.ledger_rotation import rotate_if_over  # noqa: E402
+
 REGISTRY = DESK / "data" / "asia_sources.json"
 STATE = DESK / "data" / "lake" / "collector_state.json"
 VAULT = DESK / "data" / "lake" / "vault"
@@ -73,7 +75,9 @@ UNIVERSE = DESK / "data" / "universe" / "universe.json"
 #: (the order handed back); `scripts/check_asia_directive.py` joins it with the collector's own
 #: report to name the sources fetched only because of the ranking.
 DECISIONS = DESK / "data" / "evig_order_decisions.jsonl"
-DECISIONS_KEEP_BYTES = 2 * 1024 * 1024
+#: Past this size the ledger is ROTATED whole to a dated archive beside it (never truncated: a
+#: discarded decision is a proof the audit can no longer compute).
+DECISIONS_ROTATE_BYTES = 2 * 1024 * 1024
 
 #: Declared cadence -> the seconds of desk attention one attempt costs, before measured seconds
 #: replace it. A daily portal is attempted thirty times more often than a monthly one, so the
@@ -325,11 +329,7 @@ def _record_decision(rec: dict[str, Any]) -> None:
         DECISIONS.parent.mkdir(parents=True, exist_ok=True)
         with DECISIONS.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(rec, ensure_ascii=True, default=str) + "\n")
-        if DECISIONS.stat().st_size > DECISIONS_KEEP_BYTES:      # keep the newest half
-            lines = DECISIONS.read_text("utf-8", errors="replace").splitlines()
-            tmp = DECISIONS.with_suffix(".jsonl.tmp")
-            tmp.write_text("\n".join(lines[len(lines) // 2:]) + "\n", encoding="utf-8")
-            tmp.replace(DECISIONS)
+        rotate_if_over(DECISIONS, DECISIONS_ROTATE_BYTES)        # archive whole, drop nothing
     except OSError as exc:
         print(f"source evig: decision record not written ({type(exc).__name__}: {exc})")
 
