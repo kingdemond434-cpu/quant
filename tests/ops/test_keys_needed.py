@@ -71,8 +71,10 @@ def test_no_value_reaches_the_artifact(tmp_path: Path, monkeypatch: pytest.Monke
 def test_a_requested_key_is_parked_out_of_the_alert(tmp_path: Path) -> None:
     every = set(kn.env_keys.key_names()) - {"ENTSOE_API_TOKEN"}
     a = kn.build(reports=tmp_path, present=lambda n: n in every)
-    b = kn.build(reports=tmp_path, present=lambda n: n in every, requested=["ENTSOE_API_TOKEN@2026-10-06"],
-                 now=__import__("datetime").datetime(2026, 10, 7, tzinfo=__import__("datetime").UTC))
+    from datetime import UTC, datetime
+    b = kn.build(reports=tmp_path, present=lambda n: n in every,
+                 requested=["ENTSOE_API_TOKEN@2026-10-06"],
+                 now=datetime(2026, 10, 7, tzinfo=UTC))
     assert [i["name"] for i in a["items"]] == ["ENTSOE_API_TOKEN"]
     assert b["items"] == [] and b["requested_waiting"] == ["ENTSOE_API_TOKEN"]
 
