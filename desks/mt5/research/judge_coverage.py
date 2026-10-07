@@ -1343,18 +1343,53 @@ def _unseen_in_prefix(rows: list[dict[str, Any]], n: int) -> int:
     return sum(1 for r in rows[:max(int(n), 0)] if not int(r.get("_variant") or 0))
 
 
+def docket_priority(row: dict[str, Any]) -> int:
+    """The compiler's queue rank for a row (0 first): intraday before H1, a causally NON_INVARIANT
+    mechanism one step later, a chart outside its source's horizon two later
+    (`miner_candidate_compiler.expand_axes`). Only the compiler's own stamp is read -- a row it
+    expanded carries `axis` -- so another producer's unrelated `priority` field is never mistaken
+    for it; anything else ranks 0 and keeps its place."""
+    if not isinstance(row.get("axis"), dict):
+        return 0
+    try:
+        return max(int(row.get("priority") or 0), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def priority_within_family(rows: list[dict[str, Any]],
+                           tier: Any = None) -> list[dict[str, Any]]:
+    """Stable, slot-preserving: each family keeps the SAME positions; inside them its rows are
+    re-ordered by (`tier(row)`, `docket_priority`), each group in its original order. Length,
+    membership and the family interleave are unchanged -- the `prejudge_screen.demote_flagged`
+    pattern. `tier` keeps a stronger ordering (never-judged first) above the priority."""
+    slots: dict[str, list[int]] = {}
+    for i, r in enumerate(rows):
+        slots.setdefault(str(r.get("family") or ""), []).append(i)
+    out = list(rows)
+    for idxs in slots.values():
+        order = sorted(idxs, key=lambda i: ((tier(rows[i]) if tier else 0),
+                                            docket_priority(rows[i]), i))
+        for slot, src in zip(idxs, order, strict=True):
+            out[slot] = rows[src]
+    return out
+
+
 def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
                    unjudged_ids: set[str] | None = None, *,
                    demote_variants: bool = True,
                    use_keff: bool = True,
-                   use_occupancy: bool = True) -> list[dict[str, Any]]:
+                   use_occupancy: bool = True,
+                   use_priority: bool = True) -> list[dict[str, Any]]:
     """Weighted interleave of the families, so EVERY PREFIX of the docket is family-balanced.
 
     Each family is emitted on its own virtual clock ticking at 1/quota, and the family whose next
     tick is earliest goes next -- classic weighted fair queueing. The result: in any first N rows
     the gauntlet's budget reaches, family f holds about N * quota[f] / sum(quota) of them. Within
-    a family, NEVER-JUDGED rows go first, then DISTINCT STRUCTURAL CELLS before parameter variants
-    of a rule already claiming the same chart/session/regime/direction/representation, then oldest.
+    a family, NEVER-JUDGED rows go first, then by the compiler's `priority` (`docket_priority`, 0
+    first; `use_priority=False` reproduces the order before it was read), then DISTINCT
+    STRUCTURAL CELLS before parameter variants of a rule already claiming the same
+    chart/session/regime/direction/representation, then oldest.
     The head of a family's stream is exactly the backlog the ratchet measures, spent on independent
     ground rather than on the same rule's constants. `demote_variants=False` reproduces the
     pre-2026-09-23 order, which is how the freed-slot count below is measured.
@@ -1379,9 +1414,12 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
         return []
     ids = unjudged_ids or set()
 
-    def rank(row: dict[str, Any]) -> tuple[int, int, float, str]:
+    def rank(row: dict[str, Any]) -> tuple[int, int, int, float, str]:
         cid = str(row.get("_cell") or "")
         fresh = 0 if (not ids or cid in ids) else 1
+        # THE COMPILER'S QUEUE RANK (DATA-46 audit), right after the never-judged test: inside
+        # the family's own stream, so the interleave and every family's share are unchanged.
+        prio = docket_priority(row) if use_priority else 0
         # A parameter variant of a rule already claiming this grid cell ranks below an unseen
         # mechanism -- inside the family stream, after the never-judged test. It is never
         # dropped and the stream is never shortened; only the order changes.
@@ -1389,7 +1427,7 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
         keff = -float(row.get("_keff") or 0.0) if use_keff else 0.0
         if use_occupancy:
             keff -= float(row.get("_occ") or 0.0) + float(row.get("_orth") or 0.0)
-        return (fresh, variant, keff, str(row.get("first_seen") or "9999"))
+        return (fresh, prio, variant, keff, str(row.get("first_seen") or "9999"))
 
     streams: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
@@ -1842,8 +1880,23 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
         split = variant_split(judgeable, ids)
         cap = int((doc.get("totals") or {}).get("capacity_measured") or 0)
         before = coverage_order(judgeable, quota, ids, demote_variants=False, use_keff=False,
-                                use_occupancy=False)
+                                use_occupancy=False, use_priority=False)
         ordered_j = coverage_order(judgeable, quota, ids)
+        # THE PRIORITY EVIDENCE: how many compiler-demoted rows (H1, NON_INVARIANT, outside the
+        # source horizon) sit inside the judge's measured capacity with and without the rank.
+        # Same rows, same family shares; only which of a family's rows come first.
+        _cap_n = cap or len(ordered_j)
+        _flat = coverage_order(judgeable, quota, ids, use_priority=False)
+        doc["priority_order"] = {
+            "rows_ranked": sum(1 for r in judgeable if docket_priority(r) > 0),
+            "capacity": _cap_n,
+            "demoted_in_capacity_with": sum(1 for r in ordered_j[:_cap_n]
+                                            if docket_priority(r) > 0),
+            "demoted_in_capacity_without": sum(1 for r in _flat[:_cap_n]
+                                               if docket_priority(r) > 0),
+            "rule": ("inside each family's own stream, after the never-judged test, rows rank by "
+                     "the compiler's priority (0 first); no row is removed and no family's share "
+                     "changes")}
         # NEVER-FIRING GROUND TO THE TAIL (2026-09-30). Order only; every row stays.
         dead = never_fire_pairs(bank, fired_pairs())
         if dead:

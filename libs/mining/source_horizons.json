@@ -1,39 +1,66 @@
 {
- "schema": "source_horizons/1",
- "what": "Per producing seat: the window (min_h..max_h, hours) a state it reports can plausibly move an MT5 price over, its decay half-life, and the session it is released into. Read by libs/mining/source_horizon.py in the miner compiler's expand_axes: a chart outside the window is DEMOTED in queue order (never dropped), and every session cell of a source with a release_session is labelled own/transfer. Declared priors, to be revised by measured decay; a row may override any key. A seat absent here reads UNDECLARED, never INSIDE. kind=strategy marks a strategy record, whose horizon lives in its own params.",
+ "schema": "source_horizons/2",
+ "what": "Per producing seat: the window (min_h..max_h, hours) a state it reports can plausibly move an MT5 price over, its decay half-life, the session it is released into, and `release`: its publication kind (weekly / event / observed / calendar), the timezone it publishes in and, when weekly, the weekday and local time. Read by libs/mining/source_horizon.py in the miner compiler's expand_axes: a chart outside the window is DEMOTED in queue order (never dropped). libs/mining/release_clock.py converts a weekly release DST-aware to broker time (NY+7); the compiler mints session-transfer cells (`release_gate`) for scheduled seats, and mt5desk/cell_modifiers keeps a signal only after the release (available_at <= decision_time) and while the state keeps >= 25% of its strength by decay_half_life_h. Declared priors, to be revised by measured decay; a row may override any horizon key. A seat absent here reads UNDECLARED, never INSIDE. kind=strategy marks a strategy record, whose horizon lives in its own params.",
  "seats": {
   "aaii": {
    "min_h": 24,
    "max_h": 504,
    "decay_half_life_h": 120,
    "release_session": "ny",
-   "why": "weekly AAII survey, Thursday US"
+   "why": "weekly AAII survey, Thursday US",
+   "release": {
+    "kind": "weekly",
+    "tz": "America/New_York",
+    "weekday": 3,
+    "local": "23:59",
+    "why": "AAII posts the survey on Thursday at an unannounced hour: labelled at the END of that US day, never earlier than the truth (#238's rule for unannounced releases)"
+   }
   },
   "bis_speeches": {
    "min_h": 1,
    "max_h": 120,
    "decay_half_life_h": 24,
    "release_session": "london",
-   "why": "Basel-published speeches, read in the European session"
+   "why": "Basel-published speeches, read in the European session",
+   "release": {
+    "kind": "event",
+    "tz": "Europe/Zurich",
+    "why": "each speech row carries its own publication instant; a naive stamp is Basel local time"
+   }
   },
   "broker_swaps": {
    "min_h": 24,
    "max_h": 2160,
    "decay_half_life_h": 720,
-   "why": "overnight financing accrues per night; a reprice moves carry for weeks"
+   "why": "overnight financing accrues per night; a reprice moves carry for weeks",
+   "release": {
+    "kind": "observed",
+    "tz": "UTC",
+    "why": "the broker's swap panel is public when the terminal reports it (observed_at, UTC)"
+   }
   },
   "central_banks": {
    "min_h": 1,
    "max_h": 240,
    "decay_half_life_h": 48,
-   "why": "policy decisions/statements: repricing over the first days"
+   "why": "policy decisions/statements: repricing over the first days",
+   "release": {
+    "kind": "event",
+    "tz": "UTC",
+    "why": "decision/statement rows carry their own instant; each bank publishes in its own zone, stamped with an offset"
+   }
   },
   "china": {
    "min_h": 1,
    "max_h": 168,
    "decay_half_life_h": 24,
    "release_session": "asia",
-   "why": "Chinese releases land in the Asian session"
+   "why": "Chinese releases land in the Asian session",
+   "release": {
+    "kind": "event",
+    "tz": "Asia/Shanghai",
+    "why": "NBS/PBoC releases are dated per release (NBS prints at 10:00 Beijing on a published calendar); a naive stamp is Beijing time"
+   }
   },
   "collective2": {
    "kind": "strategy",
@@ -44,7 +71,15 @@
    "max_h": 720,
    "decay_half_life_h": 168,
    "release_session": "ny",
-   "why": "weekly CFTC print, Friday 15:30 ET; positioning mean-reverts over weeks"
+   "why": "weekly CFTC print, Friday 15:30 ET; positioning mean-reverts over weeks",
+   "release": {
+    "kind": "weekly",
+    "tz": "America/New_York",
+    "weekday": 4,
+    "local": "15:30",
+    "calendar": "cftc",
+    "why": "CFTC Commitments of Traders: Friday 15:30 ET; holiday and shutdown weeks read #238's release labels (mt5desk.cot_frames) where present"
+   }
   },
   "darwinex": {
    "kind": "strategy",
@@ -59,7 +94,12 @@
    "max_h": 120,
    "decay_half_life_h": 24,
    "release_session": "ny",
-   "why": "US earnings reactions, post-announcement drift over days"
+   "why": "US earnings reactions, post-announcement drift over days",
+   "release": {
+    "kind": "event",
+    "tz": "America/New_York",
+    "why": "each report is dated (pre-open or post-close); a naive stamp is New York time"
+   }
   },
   "equiti_copy": {
    "kind": "strategy",
@@ -69,13 +109,23 @@
    "min_h": 24,
    "max_h": 336,
    "decay_half_life_h": 72,
-   "why": "daily sentiment index"
+   "why": "daily sentiment index",
+   "release": {
+    "kind": "observed",
+    "tz": "UTC",
+    "why": "a continuously updated index: public when observed"
+   }
   },
   "ff_calendar_vintage": {
    "min_h": 0.25,
    "max_h": 72,
    "decay_half_life_h": 6,
-   "why": "scheduled macro releases: minutes-to-days surprise response"
+   "why": "scheduled macro releases: minutes-to-days surprise response",
+   "release": {
+    "kind": "event",
+    "tz": "UTC",
+    "why": "calendar rows carry each print's scheduled instant"
+   }
   },
   "followme_cn": {
    "kind": "strategy",
@@ -85,7 +135,12 @@
    "min_h": 0.25,
    "max_h": 72,
    "decay_half_life_h": 6,
-   "why": "scheduled macro releases"
+   "why": "scheduled macro releases",
+   "release": {
+    "kind": "event",
+    "tz": "UTC",
+    "why": "calendar rows carry each print's scheduled instant"
+   }
   },
   "fxblue": {
    "kind": "strategy",
@@ -95,7 +150,12 @@
    "min_h": 24,
    "max_h": 720,
    "decay_half_life_h": 168,
-   "why": "weekly attention series"
+   "why": "weekly attention series",
+   "release": {
+    "kind": "observed",
+    "tz": "UTC",
+    "why": "the series is public when fetched; history can be re-based, so only the fetched vintage is usable"
+   }
   },
   "hfm_pamm": {
    "kind": "strategy",
@@ -109,14 +169,24 @@
    "min_h": 0.25,
    "max_h": 72,
    "decay_half_life_h": 6,
-   "why": "scheduled macro releases"
+   "why": "scheduled macro releases",
+   "release": {
+    "kind": "event",
+    "tz": "UTC",
+    "why": "calendar rows carry each print's scheduled instant"
+   }
   },
   "korea": {
    "min_h": 1,
    "max_h": 168,
    "decay_half_life_h": 24,
    "release_session": "asia",
-   "why": "Korean releases land in the Asian session"
+   "why": "Korean releases land in the Asian session",
+   "release": {
+    "kind": "event",
+    "tz": "Asia/Seoul",
+    "why": "Korean releases are dated per release; a naive stamp is Seoul time"
+   }
   },
   "litefinance": {
    "kind": "strategy",
@@ -126,7 +196,12 @@
    "min_h": 0.05,
    "max_h": 8,
    "decay_half_life_h": 1,
-   "why": "order-flow/quote states fade within the session"
+   "why": "order-flow/quote states fade within the session",
+   "release": {
+    "kind": "observed",
+    "tz": "UTC",
+    "why": "quote/flow states are public as they print"
+   }
   },
   "minfx_jp": {
    "kind": "strategy",
@@ -148,7 +223,12 @@
    "min_h": 1,
    "max_h": 72,
    "decay_half_life_h": 12,
-   "why": "retail positioning snapshot"
+   "why": "retail positioning snapshot",
+   "release": {
+    "kind": "observed",
+    "tz": "UTC",
+    "why": "a snapshot: public when observed"
+   }
   },
   "mylivefx_br": {
    "kind": "strategy",
@@ -162,7 +242,12 @@
    "min_h": 24,
    "max_h": 720,
    "decay_half_life_h": 168,
-   "why": "funding/plumbing states move over weeks"
+   "why": "funding/plumbing states move over weeks",
+   "release": {
+    "kind": "event",
+    "tz": "America/New_York",
+    "why": "funding data (Fed H.4.1, repo) are dated per release; a naive stamp is New York time"
+   }
   },
   "propfirm_boards": {
    "kind": "strategy",
@@ -188,14 +273,24 @@
    "min_h": 24,
    "max_h": 720,
    "decay_half_life_h": 336,
-   "why": "calendar effects span days to weeks"
+   "why": "calendar effects span days to weeks",
+   "release": {
+    "kind": "calendar",
+    "tz": "UTC",
+    "why": "a calendar effect is known in advance"
+   }
   },
   "sec_edgar": {
    "min_h": 1,
    "max_h": 240,
    "decay_half_life_h": 48,
    "release_session": "ny",
-   "why": "US filings, read after the New York open"
+   "why": "US filings, read after the New York open",
+   "release": {
+    "kind": "event",
+    "tz": "America/New_York",
+    "why": "EDGAR acceptance timestamps are Eastern time"
+   }
   },
   "share4you": {
    "kind": "strategy",
@@ -205,7 +300,12 @@
    "min_h": 24,
    "max_h": 720,
    "decay_half_life_h": 168,
-   "why": "freight/shipping states move over weeks"
+   "why": "freight/shipping states move over weeks",
+   "release": {
+    "kind": "observed",
+    "tz": "UTC",
+    "why": "freight indices are public when observed"
+   }
   },
   "trading_latam": {
    "kind": "strategy",
@@ -219,13 +319,23 @@
    "min_h": 6,
    "max_h": 336,
    "decay_half_life_h": 72,
-   "why": "weather states act on energy/softs over days"
+   "why": "weather states act on energy/softs over days",
+   "release": {
+    "kind": "observed",
+    "tz": "UTC",
+    "why": "model runs/observations are public when observed"
+   }
   },
   "world": {
    "min_h": 0.25,
    "max_h": 168,
    "decay_half_life_h": 24,
-   "why": "world-sensor news states: hours to a week"
+   "why": "world-sensor news states: hours to a week",
+   "release": {
+    "kind": "event",
+    "tz": "UTC",
+    "why": "news-sensor rows carry their own publication instant"
+   }
   }
  }
 }

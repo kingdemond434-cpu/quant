@@ -7,17 +7,25 @@ was minted as an M5 cell beside an H1 one, and a Tokyo release was tested in New
 record that the cell was a TRANSFER test rather than an own-session one.
 
 `libs/mining/source_horizons.json` declares, per producing seat: `min_h` / `max_h` (the window the
-state can reach), `decay_half_life_h` (how fast it fades), and `release_session` (where it lands).
-A row or candidate may override any of them with the same keys. From that:
+state can reach), `decay_half_life_h` (how fast it fades), `release_session` (where it lands) and
+`release` (when and in which timezone it is published). A row or candidate may override any horizon
+key. From that:
 
   chart_fit      INSIDE when the chart fits at least MIN_BARS bars inside `max_h` and `min_h`
                  spans at most MAX_BARS bars of it; OUTSIDE otherwise; UNDECLARED with no row.
                  The compiler DEMOTES an OUTSIDE cell in queue order and never drops it:
                  research generation is never reduced, backpressure reorders (standing rule).
-  session_transfer  for a source with a `release_session`, every session cell names its path:
-                 `own` in the release session, `transfer` k sessions later (asia->london->ny).
-                 The cell is the same shared session filter; the label makes the transfer test
-                 explicit, countable and charged as its own trial like every other cell.
+  transfer cells for a seat with a SCHEDULED release (`libs/mining/release_clock.py`), the
+                 compiler mints NEW cells `release_gate = "<seat>:<k>"`: the same rule, kept
+                 only in the k-th session after the release instant (k = 0 is the release's own
+                 session), only once the state is public, and only while it keeps
+                 `release_clock.DECAY_FLOOR` of its strength by `decay_half_life_h`. Each is its
+                 own identity (the gate is in `params`), so it is charged once like any cell and
+                 re-minted to the same id every hour. A seat whose release is row-dated mints no
+                 transfer cell and is reported UNSCHEDULED: a session label with no release
+                 instant behind it would claim a transfer test it cannot run.
+  resolve        a cell two seats produce gets the most permissive fit among them (lowest
+                 demotion), ties by seat name, so the label never depends on intake order.
 
 Undeclared is a real answer (L1.28a): counted UNDECLARED, never read as INSIDE.
 """
@@ -79,31 +87,54 @@ def chart_fit(tf: str, decl: dict[str, Any] | None) -> str:
     return "INSIDE"
 
 
-def session_transfer(decl: dict[str, Any] | None, session: str) -> dict[str, Any] | None:
-    rel = str((decl or {}).get("release_session") or "")
-    if rel not in SESSION_ORDER or session not in SESSION_ORDER:
-        return None
-    k = (SESSION_ORDER.index(session) - SESSION_ORDER.index(rel)) % len(SESSION_ORDER)
-    return {"from": rel, "to": session, "lag_sessions": k, "kind": "own" if k == 0 else "transfer"}
-
-
-def annotate(cell: dict[str, Any], chart: str, session: str) -> int:
-    """Stamp a minted cell with its source horizon and transfer path; returns the queue demotion
-    (0 or 2) the compiler adds to its priority. Never removes the cell."""
-    decl = declared(seat_of(cell), cell)
+def annotate(cell: dict[str, Any], chart: str, session: str = "all",
+             seat: str | None = None) -> int:
+    """Stamp a minted cell with its source horizon; returns the queue demotion (0 or 2) the
+    compiler adds to its priority. Never removes the cell."""
+    del session                            # the transfer test is a cell of its own now
+    name = seat or seat_of(cell)
+    decl = declared(name, cell)
     fit = chart_fit(chart, decl)
-    cell["source_horizon"] = {"fit": fit, **{k: (decl or {}).get(k) for k in _KEYS}}
-    path = session_transfer(decl, session)
-    if path:
-        cell["session_transfer"] = path
-    return 2 if fit == "OUTSIDE" else 0
+    demotion = 2 if fit == "OUTSIDE" else 0
+    cell["source_horizon"] = {"fit": fit, "seat": name or None, "demotion": demotion,
+                              **{k: (decl or {}).get(k) for k in _KEYS}}
+    return demotion
+
+
+def resolve(cell: dict[str, Any], sources: list[str]) -> None:
+    """Re-label a cell several seats produced: the lowest demotion among them, ties broken by
+    seat name. Adjusts `priority` by the difference; nothing else changes."""
+    chart = str((cell.get("axis") or {}).get("chart") or "")
+    stamp = cell.get("source_horizon")
+    if not chart or not isinstance(stamp, dict):
+        return
+    old = int(stamp.get("demotion") or 0)
+    best: tuple[int, str] | None = None
+    for src in sorted(set(sources)):
+        seat = src.split(":", 1)[1] if src.startswith("miner:") else src
+        d = 2 if chart_fit(chart, declared(seat, cell)) == "OUTSIDE" else 0
+        if best is None or (d, seat) < best:
+            best = (d, seat)
+    if best is None:
+        return
+    annotate(cell, chart, seat=best[1])
+    cell["source_horizon"]["resolved_from"] = sorted(set(sources))
+    cell["priority"] = int(cell.get("priority") or 0) - old + int(best[0])
 
 
 def tally(cells: list[dict[str, Any]]) -> dict[str, Any]:
     fit = Counter(str((c.get("source_horizon") or {}).get("fit") or "UNSTAMPED") for c in cells)
-    paths = Counter(f"{p['from']}->{p['to']}" for c in cells
-                    if (p := c.get("session_transfer")))
-    return {"fit": dict(fit), "session_transfer_paths": dict(sorted(paths.items())),
+    gates = Counter(str((c.get("params") or {}).get("release_gate")) for c in cells
+                    if (c.get("params") or {}).get("release_gate"))
+    seats = sorted({str((c.get("source_horizon") or {}).get("seat") or "") for c in cells} - {""})
+    try:
+        from libs.mining import release_clock
+        releases: dict[str, Any] = {s: release_clock.describe(s) for s in seats}
+    except Exception as exc:                # a broken clock costs the report, never a cell
+        releases = {"state": f"UNMEASURED: {type(exc).__name__}: {exc}"}
+    return {"fit": dict(fit), "transfer_cells": dict(sorted(gates.items())),
+            "releases": releases,
             "rule": f"INSIDE = >= {MIN_BARS} bars inside max_h and min_h <= {MAX_BARS} bars; "
-                    "OUTSIDE cells are demoted in queue order, never dropped",
+                    "OUTSIDE cells are demoted in queue order, never dropped; transfer cells "
+                    "trade only after the release instant, in the k-th session after it",
             "table": str(TABLE.relative_to(TABLE.parents[2]))}
