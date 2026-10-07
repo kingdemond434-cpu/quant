@@ -28,6 +28,11 @@ foreach ($u in @(Get-Process -Name 'terminal64' -ErrorAction SilentlyContinue |
 }
 $terminals = Get-FusionTerminals
 $local = @($terminals | Where-Object { $_.SessionId -eq $session })
+# An unreadable terminal in THIS session is not another account's: it may be the Fusion terminal
+# itself behind an access hiccup. Launching beside it would make two terminals on one data
+# directory, so its presence refuses the launch below.
+$unreadableLocal = @(Get-Process -Name 'terminal64' -ErrorAction SilentlyContinue |
+    Where-Object { -not $_.Path -and $_.SessionId -eq $session })
 
 # A terminal in another session may own live state. Refuse to kill it or launch
 # another on the same data directory without controlled reconciliation.
@@ -45,6 +50,11 @@ if ($terminals.Count -gt 1) {
     exit 2
 }
 
+if ($local.Count -eq 0 -and $unreadableLocal.Count -gt 0) {
+    $pids = ($unreadableLocal | ForEach-Object { $_.Id }) -join ','
+    Add-Content -LiteralPath $log -Value "$stamp unreadable-path terminal(s) $pids in this session $session; refusing to launch a second terminal"
+    exit 2
+}
 if ($local.Count -eq 0) {
     if (-not (Test-Path -LiteralPath $exe)) {
         Add-Content -LiteralPath $log -Value "$stamp Fusion terminal executable missing: $exe"
