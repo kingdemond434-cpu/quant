@@ -1,0 +1,337 @@
+{
+ "specification": "MINIATURE_INSTITUTION_ACCEPTANCE_V1_20261006",
+ "status": "ARCHITECTURAL_ACCEPTANCE",
+ "scope": "architecture only: correctness, connection and separation of the institution's functions. It is never evidence of profitable alpha; investment performance is assessed separately.",
+ "source": "principal directive 2026-10-06 11:08Z, 12:35Z and 13:20Z; function map /mnt/project-files/reports/acceptance/function_map.json at 2d61e69a1",
+ "requirements": [
+  {
+   "id": "MI01",
+   "title": "global information platform: acquire, preserve availability and revisions, trace a feature to its source observation",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "libs/data/input_identity.py",
+    "libs/data/pit.py",
+    "desks/mt5/research/source_registry.py"
+   ],
+   "tests": [
+    "tests/data/test_input_identity.py",
+    "tests/data/test_pit_stamp.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/identity_chain.py"
+   ],
+   "runtime": [
+    "desks/mt5/data/input_identity.json",
+    "desks/mt5/reports/SOURCE_REGISTRY.json"
+   ],
+   "blockers": []
+  },
+  {
+   "id": "MI02",
+   "title": "continuous research factory with deduplication, experiment memory and protected validation",
+   "priority": "P0",
+   "lane": "research",
+   "implementation": [
+    "desks/mt5/research/hourly_cycle.py",
+    "desks/mt5/scripts/external_gauntlet.py",
+    "desks/mt5/scripts/run_sharded_gauntlet.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_run_sharded_gauntlet.py",
+    "desks/mt5/tests/test_lockbox_independence.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/canon_publication.py"
+   ],
+   "runtime": [
+    "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
+    "desks/mt5/reports/JUDGING_THROUGHPUT.json"
+   ],
+   "blockers": []
+  },
+  {
+   "id": "MI03",
+   "title": "probabilistic forecasting: calibrated, scoreable, horizon-specific beliefs with lineage",
+   "priority": "P0",
+   "lane": "research",
+   "implementation": [
+    "desks/mt5/research/forecast_contract.py"
+   ],
+   "tests": [
+    "tests/research/test_forecast_contract_and_league.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "runtime": [
+    "desks/mt5/data/forecast_register.jsonl"
+   ],
+   "blockers": [
+    {
+     "id": "forecast_unconnected",
+     "owner": "this thread (publisher) + desktop \"Growth allocator overhaul\" session (money path) (consumer)",
+     "why": "forecast_contract.publish() has no production caller and pf_allocator reads no beliefs"
+    }
+   ]
+  },
+  {
+   "id": "MI04",
+   "title": "portfolio construction: joint sleeve, exposure, hedge and cash decision from expected net contribution",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "libs/portfolio/robust_elog.py",
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "tests": [
+    "tests/portfolio/test_robust_elog.py",
+    "desks/mt5/tests/test_allocator_sovereignty.py"
+   ],
+   "consumers": [
+    "desks/mt5/mt5desk/gateway.py"
+   ],
+   "runtime": [
+    "desks/mt5/reports/pf_allocation.json",
+    "desks/mt5/reports/ALLOCATOR_PROOF.json"
+   ],
+   "blockers": [
+    {
+     "id": "book_key_not_sleeve",
+     "owner": "desktop \"Growth allocator overhaul\" session (money path)",
+     "why": "the book is keyed symbol_family_selector; gateway._book_key gives every variant sharing a key the fraction solved for one sleeve"
+    }
+   ]
+  },
+  {
+   "id": "MI05",
+   "title": "independent risk control outside research authority",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "desks/mt5/mt5desk/decision_core.py",
+    "libs/portfolio/rails.py",
+    "desks/mt5/proposals/fusion_deadman.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_fusion_deadman_dry_run.py",
+    "desks/mt5/tests/test_risk_units.py"
+   ],
+   "consumers": [
+    "desks/mt5/mt5desk/gateway.py"
+   ],
+   "runtime": [
+    "desks/mt5/data/fusion_deadman_state.json"
+   ],
+   "blockers": [
+    {
+     "id": "risk_not_independent",
+     "owner": "desktop \"Growth allocator overhaul\" session (money path)",
+     "why": "the enforced heat ceiling is the allocator's own heat.envelope; the flatten rail runs dry-run; principal decision required for any new cap (growth governance)"
+    }
+   ]
+  },
+  {
+   "id": "MI06",
+   "title": "execution and accounting: valid orders, reconciled fills and positions, measured costs",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "desks/mt5/mt5desk/order_door.py",
+    "desks/mt5/mt5desk/gateway.py",
+    "desks/mt5/mt5desk/markout.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_order_door_chaos.py",
+    "desks/mt5/tests/test_markout.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/identity_chain.py"
+   ],
+   "runtime": [
+    "desks/mt5/data/live_ledger.jsonl",
+    "desks/mt5/reports/markout.json"
+   ],
+   "blockers": [
+    {
+     "id": "comment_tag_truncation",
+     "owner": "desktop \"Growth allocator overhaul\" session (money path)",
+     "why": "the venue tag 'DW'+name is cut to 29 chars; 34/40 LIVE names are longer, so promoter.sleeve_forward_stats sees no trades and five name groups collide"
+    }
+   ]
+  },
+  {
+   "id": "MI07",
+   "title": "reliable operations and controlled change: versioned releases, adoption, rollback, recovery drills",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "libs/ops/release.py",
+    "desks/mt5/scripts/Adopt-And-Seal.ps1"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_release_identity.py"
+   ],
+   "consumers": [
+    "desks/mt5/scripts/Run-DeskCycle.ps1"
+   ],
+   "runtime": [
+    "desks/mt5/data/RELEASE.json"
+   ],
+   "blockers": [
+    {
+     "id": "recovery_drills_unproven",
+     "owner": "\"Live control room layer\" thread",
+     "why": "backup restoration, outage and rollback drills have no recorded pass"
+    }
+   ]
+  },
+  {
+   "id": "MI08",
+   "title": "research-resource allocation: evidence changes research priorities while keeping exploration",
+   "priority": "P1",
+   "lane": "research",
+   "implementation": [
+    "desks/mt5/research/cycle_pricing.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_cycle_pricing.py",
+    "desks/mt5/tests/test_research_budget_contract.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/hourly_cycle.py"
+   ],
+   "runtime": [
+    "desks/mt5/reports/CYCLE_PRICING.json",
+    "desks/mt5/data/research_budget.json"
+   ],
+   "blockers": []
+  },
+  {
+   "id": "MI09",
+   "title": "one replayable decision chain: observation to reconciled P&L and feedback, including no-change decisions",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "desks/mt5/research/identity_chain.py",
+    "libs/research/trade_identity.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_identity_chain.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/hourly_cycle.py"
+   ],
+   "runtime": [
+    "desks/mt5/reports/IDENTITY_CHAIN.json",
+    "desks/mt5/data/identity_chain.jsonl"
+   ],
+   "blockers": [
+    {
+     "id": "cert_no_input_identity",
+     "owner": "desktop pass \"Fix the deflated-Sharpe gate\" (external_gauntlet.py is sealed)",
+     "why": "certificates record no data digest, parameters or code release (0/58)"
+    },
+    {
+     "id": "intent_no_decision_id",
+     "owner": "desktop \"Growth allocator overhaul\" session (money path)",
+     "why": "order intents carry no allocation decision id or risk approval id, and are written after order_send"
+    },
+    {
+     "id": "credit_fuzzy_join",
+     "owner": "this thread",
+     "why": "credit_assignment joins live deals to certificates by substring and drops unmatched deals uncounted"
+    }
+   ]
+  },
+  {
+   "id": "MI10",
+   "title": "separation of authority: research holds no production credentials or order path",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "desks/mt5/mt5desk/order_door.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_order_door_chaos.py"
+   ],
+   "consumers": [
+    "desks/mt5/mt5desk/gateway.py"
+   ],
+   "runtime": [
+    "desks/mt5/data/order_door_ledger.jsonl"
+   ],
+   "blockers": [
+    {
+     "id": "raw_terminal_in_research",
+     "owner": "desktop \"Growth allocator overhaul\" session (money path) + this thread (fence)",
+     "why": "about 11 research modules call mt5.initialize() with the raw module, which exposes order_send; libs/execution/broker.py sends outside the door; the fence skips libs/ and side_channels/"
+    }
+   ]
+  },
+  {
+   "id": "MI11",
+   "title": "research governance: protected holdout evaluated once, every search charged, fixtures isolated, replication before promotion",
+   "priority": "P0",
+   "lane": "research",
+   "implementation": [
+    "libs/research/lockbox.py",
+    "desks/mt5/research/gate_policy.py",
+    "libs/ops/protected_artifacts.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_lockbox_independence.py"
+   ],
+   "consumers": [
+    "desks/mt5/scripts/external_gauntlet.py"
+   ],
+   "runtime": [
+    "desks/mt5/data/dsr_trial_sharpes.jsonl"
+   ],
+   "blockers": [
+    {
+     "id": "lockbox_not_evaluate_once",
+     "owner": "desktop pass \"Fix the deflated-Sharpe gate\"",
+     "why": "the gauntlet's lockbox is a rolling tail with no evaluate-once ledger"
+    },
+    {
+     "id": "prescreen_trials_uncharged",
+     "owner": "this thread",
+     "why": "alpha_evolution IC screen and LLM ideation are not charged to the trial ledger"
+    },
+    {
+     "id": "replication_fails_open",
+     "owner": "desktop pass \"Fix the deflated-Sharpe gate\"",
+     "why": "promotion blocks only on a replication mismatch; blind review fails open"
+    }
+   ]
+  },
+  {
+   "id": "MI12",
+   "title": "desk economics: compute, data, subscriptions and owner attention beside trading P&L",
+   "priority": "P1",
+   "lane": "research",
+   "implementation": [
+    "libs/research/desk_economics.py",
+    "scripts/run_desk_economics.py",
+    "config/desk_costs.yaml"
+   ],
+   "tests": [
+    "tests/research/test_desk_economics.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/hourly_cycle.py"
+   ],
+   "runtime": [
+    "web/desk_economics.json"
+   ],
+   "blockers": [
+    {
+     "id": "economics_unjoined",
+     "owner": "this thread",
+     "why": "desk_costs.yaml declares VPS and LLM costs null, run_desk_economics has no live clock, owner attention is unrecorded"
+    }
+   ]
+  }
+ ]
+}
