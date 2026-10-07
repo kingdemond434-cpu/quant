@@ -570,7 +570,7 @@ def load_cursor(path: Path | None = None) -> dict[str, Any]:
     doc = _read_json(path or CURSOR)
     if not isinstance(doc, dict):
         doc = {}
-    for key in ("files", "offsets", "seen", "fps", "gdelt", "baseline", "day"):
+    for key in ("files", "offsets", "seen", "fps", "gdelt", "baseline", "day", "pages"):
         doc.setdefault(key, {})
     doc.setdefault("seq", 0)
     return doc
@@ -615,7 +615,8 @@ def _mark_files(paths: Iterable[Path], key: str, cur: dict[str, Any]) -> None:
             known[str(path)] = [round(st.st_mtime, 3), st.st_size]
 
 
-#: Rows one call may take from one jsonl ground. NOT A CAP: the offset stops at the last row
+#: Rows one call may take from one jsonl ground, and rows one pass may take from one seat (paged
+#: across that seat's files by `_seat_page`). NOT A CAP: the offset stops at the last row
 #: taken, so the rest is read on the next pass (60 s later on the resident) and nothing is lost.
 #: It bounds the memory one pass can hold, which a single fh.read() of a ground did not.
 MAX_ROWS_PER_READ = 20_000
@@ -668,6 +669,101 @@ def _jsonl_since(path: Path, key: str, cur: dict[str, Any],
     return rows
 
 
+def _iter_seat_rows(path: Path) -> Iterable[dict[str, Any]]:
+    """EVERY row of one seat file, oldest (file order) first. A jsonl file is STREAMED line by
+    line; a json document is loaded whole (it already was) and its row list walked in order."""
+    if path.suffix == ".jsonl":
+        try:
+            fh = path.open("rb")
+        except OSError:
+            return
+        with fh:
+            for raw in fh:
+                if not raw.endswith(b"\n"):
+                    break                                    # a row still being written
+                line = raw.decode("utf-8", "replace").strip()
+                if line.startswith("{"):
+                    with suppress(ValueError):
+                        row = json.loads(line)
+                        if isinstance(row, dict):
+                            yield row
+        return
+    doc = _read_json(path)
+    if isinstance(doc, list):
+        yield from (r for r in doc if isinstance(r, dict))
+    elif isinstance(doc, dict):
+        for key in ("discoveries", "items", "rows", "documents"):
+            value = doc.get(key)
+            if isinstance(value, list):
+                yield from (r for r in value if isinstance(r, dict))
+                return
+        yield doc
+
+
+def _row_digest(row: Mapping[str, Any]) -> str:
+    blob = json.dumps(row, sort_keys=True, default=str)
+    return hashlib.sha1(blob.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
+
+
+def _seat_page(path: Path, key: str, cur: dict[str, Any],
+               max_rows: int) -> tuple[list[dict[str, Any]], bool]:
+    """The next page of a seat file's UNCONSUMED rows, oldest first, and whether the file is now
+    consumed to its last row (audit #204 v3, 2026-10-07).
+
+    Until this, a seat file was read as its newest 20,000 rows and then MARKED READ, so every
+    older row of a big file was lost for good: a mining cut. Now a file is consumed in bounded
+    pages across passes and the caller marks it read only once this returns `done`.
+
+    The page cursor `cur["pages"][key][path]` is one of two shapes:
+      * PARTIAL  `{"taken": [digest, ...]}` -- the digest of every row consumed so far. A file
+        that changes mid-consumption (an append, or a rewrite that reorders or inserts rows) is
+        re-digested and only rows whose digest was not taken are read: none lost, none twice.
+      * FINISHED `{"n": rows, "prefix": chained digest of those rows}` -- a few bytes. A later
+        APPEND re-digests the first `n` rows, finds the prefix intact and reads only the tail.
+        A finished file REWRITTEN in place has no recoverable prefix and is read again from its
+        first row; the pass's item-id dedup (`cur["seen"]`) keeps those re-reads from counting.
+    Identical rows share a digest and so one item id; they are one observation, read once.
+    """
+    pages: dict[str, Any] = cur.setdefault("pages", {}).setdefault(key, {})
+    state = pages.get(str(path)) or {}
+    digests = [_row_digest(r) for r in _iter_seat_rows(path)]
+    if "taken" in state:
+        consumed = set(state["taken"])
+    else:
+        n = int(state.get("n", 0))
+        consumed = (set(digests[:n]) if 0 < n <= len(digests)
+                    and _prefix_of(digests[:n]) == state.get("prefix") else set())
+    want: set[int] = set()
+    picked: set[str] = set()
+    left = 0
+    for i, d in enumerate(digests):
+        if d in consumed or d in picked:
+            continue
+        if len(want) < max_rows:
+            want.add(i)
+            picked.add(d)
+        else:
+            left += 1
+    page = [r for i, r in enumerate(_iter_seat_rows(path))
+            if i in want and i < len(digests) and _row_digest(r) == digests[i]]
+    if len(page) != len(want):
+        # The file was rewritten between the two reads: take nothing, keep the state, and read
+        # it again next pass -- nothing marked, so nothing lost.
+        return [], False
+    if left == 0:
+        pages[str(path)] = {"n": len(digests), "prefix": _prefix_of(digests)}
+        return page, True
+    pages[str(path)] = {"taken": sorted(consumed | picked)}
+    return page, False
+
+
+def _prefix_of(digests: Sequence[str]) -> str:
+    acc = ""
+    for d in digests:
+        acc = hashlib.sha1(f"{acc}|{d}".encode(), usedforsecurity=False).hexdigest()[:16]
+    return acc
+
+
 def collect_items(limit: int = MAX_ITEMS, notes: list[str] | None = None,
                   cursor: dict[str, Any] | None = None,
                   census: dict[str, Any] | None = None) -> list[Item]:
@@ -718,13 +814,44 @@ def collect_items(limit: int = MAX_ITEMS, notes: list[str] | None = None,
         fresh = (_new_files(files, f"seat:{seat}", cur)[:MAX_FILES_PER_READ]
                  if cursor is not None
                  else sorted(files, key=lambda p: p.stat().st_mtime)[-8:])
+        if cursor is None:
+            for path in fresh:
+                rows = (_rows_of(path, MAX_ROWS_PER_READ) if not path.name.endswith(".gz")
+                        else [])
+                out.extend(i for r in rows
+                           if (i := _item(str(r.get("source") or seat), r,
+                                          f"intelligence:{seat}")) is not None)
+            continue
+        # PAGED, NEVER CUT (audit #204 v3): one pass takes at most MAX_ROWS_PER_READ rows from
+        # one seat, oldest file first and oldest row first; a file is marked read only once its
+        # last row is taken, and whatever the budget did not reach stays owed to the next pass.
+        budget = MAX_ROWS_PER_READ
+        t = tally.setdefault(f"seat:{seat}", {"rows": 0, "partial_files": 0,
+                                              "deferred_files": 0})
+        known: dict[str, list[float]] = cur["files"].setdefault(f"seat:{seat}", {})
         for path in fresh:
-            rows = (_rows_of(path, MAX_ROWS_PER_READ) if not path.name.endswith(".gz") else [])
+            try:
+                st = path.stat()                         # the signature BEFORE the read: a row
+            except OSError:                              # appended during it changes the file's
+                continue                                 # signature, so it is read next pass
+            sig = [round(st.st_mtime, 3), st.st_size]
+            if path.name.endswith(".gz"):
+                known[str(path)] = sig
+                continue
+            if budget <= 0:
+                t["deferred_files"] += 1                 # unmarked: the next pass reads it
+                continue
+            rows, done = _seat_page(path, f"seat:{seat}", cur, budget)
+            budget -= len(rows)
+            t["rows"] += len(rows)
             for row in rows:
                 got = _item(str(row.get("source") or seat), row, f"intelligence:{seat}")
                 if got is not None:
                     out.append(got)
-        _mark_files(fresh, f"seat:{seat}", cur)
+            if done:
+                known[str(path)] = sig
+            else:
+                t["partial_files"] += 1                  # unmarked: its next page is owed
     if not seen_seats:
         say.append(f"none of the {len(NEWS_SEATS)} declared news seats exists under {INTEL}")
     now_s = _now().timestamp()
@@ -735,14 +862,23 @@ def collect_items(limit: int = MAX_ITEMS, notes: list[str] | None = None,
             g["status"] = f"{folder} absent: {UNMEASURED} on this box"
             continue
         taken = 0
-        for meta_path in sorted(folder.glob("*.meta.json")):
+        # THE BACKLOG IS WORKED IN TIME ORDER (audit #204 v3): the oldest 15-minute slot first,
+        # chronologically -- never in content-hash order, which is a random walk through time
+        # and let a deferred slot from hours ago wait behind newer ones. A meta with no
+        # readable slot sorts last (it is history either way and is marked too_old below).
+        backlog: list[tuple[str, str, Path, dict[str, Any]]] = []
+        for meta_path in folder.glob("*.meta.json"):
             digest = meta_path.name.split(".", 1)[0]
             if digest in cur["gdelt"]:
                 continue
+            meta = _read_json(meta_path)
+            meta = meta if isinstance(meta, dict) else {}
+            backlog.append((_gdelt_slot(meta) or "9" * 14, digest, meta_path, meta))
+        backlog.sort(key=lambda b: (b[0], b[1]))
+        for _slot_key, digest, _meta_path, meta in backlog:
             if taken >= MAX_GDELT_BLOBS_PER_READ:
                 g["deferred"] = int(g.get("deferred", 0)) + 1     # unmarked: next pass reads it
                 continue
-            meta = _read_json(meta_path) or {}
             slot = _gdelt_slot(meta)
             slot_t = _parse_time(f"{slot[:4]}-{slot[4:6]}-{slot[6:8]}T{slot[8:10]}:"
                                  f"{slot[10:12]}:00+00:00") if slot else None
