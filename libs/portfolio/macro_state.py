@@ -135,6 +135,13 @@ SERIES: dict[str, str] = {
     "dollar": "DTWEXBGS", "risk": "VIXCLS", "rates": "DGS10", "real_rates": "DFII10",
     "curve": "T10Y2Y", "liquidity": "WALCL",
 }
+#: SERIES ON A TERMS HOLD (2026-10-07): FRED's VIXCLS is CBOE data republished under copyright
+#: terms the desk has not cleared, so it may not be used until a permitted replacement risk-state
+#: series lands (World sensor, PR #211: the broker VIX CFD or an own-bars vol composite). A held
+#: series is dropped AT LOAD for every consumer -- the regime kernel's risk dimension, the factor
+#: model's d_vix factor (`leg_factors`), and the gateway's macro lean (`mt5desk.macro_view`) --
+#: and each says UNMEASURED by name rather than silently running without it.
+TERMS_HOLD: frozenset[str] = frozenset({"VIXCLS"})
 #: The dimensions the KERNEL conditions on. Dollar and risk are the two every FX and metals sleeve
 #: expresses; rates is the third axis of the macro trade. Curve and liquidity are reported, and
 #: available to the admission test, but not kernelled: five dimensions at bandwidth 0.2 would
@@ -168,7 +175,7 @@ def _load_archive(path: Path | None = None,
     out: dict[str, list[tuple[str, float]]] = {}
     newest: str | None = None
     for sid, pts in (doc.get("series") or {}).items():
-        if not isinstance(pts, list):
+        if not isinstance(pts, list) or str(sid) in TERMS_HOLD:
             continue
         rows: list[tuple[str, float]] = []
         for p in pts:

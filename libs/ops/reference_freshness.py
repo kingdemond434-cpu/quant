@@ -667,6 +667,17 @@ class DestructivePath:
 #: note, so the history of what once removed on an absence stays readable.
 DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
     DestructivePath(
+        path_id="decision_replay.prune",
+        module="libs/portfolio/decision_replay.py",
+        function="_prune",
+        removes="the oldest frozen decision-input snapshots beyond the keep/byte bound",
+        reference="the snapshot directory's own listing (count and bytes)",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY: a snapshot is unlinked only when NEWER snapshots exist "
+             "beyond the bound; the newest is always kept, and an empty or unreadable directory "
+             "removes nothing. Replay evidence, never a retirement of anything the desk trades.",
+    ),
+    DestructivePath(
         path_id="forward_cure_route.accumulate",
         module="desks/mt5/research/forward_cure_route.py",
         function="accumulate",

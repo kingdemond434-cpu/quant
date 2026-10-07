@@ -24,11 +24,14 @@ test can hand it a tmp_path and a fixed time and cover every branch on any host.
 
 from __future__ import annotations
 
+import contextlib
+import hashlib
 import json
 import math
 import re
 import sys
 import time
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -928,6 +931,131 @@ def live_heat_ceiling(heat: dict) -> tuple[float, str]:
                  f"{surv.get('why') or 'survival constraint'}")
 
 
+#: The rail name the contradiction clause bills under in `data/missed_growth.jsonl`, the same
+#: row shape `research/missed_growth.py` appends for every registered rail.
+HEAT_CONTRADICTION_RAIL = "heat_ceiling_contradiction"
+
+
+def _bill_heat_contradiction(base: Path, claimed: float, stated: float,
+                             heat: dict[str, Any]) -> None:
+    """One missed-growth ledger line for a day the contradiction clause bound. Never raises.
+
+    THE CLAUSE COSTS GROWTH WHEN IT BINDS, SO IT IS BILLED (#261 re-audit, 2026-10-06). Every
+    rail on this desk that can make the book smaller is priced in forward log-wealth
+    (`research/missed_growth.py`: OpportunityCost = E[log W without rail] - E[log W with
+    rail]). The clause lowers the cap from the operative bar the artifact claimed to the lower
+    bar it stated; its cost is the allocator's own growth curve (`heat.curve`) read at both,
+    value = g(stated) - g(claimed), negative when the cut cost growth -- the sign and the
+    0.05-heat nearest-point read are `missed_growth._growth_at`'s. A curve that does not cover
+    both points writes the line with `value: null` and the reason: UNMEASURED, never zero.
+    ONE line per day, appended to the same `data/missed_growth.jsonl`, deduplicated on
+    (rail, day) exactly as `missed_growth.run` does.
+    """
+    try:
+        ledger = Path(base) / "data" / "missed_growth.jsonl"
+        day = datetime.now(tz=UTC).date().isoformat()
+        if ledger.exists():
+            for ln in ledger.read_text("utf-8").splitlines():
+                with contextlib.suppress(ValueError, TypeError, IndexError, KeyError,
+                                         AttributeError):
+                    r = json.loads(ln)
+                    if r.get("rail") == HEAT_CONTRADICTION_RAIL and r.get("day") == day:
+                        return
+        curve: dict[float, float] = {}
+        for pt in (heat.get("curve") or []):
+            with contextlib.suppress(ValueError, TypeError, IndexError, KeyError,
+                                         AttributeError):
+                curve[float(pt[0])] = float(pt[1])
+
+        def g_at(h: float) -> float | None:
+            if not curve:
+                return None
+            k = min(curve, key=lambda x: abs(x - h))
+            return curve[k] if abs(k - h) <= 0.05 else None
+
+        g_claim, g_stated = g_at(claimed), g_at(stated)
+        row: dict[str, Any] = {"day": day, "rail": HEAT_CONTRADICTION_RAIL,
+                               "value": (round(g_stated - g_claim, 8)
+                                         if g_claim is not None and g_stated is not None
+                                         else None),
+                               "at": datetime.now(tz=UTC).isoformat(),
+                               "claimed_operative": round(float(claimed), 6),
+                               "stated_bar": round(float(stated), 6),
+                               "where": "decision_core.verify_heat_ceiling clause 1"}
+        if row["value"] is None:
+            row["why"] = "UNMEASURED: heat.curve does not cover both the claimed and stated bar"
+        ledger.parent.mkdir(parents=True, exist_ok=True)
+        with ledger.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row) + "\n")
+    except Exception:
+        return
+
+
+def verify_heat_ceiling(cap: float, cap_why: str, heat: dict[str, Any],
+                        surface: object, *, base: Path | None = None) -> tuple[float, str]:
+    """The ceiling after the money path checks the allocator's claim against its own evidence.
+
+    RISK CONTROL WAS NOT INDEPENDENT (acceptance map V7, 2026-10-06). `live_heat_ceiling` takes
+    `heat.envelope.operative_ceiling` as written: the same process that solves the book also
+    certifies the bar the book is held under, so a defect in the allocator's envelope reaches
+    the account unopposed. This is the second reading. It re-derives nothing the allocator is
+    entitled to decide and it adds no constant: it binds ONLY where the artifact contradicts
+    itself, and in normal operation it returns `cap` unchanged (Rule 1: it lowers nothing a
+    consistent artifact earned, so it cannot cost forward E[log W] on a correct solve).
+
+      1. The rule the artifact states for itself: operative = min(growth, survival, ...). An
+         operative ceiling above its own growth or survival ceiling is a contradiction; the
+         lower stated bar binds.
+      2. The survival surface the artifact publishes (`kelly_surface.rows`), REPORTED, NOT
+         BINDING (audit of PR #261, 2026-10-06). That surface is labelled report-only by the
+         allocator, sampled on a coarse grid, and one ruined world in 64 at 0.18 cut the cap
+         0.30 -> 0.12 -- below the 20% target, from grid spacing and a single draw, one-sided,
+         with no missed-growth line to bill it. Sizing belongs to the solver's own survival
+         envelope (clause 1 reads it). A ruinous row inside the claimed bar is named in the
+         reason so a reader and the auditors see it; it moves no heat.
+
+    An absent or unreadable surface leaves `cap` as it was and says UNVERIFIED: a missing second
+    reading is reported, never turned into a smaller book.
+
+    WHEN CLAUSE 1 BINDS IT IS BILLED: with `base` (the desk root `allocator_heat` passes), one
+    missed-growth ledger line per day prices the cut on the allocator's own growth curve
+    (`_bill_heat_contradiction`). Without `base` (a pure call, the tests) nothing is written.
+    """
+    try:
+        notes: list[str] = []
+        env = heat.get("envelope") if isinstance(heat, dict) else None
+        if isinstance(env, dict):
+            stated = [float(env[k]) for k in ("growth_ceiling", "survival_ceiling")
+                      if isinstance(env.get(k), (int, float)) and math.isfinite(float(env[k]))
+                      and float(env[k]) > 0.0]
+            if stated and cap > min(stated) + 1e-9:
+                notes.append(f"operative {cap:.4f} above its own stated bar {min(stated):.4f}")
+                if base is not None:
+                    _bill_heat_contradiction(base, cap, min(stated), heat)
+                cap = min(stated)
+        rows = surface.get("rows") if isinstance(surface, dict) else None
+        clean = sorted(
+            ((float(r["heat"]), float(r["p_ruin"])) for r in (rows or [])
+             if isinstance(r, dict) and isinstance(r.get("heat"), (int, float))
+             and isinstance(r.get("p_ruin"), (int, float)) and math.isfinite(float(r["heat"]))),
+            key=lambda t: t[0])
+        if not clean:
+            tail = "; ".join(notes) + "; " if notes else ""
+            return cap, f"{cap_why} [independent check: {tail}surface UNVERIFIED]"
+        ruin = next((i for i, (h, p) in enumerate(clean) if p > 0.0 and h <= cap + 1e-9), None)
+        flag = ""
+        if ruin is not None:
+            flag = (f"; REPORT ONLY: kelly_surface row heat {clean[ruin][0]:.4f} shows P(ruin) "
+                    f"{clean[ruin][1]:.3g} inside the claimed bar (coarse report surface, not "
+                    f"the solver's envelope -- moves no heat)")
+        if notes:
+            return cap, f"{cap_why} [independent check BINDS: {'; '.join(notes)}{flag}]"
+        return cap, (f"{cap_why} [independent check: consistent over {len(clean)} surface rows"
+                     f"{flag}]")
+    except Exception as exc:
+        return cap, f"{cap_why} [independent check UNVERIFIED ({type(exc).__name__})]"
+
+
 def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, str]:
     """Total heat the E[log W] allocator resolved, or None with the reason it cannot be used.
 
@@ -961,6 +1089,8 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
             return None, "allocator did not certify the utilisation target"
         total = float(heat.get("total") or 0.0)
         cap, cap_why = live_heat_ceiling(heat)
+        cap, cap_why = verify_heat_ceiling(cap, cap_why, heat, art.get("kelly_surface"),
+                                           base=base)
         # A FILL THAT OVERSHOOTS THE BAR IS CLAMPED, NOT DISCARDED. The heat law FILLS the
         # resolved heat rather than reporting it short (`heat.filled`), and that fill lands a
         # rounding step ABOVE the ceiling it filled to. Measured 2026-09-11: a certified, armed
@@ -2006,6 +2136,147 @@ def bracket_deadline(sleeve: str, window: str | None = None,
     return deadline
 
 
+#: The terminal's order-comment bound ("DW" + 27), mirrored by `gateway.COMMENT_MAX`, which is
+#: where it was measured. Kept here so the tag is built by the same pure code CI covers.
+SLEEVE_TAG_MAX = 29
+#: Hex digits of the name's hash a tag carries when the name does not fit the bound. Computed:
+#: 8 hex digits = 32 bits, so the birthday probability of any collision among n over-long names
+#: is about n^2 / 2^33 -- 2.9e-05 at 500 names -- and it leaves 29 - 8 - 1 = 20 characters of
+#: readable prefix before the "~". Not a sizing number: it names an order, never sizes one.
+SLEEVE_TAG_HASH = 8
+
+
+def sleeve_tag(name: str, limit: int = SLEEVE_TAG_MAX) -> str:
+    """The order comment (and position tag) for a sleeve: `DW<name>`, unique per name.
+
+    TRUNCATION WAS A COLLISION (measured 2026-10-06 on LIVE 2d61e69a1). `f"DW{name}"[:29]` kept
+    the first 27 characters of the name, and 34 of the 40 LIVE sleeve names are longer than
+    that; five groups of them share the same first 27 characters, so two sleeves on one symbol
+    read each other's positions as their own (`_sleeve_positions`), refused each other's bars
+    (`bar_already_traded`) and pooled their closed trades under one ledger stem. A name that
+    fits is unchanged. A longer one keeps its first characters, so a human and every prefix
+    test (`DWgold_`) still read it, and ends in `~` plus 8 hex digits of the full name's SHA-1:
+    distinct names get distinct tags (a 32-bit collision, checked against the roster by the
+    tests), and the tag stays inside the terminal's bound.
+    """
+    full = f"DW{name}"
+    if len(full) <= limit:
+        return full
+    digest = hashlib.sha1(name.encode("utf-8")).hexdigest()[:SLEEVE_TAG_HASH]
+    return full[: limit - SLEEVE_TAG_HASH - 1] + "~" + digest
+
+
+def legacy_sleeve_tag(name: str, limit: int = SLEEVE_TAG_MAX) -> str:
+    """The tag positions opened before 2026-10-06 carry: the plain 29-character truncation.
+    Read only, so a position the old code opened is still recognised and closed by its sleeve."""
+    return f"DW{name}"[:limit]
+
+
+def sleeve_tags(name: str, limit: int = SLEEVE_TAG_MAX) -> frozenset[str]:
+    """Every tag this sleeve's positions may carry: the current one and the legacy one."""
+    return frozenset({sleeve_tag(name, limit), legacy_sleeve_tag(name, limit)})
+
+
+def sleeve_from_tag(comment: str, names: Iterable[object] | None, unattributed: str = "",
+                    limit: int = SLEEVE_TAG_MAX) -> str:
+    """The full roster name a venue comment belongs to, read against the roster in hand.
+
+    The current tag resolves exactly. A legacy tag resolves only when ONE roster name carries
+    it; an ambiguous legacy tag (two names sharing their first 27 characters) and a comment no
+    roster name owns fall back to `sleeve_from_comment`, the stem, which is what was recorded
+    before -- never a guess between two sleeves.
+    """
+    roster = [str(n) for n in (names or []) if n]
+    for n in roster:
+        if comment == sleeve_tag(n, limit):
+            return n
+    legacy = [n for n in roster if comment == legacy_sleeve_tag(n, limit)]
+    if len(legacy) == 1:
+        return legacy[0]
+    return sleeve_from_comment(comment, unattributed)
+
+
+def book_shares(joins: Iterable[tuple[str, str | None]]) -> dict[str, int]:
+    """How many roster sleeves share each sleeve's allocator book key, by sleeve name.
+
+    A BOOK KEY IS NOT A SLEEVE (measured 2026-10-06 on LIVE 2d61e69a1). `gateway._book_key` joins
+    a row to the optimiser's book by its exact name, then by the name with `_vN` stripped, then
+    by the derived `SYMBOL_family_selector`. The two fallbacks are many-to-one: the live
+    `gold_afternoon_v2/_v3/_v4` all join `gold_afternoon`, and two parameterisations of one
+    family on one symbol join the same derived key. Each row then took the WHOLE fraction the
+    optimiser solved for the key, so three rows deployed three times the h it chose -- the
+    allocator's sovereignty (2026-09-29) broken upward by a join, with no evidence behind the
+    extra two. The fraction belongs to the key, so it is divided among the rows that share it:
+    the total deployed is exactly the solved h, which is neither smaller nor larger than the
+    optimiser asked for. A row that matched its key EXACTLY owns it and is never divided; it is
+    counted against nobody, and nobody against it.
+
+    `joins` is (sleeve name, book key or None) per roster row. The result maps each row that
+    joined to the number of rows sharing its key (1 = sole owner).
+    """
+    rows = [(str(n), k) for n, k in joins if k is not None]
+    counts: dict[str, int] = {}
+    for n, k in rows:
+        if n != k:
+            counts[k] = counts.get(k, 0) + 1
+    return {n: (1 if n == k else counts[k]) for n, k in rows}
+
+
+def book_carrier_order(joins: Iterable[tuple[str, str | None]],
+                       evidence: Mapping[str, Sequence[float]] | None = None
+                       ) -> dict[str, list[str]]:
+    """Per book key, the rows that may carry it, BEST-EVIDENCED FIRST.
+
+    WHY EVIDENCE AND NOT ROSTER ORDER (#261 re-audit, 2026-10-06). `book_carriers` handed a
+    shared key's whole h to the first row in roster order -- an accident of how `sleeves.json`
+    was written, so the h could ride on the row with the least record behind it while a sibling
+    with forty live trades carried zero. The order is now the evidence the gateway holds per
+    row, compared lexicographically, larger first: `evidence[name]` is a tuple such as
+    (live closed trades, forward/shadow trades, admission streak) -- the gateway passes exactly
+    that (`sleeve_live_n`, `shadow_n`, `admit_streak`). A row with no evidence entry ranks as
+    all zeros. TIES BREAK BY ROSTER ORDER, so with no evidence at all the order is exactly the
+    old one and the choice is stable pass to pass.
+
+    An EXACT owner (name == key) is first on its key whatever the evidence: it owns the key by
+    name, and a `_v2` that falls back onto it is the same solved h. The list after the first
+    is the FALLBACK order the gateway walks when the carrier's window or entry does not fire.
+    """
+    rows = [(str(n), k) for n, k in joins if k is not None]
+    ev = dict(evidence or {})
+    order: dict[str, list[tuple[int, str]]] = {}
+    for i, (n, k) in enumerate(rows):
+        order.setdefault(k, []).append((i, n))
+
+    def rank(item: tuple[int, str], key: str) -> tuple:
+        i, n = item
+        e = tuple(-float(x) for x in (ev.get(n) or ()))
+        return (0 if n == key else 1, e, i)
+
+    return {k: [n for _, n in sorted(v, key=lambda it, k=k: rank(it, k))]
+            for k, v in order.items()}
+
+
+def book_carriers(joins: Iterable[tuple[str, str | None]],
+                  evidence: Mapping[str, Sequence[float]] | None = None) -> dict[str, str]:
+    """For each row on a SHARED fallback key, the one row that carries the key's whole h.
+
+    SNAP THE KEY'S TOTAL, THEN SPLIT (audit of PR #261, 2026-10-06). `book_shares` divided h by
+    the number of rows BEFORE the lot snap, so three rows at h/3 could each fall under the
+    venue's minimum lot and deploy nothing -- the solved h lost to rounding three times over. The
+    key's h is deployed ONCE, at its full size, through ONE row: one snap on the total, and the
+    total deployed is exactly the solved h. The other rows on that key carry zero and name their
+    carrier, so attribution stays readable. A row that matched its key EXACTLY owns it and is
+    its own carrier, as before.
+
+    THE CARRIER IS THE BEST-EVIDENCED ROW (`book_carrier_order`), not the first in roster order;
+    with no `evidence` the two coincide. This is the PRE-PASS answer -- the gateway walks the
+    same order and hands h to the next row when this one's window or entry does not fire.
+    """
+    rows = [(str(n), k) for n, k in joins if k is not None]
+    order = book_carrier_order(rows, evidence)
+    return {n: order[k][0] for n, k in rows}
+
+
 def sleeve_from_comment(comment: str, unattributed: str = "") -> str:
     """The sleeve a `DW<name>` order comment names; `unattributed` when the label did not
     survive the broker's round trip. Brokers do rewrite comments, so a caller that must record
@@ -2331,7 +2602,8 @@ def signal_with_levels(g: object, stop: float, target: float) -> object:
         return SimpleNamespace(**d)
 
 
-def bar_already_traded(deals: object, tag: str, entry_in: int = 0) -> tuple[int, str] | None:
+def bar_already_traded(deals: object, tag: str | frozenset[str] | set[str],
+                       entry_in: int = 0) -> tuple[int, str] | None:
     """(deal ticket, ISO time) of the first ENTRY deal carrying this sleeve's order comment among
     `deals`, or None. The venue's own record of whether this sleeve already opened on a bar.
 
@@ -2343,11 +2615,12 @@ def bar_already_traded(deals: object, tag: str, entry_in: int = 0) -> tuple[int,
     the venue too. The replay fills once per signal and never re-enters a bar after its stop; a
     second entry on the same bar is a trade the certificate never made.
     """
+    tags = {tag} if isinstance(tag, str) else set(tag)
     for d in deals or []:
         try:
             if int(getattr(d, "entry", -1)) != int(entry_in):
                 continue
-            if str(getattr(d, "comment", "") or "") != tag:
+            if str(getattr(d, "comment", "") or "") not in tags:
                 continue
             t = getattr(d, "time", None)
             iso = (datetime.fromtimestamp(int(t), tz=UTC).isoformat(timespec="seconds")

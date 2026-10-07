@@ -303,7 +303,9 @@ def test_one_current_series_makes_the_whole_state_current(tmp_path: Path) -> Non
               np.array([v for _d, v in series["DTWEXBGS"]], dtype=float))
     doc = macro_state.daily_states(p)
     assert doc["vintage_by_series"]["DTWEXBGS"] == macro_state.VINTAGE_ALFRED
-    assert doc["vintage_by_series"]["VIXCLS"] == "current (look-ahead risk)"
+    # VIXCLS is on a terms hold (dropped at load, 2026-10-07); DGS10 is the still-current series.
+    assert doc["vintage_by_series"]["DGS10"] == "current (look-ahead risk)"
+    assert "VIXCLS" not in doc["vintage_by_series"]
     assert doc["vintage"] == "current (look-ahead risk)"
 
 
