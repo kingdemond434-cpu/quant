@@ -205,6 +205,36 @@
     "threshold": 10,
     "after": "30 days in which 10 or more cases stay UNMEASURED on the box: the battery no longer reaches the controls it claims to test"
    }
+  },
+  "execution_reconcile": {
+   "hypothesis": "Joining the venue's positions, the order door's ledger, the intents and the deal ledger every hour, and drilling the join in shadow against planted partial fills, lost acknowledgements, stopless restarts and duplicate messages, surfaces any execution or accounting inconsistency as a named BREAK before it compounds.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "live.breaks",
+    "better": "down",
+    "organ": "report:EXECUTION_RECONCILE.json"
+   },
+   "falsifier": {
+    "metric": "drill.passed",
+    "op": "<=",
+    "threshold": 7,
+    "after": "any reading in which fewer than 8 of the drill's scenarios pass: the join no longer catches the breaks it was built to catch and its live verdict means nothing"
+   }
+  },
+  "account_state": {
+   "hypothesis": "Publishing cash, used and free margin, margin level, open financing and every open position into one self-checked account record every hour gives the reconciliation and the dashboard an authoritative ledger instead of a balance and a position count.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "ledger_check.equity_minus_balance_floating_swap",
+    "better": "down",
+    "organ": "report:../data/account_state.json"
+   },
+   "falsifier": {
+    "metric": "ledger_check.equity_minus_balance_floating_swap",
+    "op": ">=",
+    "threshold": 1,
+    "after": "30 days in which the record disagrees with itself by a euro or more: the fields are not one ledger and the reconciliation cannot trust them"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

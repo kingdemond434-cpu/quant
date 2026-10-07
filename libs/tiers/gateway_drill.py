@@ -158,8 +158,13 @@ def _jsonl(p: Path) -> list[dict[str, Any]]:
         return []
 
 
-def run_fault(fault: str, *, desk: Path = DESK) -> dict[str, Any]:
-    """One fault against the real gateway in a child process rooted in a temp directory."""
+def run_fault(fault: str, *, desk: Path = DESK, with_ledgers: bool = False) -> dict[str, Any]:
+    """One fault against the real gateway in a child process rooted in a temp directory.
+
+    `with_ledgers` also returns the sandbox's own order-door ledger and intent rows (under
+    `observed.ledgers`), read before the temp directory is removed -- the execution
+    reconciliation (`desks/mt5/research/execution_reconcile.py`) joins them exactly as it joins
+    the box's. Off by default, so the CHAOS artifact does not carry them."""
     with tempfile.TemporaryDirectory(prefix="gw_drill_") as tmp:
         root = Path(tmp)
         (root / "data").mkdir()
@@ -186,6 +191,9 @@ def run_fault(fault: str, *, desk: Path = DESK) -> dict[str, Any]:
         obs["intents"] = len(_jsonl(root / "data" / "order_intents.jsonl"))
         obs["decisions"] = [r.get("reason") for r in
                             _jsonl(root / "data" / "decision_ledger.jsonl")]
+        if with_ledgers:
+            obs["ledgers"] = {"door": _jsonl(root / "data" / "order_door_ledger.jsonl"),
+                              "intents": _jsonl(root / "data" / "order_intents.jsonl")}
     if obs.get("import_exc"):
         return {"fault": fault, "status": "UNMEASURED",
                 "why": f"gateway did not import: {obs['import_exc']}"}

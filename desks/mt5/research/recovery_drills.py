@@ -46,6 +46,7 @@ FORECAST = REPORTS / "FORECAST_CONTRACT.json"
 REPLAY = REPORTS / "STATE_REPLAY_PARITY.json"
 RELEASE = DATA / "release_identity.json"
 ADVERSARIAL = REPORTS / "ADVERSARIAL_RISK.json"
+RECONCILE = REPORTS / "EXECUTION_RECONCILE.json"
 ACCOUNT = DATA / "account_state.json"
 STALL = (DATA / "stall_watch.json", ROOT / "data" / "stall_watch.json")
 
@@ -235,13 +236,48 @@ def _account(now: datetime) -> dict[str, Any]:
     doc, miss = _artifact(ACCOUNT, 1.0, now)
     if miss:
         return miss
-    have = set(doc or {}) | set((doc or {}).get("account") or {})
-    lacking = [f for f in ACCOUNT_FIELDS if f not in have]
+    d = dict((doc or {}).get("account") or {}) | dict(doc or {})
+    # PRESENT AND MEASURED, not merely a key: a null margin is the field the ledger lacks.
+    lacking = [f for f in ACCOUNT_FIELDS if d.get(f) is None]
     if lacking:
         return _row(FAIL, "data/account_state.json",
                     f"account snapshot lacks {lacking}: positions, used margin and financing "
                     "are not in one authoritative ledger")
-    return _row(PASS, "data/account_state.json", "balance, equity, margin, swap and positions")
+    if not isinstance(d.get("positions"), list):
+        return _row(FAIL, "data/account_state.json", "positions is not a list of positions")
+    lc = d.get("ledger_check") or {}
+    if lc.get("consistent") is False:
+        return _row(FAIL, "data/account_state.json",
+                    f"equity disagrees with balance + floating + swap by "
+                    f"{lc.get('equity_minus_balance_floating_swap')}")
+    return _row(PASS, "data/account_state.json",
+                f"balance, equity, margin, swap and {len(d['positions'])} position(s), "
+                f"self-consistent")
+
+
+def _reconciliation(now: datetime) -> dict[str, Any]:
+    """ARCH-06: positions vs the door ledger vs the intents, drilled and live."""
+    doc, miss = _artifact(RECONCILE, 3.0, now)
+    if miss:
+        return miss
+    d = doc or {}
+    dr, lv = d.get("drill") or {}, d.get("live") or {}
+    ev = "reports/EXECUTION_RECONCILE.json"
+    if dr.get("verdict") == "FAIL":
+        bad = [s.get("scenario") for s in dr.get("scenarios") or [] if s.get("verdict") == "FAIL"]
+        return _row(FAIL, ev, f"the reconciliation drill missed {bad}")
+    if lv.get("verdict") == "BREAKS":
+        kinds = [f.get("check") for f in lv.get("findings") or []
+                 if f.get("severity") == "BREAK"]
+        return _row(FAIL, ev, f"{lv.get('breaks')} live ledger break(s): {kinds[:6]}")
+    if dr.get("verdict") != "PASS":
+        return _row(UNMEASURED, ev, f"drill {dr.get('verdict')}")
+    if lv.get("verdict") != "RECONCILED":
+        return _row(UNMEASURED, ev, f"drill {dr.get('passed')}/{dr.get('n')} passed in shadow; "
+                                    f"the live join is {lv.get('verdict')} "
+                                    f"(absent {lv.get('absent')})")
+    return _row(PASS, ev, f"drill {dr.get('passed')}/{dr.get('n')}; live positions, door ledger "
+                          f"and intents reconcile ({lv.get('rows')})")
 
 
 def _resources(now: datetime) -> dict[str, Any]:
@@ -351,6 +387,8 @@ DRILLS: tuple[tuple[str, str, Callable[[datetime], dict[str, Any]]], ...] = (
      lambda n: _ops_component("terminal_health", n, "terminal")),
     ("reboot", "box reboot and recovery", _reboot),
     ("account_ledger", "authoritative positions, cash, margin, financing", _account),
+    ("reconciliation", "positions vs deals vs the internal ledger: partial fills, missing "
+     "acks, restarts, duplicate messages", _reconciliation),
     ("reproducibility", "reproduce a decision from its inputs", _replay),
     ("secrets", "secrets never published",
      _ci("tests/ops/test_live_infrastructure_is_not_published.py",

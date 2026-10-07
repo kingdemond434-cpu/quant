@@ -30,9 +30,11 @@ papered over with a stale number presented as current.
 from __future__ import annotations
 
 import json
+import math
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "desks" / "mt5" / "data" / "account_state.json"
@@ -40,6 +42,94 @@ sys.path.insert(0, str(ROOT / "desks" / "mt5"))
 if str(ROOT) not in sys.path:  # libs.ops.mt5_readonly (ARCH-12)
     sys.path.insert(0, str(ROOT))
 from research.mt5_session import attach_or_initialize  # noqa: E402
+
+#: Fields copied from each open position (MT5 `TradePosition`). The comment is the sleeve tag
+#: the gateway writes, and the ticket is the order that opened it -- what the reconciliation
+#: (`desks/mt5/research/execution_reconcile.py`) joins to the order door's ledger.
+POSITION_FIELDS = ("ticket", "symbol", "type", "volume", "price_open", "sl", "tp", "profit",
+                   "swap", "magic", "comment", "time", "identifier")
+
+
+def _f(x: Any, nd: int = 2) -> float | None:
+    """A finite rounded float, or None: a non-number never reaches the ledger as a number."""
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return None
+    return round(v, nd) if math.isfinite(v) else None
+
+
+def _position(p: Any) -> dict[str, Any]:
+    row: dict[str, Any] = {}
+    for k in POSITION_FIELDS:
+        v = getattr(p, k, None)
+        if k in ("ticket", "type", "magic", "time", "identifier"):
+            try:
+                row[k] = int(v) if v is not None else None
+            except (TypeError, ValueError):
+                row[k] = None
+        elif k in ("symbol", "comment"):
+            row[k] = str(v) if v is not None else None
+        else:
+            row[k] = _f(v, 8 if k in ("price_open", "sl", "tp", "volume") else 2)
+    return row
+
+
+def build_record(info: Any, deals: Any, positions: Any, now: datetime) -> dict[str, Any]:
+    """The account ledger record: cash, margin, financing and every open position in ONE file.
+
+    THE ACCOUNT LEDGER WAS NOT AUTHORITATIVE (ARCH-06, recovery_drills row `account_ledger`).
+    This published balance, equity, free margin and a position COUNT -- so used margin, the
+    margin level, the swap the book is carrying and which positions are open were in no artifact
+    at all, and nothing could reconcile the venue's positions against the order door's ledger.
+    `margin`, `margin_level`, `swap` (open financing) and `positions` close that; the totals are
+    recomputed from the positions so a reader can check the record against itself
+    (`ledger_check`).
+    """
+    closed = 0.0
+    for d in deals:
+        closed += float(getattr(d, "profit", 0.0) or 0.0)
+        closed += float(getattr(d, "commission", 0.0) or 0.0)
+        closed += float(getattr(d, "swap", 0.0) or 0.0)
+    rows = [_position(p) for p in positions]
+    floating = sum(float(getattr(p, "profit", 0.0) or 0.0) for p in positions)
+    swap_open = sum(float(getattr(p, "swap", 0.0) or 0.0) for p in positions)
+    balance = float(info.balance)
+    equity = float(info.equity)
+    margin = _f(getattr(info, "margin", None))
+    level = _f(getattr(info, "margin_level", None))
+    if level is None and margin:
+        level = round(equity / margin * 100.0, 2)     # MT5's own definition, in percent
+    # equity = balance + floating P&L + open swap (commission is charged at the deal): the
+    # residual is what a reader would otherwise have to discover by hand.
+    residual = round(equity - (balance + floating + swap_open), 2)
+    return {
+        "updated_at": now.isoformat(timespec="seconds"),
+        "source": "ops/publish_account_state.py",
+        "venue": str(getattr(info, "company", "") or "") or None,
+        "server": str(getattr(info, "server", "") or "") or None,
+        # The login is WITHHELD: this file is committed by the box, and a tracked file must never
+        # name the live account (tests/ops/test_live_infrastructure_is_not_published.py). No
+        # reader takes it from here; provenance reads mt5.account_info().login from the terminal.
+        "login_withheld": info.login is not None,
+        "currency": str(info.currency),
+        "balance": round(balance, 2),
+        "equity": round(equity, 2),
+        "margin": margin,
+        "margin_free": round(float(info.margin_free), 2),
+        "margin_level": level,
+        "swap": round(swap_open, 2),
+        "today_pnl": round(closed + floating, 2),
+        "today_closed_pnl": round(closed, 2),
+        "today_floating_pnl": round(floating, 2),
+        "open_positions": len(rows),
+        "positions": rows,
+        "ledger_check": {
+            "equity_minus_balance_floating_swap": residual,
+            "consistent": abs(residual) <= max(0.05, abs(equity) * 1e-4),
+            "rule": "equity == balance + sum(position profit) + sum(position swap)",
+        },
+    }
 
 
 def main() -> int:
@@ -69,31 +159,7 @@ def main() -> int:
     if deals is None or positions is None:
         print("broker history or positions unavailable; previous file left in place")
         return 1
-    closed = 0.0
-    for d in deals:
-        closed += float(getattr(d, "profit", 0.0) or 0.0)
-        closed += float(getattr(d, "commission", 0.0) or 0.0)
-        closed += float(getattr(d, "swap", 0.0) or 0.0)
-    floating = sum(float(getattr(p, "profit", 0.0) or 0.0) for p in positions)
-
-    rec = {
-        "updated_at": now.isoformat(timespec="seconds"),
-        "source": "ops/publish_account_state.py",
-        "venue": str(getattr(info, "company", "") or "") or None,
-        "server": str(getattr(info, "server", "") or "") or None,
-        # The login is WITHHELD: this file is committed by the box, and a tracked file must never
-        # name the live account (tests/ops/test_live_infrastructure_is_not_published.py). No
-        # reader takes it from here; provenance reads mt5.account_info().login from the terminal.
-        "login_withheld": info.login is not None,
-        "currency": str(info.currency),
-        "balance": round(float(info.balance), 2),
-        "equity": round(float(info.equity), 2),
-        "margin_free": round(float(info.margin_free), 2),
-        "today_pnl": round(closed + floating, 2),
-        "today_closed_pnl": round(closed, 2),
-        "today_floating_pnl": round(floating, 2),
-        "open_positions": len(positions),
-    }
+    rec = build_record(info, deals, positions, now)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     tmp = OUT.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(rec, indent=1), encoding="utf-8")

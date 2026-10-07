@@ -964,7 +964,12 @@ CORE_LEGS: frozenset[str] = frozenset({
     "live_calibration_posterior", "constrained_book", "experimental_budget",
     # THE ADVERSARIAL RISK BATTERY (ARCH-05, 2026-10-07) runs just before the scorecard that
     # grades it (`recovery_drills` row `independent_controls`): ~3 s, temp dirs only.
-    "ops_redundancy", "adversarial_risk", "recovery_drills", "forward_evidence_tracker",
+    # THE ACCOUNT LEDGER AND ITS RECONCILIATION (ARCH-06, 2026-10-07), also just before the
+    # scorecard: the publisher writes account_state.json (cash, margin, financing, positions)
+    # on the box and is a no-op where no terminal exists; the reconciliation joins it to the
+    # order door's ledger and the intents and drills the join in shadow.
+    "ops_redundancy", "adversarial_risk", "account_state", "execution_reconcile",
+    "recovery_drills", "forward_evidence_tracker",
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
@@ -5564,6 +5569,12 @@ def main() -> None:
     # order door and margin switch; recovery_drills grades it as `independent_controls`.
     adv = _costed("adversarial_risk", lambda: _producer(
         "adversarial_risk", "research/adversarial_risk.py"))
+    # ARCH-06: the account ledger (repo-level ops/ script, resolved against REPO) and the
+    # positions / door ledger / intents reconciliation, both graded by recovery_drills.
+    acs = _costed("account_state", lambda: _producer(
+        "account_state", "ops/publish_account_state.py"))
+    xrc = _costed("execution_reconcile", lambda: _producer(
+        "execution_reconcile", "research/execution_reconcile.py"))
     rcd = _costed("recovery_drills", lambda: _producer(
         "recovery_drills", "research/recovery_drills.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(
@@ -5810,7 +5821,8 @@ def main() -> None:
                     "kelly_survival": kls,
                     "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
-                    "adversarial_risk": adv, "recovery_drills": rcd,
+                    "adversarial_risk": adv, "account_state": acs,
+                    "execution_reconcile": xrc, "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,
