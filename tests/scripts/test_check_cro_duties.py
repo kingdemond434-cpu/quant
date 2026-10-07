@@ -258,7 +258,7 @@ def test_a_burndown_older_than_two_hours_is_stale_for_d3(tmp_path: Path) -> None
 def test_the_cycle_carries_the_judging_sweep_and_the_d3_d4_d38_extensions() -> None:
     text = (ROOT / "docs" / "cro" / "CRO_CYCLE.md").read_text(encoding="utf-8")
     items = [ln.split("|")[1].strip() for ln in text.splitlines()
-             if ln.startswith("| ") and len(ln.split("|")[1].strip()) == 1]
+             if len(ln) > 4 and ln[:2] == "| " and ln[2] in "abcdefg" and ln[3:5] == " |"]
     assert items == list("abcdefg")
     rows = ccd.duty_rows(text)
     assert "reports/JUDGING_BURNDOWN.json" in rows["D3"]["artifacts"]
