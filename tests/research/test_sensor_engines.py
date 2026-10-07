@@ -76,10 +76,11 @@ def test_lake_series_keeps_the_pit_stamp_and_the_conditioner_reads_it(tmp_path) 
 def test_cell_door_dry_run_and_rollup(tmp_path) -> None:
     got = se.emit_conditioner_cells("ws_test", ["a", "b"], ["US500"], mechanism="m",
                                     falsifier="f", generator="g", sides=(1, -1), dry_run=True,
-                                    data_source="fred:DGS10")
+                                    data_source="mt5:bars")
     assert got["emitted"] == 2 * 1 * 3 * 2
-    # the terms gate fails closed: an unnamed source and a held source emit nothing
-    for src in (None, "yahoo:cboe_indices:^VIX"):
+    # the terms gate fails closed: an unnamed source and a held source emit nothing, and FRED
+    # is held from fitted models (ruling on prohibition (j), 2026-10-07)
+    for src in (None, "yahoo:cboe_indices:^VIX", "fred:DGS10"):
         held = se.emit_conditioner_cells("ws_test", ["a"], ["US500"], mechanism="m",
                                          falsifier="f", generator="g", dry_run=True,
                                          data_source=src)
