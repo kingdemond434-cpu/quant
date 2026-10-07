@@ -80,6 +80,7 @@ LEG_LAYER: dict[str, str] = {
     # places an order, neither sizes one, and both exist only so the prediction layer's verdict
     # is fed the right population and published the moment it exists.
     "fast_admission": "prediction", "canon_publication": "prediction",
+    "attestation_remint": "prediction",
     "lockbox_recert": "prediction",
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
@@ -608,6 +609,7 @@ LEG_LAYER: dict[str, str] = {
     "state_replay_audit": "execution", "why_not_report": "execution",
     "forward_calibration": "prediction",
     "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
+    "clock_accrual": "meta",
     "tier5_acceptance": "meta",
 }
 
