@@ -269,11 +269,11 @@ def resolve_organ(root: Path, organ: Mapping[str, Any],
     if kind == "code":
         rel = str(organ.get("path") or "")
         token = str(organ.get("token") or "")
-        src = text(rel)
-        ok = src is not None and token in src
+        code_src = text(rel)
+        ok = code_src is not None and token in code_src
+        state = "lacks" if code_src is not None else "is absent; lacks"
         return {"ok": ok, "why": (f"{rel} carries `{token}`" if ok else
-                                  f"{rel} {'lacks' if src is not None else 'is absent; lacks'} "
-                                  f"`{token}`")}
+                                  f"{rel} {state} `{token}`")}
     return {"ok": False, "why": f"unknown organ kind {kind!r}"}
 
 
@@ -736,10 +736,10 @@ def registry_open(root: Path, reg: Mapping[str, Any]) -> tuple[bool, str]:
     has_fn = any(isinstance(n, ast.FunctionDef) and n.name == fn for n in tree.body)
     value = None
     for n in tree.body:
-        targets = n.targets if isinstance(n, ast.Assign) else (
-            [n.target] if isinstance(n, ast.AnnAssign) else [])
-        if any(isinstance(t, ast.Name) and t.id == sym for t in targets):
-            value = n.value  # type: ignore[union-attr]
+        if isinstance(n, (ast.Assign, ast.AnnAssign)):
+            targets = n.targets if isinstance(n, ast.Assign) else [n.target]
+            if any(isinstance(t, ast.Name) and t.id == sym for t in targets):
+                value = n.value
     if value is None:
         return False, f"{rel} no longer defines {sym}"
     closed = isinstance(value, (ast.Tuple, ast.Constant)) or (
