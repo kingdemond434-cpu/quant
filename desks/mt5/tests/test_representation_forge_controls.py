@@ -140,8 +140,7 @@ def test_kept_representations_are_charged_once_to_the_shared_lifetime_count(desk
     assert all(k.startswith("representation:") for k in by_fam)
     # A second pass charges only ids the store did not already hold: across both passes the
     # charged total equals the number of distinct stored representations, never more.
-    first_ids = set(json.loads(rf.MANIFEST.read_text("utf-8"))["representations"][i]["id"]
-                    for i in range(report["store"]["n_total"]))
+    first_ids = {r["id"] for r in json.loads(rf.MANIFEST.read_text("utf-8"))["representations"]}
     again = rf.run(budget_s=60.0, max_new=40, inputs=_inputs(series))
     stored = json.loads(rf.MANIFEST.read_text("utf-8"))["representations"]
     assert again["control"]["charged"]["tests_run"] == len({r["id"] for r in stored} - first_ids)
@@ -339,3 +338,11 @@ def test_a_full_pass_publishes_every_new_section(desk):
     manifest = json.loads(rf.MANIFEST.read_text("utf-8"))["representations"]
     assert any(r["family"] == "latent" for r in manifest)
     assert all("control" in r for r in manifest)
+
+
+def test_a_family_whose_ids_sort_last_still_gets_a_share_of_the_budget():
+    ranked = [{"id": f"repr:a{i:03d}", "family": "dynamics", "score": 0.25} for i in range(50)]
+    ranked += [{"id": "repr:zz_link_outcomes", "family": "latent", "score": 0.25}]
+    cut = rf.diverse(ranked, 10)
+    assert len(cut) == 10 and any(r["family"] == "latent" for r in cut)
+    assert rf.diverse(ranked, 10) == cut, "deterministic"
