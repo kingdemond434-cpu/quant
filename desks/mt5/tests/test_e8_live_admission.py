@@ -14,6 +14,7 @@ for path in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, path)
 
 from prop import e8_book  # noqa: E402
+from prop import e8_executor  # noqa: E402
 import admission_integrity  # noqa: E402
 import kelly_survival  # noqa: E402
 
@@ -59,3 +60,35 @@ def test_missing_exclusion_authority_refuses_to_build(tmp_path: Path,
     monkeypatch.setattr(e8_book, "CERT_BOOK", tmp_path / "missing.json")
     with pytest.raises(OSError):
         e8_book.live_admissible([])
+
+
+class _RiskVenue:
+    _by_key = {"XAUUSD": 6102, "AUDCHF": 6103}
+
+    def details(self, symbol: str) -> dict:
+        return {"contractSize": 100 if symbol == "XAUUSD" else 100_000,
+                "currency": "USD" if symbol == "XAUUSD" else "CHF"}
+
+    def quote(self, symbol: str) -> tuple[float, float]:
+        return (4100.0, 4101.0) if symbol == "XAUUSD" else (0.7000, 0.7001)
+
+
+def test_broker_risk_reserves_open_stop_and_both_resting_gold_legs() -> None:
+    venue = _RiskVenue()
+    positions = [{"tradableInstrumentId": 6102, "side": "buy", "qty": 0.1,
+                  "stopLossId": 7}]
+    orders = [{"id": 7, "tradableInstrumentId": 6102, "stopPrice": 4050.0},
+              {"id": 8, "tradableInstrumentId": 6102, "qty": 0.08,
+               "stopPrice": 4120.0, "stopLoss": 4070.0},
+              {"id": 9, "tradableInstrumentId": 6102, "qty": 0.08,
+               "stopPrice": 4070.0, "stopLoss": 4120.0}]
+    risk, why = e8_executor.outstanding_stop_risk(venue, positions, orders)
+    assert risk == pytest.approx(1300.0)  # 500 live downside + 400 per pending leg
+    assert "priced" in why
+
+
+def test_missing_protective_stop_refuses_new_risk() -> None:
+    risk, why = e8_executor.outstanding_stop_risk(
+        _RiskVenue(), [{"tradableInstrumentId": 6102, "side": "buy", "qty": 0.1}], [])
+    assert risk is None
+    assert "no measurable protective stop" in why
