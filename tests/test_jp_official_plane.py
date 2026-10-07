@@ -102,8 +102,8 @@ def test_jquants_parser_reads_the_collector_output_with_its_published_date(tmp_p
                                        "Section": "TSE1st", "ForeignersBalance": 5}]})
     assert A.parse_jquants_investor_types(v1.encode(), A.Ctx())[0].value == 5
     paths = A.Paths(tmp_path / "desk")
-    paths.series.mkdir(parents=True)
-    (paths.series / "jpx_jquants.json").write_bytes(
+    paths.private_series.mkdir(parents=True)              # the collector's PRIVATE store
+    (paths.private_series / "jpx_jquants.json").write_bytes(
         (FIX / "jp_jquants_investor_types.json").read_bytes())
     assert len(A.read_jquants_investor_types(paths)) == len(obs)
 
