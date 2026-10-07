@@ -246,6 +246,47 @@ class Costs:
                    swap_unmeasured=why)
 
 
+def swap_night_quote(meta: dict[str, Any], raw: float,
+                     price: float | None = None) -> tuple[float | None, str | None]:
+    """ONE signed swap value (MT5 sign: positive is a credit) as QUOTE CURRENCY PER LOT for one
+    night, in the unit its swap_mode names, at `price` where the mode is price-linked.
+
+    (value, None) when priced; (None, why) when it cannot be -- an unknown mode, or a mode-5/6
+    rate with no price. Never a points reading of a number whose unit is unknown, never 0.0 for
+    "could not price". The one conversion every reader of `swap_long`/`swap_short` goes through.
+    """
+    try:
+        r = float(raw)
+    except (TypeError, ValueError):
+        return None, f"swap value {raw!r} is not a number"
+    if r == 0.0:
+        return 0.0, None
+    c = Costs.from_symbol({**meta, "swap_long": abs(r), "swap_short": 0.0})
+    if c.swap_unmeasured:
+        return None, c.swap_unmeasured
+    px = float(price) if price is not None else None
+    if c.swap_per_lot_per_price and not (px is not None and px > 0):
+        mode, _src = swap_mode_of(meta)
+        return None, (f"UNMEASURED: swap_mode {mode} is a rate on notional and no price was "
+                      "available to charge it at")
+    q = c.financing(1.0, px if c.swap_per_lot_per_price else None)
+    return (q if r > 0 else -q), None
+
+
+def swap_night_points(meta: dict[str, Any], raw: float,
+                      price: float | None = None) -> tuple[float | None, str | None]:
+    """`swap_night_quote` in POINTS of this symbol (quote / (tick_size x contract)): identical
+    to the raw number on a mode-1 symbol, and the points-equivalent of a percent on mode 5."""
+    q, why = swap_night_quote(meta, raw, price)
+    if q is None:
+        return None, why
+    ts = float(meta.get("tick_size", 0.0) or 0.0)
+    cs = float(meta.get("contract_size", 0.0) or 0.0)
+    if not (ts > 0 and cs > 0):
+        return None, "UNMEASURED: tick_size/contract_size missing, no point to express it in"
+    return q / (ts * cs), None
+
+
 @lru_cache(maxsize=1)
 def _recorded_swap_modes() -> dict[str, int]:
     """symbol -> swap_mode from the contract-terms reading `carry_state.json` resolved. {} if absent."""
