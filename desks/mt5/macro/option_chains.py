@@ -964,8 +964,18 @@ def run(*, now: datetime, fetch: bool = True, fetcher: Callable[[str], tuple[Any
             ledger_out = led.append(obs, now=now)
         se.publish(ENGINE, contracts, root=contracts_root,
                    extra={"measure": MEASURE, "dealer_convention": DEALER_CONVENTION})
+    # OMST (DATA-22): the unusual-options ranking over the same archive; state only while the
+    # source is HELD (the cell door is asked through the same terms verdict and says so)
+    term = terms_status()
+    try:
+        from macro import unusual_options as uo
+        unusual: dict[str, Any] = uo.build(
+            data_dir, {p.etf: (per.get(p.etf) or {}).get("mapping", {}).get("mt5_symbol")
+                       for p in chosen}, terms=term, series_root=lake_root, dry_run=dry_run)
+    except Exception as exc:                             # pragma: no cover - organ guard
+        unusual = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
     doc = {"engine": ENGINE, "at": _iso(now), "dry_run": dry_run, "source": SOURCE,
-           "terms": terms_status(),
+           "terms": term, "unusual_options": unusual,
            "measure": MEASURE, "dealer_convention": DEALER_CONVENTION,
            "symbols": per, "contracts": contracts,
            "verdicts": {v: sum(1 for c in contracts if c.get("verdict") == v)
