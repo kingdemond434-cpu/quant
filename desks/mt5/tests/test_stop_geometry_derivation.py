@@ -215,35 +215,47 @@ def test_derive_reports_the_dry_runs_case_as_held(monkeypatch) -> None:
     assert doc["ENTRY_DRIFT_TOL_FRAC"]["adopt"] is False
     assert doc["adopted"] == {"MIN_STOP_SPREAD_MULT": 3.0, "ENTRY_DRIFT_TOL_FRAC": 0.25}
     assert doc["held"] == ["ENTRY_DRIFT_TOL_FRAC"]
+    # ONE missed-growth line per constant, every pass: the hold billed, the non-hold a zero.
+    lines = {x["constant"]: x for x in doc["missed_growth"]}
+    assert lines["ENTRY_DRIFT_TOL_FRAC"]["verdict"] == "COSTS_GROWTH"
+    assert lines["ENTRY_DRIFT_TOL_FRAC"]["value"] == pytest.approx(-1.7e-4)
+    assert lines["ENTRY_DRIFT_TOL_FRAC"]["direction"] == "down"
+    assert lines["MIN_STOP_SPREAD_MULT"]["verdict"] == "NOT_BINDING"
+    assert lines["MIN_STOP_SPREAD_MULT"]["value"] == 0.0
 
 
-def test_missed_growth_bills_every_held_move(tmp_path, monkeypatch) -> None:
-    """The report's consumer: the daily missed-growth organ reads the gate and bills each hold."""
+def test_missed_growth_carries_every_held_move(tmp_path, monkeypatch) -> None:
+    """The report's consumer: the daily missed-growth organ reads the gate's published lines."""
     import json
     from datetime import UTC, datetime
 
     import missed_growth as mg
 
-    from libs.portfolio.rails import rail
-
-    r = rail("stop_geometry_robustness_gate")
-    assert r.measure in mg.MEASURES
     path = tmp_path / "STOP_GEOMETRY_DERIVATION.json"
     monkeypatch.setattr(mg, "STOP_GEOMETRY", path)
-    assert mg.measure_stop_geometry_gate(r, {}, {})["verdict"] == mg.UNMEASURED
-    held = sgd.robustness_gate(_solved(0.05, 0.25, n=10, mean=-0.3, sd=1.1, delta=2e-4),
-                               0.9, 0.25)
+    assert mg.published_gate_lines()["verdict"] == mg.UNMEASURED      # absent: never a zero
+    at = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    held = sgd.robustness_gate(_solved(0.9, 0.25, n=10, mean=0.9, sd=1.1, delta=2e-4),
+                               0.05, 0.25)                             # the upward thin move
     kept = sgd.robustness_gate(_solved(3.0, 3.0, n=0, mean=None, sd=None), 3.0, 3.0)
-    doc = {"generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-           "ENTRY_DRIFT_TOL_FRAC": held, "MIN_STOP_SPREAD_MULT": kept}
+    doc = {"generated_at": at, "missed_growth": [
+        sgd.gate_missed_growth_line("ENTRY_DRIFT_TOL_FRAC", held["gate"], at),
+        sgd.gate_missed_growth_line("MIN_STOP_SPREAD_MULT", kept["gate"], at)]}
     path.write_text(json.dumps(doc), "utf-8")
-    m = mg.measure_stop_geometry_gate(r, {}, {})
-    assert m["verdict"] == mg.COSTS and m["sample"] is True
+    m = mg.published_gate_lines()
+    assert m["verdict"] == mg.COSTS and m["n_held"] == 1
     assert m["value_logw_per_day"] == pytest.approx(-2e-4)
-    assert m["by_direction"] == {"up": 0, "down": 1}
-    doc["ENTRY_DRIFT_TOL_FRAC"] = kept
+    assert m["by_direction"] == {"up": 1, "down": 0}
+    doc["missed_growth"] = [sgd.gate_missed_growth_line("ENTRY_DRIFT_TOL_FRAC", kept["gate"], at)]
     path.write_text(json.dumps(doc), "utf-8")
-    assert mg.measure_stop_geometry_gate(r, {}, {})["verdict"] == mg.NOT_BINDING
+    assert mg.published_gate_lines()["verdict"] == mg.NOT_BINDING
     doc["generated_at"] = "2026-01-01T00:00:00+00:00"           # stale: the gate's state unknown
     path.write_text(json.dumps(doc), "utf-8")
-    assert mg.measure_stop_geometry_gate(r, {}, {})["verdict"] == mg.UNMEASURED
+    assert mg.published_gate_lines()["verdict"] == mg.UNMEASURED
+
+
+def test_the_daily_missed_growth_run_publishes_the_gate(tmp_path, monkeypatch) -> None:
+    import missed_growth as mg
+    monkeypatch.setattr(mg, "STOP_GEOMETRY", tmp_path / "absent.json")
+    doc = mg.run(write=False)
+    assert "stop_geometry_robustness_gate" in doc["published_gate_lines"]

@@ -167,14 +167,6 @@ RAILS: tuple[Rail, ...] = (
     Rail("e8_unowned_position_block", "integrity",
          "prop.e8_gold._retry_failed_legs <- position_since_failure",
          "measure_e8_unowned_block"),
-    # THE STOP-GEOMETRY ROBUSTNESS GATE (audit of PR #191, 2026-10-07). The hourly re-solve of
-    # MIN_STOP_SPREAD_MULT / ENTRY_DRIFT_TOL_FRAC adopts a moved value only when the live
-    # evidence that moved it clears a sample floor and a two-SE confidence test, in EITHER
-    # direction. A held move keeps today's value; the report publishes the solve's claimed
-    # gain for it, and missed_growth bills that claim here so the hold is never free.
-    Rail("stop_geometry_robustness_gate", "gate",
-         "research/stop_geometry_derivation.robustness_gate -> STOP_GEOMETRY_DERIVATION.json",
-         "measure_stop_geometry_gate"),
 )
 
 _CACHE: dict[str, Any] = {"mtime": None, "doc": {}}

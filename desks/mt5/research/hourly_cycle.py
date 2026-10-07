@@ -5560,8 +5560,8 @@ def main() -> None:
     # THE STOP GEOMETRY ON THE SAME SOLVE (2026-09-30): MIN_STOP_SPREAD_MULT and
     # ENTRY_DRIFT_TOL_FRAC re-derived from the bars' spreads, the entry drift and the live edge.
     # A report only -- the money path carries the cited values. Each value passes a two-sided
-    # robustness gate (adopt/adopted_value); missed_growth's `stop_geometry_robustness_gate`
-    # rail reads the report and bills every held move.
+    # robustness gate (adopt/adopted_value); missed_growth (daily cycle) reads the report and
+    # carries every held move's published missed-growth line into MISSED_GROWTH.json.
     sgd = _costed("stop_geometry_derivation", lambda: _producer(
         "stop_geometry_derivation", "research/stop_geometry_derivation.py"))
     xbg = _costed("experimental_budget", lambda: _producer(

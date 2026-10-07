@@ -54,9 +54,8 @@ An absent input is UNMEASURED, never a default: the report names what it needs.
 
 A SOLVED VALUE IS NOT AN ADOPTED ONE. `robustness_gate` (two-sided: a live-sample floor and a
 confidence test on the evidence that moved the answer) sets `adopt` and `adopted_value` per
-constant; a held move leaves today's value and publishes its claimed gain under
-`gate.missed_growth`, which `missed_growth.measure_stop_geometry_gate` (daily cycle) bills
-against the `stop_geometry_robustness_gate` rail.
+constant; a held move leaves today's value and publishes its claimed gain as a missed-growth
+line (`missed_growth` rows), which `missed_growth.run` (daily cycle) reads into MISSED_GROWTH.json.
 
     python desks/mt5/research/stop_geometry_derivation.py   # writes the report below
     -> desks/mt5/reports/STOP_GEOMETRY_DERIVATION.json
@@ -339,8 +338,11 @@ def _posterior_edge(prior: float, sleeve_names: set[str],
 #: a thin-evidence move toward MORE aggression is held exactly as one toward less. A move the
 #: live ledger did not cause (full solve == prior-only solve) is the certified prior's answer,
 #: already significant against today's value on the solve's own paired SEs, and is adopted.
-#: Every hold publishes the solve's claimed gain as its missed-growth line (`gate.missed_growth`),
-#: which missed_growth.measure_stop_geometry_gate bills against the rail of the same name.
+#: Every hold publishes the solve's claimed gain as its missed-growth line (`gate.missed_growth`,
+#: and one `missed_growth` row per constant in `forward_slot_ranker`'s published-line shape),
+#: which missed_growth.run carries into MISSED_GROWTH.json. PUBLISHED, never appended to
+#: data/missed_growth.jsonl: that ledger is keyed by `libs.portfolio.rails.RAILS`, a sealed
+#: (immutable-evaluator) file this gate is not yet registered in.
 MIN_LIVE_N = 30
 Z_ADOPT = 2.0
 
@@ -406,6 +408,38 @@ def robustness_gate(res: dict[str, Any], prior_value: float | None,
     return _out(True, "ADOPT",
                 f"{n} live trades, mean {mean:g}R, {z:.2f} SEs from the prior's {prior_r:g}R: "
                 f"the evidence carries the move to {derived:g}")
+
+
+#: The name the gate's lines carry, and would carry as a registered rail.
+GATE_RAIL = "stop_geometry_robustness_gate"
+
+
+def gate_missed_growth_line(constant: str, gate: dict[str, Any], at: str) -> dict[str, Any]:
+    """One missed-growth line per constant, every pass: a hold is billed at the solve's claimed
+    gain (negative value = growth forgone), a non-hold is a measured NOT_BINDING zero -- silence
+    is not a measurement. The claim is made on the evidence the gate found too thin, so it is an
+    upper reading of the cost, billed in full rather than discounted."""
+    line: dict[str, Any] = {
+        "day": at[:10], "at": at, "rail": f"{GATE_RAIL}:{constant}", "kind": "opportunity_cost",
+        "units": "E[log W] per day (the solve's own objective)", "constant": constant,
+        "gate_verdict": gate.get("verdict"),
+        "why": "the claimed gain of a re-solved stop-geometry value the robustness gate held; "
+               "PUBLISHED, never appended to data/missed_growth.jsonl and never executed -- "
+               "the gate registers no rail (libs/portfolio/rails.py is sealed)"}
+    if not gate.get("held"):
+        line.update(value=0.0, verdict="NOT_BINDING")
+        return line
+    mg = gate.get("missed_growth") or {}
+    claim = mg.get("claimed_delta_elog_per_day")
+    line.update({k: mg.get(k) for k in ("held_value", "refused_value", "direction")})
+    if not isinstance(claim, (int, float)):
+        line.update(value=None, verdict="UNMEASURED",
+                    unmeasured="the solve published no claimed gain for the held value")
+    else:
+        forgone = max(0.0, float(claim))
+        line.update(value=round(-forgone, 12),
+                    verdict="COSTS_GROWTH" if forgone > 0 else "NOT_BINDING")
+    return line
 
 
 def _activity(rng: np.random.Generator, rate: float, slots: int) -> np.ndarray:
@@ -635,6 +669,8 @@ def derive() -> dict[str, Any]:
         doc[k].update(robustness_gate(doc[k], alt.get("derived"), TODAY[k]))
     doc["adopted"] = {k: doc[k]["adopted_value"] for k in TODAY}
     doc["held"] = sorted(k for k in TODAY if doc[k]["gate"]["held"])
+    doc["missed_growth"] = [gate_missed_growth_line(k, doc[k]["gate"], doc["generated_at"])
+                            for k in TODAY]
     states = [doc[k].get("status", "") for k in ("MIN_STOP_SPREAD_MULT", "ENTRY_DRIFT_TOL_FRAC")]
     # SOLVED covers "today's value is optimal within noise": the solve ran and answered.
     solved = {"OK", "TODAY_OPTIMAL_WITHIN_NOISE"}
