@@ -965,7 +965,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
-    "ops_redundancy", "forward_evidence_tracker",
+    "ops_redundancy", "recovery_drills", "forward_evidence_tracker",
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
@@ -5552,6 +5552,8 @@ def main() -> None:
     #   experimental_budget         the principal's override sleeves in their own ledger/budget
     #   ops_redundancy              journal replay, off-box restore drill, terminal health,
     #                               independent price cross-check, duplicate-position count
+    #   recovery_drills             one PASS/FAIL/UNMEASURED row per named failure mode, graded
+    #                               from the drill artifacts above (CHAOS, offsite restore, ...)
     #   forward_evidence_tracker    survival / degradation / calibration / breadth / cost /
     #                               capacity / hit rate as an append-only hourly series
     lcp = _costed("live_calibration_posterior", lambda: _producer(
@@ -5568,6 +5570,8 @@ def main() -> None:
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
         "ops_redundancy", "research/ops_redundancy.py"))
+    rcd = _costed("recovery_drills", lambda: _producer(
+        "recovery_drills", "research/recovery_drills.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(
         "forward_evidence_tracker", "research/forward_evidence_tracker.py"))
     # THE ARENA AND THE CLOCK'S CAPITAL (Tier-1 AP5 and P18; 2026-09-09). The arena records a
@@ -5812,6 +5816,7 @@ def main() -> None:
                     "kelly_survival": kls,
                     "decay_monitor": dmo, "tradability_health": thl, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
+                    "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,

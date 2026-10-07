@@ -237,6 +237,7 @@ LEG_LAYER: dict[str, str] = {
     # forward posterior) beside the demotion organ whose roster it reads: portfolio.
     "tradability_health": "portfolio",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
+    "recovery_drills": "meta",
     "forward_evidence_tracker": "meta",
     # The box-state freshness fence and the desk health report, hourly before publication.
     "box_state_freshness": "meta", "desk_health": "meta",
