@@ -331,8 +331,10 @@ def test_every_collector_fetch_path_is_behind_the_terms_gate(
             # on this host it still sends nothing.
             assert r["id"] == "jpx_jquants" and len(sent) == before, r["id"]
         elif state not in ("confirmed", "ungoverned"):
-            # robots.txt included: a refused / to_confirm row sends NOTHING at all
-            assert len(sent) == before and rec["status"] == "BLOCKED_ON_TERMS", r["id"]
+            # robots.txt included: a refused / to_confirm row sends NOTHING at all (a paid row
+            # is refused by rule one door earlier, #201)
+            want = "BLOCKED_PAID" if str(r.get("access")) == "paid" else "BLOCKED_ON_TERMS"
+            assert len(sent) == before and rec["status"] == want, r["id"]
     blocked = {r["id"] for r in rows
                if C._terms_state(r, C._resolve_url(r))[0] not in ("confirmed", "ungoverned")}
     assert {"krx_open_api", "krx_derivatives_stats", "hkex_data", "bok_ecos",
