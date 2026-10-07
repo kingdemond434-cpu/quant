@@ -2424,6 +2424,61 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
 
+
+# A HUNT16 CELL, JUDGEABLE BY THE ONE DOOR THAT MINTS (2026-09-30). The hunt16 population
+# (`research/run_hunt16.FAMILIES`) is resolved by the forward engine (`executables.resolve_family`
+# checks it first) but NOT by the sealed gauntlet: `build_cell` looks in `families` and in this dict
+# and nowhere else, and it always calls `fn(h1, side=1, ...)`. A hunt16 certificate is also more
+# than its family -- `AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY` is the family's SHORT
+# signals, kept only at the window's signal hour (17 for `afternoon`) and only on days the causal
+# prior-NY-session label calls NORMAL_DAY (`run_hunt12.day_states`). None of those three were ever
+# recorded as params, which is why `certificate_hygiene` evicted that certificate.
+#
+# This family carries all three AS PARAMS, so a re-judged cell is executable by construction and
+# the certificate it may earn names exactly what it trades. It DELEGATES to the hunt16 code and to
+# the same `day_states` the hunt used -- nothing is re-implemented, so the judged signals are the
+# hunt's signals. `direction` rides in params because the gauntlet always passes `side=1`; when
+# `direction` is given it wins, so the forward engine and the judge agree whichever side they pass.
+def family_hunt16_cell(
+    df: pd.DataFrame,
+    *,
+    side: int = 1,
+    base_family: str = "",
+    direction: str | int | None = None,
+    signal_at: int | None = None,
+    day_state: str | None = None,
+) -> list[Signal]:
+    try:
+        from research.run_hunt12 import day_states as _day_states
+        from research.run_hunt16 import FAMILIES as _H16
+    except ImportError:                                           # pragma: no cover - path only
+        from run_hunt12 import day_states as _day_states  # type: ignore[no-redef]
+        from run_hunt16 import FAMILIES as _H16  # type: ignore[no-redef]
+    fn = _H16.get(str(base_family))
+    if fn is None:
+        return []
+    if direction is not None:
+        d = str(direction).strip().upper()
+        side = -1 if d in ("SHORT", "-1", "SELL") else 1
+    h1 = _h1(df)
+    sigs = list(fn(h1, -1 if int(side) < 0 else 1) or [])
+    if signal_at is not None:
+        sigs = [s for s in sigs if pd.Timestamp(s.time).hour == int(signal_at)]
+    if day_state:
+        states = _day_states(h1)
+        want = str(day_state).upper()
+        sigs = [s for s in sigs if states.get(pd.Timestamp(s.time).date()) == want]
+    return sigs
+
+
+ORTHOGONAL_FAMILIES["hunt16_cell"] = family_hunt16_cell
+FAMILY_INPUTS["hunt16_cell"] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_TIMEFRAMES["hunt16_cell"] = (
+    ("H1",),
+    "the hunt16 families, their signal hours and the prior-NY-session day labels are all "
+    "defined on H1 stamp-hours; on any other chart the hour filter and the label do not exist")
+
+
 # ANALYST REVISION DRIFT AND THE CROSS-MARKET ANALYST LEAD (2026-09-30, the Alpha Capture
 # substitute). Public broker, company-guidance and forecast-revision views, stored point-in-time
 # by `research/alpha_capture.py` and replayed here from that store -- the family loads its own

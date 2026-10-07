@@ -202,8 +202,10 @@ _FAMILY_GROUPS: dict[str, str] = {
     "calendar_seasonality cross_asset market": "month_end_rebalance",
     "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
                                                " mass_screen_clock seasonal_window",
+    # hunt16_cell (2026-09-30) rebuilds the hunt16 dav_range_filter_adx cells (side, signal hour,
+    # day state) through the registry door, so it sits with its base family.
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"
-                                        " mean_reversion_rsi range_reversion",
+                                        " mean_reversion_rsi range_reversion hunt16_cell",
     "range_reversion price_only market": "engulfing_reversal pin_bar_reversal",
     "breakout_liquidity price_only stop": "anti_donchian_breakout d1_swing_break level_breakout"
                                           " london_ny_breakout opening_range"
