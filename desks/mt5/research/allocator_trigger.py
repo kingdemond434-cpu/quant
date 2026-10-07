@@ -95,6 +95,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+import book_trigger  # noqa: E402
+
 REPORTS = DESK / "reports"
 DATA = DESK / "data"
 OUT = REPORTS / "ALLOCATOR_REACTION.json"
@@ -620,6 +622,7 @@ def poll(*, budget_s: float = 600.0, state: dict[str, Any] | None = None,
          write: bool = True, solve: bool = True, now: float | None = None,
          clock: Callable[[], float] = time.time,
          solver: Callable[[float, dict[str, Any]], dict[str, Any]] | None = None,
+         book_solver: Callable[[float], dict[str, Any]] | None = None,
          ) -> dict[str, Any]:
     """One pass: settle any decision already on disk, observe every input, solve once if anything
     is pending and the gap/backoff allows, and settle the decision that solve produced."""
@@ -704,6 +707,18 @@ def poll(*, budget_s: float = 600.0, state: dict[str, Any] | None = None,
                              f"{MIN_SOLVE_GAP_S:.0f}s, failures {st.get('fail_count', 0)}); "
                              f"pending is kept and served then")})
 
+    # 4. THE CERTIFIED BOOK, on the same pass (book_trigger): re-solved when its fingerprint
+    # moved, so a fill is sized against a book that has seen it within one tick, not the hour.
+    t_book = t0 if now is not None else max(t0, clock())
+    try:
+        book = book_trigger.poll(st.setdefault("book", {}), t_book, solve=solve,
+                                 solver=book_solver)
+    except Exception as exc:                       # never let the book cost the allocator a pass
+        book = {"event": "book_error", "why": f"{type(exc).__name__}: {exc}"}
+    if book.get("event") in ("solved", "solve_failed", "book_error"):
+        rows.append({"schema": STATE_SCHEMA, "event": f"book_{book['event']}",
+                     "at": _iso(t_book), **{k: v for k, v in book.items() if k != "event"}})
+
     st["at"] = _iso(t0)
     st["schema"] = STATE_SCHEMA
     if write:
@@ -713,7 +728,7 @@ def poll(*, budget_s: float = 600.0, state: dict[str, Any] | None = None,
             with LOG.open("a", encoding="utf-8") as fh:
                 for row in rows:
                     fh.write(json.dumps(row, default=str) + "\n")
-    return {"watch": watch, "fired": rows, "state": st, "debounced": debounced,
+    return {"watch": watch, "fired": rows, "state": st, "debounced": debounced, "book": book,
             "attempt": attempt, "settled_on_entry": verdict0, "pending_keys": sorted(
                 k for k, inp in inputs.items() if inp.get("pending"))}
 
