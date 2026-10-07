@@ -68,9 +68,21 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 REGISTRY = BASE / "data" / "asia_sources.json"
+from libs.ops import token_refresh as _token_refresh  # noqa: E402
+
 VAULT = BASE / "data" / "lake" / "vault"
 SERIES = BASE / "data" / "lake" / "series"
 STATE = BASE / "data" / "lake" / "collector_state.json"
+#: PRIVATE-USE DATA (J-Quants, art. 8; the principal's answer of 2026-10-06) is vaulted and
+#: parsed HERE and nowhere else: gitignored (`lake/`), outside the shared vault/series dirs every
+#: generic lake reader globs, so no value or derived cell reaches git or a shared output. The
+#: repository is public. A tracked-path report carries counts and status only for such a source.
+PRIVATE = BASE / "data" / "lake" / "private_use"
+#: The only fields a private-use row keeps in the collector's report: status and counts, never a
+#: value, a column name, a vault path or a parsed frame.
+PRIVATE_REPORT_KEYS = ("id", "plane", "access", "status", "http", "bytes", "collected_utc",
+                       "key_env", "token_status", "token_http", "private_use", "attribution",
+                       "lineage", "e8_ineligible")
 OUT = BASE / "reports" / "ASIA_COLLECTOR.json"
 
 #: Bytes read per fetch. Generous enough for a daily statistics file, small enough that a
@@ -107,7 +119,7 @@ _ACCEPT = {
 }
 
 
-def _tls_context():
+def _tls_context() -> Any:
     """A verified TLS context using certifi's CA bundle, or None to keep the default.
 
     THIS IS NOT A VERIFICATION BYPASS AND MUST NEVER BECOME ONE. Measured 2026-09-15: 26 of 85
@@ -146,9 +158,52 @@ def _write_atomic(p: Path, text: str) -> None:
 
 
 def _key_present(src: dict[str, Any]) -> bool:
-    import os
     env = str(src.get("key_env") or "")
-    return bool(env and os.environ.get(env))
+    if env in _token_refresh.MANAGED:
+        # SHORT-LIVED TOKENS (JQUANTS_TOKEN, CDSE_TOKEN, MYFXBOOK_SESSION) come from
+        # libs.ops.token_refresh: a pasted value still wins, else a cached or freshly minted
+        # token from the long-lived credential. Present means "a valid token is in hand".
+        return _token_refresh.get_token(env).ok
+    from libs.ops.env_keys import read_key
+    return bool(env and read_key(env))
+
+
+def _apply_key(src: dict[str, Any], url: str, headers: dict[str, str]
+               ) -> tuple[str, dict[str, str], str]:
+    """(url to SEND, headers, key) with the source's key placed where its row DECLARES.
+
+    `key_in` is `query:<param>`, `header:<name>` or `bearer`; a row without it sends no key (its
+    url is a landing page, and the keyed fetch of that dataset lives in keyed_sources/alt_proxies,
+    which build the real endpoint). The recorded `url` never carries the key, and the returned
+    key lets the caller scrub it out of any error text before the row is written."""
+    from libs.ops.env_keys import read_key
+    place = str(src.get("key_in") or "")
+    env = str(src.get("key_env") or "")
+    key = read_key(env) if (place and env) else ""
+    if not key:
+        return url, headers, ""
+    out = dict(headers)
+    kind, _, name = place.partition(":")
+    if kind == "query" and name:
+        sep = "&" if "?" in url else "?"
+        return f"{url}{sep}{urllib.parse.urlencode({name: key})}", out, key
+    if kind == "header" and name:
+        out[name] = key
+    elif kind == "bearer":
+        out["Authorization"] = f"Bearer {key}"
+    return url, out, key
+
+
+def _why(e: BaseException, key: str = "") -> str:
+    """`Type: message` for a row, with every credential removed FIRST and the cut taken AFTER.
+
+    Truncating first is the leak the security audit of #218 found: a key that straddles char 90
+    loses its tail, and the scrub can no longer find the whole key to replace. The scrub covers
+    the request's own key in every encoded form, every managed token / long-lived credential,
+    and any credential carried in a URL query string the message quotes."""
+    from libs.data.keyed_sources import redact
+    text = redact(f"{type(e).__name__}: {e}", (key,) if key else ())
+    return _token_refresh.scrub(text)[:90]
 
 
 def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool, str]:
@@ -178,39 +233,45 @@ def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool,
         return True, f"robots.txt unreadable ({type(exc).__name__}); treated as allowing"
 
 
-def _vault(source_id: str, body: bytes, url: str, ctype: str) -> dict[str, Any]:
+def _vault(source_id: str, body: bytes, url: str, ctype: str,
+           attribution: str = "", private: bool = False) -> dict[str, Any]:
     """Write the raw bytes under their content hash. Never overwrites, never deletes."""
     digest = hashlib.sha256(body).hexdigest()
-    d = VAULT / source_id
+    d = (PRIVATE / "vault" if private else VAULT) / source_id
     d.mkdir(parents=True, exist_ok=True)
     blob = d / f"{digest[:16]}.gz"
     fresh = not blob.exists()
     if fresh:
         blob.write_bytes(gzip.compress(body))
         _write_atomic(blob.with_suffix(".meta.json"), json.dumps({
-            "source_id": source_id, "url": url, "content_type": ctype,
+            "source_id": source_id, "url": _token_refresh.strip_url_credentials(url),
+            "content_type": ctype,
             "sha256": digest, "bytes": len(body),
             "fetched_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+            **({"attribution": attribution} if attribution else {}),
+            **({"private_use": True} if private else {}),
         }, indent=1))
     return {"sha256": digest, "blob": str(blob), "bytes": len(body), "new_content": fresh}
 
 
-def _parse(body: bytes, expect: str, source_id: str) -> dict[str, Any]:
+def _parse(body: bytes, expect: str, source_id: str,
+           series: Path | None = None) -> dict[str, Any]:
     """Body -> a stored frame where the declared shape allows one, else NEEDS_PARSER.
 
     NO SHAPE IS GUESSED. A declared `json` that does not parse as JSON is a route change, not a
     parser problem, and calling it one would hide the NOAA failure all over again.
     """
+    out_dir = SERIES if series is None else series
     if expect == "json":
         try:
             doc = json.loads(body.decode("utf-8", errors="replace"))
         except ValueError as exc:
             return {"parsed": False, "why": f"declared json and did not parse: {exc}"}
-        SERIES.mkdir(parents=True, exist_ok=True)
-        _write_atomic(SERIES / f"{source_id}.json", json.dumps(doc, indent=1)[:4_000_000])
+        out_dir.mkdir(parents=True, exist_ok=True)
+        _write_atomic(out_dir / f"{source_id}.json", json.dumps(doc, indent=1)[:4_000_000])
         n = len(doc) if isinstance(doc, (list, dict)) else 1
         return {"parsed": True, "kind": "json", "n": n,
-                "path": str(SERIES / f"{source_id}.json")}
+                "path": str(out_dir / f"{source_id}.json")}
     if expect == "csv":
         try:
             import io
@@ -221,12 +282,12 @@ def _parse(body: bytes, expect: str, source_id: str) -> dict[str, Any]:
             return {"parsed": False, "why": f"declared csv and did not parse: {type(exc).__name__}"}
         if df.empty:
             return {"parsed": False, "why": "csv parsed to zero rows"}
-        SERIES.mkdir(parents=True, exist_ok=True)
-        out = SERIES / f"{source_id}.parquet"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out = out_dir / f"{source_id}.parquet"
         try:
             df.to_parquet(out)
         except Exception:
-            out = SERIES / f"{source_id}.csv"
+            out = out_dir / f"{source_id}.csv"
             df.to_csv(out, index=False)
         return {"parsed": True, "kind": "csv", "n": len(df),
                 "columns": [str(c) for c in df.columns][:20], "path": str(out)}
@@ -354,11 +415,40 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     url = _resolve_url(src)
     expect = str(src.get("expect") or "any")
     access = str(src.get("access") or "public")
-    rec: dict[str, Any] = {"id": sid, "plane": src.get("plane"), "url": url, "expect": expect,
+    # The recorded url never carries a credential, whatever the registry row holds.
+    rec: dict[str, Any] = {"id": sid, "plane": src.get("plane"),
+                           "url": _token_refresh.strip_url_credentials(url), "expect": expect,
                            "access": access,
                            "collected_utc": datetime.now(UTC).isoformat(timespec="seconds")}
 
-    if access in ("key", "paid") and not _key_present(src):
+    # PAID DATA IS REFUSED BY RULE, NOT BY THE ACCIDENT OF A MISSING KEY (audit of #201,
+    # 2026-10-06): private or paid data stays blocked whatever is set on the box.
+    if access == "paid":
+        rec.update({"status": "BLOCKED_PAID",
+                    "why": "paid source: refused by the data policy (public or licensed only), "
+                           "whatever credential the host holds"})
+        return rec
+
+    key_env = str(src.get("key_env") or "")
+    tok = (_token_refresh.get_token(key_env) if key_env in _token_refresh.MANAGED else None)
+    if tok is not None and tok.private_use:
+        # private_use=True, lineage "jquants_private", e8_ineligible=True: every record (and so
+        # every cell derived from it) carries the lineage the E8 book refuses on.
+        _token_refresh.mark_private_lineage(rec)
+    if tok is not None and tok.attribution:
+        # The licence's source notice rides on every record this token path produces (CDSE:
+        # "Contains modified Copernicus Sentinel data <year>"), whatever the fetch's outcome.
+        rec["attribution"] = tok.attribution
+    if access == "key" and tok is not None and not tok.ok:
+        # A MANAGED TOKEN'S REASON IS NAMED, NEVER COLLAPSED (security audit of #218): an absent
+        # credential is UNCONFIGURED, a refresh the provider refused is BLOCKED_AUTH, and a
+        # provider whose terms are not confirmed is BLOCKED_ON_TERMS (no credential was sent).
+        st = _token_refresh.collector_status(tok)
+        rec.update({"status": st, "key_env": key_env, "token_status": tok.status,
+                    "token_http": tok.http, "token_detail": tok.detail,
+                    "why": (tok.detail or st)})
+        return rec
+    if access == "key" and tok is None and not _key_present(src):
         rec.update({"status": "UNCONFIGURED", "key_env": src.get("key_env"),
                     "why": (f"declares {access} access and {src.get('key_env') or 'no key env'} "
                             f"is not set. A named state, never a failure and never a silent "
@@ -393,9 +483,24 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
             headers["If-Modified-Since"] = str(validators["last_modified"])
     headers.update(_declared_headers(src))
     body_out = _declared_form(src)
-    req = urllib.request.Request(url, data=body_out, headers=headers)
+    if tok is not None:
+        # The token goes on the request only for the provider's own API host; `url` (what is
+        # recorded in the row and the vault) never carries it.
+        send_url, headers = _token_refresh.apply_to_request(tok, url, headers)
+        _key = str(tok.token or "")
+        place, hname = "", ""
+    else:
+        send_url, headers, _key = _apply_key(src, url, headers)
+        place, _, hname = str(src.get("key_in") or "").partition(":")
+    req = urllib.request.Request(send_url, data=body_out, headers=headers)
+    # A KEYED ROW NEVER HANDS ITS CREDENTIAL TO ANOTHER HOST: urllib copies headers to a
+    # cross-host redirect target, so the bearer / declared key header is dropped there.
+    from libs.data.keyed_sources import keyed_opener, scrub_body
+    opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else ())
+              if _key else None)
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+        with (opener.open(req, timeout=timeout) if opener else
+              urllib.request.urlopen(req, timeout=timeout, context=_TLS)) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")
@@ -409,17 +514,23 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                                 "GET). The vault's newest blob is still current -- nothing new, "
                                 "which is not the same as nothing fetched.")})
             return rec
+        if code == 401 and key_env in _token_refresh.MANAGED:
+            _token_refresh.invalidate(key_env)  # re-minted on the next pass
         rec.update({"status": "HTTP_ERROR", "http": code,
                     "why": (f"HTTP {code}" if code not in (401, 403)
                             else f"HTTP {code}: authentication or access control, not a route "
                                  f"change")})
         return rec
     except (urllib.error.URLError, TimeoutError, OSError) as e:
-        rec.update({"status": "UNREACHABLE", "why": f"{type(e).__name__}: {str(e)[:90]}"})
+        # SCRUB FIRST, TRUNCATE AFTER (security audit of #218): cutting first kept the prefix
+        # of a key that straddled the cut, and `unknown url type` carries the whole URL.
+        rec.update({"status": "UNREACHABLE", "why": _why(e, _key)})
         return rec
     except Exception as e:
-        rec.update({"status": "UNMEASURED", "why": f"{type(e).__name__}: {str(e)[:90]}"})
+        rec.update({"status": "UNMEASURED", "why": _why(e, _key)})
         return rec
+    if _key:
+        body = scrub_body(body, (_key,))
 
     rec.update({"http": status, "content_type": ctype, "bytes": len(body)})
     accept = _ACCEPT.get(expect, ())
@@ -451,11 +562,44 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     # the next fetch is unconditional -- correct, and never a silent skip.
     rec["validators"] = {k: v for k, v in
                          (("etag", etag), ("last_modified", last_mod)) if v}
-    rec["vault"] = _vault(sid, body, url, ctype)
-    parsed = _parse(body, expect, sid)
+    private = bool(rec.get("private_use"))
+    rec["vault"] = _vault(sid, body, url, ctype, str(rec.get("attribution") or ""), private)
+    parsed = _parse(body, expect, sid, PRIVATE / "series" if private else None)
     rec["parse"] = parsed
     rec["status"] = "COLLECTED" if parsed.get("parsed") else "NEEDS_PARSER"
+    if private:
+        _write_attribution_sidecar(sid, key_env)
     return rec
+
+
+def _write_attribution_sidecar(source_id: str, key_env: str) -> Path | None:
+    """ATTRIBUTION SIDECAR next to a private-use series (audit of #218, 2026-10-07): the source,
+    its terms and permitting-clause URLs and the conditions the permission comes with, written
+    INTO THE GITIGNORED PRIVATE LAKE ONLY, so whoever opens the series on the box reads what it
+    may and may not be used for. Holds no value. Never raises; a failure is named on stderr."""
+    try:
+        p = _token_refresh.PROVIDERS.get(key_env)
+        name = p.name if p is not None else key_env
+        ev = _token_refresh.TERMS_EVIDENCE.get(name, {})
+        out = PRIVATE / "series" / f"{source_id}.attribution.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        _write_atomic(out, json.dumps({
+            "source_id": source_id, "provider": name,
+            "terms_verdict": _token_refresh.TERMS.get(name, ("", ""))[0],
+            "terms_url": ev.get("terms_url"), "licence_url": ev.get("licence_url"),
+            "permitting_url": ev.get("permitting_url"),
+            "permitting_quote": ev.get("permitting_quote"),
+            "condition": ev.get("condition"),
+            "conditions": _token_refresh.TERMS_CONDITIONS.get(name, {}),
+            "lineage": _token_refresh.PRIVATE_LINEAGE, "e8_ineligible": True,
+            "written_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+        }, indent=1, ensure_ascii=False))
+        return out
+    except Exception as exc:
+        # Named, never swallowed: the type only (no path, no value), on stderr.
+        print(f"asia collector: attribution sidecar for {source_id} not written "
+              f"({type(exc).__name__})", file=sys.stderr)
+        return None
 
 
 FOUND = BASE / "data" / "intelligence" / "asia_endpoints"
@@ -604,28 +748,66 @@ def main(argv: list[str] | None = None) -> int:
         with guard:
             state[str(s.get("id"))] = keep
 
-    with cf.ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        list(pool.map(lambda t: _one(*t), list(enumerate(todo))))
+    # A PRIVATE-USE PASS NEVER PRINTS A TRACEBACK. hourly_cycle keeps the last lines of this
+    # process's stdout and stderr in the TRACKED sync_marker.json; an exception raised while a
+    # private payload was in hand could carry a value into its message. With a private-use
+    # source in the pass, a failure prints its type only (status, never content).
+    has_private = any(_token_refresh.private_use(str(s.get("key_env") or "")) for s in todo)
+    try:
+        with cf.ThreadPoolExecutor(max_workers=WORKERS) as pool:
+            list(pool.map(lambda t: _one(*t), list(enumerate(todo))))
+    except Exception as exc:
+        if not has_private:
+            raise
+        print(f"asia collector: pass failed ({type(exc).__name__}); a private-use source was "
+              f"in the pass, so no detail is printed", file=sys.stderr)
+        return 2
     rows = [r for r in rows if r is not None]
 
     _write_atomic(STATE, json.dumps(state, indent=1))
     census = Counter(str(r.get("status")) for r in rows)
-    doc = {
+    doc = report_doc(rows, len(sources), census)
+    _write_atomic(OUT, json.dumps(doc, indent=1))
+    return _print_summary(rows, sources, census)
+
+
+def public_row(rec: dict[str, Any]) -> dict[str, Any]:
+    """The row as the report may carry it. A private-use row keeps status and counts only (the
+    parsed frame's `n` survives as a count); every other row is unchanged."""
+    if not rec.get("private_use"):
+        return rec
+    out = {k: rec[k] for k in PRIVATE_REPORT_KEYS if k in rec}
+    parse = rec.get("parse")
+    if isinstance(parse, dict):
+        out["parse"] = {k: parse[k] for k in ("parsed", "kind", "n") if k in parse}
+    out["private_use"] = True
+    return out
+
+
+def report_doc(rows: list[dict[str, Any]], n_sources: int,
+               census: Counter[str]) -> dict[str, Any]:
+    """The collector's report. Private-use rows carry counts and status only, and their series
+    paths are never listed: the report must be safe on a tracked path."""
+    return {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "law": ("NO SOURCE IS EVER BLOCKED FOR WANT OF A COLLECTOR. One generic collector is "
                 "driven by the registry, so a source is collected the moment it is declared and "
                 "the 90th source is not blocked on the day it is added."),
-        "n_sources": len(sources), "n_attempted": len(rows),
+        "n_sources": n_sources, "n_attempted": len(rows),
         "census": dict(census),
+        "n_private_use": sum(1 for r in rows if r.get("private_use")),
         "series_written": [r["parse"]["path"] for r in rows
-                           if isinstance(r.get("parse"), dict) and r["parse"].get("path")],
-        "rows": rows,
+                           if not r.get("private_use")
+                           and isinstance(r.get("parse"), dict) and r["parse"].get("path")],
+        "rows": [public_row(r) for r in rows],
     }
-    _write_atomic(OUT, json.dumps(doc, indent=1))
 
+
+def _print_summary(rows: list[dict[str, Any]], sources: list[dict[str, Any]],
+                   census: Counter[str]) -> int:
     print(f"asia collector: {len(rows)} attempted of {len(sources)} -> {dict(census)}")
     for st in ("COLLECTED", "NEEDS_PARSER", "ROUTE_CHANGED", "HTTP_ERROR", "UNREACHABLE",
-               "UNCONFIGURED", "BLOCKED_BY_ROBOTS"):
+               "UNCONFIGURED", "BLOCKED_PAID", "BLOCKED_BY_ROBOTS"):
         rs = [r for r in rows if r.get("status") == st]
         if not rs:
             continue
@@ -634,7 +816,15 @@ def main(argv: list[str] | None = None) -> int:
             extra = ""
             if st == "COLLECTED" and isinstance(r.get("parse"), dict):
                 extra = f"  n={r['parse'].get('n')}"
+            if r.get("private_use"):
+                # COUNTS ONLY for a private-use row (audit of #218): this stdout's tail is kept
+                # in the tracked sync_marker.json, so neither `why` nor anything parsed is shown.
+                print(f"    {r.get('id')!s:24} [private use: status and counts only]{extra}")
+                continue
             print(f"    {r.get('id')!s:24} {str(r.get('why') or '')[:58]}{extra}")
+    n_priv = sum(1 for r in rows if r.get("private_use"))
+    if n_priv:
+        print(f"  private use: {n_priv} row(s), values kept in the gitignored private lake only")
     print(f"  -> {OUT}")
     # ROUTE_CHANGED is the only fatal verdict: it is the one that silently becomes "no data".
     return 1 if census.get("ROUTE_CHANGED") else 0

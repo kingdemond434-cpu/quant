@@ -715,8 +715,9 @@
    "plane": "jp",
    "country": "jp",
    "name": "JPX J-Quants",
-   "url": "https://jpx-jquants.com/",
-   "expect": "any",
+   "url": "https://api.jquants.com/v2/equities/investor-types",
+   "docs": "https://jpx-jquants.com/en/spec/migration-v1-v2 (V1 /v1/markets/trades_spec -> V2 /v2/equities/investor-types; auth: x-api-key header, JQUANTS_API_KEY)",
+   "expect": "json",
    "access": "key",
    "key_env": "JQUANTS_TOKEN",
    "cadence": "daily",
@@ -907,6 +908,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "C2_API_KEY",
+   "key_in": "query:apikey",
    "cadence": "weekly",
    "targets": [
     "EURUSD",
@@ -932,6 +934,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "DARWINEX_TOKEN",
+   "key_in": "bearer",
    "cadence": "weekly",
    "targets": [
     "EURUSD",
@@ -1088,6 +1091,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "EIA_API_KEY",
+   "key_in": "query:api_key",
    "cadence": "weekly",
    "pit": {
     "event_time": "reference week",
@@ -1628,6 +1632,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "BANXICO_TOKEN",
+   "key_in": "header:Bmx-Token",
    "cadence": "daily",
    "pit": {
     "event_time": "publication",
