@@ -133,8 +133,9 @@ def test_the_pre_commit_hook_actually_calls_it() -> None:
 # Merging LIVE into a branch that predates a lessons edit staged LIVE's exact blob, and the guard,
 # which compares the staged blob with HEAD (the first parent) only, called three lessons
 # RECORDS_REWRITTEN. The content was already committed, and already checked, on the other parent.
-# A staged blob that equals a MERGE_HEAD parent's blob is now exempt; every other case is checked
-# as before. ALLOW_PROTECTED_RECORD_LOSS used to let a rewrite through as well; it no longer does.
+# A record HEAD left as the merge-base had it, staged with the merging parent's exact body, is now
+# waived (three-way, per record); every other case is checked as before.
+# ALLOW_PROTECTED_RECORD_LOSS used to let a rewrite through as well; it no longer does.
 # These tests drive main() against a real temporary git repository.
 # ---------------------------------------------------------------------------------------------
 
@@ -184,17 +185,17 @@ def _diverge_main(root: Path) -> None:
     _g(root, "commit", "-q", "-m", "main moves on")
 
 
-def test_a_merge_taking_a_parents_exact_blob_passes(
+def test_a_merge_taking_an_untouched_records_parent_body_passes(
         mod: ModuleType, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _branch_rewriting(repo, "side", "a, sharpened upstream")
     _diverge_main(repo)
     _g(repo, "merge", "--no-commit", "--no-ff", "side")
     side = _g(repo, "rev-parse", "side").strip()
     assert mod.main([]) == 0
-    assert f"equals parent {side}" in capsys.readouterr().out
+    assert f"waived against parent {side}" in capsys.readouterr().out
 
 
-def test_an_octopus_merge_matches_any_parent(
+def test_an_octopus_merge_waives_against_the_supplying_parent(
         mod: ModuleType, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _g(repo, "checkout", "-q", "-b", "quiet", "main")
     (repo / "quiet.txt").write_text("q\n", encoding="utf-8")
@@ -206,7 +207,7 @@ def test_an_octopus_merge_matches_any_parent(
     _g(repo, "merge", "--no-commit", "--no-ff", "quiet", "side")
     side = _g(repo, "rev-parse", "side").strip()
     assert mod.main([]) == 0
-    assert f"equals parent {side}" in capsys.readouterr().out
+    assert f"waived against parent {side}" in capsys.readouterr().out
 
 
 def test_a_merge_blob_matching_neither_parent_is_refused(mod: ModuleType, repo: Path) -> None:
@@ -235,3 +236,191 @@ def test_the_loss_override_still_allows_a_loss(
     assert mod.main([]) == 2
     monkeypatch.setenv(mod.OVERRIDE, "1")
     assert mod.main([]) == 0
+
+
+# ---------------------------------------------------------------------------------------------
+# THE AUDIT'S HOLD (2026-10-07): an exemption on "the staged blob equals a parent's blob" let real
+# losses through that the strict rule blocks. Each case below is one the first cut PASSED. The
+# rule is now three-way per record against the merge-base, and the merge must be real.
+# ---------------------------------------------------------------------------------------------
+
+
+def _write(root: Path, *lines: str) -> None:
+    (root / _LEDGER).write_text("".join(lines), encoding="utf-8")
+
+
+def _commit_ledger(root: Path, msg: str, *lines: str) -> None:
+    _write(root, *lines)
+    _g(root, "add", _LEDGER)
+    _g(root, "commit", "-q", "-m", msg)
+
+
+def _merge_taking(root: Path, *branches: str, take: str) -> None:
+    """Start a real `git merge --no-commit`, then stage `take`'s exact ledger blob."""
+    subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "merge", "--no-commit",
+                    "--no-ff", *branches], cwd=root, capture_output=True, check=False)
+    _g(root, "checkout", take, "--", _LEDGER)
+    _g(root, "add", _LEDGER)
+
+
+def _hand_merge(root: Path, *parents: str, msg: bool = True) -> None:
+    """Write the merge state files by hand, as a script (or an attacker) would."""
+    shas = [_g(root, "rev-parse", p).strip() for p in parents]
+    gd = Path(_g(root, "rev-parse", "--absolute-git-dir").strip())
+    (gd / "MERGE_HEAD").write_text("\n".join(shas) + "\n", encoding="utf-8")
+    if msg:
+        (gd / "MERGE_MSG").write_text("Merge\n", encoding="utf-8")
+
+
+def test_p1_a_record_head_added_survives_a_merge(
+        mod: ModuleType, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """HEAD appended L3; the other parent never had it. Taking that parent's blob loses L3."""
+    _branch_rewriting(repo, "side", "a, sharpened upstream")
+    _commit_ledger(repo, "HEAD appends L3", _line("L1", "a"), _line("L2", "b"), _line("L3", "c"))
+    _merge_taking(repo, "side", take="side")
+    assert mod.main([]) == 2
+    out = capsys.readouterr().out
+    assert "RECORDS_LOST" in out and "id='L3'" in out
+
+
+def test_p1b_a_correction_head_made_survives_a_merge(
+        mod: ModuleType, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """HEAD corrected L2 since the base; taking the other parent's blob reverts it."""
+    _branch_rewriting(repo, "side", "a, sharpened upstream")
+    _commit_ledger(repo, "HEAD corrects L2", _line("L1", "a"), _line("L2", "b, corrected"))
+    _merge_taking(repo, "side", take="side")
+    assert mod.main([]) == 2
+    out = capsys.readouterr().out
+    assert "RECORDS_REWRITTEN" in out and "L2" in out
+    assert "waived against parent" in out          # L1, which HEAD never touched, is waived
+
+
+def test_octopus_one_truncating_parent_never_wins(mod: ModuleType, repo: Path) -> None:
+    """T deleted L2 while Q corrected it. Staging T's blob must not count as a clean merge."""
+    _diverge_main(repo)
+    _g(repo, "checkout", "-q", "-b", "T", "main~1")
+    _commit_ledger(repo, "truncate", _line("L1", "a"))
+    _g(repo, "checkout", "-q", "-b", "Q", "main~1")
+    _commit_ledger(repo, "correct L2", _line("L1", "a"), _line("L2", "b, corrected"))
+    _g(repo, "checkout", "-q", "main")
+    _hand_merge(repo, "T", "Q")
+    _g(repo, "checkout", "T", "--", _LEDGER)
+    _g(repo, "add", _LEDGER)
+    assert mod.main([]) == 2
+
+
+def test_octopus_truncating_parent_cannot_drop_a_head_record(mod: ModuleType, repo: Path) -> None:
+    _g(repo, "checkout", "-q", "-b", "T", "main")
+    _commit_ledger(repo, "truncate", _line("L1", "a"))
+    _g(repo, "checkout", "-q", "-b", "Q", "main")
+    (repo / "q.txt").write_text("q\n", encoding="utf-8")
+    _g(repo, "add", "q.txt")
+    _g(repo, "commit", "-q", "-m", "quiet")
+    _g(repo, "checkout", "-q", "main")
+    _commit_ledger(repo, "HEAD appends L3", _line("L1", "a"), _line("L2", "b"), _line("L3", "c"))
+    _hand_merge(repo, "T", "Q")
+    _g(repo, "checkout", "T", "--", _LEDGER)
+    _g(repo, "add", _LEDGER)
+    assert mod.main([]) == 2
+
+
+def test_p5_a_hand_written_merge_head_without_a_merge_is_ignored(
+        mod: ModuleType, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _branch_rewriting(repo, "side", "a, sharpened upstream")
+    _diverge_main(repo)
+    _hand_merge(repo, "side", msg=False)
+    _g(repo, "checkout", "side", "--", _LEDGER)
+    _g(repo, "add", _LEDGER)
+    assert mod.main([]) == 2
+    assert "MERGE_IGNORED" in capsys.readouterr().out
+
+
+def test_a_merge_head_naming_no_commit_is_ignored(mod: ModuleType, repo: Path) -> None:
+    _branch_rewriting(repo, "side", "a, sharpened upstream")
+    _diverge_main(repo)
+    _hand_merge(repo, "side:" + _LEDGER)                    # a blob sha, not a commit
+    _g(repo, "checkout", "side", "--", _LEDGER)
+    _g(repo, "add", _LEDGER)
+    assert mod.main([]) == 2
+
+
+def test_p6b_a_merge_head_naming_an_ancestor_is_ignored(
+        mod: ModuleType, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A MERGE_HEAD at HEAD~1 merges nothing; honouring it could only revert HEAD's own work."""
+    _commit_ledger(repo, "HEAD corrects L1", _line("L1", "a, corrected"), _line("L2", "b"))
+    _hand_merge(repo, "HEAD~1")
+    _g(repo, "checkout", "HEAD~1", "--", _LEDGER)
+    _g(repo, "add", _LEDGER)
+    assert mod.main([]) == 2
+    assert "ancestor of HEAD" in capsys.readouterr().out
+
+
+def test_a_loss_and_a_rewrite_are_both_reported_and_refused(
+        mod: ModuleType, repo: Path, monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str]) -> None:
+    _write(repo, _line("L1", "silently replaced"))
+    _g(repo, "add", _LEDGER)
+    monkeypatch.setenv(mod.OVERRIDE, "1")
+    assert mod.main([]) == 2
+    out = capsys.readouterr().out
+    assert "RECORDS_LOST" in out and "RECORDS_REWRITTEN" in out
+    monkeypatch.setenv(mod.REWRITE_OVERRIDE, "1")
+    assert mod.main([]) == 0
+
+
+def test_the_rewrite_override_must_be_exactly_one(
+        mod: ModuleType, repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _write(repo, _line("L1", "replaced"), _line("L2", "b"))
+    _g(repo, "add", _LEDGER)
+    for v in ("0", "true", "yes"):
+        monkeypatch.setenv(mod.REWRITE_OVERRIDE, v)
+        assert mod.main([]) == 2
+    monkeypatch.setenv(mod.REWRITE_OVERRIDE, "1")
+    assert mod.main([]) == 0
+
+
+def test_a_git_mv_cannot_hide_a_protected_path(mod: ModuleType, repo: Path) -> None:
+    _g(repo, "mv", _LEDGER, "docs/moved.jsonl")
+    assert mod.main([]) == 2
+
+
+def _legit_live_into_old_branch(root: Path) -> None:
+    """LIVE appends L3 and corrects L1; the old branch never touched the ledger."""
+    _g(root, "checkout", "-q", "-b", "live", "main")
+    _commit_ledger(root, "live appends and corrects", _line("L1", "a, corrected"),
+                   _line("L2", "b"), _line("L3", "c"))
+    _g(root, "checkout", "-q", "main")
+    _diverge_main(root)
+    _g(root, "merge", "--no-commit", "--no-ff", "live")
+
+
+def test_merging_live_into_an_old_branch_passes(
+        mod: ModuleType, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _legit_live_into_old_branch(repo)
+    assert mod.main([]) == 0
+    live = _g(repo, "rev-parse", "live").strip()
+    assert f"waived against parent {live}" in capsys.readouterr().out
+
+
+def test_merging_live_where_live_retired_a_record_passes(mod: ModuleType, repo: Path) -> None:
+    """A record LIVE retired (on a commit already checked) and the old branch never touched."""
+    _g(repo, "checkout", "-q", "-b", "live", "main")
+    _commit_ledger(repo, "live retires L2", _line("L1", "a"))
+    _g(repo, "checkout", "-q", "main")
+    _diverge_main(repo)
+    _g(repo, "merge", "--no-commit", "--no-ff", "live")
+    assert mod.main([]) == 0
+
+
+def test_range_mode_waives_a_legitimate_merge_commit(mod: ModuleType, repo: Path) -> None:
+    _legit_live_into_old_branch(repo)
+    _g(repo, "commit", "-q", "-m", "merge live")
+    assert mod.main(["--range", "HEAD~1", "HEAD"]) == 0
+
+
+def test_range_mode_refuses_a_p1_merge_commit(mod: ModuleType, repo: Path) -> None:
+    _branch_rewriting(repo, "side", "a, sharpened upstream")
+    _commit_ledger(repo, "HEAD appends L3", _line("L1", "a"), _line("L2", "b"), _line("L3", "c"))
+    _merge_taking(repo, "side", take="side")
+    _g(repo, "commit", "-q", "-m", "merge side, taking its blob")
+    assert mod.main(["--range", "HEAD~1", "HEAD"]) == 2
