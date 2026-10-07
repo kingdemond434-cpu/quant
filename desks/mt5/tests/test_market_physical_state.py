@@ -173,7 +173,7 @@ def test_physical_state_seasonal_surprise_and_clock() -> None:
 
 
 def test_eia_clock_follows_the_release_calendar_and_holiday_shifts() -> None:
-    """Audit #211 item 1: Wednesday 10:30 ET, Thursday 11:00 ET after a Mon-Wed federal holiday,
+    """Audit #211 item 1: Wednesday 10:30 ET, Thursday 12:00 ET after a Mon-Wed federal holiday,
     Friday 12:00 ET after a Christmas Wednesday; never the old blanket +1 day."""
     et = ZoneInfo("America/New_York")
 
@@ -181,12 +181,16 @@ def test_eia_clock_follows_the_release_calendar_and_holiday_shifts() -> None:
         return datetime(y, m, d, hh, mm, tzinfo=et).astimezone(UTC)
 
     assert ps.knowable("2026-09-25") == at(2026, 9, 30, 10, 30)          # ordinary week
-    assert ps.knowable("2026-09-04") == at(2026, 9, 10, 11, 0)           # Labor Day Monday
-    assert ps.knowable("2026-05-22") == at(2026, 5, 28, 11, 0)           # Memorial Day
-    assert ps.knowable("2026-10-09") == at(2026, 10, 15, 11, 0)          # Columbus Day
+    assert ps.knowable("2026-09-04") == at(2026, 9, 10, 12, 0)           # Labor Day Monday
+    assert ps.knowable("2026-05-22") == at(2026, 5, 28, 12, 0)           # Memorial Day
+    assert ps.knowable("2026-10-09") == at(2026, 10, 15, 12, 0)          # Columbus Day
     assert ps.knowable("2024-12-20") == at(2024, 12, 27, 12, 0)          # Christmas Wednesday
-    assert ps.knowable("2024-06-14") == at(2024, 6, 20, 11, 0)           # Juneteenth Wednesday
+    assert ps.knowable("2024-06-14") == at(2024, 6, 20, 12, 0)           # Juneteenth Wednesday
     assert ps.knowable("2026-11-20") == at(2026, 11, 25, 10, 30)         # Thanksgiving week
+    # Christmas 2025 fell on the Thursday: the print came 126.5 h after the Wednesday, so the
+    # stamp is a conservative bound that is never earlier than that
+    wed = at(2025, 12, 24, 10, 30)
+    assert ps.knowable("2025-12-19") >= wed + timedelta(hours=126.5)
     # DST: the same 10:30 ET is 14:30 UTC in summer and 15:30 UTC in winter
     assert ps.knowable("2026-01-09").hour == 15 and ps.knowable("2026-07-10").hour == 14
     ps.RELEASE_OVERRIDES["2026-07-10"] = "2026-07-16T12:00"

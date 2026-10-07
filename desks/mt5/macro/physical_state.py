@@ -65,7 +65,7 @@ RELEASE_OVERRIDES: dict[str, str] = {}
 #: Stamped on every store row. Rows written under an earlier clock (the +1 day stamp, the ISO-week
 #: norm) are superseded: `event_surprise.store_pairs` reads only this clock's inventory rows, and
 #: every week is regenerated from FRED on each pass, so nothing is lost.
-CLOCK = "eia_wpsr_calendar_v2"
+CLOCK = "eia_wpsr_calendar_v3"
 
 
 def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
@@ -117,6 +117,16 @@ def release_at(week_end: str) -> tuple[datetime, str]:
     hol = {**us_federal_holidays(mon.year), **us_federal_holidays(wed.year)}
     hit = [(day, hol[day]) for day in (mon, mon + timedelta(days=1), wed) if day in hol]
     if not hit:
+        xmas = date(wed.year, 12, 25)
+        if wed < xmas <= wed + timedelta(days=2):
+            # CHRISTMAS ON THE THURSDAY OR FRIDAY (audit #211, 2026-10-07): the 2025 release came
+            # 126.5 h after the Wednesday stamp, with the executive-order closures either side. No
+            # rule describes those, so the stamp is a CONSERVATIVE BOUND -- the Tuesday after,
+            # 12:00 ET -- which can only arrive late, never early, until the announced date is
+            # recorded in RELEASE_OVERRIDES.
+            tue = wed + timedelta(days=6)
+            return datetime(tue.year, tue.month, tue.day, 12, 0, tzinfo=ET).astimezone(UTC), \
+                "Christmas on Thursday/Friday: conservative bound, Tuesday after 12:00 ET"
         return datetime(wed.year, wed.month, wed.day, 10, 30, tzinfo=ET).astimezone(UTC), \
             "Wednesday 10:30 ET"
     day, name = hit[-1]
@@ -124,9 +134,11 @@ def release_at(week_end: str) -> tuple[datetime, str]:
         fri = wed + timedelta(days=2)
         return datetime(fri.year, fri.month, fri.day, 12, 0, tzinfo=ET).astimezone(UTC), \
             f"{name} on Wednesday: Friday 12:00 ET"
+    # a Mon-Wed holiday moves the release to Thursday NOON ET (audit #211: 11:00 stamped an
+    # hour before the print on every holiday week)
     thu = wed + timedelta(days=1)
-    return datetime(thu.year, thu.month, thu.day, 11, 0, tzinfo=ET).astimezone(UTC), \
-        f"{name} ({day.isoformat()}): Thursday 11:00 ET"
+    return datetime(thu.year, thu.month, thu.day, 12, 0, tzinfo=ET).astimezone(UTC), \
+        f"{name} ({day.isoformat()}): Thursday 12:00 ET"
 
 
 def knowable(week_end: str) -> datetime:
