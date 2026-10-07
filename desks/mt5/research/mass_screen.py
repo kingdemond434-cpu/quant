@@ -228,6 +228,12 @@ class Prepared:
             fill_hour[-1] = self.hour[-1]
             hs = by_hour[fill_hour]
             pts = np.where(np.isfinite(hs), np.maximum(pts, hs), pts)
+        # SWAP AS KNOWABLE AT EACH BAR (2026-10-07), never today's backdated: a hold's nights are
+        # charged the rate knowable at its ENTRY bar, or -- with no fresh row -- the stand-in the
+        # engine uses (today's registry floor or the worst side knowable so far, whichever is
+        # larger). `carry_pit` is the side whose knowable swap pays at each bar.
+        self.swap_rate, self.carry_pit = swap_pit_arrays(symbol, self.t_ns, c,
+                                                         cm["swap_price"])
         spread_x1 = np.maximum(pts * cm["ts"] * cm["cs"], 0.05) / cm["cs"]
         spread_x3 = np.maximum(pts * cm["ts"] * cm["cs"] * COST_STRESS, 0.05) / cm["cs"]
         self.R1: dict[int, np.ndarray] = {}
@@ -246,7 +252,7 @@ class Prepared:
             win_lo = np.lib.stride_tricks.sliding_window_view(lo[1:], h)[:m].min(axis=1)
             win_hi = np.lib.stride_tricks.sliding_window_view(hi[1:], h)[:m].max(axis=1)
             nights = nights_between(self.t_ns[1: m + 1], self.t_ns[1 + h: m + 1 + h])
-            fin = nights * cm["swap_price"]
+            fin = nights * self.swap_rate[1: m + 1]
             for vi, (d, k) in enumerate(VARIANTS):
                 stop = c[:m] - d * k * atr[:m]
                 sd = np.abs(entry - stop)
@@ -277,7 +283,31 @@ class Prepared:
                               cond_lo=cond.get("cond_lo", -MR.OPEN_BOUND),
                               cond_hi=cond.get("cond_hi", MR.OPEN_BOUND),
                               hour=cond.get("hour", -1), weekday=cond.get("weekday", -1))
+        if cond.get("grammar") == "carry":
+            # a carry cell fires only on bars whose KNOWABLE swap pays its side
+            m = m & (self.carry_pit == int(cond.get("carry_side", 0)))
         return m & self.valid
+
+
+def swap_pit_arrays(symbol: str, t_ns: np.ndarray, price: np.ndarray,
+                    today_rate: float) -> tuple[np.ndarray, np.ndarray]:
+    """(per-night swap in price units at each bar, carry side at each bar), point in time.
+
+    Read through `families_carry.swap_asof`, the helper the engine's cost side shares. A bar with
+    no fresh row is charged the stand-in max(today's registry rate, worst knowable so far) and
+    carries no side (0): nothing is backfilled. An unreadable tape degrades to exactly that."""
+    n = t_ns.size
+    today = float(today_rate or 0.0)
+    try:
+        from mt5desk import families_carry
+        a = families_carry.swap_asof(symbol, t_ns, price)
+        side = families_carry.carry_side_asof(symbol, t_ns)
+    except Exception:
+        return np.full(n, today), np.zeros(n, dtype="int64")
+    peak = a["peak_px"]
+    standin = np.maximum(today, np.where(np.isfinite(peak), peak, 0.0))
+    rate = np.where(np.isfinite(a["worse_px"]), a["worse_px"], standin)
+    return rate, side
 
 
 def _q(a: np.ndarray, q: float) -> float | None:
@@ -287,13 +317,15 @@ def _q(a: np.ndarray, q: float) -> float | None:
     return float(f"{float(np.quantile(v, q)):.6g}")
 
 
-def carry_side(meta: dict[str, Any]) -> int:
-    """+1 / -1 for the side whose recorded swap is POSITIVE, 0 when neither pays."""
-    sl = float((meta or {}).get("swap_long", 0.0) or 0.0)
-    ss = float((meta or {}).get("swap_short", 0.0) or 0.0)
-    if max(sl, ss) <= 0:
-        return 0
-    return 1 if sl >= ss else -1
+def carry_sides(P: Prepared) -> list[int]:
+    """The carry sides the TRAINING window's knowable swap ever paid, +1 first.
+
+    Point in time (2026-10-07). This read TODAY's `swap_long`/`swap_short` from universe.json and
+    gave the whole history that one side -- a look-ahead on the signal. Now each bar carries the
+    side its own knowable swap pays (`Prepared.carry_pit`), a cell is opened per side the
+    training window actually saw, and the cell fires only where that side was knowable."""
+    seen = set(np.unique(P.carry_pit[: P.cut]).tolist()) - {0}
+    return sorted((int(x) for x in seen), reverse=True)
 
 
 def conditions(P: Prepared, meta: dict[str, Any] | None = None) -> list[dict[str, Any]]:
@@ -339,8 +371,7 @@ def conditions(P: Prepared, meta: dict[str, Any] | None = None) -> list[dict[str
                 if thr is not None:
                     out.append({"grammar": "lead", "feat": f, "op": op, "thr": thr,
                                 "leader": leader, "_q": q})
-    cs = carry_side(meta or {})
-    if cs:
+    for cs in carry_sides(P):
         vr = P.feats["volratio"][:cut]
         v1, v2 = _q(vr, TERCILE_Q[0]), _q(vr, TERCILE_Q[1])
         regimes: list[tuple[str, float, float]] = [("", -MR.OPEN_BOUND, MR.OPEN_BOUND)]

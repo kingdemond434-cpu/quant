@@ -5,9 +5,11 @@ applied it to every bar since 2018: a look-ahead on the cost side. These pin the
 
 * a night is priced from the newest `families_carry.swap_history` row knowable at its rollover
   (`observed_at` + 3 h, the reader #166/#269 use on the signal side);
-* a night with no knowable swap is charged a stand-in that is never zero and never below today's
-  registry value, and is counted UNMEASURED;
-* the run names its swap status, PENDING_HISTORY below the lockbox floor, by name.
+* a night with no knowable swap is charged a stand-in -- today's registry value as the floor, or
+  the worst side any row KNOWABLE UP TO THAT NIGHT showed, whichever is larger -- and is counted
+  UNMEASURED; a later, larger row never reaches an earlier night;
+* the run names its swap status, PENDING_HISTORY below the judgeable floor, by name, and UNPRICED
+  only when nothing at all prices a night.
 """
 from __future__ import annotations
 
@@ -52,9 +54,8 @@ def _hist(rows: list[tuple[str, float, float]], mode: float = 1.0) -> dict[str, 
 
 @pytest.fixture
 def tape(monkeypatch: pytest.MonkeyPatch):
-    state: dict[str, Any] = {"hist": {}, "ceiling": {}}
+    state: dict[str, Any] = {"hist": {}}
     monkeypatch.setattr(families_carry, "swap_history", lambda: (state["hist"], {}))
-    monkeypatch.setattr(families_carry, "swap_ceiling", lambda: dict(state["ceiling"]))
     return state
 
 
@@ -78,27 +79,40 @@ def test_rollover_instants_list_exactly_what_rollovers_between_counts():
         assert all(pd.Timestamp(int(t)).hour == engine.ROLLOVER_HOUR_UTC for t in inst)
 
 
-def test_a_night_before_the_first_knowable_row_is_never_charged_zero_or_today_backdated(tape):
-    """No history at all: every night is the stand-in, which is at least today's value."""
-    tape["ceiling"] = {"TESTFX": 25.0}          # some row on disk once showed 25 points
+def test_a_night_before_any_knowable_row_is_charged_todays_floor_never_zero(tape):
+    """No history at all: every night is the stand-in, which is then today's registry value."""
     costs = Costs.from_symbol(META)
-    assert costs.swap_symbol == "TESTFX"
+    assert costs.swap_symbol == "TESTFX" and costs.swap_registry_known
     assert costs.swap_per_lot_per_night == pytest.approx(10.0 * 1e-5 * 1e5)     # today's
-    assert costs.swap_standin_per_lot_per_night == pytest.approx(25.0 * 1e-5 * 1e5)
     res = _hold(_frame(), "2026-09-07 10:00", 48, costs)        # Mon -> Wed 10:00: 2 nights
     (t,) = res.trades
     nights = rollovers_between(t.entry_time, t.exit_time)
     assert nights == 2.0
-    assert t.r_multiple == pytest.approx(-(_rt(costs) + 25.0e-5 * nights) / 0.5, rel=1e-9)
+    assert t.r_multiple == pytest.approx(-(_rt(costs) + 10.0e-5 * nights) / 0.5, rel=1e-9)
     assert t.swap_nights_unmeasured == nights
     rep = res.swap_report()
-    assert rep["status"] == "PENDING_HISTORY" and rep["nights_unmeasured"] == nights
+    assert rep["nights_unmeasured"] == nights and rep["nights_unpriced"] == 0.0
+    assert rep["status"] in ("PENDING_HISTORY", "UNMEASURED")
+
+
+def test_the_stand_in_is_the_worst_row_knowable_so_far_never_a_later_one(tape):
+    # 30 points observed Tue 2026-09-01 (knowable 03:00), then nothing fresh; a 50-point row is
+    # knowable only on Wed 2026-09-16 at 03:00 -- AFTER the Tuesday night being priced.
+    tape["hist"] = {"TESTFX": _hist([("2026-09-01 00:00", -30.0, 1.0),
+                                     ("2026-09-16 00:00", -50.0, 1.0)])}
+    costs = Costs.from_symbol(META)
+    res = _hold(_frame(), "2026-09-15 09:00", 24, costs)     # Tue 09-15 night: row 1 is stale
+    (t,) = res.trades
+    assert t.r_multiple == pytest.approx(-(_rt(costs) + 30.0e-5) / 0.5, rel=1e-9)
+    assert res.swap_nights_unmeasured == 1.0
 
 
 def test_the_stand_in_never_falls_below_todays_registry_value(tape):
-    tape["ceiling"] = {"TESTFX": 4.0}            # history only ever showed less than today
+    tape["hist"] = {"TESTFX": _hist([("2026-09-01 00:00", -4.0, 1.0)])}     # less than today
     costs = Costs.from_symbol(META)
-    assert costs.swap_standin_per_lot_per_night == pytest.approx(costs.swap_per_lot_per_night)
+    res = _hold(_frame(), "2026-09-15 09:00", 24, costs)
+    (t,) = res.trades
+    assert t.r_multiple == pytest.approx(-(_rt(costs) + 10.0e-5) / 0.5, rel=1e-9)
 
 
 def test_each_night_is_priced_from_the_row_knowable_at_it_and_not_before(tape):
@@ -107,16 +121,14 @@ def test_each_night_is_priced_from_the_row_knowable_at_it_and_not_before(tape):
     # (triple) must still be priced from Tuesday's row.
     tape["hist"] = {"TESTFX": _hist([("2026-09-08 17:00", -3.0, 1.0),
                                      ("2026-09-09 19:00", -7.0, 1.0)])}
-    tape["ceiling"] = {"TESTFX": 7.0}
     costs = Costs.from_symbol(META)
-    # Enter Mon 10:00, hold to Fri 10:00: Mon (no row yet), Tue (3), Wed x3 (still 3), Thu (7).
+    # Enter Mon 10:00, hold to Fri 10:00: Mon (no row yet: today's 10), Tue (3), Wed x3 (still
+    # 3), Thu (7).
     res = _hold(_frame(), "2026-09-07 09:00", 96, costs)
     (t,) = res.trades
-    standin = max(10.0, 7.0) * 1e-5
-    expected = standin * 1 + 3.0e-5 * 1 + 3.0e-5 * 3 + 7.0e-5 * 1
+    expected = 10.0e-5 * 1 + 3.0e-5 * 1 + 3.0e-5 * 3 + 7.0e-5 * 1
     assert t.r_multiple == pytest.approx(-(_rt(costs) + expected) / 0.5, rel=1e-9)
     assert res.swap_nights_unmeasured == 1.0 and res.swap_nights_measured == 5.0
-    assert res.swap_report()["status"] == "PENDING_HISTORY"
 
 
 def test_a_stale_row_is_unmeasured(tape):
@@ -134,17 +146,16 @@ def test_percent_mode_is_priced_on_the_entry_price(tape):
     assert t.r_multiple == pytest.approx(-(_rt(costs) + 3.6 / 100 / 360) / 0.5, rel=1e-9)
 
 
-def test_measured_only_when_every_night_is_knowable_over_the_lockbox_floor(tape, monkeypatch):
-    from research import gate_policy
+def test_measured_only_when_every_night_is_knowable_over_the_judgeable_floor(tape, monkeypatch):
     rows = [(str(pd.Timestamp("2026-09-01") + pd.Timedelta(days=d)), -3.0, 1.0)
             for d in range(19)]
     tape["hist"] = {"TESTFX": _hist(rows)}
     costs = Costs.from_symbol(META)
     res = _hold(_frame(), "2026-09-15 09:00", 24, costs)
     assert res.swap_nights_unmeasured == 0.0 and res.swap_nights_measured == 1.0
-    monkeypatch.setattr(gate_policy, "LOCKBOX_MIN_DAYS", 19)
+    monkeypatch.setattr(families_carry, "judgeable_floor", lambda: 19, raising=False)
     assert res.swap_report()["status"] == "MEASURED"
-    monkeypatch.setattr(gate_policy, "LOCKBOX_MIN_DAYS", 20)
+    monkeypatch.setattr(families_carry, "judgeable_floor", lambda: 20, raising=False)
     rep = res.swap_report()
     assert rep["status"] == "PENDING_HISTORY" and rep["honest_days"] == 19
     assert rep["floor_days"] == 20
@@ -165,25 +176,27 @@ def test_an_intraday_run_has_nothing_to_measure(tape):
 
 
 def test_the_stressed_variant_keeps_the_point_in_time_fields(tape):
-    tape["ceiling"] = {"TESTFX": 25.0}
-    c = Costs.from_symbol(META).stressed(3.0)
-    assert c.swap_symbol == "TESTFX"
-    assert c.swap_standin_per_lot_per_night == pytest.approx(25.0)
+    c = Costs.from_symbol({k: v for k, v in META.items() if k != "swap_long"}).stressed(3.0)
+    assert c.swap_symbol == "TESTFX" and c.swap_registry_known
 
 
-def test_a_night_nothing_can_price_is_unpriced_and_only_that_is_named_so(tape):
-    """No registry swap and no row ever on disk: no stand-in exists, and the run says UNPRICED.
-    With a registry value the same run is PENDING_HISTORY evidence, never UNPRICED."""
+def test_a_night_nothing_can_price_is_unpriced_and_only_that_is_named_so(tape, monkeypatch):
+    """No registry swap and no knowable row: no stand-in exists, and the run says UNPRICED.
+    With a registry value, or a row knowable before the night, it is evidence, never UNPRICED."""
+    monkeypatch.setattr(families_carry, "judgeable_floor", lambda: 100, raising=False)
     bare = {k: v for k, v in META.items() if k not in ("swap_long", "swap_short")}
     costs = Costs.from_symbol(bare)
-    assert costs.swap_standin_per_lot_per_night is None
+    assert not costs.swap_registry_known
     rep = _hold(_frame(), "2026-09-07 09:00", 24, costs).swap_report()
     assert rep["status"] == "UNPRICED" and rep["nights_unpriced"] == 1.0
     rep = _hold(_frame(), "2026-09-07 09:00", 24, Costs.from_symbol(META)).swap_report()
     assert rep["status"] == "PENDING_HISTORY" and rep["nights_unpriced"] == 0.0
-    tape["ceiling"] = {"TESTFX": 5.0}           # a row once seen is a stand-in
+    tape["hist"] = {"TESTFX": _hist([("2026-08-20 00:00", -5.0, 1.0)])}   # knowable, now stale
     rep = _hold(_frame(), "2026-09-07 09:00", 24, Costs.from_symbol(bare)).swap_report()
-    assert rep["status"] == "PENDING_HISTORY"
+    assert rep["status"] == "PENDING_HISTORY" and rep["nights_unpriced"] == 0.0
+    tape["hist"] = {"TESTFX": _hist([("2026-09-20 00:00", -5.0, 1.0)])}   # knowable only LATER
+    rep = _hold(_frame(), "2026-09-07 09:00", 24, Costs.from_symbol(bare)).swap_report()
+    assert rep["status"] == "UNPRICED"
 
 
 def test_the_cache_stamp_moves_only_when_a_row_that_matters_arrives(tape, monkeypatch):
@@ -198,3 +211,36 @@ def test_the_cache_stamp_moves_only_when_a_row_that_matters_arrives(tape, monkey
     b = engine.swap_cache_stamp("TESTFX", "2026-09-05")
     monkeypatch.setattr(engine, "ENGINE_COST_VERSION", "next")
     assert engine.swap_cache_stamp("TESTFX", "2026-09-05") != b
+
+
+# ------------------------------------------------------------- the other readers of the swap
+def test_the_carry_side_is_the_side_knowable_at_each_bar(tape):
+    tape["hist"] = {"TESTFX": _hist([("2026-09-03 00:00", 2.0, -5.0),
+                                     ("2026-09-08 00:00", -5.0, 3.0)])}
+    t = pd.date_range("2026-09-01", periods=24 * 12, freq="h")
+    side = families_carry.carry_side_asof("TESTFX", t.asi8)
+    k1 = pd.Timestamp("2026-09-03 03:00")
+    k2 = pd.Timestamp("2026-09-08 03:00")
+    assert (side[t < k1] == 0).all()                       # never today's side backdated
+    assert (side[(t >= k1) & (t < k2)] == 1).all()
+    assert (side[t >= k2] == -1).all()
+
+
+def test_mass_screen_charges_and_sides_point_in_time(tape):
+    from research import mass_screen as ms
+    tape["hist"] = {"TESTFX": _hist([("2026-09-05 00:00", 2.0, -30.0)])}
+    t = pd.date_range("2026-09-01", periods=24 * 20, freq="h")
+    rate, side = ms.swap_pit_arrays("TESTFX", t.asi8, np.ones(t.size), 10.0e-5)
+    knowable = t >= pd.Timestamp("2026-09-05 03:00")
+    stale = t > pd.Timestamp("2026-09-09 03:00")
+    assert np.allclose(rate[~knowable], 10.0e-5)                         # today's floor
+    assert np.allclose(rate[knowable & ~stale], 30.0e-5)                 # the knowable row
+    assert np.allclose(rate[stale], 30.0e-5)                             # worst knowable so far
+    assert (side[~knowable] == 0).all() and (side[knowable & ~stale] == 1).all()
+
+    class _P:
+        cut = int(np.searchsorted(t.asi8, pd.Timestamp("2026-09-04").value))
+        carry_pit = side
+    assert ms.carry_sides(_P()) == []           # the training window never saw a paying side
+    _P.cut = t.size
+    assert ms.carry_sides(_P()) == [1]

@@ -39,10 +39,10 @@ THE PARTICIPANT-FLOW LAYER (2026-09-04). Price alone cannot say WHO is trading, 
 positioning story the desk has told so far was told from price. Four features name the
 participants the desk can actually observe off-box: the broker's own tick flow (`tick_imbalance`,
 `session_participation`), the broker's overnight financing (`swap_long` / `swap_short` /
-`swap_diff` -- the carry the desk PAYS, from `universe.json`), and the CFTC's weekly speculative
-positioning (`cot_z`) joined POINT-IN-TIME: a report dated Tuesday is public Friday evening, so a
-bar may only see a report whose `available_time` is at or before the bar. Every one of them is
-causal by construction and is refused by `check_causal` if it is not.
+`swap_diff` -- the carry the desk PAYS, point in time from the broker's swap tape), and the
+CFTC's weekly speculative positioning (`cot_z`) joined POINT-IN-TIME: a report dated Tuesday is
+public Friday evening, so a bar may only see a report whose `available_time` is at or before the
+bar. Every one of them is causal by construction and is refused by `check_causal` if it is not.
 
 FEATURES WITH INPUTS OUTSIDE THE BARS declare an `external` identity -- a string naming the files
 they read -- that is folded into the feature id. Without it a refreshed COT file or a re-quoted
@@ -390,49 +390,78 @@ def _universe_external(p: dict[str, Any]) -> str:
     return _file_identity([UNIVERSE_JSON])
 
 
-def _swap(df: pd.DataFrame, p: dict[str, Any], field: str, name: str) -> np.ndarray:
-    """A static broker level per symbol, constant across bars. Unknown symbol -> NaN + reason."""
-    sym = str(p.get("symbol") or "")
-    entry = _universe().get(sym)
-    if not sym or not isinstance(entry, dict):
-        return _degrade(name, len(df), f"symbol {sym!r} not in {UNIVERSE_JSON.name}")
+def _swap_files() -> list[Path]:
+    """The point-in-time swap tape `families_carry.swap_history` reads (empty if unreachable)."""
     try:
-        long_, short = float(entry["swap_long"]), float(entry["swap_short"])
-    except (KeyError, TypeError, ValueError):
-        return _degrade(name, len(df), f"{sym}: swap_long/swap_short missing from the entry")
-    val = {"swap_long": long_, "swap_short": short, "swap_diff": long_ - short}[field]
-    _ok(name, f"{sym}: {field}={val}", published_time=_mtime_iso(UNIVERSE_JSON),
-        revision_time=_mtime_iso(UNIVERSE_JSON), source_version=_file_identity([UNIVERSE_JSON]),
-        raw_hash=_raw_hash([UNIVERSE_JSON]))
-    return np.full(len(df), val)
+        from mt5desk import families_carry
+        return list(families_carry._files())
+    except Exception:
+        return []
 
 
-#: The broker's swap is a static level re-quoted without history: the block is knowable from the
-#: moment the universe file carried it, and a re-quote re-keys the block through its external
-#: identity rather than restating the old one.
-_SWAP_AVAILABILITY = ("static broker level as quoted in universe.json when the block was "
-                      "computed, applied to every bar; a re-quote re-keys the block by file "
-                      "identity")
-_SWAP_REVISION = "re-quoted by the broker without history; re-keyed by file identity"
+def _swap_external(p: dict[str, Any]) -> str:
+    """The swap tape's identity: a new knowable row re-keys every swap block."""
+    files = _swap_files()
+    return "swap_tape:" + (_file_identity(files) if files else "absent")
 
 
-@register("swap_diff", "broker_swap", "swap_long - swap_short for the symbol (universe.json): "
-          "the financing asymmetry the desk pays, a static level per instrument",
-          external=_universe_external, source="universe.json", availability=_SWAP_AVAILABILITY,
+def _swap(df: pd.DataFrame, p: dict[str, Any], field: str, name: str) -> np.ndarray:
+    """The broker's swap AS KNOWABLE AT EACH BAR, point in time, never backfilled.
+
+    THIS WAS A LOOK-AHEAD (fixed 2026-10-07). It read TODAY's level from universe.json and put it
+    on every bar since 2018. It now reads `families_carry.swap_asof`, the same helper the engine's
+    cost side and the mass screen's carry side use: a row is knowable from its own `observed_at`
+    + 3 h, an unstamped row never, a row older than four days is stale. A bar with no fresh row is
+    NaN, and a symbol with no knowable row at all degrades with the reason on record."""
+    sym = str(p.get("symbol") or "")
+    if not sym:
+        return _degrade(name, len(df), "no symbol in params")
+    try:
+        from mt5desk import families_carry
+        stamps = np.asarray(pd.DatetimeIndex(df.index).as_unit("ns").asi8, dtype="int64")
+        a = families_carry.swap_asof(sym, stamps)
+    except Exception as exc:
+        return _degrade(name, len(df), f"{sym}: swap tape unreadable ({type(exc).__name__})")
+    lo, sh = a["lo"], a["sh"]
+    val = {"swap_long": lo, "swap_short": sh, "swap_diff": lo - sh}[field]
+    known = int(np.isfinite(val).sum())
+    if not known:
+        return _degrade(name, len(df), f"{sym}: no swap row knowable at any bar "
+                        "(PENDING_HISTORY: the honest tape has not reached this window)")
+    files = _swap_files()
+    _ok(name, f"{sym}: {field} point in time on {known} of {len(df)} bars",
+        published_time=None, revision_time=None,
+        source_version=_file_identity(files), raw_hash=_raw_hash(files))
+    out: np.ndarray = np.asarray(val, dtype=float)
+    return out
+
+
+#: Point in time: a bar sees the newest swap row knowable at it (observed_at + 3 h, <= 4 days
+#: old); before the first knowable row, or after a gap, it sees NaN. Nothing is backfilled.
+_SWAP_AVAILABILITY = ("point in time: the newest broker swap row knowable at the bar "
+                      "(observed_at + 3h, at most 96h old, unstamped rows never); NaN before the "
+                      "first knowable row, never today's level backfilled")
+_SWAP_REVISION = "the swap tape is append-only; a new row re-keys the block by tape identity"
+
+
+@register("swap_diff", "broker_swap",
+          "swap_long - swap_short for the symbol, point in time from the broker's swap "
+          "tape: the financing asymmetry the desk pays, as knowable at each bar",
+          external=_swap_external, source="mt5:broker_swaps", availability=_SWAP_AVAILABILITY,
           revision_status=_SWAP_REVISION)
 def _f_swap_diff(df: pd.DataFrame, p: dict[str, Any]) -> np.ndarray:
     return _swap(df, p, "swap_diff", "swap_diff")
 
 
-@register("swap_long", "broker_swap", "the broker's overnight swap on a long (universe.json)",
-          external=_universe_external, source="universe.json", availability=_SWAP_AVAILABILITY,
+@register("swap_long", "broker_swap", "the broker's overnight swap on a long, point in time",
+          external=_swap_external, source="mt5:broker_swaps", availability=_SWAP_AVAILABILITY,
           revision_status=_SWAP_REVISION)
 def _f_swap_long(df: pd.DataFrame, p: dict[str, Any]) -> np.ndarray:
     return _swap(df, p, "swap_long", "swap_long")
 
 
-@register("swap_short", "broker_swap", "the broker's overnight swap on a short (universe.json)",
-          external=_universe_external, source="universe.json", availability=_SWAP_AVAILABILITY,
+@register("swap_short", "broker_swap", "the broker's overnight swap on a short, point in time",
+          external=_swap_external, source="mt5:broker_swaps", availability=_SWAP_AVAILABILITY,
           revision_status=_SWAP_REVISION)
 def _f_swap_short(df: pd.DataFrame, p: dict[str, Any]) -> np.ndarray:
     return _swap(df, p, "swap_short", "swap_short")
