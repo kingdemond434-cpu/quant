@@ -1760,7 +1760,7 @@ def family_opening_range(
     cl_v = d["close"].to_numpy(dtype="float64", na_value=np.nan)
     idx = d.index
     hours = idx.hour.to_numpy()
-    days = idx.normalize().asi8
+    days = idx.normalize().as_unit("ns").asi8
     n = len(d)
     signals: list[Signal] = []
     last_day = None

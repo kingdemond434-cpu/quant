@@ -44,7 +44,7 @@ def frame_fingerprint(df: pd.DataFrame | pd.Series) -> str:
                    getattr(idx, "name", None))).encode())
     if isinstance(idx, pd.DatetimeIndex):
         h.update(str(idx.tz).encode())
-        h.update(np.ascontiguousarray(idx.asi8).tobytes())
+        h.update(np.ascontiguousarray(idx.as_unit("ns").asi8).tobytes())
     else:
         h.update(pd.util.hash_pandas_object(pd.Index(idx), index=False).to_numpy().tobytes())
     for col in obj.columns:

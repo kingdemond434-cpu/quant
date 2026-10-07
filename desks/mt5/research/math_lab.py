@@ -228,7 +228,7 @@ def bar_frames(symbol: str) -> tuple[dict[str, np.ndarray], np.ndarray, dict[str
     except Exception:
         return None
     columns = {name: series.to_numpy(dtype=float) for name, series in frames.items()}
-    times = frame.index.view("int64") // 10 ** 9
+    times = pd.DatetimeIndex(frame.index).as_unit("ns").asi8 // 10 ** 9
     return columns, np.asarray(times, dtype=np.int64), {"bars": len(frame),
                                                         "first": str(frame.index[0]),
                                                         "last": str(frame.index[-1])}
