@@ -43,7 +43,7 @@ from __future__ import annotations
 import math
 import re
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -328,6 +328,8 @@ class AllocationResult:
     #: "global_bound" when `global_gap` (a TRUE bound on the distance to the global optimum, see
     #: `optimise`) is within tolerance.
     certificate: str = "local_kkt_multistart"
+    #: The CVaR smoothing used for the certificate (see `_smooth_objective`).
+    smoothing: str = ""
     #: Upper bound on the global optimum of the real objective, and score's distance below it.
     upper_bound: float = float("inf")
     global_gap: float = float("inf")
@@ -1213,6 +1215,48 @@ def _corr_abs(ev: Sequence[SleeveEvidence]) -> np.ndarray:
     return out
 
 
+def _smooth_objective(worlds: Worlds, h: np.ndarray, cfg: WorldConfig, tau: float,
+                      charge: Callable[[np.ndarray], tuple[float, np.ndarray]],
+                      ) -> tuple[float, np.ndarray]:
+    """(1 - lam) mean + lam * CVaR_tau of per-world log growth, minus `charge`, and its gradient.
+
+    THE TAIL TERM SMOOTHED SO THE ASCENT CAN CONVERGE AND THE GAP CAN BE CERTIFIED (audit of PR
+    #261). Rockafellar-Uryasev writes CVaR_a(G) = max_z { z - E[(z - G)+] / a }; replacing (x)+ by
+    the softplus tau*log(1 + e^(x/tau)) >= (x)+ gives a SMOOTH concave CVaR_tau with
+        CVaR_tau <= CVaR <= CVaR_tau + tau * ln 2 / a,
+    so the smoothed objective is within lam * tau * ln 2 / a of the true one, from BELOW. The
+    inner z is solved exactly (the stationarity mean sigmoid((z - G)/tau) = a, by bisection) and
+    the gradient follows by the envelope theorem: world weights (1 - lam)/W + lam*s_w/(a*W).
+    """
+    port = np.einsum("wtn,n->wt", worlds.r, h.astype(np.float32), optimize=True).astype(
+        np.float64)
+    one_plus = 1.0 + port
+    if not np.all(one_plus > 1e-9):
+        return -np.inf, np.zeros_like(h)
+    g_w = np.log(one_plus).mean(axis=1)
+    n_w = g_w.size
+    lam, a = float(cfg.robust_lambda), float(cfg.cvar_alpha)
+    lo, hi = float(g_w.min()) - 40.0 * tau, float(g_w.max()) + 40.0 * tau
+    for _ in range(100):
+        z = 0.5 * (lo + hi)
+        if float((0.5 * (1.0 + np.tanh(0.5 * (z - g_w) / tau))).mean()) > a:
+            hi = z
+        else:
+            lo = z
+    z = 0.5 * (lo + hi)
+    x = (z - g_w) / tau
+    softplus = tau * np.logaddexp(0.0, x)
+    sig = 0.5 * (1.0 + np.tanh(0.5 * x))
+    cvar_t = z - float(softplus.mean()) / a
+    val = (1.0 - lam) * float(g_w.mean()) + lam * cvar_t
+    wts = (1.0 - lam) / n_w + lam * sig / (a * n_w)
+    u = (1.0 / one_plus) * wts[:, None] / one_plus.shape[1]
+    grad = np.einsum("wtn,wt->n", worlds.r, u.astype(np.float32), optimize=True).astype(
+        np.float64)
+    c_val, c_grad = charge(h)
+    return val - c_val, grad - c_grad
+
+
 def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | None = None,
              cfg: WorldConfig | None = None, worlds: Worlds | None = None,
              warm_start: Mapping[str, float] | None = None,
@@ -1375,46 +1419,69 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
     # optimum of the real non-convex problem. Tight where a sleeve's bound u is small; loose by
     # at most the charge the optimum pays. `converged` means THIS gap is within tolerance.
     upper_bound, global_gap = float("inf"), float("inf")
+    smooth_note = ""
     if math.isfinite(score) and not budget_hit:
-        from dataclasses import replace as _dc_replace
-        cfg0 = _dc_replace(cfg, redundancy_lambda=0.0)
         u = np.minimum(np.where(np.isfinite(ub), ub, cap), cap)
         a_off = corr_abs - np.diag(np.diag(corr_abs))
         lam_r = float(cfg.redundancy_lambda)
+        # Smoothing width chosen so the smoothing error lam*tau*ln2/a is a tenth of `tol`.
+        lam_c, alpha_c = float(cfg.robust_lambda), float(cfg.cvar_alpha)
+        tau = (0.1 * tol * alpha_c / (lam_c * math.log(2.0))) if lam_c > 0 else 1e-12
+        smooth_err = lam_c * tau * math.log(2.0) / alpha_c
 
-        def _relaxed(hh: np.ndarray) -> tuple[float, np.ndarray]:
-            g0, gr0, _gw0 = _objective(w_pop, hh, corr_abs, cfg0)
-            if not math.isfinite(g0) or lam_r == 0.0:
-                return g0, gr0
+        def _true_charge(hh: np.ndarray) -> tuple[float, np.ndarray]:
+            red, red_grad = _redundancy(corr_abs, hh)
+            return lam_r * red, lam_r * red_grad
+
+        def _mccormick(hh: np.ndarray) -> tuple[float, np.ndarray]:
+            if lam_r == 0.0:
+                return 0.0, np.zeros_like(hh)
             env = u[None, :] * hh[:, None] + u[:, None] * hh[None, :] - np.outer(u, u)
             act = (env > 0.0) & (a_off > 0.0)
             m_val = float((a_off * np.where(act, env, 0.0)).sum())
             # d/dh_k of sum_ij A_ij (u_j h_i + u_i h_j - u_i u_j) over active pairs.
             w_act = a_off * act
             m_grad = (w_act * u[None, :]).sum(axis=1) + (w_act * u[:, None]).sum(axis=0)
-            return g0 - lam_r * m_val, gr0 - lam_r * m_grad
+            return lam_r * m_val, lam_r * m_grad
 
-        hr = h.copy()
-        r_score, r_grad = _relaxed(hr)
-        lr0 = step
-        for _ in range(max(1, iterations // 2)):
-            if deadline is not None and time.time() > deadline:
-                break
-            cand = project_capped_simplex(hr + lr0 * r_grad, cap, exact=exact, upper=ub)
-            c_s, c_g = _relaxed(cand)
-            if c_s > r_score:
-                moved = float(np.abs(cand - hr).sum())
-                hr, r_score, r_grad = cand, c_s, c_g
-                lr0 *= 1.10
-                if moved < 1e-7:
+        def _ascend_smooth(h0: np.ndarray, fn: Callable[[np.ndarray], tuple[float, np.ndarray]],
+                           n_it: int) -> tuple[np.ndarray, float, np.ndarray]:
+            hh = h0.copy()
+            val, gr = fn(hh)
+            lr1 = step
+            for _ in range(n_it):
+                if deadline is not None and time.time() > deadline:
                     break
-            else:
-                lr0 *= 0.5
-                if lr0 < 1e-9:
-                    break
+                cand = project_capped_simplex(hh + lr1 * gr, cap, exact=exact, upper=ub)
+                c_v, c_g = fn(cand)
+                if c_v > val:
+                    moved = float(np.abs(cand - hh).sum())
+                    hh, val, gr = cand, c_v, c_g
+                    lr1 *= 1.25
+                    if moved < 1e-10:
+                        break
+                else:
+                    lr1 *= 0.5
+                    if lr1 < 1e-12:
+                        break
+            return hh, val, gr
+
+        # NO SMOOTHED REFINEMENT OF THE BOOK ITSELF: measured on the cached 28-sleeve worlds it
+        # moved the score by < 1e-6 at 5-7x the solve time, and the allocator runs this solve
+        # dozens of times a pass. The smoothing is used where it pays -- the certificate below.
+        # The local certificate is the smooth objective's FW gap at the returned book (a true
+        # stationarity measure where the kinked supergradient is not), plus the smoothing error.
+        _s_val, s_grad = _smooth_objective(w_pop, h, cfg, tau, _true_charge)
+        gap = fw_gap(s_grad, h, cap, exact=exact, upper=ub) + smooth_err
+        local_ok = bool(math.isfinite(gap) and gap <= tol)
+        # (b) THE GLOBAL BOUND: the smoothed objective with the McCormick charge is CONCAVE and
+        # >= f - smooth_err everywhere, so f* <= R(h_r) + FW_gap_R(h_r) + smooth_err.
+        hr, r_score, r_grad = _ascend_smooth(
+            h, lambda hh: _smooth_objective(w_pop, hh, cfg, tau, _mccormick), iterations * 3)
         if math.isfinite(r_score):
-            upper_bound = r_score + fw_gap(r_grad, hr, cap, exact=exact, upper=ub)
+            upper_bound = r_score + fw_gap(r_grad, hr, cap, exact=exact, upper=ub) + smooth_err
             global_gap = max(0.0, upper_bound - score)
+        smooth_note = f"tau={tau:.3g}, smoothing error {smooth_err:.3g}"
     # CONVERGED MEANS GLOBAL (audit ruling): the returned book is within `tol` of the global
     # optimum by the bound above. A KKT point the bound cannot certify is reported LOCAL --
     # `converged=False`, `certificate="local_kkt_multistart"` -- and is still the best feasible
@@ -1445,7 +1512,7 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
         n_starts=len(starts),
         certificate=("global_bound" if converged else
                      "local_kkt_multistart" if local_ok else "best_known_feasible"),
-        upper_bound=float(upper_bound), global_gap=float(global_gap),
+        upper_bound=float(upper_bound), global_gap=float(global_gap), smoothing=smooth_note,
     )
 
 
