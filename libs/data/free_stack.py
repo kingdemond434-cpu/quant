@@ -53,6 +53,7 @@ numbers -- never a zero.
 from __future__ import annotations
 
 import csv
+import functools
 import hashlib
 import html
 import importlib
@@ -149,6 +150,11 @@ class Harvest:
 
 def _get(fetch: Fetch, h: Harvest, url: str, headers: Mapping[str, str] | None = None,
          body: bytes | None = None) -> bytes | None:
+    # A gated fetch (every FETCHERS entry runs under one, `terms_gated`) is asked BEFORE the
+    # request is counted: a fenced host is a note, never a request and never a failure.
+    if isinstance(fetch, GatedFetch) and not fetch.allows(url):
+        h.notes.append(f"terms gate: {urllib.parse.urlsplit(url).netloc} fenced, not fetched")
+        return None
     h.requests += 1
     try:
         return fetch(url, headers, body)
@@ -156,6 +162,93 @@ def _get(fetch: Fetch, h: Harvest, url: str, headers: Mapping[str, str] | None =
         h.failures[classify(exc)] += 1
         h.notes.append(f"{classify(exc)}: {url[:120]}")
         return None
+
+
+# -------------------------------------------- EVERY FETCHER BEHIND THE TERMS GATE (DATA-24) ----
+#: The verdicts that let a request out: the same set the asia collector's terms gate passes
+#: (`asia_collector._terms_state`, PR #239) -- a CONFIRMED row, or a host no row governs. refused,
+#: to_confirm and unreadable (an unimportable table) are never fetched.
+LIVE_OK: tuple[str, ...] = ("confirmed", "ungoverned")
+#: Kinds whose fetcher judges the roster row's own `terms` field itself (with its substitutes).
+ROW_TERMS_KINDS: frozenset[str] = frozenset({"cn_exchange"})
+
+
+def host_verdict(url: str) -> tuple[str, str]:
+    """The raw gate verdict for a URL (`ungoverned` when no row governs its host); `unreadable`
+    when the terms table cannot be imported -- fail closed."""
+    try:
+        gate = _terms_gate()
+    except Exception as exc:
+        return "unreadable", f"terms table unimportable ({type(exc).__name__}); fail closed"
+    return gate(url)
+
+
+class GatedFetch:
+    """A fetch that asks `host_verdict` before every request. A fenced host raises FetchError
+    (`terms_<verdict>`) instead of reaching the transport, and is recorded once per host."""
+
+    def __init__(self, fetch: Fetch) -> None:
+        self.inner = fetch
+        self.fenced: dict[str, tuple[str, str]] = {}
+
+    def allows(self, url: str) -> bool:
+        host = urllib.parse.urlsplit(url).netloc.lower()
+        state, why = host_verdict(url)
+        if state in LIVE_OK:
+            return True
+        self.fenced.setdefault(host, (state, why))
+        return False
+
+    def __call__(self, url: str, headers: Mapping[str, str] | None = None,
+                 body: bytes | None = None) -> bytes:
+        if not self.allows(url):
+            raise FetchError(f"terms_{self.fenced[urllib.parse.urlsplit(url).netloc.lower()][0]}",
+                             url)
+        return self.inner(url, headers, body)
+
+
+def row_fence(row: Mapping[str, Any]) -> tuple[str, str, str] | None:
+    """(label, verdict, why) when the roster row itself is fenced, else None: its `url` / `home`
+    host fails the gate, or its own `terms` field is not confirmed (except kinds that judge their
+    own row terms, ROW_TERMS_KINDS)."""
+    for k in ("url", "home"):
+        u = str(row.get(k) or "")
+        if "://" in u:
+            state, why = host_verdict(u)
+            if state not in LIVE_OK:
+                return f"{row.get('id')} ({urllib.parse.urlsplit(u).netloc})", state, why
+    terms = row.get("terms")
+    if (isinstance(terms, str) and terms != "confirmed"
+            and str(row.get("kind")) not in ROW_TERMS_KINDS):
+        ev = row.get("terms_evidence") or {}
+        why = str(ev.get("ban") or ev.get("judgement") or ev.get("terms_url") or "roster row")
+        return f"{row.get('id')} (roster terms)", terms, why
+    return None
+
+
+def terms_gated(fn: Callable[..., Harvest]) -> Callable[..., Harvest]:
+    """Every free_stack fetcher runs under this: the roster row is judged before the fetcher is
+    even called, and every request it then makes goes through a GatedFetch. A fenced source ends
+    BLOCKED_ON_TERMS:<verdict> with the source named, makes no request and writes no cursor."""
+    @functools.wraps(fn)
+    def run(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any], now: datetime,
+            *args: Any, **kw: Any) -> Harvest:
+        pre = row_fence(row)
+        if pre is not None:
+            h = Harvest(str(row.get("id")))
+            _block_on_terms(h, [pre])
+            return h
+        gated = fetch if isinstance(fetch, GatedFetch) else GatedFetch(fetch)
+        h = fn(gated, row, cursor, now, *args, **kw)
+        if gated.fenced:
+            shut = [(host, st, why) for host, (st, why) in sorted(gated.fenced.items())]
+            if not (h.obs or h.raw or h.datasets):
+                _block_on_terms(h, shut)
+                h.cursor = {}
+            else:
+                h.notes.append("terms gate fenced: " + ", ".join(f"{a}={b}" for a, b, _ in shut))
+        return h
+    return run
 
 
 def _json(raw: bytes | None) -> Any:
@@ -539,6 +632,7 @@ def app_rank_scores(rows: Sequence[Mapping[str, Any]], n: int = 100
     return dict(comp), dict(idx), meta
 
 
+@terms_gated
 def fetch_app_rank_apple(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                          now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
@@ -722,6 +816,7 @@ def _post_time(p: Mapping[str, Any], now: datetime) -> datetime:
         return now
 
 
+@terms_gated
 def fetch_cn_forum(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                    now: datetime) -> Harvest:
     """One forum, every topic keyword; posts deduped by id against the cursor, bot-filtered,
@@ -859,6 +954,7 @@ def document_text(raw: bytes | None, url: str) -> str | None:
     return _text(text)
 
 
+@terms_gated
 def fetch_jp_ir(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                 now: datetime) -> Harvest:
     """Every declared IR page: new transcript/Q&A documents -> tone -> delta vs the company's
@@ -980,6 +1076,7 @@ def patent_momentum(rows: Sequence[Mapping[str, str]]) -> tuple[list[dict[str, A
     return obs, meta
 
 
+@terms_gated
 def fetch_jp_patents(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                      now: datetime, *, inbox: Any = None) -> Harvest:
     """Keyless JP patent data does not exist as an API: J-PlatPat is a web search with no API and
@@ -1048,6 +1145,7 @@ def parse_trends_multiline(raw: bytes | None) -> list[tuple[str, float]]:
     return out
 
 
+@terms_gated
 def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                   now: datetime) -> Harvest:
     """Interest over time for each term. THE PUBLISHED COLUMN IS THE LOG CHANGE, computed inside
@@ -1135,6 +1233,7 @@ def parse_stockwatcher(raw: bytes | None) -> list[dict[str, Any]]:
     return out
 
 
+@terms_gated
 def fetch_congress(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                    now: datetime) -> Harvest:
     """Disclosure-dated, never trade-dated: a congressional trade becomes public on its
@@ -1195,6 +1294,7 @@ def parse_paprika_ticker(raw: bytes | None) -> dict[str, float] | None:
     return out or None
 
 
+@terms_gated
 def fetch_coinpaprika(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                       now: datetime, *, crypto_cfds: Sequence[str] = ()) -> Harvest:
     """Hourly market state per Fusion crypto CFD. Nothing here is an exchange universe: a coin is
@@ -1304,6 +1404,7 @@ def _social(h: Harvest, posts: list[dict[str, Any]], now: datetime, sid: str) ->
                           "score": round(float(tone), 4), "method": method})
 
 
+@terms_gated
 def fetch_reddit(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                  now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
@@ -1323,6 +1424,7 @@ def fetch_reddit(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any]
     return h
 
 
+@terms_gated
 def fetch_telegram(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                    now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
@@ -1454,6 +1556,7 @@ def _block_on_terms(h: Harvest, fenced: Sequence[tuple[str, str, str]]) -> None:
     h.detail = "; ".join(f"{lab}: terms {s}, not fetched ({why})" for lab, s, why in fenced)
 
 
+@terms_gated
 def fetch_akshare_direct(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                          now: datetime) -> Harvest:
     """AKShare's own upstreams, fetched directly (AKShare is not in the requirements files).
@@ -1523,6 +1626,7 @@ def parse_tushare(raw: bytes | None, value_field: str) -> list[tuple[str, float]
     return out
 
 
+@terms_gated
 def fetch_tushare(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                   now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
@@ -1553,6 +1657,7 @@ def fetch_tushare(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
     return h
 
 
+@terms_gated
 def fetch_package_route(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                         now: datetime) -> Harvest:
     """BaoStock and jqdatasdk speak their own client protocols (BaoStock a TCP socket, JoinQuant
@@ -1611,6 +1716,7 @@ def fetch_package_route(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[st
     return h
 
 
+@terms_gated
 def fetch_akshare_package(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                           now: datetime) -> Harvest:
     """AKShare through its own package when importable AND its data terms are confirmed, else
@@ -1860,6 +1966,7 @@ def score_dataset(d: Mapping[str, Any]) -> tuple[float, str | None]:
     return float(hits), None
 
 
+@terms_gated
 def fetch_catalogue(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                     now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
@@ -1894,5 +2001,6 @@ FETCHERS: dict[str, Callable[..., Harvest]] = {
     "coinpaprika": fetch_coinpaprika, "reddit": fetch_reddit, "telegram": fetch_telegram,
     "akshare": fetch_akshare_package, "tushare": fetch_tushare,
     "package": fetch_package_route, "catalogue": fetch_catalogue,
-    "cn_exchange": fetch_cn_exchange,
+    # cn_exchange judges its row's own `terms` (with substitutes); its requests are gated here
+    "cn_exchange": terms_gated(fetch_cn_exchange),
 }

@@ -227,14 +227,114 @@ def test_proposer_fences_archived_columns_by_the_licence_report(monkeypatch) -> 
     import free_stack_proposer as P
     monkeypatch.setattr(P, "series_exists", lambda sid: True)
     cols = {"akshare": {"csi300_ret": {"hypothesis": ["CHINAH"], "event": [], "why": "t"}},
-            "reddit": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}}}
+            "gtrends": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}}}
     rep = fs.licence_validation(NOW)
     grid, skipped = P.build_grid(cols, P.roster_rows(), P.licence_fence(rep))
-    assert {c["params"]["source"] for c in grid} == {"fs_reddit"}
+    assert {c["params"]["source"] for c in grid} == {"fs_gtrends"}
     assert skipped["akshare"].startswith("BLOCKED_ON_TERMS")
     # the proposer reads the report from its declared path; no report -> fail closed
     monkeypatch.setattr(P, "LICENCE", Path("/nonexistent/CN_AGGREGATOR_LICENCE.json"))
     fence = P.licence_fence()
     assert all(fence[s] == ["*"] for s in fs.LICENCE_SOURCE_IDS)
     grid2, skipped2 = P.build_grid(cols, P.roster_rows())
-    assert "akshare" in skipped2 and {c["params"]["source"] for c in grid2} == {"fs_reddit"}
+    assert "akshare" in skipped2 and {c["params"]["source"] for c in grid2} == {"fs_gtrends"}
+
+
+# ------------------------------------------- every free_stack fetcher behind the gate ---
+def _roster_rows() -> list[dict[str, Any]]:
+    return list(json.loads((_DESK / "data" / "free_stack_sources.json")
+                           .read_text("utf-8"))["sources"])
+
+
+def test_cn_guba_forum_asks_the_gate_and_makes_zero_fetches() -> None:
+    row = next(r for r in _roster_rows() if r["id"] == "cn_guba")
+    rec = Recorder()
+    h = fs.fetch_cn_forum(rec, row, {}, NOW)
+    assert rec.calls == [] and h.requests == 0 and h.cursor == {}
+    assert h.status == "BLOCKED_ON_TERMS:refused" and "guba.eastmoney.com" in h.detail
+
+
+def test_every_roster_source_sends_no_request_to_a_fenced_host(tmp_path: Path,
+                                                             monkeypatch) -> None:
+    """Walk EVERY source id in the roster through its FETCHERS entry with a recording fetch: no
+    request may reach a host whose verdict is outside fs.LIVE_OK (the collector's set)."""
+    for k in ("TUSHARE_TOKEN", "JQ_USER", "JQ_PASS"):
+        monkeypatch.setenv(k, "x")
+    assert fs.LIVE_OK == ("confirmed", "ungoverned")
+    rows = _roster_rows()
+    assert len({r["id"] for r in rows}) == len(rows)
+    blocked: set[str] = set()
+    for row in rows:
+        rec = Recorder()
+        kw: dict[str, Any] = {}
+        if row["kind"] == "coinpaprika":
+            kw["crypto_cfds"] = ["BTCUSD"]
+        if row["kind"] == "jp_patents":
+            kw["inbox"] = tmp_path / "jp_patents"
+        h = fs.FETCHERS[row["kind"]](rec, {**row, "max_seconds": 2}, {}, NOW, **kw)
+        for url in rec.calls:
+            state, _why = fs.host_verdict(url)
+            assert state in fs.LIVE_OK, (row["id"], url, state)
+        if h.status.startswith("BLOCKED_ON_TERMS"):
+            blocked.add(row["id"])
+            assert not h.cursor, row["id"]                       # the cursor never advances
+    assert {"cn_guba", "reddit", "telegram", "akshare", "tushare", "baostock",
+            "jqdatasdk"} <= blocked
+
+
+def test_a_fenced_host_reached_mid_run_is_never_requested() -> None:
+    """The row's own host is ungoverned, but a URL the fetcher builds lands on a fenced host:
+    the GatedFetch stops it before the transport, and the source says BLOCKED_ON_TERMS."""
+    row = {"id": "jp_ir_test", "kind": "jp_ir", "url": "https://example-ir.jp/",
+           "companies": [{"name": "X", "cfd": "Toyota",
+                          "ir_url": "https://guba.eastmoney.com/ir/index.html"}]}
+    rec = Recorder()
+    h = fs.fetch_jp_ir(rec, row, {}, NOW)
+    assert rec.calls == [] and h.requests == 0
+    assert h.status == "BLOCKED_ON_TERMS:refused" and "guba.eastmoney.com" in h.detail
+
+
+# ------------------------------------------------------ the project's platform bans ---
+def test_reddit_is_banned_by_project_and_never_fetched() -> None:
+    row = next(r for r in _roster_rows() if r["id"] == "reddit")
+    assert row["terms"] == "refused" and row["terms_evidence"]["ban"] == "BANNED_BY_PROJECT"
+    rec = Recorder()
+    h = fs.fetch_reddit(rec, {**row, "subreddits": ["Gold"]}, {"seen_ids": ["a"]}, NOW)
+    assert rec.calls == [] and h.requests == 0 and h.cursor == {}
+    assert h.status == "BLOCKED_ON_TERMS:refused" and "BANNED_BY_PROJECT" in h.detail
+    # even a row without its roster terms is refused by host
+    h2 = fs.fetch_reddit(rec, {"id": "r", "url": "https://old.reddit.com/",
+                               "subreddits": ["Gold"]}, {}, NOW)
+    assert rec.calls == [] and "BANNED_BY_PROJECT" in h2.detail
+
+
+@pytest.mark.parametrize("url", ["https://www.reddit.com/r/Gold/new.json",
+                                 "https://api.pushshift.io/x", "https://x.com/a",
+                                 "https://twitter.com/a", "https://api.stocktwits.com/api/2/x"])
+def test_banned_platforms_are_refused_by_host(url: str) -> None:
+    state, why = ap.terms_gate(url)
+    assert state == "refused" and why.startswith("BANNED_BY_PROJECT")
+
+
+def test_no_roster_row_points_at_a_banned_venue_unfenced() -> None:
+    for row in _roster_rows():
+        u = str(row.get("url") or "")
+        sid = _sid_of_host(_host(u)) if "://" in u else None
+        if sid in ap.PROJECT_BANS:
+            assert row.get("terms") == "refused", row["id"]
+            assert fs.row_fence(row) is not None, row["id"]
+    assert ap.GATE_TERMS["project_ban_discord_user"][0] == "refused"
+    # Discord is a credential ban (bot token permitted), so no host row stands for it
+    assert not any(k.startswith("discord") for k in ap.TERMS_HOSTS)
+
+
+def test_telegram_is_gated_and_needs_a_permitting_quote() -> None:
+    row = next(r for r in _roster_rows() if r["id"] == "telegram")
+    state, _why = ap.terms_gate("https://t.me/s/somechannel")
+    assert state in ("refused", "to_confirm")
+    assert fs.row_fence(row) is not None
+    rec = Recorder()
+    h = fs.fetch_telegram(rec, {**row, "channels": ["c"]}, {}, NOW)
+    assert rec.calls == [] and h.status.startswith("BLOCKED_ON_TERMS:")
+    ev = ap.GATE_TERMS_EVIDENCE["telegram_public_preview"]
+    assert ev["terms_url"] == "https://telegram.org/tos" and "scraping" in ev["terms_quote"]

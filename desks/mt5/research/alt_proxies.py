@@ -2533,8 +2533,42 @@ TERMS_HOSTS: dict[str, str] = {
     "tushare.pro": "asia_tushare",
     "baostock.com": "cn_baostock",
     "joinquant.com": "cn_jqdatasdk",
+    # Every free_stack fetcher asks this table before its first request (DATA-24 follow-up). The
+    # project's standing platform bans (coordinator ruling 2026-09-30, carried on #162's
+    # libs/data/terms_fence.py) are rows here too, so the gate refuses them by host.
+    "reddit.com": "project_ban_reddit",
+    "redd.it": "project_ban_reddit",
+    "redditmedia.com": "project_ban_reddit",
+    "pushshift.io": "project_ban_reddit",
+    "pullpush.io": "project_ban_reddit",
+    "photon-reddit.com": "project_ban_reddit",
+    "x.com": "project_ban_x",
+    "twitter.com": "project_ban_x",
+    "twimg.com": "project_ban_x",
+    "stocktwits.com": "project_ban_stocktwits",
+    "t.me": "telegram_public_preview",
+    "telegram.me": "telegram_public_preview",
+    # Discord is NOT host-mapped: the ban is on a USER token (a bot token is permitted), which a
+    # host cannot tell apart; #162's terms_fence.check_request enforces it per credential.
 }
 
+#: THE PROJECT'S STANDING PLATFORM BANS -- a ruling, not a reading of terms, so no `terms_quote`
+#: can unfence them: an entry leaves only on a recorded agreement (the #162 rule). Reasons are the
+#: rulings' own words as #162 carries them (libs/data/terms_fence.py on that branch).
+_BAN_REDDIT = ("Reddit's User Agreement and Data API terms cover all automated access, including "
+               "RSS and the anonymous JSON listings, and require a separate agreement for "
+               "commercial use; this desk is commercial and holds none (project coordinator "
+               "ruling 2026-09-30)")
+_BAN_X = ("X's Developer Agreement makes its paid API the only authorized automated access and "
+          "its Terms forbid crawling or scraping without prior written consent; the principal "
+          "ruled no paid X (2026-09-30)")
+_BAN_STOCKTWITS = ("StockTwits Terms s.5 forbid extracting data by automated means except as "
+                   "expressly authorized in writing or through an approved API; the desk holds no "
+                   "authorization (checked 2026-09-30)")
+_BAN_DISCORD = ("Discord permits automation only through a bot account; a user token driving the "
+                "API is barred (the Discord ruling: bot token only, never a user token)")
+PROJECT_BANS: frozenset[str] = frozenset({"project_ban_reddit", "project_ban_x",
+                                          "project_ban_stocktwits", "project_ban_discord_user"})
 #: GATE-ONLY TERMS ROWS: decisions for feeds that are not alt_proxies sources (so they stay out of
 #: TERMS, whose keys are exactly this organ's sources) but are fetched by another organ through
 #: `terms_gate`. Same vocabulary, same fail-closed rule, same evidence shape.
@@ -2552,6 +2586,12 @@ GATE_TERMS: dict[str, tuple[str, str]] = {
     "cn_akshare_data": ("refused", "AKShare README Statement 1: 'All data provided by AKShare is "
                         "just for academic research purpose'. Its MIT licence covers the wrapper "
                         "CODE only, never the upstream DATA"),
+    "project_ban_reddit": ("refused", "BANNED_BY_PROJECT: " + _BAN_REDDIT),
+    "project_ban_x": ("refused", "BANNED_BY_PROJECT: " + _BAN_X),
+    "project_ban_stocktwits": ("refused", "BANNED_BY_PROJECT: " + _BAN_STOCKTWITS),
+    "project_ban_discord_user": ("refused", "BANNED_BY_PROJECT: " + _BAN_DISCORD),
+    "telegram_public_preview": ("refused", "Telegram ToS: data scraping is prohibited under its "
+                                "Content Licensing and AI Scraping Terms; no permitting clause"),
     "cn_jqdatasdk": ("to_confirm", "JoinQuant / jqdatasdk terms not read; an authenticated "
                      "account route, so a credential waits on a quoted permitting clause"),
 }
@@ -2641,6 +2681,23 @@ GATE_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "box_action": ("none: the data route is closed by AKShare's own statement and by its "
                        "upstreams' terms; lawful substitutes are named in "
                        "reports/CN_AGGREGATOR_LICENCE.json"),
+        "checked_at": _CHK_D24},
+    **{b: {"terms_url": "(project ruling, not a terms page)",
+           "terms_quote": "(a project ban: no quote can unfence it)",
+           "ban": "BANNED_BY_PROJECT",
+           "judgement": "REFUSED: " + GATE_TERMS[b][1],
+           "box_action": "none: lifted only by a recorded agreement and the coordinator's ruling",
+           "checked_at": "2026-09-30"} for b in sorted(PROJECT_BANS)},
+    "telegram_public_preview": {
+        "terms_url": "https://telegram.org/tos",
+        "terms_quote": ("Telegram additionally prohibits data scraping as part of its Content "
+                        "Licensing and AI Scraping Terms, which apply to all users, businesses, "
+                        "and third-party services accessing the platform."),
+        "judgement": ("REFUSED: the ToS prohibits data scraping for all users and businesses; "
+                      "nothing permits automated reading of t.me/s channel previews"),
+        "read_via": "web reader (WebFetch); re-read character-exact on the box",
+        "box_action": ("re-read telegram.org/tos and the Content Licensing and AI Scraping Terms; "
+                       "a flip needs a clause permitting automated reading of public previews"),
         "checked_at": _CHK_D24},
     "cn_jqdatasdk": {
         "terms_url": "https://www.joinquant.com/",

@@ -117,7 +117,9 @@ def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]],
                fence: dict[str, list[str]] | None = None
                ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """The full grid, in a stable order (source, column, symbol, chart, arm). Columns the
-    licence report fences (DATA-24) are left out and named in `skipped`."""
+    licence report fences (DATA-24) are left out and named in `skipped`, as are the columns of a
+    roster row the terms gate fences (a project ban, a refused or unconfirmed row)."""
+    from libs.data.free_stack import row_fence
     out: list[dict[str, Any]] = []
     skipped: dict[str, str] = {}
     fence = licence_fence() if fence is None else fence
@@ -127,6 +129,12 @@ def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]],
             skipped[sid] = "no roster row"
             continue
         shut = set(fence.get(sid) or ())
+        row_shut = row_fence(src)
+        if row_shut is not None:
+            # a banned or fenced source's ARCHIVED columns never mint either (no Reddit data
+            # feeds a cell, whatever an older pass stored)
+            skipped[sid] = f"BLOCKED_ON_TERMS:{row_shut[1]}: {row_shut[0]}"
+            continue
         if "*" in shut:
             skipped[sid] = "BLOCKED_ON_TERMS: fenced by reports/CN_AGGREGATOR_LICENCE.json"
             continue
