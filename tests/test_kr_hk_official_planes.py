@@ -212,6 +212,8 @@ def test_without_a_calendar_the_stamp_is_never_before_first_seen(
 def test_plane_terms_are_quoted_or_fenced_and_refused_hosts_are_not_sources() -> None:
     for sid in PLANE_IDS:
         ev = A.KR_HK_TERMS_EVIDENCE[sid]
+        if sid == "bis_kr_policy_rate":                       # tested in its own block below
+            continue
         assert ev["terms_url"].startswith("https://") and ev["checked_at"] == "2026-10-06"
         if sid.startswith("kr_ecos_"):
             # the ECOS terms were never read: fenced, never confirmed without a quoted clause
@@ -466,3 +468,148 @@ def test_department_miner_runs_dry(tmp_path: Path) -> None:
     ctx = M.make_ctx(None, 30.0, dry_run=True)
     res = M.run_miner("official_plane", ctx)
     assert res["status"] == "RAN" and "lane(s)" in res["why"]
+
+
+# ---------------------------------------------------------------------------- the BIS substitute
+ECOS_FENCED = ("kr_ecos_base_rate", "kr_ecos_call_rate", "kr_ecos_fx_reserves",
+               "kr_ecos_export_prices", "kr_bok_card_spend")
+BIS_ID = "bis_kr_policy_rate"
+
+
+def _bis_rows() -> list[dict[str, str]]:
+    import csv
+    import io
+    text = (FIX / f"{BIS_ID}.csv").read_text("utf-8")
+    return list(csv.DictReader(io.StringIO(text)))
+
+
+def test_bis_kr_policy_rate_parses_daily_kr_only() -> None:
+    src = A.BY_ID[BIS_ID]
+    assert src.parse is not None
+    obs = src.parse((FIX / f"{BIS_ID}.csv").read_bytes(), A.Ctx(fetched_at=NOW))
+    got = {(o.series, o.period): o.value for o in obs}
+    assert got[("base_rate", date(2026, 8, 7))] == pytest.approx(2.50)
+    assert got[("base_rate", date(2026, 8, 10))] == pytest.approx(2.25)
+    assert {o.series for o in obs} == {"base_rate"}
+    # the NaN day, the monthly row and the US row are dropped, never a zero
+    assert date(2026, 8, 22) not in {o.period for o in obs}
+    assert len(obs) == sum(1 for r in _bis_rows() if r["REF_AREA"] == "KR"
+                           and r["FREQ"] == "D" and r["OBS_VALUE"] != "NaN")
+    # an SDMX "No results" error document (HTTP 200) parses to nothing
+    assert src.parse(b"<message:Error><com:Text>No results for query</com:Text>"
+                     b"</message:Error>", A.Ctx()) == []
+
+
+def test_bis_parser_reads_the_bulk_flat_zip_axis_ingest_reads() -> None:
+    """The same rows in WS_CBPOL_csv_flat.zip's shape: CODE:Label headers and codes, zipped."""
+    import csv
+    import io
+    import zipfile
+
+    from research import axis_ingest
+    labels = {"FREQ": "Frequency", "REF_AREA": "Reference area",
+              "TIME_PERIOD": "Time period or range", "OBS_VALUE": "Observation Value"}
+    vals = {"D": "Daily", "M": "Monthly", "KR": "Korea", "US": "United States"}
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow([f"{k}:{v}" for k, v in labels.items()])
+    for r in _bis_rows():
+        w.writerow([f"{r['FREQ']}:{vals[r['FREQ']]}", f"{r['REF_AREA']}:{vals[r['REF_AREA']]}",
+                    r["TIME_PERIOD"], r["OBS_VALUE"]])
+    blob = io.BytesIO()
+    with zipfile.ZipFile(blob, "w") as z:
+        z.writestr("WS_CBPOL_csv_flat.csv", buf.getvalue())
+    src = A.BY_ID[BIS_ID]
+    assert src.parse is not None
+    flat = src.parse(blob.getvalue(), A.Ctx())
+    sdmx = src.parse((FIX / f"{BIS_ID}.csv").read_bytes(), A.Ctx())
+    assert flat == sdmx and flat
+    assert axis_ingest.BIS_AREA_CCY["KR"] == "KRW"             # the same dataflow, the same area
+
+
+def test_bis_kr_policy_rate_is_confirmed_keyless_and_passes_the_gate() -> None:
+    src = A.BY_ID[BIS_ID]
+    assert src.terms == "confirmed" and src.key_env is None and not src.config_env
+    assert A.status_of(src, {}) == "UNMEASURED_LIVE_YIELD"
+    ev = A.KR_HK_TERMS_EVIDENCE[BIS_ID]
+    assert ev["terms_url"] == "https://www.bis.org/terms_statistics.htm"
+    assert ev["terms_quote"] == "The use of the statistics is unrestricted, provided that"
+    assert ev["decision"] == "confirmed" and ev["checked_at"]
+    state, why = A.terms_gate(src.url)
+    assert state == "confirmed" and "terms_statistics" in why
+    assert A.terms_gate(BIS_ID)[0] == "confirmed"
+    # the collector's own BIS rows are judged by the same host decision
+    C = _collector()
+    reg = json.loads((DESK / "data" / "asia_sources.json").read_text("utf-8"))
+    row = next(r for r in reg["sources"] if r["id"] == "bis_cbpol")
+    assert C._terms_state(row, C._resolve_url(row))[0] == "confirmed"
+    # www.bis.org publications are NOT governed by the statistics terms
+    assert A.terms_gate("https://www.bis.org/review/r1.htm")[0] == "ungoverned"
+
+
+def test_bis_row_mirrors_the_ecos_base_rate_it_stands_in_for() -> None:
+    bis, ecos = A.BY_ID[BIS_ID], A.BY_ID["kr_ecos_base_rate"]
+    assert bis.instruments == ecos.instruments == {"USDKRW": -1}
+    assert bis.signal_series == ecos.signal_series and bis.transform == ecos.transform
+    assert bis.series_instruments == ecos.series_instruments
+    for k in ("mechanism", "payer", "constraint", "participant_structure",
+              "failure_mode_hypothesis", "crowding_prior", "region", "cadence"):
+        assert getattr(bis, k) == getattr(ecos, k), k
+    assert bis.data_source == "bis:WS_CBPOL"
+
+
+def test_bis_release_rule_is_late_against_the_measured_bis_lag() -> None:
+    rule = A.BY_ID[BIS_ID].rule
+    assert rule.calendar == "KR"  # type: ignore[attr-defined]
+    for d in (date(2026, 8, 10), date(2026, 9, 23), date(2026, 12, 31)):
+        assert rule(d) >= datetime(d.year, d.month, d.day, tzinfo=UTC) + timedelta(days=35)
+    assert A.BIS_KR_LAG_D >= 25 + 7                  # 25 days stale measured 2026-08-28
+
+
+def test_ecos_rows_stay_fenced_and_the_substitute_is_unmeasured() -> None:
+    for sid in ECOS_FENCED:
+        assert A.BY_ID[sid].terms == "to_confirm", sid
+        assert A.TERMS[sid][0] == "to_confirm", sid
+        assert A.status_of(A.BY_ID[sid]) == "BLOCKED_ON_TERMS:to_confirm", sid
+    assert "kr_ecos_base_rate" not in A.NO_SUBSTITUTE
+    assert {"kr_bok_card_spend", "kr_ecos_fx_reserves", "kr_ecos_export_prices"} <= set(
+        A.NO_SUBSTITUTE)
+    for sid in ("kr_bok_card_spend", "kr_ecos_fx_reserves", "kr_ecos_export_prices"):
+        assert "single-page app" in A.NO_SUBSTITUTE[sid] and "2026-10-07" in A.NO_SUBSTITUTE[sid]
+    base = A.substitute_check("kr_ecos_base_rate", BIS_ID)
+    assert base["verdict"] == "UNMEASURED" and base["verdict"] != "COVERED"
+    assert base["relation"] == "identity_by_publisher" and "republished by the BIS" in base["why"]
+    call = A.substitute_check("kr_ecos_call_rate", BIS_ID)
+    assert call["verdict"] == "UNMEASURED" and call["relation"] == "nearest_lawful_proxy"
+    assert A.SUBSTITUTE_VS_ORIGINAL == {}                   # nothing measured, nothing entered
+
+
+def test_the_152_law_needs_corr_and_n() -> None:
+    def v(corr: float, n: int) -> str:
+        m = {"kr_ecos_base_rate": {BIS_ID: {"corr": corr, "n": n}}}
+        return str(A.substitute_check("kr_ecos_base_rate", BIS_ID, m)["verdict"])
+    assert v(0.99, 11) == "NOT_COVERED" and v(0.49, 400) == "NOT_COVERED"
+    assert v(0.5, 12) == "COVERED"
+    m = {"kr_ecos_base_rate": {BIS_ID: {"corr": 0.97, "n": 60}}}
+    assert A.covered_candidates("kr_ecos_base_rate", m) == (BIS_ID,)
+    assert "kr_ecos_base_rate" not in A.unsubstituted(m)
+
+
+def test_bis_cells_axis_and_plane_carry_the_data_source(tmp_path: Path) -> None:
+    paths = _fixture_pass(tmp_path)
+    axis = json.loads((paths.axes / f"alt_{BIS_ID}.json").read_text("utf-8"))
+    assert axis["data_source"] == "bis:WS_CBPOL" and "base_rate.value" in axis["series"]
+    gains = {f"{BIS_ID}|base_rate|USDKRW": {"verdict": "PASS", "ic": -0.2, "n": 40}}
+    (cell,) = A.direct_cells(gains, NOW)
+    assert cell["data_source"] == "bis:WS_CBPOL"
+    assert cell["provenance"]["data_source"] == "bis:WS_CBPOL"
+    assert cell["params"]["source"] == f"alt_{BIS_ID}__base_rate"
+    # the KR official plane (department loop) reads it as a PARSED lane, the ECOS row as fenced
+    from countries.kr import official_plane as K
+    doc = K.run(paths=paths, report_default=tmp_path / "KR.json", now=NOW)
+    lanes = {r["dataset"]: r for r in doc["lanes"]}
+    assert lanes[BIS_ID]["status"] == "PARSED" and lanes[BIS_ID]["data_source"] == "bis:WS_CBPOL"
+    assert lanes[BIS_ID]["mapped_instruments"] == lanes["kr_ecos_base_rate"][
+        "mapped_instruments"] == ["USDKRW"]
+    (cand,) = lanes["kr_ecos_base_rate"]["substitute_candidates"]
+    assert cand["substitute"] == BIS_ID and cand["verdict"] == "UNMEASURED"

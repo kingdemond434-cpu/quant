@@ -542,8 +542,11 @@ BLOCKED = ("jp_jnto_arrivals", "cn_holiday_spend", "tr_bkm_card", "br_cielo_icva
 def test_every_blocked_source_is_substituted_or_says_why_not() -> None:
     blocked = {s.id for s in A.SOURCES if s.terms != "confirmed"}
     assert blocked == set(BLOCKED)
-    assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) == blocked
+    # every blocked source is substituted, a #152 candidate, or says why there is none
+    assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) | set(A.SUBSTITUTE_CANDIDATES) == blocked
     assert not set(A.SUBSTITUTED_BY) & set(A.NO_SUBSTITUTE)
+    assert not set(A.SUBSTITUTE_CANDIDATES) & (set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE))
+    assert set(A.SUBSTITUTE_CANDIDATES) == {"kr_ecos_base_rate", "kr_ecos_call_rate"}
     for sid, subs in A.SUBSTITUTED_BY.items():
         assert subs and len(subs) == len(set(subs)), sid
         for x in subs:
@@ -553,6 +556,11 @@ def test_every_blocked_source_is_substituted_or_says_why_not() -> None:
         assert A.status_of(A.BY_ID[sid]) == "BLOCKED+SUBSTITUTE:" + ",".join(subs)
     for sid, why in A.NO_SUBSTITUTE.items():
         assert why and A.status_of(A.BY_ID[sid]) == f"BLOCKED_ON_TERMS:{A.BY_ID[sid].terms}"
+    # a named candidate is not coverage: UNMEASURED leaves the source BLOCKED_ON_TERMS
+    for sid, cands in A.SUBSTITUTE_CANDIDATES.items():
+        assert cands and all(A.BY_ID[x].terms == "confirmed" for x in cands), sid
+        assert A.status_of(A.BY_ID[sid]) == f"BLOCKED_ON_TERMS:{A.BY_ID[sid].terms}", sid
+        assert not A.covered_candidates(sid)
 
 
 def test_a_substituted_source_is_still_never_fetched(tmp_path: Path) -> None:
@@ -566,9 +574,13 @@ def test_a_substituted_source_is_still_never_fetched(tmp_path: Path) -> None:
     rep = A.run(paths, fixtures=FIX, donate=False, now=NOW)
     assert rep["blocked_substituted"]["kr_busan_port"] == ["kr_mof_container_teu",
                                                            "imf_portwatch_ports"]
-    assert set(rep["blocked_unsubstituted"]) == set(A.NO_SUBSTITUTE) == {
-        "in_npci_upi", "za_beti", "kr_bok_card_spend", "kr_ecos_base_rate", "kr_ecos_call_rate",
-        "kr_ecos_fx_reserves", "kr_ecos_export_prices"}
+    assert set(A.NO_SUBSTITUTE) == {"in_npci_upi", "za_beti", "kr_bok_card_spend",
+                                    "kr_ecos_fx_reserves", "kr_ecos_export_prices"}
+    # the two ECOS rows with an UNMEASURED candidate still count as unsubstituted
+    assert set(rep["blocked_unsubstituted"]) == set(A.unsubstituted()) == {
+        *A.NO_SUBSTITUTE, "kr_ecos_base_rate", "kr_ecos_call_rate"}
+    assert {c["verdict"] for v in rep["substitute_candidates"].values() for c in v} == {
+        "UNMEASURED"}
     assert rep["sources"]["tr_bkm_card"]["status"].startswith("BLOCKED+SUBSTITUTE:")
     rows = {r["id"]: r for r in A.roster_rows()}
     assert rows["jp_jnto_arrivals"]["substituted_by"] == ["jp_estat_immigration"]

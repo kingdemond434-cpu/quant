@@ -1589,6 +1589,9 @@ def parse_kr_mof_container(body: bytes, ctx: Ctx) -> list[Obs]:
 # commercial use / systematic retrieval, so the fail-closed terms gate below never builds them a
 # fetcher (the refusals and their verbatim quotes are in `KR_HK_TERMS_EVIDENCE` and are carried by
 # `countries/kr|hk/official_plane.py` into the departments' reports).
+# The ECOS rows are fenced on unread terms (to_confirm); the BOK base rate itself is read keylessly
+# from the BIS's republication (`bis_kr_policy_rate`, WS_CBPOL D.KR, 2026-10-07), a #152
+# substitute CANDIDATE that stays UNMEASURED against ECOS until a correlation is measured.
 
 def _ecos_period(t: str) -> date | None:
     """ECOS TIME: YYYYMMDD (daily), YYYYMM (monthly -> month end), YYYYQn (quarter end)."""
@@ -1625,6 +1628,68 @@ def make_ecos_parser(series: str) -> Callable[[bytes, Ctx], list[Obs]]:
         return out
 
     parse.__name__ = f"parse_ecos_{series}"
+    return parse
+
+
+def make_bis_cbpol_parser(area: str, series: str) -> Callable[[bytes, Ctx], list[Obs]]:
+    """A BIS WS_CBPOL parser for ONE reference area's DAILY policy rate, named `series`.
+
+    Reads both shapes BIS publishes the dataflow in: the SDMX CSV a keyed query returns (columns
+    `FREQ,REF_AREA,TIME_PERIOD,OBS_VALUE,...`, codes bare) and the bulk flat file
+    `WS_CBPOL_csv_flat.zip` that `axis_ingest.ingest_bis` reads (columns and codes as
+    `CODE:Label`), zipped or not. Columns are matched on their CODE through
+    `axis_ingest._bis_col`, the desk's one reader of that header, so a label change breaks
+    neither. Only FREQ=D rows of `area` are kept (the bulk file also carries monthly rows). A
+    body without the three columns -- an SDMX `No results for query` error document returned with
+    HTTP 200, which is a key-shape bug until proven a gap -- parses to nothing, never a zero."""
+    want = area.upper()
+
+    def _code(v: Any) -> str:
+        return str(v or "").split(":")[0].strip().upper()
+
+    def parse(body: bytes, ctx: Ctx) -> list[Obs]:
+        import csv
+        import zipfile
+        try:
+            from research import axis_ingest as ai
+        except ImportError:                                    # pragma: no cover - path variant
+            import axis_ingest as ai  # type: ignore[import-not-found,no-redef]
+        _bis_col: Callable[[dict[str, Any], str], str | None] = ai._bis_col
+        if body[:2] == b"PK":
+            try:
+                with zipfile.ZipFile(io.BytesIO(body)) as z:
+                    names = [n for n in z.namelist() if n.lower().endswith(".csv")]
+                    if not names:
+                        return []
+                    text = z.read(names[0]).decode("utf-8-sig", errors="replace")
+            except (zipfile.BadZipFile, OSError, KeyError):
+                return []
+        else:
+            text = body.decode("utf-8-sig", errors="replace")
+        out: list[Obs] = []
+        c_freq = c_area = c_time = c_val = None
+        for row in csv.DictReader(io.StringIO(text)):
+            if c_area is None:
+                c_freq = _bis_col(row, "FREQ")
+                c_area, c_time, c_val = (_bis_col(row, k) for k in
+                                         ("REF_AREA", "TIME_PERIOD", "OBS_VALUE"))
+                if not (c_area and c_time and c_val):
+                    return []
+            if _code(row.get(c_area)) != want:
+                continue
+            if c_freq is not None and _code(row.get(c_freq)) != "D":
+                continue
+            t = str(row.get(c_time) or "").strip()[:10]
+            v = _num(str(row.get(c_val) or ""))
+            try:
+                d = date.fromisoformat(t)
+            except ValueError:
+                continue
+            if v is not None and math.isfinite(v):
+                out.append(Obs(series, d, v))
+        return out
+
+    parse.__name__ = f"parse_bis_cbpol_{want.lower()}_{series}"
     return parse
 
 
@@ -2040,8 +2105,10 @@ class Source:
     terms: str = "to_confirm"
     #: Env vars that must hold REAL codes before a request may be built (no placeholder default).
     config_env: tuple[str, ...] = ()
-    #: `<provider>:<dataset>` for the terms gate a cell door reads (#211's `data_source`);
-    #: empty means `alt_proxies:<id>` (see `data_source_of`).
+    #: `<provider>:<dataset>` for the terms gate a cell door reads (#211's `data_source`), and
+    #: the publisher dataset the values are read from when it is not the row's own name (a
+    #: republished series, e.g. `bis:WS_CBPOL`); carried on every cell, axis and roster row.
+    #: Empty means `alt_proxies:<id>` (see `data_source_of`).
     data_source: str = ""
 
     def instruments_for(self, series: str) -> dict[str, int]:
@@ -2843,6 +2910,30 @@ _HKMA = ("HKMA Open API, published on DATA.GOV.HK: free commercial and non-comme
 _ECOS_NOTE = ("parsed ECOS item; the code path is overridable (ALT_ECOS_*_PATH) and is verified "
               "on the box against StatisticItemList -- a wrong code parses to nothing, never a "
               "value. Key: ECOS_API_KEY (BOK_API_KEY is adopted as its alias)")
+#: THE KEYLESS BIS SUBSTITUTE FOR THE FENCED ECOS BASE RATE (2026-10-07). BIS WS_CBPOL republishes
+#: every reporting central bank's own policy rate; REF_AREA KR is the Bank of Korea's base rate,
+#: sourced from the BOK. `axis_ingest.ingest_bis` already reads the bulk file for the carry axis,
+#: but its output keeps only CARRY_PAIRS rows and no pair has a KRW leg, so the axis holds no KR
+#: series to read; and the bulk file is ~207 MB of CSV (docs/research/data_axis_watchlist.md),
+#: past this organ's MAX_BYTES and a vault blob per BIS refresh on an hourly leg. So this row
+#: asks the same dataflow for ONE key, D.KR, through the BIS SDMX API (the v1 csv form the desk
+#: verified for WS_XRU, data_universe_map.json); the parser also reads the bulk flat file, so
+#: ALT_BIS_KR_URL may point at axis_ingest.BIS_URL without a code change.
+BIS_KR_URL = os.environ.get(
+    "ALT_BIS_KR_URL",
+    "https://stats.bis.org/api/v1/data/WS_CBPOL/D.KR/all?format=csv&startPeriod=2010-01-01")
+#: PIT, LATE ON PURPOSE. The BOK announces a base-rate decision at the MPC (~10:00 KST), so the
+#: fact is public on its effective day; but this row learns it only when BIS refreshes WS_CBPOL,
+#: and BIS lags the origin for KR: measured 2026-08-28, the newest KR observation was 2026-08-03,
+#: 25 days stale (docs/research/data_axis_watchlist.md, the per-REF_AREA count). BIS publishes no
+#: per-area refresh calendar this desk has read, so the rule is the measured staleness plus ten
+#: days, rolled past Korean holidays: 35 days. A late stamp only costs edge; an early one invents
+#: it. On the box, first_seen_at - event_time on live points measures the real lag; if it ever
+#: exceeds 35 days, raise this rule rather than trust it.
+BIS_KR_LAG_D = 35
+_BIS = ("BIS statistics (WS_CBPOL), keyless: use unrestricted provided the BIS is cited when "
+        "reproduced (bis.org/terms_statistics.htm); the series is the Bank of Korea's own "
+        "published base rate as republished by the BIS")
 
 KR_HK_PLANE_SOURCES: tuple[Source, ...] = (
     Source(
@@ -2910,6 +3001,27 @@ KR_HK_PLANE_SOURCES: tuple[Source, ...] = (
         failure_mode_hypothesis=("fails when the won-basis index moves on the won itself "
                                  "(a translation effect) rather than on contract prices"),
         crowding_prior="low", note=_ECOS_NOTE),
+    Source(
+        id="bis_kr_policy_rate",
+        name="Bank of Korea base rate, as republished by the BIS (WS_CBPOL D.KR, daily)",
+        url=BIS_KR_URL, region="KR", language="en",
+        cadence="daily", parse=make_bis_cbpol_parser("KR", "base_rate"),
+        rule=_lag_rule(BIS_KR_LAG_D, 0, calendar="KR"),
+        transform="given", instruments={"USDKRW": -1},
+        signal_series=("base_rate",),
+        # The same mechanism, payer, constraint and failure mode as kr_ecos_base_rate: it is the
+        # same number (the BOK's base rate), read from the BIS instead of from ECOS.
+        mechanism=("the BOK policy rate is the anchor of KRW carry; a move (or the end of a "
+                   "cycle) reprices the won against the dollar before Korean flows adjust"),
+        payer="won carry positions sized on the prior policy path",
+        constraint="FX swap and NDF books reprice only at MPC dates",
+        licence=_BIS, source_culture="KR/ko", participant_structure=("policy_driven",),
+        failure_mode_hypothesis=("fails when the move was fully priced by the KTB curve and "
+                                 "when Fed surprises dominate the same week"),
+        crowding_prior="high", data_source="bis:WS_CBPOL",
+        note=("keyless substitute for the fenced kr_ecos_base_rate (SUBSTITUTE_CANDIDATES): "
+              "identity by publisher, UNMEASURED against ECOS; stamped 35 days late "
+              "(BIS_KR_LAG_D). URL overridable: ALT_BIS_KR_URL")),
     Source(
         id="hk_hkma_interbank_liquidity",
         name="HKMA daily interbank liquidity (aggregate balance, CU FX leg, HIBOR, TWI)",
@@ -2982,6 +3094,9 @@ KR_HK_TERMS: dict[str, tuple[str, str]] = {
                             "permitting clause quoted (2026-10-06)"),
     "kr_ecos_export_prices": ("to_confirm", "BOK ECOS Open API: terms of use not read, no "
                               "permitting clause quoted (2026-10-06)"),
+    # The keyless substitute for kr_ecos_base_rate: BIS statistics terms, quoted (2026-10-07).
+    "bis_kr_policy_rate": ("confirmed", "BIS terms of permitted use of statistics: use is "
+                           "unrestricted, provided the BIS is cited when reproduced"),
     "hk_hkma_interbank_liquidity": ("confirmed", "DATA.GOV.HK terms: commercial and "
                                     "non-commercial reuse, free, with attribution"),
     "hk_hkma_hibor_fixing": ("confirmed", "DATA.GOV.HK terms: commercial and non-commercial "
@@ -3031,13 +3146,41 @@ _ECOS_TERMS_ATTEMPT = {
     "decision": "to_confirm",
     "box_action": ("read https://ecos.bok.or.kr/api/ (이용약관 / 이용안내) on the box, quote the "
                    "clause that permits use of the data, and only then set these rows confirmed"),
+    "box_read": ("2026-10-07: fetched from the trading box (HTTP 200), ecos.bok.or.kr/api is a "
+                 "client-side single-page app and the response carried only the page title "
+                 "('한국은행 Open API 서비스'); the 이용약관 render in the browser and were not in "
+                 "the response. Still no clause quoted: the rows stay to_confirm. The base rate "
+                 "is reached keylessly through bis_kr_policy_rate instead"),
     "checked_at": _CHK_PLANES}
+#: BIS TERMS OF PERMITTED USE OF STATISTICS. The quote is the clause as the desk read it from
+#: bis.org/terms_statistics.htm on 2026-08-29 (data/data_universe_map.json,
+#: bis_ws_xru_daily_usd_fx_panel, `license` and `provenance`); this container's proxy refused
+#: www.bis.org, data.bis.org and stats.bis.org on 2026-10-07, so the page was not re-read today.
+#: The conditions that follow "provided that" are recorded as the desk summarised them then,
+#: marked as a summary, never as quoted text.
+_CHK_BIS = "2026-10-07"
+_BIS_TERMS_EVIDENCE: dict[str, str] = {
+    "terms_url": "https://www.bis.org/terms_statistics.htm",
+    "terms_quote": "The use of the statistics is unrestricted, provided that",
+    "conditions_summary": ("(summary, not a quote) the BIS is cited as the source when the "
+                           "statistics are reproduced; translations are marked unofficial; use "
+                           "is not misleading; a commercial publication including them adds no "
+                           "charge for them. Own-account research and trading reproduce and "
+                           "publish nothing"),
+    "attribution": "Source: BIS (WS_CBPOL, central bank policy rates)",
+    "quote_read_at": "2026-08-29 (data/data_universe_map.json bis_ws_xru_daily_usd_fx_panel)",
+    "robots": ("data.bis.org/robots.txt: User-agent: * / Allow: / ; disallows only the "
+               "query-param patterns *filter= *sort= *q= *rows= *cols= *page_size= (read "
+               "2026-08-29); the SDMX path on stats.bis.org uses none of them"),
+    "decision": "confirmed",
+    "checked_at": _CHK_BIS}
 #: Evidence for the plane rows AND for the two refused hosts no fetcher is built for.
 KR_HK_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
     **{sid: {**_DGH, **_HKMA_LISTING[sid]} for sid in _HKMA_LISTING},
     **{sid: dict(_ECOS_TERMS_ATTEMPT)
        for sid in ("kr_ecos_base_rate", "kr_ecos_call_rate", "kr_ecos_fx_reserves",
                    "kr_ecos_export_prices", "kr_bok_card_spend")},
+    "bis_kr_policy_rate": dict(_BIS_TERMS_EVIDENCE),
     "kr_krx_market_data": {
         "terms_url": "https://openapi.krx.co.kr/contents/OPP/INFO/OPPINFO005.jsp",
         "terms_quote": ("Art. 6(2): API Users may only use the API Service for non-commercial "
@@ -3603,6 +3746,10 @@ TERMS_HOSTS: dict[str, str] = {
     "ecos.bok.or.kr": "kr_bok_card_spend",          # ECOS Open API -- to_confirm
     "api.hkma.gov.hk": "hk_hkma_interbank_liquidity",
     "index.baidu.com": "asia_baidu_index",          # login cookie -- refused
+    # BIS statistics hosts only (www.bis.org publications carry other terms): confirmed. The
+    # asia collector's bis_cbpol / bis_eer rows and bis_kr_policy_rate are judged here.
+    "data.bis.org": "bis_statistics",
+    "stats.bis.org": "bis_statistics",
 }
 
 #: GATE-ONLY TERMS ROWS: decisions for feeds that are not alt_proxies sources (so they stay out
@@ -3627,6 +3774,8 @@ GATE_TERMS: dict[str, tuple[str, str]] = {
                         "are public domain; data may be used and distributed"),
     "asia_nasa_firms": ("confirmed", "NASA Earth science data policy: available fully, "
                         "openly and without restrictions, including corporate use"),
+    "bis_statistics": ("confirmed", "BIS terms of permitted use of statistics: use is "
+                       "unrestricted, provided the BIS is cited when reproduced"),
 }
 GATE_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
     "kr_krx_market_data": KR_HK_TERMS_EVIDENCE["kr_krx_market_data"],
@@ -3669,6 +3818,7 @@ GATE_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                         "individual use, but also are freely available for corporate use as "
                         "well."),
         "decision": "confirmed", "checked_at": _CHK_PLANES},
+    "bis_statistics": dict(_BIS_TERMS_EVIDENCE),
 }
 
 
@@ -3717,14 +3867,45 @@ SUBSTITUTED_BY: dict[str, tuple[str, ...]] = {
     "kr_busan_port": ("kr_mof_container_teu", "imf_portwatch_ports"),
     "cn_mot_port_weekly": ("imf_portwatch_ports",),
 }
-#: Blocked sources with NO verified lawful substitute, and why (each has a box action queued in
+#: SUBSTITUTE CANDIDATES UNDER THE #152 LAW (2026-10-07). A blocked source named here has a lawful
+#: (terms `confirmed`) source of this organ standing NEAR it, but the stand-in counts as COVERED
+#: only when SUBSTITUTE_VS_ORIGINAL records a MEASURED correlation >= SUBSTITUTE_MIN_CORR against
+#: the original on n >= SUBSTITUTE_MIN_N points (the #152 engine's MIN_CORRELATION; the names are
+#: those of the substitute-law change on claude/asia-substitutes-round3, so the two converge).
+#: Until then the verdict is UNMEASURED, the blocked source stays BLOCKED_ON_TERMS and it is listed
+#: in `unsubstituted()` -- a named candidate is never coverage by being named. `relation` says why
+#: the candidate was chosen; it is a prior about the mechanism, not a measurement.
+SUBSTITUTE_MIN_CORR = 0.50
+SUBSTITUTE_MIN_N = 12
+#: MEASURED substitute-vs-original correlations, {blocked_id: {substitute_id: {"corr": float,
+#: "n": int, "basis": str, "measured_at": iso, "evidence": str}}}, written ONLY from a computation
+#: on data this desk held. EMPTY on 2026-10-07: no ECOS value can be fetched (its terms are
+#: unread), so no pair has been measured.
+SUBSTITUTE_VS_ORIGINAL: dict[str, dict[str, dict[str, Any]]] = {}
+SUBSTITUTE_CANDIDATES: dict[str, dict[str, dict[str, str]]] = {
+    "kr_ecos_base_rate": {"bis_kr_policy_rate": {
+        "relation": "identity_by_publisher",
+        "why": ("BIS WS_CBPOL REF_AREA KR is the Bank of Korea's own published base rate, "
+                "republished by the BIS (identity by publisher, same instruments, signal and "
+                "mechanism). It is not marked COVERED on that argument: no ECOS value has been "
+                "fetched to measure it against, and BIS lags the BOK for KR (25 days measured "
+                "2026-08-28), so the two are not the same series in time")}},
+    "kr_ecos_call_rate": {"bis_kr_policy_rate": {
+        "relation": "nearest_lawful_proxy",
+        "why": ("the overnight call rate is targeted at the base rate, so the policy rate is its "
+                "nearest lawful level; it carries none of the call-over-base funding squeeze the "
+                "call-rate row exists to read. UNMEASURED: no ECOS call-rate value is held")}},
+}
+#: Blocked sources with NO lawful substitute candidate, and why (each has a box action queued in
 #: /mnt/project-files/patches/DESKTOP_PASS2_STATUS.md).
-_ECOS_NO_SUB = ("the BOK ECOS terms of use could not be read or quoted (2026-10-06), so the row "
-                "is fenced to_confirm; no other free source publishes the same BOK series under "
-                "quoted reuse terms. Box action: read the ECOS 이용약관 and quote the clause")
+_ECOS_NO_SUB = ("the BOK ECOS terms of use could not be read: ecos.bok.or.kr/api is a client-side "
+                "single-page app and the box's fetch returned only the page title (2026-10-07), "
+                "so the row is fenced to_confirm; no other free source publishes this BOK series "
+                "under quoted reuse terms (BIS WS_CBPOL carries the policy rate only). Box "
+                "action: read the ECOS 이용약관 in a browser and quote the permitting clause")
 NO_SUBSTITUTE: dict[str, str] = {
-    **dict.fromkeys(("kr_bok_card_spend", "kr_ecos_base_rate", "kr_ecos_call_rate",
-                     "kr_ecos_fx_reserves", "kr_ecos_export_prices"), _ECOS_NO_SUB),
+    **dict.fromkeys(("kr_bok_card_spend", "kr_ecos_fx_reserves", "kr_ecos_export_prices"),
+                    _ECOS_NO_SUB),
     "in_npci_upi": ("RBI payment-system indicators carry '© Reserve Bank of India. All Rights "
                     "Reserved' and no reuse grant; data.gov.in (GODL) pages are robots-disallowed "
                     "to the authoring fetcher, so no licence text could be read"),
@@ -3732,6 +3913,64 @@ NO_SUBSTITUTE: dict[str, str] = {
                 "copyright page and PDFs are behind an Incapsula wall, so no reuse text could be "
                 "read"),
 }
+
+
+def substitute_check(blocked: str, sub: str,
+                     measured: dict[str, dict[str, dict[str, Any]]] | None = None
+                     ) -> dict[str, Any]:
+    """One blocked -> candidate pair against the #152 law: COVERED only with confirmed terms and
+    a recorded corr >= SUBSTITUTE_MIN_CORR on n >= SUBSTITUTE_MIN_N; UNMEASURED with nothing
+    recorded; NOT_COVERED when a recorded measurement misses the bar."""
+    table = SUBSTITUTE_VS_ORIGINAL if measured is None else measured
+    m = (table.get(blocked) or {}).get(sub) or {}
+    meta = (SUBSTITUTE_CANDIDATES.get(blocked) or {}).get(sub) or {}
+    corr, n = m.get("corr"), m.get("n")
+    out: dict[str, Any] = {"substitute": sub, "relation": meta.get("relation", ""),
+                           "corr": corr if corr is not None else UNMEASURED,
+                           "n": n if n is not None else UNMEASURED,
+                           "min_corr": SUBSTITUTE_MIN_CORR, "min_n": SUBSTITUTE_MIN_N}
+    src = BY_ID.get(sub)
+    if src is None or src.terms != "confirmed" or src.archive_until:
+        return {**out, "verdict": "NOT_COVERED",
+                "why": "candidate is DEAD" if src is not None and src.archive_until else
+                f"candidate terms {src.terms if src else 'unknown'}: not a lawful source"}
+    c = (float(corr) if isinstance(corr, (int, float)) and not isinstance(corr, bool)
+         and math.isfinite(float(corr)) else None)
+    k = n if isinstance(n, int) and not isinstance(n, bool) else None
+    if c is None or k is None:
+        return {**out, "verdict": UNMEASURED,
+                "why": ("no measured correlation against the original (with n) is recorded. "
+                        + meta.get("why", "")).strip()}
+    if k < SUBSTITUTE_MIN_N:
+        return {**out, "verdict": "NOT_COVERED", "why": f"n={k} < {SUBSTITUTE_MIN_N}"}
+    if c < SUBSTITUTE_MIN_CORR:
+        return {**out, "verdict": "NOT_COVERED",
+                "why": f"corr={c:.3f} < {SUBSTITUTE_MIN_CORR} on n={k}"}
+    return {**out, "verdict": "COVERED", "basis": m.get("basis", ""),
+            "measured_at": m.get("measured_at", ""), "evidence": m.get("evidence", "")}
+
+
+def covered_candidates(sid: str, measured: dict[str, dict[str, dict[str, Any]]] | None = None
+                       ) -> tuple[str, ...]:
+    return tuple(x for x in SUBSTITUTE_CANDIDATES.get(sid, {})
+                 if substitute_check(sid, x, measured)["verdict"] == "COVERED")
+
+
+def unsubstituted(measured: dict[str, dict[str, dict[str, Any]]] | None = None
+                  ) -> dict[str, str]:
+    """Every blocked source with no substitute that counts, and why: NO_SUBSTITUTE, plus each
+    candidate-only source whose candidates are not COVERED under the #152 law."""
+    out = dict(NO_SUBSTITUTE)
+    for sid, cands in SUBSTITUTE_CANDIDATES.items():
+        if sid in SUBSTITUTED_BY or covered_candidates(sid, measured):
+            continue
+        out[sid] = "; ".join(
+            f"candidate {x} {c['verdict']} ({c['relation']}): COVERED only at corr >= "
+            f"{SUBSTITUTE_MIN_CORR} with n >= {SUBSTITUTE_MIN_N} against the original"
+            for x in cands for c in (substitute_check(sid, x, measured),))
+    return dict(sorted(out.items()))
+
+
 #: The paid-substitute engine (#152) reads Asia-thread rows from
 #: data/paid_data_substitutes_*.json; this is that file (regenerate with --write-rosters).
 ENGINE_ROWS_FILE = DESK / "data" / "paid_data_substitutes_asia_blocked.json"
@@ -3746,7 +3985,8 @@ def status_of(src: Source, environ: dict[str, str] | None = None) -> str:
     if src.archive_until:
         return f"DEAD:{src.archive_until}"
     if src.terms != "confirmed":
-        subs = SUBSTITUTED_BY.get(src.id)
+        # A #152 candidate (SUBSTITUTE_CANDIDATES) counts only once COVERED by measurement.
+        subs = SUBSTITUTED_BY.get(src.id) or covered_candidates(src.id)
         return (f"BLOCKED+SUBSTITUTE:{','.join(subs)}" if subs
                 else f"BLOCKED_ON_TERMS:{src.terms}")
     if src.key_env and not (read_key(src.key_env) if environ is None else env.get(src.key_env)):
@@ -4245,6 +4485,7 @@ def axis_doc(src: Source, points: dict[str, list[dict[str, Any]]], now: datetime
                                            "first": keep[0]["d"], "last": keep[-1]["d"],
                                            "points": keep}
     return {"axis": "alt_proxy", "id": f"alt_{src.id}", "source": src.url.split("?")[0],
+            **({"data_source": src.data_source} if src.data_source else {}),
             "at": now.isoformat(timespec="seconds"), "region": src.region,
             "cadence": src.cadence, "n_series": len(series),
             "pit_fields": ["event_time", "published_time", "available_time", "first_seen_at",
@@ -4371,7 +4612,8 @@ def _meta(src: Source) -> dict[str, Any]:
             "source_culture": src.source_culture,
             "participant_structure": list(src.participant_structure),
             "failure_mode_hypothesis": src.failure_mode_hypothesis,
-            "crowding_prior": src.crowding_prior}
+            "crowding_prior": src.crowding_prior,
+            **({"data_source": src.data_source} if src.data_source else {})}
 
 
 DIRECT_FAMILY = "exogenous_conditioner"
@@ -5084,7 +5326,9 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "dead_sources": sorted(s.id for s in SOURCES if is_dead(s)),
         "blocked_on_terms": sorted(s.id for s in SOURCES if s.terms != "confirmed"),
         "blocked_substituted": {sid: list(SUBSTITUTED_BY[sid]) for sid in sorted(SUBSTITUTED_BY)},
-        "blocked_unsubstituted": {sid: NO_SUBSTITUTE[sid] for sid in sorted(NO_SUBSTITUTE)},
+        "blocked_unsubstituted": unsubstituted(),
+        "substitute_candidates": {sid: [substitute_check(sid, x) for x in cands]
+                                  for sid, cands in sorted(SUBSTITUTE_CANDIDATES.items())},
         "direct_cells": {"n": len(direct), "donation": donations["direct"],
                          "rule": ("an exogenous_conditioner cell is donated only after its gain "
                                   "test PASSED on this box; every tested cell is charged")},
@@ -5232,10 +5476,11 @@ def engine_rows() -> dict[str, Any]:
              _NEWS: "news", _TRAVEL: "foot traffic (travel arrivals)", _GOLD: "gold premium"}
     blocked_class = {"jp_jnto_arrivals": _TRAVEL, "cn_sge_premium": _GOLD}
     rows: list[dict[str, str]] = []
-    for sid in sorted({*SUBSTITUTED_BY, *NO_SUBSTITUTE}):
+    unsub = unsubstituted()
+    for sid in sorted({*SUBSTITUTED_BY, *NO_SUBSTITUTE, *SUBSTITUTE_CANDIDATES}):
         src = BY_ID[sid]
         paid_cls = src.substitutes_for or blocked_class.get(sid, "")
-        subs = SUBSTITUTED_BY.get(sid, ())
+        subs = SUBSTITUTED_BY.get(sid, ()) or covered_candidates(sid)
         rows.append({
             "class": klass.get(paid_cls, paid_cls),
             "paid": f"{src.name} [{sid}]",
@@ -5246,10 +5491,15 @@ def engine_rows() -> dict[str, Any]:
             "status": status_of(src, {}),
             "terms": src.terms,
             "blocked_because": TERMS.get(sid, ("", ""))[1],
-            "unsubstituted_because": NO_SUBSTITUTE.get(sid, ""),
+            "unsubstituted_because": unsub.get(sid, ""),
             "evidence": "; ".join(f"{x}: {TERMS_EVIDENCE[x]['terms_url']}" for x in subs
                                   if x in TERMS_EVIDENCE),
         })
+        if sid in SUBSTITUTE_CANDIDATES:
+            rows[-1]["candidates"] = "; ".join(
+                f"{c['substitute']}: {c['verdict']} ({c['relation']}; corr={c['corr']}, "
+                f"n={c['n']})" for c in (substitute_check(sid, x)
+                                         for x in SUBSTITUTE_CANDIDATES[sid]))
     lib: list[dict[str, Any]] = []
     for x in sorted({x for v in SUBSTITUTED_BY.values() for x in v}):
         s = BY_ID[x]
