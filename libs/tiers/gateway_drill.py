@@ -174,8 +174,10 @@ def run_fault(fault: str, *, desk: Path = DESK, with_ledgers: bool = False) -> d
         # has no installed package to fall back on (audit 2026-09-30: ModuleNotFoundError).
         path = os.pathsep.join([str(ROOT), str(desk),
                                 *filter(None, [os.environ.get("PYTHONPATH", "")])])
+        # The door's ledger goes INSIDE the sandbox too: an inherited MT5_ORDER_DOOR_DIR (a test
+        # harness sets one) would send the child's door rows to the caller's directory.
         env = {**os.environ, "MT5_DESK_ROOT": str(root), "PYTHONDONTWRITEBYTECODE": "1",
-               "PYTHONPATH": path}
+               "PYTHONPATH": path, "MT5_ORDER_DOOR_DIR": str(root / "data")}
         try:
             proc = subprocess.run([sys.executable, "-c", _CHILD, fault, str(desk), str(ROOT)],
                                   capture_output=True, text=True, timeout=TIMEOUT_S, env=env,
