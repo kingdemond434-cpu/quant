@@ -8,6 +8,12 @@
    "returncode": 1,
    "status": "FAILED"
   },
+  "certificate_projection": {
+   "finished_at": "2026-10-07T01:50:57.268369+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
   "external_queue_projection": {
    "finished_at": "2026-10-07T00:19:24.436821+00:00",
    "passes_completed": 1,
@@ -19,7 +25,13 @@
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
+  },
+  "fusion_state_pull": {
+   "finished_at": "2026-10-07T02:50:18.077870+00:00",
+   "passes_completed": 1,
+   "returncode": 124,
+   "status": "FAILED"
   }
  },
- "updated_at": "2026-10-07T00:46:58.934899+00:00"
+ "updated_at": "2026-10-07T02:50:18.077870+00:00"
 }
