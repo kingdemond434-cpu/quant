@@ -134,3 +134,17 @@ def test_disk_pressure_falls_back_to_the_limits_census(tmp_path: Path,
         {"name": "disk@box", "binding": True, "evidence": "2.0 GB free (floor 10.0)"}]})
     row = rd._resources(NOW)
     assert row["verdict"] == rd.FAIL and "LIMITS_CENSUS" in row["evidence"]
+
+
+def test_account_ledger_needs_the_untracked_book_to_agree(tmp_path: Path,
+                                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    acct, book = tmp_path / "account_state.json", tmp_path / "account_positions.json"
+    monkeypatch.setattr(rd, "ACCOUNT", acct)
+    monkeypatch.setattr(rd, "POSITIONS", book)
+    _put(acct, {"balance": 1, "equity": 1, "margin": 0, "margin_free": 1, "swap": 0,
+                "open_positions": 2})
+    assert rd._account(NOW)["verdict"] == rd.UNMEASURED
+    _put(book, {"positions": [{"ticket": 1}]})
+    assert rd._account(NOW)["verdict"] == rd.FAIL
+    _put(book, {"positions": [{"ticket": 1}, {"ticket": 2}]})
+    assert rd._account(NOW)["verdict"] == rd.PASS

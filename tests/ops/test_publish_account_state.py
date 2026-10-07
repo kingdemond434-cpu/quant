@@ -32,6 +32,7 @@ def _load(monkeypatch, tmp_path):
     spec.loader.exec_module(mod)
     monkeypatch.setattr(mod, "attach_or_initialize", lambda m, timeout: True)
     monkeypatch.setattr(mod, "OUT", tmp_path / "account_state.json")
+    monkeypatch.setattr(mod, "POSITIONS", tmp_path / "account_positions.json")
     return mod
 
 
@@ -47,6 +48,36 @@ def test_the_snapshot_carries_every_field_the_account_ledger_drill_grades(monkey
     ACCOUNT_FIELDS = drills.ACCOUNT_FIELDS
     assert [f for f in ACCOUNT_FIELDS if f not in rec] == []
     assert rec["margin"] == 90.0 and rec["swap"] == -0.3 and rec["today_swap"] == -0.1
-    pos = rec["positions"][0]
-    assert pos["side"] == "sell" and pos["sl"] == 1.12 and pos["tp"] is None
     assert "login" not in rec, "the live login is never written to a tracked file"
+    book = json.loads((tmp_path / "account_positions.json").read_text("utf-8"))
+    pos = book["positions"][0]
+    assert pos["side"] == "sell" and pos["sl"] == 1.12 and pos["tp"] is None
+    assert book["open_positions"] == rec["open_positions"] == 1
+
+
+def test_no_position_detail_reaches_the_tracked_snapshot(monkeypatch, tmp_path):
+    """The repository is public: tickets, sizes and stops stay in the untracked book."""
+    mod = _load(monkeypatch, tmp_path)
+    assert mod.main() == 0
+    text = (tmp_path / "account_state.json").read_text("utf-8")
+    rec = json.loads(text)
+    assert "positions" not in rec
+    for leak in ('"ticket"', '"sl"', '"tp"', '"price_open"', '"volume"', '"magic"'):
+        assert leak not in text, leak
+
+
+def test_the_position_book_is_untracked_and_ignored():
+    import subprocess
+    rel = "desks/mt5/data/account_positions.json"
+    tracked = subprocess.run(["git", "ls-files", "--error-unmatch", rel], cwd=ROOT,
+                             capture_output=True).returncode == 0
+    assert not tracked, f"{rel} is tracked in a public repository"
+    ignored = subprocess.run(["git", "check-ignore", "-q", rel], cwd=ROOT).returncode == 0
+    assert ignored, f"{rel} is not gitignored: a box commit could publish the open book"
+    shipped = [p for p in (ROOT / "desks" / "mt5" / "scripts").glob("*.ps1")
+               if "account_positions" in p.read_text("utf-8", errors="replace")]
+    assert shipped == [], f"a box script names the private book: {shipped}"
+    # the snapshot that IS tracked (when present) carries no per-position detail
+    snap = ROOT / "desks" / "mt5" / "data" / "account_state.json"
+    if snap.exists():
+        assert '"ticket"' not in snap.read_text("utf-8", errors="replace")

@@ -180,30 +180,58 @@ def _within(stamp: Any, now: Any, days: float) -> bool:
     return bool(0.0 <= age <= days)
 
 
+def _parse(stamp: Any) -> Any:
+    from datetime import UTC, datetime
+    try:
+        t = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
 def measure_llm(rows: list[dict[str, Any]], now: Any, is_free: Any,
                 days: float = WINDOW_DAYS) -> dict[str, Any]:
-    """Trailing-window model spend from the seat ledger, scaled to a 30-day month.
+    """Trailing-window model spend from the seat ledger, scaled to a 30-day month BY THE SPAN
+    THE LEDGER ACTUALLY COVERS, never by the window it was asked for.
 
-    Free-model rows cost zero by model id, the same rule `llm_seat.month_spend_usd` applies, so
-    the phantom dollars booked against free calls before that rule existed are not a cost here.
+    THE `usd` ON A ROW IS AN ESTIMATE, not a bill: `llm_seat._record_spend` writes tokens times a
+    flat, deliberately high per-1k rate. So a priced result is ESTIMATED, never MEASURED, and its
+    basis says so. A paid row with no `usd` is UNPRICED: it is not $0, and while any exists the
+    line is UNMEASURED, because a total that silently omits calls lowers the hurdle. Free-model
+    rows cost zero by model id, the same rule `llm_seat.month_spend_usd` applies.
     """
-    paid = calls = free_calls = tokens = 0.0
+    paid = 0.0
+    calls = free_calls = tokens = unpriced = 0
     first = None
     for r in rows:
         if not _within(r.get("utc"), now, days):
             continue
         calls += 1
-        tokens += float(r.get("tokens") or 0)
+        tokens += int(r.get("tokens") or 0)
+        t = _parse(r.get("utc"))
+        if t is not None and (first is None or t < first):
+            first = t
         if r.get("free") is True or is_free(str(r.get("model") or "")):
             free_calls += 1
             continue
-        paid += float(r.get("usd") or 0.0)
-        first = first or r.get("utc")
-    if not calls:
+        if r.get("usd") is None:
+            unpriced += 1
+            continue
+        paid += float(r["usd"])
+    if not calls or first is None:
         return {"status": "UNMEASURED", "why": f"no seat call in the last {days:g} days"}
-    return {"status": "MEASURED", "basis": "data/llm_spend.jsonl (provider-reported usage)",
-            "monthly_usd": round(paid * 30.0 / days, 2), "calls": int(calls),
-            "free_calls": int(free_calls), "tokens": int(tokens), "window_days": days}
+    # The ledger covers from its first row in the window to now; a ledger that began yesterday
+    # is one day of evidence, and scaling it as thirty would understate the month thirty-fold.
+    span = max(1.0 / 24.0, min(days, (now - first).total_seconds() / 86_400.0))
+    out = {"basis": "data/llm_spend.jsonl usd = tokens x flat per-1k rate (an over-estimate "
+                    "by design, not a provider bill)",
+           "window_days": days, "span_days": round(span, 3), "calls": calls,
+           "free_calls": free_calls, "unpriced_calls": unpriced, "tokens": tokens,
+           "window_usd": round(paid, 4)}
+    if unpriced:
+        return {**out, "status": "UNMEASURED",
+                "why": f"{unpriced} paid call(s) carry no price; the total would omit them"}
+    return {**out, "status": "ESTIMATED", "monthly_usd": round(paid * 30.0 / span, 2)}
 
 
 def measure_broker(deals: list[dict[str, Any]], now: Any, currency: str | None,
@@ -255,14 +283,17 @@ def alert_burden(summary: dict[str, int], escalations: list[dict[str, Any]],
 
 
 def merge_measured(cfg: dict[str, Any], measured: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    """The YAML with each MEASURED line written over its declared value; basis per line."""
+    """The YAML with each MEASURED or ESTIMATED line written over its declared value; the basis
+    per line says which. An UNMEASURED line leaves the declared value, and a null stays UNKNOWN.
+    """
     out = dict(cfg)
     lines = dict(cfg.get("monthly_usd") or {})
     basis = {k: ("declared" if v is not None else "unknown") for k, v in lines.items()}
     for name, m in measured.items():
-        if m.get("status") == "MEASURED" and m.get("monthly_usd") is not None:
+        st = m.get("status")
+        if st in ("MEASURED", "ESTIMATED") and m.get("monthly_usd") is not None:
             lines[name] = float(m["monthly_usd"])
-            basis[name] = f"measured: {m.get('basis')}"
+            basis[name] = f"{str(st).lower()}: {m.get('basis')}"
     out["monthly_usd"] = lines
     out["basis"] = basis
     return out

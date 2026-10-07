@@ -14,6 +14,7 @@ rollback's name, so `apply()` raises `RollbackRefused` before touching a file.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -32,9 +33,22 @@ def _root(root: Path | None) -> Path:
     return Path(root) if root is not None else ROOT
 
 
-def _git(*args: str, root: Path | None = None) -> str:
+def _git(*args: str, root: Path | None = None, env: dict[str, str] | None = None) -> str:
     return subprocess.run(["git", *args], cwd=_root(root), check=True, capture_output=True,
-                          text=True).stdout.strip()
+                          text=True, env=env).stdout.strip()
+
+
+def _sandbox_env(tmp: Path) -> dict[str, str]:
+    """The caller's environment with every GIT_* variable removed and discovery fenced at `tmp`.
+
+    GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE all outrank `cwd`: inherited, they point the drill's
+    `git config` and `git commit` at whatever repository the CALLER was in (audit 2026-10-07: a
+    victim's hooksPath, identity, signing and index were rewritten while the drill read PASS).
+    GIT_CEILING_DIRECTORIES stops discovery climbing out of the sandbox into an enclosing repo.
+    """
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
+    env["GIT_CEILING_DIRECTORIES"] = str(tmp.parent)
+    return env
 
 
 def sealed_releases(root: Path | None = None) -> list[str]:
@@ -51,33 +65,36 @@ def sealed_releases(root: Path | None = None) -> list[str]:
     return out
 
 
-def _full(sha: str, root: Path | None) -> str | None:
+def _full(sha: str, root: Path | None, env: dict[str, str] | None = None) -> str | None:
     try:
-        return _git("rev-parse", "--verify", f"{sha}^{{commit}}", root=root)
+        return _git("rev-parse", "--verify", f"{sha}^{{commit}}", root=root, env=env)
     except subprocess.CalledProcessError:
         return None
 
 
-def plan(target: str | None, root: Path | None = None) -> dict[str, object]:
-    head = _git("rev-parse", "HEAD", root=root)
+def plan(target: str | None, root: Path | None = None,
+         env: dict[str, str] | None = None) -> dict[str, object]:
+    head = _git("rev-parse", "HEAD", root=root, env=env)
     seals = sealed_releases(root)
     if target is None:
         prior = [s for s in seals if s != head]
         if not prior:
             return {"available": False, "why": "no earlier sealed release in LIVE_MANIFEST"}
         target = prior[-1]
-    full = _full(target, root)
+    full = _full(target, root, env)
     if full is None:
         return {"available": False, "why": f"{target} is not a commit in this clone"}
-    sealed_full = {f for f in (_full(s, root) for s in seals) if f}
-    changed = [p for p in _git("diff", "--name-only", full, "HEAD", root=root).splitlines() if p]
+    sealed_full = {f for f in (_full(s, root, env) for s in seals) if f}
+    changed = [p for p in _git("diff", "--name-only", full, "HEAD", root=root,
+                               env=env).splitlines() if p]
     code = [p for p in changed if not is_state_path(p)]
     return {"available": True, "head": head, "target": full,
             "sealed": full in sealed_full, "code_paths": code,
             "state_paths_kept": len(changed) - len(code)}
 
 
-def apply(p: dict[str, object], root: Path | None = None) -> str:
+def apply(p: dict[str, object], root: Path | None = None,
+          env: dict[str, str] | None = None) -> str:
     """ONE commit whose code equals the target's; returns its SHA (or a nothing-to-do line).
 
     Raises `RollbackRefused` for an unavailable plan or an unsealed target, before any write."""
@@ -90,16 +107,17 @@ def apply(p: dict[str, object], root: Path | None = None) -> str:
     code = [str(x) for x in p["code_paths"]]  # type: ignore[attr-defined]
     if not code:
         return "nothing to roll back: code already equals the target"
-    present = set(_git("ls-tree", "-r", "--name-only", target, root=root).splitlines())
+    present = set(_git("ls-tree", "-r", "--name-only", target, root=root,
+                       env=env).splitlines())
     restore = [c for c in code if c in present]
     remove = [c for c in code if c not in present]
     if restore:
-        _git("checkout", target, "--", *restore, root=root)
+        _git("checkout", target, "--", *restore, root=root, env=env)
     if remove:
-        _git("rm", "-q", "--", *remove, root=root)
+        _git("rm", "-q", "--", *remove, root=root, env=env)
     _git("commit", "-m", f"tier_s rollback: code to sealed release {target[:12]}",
-         "--", *code, root=root)
-    return _git("rev-parse", "HEAD", root=root)
+         "--", *code, root=root, env=env)
+    return _git("rev-parse", "HEAD", root=root, env=env)
 
 
 def drill() -> dict[str, object]:
@@ -119,7 +137,8 @@ def drill() -> dict[str, object]:
     code_rel, state_rel = "desks/mt5/research/organ.py", "desks/mt5/data/sleeves.json"
     # Windows marks git's object files read-only, which a plain cleanup raises on.
     with tempfile.TemporaryDirectory(prefix="rollback_drill_", ignore_cleanup_errors=True) as tmp:
-        r = Path(tmp)
+        r = Path(tmp).resolve()
+        env = _sandbox_env(r)
 
         def put(rel: str | Path, text: str) -> None:
             p = r / rel
@@ -127,8 +146,14 @@ def drill() -> dict[str, object]:
             p.write_text(text, "utf-8")
 
         def g(*a: str) -> str:
-            return _git(*a, root=r)
+            return _git(*a, root=r, env=env)
         g("init", "-q")
+        # Before ANY write: the repository git will act on must be this sandbox, or nothing runs.
+        top = Path(g("rev-parse", "--show-toplevel")).resolve()
+        gdir = Path(g("rev-parse", "--absolute-git-dir")).resolve()
+        if top != r or not gdir.is_relative_to(r):
+            return {"status": "FAIL", "checks": {"sandboxed": False},
+                    "failed": ["sandboxed"], "why": f"git resolved {top} / {gdir}, not {r}"}
         g("config", "user.email", "drill@sandbox")
         g("config", "user.name", "rollback drill")
         g("config", "commit.gpgsign", "false")
@@ -149,18 +174,18 @@ def drill() -> dict[str, object]:
         checks: dict[str, bool] = {}
         try:
             apply({"available": True, "sealed": False, "target": b, "code_paths": [code_rel]},
-                  root=r)
+                  root=r, env=env)
             checks["unsealed_refused"] = False
         except RollbackRefused:
             checks["unsealed_refused"] = g("rev-parse", "HEAD") == b
-        p = plan(None, root=r)
+        p = plan(None, root=r, env=env)
         checks["picked_last_sealed"] = p.get("target") == a and bool(p.get("sealed"))
-        head = apply(p, root=r)
+        head = apply(p, root=r, env=env)
         checks["one_new_commit"] = g("rev-parse", "HEAD~1") == b and head != b
         checks["code_restored"] = (r / code_rel).read_text("utf-8") == "GOOD = 1\n"
         checks["state_kept"] = (r / state_rel).read_text("utf-8") == '{"v": "B"}\n'
         checks["history_kept"] = subprocess.run(
-            ["git", "merge-base", "--is-ancestor", b, "HEAD"], cwd=r).returncode == 0
+            ["git", "merge-base", "--is-ancestor", b, "HEAD"], cwd=r, env=env).returncode == 0
         checks["tree_clean"] = g("status", "--porcelain") == ""
     ok = all(checks.values())
     return {"status": "PASS" if ok else "FAIL", "checks": checks,

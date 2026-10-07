@@ -13,7 +13,7 @@ script that could actually mislead a decision.
 
 MEASURED, NOT ONLY DECLARED (ARCH-28, 2026-10-07). The organ had no box clock and every cost in
 the YAML was null, so it answered nothing. It now runs on the box's `organs` battery and reads
-the desk's own ledgers: model spend from `data/llm_spend.jsonl` (written over the YAML's
+the desk's own ledgers: model spend ESTIMATED from `data/llm_spend.jsonl` (written over the YAML's
 `llm_api`), what the broker charged from `desks/mt5/data/cost_truth_quotes.json` deals (reported,
 never added to the burn), and the operator's alert burden from `data/alert_ledger.json` and the
 event log. Host invoices have no API the desk holds a key for, so those lines stay as declared

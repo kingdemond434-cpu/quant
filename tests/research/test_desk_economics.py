@@ -123,14 +123,26 @@ class TestMeasuredLines:
 
     NOW = __import__("datetime").datetime(2026, 10, 7, tzinfo=__import__("datetime").UTC)
 
-    def test_paid_model_spend_is_scaled_to_a_month_and_free_calls_cost_nothing(self) -> None:
+    def test_paid_spend_is_scaled_by_the_span_the_ledger_covers(self) -> None:
         from libs.research.desk_economics import measure_llm
         rows = [{"utc": "2026-10-01T00:00:00+00:00", "model": "a/paid", "usd": 3.0, "tokens": 10},
                 {"utc": "2026-10-02T00:00:00+00:00", "model": "a/x:free", "usd": 9.0},
                 {"utc": "2026-08-01T00:00:00+00:00", "model": "a/paid", "usd": 99.0}]
         m = measure_llm(rows, self.NOW, lambda mid: mid.endswith(":free"), days=15.0)
-        assert m["status"] == "MEASURED" and m["monthly_usd"] == 6.0
+        # the in-window ledger starts 2026-10-01: six days of evidence, not fifteen
+        assert m["status"] == "ESTIMATED" and m["span_days"] == 6.0
+        assert m["monthly_usd"] == 15.0
         assert m["calls"] == 2 and m["free_calls"] == 1
+        assert "estimate" in m["basis"] and "provider" not in m["basis"].split("not a")[0]
+
+    def test_an_unpriced_paid_call_makes_the_line_unmeasured_not_cheaper(self) -> None:
+        from libs.research.desk_economics import measure_llm, merge_measured
+        rows = [{"utc": "2026-10-06T00:00:00+00:00", "model": "a/paid", "usd": 3.0},
+                {"utc": "2026-10-06T01:00:00+00:00", "model": "a/paid"}]
+        m = measure_llm(rows, self.NOW, lambda _m: False)
+        assert m["status"] == "UNMEASURED" and m["unpriced_calls"] == 1
+        merged = merge_measured({"monthly_usd": {"llm_api": None}}, {"llm_api": m})
+        assert merged["monthly_usd"]["llm_api"] is None
 
     def test_no_ledger_rows_is_unmeasured_not_zero(self) -> None:
         from libs.research.desk_economics import measure_llm, merge_measured
@@ -143,10 +155,10 @@ class TestMeasuredLines:
     def test_a_measurement_overrides_the_declared_line_and_says_so(self) -> None:
         from libs.research.desk_economics import merge_measured
         merged = merge_measured({"monthly_usd": {"llm_api": None, "vps": 5}},
-                                {"llm_api": {"status": "MEASURED", "monthly_usd": 7.5,
+                                {"llm_api": {"status": "ESTIMATED", "monthly_usd": 7.5,
                                              "basis": "ledger"}})
         assert merged["monthly_usd"] == {"llm_api": 7.5, "vps": 5}
-        assert merged["basis"]["llm_api"].startswith("measured") and \
+        assert merged["basis"]["llm_api"].startswith("estimated") and \
             merged["basis"]["vps"] == "declared"
 
     def test_broker_charges_are_signed_as_costs_and_kept_out_of_the_burn(self) -> None:

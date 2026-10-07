@@ -54,7 +54,10 @@ GATEWAY_SPEC = "docs/desktop_pass/recovery_drills/gateway_new_risk_gate.md"
 FILL_ORDER_SPEC = "docs/desktop_pass/recovery_drills/gateway_partial_fill_and_ordering.md"
 STALE_QUOTE_SPEC = "docs/desktop_pass/recovery_drills/gateway_stale_quote_gate.md"
 #: Fields an authoritative account ledger needs; the publisher writes a subset.
-ACCOUNT_FIELDS = ("balance", "equity", "margin", "margin_free", "swap", "positions")
+ACCOUNT_FIELDS = ("balance", "equity", "margin", "margin_free", "swap", "open_positions")
+#: The per-position book: untracked on the box (the repo is public), graded only for presence,
+#: freshness and agreement with the snapshot's count.
+POSITIONS = DATA / "account_positions.json"
 DISK_FLOOR_GB = 5.0
 
 PASS, FAIL, UNMEASURED, CI_ONLY = "PASS", "FAIL", "UNMEASURED", "CI_ONLY"
@@ -256,7 +259,16 @@ def _account(now: datetime) -> dict[str, Any]:
         return _row(FAIL, "data/account_state.json",
                     f"account snapshot lacks {lacking}: positions, used margin and financing "
                     "are not in one authoritative ledger")
-    return _row(PASS, "data/account_state.json", "balance, equity, margin, swap and positions")
+    book, bmiss = _artifact(POSITIONS, 1.0, now)
+    if bmiss:
+        return {**bmiss, "why": f"per-position book: {bmiss['why']}"}
+    n_book = len((book or {}).get("positions") or [])
+    n_snap = (doc or {}).get("open_positions")
+    if n_book != n_snap:
+        return _row(FAIL, "data/account_positions.json",
+                    f"the book lists {n_book} position(s), the snapshot counts {n_snap}")
+    return _row(PASS, "data/account_state.json + data/account_positions.json (untracked)",
+                f"balance, equity, margin and swap; {n_book} position(s) in the book")
 
 
 def _resources(now: datetime) -> dict[str, Any]:
