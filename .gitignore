@@ -466,3 +466,8 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
+# THE OPEN BOOK, PER POSITION (ops/publish_account_state.py, 2026-10-07). The repository is
+# public: tickets, sizes and stops never reach a tracked file. Last line on purpose, after every
+# negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
+desks/mt5/data/account_positions.json
+desks/mt5/data/account_positions.json.tmp
