@@ -599,12 +599,13 @@ def test_the_law_gate_stays_green_hours_after_a_cloud_attest(tmp_path: Path, mon
 def test_an_uppercase_desk_hostname_is_a_desk_host(tmp_path: Path, monkeypatch) -> None:
     # Windows reports the box as "VMI3571445"; DESK_HOSTS holds "vmi3571445". A case-sensitive
     # `in` stamped the box itself desk_host: false, and that is never judged stale (fails open).
-    for name in ("VMI3571445", "Vmi3571445", "vmi3571445.contaboserver.net"):
+    for name in ("VMI3571445", "Vmi3571445", "vmi3571445"):
         _as_host(monkeypatch, name)
         assert ra.is_desk_host(name)
         assert ra.host_identity_key() == {"hostname": name, "machine_id": "box-machine-id",
                                           "desk_host": True}
-    for name in ("vm", "vmi3500897", "VMI35714450", "", "runsc"):
+    for name in ("vm", "vmi3500897", "VMI35714450", "", "runsc",
+                 "vmi3571445.evil.com", "VMI3571445.attacker.net"):
         _as_host(monkeypatch, name)
         assert not ra.is_desk_host(name)
         assert ra.host_identity_key()["desk_host"] is False
@@ -639,3 +640,39 @@ def test_an_uppercase_desk_host_is_judged_stale(tmp_path: Path, monkeypatch) -> 
     v = fence.measure(tmp_path)
     assert not v["on_attesting_host"] and not v["age_judged"]
     assert not any("stale on its own host" in f for f in v["failures"])
+
+
+# ------------------------------------------ a spoofed domain is not the box (audit of #267)
+SPOOFED = ("vmi3571445.evil.com", "VMI3571445.attacker.net", "vmi3571445.contaboserver.net")
+
+
+def test_a_spoofed_domain_does_not_stamp_a_desk_host(monkeypatch) -> None:
+    # `desk_host: true` seeds the ratchet floor (runtime_attestation.main); a name that merely
+    # STARTS with the box's label under someone else's domain must not earn it.
+    for name in SPOOFED:
+        _as_host(monkeypatch, name)
+        assert not ra.is_desk_host(name), name
+        assert ra.host_identity_key()["desk_host"] is False, name
+        assert ra.host_key(name) != ra.host_key("vmi3571445"), name
+
+
+def test_a_spoofed_domain_claim_is_host_drift(tmp_path: Path) -> None:
+    for claimed in SPOOFED:
+        _write(tmp_path, _doc(attests_to_host=claimed,
+                              host={"hostname": "vmi3571445", "role": "non_trading_host",
+                                    "role_evidence": "measured"}))
+        assert any("host drift" in f for f in fence.measure(tmp_path)["failures"]), claimed
+    # the same box in another case is not drift
+    _write(tmp_path, _doc(attests_to_host="VMI3571445",
+                          host={"hostname": "vmi3571445", "role": "non_trading_host",
+                                "role_evidence": "measured"}))
+    assert not any("host drift" in f for f in fence.measure(tmp_path)["failures"])
+
+
+def test_classify_and_is_desk_host_agree() -> None:
+    from libs.ops import host_identity as hi
+    cfg = {"hostname": ra.DESK_HOSTS[0], "machine_id": None}
+    for name in ("vmi3571445", "VMI3571445", "Vmi3571445", " vmi3571445 ", "vmi3571445.",
+                 *SPOOFED, "vm", "vmi35714450", "vmi3500897", "", "runsc"):
+        assert ra.is_desk_host(name) == hi.classify(None, name, cfg).hostname_match, name
+        assert ra.host_key(name) == hi.host_key(name), name
