@@ -47,10 +47,10 @@ ROOT = Path(__file__).resolve().parent.parent
 SCAN_ROOTS: tuple[str, ...] = (
     "desks/mt5/research", "desks/mt5/frontier_intel", "libs/data", "libs/research", "libs/moat",
 )
-_NET_MARKER = re.compile(r"\burlopen\b|import requests\b|import httpx\b|urllib\.request|"
-                         r"http\.client|import aiohttp\b|from requests\b|from httpx\b|"
+_NET_MARKER = re.compile(r"^\s*(?:import|from)\s[^\n]*\b(?:requests|httpx|aiohttp|urllib3|"
+                         r"urllib\.request|http\.client)\b|\burlopen\(|"
                          r"\b_fetch\w*\(|\bfetch_(?:url|page|bytes|json|text)\w*\(|"
-                         r"\bhttp_get\(|\bget_url\(")
+                         r"\bhttp_get\(|\bget_url\(", re.MULTILINE)
 #: A path whose joined string constants contain one of these is PROTECTED: secrets, permission
 #: and settings files, hooks, schedules, governing documents, and the roster that deploys trades.
 PROTECTED_FRAGMENTS: tuple[str, ...] = (
@@ -322,6 +322,10 @@ def _write_path(call: ast.Call) -> tuple[ast.AST | None, str]:
                 and set(mode.value) & set("wax+"):
             return call.args[0], "open-for-write"
         return None, ""
+    if (owner, attr) in _PATH_SECOND_ARG:
+        return (call.args[1], f"{owner}.{attr}") if len(call.args) >= 2 else (None, "")
+    if (owner, attr) in _PATH_FIRST_ARG:
+        return (call.args[0], f"{owner}.{attr}") if call.args else (None, "")
     if isinstance(call.func, ast.Attribute):
         if attr == "open":
             mode = call.args[0] if call.args else next(
