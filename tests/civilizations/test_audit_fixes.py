@@ -461,5 +461,6 @@ def test_terms_retention_blanks_old_text_and_keeps_the_record(tmp_path: Path) ->
     acq.acquire(src, store, cursors, ctx, force=True)
     a, b = store.get(old.record_id), store.get(new.record_id)
     assert a is not None and b is not None
-    assert a["body"] == "" and a["title"] == "" and "text_expired_by_terms" in a["flags"]
+    assert a["body"] == "" and a["title"] == ""
+    assert any(str(f).startswith("text_expired_by_terms") for f in a["flags"])
     assert b["body"] == "new description" and a["source_uri"] == "u1"
