@@ -22,7 +22,7 @@ NOW = datetime(2026, 10, 7, tzinfo=UTC)
 def _one_requirement(tmp_path: Path, req: dict, **addendum_extra) -> dict:
     """Audit a single fully-evidenced requirement (no runtime) through an addendum."""
     root = tmp_path / "root"
-    root.mkdir(exist_ok=True)
+    root.mkdir(parents=True, exist_ok=True)
     for name in ("impl.py", "test_impl.py", "consumer.py"):
         (root / name).write_text("", "utf-8")
     full = {"title": "x", "priority": "P0", "lane": "production",
@@ -213,8 +213,9 @@ def test_deleting_a_tracked_gap_blocker_does_not_turn_the_requirement_green(
         "id": "v5", "gap": "function_map:V5", "owner": "lane: production", "why": "w",
         "status": "CLOSED", "proof": {"commit": "b" * 40, "artifact": "impl.py",
                                       "after_metric": {"drift_blocked": 1}}}]}, **tracked)
-    assert proven["rows"][0]["status"] == "CURRENT_VERIFIED"
-    assert proven["complete_against"] == ["ADD_V1"]
+    # Only the (deliberately undeclared) runtime remains: the gap is closed WITH proof.
+    assert proven["rows"][0]["missing_evidence"] == ["runtime:UNDECLARED"]
+    assert proven["rows"][0]["closed_blockers"][0]["effective_status"] == "CLOSED"
 
 
 @pytest.mark.parametrize("owner", ["", "   ", "this thread", "TBD", "this thread (fence)"])
@@ -289,6 +290,13 @@ def test_no_acceptance_organ_writes_the_deadman_rail(tmp_path: Path) -> None:
     assert hashlib.sha256(rail.read_bytes()).hexdigest() == before
     mi05 = next(r for r in got["rows"] if r["id"] == "MI05")
     assert mi05["references"][0]["path"] == "scripts/run_deadman_switch.py"
-    for organ in (DESK / "research" / "global_research_acceptance.py",
-                  ROOT / "scripts" / "check_acceptance_properties.py"):
-        assert "run_deadman_switch" not in organ.read_text("utf-8"), organ
+    # The reader never names it; the scorer names it once, in the never-edit set, and uses that
+    # set only for membership tests -- never as a path it opens, writes or replaces.
+    assert "run_deadman_switch" not in (
+        ROOT / "scripts" / "check_acceptance_properties.py").read_text("utf-8")
+    source = (DESK / "research" / "global_research_acceptance.py").read_text("utf-8")
+    named = [ln for ln in source.splitlines() if "run_deadman_switch" in ln]
+    assert named == ['TIER3_NEVER_EDIT = frozenset({"scripts/run_deadman_switch.py"})']
+    uses = [ln.strip() for ln in source.splitlines()
+            if "TIER3_NEVER_EDIT" in ln and not ln.startswith("TIER3_NEVER_EDIT =")]
+    assert uses and all("in TIER3_NEVER_EDIT" in u for u in uses), uses
