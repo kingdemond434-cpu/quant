@@ -183,10 +183,53 @@ def broker_epoch_to_utc(stamp: object) -> str | None:
     wall = datetime.fromtimestamp(sec, UTC).replace(tzinfo=None) - timedelta(hours=7)
     try:
         from zoneinfo import ZoneInfo
-        utc = wall.replace(tzinfo=ZoneInfo("America/New_York")).astimezone(UTC)
+        ny = ZoneInfo("America/New_York")
+        # THE EARLIER INSTANT (audit of #273). A wall time in the spring gap (02:00-03:00 on the
+        # second Sunday of March) or the autumn repeat has two readings; fold=0 picks the LATER
+        # one in the gap, which makes a quote look an hour fresher than it may be. The earlier
+        # reading can only age it. The US-rule fallback below already picks the earlier one.
+        utc = min(wall.replace(tzinfo=ny, fold=f).astimezone(UTC) for f in (0, 1))
     except (KeyError, OSError, ValueError):     # ZoneInfoNotFoundError is a KeyError
         utc = (wall - timedelta(hours=_ny_offset_h(wall))).replace(tzinfo=UTC)
     return utc.isoformat(timespec="seconds")
+
+
+def broker_clock(stamps: list[object], at: datetime) -> dict:
+    """FUSION'S REAL CLOCK, MEASURED EACH RUN rather than assumed. While the market is open the
+    newest `symbol_info().time` is seconds old, so (newest - now) is the broker's UTC offset; it
+    must equal New York's offset + 7 (+3 in US summer, +2 in winter). A MISMATCH means the broker
+    switched daylight saving on a different date than New York, and every conversion above is an
+    hour out until the rule is changed. With no quote in the last 15 minutes (weekend, closed
+    market) the reading is UNMEASURED, never assumed to match."""
+    secs = []
+    for raw in stamps:
+        try:
+            v = int(raw)  # type: ignore[call-overload]
+        except (TypeError, ValueError):
+            continue
+        if v > 0:
+            secs.append(v)
+    try:
+        from zoneinfo import ZoneInfo
+        off = at.astimezone(ZoneInfo("America/New_York")).utcoffset()
+        expected = 7 + (off.total_seconds() / 3600 if off is not None else 0.0)
+    except (KeyError, OSError, ValueError):
+        # Decide on New York STANDARD time: daylight runs 02:00 standard (March) to 01:00
+        # standard (November), which is where a wall-time rule is unambiguous.
+        std = at.astimezone(UTC).replace(tzinfo=None) - timedelta(hours=5)
+        dst = _ny_offset_h(std) == -4 and _ny_offset_h(std + timedelta(hours=1)) == -4
+        expected = 7.0 + (-4.0 if dst else -5.0)
+    if not secs:
+        return {"verdict": "UNMEASURED", "expected_offset_h": expected,
+                "why": "no symbol reported a quote time"}
+    raw_h = (max(secs) - at.timestamp()) / 3600
+    near = round(raw_h)
+    if not (0 <= near <= 6) or abs(raw_h - near) > 0.25:
+        return {"verdict": "UNMEASURED", "expected_offset_h": expected,
+                "why": f"newest quote is not live (offset reads {raw_h:+.2f}h)"}
+    return {"verdict": "MATCH" if near == expected else "MISMATCH",
+            "observed_offset_h": near, "expected_offset_h": expected,
+            "why": f"newest quote reads broker = UTC{near:+d}h; New York + 7 = UTC{expected:+g}h"}
 
 
 def record_contract_terms(symbols: list[str]) -> dict:
@@ -197,11 +240,13 @@ def record_contract_terms(symbols: list[str]) -> dict:
     term = mt5.terminal_info()
     connected = bool(getattr(term, "connected", False)) if term is not None else False
     rows, failures = [], {}
+    stamps: list[object] = []
     for symbol in symbols:
         info = mt5.symbol_info(symbol)
         if info is None:
             failures[symbol] = "symbol_info unavailable"
             continue
+        stamps.append(getattr(info, "time", None))
         try:
             rows.append(contract_terms_row(symbol, info, at))
         except (AttributeError, TypeError, ValueError) as exc:
@@ -216,7 +261,7 @@ def record_contract_terms(symbols: list[str]) -> dict:
         frame.to_parquet(path, index=False, compression="zstd")
     return {"observed_at": at.isoformat(timespec="seconds"), "rows": len(rows),
             "failures": failures, "records": rows, "connected": connected,
-            "n_requested": len(symbols)}
+            "n_requested": len(symbols), "broker_clock": broker_clock(stamps, at)}
 
 
 #: THE BOX'S OWN SWAP PANEL (2026-10-06). `data/intelligence/broker_swaps/` -- the panel the carry
@@ -307,7 +352,8 @@ def publish_swap_panel(terms: dict, now: datetime | None = None) -> dict:
     prev = _load(SWAP_FRESHNESS, {})
     prev = prev if isinstance(prev, dict) else {}
     state = _load(SWAP_STATE, {})
-    state = {k: v for k, v in state.items() if isinstance(v, dict)} if isinstance(state, dict) else {}
+    state = ({k: v for k, v in state.items() if isinstance(v, dict)}
+             if isinstance(state, dict) else {})
     records = evidenced_records(terms, now)
     rows = swap_panel_rows(records, state)
     changed = any(r["value_since"] == r["observed_at"] for r in rows)     # new or repriced
@@ -352,7 +398,8 @@ def publish_swap_panel(terms: dict, now: datetime | None = None) -> dict:
         "n_symbols": n_sym, "n_expected": n_exp, "full_share": SWAP_FULL_SHARE,
         "this_run": {"connected": terms.get("connected"), "evidenced": len(rows),
                      "answered": len(terms.get("records") or []),
-                     "failures": len(terms.get("failures") or {}), "why_no_capture": why or None},
+                     "failures": len(terms.get("failures") or {}), "why_no_capture": why or None,
+                     "broker_clock": terms.get("broker_clock") or {"verdict": "UNMEASURED"}},
         "last_panel_at": last_at, "last_panel_file": wrote or prev.get("last_panel_file"),
         "rule": "readers recompute age from last_capture_at against their own clock and refuse "
                 "STALE, UNMEASURED or a missing file (research.carry_state.swap_feed); this file "

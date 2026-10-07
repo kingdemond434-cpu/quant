@@ -287,3 +287,29 @@ def test_artifact_shape_if_present():
             else:
                 assert leg["state"] != "UNMEASURED"
                 assert leg["unit"]
+
+
+def test_per_symbol_age_reads_only_evidenced_rows_as_instants(tmp_path):
+    cs = carry_state
+    panel = tmp_path / "broker_swaps"
+    panel.mkdir()
+    rows = [
+        # evidenced, stamped with an offset
+        {"kind": "swap_table", "symbols": ["EURUSD"], "swap_long": -7.0, "swap_short": 2.0,
+         "found_at": "2026-10-06T09:00:00+00:00", "observed_at": "2026-10-06T09:00:00+00:00",
+         "last_evidence_at": "2026-10-06T08:59:00+00:00"},
+        # later, evidenced, written with a Z: a string compare would rank it below "+00:00"
+        {"kind": "swap_table", "symbols": ["EURUSD"], "swap_long": -7.0, "swap_short": 2.0,
+         "found_at": "2026-10-06T09:00:00+00:00", "observed_at": "2026-10-06T11:00:00Z",
+         "last_evidence_at": "2026-10-06T10:59:00Z"},
+        # newest of all but copied with no evidence: vouches for nothing
+        {"kind": "swap_table", "symbols": ["EURUSD"], "swap_long": -7.0, "swap_short": 2.0,
+         "found_at": "2026-10-06T09:00:00+00:00", "observed_at": "2026-10-06T23:00:00+00:00"},
+        {"kind": "swap_table", "symbols": ["XAUUSD"], "swap_long": -40.0, "swap_short": 18.0,
+         "found_at": "2026-10-06T09:00:00", "observed_at": "2026-10-06T09:00:00"},
+    ]
+    (panel / "a.json").write_text(json.dumps(rows), "utf-8")
+    captured = {}
+    series = cs._load_panel(panel, captured)
+    assert captured == {"EURUSD": "2026-10-06T11:00:00+00:00"}
+    assert len(series["EURUSD"]) == 3 and series["XAUUSD"]

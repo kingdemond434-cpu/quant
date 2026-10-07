@@ -204,13 +204,27 @@ def _load_terms(terms_dir: Path) -> dict[str, dict[str, Any]]:
     return out
 
 
+def _when(raw: object) -> datetime | None:
+    """An ISO stamp as an aware UTC instant; naive reads as UTC; unparseable is None."""
+    try:
+        t = datetime.fromisoformat(str(raw))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
 def _load_panel(panel_dir: Path, captured: dict[str, str] | None = None
                 ) -> dict[str, list[tuple[str, float, float]]]:
     """Per-symbol swap SERIES from the hourly broker panel, oldest first. `captured`, when given,
-    receives each symbol's latest `observed_at` -- the capture that last vouched for it."""
-    series: dict[str, list[tuple[str, float, float]]] = {}
+    receives each symbol's latest EVIDENCED capture: the `observed_at` of a row the box wrote with
+    live terminal evidence (`last_evidence_at`). A copied or seed row with no evidence vouches for
+    nothing. Stamps are compared as instants, never as strings (`+00:00` against `Z`, or a naive
+    stamp, would otherwise order wrongly)."""
+    series: dict[str, list[tuple[datetime, str, float, float]]] = {}
+    best: dict[str, datetime] = {}
     if not panel_dir.exists():
-        return series
+        return {}
+    floor = datetime.min.replace(tzinfo=UTC)
     for f in sorted(panel_dir.glob("*.json")):
         try:
             rows = json.loads(f.read_text("utf-8"))
@@ -227,14 +241,19 @@ def _load_panel(panel_dir: Path, captured: dict[str, str] | None = None
             lo, sh = r.get("swap_long"), r.get("swap_short")
             if lo is None or sh is None:
                 continue
-            series.setdefault(str(syms[0]), []).append(
-                (str(r.get("found_at", "")), float(lo), float(sh)))
-            seen = r.get("observed_at")
-            if captured is not None and seen and str(seen) > captured.get(str(syms[0]), ""):
-                captured[str(syms[0])] = str(seen)
-    for v in series.values():
-        v.sort()
-    return series
+            sym = str(syms[0])
+            found = str(r.get("found_at", ""))
+            series.setdefault(sym, []).append((_when(found) or floor, found, float(lo), float(sh)))
+            seen = _when(r.get("observed_at"))
+            if (captured is not None and seen is not None and _when(r.get("last_evidence_at"))
+                    and seen > best.get(sym, floor)):
+                best[sym] = seen
+                captured[sym] = seen.isoformat(timespec="seconds")
+    out: dict[str, list[tuple[str, float, float]]] = {}
+    for sym, v in series.items():
+        v.sort(key=lambda x: (x[0], x[1]))
+        out[sym] = [(found, lo, sh) for _, found, lo, sh in v]
+    return out
 
 
 def _last_close(symbol: str, universe_dir: Path) -> float | None:
