@@ -781,7 +781,8 @@ def test_usdcnh_fixing_cell_runs_the_production_loop(
     monkeypatch.setattr(pc, "_record_in_registry", door.record)
     monkeypatch.setattr(pc, "_preregister", door.preregister)
 
-    cnh = _bars("2025-12-01", 290, 7.20, seed=21)
+    # a tape the fixing's trend genuinely leads (synthetic), so the screen has a cell to propose
+    cnh = _bars("2025-12-01", 290, 7.20, seed=21, drift=0.00015)
     usdx = _bars("2025-12-01", 290, 98.0, seed=22)
     bars = {"USDCNH": cnh, "USDX": usdx}
     # one fetch per fixing day, inside the measured clock's seasons (shoulders are dropped)
@@ -800,12 +801,17 @@ def test_usdcnh_fixing_cell_runs_the_production_loop(
         rec = AC.collect_one(src)
         assert rec["status"] in ("COLLECTED", "NEEDS_PARSER") and rec.get("vault"), rec
     monkeypatch.setattr(AC, "datetime", datetime)
-    AP.parse_all(only=["cfets_fixing"])
-    assert len(AP.read_ledger("cfets_fixing")) >= len(days)
+    # the parser reads MAX_VINTAGES_PER_PASS vintages a pass; hourly passes catch up
+    seen = -1
+    while len(AP.read_ledger("cfets_fixing")) > seen:
+        seen = len(AP.read_ledger("cfets_fixing"))
+        AP.parse_all(only=["cfets_fixing"])
+    usd = [r for r in AP.read_ledger("cfets_fixing") if "USD" in str(r.get("entity"))]
+    assert len({r["event_time"] for r in usd}) == len(days)
 
     rep = PK.semantic_lane(budget_s=600.0, bars_fn=bars.get)
     row = rep["packs"]["cfets_fix"]
-    assert row["status"] == "BUILT" and row["terms"] == "confirmed", row
+    assert row["status"] == "BUILT" and row["terms"] == "confirmed", row.get("why")
     assert "USDCNH" in row["targets"] and row["tests"] > 0, row
     # SCREENED and DEFLATED: measured cells on USDCNH, every look charged into the deflation
     assert rep["screened_measurable"] > 0 and rep["proposed"] > 0, rep
@@ -841,7 +847,7 @@ def test_every_terms_table_agrees_where_two_cover_one_source() -> None:
     disagree: list[str] = []
     # (a) a TERMS source on a governed host == the host's row (one decision per host)
     for s in A.SOURCES:
-        host_ref = A._terms_id(s.url)
+        host_ref = A._terms_id(s.url) if "://" in s.url else None
         if host_ref and host_ref != s.id and _verdict(host_ref) != _verdict(s.id):
             disagree.append(f"source {s.id} {_verdict(s.id)} vs host {host_ref} "
                             f"{_verdict(host_ref)}")
@@ -859,7 +865,8 @@ def test_every_terms_table_agrees_where_two_cover_one_source() -> None:
         ref = str(r.get("terms_ref") or "")
         if not ref:
             continue
-        host_ref = A._terms_id(str(r.get("url") or ""))
+        url = str(r.get("url") or "")
+        host_ref = A._terms_id(url) if "://" in url else None
         if host_ref and _verdict(host_ref) != _verdict(ref):
             disagree.append(f"row {r['id']} {ref} vs host {host_ref}")
         ad = C.ADAPTER_TERMS.get(str(r.get("adapter") or ""))
