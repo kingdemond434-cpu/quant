@@ -23,7 +23,15 @@ is what a partial regeneration actually produces.
 
 THE OVERRIDE IS DELIBERATE AND VISIBLE. Set ALLOW_PROTECTED_RECORD_LOSS=1 in the environment of
 the commit that genuinely retires records. It is one variable, it appears in shell history, and
-it forces the decision to be made by someone rather than inherited from a default.
+it forces the decision to be made by someone rather than inherited from a default. It covers
+EMPTIED and RECORDS_LOST only. A RECORDS_REWRITTEN finding passes only under its own variable,
+ALLOW_PROTECTED_RECORD_REWRITE, so a loss override can never let a rewrite through.
+
+A MERGE THAT TAKES A PARENT'S EXACT BLOB IS NOT A REWRITE. In a merge, HEAD is only the first
+parent. A protected file whose staged blob is byte-identical to that file in a MERGE_HEAD parent
+(every parent of an octopus merge counts) is content already committed, and already checked, on
+that parent. It is exempt and reported as "equals parent <sha>". Every other staged file,
+including one a merge edits into something neither parent holds, is checked exactly as before.
 
     git diff --cached  ->  this only ever inspects what is ABOUT to be committed.
 
@@ -71,6 +79,33 @@ def _git(*args: str) -> str:
                        encoding="utf-8", errors="replace",
                        check=False, timeout=120)
     return r.stdout
+
+
+def _merge_parents() -> list[str]:
+    """The MERGE_HEAD parents of an in-progress merge, one per line (octopus merges list several).
+
+    Empty when no merge is in progress. `--git-path` resolves the file for a linked worktree too.
+    """
+    path = _git("rev-parse", "--git-path", "MERGE_HEAD").strip()
+    if not path:
+        return []
+    f = Path(path) if Path(path).is_absolute() else ROOT / path
+    try:
+        lines = f.read_text(encoding="utf-8").split()
+    except OSError:
+        return []
+    return [s for s in lines if re.fullmatch(r"[0-9a-f]{40,64}", s)]
+
+
+def _equal_parent(rel: str, parents: list[str]) -> str | None:
+    """The first MERGE_HEAD parent whose blob for `rel` equals the staged blob, else None."""
+    staged = _git("rev-parse", "-q", "--verify", f":{rel}").strip()
+    if not staged:
+        return None
+    for p in parents:
+        if _git("rev-parse", "-q", "--verify", f"{p}:{rel}").strip() == staged:
+            return p
+    return None
 
 
 def _protected() -> dict[str, str]:
@@ -205,7 +240,8 @@ def compare(rel: str, before: str, after: str) -> dict[str, object] | None:
 
 
 def _write_report(prot: dict[str, str], compared: list[str],
-                  findings: list[dict[str, object]], rng: list[str] | None) -> None:
+                  findings: list[dict[str, object]], rng: list[str] | None,
+                  equals_parent: dict[str, str] | None = None) -> None:
     """Record what this run actually compared, so a vacuous pass cannot read as a clean one.
 
     `n` IS THE NUMBER OF FILES COMPARED, never the number guarded. A staged-vs-HEAD run with an
@@ -222,6 +258,7 @@ def _write_report(prot: dict[str, str], compared: list[str],
         "losses": len(findings),
         "compared": compared,
         "findings": findings,
+        "equals_parent": {k: f"equals parent {v}" for k, v in (equals_parent or {}).items()},
         "rule": "a protected artifact may not lose records; a record that vanishes reads exactly "
                 "like a record resolved",
     }
@@ -246,6 +283,8 @@ def main(argv: list[str] | None = None) -> int:
     prot = _protected()
     findings: list[dict[str, object]] = []
     compared: list[str] = []
+    equals_parent: dict[str, str] = {}
+    parents = [] if args.range else _merge_parents()
     for rel in sorted(prot):
         if args.range:
             before = _git("show", f"{args.range[0]}:{rel}")
@@ -259,12 +298,17 @@ def main(argv: list[str] | None = None) -> int:
         if not before.strip():
             continue                                  # nothing to lose
         compared.append(rel)
+        if parents and (p := _equal_parent(rel, parents)):
+            equals_parent[rel] = p                    # already committed on that parent
+            continue
         finding = compare(rel, before, after)
         if finding:
             findings.append(finding)
 
-    _write_report(prot, compared, findings, args.range)
+    _write_report(prot, compared, findings, args.range, equals_parent)
 
+    for rel, p in equals_parent.items():
+        print(f"  EQUALS_PARENT  {rel} -- equals parent {p}; exempt (merge takes that blob)")
     if not findings:
         print(f"protected records: OK over {len(prot)} guarded artifact(s)")
         return 0
@@ -282,6 +326,12 @@ def main(argv: list[str] | None = None) -> int:
                 body = (", ".join(lost[:12]) + f" ... +{len(lost) - 24} more ... "
                         + ", ".join(lost[-12:]))
             print(f"                 lost: {body}")
+    rewrites = [f for f in findings if f["kind"] == "RECORDS_REWRITTEN"]
+    if os.environ.get(OVERRIDE) == "1" and rewrites:
+        print(f"  {OVERRIDE}=1 covers EMPTIED and RECORDS_LOST only, never RECORDS_REWRITTEN. "
+              "A deliberate rewrite needs ALLOW_PROTECTED_RECORD_REWRITE=1, naming the records "
+              "in the commit message.")
+        return 2
     if os.environ.get(OVERRIDE) == "1":
         print(f"  {OVERRIDE}=1 -- allowed, and recorded in this output. Say in the commit "
               "message WHICH records are being retired and why.")

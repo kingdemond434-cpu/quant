@@ -22,6 +22,7 @@ The first two tests are the positive and negative control run against the real c
 from __future__ import annotations
 
 import importlib.util
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -124,3 +125,113 @@ def test_the_pre_commit_hook_actually_calls_it() -> None:
     """A guard nobody calls always returns True -- the lesson this desk has already paid for."""
     hook = (_ROOT / "ops" / "githooks" / "pre-commit").read_text("utf-8")
     assert "check_protected_records.py" in hook
+
+
+# ---------------------------------------------------------------------------------------------
+# MERGE AWARENESS AND THE NARROWED LOSS OVERRIDE (2026-10-07).
+#
+# Merging LIVE into a branch that predates a lessons edit staged LIVE's exact blob, and the guard,
+# which compares the staged blob with HEAD (the first parent) only, called three lessons
+# RECORDS_REWRITTEN. The content was already committed, and already checked, on the other parent.
+# A staged blob that equals a MERGE_HEAD parent's blob is now exempt; every other case is checked
+# as before. ALLOW_PROTECTED_RECORD_LOSS used to let a rewrite through as well; it no longer does.
+# These tests drive main() against a real temporary git repository.
+# ---------------------------------------------------------------------------------------------
+
+_LEDGER = "docs/ledger.jsonl"
+
+
+def _line(rid: str, lesson: str) -> str:
+    return json.dumps({"id": rid, "lesson": lesson}) + "\n"
+
+
+@pytest.fixture()
+def repo(tmp_path: Path, mod: ModuleType, monkeypatch: pytest.MonkeyPatch) -> Path:
+    for var in ("GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE", mod.OVERRIDE,
+                "ALLOW_PROTECTED_RECORD_REWRITE"):
+        monkeypatch.delenv(var, raising=False)
+    root = tmp_path / "repo"
+    root.mkdir()
+    _g(root, "init", "-q", "-b", "main")
+    (root / "docs").mkdir()
+    (root / _LEDGER).write_text(_line("L1", "a") + _line("L2", "b"), encoding="utf-8")
+    _g(root, "add", _LEDGER)
+    _g(root, "commit", "-q", "-m", "base")
+    monkeypatch.setattr(mod, "ROOT", root)
+    monkeypatch.setattr(mod, "REPORT", tmp_path / "PROTECTED_RECORDS.json")
+    monkeypatch.setattr(mod, "_protected", lambda: {_LEDGER: "a test ledger"})
+    return root
+
+
+def _g(root: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "core.hooksPath=/dev/null",
+         "-c", "commit.gpgsign=false", *args],
+        cwd=root, capture_output=True, text=True, check=True).stdout
+
+
+def _branch_rewriting(root: Path, name: str, lesson: str) -> None:
+    """A side branch off the base that rewrites L1, leaving main where it was."""
+    _g(root, "checkout", "-q", "-b", name, "main")
+    (root / _LEDGER).write_text(_line("L1", lesson) + _line("L2", "b"), encoding="utf-8")
+    _g(root, "commit", "-q", "-am", f"rewrite L1 on {name}")
+    _g(root, "checkout", "-q", "main")
+
+
+def _diverge_main(root: Path) -> None:
+    (root / "other.txt").write_text("main moved\n", encoding="utf-8")
+    _g(root, "add", "other.txt")
+    _g(root, "commit", "-q", "-m", "main moves on")
+
+
+def test_a_merge_taking_a_parents_exact_blob_passes(
+        mod: ModuleType, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _branch_rewriting(repo, "side", "a, sharpened upstream")
+    _diverge_main(repo)
+    _g(repo, "merge", "--no-commit", "--no-ff", "side")
+    side = _g(repo, "rev-parse", "side").strip()
+    assert mod.main([]) == 0
+    assert f"equals parent {side}" in capsys.readouterr().out
+
+
+def test_an_octopus_merge_matches_any_parent(
+        mod: ModuleType, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _g(repo, "checkout", "-q", "-b", "quiet", "main")
+    (repo / "quiet.txt").write_text("q\n", encoding="utf-8")
+    _g(repo, "add", "quiet.txt")
+    _g(repo, "commit", "-q", "-m", "quiet branch")
+    _g(repo, "checkout", "-q", "main")
+    _branch_rewriting(repo, "side", "a, sharpened upstream")
+    _diverge_main(repo)
+    _g(repo, "merge", "--no-commit", "--no-ff", "quiet", "side")
+    side = _g(repo, "rev-parse", "side").strip()
+    assert mod.main([]) == 0
+    assert f"equals parent {side}" in capsys.readouterr().out
+
+
+def test_a_merge_blob_matching_neither_parent_is_refused(mod: ModuleType, repo: Path) -> None:
+    _branch_rewriting(repo, "side", "a, sharpened upstream")
+    _diverge_main(repo)
+    _g(repo, "merge", "--no-commit", "--no-ff", "side")
+    (repo / _LEDGER).write_text(_line("L1", "a third thing") + _line("L2", "b"),
+                                encoding="utf-8")
+    _g(repo, "add", _LEDGER)
+    assert mod.main([]) == 2
+
+
+def test_the_loss_override_never_lets_a_rewrite_through(
+        mod: ModuleType, repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (repo / _LEDGER).write_text(_line("L1", "silently replaced") + _line("L2", "b"),
+                                encoding="utf-8")
+    _g(repo, "add", _LEDGER)
+    monkeypatch.setenv(mod.OVERRIDE, "1")
+    assert mod.main([]) == 2
+
+
+def test_the_loss_override_still_allows_a_loss(
+        mod: ModuleType, repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (repo / _LEDGER).write_text(_line("L1", "a"), encoding="utf-8")
+    _g(repo, "add", _LEDGER)
+    assert mod.main([]) == 2
+    monkeypatch.setenv(mod.OVERRIDE, "1")
+    assert mod.main([]) == 0
