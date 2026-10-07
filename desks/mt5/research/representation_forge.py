@@ -380,7 +380,34 @@ def propose(series: list[R.Series], existing: set[str], history: dict[str, dict[
         row["score"] = score.get("score", 0.0)
     unique.sort(key=lambda r: (-float(r.get("score") or 0.0), int(r.get("causal_order") or 0),
                                str(r["id"])))
-    return unique[:budget], unique
+    return diverse(unique, budget), unique
+
+
+def diverse(ranked: list[dict[str, Any]], budget: int) -> list[dict[str, Any]]:
+    """The budget cut, with every family that has a proposal guaranteed a share of it.
+
+    Ties on score break on the id, and ids sort by dataset: cut naively, a family whose ids sort
+    late (`repr:vint...`, `repr:link_outcomes...`) would never be minted however many hours the
+    forge ran. Each family first takes up to ceil(budget / families) of its own best-ranked rows;
+    what is left of the budget goes in plain rank order. Deterministic, like the ranking."""
+    if budget <= 0:
+        return []
+    families = sorted({str(r.get("family")) for r in ranked})
+    if not families:
+        return []
+    quota = -(-budget // len(families))
+    taken: dict[str, int] = {}
+    chosen: set[str] = set()
+    for row in ranked:
+        fam = str(row.get("family"))
+        if taken.get(fam, 0) < quota and len(chosen) < budget:
+            taken[fam] = taken.get(fam, 0) + 1
+            chosen.add(str(row["id"]))
+    for row in ranked:
+        if len(chosen) >= budget:
+            break
+        chosen.add(str(row["id"]))
+    return [r for r in ranked if str(r["id"]) in chosen]
 
 
 def mint(row: dict[str, Any], by_id: dict[str, R.Series],
