@@ -62,7 +62,8 @@ ROUTES: tuple[dict[str, Any], ...] = (
      "url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml", "expect": "xml"},
     {"name": "dukascopy_datafeed", "url": "https://datafeed.dukascopy.com/datafeed",
      "expect": "any"},
-    {"name": "sge_quotations", "url": "https://www.sge.com.cn/graph/quotations", "expect": "any"},
+    {"name": "sge_quotations", "url": "https://www.sge.com.cn/graph/quotations", "expect": "any",
+     "terms_ref": "cn_sge_premium"},
     {"name": "gld_holdings",
      "url": "https://www.spdrgoldshares.com/usa/assets/uploads/GLD_US_holdings.xlsx",
      "expect": "binary"},
@@ -84,11 +85,36 @@ _ACCEPT = {
 MIN_BODY_BYTES = 64
 
 
+def terms_state(route: dict[str, Any]) -> tuple[str, str]:
+    """The terms gate (`alt_proxies.terms_gate`) for one route: by its `terms_ref`, else by host.
+
+    Even a 4 KB shape probe is a request to the host, so a host whose terms are refused or not yet
+    confirmed is never probed. FAIL CLOSED: a route that names a `terms_ref` is blocked when the
+    gate cannot be read."""
+    ref = str(route.get("terms_ref") or "")
+    try:
+        import importlib
+        import sys
+        for p in (str(ROOT / "desks" / "mt5"), str(ROOT / "desks" / "mt5" / "research")):
+            if p not in sys.path:
+                sys.path.insert(0, p)
+        terms_gate = importlib.import_module("research.alt_proxies").terms_gate
+    except Exception as exc:                                       # pragma: no cover
+        return ("to_confirm", f"terms gate unreadable: {type(exc).__name__}") if ref else (
+            "ungoverned", "")
+    state, why = terms_gate(ref or str(route.get("url") or ""))
+    return str(state), str(why)
+
+
 def probe(route: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
     """One route, one verdict. Never raises: an unprobed route is UNMEASURED, not a pass."""
     name, url = str(route.get("name")), str(route.get("url"))
     expect = str(route.get("expect") or "any")
     out: dict[str, Any] = {"name": name, "url": url, "expect": expect}
+    state, why = terms_state(route)
+    if state not in ("confirmed", "ungoverned"):
+        out.update({"status": "BLOCKED_ON_TERMS", "terms": state, "why": why[:200]})
+        return out
     req = urllib.request.Request(url, headers={"User-Agent": "quant-desk-route-probe/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -164,7 +190,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"source routes: {len(results)} probed -> {census}")
     for r in results:
         mark = {"OK": "  ok    ", "MOVED": "  MOVED ", "HTTP_ERROR": "  http  ",
-                "UNREACHABLE": "  unrch ", "UNMEASURED": "  unmsr "}.get(str(r["status"]), "  ?    ")
+                "UNREACHABLE": "  unrch ", "UNMEASURED": "  unmsr ",
+                "BLOCKED_ON_TERMS": "  terms "}.get(str(r["status"]), "  ?    ")
         print(f"{mark}{r['name']!s:22} {str(r.get('why') or r.get('content_type') or '')[:70]}")
     print(f"  -> {OUT}")
     # MOVED is the only fatal verdict. An honest HTTP error or an unreachable host is loud and

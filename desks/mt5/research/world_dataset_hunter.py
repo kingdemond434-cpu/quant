@@ -1155,6 +1155,18 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
         by_provider[spec["provider"]]["rows"] += res["rows_added"]
 
 
+def legacy_terms_state(url: str) -> tuple[str, str]:
+    """`alt_proxies.terms_gate` for a direct legacy door. A host the gate governs (SGE: terms
+    refused, 2026-10-06) is never fetched unless its terms read `confirmed`; an unreadable gate
+    blocks a governed-looking host rather than permitting it."""
+    try:
+        from research.alt_proxies import terms_gate
+    except Exception as exc:                                       # pragma: no cover
+        return ("to_confirm", f"terms gate unreadable: {type(exc).__name__}") if (
+            "sge.com.cn" in url) else ("ungoverned", "")
+    return terms_gate(url)
+
+
 def attempt_legacy(client: Client, cat: dict[str, Any], *, now: datetime, until: float,
                    stats: Counter[str], qstats: Counter[str]) -> None:
     """Try every DISCOVERED registry row once a day, by its own door and by a frontier search."""
@@ -1207,6 +1219,12 @@ def attempt_legacy(client: Client, cat: dict[str, Any], *, now: datetime, until:
             rec["reason"] = "no keyless endpoint known; frontier seeded by search"
             rec["status"] = "SEARCH_ONLY"
             stats["legacy:SEARCH_ONLY"] += 1
+            continue
+        t_state, t_why = legacy_terms_state(str(probe.get("url")))
+        if t_state not in ("confirmed", "ungoverned"):
+            # THE TERMS GATE GOVERNS THE HOST, not the organ that happens to know a URL on it.
+            rec["status"], rec["reason"] = "BLOCKED_ON_TERMS", t_why[:200]
+            stats["legacy:BLOCKED_ON_TERMS"] += 1
             continue
         spec = {"provider": "DIRECT", "dataset": rid, "name": rid, **probe}
         try:

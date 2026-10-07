@@ -59,6 +59,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.data import terms_fence  # noqa: E402
+
 REGISTRY = DESK / "data" / "asia_sources.json"
 STATE = DESK / "data" / "lake" / "collector_state.json"
 VAULT = DESK / "data" / "lake" / "vault"
@@ -210,9 +212,13 @@ def chain_for(src: dict[str, Any], state: dict[str, Any],
         stops_at = None
     else:
         stops_at = STAGES[STAGES.index(reached) + 1]
+    t_state, t_why = terms_fence.row_hold(src)
     return {
         "id": sid, "cadence": src.get("cadence"), "url": src.get("url"),
         "targets": src.get("targets") or [],
+        # HELD ON TERMS (PR #229): never handed to the collector, never parsed, never enqueued.
+        "terms": terms_fence.status(t_state) if t_state else None,
+        "terms_why": t_why[:300] if t_state else None,
         "collected": collected, "ingested": ingested, "represented": represented,
         "n_rows": n_rows,
         "cells_emitted": emitted, "cells_judged": judged,
@@ -298,7 +304,8 @@ def repair(rows: list[dict[str, Any]], order: list[str], *,
     """
     t0 = time.monotonic()
     rank = {sid: i for i, sid in enumerate(order)}
-    to_parse = sorted([r["id"] for r in rows if r["collected"] and not r["represented"]],
+    to_parse = sorted([r["id"] for r in rows
+                       if r["collected"] and not r["represented"] and not r.get("terms")],
                       key=lambda sid: rank.get(sid, 10**6))[:REPAIR_BATCH]
     parsed: dict[str, Any] = {}
     if to_parse:
@@ -308,7 +315,8 @@ def repair(rows: list[dict[str, Any]], order: list[str], *,
         except Exception as exc:                       # a parser defect never stops the drain
             parsed = {"error": f"{type(exc).__name__}: {exc}"}
     enqueued: list[dict[str, Any]] = []
-    for r in sorted([r for r in rows if r["represented"] and r["cells_emitted"] <= 0],
+    for r in sorted([r for r in rows
+                     if r["represented"] and r["cells_emitted"] <= 0 and not r.get("terms")],
                     key=lambda r: rank.get(r["id"], 10**6))[:REPAIR_BATCH]:
         if time.monotonic() - t0 > budget_s:
             break
@@ -389,7 +397,10 @@ def build(budget_s: float = 300.0, *, fetch: bool = True) -> dict[str, Any]:
     oldest = max(ages, key=lambda kv: kv[1], default=(None, 0.0))
     windows = {str(s.get("id")): _window_h(s) for s in srcs}
 
-    pending = _evig_order(uncollected_before)
+    # A source HELD ON TERMS stays in the uncollected count (it is not covered) but is never
+    # requested: the collector is handed only what the desk may lawfully fetch.
+    held = {r["id"] for r in rows if r.get("terms")}
+    pending = _evig_order([sid for sid in uncollected_before if sid not in held])
     # The least-recently-attempted never-collected sources, for the anti-starvation half.
     def _last_attempt(sid: str) -> float:
         row = state.get(sid) if isinstance(state, dict) else None
@@ -398,7 +409,8 @@ def build(budget_s: float = 300.0, *, fetch: bool = True) -> dict[str, Any]:
         except (TypeError, ValueError, AttributeError):
             return 0.0
 
-    oldest_first = sorted(uncollected_before, key=_last_attempt)
+    oldest_first = sorted((sid for sid in uncollected_before if sid not in held),
+                          key=_last_attempt)
     result = drain(pending, min(budget_s * 0.7, 180.0), fetch=fetch,
                    oldest_first=oldest_first)
 
@@ -533,6 +545,7 @@ def build(budget_s: float = 300.0, *, fetch: bool = True) -> dict[str, Any]:
         "oldest_never_collected": {"id": oldest[0], "age_h": round(oldest[1], 2),
                                    "window_h": windows.get(str(oldest[0]), 6_480.0)},
         "not_reached": not_reached,
+        "blocked_on_terms": sorted(held),
         "chain": {"stages": STAGES, "census": stages},
         "n_collected": len(collected_after),
         "n_collected_but_unconverted": len(unconverted),

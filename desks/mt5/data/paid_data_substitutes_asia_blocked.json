@@ -74,8 +74,8 @@
    "measure": "premium_pct",
    "frequency": "daily",
    "status": "BLOCKED+SUBSTITUTE:in_gold_imports",
-   "terms": "to_confirm",
-   "blocked_because": "SGE site shows only 'All Right Reserved'; no terms or licence page found, no robots.txt",
+   "terms": "refused",
+   "blocked_because": "SGE market-data licensing page: 'Without the permission of SGE or Information Company, no institution or individual may disseminate, operate or use the trading information of SGE.' Licensed through named vendors only (re-read 2026-10-06)",
    "unsubstituted_because": "",
    "evidence": ""
   },

@@ -33,6 +33,26 @@ version would disagree in invented places and the desk would trade the invention
 Provenance is recorded per row — which source, fetched when — because a number whose origin is
 unknown cannot be audited later, and this series will be used to justify positions.
 
+THE TERMS GATE COMES FIRST (2026-10-06). SGE's own market-data licensing page says: "Without
+the permission of SGE or Information Company, no institution or individual may disseminate,
+operate or use the trading information of SGE" (en.sge.com.cn/data_Licensed). That is recorded in
+`alt_proxies.TERMS["cn_sge_premium"]` as `refused`, and this module asks `terms_gate` before any
+request: while the decision is not `confirmed` it fetches NOTHING, computes nothing from the host's
+data and reports BLOCKED_ON_TERMS (a named state, never UNAVAILABLE and never a zero). The day the
+desk holds a licence the one TERMS line flips and everything below runs unchanged.
+
+WHAT RUNS WHEN IT IS CONFIRMED (audit 2026-10-06 rows 8-10, 37):
+  * every print is appended to `sge_vintages.jsonl` (append-only; the daily table is a VIEW);
+  * the Shanghai Gold / Silver Benchmark AM/PM history from the benchmark page and the daily quote
+    table (Au99.99, Au(T+D), Ag(T+D): OHLC, weighted average, volume, turnover, open interest,
+    delivery), each a vintage;
+  * the USD/oz premium at the BENCHMARK instant (10:15 / 14:15 Beijing) against XAUUSD and USDCNH
+    from the desk's own H1 bars, converted into the bars' broker clock by `libs.research.bar_clock`
+    (a day whose instant cannot be placed is dropped, never guessed);
+  * the premium's derivatives (change, acceleration, z, percentile, x CNH state, x USD state)
+    published as `data/lake/series/sge_premium_features.parquet` with `available_time`, which the
+    dislocation lab and `family_exogenous_conditioner` read.
+
     python research/fetch_sge_premium.py
 """
 
@@ -41,8 +61,9 @@ from __future__ import annotations
 import json
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import requests
@@ -56,6 +77,19 @@ REPORTS = BASE / "reports"
 REPORTS.mkdir(parents=True, exist_ok=True)
 #: Forward-accumulated raw SGE prints, one row per Beijing trading date.
 HISTORY = OUT / "sge_daily.parquet"
+#: EVERY print and table row ever read, append-only. The daily parquet above is a VIEW of it.
+VINTAGES = OUT / "sge_vintages.jsonl"
+#: First-release view of the benchmark vintages: one row per (date, metal) with AM/PM.
+BENCHMARK = OUT / "sge_benchmark.parquet"
+#: The premium and its derivatives, PIT-stamped, where the lab and the conditioner family read it.
+FEATURES = OUT / "series" / "sge_premium_features.parquet"
+UNIVERSE = BASE / "data" / "universe"
+SGE_DAILY_QUOTE = "https://www.sge.com.cn/sjzx/mrhq"
+SGE_BENCHMARK = "https://www.sge.com.cn/sjzx/jzj"
+#: The Shanghai Gold Benchmark auctions open at 10:15 and 14:15 Beijing (02:15 / 06:15 UTC); the
+#: price is published minutes later, so it is usable from +15 minutes.
+BENCH_UTC: dict[str, tuple[int, int]] = {"am": (2, 15), "pm": (6, 15)}
+BENCH_PUBLISH_DELAY = timedelta(minutes=15)
 
 GRAMS_PER_TROY_OZ = 31.1034768
 
@@ -94,7 +128,7 @@ def _fred_csv(url: str, col: str, timeout: int = 45) -> pd.Series | None:
     try:
         r = requests.get(url, timeout=timeout)
         r.raise_for_status()
-    except Exception as exc:                                        # noqa: BLE001
+    except Exception as exc:
         print(f"  {col}: {type(exc).__name__}: {exc}", flush=True)
         return None
     from io import StringIO
@@ -145,7 +179,7 @@ def fetch_sge() -> tuple[dict[str, tuple[pd.Timestamp, float]], str]:
                              headers={"User-Agent": "quant-research-desk/1.0"})
             r.raise_for_status()
             parsed = _parse_graph(r.json(), instid)
-        except Exception as exc:                                    # noqa: BLE001
+        except Exception as exc:
             print(f"  {instid}: {type(exc).__name__}: {exc}", flush=True)
             parsed = None
         if parsed is None:
@@ -165,6 +199,12 @@ def record_history(prints: dict[str, tuple[pd.Timestamp, float]], prov: str,
     rows: dict[pd.Timestamp, dict[str, object]] = {}
     for col, (d, px) in prints.items():
         rows.setdefault(d.normalize(), {})[col] = px
+    # THE VINTAGE FIRST: every print the fetch saw, appended. The daily table below keeps the
+    # session's freshest print (a session is not over until it closes), and that upsert is a VIEW
+    # -- the intermediate prints survive here, so nothing the desk read is ever lost.
+    append_vintages([{"kind": "graph_print", "contract": col, "session_date": str(d.date()),
+                      "cny": float(px)} for col, (d, px) in prints.items()],
+                    fetched_at, prov)
     add = pd.DataFrame.from_dict(rows, orient="index").sort_index()
     add["source"] = prov
     add["fetched_at"] = fetched_at
@@ -204,7 +244,7 @@ def _ecb_usdcny() -> pd.Series | None:
         r = requests.get(ECB_90D, timeout=45)
         r.raise_for_status()
         root = ET.fromstring(r.content)
-    except Exception as exc:                                        # noqa: BLE001
+    except Exception as exc:
         print(f"  ecb_usdcny: {type(exc).__name__}: {exc}", flush=True)
         return None
     ns = {"e": "http://www.ecb.int/vocabulary/2002-08-01/eurofxref"}
@@ -240,8 +280,290 @@ def build_premium(sge_cny_g: pd.Series, intl_usd_oz: pd.Series,
     return df
 
 
+# =============================================================================== terms + vintages
+def terms_state() -> tuple[str, str]:
+    """The one terms decision for the SGE host. FAIL CLOSED: an unreadable table is not consent."""
+    try:
+        from research.alt_proxies import terms_gate
+    except Exception as exc:
+        return "unreadable", f"terms table unimportable ({type(exc).__name__}); fail closed"
+    return terms_gate(SGE_GRAPH)
+
+
+def append_vintages(rows: list[dict[str, Any]], fetched_at: str, source: str) -> int:
+    """Append rows to the vintage ledger, skipping a row identical to the last one recorded for
+    the same (kind, contract/metal, session date). Never rewrites a line."""
+    if not rows:
+        return 0
+    last: dict[str, str] = {}
+    if VINTAGES.exists():
+        for ln in VINTAGES.read_text(encoding="utf-8").splitlines():
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                continue
+            if isinstance(r, dict):
+                last[str(r.get("key"))] = str(r.get("payload"))
+    n = 0
+    VINTAGES.parent.mkdir(parents=True, exist_ok=True)
+    with VINTAGES.open("a", encoding="utf-8") as fh:
+        for r in rows:
+            key = "|".join(str(r.get(k) or "") for k in ("kind", "contract", "metal",
+                                                         "session_date"))
+            payload = json.dumps(dict(sorted(r.items())), ensure_ascii=False,
+                                 default=str)
+            if last.get(key) == payload:
+                continue
+            fh.write(json.dumps({"key": key, "payload": payload, "received_at": fetched_at,
+                                 "source": source, "revision": key in last},
+                                ensure_ascii=False) + "\n")
+            last[key] = payload
+            n += 1
+    return n
+
+
+# =============================================================================== table parsers
+def _tables(html: str) -> list[list[list[str]]]:
+    from research.cn_official_tables import html_tables
+    return html_tables(html)
+
+
+def _num(v: Any) -> float | None:
+    from research.cn_official_tables import to_number
+    return to_number(v)
+
+
+def parse_benchmark(html: str) -> list[dict[str, Any]]:
+    """Shanghai Gold Benchmark (早盘价 / 午盘价, CNY/g) and Silver Benchmark (基准价, CNY/kg)."""
+    out: list[dict[str, Any]] = []
+    for rows in _tables(html):
+        hdr = rows[0]
+        di = next((j for j, h in enumerate(hdr) if "日期" in h), None)
+        if di is None:
+            continue
+        am = next((j for j, h in enumerate(hdr) if "早盘" in h), None)
+        pm = next((j for j, h in enumerate(hdr) if "午盘" in h), None)
+        one = next((j for j, h in enumerate(hdr) if "基准价" in h), None)
+        metal = "silver" if (am is None and pm is None and one is not None) else "gold"
+        for r in rows[1:]:
+            m = re.search(r"(\d{4})\D(\d{1,2})\D(\d{1,2})", r[di] if di < len(r) else "")
+            if m is None:
+                continue
+            d = f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+            if metal == "gold":
+                a = _num(r[am]) if am is not None and am < len(r) else None
+                b = _num(r[pm]) if pm is not None and pm < len(r) else None
+                if a is None and b is None:
+                    continue
+                out.append({"kind": "benchmark", "metal": "gold", "session_date": d,
+                            "am_cny_g": a, "pm_cny_g": b})
+            else:
+                v = _num(r[one]) if one is not None and one < len(r) else None
+                if v is not None:
+                    out.append({"kind": "benchmark", "metal": "silver", "session_date": d,
+                                "pm_cny_kg": v})
+    return out
+
+
+_QUOTE_COLS = {"开盘": "open", "最高": "high", "最低": "low", "收盘": "close", "加权平均": "wavg",
+               "成交量": "volume", "成交金额": "turnover", "持仓": "open_interest",
+               "交收量": "delivery_volume"}
+
+
+def parse_daily_quote(html: str, session_date: str | None = None) -> list[dict[str, Any]]:
+    """SGE 每日行情: one row per contract with OHLC, weighted average, volume, turnover, open
+    interest and delivery volume where printed. `-` is UNMEASURED (None), never zero."""
+    if session_date is None:
+        from research.cn_official_tables import _strip_tags
+        m = re.search(r"(\d{4})-(\d{2})-(\d{2})", _strip_tags(html)[:2000])
+        session_date = m.group(0) if m else None
+    out: list[dict[str, Any]] = []
+    if session_date is None:
+        return out
+    for rows in _tables(html):
+        hdr = rows[0]
+        ci = next((j for j, h in enumerate(hdr) if "合约" in h or "品种" in h), None)
+        if ci is None:
+            continue
+        cols = {j: name for j, h in enumerate(hdr) for k, name in _QUOTE_COLS.items() if k in h}
+        for r in rows[1:]:
+            if ci >= len(r) or not r[ci]:
+                continue
+            row: dict[str, Any] = {"kind": "daily_quote", "contract": r[ci].strip(),
+                                   "session_date": session_date}
+            for j, name in cols.items():
+                row[name] = _num(r[j]) if j < len(r) else None
+            if row.get("close") is not None or row.get("wavg") is not None:
+                out.append(row)
+    return out
+
+
+def benchmark_view(path: Path | None = None) -> pd.DataFrame:
+    """First-release view of the benchmark vintages: per (date, metal) the first values read."""
+    p = path or VINTAGES
+    first: dict[str, dict[str, Any]] = {}
+    if p.exists():
+        for ln in p.read_text(encoding="utf-8").splitlines():
+            try:
+                r = json.loads(ln)
+                pay = json.loads(r["payload"])
+            except (ValueError, KeyError, TypeError):
+                continue
+            if pay.get("kind") == "benchmark":
+                first.setdefault(str(r["key"]), {**pay, "received_at": r.get("received_at")})
+    if not first:
+        return pd.DataFrame()
+    return pd.DataFrame(list(first.values())).sort_values(["metal", "session_date"])
+
+
+# =============================================================================== premium + features
+def _bars(sym: str) -> pd.DataFrame | None:
+    p = UNIVERSE / f"{sym}_H1.parquet"
+    if not p.exists():
+        return None
+    try:
+        df = pd.read_parquet(p)
+    except Exception:
+        return None
+    df.index = pd.DatetimeIndex(pd.to_datetime(df.index, utc=True, errors="coerce"))
+    return df[~df.index.isna()].sort_index()
+
+
+def _bar_open_at(bars: pd.DataFrame, instant_utc: datetime, root: Path | None = None
+                 ) -> tuple[float | None, str]:
+    """The OPEN of the H1 bar containing a genuinely-UTC instant, placed on the bars' broker clock.
+
+    The open, not the close: it is a price from before the benchmark instant, so the comparison
+    never borrows the next 45 minutes. An instant `bar_clock` cannot place (no measured clock, or
+    a shoulder month) is UNMEASURED and the day is dropped."""
+    from libs.research.bar_clock import to_bar_time
+    conv, status, why = to_bar_time(instant_utc, root)
+    if conv is None:
+        return None, f"{status}: {why}"
+    stamp = pd.Timestamp(conv).tz_convert("UTC").floor("h")
+    if stamp not in bars.index:
+        return None, f"no bar at {stamp}"
+    return float(bars.loc[stamp, "open"]), "ok"
+
+
+def benchmark_premium(bench: pd.DataFrame, xau: pd.DataFrame, cnh: pd.DataFrame,
+                      clock_root: Path | None = None) -> tuple[pd.DataFrame, dict[str, int]]:
+    """USD/oz premium of each gold benchmark fix over XAUUSD, with USDCNH at the same instant.
+
+        sge_usd_oz = benchmark_CNY_per_g * 31.1034768 / USDCNH
+        premium    = sge_usd_oz - XAUUSD           (both at the bar containing the fix instant)
+    """
+    rows: list[dict[str, Any]] = []
+    dropped: dict[str, int] = {}
+    if bench is None or bench.empty:
+        return pd.DataFrame(), dropped
+    gold = bench[bench["metal"] == "gold"]
+    for _, r in gold.iterrows():
+        d = datetime.strptime(str(r["session_date"]), "%Y-%m-%d").replace(tzinfo=UTC)
+        for fix, (hh, mm) in BENCH_UTC.items():
+            px = r.get(f"{fix}_cny_g")
+            if px is None or pd.isna(px):
+                continue
+            inst = d.replace(hour=hh, minute=mm)
+            x, why_x = _bar_open_at(xau, inst, clock_root)
+            c, why_c = _bar_open_at(cnh, inst, clock_root)
+            if x is None or c is None or c <= 0:
+                why = (why_x if x is None else why_c).split(":")[0]
+                dropped[why] = dropped.get(why, 0) + 1
+                continue
+            sge_usd = float(px) * GRAMS_PER_TROY_OZ / c
+            rows.append({"event_time": inst, "fix": fix, "sge_cny_g": float(px), "usdcnh": c,
+                         "xau_usd_oz": x, "sge_usd_oz": sge_usd, "premium_usd_oz": sge_usd - x,
+                         "premium_pct": (sge_usd - x) / x * 100.0,
+                         "available_time": inst + BENCH_PUBLISH_DELAY})
+    return (pd.DataFrame(rows).sort_values("event_time") if rows else pd.DataFrame()), dropped
+
+
+def premium_features(prem: pd.DataFrame, cnh: pd.DataFrame | None = None,
+                     usdx: pd.DataFrame | None = None, z_window: int = 60,
+                     rank_window: int = 250) -> pd.DataFrame:
+    """Level, change, acceleration, z, percentile, and the premium x CNH / x USD states.
+
+    Every statistic uses only rows at or before its own: rolling windows end at the row, and the
+    CNH / USD state is the 20-bar return ending at the bar BEFORE the fix instant's bar."""
+    if prem is None or prem.empty:
+        return pd.DataFrame()
+    f = prem[["event_time", "available_time", "fix", "premium_usd_oz", "premium_pct"]].copy()
+    f = f.sort_values("event_time").reset_index(drop=True)
+    p = f["premium_pct"]
+    f["premium_delta"] = p.diff()
+    f["premium_accel"] = f["premium_delta"].diff()
+    mu = p.rolling(z_window, min_periods=20).mean()
+    sd = p.rolling(z_window, min_periods=20).std(ddof=0)
+    f["premium_z"] = (p - mu) / sd.where(sd > 0)
+    f["premium_pct_rank"] = p.rolling(rank_window, min_periods=20).rank(pct=True)
+    for name, bars in (("cnh", cnh), ("usd", usdx)):
+        col = f"premium_x_{name}"
+        if bars is None or bars.empty:
+            f[col] = float("nan")
+            continue
+        ret = (bars["close"].astype(float).pipe(lambda c: c / c.shift(20) - 1.0)).shift(1)
+        rz = (ret - ret.rolling(500, min_periods=50).mean()) / ret.rolling(
+            500, min_periods=50).std(ddof=0)
+        state = rz.reindex(pd.DatetimeIndex(f["event_time"]).floor("h"), method="ffill")
+        f[col] = f["premium_z"].to_numpy() * state.to_numpy()
+    f["source_id"] = "sge_premium_features"
+    return f
+
+
+def record_benchmark_and_features(fetched_at: str) -> dict[str, Any]:
+    """Benchmark AM/PM + daily quotes as vintages, then the benchmark premium and its features.
+    Called only behind a `confirmed` terms gate."""
+    out: dict[str, Any] = {}
+    for url, parser, kind in ((SGE_BENCHMARK, parse_benchmark, "benchmark"),
+                              (SGE_DAILY_QUOTE, parse_daily_quote, "daily_quote")):
+        try:
+            r = requests.get(url, timeout=45, headers={"User-Agent": "quant-research-desk/1.0"})
+            r.raise_for_status()
+            r.encoding = r.encoding or "utf-8"
+            rows = parser(r.text)
+        except Exception as exc:
+            out[kind] = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:160]}
+            continue
+        out[kind] = {"status": "PARSED" if rows else "NO_TABLE", "rows": len(rows),
+                     "appended": append_vintages(rows, fetched_at, url)}
+    xau, cnh = _bars("XAUUSD"), _bars("USDCNH")
+    if xau is None or cnh is None:
+        out["premium"] = {"status": "UNMEASURED", "why": "XAUUSD or USDCNH H1 bars absent"}
+        return out
+    prem, dropped = benchmark_premium(benchmark_view(), xau, cnh)
+    feats = premium_features(prem, cnh, _bars("USDX"))
+    if not feats.empty:
+        FEATURES.parent.mkdir(parents=True, exist_ok=True)
+        feats.to_parquet(FEATURES, index=False)
+    out["premium"] = {"status": "OK" if not feats.empty else "INSUFFICIENT_HISTORY",
+                      "rows": len(feats), "dropped_unplaceable": dropped,
+                      "path": str(FEATURES)}
+    return out
+
+
 def main() -> int:
-    report: dict[str, object] = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    report: dict[str, object] = {"at": datetime.now(UTC).isoformat(timespec="seconds")}
+    # THE OTHER PHYSICAL PREMIUMS (KRX, IBJA, Borsa Istanbul) ride this leg's clock and carry
+    # their own terms rows; SGE's refusal never silences them, nor theirs SGE.
+    try:
+        from research.physical_gold_premium import record_physical_premiums
+        report["physical"] = record_physical_premiums(str(report["at"]))
+    except Exception as exc:
+        report["physical"] = {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}"[:200]}
+    state, why = terms_state()
+    report["terms"] = {"state": state, "why": why}
+    if state != "confirmed":
+        # NOTHING IS FETCHED AND NOTHING IS COMPUTED FROM THE HOST'S DATA. A named state, not a
+        # failure: the leg ran, read the decision and honoured it.
+        report.update({"status": "BLOCKED_ON_TERMS",
+                       "reason": ("SGE's terms bar any use of its trading information without "
+                                  "permission; flip alt_proxies.TERMS['cn_sge_premium'] only on "
+                                  "a held licence"),
+                       "history_rows": "UNMEASURED", "premium": "UNMEASURED"})
+        (REPORTS / "sge_premium.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+        print(f"SGE PREMIUM BLOCKED_ON_TERMS ({state}): nothing fetched")
+        return 0
     print("SGE Au99.99 + Au(T+D)...", flush=True)
     prints, prov = fetch_sge()
     if "au9999_cny_g" not in prints:
@@ -262,7 +584,7 @@ def main() -> int:
     hist = record_history(prints, prov, str(report["at"]))
     latest = {col: {"date": str(d.date()), "cny_per_gram": px}
               for col, (d, px) in prints.items()}
-    report.update({"history_rows": int(len(hist)), "history_path": str(HISTORY),
+    report.update({"history_rows": len(hist), "history_path": str(HISTORY),
                    "source_sge": prov, "latest": latest})
     print(f"history: {len(hist)} day(s) recorded -> {HISTORY}", flush=True)
 
@@ -295,7 +617,8 @@ def main() -> int:
                                   "self-recorded SGE history and the rate legs -- the overlap "
                                   "arrives within a day as the legs publish")})
         (REPORTS / "sge_premium.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
-        print("\nno overlapping days yet (rate-leg publication lag); SGE history recorded and growing")
+        print("\nno overlapping days yet (rate-leg publication lag); "
+              "SGE history recorded and growing")
         return 0
 
     df["source_sge"] = prov
@@ -303,8 +626,9 @@ def main() -> int:
     df["usdcny_source"] = cny_source
     df["fetched_at"] = report["at"]
     df.to_parquet(OUT / "sge_premium.parquet")
+    report["benchmark"] = record_benchmark_and_features(str(report["at"]))
     recent = df["premium_usd_oz"].tail(20)
-    report.update({"status": "OK", "rows": int(len(df)),
+    report.update({"status": "OK", "rows": len(df),
                    "first": str(df.index.min().date()), "last": str(df.index.max().date()),
                    "premium_usd_oz_last": float(df["premium_usd_oz"].iloc[-1]),
                    "premium_pct_last": float(df["premium_pct"].iloc[-1]),

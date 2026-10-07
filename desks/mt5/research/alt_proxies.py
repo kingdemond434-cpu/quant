@@ -2325,8 +2325,10 @@ TERMS: dict[str, tuple[str, str]] = {
     "imf_portwatch_chokepoints": ("confirmed", "IMF PortWatch public statistics, documented "
                                   "ArcGIS API"),
     "in_gold_imports": ("confirmed", "Government of India press releases (PIB), public"),
-    "cn_sge_premium": ("to_confirm", "SGE site shows only 'All Right Reserved'; no terms or "
-                       "licence page found, no robots.txt"),
+    "cn_sge_premium": ("refused", "SGE market-data licensing page: 'Without the permission of SGE "
+                       "or Information Company, no institution or individual may disseminate, "
+                       "operate or use the trading information of SGE.' Licensed through named "
+                       "vendors only (re-read 2026-10-06)"),
     "gdelt_events_country": ("confirmed", "GDELT: unrestricted use with citation"),
     "wiki_asia_attention": ("confirmed", "Wikimedia pageviews API, CC0"),
     "us_oi_card_spend": ("confirmed", "OI README: 'Anyone is welcome to use this data'"),
@@ -2399,10 +2401,22 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "robots": "www.jnto.go.jp/robots.txt 404 (no rules)",
         "checked_at": _CHK},
     "cn_sge_premium": {
-        "terms_url": "https://www.sge.com.cn/",
-        "terms_quote": "Copyright 2016 上海黄金交易所 All Right Reserved (no terms page found)",
+        "terms_url": "https://en.sge.com.cn/data_Licensed",
+        "terms_quote": ("Without the permission of SGE or Information Company, no institution or "
+                        "individual may disseminate, operate or use the trading information of "
+                        "SGE."),
+        "also_quote": ("SGE has authorized Shanghai Gold Exchange&Communication Co., "
+                       "Ltd.(hereinafter referred to as information Company) as the general agent "
+                       "for the operation and dissemination of the trading information of SGE"),
+        "judgement": ("re-read 2026-10-06 (the 2026-09-30 reading found only the www.sge.com.cn "
+                      "footer 'Copyright 2016 上海黄金交易所 All Right Reserved'). The English "
+                      "site's market-data licensing page names a licensing agent and 19 licensed "
+                      "vendors and bars any use of SGE trading information without permission, "
+                      "which covers the benchmark, the daily quotes and the graph endpoint. "
+                      "REFUSED until the desk holds a licence (directly or through a listed "
+                      "vendor); every organ that touches the host reads `terms_gate`"),
         "robots": "www.sge.com.cn/robots.txt 404 (no rules)",
-        "checked_at": _CHK},
+        "checked_at": "2026-10-06"},
     "cn_nbs_retail": {
         "terms_url": "https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
         "terms_quote": ("用户可以在本网站下载和使用国家统计局发布的统计数据 / "
@@ -2518,6 +2532,160 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "robots": "apis.data.go.kr is the portal's documented Open API (free service key)",
         "checked_at": _CHK},
 }
+
+#: HOSTS GOVERNED BY A TERMS ROW. One decision binds every organ that touches the host: the
+#: audit (2026-10-06, row 8) found `fetch_sge_premium`, `asia_collector` (sge_benchmark /
+#: sge_silver), `world_dataset_hunter` and `check_source_routes` all fetching sge.com.cn while this
+#: table held it `to_confirm`. Each of them now asks `terms_gate` first. Matched on the host's
+#: registrable suffix, so en./www. and any sub-host are governed together.
+TERMS_HOSTS: dict[str, str] = {
+    "sge.com.cn": "cn_sge_premium",
+    # China official hosts (audit hold 2026-10-06, MUST 1): the asia_collector rows on these
+    # hosts carry a `terms_ref` to the same id, and every other organ is governed by host.
+    "chinamoney.com.cn": "cn_cfets_chinamoney",
+    "shibor.org": "cn_cfets_chinamoney",
+    "pbc.gov.cn": "cn_pboc_official",
+    "safe.gov.cn": "cn_safe_official",
+    "customs.gov.cn": "cn_customs_official",
+    "stats.gov.cn": "cn_nbs_official",
+}
+
+#: GATE-ONLY TERMS ROWS: decisions for feeds that are not alt_proxies sources (so they stay out of
+#: TERMS, whose keys are exactly this organ's sources) but are fetched by another organ through
+#: `terms_gate` -- the physical gold premium adapters (research/physical_gold_premium.py). Same
+#: vocabulary, same fail-closed rule, same evidence shape; they are matched by id only, never by
+#: host, so other organs' rows on the same hosts are untouched.
+GATE_TERMS: dict[str, tuple[str, str]] = {
+    "kr_krx_gold": ("to_confirm", "KRX Data Marketplace: no terms-of-use text readable on "
+                    "2026-10-06 (portal landing page names 이용약관 / 법적고지; the legal-notice "
+                    "page returned a server error)"),
+    "in_ibja_gold": ("to_confirm", "ibjarates.com: '(c) India Bullion and Jewellers Association "
+                     "Ltd.(IBJA). All Rights Reserved'; official rates are sold by API "
+                     "subscription; no reuse grant"),
+    "tr_borsa_gold": ("to_confirm", "Borsa Istanbul: 'market data are disseminated on real "
+                      "time, delayed and end of day basis through Borsa Istanbul's licensed data "
+                      "vendors'; the Data Distribution Agreement was not readable"),
+    # ---- China official hosts, read 2026-10-06 (audit hold, MUST 1). Fail closed until read.
+    "cn_cfets_chinamoney": ("refused", "CFETS market-data page: 'No institution or individual "
+                            "shall copy, transmit, save, use, publish, sell [...] CFETS market "
+                            "data [...] without written permission from CFETS' (CCPR, SHIBOR and "
+                            "every chinamoney.com.cn series)"),
+    "cn_pboc_official": ("to_confirm", "pbc.gov.cn: no terms page readable on 2026-10-06 (the "
+                         "authoring fetcher is robots-disallowed on every pbc.gov.cn path and "
+                         "the container proxy has no route to the host)"),
+    "cn_safe_official": ("to_confirm", "SAFE legal statement: commercial reprint barred; "
+                         "non-commercial reprint only by permitted media/sites with attribution; "
+                         "no grant to use the data"),
+    "cn_customs_official": ("to_confirm", "customs.gov.cn: no statement readable on 2026-10-06 "
+                            "(robots.txt unreadable to the authoring fetcher, self-signed chain; "
+                            "the container proxy has no route to the host)"),
+    "cn_nbs_official": TERMS["cn_nbs_retail"],
+}
+GATE_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    "kr_krx_gold": {
+        "terms_url": "https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd",
+        "terms_quote": "(no terms text on the page; footer links 홈페이지 이용약관, 법적고지)",
+        "judgement": ("TO_CONFIRM: the KRX gold market close is public on the portal but no "
+                      "reuse terms could be read. Fail closed until the 이용약관 is read and "
+                      "quoted, or a KRX data licence is held"),
+        "checked_at": "2026-10-06"},
+    "in_ibja_gold": {
+        "terms_url": "https://ibjarates.com/",
+        "terms_quote": ("(c) India Bullion and Jewellers Association Ltd.(IBJA). All Rights "
+                        "Reserved"),
+        "judgement": ("TO_CONFIRM: rates are displayed publicly, the site reserves all rights "
+                      "and sells the official rates by API subscription; no free-reuse grant"),
+        "checked_at": "2026-10-06"},
+    "tr_borsa_gold": {
+        "terms_url": "https://www.borsaistanbul.com/en/data/data-dissemination",
+        "terms_quote": ("Borsa Istanbul market data are disseminated on real time, delayed and "
+                        "end of day basis through Borsa Istanbul's licensed data vendors."),
+        "judgement": ("TO_CONFIRM: dissemination is through licensed vendors; the Data "
+                      "Distribution Agreement was not readable. Fail closed until it is quoted "
+                      "or a vendor licence is held"),
+        "checked_at": "2026-10-06"},
+    "cn_cfets_chinamoney": {
+        "terms_url": "https://www.chinamoney.com.cn/english/svcmds/",
+        "terms_quote": ("Any institution or individual that needs to use CFETS market data should "
+                        "submit an application to CFETS and obtain a written license or "
+                        "authorization from CFETS. [...] No institution or individual shall copy, "
+                        "transmit, save, use, publish, sell, permit others to use or process CFETS "
+                        "market data, nor develop or produce work derived therefrom in any form "
+                        "without written permission from CFETS."),
+        "judgement": ("REFUSED: the same shape as SGE. The CNY central parity (ccpr.json, "
+                      "CcprHisNew) and SHIBOR (shibor.json) are CFETS market data on the CFETS "
+                      "site; use needs a written CFETS licence. The Chinese site's footer legal "
+                      "links are script-rendered and were not readable; the English data page "
+                      "is unambiguous"),
+        "robots": ("www.chinamoney.com.cn pages fetched by the authoring fetcher (no robots "
+                   "refusal)"),
+        "checked_at": "2026-10-06"},
+    "cn_pboc_official": {
+        "terms_url": "http://www.pbc.gov.cn/",
+        "terms_quote": ("(not readable: the authoring fetcher refused www.pbc.gov.cn as 'URL is "
+                        "disallowed by robots.txt rules' for the home page and the English site; "
+                        "curl through the container proxy: 'Host not in allowlist: "
+                        "www.pbc.gov.cn'; a web search found no copy of the site statement)"),
+        "judgement": ("TO_CONFIRM: fail closed. Read the footer's site statement on the box (a "
+                      "browser session) and quote it here before any PBOC page is fetched"),
+        "checked_at": "2026-10-06"},
+    "cn_safe_official": {
+        "terms_url": "https://www.safe.gov.cn/safe/flsm/index.html",
+        "terms_quote": ("本网所有资料，凡未经特殊注明的，版权均属国家外汇管理局所有 / "  # noqa: RUF001
+                        "任何媒体、互联网站和商业机构不得利用本网发布的内容进行商业性转载，"  # noqa: RUF001
+                        "也不得歪曲和篡改本网发布的内容 / 经许可的媒体、网站可对本网内容进行"
+                        "非商业性转载，并注明'信息来源：国家外汇管理局网站'"),  # noqa: RUF001
+        "also_quote": "footer: 国家外汇管理局主办 版权所有 授权转载",
+        "judgement": ("TO_CONFIRM, not refused: the statement governs REPRINTING (commercial "
+                      "reprint barred; non-commercial reprint by permitted media with "
+                      "attribution) and grants nothing permitting a commercial desk to read and "
+                      "use the statistics. Same reading as cn_mot_port_weekly's near-identical "
+                      "MOT clause. Needs a written SAFE grant or a clearer reuse clause"),
+        "robots": "www.safe.gov.cn pages fetched by the authoring fetcher (no robots refusal)",
+        "checked_at": "2026-10-06"},
+    "cn_customs_official": {
+        "terms_url": "http://english.customs.gov.cn/statement.html",
+        "terms_quote": ("(not readable: the authoring fetcher refused www.customs.gov.cn and "
+                        "english.customs.gov.cn with 'Failed to fetch or parse robots.txt' "
+                        "(self-signed certificate in the chain); curl through the container "
+                        "proxy: 'Host not in allowlist: www.customs.gov.cn'. The English home "
+                        "page footer links STATEMENT at this URL)"),
+        "judgement": ("TO_CONFIRM: fail closed. Read the STATEMENT page (and the Chinese site "
+                      "statement) on the box and quote it here before any customs page is "
+                      "fetched"),
+        "checked_at": "2026-10-06"},
+    "cn_nbs_official": {
+        **TERMS_EVIDENCE["cn_nbs_retail"],
+        "judgement": ("CONFIRMED by the same NBS terms page as cn_nbs_retail (re-read "
+                      "2026-10-06): '用户可以在本网站下载和使用国家统计局发布的统计数据'. "
+                      "Attribution condition, recorded: '转载或引用本网内容，务必在显著位置注明"  # noqa: RUF001
+                      "转自（或引自）国家统计局网站...并标明本网网址：www.stats.gov.cn'. The "  # noqa: RUF001
+                      "page says 本网站 without naming sub-hosts; data.stats.gov.cn is NBS's "
+                      "own data portal under the same domain and is governed with it"),
+        "checked_at": "2026-10-06"},
+}
+
+
+def terms_gate(ref_or_url: str) -> tuple[str, str]:
+    """(state, why) for a TERMS id or a URL. `confirmed` / `to_confirm` / `refused` for a governed
+    id or host, `ungoverned` for a URL on no governed host. FAIL CLOSED: an id this table does not
+    know is `to_confirm`, never permission."""
+    ref = str(ref_or_url or "")
+    if "://" in ref or ref.startswith("//"):
+        host = urllib.parse.urlsplit(ref if "://" in ref else "https:" + ref).netloc.lower()
+        host = host.split(":")[0]
+        sid = next((v for k, v in TERMS_HOSTS.items() if host == k or host.endswith("." + k)),
+                   None)
+        if sid is None:
+            return "ungoverned", ""
+        ref = sid
+    state, why = TERMS.get(ref) or GATE_TERMS.get(
+        ref, ("to_confirm", f"{ref}: no terms row -- fail closed"))
+    ev = TERMS_EVIDENCE.get(ref) or GATE_TERMS_EVIDENCE.get(ref) or {}
+    if ev.get("terms_url"):
+        why = f"{why} [{ev['terms_url']}, checked {ev.get('checked_at', '?')}]"
+    return state, why
+
 
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
                 for s in (*SOURCES, *SUBSTITUTE_SOURCES))

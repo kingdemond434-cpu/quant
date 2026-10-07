@@ -54,6 +54,8 @@ sys.path.insert(0, str(BASE))
 
 import world_frontier as wf  # noqa: E402  # type: ignore[import-not-found]
 
+from libs.data import terms_fence  # noqa: E402
+
 WORLD = BASE / "data" / "intelligence" / "world"
 VAULT = WORLD / "vault"
 REPORT = BASE / "reports" / "world_crawl.json"
@@ -196,6 +198,10 @@ def _ascii_url(url: str) -> str:
 
 def fetch(url: str) -> tuple[bytes | None, str]:
     """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour."""
+    # A HELD HOST IS NEVER REQUESTED (PR #229: CFETS refused; SAFE, PBOC, customs to_confirm).
+    t_state = terms_fence.host_hold(url)[0]
+    if t_state:
+        return None, terms_fence.status(t_state)
     try:
         req = urllib.request.Request(_ascii_url(url), headers={
             "User-Agent": UA,
@@ -988,6 +994,7 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
     failures: Counter[str] = Counter()
     langs: Counter[str] = Counter()
     last_host_hit: dict[str, float] = {}
+    held_on_terms: Counter[str] = Counter()
 
     for src in picked:
         if time.time() - started > run_budget_s:
@@ -995,6 +1002,12 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
                 f"The frontier resumes next hour rather than restarting.")
             break
 
+        # Held on terms: counted BLOCKED, never fetched, and not charged as a source failure
+        # (the page did not fail; the desk may not ask for it).
+        t_state = terms_fence.host_hold(src.url)[0]
+        if t_state:
+            held_on_terms[f"{terms_fence.status(t_state)} {src.host}"] += 1
+            continue
         gap = seconds_per_host - (time.time() - last_host_hit.get(src.host, 0.0))
         if gap > 0:
             time.sleep(min(gap, seconds_per_host))
@@ -1068,6 +1081,7 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
         "dropped_at_frontier_cap": dropped,
         "languages": dict(langs.most_common()),
         "failures": dict(failures.most_common()),
+        "blocked_on_terms": dict(held_on_terms.most_common()),
         # WHOSE BUDGET THIS WAS. `source_shares` says whether the registry's published shares
         # ranked this pass or whether the old order stood, and why -- an absence is a verdict,
         # never a silent fallback (L1.28a).

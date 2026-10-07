@@ -64,6 +64,7 @@ for _p in (str(BASE), str(BASE / "research"), str(REPO)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.data import terms_fence  # noqa: E402
 from libs.moat import registry as R  # noqa: E402
 from libs.research import coverage as CV  # noqa: E402
 
@@ -730,6 +731,7 @@ def observe_forest(forest: CV.Tensor, conn: Any, absent: Absent,
     counts: dict[str, int] = {}
     CL = _country_lab()
     untagged = 0
+    held_on_terms: list[str] = []
 
     def hit(state: str, values: Mapping[str, str], evidence: Mapping[str, Any]) -> None:
         forest.observe(values, state, evidence, at=at)
@@ -755,6 +757,11 @@ def observe_forest(forest: CV.Tensor, conn: Any, absent: Absent,
                 continue
             for src in sources:
                 if not isinstance(src, Mapping):
+                    continue
+                # HELD ON TERMS (PR #229): named in the pack, never a forest cell -- not even
+                # DISCOVERED, whose next action is "fetch it". Counted BLOCKED below.
+                if terms_fence.row_hold(src)[0]:
+                    held_on_terms.append(f"{code}:{src.get('id')}")
                     continue
                 verified = bool(src.get("verified"))
                 absent_reason = str(src.get("absent_reason") or "")
@@ -796,6 +803,11 @@ def observe_forest(forest: CV.Tensor, conn: Any, absent: Absent,
                     f"{untagged} declared pack source(s) carry no `layer=` tag: their source "
                     "class is UNMEASURED and they hold no forest cell until the pack tags them")
     counts["untagged_pack_sources"] = untagged
+    if held_on_terms:
+        absent.note("pack_sources_blocked_on_terms",
+                    f"{len(held_on_terms)} declared pack source(s) are BLOCKED_ON_TERMS (PR "
+                    f"#229) and hold no forest cell: {', '.join(sorted(held_on_terms)[:8])}")
+    counts["blocked_on_terms_pack_sources"] = len(held_on_terms)
     return dict(sorted(counts.items()))
 
 

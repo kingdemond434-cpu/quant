@@ -31,6 +31,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "side_channels"), str
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from libs.data import terms_fence  # noqa: E402
 from libs.research import mechanism_claims as mc  # noqa: E402
 from research import deep_forest_miner as dfm  # noqa: E402
 from research import proposer_common as pc  # noqa: E402
@@ -511,14 +512,21 @@ def test_every_ground_in_the_world_file_resolves_offline_and_no_region_is_credit
     doc = _run_grounds(monkeypatch, tmp_path, _SRC["grounds"], budget=3000)
     statuses = {g["ground"]: g for g in doc["grounds"]}
     assert len(statuses) == len(_SRC["grounds"])
+    # A ground the terms fence holds (PR #229 / #250) is recorded BLOCKED_ON_TERMS, never
+    # worked and never credited; every other ground must still resolve.
+    held = {g["name"] for g in _SRC["grounds"]
+            if terms_fence.row_hold(g)[0] or terms_fence.host_hold(str(g.get("site")))[0]}
+    assert held and all(statuses[k]["status"].startswith("BLOCKED_ON_TERMS:") for k in held)
     bad = {k: (v["status"], v.get("errors") or v.get("error")) for k, v in statuses.items()
-           if v["status"] not in ("PRODUCTIVE", "REACHED_NO_CLAIMS", "UNREACHABLE")}
+           if k not in held
+           and v["status"] not in ("PRODUCTIVE", "REACHED_NO_CLAIMS", "UNREACHABLE")}
     assert not bad, bad
     # The fixture world serves the same page everywhere, so most grounds see claims already
     # banked (REACHED_NO_CLAIMS); the first of each route converts and every route resolves.
     assert doc["productive"] >= 5 and doc["counts"]["claims_seen_before"] > 100
     for reg, b in doc["by_region"].items():
-        assert b["worked"] == b["grounds"], reg
+        assert b["worked"] + b["blocked_on_terms"] == b["grounds"], reg
+    assert doc["counts"]["blocked_on_terms"] >= len(held)
     assert doc["datasets_new"] >= 100 and doc["counts"]["dataset_endpoints"] >= 100
     assert doc["claims_by_channel"]["direct"] > 0 and doc["claims_by_channel"]["indirect"] > 0
     assert set(doc["ledger_schema"]) >= {"claims (data/deep_forest_claims.jsonl)"}

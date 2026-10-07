@@ -48,6 +48,7 @@ try:
     from research import data_scout as DS
 except ImportError:                                                          # pragma: no cover
     import data_scout as DS  # type: ignore[no-redef]
+from libs.data import terms_fence  # noqa: E402
 from libs.data.pit import stamp as pit_stamp  # noqa: E402
 from libs.moat import registry as REG  # noqa: E402
 from libs.research import access_classifier as AC  # noqa: E402
@@ -274,12 +275,18 @@ def _absent(text: str) -> bool:
 def from_country_packs(packs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     out: list[dict[str, Any]] = []
     scanned = 0
+    held: list[str] = []
     for code, pack in sorted(packs.items()):
         instruments = [str(s) for s in (_pack_get(pack, "executable_instruments") or [])][:12]
         for row in list(_pack_get(pack, "datasets") or [])[:MAX_PACK_ROWS]:
             if not isinstance(row, dict):
                 continue
             scanned += 1
+            # HELD ON TERMS (PR #229): never an acquisition request -- the hold is the answer,
+            # and it is counted, not hidden.
+            if terms_fence.row_hold(row)[0]:
+                held.append(f"{code}.datasets:{row.get('name') or ''}")
+                continue
             blob = " ".join(str(row.get(k) or "") for k in ("name", "coverage", "how_to_fetch",
                                                             "source"))
             if not _absent(blob):
@@ -316,6 +323,9 @@ def from_country_packs(packs: dict[str, Any]) -> tuple[list[dict[str, Any]], dic
             if not isinstance(row, dict):
                 continue
             scanned += 1
+            if terms_fence.row_hold(row)[0]:
+                held.append(f"{code}.positioning_sources:{row.get('id') or ''}")
+                continue
             if not _absent(str(row.get("name") or "") + " " + str(row.get("covers") or "")):
                 continue
             name = str(row.get("name") or "")
@@ -326,7 +336,8 @@ def from_country_packs(packs: dict[str, Any]) -> tuple[list[dict[str, Any]], dic
                 country=code, licence=str(row.get("licence") or ""), assets=instruments,
                 source_class="official", how_to_fetch=str(row.get("root") or "")))
     note: dict[str, Any] = {"status": "measured" if packs else UNMEASURED, "packs": len(packs),
-                            "rows_scanned": scanned, "candidates": len(out)}
+                            "rows_scanned": scanned, "candidates": len(out),
+                            "blocked_on_terms": held}
     if not packs:
         note.update({"why": "no country pack loaded",
                      "measured_by": "desks/mt5/research/countries/<code>/pack.py"})

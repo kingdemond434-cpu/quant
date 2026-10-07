@@ -796,6 +796,8 @@
    "weight": 1.0,
    "why": "the Shanghai gold premium is an indirect channel into XAUUSD; daily quotes page",
    "url": "https://www.sge.com.cn/sjzx/mrhq",
+   "terms_status": "BLOCKED_ON_TERMS:refused",
+   "terms_ref": "cn_sge_premium",
    "dataset_class": "physical_premia"
   },
   {
@@ -818,6 +820,8 @@
    "weight": 0.9,
    "why": "PBoC statistics releases",
    "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/index.html",
+   "terms_status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms_ref": "cn_pboc_official",
    "dataset_class": "central_bank_data"
   },
   {
@@ -850,7 +854,9 @@
    "kind": "macro",
    "weight": 1.0,
    "why": "PBoC press releases and policy communications -> USDCNH",
-   "url": "https://www.pbc.gov.cn/goutongjiaoliu/113456/113469/index.html"
+   "url": "https://www.pbc.gov.cn/goutongjiaoliu/113456/113469/index.html",
+   "terms_status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms_ref": "cn_pboc_official"
   },
   {
    "name": "外汇交易中心 中间价公告",
@@ -860,7 +866,9 @@
    "kind": "macro",
    "weight": 1.0,
    "why": "CFETS daily fixing announcements -> USDCNH",
-   "url": "https://www.chinamoney.com.cn/chinese/bkccpr/"
+   "url": "https://www.chinamoney.com.cn/chinese/bkccpr/",
+   "terms_status": "BLOCKED_ON_TERMS:refused",
+   "terms_ref": "cn_cfets_chinamoney"
   },
   {
    "name": "海关总署 进出口统计",
@@ -871,6 +879,8 @@
    "weight": 0.9,
    "why": "China trade releases: iron ore, soy, copper imports -> AUD, BRL, copper",
    "url": "http://www.customs.gov.cn/customs/302249/zfxxgk/2799825/302274/index.html",
+   "terms_status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms_ref": "cn_customs_official",
    "dataset_class": "trade_data"
   },
   {
