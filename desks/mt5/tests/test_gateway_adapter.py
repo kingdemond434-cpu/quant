@@ -249,7 +249,7 @@ def test_the_book_is_the_allocator_that_won_in_this_state(tmp_path, monkeypatch)
 
     # No per-state bucket at all -> the global verdict, which is what the desk had before.
     cert["by_state"] = {}
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.12, "b": 0.08} and "authoritative" in why
 
     # The state's winner has no finite score: `select` refuses, and a refusal sizes the
@@ -257,7 +257,7 @@ def test_the_book_is_the_allocator_that_won_in_this_state(tmp_path, monkeypatch)
     cert["by_state"] = {"asia|calm|MON": {"passed": False, "best": "risk_parity",
                                           "scores": {"risk_parity": float("nan")},
                                           "n_worlds": 96, "why": "all wiped out"}}
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.09, "b": 0.11} and "inverse_vol" in why and "withheld" in why
 
 
