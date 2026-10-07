@@ -153,6 +153,14 @@ def test_lint_fails_only_on_arrival_and_floor_only_shrinks(
     monkeypatch.setattr(kbd, "LAG_OUT", tmp_path / "lag.json")
     monkeypatch.setattr(kbd, "certificate_fence",
                         lambda root=None: {"providers": {}, "failures": [], "verdict": "OK"})
+    # the producer census has its own ratchet (test_bitemporal_producers.py); held OK here so
+    # this test exercises the reader floor alone, and its floor never touches the repo's
+    monkeypatch.setattr(kbd, "PRODUCER_FLOOR", tmp_path / "producer_floor.json")
+    kbd.write_producer_floor(set())
+    monkeypatch.setattr(kbd, "producer_census", lambda root=None, floor=None: {
+        "producers": {}, "counts": dict.fromkeys(kbd.PRODUCER_CLASSES, 0), "n": 0,
+        "pit_routed": 0, "not_pit_routed": 0, "not_pit": [], "floor": [], "arrived": [],
+        "healed": [], "verdict": "OK"})
     monkeypatch.setattr(kbd, "ROOT", root)
     real_scan = kbd.scan
     monkeypatch.setattr(kbd, "scan", lambda: real_scan(root))

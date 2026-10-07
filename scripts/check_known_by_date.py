@@ -47,6 +47,27 @@ must carry a publication lag; and a provider reading a lagged, non-bar source mu
 its own body (or in a module helper it calls). Any of the three missing FAILS this fence: a
 certificate whose inputs cannot say when they were known certifies a look-ahead.
 
+THE PRODUCER CENSUS: WHICH READS GO THROUGH THE BITEMPORAL STORE (Tier S AC3, 2026-10-06). A
+lag token anywhere in a module is enough for the reader census above; it is not enough to say a
+value is READ AS KNOWN AT THE DECISION TIME. Every research-side macro / alt-data producer -- a
+module under the research trees or `desks/mt5/macro` that carries a macro/alt source token and
+JOINS it to a clock (or shifts it by a lag) -- is classed by its read path:
+
+    bitemporal         reads through `libs/tiers/bitemporal.BitemporalStore` (`latest_known`,
+                       `store_from_series`, `data_os.pit_align` / `known_series` / `known_as_of`,
+                       all store-backed since AC3)
+    knowledge_stamped  joins on a row's own knowledge-time column (`knowable_at`,
+                       `available_time`, `usable_at`) -- point-in-time, not through the store
+    lag_shift          shifts by a lag constant of its own -- point-in-time by arithmetic only
+    declared           a live read / mention declared in `data_os.READER_ROUTES` or
+                       `data_os.PRODUCER_ROUTES`
+    not_pit            none of these: a value joined on the date it describes
+
+A `not_pit` producer FAILS the fence outright. Every non-bitemporal producer is listed in a floor
+(`docs/research/bitemporal_producer_floor.json`) that only SHRINKS: a producer ARRIVING outside
+the store fails, a producer that moves onto the store drops out (`--update`). The counts are
+published in KNOWN_BY_DATE.json under `producers` on the same hourly `pit_canaries` leg.
+
 Artifacts: `desks/mt5/reports/KNOWN_BY_DATE.json` (the reader census and the floor verdict) and
 `desks/mt5/reports/PIT_LAG_CENSUS.json` (every declared lag, the assumed ones flagged, the
 registry census and the certificate inputs). The box writes both on the hourly `pit_canaries`
@@ -58,6 +79,7 @@ import argparse
 import ast
 import json
 import sys
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -73,7 +95,7 @@ TREES = ("desks/mt5/research", "desks/mt5/mt5desk", "libs/research")
 JOINS = ("reindex", "merge", "merge_asof", "join", "asof", "searchsorted", "get_indexer")
 LAG_TOKENS = ("latest_known", ".as_of(", "store_from_series", "knowledge_time", "declared_lag",
               "available_time", "usable_at", "vintage", "PUBLICATION_LAG", "publication_lag",
-              "RELEASE_LAG", "KNOWABLE", "data_os.", "known_series", "known_as_of")
+              "RELEASE_LAG", "KNOWABLE", "data_os.", "known_series", "known_as_of", "pit_align")
 FLOOR = ROOT / "docs" / "research" / "known_by_date_floor.json"
 OUT = ROOT / "desks" / "mt5" / "reports" / "KNOWN_BY_DATE.json"
 LAG_OUT = ROOT / "desks" / "mt5" / "reports" / "PIT_LAG_CENSUS.json"
@@ -81,6 +103,93 @@ LAG_OUT = ROOT / "desks" / "mt5" / "reports" / "PIT_LAG_CENSUS.json"
 #: forward/live rebuild that mirrors it
 CERT_CALLERS = ("desks/mt5/scripts/external_gauntlet.py", "desks/mt5/mt5desk/family_inputs.py")
 REGISTRIES = ("desks/mt5/data/data_registry.json", "desks/mt5/data_registry.json")
+
+# ------------------------------------------------------------------ the producer census (AC3)
+#: the research trees plus the macro desk and the two library trees that feed the ALLOCATOR
+#: (`libs/portfolio`: `leg_factors`, `macro_state`; `libs/regime`), widened 2026-10-07
+PRODUCER_TREES = (*TREES, "desks/mt5/macro", "libs/portfolio", "libs/regime")
+PRODUCER_FLOOR = ROOT / "docs" / "research" / "bitemporal_producer_floor.json"
+#: macro / alt-data tokens beyond the registered sources' `readers`: FRED and ALFRED, vintages,
+#: macro states and regimes, surprises, alt-data conditioners
+PRODUCER_TOKENS = ("fred", "alfred", "data/vintages", "release_vintages", "macro_regime",
+                   "macro_state", "alt_proxies", "alt_data", "event_surprise", "surprise_z",
+                   "cot.json", "gdelt", "exogenous_conditioner",
+                   # the acquirer's publishers, by host (`data_os.ACQUIRED_HOST_SOURCES`)
+                   "cftc.gov", "ecb.europa.eu", "eia.gov")
+#: THE STORE'S DOORS, as CALLS. A module is `bitemporal` only when its code CALLS one of these
+#: (`libs/tiers/bitemporal.BitemporalStore` itself, its `latest_known`, or a `data_os` door that is
+#: store-backed since AC3). A name in a comment, a docstring or a message string is not a read.
+STORE_DOORS = frozenset({"BitemporalStore", "latest_known", "store_from_series", "pit_align",
+                         "known_series", "known_as_of", "known_axis_series"})
+BITEMPORAL_TOKENS = tuple(sorted(STORE_DOORS))
+#: a join on the row's own knowledge-time column: the column name as a subscript / key / attribute
+KNOWLEDGE_COLUMNS = ("knowable_at", "available_time", "usable_at", "knowledge_time")
+#: an IDENTIFIER that shifts a dated input by a lag (a constant or a data_os lag function)
+LAG_IDENTIFIERS = ("PUBLICATION_LAG", "RELEASE_LAG", "PUB_LAG", "KNOWABLE", "lag_of",
+                   "knowledge_time", "knowledge_at", "declared_lag", "effective_lag",
+                   "publication_lag", "vintage")
+#: what puts a module with NO join in the census: it shifts a dated input itself (a lag constant
+#: or lag function) or calls a store door -- a vintage reader with no join is not a producer
+SHIFT_IDENTIFIERS = ("PUBLICATION_LAG", "RELEASE_LAG", "PUB_LAG", "KNOWABLE", "lag_of",
+                     "knowledge_time", "knowledge_at")
+PRODUCER_CLASSES = ("bitemporal", "knowledge_stamped", "lag_shift", "declared", "not_pit")
+
+
+@dataclass(frozen=True)
+class CodeView:
+    """What a module's CODE says, comments and docstrings excluded (they never reach the AST or
+    are dropped here): every identifier, every non-docstring string constant, and every call into
+    a store door with its line."""
+
+    identifiers: frozenset[str]
+    strings: tuple[str, ...]
+    door_calls: tuple[tuple[int, str], ...]
+
+    def mentions(self, token: str) -> bool:
+        return any(token in i for i in self.identifiers) or any(token in s for s in self.strings)
+
+
+def _docstring_nodes(tree: ast.AST) -> set[int]:
+    out: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            body = getattr(node, "body", None) or []
+            if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant) \
+                    and isinstance(body[0].value.value, str):
+                out.add(id(body[0].value))
+    return out
+
+
+def code_view(tree: ast.AST) -> CodeView:
+    docs = _docstring_nodes(tree)
+    idents: set[str] = set()
+    strings: list[str] = []
+    doors: list[tuple[int, str]] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name):
+            idents.add(node.id)
+        elif isinstance(node, ast.Attribute):
+            idents.add(node.attr)
+        elif isinstance(node, ast.alias):
+            idents.update(p for p in (node.name, node.asname or "") if p)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            idents.add(node.module)
+        elif isinstance(node, ast.keyword) and node.arg:
+            idents.add(node.arg)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            idents.add(node.name)
+        elif isinstance(node, ast.arg):
+            idents.add(node.arg)
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str) \
+                and id(node) not in docs:
+            strings.append(node.value)
+        if isinstance(node, ast.Call):
+            fn = node.func
+            name = fn.attr if isinstance(fn, ast.Attribute) else \
+                fn.id if isinstance(fn, ast.Name) else None
+            if name in STORE_DOORS:
+                doors.append((node.lineno, name))
+    return CodeView(frozenset(idents), tuple(strings), tuple(sorted(doors)))
 
 
 def _joins(tree: ast.AST) -> list[tuple[int, str]]:
@@ -165,6 +274,85 @@ def scan(root: Path | None = None) -> dict[str, Any]:
                            "offenders": len(offenders),
                            "routed_or_declared": (len(routed) + len(no_join_routed)
                                                   + len(declared))}}
+
+
+def _producer_class(rel: str, view: CodeView) -> str:
+    """The read path, from CODE only (AST): a store-door CALL, a knowledge-time column used as a
+    key / attribute, a lag identifier, a declaration -- in that order -- else not point-in-time."""
+    if view.door_calls:
+        return "bitemporal"
+    if any(c in view.identifiers or c in view.strings for c in KNOWLEDGE_COLUMNS):
+        return "knowledge_stamped"
+    if any(t in i for t in LAG_IDENTIFIERS for i in view.identifiers):
+        return "lag_shift"
+    if rel in data_os.READER_ROUTES or rel in data_os.PRODUCER_ROUTES:
+        return "declared"
+    return "not_pit"
+
+
+def producer_census(root: Path | None = None, floor: set[str] | None = None) -> dict[str, Any]:
+    """Every research-side macro / alt-data producer and its read path (module docstring)."""
+    root = root or ROOT
+    reader_toks = tuple(t for e in PUBLICATION_LAGS.values() for t in (e.get("readers") or ()))
+    toks = reader_toks + PRODUCER_TOKENS
+    rows: dict[str, dict[str, Any]] = {}
+    for tree_rel in PRODUCER_TREES:
+        base = root / tree_rel
+        if not base.is_dir():
+            continue
+        for p in sorted(base.rglob("*.py")):
+            if p.name.startswith(("test_", "fetch_")) or "__pycache__" in p.parts \
+                    or "/tests/" in p.as_posix():
+                continue
+            try:
+                tree = ast.parse(p.read_text("utf-8"))
+            except (OSError, SyntaxError, ValueError):
+                continue
+            view = code_view(tree)
+            hits = sorted({t for t in toks if view.mentions(t)})
+            if not hits and not view.door_calls:     # a store read IS a dated-source read
+                continue
+            joins = _joins(tree)
+            shifts = view.door_calls or any(t in i for t in SHIFT_IDENTIFIERS
+                                            for i in view.identifiers)
+            if not joins and not shifts:
+                continue
+            rel = p.relative_to(root).as_posix()
+            rows[rel] = {"class": _producer_class(rel, view), "tokens": hits[:6],
+                         "joins": [f"{ln}:{kind}" for ln, kind in joins[:3]],
+                         "store_calls": [f"{ln}:{name}" for ln, name in view.door_calls[:3]]}
+    counts = {c: sum(1 for r in rows.values() if r["class"] == c) for c in PRODUCER_CLASSES}
+    non_store = {r for r, v in rows.items() if v["class"] != "bitemporal"}
+    not_pit = sorted(r for r, v in rows.items() if v["class"] == "not_pit")
+    floor = floor if floor is not None else read_producer_floor()
+    arrived = sorted(non_store - floor) if floor is not None else sorted(non_store)
+    n = len(rows)
+    return {"producers": rows, "counts": counts, "n": n,
+            "pit_routed": counts["bitemporal"], "not_pit_routed": n - counts["bitemporal"],
+            "pit_routed_share": round(counts["bitemporal"] / n, 4) if n else None,
+            "point_in_time": n - counts["not_pit"],
+            "not_pit": not_pit, "floor": sorted(floor or ()), "arrived": arrived,
+            "healed": sorted((floor or set()) - non_store),
+            "verdict": ("UNMEASURED" if floor is None else
+                        "FAIL" if (arrived or not_pit) else "OK")}
+
+
+def read_producer_floor(path: Path | None = None) -> set[str] | None:
+    try:
+        doc = json.loads((path or PRODUCER_FLOOR).read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    names = doc.get("outside_store") if isinstance(doc, dict) else None
+    return set(names) if isinstance(names, list) else None
+
+
+def write_producer_floor(names: set[str], path: Path | None = None) -> None:
+    (path or PRODUCER_FLOOR).write_text(json.dumps({
+        "_": ("BITEMPORAL PRODUCER FLOOR (Tier S AC3): research-side macro/alt-data producers "
+              "that do NOT read through libs/tiers/bitemporal.BitemporalStore. Only SHRINKS: a "
+              "producer routed onto the store drops out (check_known_by_date.py --update); a "
+              "new producer outside the store fails the fence and is never added here."),
+        "outside_store": sorted(names)}, indent=1) + "\n", "utf-8")
 
 
 # ---------------------------------------------------------------- the certificate path's inputs
@@ -319,9 +507,11 @@ def publish(doc: dict[str, Any] | None = None, floor: set[str] | None = None,
     census = lag_census_doc()
     cert = census["certificate_inputs"]
     arrived = sorted(now - floor)
+    producers = producer_census()
     doc.update({"floor": sorted(floor), "arrived": arrived, "healed": sorted(floor - now),
-                "certificate_inputs": cert,
-                "verdict": "FAIL" if arrived or cert["failures"] else "OK"})
+                "certificate_inputs": cert, "producers": producers,
+                "verdict": ("FAIL" if arrived or cert["failures"]
+                            or producers["verdict"] == "FAIL" else "OK")})
     for path, body in ((out or OUT, doc), (lag_out or LAG_OUT, census)):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(body, indent=1, default=str), "utf-8")
@@ -335,6 +525,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="rewrite the floor to the healed (smaller) set; never adds a name")
     ap.add_argument("--init", action="store_true",
                     help="seal the floor from today's census; refuses if one exists")
+    ap.add_argument("--init-producers", action="store_true",
+                    help="seal the bitemporal producer floor; only when none exists")
     a = ap.parse_args(argv)
     doc = scan()
     now = set(doc["offenders"])
@@ -350,9 +542,20 @@ def main(argv: list[str] | None = None) -> int:
         print(f"NO FLOOR: {FLOOR.relative_to(ROOT)} is absent or unreadable. A ratchet with "
               "nothing to ratchet against is not a ratchet: seal it with --init and commit it.")
         return 1
+    if read_producer_floor() is None:
+        print(f"NO PRODUCER FLOOR: {PRODUCER_FLOOR.relative_to(ROOT)} is absent or unreadable; "
+              "seal it with --init-producers and commit it.")
+        if a.init_producers:
+            census = producer_census(floor=set())
+            write_producer_floor({r for r, v in census["producers"].items()
+                                  if v["class"] != "bitemporal"})
+            print(f"sealed {PRODUCER_FLOOR.relative_to(ROOT)}")
+            return 0
+        return 1
     doc = publish(doc, floor)
     arrived, healed = doc["arrived"], doc["healed"]
     cert = doc["certificate_inputs"]
+    prod = doc["producers"]
     if a.json:
         print(json.dumps(doc, indent=1, default=str))
     else:
@@ -371,10 +574,26 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  undeclared no-join reader (flagged): {rel}")
         for why in cert["failures"]:
             print(f"  CERTIFICATE INPUT: {why}")
+        c = prod["counts"]
+        print(f"producers: {prod['n']} macro/alt producer(s); {prod['pit_routed']} read through "
+              f"the bitemporal store, {prod['not_pit_routed']} not (knowledge-stamped "
+              f"{c['knowledge_stamped']}, lag-shift {c['lag_shift']}, declared {c['declared']}, "
+              f"not point-in-time {c['not_pit']}); floor {len(prod['floor'])}, "
+              f"{len(prod['healed'])} healed")
+        for rel in prod["arrived"]:
+            print(f"  NEW PRODUCER OUTSIDE THE STORE {rel}: {prod['producers'][rel]['class']}")
+        for rel in prod["not_pit"]:
+            print(f"  NOT POINT-IN-TIME {rel}: {prod['producers'][rel]['joins']}")
+        for rel in prod["healed"]:
+            print(f"  producer healed onto the store: {rel}")
     if a.update and healed and not arrived:
         write_floor(floor & now)
         print(f"  floor shrunk {len(floor)} -> {len(floor & now)} (commit it)")
-    return 1 if arrived or cert["failures"] else 0
+    if a.update and prod["healed"] and not prod["arrived"]:
+        pfloor = set(prod["floor"]) - set(prod["healed"])
+        write_producer_floor(pfloor)
+        print(f"  producer floor shrunk {len(prod['floor'])} -> {len(pfloor)} (commit it)")
+    return 1 if arrived or cert["failures"] or prod["verdict"] == "FAIL" else 0
 
 
 if __name__ == "__main__":

@@ -112,18 +112,34 @@ def _pair_daily_logret(path: Path) -> Any:
     return r
 
 
-def _macro_changes(archive: Path | None) -> dict[str, Any]:
+def _macro_changes(archive: Path | None, as_of: Any = None) -> dict[str, Any]:
+    """The macro factor CHANGES, keyed 'YYYY-MM-DD' by the day each describes.
+
+    THE JOIN IS CONTEMPORANEOUS ON PURPOSE (a factor model pairs a sleeve's day-t return with the
+    factor's day-t move; it forecasts nothing), so the point-in-time question is only which
+    levels the run may hold at all: the levels are read through the bitemporal store
+    (`data_os.known_as_of`) as of `as_of` (now), at each series' own declared release timing, so
+    a print the desk could not yet have published never enters the covariance (2026-10-07)."""
+    from datetime import UTC, datetime
+
     import pandas as pd
 
     from libs.portfolio.macro_state import _load_archive
+    from libs.tiers import data_os
     series, _newest = _load_archive(archive)         # None -> the long archive when present
+    when = as_of or datetime.now(tz=UTC)
     out: dict[str, Any] = {}
     for name, (sid, how) in MACRO_FACTORS.items():
         rows = series.get(sid)
         if not rows:
             continue
-        s = pd.Series([v for _, v in rows], index=[d for d, _ in rows], dtype=float)
+        s = pd.Series([v for _, v in rows],
+                      index=pd.to_datetime([str(d)[:10] for d, _ in rows], utc=True,
+                                           errors="coerce"), dtype=float)
+        s = s[~s.index.isna()].sort_index()
         s = s[~s.index.duplicated(keep="last")]
+        s = data_os.known_as_of(s, "fred_macro", when, series_id=sid)
+        s.index = [t.date().isoformat() for t in s.index]
         if how == "dlog":
             s = s[s > 0]
             ch = np.log(s).diff()

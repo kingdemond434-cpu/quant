@@ -64,6 +64,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.tiers import data_os  # noqa: E402
+
 UNIVERSE = DESK / "data" / "universe"
 AXES_DIR = DESK / "data" / "axes"
 FORCED_FLOW = DESK / "data" / "forced_flow_calendar.json"
@@ -278,7 +280,12 @@ def axis_series() -> dict[str, pd.Series]:
                           index=pd.to_datetime([p.get("d") for p in (spec or {}).get("points")
                                                 or []], errors="coerce", utc=True)).dropna()
             if len(s) >= MIN_LIVE_DAYS:
-                out[f"{axis}:{sid}"] = s[~s.index.duplicated(keep="last")].sort_index()
+                # KNOWN, NOT DESCRIBED (Tier S AC3, 2026-10-06): a fred/ecb point is
+                # stamped with the date it DESCRIBES, so it is re-indexed on its knowledge
+                # time through the bitemporal store (`data_os.known_axis_series`) before
+                # anything carries it forward.
+                out[f"{axis}:{sid}"] = data_os.known_axis_series(
+                    axis, sid, s[~s.index.duplicated(keep="last")].sort_index())
         rows = doc.get("rows") or []
         frame = pd.DataFrame(rows) if isinstance(rows, list) and rows else pd.DataFrame()
         fields = [c for c in ("net_pct_oi", "comm_pct_oi", "open_interest", "carry_differential")

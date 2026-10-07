@@ -198,26 +198,41 @@ def macro_weights(train_days: list[str], asof: str) -> np.ndarray | None:
     use = [d for d in ms.KERNEL_DIMS if states.get(d)]
     if not use:
         return None
-    # KNOWN, NOT VALID, DATES (data_os): a FRED state dated d is re-keyed to the first whole day
-    # on which it was published (d + the declared fred_macro lag), so neither "today" nor any
-    # training day's kernel reads a print that did not yet exist.
+    # KNOWN, NOT VALID, DATES, READ THROUGH THE BITEMPORAL STORE (data_os, Tier S AC3): each
+    # FRED state becomes `BitemporalStore` rows (knowledge = `data_os.knowledge_at` for that
+    # state's own FRED series). TODAY is `latest_known` at the start of `asof` -- the newest
+    # print published before that day opened -- and a training day reads only the print whose knowledge time first falls
+    # inside it, so neither "today" nor any training day's kernel reads a print that did not yet
+    # exist.
+    from datetime import UTC as _UTC
     from datetime import datetime as _dt
     from datetime import timedelta as _td
 
     from libs.tiers import data_os
-    lag = data_os.lag_of("fred_macro")
 
-    def _known(k: str) -> str:
-        at = _dt.fromisoformat(str(k)[:10]) + lag
+    def _known_day(kt: str) -> str:
+        at = _dt.fromisoformat(kt)
         return (at.date() + _td(days=1) if at.time() != _dt.min.time() else at.date()).isoformat()
 
+    asof_open = _dt.fromisoformat(str(asof)[:10]).replace(tzinfo=_UTC)
     w = np.ones(len(train_days))
     for d in use:
-        by = {_known(k): v for k, v in states[d].items()}
-        past = [k for k in by if k <= asof]
-        if not past:
+        raw = states[d]
+        try:
+            ser = pd.Series([float(v) for v in raw.values()],
+                            index=pd.to_datetime([str(k)[:10] for k in raw], utc=True))
+        except (TypeError, ValueError):
             return None
-        today = float(by[max(past)])
+        # THE DIMENSION'S OWN FRED SERIES, so its own release timing applies (2026-10-07): with
+        # no `series_id` every state read the flat 27h daily lag, and the WEEKLY-posted dollar
+        # index (DTWEXBGS, H.10) entered the kernel about a week before it was published.
+        store = data_os.store_from_series(ser, source="fred_macro", entity=d, attribute="state",
+                                          series_id=ms.SERIES.get(d))
+        by = {_known_day(r.knowledge_time): r.value for r in store.rows}
+        now = store.latest_known(d, "state", [asof_open])[0]
+        if now is None:
+            return None
+        today = float(now.value)
         for i, day in enumerate(train_days):
             r = by.get(day)
             if r is None:

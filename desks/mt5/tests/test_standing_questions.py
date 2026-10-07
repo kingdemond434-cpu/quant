@@ -109,10 +109,13 @@ def _build(base: Path) -> dict:
         _write_bars(uni, sym, idx, gap, body, rng)
     _write_bars(uni, EQUITY, idx, rng.normal(0.0, 2e-5, N), rng.normal(0.0, 4e-4, N), rng)
 
+    # A fred point is stamped with the day it DESCRIBES and is known a declared lag later (27h:
+    # the first whole day after is d + 2), so the move meant to be readable on day t is the
+    # print that describes t - 2 (Tier S AC3: the axis is read as known, never as described).
     (axes / "fred.json").write_text(json.dumps({
         "axis": "macro_state", "id": "planted",
         "series": {"PLANT": {"what": "the planted state variable", "points": [
-            {"d": str(d.date()), "v": float(v)}
+            {"d": str((d - pd.Timedelta(days=2)).date()), "v": float(v)}
             for d, v in zip(days, axis_level, strict=True)]}}}), "utf-8")
 
     (base / "sleeves.json").write_text(json.dumps({"sleeves": [
