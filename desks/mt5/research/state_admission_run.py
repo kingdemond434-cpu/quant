@@ -149,6 +149,11 @@ def run(dimensions: tuple[str, ...] = DEFAULT_DIMENSIONS, basis: str = "shadow")
         "rule": ("a dimension conditions capital only until it is MEASURED worse; "
                  "RETAIN_SHRUNK is a stay of execution granted by k_state, not a pass"),
     }
+    # THE HANDOFF (ARCH-11): which state dimensions may condition the book, judged daily.
+    from libs.research import handoff_contract as HC  # ARCH-11; ROOT is on sys.path above
+    HC.stamp(doc, "allocator_input", unit="bucket", horizon_s=86400.0,
+             instrument_id=HC.BOOK, gross_or_net="not_applicable",
+             known_at=str(doc["generated_utc"]))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     return doc

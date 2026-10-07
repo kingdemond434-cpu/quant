@@ -65,6 +65,7 @@ from libs.regime.asset_state import (  # noqa: E402
     observations_at,
 )
 from libs.regime.state_vector import StateVector  # noqa: E402
+from libs.research import handoff_contract as HC  # noqa: E402  (ARCH-11)
 from libs.research.information_decay import (  # noqa: E402
     REGISTRY,
     STALE_WEIGHT,
@@ -564,7 +565,10 @@ def main() -> int:
 
     sv = build(budget_s=args.budget_s, symbols=args.symbol)
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(sv.to_dict(), indent=1, default=str), "utf-8")
+    # THE HANDOFF (ARCH-11): the book's current state buckets, held for two allocator clocks.
+    doc = HC.stamp(sv.to_dict(), "allocator_input", unit="bucket", horizon_s=3600.0,
+                   instrument_id=HC.BOOK, gross_or_net="not_applicable")
+    OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
 
     g = sv.global_state
     print(f"STATE VECTOR {sv.id}  {sv.at}")

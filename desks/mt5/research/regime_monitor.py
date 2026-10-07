@@ -156,6 +156,13 @@ def main() -> None:
     # its vetoes were worth. It changes no flag -- a filter is never loosened by its own report --
     # but a COSTS_EDGE verdict is the number a human reads before re-admitting a sleeve.
     state["hibernate_filter_value"] = _own_filter_value()
+    # THE HANDOFF (ARCH-11): regime probabilities for the whole book, two allocator clocks.
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in sys.path:
+        sys.path.insert(0, _root)
+    from libs.research import handoff_contract as HC  # ARCH-11
+    HC.stamp(state, "allocator_input", unit="probability", horizon_s=3600.0,
+             instrument_id=HC.BOOK, gross_or_net="not_applicable")
     STATE.parent.mkdir(parents=True, exist_ok=True)
     STATE.write_text(json.dumps(state, indent=2), encoding="utf-8")
     flags = {s: v["flag"] for s, v in state["sleeves"].items() if v["flag"] != "ok"}

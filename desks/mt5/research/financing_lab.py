@@ -50,6 +50,7 @@ for _p in (str(ROOT), str(DESK)):
 
 from libs.portfolio import allocator_evidence as AE  # noqa: E402
 from libs.portfolio import financing as F  # noqa: E402
+from libs.research import handoff_contract as HC  # noqa: E402  (ARCH-11)
 
 DATA = DESK / "data"
 REPORTS = DESK / "reports"
@@ -647,6 +648,11 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False) -> dict[str, Any]:
                 "exposures, lineage concentration and tail risk -- as evidence, through its "
                 "own E[log W] arithmetic, never as a cap (GROWTH_GOVERNANCE Rules 1 and 2)"),
     }
+    # THE HANDOFF (ARCH-11): tilts are dimensionless factors per sleeve, the financing term is
+    # R per day, the whole file is NET of financing and holds for one day.
+    HC.stamp(evidence_doc, "allocator_input", unit="dimensionless", horizon_s=86400.0,
+             instrument_id={"rows": "sleeves", "field": "symbol"}, gross_or_net="net",
+             known_at=now.isoformat(), field_units={"financing_cost_r_per_day": "R_per_day"})
     if not dry_run:
         _atomic_write(OUT_EVIDENCE, evidence_doc)
         _atomic_write(OUT_REPORT, report)

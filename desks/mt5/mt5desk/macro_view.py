@@ -256,10 +256,18 @@ def main() -> int:
                       ("XAUUSD", 1), ("GBPNOK", 1)):
         m, w = multiplier(sym, side, v)
         print(f"   {sym} {'long ' if side > 0 else 'short'} -> x{m:.2f}   {w[:90]}")
+    # THE HANDOFF (ARCH-11): a dimensionless macro lean over the whole book, two allocator
+    # clocks.
+    import sys
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.research import handoff_contract as HC  # ARCH-11
+    doc = HC.stamp({**v, "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                    "band": [MULT_MIN, MULT_MAX], "stale_days": STALE_DAYS},
+                   "allocator_input", unit="dimensionless", horizon_s=3600.0,
+                   instrument_id=HC.BOOK, gross_or_net="not_applicable")
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps({**v, "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-                               "band": [MULT_MIN, MULT_MAX], "stale_days": STALE_DAYS},
-                              indent=1), encoding="utf-8")
+    OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     print(f"-> {OUT}")
     return 0
 

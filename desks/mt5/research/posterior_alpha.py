@@ -565,6 +565,12 @@ def run(n0: float = PRIOR_N0, write: bool = True) -> dict[str, Any]:
         "inputs": {str(p): ("present" if p.exists() else "absent")
                    for p in (SLEEVES, LIVE_LEDGER, SHADOW_STATE, HAZARD)},
     }
+    # THE HANDOFF (ARCH-11): the posterior of realised forward R per trade, net of the costs
+    # the fills paid, per sleeve's instrument.
+    from libs.research import handoff_contract as HC  # ARCH-11; ROOT is on sys.path above
+    HC.stamp(payload, "allocator_input", unit="R", horizon_s=86400.0,
+             instrument_id={"rows": "sleeves", "field": "symbol"}, gross_or_net="net",
+             known_at=str(payload["at"]))
     if write:
         _write_atomic(OUT, payload)
     return payload

@@ -140,6 +140,15 @@ def _write(reg: dict[str, Any]) -> None:
     window is the generator of the `RegistryUnreadable` condition above; closing it removes the
     cause rather than only refusing to act on the symptom.
     """
+    # THE HANDOFF (ARCH-11): the roster's identities, one instrument per sleeve, every write.
+    import sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in sys.path:
+        sys.path.insert(0, _root)
+    from libs.research import handoff_contract as HC  # ARCH-11
+    HC.stamp(reg, "allocator_input", unit="dimensionless", horizon_s=86400.0,
+             instrument_id={"rows": "sleeves", "field": "identity.symbol"},
+             gross_or_net="not_applicable")
     REGISTRY.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(REGISTRY.parent), prefix=".sleeve_registry.")
     try:

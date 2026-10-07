@@ -76,6 +76,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 from libs.portfolio import latent_factors as lf  # noqa: E402
 from libs.regime.drift import forecast_next, window_stats  # noqa: E402
 from libs.research import crowding_hazard as ch  # noqa: E402
+from libs.research import handoff_contract as HC  # noqa: E402  (ARCH-11)
 from libs.research import perishability as ph  # noqa: E402
 from research import proposer_common as pc  # noqa: E402
 
@@ -639,6 +640,9 @@ def run(symbols: list[str] | None = None, budget_s: float = 300.0, write: bool =
                     f"{len(ph.HAZARD_COMPONENTS)} named channels. Consumers: revival_engine "
                     "(STATE_FRAGILE burials), the allocator's crisis overlay and its "
                     "pre-retirement shrink.")}
+    # THE HANDOFF (ARCH-11): the crisis-world share and break hazards, judged daily.
+    HC.stamp(doc, "allocator_input", unit="probability", horizon_s=86400.0,
+             instrument_id=HC.BOOK, gross_or_net="not_applicable")
     if write:
         REPORT.parent.mkdir(parents=True, exist_ok=True)
         REPORT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")

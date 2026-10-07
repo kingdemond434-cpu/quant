@@ -55,6 +55,7 @@ for _entry in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _entry not in sys.path:
         sys.path.insert(0, _entry)
 
+from libs.research import handoff_contract as HC  # noqa: E402  (ARCH-11)
 from libs.tiers import data_os  # noqa: E402
 
 SOURCE = "exposure_decomposition"
@@ -647,6 +648,9 @@ def run(write: bool = True) -> dict[str, Any]:
         "n_eff_factor_bets_unscaled": n_eff_bets(book),
         "n_factors_measured": sum(1 for m in factors["meta"].values() if not m.get("unmeasured")),
         "unmeasured": sorted(set(unmeasured)), "rule": RULE}
+    # THE HANDOFF (ARCH-11): factor betas of the whole book, re-estimated daily.
+    HC.stamp(report, "allocator_input", unit="dimensionless", horizon_s=86400.0,
+             instrument_id=HC.BOOK, gross_or_net="not_applicable")
     if write:
         _write_atomic(report_path(), report)
     return report

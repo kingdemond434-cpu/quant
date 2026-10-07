@@ -67,6 +67,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.moat import registry as R  # noqa: E402
+from libs.research import handoff_contract as HC  # noqa: E402  (ARCH-11)
 
 DATA, REPORTS = DESK / "data", DESK / "reports"
 FORWARD_DATA = DATA / "forward_reconcile.json"
@@ -1246,6 +1247,9 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
             "discovery's source and counted as UNROUTED where that join does not exist",
         ],
     }
+    # THE HANDOFF (ARCH-11): a per-mechanism ROI tilt for the whole book, re-read daily.
+    HC.stamp(capital, "allocator_input", unit="dimensionless", horizon_s=86400.0,
+             instrument_id=HC.BOOK, gross_or_net="not_applicable")
     if not dry_run:
         _atomic_write(ALLOC_OUT, alloc_doc)
         _atomic_write(FOREST_OUT, forest)
