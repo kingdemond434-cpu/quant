@@ -30,12 +30,12 @@ def _load(name: str, rel: str):
 fence = _load("_quant_check_handoff_contract", "scripts/check_handoff_contract.py")
 fc = _load("_quant_forecast_contract_arch11", "desks/mt5/research/forecast_contract.py")
 
-NOW = datetime(2026, 10, 7, 12, 0, tzinfo=UTC)
+NOW = datetime(2026, 10, 1, 12, 0, tzinfo=UTC)
 
 
 def _ok(**over: Any) -> dict[str, Any]:
     kw: dict[str, Any] = {"unit": "R", "horizon_s": 3600.0, "instrument_id": "XAUUSD",
-                          "gross_or_net": "net", "known_at": "2026-10-07T11:00:00+00:00"}
+                          "gross_or_net": "net", "known_at": "2026-10-01T11:00:00+00:00"}
     return HC.block("allocator_input", **(kw | over))
 
 
@@ -65,7 +65,7 @@ def test_a_missing_field_and_a_future_vintage_are_defects() -> None:
     h = _ok()
     h.pop("currency")
     assert any("missing field currency" in d for d in HC.field_defects(h, now=NOW))
-    late = _ok(known_at="2026-10-07T13:00:00+00:00")
+    late = _ok() | {"known_at": "2026-10-01T13:00:00+00:00"}
     assert any("future" in d for d in HC.field_defects(late, now=NOW))
 
 
@@ -96,7 +96,7 @@ def test_book_level_quantity_meets_every_instrument() -> None:
 # --------------------------------------------------------------------------- forecast producer
 def _belief(**over: Any):
     base = {"model_id": "m1", "subject": "XAUUSD/up", "kind": "PROBABILITY", "value": 0.6,
-            "horizon_s": 3600, "at": "2026-10-07T10:00:00+00:00", "instrument_id": "XAUUSD",
+            "horizon_s": 3600, "at": "2026-10-01T10:00:00+00:00", "instrument_id": "XAUUSD",
             "unit": "probability", "gross_or_net": "not_applicable"}
     return fc.Belief(**(base | over))
 
@@ -106,13 +106,13 @@ def test_forecast_register_rows_carry_the_block_and_refuse_without_it(tmp_path: 
     pub = fc.publish([_belief(), _belief(instrument_id="", unit="")], register=reg)
     assert pub.counts() == {"accepted": 1, "refused": 1}
     acc = pub.accepted[0][HC.KEY]
-    assert acc["stage"] == "forecast" and acc["known_at"] == "2026-10-07T10:00:00+00:00"
+    assert acc["stage"] == "forecast" and acc["known_at"] == "2026-10-01T10:00:00+00:00"
     assert HC.field_defects(acc) == []
     assert any("handoff" in d for d in pub.refused[0]["defects"])
 
 
 def test_a_belief_citing_a_later_vintage_is_refused() -> None:
-    bad = fc.defects(_belief(known_at="2026-10-07T11:00:00+00:00"))
+    bad = fc.defects(_belief(known_at="2026-10-01T11:00:00+00:00"))
     assert any("lookahead" in d for d in bad)
 
 
@@ -151,7 +151,7 @@ def _write_ev(tree: Path, **over: Any) -> None:
                                          "instrument_id": {"rows": "sleeves",
                                                            "field": "symbol"},
                                          "gross_or_net": "net",
-                                         "known_at": "2026-10-07T11:00:00+00:00"} | over))
+                                         "known_at": "2026-10-01T11:00:00+00:00"} | over))
     (tree / "data/ev.json").write_text(json.dumps(doc))
 
 
@@ -167,7 +167,7 @@ def test_a_clean_stamped_chain_passes(tree: Path) -> None:
     (tree / "data/fr.jsonl").write_text(json.dumps(
         {HC.KEY: HC.block("forecast", unit="probability", horizon_s=3600.0,
                           instrument_id="XAUUSD", gross_or_net="not_applicable",
-                          known_at="2026-10-07T10:00:00+00:00")}) + "\n")
+                          known_at="2026-10-01T10:00:00+00:00")}) + "\n")
     doc = fence.measure(tree, now=NOW)
     assert doc["problems"] == [] and doc["verdict"] == "PASS", doc
 
@@ -195,7 +195,7 @@ def test_net_upstream_republished_gross_fails(tree: Path) -> None:
     _write_ev(tree, gross_or_net="gross")
     (tree / "data/fr.jsonl").write_text(json.dumps(
         {HC.KEY: HC.block("forecast", unit="R", horizon_s=3600.0, instrument_id="XAUUSD",
-                          gross_or_net="net", known_at="2026-10-07T10:00:00+00:00")}) + "\n")
+                          gross_or_net="net", known_at="2026-10-01T10:00:00+00:00")}) + "\n")
     probs = fence.measure(tree, now=NOW)["problems"]
     assert any("GROSS" in p for p in probs)
 
