@@ -107,7 +107,7 @@ def test_a_populated_host_measures_every_gap_with_numbers(tmp_path: Path) -> Non
     assert tp["documents_24h"] == 60 and tp["raw_items_24h"] == 75 and tp["peak_hour"] >= 6
     assert g["news_throughput"]["open"] is True                        # 60 < 10000
     ml = g["multilingual_firehose"]["metrics"]
-    assert ml["distinct_languages"] == 2 and ml["non_english_share"] == pytest.approx(1 / 3)
+    assert ml["distinct_languages"] == 2 and ml["non_english_share"] == 0.3333
     gd = g["gdelt_intake"]["metrics"]
     assert gd["rows"] == 30 and gd["rows_24h"] == 30 and gd["newest_age_s"] == 300.0
     assert g["gdelt_intake"]["open"] is False
