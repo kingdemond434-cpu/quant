@@ -104,7 +104,7 @@ def _pairs(release: str, kind: str, symbol: str, *, n: int = N_PRINTS,
                     "at": when.isoformat(timespec="seconds"),
                     "period": f"{when:%Y-%m}-{i}", "consensus": 100.0,
                     "actual": 100.0 + cycle[i % len(cycle)], "instruments": [symbol],
-                    "source_id": "test"})
+                    "source_id": "alfred:SYNTH"})
     return out
 
 

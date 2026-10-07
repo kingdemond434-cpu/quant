@@ -2,6 +2,7 @@
 reaction joins and the monotone / incremental contracts on synthetic history."""
 from __future__ import annotations
 
+import json
 import math
 import sys
 from datetime import UTC, date, datetime, timedelta
@@ -162,8 +163,20 @@ def test_a_surprise_that_only_restates_consensus_adds_nothing(tmp_path: Path) ->
     assert inc["verdict"] != se.GAIN
 
 
-def test_cells_both_sides_on_the_legs_dry_run(tmp_path: Path) -> None:
+def test_cells_both_sides_on_the_legs_dry_run(tmp_path: Path,
+                                              monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.data import terms_hold as th
     rows, closes, consensus = _world(5, planted=True)
+    # the forecast store has no recorded terms basis: the closed gate holds it (audit #211)
+    monkeypatch.setattr(th, "CLEARANCES", tmp_path / "none.json")
+    doc = pi.run(now=datetime(2026, 10, 6, tzinfo=UTC), forecasts=rows, registry=REG,
+                 closes_fn=lambda s, n: closes[s], consensus=consensus, dry_run=True)
+    assert doc["cells"]["status"] == "HELD_TERMS" and doc["cells"]["emitted"] == 0
+    # a quoted clearance admits it, both sides on every leg
+    (tmp_path / "clear.json").write_text(json.dumps({"prediction_markets": {
+        "status": "CLEARED", "terms_url": "https://example.test/terms",
+        "terms_quote": "machine use permitted"}}), "utf-8")
+    monkeypatch.setattr(th, "CLEARANCES", tmp_path / "clear.json")
     doc = pi.run(now=datetime(2026, 10, 6, tzinfo=UTC), forecasts=rows, registry=REG,
                  closes_fn=lambda s, n: closes[s], consensus=consensus, dry_run=True)
     assert doc["cells"]["emitted"] == 2 * len(LEGS) * 3 * 2

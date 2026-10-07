@@ -97,7 +97,9 @@ def test_fred_substitute_is_the_source_when_present(tmp_path: Path) -> None:
     assert datetime.fromisoformat(last["available_time"]) >= datetime(
         d.year, d.month, d.day, 13, 0, tzinfo=UTC) + timedelta(days=1)
     from libs.research import sensor_engines as se
-    admitted = se.emit_conditioner_cells("ws_vol_state_us500", ["iv_pct"], ["US500"],
-                                         mechanism="m", falsifier="f", generator=vc.ENGINE,
-                                         dry_run=True, data_source=g["data_source"])
-    assert admitted["emitted"] > 0
+    # FRED republishes CBOE's index under CBOE's copyright notice, which FRED cannot license
+    # (ToU FAQ Q3): the substitute is measured state, and its cells stay HELD (audit #211)
+    held_cells = se.emit_conditioner_cells("ws_vol_state_us500", ["iv_pct"], ["US500"],
+                                           mechanism="m", falsifier="f", generator=vc.ENGINE,
+                                           dry_run=True, data_source=g["data_source"])
+    assert held_cells["status"] == "HELD_TERMS" and held_cells["emitted"] == 0
