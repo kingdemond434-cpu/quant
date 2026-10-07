@@ -898,6 +898,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
     # a certificate minted by that task would wait for one. It reads two small JSON files.
     "canon_publication",
+    # THE RE-MINT QUEUE IS CORE FOR THE SAME REASON (2026-09-30): an attestation change freezes
+    # enrolment whole, and `MT5-Gauntlet` can sweep on a pass this cycle never ran. It reads two
+    # small JSON files, byte-scans the docket and appends only what is missing.
+    "attestation_remint",
     # THE LOCKBOX v4 RE-CERTIFICATION LEDGER (pass-2 P0, 2026-09-30), right after the seal it
     # reads: per canon certificate, lockbox Sharpe before and after the re-mint. Two small JSON
     # reads, seconds.
@@ -1068,6 +1072,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
+                     "attestation_remint",
                      "lockbox_recert",
                      # each hunted family's own pipeline on null data: the gates' real
                      # false-positive rate, per family
@@ -1826,6 +1831,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # RECOVERY_BUDGET_SEC of 240. The cap sits above that plus the read, for the reason every
     # other entry here gives: a cap below an organ's own budget truncates it at the same prefix.
     "canon_publication": 600,
+    # THE RE-MINT QUEUE byte-scans the ~440 MB docket once (4 MB reads, no JSON parse) and appends
+    # in place; the git call that dates a new attestation is bounded at 20 s.
+    "attestation_remint": 300,
     # THE FOUR ACTIVATION LEGS ARE SEARCHES, NOT RENDERERS. `weak_signals` rebuilds member
     # signals for up to 24 members across 67 symbols and its own `run()` already self-limits at
     # 2400s; a cycle budget below that would kill it at the same prefix every hour, which is the
@@ -4902,6 +4910,16 @@ def main() -> None:
     # refuse what the judge itself refuses terminally before a bar is read. It deletes nothing.
     fa = _costed("fast_admission", lambda: _producer(
         "fast_admission", "research/fast_admission.py"))
+    # RE-JUDGED, NEVER RE-STAMPED, AND FIRST (2026-09-30, lockbox v4). Immediately before the judge:
+    # when gate_policy.ATTESTATION changes, every certificate judged under the old one is refused
+    # whole by shadow_admission, and the sealed writer's way out is a re-stamp. This leg queues
+    # every certificate whose gates predate the attestation in force (exact certified params,
+    # PIT-stamped, charged to the trial census like any cell), writes the priority record the
+    # patched judge puts first, and publishes reports/REMINT_STATUS.json -- frozen since, pending,
+    # oldest age, ETA from the measured judge rate. Exit 3 = enrolment frozen past one sweep, or a
+    # row re-stamped rather than re-judged.
+    arm = _costed("attestation_remint", lambda: _producer(
+        "attestation_remint", "research/attestation_remint.py", "--apply"))
     gt = _costed("external_gauntlet", lambda: _producer(
         "external_gauntlet", "scripts/external_gauntlet.py"))
     # THE CANON'S LAST MISSING LINK, IMMEDIATELY AFTER THE JUDGE. `external_gauntlet.py` is a
@@ -5820,6 +5838,7 @@ def main() -> None:
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "canon_publication": cpub, "judging_burndown": jbd, "lockbox_recert": lrc,
+                    "attestation_remint": arm,
                     "rejection_throughput": rjt,
                     "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,
