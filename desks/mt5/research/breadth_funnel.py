@@ -26,8 +26,8 @@ import ast
 import json
 from collections import Counter, defaultdict
 from collections.abc import Mapping
-from itertools import pairwise
 from datetime import UTC, datetime
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
