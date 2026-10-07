@@ -896,6 +896,10 @@ _CONTROL_ROOM_ORGANS: tuple[tuple[str, str, str, str], ...] = (
      "control_room"),
     ("regime_split_miner", "regime_split_miner.json",
      "desks/mt5/research/miner_candidate_compiler.py", "proposers"),
+    # Loaded by name in the proposers step, so the import walk never reached it. Its report is
+    # an admission verdict that no organ reads yet: the empty consumer says so instead of
+    # naming a reader that does not exist.
+    ("reflective_timing_contract", "REFLECTIVE_TIMING.json", "", "proposers"),
 )
 
 
@@ -905,7 +909,7 @@ def _control_room_specs() -> list[ComponentSpec]:
         kind="daily_step", host="box",
         code_paths=(f"desks/mt5/research/{organ}.py",),
         outputs=(f"desks/mt5/reports/{report}",),
-        consumers=(consumer,),
+        consumers=(consumer,) if consumer else (),
         cadence_s=86_400, timeout_s=3_600, progress_metric="daily_step_completions",
         expected_artifact_schema=f"desks/mt5/reports/{report}",
         owner="daily_cycle", restart_action="restart:task:MT5-Daily",
