@@ -411,7 +411,8 @@ def _lane_filtered(candidates: list[dict]) -> tuple[list[dict], list[dict]]:
     return ok, refused
 
 
-def _preregister(source: str, candidates: list[dict]) -> dict[str, Any]:
+def _preregister(source: str, candidates: list[dict[str, Any]],
+                 path: Path | None = None) -> dict[str, Any]:
     """PRE-REGISTERED BEFORE THE VERDICT, AND LOUD WHEN IT IS NOT.
 
     Each candidate's hypothesis card -- mechanism, direction, variables, universe, horizon,
@@ -452,7 +453,7 @@ def _preregister(source: str, candidates: list[dict]) -> dict[str, Any]:
         if c.get("prereg_hash"):
             out["already"] += 1
             continue
-        h, why = register_candidate(c, source=source)
+        h, why = register_candidate(c, source=source, path=path)
         if h:
             c["prereg_hash"] = h
             out["preregistered"] += 1
@@ -467,7 +468,8 @@ def _preregister(source: str, candidates: list[dict]) -> dict[str, Any]:
     return out
 
 
-def _blinded(source: str, candidates: list[dict]) -> tuple[list[dict], dict[str, Any]]:
+def _blinded(source: str, candidates: list[dict[str, Any]], *,
+             publish: bool = True) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """TIER S LAYER 4 AT THE WRITE DOOR. A proposer's output that carries the desk's held-out,
     lockbox, forward or gate OUTCOMES is evidence the proposer read them: the fields are stripped
     before the row is stamped (so the payload hash covers the blind row), and the pass is counted
@@ -484,12 +486,21 @@ def _blinded(source: str, candidates: list[dict]) -> tuple[list[dict], dict[str,
     counter = RuntimeCounter("output")
     clean = [counter.filter(source, c) if isinstance(c, dict) else c for c in candidates]
     rep = counter.report()
-    if rep["violations"]:
+    if rep["violations"] and publish:
         counter.publish(INTEL.parent, "tier_s/blinding_runtime.jsonl")
     return clean, {k: rep[k] for k in ("rows", "violations", "fields_stripped")}
 
 
-def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
+#: PRIVATE-USE DONATIONS (J-Quants, art. 8; the principal's answer of 2026-10-06). The repository
+#: is PUBLIC, so a private donation lands under this GITIGNORED root and nowhere tracked: no
+#: canonical-registry row (its backup under backups/moat/ is committed), no line in the tracked
+#: pre-registration ledger (a private one beside the donation instead), no blinding-ledger line.
+#: `miner_candidate_compiler.compile_private` is its one reader.
+PRIVATE_INTEL = _DESK / "data" / "intelligence_private"
+
+
+def donate(source: str, candidates: list[dict[str, Any]], tests_run: int, *,
+           private_root: Path | None = None) -> Path | None:
     """Write the discovery contract. A control run must NEVER call this.
 
     POINT-IN-TIME BY CONSTRUCTION AND BY REFUSAL. Every row that leaves here carries
@@ -497,13 +508,26 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     for any decision earlier than the desk could have known it -- and a row that cannot carry
     them does not leave at all. The counts ride on the contract file (`counts.refused_unstamped`)
     and on `donation_counts()` for the proposer's own report.
+
+    `private_root` (a gitignored directory under PRIVATE_INTEL) makes this a PRIVATE donation:
+    the same blinding, lane, stamp and pre-registration doors, written under that root only, and
+    nothing about the rows reaches a tracked store. The CALLER charges its trials on the tracked
+    side ledger as a bare count (the private file is not read by experiment_ledger).
     """
     global LAST_DONATION
     LAST_DONATION = {"source": source, "donated": 0, "refused_unstamped": 0,
                      "refused_wrong_lane": 0, "refusals": [], "lane_refusals": []}
     if not candidates:
         return None
-    candidates, blinded = _blinded(source, candidates)
+    private = private_root is not None
+    if private_root is not None:
+        try:
+            Path(private_root).resolve().relative_to(PRIVATE_INTEL.resolve())
+        except ValueError:
+            raise ValueError("a private donation must land under PRIVATE_INTEL, the gitignored "
+                             "private root") from None
+        LAST_DONATION["private"] = True
+    candidates, blinded = _blinded(source, candidates, publish=not private)
     LAST_DONATION["blinded"] = blinded
     candidates, lane_refused = _lane_filtered(candidates)
     LAST_DONATION["refused_wrong_lane"] = len(lane_refused)
@@ -519,9 +543,11 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
         # Nothing survived the door. Writing an empty contract would put a file into the intake
         # that says a proposer produced nothing, when it produced rows the door turned away.
         return None
-    prereg = _preregister(source, candidates)
+    prereg = _preregister(source, candidates,
+                          path=(Path(private_root) / "preregistrations_private.jsonl"
+                                if private_root is not None else None))
     LAST_DONATION["prereg"] = prereg
-    out = INTEL / source
+    out = Path(private_root) if private_root is not None else INTEL / source
     out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
     path = out / f"discoveries_{stamp}.json"
@@ -542,7 +568,8 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
                                          "here and counted, never written: absence of an "
                                          "available_time is not permission to use the row")},
                                indent=1, default=str), "utf-8")
-    _record_in_registry(source, candidates)
+    if not private:
+        _record_in_registry(source, candidates)
     return path
 
 

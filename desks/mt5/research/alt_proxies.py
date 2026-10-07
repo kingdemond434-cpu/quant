@@ -141,6 +141,17 @@ class Paths:
         return self.desk / "data" / "lake" / "vault"
 
     @property
+    def private_series(self) -> Path:
+        """PRIVATE-USE parsed documents (J-Quants, art. 8): asia_collector.PRIVATE / series.
+        Gitignored (`lake/`); nothing read from here may reach a tracked path or a shared output."""
+        return self.desk / "data" / "lake" / "private_use" / "series"
+
+    @property
+    def private_vault(self) -> Path:
+        """PRIVATE-USE raw bodies: asia_collector.PRIVATE / vault (gitignored)."""
+        return self.desk / "data" / "lake" / "private_use" / "vault"
+
+    @property
     def axes(self) -> Path:
         return self.desk / "data" / "axes"
 
@@ -245,6 +256,7 @@ def _num(s: str) -> float | None:
 
 # ============================================================================ release rules
 #: RELEASE CALENDARS (audit of PR #239, 2026-10-06). An official publisher in Seoul or Hong Kong
+#: (and, from the Japan plane, Tokyo: MOF and the BOJ, 2026-10-07)
 #: does not publish on a Saturday, a Sunday or a public holiday, so a release rule that lands on
 #: one of those days is LOOK-AHEAD for the Sunday FX open: it is rolled forward to the next
 #: business day of that calendar. The closed days come from the `holidays` package when it is
@@ -252,7 +264,7 @@ def _num(s: str) -> float | None:
 #: (`countries/<cc>/pack.py` HOLIDAYS_RULE: the public-holiday decree / General Holidays
 #: Ordinance plus the exchange's own closures). A year neither source covers has NO calendar:
 #: `merge_vintages` then stamps the row no earlier than the instant it was first seen.
-_CAL_PACK = {"KR": "kr", "HK": "hk"}
+_CAL_PACK = {"KR": "kr", "HK": "hk", "JP": "jp"}
 _CAL_CACHE: dict[tuple[str, int], frozenset[str] | None] = {}
 
 
@@ -1723,10 +1735,11 @@ def _hkma_requests(src: Source, now: datetime, state: dict[str, Any]) -> list[Re
 #   * BOJ Time-Series Data Search API (www.stat-search.boj.or.jp/api/v1, its own API notice:
 #     credit line required, no commercial restriction): call rate, TANKAN, current-account
 #     balances and the Bank's JGB holdings (the Rinban footprint).
-#   * J-Quants V2 investor-type flows: PARSED HERE but NOT a source -- the full terms of
-#     service were not readable from the authoring container, so the lane is fail-closed
-#     (BLOCKED_ON_TERMS:to_confirm). `parse_jquants_investor_types` consumes the file the
-#     asia_collector writes for `jpx_jquants` (PR #218: data/lake/series/jpx_jquants.json).
+#   * J-Quants V2 investor-type flows: PARSED HERE but NOT a source of this organ. Its terms are
+#     `confirmed_private_use` (token_refresh.TERMS, the principal's answer of 2026-10-06): the
+#     asia_collector fetches it and stores it ONLY under data/lake/private_use/ (gitignored), and
+#     `read_jquants_investor_types` reads it from there. Its cells are built by the Japan plane
+#     (countries/jp/official_plane.jquants_cells) and donated to a gitignored private root.
 # JPX (jpx.co.jp: investor-type PDFs, margin, OSE options) and boj.or.jp HTML (Rinban result
 # pages, MPM statements) refuse commercial collection in their own terms and are never fetched.
 
@@ -1850,13 +1863,18 @@ def rule_mof_intervention(period: date) -> datetime:
     the quarter (Q2 2026 on 2026-08-07). Quarter end + 45 days, 00:00 UTC, weekday: late on
     purpose. The monthly TOTAL (last business day, 19:00 JST) names no day and is an event."""
     q_end = _month_end(period.year, ((period.month - 1) // 3 + 1) * 3)
-    return _roll_weekday(_utc(q_end.year, q_end.month, q_end.day) + timedelta(days=45))
+    return roll_business_day(_utc(q_end.year, q_end.month, q_end.day) + timedelta(days=45), "JP")
 
 
 def rule_tankan(period: date) -> datetime:
     """TANKAN prints at 08:50 JST on the first business day after the survey quarter (mid-December
-    for Q4). Quarter end + 2 days at 00:00 UTC, weekday: never earlier than the print."""
-    return _roll_weekday(_utc(period.year, period.month, period.day) + timedelta(days=2))
+    for Q4). Quarter end + 2 days at 00:00 UTC, rolled past Tokyo's weekends and holidays: never
+    earlier than the print."""
+    return roll_business_day(_utc(period.year, period.month, period.day) + timedelta(days=2), "JP")
+
+
+rule_mof_intervention.calendar = "JP"  # type: ignore[attr-defined]
+rule_tankan.calendar = "JP"  # type: ignore[attr-defined]
 
 
 def _boj_period(t: str, freq: str) -> date | None:
@@ -1965,12 +1983,17 @@ def parse_jquants_investor_types(body: bytes, ctx: Ctx) -> list[Obs]:
 
 def read_jquants_investor_types(paths: Paths) -> list[Obs]:
     """The stored output of `asia_collector`'s `jpx_jquants` row (PR #218) -- the latest document
-    in data/lake/series and every vaulted body -- READ, never fetched here."""
+    in the PRIVATE-USE series store and every privately vaulted body -- READ, never fetched here.
+
+    J-Quants is permitted for private use only (token_refresh.TERMS["jquants"]), so the collector
+    writes it ONLY under data/lake/private_use/{series,vault}/ (gitignored) and never to the
+    shared lake; this reader looks nowhere else. Whatever it returns is private-use data: a caller
+    may write it, or anything derived from it, only under a gitignored private root."""
     bodies: list[bytes] = []
-    p = paths.series / "jpx_jquants.json"
+    p = paths.private_series / "jpx_jquants.json"
     with contextlib.suppress(OSError):
         bodies.append(p.read_bytes())
-    vdir = paths.vault / "jpx_jquants"
+    vdir = paths.private_vault / "jpx_jquants"
     for blob in sorted(vdir.glob("*.gz")) if vdir.is_dir() else []:
         with contextlib.suppress(OSError, EOFError, gzip.BadGzipFile):
             bodies.append(gzip.decompress(blob.read_bytes()))
@@ -3093,7 +3116,7 @@ JP_PLANE_SOURCES: tuple[Source, ...] = (
         name="MOF weekly international transactions in securities (designated major investors)",
         url=os.environ.get("ALT_MOF_SEC_WEEK_URL", MOF_SEC + "week.csv"), region="JP",
         language="ja", cadence="weekly", parse=parse_mof_securities_weekly,
-        rule=_lag_rule(5, 0, weekday=True), transform="given",
+        rule=_lag_rule(5, 0, calendar="JP"), transform="given",
         instruments=_JP_FX,
         series_instruments={"liab_": {"USDJPY": -1, "EURJPY": -1, "JPN225": 1},
                             "assets_": _JP_FX},
@@ -3117,7 +3140,7 @@ JP_PLANE_SOURCES: tuple[Source, ...] = (
         name="MOF residents' foreign long-term bond purchases by investor type (monthly)",
         url=os.environ.get("ALT_MOF_SEC_INVESTOR_URL", MOF_SEC + "monthb3.csv"), region="JP",
         language="ja", cadence="monthly", parse=make_mof_investor_parser("bonds"),
-        rule=_lag_rule(42, 0, weekday=True), transform="given", instruments=_JP_FX,
+        rule=_lag_rule(42, 0, calendar="JP"), transform="given", instruments=_JP_FX,
         signal_series=("bonds_life_insurers_net", "bonds_trust_accounts_net",
                        "bonds_banks_net"),
         mechanism=("WHO sells the yen: life insurers and trust accounts (the pension money) "
@@ -3155,7 +3178,7 @@ JP_PLANE_SOURCES: tuple[Source, ...] = (
         id="jp_boj_call_rate", name="BOJ uncollateralised overnight call rate (stat-search FM01)",
         url=BOJ_API.format(db="FM01", start="201501", code=BOJ_CALL_CODE), region="JP",
         language="en", cadence="daily", parse=make_boj_parser({BOJ_CALL_CODE: "call_rate_on"}),
-        rule=_lag_rule(1, 3, weekday=True), transform="level_dev",
+        rule=_lag_rule(1, 3, calendar="JP"), transform="level_dev",
         instruments={"USDJPY": -1, "EURJPY": -1, "AUDJPY": -1, "JPN225": -1},
         signal_series=("call_rate_on",),
         mechanism=("the overnight call rate is where BOJ policy actually clears: a print drifting "
@@ -3194,7 +3217,7 @@ JP_PLANE_SOURCES: tuple[Source, ...] = (
         url=BOJ_API.format(db="{ALT_BOJ_CA_DB}", start="201501", code="{ALT_BOJ_CA_CODE}"),
         region="JP", language="en", cadence="daily",
         parse=make_boj_parser({}, ("ALT_BOJ_CA_CODE", "boj_current_account")),
-        rule=_lag_rule(2, 0, weekday=True), transform="level_dev",
+        rule=_lag_rule(2, 0, calendar="JP"), transform="level_dev",
         config_env=("ALT_BOJ_CA_DB", "ALT_BOJ_CA_CODE"), instruments=_JP_FX,
         signal_series=("boj_current_account",),
         mechanism=("current-account balances at the BOJ are yen liquidity itself: a draw-down "
@@ -3214,7 +3237,7 @@ JP_PLANE_SOURCES: tuple[Source, ...] = (
         url=BOJ_API.format(db="{ALT_BOJ_JGB_DB}", start="201501", code="{ALT_BOJ_JGB_CODE}"),
         region="JP", language="en", cadence="10-daily",
         parse=make_boj_parser({}, ("ALT_BOJ_JGB_CODE", "boj_jgb_holdings")),
-        rule=_lag_rule(4, 0, weekday=True), transform="level_dev",
+        rule=_lag_rule(4, 0, calendar="JP"), transform="level_dev",
         config_env=("ALT_BOJ_JGB_DB", "ALT_BOJ_JGB_CODE"), instruments=_JP_FX,
         signal_series=("boj_jgb_holdings",),
         mechanism=("the change in the Bank's JGB holdings is the net of its Rinban purchase "
@@ -3294,7 +3317,11 @@ JP_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                         "parties is also prohibited. (FAQ; the full terms of service page was "
                         "not reachable from the authoring container)"),
         "robots": "api.jquants.com is the documented API (x-api-key, PR #218)",
-        "decision": "to_confirm", "checked_at": _CHK_JP},
+        # SUPERSEDED 2026-10-07: the full terms (art. 8) were read and put to the principal, who
+        # confirmed private use; the verdict and its condition live in ONE place,
+        # libs.ops.token_refresh.TERMS / TERMS_EVIDENCE["jquants"], and are read from there.
+        "decision": "confirmed_private_use", "checked_at": _CHK_JP,
+        "decision_of_record": "libs.ops.token_refresh.TERMS_EVIDENCE['jquants']"},
     "jp_tfx_click365": {
         "terms_url": "https://www.tfx.co.jp/sitepolicy.html",
         "terms_quote": ("(the site policy covers linking only; no reuse or commercial-use "
@@ -3320,18 +3347,6 @@ JP_REFUSED: dict[str, dict[str, Any]] = {
         "why_not_a_substitute": ("the balance-sheet holdings carry the NET of the operations, "
                                  "not each operation's demand; the MPM decision survives as a "
                                  "calendar event plus the call rate's move across it")},
-    "jp_jquants_investor_types": {
-        "would_carry": ["TSE Prime investor-type net buying (foreigners, individuals, trust "
-                        "banks, investment trusts) weekly", "weekly margin interest"],
-        "status": "BLOCKED_ON_TERMS:to_confirm", "terms": "to_confirm",
-        "depends_on": ("PR #218 (claude/token-refresh-flows): asia_collector's jpx_jquants row "
-                       "at https://api.jquants.com/v2/equities/investor-types with x-api-key "
-                       "JQUANTS_API_KEY; it stores data/lake/series/jpx_jquants.json, which "
-                       "alt_proxies.read_jquants_investor_types parses"),
-        "nearest_lawful": ["jp_mof_securities_weekly"],
-        "why_not_a_substitute": ("MOF's liabilities side is non-residents' Japanese equity "
-                                 "purchases weekly -- the foreigners' leg of investor-type flow, "
-                                 "without the domestic individuals / trust banks legs")},
     "jp_tfx_click365": {
         "would_carry": ["Click365 retail FX open interest by currency pair (Japanese retail "
                         "FX positioning)"],
@@ -3346,6 +3361,22 @@ JP_REFUSED: dict[str, dict[str, Any]] = {
         "why_not_a_substitute": ("MOF publishes the history as BIFF .xls (Auction_Results_for_"
                                  "JGBs.xls); neither xlrd nor openpyxl is installed on the desk, "
                                  "and a parser is not written against a layout nobody has read")},
+}
+#: PRIVATE-USE lanes: fetched by asia_collector under a `confirmed_private_use` verdict and built
+#: into cells by the Japan plane, but EVERY value, derived value and cell stays under a gitignored
+#: private root (the repository is public). A shared report carries counts and status only.
+JP_PRIVATE_USE: dict[str, dict[str, Any]] = {
+    "jp_jquants_investor_types": {
+        "would_carry": ["TSE Prime investor-type net buying (foreigners, individuals, trust "
+                        "banks, investment trusts, insurers, proprietary) weekly"],
+        "status": "PRIVATE_USE", "terms": "confirmed_private_use",
+        "depends_on": ("PR #218 (claude/token-refresh-flows): asia_collector's jpx_jquants row "
+                       "at https://api.jquants.com/v2/equities/investor-types with x-api-key "
+                       "JQUANTS_API_KEY; it stores data/lake/private_use/series/jpx_jquants.json "
+                       "(gitignored), which alt_proxies.read_jquants_investor_types parses"),
+        "private_roots": ["desks/mt5/data/lake/private_use/",
+                          "desks/mt5/data/intelligence_private/jquants/",
+                          "desks/mt5/data/hypotheses_private/"]},
 }
 JP_TERMS_EVIDENCE["jp_estat"]["note"] = ("existing e-Stat rows (jp_tokyo_cpi, "
                                          "jp_estat_immigration) re-read under the same terms")

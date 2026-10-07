@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -119,6 +119,75 @@ def test_release_rules_are_late_biased() -> None:
         assert A.BY_ID[sid].rule(date(2026, 8, 27)) > datetime(2026, 8, 27, tzinfo=UTC), sid
 
 
+# ---------------------------------------------------------------- Tokyo's calendar (#239's roll)
+def test_jp_pack_derives_the_gazetted_holidays() -> None:
+    from countries.jp import pack as P
+    got = set(P.holidays(2026))
+    for d in ("2026-01-12", "2026-05-06", "2026-09-21", "2026-09-22", "2026-09-23",
+              "2026-11-23", "2026-12-31", "2026-01-02"):
+        assert d in got, d
+    assert {"2025-02-24", "2025-11-24"} <= set(P.holidays(2025))           # 振替休日
+    assert {"2019-04-30", "2019-05-02", "2019-10-22"} <= set(P.holidays(2019))
+    assert "2019-12-23" not in P.holidays(2019) and P.holidays(1999) == {}
+    assert A.release_calendar_known("JP", 2005) and not A.release_calendar_known("JP", 1999)
+
+
+#: (row, a period whose rule lands on a Tokyo closure, the instant weekends alone would give,
+#:  the instant rolled past Tokyo's holidays). Each row is a BOJ/MOF daily, weekly or 10-daily row.
+JP_ROLLS = (
+    # Fri 18 Sep 2026 + 1 day = Sat -> Mon 21 (敬老の日), 22 (国民の休日), 23 (秋分) -> Thu 24
+    ("jp_boj_call_rate", date(2026, 9, 18), datetime(2026, 9, 21, 3, tzinfo=UTC),
+     datetime(2026, 9, 24, 3, tzinfo=UTC)),
+    # Thu 17 Sep + 2 = Sat 19 -> Mon 21 .. Wed 23 closed -> Thu 24
+    ("jp_boj_current_account", date(2026, 9, 17), datetime(2026, 9, 21, tzinfo=UTC),
+     datetime(2026, 9, 24, tzinfo=UTC)),
+    # 17 Sep + 4 = Mon 21 -> Thu 24
+    ("jp_boj_jgb_holdings", date(2026, 9, 17), datetime(2026, 9, 21, tzinfo=UTC),
+     datetime(2026, 9, 24, tzinfo=UTC)),
+    # week to Sat 27 Dec 2025 + 5 = Thu 1 Jan -> 2 Jan (administrative closure) -> Mon 5 Jan
+    ("jp_mof_securities_weekly", date(2025, 12, 27), datetime(2026, 1, 1, tzinfo=UTC),
+     datetime(2026, 1, 5, tzinfo=UTC)),
+)
+
+
+@pytest.mark.parametrize(("sid", "period", "weekend_only", "rolled"), JP_ROLLS)
+def test_boj_and_mof_rows_roll_past_tokyo_holidays(sid: str, period: date,
+                                                   weekend_only: datetime,
+                                                   rolled: datetime) -> None:
+    src = A.BY_ID[sid]
+    assert getattr(src.rule, "calendar", None) == "JP"
+    assert A._roll_weekday(weekend_only) == weekend_only        # weekends alone stop here...
+    assert src.rule(period) == rolled                          # ...Tokyo's calendar does not
+
+
+def test_every_jp_plane_rule_rolls_on_tokyo_calendar() -> None:
+    for sid in PLANE_IDS:
+        assert getattr(A.BY_ID[sid].rule, "calendar", None) == "JP", sid
+
+
+@pytest.mark.parametrize("sid", [r[0] for r in JP_ROLLS])
+def test_jp_row_revisions_are_their_own_vintages(sid: str) -> None:
+    """#239's per-revision stamping on each BOJ/MOF row: a revision is knowable only from the
+    instant it was first seen (revision_points), and as_of before it returns the first print."""
+    src = A.BY_ID[sid]
+    series = src.signal_series[0]
+    d = date(2026, 7, 31)
+    seen1 = datetime(2026, 8, 20, tzinfo=UTC)
+    seen2 = datetime(2026, 9, 15, 6, tzinfo=UTC)
+    store: dict[str, Any] = {}
+    A.merge_vintages(store, src, [A.Obs(series, d, 100.0)], seen1)
+    A.merge_vintages(store, src, [A.Obs(series, d, 104.0)], seen2)
+    (row,) = store.values()
+    assert row["value_first"] == 100.0 and row["vintages"][0]["seen_at"] == seen2.isoformat()
+    (rev,) = A.revision_points(src, store)[series]
+    assert rev["knowable_at"] == seen2.isoformat() and rev["revision_delta"] == 4.0
+    assert rev["revision_of"] and rev["vintage_n"] == 1
+    assert A.as_of(A.revision_points(src, store), seen2 - timedelta(seconds=1)) == {}
+    assert A.as_of(A.revision_points(src, store), seen2)[series][0]["value"] == 104.0
+    # the first print is stamped by the Tokyo-calendar rule, never before it
+    assert row["published_time"] == src.rule(d).isoformat(timespec="seconds")
+
+
 def test_points_carry_the_five_alpha_objects_and_revisions_are_vintages() -> None:
     src = A.BY_ID["jp_boj_call_rate"]
     store: dict[str, Any] = {}
@@ -145,7 +214,11 @@ def test_plane_rows_are_confirmed_with_evidence_and_blocked_hosts_are_not_source
         assert A.JP_TERMS_EVIDENCE[sid]["terms_quote"], sid
         assert meta["status"].startswith(("BLOCKED_ON_TERMS:", "UNCONFIGURED:")), sid
     assert A.JP_TERMS_EVIDENCE["jp_jpx_market_data"]["decision"] == "refused"
-    assert A.JP_REFUSED["jp_jquants_investor_types"]["depends_on"].startswith("PR #218")
+    # J-Quants left the refused lanes: it is a PRIVATE-USE lane under token_refresh's verdict.
+    assert "jp_jquants_investor_types" not in A.JP_REFUSED
+    jq = A.JP_PRIVATE_USE["jp_jquants_investor_types"]
+    assert jq["depends_on"].startswith("PR #218") and jq["terms"] == "confirmed_private_use"
+    assert A.JP_TERMS_EVIDENCE["jp_jquants_investor_types"]["decision"] == "confirmed_private_use"
 
 
 def test_unconfigured_boj_codes_build_no_request(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -198,7 +271,9 @@ def test_jp_plane_reports_lanes_events_and_funding_state(tmp_path: Path,
         assert lanes[sid]["status"] == "PARSED", sid
         assert lanes[sid]["data_source"] == A.data_source_of(A.BY_ID[sid])
     assert lanes["jp_jpx_market_data"]["status"] == "BLOCKED_ON_TERMS:refused"
-    assert lanes["jp_jquants_investor_types"]["status"] == "BLOCKED_ON_TERMS:to_confirm"
+    jq = lanes["jp_jquants_investor_types"]
+    assert jq["status"] == "PRIVATE_USE:UNMEASURED_LIVE_YIELD" and jq["observations"] == 0
+    assert set(jq) <= set(J.JQ_PUBLIC_KEYS)
     assert lanes["jp_mof_jgb_auctions"]["status"] == "UNCONFIGURED:NEEDS_XLS_READER"
     kinds = {(e["event"], e["lifecycle"]) for e in doc["events"]}
     for k in (("jp_mof_intervention", "RELEASED"), ("jp_mof_intervention_monthly_total",

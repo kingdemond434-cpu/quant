@@ -20,16 +20,29 @@ PART IX asks of a Japan superplane and the factory cannot hold as a series:
 
 REFUSED or UNCONFIRMED lanes are reported with their verbatim terms and never fetched: JPX
 market data (investor-type PDFs, margin, OSE options / implied volatility), the boj.or.jp HTML
-releases (Rinban results, MPM statements: commercial copying excluded), J-Quants (terms not fully
-readable; its parser waits on PR #218's collector output), TFX Click365 retail positions, and the
-MOF JGB auction history (terms confirmed; the file is .xls and the desk has no reader).
+releases (Rinban results, MPM statements: commercial copying excluded), TFX Click365 retail
+positions, and the MOF JGB auction history (terms confirmed; the file is .xls and the desk has no
+reader).
+
+J-QUANTS IS A PRIVATE-USE LANE (`jquants_cells`). Its terms are `confirmed_private_use`
+(libs.ops.token_refresh.TERMS, the principal's answer of 2026-10-06) and the repository is PUBLIC.
+The asia collector stores it under data/lake/private_use/ (gitignored); this module builds the
+investor-type flow cells from it -- net buy, change, acceleration and surprise per investor type
+-- through the desk's one door (proposer_common.screen -> deflate -> donate, every look charged)
+and donates them to data/intelligence_private/jquants/ (gitignored), which only
+`miner_candidate_compiler.compile_private` reads. This report, and every other tracked or shared
+artifact, carries the lane's COUNTS AND STATUS ONLY: no value, no date, no derived statistic, no
+cell.
 
 The file is named `official_plane.py` for the same reason as Korea's: it is the plane every
 department in this package now shares, and `pack.py` names it as the department module.
 """
 from __future__ import annotations
 
+import hashlib
 import importlib
+import json
+import math
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -52,7 +65,7 @@ CODE = "jp"
 REGION = "JP"
 REPORT: Path = _op.report_path(CODE)
 REFUSED: tuple[str, ...] = ("jp_jpx_market_data", "jp_boj_site_releases",
-                            "jp_jquants_investor_types", "jp_tfx_click365", "jp_mof_jgb_auctions")
+                            "jp_tfx_click365", "jp_mof_jgb_auctions")
 LANES: tuple[str, ...] = ("alt_proxies:region=JP",)
 YEN_TARGETS: list[str] = ["USDJPY", "EURJPY", "AUDJPY", "JPN225"]
 #: (source id, series, sign toward YEN STRENGTH when the component's surprise is positive).
@@ -242,14 +255,239 @@ def funding_state(points: dict[str, dict[str, list[dict[str, Any]]]], now: datet
                  "authority")}}
 
 
+# ============================================================== J-Quants: the private-use lane
+JQ_LANE = "jp_jquants_investor_types"
+#: The seat name, and the directory under the gitignored private root it donates to.
+JQ_SOURCE = "jquants"
+JQ_DATA_SOURCE = "jquants:investor_types"
+JQ_FAMILY = "exogenous_conditioner"
+JQ_FEATURES: tuple[str, ...] = ("net", "change", "acceleration", "surprise")
+#: The instruments investor-type flow bears on: the yen (a foreign purchase of Japanese equity is
+#: a yen purchase first) and the index itself. Routed by `alt_proxies.may_mint` (asset class).
+JQ_TARGETS: tuple[str, ...] = ("USDJPY", "EURJPY", "JPN225")
+JQ_DIRECTIONS: tuple[int, ...] = (1, -1)
+JQ_HOLDS: tuple[int, ...] = (24, 120)
+#: Each feature is judged against its own trailing prints only (never the future): at least
+#: JQ_MIN_OBS of the last JQ_Z_OBS weeks, and a print fires when |z| >= JQ_Z_THRESHOLD.
+JQ_Z_OBS = 26
+JQ_MIN_OBS = 8
+JQ_Z_THRESHOLD = 0.5
+#: The only fields of the lane that may appear in a tracked or shared artifact.
+JQ_PUBLIC_KEYS = ("dataset", "status", "terms", "private_use", "private_ref", "investor_types",
+                  "observations", "features", "looks", "tests_run", "proposed", "donated",
+                  "trials_charged", "why")
+
+
+def _private_root() -> Path:
+    from research import proposer_common as pc
+    return pc.PRIVATE_INTEL / JQ_SOURCE
+
+
+def _jq_features(obs: list[Any]) -> dict[tuple[str, str], list[tuple[datetime, float]]]:
+    """(investor series, feature) -> [(knowable_at, z)] where z is the feature against its OWN
+    trailing JQ_Z_OBS prints. A print without its published instant is never used: a weekly flow
+    is knowable only from its publication, and inventing one would be look-ahead."""
+    by_series: dict[str, list[Any]] = {}
+    for o in obs:
+        if getattr(o, "published_at", None) is not None:
+            by_series.setdefault(str(o.series), []).append(o)
+    out: dict[tuple[str, str], list[tuple[datetime, float]]] = {}
+    for series, rows in by_series.items():
+        rows.sort(key=lambda o: o.period)
+        v = [float(o.value) for o in rows]
+        feats: dict[str, list[float | None]] = {"net": list(v), "change": [None] * len(v),
+                                                "acceleration": [None] * len(v),
+                                                "surprise": [None] * len(v)}
+        for i in range(len(v)):
+            if i >= 1:
+                feats["change"][i] = v[i] - v[i - 1]
+            if i >= 2:
+                feats["acceleration"][i] = (v[i] - v[i - 1]) - (v[i - 1] - v[i - 2])
+            prev = v[max(0, i - JQ_Z_OBS):i]
+            if len(prev) >= JQ_MIN_OBS:
+                mu = sum(prev) / len(prev)
+                sd = math.sqrt(sum((x - mu) ** 2 for x in prev) / (len(prev) - 1))
+                if sd > 0:
+                    feats["surprise"][i] = (v[i] - mu) / sd
+        for name, xs in feats.items():
+            pts: list[tuple[datetime, float]] = []
+            for i, x in enumerate(xs):
+                if x is None:
+                    continue
+                hist = [h for h in xs[max(0, i - JQ_Z_OBS):i] if h is not None]
+                if len(hist) < JQ_MIN_OBS:
+                    continue
+                mu = sum(hist) / len(hist)
+                sd = math.sqrt(sum((h - mu) ** 2 for h in hist) / (len(hist) - 1))
+                if sd > 0:
+                    pts.append((rows[i].published_at, (float(x) - mu) / sd))
+            if pts:
+                out[(series, name)] = pts
+    return out
+
+
+def _jq_signals(d: Any, pts: list[tuple[datetime, float]], direction: int, hold: int
+                ) -> list[Any]:
+    """One signal per print whose |z| clears the threshold, on the first bar at or after its
+    publication + the broker-clock pad (bars carry broker time under a UTC tzinfo)."""
+    import pandas as pd
+    from libs.research.release_gain import CLOCK_PAD_H
+    from mt5desk.engine import Signal
+    idx = d.index
+    close = d["close"].to_numpy(dtype=float)
+    out: list[Any] = []
+    for when, z in pts:
+        if abs(z) < JQ_Z_THRESHOLD:
+            continue
+        pos = int(idx.searchsorted(pd.Timestamp(when) + pd.Timedelta(hours=CLOCK_PAD_H)))
+        if pos >= len(idx) - 1:
+            continue
+        side = int(direction) * (1 if z > 0 else -1)
+        px = float(close[pos])
+        out.append(Signal(time=idx[pos], side=side, stop=px * (1 - 0.05 * side),
+                          target=px * (1 + 0.05 * side), ttl_bars=int(hold),
+                          tag=f"{JQ_SOURCE}:{direction}"))
+    return out
+
+
+def _jq_public(lane: dict[str, Any]) -> dict[str, Any]:
+    """The lane as a tracked artifact may carry it: counts and status, never a value."""
+    return {k: lane[k] for k in JQ_PUBLIC_KEYS if k in lane}
+
+
+def _charge(paths: Any, now: datetime, looks: int) -> int:
+    """EVERY LOOK IS A TRIAL. The private discovery file is not read by experiment_ledger, so a
+    J-Quants pass is charged on the tracked side ledger as a BARE COUNT (source, family, n)."""
+    if looks <= 0:
+        return 0
+    row = {"at": now.isoformat(timespec="seconds"), "source": f"{JQ_SOURCE}_private",
+           "tests_run": int(looks), "by_family": {JQ_FAMILY: int(looks)},
+           "why": "private-use lane: looks charged here as a count; the cells stay private"}
+    paths.null_trials.parent.mkdir(parents=True, exist_ok=True)
+    with paths.null_trials.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, sort_keys=True) + "\n")
+    return int(looks)
+
+
+def jquants_cells(paths: Any = None, now: datetime | None = None, *, donate: bool = True,
+                  private_root: Path | None = None) -> dict[str, Any]:
+    """J-Quants investor-type flow cells, PRIVATE end to end. Returns the lane in its PUBLIC form
+    (`JQ_PUBLIC_KEYS`: counts and status); everything else is written under `private_root`."""
+    A = _op.alt()
+    paths = paths or A.DEFAULT_PATHS
+    now = now or datetime.now(UTC)
+    lane: dict[str, Any] = {"dataset": JQ_LANE, "terms": "confirmed_private_use",
+                            "private_use": True}
+    try:
+        from libs.ops import token_refresh as T
+        prov = T.PROVIDERS.get("JQUANTS_TOKEN")
+        allowed = bool(prov is not None and T.TERMS.get(prov.name, ("", ""))[0] == T.PRIVATE_USE
+                       and T.terms_ok(prov))
+    except Exception as exc:                        # fail closed: no verdict, no lane
+        allowed = False
+        lane["why"] = f"token_refresh unreadable ({type(exc).__name__}); fail closed"
+    if not allowed:
+        lane.update({"status": "BLOCKED_ON_TERMS:to_confirm", "terms": "to_confirm"})
+        lane.setdefault("why", "the private-use verdict or its recorded condition is absent")
+        return _jq_public(lane)
+    obs = A.read_jquants_investor_types(paths)
+    feats = _jq_features(obs)
+    lane.update({"investor_types": len({k[0] for k in feats}), "observations": len(obs),
+                 "features": len(feats)})
+    if not obs:
+        lane.update({"status": "PRIVATE_USE:UNMEASURED_LIVE_YIELD", "looks": 0, "tests_run": 0,
+                     "why": "no J-Quants document in the private store on this host yet"})
+        return _jq_public(lane)
+    from research import proposer_common as pc
+    meta = pc.universe_meta()
+    rows: list[dict[str, Any]] = []
+    looks = 0
+    for sym in JQ_TARGETS:
+        if not A.may_mint(sym, JQ_FAMILY):
+            continue
+        d = pc.bars(sym)
+        if d is None or len(d) < 500:
+            continue
+        cost = pc.cost_frac(sym, meta, d["close"])
+        if cost is None:
+            continue
+        unf = pc.artifact_hours(d)
+        for (series, feat), pts in sorted(feats.items()):
+            for direction in JQ_DIRECTIONS:
+                for hold in JQ_HOLDS:
+                    looks += 1                       # a look is charged whatever it returns
+                    sc = pc.screen(d, _jq_signals(d, pts, direction, hold), cost, unf)
+                    if sc is None:
+                        continue
+                    ref = f"private:{JQ_SOURCE}/{series}/{feat}"
+                    params = {"source": ref, "signal": feat, "transform": "level_z",
+                              "threshold": JQ_Z_THRESHOLD, "z_obs": JQ_Z_OBS,
+                              "side_when_high": direction, "lag_hours": 0,
+                              "ttl_bars": hold, "timeframe": "H1"}
+                    rows.append({"cell": f"{sym}.{JQ_FAMILY}.{ref}", "symbol": sym,
+                                 "series": series, "feature": feat, "params": params, **sc})
+    rows = pc.deflate(rows)
+    # Every look is charged in the sweep's own deflation, null screens included.
+    from research.multiplicity import deflate_t
+    for r in rows:
+        r["n_tests_sweep"] = looks
+        r["t_deflated_sweep"] = round(deflate_t(float(r["t_gross"]), max(1, looks)), 3)
+        r["proposed"] = bool(r.get("clears_cost") and r["t_deflated_sweep"] > pc.PROPOSE_T
+                             and int(r.get("n_independent", 0)) >= pc.MIN_TRADES)
+    proposals = pc.best_per_cell(rows)
+    stamp = now.isoformat(timespec="seconds")
+    cands = []
+    for r in proposals:
+        c = pc.candidate(
+            JQ_SOURCE, r["symbol"], JQ_FAMILY, dict(r["params"]),
+            mechanism=(f"J-Quants investor-type flow: {r['series']} {r['feature']} against its "
+                       f"own last {JQ_Z_OBS} weekly prints leans "
+                       f"{'with' if r['params']['side_when_high'] > 0 else 'against'} the flow "
+                       f"on {r['symbol']} for {r['params']['ttl_bars']} bars"),
+            title=r["cell"][:120],
+            evidence={k: r.get(k) for k in ("n_independent", "gross_per_trade", "net_per_trade",
+                                            "cost_frac", "t_gross", "t_deflated_sweep",
+                                            "n_tests_sweep")})
+        c.update({"kind": "hypothesis", "symbols": [r["symbol"]], "cell": r["cell"],
+                  "data_source": JQ_DATA_SOURCE, "private_use": True,
+                  "available_time": stamp, "event_time": stamp})
+        cands.append(c)
+    root = private_root or _private_root()
+    donated = None
+    if donate and cands:
+        donated = pc.donate(JQ_SOURCE, cands, looks, private_root=root)
+    charged = _charge(paths, now, looks) if donate else 0
+    ref_basis = str(donated or "") + stamp
+    lane.update({"status": "PRIVATE_USE:CELLS_BUILT", "looks": looks, "tests_run": looks,
+                 "proposed": len(proposals), "donated": len(cands) if donated else 0,
+                 "trials_charged": charged,
+                 "private_ref": (hashlib.sha256(ref_basis.encode()).hexdigest()[:16]
+                                 if donated else None)})
+    if looks == 0:
+        lane["why"] = "no target instrument with H1 bars and contract terms on this host"
+    return _jq_public(lane)
+
+
 def run(**kwargs: Any) -> dict[str, Any]:
-    """The JP lanes from the factory's stores, the event system and the funding state."""
+    """The JP lanes from the factory's stores, the event system and the funding state; then the
+    J-Quants private-use lane, whose cells stay private and whose row here is counts only."""
     kwargs.pop("code", None)
-    kwargs.setdefault("report_default", REPORT)
-    return dict(_op.run(code=CODE, region=REGION, refused=REFUSED, events=events,
-                        states=funding_state, **kwargs))
+    target = kwargs.pop("report_default", None) or REPORT
+    dry = bool(kwargs.pop("dry_run", False))
+    doc = dict(_op.run(code=CODE, region=REGION, refused=REFUSED, events=events,
+                       states=funding_state, dry_run=True, **kwargs))
+    jq = jquants_cells(kwargs.get("paths"), kwargs.get("now"), donate=not dry)
+    doc["lanes"].append(jq)
+    doc["declared"] = len(doc["lanes"])
+    doc["private_use_lanes"] = [jq["dataset"]]
+    if not dry:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(".tmp")
+        tmp.write_text(json.dumps(doc, indent=1, default=str) + "\n", "utf-8")
+        tmp.replace(target)
+    return doc
 
 
-__all__ = ["CODE", "FUNDING_COMPONENTS", "LANES", "REFUSED", "REPORT", "boj_meeting_events",
-           "events", "funding_state", "intervention_events", "run", "tankan_events",
-           "weekly_flow_events"]
+__all__ = ["CODE", "FUNDING_COMPONENTS", "JQ_PUBLIC_KEYS", "LANES", "REFUSED", "REPORT",
+           "boj_meeting_events", "events", "funding_state", "intervention_events",
+           "jquants_cells", "run", "tankan_events", "weekly_flow_events"]
