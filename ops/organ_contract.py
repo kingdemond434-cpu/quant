@@ -172,9 +172,12 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-IdentityHealer": ("desks/mt5/logs/MT5-IdentityHealer.log", 180,
                            "clears IDENTITY_BROKEN clocks. It had NEVER ONCE RUN before "
                            "2026-09-12 and nothing noticed, which is this row's whole reason"),
-    "MT5-TerminalBoot":   ("desks/mt5/logs/MT5-TerminalBoot.log", 180,
-                           "keeps the MT5 terminal up -- without it every other organ's "
-                           "market data goes stale while each reports success"),
+    # GRADED ON THE PASSED PROBE, NOT THE LOG (2026-10-06): every refusal appends to the log, so
+    # a watchdog wedged on "refusing" kept the log fresh and read OK. ensure_terminal.ps1 writes
+    # terminal_boot_ok.json only when the read-only IPC/account probe passes.
+    "MT5-TerminalBoot":   ("desks/mt5/data/terminal_boot_ok.json", 180,
+                           "keeps the MT5 terminal up and its IPC answering -- without it every "
+                           "other organ's market data goes stale while each reports success"),
     # DAILY OR EVENT-DRIVEN, so the age is generous on purpose. An alarm that fires on a
     # legitimately quiet organ is the cry-wolf failure, and these three are quiet by design.
     "MT5-ResearchReports": ("desks/mt5/reports/RESEARCH_REPORT_CLOCK.json", 1560,

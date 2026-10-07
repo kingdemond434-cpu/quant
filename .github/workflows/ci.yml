@@ -7,7 +7,9 @@ name: ci
 
 on:
   push:
-    branches: ["**"]
+    # Only the two shared branches run on push; feature branches are gated by their
+    # pull_request runs.
+    branches: ["claude/llm-auto-upgrade-verify-gcjac3", "desk-sync-clean"]
   pull_request:
   workflow_dispatch:
 
