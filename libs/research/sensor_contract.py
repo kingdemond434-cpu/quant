@@ -57,12 +57,17 @@ source diversity and the publication->receipt and receipt->classification latenc
 """
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
 import math
 import os
+import sys
+import threading
+import time
 from collections import Counter
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field, fields
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -376,6 +381,20 @@ def default_root() -> Path:
     return Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / "sensors"
 
 
+class LedgerLockTimeout(RuntimeError):
+    """Another writer held the ledger lock past `LOCK_DEADLINE_S`. Nothing is appended: a hung
+    holder costs this pass its rows (the producer re-sends them next pass), never the cycle."""
+
+
+#: The longest a writer waits for the ledger lock. A normal append holds it for well under a
+#: second; a holder past this is hung, and waiting on it would stall every producer and the
+#: hourly leg behind it.
+LOCK_DEADLINE_S = float(os.environ.get("QUANT_SENSOR_LOCK_DEADLINE_S") or 60.0)
+#: The only errors that mean "someone else holds it, try again": EWOULDBLOCK/EAGAIN from flock,
+#: EACCES/EDEADLK from msvcrt. Anything else (EBADF, ENOLCK, EIO) is permanent and raised.
+_LOCK_BUSY = frozenset({errno.EAGAIN, errno.EWOULDBLOCK, errno.EACCES, errno.EDEADLK})
+
+
 class LedgerIndexCorrupt(RuntimeError):
     """The revision index exists and cannot be read. Nothing is appended and nothing is reset:
     a silently re-created index would re-admit every vintage as new and every revision as a
@@ -384,6 +403,11 @@ class LedgerIndexCorrupt(RuntimeError):
 
 def _vintage_key(knowable_at: str) -> datetime:
     return parse_time(knowable_at) or datetime.min.replace(tzinfo=UTC)
+
+
+#: The index's own bookkeeping key: per shard, how many bytes of whole lines the index has
+#: absorbed. Never a series key (series keys contain "|").
+META = "__meta__"
 
 
 class SensorLedger:
@@ -404,7 +428,27 @@ class SensorLedger:
         with `late_vintage`, never as a revision of the newer value;
       * the index is updated only AFTER the shard write succeeded, and a corrupt index fails
         closed (`LedgerIndexCorrupt`): nothing is appended and nothing is reset.
-    `as_of` answers what the ledger said a key was worth at any instant; `latest` the newest.
+      * THE SHARDS ARE THE TRUTH, THE INDEX IS DERIVED (audit #208, 2026-10-06): the index
+        records how many bytes of each shard it has absorbed (`__meta__`). On load every shard
+        is reconciled against it: bytes written after the last index write (a crash between the
+        two writes) are replayed into the index, and an ABSENT index is rebuilt from the shards
+        -- so a deleted index or a torn pass never re-admits history as new.
+      * a torn last line (a crash mid-write) is quarantined to `torn/<day>.jsonl` and cut from
+        the shard before the next append; its observation id is never taken from the fragment,
+        so the re-sent observation is admitted.
+      * ONE WRITER AT A TIME, ACROSS PROCESSES (audit #208 round 2): load, reconcile, append and
+        the index write all run under an exclusive lock on `ledger.lock` (flock / msvcrt), and
+        every append re-reads the index and re-reconciles from the ON-DISK watermark under it --
+        so two producers (the event-surprise run and the Asia adapter) never write an index that
+        drops the other's rows while its watermark claims their bytes. Each writer has its own
+        temp file. A shard cut below its watermark (or removed) rebuilds the whole index from the
+        shards, so an index entry never outlives the row it was derived from.
+      * THE WAIT IS BOUNDED (`LOCK_DEADLINE_S`): a writer that cannot get the lock in time gets
+        status LOCK_TIMEOUT and appends nothing, so a hung holder never stalls the producers or
+        the hourly leg; only "busy" errors are retried, a permanent one (EBADF) is raised.
+    `as_of` answers what the ledger said a key was worth at any instant -- by default on the
+    DESK's clock (the later of world-knowable and received), or on the world clock with
+    basis="world"; `latest` the newest.
 
     The shards are box-local state and are NOT committed (`.gitignore`): the hourly
     `sensor_ledger` leg publishes `desks/mt5/reports/SENSOR_LEDGER.json` (see `digest`) instead.
@@ -415,13 +459,71 @@ class SensorLedger:
         self.obs_dir = self.root / "observations"
         self.clock_dir = self.root / "clocks"
         self.index_path = self.root / "latest_numeric.json"
+        self.torn_dir = self.root / "torn"
+        self.lock_path = self.root / "ledger.lock"
+        self._lock_depth = 0
+        self._tlock = threading.RLock()
         self._index: dict[str, dict[str, Any]] | None = None
+        self._meta: dict[str, Any] = {"shards": {}}
         self._seen: dict[str, set[str]] = {}
 
     # -- internals
     def _shard(self, day: str, kind: str = "observations") -> Path:
         base = self.obs_dir if kind == "observations" else self.clock_dir
         return base / f"{day}.jsonl"
+
+    @contextmanager
+    def _locked(self) -> Iterator[None]:
+        """Exclusive across processes (an OS file lock) and threads; re-entrant in one ledger."""
+        with self._tlock:
+            if self._lock_depth:
+                self._lock_depth += 1
+                try:
+                    yield
+                finally:
+                    self._lock_depth -= 1
+                return
+            self.root.mkdir(parents=True, exist_ok=True)
+            fh = self.lock_path.open("a+b")
+            try:
+                self._acquire(fh)
+                self._lock_depth = 1
+                try:
+                    yield
+                finally:
+                    self._lock_depth = 0
+                    if sys.platform.startswith("win"):
+                        import msvcrt
+                        fh.seek(0)
+                        msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+                    else:
+                        import fcntl
+                        fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+            finally:
+                fh.close()
+
+    def _acquire(self, fh: Any) -> None:
+        """Non-blocking attempts until `LOCK_DEADLINE_S`: busy is retried, anything else is
+        raised, and the deadline raises `LedgerLockTimeout`."""
+        deadline = time.monotonic() + LOCK_DEADLINE_S
+        pause = 0.005
+        while True:
+            try:
+                if sys.platform.startswith("win"):
+                    import msvcrt
+                    fh.seek(0)
+                    msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return
+            except OSError as exc:
+                if exc.errno not in _LOCK_BUSY:
+                    raise
+            if time.monotonic() >= deadline:
+                raise LedgerLockTimeout(f"{self.lock_path} held past {LOCK_DEADLINE_S:.0f}s")
+            time.sleep(pause)
+            pause = min(pause * 2, 0.25)
 
     @staticmethod
     def _entry(raw: Any) -> dict[str, Any]:
@@ -437,11 +539,35 @@ class SensorLedger:
                     "ids": sorted(set(ids))}
         raise LedgerIndexCorrupt(f"unreadable index entry {str(raw)[:80]!r}")
 
-    def _load_index(self) -> dict[str, dict[str, Any]]:
+    def _load_index(self, fresh: bool = False) -> dict[str, dict[str, Any]]:
+        if fresh:
+            self._index = None
+            self._seen = {}
         if self._index is None:
-            if not self.index_path.exists():
-                self._index = {}
-                return self._index
+            with self._locked():
+                self._index = self._read_reconciled()
+        return self._index
+
+    @staticmethod
+    def _parse_meta(meta: Any) -> dict[str, Any]:
+        """The watermark block, or LedgerIndexCorrupt: an unreadable watermark is a corrupt
+        index (fail closed), never a ValueError that crashes the caller."""
+        if meta is None:
+            return {"shards": {}}
+        if not isinstance(meta, dict) or not isinstance(meta.get("shards", {}), dict):
+            raise LedgerIndexCorrupt(f"unreadable {META} block {str(meta)[:80]!r}")
+        try:
+            return {"shards": {str(k): int(v) for k, v in meta.get("shards", {}).items()}}
+        except (TypeError, ValueError) as exc:
+            raise LedgerIndexCorrupt(f"unreadable {META} watermark: {exc}") from exc
+
+    def _read_reconciled(self) -> dict[str, dict[str, Any]]:
+        """The on-disk index, reconciled against the shards (and persisted if that changed
+        it). Called only under `_locked`."""
+        meta: Any = None
+        if not self.index_path.exists():
+            index: dict[str, dict[str, Any]] = {}       # rebuilt from the shards below
+        else:
             try:
                 doc = json.loads(self.index_path.read_text(encoding="utf-8"))
             except (OSError, ValueError) as exc:
@@ -449,8 +575,117 @@ class SensorLedger:
                                          f"{str(exc)[:120]}") from exc
             if not isinstance(doc, dict):
                 raise LedgerIndexCorrupt(f"{self.index_path}: not a JSON object")
-            self._index = {str(k): self._entry(v) for k, v in doc.items()}
-        return self._index
+            meta = doc.pop(META, None)
+            index = {str(k): self._entry(v) for k, v in doc.items()}
+        # an index with no watermark (absent, or written before the watermark existed)
+        # reconciles every shard from byte 0; ids already held are recognised, not re-added
+        self._meta = self._parse_meta(meta)
+        if self._shard_cut():
+            # a shard shorter than (or missing past) the bytes the index absorbed: entries
+            # derived from the cut rows must go, so the index is rebuilt from the shards
+            index, self._meta = {}, {"shards": {}}
+        if self._reconcile(index):
+            self._write_index(index)
+        return index
+
+    def _shard_cut(self) -> bool:
+        for day, mark in self._meta["shards"].items():
+            path = self._shard(day)
+            size = path.stat().st_size if path.is_file() else 0
+            if int(mark) > size:
+                return True
+        return False
+
+    @staticmethod
+    def _absorb(index: dict[str, dict[str, Any]], row: Mapping[str, Any]) -> bool:
+        """One shard row into the index. True when it added or completed a vintage."""
+        if (row.get("kind") == "document" or row.get("value") is None
+                or str(row.get("event_time") or UNMEASURED) == UNMEASURED):
+            return False
+        key = "|".join(str(row.get(k) or "") for k in ("sensor_id", "entity", "metric",
+                                                       "event_time"))
+        oid = str(row.get("observation_id") or "")
+        if not oid:
+            return False
+        entry = index.setdefault(key, {"vintages": [], "ids": []})
+        rx = str(row.get("received_at") or UNMEASURED)
+        for v in entry["vintages"]:
+            if str(v[1]) == oid:
+                if len(v) < 5 or v[4] == UNMEASURED:   # an older index: learn its receipt
+                    del v[4:]
+                    v.append(rx)
+                    return True
+                return False
+        entry["vintages"].append([str(row.get("knowable_at") or UNMEASURED), oid,
+                                  _f(row.get("value")), int(row.get("revision_n") or 0), rx])
+        entry["ids"] = sorted(set(entry["ids"]) | {oid})
+        return True
+
+    def _reconcile(self, index: dict[str, dict[str, Any]]) -> int:
+        """Replay every shard byte the index has not absorbed. Returns rows replayed (or
+        watermarks moved), so the caller persists the index only when something changed."""
+        changed = 0
+        shards = (sorted(p for p in self.obs_dir.glob("*.jsonl") if p.is_file())
+                  if self.obs_dir.exists() else [])
+        marks = self._meta["shards"]
+        for path in shards:
+            day = path.stem
+            size = path.stat().st_size
+            pos = int(marks.get(day, 0))
+            if pos > size:                                  # a shard cut shorter: replay it all
+                pos = 0
+            if pos == size and day in marks:
+                continue
+            with path.open("rb") as fh:
+                fh.seek(pos)
+                for raw in fh:
+                    if not raw.endswith(b"\n"):
+                        break                               # a torn tail is never absorbed
+                    pos += len(raw)
+                    try:
+                        row = json.loads(raw)
+                    except ValueError:
+                        continue
+                    if isinstance(row, dict) and self._absorb(index, row):
+                        changed += 1
+            if marks.get(day) != pos:
+                marks[day] = pos
+                changed += 1
+        return changed
+
+    def _write_index(self, index: dict[str, dict[str, Any]]) -> None:
+        self.index_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.index_path.with_name(
+            f"{self.index_path.stem}.{os.getpid()}.{threading.get_ident()}.tmp")
+        tmp.write_text(json.dumps({**index, META: self._meta}, separators=(",", ":")),
+                       encoding="utf-8")
+        os.replace(tmp, self.index_path)
+
+    def _cut_torn_tail(self, path: Path) -> int:
+        """A shard whose last byte is not a newline ends in a torn write: move the fragment to
+        `torn/<day>.jsonl` and cut it, so the next append starts on a line of its own and the
+        fragment's observation id is never treated as held. Returns bytes moved."""
+        if not path.is_file():
+            return 0
+        size = path.stat().st_size
+        if size == 0:
+            return 0
+        with path.open("rb+") as fh:
+            fh.seek(size - 1)
+            if fh.read(1) == b"\n":
+                return 0
+            back = min(size, 1 << 20)
+            fh.seek(size - back)
+            tail = fh.read(back)
+            cut = tail.rfind(b"\n")
+            keep = (size - back + cut + 1) if cut >= 0 else 0
+            fh.seek(keep)
+            fragment = fh.read()
+            self.torn_dir.mkdir(parents=True, exist_ok=True)
+            with (self.torn_dir / path.name).open("ab") as out:
+                out.write(fragment + b"\n")
+            fh.truncate(keep)
+        return len(fragment)
 
     def _seen_ids(self, day: str) -> set[str]:
         if day not in self._seen:
@@ -459,10 +694,13 @@ class SensorLedger:
             if path.is_file():
                 with path.open(encoding="utf-8", errors="replace") as fh:
                     for line in fh:
+                        if not line.endswith("\n"):
+                            break                   # a torn fragment's id is never "seen"
                         i = line.find('"observation_id": "')
                         if i >= 0:
                             j = line.find('"', i + 19)
-                            ids.add(line[i + 19:j])
+                            if j > i + 19:
+                                ids.add(line[i + 19:j])
             self._seen[day] = ids
         return self._seen[day]
 
@@ -486,26 +724,43 @@ class SensorLedger:
         return {"observation_id": str(v[1]), "value": _f(v[2]), "revision_n": int(v[3]),
                 "knowable_at": str(v[0]), "known_ids": sorted(entry["ids"])}
 
-    def as_of(self, sensor_id: str, entity: str, metric: str, event_time: Any, at: Any
-              ) -> dict[str, Any] | None:
-        """What the ledger held for one key at instant `at`: the newest vintage whose knowable
-        instant is at or before it. A vintage of unmeasured knowable instant is never returned."""
+    def as_of(self, sensor_id: str, entity: str, metric: str, event_time: Any, at: Any,
+              basis: str = "desk") -> dict[str, Any] | None:
+        """What one key was worth at instant `at`, newest vintage first among those held then.
+
+        basis="desk" (the default): a vintage counts only once the DESK held it -- the later of
+        its world-knowable instant and its receipt -- so a vintage backfilled on day 61 is never
+        returned for day 10. basis="world": the world clock alone (what was public then, which
+        a backtest may use only if it fetched it then). A vintage of unmeasured knowable
+        instant, or (desk basis) of unmeasured receipt, is never returned."""
+        if basis not in ("desk", "world"):
+            raise ValueError(f"basis must be 'desk' or 'world', not {basis!r}")
         t = parse_time(at)
         entry = self._load_index().get(self._key(sensor_id, entity, metric, event_time))
         if t is None or not entry:
             return None
-        held = [v for v in entry["vintages"]
-                if parse_time(v[0]) is not None and _vintage_key(v[0]) <= t]
+
+        def instant(v: list[Any]) -> datetime | None:
+            k = parse_time(v[0])
+            if k is None or basis == "world":
+                return k
+            rx = parse_time(v[4]) if len(v) > 4 else None
+            return None if rx is None else max(k, rx)
+
+        held = [(i, v) for v in entry["vintages"] if (i := instant(v)) is not None and i <= t]
         if not held:
             return None
-        v = max(held, key=lambda r: _vintage_key(r[0]))
+        v = max(held, key=lambda r: _vintage_key(r[1][0]))[1]
         return {"observation_id": str(v[1]), "value": _f(v[2]), "revision_n": int(v[3]),
-                "knowable_at": str(v[0])}
+                "knowable_at": str(v[0]), "received_at": str(v[4]) if len(v) > 4
+                else UNMEASURED, "basis": basis}
 
     def latest_index(self) -> dict[str, dict[str, Any]]:
         """Every key's newest vintage, keyed `sensor|entity|metric|event_time`."""
         out: dict[str, dict[str, Any]] = {}
         for k, entry in self._load_index().items():
+            if k == META:
+                continue
             if entry["vintages"]:
                 v = max(entry["vintages"], key=lambda r: _vintage_key(r[0]))
                 out[k] = {"observation_id": str(v[1]), "value": _f(v[2]),
@@ -515,9 +770,19 @@ class SensorLedger:
     def append(self, observations: Iterable[SensorObservation],
                now: datetime | None = None) -> dict[str, Any]:
         """Append what is new; a new vintage becomes a revision row. Returns the census."""
+        try:
+            with self._locked():
+                return self._append_locked(observations, now)
+        except LedgerLockTimeout as exc:
+            return {"status": "LOCK_TIMEOUT", "why": str(exc), "appended": 0,
+                    "duplicates": 0, "revisions": 0, "conflicts": 0, "refused": 0,
+                    "refusals": [], "shards": []}
+
+    def _append_locked(self, observations: Iterable[SensorObservation],
+                       now: datetime | None) -> dict[str, Any]:
         when = now or datetime.now(UTC)
         try:
-            index = self._load_index()
+            index = self._load_index(fresh=True)    # another writer may have moved it
         except LedgerIndexCorrupt as exc:
             return {"status": "INDEX_CORRUPT", "why": str(exc), "appended": 0,
                     "duplicates": 0, "revisions": 0, "conflicts": 0, "refused": 0,
@@ -581,7 +846,7 @@ class SensorLedger:
                     obs = make(**{**asdict(obs), "observation_id": "",
                                   "attributes": {**dict(obs.attributes), "late_vintage": True}})
                 entry["vintages"].append([obs.knowable_at, obs.observation_id, obs.value,
-                                          obs.revision_n])
+                                          obs.revision_n, iso(received)])
                 entry["ids"] = sorted(set(entry["ids"]) | {obs.observation_id})
                 staged[key] = entry
             elif obs.observation_id in seen:
@@ -596,6 +861,7 @@ class SensorLedger:
             for day, lines in by_day.items():
                 path = self._shard(day)
                 path.parent.mkdir(parents=True, exist_ok=True)
+                self._cut_torn_tail(path)
                 with path.open("a", encoding="utf-8") as fh:
                     fh.write("\n".join(lines) + "\n")
                 written.append(day)
@@ -604,13 +870,13 @@ class SensorLedger:
             return {"status": "WRITE_FAILED", "why": f"{type(exc).__name__}: {exc}",
                     "appended": 0, "duplicates": n_dup, "revisions": 0, "conflicts": n_conf,
                     "refused": len(refused), "refusals": refused[:8], "shards": written}
-        if staged:
-            # THE INDEX MOVES ONLY AFTER THE ROWS IT DESCRIBES ARE ON DISK.
+        if written:
+            # THE INDEX MOVES ONLY AFTER THE ROWS IT DESCRIBES ARE ON DISK, with the watermark
+            # of the bytes it now covers (a crash before this line is replayed on next load).
             index.update(staged)
-            self.index_path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = self.index_path.with_suffix(".tmp")
-            tmp.write_text(json.dumps(index, separators=(",", ":")), encoding="utf-8")
-            os.replace(tmp, self.index_path)
+            for day in written:
+                self._meta["shards"][day] = self._shard(day).stat().st_size
+            self._write_index(index)
         return {"status": "OK", "appended": n_new, "duplicates": n_dup, "revisions": n_rev,
                 "conflicts": n_conf, "refused": len(refused), "refusals": refused[:8],
                 "shards": sorted(by_day)}
@@ -628,7 +894,7 @@ class SensorLedger:
         rows = [json.dumps({"observation_id": oid, "clock": clock, "at": stamp,
                             "consumer": consumer, **(dict(detail or {}))}, default=str)
                 for oid in observation_ids]
-        with path.open("a", encoding="utf-8") as fh:
+        with self._locked(), path.open("a", encoding="utf-8") as fh:
             fh.write("\n".join(rows) + "\n")
         return len(rows)
 
@@ -821,6 +1087,8 @@ def digest(ledger: SensorLedger | None = None, now: datetime | None = None,
         index_status = "OK"
     except LedgerIndexCorrupt as exc:
         index, index_status = {}, f"INDEX_CORRUPT: {exc}"
+    except LedgerLockTimeout as exc:
+        index, index_status = {}, f"LOCK_TIMEOUT: {exc}"
     per_day: dict[str, Any] = {}
     for back in range(max(1, days)):
         day = (when - timedelta(days=back)).date().isoformat()
@@ -832,8 +1100,10 @@ def digest(ledger: SensorLedger | None = None, now: datetime | None = None,
         "schema": "sensor_ledger_digest/1",
         "at": when.isoformat(timespec="seconds"),
         "root": str(led.root),
-        "status": "MEASURED" if shards else UNMEASURED,
-        "why": "" if shards else "the ledger has no observation shard on this host yet",
+        "status": (index_status.split(":", 1)[0] if index_status != "OK" else
+                   "MEASURED" if shards else UNMEASURED),
+        "why": (index_status if index_status != "OK" else
+                "" if shards else "the ledger has no observation shard on this host yet"),
         "shards": len(shards),
         "shard_bytes": sum(p.stat().st_size for p in shards),
         "first_day": shards[0].stem if shards else UNMEASURED,

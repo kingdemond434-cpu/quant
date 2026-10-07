@@ -303,3 +303,66 @@ def test_the_intake_meter_reads_only_new_ledger_rows(desk: Path,
     nes.run(budget_s=0, now=NOW + timedelta(minutes=1))
     n2 = len(nes._day_rows(led, day))
     assert n2 > n1 and calls[-1] > 0                     # the second read resumed past offset 0
+
+
+def test_a_crash_between_the_owed_file_and_the_cursor_loses_nothing(
+        desk: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit #204 (2026-10-07): the cursor was written before the owed file, so a crash between
+    the two marked the grounds read while the spilled items were never owed (10 of 20 lost)."""
+    _write_captures([_capture(i) for i in range(20)], nes.NEWS_CAPTURES)
+    real_settle, real_json = nes._settle_pending, nes._atomic_json
+    writes: list[str] = []
+
+    def second_write_crashes(kind: str) -> None:
+        writes.append(kind)
+        if len(writes) == 2:
+            raise RuntimeError(f"crash at the {kind} write")
+
+    def settle(spilled: Any) -> int:
+        second_write_crashes("owed")
+        return real_settle(spilled)
+
+    def atomic(path: Path, value: Any) -> None:
+        if path == nes.CURSOR:
+            second_write_crashes("cursor")
+        real_json(path, value)
+
+    monkeypatch.setattr(nes, "_settle_pending", settle)
+    monkeypatch.setattr(nes, "_atomic_json", atomic)
+    with pytest.raises(RuntimeError):
+        nes.run(budget_s=1e-12)                          # spills all 20, then crashes
+    monkeypatch.setattr(nes, "_settle_pending", real_settle)
+    monkeypatch.setattr(nes, "_atomic_json", real_json)
+    done = 0
+    for k in range(1, 4):
+        done += nes.run(budget_s=0, now=NOW + timedelta(minutes=k))["items_processed"]
+    assert done == 20
+
+
+def test_a_large_owed_set_is_worked_before_any_ground_is_read(
+        desk: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit #204: the owed file grew by a pass's whole ground read and was loaded whole."""
+    monkeypatch.setattr(nes, "OWED_GATE", 10)
+    _write_captures([_capture(i) for i in range(12)], nes.NEWS_CAPTURES)
+    assert nes.run(budget_s=1e-12)["items_spilled"] == 12          # 12 owed >= the gate
+    _write_captures([_capture(100 + i) for i in range(5)], nes.NEWS_CAPTURES)
+    gated = nes.run(budget_s=0, now=NOW + timedelta(minutes=1))
+    assert gated["items_owed_from_last_pass"] == 12 and gated["items_processed"] == 12
+    nxt = nes.run(budget_s=0, now=NOW + timedelta(minutes=2))
+    assert nxt["items_processed"] == 5                             # the ground kept its cursor
+
+
+def test_file_grounds_are_read_in_bounded_slices(desk: Path,
+                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nes, "MAX_FILES_PER_READ", 3)
+    nes.MOAT_NORMALIZED.mkdir(parents=True)
+    cur = nes.load_cursor(nes.CURSOR)
+    cur["files"]["moat_normalized"] = {}                 # not first sight: every file is new
+    for i in range(7):
+        doc = {"source_id": "s", "title": f"Moat headline {i}",
+               "published_utc": (NOW - timedelta(minutes=5)).isoformat(),
+               "fetched_utc": NOW.isoformat()}
+        (nes.MOAT_NORMALIZED / f"{i}.json").write_text(json.dumps(doc))
+    sizes = [len([x for x in nes.collect_items(cursor=cur) if x.origin == "moat_normalized"])
+             for _ in range(4)]
+    assert sizes == [3, 3, 1, 0]

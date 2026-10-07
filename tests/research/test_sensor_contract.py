@@ -2,7 +2,11 @@
 revisions appended, no authority, and throughput measured rather than assumed."""
 from __future__ import annotations
 
+import json
+import multiprocessing
+import sys
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -242,10 +246,137 @@ def test_as_of_reads_what_the_ledger_held_at_an_instant(tmp_path) -> None:
     led = sc.SensorLedger(tmp_path)
     led.append(_vintages(60))
     key = ("macro:alfred", "US", "PAYEMS_change", "2026-09-30")
-    assert led.as_of(*key, T0 - timedelta(seconds=1)) is None
-    assert led.as_of(*key, T0 + timedelta(days=10))["value"] == 120.0
-    assert led.as_of(*key, T0 + timedelta(days=45))["value"] == 95.0
-    assert led.as_of(*key, T0 + timedelta(days=90))["value"] == 101.0
+    w = {"basis": "world"}
+    assert led.as_of(*key, T0 - timedelta(seconds=1), **w) is None
+    assert led.as_of(*key, T0 + timedelta(days=10), **w)["value"] == 120.0
+    assert led.as_of(*key, T0 + timedelta(days=45), **w)["value"] == 95.0
+    assert led.as_of(*key, T0 + timedelta(days=90), **w)["value"] == 101.0
+    # audit #208 (2): all three were BACKFILLED on day 60 -- the desk held none of them on day
+    # 10, so the default (desk) basis returns nothing until the receipt, then the newest
+    assert led.as_of(*key, T0 + timedelta(days=10)) is None
+    assert led.as_of(*key, T0 + timedelta(days=60, hours=1))["value"] == 101.0
+
+
+def test_a_deleted_index_is_rebuilt_from_the_shards_not_read_as_empty(tmp_path) -> None:
+    """Audit #208 must-fix 1: a deleted index re-appended the history (4 rows, not 2)."""
+    sc.SensorLedger(tmp_path).append(_vintages(30))
+    led = sc.SensorLedger(tmp_path)
+    led.index_path.unlink()
+    out = sc.SensorLedger(tmp_path).append(_vintages(31))
+    assert out["appended"] == 0 and out["duplicates"] == 2
+    n = sum(len(led.rows(p.stem)) for p in led.obs_dir.glob("*.jsonl"))
+    assert n == 2
+    latest = sc.SensorLedger(tmp_path).latest("macro:alfred", "US", "PAYEMS_change",
+                                              "2026-09-30")
+    assert latest is not None and latest["value"] == 95.0
+
+
+def test_a_crash_between_shard_and_index_is_reconciled_on_load(tmp_path) -> None:
+    """Audit #208 must-fix 2: rows on disk that the index never recorded duplicated when the
+    producer re-sent them on a later receipt day."""
+    led = sc.SensorLedger(tmp_path)
+    led.append(_vintages(0))
+    stale = led.index_path.read_text(encoding="utf-8")
+    sc.SensorLedger(tmp_path).append(_vintages(30))           # writes the day-30 vintage
+    led.index_path.write_text(stale, encoding="utf-8")         # ...but the index write was lost
+    out = sc.SensorLedger(tmp_path).append(_vintages(45))      # resent on a later receipt day
+    assert out["appended"] == 0 and out["duplicates"] == 2
+    assert sum(len(led.rows(p.stem)) for p in led.obs_dir.glob("*.jsonl")) == 2
+
+
+def test_a_torn_last_line_is_quarantined_and_its_observation_admitted(tmp_path) -> None:
+    """Audit #208 should-fix: the fragment's id was taken as held, losing the observation."""
+    led = sc.SensorLedger(tmp_path)
+    obs = _payrolls(120.0, received=T0 + timedelta(seconds=30))
+    shard = led.obs_dir / f"{T0.date().isoformat()}.jsonl"
+    shard.parent.mkdir(parents=True)
+    whole = json.dumps(obs.to_row(), default=str)
+    shard.write_text(whole[: len(whole) // 2], encoding="utf-8")   # a crash mid-write
+    out = sc.SensorLedger(tmp_path).append([obs])
+    assert out["appended"] == 1
+    rows = led.rows(T0.date().isoformat())
+    assert [r["observation_id"] for r in rows] == [obs.observation_id]
+    assert (led.torn_dir / shard.name).read_text(encoding="utf-8").startswith(whole[:20])
+
+
+def test_the_digest_status_reads_index_corrupt(tmp_path) -> None:
+    led = sc.SensorLedger(tmp_path)
+    led.append([_payrolls(120.0, received=T0 + timedelta(seconds=30))])
+    led.index_path.write_text("{not json", encoding="utf-8")
+    assert sc.digest(sc.SensorLedger(tmp_path), now=T0)["status"] == "INDEX_CORRUPT"
+
+
+def _series(entity: str, value: float, rx: datetime) -> sc.SensorObservation:
+    return sc.make(sensor_id="macro:alfred", source_id="alfred", metric="PAYEMS_change",
+                   entity=entity, kind="state", value=value, unit="k", event_time="2026-09-30",
+                   scheduled_time=T0, publication_time=T0, knowable_at=T0,
+                   knowable_basis="calendar", received_at=rx,
+                   parse_complete_at=rx + timedelta(seconds=2), licence="public domain")
+
+
+def _writer(root: str, prefix: str, n: int) -> None:
+    led = sc.SensorLedger(Path(root))             # one long-lived instance, as a producer holds
+    for i in range(n):
+        out = led.append([_series(f"{prefix}{i}", float(i), T0 + timedelta(seconds=30))])
+        assert out["status"] == "OK", out
+
+
+def test_a_stale_writer_never_drops_another_writers_rows(tmp_path) -> None:
+    """Audit #208 round 2 must-fix: A loaded, B appended, A appended -- A's index lacked B's row
+    while its watermark covered B's bytes, so B's row was never replayed and a resend landed."""
+    a, b = sc.SensorLedger(tmp_path), sc.SensorLedger(tmp_path)
+    a.latest_index()                                          # A has its index in memory
+    b.append([_series("B", 1.0, T0 + timedelta(seconds=30))])
+    a.append([_series("A", 2.0, T0 + timedelta(seconds=30))])
+    raw = json.loads(a.index_path.read_text(encoding="utf-8"))
+    assert {k.split("|")[1] for k in raw if k != sc.META} == {"A", "B"}
+    out = sc.SensorLedger(tmp_path).append([_series("B", 1.0, T0 + timedelta(days=1))])
+    assert out["appended"] == 0 and out["duplicates"] == 1
+
+
+def test_two_processes_appending_at_once_lose_nothing(tmp_path) -> None:
+    ctx = multiprocessing.get_context("fork" if sys.platform != "win32" else "spawn")
+    procs = [ctx.Process(target=_writer, args=(str(tmp_path), p, 25)) for p in ("P", "Q")]
+    for pr in procs:
+        pr.start()
+    for pr in procs:
+        pr.join(120)
+        assert pr.exitcode == 0
+    raw = json.loads((tmp_path / "latest_numeric.json").read_text(encoding="utf-8"))
+    assert len([k for k in raw if k != sc.META]) == 50
+    led = sc.SensorLedger(tmp_path)
+    assert sum(len(led.rows(p.stem)) for p in led.obs_dir.glob("*.jsonl")) == 50
+    resend = [_series(f"{p}{i}", float(i), T0 + timedelta(days=1)) for p in "PQ"
+              for i in range(25)]
+    assert sc.SensorLedger(tmp_path).append(resend)["appended"] == 0
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_a_shard_cut_below_its_watermark_prunes_the_cut_rows_from_the_index(tmp_path) -> None:
+    """Audit #208 round 2 should-fix: the cut row's index entry survived, so its resend was
+    refused as a duplicate of a row that no longer exists."""
+    led = sc.SensorLedger(tmp_path)
+    led.append([_series("A", 1.0, T0 + timedelta(seconds=30))])
+    led.append([_series("B", 2.0, T0 + timedelta(seconds=40))])
+    shard = led.obs_dir / f"{T0.date().isoformat()}.jsonl"
+    first = shard.read_text(encoding="utf-8").splitlines(keepends=True)[0]
+    shard.write_text(first, encoding="utf-8")                 # B's row is gone from the truth
+    out = sc.SensorLedger(tmp_path).append([_series("B", 2.0, T0 + timedelta(days=1))])
+    assert out["appended"] == 1
+    again = sc.SensorLedger(tmp_path).append([_series("A", 1.0, T0 + timedelta(days=1))])
+    assert again["appended"] == 0
+
+
+@pytest.mark.parametrize("meta", ["abc", {"shards": {"2026-10-02": "abc"}}, {"shards": []}])
+def test_a_malformed_watermark_is_index_corrupt_not_a_crash(tmp_path, meta) -> None:
+    led = sc.SensorLedger(tmp_path)
+    led.append([_series("A", 1.0, T0 + timedelta(seconds=30))])
+    doc = json.loads(led.index_path.read_text(encoding="utf-8"))
+    doc[sc.META] = meta
+    led.index_path.write_text(json.dumps(doc), encoding="utf-8")
+    out = sc.SensorLedger(tmp_path).append([_series("B", 2.0, T0 + timedelta(seconds=40))])
+    assert out["status"] == "INDEX_CORRUPT" and out["appended"] == 0
+    assert sc.digest(sc.SensorLedger(tmp_path), now=T0)["status"] == "INDEX_CORRUPT"
 
 
 def test_a_same_vintage_with_a_different_value_is_a_refused_conflict(tmp_path) -> None:
@@ -318,3 +449,35 @@ def test_rows_since_streams_only_new_whole_lines(tmp_path) -> None:
     more, off2 = led.rows_since(day, off)
     assert [r["value"] for r in more] == [95.0] and off2 > off
     assert led.rows_since(day, 10 ** 9)[0][0]["value"] == 120.0   # rotated: restart
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="holds the lock with flock")
+def test_a_hung_lock_holder_times_out_and_appends_nothing(tmp_path, monkeypatch) -> None:
+    import fcntl
+    monkeypatch.setattr(sc, "LOCK_DEADLINE_S", 0.3)
+    led = sc.SensorLedger(tmp_path)
+    tmp_path.mkdir(exist_ok=True)
+    with led.lock_path.open("a+b") as holder:
+        fcntl.flock(holder.fileno(), fcntl.LOCK_EX)          # a hung writer
+        out = led.append([_series("A", 1.0, T0 + timedelta(seconds=30))])
+        assert out["status"] == "LOCK_TIMEOUT" and out["appended"] == 0
+        assert not led.obs_dir.exists()
+        assert sc.digest(sc.SensorLedger(tmp_path), now=T0)["status"] == "LOCK_TIMEOUT"
+    assert sc.SensorLedger(tmp_path).append(
+        [_series("A", 1.0, T0 + timedelta(seconds=30))])["appended"] == 1
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="patches flock")
+def test_a_permanent_lock_error_is_raised_not_retried_forever(tmp_path, monkeypatch) -> None:
+    import errno
+    import fcntl
+    calls = []
+
+    def bad(fd: int, op: int) -> None:
+        calls.append(op)
+        raise OSError(errno.EBADF, "bad file descriptor")
+
+    monkeypatch.setattr(fcntl, "flock", bad)
+    with pytest.raises(OSError):
+        sc.SensorLedger(tmp_path).append([_series("A", 1.0, T0 + timedelta(seconds=30))])
+    assert len(calls) == 1

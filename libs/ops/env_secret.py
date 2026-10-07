@@ -100,7 +100,66 @@ def lookup(names: Sequence[str], files: Iterable[Path] = ()) -> tuple[str | None
     return None, "absent"
 
 
+#: Without the key inventory, only API-key-shaped names are carried. Login-shaped names (_USER,
+#: _PASSWORD, _EMAIL...) are NEVER carried by suffix: a resident hands its environment to LLM
+#: seats and miners that can echo it, and an MT5 or broker login must not ride along (audit #204).
 SECRET_SUFFIXES = ("_KEY", "_TOKEN", "_SECRET")
+#: The key inventory (libs/ops/env_keys_catalog.json): every credential the code reads, by name
+#: and alias. When it is present it is the WHOLE carried set -- catalog names only, minus the
+#: refused groups (paid data, banned sources) and the names whose source is blocked on terms.
+CATALOG = Path(__file__).with_name("env_keys_catalog.json")
+#: Catalog groups never carried: paid data, banned sources, and keys with no admitted reader.
+REFUSED_GROUPS = frozenset({"paid_blocked", "banned", "unavailable"})
+#: Sources whose machine use is held on terms: their logins stay on the box, never in a child.
+BLOCKED_ON_TERMS = frozenset({"MYFXBOOK_EMAIL", "MYFXBOOK_PASSWORD", "MYFXBOOK_SESSION"})
+#: HARD REFUSALS, with or without a catalog (audit #204, 2026-10-07): the fenced platforms
+#: (libs/data/terms_fence.py) by prefix, and the paid sources by name. A suffix-mode resident
+#: would otherwise hand X_BEARER_TOKEN or a paid vendor's token to every child it starts.
+REFUSED_PREFIXES: tuple[str, ...] = ("X_", "TWITTER_", "REDDIT_", "STOCKTWITS_", "DISCORD_")
+PAID_BLOCKED = frozenset({"TIANYANCHA_TOKEN", "BAIDU_INDEX_COOKIE", "CLOUDFLARE_API_TOKEN",
+                          "GFW_API_TOKEN", "XUEQIU_COOKIE", "WIND_KEY"})
+
+
+def _hard_refused(up: str) -> bool:
+    return up in BLOCKED_ON_TERMS or up in PAID_BLOCKED or up.startswith(REFUSED_PREFIXES)
+
+
+def _catalog_names() -> tuple[set[str], set[str]] | None:
+    """(allowed, refused) upper-cased names from the catalog; None when there is NO catalog file.
+    A catalog that exists and cannot be read is ({}, {}): it carries nothing (fail closed)."""
+    if not CATALOG.exists():
+        return None
+    allowed: set[str] = set()
+    refused: set[str] = set(BLOCKED_ON_TERMS)
+    try:
+        rows = json.loads(CATALOG.read_text(encoding="utf-8")).get("keys")
+    except (OSError, ValueError, AttributeError):
+        return set(), set()
+    if not isinstance(rows, list):
+        return set(), set()
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        names = {str(n).upper() for n in [r.get("name"), *(r.get("aliases") or [])] if n}
+        blocked = (r.get("group") in REFUSED_GROUPS
+                   or "BLOCKED_ON_TERMS" in str(r.get("status") or r.get("terms") or "").upper())
+        (refused if blocked else allowed).update(names)
+    return allowed - refused, refused
+
+
+def is_secret_name(name: str,
+                   catalog: tuple[set[str], set[str]] | bool | None = True) -> bool:
+    """A variable a resident should carry to its children. Never a hard-refused name. With the
+    catalog: a catalogued name no refused group or terms block covers. Without it: an
+    API-key-shaped name."""
+    cat = _catalog_names() if catalog is True else catalog
+    up = name.upper()
+    if _hard_refused(up):
+        return False
+    if isinstance(cat, tuple):
+        allowed, refused = cat
+        return up in allowed and up not in refused
+    return up.endswith(SECRET_SUFFIXES)
 
 
 def _registry_all(hive: str) -> dict[str, str]:
@@ -128,16 +187,18 @@ def _registry_all(hive: str) -> dict[str, str]:
 
 
 def fresh_secrets(existing: dict[str, str] | None = None) -> dict[str, str]:
-    """Secret-looking variables (`*_KEY`, `*_TOKEN`, `*_SECRET`) that the registry holds and the
-    given environment lacks: the keys a `setx /M` added after this process started. A resident
-    merges them into each child's environment, so a key the principal sets reaches the next pass
-    without a reboot. Only fills ABSENT names; never overrides what the process already has."""
+    """Credential variables (`is_secret_name`: catalogued and not refused, or `*_KEY`/`*_TOKEN`/
+    `*_SECRET` when there is no catalog) that the registry holds and the environment lacks:
+    the keys a `setx /M` added after this process started. A resident merges them into each
+    child's environment, so a key the principal sets reaches the next pass without a reboot.
+    Only fills ABSENT names; never overrides what the process already has."""
     env = os.environ if existing is None else existing
     have = {k.upper() for k, v in env.items() if str(v).strip()}
     out: dict[str, str] = {}
+    cat = _catalog_names()
     for hive in ("machine", "user"):
         for name, value in _registry_all(hive).items():
-            if (name.upper().endswith(SECRET_SUFFIXES) and value.strip()
+            if (is_secret_name(name, cat) and value.strip()
                     and name.upper() not in have and name not in out):
                 out[name] = os.path.expandvars(value.strip())
     return out

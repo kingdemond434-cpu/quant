@@ -623,6 +623,14 @@ def _mark_files(paths: Iterable[Path], key: str, cur: dict[str, Any]) -> None:
 #: taken, so the rest is read on the next pass (60 s later on the resident) and nothing is lost.
 #: It bounds the memory one pass can hold, which a single fh.read() of a ground did not.
 MAX_ROWS_PER_READ = 20_000
+#: The same bound for the file grounds (audit #204, 2026-10-07): new files a pass takes from the
+#: moat store or one seat, and GDELT blobs from one vault. The oldest go first and the rest stay
+#: unmarked, so they are read on the next pass -- a bound on memory, never a drop.
+MAX_FILES_PER_READ = 2_000
+MAX_GDELT_BLOBS_PER_READ = 96
+#: While the owed file holds this many items, a pass works the owed set and reads NO ground: the
+#: grounds keep their cursors, so nothing is skipped, and the owed file cannot grow without bound.
+OWED_GATE = 20_000
 
 
 def _jsonl_since(path: Path, key: str, cur: dict[str, Any],
@@ -682,8 +690,9 @@ def collect_items(limit: int = MAX_ITEMS, notes: list[str] | None = None,
     probe_cap = limit if limit > 0 else 4000
     if MOAT_NORMALIZED.exists():
         files = list(MOAT_NORMALIZED.rglob("*.json"))
-        fresh = _new_files(files, "moat_normalized", cur) if cursor is not None else \
-            sorted(files, key=lambda p: p.stat().st_mtime)[-probe_cap:]
+        fresh = (_new_files(files, "moat_normalized", cur)[:MAX_FILES_PER_READ]
+                 if cursor is not None
+                 else sorted(files, key=lambda p: p.stat().st_mtime)[-probe_cap:])
         for path in fresh:
             doc = _read_json(path)
             if isinstance(doc, dict):
@@ -710,10 +719,11 @@ def collect_items(limit: int = MAX_ITEMS, notes: list[str] | None = None,
             continue
         seen_seats += 1
         files = list(folder.glob("*.json*"))
-        fresh = (_new_files(files, f"seat:{seat}", cur) if cursor is not None
+        fresh = (_new_files(files, f"seat:{seat}", cur)[:MAX_FILES_PER_READ]
+                 if cursor is not None
                  else sorted(files, key=lambda p: p.stat().st_mtime)[-8:])
         for path in fresh:
-            rows = (_rows_of(path, 10**9) if not path.name.endswith(".gz") else [])
+            rows = (_rows_of(path, MAX_ROWS_PER_READ) if not path.name.endswith(".gz") else [])
             for row in rows:
                 got = _item(str(row.get("source") or seat), row, f"intelligence:{seat}")
                 if got is not None:
@@ -728,9 +738,13 @@ def collect_items(limit: int = MAX_ITEMS, notes: list[str] | None = None,
         if not folder.is_dir():
             g["status"] = f"{folder} absent: {UNMEASURED} on this box"
             continue
+        taken = 0
         for meta_path in sorted(folder.glob("*.meta.json")):
             digest = meta_path.name.split(".", 1)[0]
             if digest in cur["gdelt"]:
+                continue
+            if taken >= MAX_GDELT_BLOBS_PER_READ:
+                g["deferred"] = int(g.get("deferred", 0)) + 1     # unmarked: next pass reads it
                 continue
             meta = _read_json(meta_path) or {}
             slot = _gdelt_slot(meta)
@@ -749,6 +763,7 @@ def collect_items(limit: int = MAX_ITEMS, notes: list[str] | None = None,
             except (OSError, EOFError, ValueError):
                 continue
             items, c = gdelt_items(body, slot, ground, str(meta.get("fetched_utc") or ""))
+            taken += 1
             g["blobs"] += 1
             for k in ("rows", "documents", "groups", "economic_groups"):
                 g[k] += int(c.get(k, 0))
@@ -1286,7 +1301,13 @@ def _run_pass(*, limit: int, deep_threshold: float, dry_run: bool, now: datetime
         by_kind.setdefault(str(r.get("kind") or "other"), []).append(r)
     census: dict[str, Any] = {}
     owed = [] if dry_run else _unspill()
-    items = owed + collect_items(limit, notes, cursor=cur, census=census)
+    if len(owed) >= OWED_GATE:
+        notes.append(f"{len(owed)} owed items >= {OWED_GATE}: this pass works the owed set and "
+                     f"reads no ground (their cursors stay put, nothing is skipped)")
+        census["owed_gate"] = {"owed": len(owed), "gate": OWED_GATE}
+        items = list(owed)
+    else:
+        items = owed + collect_items(limit, notes, cursor=cur, census=census)
     fresh: list[Item] = []
     for i in items:
         if i.item_id not in seen_items:
@@ -1477,8 +1498,12 @@ def _run_pass(*, limit: int, deep_threshold: float, dry_run: bool, now: datetime
     except Exception as exc:                             # pragma: no cover - ledger guard
         notes.append(f"sensor ledger refused: {type(exc).__name__}: {str(exc)[:160]}")
         intake = None
-    _atomic_json(CURSOR, cur)
+    # THE OWED FILE IS WRITTEN BEFORE THE CURSOR (audit #204). The cursor marks the grounds read
+    # and the items seen; written first, a crash before the owed file landed lost every spilled
+    # item for good (seen, past the offset, and absent from the old owed set). In this order a
+    # crash between the two re-reads the grounds from the old cursor: a duplicate, never a loss.
     _settle_pending(spilled)
+    _atomic_json(CURSOR, cur)
     payload["sensor_ledger"] = ledger_census
     payload["intake"] = intake
     _atomic_json(REPORT, payload)
