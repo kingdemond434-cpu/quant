@@ -176,8 +176,8 @@ def _within(stamp: Any, now: Any, days: float) -> bool:
                 t = t.replace(tzinfo=UTC)
     except (TypeError, ValueError, OSError):
         return False
-    age = (now - t).total_seconds() / 86_400.0
-    return 0.0 <= age <= days
+    age = float((now - t).total_seconds()) / 86_400.0
+    return bool(0.0 <= age <= days)
 
 
 def measure_llm(rows: list[dict[str, Any]], now: Any, is_free: Any,
