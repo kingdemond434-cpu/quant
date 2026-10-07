@@ -42,11 +42,19 @@ def _graph_counts() -> tuple[int, dict[str, int]]:
     return sum(by_fam.values()), by_fam
 
 
+#: Censuses with a dedicated reader, so the generic `*_TRIALS.jsonl` sweep must not sum them as
+#: well: MASS_SCREEN_TRIALS.jsonl is charged by `_mass_screen_counts` in `lifetime`, and summing
+#: it here too charged every mass-screen cell twice (audit of #172, 2026-10-07).
+_DEDICATED_CENSUSES = frozenset({"MASS_SCREEN_TRIALS.jsonl"})
+
+
 def _census_files() -> list[str]:
     """`data/*_TRIALS.jsonl`, matched case-SENSITIVELY: Windows globbing ignores case and would
-    also catch `learned_miners_trials.jsonl`, which is charged by its own reader below."""
+    also catch `learned_miners_trials.jsonl`, which is charged by its own reader below. A census
+    with its own reader (`_DEDICATED_CENSUSES`) is left to it: every trial is charged once."""
     return sorted(f for f in glob.glob(str(DESK / "data" / "*_TRIALS.jsonl"))
-                  if Path(f).name.endswith("_TRIALS.jsonl"))
+                  if Path(f).name.endswith("_TRIALS.jsonl")
+                  and Path(f).name not in _DEDICATED_CENSUSES)
 
 
 def _censused_sources() -> set[str]:
