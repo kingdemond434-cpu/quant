@@ -616,3 +616,103 @@ def test_the_asia_events_step_is_bounded_by_the_latent_deadline(
     monkeypatch.setattr(mse, "_registry", lambda: {})
     got = mse.build(budget_s=600.0, apply=False, latent_budget_s=150.0)
     assert got["asia_events"]["status"].startswith("SKIPPED_BUDGET")
+
+
+# ------------------------------------------- latent budget: the skip order rotates (#217 follow-up)
+@pytest.mark.parametrize("k", [2, 3, 5])   # budget_s floors at 1 s, i.e. k >= 2
+def test_every_input_is_loaded_within_ceil_n_over_k_passes(
+        world: Path, monkeypatch: pytest.MonkeyPatch, k: int) -> None:
+    import math
+    import types
+    clock = _Clock()
+    monkeypatch.setattr(mse, "time", types.SimpleNamespace(monotonic=clock.monotonic))
+    loaded: list[str] = []
+
+    def one_second_load(inp: Any, *a: Any) -> Any:      # every load costs 1 s of fake clock
+        loaded.append(inp.id)
+        clock.jump(1.0)
+        return [], {"input": inp.id, "label": inp.label, "kind": inp.kind, "status": "ABSENT"}
+
+    monkeypatch.setattr(mse, "load_input", one_second_load)
+    specs = (mse.LATENT_BY_ID["asia_export"], mse.LATENT_BY_ID["asia_funding"])
+    keys = [f"{s.id}.{i.id}" for s in specs for i in s.inputs]
+    n = len(keys)
+    assert n > k
+    seen: set[str] = set()
+    passes = math.ceil(n / k)
+    for p in range(passes):
+        before = len(loaded)
+        # The budget fits exactly k loads: the (k+1)-th check reads past the deadline.
+        rep = mse.build_latent(NOW + timedelta(hours=p), budget_s=k - 0.5, apply=True,
+                               cells=False, specs=specs, environ={})
+        this = loaded[before:]
+        assert len(this) == min(k, n) and len(set(this)) == len(this)
+        assert rep["skipped_inputs"]["n"] == n - k
+        seen |= set(rep["fed"]["datasets"]) - set(rep["skipped_inputs"]["inputs"])
+    assert seen == set(keys), f"never loaded in {passes} passes: {sorted(set(keys) - seen)}"
+    # The order is persisted in the existing state file, one stamp per loaded input.
+    state = json.loads((world / "latent" / "state.json").read_text())
+    assert set(state[mse.LOADED_AT_KEY]) == set(keys)
+    # ... and the NEXT pass starts again from the least recently loaded inputs.
+    nxt = mse.load_order(specs, state[mse.LOADED_AT_KEY])[:k]
+    oldest = sorted(keys, key=lambda x: (state[mse.LOADED_AT_KEY][x], keys.index(x)))[:k]
+    assert nxt == oldest
+
+
+def test_load_order_puts_never_loaded_and_unreadable_stamps_first() -> None:
+    spec = mse.LATENT_BY_ID["asia_export"]
+    keys = [f"{spec.id}.{i.id}" for i in spec.inputs]
+    stamps = {keys[0]: (NOW - timedelta(hours=1)).isoformat(),
+              keys[1]: (NOW - timedelta(hours=5)).isoformat(),
+              keys[2]: "not a time"}
+    order = mse.load_order((spec,), stamps)
+    never = [x for x in keys if x not in stamps or x == keys[2]]
+    assert order[:len(never)] == never                    # declared order among the unstamped
+    assert order[len(never):] == [keys[1], keys[0]]       # then oldest stamp first
+
+
+# -------------------------------------------- Asia events: a stale file is refused (#217 follow-up)
+def _asia_doc(world: Path, now: datetime) -> dict[str, Any]:
+    mse.build_asia_events(now, world / "axes", apply=True)
+    return json.loads((world / "latent" / "asia_events.json").read_text())
+
+
+def test_a_stale_asia_events_file_is_named_stale_and_not_used(
+        world: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+
+    import state_vector_build as svb
+    now = datetime(2026, 9, 21, 4, 0, tzinfo=UTC)
+    path = world / "latent" / "asia_events.json"
+    monkeypatch.setattr(svb, "ASIA_EVENTS", path)
+    doc = _asia_doc(world, now)
+    ev, _ = svb.event_state(now, ["USDKRW"])
+    assert ev["asia_events_status"] == "OK" and ev["n_asia_objects"] > 0
+    # The SAME content, generated past the horizon: STALE, no object reaches the state vector,
+    # although the file's mtime is brand new (the age is the file's own stamp, never mtime).
+    old = now - timedelta(hours=svb.ASIA_EVENTS_MAX_AGE_H + 1)
+    path.write_text(json.dumps({**doc, "generated_at": old.isoformat()}))
+    os.utime(path, None)
+    ev, why = svb.event_state(now, ["USDKRW"])
+    assert why == "" and ev["asia_events_status"].startswith("STALE")
+    assert ev["n_asia_objects"] == 0 and ev["n_asia_rows"] > 0      # the schedule still stands
+    assert "asia_events" not in ev["per_symbol"]["USDKRW"]
+    # No generated_at: the newest released row's stamp bounds the age from below.
+    released = [o for o in doc["events"] if o["stage"] not in ("ANNOUNCED", "EXPECTATION")
+                and o.get("knowable_at")]
+    assert released
+    bare = {k: v for k, v in doc.items() if k != "generated_at"}
+    newest = max(pd.Timestamp(o["knowable_at"]) for o in released
+                 if pd.Timestamp(o["knowable_at"]) <= pd.Timestamp(now))
+    st, age = svb.asia_events_age(bare, newest.to_pydatetime() + timedelta(hours=1))
+    assert st == "OK" and age == pytest.approx(1.0)
+    st, _ = svb.asia_events_age(bare, newest.to_pydatetime() + timedelta(hours=7))
+    assert st.startswith("STALE") and "knowable_at" in st
+    # Nothing to date it, or a stamp from the future: UNMEASURED, never OK.
+    assert svb.asia_events_age({"events": []}, now)[0].startswith("UNMEASURED")
+    future = {**doc, "generated_at": (now + timedelta(hours=2)).isoformat()}
+    assert svb.asia_events_age(future, now)[0].startswith("UNMEASURED")
+    # An absent file is UNMEASURED and contributes nothing, as before.
+    path.unlink()
+    ev, _ = svb.event_state(now, ["USDKRW"])
+    assert ev["asia_events_status"].startswith("UNMEASURED") and ev["n_asia_objects"] == 0

@@ -1267,6 +1267,9 @@ LATENT_BUDGET_S = 150.0
 FED_WINDOW_H = 24
 #: The consumer name under which the latent build records its reads for the dataset-use census.
 FED_CONSUMER = "macro_state_engine.latent"
+#: Key in `data/latent/state.json` holding when each `<spec>.<input>` was last LOADED (attempted,
+#: whatever it returned). The load order is read from it: least recently loaded first.
+LOADED_AT_KEY = "loaded_at"
 
 
 @dataclass(frozen=True)
@@ -2515,6 +2518,21 @@ def record_fed_reads(consumed: dict[str, dict[str, Any]], now: datetime) -> str:
 
 
 # ---------------------------------------------------------------------------- the latent pass
+def load_order(specs: tuple[LatentSpec, ...] | list[LatentSpec],
+               loaded_at: dict[str, Any]) -> list[str]:
+    """Every declared `<spec>.<input>` key, least recently loaded first.
+
+    A key never loaded (or whose stamp cannot be read) goes before every stamped one; ties keep
+    the declared order. When the latent budget fits k of n inputs a pass loads the k oldest and
+    stamps them newest, so the order ROTATES and every input is loaded within ceil(n/k) passes.
+    A fixed declared order skipped the same tail inputs every pass, for ever."""
+    keyed: list[tuple[int, float, int, str]] = []
+    for i, key in enumerate(f"{spec.id}.{inp.id}" for spec in specs for inp in spec.inputs):
+        t = _iso_t(loaded_at.get(key))
+        keyed.append((0, 0.0, i, key) if t is None else (1, t.timestamp(), i, key))
+    return [k for *_r, k in sorted(keyed)]
+
+
 def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
                  axes_dir: Path | None = None, latent_dir: Path | None = None,
                  series_root: Path | None = None, intel_path: Path | None = None,
@@ -2534,21 +2552,37 @@ def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
     ledgers: dict[str, list[dict[str, Any]]] = {}
     consumed: dict[str, dict[str, Any]] = {}
     skipped_inputs: list[str] = []
+    state_path = latent_dir / "state.json"
+    state = _read_json(state_path)
+    state = state if isinstance(state, dict) else {}
+    prior_loaded = state.get(LOADED_AT_KEY)
+    loaded_at: dict[str, Any] = dict(prior_loaded) if isinstance(prior_loaded, dict) else {}
+    at = now.isoformat(timespec="seconds")
+    # LOADING ROTATES (follow-up to the SKIPPED_BUDGET bound). Inputs are loaded least recently
+    # loaded first, across every dataset, and each load is stamped in state.json, so a budget
+    # that cannot fit them all skips a DIFFERENT tail each pass instead of starving one for ever.
+    by_key = {f"{spec.id}.{inp.id}": inp for spec in specs for inp in spec.inputs}
+    loads: dict[str, tuple[list[dict[str, Any]], dict[str, Any]]] = {}
+    skipped: set[str] = set()
+    for key in load_order(specs, loaded_at):
+        inp = by_key[key]
+        if time.monotonic() > deadline:
+            # Past the latent budget no further input is LOADED; it is named, never silently
+            # dropped, and the dataset rule below reads it as not fed this pass.
+            skipped.add(key)
+            loads[key] = ([], {"input": inp.id, "label": inp.label, "kind": inp.kind,
+                               "status": "SKIPPED_BUDGET",
+                               "why": "latent budget spent: not loaded this pass"})
+            continue
+        loads[key] = load_input(inp, axes_dir, docs, environ)
+        loaded_at[key] = at
     for spec in specs:
         recs: list[dict[str, Any]] = []
         prep: list[_Prepared] = []
         for inp in spec.inputs:
-            obs: list[dict[str, Any]]
-            rec: dict[str, Any]
-            if time.monotonic() > deadline:
-                # Past the latent budget no further input is LOADED; it is named, never
-                # silently dropped, and the dataset rule below reads it as not fed this pass.
-                obs, rec = [], {"input": inp.id, "label": inp.label, "kind": inp.kind,
-                                "status": "SKIPPED_BUDGET",
-                                "why": "latent budget spent: not loaded this pass"}
+            obs, rec = loads[f"{spec.id}.{inp.id}"]
+            if f"{spec.id}.{inp.id}" in skipped:
                 skipped_inputs.append(f"{spec.id}.{inp.id}")
-            else:
-                obs, rec = load_input(inp, axes_dir, docs, environ)
             recs.append(rec)
             consumed[f"{spec.id}.{inp.id}"] = {"inp": inp, "rec": rec, "fed": bool(obs)}
             if obs:
@@ -2596,9 +2630,7 @@ def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
             "axis_doc": f"desks/mt5/data/axes/{spec.dataset_id}.json" if full else None,
             "lake_series": f"desks/mt5/data/lake/series/{spec.dataset_id}.csv" if full else None,
             "ledger": f"desks/mt5/data/latent/{spec.dataset_id}.vintages.jsonl"}
-    state_path = latent_dir / "state.json"
-    state = _read_json(state_path)
-    state = state if isinstance(state, dict) else {}
+    state[LOADED_AT_KEY] = loaded_at
     prior_fed = state.get("fed")
     fed = fed_block(consumed, prior_fed if isinstance(prior_fed, dict) else {}, now)
     state["fed"] = {k: v["last_fed_at"] for k, v in fed["datasets"].items()

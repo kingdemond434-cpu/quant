@@ -215,7 +215,7 @@ def event_state(now: datetime, symbols: list[str]) -> tuple[dict, str]:
         # KOSPI200 expiry, gotobi, the SHFE Friday stocks, the NBS PMI or the LPR; they are
         # rule-derived here and scoped by currency AND instrument, so a mainland release is an
         # event for USDCNH and copper and an ordinary hour for EURUSD.
-        asia_rows, asia_objs = _asia_rows(now)
+        asia_rows, asia_objs, asia_status = _asia_rows(now)
         rows = parse_rows(_calendar_rows() + asia_rows)
         if not rows:
             return {"phase": NORMAL, "basis": "no calendar vintages with usable stamps"}, ""
@@ -245,6 +245,7 @@ def event_state(now: datetime, symbols: list[str]) -> tuple[dict, str]:
         worst = min(per.values(), key=lambda d: order.get(str(d.get("phase")), 99))
         return {"phase": worst["phase"], "n_calendar_rows": len(rows),
                 "n_asia_rows": len(asia_rows), "n_asia_objects": len(asia_objs),
+                "asia_events_status": asia_status,
                 "per_symbol": per}, ""
     except Exception as exc:
         return {}, f"event: {type(exc).__name__}: {exc}"
@@ -252,14 +253,56 @@ def event_state(now: datetime, symbols: list[str]) -> tuple[dict, str]:
 
 #: The Asia event objects `macro_state_engine` publishes each hour (lifecycle + sensor values).
 ASIA_EVENTS = BASE / "data" / "latent" / "asia_events.json"
+#: Hours an Asia events file stays CURRENT, measured from its own `generated_at` (never mtime: a
+#: copy, checkout or sync rewrites mtime without making the content any newer). Every stage and
+#: decay weight in it was judged at generation time, so past this a file describes an old hour.
+#: Six missed hourly passes of the producer.
+ASIA_EVENTS_MAX_AGE_H = 6.0
+#: Clock skew tolerated before a `generated_at` in the future is refused.
+ASIA_EVENTS_SKEW_S = 300.0
+_ASIA_NOT_YET_KNOWN = ("ANNOUNCED", "EXPECTATION")
 
 
-def _asia_rows(now: datetime) -> tuple[list[dict], list[dict]]:
-    """(schedule rows for the lifecycle, lifecycle objects near now).
+def asia_events_age(doc: object, now: datetime) -> tuple[str, float | None]:
+    """(status, age in hours) of a published Asia events document, from its OWN stamps.
+
+    The stamp is `generated_at`; failing that, the newest `knowable_at` among rows already
+    released (a lower bound on when the file was written: it cannot predate a release it holds).
+    `OK` inside ASIA_EVENTS_MAX_AGE_H; `STALE` past it (not current state); `UNMEASURED` when no
+    stamp can be read or it lies in the future -- absence is never a clean verdict."""
+    if not isinstance(doc, dict):
+        return "UNMEASURED: asia_events.json is not a JSON object", None
+    now = now if now.tzinfo else now.replace(tzinfo=UTC)
+    basis = "generated_at"
+    stamp = pd.to_datetime(doc.get("generated_at"), utc=True, errors="coerce")
+    if stamp is None or pd.isna(stamp):
+        basis = "newest released row's knowable_at (generated_at absent)"
+        known = [pd.to_datetime(o.get("knowable_at"), utc=True, errors="coerce")
+                 for o in doc.get("events") or []
+                 if isinstance(o, dict) and o.get("stage") not in _ASIA_NOT_YET_KNOWN]
+        known = [t for t in known if t is not None and not pd.isna(t)
+                 and t.to_pydatetime() <= now]
+        stamp = max(known) if known else None
+    if stamp is None or pd.isna(stamp):
+        return "UNMEASURED: asia_events.json carries no generated_at and no released row", None
+    age_h = (now - stamp.to_pydatetime()).total_seconds() / 3600.0
+    if age_h < -ASIA_EVENTS_SKEW_S / 3600.0:
+        return f"UNMEASURED: {basis} {stamp.isoformat()} is in the future of {now.isoformat()}", \
+            round(age_h, 3)
+    if age_h > ASIA_EVENTS_MAX_AGE_H:
+        return (f"STALE: {basis} {stamp.isoformat()} is {age_h:.1f}h old (horizon "
+                f"{ASIA_EVENTS_MAX_AGE_H:g}h); not used as current state"), round(age_h, 3)
+    return "OK", round(age_h, 3)
+
+
+def _asia_rows(now: datetime) -> tuple[list[dict], list[dict], str]:
+    """(schedule rows for the lifecycle, lifecycle objects near now, the objects' status).
 
     The schedule is rule-derived HERE, so the market phase never waits on another organ; the
     information lifecycle (expectation, surprise, revision, decay) comes from the artifact
-    `macro_state_engine` writes, and an absent artifact simply contributes no objects.
+    `macro_state_engine` writes, and an absent artifact simply contributes no objects. A file
+    past ASIA_EVENTS_MAX_AGE_H by its own stamp is STALE and contributes no objects either: its
+    stages were judged hours ago and are not the current state.
     """
     from datetime import timedelta
 
@@ -277,6 +320,9 @@ def _asia_rows(now: datetime) -> tuple[list[dict], list[dict]]:
     objs: list[dict] = []
     try:
         doc = json.loads(ASIA_EVENTS.read_text("utf-8"))
+        status, _age = asia_events_age(doc, now)
+        if status != "OK":
+            return rows, [], status
         lo, hi = now - timedelta(days=3), now + timedelta(days=2)
         for o in doc.get("events") or []:
             if not isinstance(o, dict):
@@ -287,9 +333,11 @@ def _asia_rows(now: datetime) -> tuple[list[dict], list[dict]]:
             scope = o.get("scope") or {}
             objs.append({**o, "currency": scope.get("currencies") or [],
                          "instruments": scope.get("instruments") or []})
-    except (OSError, ValueError, AttributeError):
-        objs = []
-    return rows, objs
+    except OSError as exc:
+        return rows, [], f"UNMEASURED: asia_events.json unreadable ({type(exc).__name__})"
+    except (ValueError, AttributeError) as exc:
+        return rows, [], f"UNMEASURED: asia_events.json malformed ({type(exc).__name__})"
+    return rows, objs, "OK"
 
 
 def _calendar_rows() -> list[dict]:
