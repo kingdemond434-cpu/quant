@@ -80,7 +80,23 @@ OPERATORS = UNARY + WINDOWED + BINARY + BINARY_WINDOWED
 #: with the panel series under the node's own key (`alpha_dsl.seed_panels`) and read NaN
 #: everywhere else -- the grammar's standing rule for a series it cannot compute.
 PANEL = ("xrank", "xzscore")
-ALL_OPERATORS = OPERATORS + PANEL
+#: THE REGIME SWITCH (2026-09-30): `["if_pos", gate, a, b]` is `a` where the gate is > 0 and
+#: `b` elsewhere -- the published alphas' `(cond ? a : b)`, which eleven of WorldQuant's 101 need
+#: and no composition of the operators above can say (there are no literals to build a step).
+#: The gate must be a pure number, exactly as `trade_when`'s is; `a` and `b` must share a kind.
+#: Where the gate was never measured the node is NaN, never `b`: an unmeasured regime is not the
+#: "else" regime. DELIBERATELY NOT IN `OPERATORS`, for the reason PANEL is not: the typed
+#: samplers infer arity from the four classes above, so the searches never draw it by accident;
+#: a translated formula or a caller that names it is checked, evaluated and mutated here.
+#: A BRANCH (never the gate) may be a numeric literal -- the formulas' `? -1 : 1` -- and this is
+#: the one place the grammar admits one. A nonzero literal is a pure number, so the other branch
+#: must be one too; a literal 0 takes the other branch's kind ("flat in the else regime").
+TERNARY = ("if_pos",)
+
+
+def _lit(x: Any) -> bool:
+    return isinstance(x, (int, float)) and not isinstance(x, bool)
+ALL_OPERATORS = OPERATORS + PANEL + TERNARY
 WINDOWS = (2, 3, 5, 8, 12, 24, 48, 120, 240)
 MAX_DEPTH = 5
 #: Bars of log return that `vol` is measured over. One trading day on H1, so the terminal means
@@ -450,6 +466,11 @@ def _eval(expr: Expr, frames: dict[str, pd.Series], idx: pd.Index,
         if op == "scale":
             den = a.abs().rolling(w, min_periods=w).sum()
             return a / den.where(den > 1e-12)
+    if op in TERNARY:
+        g = evaluate(expr[1], frames, memo)
+        a, b = (pd.Series(float(e), index=idx) if _lit(e) else evaluate(e, frames, memo)
+                for e in expr[2:4])
+        return a.where(g > 0, b).where(g.notna())
     if op in BINARY:
         a, b = evaluate(expr[1], frames, memo), evaluate(expr[2], frames, memo)
         if op == "trade_when":
@@ -736,6 +757,19 @@ def type_of(expr: Expr) -> str:
     if op in PANEL:
         t = type_of(expr[1]) if len(expr) > 1 else INVALID
         return INVALID if t == INVALID else ("RANK" if op == "xrank" else "Z")
+    if op in TERNARY:
+        if len(expr) != 4:
+            return INVALID
+        g = type_of(expr[1])
+        a, b = ("ZERO" if _lit(e) and e == 0 else "Z" if _lit(e) else type_of(e)
+                for e in expr[2:4])
+        if INVALID in (g, a, b) or g not in _FREE:
+            return INVALID
+        if "ZERO" in (a, b):
+            return "Z" if a == b else (b if a == "ZERO" else a)
+        if a == b:
+            return a
+        return "Z" if a in _FREE and b in _FREE else INVALID
     return INVALID
 
 
@@ -862,6 +896,19 @@ def dimension_of(expr: Expr) -> Dimension | None:
     if op in PANEL:
         a = dimension_of(expr[1]) if len(expr) > 1 else None
         return None if a is None else DIMENSIONLESS             # a rank or a z across peers
+    if op in TERNARY:
+        if len(expr) != 4:
+            return None
+        if _lit(expr[1]):
+            return None
+        g = dimension_of(expr[1])
+        a, b = (DIMENSIONLESS if _lit(e) else dimension_of(e) for e in expr[2:4])
+        for i in (0, 1):                                        # a literal 0 is kind-free
+            if _lit(expr[2 + i]) and expr[2 + i] == 0:
+                a, b = (b, b) if i == 0 else (a, a)
+        if g != DIMENSIONLESS or a is None or a != b:
+            return None
+        return a                                                # both branches agree
     return None
 
 
@@ -1030,6 +1077,19 @@ def unit_of(expr: Expr) -> Unit | None:
     if op in PANEL:
         a = unit_of(expr[1]) if len(expr) > 1 else None
         return None if a is None else NO_UNIT                   # a rank or a z across peers
+    if op in TERNARY:
+        if len(expr) != 4:
+            return None
+        if _lit(expr[1]):
+            return None
+        g = unit_of(expr[1])
+        a, b = (NO_UNIT if _lit(e) else unit_of(e) for e in expr[2:4])
+        for i in (0, 1):
+            if _lit(expr[2 + i]) and expr[2 + i] == 0:
+                a, b = (b, b) if i == 0 else (a, a)
+        if g is None or not g.is_dimensionless or a is None or a != b:
+            return None
+        return a
     return None
 
 
@@ -1205,6 +1265,11 @@ def _structurally_valid(expr: Expr, allow_drivers: bool = True,
                 and isinstance(expr[3], int) and expr[3] in WINDOWS)
     if op in PANEL:
         return len(expr) == 2 and _structurally_valid(expr[1], allow_drivers, terminals)
+    if op in TERNARY:
+        return (len(expr) == 4 and _structurally_valid(expr[1], allow_drivers, terminals)
+                and all(_lit(e) or _structurally_valid(e, allow_drivers, terminals)
+                        for e in expr[2:4])
+                and not (_lit(expr[2]) and _lit(expr[3])))
     return False
 
 
@@ -1309,7 +1374,7 @@ def mutate(expr: Expr, rng: np.random.Generator, allow_drivers: bool = True,
             new = list(node)
             new[-1] = int(rng.choice(WINDOWS))
         elif move < 0.65:
-            cls = next(c for c in (UNARY, WINDOWED, BINARY, BINARY_WINDOWED, PANEL)
+            cls = next(c for c in (UNARY, WINDOWED, BINARY, BINARY_WINDOWED, PANEL, TERNARY)
                        if node[0] in c)
             new = list(node)
             new[0] = _pick(rng, cls, op_weights)

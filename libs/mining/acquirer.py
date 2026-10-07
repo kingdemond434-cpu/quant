@@ -9,9 +9,10 @@ nothing is doubled, which is `test_cursor_resume`.
 
 EVERY SOURCE LEAVES AN OUTCOME, every run. `ok`, `empty`, `BLOCKED_AUTH` (a login or paid key the
 box does not hold; the keyless path runs where one exists), `BLOCKED_FETCH` (403/WAF/DNS: the
-host refused, recorded with its status), `DEFERRED_TO_OWNER` (another lane owns this fetcher and
-its feed is present, so this one does not fetch twice), `NOT_DUE` or `ERROR`. A source that
-silently produced nothing is not a state this module can reach.
+host refused, recorded with its status), `BLOCKED_TERMS` (the row carries a `terms` record that
+is not PERMITTED with a quoted clause: the gate fails closed), `DEFERRED_TO_OWNER` (another
+lane owns this fetcher and its feed is present, so this one does not fetch twice), `NOT_DUE` or
+`ERROR`. A source that silently produced nothing is not a state this module can reach.
 
 FETCHERS ARE DATA-DRIVEN. Nine generic kinds cover the roster (html_listing, rss, reddit_json,
 github_search, telegram_preview, json_api, search_route, page_snapshot, external_feed); a new
@@ -249,6 +250,13 @@ def normalise_row(row: Mapping[str, Any], *, origin: str,
         url_key=canonical_url(_row_url(row)),
         url_keys=[k for k in dict.fromkeys(canonical_url(u) for u in _row_urls(row)) if k],
         seats=_seats(row.get("seats")))
+
+
+def _permissive(spdx: Any) -> bool:
+    """The one permissive set (libs.civilizations.licence.PERMISSIVE), read lazily: the
+    civilizations package imports this module, so a top-level import would be a cycle."""
+    from libs.civilizations import licence
+    return licence.is_permissive(str(spdx or ""))
 
 
 def _seats(raw: Any) -> list[str]:
@@ -726,7 +734,11 @@ def fetch_github_search(src: Source, cursor: dict[str, Any], ctx: FetchContext
     if tok:
         hdr["Authorization"] = f"Bearer {tok}"
     marks = dict(cursor.get("since") or {})
-    for q in cfg.get("queries") or []:
+    # a lane's queries are its roster's plus any its owner writes into the cursor at run time
+    # (the civilizations' ontology frontier steers its search this way, as data)
+    queries = list(dict.fromkeys([*(cfg.get("queries") or []),
+                                  *(cursor.get("extra_queries") or [])]))
+    for q in queries:
         if ctx.expired():
             return
         since = str(marks.get(q) or cfg.get("start") or "2015-01-01")
@@ -747,11 +759,21 @@ def fetch_github_search(src: Source, cursor: dict[str, Any], ctx: FetchContext
             marks[q] = upd
             body = f"{it.get('description') or ''}\n{' '.join(it.get('topics') or [])}\n" \
                    f"{it.get('body') or ''}"
+            lic = (it.get("license") or {}).get("spdx_id") \
+                if isinstance(it.get("license"), dict) else None
+            # a README is the repository's text under its licence: kept verbatim only when that
+            # licence is permissive (libs/civilizations/licence.PERMISSIVE); any other licence
+            # keeps a rewritten metadata description of its facts, as git_mirror does for files
             if what == "repositories" and cfg.get("readme", True):
                 full = str(it.get("full_name") or "")
                 rr = ctx.fetch(f"https://raw.githubusercontent.com/{full}/HEAD/README.md")
                 if rr.ok:
-                    body += "\n" + rr.text[:60_000]
+                    if _permissive(lic):
+                        body += f"\n[README of {full}, licence {lic}]\n" + rr.text[:60_000]
+                    else:
+                        from libs.civilizations import licence
+                        body += "\n" + licence.derived_description(
+                            "README.md", rr.text[:60_000], str(lic or "NOASSERTION"), full)
             yield Item(uri=str(it.get("html_url") or ""),
                        title=str(it.get("full_name") or it.get("title") or ""), body=body,
                        publication_time=str(it.get("created_at") or "") or None,
@@ -840,11 +862,23 @@ def _time_text(v: Any) -> str | None:
     return str(v)
 
 
+def _matches_any(item: Any, match: Mapping[str, Any]) -> bool:
+    """`match_any: {path: author, fields: {family: "^Paolucci$", given: "^Roman\\b"}}` keeps an
+    item only when SOME element of the list at `path` matches every field regex (case-blind).
+    A search API that ranks by relevance returns near-names; this is the exact-match filter."""
+    rows = _dig(item, str(match.get("path") or ""))
+    rows = rows if isinstance(rows, list) else [rows]
+    pats = {str(k): re.compile(str(v), re.I) for k, v in (match.get("fields") or {}).items()}
+    return any(isinstance(r, Mapping) and all(rx.search(str(r.get(k) or ""))
+                                              for k, rx in pats.items()) for r in rows)
+
+
 def fetch_json_api(src: Source, cursor: dict[str, Any], ctx: FetchContext) -> Iterator[Item]:
     """A generic JSON listing: `url` or `urls` (with {q} and {page}), `items_path`, field paths,
     and the source's secret sent the way `config.auth_style` says (see `auth_headers`)."""
     cfg = src.config
     fields = dict(cfg.get("fields") or {})
+    match = cfg.get("match_any") if isinstance(cfg.get("match_any"), Mapping) else None
     seen = _seen(cursor)
     headers = {"Accept": "application/json", **auth_headers(src)}
     urls = [str(u) for u in (cfg.get("urls") or [cfg.get("url") or ""]) if u]
@@ -871,6 +905,8 @@ def fetch_json_api(src: Source, cursor: dict[str, Any], ctx: FetchContext) -> It
                 if not isinstance(items, list) or not items:
                     break
                 for it in items:
+                    if match is not None and not _matches_any(it, match):
+                        continue
                     uri = str(_dig(it, str(fields.get("uri") or "url")) or "")
                     if cfg.get("uri_template"):
                         uri = str(cfg["uri_template"]).format(
@@ -1045,9 +1081,94 @@ def auth_missing(src: Source) -> bool:
     return not (src.auth_env and os.environ.get(src.auth_env))
 
 
-def owner_feed_present(src: Source, root: Path) -> bool:
-    return bool(src.mode == "fallback" and src.owner_feed
-                and glob.glob(str(root / src.owner_feed), recursive=True))
+def _retention_days(src: Source) -> float | None:
+    t = src.config.get("terms")
+    v = t.get("retention_days") if isinstance(t, Mapping) else None
+    try:
+        return float(v) if v is not None else None
+    except (TypeError, ValueError):
+        return 0.0                      # unreadable bound: keep nothing (fails closed)
+
+
+def terms_refusal(src: Source) -> str | None:
+    """THE TERMS GATE, which FAILS CLOSED. A row that carries `config.terms` is fetched only when
+    that record says PERMITTED and quotes the permitting clause and where it was read; anything
+    else (REFUSED, UNVERIFIED, a missing clause, an unreadable record) blocks the fetch and says
+    why. A row without a `terms` record is outside this gate (the robots and licence rules
+    above still apply to it)."""
+    t = src.config.get("terms")
+    if t is None:
+        return None
+    if not isinstance(t, Mapping):
+        return "UNVERIFIED: terms record unreadable"
+    status = str(t.get("status") or "UNVERIFIED").upper()
+    if status == "PERMITTED" and str(t.get("clause") or "").strip() \
+            and str(t.get("url") or "").strip():
+        return None
+    why = str(t.get("why") or t.get("clause") or "no permitting clause recorded")
+    return f"{status}: {why}"[:300]
+
+
+def owner_feed_present(src: Source, root: Path, now: datetime | None = None) -> bool:
+    """A fallback defers only to an owner that is PRODUCING: a file matching `owner_feed`, and,
+    when the row says so, one written within `config.owner_feed_max_age_h` (its `generated_at`,
+    else its mtime) that contains `config.owner_feed_must_contain`. An owner gone quiet or
+    never scanning this source hands the lane back to the fallback."""
+    if not (src.mode == "fallback" and src.owner_feed):
+        return False
+    files = glob.glob(str(root / src.owner_feed), recursive=True)
+    if not files:
+        return False
+    max_h = src.config.get("owner_feed_max_age_h")
+    must = str(src.config.get("owner_feed_must_contain") or "")
+    if max_h is None and not must:
+        return True
+    newest = Path(max(files, key=os.path.getmtime))
+    try:
+        text = newest.read_text("utf-8", errors="replace") if must or newest.suffix == ".json" \
+            else ""
+    except OSError:
+        return False
+    if must and must not in text:
+        return False
+    if max_h is not None:
+        stamp: datetime | None = None
+        if newest.suffix == ".json":
+            try:
+                doc = json.loads(text)
+                stamp = parse_time(doc.get("generated_at")) if isinstance(doc, dict) else None
+            except ValueError:
+                stamp = None
+        if stamp is None:
+            stamp = parse_time(newest.stat().st_mtime)
+        if stamp is None or (now or utcnow()) - stamp > timedelta(hours=float(max_h)):
+            return False
+    return True
+
+
+#: credentials that can ride into an error string (a URL's query, a header, a token's own shape)
+_SECRET_RX = (re.compile(r"(?i)((?:api[_-]?key|apikey|key|token|access_token|secret|password|"
+                         r"signature|sig)=)[^&\s'\"]+"),
+              re.compile(r"(?i)((?:bearer|token|kakaoak)\s+)[\w.~+/=-]{8,}"),
+              re.compile(r"(?i)((?:x-goog-api-key|authorization|cookie)['\"]?\s*[:=]\s*['\"]?)"
+                         r"[^'\",}\s]+"),
+              re.compile(r"()\bAIza[0-9A-Za-z_-]{30,}"),
+              re.compile(r"()\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})"))
+
+
+def redact(text: str, src: Source | None = None) -> str:
+    """`text` with every credential this process could hold replaced by ***: the source's own
+    secret and the common key variables by value, then anything shaped like a credential."""
+    out = str(text)
+    envs = {"GITHUB_TOKEN", "YOUTUBE_API_KEY", *((src.auth_env,) if src and src.auth_env
+                                                  else ())}
+    for env in envs:
+        v = os.environ.get(env, "").strip()
+        if len(v) >= 6:
+            out = out.replace(v, "***")
+    for rx in _SECRET_RX:
+        out = rx.sub(lambda m: m.group(1) + "***", out)
+    return out
 
 
 def acquire(src: Source, store: PitStore, cursors: CursorStore, ctx: FetchContext, *,
@@ -1063,15 +1184,22 @@ def acquire(src: Source, store: PitStore, cursors: CursorStore, ctx: FetchContex
     elif not force and not is_due(src, cursor, ctx.now):
         rep.outcome = "NOT_DUE"
         return rep                                     # not a run; nothing to log
+    elif (refusal := terms_refusal(src)) is not None:
+        rep.outcome, rep.detail = "BLOCKED_TERMS", refusal
     elif auth_missing(src):
         rep.outcome, rep.detail = "BLOCKED_AUTH", f"needs {src.auth} ({src.auth_env or '?'})"
-    elif root is not None and owner_feed_present(src, root):
+    elif root is not None and owner_feed_present(src, root, ctx.now):
         rep.outcome, rep.detail = "DEFERRED_TO_OWNER", f"{src.owner} feed {src.owner_feed}"
     elif src.fetcher == "owned":
         rep.outcome, rep.detail = "OWNED", f"fetched and consumed by {src.consumer or src.owner}"
     elif src.fetcher not in FETCHERS:
         rep.outcome, rep.detail = "ERROR", f"unknown fetcher {src.fetcher!r}"
+    retention = _retention_days(src)
+    if retention is not None and rep.outcome != "NOT_DUE":
+        # a source whose terms bound how long its raw text may be kept: older bodies go now
+        store.expire_bodies(src.id, ctx.now - timedelta(days=retention), now=ctx.now)
     if rep.outcome != "ok":
+        rep.detail = redact(rep.detail, src)
         store.log_run(src.id, rep.outcome, 0, 0, rep.detail, now=ctx.now)
         cursors.save(src.id, {**cursor, "last_run": iso(ctx.now), "last_outcome": rep.outcome})
         return rep
@@ -1113,6 +1241,7 @@ def acquire(src: Source, store: PitStore, cursors: CursorStore, ctx: FetchContex
             rep.detail = "; ".join(ctx.blocked[:3])[:300]
         elif rep.fetched == 0:
             rep.outcome = "empty"
+    rep.detail = redact(rep.detail, src)
     store.log_run(src.id, rep.outcome, rep.fetched, rep.new, rep.detail, now=ctx.now)
     cursor.update({"last_run": iso(ctx.now), "last_outcome": rep.outcome})
     cursors.save(src.id, cursor)

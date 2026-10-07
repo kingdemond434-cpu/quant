@@ -8,6 +8,17 @@ alpha. And NO AUTHOR IS MONITORED: what is encoded here are ideas, as families, 
 falsifiers -- there is no crawler pointed at a person, no feed of anybody's posts, and nothing in
 this module fetches a named individual's output on a schedule.
 
+ONE SCOPED EXCEPTION, 2026-10-06 (principal's Roman Paolucci / Quant Guild directive: "monitor
+Roman's public GitHub / monitor Quant Guild library updates / monitor new public video
+descriptions/transcripts when accessible / monitor public research/papers / monitor public Quant
+Guild letters/posts"). That later, specific order wins over the general rule for that author
+ONLY, and only as `MONITORED_AUTHOR_EXCEPTIONS` records it: his PUBLIC output on the five named
+surfaces, each a lane in desks/mt5/data/source_rosters/civilizations.yaml, every web surface
+behind the acquirer's terms gate (which fails closed). Each new item is hashed into the PIT store
+and re-mined into translator cards. What comes in is still a mechanism with a falsifier, judged
+by the same ten gates; nothing follows a post, and the rule
+above stands for every other author. This is not a repeal.
+
 WHY THE DISTINCTION MATTERS AND IS NOT A FORMALITY. A desk that tracks an author inherits the
 author's survivorship: it learns what the author said loudly and recently, weighted by how well
 it worked for them on the sample they chose to publish. A desk that absorbs the MECHANISM inherits
@@ -122,6 +133,24 @@ ACCESS_LABELS: tuple[str, ...] = ("PUBLIC", "PUBLIC_WITH_TERMS", "LICENSED", "OP
                                   "PUBLIC_ARCHIVE", "PUBLIC_SOCIAL", "USER_SUBMITTED",
                                   "ACCESS_UNCLEAR", "PRIVATE", "CONFIDENTIAL_MNPI",
                                   "STOLEN_UNAUTHORIZED")
+#: The only authors whose public output IS watched, each by the principal order that scoped it.
+#: Everyone else falls under NO AUTHOR IS MONITORED (module docstring).
+MONITORED_AUTHOR_EXCEPTIONS: dict[str, dict[str, str]] = {
+    "romanmichaelpaolucci": {
+        "order": "principal 2026-10-06, Roman Paolucci / Quant Guild directive",
+        "scope": ("public output only, on the directive's five surfaces: public GitHub "
+                  "repositories and any Quant Guild GitHub organisation, the Quant Guild "
+                  "library, the @QuantGuild YouTube descriptions (transcripts where an official "
+                  "API permits), public papers (SSRN and indexed), and public Quant Guild "
+                  "letters/Medium/LinkedIn posts; every web surface through the terms gate, "
+                  "which fails closed"),
+        "how": ("lanes civ_qg_youtube, civ_qg_papers, civ_qg_letters, civ_qg_medium, "
+                "civ_qg_linkedin, civ_qg_github_org, civ_qg_holder, civ_qg_github_account, "
+                "civ_qg_library in desks/mt5/data/source_rosters/civilizations.yaml; the two "
+                "GitHub fallbacks defer to the external federation's seeds once they run"),
+        "output": "translator cards -> canonical compiler -> ten gates; nothing follows a post",
+    },
+}
 CREDIBILITY_LABELS: tuple[str, ...] = ("AUTHORITATIVE", "RELIABLE", "UNRELIABLE", "FRINGE",
                                        "CONTRADICTED", "UNKNOWN")
 PREDICTIVE_STATES: tuple[str, ...] = ("UNTESTED", "PREDICTIVE", "NOT_PREDICTIVE",
@@ -2696,6 +2725,7 @@ def run_pass(*, dry_run: bool = False, budget_s: float = 300.0,
         "mandate": "every family is a SENSOR or MECHANISM for an MT5 instrument; no "
                    "crypto-exchange universe is hunted, scouted, ranked or queued",
         "no_author_monitored": True,
+        "author_monitoring_exceptions": sorted(MONITORED_AUTHOR_EXCEPTIONS),
         "access_policy": {
             "pipeline": list(SOURCE_PIPELINE),
             "access_labels": list(ACCESS_LABELS), "credibility": list(CREDIBILITY_LABELS),
