@@ -1072,6 +1072,19 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "(symbol_eligibility) verdict is not taken as a verdict on the certificate.",
     ),
     DestructivePath(
+        path_id="story_graph.evict_stories",
+        module="desks/mt5/research/story_graph.py",
+        function="evict_stories",
+        removes="the stalest stories (with their events, documents, edges and index rows) from "
+                "the live knowledge-graph store",
+        reference="MAX_DOCUMENTS, a capacity cap over the document count of the store in hand",
+        status="positive",
+        note="A size cap, not a judgement, and not a loss: it fires only when the store in hand "
+             "HOLDS more than MAX_DOCUMENTS documents (an empty or unreadable store evicts "
+             "nothing), and every doomed story is appended whole to story_archive.jsonl beside "
+             "graph.json BEFORE anything is popped; a refused archive write evicts nothing.",
+    ),
+    DestructivePath(
         path_id="allocator_proof.no_destructive_path",
         module="libs/portfolio/allocator_proof.py",
         function="certify",

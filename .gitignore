@@ -312,6 +312,9 @@ desks/mt5/data/text_store/
 # The committed Asian/alt-data digest's writer lock and temp file (the digest itself is tracked).
 desks/mt5/data/digests/*.lock
 desks/mt5/data/digests/*.tmp
+# Stories evicted whole from the knowledge-graph store at its document cap (DATA-29): an
+# append-only box-local archive, so the store stays bounded and nothing evicted is lost.
+desks/mt5/data/knowledge_graph/story_archive.jsonl
 
 # THE BOX'S OWN REPORT, ALLOWLISTED LAST SO IT WINS (2026-09-06). `sync_shadow_to_git.ps1` lists
 # every path here in $relPaths and its header warns that an ignored path makes `git add` a SILENT
