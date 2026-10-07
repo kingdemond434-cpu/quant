@@ -596,6 +596,7 @@ $reportPaths = @(
     # THE UNIVERSAL SENSOR LEDGER'S DIGEST (2026-10-06): its day shards are box-local and
     # gitignored, so this hourly summary (leg sensor_ledger) is what readers off the box get.
     "desks/mt5/reports/SENSOR_LEDGER.json",
+    "desks/mt5/reports/WORLD_SENSOR_GAPS.json",
     "desks/mt5/reports/WORLD_SENSOR_INTAKE.json",
     "desks/mt5/reports/MARKET_STATE.json",
     "desks/mt5/reports/PHYSICAL_STATE.json",

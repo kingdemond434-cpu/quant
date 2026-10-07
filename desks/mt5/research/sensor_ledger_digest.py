@@ -9,6 +9,11 @@ artifact. Each hour it reads the last two receipt days and publishes their intak
 (throughput, PIT completeness, latency distributions, and the downstream clock joins to the
 allocator), the shard census and the revision-index size. An empty ledger is UNMEASURED, never 0.
 Nothing here writes to the ledger, sizes anything or carries authority.
+
+THE TEN-GAP RE-AUDIT (DATA-19). On the same clock it writes reports/WORLD_SENSOR_GAPS.json
+(`research/world_sensor_gaps.py`): each of the world sensor's ten named gaps measured from the
+host's artifacts -- counts, rates, freshness, latency percentiles -- or UNMEASURED naming the
+artifact it needed.
 """
 from __future__ import annotations
 
@@ -23,6 +28,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 REPORT = DESK / "reports" / "SENSOR_LEDGER.json"
+GAPS_REPORT = DESK / "reports" / "WORLD_SENSOR_GAPS.json"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -30,6 +36,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--days", type=int, default=2)
     ap.add_argument("--out", type=Path, default=REPORT)
+    ap.add_argument("--gaps-out", type=Path, default=GAPS_REPORT)
     args = ap.parse_args(argv)
     from libs.research import sensor_contract as sc
     doc = sc.digest(days=args.days)
@@ -43,6 +50,15 @@ def main(argv: list[str] | None = None) -> int:
     tmp.replace(args.out)
     print(f"sensor_ledger: {doc['status']} shards={doc['shards']} "
           f"index_keys={doc['index_keys']} revised={doc['revised_keys']}")
+    try:
+        sys.path.insert(0, str(DESK / "research"))
+        import world_sensor_gaps as wsg  # type: ignore[import-not-found]
+        gaps = wsg.build(days=args.days)
+        wsg.write(gaps, args.gaps_out)
+        print(f"world_sensor_gaps: measured={gaps['measured']} "
+              f"unmeasured={gaps['unmeasured']} open={len(gaps['open'])}")
+    except Exception as exc:                             # pragma: no cover - organ guard
+        print(f"world_sensor_gaps: not written: {type(exc).__name__}: {str(exc)[:160]}")
     return 0
 
 

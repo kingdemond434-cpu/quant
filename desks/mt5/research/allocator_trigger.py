@@ -20,6 +20,17 @@ never replaces the hourly pass.
   certificate_change      data/sleeve_registry.json      a certificate arriving or dying
   fill                    data/gateway_state.json        realised risk moved at the venue
   cost_capacity_revision  reports/NET_EDGE.json          net-of-cost or capacity was re-priced
+  news_resolve_request    data/allocator_resolve_request.json
+                                                         the news stream lodged a re-solve
+                                                         (its sequence number / fingerprint)
+
+THE NEWS REQUEST (DATA-19, 2026-10-07). `news_event_stream` writes a SEQUENCED re-solve request
+to `data/allocator_resolve_request.json` (and appends it to `allocator_resolve_queue.jsonl`)
+whenever an event moves the world state. Until this row existed no organ consumed it: the
+request was lodged and the book waited for the hour anyway, which `world_sensor_gaps` measured as
+`event_allocator_reaction` open with `allocator_listens_to_news` false. The signature is the
+request's `seq` and `world_state_fingerprint`, so a new request fires once and a rewrite of the
+same request does not; two requests between polls are served by one solve on the newer state.
 
 WHY IT IS SAFE UNDER GROWTH GOVERNANCE. It fires the SAME solver the hourly leg fires, with the
 same heat law, the same floor and the same certificate contest. It sets no fraction and passes no
@@ -68,6 +79,10 @@ LOG = DATA / "allocator_reactions.jsonl"
 #: What each watched source looked like when it was last acted on.
 STATE = DATA / "allocator_trigger_state.json"
 ALLOCATION = REPORTS / "pf_allocation.json"
+#: The news stream's re-solve request (`news_event_stream.RESOLVE_REQUEST`): overwritten each
+#: pass that lodges one, carrying a monotone `seq`. Named here, not imported, so the watcher does
+#: not load the news organ.
+RESOLVE_REQUEST = DATA / "allocator_resolve_request.json"
 
 #: The poll interval of the 24/7 resident. Not a tuning knob: it is the smallest interval at
 #: which the watched artifacts can change (their producers are minute-scale at best), and a
@@ -107,6 +122,9 @@ def sources() -> list[Source]:
         Source("cost_capacity_revision", REPORTS / "NET_EDGE.json",
                ("capacity_by_sleeve", "n_sign_flips", "ranked_if_net_were_the_only_ranking"),
                "net-of-cost or per-sleeve capacity was re-priced"),
+        Source("news_resolve_request", RESOLVE_REQUEST,
+               ("seq", "world_state_fingerprint"),
+               "the news stream lodged a re-solve request: an event moved the world state"),
     ]
 
 
