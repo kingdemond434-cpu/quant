@@ -1785,8 +1785,9 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
     for g in grounds:
         reg = str(g.get("region") or "?")
         b = by_region.setdefault(reg, {"cluster": cluster_of(g), "grounds": 0, "worked": 0,
-                                       "productive": 0, "blocked": 0, "claims": 0, "datasets": 0,
-                                       "story": 0, "dataset": 0, "macro": 0, "momentum_only": 0,
+                                       "productive": 0, "blocked": 0, "blocked_on_terms": 0,
+                                       "claims": 0, "datasets": 0, "story": 0, "dataset": 0,
+                                       "macro": 0, "momentum_only": 0,
                                        "languages": []})
         b["grounds"] += 1
         kind = "dataset" if g.get("kind") == "dataset" else ("macro" if g.get("kind") == "macro"
@@ -1805,6 +1806,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
             b["productive"] += 1
         if s.get("status") in ("BLOCKED", "NO_NETWORK", "UNREACHABLE") or held:
             b["blocked"] += 1
+        b["blocked_on_terms"] += int(held)
         b["claims"] += int(s.get("claims") or 0)
         b["datasets"] += int(s.get("datasets") or 0)
         b["momentum_only"] += int(bool(s.get("momentum_only")))
