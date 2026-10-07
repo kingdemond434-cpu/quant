@@ -171,8 +171,7 @@ def test_seed_miners_wall_every_mql5_seat_and_never_probe(no_network: list[str])
         assert lifted is False and "BLOCKED_TERMS" in note
     with pytest.raises(mql5_terms.MQL5TermsRefused):
         sm.fetch("https://www.mql5.com/en/signals/mt5")
-    with pytest.raises(mql5_terms.MQL5TermsRefused):
-        sm.mine_mql5_signals()
+    assert sm.mine_mql5_signals()[0]["verdict"] == mql5_terms.STATUS     # refusal, no request
     assert no_network == []
 
 
