@@ -101,7 +101,8 @@ def build(*, reports: Path = REPORTS, acquired: Iterable[str] = (),
     waiting on (a provider that answers by email). Parked out of the list and the digest so the
     alert does not nag about a key nobody can fetch yet -- for REQUEST_STALE_DAYS only; after
     that it comes back as REQUESTED_STALE. An undated name is never parked (audit of #252: an
-    undated park dropped a never-set key off the list for good), nor is a REJECTED key."""
+    undated park dropped a never-set key off the list for good), nor one dated in the future
+    (`@2099-...` would park it for decades), nor a REJECTED key."""
     cat = _catalog_by_name()
     have = {str(n).strip() for n in acquired if str(n).strip()}
     today = (now or datetime.now(tz=UTC)).date()
@@ -139,6 +140,8 @@ def build(*, reports: Path = REPORTS, acquired: Iterable[str] = (),
         if n not in waiting or any(r.startswith("REJECTED") for r in items[n]["reasons"]):
             continue
         age = (today - waiting[n]).days
+        if age < 0:
+            continue   # a future application date would park the key until then (re-audit)
         if age < REQUEST_STALE_DAYS:
             parked.append(n)
             items.pop(n)

@@ -156,3 +156,13 @@ def test_a_key_in_a_redirect_path_or_nested_value_is_refused() -> None:
         {"next": "/x?" + urllib.parse.urlencode({"api_key": KEY})})
     assert _follow(src, nested, []) is None
     assert _follow("https://api.darwinex.com/a", f"https://evil.example/?t={KEY}", [KEY]) is None
+
+
+def test_every_gzip_member_and_trailing_bytes_are_scrubbed() -> None:
+    import gzip
+    raw = gzip.compress(b'{"ok":1}') + gzip.compress(f'{{"echo":"{KEY}"}}'.encode())
+    out = ks.scrub_body(raw, [KEY])
+    assert KEY.encode() not in gzip.decompress(out)
+    trailing = gzip.compress(b'{"ok":1}') + f"tail {KEY}".encode()
+    out = ks.scrub_body(trailing, [KEY])
+    assert KEY.encode() not in out and KEY.encode() not in gzip.decompress(out)
