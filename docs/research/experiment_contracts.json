@@ -175,6 +175,21 @@
     "threshold": 0,
     "after": "30 days of readings in which the solved book grows slower than today's: survival is costing growth rather than protecting it (growth governance Rule 1)"
    }
+  },
+  "recovery_drills": {
+   "hypothesis": "Grading every named failure mode (stale data, broker rejection, missing ack, network loss, restore, reconcile-before-exposure, ...) hourly from the desk's own drill artifacts turns silent recovery defects into named FAIL rows with a fix, so failures the book would otherwise meet live are closed in simulation first.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "counts.FAIL",
+    "better": "down",
+    "organ": "report:RECOVERY_DRILLS.json"
+   },
+   "falsifier": {
+    "metric": "counts.UNMEASURED",
+    "op": ">=",
+    "threshold": 20,
+    "after": "30 days in which 20 or more of the drill rows stay UNMEASURED on the box: the scorecard grades nothing and the drills it reads are not running"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
