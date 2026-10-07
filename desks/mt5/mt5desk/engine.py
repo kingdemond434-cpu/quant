@@ -197,10 +197,15 @@ class Costs:
         # read it as that); the engine prices each night from the history instead and charges a
         # night with no knowable swap the stand-in below. See `swap_symbol`.
         sym = str(meta.get("symbol") or "")
+        # A STAND-IN EXISTS only when something prices the night: the registry carries a swap
+        # field, or some row on disk once showed one. With neither, it is None and every night
+        # the run crosses without a knowable row is UNPRICED -- the one case the judge refuses.
         standin = None
         if sym:
             ceil = _swap_ceiling_pts(sym)
-            standin = max(swap_pts, ceil if ceil is not None else 0.0) * ts * cs
+            has_reg = meta.get("swap_long") is not None or meta.get("swap_short") is not None
+            if has_reg or ceil is not None:
+                standin = max(swap_pts, ceil if ceil is not None else 0.0) * ts * cs
         return cls(spread_per_lot=max(spread * mult, 0.05),
                    commission_per_lot=commission_per_lot, contract_oz=cs,
                    quote_per_account=qpa,
@@ -287,23 +292,37 @@ class BacktestResult:
     swap_nights_unmeasured: float = 0.0
     swap_symbol: str = ""
     swap_honest_days: int = 0
+    #: Unmeasured nights for which NO stand-in existed (no registry swap, no row ever on disk).
+    swap_nights_unpriced: float = 0.0
 
     def swap_report(self) -> dict[str, Any]:
         """Whether this run's swap cost was MEASURED, by name. Never a clean verdict by default.
 
         NO_OVERNIGHT   no trade crossed a rollover: there was no swap to measure.
+        UNPRICED       some night had no knowable swap AND no stand-in at all (no registry value,
+                       no row ever on disk): its cost is unknown, and this alone is a refusal.
         UNMEASURED     nights were charged but the cost carries no symbol (a hand-built `Costs`),
                        so no history could price them point in time.
         PENDING_HISTORY some night had no knowable swap (charged the stand-in), or the symbol's
                        honest swap history is shorter than the lockbox floor
                        (`research.gate_policy.LOCKBOX_MIN_DAYS`, the floor #269 holds carry to).
         MEASURED       every night priced from a swap knowable at it, over a long enough history.
+
+        PENDING_HISTORY and UNMEASURED are EVIDENCE, not refusals: those nights were charged a
+        stand-in at least as costly as today's swap and the worst ever seen, so a run that clears
+        its gates on them is priced no cheaper than reality as far as the desk can know it.
         """
         nm, nu = float(self.swap_nights_measured), float(self.swap_nights_unmeasured)
+        npr = float(self.swap_nights_unpriced)
         out: dict[str, Any] = {"symbol": self.swap_symbol, "nights_measured": nm,
-                               "nights_unmeasured": nu, "honest_days": int(self.swap_honest_days)}
+                               "nights_unmeasured": nu, "nights_unpriced": npr,
+                               "honest_days": int(self.swap_honest_days)}
         if nm + nu <= 0:
             return {**out, "status": "NO_OVERNIGHT"}
+        if npr > 0:
+            return {**out, "status": "UNPRICED",
+                    "why": (f"{npr:g} nights had no knowable swap and no stand-in (no registry "
+                            f"swap for {self.swap_symbol or '?'}, no row ever on disk)")}
         if not self.swap_symbol:
             return {**out, "status": "UNMEASURED",
                     "why": "nights charged from a hand-built Costs with no swap history"}
@@ -404,6 +423,45 @@ def rollovers_between(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
     return float(k + 2 * triples)
 
 
+#: Bump when the engine's COST arithmetic changes, so a series cached under the old arithmetic
+#: is never served under the new one. Read by `swap_cache_stamp`.
+ENGINE_COST_VERSION = "swap-pit-1"
+
+
+def swap_cache_stamp(symbol: str, until: Any = None) -> str:
+    """A short digest of everything the engine's swap charge for `symbol` reads, for cache keys.
+
+    The engine version, the symbol's stand-in ceiling, and the knowable rows BEFORE `until` (the
+    series' last complete day): a row knowable later cannot change a night inside the series, so
+    the stamp stays stable within the day while the hourly tape grows, and moves the day a row
+    that matters arrives. Unreadable tape stamps as such rather than raising."""
+    import hashlib
+    parts: list[str] = [ENGINE_COST_VERSION, str(symbol)]
+    try:
+        from mt5desk import families_carry
+        h, _ = families_carry.swap_history()
+        parts.append(repr(families_carry.swap_ceiling().get(symbol)))
+        rows = h.get(symbol)
+        if rows is not None:
+            t = rows["t"]
+            if until is not None:
+                try:
+                    u = pd.Timestamp(str(until))
+                    u = u.tz_localize("UTC") if u.tzinfo is None else u.tz_convert("UTC")
+                    t = t[t < int(u.value)]
+                except (TypeError, ValueError):
+                    pass
+            k = int(t.size)
+            parts.append(str(k))
+            if k:
+                parts.append(hashlib.sha1(np.ascontiguousarray(np.column_stack(
+                    [t, rows["lo"][:k], rows["sh"][:k], rows["mode"][:k]])).tobytes()
+                ).hexdigest()[:16])
+    except Exception as exc:
+        parts.append(f"tape-unreadable:{type(exc).__name__}")
+    return hashlib.sha1("|".join(parts).encode()).hexdigest()[:16]
+
+
 #: A knowable swap row older than this at a rollover is stale and the night is UNMEASURED.
 #: Brokers revise financing about weekly; four days covers a weekend with the terminal offline.
 SWAP_MAX_AGE_H = 96.0
@@ -448,6 +506,8 @@ class _SwapTape:
         today = float(costs.swap_per_lot_per_night or 0.0)
         si = getattr(costs, "swap_standin_per_lot_per_night", None)
         self.standin = max(today, float(si) if si is not None else 0.0) / cs
+        #: False when nothing prices a night that has no knowable row (see `from_symbol`).
+        self.priceable = si is not None or today > 0
         self.hist: dict[str, np.ndarray] | None = None
         self.days = 0
         try:
@@ -529,6 +589,7 @@ def run_backtest(
     tape = _SwapTape(costs) if getattr(costs, "swap_symbol", "") else None
     nights_measured = 0.0
     nights_unmeasured = 0.0
+    nights_unpriced = 0.0
 
     for sig, i0 in zip(signals, locs, strict=True):
         i = i0 + 1
@@ -726,6 +787,8 @@ def run_backtest(
                     nights_measured += float(wts[ok].sum())
                     r -= float((per * wts).sum()) * units / stop_dist
             nights_unmeasured += trade_unmeasured
+            if not tape.priceable:
+                nights_unpriced += trade_unmeasured
         else:
             # A hand-built cost: today's arithmetic, and every night it crossed is UNMEASURED.
             nights = rollovers_between(entry_ts, exit_ts)
@@ -751,7 +814,8 @@ def run_backtest(
                           swap_nights_measured=nights_measured,
                           swap_nights_unmeasured=nights_unmeasured,
                           swap_symbol=tape.symbol if tape is not None else "",
-                          swap_honest_days=tape.days if tape is not None else 0)
+                          swap_honest_days=tape.days if tape is not None else 0,
+                          swap_nights_unpriced=nights_unpriced)
 
 
 def walk_forward_splits(n_bars: int, folds: int = 4) -> list[tuple[int, int, int, int, int]]:

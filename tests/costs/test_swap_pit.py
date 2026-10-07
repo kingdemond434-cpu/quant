@@ -169,3 +169,32 @@ def test_the_stressed_variant_keeps_the_point_in_time_fields(tape):
     c = Costs.from_symbol(META).stressed(3.0)
     assert c.swap_symbol == "TESTFX"
     assert c.swap_standin_per_lot_per_night == pytest.approx(25.0)
+
+
+def test_a_night_nothing_can_price_is_unpriced_and_only_that_is_named_so(tape):
+    """No registry swap and no row ever on disk: no stand-in exists, and the run says UNPRICED.
+    With a registry value the same run is PENDING_HISTORY evidence, never UNPRICED."""
+    bare = {k: v for k, v in META.items() if k not in ("swap_long", "swap_short")}
+    costs = Costs.from_symbol(bare)
+    assert costs.swap_standin_per_lot_per_night is None
+    rep = _hold(_frame(), "2026-09-07 09:00", 24, costs).swap_report()
+    assert rep["status"] == "UNPRICED" and rep["nights_unpriced"] == 1.0
+    rep = _hold(_frame(), "2026-09-07 09:00", 24, Costs.from_symbol(META)).swap_report()
+    assert rep["status"] == "PENDING_HISTORY" and rep["nights_unpriced"] == 0.0
+    tape["ceiling"] = {"TESTFX": 5.0}           # a row once seen is a stand-in
+    rep = _hold(_frame(), "2026-09-07 09:00", 24, Costs.from_symbol(bare)).swap_report()
+    assert rep["status"] == "PENDING_HISTORY"
+
+
+def test_the_cache_stamp_moves_only_when_a_row_that_matters_arrives(tape, monkeypatch):
+    tape["hist"] = {"TESTFX": _hist([("2026-09-01 12:00", -3.0, 1.0)])}
+    a = engine.swap_cache_stamp("TESTFX", "2026-09-05")
+    tape["hist"] = {"TESTFX": _hist([("2026-09-01 12:00", -3.0, 1.0),
+                                     ("2026-09-06 12:00", -9.0, 1.0)])}
+    assert engine.swap_cache_stamp("TESTFX", "2026-09-05") == a      # knowable after the series
+    tape["hist"] = {"TESTFX": _hist([("2026-09-01 12:00", -3.0, 1.0),
+                                     ("2026-09-03 12:00", -9.0, 1.0)])}
+    assert engine.swap_cache_stamp("TESTFX", "2026-09-05") != a      # inside it
+    b = engine.swap_cache_stamp("TESTFX", "2026-09-05")
+    monkeypatch.setattr(engine, "ENGINE_COST_VERSION", "next")
+    assert engine.swap_cache_stamp("TESTFX", "2026-09-05") != b
