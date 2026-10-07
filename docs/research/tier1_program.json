@@ -9052,13 +9052,14 @@
     "desks/mt5/research/forward_evidence_tracker.py:338 -- signal_record(): the thirteen fields; n_eff and the sequential bound from forward_verdict over the forward-phase ledger only",
     "desks/mt5/research/forward_evidence_tracker.py:436 -- asian_signals(): n_signals 0 is a measured empty, absent lineage is UNMEASURED",
     "desks/mt5/research/forward_evidence_tracker.py:540 -- the block rides on the existing hourly report",
-    "desks/mt5/research/research_roi.py:914 -- attach_forward_record(): the consumer, publish-only (the ROI arithmetic is unchanged)"
+    "desks/mt5/research/research_roi.py:957 -- attach_forward_record(): the consumer, publish-only (the ROI arithmetic is unchanged)",
+    "desks/mt5/research/research_roi.py:263 -- region_of(): an alt_proxies id (bare, alt_proxies:<id>, data_source, alt_<id>__<series>) resolves through the row's declared region"
    ],
    "consumer": "desks/mt5/research/research_roi.py attach_forward_record -> reports/RESEARCH_ROI.json region_roi.by_region[<asian region>].forward_record (hourly_cycle:research_roi)",
    "tests": [
     "desks/mt5/tests/test_forward_evidence_tracker.py"
    ],
-   "gap": "Live yield UNMEASURED: on the day of landing no Asian-derived signal held a forward clock (owned-rows audit), so the record publishes n_signals 0 until one enrols. research_roi caps credited cells at 25 per source, so a heavily credited Asian source can be under-listed.",
+   "gap": "LANDED, NOT DONE: not yet run on the trading box. Live yield UNMEASURED: on the day of landing no Asian-derived signal held a forward clock (owned-rows audit), so the record publishes n_signals 0 until one enrols. research_roi caps credited cells at 25 per source, so a heavily credited Asian source can be under-listed. The registry credits alt_proxies cells to the donor name `alt_proxies` (multi-region, unrouted), so an alt_proxies-derived signal reaches the Asian record only once credit carries the row id.",
    "next_step": "When the completion audit (#232) lands, point its FORWARD rung for ASIA-0772..0784 at FORWARD_EVIDENCE.asian_signals.",
    "landed": [
     "asia other rows 2026-10-06"
@@ -9074,14 +9075,17 @@
    "scheduled_by": "hourly_cycle:alt_proxies",
    "artifact": "desks/mt5/reports/ALT_PROXIES.json",
    "evidence": [
-    "desks/mt5/research/hourly_cycle.py:5175 -- the existing alt_proxies leg runs the three new rows (no new leg)",
-    "desks/mt5/research/alt_proxies.py:1254 -- SINGSTAT_SERIES: rows read by the table's own seriesNo",
-    "desks/mt5/research/alt_proxies.py:1315 -- parse_pink_sheet(): header found by name, missing prints skipped, update date stamps only the newest month",
-    "desks/mt5/research/alt_proxies.py:1364 -- rule_pink_sheet(): third business day, never before the release",
-    "desks/mt5/research/alt_proxies.py:1885 -- the three Source rows with instruments and mechanism",
-    "desks/mt5/research/alt_proxies.py:1974 -- DATA_SOURCE: provider:dataset on every direct and indirect cell",
-    "desks/mt5/research/alt_proxies.py:2768 -- TERMS_EVIDENCE with the verbatim licence quotes read 2026-10-06",
-    "desks/mt5/research/alt_proxies.py:2943 -- the Pink Sheet is fetched at most once per UTC day",
+    "desks/mt5/research/hourly_cycle.py:5174 -- the existing alt_proxies leg runs the three new rows (no new leg)",
+    "desks/mt5/research/alt_proxies.py:1264 -- SINGSTAT_SERIES: rows read by the table's own seriesNo",
+    "desks/mt5/research/alt_proxies.py:1325 -- parse_pink_sheet(): header found by name, missing prints skipped, update date stamps only the newest month",
+    "desks/mt5/research/alt_proxies.py:1374 -- us_federal_business_days(): pandas USFederalHolidayCalendar",
+    "desks/mt5/research/alt_proxies.py:1391 -- rule_pink_sheet(): third US federal business day, never before the release (0 early stamps over 108 months)",
+    "desks/mt5/research/alt_proxies.py:1909 -- the three Source rows with instruments and mechanism",
+    "desks/mt5/research/alt_proxies.py:1998 -- DATA_SOURCE: provider:dataset on every direct and indirect cell",
+    "desks/mt5/research/alt_proxies.py:2777 -- TERMS_EVIDENCE: verbatim ODL and World Bank licence quotes read 2026-10-07, credit and licence link per row",
+    "desks/mt5/research/alt_proxies.py:2836 -- attribution_of(): credit + licence link carried into the axis doc, lake CSV and cells",
+    "desks/mt5/research/alt_proxies.py:3004 -- the Pink Sheet is fetched at most once per UTC day",
+    "desks/mt5/research/alt_proxies.py:3844 -- stale_link_alarm(): a 404 or a missing current month is an alarm row (data/alt_proxies/alarms.jsonl + PLUMBING_DEFECT event)",
     "libs/data/xls_reader.py:598 -- read_xlsx(): a stdlib OOXML reader (the box has no openpyxl)"
    ],
    "consumer": "libs/research/alpha_dsl.axis_fields reads data/axes/alt_<id>.json (FieldCatalogue -> world_model -> representation_forge); passing cells go through proposer_common.donate to the one gauntlet",
@@ -9089,7 +9093,7 @@
     "tests/test_alt_proxies_asia_channels.py",
     "tests/test_alt_proxies.py"
    ],
-   "gap": "Live yield UNMEASURED: thedocs.worldbank.org and tablebuilder.singstat.gov.sg are refused by the authoring container's proxy, so the parsers were built against fixtures in the documented format. The Pink Sheet document id changes per release (ALT_WB_PINK_SHEET_URL). The Pink Sheet is the price layer of each channel; country volumes (MPOB stocks, DOSM/GSO electronics, MOTS tourism, PPAC oil) remain NEXT behind their terms.",
+   "gap": "LANDED, NOT DONE: not yet run on the trading box. Live yield UNMEASURED: thedocs.worldbank.org and tablebuilder.singstat.gov.sg are refused by the authoring container's proxy, so the parsers were built against fixtures in the documented format. The Pink Sheet document id changes per release (ALT_WB_PINK_SHEET_URL). The Pink Sheet is the price layer of each channel; country volumes (MPOB stocks, DOSM/GSO electronics, MOTS tourism, PPAC oil) remain NEXT behind their terms. SingStat's own terms page renders client-side and could not be read; the evidence is the ODL text itself (data.gov.sg).",
    "next_step": "First box pass: confirm the live header labels of 'Monthly Prices' and the two SingStat table ids, and read the gain verdicts in ALT_PROXIES.json.",
    "landed": [
     "asia other rows 2026-10-06"

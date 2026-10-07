@@ -108,8 +108,8 @@ def test_terms_are_confirmed_with_verbatim_evidence_and_the_gate_stays_closed() 
         assert A.TERMS[sid][0] == "confirmed"
         ev = A.TERMS_EVIDENCE[sid]
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"]
-        assert ev["checked_at"] == "2026-10-06"
-    assert "commercial use" in A.TERMS_EVIDENCE["wb_pink_sheet_asia"]["terms_quote"]
+        assert ev["checked_at"] == "2026-10-07"
+    assert "commercial use" in A.TERMS_EVIDENCE["wb_pink_sheet_asia"]["terms_quote_2"]
     # the existing fail-closed rows are untouched
     assert A.TERMS["cn_sge_premium"][0] == "to_confirm"
     assert A.TERMS["jp_jnto_arrivals"][0] == "refused"
@@ -177,3 +177,175 @@ def test_singstat_fixture_shape_matches_the_documented_reply() -> None:
         assert set(doc) == {"Data", "DataCount", "StatusCode", "Message"}
         for r in doc["Data"]["row"]:
             assert {"seriesNo", "rowText", "uoM", "columns"} <= set(r)
+
+
+# ---------------------------------------------------------------- audit HOLD fixes (PR #253)
+def _old_weekday_rule(period: date) -> date:
+    """The rule the audit held: third WEEKDAY, holidays ignored (kept here as the control)."""
+    t, n = period + timedelta(days=1), 0
+    while True:
+        if t.weekday() < 5:
+            n += 1
+            if n == 3:
+                return t
+        t += timedelta(days=1)
+
+
+def test_pink_sheet_rule_never_stamps_before_the_release_over_108_months() -> None:
+    """Release = the second US federal business day of the next month, computed independently
+    with pandas' CustomBusinessDay over USFederalHolidayCalendar. Over 2018-01..2026-12 the
+    weekday-only rule stamped 15 months on or before that day; the federal rule stamps none."""
+    import pandas as pd
+    from pandas.tseries.holiday import USFederalHolidayCalendar
+    from pandas.tseries.offsets import CustomBusinessDay
+    bday = CustomBusinessDay(calendar=USFederalHolidayCalendar())
+    early_new = early_old = 0
+    months = [A._month_end(2018 + i // 12, i % 12 + 1) for i in range(108)]
+    assert len(months) == 108 and months[-1] == date(2026, 12, 31)
+    for end in months:
+        first = pd.Timestamp(end + timedelta(days=1))
+        release = (first - bday + 2 * bday).date()            # 2nd federal business day
+        stamp = A.rule_pink_sheet(end)
+        assert stamp.tzinfo is not None and stamp.hour == 0
+        early_new += stamp.date() <= release
+        early_old += _old_weekday_rule(end) <= release
+    assert early_new == 0
+    assert early_old == 15                                     # the audited defect, reproduced
+    # Labor Day 2025 (Sep 1): release Sep 3, so the stamp is Sep 4, never Sep 3
+    assert A.rule_pink_sheet(date(2025, 8, 31)) == datetime(2025, 9, 4, tzinfo=UTC)
+    # New Year's Day 2026 (Thu): release Jan 5 (Mon), stamp Jan 6
+    assert A.rule_pink_sheet(date(2025, 12, 31)) == datetime(2026, 1, 6, tzinfo=UTC)
+
+
+def test_every_cited_terms_evidence_key_exists() -> None:
+    """A TERMS reason or a TERMS_EVIDENCE text that names another source (or says
+    'TERMS_EVIDENCE') cites evidence; every cited key must be a TERMS_EVIDENCE row."""
+    import re
+    ids = set(A.BY_ID)
+
+    def cited(text: str) -> set[str]:
+        return {t for t in re.findall(r"[a-z][a-z0-9_]+", text) if t in ids}
+
+    missing: list[tuple[str, str]] = []
+    for sid, (_, why) in A.TERMS.items():
+        keys = cited(why) - {sid}
+        if "TERMS_EVIDENCE" in why:
+            keys.add(sid)
+        missing += [(sid, k) for k in keys if k not in A.TERMS_EVIDENCE]
+    for sid, ev in A.TERMS_EVIDENCE.items():
+        for field, text in ev.items():
+            if field.endswith("_url") or field == "robots":
+                continue
+            missing += [(f"{sid}.{field}", k) for k in cited(text) - {sid}
+                        if k not in A.TERMS_EVIDENCE]
+    assert missing == []
+    assert "sg_port_throughput" in A.TERMS_EVIDENCE           # the once-dangling reference
+
+
+def test_licence_quotes_are_single_verbatim_sentences_from_the_licence_pages() -> None:
+    wb = A.TERMS_EVIDENCE["wb_pink_sheet_asia"]
+    assert wb["terms_quote"] == ("CC-BY 4.0, with the additional terms below, is the default "
+                                 "license for all Datasets produced by the World Bank itself and "
+                                 "distributed as open data.")
+    assert wb["terms_quote_2"].startswith("The Creative Commons Attribution 4.0 International")
+    for sid in ("sg_port_throughput", *NEW):
+        ev = A.TERMS_EVIDENCE[sid]
+        assert " / " not in ev["terms_quote"], sid              # never two sentences glued
+        assert "application" not in ev["terms_url"] and "mobile-app" not in ev["terms_url"], sid
+    for sid in ("sg_port_throughput", "sg_merch_trade", "sg_nodx_electronics"):
+        ev = A.TERMS_EVIDENCE[sid]
+        assert ev["terms_url"] == ev["licence_url"] == "https://data.gov.sg/open-data-licence"
+        assert ev["terms_quote"].startswith("You can use, access, download, copy, distribute")
+
+
+def test_attribution_rides_on_the_axis_doc_the_lake_csv_and_every_cell(tmp_path: Path) -> None:
+    import csv
+    paths = A.Paths(tmp_path / "desk")
+    A.run(paths, fixtures=FIX, donate=False, now=NOW)
+    want = {"wb_pink_sheet_asia": ("The World Bank: Commodity Price Data (The Pink Sheet)",
+                                   "https://data.worldbank.org/summary-terms-of-use"),
+            "sg_merch_trade": ("SingStat Table Builder table M451001",
+                               "https://data.gov.sg/open-data-licence"),
+            "sg_nodx_electronics": ("SingStat Table Builder table M450981",
+                                    "https://data.gov.sg/open-data-licence")}
+    for sid, (credit, url) in want.items():
+        doc = json.loads((paths.axes / f"alt_{sid}.json").read_text("utf-8"))
+        assert credit in doc["attribution"]["credit"] and doc["attribution"]["licence_url"] == url
+        assert "{accessed}" not in doc["attribution"]["credit"]
+        lake = next(paths.series.glob(f"alt_{sid}__*.csv"))
+        rows = list(csv.DictReader(lake.open(encoding="utf-8")))
+        assert rows and all(credit in r["credit"] and r["licence_url"] == url for r in rows)
+    assert "Singapore Open Data Licence version 1.0" in A.attribution_of(
+        A.BY_ID["sg_merch_trade"], NOW)["credit"]                              # type: ignore[index]
+    assert "accessed on 2026-10-06" in A.attribution_of(
+        A.BY_ID["sg_merch_trade"], NOW)["credit"]                              # type: ignore[index]
+    gains = {"wb_pink_sheet_asia|nickel|XNIUSD": {"verdict": "PASS", "ic": 0.2, "n": 40},
+             "sg_merch_trade|nodx|USDSGD": {"verdict": "PASS", "ic": -0.1, "n": 40},
+             "kr_exports_early|daily_avg_yoy|USDKRW": {"verdict": "PASS", "ic": -0.1, "n": 40}}
+    for c in A.direct_cells(gains, NOW):
+        sid = c["provenance"]["source_id"]
+        if sid in want:
+            assert want[sid][0] in c["attribution"]["credit"], sid
+            assert c["attribution"]["licence_url"] == want[sid][1], sid
+        else:
+            assert c["attribution"] is None                    # no credit asked, none invented
+
+
+def _pink_bytes() -> bytes:
+    return (FIX / "wb_pink_sheet_asia.xlsx").read_bytes()
+
+
+def _collect_pink(tmp_path: Path, now: datetime, getter: object) -> tuple[A.Paths, dict]:
+    paths = A.Paths(tmp_path / "desk")
+    rec = A.collect(paths, A.BY_ID["wb_pink_sheet_asia"], {}, now, fetch=True, fixtures=None,
+                    deadline=float("inf"), getter=getter)  # type: ignore[arg-type]
+    return paths, rec
+
+
+def _alarms(paths: A.Paths) -> list[dict]:
+    if not paths.alarms.exists():
+        return []
+    return [json.loads(x) for x in paths.alarms.read_text("utf-8").splitlines() if x.strip()]
+
+
+def test_a_current_pink_sheet_raises_no_alarm(tmp_path: Path) -> None:
+    paths, rec = _collect_pink(tmp_path, NOW, lambda url: (_pink_bytes(), "application/xlsx"))
+    assert "alarm" not in rec and _alarms(paths) == []
+
+
+def test_a_pink_sheet_missing_the_current_month_records_an_alarm_row(tmp_path: Path) -> None:
+    # The fixture's newest month is 2026-09; by 2026-11-06 October is out (stamped Nov 4).
+    later = datetime(2026, 11, 6, 12, tzinfo=UTC)
+    paths, rec = _collect_pink(tmp_path, later, lambda url: (_pink_bytes(), "application/xlsx"))
+    assert rec["alarm"]["alarm"] == "NO_CURRENT_MONTH"
+    assert rec["alarm"]["expected_period"] == "2026-10-31"
+    rows = _alarms(paths)
+    assert len(rows) == 1 and rows[0]["source_id"] == "wb_pink_sheet_asia"
+    assert "ALT_WB_PINK_SHEET_URL" in rows[0]["action"]
+    ev = [json.loads(x) for x in paths.events.read_text("utf-8").splitlines()]
+    assert ev[-1]["kind"] == "PLUMBING_DEFECT" and ev[-1]["organ"] == "alt_proxies"
+
+
+def test_a_dead_pink_sheet_link_records_an_alarm_row(tmp_path: Path) -> None:
+    import urllib.error
+
+    def dead(url: str) -> tuple[bytes, str]:
+        raise urllib.error.HTTPError(url, 404, "Not Found", None, None)  # type: ignore[arg-type]
+
+    paths, rec = _collect_pink(tmp_path, NOW, dead)
+    assert rec["alarm"]["alarm"] == "LINK_DEAD"
+    assert _alarms(paths)[0]["alarm"] == "LINK_DEAD"
+
+
+def test_research_roi_routes_alt_proxies_ids_to_their_region() -> None:
+    from research import research_roi as R
+    assert R.region_of("wb_pink_sheet_asia") == "asean"
+    assert R.region_of("alt_proxies:sg_merch_trade") == "asean"
+    assert R.region_of("singstat:M450981") == "asean"
+    assert R.region_of("worldbank:cmo_pink_sheet_monthly") == "asean"
+    assert R.region_of("USDIDR.exogenous_conditioner.alt_wb_pink_sheet_asia__nickel") == "asean"
+    assert R.region_of("alt_proxies:kr_mof_container_teu") == "korea"
+    assert R.region_of("alt_cn_nbs_retail") == "china"
+    # a multi-country row with no declared forest stays unrouted -- never guessed
+    assert R.region_of("wiki_asia_attention") is None
+    assert R.region_of("japan") == "japan"                      # the table still governs

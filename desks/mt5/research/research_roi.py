@@ -221,11 +221,54 @@ def _clip(x: float, lo: float = FACTOR_CLIP[0], hi: float = FACTOR_CLIP[1]) -> f
     return max(lo, min(hi, x))
 
 
+#: alt_proxies rows whose own `region` is multi-country ("ASIA") but whose channels belong to one
+#: forest: the Pink Sheet rows are South-East Asia's export prices (palm oil, rubber, tin, nickel,
+#: robusta, Thai rice) read against IDR/THB. Every other multi-country row stays unrouted.
+ALT_PROXY_REGION: dict[str, str] = {"wb_pink_sheet_asia": "asean"}
+
+
+@lru_cache(maxsize=1)
+def _alt_proxy_regions() -> dict[str, str]:
+    """alt_proxies source id, `alt_<id>` axis/lake stem and `<provider>:<dataset>` data_source ->
+    forest, from each Source's own declared `region` (through REGION_OF) or ALT_PROXY_REGION.
+    Read from the organ, so a new alt_proxies row is routed the day it lands."""
+    try:
+        from research import alt_proxies as A
+    except Exception:                                          # pragma: no cover - import guard
+        return {}
+    out: dict[str, str] = {}
+    for s in A.SOURCES:
+        reg = ALT_PROXY_REGION.get(s.id) or REGION_OF.get(str(s.region).strip().lower())
+        if reg:
+            for key in (s.id, f"alt_{s.id}", f"{A.SOURCE}:{s.id}", A.data_source_of(s)):
+                out[key.lower()] = reg
+    return out
+
+
+def _alt_proxy_region(tok: str) -> str | None:
+    """An alt_proxies id in any of the shapes it travels in: the bare source id, `alt_proxies:
+    <id>`, a data_source, an axis id `alt_<id>`, or a lake file / cell name holding
+    `alt_<id>__<series>`."""
+    table = _alt_proxy_regions()
+    t = tok.strip().lower()
+    if t in table:
+        return table[t]
+    for piece in t.replace(":", " ").replace("/", " ").replace(".", " ").split():
+        stem = piece.split("__", 1)[0]
+        if stem in table and (stem.startswith("alt_") or "__" in piece or stem == piece):
+            return table[stem]
+    return None
+
+
 def region_of(*tokens: Any) -> str | None:
-    """The forest a token belongs to, or None. Explicit table only -- never guessed."""
+    """The forest a token belongs to, or None. Explicit tables only -- never guessed: REGION_OF,
+    then an alt_proxies id resolved through that row's declared region."""
     for tok in tokens:
         if not tok:
             continue
+        hit = _alt_proxy_region(str(tok))
+        if hit:
+            return hit
         for part in str(tok).replace(":", " ").replace("/", " ").replace("_", " ").split():
             hit = REGION_OF.get(part.strip().lower())
             if hit:

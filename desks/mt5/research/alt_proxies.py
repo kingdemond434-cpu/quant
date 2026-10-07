@@ -170,6 +170,16 @@ class Paths:
         return self.desk / "data" / "null_pass_trials.jsonl"
 
     @property
+    def alarms(self) -> Path:
+        """Append-only alarm rows (a stale per-release link, a dead URL): never silent."""
+        return self.desk / "data" / "alt_proxies" / "alarms.jsonl"
+
+    @property
+    def events(self) -> Path:
+        """The desk event log (libs/ops/events.PATH under this desk)."""
+        return self.desk / "data" / "events.jsonl"
+
+    @property
     def sge_premium(self) -> Path:
         return self.desk / "data" / "lake" / "sge_premium.parquet"
 
@@ -1361,18 +1371,32 @@ def parse_pink_sheet(body: bytes, ctx: Ctx) -> list[Obs]:
     return out
 
 
-def rule_pink_sheet(period: date) -> datetime:
-    """The Pink Sheet is updated on the second business day of the following month (worldbank.org
-    commodity-markets page, 2026-10-06: "Next update: November 3, 2026" for the October release).
-    Stamped at 00:00 UTC on the THIRD business day: always after the release, never before it."""
-    nxt = _month_end(period.year, period.month) + timedelta(days=1)   # the month AFTER the period's
-    t, n = _utc(nxt.year, nxt.month, 1), 0
-    while True:
-        if t.weekday() < 5:
-            n += 1
-            if n == 3:
-                return t
+def us_federal_business_days(first: date, n: int) -> list[date]:
+    """The first `n` US federal business days on or after `first` (weekdays that are not a US
+    federal holiday, observed dates included; pandas' USFederalHolidayCalendar). The World Bank
+    is in Washington and keeps the federal calendar, so a release on "the second business day"
+    slips past New Year's Day, Labor Day, Columbus Day, Veterans Day and an observed July 4th."""
+    from pandas.tseries.holiday import USFederalHolidayCalendar
+    hol = {h.date() for h in USFederalHolidayCalendar().holidays(
+        start=first.isoformat(), end=(first + timedelta(days=31)).isoformat())}
+    out: list[date] = []
+    t = first
+    while len(out) < n:
+        if t.weekday() < 5 and t not in hol:
+            out.append(t)
         t += timedelta(days=1)
+    return out
+
+
+def rule_pink_sheet(period: date) -> datetime:
+    """The Pink Sheet is updated on the second US federal business day of the following month
+    (worldbank.org commodity-markets page, read 2026-10-07: "Next update: November 3, 2026." for
+    the October release). Stamped at 00:00 UTC on the THIRD federal business day, after the whole
+    release day: never before the release, holidays included. A rule that counted weekdays only
+    stamped 15 of the 108 months 2018-01..2026-12 on or before the release day."""
+    nxt = _month_end(period.year, period.month) + timedelta(days=1)   # the month AFTER the period's
+    third = us_federal_business_days(nxt, 3)[-1]
+    return _utc(third.year, third.month, third.day)
 
 _MOT_WEEK = re.compile(r"(\d{1,2})\s*月\s*(\d{1,2})\s*日\s*[—\-－~至]+\s*(?:(\d{1,2})\s*月\s*)?"  # noqa: RUF001
                        r"(\d{1,2})\s*日")
@@ -2599,9 +2623,9 @@ TERMS: dict[str, tuple[str, str]] = {
     "tr_tuik_retail": ("confirmed", "TÜİK legal notice: reuse without permission, source cited"),
     "kr_mof_container_teu": ("confirmed", "data.go.kr: 이용허락범위 제한 없음 (unrestricted)"),
     "sg_merch_trade": ("confirmed", "SingStat Table Builder API, Singapore Open Data Licence "
-                       "(same API and licence as sg_port_throughput)"),
+                       "(TERMS_EVIDENCE: the ODL text, read 2026-10-07)"),
     "sg_nodx_electronics": ("confirmed", "SingStat Table Builder API, Singapore Open Data "
-                            "Licence (same API and licence as sg_port_throughput)"),
+                            "Licence (TERMS_EVIDENCE: the ODL text, read 2026-10-07)"),
     "wb_pink_sheet_asia": ("confirmed", "World Bank open data: CC BY 4.0 is the default licence "
                            "for World Bank datasets; commercial use allowed with attribution"),
 }
@@ -2750,38 +2774,75 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                          "별도의 신청절차 없이 이용 가능"),
         "robots": "apis.data.go.kr is the portal's documented Open API (free service key)",
         "checked_at": _CHK},
-    # ---- Asia directive OTHER rows (2026-10-06): terms read by fetching the pages that day
+    # ---- Asia directive OTHER rows: terms re-read 2026-10-07 by fetching each page that day.
+    # SingStat: www.singstat.gov.sg/terms-of-use and tablebuilder.singstat.gov.sg render their
+    # text client-side, so no SingStat sentence could be read; the quotes are the Singapore Open
+    # Data Licence itself (data.gov.sg), whose licensor is any Singapore Government department
+    # ("Agency"), which the Department of Statistics is. The SingStat app terms (which govern the
+    # mobile app, not the Table Builder API) are NOT the evidence any more.
     **{sid: {
-        "terms_url": "https://singstat.gov.sg/our-services-tools-surveys/singstat-mobile-app/tou",
-        "terms_quote": ("Use of Datasets provided in this application is subject to the terms of "
-                        "the Singapore Open Data Licence on the use of statistical data from "
-                        "this Website (\"ODL\")."),
+        "terms_url": "https://data.gov.sg/open-data-licence",
+        "terms_quote": ("You can use, access, download, copy, distribute, transmit, modify and "
+                        "adapt the datasets, or any derived analyses or applications, whether "
+                        "commercially or non-commercially."),
         "licence_url": "https://data.gov.sg/open-data-licence",
-        "licence_quote": ("You can use, access, download, copy, distribute, transmit, modify and "
-                          "adapt the datasets, or any derived analyses or applications, whether "
-                          "commercially or non-commercially."),
-        "judgement": ("the same Table Builder API and licence already confirmed for "
-                      "sg_port_throughput (quotes as recorded there); the table ids were read "
-                      "from tablebuilder.singstat.gov.sg/api/table/resourceid on 2026-10-06"),
+        "licence_quote": ("You must include in your products, applications or websites that Use "
+                          "the datasets, a conspicuous notice acknowledging the source of the "
+                          "datasets and including a link to the most recent version of this "
+                          "Licence."),
+        "scope_quote": ("\"Agency\" means the Singapore Government (including its Ministries, "
+                        "departments, and Organs of State) or the Statutory Board providing the "
+                        "dataset"),
+        "licence": "Singapore Open Data Licence version 1.0",
+        "credit": ("Contains information from SingStat Table Builder table " + table
+                   + " accessed on {accessed} from the Department of Statistics Singapore "
+                   "(tablebuilder.singstat.gov.sg) which is made available under the terms of "
+                   "the Singapore Open Data Licence version 1.0 "
+                   "https://data.gov.sg/open-data-licence"),
+        "judgement": ("the Table Builder API is the Department of Statistics' (a Singapore "
+                      "Government department, an ODL 'Agency') documented data service; the "
+                      "credit follows the ODL's sample attribution notice. Residual: SingStat's "
+                      "own terms page could not be read here (client-side render), so the box "
+                      "should confirm it names the ODL"),
         "robots": "tablebuilder.singstat.gov.sg/api is the documented Table Builder API",
-        "checked_at": "2026-10-06"} for sid in ("sg_merch_trade", "sg_nodx_electronics")},
+        "checked_at": "2026-10-07"}
+        for sid, table in (("sg_port_throughput", "M650631"), ("sg_merch_trade", "M451001"),
+                           ("sg_nodx_electronics", "M450981"))},
     "wb_pink_sheet_asia": {
         "terms_url": "https://datacatalog.worldbank.org/public-licenses",
         "terms_quote": ("CC-BY 4.0, with the additional terms below, is the default license for "
                         "all Datasets produced by the World Bank itself and distributed as open "
-                        "data / allows users to copy, modify and distribute data in any format "
-                        "for any purpose, including commercial use"),
+                        "data."),
+        "terms_quote_2": ("The Creative Commons Attribution 4.0 International license allows "
+                          "users to copy, modify and distribute data in any format for any "
+                          "purpose, including commercial use."),
         "licence_url": "https://data.worldbank.org/summary-terms-of-use",
         "licence_quote": ("you are free to copy, distribute, adapt, display or include the data "
                           "in other products for commercial or noncommercial purposes at no cost "
                           "under a Creative Commons Attribution 4.0 International License"),
+        "attribution_quote": ("you agree to provide attribution to The World Bank and its data "
+                              "providers in the following format: The World Bank: Dataset name: "
+                              "Data source (if known)"),
+        "licence": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+        "credit": "The World Bank: Commodity Price Data (The Pink Sheet)",
         "judgement": ("the Pink Sheet is produced by the World Bank (Prospects Group) and served "
                       "from worldbank.org/en/research/commodity-markets, whose licence links "
-                      "are exactly these two pages; attribution is carried in `credit`"),
-        "credit": "The World Bank: Commodity Price Data (The Pink Sheet)",
+                      "are exactly these two pages; the credit follows the attribution format"),
         "robots": "a single monthly xlsx download, refetched at most once per UTC day",
-        "checked_at": "2026-10-06"},
+        "checked_at": "2026-10-07"},
 }
+
+
+def attribution_of(src: Source, now: datetime | None = None) -> dict[str, str] | None:
+    """The credit line and licence link a source's licence requires on everything published from
+    it (axis doc, lake CSV, cells), read from its TERMS_EVIDENCE row; None when the row asks for
+    no credit. `{accessed}` in the credit is the access date (the ODL's sample notice)."""
+    ev = TERMS_EVIDENCE.get(src.id) or {}
+    if not ev.get("credit"):
+        return None
+    when = (now or datetime.now(UTC)).date().isoformat()
+    return {"credit": ev["credit"].replace("{accessed}", when),
+            "licence": ev.get("licence", ""), "licence_url": ev.get("licence_url", "")}
 
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
                 for s in (*SOURCES, *SUBSTITUTE_SOURCES))
@@ -3217,7 +3278,9 @@ def axis_doc(src: Source, points: dict[str, list[dict[str, Any]]], now: datetime
                 series[f"{name}.{col}"] = {"what": f"{src.name}: {name} {col}", "n": len(keep),
                                            "first": keep[0]["d"], "last": keep[-1]["d"],
                                            "points": keep}
+    att = attribution_of(src, now)
     return {"axis": "alt_proxy", "id": f"alt_{src.id}", "source": src.url.split("?")[0],
+            **({"attribution": att} if att else {}),
             "at": now.isoformat(timespec="seconds"), "region": src.region,
             "cadence": src.cadence, "n_series": len(series),
             "pit_fields": ["event_time", "published_time", "available_time", "first_seen_at",
@@ -3238,6 +3301,8 @@ def write_lake_series(paths: Paths, src: Source, points: dict[str, list[dict[str
     import pandas as pd
     written: list[str] = []
     paths.series.mkdir(parents=True, exist_ok=True)
+    att = attribution_of(src)       # the licence's credit rides on every row of a credited source
+    extra = {"credit": att["credit"], "licence_url": att["licence_url"]} if att else {}
     for name, pts in points.items():
         if not pts:
             continue
@@ -3246,7 +3311,8 @@ def write_lake_series(paths: Paths, src: Source, points: dict[str, list[dict[str
                             "retrieval_time": p["retrieval_time"],
                             "revision_time": p["revision_time"], "source_id": src.id,
                             "vintage_id": p["vintage_id"], "value": p["value"], "pace": p["pace"],
-                            "surprise_z": p["surprise_z"], "pit_quality": p["pit_quality"]}
+                            "surprise_z": p["surprise_z"], "pit_quality": p["pit_quality"],
+                            **extra}
                            for p in pts])
         target = paths.series / f"{lake_file(src, name)}.csv"
         tmp = target.with_suffix(f".tmp{os.getpid()}")
@@ -3441,7 +3507,7 @@ def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[s
             "evidence": {k: g.get(k) for k in ("ic", "n", "t", "p_t", "p_placebo",
                                                "placebo_abs_ic_p95", "backfill_share",
                                                "horizon_bars", "min_detectable_ic", "why")},
-            "data_source": data_source_of(src),
+            "data_source": data_source_of(src), "attribution": attribution_of(src, now),
             "provenance": {"organ": "alt_proxies", "use": "direct_cells", "source_id": sid,
                            "series": series, **_meta(src)}})
     return out
@@ -3572,6 +3638,7 @@ def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict
                 "falsifier": ("the conditioned child's gauntlet verdict is no better than its "
                               "certified parent's on the same window"),
                 "parent": par["name"], "data_source": data_source_of(src),
+                "attribution": attribution_of(src, now),
                 "provenance": {"organ": "alt_proxies", "use": "indirect_cells",
                                "source_id": sid, "series": series, **_meta(src)}})
             minted.append((out[-1], par, src, series, op))
@@ -3698,7 +3765,9 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     reqs = requests_for(src, now, sst)
-    parsed = fetched = 0
+    parsed = fetched = bodies = 0
+    dead_404 = False
+    newest: date | None = None
     errors: list[str] = []
     for i, req in enumerate(reqs):
         if time.monotonic() > deadline:
@@ -3716,11 +3785,15 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
                 errors.append(f"{type(exc).__name__}: {_redact(str(exc), src)[:120]}")
+                if getattr(exc, "code", None) == 404:
+                    dead_404 = True
                 continue
         if body is None:
             continue
         obs = src.parse(body, req.ctx)
         parsed += len(obs)
+        bodies += 1
+        newest = max([o.period for o in obs] + ([newest] if newest else []), default=None)
         m = merge_vintages(store, src, obs, now)
         rec.setdefault("merge", {"added": 0, "revised": 0})
         rec["merge"]["added"] += m["added"]
@@ -3738,8 +3811,75 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 "errors": errors[:6], "store_rows": len(store)})
     if not parsed and not errors:
         rec["why"] = "nothing parsed this pass (no fetch, or the page carried no rows)"
+    if src.id in STALE_LINK_WATCH and (bodies or dead_404):
+        alarm = stale_link_alarm(src, now, newest=newest, dead_404=dead_404)
+        if alarm is not None:
+            rec["alarm"] = record_alarm(paths, alarm)
     _atomic(store_p, store)
     return rec
+
+
+#: Sources whose URL embeds a per-release document id (the Pink Sheet's thedocs.worldbank.org
+#: path changes with each release): when the link dies or stops carrying the current month, the
+#: pass records an alarm row instead of quietly re-reading last month's workbook.
+STALE_LINK_WATCH: dict[str, str] = {
+    "wb_pink_sheet_asia": ("set ALT_WB_PINK_SHEET_URL to the current 'Monthly prices' link on "
+                           "worldbank.org/en/research/commodity-markets"),
+}
+
+
+def expected_newest_period(src: Source, now: datetime) -> date | None:
+    """The newest period the source's own release rule says is out by `now` (monthly only)."""
+    if src.cadence != "monthly":
+        return None
+    y, m = now.year, now.month
+    for _ in range(4):
+        y, m = (y - 1, 12) if m == 1 else (y, m - 1)
+        p = _month_end(y, m)
+        if src.rule(p) <= now:
+            return p
+    return None
+
+
+def stale_link_alarm(src: Source, now: datetime, *, newest: date | None,
+                     dead_404: bool) -> dict[str, Any] | None:
+    """An alarm row when the link 404s, the body parses to nothing, or the newest month it carries
+    is older than the month the release rule says is out. None when the link is current."""
+    expected = expected_newest_period(src, now)
+    if dead_404:
+        kind, why = "LINK_DEAD", "the fetch returned HTTP 404"
+    elif newest is None:
+        kind, why = "NO_ROWS", "the fetched body parsed to no rows"
+    elif expected is not None and newest < expected:
+        kind, why = ("NO_CURRENT_MONTH", f"newest month {newest.isoformat()} < "
+                     f"{expected.isoformat()}, which the release rule says is out")
+    else:
+        return None
+    return {"at": now.isoformat(timespec="seconds"), "organ": "alt_proxies",
+            "source_id": src.id, "alarm": kind, "why": why,
+            "url": _redact(src.url.split("?")[0], src),
+            "newest_period": newest.isoformat() if newest else None,
+            "expected_period": expected.isoformat() if expected else None,
+            "action": STALE_LINK_WATCH.get(src.id, "")}
+
+
+def record_alarm(paths: Paths, alarm: dict[str, Any]) -> dict[str, Any]:
+    """Append the alarm to the organ's alarm ledger AND the desk event log (as PLUMBING_DEFECT,
+    the event kind a stale feed already is), so it is never silent. Never raises."""
+    try:
+        paths.alarms.parent.mkdir(parents=True, exist_ok=True)
+        with paths.alarms.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(alarm, sort_keys=True, ensure_ascii=True) + "\n")
+    except OSError as exc:
+        alarm = {**alarm, "ledger_error": f"{type(exc).__name__}: {str(exc)[:120]}"}
+    try:
+        from libs.ops import events
+        events.emit("PLUMBING_DEFECT", path=paths.events, producer="alt_proxies",
+                    organ="alt_proxies", check=f"stale_link:{alarm.get('source_id')}",
+                    severity="alarm", evidence=json.dumps(alarm, sort_keys=True)[:400])
+    except Exception as exc:                                   # pragma: no cover - import guard
+        alarm = {**alarm, "event_error": f"{type(exc).__name__}: {str(exc)[:120]}"}
+    return alarm
 
 
 def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
