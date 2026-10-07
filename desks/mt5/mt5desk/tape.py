@@ -58,7 +58,6 @@ ONE_SIDED line in `tick_integrity` so a locked FX day can never again sit unmeas
 
 from __future__ import annotations
 
-import hashlib
 import json
 import sys
 from contextlib import suppress
@@ -155,7 +154,26 @@ def contract_terms_row(symbol: str, info: object, at: datetime) -> dict:
         "volume_max": _opt_float(info, "volume_max"),
         "volume_limit": _opt_float(info, "volume_limit"),
         "spread": _opt_int(info, "spread"),
+        # THE TERMINAL'S OWN EVIDENCE THAT THESE VALUES ARE LIVE (2026-10-06): the symbol's last
+        # quote, broker clock converted to UTC. A disconnected terminal still answers
+        # `symbol_info` from its cache, so a swap read without a recent quote is not a capture.
+        "quote_time_utc": broker_epoch_to_utc(getattr(info, "time", None)),
     }
+
+
+def broker_epoch_to_utc(stamp: object) -> str | None:
+    """`symbol_info().time` is epoch seconds on the BROKER's clock (New York wall time + 7h,
+    `libs.regime.session_clock`); the true UTC instant, or None when the terminal gave none."""
+    from zoneinfo import ZoneInfo
+    try:
+        sec = int(stamp)  # type: ignore[call-overload]
+    except (TypeError, ValueError):
+        return None
+    if sec <= 0:
+        return None
+    wall = datetime.fromtimestamp(sec, UTC).replace(tzinfo=None) - timedelta(hours=7)
+    return wall.replace(tzinfo=ZoneInfo("America/New_York")).astimezone(UTC).isoformat(
+        timespec="seconds")
 
 
 def record_contract_terms(symbols: list[str]) -> dict:
@@ -163,6 +181,8 @@ def record_contract_terms(symbols: list[str]) -> dict:
     import MetaTrader5 as mt5
 
     at = datetime.now(UTC)
+    term = mt5.terminal_info()
+    connected = bool(getattr(term, "connected", False)) if term is not None else False
     rows, failures = [], {}
     for symbol in symbols:
         info = mt5.symbol_info(symbol)
@@ -182,7 +202,8 @@ def record_contract_terms(symbols: list[str]) -> dict:
         path.parent.mkdir(parents=True, exist_ok=True)
         frame.to_parquet(path, index=False, compression="zstd")
     return {"observed_at": at.isoformat(timespec="seconds"), "rows": len(rows),
-            "failures": failures, "records": rows}
+            "failures": failures, "records": rows, "connected": connected,
+            "n_requested": len(symbols)}
 
 
 #: THE BOX'S OWN SWAP PANEL (2026-10-06). `data/intelligence/broker_swaps/` -- the panel the carry
@@ -192,28 +213,71 @@ def record_contract_terms(symbols: list[str]) -> dict:
 #: arriving), and the registry it re-read was itself last stamped 2026-09-03 -- while this task
 #: read the same fields from the terminal every hour into a gitignored tape nothing else read.
 #: So the box now writes the panel itself, same row schema, from the call it already makes.
+#:
+#: A CAPTURE NEEDS LIVE EVIDENCE (audit of #244). A disconnected terminal answers `symbol_info`
+#: from its cache, so only a CONNECTED terminal's symbol whose last quote is recent counts; with
+#: no such symbol no panel is written and the freshness report ages. An unchanged value keeps its
+#: `found_at` (= `value_since`, when the value was first seen) across heartbeats, and carries
+#: `last_evidence_at` (the terminal's own quote time) for readers to age from.
 SWAP_PANEL = DATA / "intelligence" / "broker_swaps"
 SWAP_FRESHNESS = DATA.parent / "reports" / "BROKER_SWAPS_FRESHNESS.json"
+SWAP_STATE = TAPE / "swap_panel_state.json"
 #: A capture is daily-or-better; past this age a carry key built from it is STALE, by name.
 SWAP_STALE_H = 26.0
 #: Unchanged swaps are still re-published this often, so "no new panel" never reads as "no capture".
 SWAP_HEARTBEAT_H = 20.0
+#: A last quote older than this is no evidence the terminal is live. Long enough to span a weekend
+#: close (Friday 21:00 to Sunday 21:00 UTC), short enough that a dead feed fails within days.
+SWAP_QUOTE_MAX_AGE_H = 80.0
+#: A capture covering less than this share of the requested symbols reads PARTIAL, never FRESH.
+SWAP_FULL_SHARE = 0.9
 
 
-def swap_panel_rows(records: list[dict]) -> list[dict]:
-    """The terminal's own swap fields as `broker_swaps` `swap_table` rows (the seed miner's schema),
-    stamped with the instant the terminal reported them -- never the instant they were copied."""
+def _ts(raw: object) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(raw))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def _age_h(raw: object, now: datetime) -> float | None:
+    t = _ts(raw)
+    return None if t is None else (now - t).total_seconds() / 3600
+
+
+def evidenced_records(terms: dict, now: datetime) -> list[dict]:
+    """The records a CONNECTED terminal backed with a recent quote; nothing otherwise."""
+    if terms.get("connected") is not True:
+        return []
+    out = []
+    for r in terms.get("records") or []:
+        if r.get("swap_long") is None and r.get("swap_short") is None:
+            continue
+        age = _age_h(r.get("quote_time_utc"), now)
+        if age is not None and -1.0 <= age <= SWAP_QUOTE_MAX_AGE_H:
+            out.append(r)
+    return out
+
+
+def swap_panel_rows(records: list[dict], state: dict) -> list[dict]:
+    """The terminal's swap fields as `broker_swaps` `swap_table` rows (the seed miner's schema).
+    `found_at` is when THIS value was first seen; `state` (symbol -> last value) is updated."""
     out = []
     for r in records:
-        lng, sht = r.get("swap_long"), r.get("swap_short")
-        if lng is None and sht is None:
-            continue
+        sym, lng, sht = r["symbol"], r.get("swap_long"), r.get("swap_short")
+        prev = state.get(sym) or {}
+        same = prev.get("swap_long") == lng and prev.get("swap_short") == sht
+        since = prev.get("value_since") if same and prev.get("value_since") else r["observed_at"]
+        state[sym] = {"swap_long": lng, "swap_short": sht, "value_since": since,
+                      "last_evidence_at": r["quote_time_utc"]}
         diff = float(lng or 0.0) - float(sht or 0.0)
         out.append({
             "source": "broker_swaps", "kind": "swap_table",
-            "title": f"fusion {r['symbol']} swap long={lng} short={sht} diff={diff:+.4f}",
-            "url": "mt5://symbol_info", "text": "", "symbols": [r["symbol"]],
-            "found_at": r["observed_at"], "observed_at": r["observed_at"],
+            "title": f"fusion {sym} swap long={lng} short={sht} diff={diff:+.4f}",
+            "url": "mt5://symbol_info", "text": "", "symbols": [sym],
+            "found_at": since, "value_since": since,
+            "last_evidence_at": r["quote_time_utc"], "observed_at": r["observed_at"],
             "swap_long": lng, "swap_short": sht, "swap_diff": diff,
             "swap_mode": r.get("swap_mode"), "swap_rollover3days": r.get("swap_rollover3days"),
             "broker": "fusionmarkets", "source_kind": "venue_terminal",
@@ -222,40 +286,60 @@ def swap_panel_rows(records: list[dict]) -> list[dict]:
 
 
 def publish_swap_panel(terms: dict, now: datetime | None = None) -> dict:
-    """Write a panel file when the swaps changed or the heartbeat is due, and ALWAYS the freshness
-    report, so a capture that stopped is visible by its age rather than by an absence."""
+    """Write a panel file when a swap changed or the heartbeat is due -- only from live evidence --
+    and ALWAYS the freshness report, so a capture that stopped is visible by its age."""
     now = now or datetime.now(UTC)
-    rows = swap_panel_rows(terms.get("records") or [])
     prev = _load(SWAP_FRESHNESS, {})
-    values = sorted((r["symbols"][0], r["swap_long"], r["swap_short"]) for r in rows)
-    digest = hashlib.sha256(json.dumps(values).encode()).hexdigest()[:16]
+    state = _load(SWAP_STATE, {})
+    records = evidenced_records(terms, now)
+    rows = swap_panel_rows(records, state)
+    changed = any(r["value_since"] == r["observed_at"] for r in rows)     # new or repriced
     last_at = prev.get("last_panel_at")
-    age_h = ((now - datetime.fromisoformat(last_at)).total_seconds() / 3600
-             if last_at else None)
+    panel_age = _age_h(last_at, now)
     wrote = None
-    if rows and (digest != prev.get("panel_digest") or age_h is None or age_h >= SWAP_HEARTBEAT_H):
+    if rows and (changed or panel_age is None or panel_age >= SWAP_HEARTBEAT_H):
         SWAP_PANEL.mkdir(parents=True, exist_ok=True)
         path = SWAP_PANEL / f"discoveries_{now.strftime('%Y%m%d_%H%M')}_terminal.json"
         path.write_text(json.dumps(rows, indent=1), encoding="utf-8")
         wrote, last_at = path.name, now.isoformat(timespec="seconds")
-    captured = terms.get("observed_at") if rows else prev.get("last_capture_at")
-    cap_age = ((now - datetime.fromisoformat(captured)).total_seconds() / 3600
-               if captured else None)
+    if rows:
+        SWAP_STATE.parent.mkdir(parents=True, exist_ok=True)
+        SWAP_STATE.write_text(json.dumps(state, indent=1, sort_keys=True), encoding="utf-8")
+        captured = str(terms.get("observed_at"))
+        evidence = max(str(r["quote_time_utc"]) for r in records)
+        n_sym, n_exp = len(rows), int(terms.get("n_requested") or len(terms.get("records") or []))
+    else:
+        captured, evidence = prev.get("last_capture_at"), prev.get("last_evidence_at")
+        n_sym, n_exp = prev.get("n_symbols") or 0, prev.get("n_expected") or 0
+    cap_age = _age_h(captured, now)
+    if cap_age is None:
+        status = "UNMEASURED"
+    elif cap_age > SWAP_STALE_H:
+        status = "STALE"
+    elif n_exp and n_sym < SWAP_FULL_SHARE * n_exp:
+        status = "PARTIAL"
+    else:
+        status = "FRESH"
+    why = ("" if rows else
+           "terminal not connected" if terms.get("connected") is not True else
+           "no symbol had a quote within "
+           f"{SWAP_QUOTE_MAX_AGE_H:g}h" if terms.get("records") else "no symbol answered")
     doc = {
-        "schema": "broker_swaps_freshness/1", "generated_at": now.isoformat(timespec="seconds"),
+        "schema": "broker_swaps_freshness/2", "generated_at": now.isoformat(timespec="seconds"),
         "source": "mt5.symbol_info swap_long/swap_short via mt5desk.tape --terms-only "
-                  "(MT5-ContractTerms, hourly)",
-        "last_capture_at": captured,
+                  "(MT5-ContractTerms, hourly), counted only with live terminal evidence",
+        "status": status,
+        "last_capture_at": captured, "last_evidence_at": evidence,
         "capture_age_h": round(cap_age, 2) if cap_age is not None else None,
         "stale_after_h": SWAP_STALE_H,
-        "status": ("UNMEASURED" if cap_age is None else
-                   "STALE" if cap_age > SWAP_STALE_H else "FRESH"),
-        "n_symbols": len(rows), "n_failures": len(terms.get("failures") or {}),
+        "n_symbols": n_sym, "n_expected": n_exp, "full_share": SWAP_FULL_SHARE,
+        "this_run": {"connected": terms.get("connected"), "evidenced": len(rows),
+                     "answered": len(terms.get("records") or []),
+                     "failures": len(terms.get("failures") or {}), "why_no_capture": why or None},
         "last_panel_at": last_at, "last_panel_file": wrote or prev.get("last_panel_file"),
-        "panel_digest": digest if wrote else prev.get("panel_digest"),
-        "rule": "a reader recomputes age from last_capture_at against its own clock: this file "
-                "is rewritten only when the task runs, so its own generated_at ageing is the "
-                "signal that the task stopped",
+        "rule": "readers recompute age from last_capture_at against their own clock and refuse "
+                "STALE, UNMEASURED or a missing file (research.carry_state.swap_feed); this file "
+                "is rewritten only when the task runs",
     }
     SWAP_FRESHNESS.parent.mkdir(parents=True, exist_ok=True)
     SWAP_FRESHNESS.write_text(json.dumps(doc, indent=1), encoding="utf-8")
@@ -877,9 +961,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     terms = record_contract_terms(symbols)
-    fresh = publish_swap_panel(terms)
-    print(f"swap panel {fresh['status']}: {fresh['n_symbols']} symbols, "
-          f"captured {fresh['last_capture_at']}, panel {fresh['last_panel_file']}")
+    try:                 # the panel is a by-product: its failure must never cost the tick run
+        fresh = publish_swap_panel(terms)
+        print(f"swap panel {fresh['status']}: {fresh['n_symbols']}/{fresh['n_expected']} "
+              f"symbols, captured {fresh['last_capture_at']}, panel {fresh['last_panel_file']}")
+    except Exception as exc:
+        print(f"swap panel NOT published: {type(exc).__name__}: {exc}")
     if "--terms-only" in argv:
         # THE FINANCING LEG IS SECONDS OF WORK; THE TICK PULL IS MINUTES. Binding them meant the
         # cheap perishable stream could only be scheduled at the expensive one's cadence, so a

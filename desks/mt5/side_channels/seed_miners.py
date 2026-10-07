@@ -524,16 +524,23 @@ def mine_broker_swaps() -> list[dict]:
         except (TypeError, ValueError):
             diff = 0.0
         # THE VALUE'S OWN TIME, NOT THE COPY'S (2026-10-06): the registry carries the instant the
-        # box read these from the terminal. Stamping `found_at` with the copy time made a
-        # 2026-09-03 swap read as fresh on every later pass, so a carry key built on it was never
-        # STALE. `found_at` is the knowledge time readers use; an unstamped field keeps the copy.
+        # box read these from the terminal, and that is the knowledge time readers age from.
+        # Stamping the copy time made a 2026-09-03 swap read as fresh on every later pass, so a
+        # carry key built on it was never STALE. A row with no reading time is UNMEASURED.
         seen = meta.get("updated_at")
+        if not seen:
+            out.append(row("broker_swaps", "unmeasured",
+                           f"{sym}: registry swap has no updated_at -- reading time unknown, so "
+                           "its age cannot be measured", str(reg_path), symbols=[sym],
+                           needs_selector_work=False))
+            continue
         out.append(row("broker_swaps", "swap_table",
                        f"fusion {sym} swap long={lng} short={sht} diff={diff:+.4f}",
                        "mt5://symbol_info", symbols=[sym],
                        swap_long=lng, swap_short=sht, swap_diff=diff,
                        broker="fusionmarkets", source_kind="venue_terminal",
-                       **({"found_at": seen, "observed_at": seen} if seen else {})))
+                       found_at=seen, observed_at=seen, value_since=seen,
+                       last_evidence_at=seen))
     if not priced:
         out.append(row("broker_swaps", "unmeasured",
                        "universe registry carries no swap fields yet -- run expand_universe.py on "
