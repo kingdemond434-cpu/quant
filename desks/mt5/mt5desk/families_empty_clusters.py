@@ -132,7 +132,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from mt5desk.families import Signal, _atr, _h1, bars_per_day
+from mt5desk.families import Signal, _atr, _h1, bar_minutes, bars_per_day
 
 BASE = Path(__file__).resolve().parent.parent            # desks/mt5
 OBSERVABLES = BASE / "data" / "observables"
@@ -404,10 +404,6 @@ COT_CONTRACTS: dict[str, str] = {
 }
 COT_INDEX: dict[str, str] = {"US500": "sp500", "US30": "sp500", "NAS100": "nasdaq100",
                              "USDX": "dxy"}
-#: Report dates whose release the 2013 and 2018-19 US government shutdowns DELAYED by weeks. A
-#: fixed Friday lag would date them before they existed, so they are dropped, not mis-dated.
-COT_DELAYED: tuple[tuple[str, str], ...] = (("2013-09-30", "2013-11-01"),
-                                            ("2018-12-18", "2019-03-08"))
 
 
 def cot_contract(symbol: str) -> tuple[str, int] | None:
@@ -424,13 +420,37 @@ def cot_contract(symbol: str) -> tuple[str, int] | None:
     return None
 
 
-#: The COT publication lag on the BAR clock, applied to the report's Tuesday as-of date: the
-#: CFTC releases Friday 15:30 ET (= 22:30 broker, broker = ET + 7h all year), so a report is
-#: usable from Friday 23:00 broker. Named for `scripts/check_known_by_date.py` (the cot_fx
-#: source's declared lag, `data_os.PUBLICATION_LAGS["cot_fx"]`, is the coarser 4-day bound that
-#: holds on any clock; this one is exact on the broker clock the bars are labelled in). Releases
-#: the shutdowns pushed later are dropped by `COT_DELAYED`, never mis-dated.
+#: The NOMINAL COT publication lag on the BAR clock, applied to the report's Tuesday as-of date:
+#: the CFTC normally releases Friday 15:30 ET (= 22:30 broker, broker = ET + 7h all year), so a
+#: report is usable from Friday 23:00 broker AT THE EARLIEST. It is a FLOOR, never the label.
 COT_RELEASE_LAG = pd.Timedelta(days=3, hours=23)
+
+
+def cot_usable_from(report_dates: pd.Series) -> pd.DatetimeIndex:
+    """Per report (Tuesday as-of dates, in report order), the first BAR-CLOCK instant it was public.
+
+    HOLD fix M2 (2026-10-07). A fixed Friday lag plus a hand list of two shutdown spans
+    (`COT_DELAYED`, now gone) read every holiday-week report up to a business day early and the
+    whole 2025 appropriation lapse weeks early. The release DATE is now PR #238's own schedule,
+    `mt5desk.cot_frames.release_date` (ported verbatim): a closure on the Wednesday-Friday moves
+    the release to the next business day, and the 2013, 2018-19 and 2025 lapses use the CFTC's
+    announced catch-up dates (end of that US day, since the hour was unannounced). That instant is
+    put on the bar clock by `utc_to_bar_ns`, ceiled to the hour, floored at
+    `COT_RELEASE_LAG`, and made strictly increasing in report order (a report sharing a release
+    instant with the one before it is usable an hour later) -- the rule #238 applies."""
+    from mt5desk.cot_frames import ET, RELEASE_ET, _week_friday, release_date
+    out: list[pd.Timestamp] = []
+    prev: pd.Timestamp | None = None
+    for rd in pd.to_datetime(pd.Series(report_dates), utc=True):
+        day, tabled = release_date(_week_friday(rd))
+        released = pd.Timestamp(f"{day} {'23:59' if tabled else RELEASE_ET}").tz_localize(ET)
+        lab = pd.Timestamp(utc_to_bar_ns(released), tz="UTC").ceil("h")
+        lab = max(lab, rd.normalize() + COT_RELEASE_LAG)
+        if prev is not None and lab <= prev:
+            lab = prev + pd.Timedelta(hours=1)
+        out.append(lab)
+        prev = lab
+    return pd.DatetimeIndex(out)
 
 
 @lru_cache(maxsize=32)
@@ -447,9 +467,6 @@ def _cot_cached(path: str, mtime_ns: int) -> pd.DataFrame | None:
     f["report_date"] = pd.to_datetime(f["report_date"], utc=True, errors="coerce")
     f = f.dropna(subset=["report_date"]).sort_values("report_date")
     f = f.drop_duplicates("report_date", keep="last")
-    for lo, hi in COT_DELAYED:
-        f = f[~((f["report_date"] >= pd.Timestamp(lo, tz="UTC"))
-                & (f["report_date"] <= pd.Timestamp(hi, tz="UTC")))]
     oi = f["open_interest_all"].astype(float).replace(0.0, np.nan)
     out = pd.DataFrame({
         "spec": (f["noncomm_positions_long_all"].astype(float)
@@ -457,8 +474,8 @@ def _cot_cached(path: str, mtime_ns: int) -> pd.DataFrame | None:
         "comm": (f["comm_positions_long_all"].astype(float)
                  - f["comm_positions_short_all"].astype(float)) / oi,
     })
-    # Tuesday as-of -> Friday 15:30 ET release = 22:30 broker -> usable from Friday 23:00 broker.
-    out.index = pd.DatetimeIndex(f["report_date"].dt.normalize() + COT_RELEASE_LAG)
+    # Tuesday as-of -> its TRUE release (holiday weeks and lapses included) on the bar clock.
+    out.index = cot_usable_from(f["report_date"])
     return out.dropna()
 
 
@@ -581,6 +598,43 @@ ENTRY_BASES: tuple[str, ...] = (
 #: Server-hour session opens (the same clock `family_call.SESSIONS` uses).
 SESSION_OPENS: tuple[int, ...] = (0, 8, 14)
 
+#: (operator, base) pairs this module does NOT mint, because another PR owns the question
+#: (coordinator ruling 2026-10-07 on the operator overlap with PR #254, whose
+#: `entry_alpha_spread_session_median` / `entry_alpha_post_open_normalised` own the execution-entry
+#: operator pairs): a spread gate over `overnight_gap_decay` is #254's default-base spread-median
+#: cell, and an open offset over `asia_momentum` (which fills at the 08:00 open) is #254's
+#: post-open cell. The family returns [] for them and the producer plans no cell. Their PAST
+#: trials stay charged: `data/EMPTY_CLUSTER_TRIALS.jsonl` is append-only and keeps every row
+#: already written, so the union the multiple-testing charge is taken over never shrinks -- the
+#: same treatment implied_vol_term_inversion received when it was dropped for #234.
+OWNED_ELSEWHERE: dict[str, frozenset[str]] = {
+    "entry_alpha_spread_gate": frozenset({"overnight_gap_decay"}),
+    "entry_alpha_open_offset": frozenset({"asia_momentum"}),
+}
+
+#: A missing bar spread is carried forward at most this many bars, then reads UNKNOWN (HOLD
+#: should-fix 2026-10-07: an uncapped ffill let one old print stand in for a whole gap).
+SPREAD_STALE_MAX_BARS = 3
+
+_CHART_NAME: dict[int, str] = {1: "M1", 5: "M5", 15: "M15", 30: "M30", 60: "H1", 240: "H4",
+                               1440: "D1"}
+
+
+def base_chart_ok(d: pd.DataFrame, base_family: str) -> bool:
+    """False when the BASE family is pinned to charts that exclude `d`'s chart.
+
+    `entry_alpha_spread_gate` runs on every chart, but its base does not have to: wrapping
+    `opening_range` (pinned M1-H1 in `families_orthogonal.FAMILY_TIMEFRAMES`, because its range
+    forms after one named stamp-hour a four-hour or daily bar does not carry) on H4 or D1 would
+    file an inexpressible claim as a data gap. The base's own pin binds the operator (HOLD
+    should-fix 2026-10-07)."""
+    from mt5desk.families_orthogonal import FAMILY_TIMEFRAMES
+    pin = FAMILY_TIMEFRAMES.get(base_family)
+    if not pin:
+        return True
+    minutes = bar_minutes(d)
+    return minutes is not None and _CHART_NAME.get(int(minutes)) in tuple(pin[0])
+
 
 def _memo() -> Any:
     from mt5desk.build_memo import Memo, copy_signals
@@ -620,12 +674,26 @@ def _base_signals(d: pd.DataFrame, base_family: str, base_params: dict | None) -
 
 
 def _rebased(s: Signal, t: Any, entry_ref: float, *, trigger: float | None, wait: int,
-             tag: str) -> Signal:
+             tag: str) -> Signal | None:
     """`s` moved to time `t` with its stop and target kept at the same distance from the new
-    reference price, so the operator changes the ENTRY and nothing else."""
-    ref0 = s.trigger if s.trigger is not None else None
-    dist_stop = abs((ref0 if ref0 is not None else entry_ref) - s.stop)
-    dist_tgt = abs(s.target - (ref0 if ref0 is not None else entry_ref))
+    reference price, so the operator changes the ENTRY and nothing else.
+
+    DISTANCES ARE SIGNED BY THE SIDE (HOLD fix, 2026-10-07). A long's stop must sit below and its
+    target above the reference it is measured from (mirrored for a short). When the base's stop
+    or target is already CROSSED at that reference -- for the delaying operators, the close of
+    the bar the entry was moved to -- the base trade has already resolved and there is no
+    geometry to carry; `abs()` used to flip that exit to the other side of the new entry (32.7%
+    of spread_gate's delayed signals in review). Such a signal is DROPPED (None), never
+    mirrored."""
+    ref0 = float(s.trigger) if s.trigger is not None else float(entry_ref)
+    side = int(s.side)
+    if side not in (1, -1):
+        return None
+    dist_stop = side * (ref0 - float(s.stop))
+    dist_tgt = side * (float(s.target) - ref0)
+    if not (math.isfinite(dist_stop) and math.isfinite(dist_tgt)
+            and dist_stop > 0 and dist_tgt > 0):
+        return None                        # an exit already crossed at the reference
     ref = trigger if trigger is not None else entry_ref
     return Signal(time=t, side=s.side, stop=ref - s.side * dist_stop,
                   target=ref + s.side * dist_tgt, ttl_bars=s.ttl_bars,
@@ -674,6 +742,8 @@ def family_entry_alpha_limit_pullback(
         lim = ref - s.side * float(pullback_atr) * float(atr[p])
         g = _rebased(s, s.time, ref, trigger=lim, wait=int(wait_bars),
                      tag="entry_alpha_limit_pullback")
+        if g is None:
+            continue
         import dataclasses
         out.append(dataclasses.replace(g, order_type="limit"))  # type: ignore[call-arg]
     return out
@@ -692,15 +762,23 @@ def family_entry_alpha_spread_gate(
     fills at j+1's open. The threshold at j is the quantile of bars STRICTLY before j."""
     if not symbol or "spread" not in df.columns or not 0 < float(spread_q) < 1:
         return []
+    if base_family in OWNED_ELSEWHERE.get("entry_alpha_spread_gate", ()):
+        return []
     d = _h1(df)
+    if not base_chart_ok(d, base_family):
+        return []
     base = _base_signals(d, base_family, base_params)
     if not base:
         return []
     raw = df["spread"].astype(float)
     raw.index = pd.DatetimeIndex(pd.to_datetime(raw.index, utc=True, errors="coerce"))
-    sp = raw[~raw.index.duplicated(keep="last")].reindex(d.index).ffill()
+    # A missing spread is carried forward at most SPREAD_STALE_MAX_BARS bars; past that the bar's
+    # spread is UNKNOWN, and an unknown spread neither delays a decision nor admits an entry.
+    sp = raw[~raw.index.duplicated(keep="last")].reindex(d.index).ffill(
+        limit=SPREAD_STALE_MAX_BARS)
     thr = sp.rolling(int(window), min_periods=int(window) // 2).quantile(float(spread_q)).shift(1)
-    ok = (sp <= thr).to_numpy()
+    known = (sp.notna() & thr.notna()).to_numpy()
+    ok = ((sp <= thr) & sp.notna() & thr.notna()).to_numpy()
     close = d["close"].to_numpy(dtype=float)
     st = _stamps(d)
     out: list[Signal] = []
@@ -708,14 +786,16 @@ def family_entry_alpha_spread_gate(
         if s.trigger is not None:
             continue
         p = int(np.searchsorted(st, pd.Timestamp(s.time).value, side="left"))
-        if p >= len(d) - 1 or bool(ok[p]):
+        if p >= len(d) - 1 or not bool(known[p]) or bool(ok[p]):
             continue                      # no delay: identical to the base, not a new question
         # the base decided at closed bar p on a wide spread; hold the decision to the first later
         # CLOSED bar j whose own spread has normalised, and fill at j+1 -- never reading j+1.
         for j in range(p + 1, min(p + 1 + int(max_wait), len(d) - 1)):
             if bool(ok[j]):
-                out.append(_rebased(s, d.index[j], float(close[j]), trigger=None,
-                                    wait=1, tag="entry_alpha_spread_gate"))
+                g = _rebased(s, d.index[j], float(close[j]), trigger=None, wait=1,
+                             tag="entry_alpha_spread_gate")
+                if g is not None:          # an exit crossed by close[j] is dropped, not mirrored
+                    out.append(g)
                 break
     return out
 
@@ -728,6 +808,8 @@ def family_entry_alpha_open_offset(
     moved to fill on the first bar after them. Signals elsewhere are dropped: they are the base
     cell unchanged, and re-testing them would charge a second trial for no new question."""
     if not symbol or int(offset_bars) < 1:
+        return []
+    if base_family in OWNED_ELSEWHERE.get("entry_alpha_open_offset", ()):
         return []
     d = _h1(df)
     base = _base_signals(d, base_family, base_params)
@@ -750,8 +832,10 @@ def family_entry_alpha_open_offset(
         q = f + (int(offset_bars) - (int(hours[f]) - opened))
         if q >= len(d) - 1:
             continue
-        out.append(_rebased(s, d.index[q - 1], float(close[q - 1]), trigger=None, wait=1,
-                            tag="entry_alpha_open_offset"))
+        g = _rebased(s, d.index[q - 1], float(close[q - 1]), trigger=None, wait=1,
+                     tag="entry_alpha_open_offset")
+        if g is not None:                  # an exit crossed by the new close is dropped
+            out.append(g)
     return out
 
 

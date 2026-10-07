@@ -114,6 +114,8 @@ def _params(fam: str, sym: str) -> dict:
     p = {"symbol": sym, **{k: v[0] for k, v in ec.PARAM_GRID[fam].items()}}
     if fam.startswith("entry_alpha"):
         p.update({"base_family": "asia_momentum", "base_params": {}})
+    if fam == "entry_alpha_open_offset":
+        p["base_family"] = "jump"      # asia_momentum's open offset is #254's (OWNED_ELSEWHERE)
     if fam in ("cross_asset_lead_lag", "lead_lag_session_handoff"):
         p["cond_symbol"] = "USDJPY"
     if fam == "entry_alpha_spread_gate":
@@ -199,13 +201,35 @@ def test_implied_close_is_usable_only_from_the_next_broker_day(world):
     assert first.tz_localize(None).to_pydatetime() == d0 + timedelta(days=1)
 
 
-def test_cot_is_usable_from_friday_2300_broker_and_delayed_reports_are_dropped(world):
+def test_cot_is_usable_only_from_its_true_release_on_the_bar_clock(world):
+    """M2 (HOLD 2026-10-07): each report is usable from PR #238's real CFTC release, put on the
+    bar clock -- Friday 23:00 broker in a normal week, later in a holiday week or a lapse, never
+    earlier than the nominal floor, and strictly increasing in report order."""
+    from mt5desk import cot_frames as cf
     frame, orient = ec.cot_frame("USDJPY")
     assert orient == -1                                    # long yen futures = short USDJPY
-    assert set(frame.index.dayofweek) == {4} and set(frame.index.hour) == {23}
-    dropped = frame[(frame.index >= pd.Timestamp("2018-12-18", tz="UTC"))
-                    & (frame.index <= pd.Timestamp("2019-03-12", tz="UTC"))]
-    assert dropped.empty
+    raw = pd.read_parquet(world["cot"] / "jpy.parquet")
+    rd = pd.to_datetime(raw["report_date"], utc=True)
+    assert frame.index.is_monotonic_increasing and frame.index.is_unique
+    assert len(frame) == len(rd)                           # lapse reports are labelled, not lost
+    floor = rd.dt.normalize() + ec.COT_RELEASE_LAG
+    assert (frame.index >= pd.DatetimeIndex(floor)).all()
+    normal = [i for i, r in enumerate(rd) if not cf.release_date(cf._week_friday(r))[1]
+              and cf.release_date(cf._week_friday(r))[0] == cf._week_friday(r).date()]
+    late = sorted(set(range(len(rd))) - set(normal))
+    assert normal and late
+    assert {(frame.index[i].dayofweek, frame.index[i].hour) for i in normal} == {(4, 23)}
+    assert all(frame.index[i] > floor.iloc[i] for i in late)
+    # Thanksgiving week 2019: as of Tue Nov 26, released Mon Dec 2 15:30 ET = 22:30 broker
+    i = int(np.flatnonzero(rd == pd.Timestamp("2019-11-26", tz="UTC"))[0])
+    assert frame.index[i] == pd.Timestamp("2019-12-02 23:00", tz="UTC")
+    # the 2018-19 lapse: as of Tue Jan 8 2019 is no longer DROPPED, it is usable after its
+    # CFTC catch-up release, weeks after the nominal Friday
+    i = int(np.flatnonzero(rd == pd.Timestamp("2019-01-08", tz="UTC"))[0])
+    assert frame.index[i] - floor.iloc[i] > pd.Timedelta(days=14)
+    # the 2025 lapse (outside this fixture's span, checked on the label function directly)
+    lab = ec.cot_usable_from(pd.Series(pd.to_datetime(["2025-09-30", "2025-10-07"], utc=True)))
+    assert lab[0] >= pd.Timestamp("2025-11-19", tz="UTC") and lab[1] > lab[0]
     assert ec.cot_contract("AUDJPY") == ("aud", 1) and ec.cot_contract("XAUUSD") == ("gold", 1)
 
 
@@ -501,4 +525,117 @@ def test_limit_pullback_waits_for_the_limit_engine(world, producer):
     cells, missing = ecb.plan()
     assert not any(f == "entry_alpha_limit_pullback" for _s, f, _p in cells)
     assert ec.LIMIT_ENGINE_WAIT in missing["execution_entry"]
+
+
+# ------------------------------------------------------------ HOLD fixes (2026-10-07) on #163 ---
+@pytest.mark.parametrize("side", [1, -1])
+def test_a_crossed_exit_is_dropped_never_mirrored(side):
+    """`_rebased` used abs(): a base whose target or stop the reference close had already passed
+    was re-stamped with that exit on the OTHER side of the entry. It must return None."""
+    from mt5desk.engine import Signal
+    t = pd.Timestamp("2024-01-02 09:00", tz="UTC")
+    ref = 1.1000
+
+    def sig(stop_off, tgt_off):
+        return Signal(time=t, side=side, stop=ref - side * stop_off,
+                      target=ref + side * tgt_off, ttl_bars=5, tag="b")
+    ok = ec._rebased(sig(0.002, 0.004), t, ref, trigger=None, wait=1, tag="x")
+    assert ok is not None
+    assert side * (ref - ok.stop) == pytest.approx(0.002)
+    assert side * (ok.target - ref) == pytest.approx(0.004)
+    assert ec._rebased(sig(0.002, -0.001), t, ref, trigger=None, wait=1, tag="x") is None
+    assert ec._rebased(sig(-0.001, 0.004), t, ref, trigger=None, wait=1, tag="x") is None
+    assert ec._rebased(sig(0.002, 0.0), t, ref, trigger=None, wait=1, tag="x") is None
+
+
+@pytest.mark.parametrize("family", ["entry_alpha_spread_gate", "entry_alpha_open_offset"])
+def test_every_delayed_entry_keeps_its_exits_on_the_right_side(world, family):
+    d = world["frames"]["AUDJPY"]
+    sigs = ec.EMPTY_CLUSTER_FAMILIES[family](d, **_params(family, "AUDJPY"))
+    assert sigs
+    close = d["close"]
+    for s in sigs:
+        c = float(close[pd.Timestamp(s.time)])
+        assert s.side * (c - s.stop) > 0 and s.side * (s.target - c) > 0, s
+
+
+def test_operator_pairs_owned_by_254_are_not_minted(world, producer):
+    """Coordinator ruling: #254 owns the execution-entry operator pairs, so the spread gate over
+    overnight_gap_decay and the open offset over asia_momentum are neither built nor planned."""
+    d = world["frames"]["AUDJPY"]
+    assert ec.family_entry_alpha_spread_gate(d, symbol="AUDJPY",
+                                             base_family="overnight_gap_decay") == []
+    assert ec.family_entry_alpha_open_offset(d, symbol="AUDJPY", base_family="asia_momentum") == []
+    ecb, _donated = producer
+    cells, _missing = ecb.plan()
+    pairs = {(f, p.get("base_family")) for _s, f, p in cells}
+    for fam, bases in ec.OWNED_ELSEWHERE.items():
+        assert not any((fam, b) in pairs for b in bases)
+    assert ("entry_alpha_spread_gate", "asia_momentum") in pairs     # the rest still mint
+
+
+def test_a_stale_spread_neither_delays_nor_admits(world):
+    """A missing spread carries forward at most SPREAD_STALE_MAX_BARS bars; past that the bar's
+    spread is unknown. Blanking a long run of spreads must remove every signal inside it."""
+    d = world["frames"]["AUDJPY"].copy()
+    p = _params("entry_alpha_spread_gate", "AUDJPY")
+    lo, hi = len(d) // 2, len(d) // 2 + 400
+    d["spread"] = d["spread"].astype(float)
+    d.iloc[lo:hi, d.columns.get_loc("spread")] = np.nan
+    sigs = ec.family_entry_alpha_spread_gate(d, **p)
+    blind_from = d.index[lo + ec.SPREAD_STALE_MAX_BARS]
+    blind_to = d.index[hi - 1]
+    assert sigs
+    assert not [s for s in sigs if blind_from <= pd.Timestamp(s.time) <= blind_to]
+
+
+def test_spread_gate_over_opening_range_is_pinned_to_m1_h1(world):
+    """The spread gate runs on every chart, but its base's pin binds it: opening_range is M1-H1
+    in FAMILY_TIMEFRAMES, so the wrapped cell refuses on H4 and D1 and fires on H1."""
+    from mt5desk import families_orthogonal as fo
+    assert fo.FAMILY_TIMEFRAMES["opening_range"][0] == ("M1", "M5", "M15", "M30", "H1")
+    h1 = world["frames"]["AUDJPY"]
+    p = {**_params("entry_alpha_spread_gate", "AUDJPY"), "base_family": "opening_range"}
+    assert ec.base_chart_ok(h1, "opening_range")
+    assert ec.family_entry_alpha_spread_gate(h1, **p)
+    for rule in ("4h", "1D"):
+        frame = _resample(h1, rule)
+        assert not ec.base_chart_ok(frame, "opening_range")
+        assert ec.family_entry_alpha_spread_gate(frame, **p) == []
+    assert ec.base_chart_ok(_resample(h1, "4h"), "asia_momentum")     # an unpinned base
+
+
+def test_event_surprise_consensus_future_perturbation_leaves_every_earlier_signal(world):
+    """Corrupt every bar AND every release after a cutoff (new z, flipped signs, extra rows):
+    signals at or before the cutoff must be identical."""
+    d = world["frames"]["AUDJPY"]
+    rng = np.random.default_rng(17)
+    t0 = pd.Timestamp("2019-02-01 12:30", tz="UTC")
+    rows = [{"currency": c, "z": float(rng.normal(0, 2)),
+             "release_utc": str(t0 + pd.Timedelta(hours=int(h)))}
+            for c, h in zip(rng.choice(["JPY", "AUD", "USD"], 400),
+                            np.cumsum(rng.integers(30, 150, 400)), strict=True)]
+    p = {"symbol": "AUDJPY", "side_on_up": 1, "z_min": 1.0}
+
+    def run(frame, rs):
+        ec.CONSENSUS_STORE.write_text("\n".join(json.dumps(r) for r in rs), "utf-8")
+        ec._consensus_cached.cache_clear()
+        return ec.family_event_surprise_consensus(frame, **p)
+    for frac in (0.4, 0.7):
+        cut = d.index[int(len(d) * frac)]
+        clean = _entry_key(run(d, rows), cut)
+        assert clean, f"no consensus signal before {cut}: vacuous"
+        dirty = d.copy()
+        later = dirty.index > cut
+        dirty.loc[later, ["open", "high", "low", "close"]] *= rng.uniform(0.7, 1.3,
+                                                                         (int(later.sum()), 1))
+        dirty.loc[later, "high"] = dirty.loc[later, ["open", "high", "close"]].max(axis=1)
+        dirty.loc[later, "low"] = dirty.loc[later, ["open", "low", "close"]].min(axis=1)
+        future = [dict(r, z=-3.0 * float(r["z"]) + 1.0)
+                  if pd.Timestamp(r["release_utc"]).tz_localize("UTC") > cut else r
+                  for r in rows]
+        future += [{"currency": "JPY", "z": 5.0,
+                    "release_utc": str((cut + pd.Timedelta(hours=k)).tz_localize(None))}
+                   for k in (2, 5, 30)]
+        assert clean == _entry_key(run(dirty, future), cut), f"reads the future after {cut}"
 

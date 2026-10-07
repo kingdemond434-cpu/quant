@@ -235,6 +235,10 @@ def plan() -> tuple[list[tuple[str, str, dict[str, Any]]], dict[str, list[str]]]
     for sym in EXECUTION_INSTRUMENTS:
         for base in ec.ENTRY_BASES:
             for fam in entry_fams:
+                # a pair another PR owns is not minted; its past trials stay in the append-only
+                # trial ledger, so the charged union never shrinks (`ec.OWNED_ELSEWHERE`)
+                if base in ec.OWNED_ELSEWHERE.get(fam, ()):
+                    continue
                 add(sym, fam, {"base_family": base, "base_params": {}})
 
     if not ec.fed_calendar():
