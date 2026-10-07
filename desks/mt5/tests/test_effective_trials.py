@@ -26,6 +26,13 @@ from libs.research.trial_ledger import (  # noqa: E402
 from research import effective_trials as et  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def _events_to_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`et.write` emits to the event log; keep it off the tracked desks/mt5/data/events.jsonl."""
+    from libs.ops import events
+    monkeypatch.setattr(events, "PATH", tmp_path / "events.jsonl")
+
+
 def _row(fam: str, sym: str, tf: str, **params: Any) -> dict[str, Any]:
     return {"family": fam, "symbol": sym, "timeframe": tf, "params": dict(params)}
 
@@ -259,3 +266,19 @@ def test_absent_docket_is_unmeasured_and_changes_no_policy(tmp_path: Path) -> No
 def test_render_is_a_list_of_lines() -> None:
     doc = et.build(docket=Path("/nonexistent/docket.json"), apply=False, budget_s=5.0)
     assert all(isinstance(line, str) for line in et.render(doc))
+
+
+def test_charge_carries_each_family_s_selection_trials(monkeypatch: pytest.MonkeyPatch) -> None:
+    """fda104165's merge resolution dropped `selection_trials` from the re-read census."""
+    import libs.research.trial_ledger as tl
+    seen: dict[str, Any] = {}
+
+    def _capture(nominal: int, census: Any) -> tuple[int, str]:
+        seen["census"] = census
+        return nominal, "captured"
+
+    monkeypatch.setattr(tl, "campaign_charge", _capture)
+    et.charge({"n_nominal": 10, "n_effective": 4.0, "n_mechanisms": 2, "status": "MEASURED",
+               "by_family": [{"family": "f", "n_nominal": 10, "n_effective": 4.0,
+                              "selection_trials": 200}]})
+    assert seen["census"].families["f"].selection_trials == 200
