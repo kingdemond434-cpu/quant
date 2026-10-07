@@ -638,13 +638,16 @@ def unknown_breakdown(path: Path | None = None) -> dict[str, Any]:
         return out
     never: dict[str, int] = {}
     too_rare: dict[str, int] = {}
+    span: dict[str, int] = {}
     n_unmeasured = 0
     for v in verdicts:
         if not isinstance(v, dict) or not v.get("unmeasured"):
             continue
         n_unmeasured += 1
         fam = str(v.get("family") or "")
-        if int(v.get("days") or 0) == 0:
+        if str(v.get("unknown_reason") or "") == "lockbox_span_exceeds_history":
+            span[fam] = span.get(fam, 0) + 1          # judged on >= 60 days: never "too rare"
+        elif int(v.get("days") or 0) == 0:
             never[fam] = never.get(fam, 0) + 1
         else:
             too_rare[fam] = too_rare.get(fam, 0) + 1
@@ -690,6 +693,12 @@ def unknown_breakdown(path: Path | None = None) -> dict[str, Any]:
                 "route": ("fires too rarely for CPCV's 60 observations -- a fact about the "
                           "search, recorded as `unmeasured` in the priors so it moves no pass "
                           "probability (nobody looked; that is not evidence against the edge)"),
+            },
+            "lockbox_span_exceeds_history": {
+                "cells": sum(span.values()),
+                "by_family": dict(sorted(span.items(), key=lambda kv: -kv[1])),
+                "route": ("a low-frequency cell with under the lockbox floor of UNSEEN rows after "
+                          "the campaign cut: no gate's rejection, re-judged as history accrues"),
             },
         },
         "why_unknown": ("external_gauntlet emits no `terminal_gate` on its UNMEASURED branch and "
@@ -825,6 +834,12 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
             reason, route = "short_history_after_cut", (
                 "the cell traded, but on under 60 days, all of them after the lockbox cut, so the "
                 "carve left no development window: re-admitted as history grows")
+        elif declared == "lockbox_span_exceeds_history":
+            reason, route = "lockbox_span_exceeds_history", (
+                "a low-frequency cell (weekly/monthly/event) cleared every other gate, but holds "
+                "under the 40-observation lockbox floor on or after the campaign cut, and no "
+                "earlier row may be held out (the desk has read it): re-admitted as unseen "
+                "history accrues; the floor is never lowered")
         elif days == 0 and bars == 0:
             reason, route = "missing_bars", ("no H1 bar file for this symbol: the conversion "
                                              "organ's bar supply (research/local_converter.py) "
