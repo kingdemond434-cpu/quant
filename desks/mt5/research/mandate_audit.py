@@ -40,7 +40,8 @@ those audited states are KEPT and marked `evidence_stale` when none of their out
 fresh here. BLOCKED and UNMEASURED stay unless their own artifact runs. A row that names no
 module keeps its audited state with `measured: UNMEASURED` (L1.28a).
 
-Writes desks/mt5/reports/MANDATE_AUDIT.json. Read by the CRO pass (STEP 4B, D13 and D41) and by
+Writes desks/mt5/reports/MANDATE_AUDIT.json, then one brief per owner thread
+(research/thread_briefs.py, MISC-18/MISC-22) from the same pass. Read by the CRO pass (STEP 4B, D13 and D41) and by
 the unfinished-work tracker.
 """
 from __future__ import annotations
@@ -344,6 +345,14 @@ def main(argv: list[str] | None = None) -> int:
         tmp = OUT.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
         tmp.replace(OUT)
+        try:                             # the briefs never cost the audit its publish
+            try:
+                from research import thread_briefs
+            except ImportError:          # run as a script from research/
+                import thread_briefs  # type: ignore[no-redef]
+            thread_briefs.write(doc)
+        except Exception as exc:
+            print(f"mandate_audit: thread briefs not written: {type(exc).__name__}: {exc}")
     if a.json:
         print(json.dumps({k: v for k, v in doc.items() if k != "rows"}, default=str))
     else:
