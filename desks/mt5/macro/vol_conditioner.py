@@ -97,6 +97,19 @@ TENOR = {"^VIX9D": 9, "^VIX": 30, "^VIX3M": 91, "^VIX6M": 182}
 SIGNALS = ("iv_pct", "vrp_rank", "vrp_var", "iv_gap", "term_slope_short", "term_slope_long",
            "skew_rank", "rv_resid")
 
+#: THE PERMITTED VOL STATE (coordinator, 2026-10-07). The CBOE indices are HELD on terms whether
+#: read through Yahoo or FRED (FRED ToU FAQ Q3: FRED cannot license a series carrying a third
+#: party's copyright notice), so their cells went dark. Two grounds need no third party's licence:
+#:   1. the broker's OWN vol-index CFD, where this account lists one: its price is our own MT5
+#:      data, admitted as "mt5:bars", and it replaces the held index as the IV of its ground;
+#:   2. range-based realised-vol state from the desk's own H1 bars (Garman-Klass and Parkinson
+#:      estimators, HAR forecast), on every ground's tradeable symbol.
+BAR_SOURCE = "mt5:bars"
+BROKER_VOL_CFD: dict[str, tuple[str, ...]] = {
+    "^VIX": ("VIX", "VIX.f", "VIX.cash", "VIXX", "USVIX", "VOLX", "VIX_Z"),
+}
+BAR_SIGNALS = ("rv_pct", "rv_term", "volvol_rank", "range_rank", "har_gap")
+
 
 # ============================================================================== inputs
 def load_reference(ticker: str, root: Path = REFERENCE) -> dict[str, float]:
@@ -343,6 +356,194 @@ def build_ground(ticker: str, *, iv: Mapping[str, float], closes: Mapping[str, f
     return rows
 
 
+# ============================================================================== bar vol state
+def daily_bars(symbol: str, universe_dir: Path = UNIVERSE_DIR
+               ) -> dict[str, tuple[float, float, float, float, str]]:
+    """{iso date: (open, high, low, close, available_time)} from the desk's own H1 bars. A bar is
+    stamped at its OPEN, so a day's state is knowable when its last bar closes (+1h)."""
+    path = universe_dir / f"{symbol}_H1.parquet"
+    if not path.exists():
+        return {}
+    try:
+        import pandas as pd
+        df = pd.read_parquet(path, columns=["open", "high", "low", "close"])
+    except Exception:
+        return {}
+    if df.empty:
+        return {}
+    idx = pd.DatetimeIndex(df.index)
+    if idx.tz is None:
+        idx = idx.tz_localize(UTC)
+    df = df.set_axis(idx)
+    g = df.groupby(idx.date)
+    agg = pd.DataFrame({"open": g["open"].first(), "high": g["high"].max(),
+                        "low": g["low"].min(), "close": g["close"].last()})
+    last = pd.Series(idx, index=idx).groupby(idx.date).max()
+    out: dict[str, tuple[float, float, float, float, str]] = {}
+    for d, r in agg.iterrows():
+        o, h, lo, c = (float(r["open"]), float(r["high"]), float(r["low"]), float(r["close"]))
+        if min(o, h, lo, c) <= 0 or not all(map(math.isfinite, (o, h, lo, c))) or h < lo:
+            continue
+        avail = (last[d].to_pydatetime() + timedelta(hours=1)).astimezone(UTC)
+        out[d.isoformat()] = (o, h, lo, c, avail.isoformat())
+    return out
+
+
+def _gk(o: float, h: float, lo: float, c: float) -> float:
+    """Garman-Klass one-day variance (log units)."""
+    return 0.5 * math.log(h / lo) ** 2 - (2.0 * math.log(2.0) - 1.0) * math.log(c / o) ** 2
+
+
+def _ann(var_mean: float) -> float:
+    return math.sqrt(max(var_mean, 0.0) * 252.0) * 100.0
+
+
+def build_bar_ground(bars: Mapping[str, tuple[float, float, float, float, str]]
+                     ) -> list[dict[str, Any]]:
+    """One PIT row per broker day from that day's bars and earlier ones only.
+
+    rv5/rv21/rv63  annualised Garman-Klass vol (%) over 5/21/63 days
+    rv_pct         rv21's rank in the trailing year           (the IV-percentile analogue)
+    rv_term        log(rv5 / rv63): > 0 is the short end above the long (an "inverted" curve)
+    volvol_rank    rank of the 63-day std of log rv5 changes  (vol of vol)
+    range_rank     the day's Parkinson range against the trailing year
+    har_gap        HAR forecast of next-21-day variance minus rv21^2, fitted only on windows that
+                   had CLOSED by the day (non-overlapping targets, expanding window)"""
+    days = sorted(bars)
+    gk: list[float] = []
+    park: list[float] = []
+    rv21s: list[float] = []
+    lrv5: list[float] = []
+    vv: list[float] = []
+    rows: list[dict[str, Any]] = []
+    pending: list[tuple[int, list[float], float]] = []      # (end index, x, y)
+    train_x: list[list[float]] = []
+    train_y: list[float] = []
+    last_end = -1
+    for i, d in enumerate(days):
+        o, h, lo, c, avail = bars[d]
+        gk.append(max(_gk(o, h, lo, c), 0.0))
+        park.append(math.log(h / lo) ** 2 / (4.0 * math.log(2.0)))
+        while pending and pending[0][0] <= i:
+            _e, x, y = pending.pop(0)
+            train_x.append(x)
+            train_y.append(y)
+        if len(gk) < 63:
+            continue
+        v5, v21, v63 = (float(np.mean(gk[-5:])), float(np.mean(gk[-21:])),
+                        float(np.mean(gk[-63:])))
+        rv5, rv21, rv63 = _ann(v5), _ann(v21), _ann(v63)
+        row: dict[str, Any] = {"event_time": d, "available_time": avail,
+                               "knowable_basis": "bar_close", "rv5": rv5, "rv21": rv21,
+                               "rv63": rv63, "rv_pct": _pct_rank(rv21s[-TRAIL:], rv21),
+                               "range_rank": _pct_rank(park[-TRAIL - 1:-1], park[-1])}
+        if rv5 > 0 and rv63 > 0:
+            row["rv_term"] = math.log(rv5 / rv63)
+            row["rv_term_inverted"] = 1.0 if rv5 > rv63 else 0.0
+            lrv5.append(math.log(rv5))
+        if len(lrv5) >= 64:
+            vol_of_vol = float(np.std(np.diff(lrv5[-64:]), ddof=1))
+            row["volvol_rank"] = _pct_rank(vv[-TRAIL:], vol_of_vol)
+            vv.append(vol_of_vol)
+        x = [1.0, v5, v21, v63]
+        if len(train_y) >= 12:
+            beta, *_ = np.linalg.lstsq(np.asarray(train_x), np.asarray(train_y), rcond=None)
+            har = float(np.dot(beta, x))
+            if har > 0:
+                row["har_var_hat"] = har
+                row["har_gap"] = har - v21
+        row["gk_var21"] = v21
+        rows.append(row)
+        rv21s.append(rv21)
+        # this day becomes a training pair once its next-21-day window has closed
+        if i + H < len(days) and i > last_end:
+            y = float(np.mean([max(_gk(*bars[days[k]][:4]), 0.0)
+                               for k in range(i + 1, i + H + 1)]))
+            pending.append((i + H + 1, x, y))
+            last_end = i + H
+    return rows
+
+
+def bar_contracts(symbol: str, equity: bool, rows: Sequence[Mapping[str, Any]],
+                  closes: Mapping[str, float],
+                  bars: Mapping[str, tuple[float, float, float, float, str]]
+                  ) -> list[dict[str, Any]]:
+    al = _align(rows, closes)
+    rev = [-math.copysign(1.0, r0) * r1 if r0 else 0.0 for _, r0, r1, _ in al]
+    mom = [math.copysign(1.0, m) * r1 if m else 0.0 for _, _, r1, m in al]
+    lng = [r1 for _, _, r1, _ in al]
+    strata = _terciles([s.get("rv63") for s, _, _, _ in al])
+
+    def g(key: str, test: Any) -> list[bool]:
+        return [bool(isinstance(s.get(key), int | float) and test(float(s[key])))
+                for s, _, _, _ in al]
+
+    fals = ("bucket expectancy difference not significant after the multiplicity charge, or "
+            "vanishes once the 63-day realised-vol tercile is controlled")
+    out = [
+        se.gated_gain(mom, g("rv_term_inverted", lambda v: v > 0.5), engine=ENGINE,
+                      cards=["QG26-07", "QG26-09"], falsifier=fals,
+                      baseline="20-day trend, ungated", strata=strata),
+        se.gated_gain(rev, g("rv_term_inverted", lambda v: v < 0.5), engine=ENGINE,
+                      cards=["QG26-07", "QG26-09"], falsifier=fals,
+                      baseline="1-day reversal, ungated", strata=strata),
+        se.gated_gain(rev, g("range_rank", lambda v: v >= 0.9), engine=ENGINE,
+                      cards=["QG26-09"], falsifier=fals, baseline="1-day reversal, ungated",
+                      strata=strata),
+        se.gated_gain(mom, g("volvol_rank", lambda v: v >= 0.8), engine=ENGINE,
+                      cards=["QG26-09"], falsifier=fals, baseline="20-day trend, ungated",
+                      strata=strata),
+    ]
+    labels = ["rv_term_inverted->trend", "rv_term_contango->reversal",
+              "range_extreme->reversal", "volvol_high->trend"]
+    if equity:
+        out.append(se.gated_gain(lng, g("rv_pct", lambda v: v >= 0.8), engine=ENGINE,
+                                 cards=["QG25-05"], falsifier=fals, baseline="long, ungated",
+                                 strata=strata))
+        labels.append("rv_high->long")
+    days = sorted(bars)
+    pos = {d: i for i, d in enumerate(days)}
+    y, model, base = [], [], []
+    for r in rows:
+        i = pos.get(str(r["event_time"]))
+        if i is None or i + H >= len(days) or not isinstance(r.get("har_var_hat"), float):
+            continue
+        y.append(float(np.mean([max(_gk(*bars[days[k]][:4]), 0.0)
+                                for k in range(i + 1, i + H + 1)])))
+        model.append(max(float(r["har_var_hat"]), 1e-12))
+        base.append(max(float(r["gk_var21"]), 1e-12))
+    out.append(se.forecast_gain(y, model, base, engine=ENGINE, cards=["QG25-05", "QG26-09"],
+                                falsifier="the HAR forecast of forward variance is no better "
+                                          "than the last 21 days' variance",
+                                baseline="trailing 21-day Garman-Klass variance", loss="qlike"))
+    labels.append("har->forward_variance")
+    for c, lbl in zip(out, labels, strict=True):
+        c.update({"label": lbl, "ground": f"bars:{symbol}", "symbol": symbol,
+                  "data_source": BAR_SOURCE})
+    return out
+
+
+def broker_vol_cfd(ticker: str, universe_dir: Path = UNIVERSE_DIR
+                   ) -> tuple[str, dict[str, float]] | None:
+    """(symbol, daily closes) of this broker's own vol-index CFD for `ticker`, if it lists one."""
+    cands = BROKER_VOL_CFD.get(ticker)
+    if not cands:
+        return None
+    sym = resolve_symbol(cands, universe_dir)
+    if sym is None:
+        return None
+    closes = daily_closes(sym, universe_dir)
+    return (sym, closes) if closes else None
+
+
+def _admitted(source: str) -> bool:
+    try:
+        from libs.data.terms_hold import gauntlet_terms
+        return bool(gauntlet_terms(source)[0])
+    except Exception:
+        return False
+
+
 # ============================================================================== the contract
 def _align(rows: Sequence[Mapping[str, Any]], closes: Mapping[str, float]
            ) -> list[tuple[Mapping[str, Any], float, float, float]]:
@@ -449,10 +650,62 @@ def observations(ticker: str, symbol: str, last: Mapping[str, Any], received_at:
                            sensor_class="market_state", asset_domain="vol", value=float(v),
                            event_time=last["event_time"], knowable_at=know,
                            knowable_basis=basis, received_at=rx, parse_complete_at=rx,
-                           licence=("CBOE index values republished by FRED"
+                           licence=("own data: this account's vol-index CFD bars"
+                                    if data_source == BAR_SOURCE else
+                                    "CBOE index values republished by FRED: held (FAQ Q3)"
                                     if str(data_source).startswith("fred:") else
                                     "CBOE index values via Yahoo: terms UNCLEARED, held"),
                            commercial_rights=UNMEASURED))
+    return out
+
+
+def bar_observations(symbol: str, last: Mapping[str, Any], received_at: datetime) -> list[Any]:
+    from libs.research import sensor_contract as sc
+    know = str(last["available_time"])
+    rx = max(received_at.isoformat(), know)
+    return [sc.make(sensor_id="market:vol_conditioner", source_id=f"{BAR_SOURCE}:{symbol}",
+                    metric=f"bars_{symbol}_{m}", entity=symbol, kind="state",
+                    sensor_class="market_state", asset_domain="vol", value=float(last[m]),
+                    event_time=last["event_time"], knowable_at=know, knowable_basis="bar_close",
+                    received_at=rx, parse_complete_at=rx,
+                    licence="own data: this account's MT5 bars", commercial_rights="own data")
+            for m in (*BAR_SIGNALS, "rv21") if isinstance(last.get(m), int | float)]
+
+
+def run_bars(*, dry_run: bool, universe_dir: Path, when: datetime,
+             contracts_out: list[dict[str, Any]], obs_out: list[Any]) -> dict[str, Any]:
+    """Range-based realised-vol state on every ground's tradeable symbol, from our own bars."""
+    out: dict[str, Any] = {}
+    for _ticker, (cands, equity, _t, _s) in GROUNDS.items():
+        sym = resolve_symbol(cands, universe_dir)
+        if sym is None or sym in out:
+            continue
+        bars = daily_bars(sym, universe_dir)
+        if len(bars) < 63 + 20:
+            out[sym] = {"status": UNMEASURED, "why": f"{len(bars)} broker days < 83"}
+            continue
+        rows = [r for r in build_bar_ground(bars)
+                if datetime.fromisoformat(str(r["available_time"])) <= when]
+        closes = {d: v[3] for d, v in bars.items()}
+        cs = bar_contracts(sym, equity, rows, closes, bars)
+        contracts_out.extend(cs)
+        sid = f"ws_bar_vol_state_{sym.lower()}"
+        info: dict[str, Any] = {"status": "MEASURED", "rows": len(rows), "series_id": sid,
+                                "data_source": BAR_SOURCE, "last": rows[-1] if rows else None}
+        if not dry_run and rows:
+            info["lake"] = se.write_lake_series(sid, [{k: v for k, v in r.items()
+                                                       if k != "knowable_basis"} for r in rows])
+            info["cells"] = se.emit_conditioner_cells(
+                sid, [s for s in BAR_SIGNALS if any(isinstance(r.get(s), float) for r in rows)],
+                [sym], mechanism=(f"{sym}'s own range-based vol state (Garman-Klass level and "
+                                  "term, vol of vol, range extremes, HAR forecast gap) conditions "
+                                  "it: vol clusters, and the short end above the long marks "
+                                  "trending stress while a calm curve marks mean reversion"),
+                falsifier="gate effect indistinguishable from the shuffled-state gate across "
+                          "the judged cells", generator=ENGINE,
+                sides=(1,) if equity else (1, -1), data_source=BAR_SOURCE)
+            obs_out.extend(bar_observations(sym, rows[-1], when))
+        out[sym] = info
     return out
 
 
@@ -473,9 +726,16 @@ def run(*, dry_run: bool = False, reference: Path = REFERENCE,
         fiv = fred_history(ticker, fred)
         substitute = (substitute_corr(fiv, held) if fiv and held else
                       {"status": UNMEASURED, "why": "one side absent here"})
-        if fiv:
-            iv, data_source, knowable_fn, vintages = (fiv, f"fred:{FRED_IDS[ticker]}",
-                                                      fred_knowable(ticker), None)
+        cfd = broker_vol_cfd(ticker, universe_dir)
+        fred_src = f"fred:{FRED_IDS[ticker]}" if ticker in FRED_IDS else ""
+        if fiv and _admitted(fred_src):
+            iv, data_source, knowable_fn, vintages = (fiv, fred_src, fred_knowable(ticker), None)
+        elif cfd is not None:
+            # the broker's own vol-index CFD: our data, its close known at the next day's start
+            iv, data_source, knowable_fn, vintages = cfd[1], BAR_SOURCE, None, None
+            fiv = {}
+        elif fiv:
+            iv, data_source, knowable_fn, vintages = (fiv, fred_src, fred_knowable(ticker), None)
         else:
             iv, data_source, knowable_fn, vintages = held, f"{VOL_SOURCE}:{ticker}", None, vint
         sym = resolve_symbol(cands, universe_dir)
@@ -527,9 +787,14 @@ def run(*, dry_run: bool = False, reference: Path = REFERENCE,
                                           else "admitted"),
                              "why": info["cells"].get("why", "")}
             obs.extend(observations(ticker, sym, rows[-1], when, data_source))
+        if cfd is not None:
+            info["broker_cfd"] = cfd[0]
         grounds[ticker] = info
+    bar_grounds = run_bars(dry_run=dry_run, universe_dir=universe_dir, when=when,
+                           contracts_out=all_contracts, obs_out=obs)
     report: dict[str, Any] = {"at": when.isoformat(timespec="seconds"), "engine": ENGINE,
-                              "grounds": grounds, "contracts": all_contracts,
+                              "grounds": grounds, "bar_grounds": bar_grounds,
+                              "contracts": all_contracts,
                               "cards": ["QG25-05", "QG26-07", "QG26-08", "QG26-09"],
                               "qg26_08": "implied variance = (index/100)^2; the strip is not "
                                          "rebuilt (NOT_WORTH_IT)",

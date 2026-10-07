@@ -156,6 +156,20 @@ TENOR_DAYS: dict[str, int] = {"^VIX9D": 9, "^VIX": 30, "^VIX3M": 91, "^VIX6M": 1
                               "^GVZ": 30, "^OVX": 30, "^VXN": 30, "^VXD": 30, "^EVZ": 30}
 
 
+YAHOO_SOURCE = "yahoo:cboe_indices"
+
+
+def terms_admit(source: str) -> bool:
+    """The one terms gate (libs.data.terms_hold); an unreadable gate admits nothing."""
+    try:
+        if str(_DESK.parents[1]) not in sys.path:
+            sys.path.insert(0, str(_DESK.parents[1]))
+        from libs.data.terms_hold import gauntlet_terms
+        return bool(gauntlet_terms(source)[0])
+    except Exception:
+        return False
+
+
 class VolSource(Protocol):
     """Where a daily implied-vol series comes from. One method, so a fake is trivial."""
 
@@ -192,13 +206,21 @@ class YahooVolSource:
     rather than any one member of it.
     """
 
-    def __init__(self, timeout: int = 20, range_: str = "10y", fresh_range: str = "1mo") -> None:
+    def __init__(self, timeout: int = 20, range_: str = "10y", fresh_range: str = "1mo",
+                 admit: Any = None) -> None:
         self.timeout = timeout
         self.range = range_
         self.fresh_range = fresh_range
         self._fred_ok = True
+        self.admit = admit or terms_admit
+        self.held: dict[str, str] = {}
 
     def series(self, ticker: str) -> dict[str, float] | None:
+        # TERMS FAIL CLOSED (coordinator, 2026-10-07): a source the terms gate holds is never
+        # fetched. Yahoo's chart API and FRED's copies of the CBOE indices are both held today.
+        if not self.admit(YAHOO_SOURCE):
+            self.held[ticker] = YAHOO_SOURCE
+            return self._fred(ticker)
         history = self._chart(ticker, self.range)
         if history is None:
             try:
@@ -249,6 +271,9 @@ class YahooVolSource:
         sid = {"^VIX": "VIXCLS", "^GVZ": "GVZCLS", "^OVX": "OVXCLS", "^VXN": "VXNCLS",
                "^VXD": "VXDCLS", "^EVZ": "EVZCLS", "^VIX3M": "VXVCLS"}.get(ticker)
         if not sid or not self._fred_ok:
+            return None
+        if not self.admit(f"fred:{sid}"):
+            self.held[ticker] = f"{self.held.get(ticker, '')} fred:{sid}".strip()
             return None
         try:
             from research import free_data as fd
@@ -582,6 +607,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=REPORT)
     ap.add_argument("--archive", type=Path, default=ARCHIVE)
     ap.add_argument("--universe", type=Path, default=_DESK / "data" / "universe")
+    ap.add_argument("--no-fetch", action="store_true",
+                    help="fetch no index at all; the broker's realised vol is still observed")
     args = ap.parse_args(argv)
 
     try:
@@ -593,7 +620,8 @@ def main(argv: list[str] | None = None) -> int:
               "instrument id this desk cannot confirm it trades (that is how a foreign alias "
               "becomes a node). Observing WITHOUT the join.")
 
-    source = RecordingSource(YahooVolSource())
+    inner: VolSource = FakeVolSource() if args.no_fetch else YahooVolSource()
+    source = RecordingSource(inner)
     cycle = observe(source, registry, args.universe)
     if not args.dry_run:
         write_reference(source.seen)

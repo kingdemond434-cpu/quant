@@ -103,3 +103,80 @@ def test_fred_substitute_is_the_source_when_present(tmp_path: Path) -> None:
                                            mechanism="m", falsifier="f", generator=vc.ENGINE,
                                            dry_run=True, data_source=g["data_source"])
     assert held_cells["status"] == "HELD_TERMS" and held_cells["emitted"] == 0
+
+
+# ------------------------------------------------------------------ the permitted vol state
+def _bar_world(uni: Path, planted: bool, seed: int = 5, n: int = 900,
+               symbol: str = "US500") -> None:
+    """Two H1 bars a day. On a random tenth of days the range is four times wider; when planted,
+    the day after such a day sees its own move reversed the day after."""
+    rng = np.random.default_rng(seed)
+    days = [date(2022, 1, 3) + timedelta(days=i) for i in range(n)]
+    extreme = rng.random(n) < 0.1
+    ret = rng.normal(0, 0.01, n)
+    if planted:
+        for i in range(1, n - 1):
+            if extreme[i - 1]:
+                ret[i + 1] += -0.012 * np.sign(ret[i])
+    rows, idx, px = [], [], 100.0
+    for i, d in enumerate(days):
+        o, c = px, px * float(np.exp(ret[i]))
+        span = (0.04 if extreme[i] else 0.01) * (0.8 + 0.4 * rng.random())
+        mid = (o + c) / 2
+        hi, lo = max(o, c) * float(np.exp(span / 2)), min(o, c) * float(np.exp(-span / 2))
+        rows += [(o, hi, lo, mid), (mid, max(mid, c), min(mid, c), c)]
+        base = pd.Timestamp(d, tz="UTC")
+        idx += [base + pd.Timedelta(hours=8), base + pd.Timedelta(hours=16)]
+        px = c
+    pd.DataFrame(rows, columns=["open", "high", "low", "close"],
+                 index=pd.DatetimeIndex(idx)).to_parquet(uni / f"{symbol}_H1.parquet")
+
+
+def test_bar_rows_are_point_in_time(tmp_path: Path) -> None:
+    _bar_world(tmp_path, planted=False, n=400)
+    bars = vc.daily_bars("US500", tmp_path)
+    d0 = sorted(bars)[0]
+    assert bars[d0][4] == f"{d0}T17:00:00+00:00"              # last bar (16:00) closes 17:00
+    rows = vc.build_bar_ground(bars)
+    r = rows[150]
+    assert r["available_time"] == bars[r["event_time"]][4]
+    later = dict(bars)
+    k = sorted(bars)[300]
+    o, h, lo, c, a = later[k]
+    later[k] = (o, h * 3, lo / 3, c, a)
+    again = {x["event_time"]: x for x in vc.build_bar_ground(later)}
+    for key in ("rv_pct", "rv_term", "range_rank", "volvol_rank", "har_gap"):
+        assert again[r["event_time"]].get(key) == r.get(key), key
+
+
+def test_planted_range_reversal_is_gain_and_noise_is_not(tmp_path: Path) -> None:
+    now = datetime(2030, 1, 1, tzinfo=UTC)
+    for planted, sub in ((True, "p"), (False, "n")):
+        uni = tmp_path / sub
+        uni.mkdir()
+        _bar_world(uni, planted, seed=5 if planted else 9)
+        rep = vc.run(dry_run=True, reference=tmp_path / "noref", universe_dir=uni, now=now,
+                     series={})
+        assert rep["bar_grounds"]["US500"]["status"] == "MEASURED"
+        assert rep["bar_grounds"]["US500"]["data_source"] == "mt5:bars"
+        got = {c["label"]: c["verdict"] for c in rep["contracts"] if c["ground"] == "bars:US500"}
+        if planted:
+            assert got["range_extreme->reversal"] == "GAIN"
+        else:
+            assert "GAIN" not in got.values()
+
+
+def test_bar_cells_and_the_broker_cfd_are_admitted(tmp_path: Path) -> None:
+    from libs.research import sensor_engines as se
+    got = se.emit_conditioner_cells("ws_bar_vol_state_us500", ["rv_pct"], ["US500"],
+                                    mechanism="m", falsifier="f", generator=vc.ENGINE,
+                                    dry_run=True, data_source=vc.BAR_SOURCE)
+    assert got["emitted"] > 0
+    ref, uni = _world(tmp_path, planted=False)
+    _bar_world(uni, planted=False, symbol="VIX", n=1100)
+    held = {"VIXCLS": [(f"2022-01-{d:02d}", 20.0) for d in range(3, 29)]}
+    rep = vc.run(dry_run=True, reference=ref, universe_dir=uni,
+                 now=datetime(2030, 1, 1, tzinfo=UTC), series=held)
+    g = rep["grounds"]["^VIX"]
+    # the broker's own VIX CFD beats both the held FRED copy and the held Yahoo history
+    assert g["data_source"] == vc.BAR_SOURCE and g["broker_cfd"] == "VIX"
