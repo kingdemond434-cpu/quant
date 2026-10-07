@@ -89,7 +89,7 @@ def test_door_fails_closed_when_a_check_raises(monkeypatch: Any) -> None:
 
     for fn in ("_constitution", "_replication", "_fdr", "_panel_and_theory"):
         monkeypatch.setattr(pa, fn, lambda name: None)
-    monkeypatch.setattr(pa, "_freeze", lambda: None)
+    monkeypatch.setattr(pa, "_freeze", lambda *a: None)
     assert pa.block("EURUSD.x") is None
     monkeypatch.setattr(pa, "_fdr", boom)
     why = pa.block("EURUSD.x") or ""
@@ -240,6 +240,7 @@ def _door_sandbox(monkeypatch: Any, tmp_path: Path) -> Any:
                  "CONSTITUTION"):
         monkeypatch.setattr(pa, attr, tmp_path / f"{attr}.json")
     monkeypatch.setattr(pa, "RATIFICATIONS", tmp_path / "RATIFICATIONS.jsonl")
+    monkeypatch.setattr(pa, "SUSPENDED_LEDGER", tmp_path / "door_suspended.jsonl")
     monkeypatch.setattr(pa.firewall, "may", lambda *a, **k: True)
     monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: False)
     return pa
@@ -330,3 +331,52 @@ def test_a_door_input_missing_past_its_grace_is_a_loud_defect(monkeypatch: Any,
     pa.DOOR_VERDICTS.write_text(json.dumps({"generated_utc": now, "rows": {}}), "utf-8")
     healed = ts._door_input_health()
     assert healed["all_ok"] and healed["defects"] == [] and store["door_inputs"]["bad_since"] == {}
+
+
+def test_a_suspended_organ_never_drops_its_withhold_silently(monkeypatch: Any,
+                                                             tmp_path: Path) -> None:
+    """Audit I16 (2026-10-06): the constitution binds whatever the truth kernel's contract reads;
+    a suspended online-FDR or immune organ withholds nothing but its would-be withhold is
+    recorded as DOOR_SUSPENDED; and a suspended organ's damaged file is not required."""
+    from libs.tiers import authority, truth_kernel
+    pa = _door_sandbox(monkeypatch, tmp_path)
+    now = datetime.now(UTC).isoformat()
+    for attr, doc in {"REPLICATION": {"at": now},
+                      "FDR_ROWS": {"generated_utc": now, "certified": [
+                          {"test_id": "EURUSD.x", "over_budget": True, "p": 0.04}]},
+                      "FREEZE": {"at": now, "verdict": "FREEZE", "judge": "production:v4",
+                                 "why": "trap catch rate fell 0.98 -> 0.80"},
+                      "DOOR_VERDICTS": {"generated_utc": now, "rows": {}}}.items():
+        getattr(pa, attr).write_text(json.dumps(doc), "utf-8")
+    assert (pa.block("EURUSD.x") or "").startswith("ONLINE_FDR_OVER_BUDGET")
+
+    monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: organ == "online_fdr")
+    assert (pa.block("EURUSD.x") or "").startswith("IMMUNE_FREEZE")
+    monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: True)
+    assert pa.block("EURUSD.x") is None
+    noted = [json.loads(x) for x in pa.SUSPENDED_LEDGER.read_text("utf-8").splitlines()]
+    assert {r["organ"] for r in noted} >= {"online_fdr", "immune"}
+    assert all(r["reason"] == "DOOR_SUSPENDED" for r in noted)
+    assert any("ONLINE_FDR_OVER_BUDGET" in r["why"] for r in noted)
+    assert not pa.LEDGER.exists(), "a pass is not a missed-growth row"
+
+    pa.FDR_ROWS.write_text("{torn", "utf-8")
+    assert pa.block("EURUSD.x") is None, "a suspended organ's file is not required"
+
+    loosened = truth_kernel.constitution_doc()
+    loosened["rules"]["cert.dsr_threshold"]["value"] = 0.5
+    pa.CONSTITUTION.write_text(json.dumps(loosened), "utf-8")
+    assert (pa.block("EURUSD.x") or "").startswith("CONSTITUTION_VIOLATED"), (
+        "the truth kernel's suspension must not lift the law")
+
+
+def test_a_suspended_review_half_is_noted(monkeypatch: Any, tmp_path: Path) -> None:
+    from libs.tiers import authority
+    pa = _door_sandbox(monkeypatch, tmp_path)
+    row = {"review_failed": ["execution:X"], "family": "f", "theory": {}}
+    pa.DOOR_VERDICTS.write_text(json.dumps({"generated_utc": datetime.now(UTC).isoformat(),
+                                            "rows": {"ext.EURUSD.x": row}}), "utf-8")
+    monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: organ == "review")
+    assert pa._panel_and_theory("EURUSD.x") is None
+    noted = json.loads(pa.SUSPENDED_LEDGER.read_text("utf-8").splitlines()[-1])
+    assert noted["organ"] == "review" and "REVIEW_PANEL_FAILED" in noted["why"]
