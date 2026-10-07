@@ -442,7 +442,10 @@ def test_fence_the_whole_private_chain_prints_and_publishes_nothing_private(
     # (c) every file git would carry from the scratch tree
     files = _files_that_reach_git(repo)
     assert "desks/mt5/data/hypotheses/miner_candidates.json" in files
-    assert "desks/mt5/reports/JP_OFFICIAL_PLANE.json" in files
+    # the plane's report is gitignored here, but it is a SHARED output (synced to the VPS):
+    # it is grepped whatever git does with it
+    rep_text = (desk / "reports" / "JP_OFFICIAL_PLANE.json").read_text("utf-8")
+    assert not _leaks(rep_text), _leaks(rep_text)
     assert not any(d in f for f in files for d in ("private_use", "intelligence_private",
                                                      "hypotheses_private"))
     bad = [f for f in files
