@@ -182,3 +182,18 @@ def test_d34_backpressure_goes_to_the_judge_only() -> None:
     assert action == ("Raise judge capacity (backpressure goes to the judge only). "
                       "Never throttle onboarding, mining or research generation.")
     assert "throttle onboarding and" not in row.lower()
+
+
+def test_pass_questions_q1_to_q7_are_in_the_cycle_and_not_duty_rows() -> None:
+    """ARCH-30: every pass answers Q1-Q7 with box evidence into `pass_questions`; an
+    unmeasured answer is MISSED. The Q rows must never be read as duty rows."""
+    text = (ROOT / "docs" / "cro" / "CRO_CYCLE.md").read_text(encoding="utf-8")
+    qs = [ln.split("|")[1].strip() for ln in text.splitlines() if ln.startswith("| Q")]
+    assert qs[1:] == [f"Q{i}" for i in range(1, 8)]
+    assert "`pass_questions`" in text and "`pass_questions_missed`" in text
+    assert "UNMEASURED or cites nothing counts as MISSED" in text
+    assert not any(k.startswith("Q") for k in ccd.duty_rows(text))
+    q4 = next(ln for ln in text.splitlines() if ln.startswith("| Q4 |"))
+    for baseline in ("equal-risk", "inverse-vol", "best-single-sleeve",
+                     "after lot rounding and costs"):
+        assert baseline in q4
