@@ -977,3 +977,56 @@ def test_a_held_series_is_never_served_and_writers_hold_it(
     lab = DL.hard_dislocations(DL.Paths(desk), dry_run=False, bars_fn=lambda _s: None)
     assert lab["pairs"]["cny_fix_cnh"]["held_series"] is True
     assert FX.series_path("dislocation_cny_fix_cnh", dseries, as_of=as_of) is None
+
+
+# ---- the raw-pack registry lane (pack_cells.build / emit_for) is behind the same terms gate
+def test_raw_pack_lane_mints_nothing_from_a_terms_blocked_frame(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from mt5desk import family_exogenous_conditioner as FX
+
+    import libs.moat.registry as REG
+    reg = {str(p.get("id")): p for p in PK.packs()}
+    cfets, sge, nbs = reg["cfets_fixing"], reg["sge_benchmark"], reg["nbs_pmi"]
+    assert PK.pack_terms(cfets)["terms"] == "refused"
+    assert PK.pack_terms(sge)["terms"] == "refused"
+    assert PK.pack_terms(nbs)["terms"] == "confirmed"
+    series = tmp_path / "series"
+    series.mkdir()
+    for pid in ("cfets_fixing", "sge_benchmark", "nbs_pmi"):
+        t = pd.date_range("2026-01-01", periods=60, freq="D", tz="UTC")
+        pd.DataFrame({"event_time": t, "available_time": t,
+                      "x": np.sin(np.arange(60) / 3.0), "y": np.cos(np.arange(60) / 5.0)}
+                     ).to_parquet(series / f"{pid}.parquet", index=False)
+    monkeypatch.setattr(PK, "SERIES", series)
+    monkeypatch.setattr(PK, "CURSOR", tmp_path / "cursor.json")
+    monkeypatch.setattr(PK, "packs", lambda: [cfets, sge, nbs])
+    monkeypatch.setattr(PK, "chain", lambda: {pid: {"stage_reached": "represented"}
+                                              for pid in ("cfets_fixing", "sge_benchmark",
+                                                          "nbs_pmi")})
+    monkeypatch.setattr(PK, "world_rows", lambda *_a, **_k: ([], ""))
+    monkeypatch.setattr(PK, "_registry_counts", lambda: ({}, ""))
+    monkeypatch.setattr(PK, "judged_registers", lambda: {})
+    monkeypatch.setattr(PK, "judged_by_stamped_region", lambda: {})
+    minted: list[dict[str, Any]] = []
+    monkeypatch.setattr(REG, "record_discovery", lambda **_k: ("disc_x", True))
+    monkeypatch.setattr(REG, "enqueue_candidate",
+                        lambda **k: minted.append(k) or ("c", True))
+    doc = PK.build(budget_s=60.0)
+    rows = {r["id"]: r for r in doc["rows"]}
+    for pid in ("cfets_fixing", "sge_benchmark"):
+        assert rows[pid]["status"] == "BLOCKED_ON_TERMS:refused", rows[pid]
+        assert rows[pid].get("emitted", 0) == 0 and rows[pid]["held_series"] is True
+        assert FX.series_state(pid, series, as_of=pd.Timestamp("2026-03-01", tz="UTC")
+                               )[0] == FX.HELD
+        assert doc["blocked_on_terms"][pid] == "BLOCKED_ON_TERMS:refused"
+    assert not any(k["source_id"] in ("cfets_fixing", "sge_benchmark") for k in minted)
+    # the confirmed NBS pack still mints, and carries its credit
+    assert rows["nbs_pmi"]["terms"] == "confirmed" and rows["nbs_pmi"]["emitted"] > 0
+    assert minted and all(k["source_id"] == "nbs_pmi" for k in minted)
+    assert all(k["lineage"]["attribution"]["terms_ref"] == "cn_nbs_official" for k in minted)
+    # emit_for refuses on its own too, and a pack with no terms mapping fails closed
+    assert PK.emit_for(cfets, ["x"], ["USDCNH"])["emitted"] == 0
+    assert PK.pack_terms({"id": "nothing"})["terms"] == "to_confirm"
+    assert PK.emit_for({"id": "nothing"}, ["x"], ["USDCNH"])["status"] == (
+        "BLOCKED_ON_TERMS:to_confirm")
+    assert PK.pack_terms({"id": "u", "terms_ref": "no_such_row"})["terms"] == "to_confirm"

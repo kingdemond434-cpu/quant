@@ -800,10 +800,60 @@ def emit_world(row: dict[str, Any], *, dry_run: bool = False,
             "claims_read": len(claims), "errors": errors[:3]}
 
 
+#: VERDICTS UNDER WHICH THE RAW-PACK LANE MAY MINT FROM A PACK'S LAKE FRAME. `confirmed` is a
+#: terms row read and quoted; `ungoverned` is a URL on a host no terms row governs, which is the
+#: verdict asia_collector already FETCHES under (`collect_one`), so a frame on disk for such a pack
+#: is one the desk was allowed to hold. Measured on this registry 2026-10-07: 224 of 242 packs are
+#: ungoverned, so excluding it would close this lane for every country but China; that is a
+#: principal's call, made by deleting it here. Everything else -- refused, to_confirm, an unknown
+#: terms id, a pack with no terms_ref and no URL -- mints nothing (fail closed).
+PACK_MINT_VERDICTS: frozenset[str] = frozenset({"confirmed", "ungoverned"})
+_VERDICT_RANK = {"refused": 0, "to_confirm": 1, "ungoverned": 2, "confirmed": 3}
+
+
+def pack_terms(pack: dict[str, Any]) -> dict[str, Any]:
+    """{terms, terms_ref, why} for one raw pack, read through the SAME gate the semantic lane
+    uses (`alt_proxies.terms_gate`): the row's own `terms_ref`, its adapter's terms id
+    (`cn_official_tables.ADAPTER_TERMS`) and its URL's host, worst verdict wins. A pack none of
+    which resolves has no terms mapping and reads `to_confirm` -- never permission."""
+    refs: list[str] = []
+    if pack.get("terms_ref"):
+        refs.append(str(pack["terms_ref"]))
+    try:
+        from research.cn_official_tables import ADAPTER_TERMS
+        ad = ADAPTER_TERMS.get(str(pack.get("adapter") or ""))
+        if ad and ad not in refs:
+            refs.append(ad)
+    except Exception:
+        pass
+    url = str(pack.get("url_override") or pack.get("url") or "")
+    try:
+        from research.alt_proxies import terms_gate
+    except Exception as exc:
+        return {"terms": "to_confirm", "terms_ref": refs[0] if refs else "",
+                "why": f"terms gate unimportable ({type(exc).__name__}): fail closed"}
+    verdicts: list[tuple[str, str, str]] = [(*terms_gate(r), r) for r in refs]
+    if "://" in url:
+        st, why = terms_gate(url)
+        if st != "ungoverned" or not refs:
+            verdicts.append((st, why, url.split("?")[0][:120]))
+    if not verdicts:
+        return {"terms": "to_confirm", "terms_ref": "",
+                "why": "no terms_ref, adapter or URL resolves a terms decision: fail closed"}
+    worst = min(verdicts, key=lambda v: _VERDICT_RANK.get(v[0], 1))
+    return {"terms": worst[0], "terms_ref": worst[2], "why": worst[1]}
+
+
 def emit_for(pack: dict[str, Any], signals: list[str], targets: list[str], *,
              dry_run: bool = False, offset: int = 0) -> dict[str, Any]:
-    """Every (signal x transform x target x chart) cell for one pack, through the one door."""
+    """Every (signal x transform x target x chart) cell for one pack, through the one door.
+    Nothing is minted unless the pack's terms read a PACK_MINT_VERDICTS verdict."""
     pid = str(pack.get("id"))
+    gate = pack_terms(pack)
+    if gate["terms"] not in PACK_MINT_VERDICTS:
+        return {"id": pid, "emitted": 0, "created": 0,
+                "status": f"BLOCKED_ON_TERMS:{gate['terms']}", "terms": gate["terms"],
+                "terms_ref": gate["terms_ref"], "error": f"BLOCKED_ON_TERMS:{gate['terms']}"}
     take = signals[offset % max(len(signals), 1):][:SIGNALS_PER_PACK_PER_PASS]
     if not take:
         take = signals[:SIGNALS_PER_PACK_PER_PASS]
@@ -947,6 +997,20 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
         targets = targets_of(p)
         row: dict[str, Any] = {"id": pid, "stage": stage, "targets": targets,
                                "cadence": p.get("cadence")}
+        # THE TERMS GATE, BEFORE ANY FRAME IS READ (the semantic lane's rule, for raw packs): a
+        # lake frame on disk is not a licence to use it. Nothing is minted and the frame is HELD.
+        gate = pack_terms(p)
+        row.update({"terms": gate["terms"], "terms_ref": gate["terms_ref"]})
+        if gate["terms"] not in PACK_MINT_VERDICTS:
+            row.update({"status": f"BLOCKED_ON_TERMS:{gate['terms']}",
+                        "reason": (f"BLOCKED_ON_TERMS:{gate['terms']}: "
+                                   f"{str(gate['why'])[:240]}")})
+            held = series_path(pid)
+            if held is not None and not dry_run:
+                from mt5desk.family_exogenous_conditioner import hold_series
+                row["held_series"] = hold_series(pid, row["status"], held.parent)
+            rows.append(row)
+            continue
         if not st:
             row["reason"] = ("UNMEASURED: source_drain has not published a chain state on this "
                              "host, so no pack's stage is known")
@@ -1175,6 +1239,8 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
                            if int(r["cells_judged"]) > 0},
         "drain_reachability": dr,
         "packs_at_zero": zero,
+        "blocked_on_terms": {r["id"]: r["status"] for r in rows
+                             if str(r.get("status", "")).startswith("BLOCKED_ON_TERMS")},
         "rows": rows,
         "dry_run": bool(dry_run),
         "consumers": [
