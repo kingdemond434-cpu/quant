@@ -174,25 +174,25 @@ def test_the_registry_carries_one_row_per_representation_with_its_roi_counters(f
 def test_roi_history_lifts_a_family_that_has_earned_and_never_extinguishes_a_new_one(forge):
     rf.run(budget_s=60.0, max_new=12, inputs=forge["inputs"])
     for row in REG.representations(limit=500):
-        if row["family"] == "normalisation":
+        if row["family"] == "dynamics":
             REG.representation_roi_update(row["representation_id"], used_by_candidates=5,
                                           survivors=4)
     history, status = rf.roi_history()
     assert status["source"] == "registry.representations"
-    assert R.expected_value("normalisation", history) > R.expected_value("event", history)
+    assert R.expected_value("dynamics", history) > R.expected_value("event", history)
     assert R.expected_value("event", history) == pytest.approx(0.25), \
         "a family with no row takes the prior, never zero"
 
 
 def test_the_world_models_credit_is_read_as_roi_without_any_candidate(forge):
     rf._atomic(wm.OUT, {"dataset_credit": {
-        "representation:normalisation": {"targets": 4, "mean_delta_r2": 0.031},
+        "representation:dynamics": {"targets": 4, "mean_delta_r2": 0.031},
         "price": {"targets": 4, "mean_delta_r2": 0.01}}})
     credit = rf.world_model_credit()
-    assert credit == {"normalisation": pytest.approx(0.031)}
+    assert credit == {"dynamics": pytest.approx(0.031)}
     report = rf.run(budget_s=60.0, max_new=12, inputs=forge["inputs"])
-    normalisation = next(r for r in report["roi"]["rows"] if r["family"] == "normalisation")
-    assert normalisation["explained_variance"] == pytest.approx(0.031)
+    dynamics = next(r for r in report["roi"]["rows"] if r["family"] == "dynamics")
+    assert dynamics["explained_variance"] == pytest.approx(0.031)
 
 
 # ------------------------------------------------------------------ donations and dry run

@@ -491,8 +491,10 @@ def control(candidate: R.Series, primary: R.Series | None, basis: list[R.Series]
 
     Three tests, in the order they are cheap:
 
-      orthogonality   R^2 of the candidate on [its input's level + the representations already
-                      kept for that input]; >= MAX_R2 is near-collinear and refused;
+      orthogonality   R^2 of the candidate on the representations already kept this pass for
+                      the same input; >= MAX_R2 is near-collinear and refused (the level itself
+                      is not in the basis: it is already a world-model input, and a transform
+                      that is affine in it is still a different FEATURE for a family);
       information     the partial R^2 it adds for the input's forward change, net of the
                       expected partial R^2 of pure noise (1 / (n - k - 1)), as Gaussian mutual
                       information -0.5 ln(1 - partial), in nats;
@@ -509,8 +511,7 @@ def control(candidate: R.Series, primary: R.Series | None, basis: list[R.Series]
 
     times = [p.available_time for p in candidate.sorted().points][-MAX_CONTROL_ROWS:]
     cand = _asof(candidate, times)
-    cols = ([_asof(primary, times)] if primary is not None else []) + \
-        [_asof(b, times) for b in basis[-MAX_BASIS:]]
+    cols = [_asof(b, times) for b in basis[-MAX_BASIS:]]
     target = _forward_change(primary, times) if primary is not None else [None] * len(times)
     out: dict[str, Any] = {"marginal_effective_trials": round(marginal_trials, 4),
                            "basis": len(cols), "max_r2": MAX_R2, "min_gain_nats": MIN_GAIN_NATS}
@@ -561,6 +562,36 @@ def control(candidate: R.Series, primary: R.Series | None, basis: list[R.Series]
         return out
     out.update({"status": "ADMITTED", "admit": True})
     return out
+
+
+def stored_basis(input_key: str, manifest: dict[str, dict[str, Any]],
+                 cache: dict[str, list[R.Series]]) -> list[R.Series]:
+    """The representations ALREADY IN THE STORE for one input, read back from their files.
+
+    The orthogonality test runs against these as well as against this pass's keeps, so the
+    control is the same whichever order a pass happens to rank proposals in: a candidate refused
+    as a copy of a stored feature this hour is refused next hour too, and the store does not
+    accumulate one collinear twin per pass."""
+    if input_key not in cache:
+        found: list[R.Series] = []
+        for rid, row in sorted(manifest.items()):
+            if str((row.get("inputs") or [""])[0]) != input_key or not row.get("file"):
+                continue
+            doc = _read_json(STORE / str(row["file"]))
+            pts = doc.get("points") if isinstance(doc, dict) else None
+            if not isinstance(pts, list):
+                continue
+            points = tuple(R.Point(available_time=str(p.get("available_time")),
+                                   period_time=str(p.get("period_time")),
+                                   value=float(p.get("value")))
+                           for p in pts if isinstance(p, dict)
+                           and isinstance(p.get("value"), (int, float)))
+            if points:
+                found.append(R.Series(series_id=rid, points=points))
+            if len(found) >= MAX_BASIS:
+                break
+        cache[input_key] = found
+    return cache[input_key]
 
 
 def charge_trials(new_records: list[dict[str, Any]], n_effective: float, *,
@@ -634,8 +665,10 @@ def vintage_candidates(by_id: dict[str, R.Series]) -> tuple[list[tuple[dict[str,
         unmeasured.append({"name": "forecast_vintages",
                            "why": "no revision log under data/vintages",
                            "measured_by": "a pass that records input vintages (this leg)"})
-    for name in names:
-        rows = V.read_log(VINTAGE_ROOT, name)
+    for stem in names:
+        rows = V.read_log(VINTAGE_ROOT, stem)
+        # The file name is sanitised; the rows carry the series name as it was recorded.
+        name = str(rows[0].get("series") or stem) if rows else stem
         origin = name[len(VINTAGE_PREFIX):] if name.startswith(VINTAGE_PREFIX) else name
         primary = by_id.get(origin)
         key = f"vint.{origin.replace(':', '.')}"
@@ -1089,6 +1122,7 @@ def run(*, budget_s: float = 900.0, dry_run: bool = False, max_new: int = MAX_NE
     seen_ids: set[str] = set()
     by_transform: dict[str, int] = {}
     kept_by_input: dict[str, list[R.Series]] = {}
+    stored_cache: dict[str, list[R.Series]] = {}
     kept_trials: list[Any] = []
     n_eff = 0.0
     for row in selected:
@@ -1114,7 +1148,11 @@ def run(*, budget_s: float = 900.0, dry_run: bool = False, max_new: int = MAX_NE
                  "region": built.region, "inputs": row["inputs"], "params": row["params"]}
         trial = _trial(probe)
         marginal = _n_effective([*kept_trials, trial]) - n_eff
-        verdict = control(built, origin, kept_by_input.get(input_key, []), marginal)
+        basis = [b for b in kept_by_input.get(input_key, []) if b.series_id != built.series_id]
+        basis += [b for b in stored_basis(input_key, manifest, stored_cache)
+                  if b.series_id != built.series_id
+                  and all(b.series_id != k.series_id for k in basis)]
+        verdict = control(built, origin, basis[:MAX_BASIS], marginal)
         if not verdict["admit"]:
             controlled.append({"id": built.series_id, **verdict})
             continue

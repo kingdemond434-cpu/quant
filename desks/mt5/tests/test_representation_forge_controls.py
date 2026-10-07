@@ -76,17 +76,17 @@ def _inputs(series: list[R.Series]) -> wm.Inputs:
 # ------------------------------------------------------------------ DATA-33 control
 def test_a_near_collinear_copy_is_refused_and_an_informative_feature_is_kept() -> None:
     x = _series("in:a", "axis:a", _ar1(300, 0.5, 1))
-    copy = R.Series(series_id="copy", points=tuple(p.with_value(2.0 * p.value + 1.0)
-                                                    for p in x.points))
-    verdict = rf.control(copy, x, [], 1.0)
+    change = R.diff(x)
+    first = rf.control(change, x, [], 1.0)
+    assert first["status"] == "ADMITTED", "a mean-reverting input's change predicts the next one"
+    # Its z-score is (nearly) affine in it: once the change is kept, the z adds nothing new.
+    z = R.zscore(change, window=0)
+    verdict = rf.control(z, x, [change], 1.0)
     assert verdict["status"] == "REFUSED_COLLINEAR" and not verdict["admit"]
     assert verdict["collinear_r2"] >= rf.MAX_R2
-    # A mean-reverting input: its own AR residual predicts the next change.
-    resid = R.ar_residual(x)
-    kept = rf.control(resid, x, [], 1.0)
-    assert kept["status"] in ("ADMITTED", "REFUSED_COLLINEAR")
-    vol = R.rolling_volatility(x, window=20)
-    assert rf.control(vol, x, [], 1.0)["admit"] in (True, False)
+    copy = R.Series(series_id="copy", points=tuple(p.with_value(2.0 * p.value + 1.0)
+                                                    for p in change.points))
+    assert rf.control(copy, x, [change], 0.0)["status"] == "REFUSED_COLLINEAR"
 
 
 def test_noise_is_refused_for_no_information_gain_per_effective_trial() -> None:
@@ -138,10 +138,19 @@ def test_kept_representations_are_charged_once_to_the_shared_lifetime_count(desk
     total, by_fam = el._proposer_counts()
     assert total == charged["tests_run"]
     assert all(k.startswith("representation:") for k in by_fam)
-    # A second pass over the same tree mints the same ids: nothing new, nothing charged again.
+    # A second pass charges only ids the store did not already hold: across both passes the
+    # charged total equals the number of distinct stored representations, never more.
+    first_ids = set(json.loads(rf.MANIFEST.read_text("utf-8"))["representations"][i]["id"]
+                    for i in range(report["store"]["n_total"]))
     again = rf.run(budget_s=60.0, max_new=40, inputs=_inputs(series))
-    assert again["control"]["charged"]["tests_run"] == 0
-    assert len(rf.NULL_TRIALS.read_text("utf-8").splitlines()) == 1
+    stored = json.loads(rf.MANIFEST.read_text("utf-8"))["representations"]
+    assert again["control"]["charged"]["tests_run"] == len({r["id"] for r in stored} - first_ids)
+    rows = [json.loads(x) for x in rf.NULL_TRIALS.read_text("utf-8").splitlines()]
+    assert sum(r["tests_run"] for r in rows) == len(stored)
+    third = rf.run(budget_s=60.0, max_new=400, inputs=_inputs(series))
+    fourth = rf.run(budget_s=60.0, max_new=400, inputs=_inputs(series))
+    assert third["minted"] >= 0 and fourth["control"]["charged"]["tests_run"] == 0, \
+        "the whole grammar re-run over the same tree is nothing new and charges nothing"
 
 
 def test_the_new_structure_transforms_are_proposed_for_every_series(desk):
@@ -157,7 +166,9 @@ def test_the_new_structure_transforms_are_proposed_for_every_series(desk):
 def test_input_vintages_are_recorded_and_revisions_reach_the_store(desk):
     series = [_series("in:a", "axis:a", _ar1(60, 0.6, 4))]
     rec = rf.record_input_vintages(series, dry_run=False)
-    assert rec["status"] == "RECORDED" and rec["rows"] == rf.VINTAGE_RECORD_TAIL
+    assert rec["status"] == "RECORDED" and rec["rows"] == min(60, rf.VINTAGE_RECORD_TAIL)
+    assert rf.record_input_vintages(series, dry_run=False)["rows"] == 0, \
+        "an unchanged input costs nothing on the next pass"
     # A forecast re-issued hourly for one target: 40 vintages, so every lag has history.
     for h in range(80):
         V.record(rf.VINTAGE_ROOT, "forge.in:a", {"2025-06-01": 100.0 + h * 0.5 + (h % 3)},

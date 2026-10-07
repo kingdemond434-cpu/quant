@@ -25,10 +25,13 @@ for _p in (str(ROOT), str(ROOT / "desks" / "mt5"), str(ROOT / "desks" / "mt5" / 
 from libs.research import representations as R  # noqa: E402
 
 
-def _series(values: list[float], dataset: str = "ds") -> R.Series:
+def _series(values: list[float], dataset: str = "ds", *, vintages: int = 1) -> R.Series:
+    """`vintages > 1` re-issues each period that many times on consecutive days, so a vintage
+    transform has revisions to read."""
     base = datetime(2025, 1, 1, tzinfo=UTC)
     pts = tuple(R.Point(available_time=(base + timedelta(days=i)).isoformat(),
-                        period_time=(base + timedelta(days=i)).isoformat(), value=v)
+                        period_time=(base + timedelta(days=i - i % vintages)).isoformat(),
+                        value=v)
                 for i, v in enumerate(values))
     return R.Series(series_id=f"raw:{dataset}", points=pts, dataset=dataset, region="US",
                     information_type="macro_state")
@@ -109,7 +112,8 @@ def test_future_corruption_never_moves_a_feature_at_or_before_t(name: str,
     rng = random.Random(99)
     cut = 160
     dirty_values = clean_values[:cut] + [rng.uniform(-1e4, 1e4) for _ in clean_values[cut:]]
-    clean, dirty = _series(clean_values), _series(dirty_values)
+    issues = 3 if name == "vintage_revision" else 1
+    clean, dirty = _series(clean_values, vintages=issues), _series(dirty_values, vintages=issues)
     t = clean.points[cut - 1].available_time
     a = R.apply(R.Transform(name, params), clean)
     b = R.apply(R.Transform(name, params), dirty)
