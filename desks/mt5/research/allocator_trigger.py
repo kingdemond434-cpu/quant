@@ -461,6 +461,8 @@ def _load_state(raw: dict[str, Any] | None) -> dict[str, Any]:
         if raw.get(k) is not None:
             st[k] = raw[k]
     st["last_solve_at"] = float(st.get("last_solve_at") or 0.0)
+    if isinstance(raw.get("book"), dict):          # book_trigger's fingerprint ledger
+        st["book"] = raw["book"]
     rows = raw.get("seen") or raw.get("inputs") or {}
     for key, rec in rows.items():
         if not isinstance(rec, dict):

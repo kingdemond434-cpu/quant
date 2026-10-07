@@ -7,13 +7,13 @@ This organ rides the allocator trigger's pass (`allocator_trigger.poll`, every ~
 the book on the SAME pass that sees any of:
 
   fill            a fill, bracket or netting change in gateway_state.json
-  equity          Fusion or E8 equity crossing a 1% log bucket
+  equity          Fusion or E8 equity 1% away from the level the book was last solved at
   certificate     a certificate arriving or dying (the canonical store, the sleeve registry)
   cost_regime     a book symbol's spread or swap moving a whole log2 bucket, or a swap flipping sign
   allocation      a new pf_allocation decision or a re-drawn world tensor
 
 THE FINGERPRINT IS THE GATE. Every input is reduced to a bucketed signature and the whole set is
-hashed; an unchanged hash never re-solves, so a quiet market costs a few file reads per pass and
+hashed (equity is compared to its solved level instead); an unchanged hash never re-solves, so a quiet market costs a few file reads per pass and
 no compute. A changed hash that arrives inside the gap (`MIN_BOOK_GAP_S`) is not dropped: the
 solved fingerprint is only advanced by a solve that finished, so the next pass after the gap
 serves it. The hourly `kelly_survival` leg stays as the backstop.
@@ -49,8 +49,9 @@ WORLDS = DATA / "pf_allocator_cache" / "worlds.npz"
 KELLY = REPORTS / "KELLY_SURVIVAL.json"
 
 FILL_KEYS = ("position", "netting_booked", "brackets", "lot")
-#: One bucket per 1% of equity, in logs: a 1% move re-sizes every fraction by 1%, which is the
-#: smallest change worth a solve; anything finer re-solves on noise.
+#: A 1% equity move (in logs, against the equity the book was LAST SOLVED at) re-sizes every
+#: fraction by 1%, the smallest change worth a solve. Measured from the solved level, not a fixed
+#: grid, so equity hovering on a grid line cannot re-solve on every tick.
 EQUITY_STEP = 0.01
 #: The fewest seconds between two book solves. The solve is ~1 min on the build box; a burst of
 #: fills inside the gap is served by one solve after it, never dropped.
@@ -82,9 +83,18 @@ def _num(v: Any) -> float | None:
     return f if math.isfinite(f) else None
 
 
-def _equity_bucket(v: Any) -> int | None:
+def _equity(v: Any) -> float | None:
     f = _num(v)
-    return None if f is None or f <= 0 else math.floor(math.log(f) / math.log1p(EQUITY_STEP))
+    return f if f is not None and f > 0 else None
+
+
+def _equity_moved(now_eq: list[float | None], solved_eq: list[float | None]) -> bool:
+    for a, b in zip(now_eq, solved_eq, strict=True):
+        if (a is None) != (b is None):
+            return True
+        if a is not None and b is not None and abs(math.log(a / b)) >= math.log1p(EQUITY_STEP):
+            return True
+    return False
 
 
 def _log2_bucket(v: Any) -> int | None:
@@ -134,10 +144,9 @@ def components() -> dict[str, Any]:
         worlds_at = None
     return {
         "fill": _hash({k: gs.get(k) for k in FILL_KEYS}),
-        "equity": [_equity_bucket(gs.get("equity") if gs.get("equity") is not None
-                                  else (acct or {}).get("equity") if isinstance(acct, dict)
-                                  else None),
-                   _equity_bucket((e8 or {}).get("equity") if isinstance(e8, dict) else None)],
+        "equity": [_equity(gs.get("equity") if gs.get("equity") is not None
+                           else (acct or {}).get("equity") if isinstance(acct, dict) else None),
+                   _equity((e8 or {}).get("equity") if isinstance(e8, dict) else None)],
         "certificate": _hash([certs, (reg or {}).get("sleeves") if isinstance(reg, dict) else None]),
         "cost_regime": costs,
         "allocation": [(alloc or {}).get("decision_id") if isinstance(alloc, dict) else None,
@@ -162,32 +171,31 @@ def poll(state: dict[str, Any], now: float, *, solve: bool = True,
          budget_s: float = BOOK_BUDGET_S) -> dict[str, Any]:
     """One pass. `state` is the allocator trigger's `book` block, updated in place."""
     comp = components()
+    equity = comp.pop("equity")
     fp = _hash(comp)
-    prev = state.get("components") or {}
-    moved = sorted(k for k in comp if prev.get(k) != comp[k]) if prev else []
-    if state.get("observed_fp") != fp:
-        state["observed_fp"], state["observed_at"] = fp, _iso(now)
-        state["components"] = comp
-        if moved:
-            state["last_moved"] = moved
+    state["observed_at"], state["observed_fp"], state["components"] = _iso(now), fp, comp
     if not state.get("solved_fp"):
         # FIRST SIGHT IS THE BASELINE the hourly solve already sized against, not a change.
-        state["solved_fp"] = fp
+        state.update(solved_fp=fp, solved_components=comp, solved_equity=equity)
         return {"event": "baseline", "fp": fp}
-    if state["solved_fp"] == fp:
+    solved = state.get("solved_components") or {}
+    moved = sorted(k for k in comp if solved.get(k) != comp[k])
+    if _equity_moved(equity, state.get("solved_equity") or [None, None]):
+        moved = sorted([*moved, "equity"])
+    if not moved:
         return {"event": "unchanged", "fp": fp}
     last = float(state.get("last_solve_at") or 0.0)
     if not solve or now < last + MIN_BOOK_GAP_S:
-        return {"event": "deferred", "fp": fp, "moved": state.get("last_moved"),
+        return {"event": "deferred", "fp": fp, "moved": moved,
                 "why": "solve disabled" if not solve else
                 f"next book solve allowed at {_iso(last + MIN_BOOK_GAP_S)}"}
     res = (solver or _solve)(budget_s)
     state["last_solve_at"] = now
     ok = res.get("rc") == 0
     if ok:
-        state["solved_fp"] = fp
-        state["solved_at"] = _iso(now)
-    state["last_result"] = {"rc": res.get("rc"), "wall_s": res.get("wall_s"),
-                            "moved": state.get("last_moved")}
-    return {"event": "solved" if ok else "solve_failed", "fp": fp,
-            "moved": state.get("last_moved"), "rc": res.get("rc"), "wall_s": res.get("wall_s")}
+        # Only a FINISHED solve advances the solved state, so a failure is retried next pass.
+        state.update(solved_fp=fp, solved_components=comp, solved_equity=equity,
+                     solved_at=_iso(now))
+    state["last_result"] = {"rc": res.get("rc"), "wall_s": res.get("wall_s"), "moved": moved}
+    return {"event": "solved" if ok else "solve_failed", "fp": fp, "moved": moved,
+            "rc": res.get("rc"), "wall_s": res.get("wall_s")}

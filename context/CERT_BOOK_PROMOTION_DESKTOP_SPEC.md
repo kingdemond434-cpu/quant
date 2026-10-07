@@ -60,6 +60,10 @@ Every key NOT in this table keeps whatever the allocator set, including 0 (no or
        so the pass shows which overlay it ran.
     Apply in either order. If #261 lands second, re-apply the three-line overlay at the end of
     its `allocator_book()`. Its rewrite of that function would otherwise drop it.
+- READ AT ORDER TIME. `research/book_trigger.py` (on the allocator trigger's ~20s pass, #261) re-solves
+  the book within one tick of a fill, a 1% equity move, a certificate change, a spread or swap
+  regime change, or a new allocation. So the reader must re-read KELLY_SURVIVAL.json every pass and never
+  cache it across passes; a solve that lands between passes is sized from on the next one.
 - The overlay applies only while the kelly book is fresh (<= 2h). A stale or absent book leaves
   the allocator's book untouched, and the heat-floor fallback is unchanged.
 - E8: `prop/e8_executor.py` / `e8_book.py` size non-gold at `RISK_FRAC` 0.15%. Read
