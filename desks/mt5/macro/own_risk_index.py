@@ -266,7 +266,7 @@ def build(universe_dir: Path = UNIVERSE_DIR, now: datetime | None = None) -> dic
                       f"under {universe_dir}")
     vs = comparison(series.get(orisk.RISK_RV, []), vix, where)
     rep["vs_vixcls"] = {"status": vs["status"], "note": vs["note"],
-                        "written_to": str(COMPARISON.relative_to(ROOT)) + " (gitignored)",
+                        "written_to": f"{COMPARISON.parent.name}/{COMPARISON.name} (gitignored)",
                         **({"why": vs["why"]} if "why" in vs else {})}
     return {"report": rep, "series": series, "sources": sources, "vs_vixcls": vs}
 

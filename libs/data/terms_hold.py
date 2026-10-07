@@ -191,9 +191,14 @@ def _one(sid: str, doc: Any) -> tuple[bool, str]:
             "fred_index" if series.strip().upper() in FRED_INDEX_SERIES else None)
         if third and third not in held:
             held.append(third)
-    if provider in ("fred", "alfred") and not held:
-        cleared = _clearance(doc, [sid, provider])
-        return (True, cleared) if cleared else (False, f"HELD_TERMS: {FRED_FITTED_HOLD}")
+    fred_why = ""
+    if provider in ("fred", "alfred"):
+        # the FRED hold stands on its own: a third party's clearance (CBOE, ICE) never lifts it
+        fred_why = _clearance(doc, [sid, provider]) or ""
+        if not fred_why:
+            return False, f"HELD_TERMS: {FRED_FITTED_HOLD}"
+        if not held:
+            return True, fred_why
     if held:
         whys = []
         for key in held:
@@ -201,7 +206,7 @@ def _one(sid: str, doc: Any) -> tuple[bool, str]:
             if not cleared:
                 return False, f"HELD_TERMS: {TERMS_HELD[key]}"
             whys.append(cleared)
-        return True, "; ".join(whys)
+        return True, "; ".join(([fred_why] if fred_why else []) + whys)
     if sid in TERMS_EVIDENCE or (series.strip() and provider in TERMS_EVIDENCE
                                  and ":" not in provider):
         return True, ""

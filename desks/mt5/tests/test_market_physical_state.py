@@ -109,9 +109,12 @@ def test_curve_regime_and_ledger(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ser["VIXCLS"][-2] = (ser["VIXCLS"][-2][0], 30.0)
     held = ms.build(now=NOW, series=ser, charts={}, vol_rows=_vol_rows())
     assert held["regime_source"] == "mt5:bars:OWN_VIX"          # a held copy is never the key
-    (tmp_path / "clear.json").write_text(json.dumps({"cboe": {
-        "status": "CLEARED", "terms_url": "https://example.test/terms",
-        "terms_quote": "machine use permitted"}}), "utf-8")
+    quoted = {"status": "CLEARED", "terms_url": "https://example.test/terms",
+              "terms_quote": "machine use permitted"}
+    (tmp_path / "clear.json").write_text(json.dumps({"cboe": quoted}), "utf-8")
+    cboe_only = ms.build(now=NOW, series=ser, charts={}, vol_rows=_vol_rows())
+    assert cboe_only["regime_source"] == "mt5:bars:OWN_VIX"     # FRED's own hold still stands
+    (tmp_path / "clear.json").write_text(json.dumps({"cboe": quoted, "fred": quoted}), "utf-8")
     fr = ms.build(now=NOW, series=ser, charts={}, vol_rows=_vol_rows())
     assert fr["regime_source"] == "fred:VIXCLS+VXVCLS"
     assert fr["regime"] == "vol_backwardation_high"
@@ -119,7 +122,7 @@ def test_curve_regime_and_ledger(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
            "OWN_VIX_INVERTED": [(d, 1.0) for d in _days(300)]}
     own["OWN_VIX"][-1] = (own["OWN_VIX"][-1][0], 40.0)
     assert ms.own_regime(NOW, own) == "vol_backwardation_high"
-    assert rep["terms"]["curve"]["gauntlet"] == "admitted"
+    assert rep["terms"]["curve"]["gauntlet"] == "HELD"          # FRED: ruling on (j)
     assert rep["option_chains"]["status"] == "EXTERNALLY_BLOCKED"
     obs = ms.observations(rep, NOW)
     assert obs and all(sc.defects(o) == [] for o in obs)
