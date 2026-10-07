@@ -921,6 +921,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE RESEARCH-LIVE IDENTITY JOIN, before the door that lists its mismatches: a reader of
     # four artifacts, seconds, so it rides the core clock with the door (`tier_s`).
     "research_live_identity",
+    # THE SEVEN PRINCIPLES (ARCH-32): every principle's enforcing organs resolved against the
+    # tree and its state measured from this pass's artifacts. A reader, ~2 s, on the core clock.
+    "principles",
     "tier_s",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
@@ -1150,6 +1153,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s",
                      "research_live_identity",
+                     # THE SEVEN PRINCIPLES (ARCH-32): the machine measuring whether its own
+                     # standing principles are still enforced: meta.
+                     "principles",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
                      "unknown_census"), "meta"),
@@ -2282,6 +2288,18 @@ def research_live_identity() -> dict:
     defect, and the `tier_s` door lists that LIVE row in `data/tier_s/live_door.json`
     (`promotion_authority.review_live`)."""
     return _producer("research_live_identity", "research/research_live_identity.py")
+
+
+def principles() -> dict:
+    """`principles` (ARCH-32): the seven standing principles -- no sacred strategy/model/source/
+    geography, structural change triggers relearning, cash is an allocation, research never
+    stops, validation never relaxes, execution teaches research, ontology stays open -- each
+    mapped to the organs that enforce it (`docs/research/principles_map.json`, every organ
+    resolved against the tree) and measured MET / VIOLATED / UNMEASURED / UNENFORCED from live
+    artifacts. Writes `reports/PRINCIPLES.json` with the ratchet verdict against
+    `docs/research/principles_floor.json`; `scripts/check_principles.py` is its fence. Caps no
+    capital: research and validation discipline only."""
+    return _producer("principles", "research/principles_enforcement.py")
 
 
 def macro_conditioned_sweep() -> dict:
@@ -5147,6 +5165,9 @@ def main() -> None:
     # RESEARCH_LIVE_IDENTITY.json, and its data-OS organ reads the macro sweep's PIT counts.
     nlab = _costed("null_lab", null_lab)
     rlid = _costed("research_live_identity", research_live_identity)
+    # AFTER the allocator, the decay monitor and the queue's structural-change producer, so the
+    # principles pass reads this hour's artifacts (ARCH-32).
+    prin = _costed("principles", principles)
     mcsw = _costed("macro_conditioned_sweep", macro_conditioned_sweep)
     # Once per UTC day (the leg gates itself on the document's `utc_day`); meta department.
     ucen = _costed("unknown_census", unknown_census)
@@ -5743,6 +5764,7 @@ def main() -> None:
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,
                     "null_lab": nlab, "research_live_identity": rlid,
+                    "principles": prin,
                     "macro_conditioned_sweep": mcsw, "unknown_census": ucen,
                     "tier_s": tiers, "adversary_evolution": advx,
                     "execution_science": exsci, "frontier_map": fmap,
