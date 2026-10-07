@@ -4,6 +4,8 @@ import sys
 from types import SimpleNamespace
 
 import pytest
+
+from libs.ops.mt5_readonly import wraps
 from desks.mt5.research import session_phase as sp
 
 
@@ -18,7 +20,7 @@ def test_live_offset_is_recorded_and_rounds_once(clock_paths, monkeypatch):
     terminal = object()
     monkeypatch.setitem(sys.modules, "MetaTrader5", terminal)
     monkeypatch.setitem(sys.modules, "h1_source", SimpleNamespace(
-        broker_utc_offset_hours=lambda module: 2.8 if module is terminal else None))
+        broker_utc_offset_hours=lambda module: 2.8 if wraps(module, terminal) else None))
     assert sp.broker_utc_offset_h() == (3, "live_terminal")
     saved = json.loads(sp.BROKER_CLOCK.read_text())
     assert saved["utc_offset_hours"] == 3

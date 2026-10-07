@@ -96,6 +96,13 @@ def _initialize(fn: Any) -> Any:
     return initialize
 
 
+def wraps(proxy: Any, module: Any) -> bool:
+    """Whether `proxy` is the read-only view of `module` -- an identity test that never hands the
+    module itself out (tests and callers that once compared `is` against the raw module)."""
+    return isinstance(proxy, ReadOnlyMT5) and \
+        object.__getattribute__(proxy, "_ReadOnlyMT5__mod") is module
+
+
 def readonly_mt5() -> ReadOnlyMT5:
     """The read-only terminal. Raises ImportError where MetaTrader5 is not installed."""
     return ReadOnlyMT5(importlib.import_module("MetaTrader5"))

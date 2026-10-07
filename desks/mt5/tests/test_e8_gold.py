@@ -64,7 +64,10 @@ def test_main_uses_configured_terminal_and_never_runs_on_failed_attach(tmp_path,
     monkeypatch.setattr(g.time, "sleep", lambda _s: None)
     assert g.main([]) == 1
     # Every reconnect attempt uses the configured terminal; none of them reaches `run`.
-    assert calls == [(fake, {"path": "canonical/terminal64.exe", "timeout": 15000})] * len(
+    # ARCH-12: the terminal arrives as the read-only view of the module, never the module.
+    from libs.ops.mt5_readonly import wraps
+    assert all(wraps(api, fake) for api, _ in calls)
+    assert [kw for _, kw in calls] == [{"path": "canonical/terminal64.exe", "timeout": 15000}] * len(
         g.MT5_RETRY_WAITS_S)
 
 
