@@ -92,6 +92,7 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(kg, "HYPOTHESIS_GRAPH", tmp_path / "hypothesis_graph.jsonl")
     monkeypatch.setattr(kg, "FRONTIER_QUEUE", tmp_path / "frontier_queue.jsonl")
     monkeypatch.setattr(kg, "UNIVERSE", tmp_path / "universe.json")
+    monkeypatch.setattr(kg, "NEWS_EVENT_LOG", tmp_path / "events.jsonl")
     _write(tmp_path / "universe.json", {"XAUUSD": {"asset_class": "metal"},
                                         "XAGUSD": {"asset_class": "metal"}})
     return tmp_path

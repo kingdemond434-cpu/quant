@@ -52,6 +52,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+import story_graph as sg  # noqa: E402
+
 from libs.research import lead_schema as ls  # noqa: E402
 
 STORE = DESK / "data" / "knowledge_graph" / "graph.json"
@@ -62,6 +64,10 @@ HYPOTHESIS_GRAPH = DESK / "data" / "hypothesis_graph.jsonl"
 FRONTIER_QUEUE = DESK / "frontier_intel" / "data" / "frontier_queue.jsonl"
 SOURCE_REGISTRY = DESK / "data" / "source_registry.json"
 UNIVERSE = DESK / "data" / "universe" / "universe.json"
+#: The news stream's event log: every classified document, read for the STORY layer (DATA-29).
+NEWS_EVENT_LOG = DESK / "data" / "events" / "events.jsonl"
+#: Event-log rows one pass reads from its byte offset; the remainder waits for the next pass.
+MAX_EVENT_LINES = 20_000
 
 #: Intake rows one pass carries. A bound on MEMORY and on wall clock, not a view of what matters:
 #: whatever it defers is COUNTED and waits for the next run rather than being dropped.
@@ -91,13 +97,13 @@ MAX_GRAPH_LINES = 400_000
 NODE_LEAD, NODE_SOURCE, NODE_MECHANISM = "lead", "source", "mechanism"
 NODE_INSTRUMENT, NODE_AXIS, NODE_CELL, NODE_OUTCOME = "instrument", "axis", "cell", "outcome"
 NODE_TYPES = (NODE_LEAD, NODE_SOURCE, NODE_MECHANISM, NODE_INSTRUMENT, NODE_AXIS, NODE_CELL,
-              NODE_OUTCOME)
+              NODE_OUTCOME, *sg.STORY_NODE_TYPES)
 
 CLAIMS, NAMES, PRODUCED, BECAME = "CLAIMS", "NAMES", "PRODUCED", "BECAME"
 JUDGED, TESTED_BY, ON_AXIS = "JUDGED", "TESTED_BY", "ON_AXIS"
 DUPLICATES, CONTRADICTS, DERIVES_FROM = "DUPLICATES", "CONTRADICTS", "DERIVES_FROM"
 EDGE_TYPES = (CLAIMS, NAMES, PRODUCED, BECAME, JUDGED, TESTED_BY, ON_AXIS, DUPLICATES,
-              CONTRADICTS, DERIVES_FROM)
+              CONTRADICTS, DERIVES_FROM, *sg.STORY_EDGE_TYPES)
 
 RULE = ("one lead schema; every lead is linked to what it claimed, where it came from and what "
         "it became")
@@ -207,7 +213,9 @@ def load_store(path: Path | None = None) -> dict[str, Any]:
 def load_cursor(path: Path | None = None) -> dict[str, Any]:
     doc = _read_json(path or CURSOR)
     if not isinstance(doc, dict):
-        return {"at": "", "rows": [], "graph_offset": 0, "graph_size": 0, "n_rows_seen": 0}
+        return {"at": "", "rows": [], "graph_offset": 0, "graph_size": 0, "n_rows_seen": 0,
+                "events_offset": 0}
+    doc.setdefault("events_offset", 0)
     doc.setdefault("rows", [])
     doc.setdefault("graph_offset", 0)
     doc.setdefault("graph_size", 0)
@@ -938,6 +946,7 @@ def mechanism_coverage(store: Mapping[str, Any] | None = None) -> dict[str, Any]
 def build(*, max_rows: int = MAX_ROWS, store_path: Path | None = None,
           cursor_path: Path | None = None, roots: Sequence[Path] | None = None,
           graph_path: Path | None = None, frontier: Path | None = None,
+          events_path: Path | None = None,
           asset_class_of: Mapping[str, str] | None = None) -> tuple[dict[str, Any],
                                                                     dict[str, Any],
                                                                     dict[str, Any]]:
@@ -952,6 +961,7 @@ def build(*, max_rows: int = MAX_ROWS, store_path: Path | None = None,
     roots = roots if roots is not None else INTEL_ROOTS
     graph_path = graph_path or HYPOTHESIS_GRAPH
     frontier = frontier or FRONTIER_QUEUE
+    events_path = events_path or NEWS_EVENT_LOG
     store = load_store(store_path)
     cursor = load_cursor(cursor_path)
     store["at"] = _now()
@@ -998,6 +1008,25 @@ def build(*, max_rows: int = MAX_ROWS, store_path: Path | None = None,
     for row in rows:
         cells.update(ingest_cell(store, row))
     resolved_late = resolve_pending(store, fresh_cell_keys)
+
+    # THE STORY LAYER (DATA-29): documents -> events -> stories, copies collapsed to one unit.
+    news_rows, events_offset = iter_graph_rows(events_path, int(cursor["events_offset"]),
+                                               MAX_EVENT_LINES)
+    if not events_path.exists():
+        unmeasured.append(f"{events_path.name} absent: the story layer is UNMEASURED")
+    story_made: Counter[str] = Counter()
+    for row in news_rows:
+        story_made.update(sg.ingest_document(store, row, add_node=add_node, add_edge=add_edge,
+                                             new_edge=new_edge))
+    if story_made.get("event_docs_capped"):
+        unmeasured.append(f"an event passed {sg.MAX_EVENT_DOCS} documents: its oldest are no "
+                          "longer compared against new ones")
+    if len(news_rows) >= MAX_EVENT_LINES:
+        unmeasured.append(f"event log bound {MAX_EVENT_LINES} hit: the rest is read next pass")
+    evicted_stories = sg.evict_stories(store)
+    if evicted_stories:
+        unmeasured.append(f"{evicted_stories} stalest stor(ies) evicted at the "
+                          f"{sg.MAX_DOCUMENTS} document cap")
     evicted = evict_leads(store)
     if evicted:
         unmeasured.append(f"{evicted} oldest claim node(s) evicted at the {MAX_LEAD_NODES} cap")
@@ -1007,7 +1036,7 @@ def build(*, max_rows: int = MAX_ROWS, store_path: Path | None = None,
         unmeasured.append(f"{links['bucket_capped']} duplicate bucket(s) hit the {MAX_BUCKET} "
                           "comparison cap: older claims in them are no longer cross-checked")
 
-    cursor.update({"at": store["at"], "graph_offset": offset,
+    cursor.update({"at": store["at"], "graph_offset": offset, "events_offset": events_offset,
                    "graph_size": graph_path.stat().st_size if graph_path.exists() else 0,
                    "n_rows_seen": int(cursor["n_rows_seen"]) + n_rows})
     if len(cursor["rows"]) > MAX_CURSOR_KEYS:
@@ -1017,6 +1046,8 @@ def build(*, max_rows: int = MAX_ROWS, store_path: Path | None = None,
                      n_new_claims=n_new_claims, n_invalid=n_invalid, by_kind=dict(by_kind),
                      links=dict(links), cells=dict(cells), resolved_late=resolved_late,
                      n_graph_rows=len(rows), n_paths=len(paths), max_rows=max_rows)
+    report["stories"] = sg.story_report(store, story_made, rows_read=len(news_rows),
+                                        log_present=events_path.exists())
     return store, cursor, report
 
 
