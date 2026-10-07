@@ -361,6 +361,7 @@ desks/mt5/data/digests/*.tmp
 !web/equity_history.jsonl
 !desks/mt5/reports/QQUANT_GATES.json
 !desks/mt5/reports/UNIVERSAL_SURVIVORS.json
+!desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json
 !desks/mt5/reports/markout.json
 # THE ATTRIBUTION CHAIN'S LEDGERS (2026-09-08), published by sync_shadow_to_git.ps1's $relPaths
 # beside markout.json. attribution_chain.json is caught by `**/reports/*` above and needs this
