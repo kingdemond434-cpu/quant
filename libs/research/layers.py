@@ -125,6 +125,7 @@ LEG_LAYER: dict[str, str] = {
     # What a sleeve pays to trade belongs with execution too: it is a cost, not a signal.
     "cost_to_edge": "execution",
     "swap_rejudge": "execution",
+    "carry_rejudge": "prediction",
     "asia_plane": "information",
     "sge_premium": "information",
     "asia_collector": "information",
