@@ -983,7 +983,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:desks/mt5/research/dormant_components.py` | `invoked:ops/run_frontier_audit.cmd` | UNMEASURED UNMEASURED | `desks/mt5/reports/DORMANT_COMPONENTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:libs/ops/intelligence_inputs.py` | `import:scripts/run_intelligence_cycle.py` | UNMEASURED UNMEASURED | `web/intelligence_cycle.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/lessons.py` | `invoked:libs/ops/agent_denials.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/NIGHTLY_CATCHUP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:stop_geometry_derivation` | `hourly_cycle:stop_geometry_derivation` | UNMEASURED UNMEASURED | `desks/mt5/reports/STOP_GEOMETRY_DERIVATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:recovery_drills` | `hourly_cycle:recovery_drills` | UNMEASURED UNMEASURED | `desks/mt5/reports/RECOVERY_DRILLS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:E8-Book` | `E8-Book` | UNMEASURED UNMEASURED | `desks/mt5/reports/E8_BOOK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (37)

@@ -276,14 +276,14 @@
     ]
    },
    {
-    "at": "2026-10-06T15:21:30+00:00",
+    "at": "2026-10-06T15:32:32+00:00",
     "host": "vm",
     "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
     "on_attesting_host": false,
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "executable:scripts/lessons.py",
-     "leg:stop_geometry_derivation",
+     "leg:recovery_drills",
      "task:E8-Book"
     ]
    }
@@ -25269,15 +25269,15 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-   "measured_at": "2026-10-06T15:21:30+00:00"
+   "measured_at": "2026-10-06T15:32:32+00:00"
   },
   {
-   "organ": "leg:stop_geometry_derivation",
+   "organ": "leg:recovery_drills",
    "kind": "leg",
    "code": [
-    "desks/mt5/research/stop_geometry_derivation.py"
+    "desks/mt5/research/recovery_drills.py"
    ],
-   "clock": "hourly_cycle:stop_geometry_derivation",
+   "clock": "hourly_cycle:recovery_drills",
    "cadence_s": 3600,
    "max_silence_s": 7200,
    "state": "NEVER",
@@ -25285,8 +25285,8 @@
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/STOP_GEOMETRY_DERIVATION.json",
-   "artifact_declared": "desks/mt5/reports/STOP_GEOMETRY_DERIVATION.json",
+   "artifact": "desks/mt5/reports/RECOVERY_DRILLS.json",
+   "artifact_declared": "desks/mt5/reports/RECOVERY_DRILLS.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -25297,7 +25297,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-   "measured_at": "2026-10-06T15:21:30+00:00"
+   "measured_at": "2026-10-06T15:32:32+00:00"
   },
   {
    "organ": "task:E8-Book",
@@ -25325,7 +25325,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-   "measured_at": "2026-10-06T15:21:30+00:00"
+   "measured_at": "2026-10-06T15:32:32+00:00"
   }
  ],
  "ratchet": {
