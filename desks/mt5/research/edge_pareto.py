@@ -184,15 +184,3 @@ def publish(doc: Mapping[str, Any], path: Path | None = None) -> Path:
     tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     tmp.replace(p)
     return p
-
-
-def main() -> int:
-    doc = build()
-    p = publish(doc)
-    print(f"edge_pareto: {doc.get('status')} dominated={doc.get('n_dominated')} "
-          f"of {doc.get('n_measured')} -> {p}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
