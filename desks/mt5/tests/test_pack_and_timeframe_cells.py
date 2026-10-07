@@ -110,7 +110,7 @@ def test_an_ungoverned_pack_mints_nothing(monkeypatch: Any, tmp_path: Path) -> N
     """CONFIRMED ONLY (#229 ruling, 2026-10-07): terms fail closed and need a quoted clause. A
     pack whose host no terms row governs has none, so it mints 0 cells and names the reason
     BLOCKED_ON_TERMS:ungoverned -- through emit_for and through build alike."""
-    assert pc.PACK_MINT_VERDICTS == frozenset({"confirmed"})
+    assert {"confirmed"} == set(pc.PACK_MINT_VERDICTS)
     calls: list[dict[str, Any]] = []
     import libs.moat.registry as reg
     monkeypatch.setattr(reg, "record_discovery",
