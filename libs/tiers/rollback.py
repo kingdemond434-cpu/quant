@@ -100,3 +100,70 @@ def apply(p: dict[str, object], root: Path | None = None) -> str:
     _git("commit", "-m", f"tier_s rollback: code to sealed release {target[:12]}",
          "--", *code, root=root)
     return _git("rev-parse", "HEAD", root=root)
+
+
+def drill() -> dict[str, object]:
+    """Roll back a failed release IN A THROWAWAY REPOSITORY and check what came back.
+
+    The box's rollback is one operator command; whether that command does what it says is a
+    property this drill measures every pass instead of on the day it is needed. A temp repo gets
+    a sealed release A (code + box state + manifest), then a bad release B that changes the code
+    and the state. `plan(None)` must pick A, `apply` must make ONE new commit whose code equals
+    A's while the state stays B's (the box's state is the box's), history must not be rewritten
+    (B stays an ancestor: no second authority over what ran), and an unsealed target must be
+    refused before any write. Never touches this clone.
+    """
+    import tempfile
+    import time
+    t0 = time.monotonic()
+    code_rel, state_rel = "desks/mt5/research/organ.py", "desks/mt5/data/sleeves.json"
+    # Windows marks git's object files read-only, which a plain cleanup raises on.
+    with tempfile.TemporaryDirectory(prefix="rollback_drill_", ignore_cleanup_errors=True) as tmp:
+        r = Path(tmp)
+
+        def put(rel: str | Path, text: str) -> None:
+            p = r / rel
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(text, "utf-8")
+
+        def g(*a: str) -> str:
+            return _git(*a, root=r)
+        g("init", "-q")
+        g("config", "user.email", "drill@sandbox")
+        g("config", "user.name", "rollback drill")
+        g("config", "commit.gpgsign", "false")
+        g("config", "core.hooksPath", str(r / ".git" / "no-hooks"))   # the drill's own commits
+        put(code_rel, "GOOD = 1\n")
+        put(state_rel, '{"v": "A"}\n')
+        g("add", "-A")
+        g("commit", "-q", "--no-verify", "-m", "release A")
+        a = g("rev-parse", "HEAD")
+        put(MANIFEST_REL, json.dumps({"code": a}) + "\n")
+        g("add", "-A")
+        g("commit", "-q", "--no-verify", "-m", "seal A")
+        put(code_rel, "GOOD = 0  # the failed release\n")
+        put(state_rel, '{"v": "B"}\n')
+        g("add", "-A")
+        g("commit", "-q", "--no-verify", "-m", "release B (fails its smoke test)")
+        b = g("rev-parse", "HEAD")
+        checks: dict[str, bool] = {}
+        try:
+            apply({"available": True, "sealed": False, "target": b, "code_paths": [code_rel]},
+                  root=r)
+            checks["unsealed_refused"] = False
+        except RollbackRefused:
+            checks["unsealed_refused"] = g("rev-parse", "HEAD") == b
+        p = plan(None, root=r)
+        checks["picked_last_sealed"] = p.get("target") == a and bool(p.get("sealed"))
+        head = apply(p, root=r)
+        checks["one_new_commit"] = g("rev-parse", "HEAD~1") == b and head != b
+        checks["code_restored"] = (r / code_rel).read_text("utf-8") == "GOOD = 1\n"
+        checks["state_kept"] = (r / state_rel).read_text("utf-8") == '{"v": "B"}\n'
+        checks["history_kept"] = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", b, "HEAD"], cwd=r).returncode == 0
+        checks["tree_clean"] = g("status", "--porcelain") == ""
+    ok = all(checks.values())
+    return {"status": "PASS" if ok else "FAIL", "checks": checks,
+            "failed": [k for k, v in checks.items() if not v],
+            "wall_s": round(time.monotonic() - t0, 2),
+            "sandbox": "temporary git repository; this clone is never touched"}

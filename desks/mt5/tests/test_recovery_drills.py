@@ -92,7 +92,7 @@ def test_every_named_failure_mode_has_a_row_and_build_is_total() -> None:
              "queue_overload", "disk_pressure", "network_loss", "broker_rejection",
              "missing_ack", "partial_fill", "duplicate_delivery", "out_of_order",
              "failed_deployment", "backup_restore", "restore_reconcile", "account_ledger",
-             "clock_sync", "secrets", "reproducibility"}
+             "clock_sync", "secrets", "reproducibility", "stale_quote", "rollback"}
     ids = {d[0] for d in rd.DRILLS}
     assert named <= ids
     doc = rd.build(NOW)
@@ -104,7 +104,21 @@ def test_every_named_failure_mode_has_a_row_and_build_is_total() -> None:
 
 def test_every_fix_pointer_names_a_file_in_this_tree() -> None:
     root = Path(__file__).resolve().parents[3]
-    for spec in (rd.GATEWAY_SPEC, rd.FILL_ORDER_SPEC):
+    for spec in (rd.GATEWAY_SPEC, rd.FILL_ORDER_SPEC, rd.STALE_QUOTE_SPEC):
         assert (root / spec).is_file(), spec
     gaps = [r for r in rd.build(NOW)["drills"] if r.get("evidence") == "code"]
     assert gaps and all(r["fix"] == rd.FILL_ORDER_SPEC for r in gaps)
+
+
+def test_a_stale_quote_breach_names_its_desktop_fix(chaos: Path) -> None:
+    _put(chaos, {"gateway_drill": {"faults": [
+        {"fault": "stale_tick", "status": "MEASURED",
+         "breaches": ["NO_SEND_STALE: 2 order(s) sent on a quote two hours old"]}]}})
+    row = rd._gateway(("stale_tick",), NOW)
+    assert row["verdict"] == rd.FAIL and row["fix"] == rd.STALE_QUOTE_SPEC
+
+
+def test_the_rollback_drill_runs_in_a_sandbox_and_passes() -> None:
+    row = rd._rollback(NOW)
+    assert row["verdict"] == rd.PASS, row
+    assert all(row["checks"].values())

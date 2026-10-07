@@ -51,6 +51,7 @@ STALL = (DATA / "stall_watch.json", ROOT / "data" / "stall_watch.json")
 #: The fix for the gateway rows, sent to the desktop pass (money path; the cloud edit is refused).
 GATEWAY_SPEC = "docs/desktop_pass/recovery_drills/gateway_new_risk_gate.md"
 FILL_ORDER_SPEC = "docs/desktop_pass/recovery_drills/gateway_partial_fill_and_ordering.md"
+STALE_QUOTE_SPEC = "docs/desktop_pass/recovery_drills/gateway_stale_quote_gate.md"
 #: Fields an authoritative account ledger needs; the publisher writes a subset.
 ACCOUNT_FIELDS = ("balance", "equity", "margin", "margin_free", "swap", "positions")
 DISK_FLOOR_GB = 5.0
@@ -119,7 +120,9 @@ def _gateway(faults: tuple[str, ...], now: datetime) -> dict[str, Any]:
     ev = "reports/tier_s/CHAOS.json gateway_drill"
     if breaches:
         return _row(FAIL, ev, "; ".join(breaches)[:600], faults=list(faults),
-                    fix=GATEWAY_SPEC if any("RECONCILE_BEFORE" in b for b in breaches) else None)
+                    fix=GATEWAY_SPEC if any("RECONCILE_BEFORE" in b for b in breaches)
+                    else STALE_QUOTE_SPEC if any("NO_SEND_STALE" in b for b in breaches)
+                    else None)
     if len(seen) < len(faults):
         missing = [f for f in faults if f not in seen]
         return _row(UNMEASURED, ev, f"fault(s) not measured on this run: {missing}",
@@ -185,9 +188,8 @@ def _stale(now: datetime) -> dict[str, Any]:
         return miss
     measured = (doc or {}).get("status") == "MEASURED"
     return _row(PASS if measured else UNMEASURED, "reports/DESK_STALE.json",
-                f"research-silence detector graded this pass: {(doc or {}).get('verdict')}",
-                gap="feed freshness is gated on the XAUUSD tick alone (30 min); there is no "
-                    "per-symbol stale-quote gate before a placement")
+                f"research-silence detector graded this pass: {(doc or {}).get('verdict')}; the "
+                "per-symbol quote is drilled separately (stale_quote)")
 
 
 def _pit(now: datetime) -> dict[str, Any]:
@@ -226,8 +228,21 @@ def _deploy(now: datetime) -> dict[str, Any]:
     return _row(PASS if ok else FAIL if v else UNMEASURED, "data/release_identity.json",
                 "running code is the sealed release" if ok else
                 f"release identity {v or 'unmeasured'}: new risk refused",
-                gap="a failed smoke test gates nothing and rollback is manual "
-                    "(libs/tiers/rollback.py); the safe state is the identity refusal")
+                gap="a failed smoke test gates nothing; the safe state is the identity "
+                    "refusal, and the rollback itself is drilled separately (rollback)")
+
+
+def _rollback(now: datetime) -> dict[str, Any]:
+    """The rollback command, run against a throwaway repository on every pass."""
+    from libs.tiers.rollback import drill
+    d = drill()
+    ok = d.get("status") == "PASS"
+    return _row(PASS if ok else FAIL, "libs/tiers/rollback.py drill (sandbox repo)",
+                f"failed release rolled back to the last sealed one in {d.get('wall_s')}s: "
+                "code restored, box state kept, history kept, unsealed target refused" if ok
+                else f"rollback drill failed: {d.get('failed')}", checks=d.get("checks"),
+                gap="operator-triggered (one command); the box does not yet roll back on its "
+                    "own when a release fails its smoke test")
 
 
 def _account(now: datetime) -> dict[str, Any]:
@@ -312,10 +327,13 @@ DRILLS: tuple[tuple[str, str, Callable[[datetime], dict[str, Any]]], ...] = (
           "a newer deal is taken at face value",
           FILL_ORDER_SPEC)),
     ("stale_data", "stale data / stale source", _stale),
+    ("stale_quote", "one symbol's quote stale while the terminal is connected",
+     lambda n: _gateway(("stale_tick",), n)),
     ("revision_leakage", "revision leakage (point in time)", _pit),
     ("malformed_forecast", "malformed forecast", _forecast),
     ("disk_pressure", "disk pressure / reserved resources", _resources),
     ("failed_deployment", "failed deployment and rollback", _deploy),
+    ("rollback", "roll a failed release back to the last sealed one", _rollback),
     ("backup_restore", "backup restoration (restore and test, not a script)", _backup),
     ("offbox_restore", "off-box restore of the journals",
      lambda n: _ops_component("offbox_restore_drill", n, "journals restored from origin")),

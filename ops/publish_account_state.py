@@ -90,6 +90,23 @@ def main() -> int:
         "today_closed_pnl": round(closed, 2),
         "today_floating_pnl": round(floating, 2),
         "open_positions": len(positions),
+        # ONE AUTHORITATIVE LEDGER (recovery drills, account_ledger row, 2026-10-07): used
+        # margin, the financing carried, and the positions themselves, so a restore or a
+        # reconciliation reads the book from one record instead of three organs.
+        "margin": round(float(getattr(info, "margin", 0.0) or 0.0), 2),
+        "margin_level": (round(float(info.margin_level), 2)
+                         if getattr(info, "margin_level", None) else None),
+        "swap": round(sum(float(getattr(p, "swap", 0.0) or 0.0) for p in positions), 2),
+        "today_swap": round(sum(float(getattr(d, "swap", 0.0) or 0.0) for d in deals), 2),
+        "positions": [{"ticket": int(p.ticket), "symbol": str(p.symbol),
+                       "side": "buy" if int(p.type) == 0 else "sell",
+                       "volume": float(p.volume), "price_open": float(p.price_open),
+                       "sl": float(p.sl or 0.0) or None, "tp": float(p.tp or 0.0) or None,
+                       "swap": round(float(getattr(p, "swap", 0.0) or 0.0), 2),
+                       "profit": round(float(getattr(p, "profit", 0.0) or 0.0), 2),
+                       "magic": int(getattr(p, "magic", 0) or 0),
+                       "opened_at": datetime.fromtimestamp(int(p.time), tz=UTC).isoformat()}
+                      for p in positions],
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     tmp = OUT.with_suffix(".json.tmp")
