@@ -9039,6 +9039,27 @@
    ]
   },
   {
+   "id": "CULT1",
+   "item": "CULTURE PROVENANCE ON EVERY CELL (principal 2026-09-30): every cell and donation carries source_culture (<jurisdiction>/<language>), participant_structure, failure_mode_hypothesis and crowding_prior, declared by the producer or inferred by ONE rule and UNMEASURED otherwise, so the Tier S cross-culture test can check whether a culture's version of a mechanism really fails on different days; the backlog, docket and certificates are backfilled into a side index (survivors, then LIVE/forward, then backlog) and the culture GAP list steers the producers.",
+   "domain": "U",
+   "phase": 2,
+   "status": "PARTIAL",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:cell_culture_index",
+   "artifact": "desks/mt5/reports/CELL_CULTURE.json",
+   "evidence": [
+    "libs/research/cell_culture.py:52-130 -- THE SCHEMA: FIELDS, DERIVATION_FIELD, PARTICIPANT_STRUCTURES, CROWDING_PRIORS, WESTERN, culture_tag(); :132-190 validate(); :656-780 _culture_from_row() (ground position, declared region, deep-forest ground/host, asia_sources, URL TLD, script, seat name, global English venue, holiday calendar, fund domicile, symbol home -- each a NAMED rule); :781-837 _structure_from_row(); :838-917 infer(); :936-970 normalise() for the pre-schema plain keys.",
+    "libs/moat/registry.py:124-128 CULTURE_COLUMNS added by ADD COLUMN to research_candidates and discoveries; :845-859 _culture() and the two call sites in enqueue_candidate and record_discovery -- culture stamped at birth at the two doors.",
+    "desks/mt5/research/miner_candidate_compiler.py:672-690 _candidate() carries the donor row's culture onto every compiled candidate; libs/moat/docket_feed.py carries the registry columns onto the docket; desks/mt5/research/discovery_compiler.py:339-380 PROVENANCE_KEYS/provenance()/carried() carry culture, source URL, seat and donation file from intake to every emitted cell.",
+    "desks/mt5/research/cell_culture_index.py:439-501 targets() -- tier (a) certificates and tier (b) LIVE/forward cells resolved in full every pass; :502-673 Lineage/resolve() walk docket -> discovery_compiler donation -> registry discovery, UNMEASURED with reason no_lineage when nothing names a source; :278-333 scan_graph() streams the backlog from a byte cursor; :854-935 gaps()/gap_cultures().",
+    "MEASURED on the committed artifacts the day it landed: culture inferred for 72.0% of 77,933 graph cells but only 1.7% from the source itself (the rest is the symbol's home); non-Western share 36.9% of measured cells, 14.5% of judged, 1 of 58 certificates carried a culture before the lineage walk and 19 of 58 after.",
+    "desks/mt5/research/deep_forest_miner.py:684-697 culture_gaps() -> schedule(): grounds of a gap culture are worked first inside each frontier bucket (a reorder, never a narrowing)."
+   ],
+   "consumer": "desks/mt5/research/culture_orthogonality.py (Tier S, #113: load_culture_index keys CELL_CULTURE_INDEX.jsonl by cell_id), desks/mt5/research/deep_forest_miner.py (culture_gaps)",
+   "gap": "NEVER RAN (audit 2026-10-07T0220Z): the code, the hourly_cycle:cell_culture_index leg and the door carry-through are in this repository, but desks/mt5/reports/CELL_CULTURE.json and CELL_CULTURE_INDEX.jsonl have never been produced on the trading box and no commit on any branch carries either (`git log --all -- desks/mt5/reports/CELL_CULTURE*` is empty). The coverage figures in the evidence above are a build-sandbox reading, not the box's. So the backfill, the culture GAP list the producers read and the Tier S consumer are all UNMEASURED; the missing part is the first box pass and its artifact.",
+   "next_step": "Box: after adoption, let the hourly cell_culture_index leg run (or run `python desks/mt5/research/cell_culture_index.py` once), commit CELL_CULTURE.json, and confirm culture_orthogonality.load_culture_index reads CELL_CULTURE_INDEX.jsonl; then restore LANDED citing the produced artifact."
+   },
+   {
    "id": "ASIA_P2",
    "item": "China exchange positioning, inventory and curves (directive 2026-10-05 PART II.B/C; audit asia_directive_diff_2026-10-06 rows 11-16): SHFE/INE member rankings, warehouse receipts and weekly inventory, DCE/CZCE/GFEX ranks and quotes, CFFEX index/bond futures ranks, parsed into top-5/20 concentration, top-20 net, state-broker net, HHI, curve slope/roll/curvature, with change, acceleration, seasonal surprise and four divergence scores, minted on mapped MT5 instruments through the free-stack door with every cell charged",
    "domain": "U",

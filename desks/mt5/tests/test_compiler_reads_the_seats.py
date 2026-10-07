@@ -212,3 +212,28 @@ def test_seat_conversion_is_one_block_in_the_compiled_artifact() -> None:
     assert seats == {"deepseek": {"rows": 12, "candidates": 3, "deepening": 9},
                      "kimi_k3_deep_forest": {"rows": 0, "candidates": 0, "deepening": 0}}
     assert '"seats": seats' in Path(mcc.__file__).read_text("utf-8")
+
+
+# ------------------------------------------------- the donating seat rides onto the candidate
+def test_a_compiled_candidate_names_the_seat_that_donated_it(intel) -> None:
+    """Audit 2026-10-07 (#139): `_candidate` dropped `source_seat`, so a compiled cell could not
+    name the seat behind it. The seat is the donation's directory under the intelligence root,
+    stamped at intake and carried through the compiler's one candidate door."""
+    seat_dir = intel / "data" / "intelligence" / "cold_seat"
+    seat_dir.mkdir(parents=True)
+    (seat_dir / "discoveries_x.json").write_text(json.dumps([_seat_row(
+        source="some_crawler", symbols=["USDJPY"], family="overnight_gap_decay",
+        title="Tokyo fix gap decay on the yen")]), encoding="utf-8")
+    rows = mcc.recent_rows(mcc.datetime.now(tz=mcc.UTC))
+    assert len(rows) == 1 and rows[0][1]["source_seat"] == "cold_seat"
+    cands, disp = mcc.compile_row(*rows[0], UNI)
+    assert disp == "STRUCTURED_HYPOTHESIS" and cands
+    assert {c["source_seat"] for c in cands} == {"cold_seat"}
+
+
+def test_a_declared_source_seat_is_kept_and_an_absent_one_is_not_invented() -> None:
+    row = _seat_row(source_seat="deepseek")
+    cand = mcc._candidate("USDJPY", "overnight_gap_decay", {}, "deepseek", row, "m")
+    assert cand["source_seat"] == "deepseek"
+    cand = mcc._candidate("USDJPY", "overnight_gap_decay", {}, "deepseek", _seat_row(), "m")
+    assert "source_seat" not in cand

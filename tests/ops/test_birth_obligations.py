@@ -140,3 +140,41 @@ def test_every_axis_names_the_fence_that_already_owns_it() -> None:
         assert (ROOT / "scripts" / ax.fence[0]).is_file(), ax.fence[0]
     gate = (ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
     assert "check_birth_obligations.py" in gate, "the fence must run on the law gate"
+
+
+def test_the_family_axis_reads_unmeasured_off_box_and_still_bites_on_box(
+        tmp_path: Path, monkeypatch) -> None:
+    """Audit 2026-10-07T0220Z (#139): JUDGE_COVERAGE.json is written only by the trading box's
+    hourly `judge_coverage` leg, so a checkout off the box has none (or a stale copy). There the
+    family axis is UNMEASURED and the fence exits 0; on the box the same tree with a family the
+    judge never reached is an arrival and the fence exits 2."""
+    import os
+    import time
+
+    report = tmp_path / "desks" / "mt5" / "reports" / "JUDGE_COVERAGE.json"
+    _baseline_tree(tmp_path)
+    assert birth.main(["--root", str(tmp_path), "--update"]) == 0
+
+    # OFF THE BOX, ABSENT: UNMEASURED with the artifact named, never a failure.
+    monkeypatch.setattr(birth, "_is_trading_host", lambda base: False)
+    report.unlink()
+    ax = birth.measure(tmp_path)["axes"]["family"]
+    assert ax["verdict"] == birth.UNMEASURED
+    assert "JUDGE_COVERAGE.json is absent" in ax["why"]
+    assert not any(f.startswith("family") for f in birth.measure(tmp_path)["failures"])
+
+    # OFF THE BOX, A STALE COPY NAMING AN UNREACHED FAMILY: still UNMEASURED, still no failure.
+    _write(report, json.dumps({"families": {"old_family": {"judged": 12},
+                                            "new_family": {"judged": 0}}}))
+    old = time.time() - (birth._SOURCE_STALE_H + 1) * 3600.0
+    os.utime(report, (old, old))
+    doc = birth.measure(tmp_path)
+    assert doc["axes"]["family"]["verdict"] == birth.UNMEASURED
+    assert not any(f.startswith("family") for f in doc["failures"])
+
+    # ON THE BOX: the same report is judged, the arrival is caught and the fence exits 2.
+    monkeypatch.setattr(birth, "_is_trading_host", lambda base: True)
+    doc = birth.measure(tmp_path)
+    assert doc["axes"]["family"]["arrived_without_obligation"] == ["new_family"]
+    assert any(f.startswith("family") for f in doc["failures"])
+    assert birth.main(["--root", str(tmp_path)]) == 2
