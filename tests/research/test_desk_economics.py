@@ -116,3 +116,52 @@ class TestPolicyVerdict:
         """Unknown is not the same as failing -- reporting False here would read as a verdict
         about a cost base against a book that does not exist yet."""
         assert assess(0.0, FULL)["hurdle_acceptable"] is None
+
+
+class TestMeasuredLines:
+    """ARCH-28: the desk's own ledgers fill the lines they can measure, and only those."""
+
+    NOW = __import__("datetime").datetime(2026, 10, 7, tzinfo=__import__("datetime").UTC)
+
+    def test_paid_model_spend_is_scaled_to_a_month_and_free_calls_cost_nothing(self) -> None:
+        from libs.research.desk_economics import measure_llm
+        rows = [{"utc": "2026-10-01T00:00:00+00:00", "model": "a/paid", "usd": 3.0, "tokens": 10},
+                {"utc": "2026-10-02T00:00:00+00:00", "model": "a/x:free", "usd": 9.0},
+                {"utc": "2026-08-01T00:00:00+00:00", "model": "a/paid", "usd": 99.0}]
+        m = measure_llm(rows, self.NOW, lambda mid: mid.endswith(":free"), days=15.0)
+        assert m["status"] == "MEASURED" and m["monthly_usd"] == 6.0
+        assert m["calls"] == 2 and m["free_calls"] == 1
+
+    def test_no_ledger_rows_is_unmeasured_not_zero(self) -> None:
+        from libs.research.desk_economics import measure_llm, merge_measured
+        m = measure_llm([], self.NOW, lambda _m: False)
+        assert m["status"] == "UNMEASURED"
+        merged = merge_measured({"monthly_usd": {"llm_api": None}}, {"llm_api": m})
+        assert merged["monthly_usd"]["llm_api"] is None
+        assert parse_costs(merged).unknown == ("llm_api",)
+
+    def test_a_measurement_overrides_the_declared_line_and_says_so(self) -> None:
+        from libs.research.desk_economics import merge_measured
+        merged = merge_measured({"monthly_usd": {"llm_api": None, "vps": 5}},
+                                {"llm_api": {"status": "MEASURED", "monthly_usd": 7.5,
+                                             "basis": "ledger"}})
+        assert merged["monthly_usd"] == {"llm_api": 7.5, "vps": 5}
+        assert merged["basis"]["llm_api"].startswith("measured") and \
+            merged["basis"]["vps"] == "declared"
+
+    def test_broker_charges_are_signed_as_costs_and_kept_out_of_the_burn(self) -> None:
+        from libs.research.desk_economics import measure_broker
+        epoch = self.NOW.timestamp() - 86_400
+        deals = [{"epoch": epoch, "comm": -2.0, "swap": 0.5, "fee": 0.0},
+                 {"epoch": epoch, "comm": -2.0, "swap": -1.0, "fee": -0.1},
+                 {"epoch": epoch - 90 * 86_400, "comm": -50.0}]
+        b = measure_broker(deals, self.NOW, "EUR")
+        assert b["deals"] == 2 and b["commission"] == 4.0 and b["swap"] == 0.5
+        assert b["total"] == 4.6 and b["in_burn"] is False
+
+    def test_alert_burden_separates_what_deserves_a_person(self) -> None:
+        from libs.research.desk_economics import alert_burden
+        b = alert_burden({"OPEN": 6, "FIXED": 2, "NEEDS_HUMAN": 2}, [{"id": "x"}],
+                         {"LEG_FAILED": 3})
+        assert b["open"] == 8 and b["needs_human"] == 2 and b["escalate"] == 1
+        assert b["meaningful_share"] == 0.125 and b["self_healed_share"] == 0.2

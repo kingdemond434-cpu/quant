@@ -238,6 +238,10 @@ ORGANS: tuple[Entry, ...] = (
     # half of the same file is on daily_cycle's proposer list.
     _e("desks/mt5/research/nlp_social_cells.py", "text -> event/policy factors and Asian retail "
        "attention/mood deltas, fetched and published", "--ingest"),
+    # THE DESK'S OWN COSTS AND THE OPERATOR'S ALERT LOAD (ARCH-28, 2026-10-07): model spend and
+    # broker charges from the desk's ledgers, the hurdle over them, and how much of the alert
+    # traffic deserves a person. It ran only in the VPS daily cycle, which the box never sees.
+    _e("scripts/run_desk_economics.py", "the hurdle from measured costs, and the alert burden"),
     _e("desks/mt5/research/empty_cluster_forcer.py", "force cells into every EMPTY alpha cluster"),
     _e("desks/mt5/research/institutional_cards.py", "mechanism cards for never-certified axes"),
     _e("desks/mt5/research/local_converter.py", "mined rows -> candidates, no seat, no network"),
