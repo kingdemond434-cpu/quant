@@ -279,9 +279,34 @@ def occupied_shares(rows: Iterable[Mapping[str, Any]],
     return out
 
 
+def duplicate_shares(feedback: Mapping[str, Any] | None,
+                     arm_of: Callable[[str], str | None],
+                     min_rows: int = MIN_CLASSIFIED) -> dict[str, dict[str, Any]]:
+    """Per arm: the share of its docket output the certificate saturation map classed a STRONG
+    DUPLICATE (saturated ground, no exception A-H), from `reports/BREADTH_FEEDBACK.json`.
+
+    THE DUPLICATE TAX (anti-saturation producer law 8, 22). A duplicate is an addition at
+    rho = 1 to ground the book already owns, so it enters `credits` as exactly that: the arm's
+    rho is pulled toward 1.0 by its measured duplicate share, and `marginal_k_eff` -- not a
+    tuned penalty -- prices it, negative at the limit. An arm below `min_rows` is not taxed."""
+    rows: dict[str, list[int]] = {}
+    for src, r in ((feedback or {}).get("producers") or {}).items():
+        if not isinstance(r, Mapping):
+            continue
+        arm = arm_of(str(src))
+        if not arm:
+            continue
+        acc = rows.setdefault(str(arm), [0, 0])
+        acc[0] += int(r.get("rows") or 0)
+        acc[1] += int(r.get("duplicate_candidates") or 0)
+    return {a: {"rows": n, "duplicates": d, "share": d / n}
+            for a, (n, d) in rows.items() if n >= int(min_rows)}
+
+
 def credits(arms: Iterable[str], *, doc: Mapping[str, Any] | None = None,
             measured_shares: Mapping[str, Mapping[str, Any]] | None = None,
-            min_classified: int = MIN_CLASSIFIED) -> dict[str, Any]:
+            min_classified: int = MIN_CLASSIFIED,
+            duplicates: Mapping[str, Mapping[str, Any]] | None = None) -> dict[str, Any]:
     """The per-arm multiplier on E[dE log W], normalised to mean 1.0 across the arms.
 
     NORMALISED, NOT SCALED. The credit redistributes the budget between arms and never inflates
@@ -317,6 +342,14 @@ def credits(arms: Iterable[str], *, doc: Mapping[str, Any] | None = None,
             src, why = DECLARED, declared_why
         s = min(max(float(s), 0.0), 1.0)
         rho = s * rho_book + (1.0 - s) * rho_cross
+        dup = (duplicates or {}).get(a) or {}
+        d_share = dup.get("share")
+        if isinstance(d_share, (int, float)) and 0.0 < float(d_share) <= 1.0:
+            # a strong duplicate is an addition at rho = 1: the arm's rho moves toward it by the
+            # measured share, and the marginal below prices the tax
+            rho = float(d_share) * 1.0 + (1.0 - float(d_share)) * rho
+            why += (f"; {dup.get('duplicates')}/{dup.get('rows')} of its docket rows are strong "
+                    "duplicates in saturated ground (duplicate tax)")
         try:
             dk = marginal_k_eff(n, k, rho)
         except ValueError as exc:
@@ -324,7 +357,9 @@ def credits(arms: Iterable[str], *, doc: Mapping[str, Any] | None = None,
                     "credit": dict.fromkeys(names, 1.0), "book": state}
         raw[a] = dk
         rows[a] = {"occupied_share": round(s, 4), "source": src, "why": why,
-                   "rho_to_book": round(rho, 4), "delta_k_eff": round(dk, 6)}
+                   "rho_to_book": round(rho, 4), "delta_k_eff": round(dk, 6),
+                   "duplicate_share": (round(float(d_share), 4)
+                                       if isinstance(d_share, (int, float)) else None)}
     # Normalised over the arms that ACTUALLY RUN THROUGH THIS CHANNEL. Including the pure-quality
     # arms in the mean would drag the normaliser toward a number that describes nothing they do.
     positive = [v for a, v in raw.items() if v > 0 and ARM_BREADTH_WEIGHT.get(a, 1.0) > 0.0]

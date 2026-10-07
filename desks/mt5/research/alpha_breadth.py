@@ -497,8 +497,16 @@ def run(write_queue: bool = True) -> dict[str, Any]:
     overlap["would_raise_headline_to"] = (
         overlap["n_eff"] if (overlap["n_eff"] is not None and k_head is not None
                              and overlap["n_eff"] > k_head) else None)
+    # THE CERTIFICATE SATURATION MAP (anti-saturation law, 2026-10-05). N_CERTIFICATES is never
+    # published without N_EFFECTIVE_CERTIFICATES beside it: the map is built on this same leg so
+    # the docket, the producers and the CRO read one measurement per hour. A failure here is
+    # UNMEASURED with its reason and never touches the readings above.
+    saturation = certificate_saturation_pass()
     doc: dict[str, Any] = {
         "generated_utc": datetime.now(tz=UTC).isoformat(),
+        "certificates": saturation.get("certificates") or {"status": "UNMEASURED"},
+        "certificate_saturation": {k: saturation.get(k) for k in
+                                   ("status", "why", "line", "report", "at")},
         "gaps": gaps,
         "timestamp_overlap": overlap,
         "factor_rank": factor_rank,
@@ -548,6 +556,96 @@ def run(write_queue: bool = True) -> dict[str, Any]:
     return doc
 
 
+def certificate_saturation_pass() -> dict[str, Any]:
+    """Build and publish `reports/CERTIFICATE_SATURATION.json` (research/certificate_saturation).
+
+    Inputs this leg already holds are passed in: the forward sleeves' daily R (L6 and forward
+    revocation) and the certified book's instrument panel (stress and tail k_eff). Never raises.
+    """
+    try:
+        try:
+            from research import certificate_saturation as cs
+        except ImportError:                                           # pragma: no cover
+            import certificate_saturation as cs  # type: ignore[import-not-found,no-redef]
+        doc = cs.build(forward_daily=daily_sleeve_returns())
+        if doc.get("status") == MEASURED:
+            exposure: dict[str, float] = defaultdict(float)
+            for g in doc.get("groups") or []:
+                exposure[str(g.get("sym"))] += 1.0
+            panel, _dropped = _daily_panel(sorted(exposure))
+            book = cs.book_breadth(dict(exposure), panel)
+            doc["book_breadth"] = book
+            cert = doc.setdefault("certificates", {})
+            cert["robust_k_eff_book"] = book.get("robust_k_eff")
+            cert["stress_k_eff_book"] = book.get("k_eff_stress")
+            cert["tail_k_eff_book"] = book.get("k_eff_tail")
+        # beside EFFECTIVE_BREADTH.json, so a caller that redirects this leg's output (a test)
+        # never overwrites the desk's published map
+        path = cs.publish(doc, OUT.parent / cs.REPORT.name)
+        debt = breadth_debt_pass(doc)
+        return {"status": doc.get("status"), "why": doc.get("why"), "line": doc.get("line"),
+                "at": doc.get("at"), "certificates": doc.get("certificates"),
+                "breadth_constrained_mode": debt.get("breadth_constrained_mode"),
+                "breadth_debt_report": debt.get("report"),
+                "report": str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)}
+    except Exception as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
+
+
+def breadth_debt_pass(sat: dict[str, Any]) -> dict[str, Any]:
+    """BREADTH_DEBT.json (research/breadth_debt) from the map this leg just built, beside it, and
+    then the per-row BREADTH_LAW_COVERAGE.json the CRO reads. Never raises."""
+    out: dict[str, Any] = {}
+    try:
+        try:
+            from research import breadth_debt as bd
+        except ImportError:                                           # pragma: no cover
+            import breadth_debt as bd  # type: ignore[import-not-found,no-redef]
+        doc = bd.build(sat=sat if sat.get("status") == MEASURED else
+                       {"status": UNMEASURED, "why": sat.get("why")})
+        path = bd.publish(doc, OUT.parent / bd.OUT.name)
+        out = {"breadth_constrained_mode": doc.get("breadth_constrained_mode"),
+               "report": str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)}
+    except Exception as exc:
+        out = {"breadth_constrained_mode": UNMEASURED,
+               "why": f"{type(exc).__name__}: {exc}"[:300]}
+    # every producer's brief (producer law §1, §5), beside the map: the hourly launcher hands its
+    # path to each producer leg and the proposer seat puts its lines into every organ's prompt
+    try:
+        try:
+            from research import certificate_saturation as _cs
+        except ImportError:                                           # pragma: no cover
+            import certificate_saturation as _cs  # type: ignore[import-not-found,no-redef]
+        bp = _cs.publish_briefs(doc=sat if sat.get("status") == MEASURED else None,
+                                path=OUT.parent / _cs.BRIEFS.name)
+        out["producer_briefs"] = str(bp) if bp else UNMEASURED
+    except Exception as exc:
+        out["producer_briefs_why"] = f"{type(exc).__name__}: {exc}"[:300]
+    # the per-cluster cap on LIVE certificates, in SHADOW only (BREADTH-0326): read-only on the
+    # promoter's rows, never enforced (automatic promotion; growth governance Rule 1)
+    try:
+        try:
+            from research import cluster_cap_shadow as ccs
+        except ImportError:                                           # pragma: no cover
+            import cluster_cap_shadow as ccs  # type: ignore[import-not-found,no-redef]
+        sh = ccs.build(sat=sat)
+        ccs.publish(sh, OUT.parent / ccs.OUT.name)
+        out["cluster_cap_shadow"] = {"would_block": sh.get("n_would_block"),
+                                     "status": sh.get("status")}
+    except Exception as exc:
+        out["cluster_cap_shadow_why"] = f"{type(exc).__name__}: {exc}"[:300]
+    try:
+        try:
+            from research import breadth_law_coverage as blc
+        except ImportError:                                           # pragma: no cover
+            import breadth_law_coverage as blc  # type: ignore[import-not-found,no-redef]
+        cov = blc.publish(blc.build(), OUT.parent / blc.OUT.name)
+        out["coverage_report"] = str(cov)
+    except Exception as exc:
+        out["coverage_why"] = f"{type(exc).__name__}: {exc}"[:300]
+    return out
+
+
 def _append_history(doc: dict[str, Any]) -> None:
     """One row per run, so the number the principal wants doubled has something to double against.
 
@@ -563,6 +661,18 @@ def _append_history(doc: dict[str, Any]) -> None:
         "n_clusters_empty": len(doc["clusters"]["empty_in_both"]),
         "n_eff_time": (doc.get("timestamp_overlap") or {}).get("n_eff"),
     }
+    # N_CERT beside N_EFFECTIVE_CERT in the series too, so the ladder and the CRO can see
+    # whether certificates are being minted into new bets or into the same ones.
+    cert = doc.get("certificates") if isinstance(doc.get("certificates"), dict) else {}
+    for k in ("n_certificates", "n_effective_certificates", "n_effective_status",
+              "n_strategy_variants",
+              "n_structural_clusters", "n_economic_clusters", "n_independent_forward_streams",
+              "n_saturated_clusters", "duplicate_survivor_share", "robust_k_eff_book",
+              "stress_k_eff_book",
+              "tail_k_eff_book", "median_validated_edge_recent", "basis", "source",
+              "source_mtime"):
+        if k in cert:
+            row[k] = cert.get(k)
     HISTORY.parent.mkdir(parents=True, exist_ok=True)
     with HISTORY.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, default=str) + "\n")

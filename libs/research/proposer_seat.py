@@ -357,6 +357,25 @@ def scrub(text: str) -> str:
     return text
 
 
+#: The hourly breadth brief every producer receives (desks/mt5/research/certificate_saturation).
+BREADTH_BRIEFS = DESK / "reports" / "PRODUCER_BRIEFS.json"
+
+
+def breadth_context(organ: str, *, path: Path | None = None, limit: int = 10) -> list[str]:
+    """The breadth brief's fact lines for `organ`, prefixed so the model reads them as context.
+    [] when the brief is absent, stale or unreadable -- the prompt is then what it was."""
+    try:
+        mt5 = str(DESK / "research")
+        if mt5 not in sys.path:
+            sys.path.insert(0, mt5)
+        import importlib
+        cs = importlib.import_module("certificate_saturation")
+        lines = cs.brief_lines(organ, limit=limit, path=path or BREADTH_BRIEFS)
+    except Exception:  # a brief never breaks a seat
+        return []
+    return [f"breadth: {line}" for line in lines]
+
+
 def prompt_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
@@ -535,7 +554,18 @@ def propose(factory: str, *, role: str, task: str, grammar: str,
     if not enabled():
         return []
     try:
-        prompt = build_prompt(factory, task, grammar=grammar, context=context, n=n)
+        # THE BREADTH BRIEF REACHES EVERY ORGAN THAT ASKS (producer law §1, §5): the published
+        # PRODUCER_BRIEFS.json facts -- what the book holds, what is saturated, the open debts
+        # and this organ's own duplicate record -- go into the context before generation. A
+        # brief the hygiene scan refuses is dropped and the prompt is built without it.
+        brief = breadth_context(factory)
+        try:
+            prompt = build_prompt(factory, task, grammar=grammar,
+                                  context=[*context, *brief], n=n)
+        except PromptRefused:
+            if not brief:
+                raise
+            prompt = build_prompt(factory, task, grammar=grammar, context=context, n=n)
     except PromptRefused as exc:
         prov = Provenance(SEAT_NAME, "", "", datetime.now(UTC).isoformat(timespec="seconds"),
                           role, factory)

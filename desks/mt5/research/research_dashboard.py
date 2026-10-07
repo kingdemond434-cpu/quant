@@ -221,6 +221,19 @@ def build(now: datetime | None = None, conn: Any | None = None,
         "gauntlet_submissions_per_day": reg.get("gauntlet_submissions_per_day", UNMEASURED),
         "survivors": n_surv,
         "independent_survivors": eff.get("effective_breadth", UNMEASURED),
+        # breadth law: N_CERT is never published without N_EFFECTIVE_CERT beside it
+        "n_certificates": _dct(breadth.get("certificates")).get("n_certificates", UNMEASURED),
+        "n_effective_certificates": _dct(breadth.get("certificates")).get(
+            "n_effective_certificates", UNMEASURED),
+        # MEASURED only when every certified instrument's coupling was measured from bars
+        "n_effective_status": _dct(breadth.get("certificates")).get(
+            "n_effective_status", UNMEASURED),
+        # where those two counts came from: box_live or git_snapshot, with the source and mtime
+        "certificates_basis": (
+            f"{_dct(breadth.get('certificates')).get('basis')} "
+            f"{_dct(breadth.get('certificates')).get('source')} "
+            f"mtime {_dct(breadth.get('certificates')).get('source_mtime')}"
+            if _dct(breadth.get("certificates")).get("basis") else UNMEASURED),
         "forward_clocks": status.count("STANDBY"),
         "live_sleeves": status.count("LIVE"),
         "effective_independent_bets": eff.get("effective_breadth", UNMEASURED),
@@ -256,7 +269,11 @@ def build(now: datetime | None = None, conn: Any | None = None,
     }
     doc["headline"] = (f"{len(metrics) - n_unm}/{len(metrics)} metrics measured; "
                        f"live {metrics['live_sleeves']}, forward {metrics['forward_clocks']}, "
-                       f"survivors {metrics['survivors']}, n_eff "
+                       f"survivors {metrics['survivors']} (N_CERT "
+                       f"{metrics['n_certificates']} / N_EFFECTIVE_CERT "
+                       f"{metrics['n_effective_certificates']} "
+                       f"[{metrics['n_effective_status']}], basis "
+                       f"{metrics['certificates_basis']}), n_eff "
                        f"{metrics['effective_independent_bets']}")
     return doc
 

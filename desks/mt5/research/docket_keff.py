@@ -248,6 +248,33 @@ def _class_of(fam: str) -> str:
         return "UNCLASSIFIED"
 
 
+def empty_prior_decay(saturation: Any = None, *, read_artifacts: bool = True
+                      ) -> tuple[dict[str, float], str]:
+    """{alpha cluster: decay in [EXPLORE_FLOOR, 1]} -- EMPTY IS A PRIOR, NOT PROOF (anti-saturation
+    law section 17). An empty cluster that has consumed a statistically meaningful search effort
+    with nothing certified earns a smaller empty-cluster bonus until an explicit reopen trigger
+    resets it (research/certificate_saturation.py `empty_cluster_priors`). Absent map: 1.0."""
+    doc = saturation
+    if doc is None and read_artifacts:
+        try:
+            try:
+                from research import certificate_saturation as cs
+            except ImportError:                                       # pragma: no cover
+                import certificate_saturation as cs  # type: ignore[import-not-found,no-redef]
+            doc, why = cs.load(max_age_h=48.0)
+        except Exception as exc:                                      # pragma: no cover
+            return {}, f"saturation map unavailable: {type(exc).__name__}"
+        if doc is None:
+            return {}, why
+    pri = (doc or {}).get("empty_cluster_priors") if isinstance(doc, dict) else None
+    if not isinstance(pri, dict):
+        return {}, "no empty_cluster_priors in the saturation map: every bonus at full weight"
+    out = {str(k): float(v.get("decay", 1.0)) for k, v in pri.items() if isinstance(v, dict)}
+    decayed = sorted(k for k, v in out.items() if v < 1.0)
+    return out, (f"{len(decayed)} empty cluster(s) searched to a meaningful effort with nothing "
+                 f"certified: {', '.join(decayed) or 'none'}")
+
+
 def culture_block(culture: Any = None, *, read_artifacts: bool = True) -> dict[str, Any]:
     """The survivor k_eff with every cross-culture SAME_EDGE merge group counted ONCE, and the
     (family|symbol) keys each group spans (research/culture_orthogonality.py). Two names of one
@@ -270,7 +297,8 @@ def culture_block(culture: Any = None, *, read_artifacts: bool = True) -> dict[s
 # ------------------------------------------------------------------------------ the whole score
 def score(rows: list[dict[str, Any]], *, breadth: Any = None, canon: Any = None,
           loader: Callable[[str], Any] | None = None, key: str = "_keff",
-          read_artifacts: bool = True, culture: Any = None) -> dict[str, Any]:
+          read_artifacts: bool = True, culture: Any = None,
+          saturation: Any = None) -> dict[str, Any]:
     """Stamp `row[key]` = priority on every row and return the evidence. Removes nothing."""
     loader = loader or daily_returns
     if read_artifacts:
@@ -304,6 +332,7 @@ def score(rows: list[dict[str, Any]], *, breadth: Any = None, canon: Any = None,
 
     # cluster + class terms
     empty, occ = empty_clusters(breadth)
+    decay, decay_why = empty_prior_decay(saturation, read_artifacts=read_artifacts)
     vac, vac_why = vacant_classes(held_book_names(breadth, canon))
     cluster_of = {f: _cluster_of(f) for f in fams}
     class_of = {f: _class_of(f) for f in fams}
@@ -319,7 +348,8 @@ def score(rows: list[dict[str, Any]], *, breadth: Any = None, canon: Any = None,
             d = deltas.get(s) or {}
             inst = d.get("delta_k")
             inst_v = float(inst) if inst is not None else par
-            cb = EMPTY_CLUSTER_BONUS if (empty is not None and cluster_of[f] in empty) else 0.0
+            cb = (EMPTY_CLUSTER_BONUS * decay.get(cluster_of[f], 1.0)
+                  if (empty is not None and cluster_of[f] in empty) else 0.0)
             ob = float(vac.get(class_of[f], 0.0)) if vac is not None else 0.0
             t = {"family": f, "symbol": s, "cluster": cluster_of[f], "census_class": class_of[f],
                  "delta_k": round(inst_v, 6),
@@ -354,7 +384,8 @@ def score(rows: list[dict[str, Any]], *, breadth: Any = None, canon: Any = None,
     return {
         "at": at,
         "rule": ("priority = delta_N_eff(symbol; worse sign, exposure_neff on the desk's daily "
-                 f"panel) + {EMPTY_CLUSTER_BONUS} if the cell's alpha cluster is empty in the book "
+                 f"panel) + {EMPTY_CLUSTER_BONUS} x effort decay if the cell's alpha cluster is "
+                 "empty in the book "
                  "+ declared orthogonality if its census class is vacant. REORDER ONLY: read "
                  "inside each family stream after never-judged and unseen-mechanism, and as a "
                  "one-sided family factor 1+max(0, mean) on the remainder; no row dropped"),
@@ -363,6 +394,8 @@ def score(rows: list[dict[str, Any]], *, breadth: Any = None, canon: Any = None,
                        "symbols_measured": len(measured), "symbols": len(syms)},
         "clusters_status": "MEASURED" if empty is not None else "UNMEASURED",
         "empty_clusters": sorted(empty) if empty is not None else None,
+        "empty_prior_decay": {k: v for k, v in sorted(decay.items()) if v < 1.0},
+        "empty_prior_decay_why": decay_why,
         "vacant_classes_status": "MEASURED" if vac is not None else "UNMEASURED",
         "vacant_classes_why": vac_why,
         "cluster_targets": clusters,

@@ -1067,7 +1067,20 @@ def breadth_credit() -> dict[str, Any]:
             return arm_of(r.get("source"), r.get("kind"))
 
         shares_by_arm = occupied_shares(rows, _arm_of, _cluster_of, occupied)
-        return credits(ARMS, measured_shares=shares_by_arm)
+        # THE DUPLICATE TAX (anti-saturation law 2026-10-05): the measured share of each arm's
+        # docket output the certificate saturation map classed a strong duplicate.
+        dups = None
+        try:
+            import json as _json
+
+            from libs.research.breadth_credit import duplicate_shares
+            fb_path = (Path(__file__).resolve().parents[2] / "desks" / "mt5" / "reports"
+                       / "BREADTH_FEEDBACK.json")
+            fb = _json.loads(fb_path.read_text("utf-8"))
+            dups = duplicate_shares(fb, lambda src: arm_of(src))
+        except Exception:
+            dups = None
+        return credits(ARMS, measured_shares=shares_by_arm, duplicates=dups)
     except Exception as exc:
         # UNMEASURED means every credit is 1.0, which is exactly the behaviour that existed
         # before this term did. A broken credit must never be able to change an allocation.

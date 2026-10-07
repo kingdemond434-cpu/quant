@@ -96,10 +96,21 @@ def lane() -> list[str]:
     try:
         # The rotation lands with the producer swarm; until then the lane runs alphabetically,
         # which still covers every admitted symbol, just not least-judged first.
-        from research.breadth_rotation import judged_counts, orthogonal_ring
-        return list(orthogonal_ring(ok, FAMILY, counts=judged_counts()))
+        from research.breadth_rotation import judged_counts, orthogonal_ring, ring_visits
+        # LEAST-RECENTLY VISITED FIRST: `run` stops at its deadline, so the ring must rotate by
+        # what this walker actually reached (audit must-fix 4), not by a book-fixed tier.
+        return list(orthogonal_ring(ok, FAMILY, counts=judged_counts(),
+                                    visits=ring_visits(FAMILY)))
     except Exception:
         return ok
+
+
+def _mark_visited(sym: str) -> None:
+    try:
+        from research.breadth_rotation import mark_ring_visit
+        mark_ring_visit(FAMILY, [sym])
+    except Exception:
+        pass
 
 
 def _charged() -> dict[str, str]:
@@ -200,6 +211,8 @@ def run(symbols: list[str] | None = None, budget_s: float = 1800.0) -> dict[str,
         if why:
             skipped[sym] = why
         rows.extend(got)
+        if not symbols:
+            _mark_visited(sym)
     rows = pc.deflate(rows)
     new_cells, union_n = charge(rows)
     from research.multiplicity import deflate_t

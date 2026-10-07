@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 764,
+  "NEVER": 766,
   "UNMEASURED": 37
  },
  "scope": {
-  "attested": 982,
+  "attested": 984,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -285,6 +285,17 @@
      "executable:scripts/lessons.py",
      "leg:recovery_drills",
      "task:E8-Book"
+    ]
+   },
+   {
+    "at": "2026-10-07T01:05:24+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:desks/mt5/research/breadth_law_coverage.py",
+     "library:desks/mt5/research/breadth_debt.py"
     ]
    }
   ]
@@ -25326,6 +25337,62 @@
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
    "measured_at": "2026-10-06T15:32:32+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/breadth_law_coverage.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/breadth_law_coverage.py"
+   ],
+   "clock": "invoked:desks/mt5/research/breadth_debt.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/BREADTH_LAW_COVERAGE.json",
+   "artifact_declared": "desks/mt5/reports/BREADTH_LAW_COVERAGE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-07T01:05:24+00:00"
+  },
+  {
+   "organ": "library:desks/mt5/research/breadth_debt.py",
+   "kind": "library",
+   "code": [
+    "desks/mt5/research/breadth_debt.py"
+   ],
+   "clock": "import:desks/mt5/research/certificate_saturation.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/BREADTH_DEBT.json",
+   "artifact_declared": "desks/mt5/reports/BREADTH_DEBT.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-07T01:05:24+00:00"
   }
  ],
  "ratchet": {

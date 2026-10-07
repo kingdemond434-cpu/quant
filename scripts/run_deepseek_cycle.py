@@ -25,6 +25,7 @@ import random
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -33,6 +34,22 @@ if str(_ROOT) not in sys.path:
 from libs.ops import deepseek_cycle as ds  # noqa: E402
 
 _CYCLE_STATE = _ROOT / "data" / "deepseek_cycle_state.json"
+
+
+def _breadth_brief() -> dict[str, Any]:
+    """Breadth law producer section 1/5/26: the seat proposes knowing what the desk already owns,
+    what is saturated, the open breadth debts and its own duplicate record -- FACTS only, so the
+    cold phase keeps them (cold_context strips opinions; strip_outcomes still blinds outcomes).
+    An absent saturation map yields {} and the seat runs exactly as before."""
+    try:
+        mt5 = _ROOT / "desks" / "mt5" / "research"
+        if str(mt5) not in sys.path:
+            sys.path.insert(0, str(mt5))
+        import importlib
+        cs = importlib.import_module("certificate_saturation")
+        return dict(cs.producer_brief("deepseek"))
+    except Exception:
+        return {}
 
 
 def _next_cycle_index() -> int:
@@ -131,7 +148,9 @@ def main(argv: list[str] | None = None) -> int:
     mix = ds.escalation_mix(args.state)
     deep = random.random() < mix["deep_share"]  # noqa: S311 -- research-cadence draw, not security
 
-    result = ds.run_role(role_name, role_brief, deep=deep, state={}, root=_ROOT)
+    brief = _breadth_brief()
+    result = ds.run_role(role_name, role_brief, deep=deep,
+                         state={"desk_breadth": brief} if brief else {}, root=_ROOT)
     report["result"] = result["status"]
     report["role"] = role_name
     report["cycle_index"] = idx

@@ -208,6 +208,9 @@ def _bounty_inputs() -> dict[str, dict[str, Any]]:
         "session": {"dark_bands": ["00-04"], "held_heat": 0.18},
         "sleeves": {"sleeves": [{"symbol": "XAUUSD", "status": "LIVE"}]},
         "universe": {"XAUUSD": {"asset_class": "metals"}, "EURUSD": {"asset_class": "fx"}},
+        # the breadth law's input, measured with no open debt (the desk's published map would
+        # otherwise be read from disk; tests/test_certificate_saturation.py covers the debts)
+        "saturation": {"breadth_debts": []},
     }
 
 
@@ -223,8 +226,9 @@ def test_bounties_name_every_missing_payoff_shape_and_absent_inputs() -> None:
     assert doc["missions"][0]["mission_id"] == doc["bounties"][0]["bounty_id"]
     assert doc["unmeasured"] == []
     empty = pb.build(now=NOW, alloc={}, exposure={}, regimes={}, drawdown={}, dd_miner={},
-                     ortho={}, session={}, sleeves={}, universe={})
+                     ortho={}, session={}, sleeves={}, universe={}, saturation={})
     assert empty["n_open"] == 0 and len(empty["unmeasured"]) >= 5
+    assert "CERTIFICATE_SATURATION.breadth_debts absent" in empty["unmeasured"]
 
 
 def test_bounty_publish_writes_registry_and_event(tmp_path: Path, registry: Any,

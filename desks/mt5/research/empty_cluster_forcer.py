@@ -186,6 +186,16 @@ def _symbols_for(family: str, universe: dict[str, Any], turn: int) -> list[str]:
     return [s for s in PREFERRED if s in universe]
 
 
+def _empty_priors() -> dict[str, Any]:
+    try:
+        from research.certificate_saturation import load
+        doc, _why = load(max_age_h=48.0)
+    except Exception:
+        return {}
+    pri = (doc or {}).get("empty_cluster_priors")
+    return pri if isinstance(pri, dict) else {}
+
+
 def plan() -> dict[str, Any]:
     breadth = _read(BREADTH, {})
     clusters = breadth.get("clusters") or {}
@@ -274,6 +284,16 @@ def plan() -> dict[str, Any]:
                      "why": (f"reachable via {', '.join(fams)} and never generated: a pure "
                              f"wiring gap, closed by minting {minted} cell(s) this pass")})
 
+    # EMPTY IS A PRIOR, NOT PROOF (anti-saturation law section 17): every row carries the
+    # effort-decayed survivor prior the docket's empty-cluster bonus is now scaled by, and the
+    # explicit reopen trigger that resets it (research/certificate_saturation.py).
+    priors = _empty_priors()
+    for r in rows:
+        p = priors.get(str(r.get("cluster")))
+        if isinstance(p, dict):
+            r["empty_prior"] = {k: p.get(k) for k in ("status", "decay", "effort_judged",
+                                                      "meaningful_effort", "reopen_trigger",
+                                                      "reopened_at", "reopen_when")}
     census = Counter(str(r["verdict"]) for r in rows)
     return {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),

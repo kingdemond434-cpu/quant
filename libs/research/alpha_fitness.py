@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from itertools import pairwise
@@ -167,6 +168,8 @@ PENALTIES: frozenset[str] = frozenset({"cost", "fragility", "complexity", "multi
                                        "turnover", "crowding", "existing_exposure"})
 #: The certified canon the existing-exposure term counts families in.
 CANON_PATH = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+#: The desk's own canon; the saturation map describes this one and no substitute for it.
+_DESK_CANON = CANON_PATH
 #: Crowding snapshots: the aligned candidate/peer calendar is cut into this many equal blocks and
 #: each block's mean daily R is one snapshot. Twenty, because `crowding.symbol_crowding` tests
 #: the LATE half against the early half and needs `MIN_SNAPSHOTS` (8) observations there.
@@ -879,6 +882,31 @@ def axis_scarcity_term(asset_class: str, mechanism: str, *,
                                     f"{AXIS_PLANE} plane; scarcity 1/(1+{n})")
 
 
+def _saturation_exposure(family: str, slots: Mapping[str, Any]) -> tuple[float, str] | None:
+    """1 - novelty credit from the published saturation map, or None when it cannot answer."""
+    sym = str(slots.get("instrument") or "").strip().upper()
+    if not sym:
+        return None
+    try:
+        desk = str(DESK)
+        if desk not in sys.path:
+            sys.path.insert(0, desk)
+        import importlib
+        cs = importlib.import_module("research.certificate_saturation")
+        sc = cs._default_scorer()
+        if sc is None:
+            return None
+        chart = str(slots.get("horizon") or "").strip().upper()
+        tf = chart if chart in ("M1", "M5", "M15", "M30", "H1", "H4", "D1") else None
+        s = sc.score_fields(sym, family, {}, tf, slots.get("session"), slots.get("regime"))
+    except Exception:
+        return None
+    credit = float(s["novelty_credit"])
+    return 1.0 - credit, (f"effective local certificate count {s['effective_local_count']} around "
+                          f"{family} on {sym} (CERTIFICATE_SATURATION.json): exposure = 1 - "
+                          f"1/sqrt(1 + count) = {1.0 - credit:.3f}")
+
+
 def existing_exposure_term(family: str, slots: Mapping[str, Any] | None = None, *,
                            canon: Path | None = None) -> tuple[float, str]:
     """Axis-aware share of certified sleeves already occupying this family, in [0, 1].
@@ -895,9 +923,18 @@ def existing_exposure_term(family: str, slots: Mapping[str, Any] | None = None, 
     This is search ordering only -- it never removes a cell or changes any evidence gate.
     """
     fam = str(family or "")
-    canon = CANON_PATH if canon is None else canon
     if not fam:
         return 0.0, "no family on the candidate: existing exposure unmeasured"
+    # THE EFFECTIVE LOCAL DENSITY FIRST (anti-saturation law 2026-10-05, section 18). On the
+    # desk's own canon, a fresh CERTIFICATE_SATURATION map prices the candidate by the EFFECTIVE
+    # count of structurally similar certificates around it -- parameter variants once, each
+    # neighbour by its coupling -- as 1 - 1/sqrt(1 + count). The nominal family share below is the
+    # fallback when the map is unmeasured or the caller supplies its own canon.
+    if canon is None and slots is not None and CANON_PATH == _DESK_CANON:
+        eff = _saturation_exposure(fam, slots)
+        if eff is not None:
+            return eff
+    canon = CANON_PATH if canon is None else canon
     shares, n = certified_family_shares(canon)
     if n == 0:
         return 0.0, (f"no certified sleeves readable at {Path(canon).name}: existing exposure "

@@ -518,6 +518,15 @@ class Library:
             ident = str(row.get("cell") or "")
             if not ident or ident in seen:
                 continue
+            # AN UNKNOWN VERDICT ANSWERED NOTHING (breadth audit 2026-10-07). `terminal_gate:
+            # UNKNOWN` (or none, with passed not True) is the sealed judge's UNMEASURED path --
+            # too few observations to rule -- so the cell is not an answered question and is never
+            # an exact twin that sets a re-test aside. A later ruling for the same cell still
+            # counts: only rulings enter `seen`.
+            if row.get("passed") is not True \
+                    and str(row.get("terminal_gate") or "").upper() in ("", "UNKNOWN"):
+                counts["judged_unknown_skipped"] = counts.get("judged_unknown_skipped", 0) + 1
+                continue
             seen.add(ident)
             members.append(_member(row, "judged", key=ident))
             counts["judged"] += 1

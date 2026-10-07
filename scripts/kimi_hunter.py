@@ -186,6 +186,31 @@ def _doctrine(role: str = "") -> str:
             return ""          # never break a caller over a preamble
 
 
+def _breadth_brief() -> dict:
+    """Breadth law producer sections 1/5/26, the same facts-only shape the DeepSeek seat gets
+    (`certificate_saturation.producer_brief`): what the desk already owns (N_CERT beside
+    N_EFFECTIVE_CERT and its basis), which clusters are saturated, the open breadth debts and this
+    seat's own duplicate record. Counts and names only -- no ranking, no instruction. An absent map
+    yields {} and the prompt is exactly what it was."""
+    try:
+        import importlib
+        mt5 = str(ROOT / "desks" / "mt5" / "research")
+        if mt5 not in sys.path:
+            sys.path.insert(0, mt5)
+        cs = importlib.import_module("certificate_saturation")
+        return dict(cs.producer_brief("kimi"))
+    except Exception:  # blind-except intentional (BLE001): a brief never breaks the seat
+        return {}
+
+
+def _breadth_section() -> str:
+    brief = _breadth_brief()
+    if not brief:
+        return ""
+    return ("\n\nDESK BREADTH FACTS (measured counts and names from the certificate saturation "
+            "map):\n" + json.dumps(brief, default=str)[:6000])
+
+
 def _forbidden(text: str) -> str | None:
     """Return the tripped zone, or None. Token-set membership, order-independent.
 
@@ -407,7 +432,8 @@ def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
     body = json.dumps({"model": model, "max_tokens": 16000, "temperature": 1.0,
                        "messages": [{"role": "system",
                                      "content": (OBJECTIVE_PREAMBLE + DATA_AXIS_MANDATE + "\n"
-                                                 + _doctrine("kimi_hunter") + system)},
+                                                 + _doctrine("kimi_hunter") + system
+                                                 + _breadth_section())},
                                     {"role": "user", "content": user}]}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",

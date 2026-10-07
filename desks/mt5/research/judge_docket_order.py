@@ -55,6 +55,14 @@ SEALED_SORT_KEY_SOURCE = (
     "                        timeframe_of(sp.get(\"params\"), str(sp.get(\"family\") or \"\")),\n"
     "                        str(sp.get(\"family\") or \"\")))")
 
+#: THE BREADTH-ORDER VARIANT (sealed patch `gauntlet_consume_breadth_order.patch`, 2026-10-06):
+#: the docket's `breadth_order` (dup, rank block) sits between never-judged and the chart rank.
+#: The restatement follows whichever variant the sealed file in hand carries (`docket_block_key`
+#: present or not), and the drift test accepts exactly these two texts.
+SEALED_SORT_KEY_SOURCE_BREADTH = SEALED_SORT_KEY_SOURCE.replace(
+    "key=lambda sp: (_is_new(sp),\n", "key=lambda sp: (_is_new(sp), *_dblock(sp),\n", 1)
+SEALED_SORT_KEY_SOURCES = (SEALED_SORT_KEY_SOURCE, SEALED_SORT_KEY_SOURCE_BREADTH)
+
 INTRADAY = ("M1", "M5", "M15", "M30")
 
 
@@ -91,7 +99,8 @@ def sealed_docket(G: Any, meta: dict) -> tuple[list[dict], dict[str, int]]:
                 census["stamped" if stamped_fn(h) else "unstamped"] += 1
     stamped_only = bool(census["stamped"] and census["unstamped"])
     cells: dict[str, dict] = {}
-    for h in _rows():
+    fields = getattr(G, "docket_order_fields", None)
+    for idx, h in enumerate(_rows()):
         if stamped_fn is None:
             census["rows"] += 1
         if not isinstance(h, dict) or (stamped_only and not stamped_fn(h)):  # type: ignore[misc]
@@ -108,7 +117,8 @@ def sealed_docket(G: Any, meta: dict) -> tuple[list[dict], dict[str, int]]:
             cells[key] = {"sym": sym, "family": fam, "params": params,
                           "mechanism_status": h.get("mechanism_status"),
                           "mechanism_note": h.get("mechanism_note"),
-                          "prejudge_flagged": bool(((h.get("prejudge") or {}).get("flags")))}
+                          "prejudge_flagged": bool((h.get("prejudge") or {}).get("flags")),
+                          **(fields(h, idx) if fields is not None else {})}
     census["cells"] = len(cells)
     eligible, rejected = G.partition_at_economic_prior(list(cells.values()), meta)
     census["rejected_at_prior"] = len(rejected)
@@ -196,8 +206,11 @@ def order(G: Any, specs: list[dict]) -> list[dict]:
         tf = tf_of(sp.get("params"), str(sp.get("family") or ""))
         return 0 if tf in INTRADAY else (1 if tf == "H4" else 2)
 
+    block_key = getattr(G, "docket_block_key", None)
+    dblock = block_key() if block_key is not None else (lambda _sp: ())
     return sorted(specs, key=lambda sp: (
         0 if sp.get("_never_judged", True) else 1,
+        *dblock(sp),
         _tf_rank(sp),
         0 if str(sp.get("family") or "") in ceo else 1,
         bool(sp.get("prejudge_flagged")),
@@ -230,6 +243,13 @@ def drop_redundant(G: Any, specs: list[dict]) -> tuple[list[dict], int]:
                   "timeframe": G.timeframe_of(sp.get("params"), str(sp.get("family") or "")),
                   "session": (sp.get("params") or {}).get("session")} for sp in head]
         verd = ng.screen(cands)
+        tail = getattr(G, "novelty_tail", None)
+        if tail is not None:
+            # the breadth variant: exact twins out, other REDUNDANT twins to the never-judged tail
+            out, tailed, exact = tail(specs, verd,
+                                      is_new=lambda sp: 0 if sp.get("_never_judged", True) else 1,
+                                      protect=lambda _sp: False)
+            return out, len(tailed) + len(exact)
         drop = {i for i, v in enumerate(verd) if getattr(v, "verdict", "") == "REDUNDANT"}
     except Exception:
         return specs, 0
@@ -255,6 +275,9 @@ def allocate(G: Any, specs: list[dict]) -> list[dict]:
         share = min(share, G.YIELD_MAX_SHARE)
         want = max(round(share * len(specs)), int(G.YIELD_MIN_SHARE * len(rows)), 1)
         keep.extend(rows[:want])
+    if getattr(G, "ALLOCATION_KEEPS_ORDER", False):
+        pos = {id(sp): i for i, sp in enumerate(specs)}
+        keep.sort(key=lambda sp: pos.get(id(sp), len(pos)))
     explored, _axes = G._explore_unmeasured_axes(specs, keep)
     keep.extend(explored)
     orthogonal, _rec = G._orthogonality_floor(specs, keep)
