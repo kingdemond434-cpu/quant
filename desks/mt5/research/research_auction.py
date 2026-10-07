@@ -202,6 +202,18 @@ def build(now: datetime | None = None, conn: Any | None = None,
                 _merged[_d] = max(float(_merged.get(_d, 1.0) or 1.0), float(_f))
         bottleneck = {**bottleneck, "compute_shift": _merged,
                       "blended_from": ["BOTTLENECK_LAW.json", "BOTTLENECK_ATTACK.json"]}
+    # PROTECTED EXPLORATION, RE-HELD AFTER THE BLEND (ARCH-26). `bottleneck_law` publishes its
+    # shift already guarded, but the attacker's maximum above can lift the geometric mean again.
+    # Raising each exploration department to that mean is the exact amount that keeps its cleared
+    # share where it would sit with no shift at all; it only raises, so it cuts nobody.
+    if _dct(bottleneck.get("compute_shift")):
+        with contextlib.suppress(Exception):
+            import full_funnel
+            _prot = (_lst(_dct(_dct(bottleneck.get("funnel")).get("route"))
+                          .get("protected_exploration"))
+                     or list(full_funnel.EXPLORATION_DEPARTMENTS))
+            bottleneck = {**bottleneck, "compute_shift": full_funnel.exploration_guard(
+                _dct(bottleneck.get("compute_shift")), departments, _prot)}
     replenish = replenish if replenish is not None else _read(REPLENISH)
     for name, d in (("PORTFOLIO_BOUNTY", bounty), ("BOTTLENECK_LAW", bottleneck),
                     ("ALPHA_REPLENISHMENT", replenish)):

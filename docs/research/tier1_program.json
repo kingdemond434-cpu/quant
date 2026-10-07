@@ -6935,7 +6935,12 @@
    "evidence": [
     "desks/mt5/research/bottleneck_law.py:117 — transitions(): the seven stage ratios and backlogs, each marked measured or not",
     "desks/mt5/research/bottleneck_law.py:147 — compute_shift(): 1 + (1 - ratio), capped, for the binding department only",
-    "tests/research/test_tier5_organs.py:71 — the shift only adds, and an empty funnel is UNMEASURED not a bottleneck"
+    "tests/research/test_tier5_organs.py:71 — the shift only adds, and an empty funnel is UNMEASURED not a bottleneck",
+    "desks/mt5/research/full_funnel.py:382 — ARCH-26: transitions() over the six stages discovery -> acquisition -> usable observations -> tested hypotheses -> qualified forecasts -> portfolio decisions, each read from its owning artifact; an absent one is UNMEASURED and never limiting",
+    "desks/mt5/research/full_funnel.py:437 — exploration_guard(): exploration departments raised to the shift's geometric mean, so a shift toward the limiting stage never lowers discovery's cleared share; every factor >= 1.0",
+    "desks/mt5/research/bottleneck_law.py:166 — merge_funnel(): the full funnel's shift merged (maximum per department) into the one compute_shift the auction reads; FUNNEL_BOTTLENECK.json written on the same hourly leg",
+    "desks/mt5/research/research_auction.py:205 — the exploration guard re-held after the attacker's shift is blended in",
+    "tests/research/test_full_funnel.py:142 — the stage and exploration floors hold whatever binds, through the auction's real clearing"
    ],
    "scheduled_by": "hourly_cycle:bottleneck_law (meta department)",
    "artifact": "desks/mt5/reports/BOTTLENECK_LAW.json",
