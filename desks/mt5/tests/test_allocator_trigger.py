@@ -13,8 +13,10 @@ here launches `pf_allocator` or reads the box's real artifacts.
 from __future__ import annotations
 
 import json
+import math
 import os
 import stat
+import statistics
 import sys
 from pathlib import Path
 from typing import Any
@@ -384,3 +386,223 @@ def test_one_argument_solver_hook_and_reset_last_solve_forces_retry(desk: Path) 
     st = _poll(st, clock, solve)["state"]
     assert len(calls) == 2 and st["seen"][MACRO]["pending"]
     assert set(st["seen"][MACRO]) >= {"observed", "pending", "consumed"}
+
+
+# --------------------------------------------------------------------------- event-driven sources
+EQUITY = "equity_move:gateway_state.json"
+COST = "cost_regime:cost_truth_quotes.json"
+DRIFT = "drift_health:DRIFT.json"
+
+
+def _pending(st: dict[str, Any], key: str) -> list[int]:
+    return [p["seq"] for p in st["seen"][key]["pending"]]
+
+
+def _equity(desk: Path, eq: float, **extra: Any) -> None:
+    _w(desk / "data" / "gateway_state.json", {"equity": eq, **extra})
+
+
+def _assert_consumed_only_by_landing(desk: Path, st: dict[str, Any], key: str,
+                                     clock: Clock) -> dict[str, Any]:
+    """A failed solve keeps the version pending; only a landed decision consumes it."""
+    calls: list[dict[str, Any]] = []
+    seq = _pending(st, key)[-1]
+    st = _poll(st, clock, failing_solver(calls))["state"]
+    assert calls and _pending(st, key)[-1] == seq
+    assert (st["seen"][key].get("consumed") or {}).get("seq") != seq
+    clock.t += 61
+    res = _poll(st, clock, honouring_solver(desk, calls))
+    st = res["state"]
+    assert not st["seen"][key]["pending"] and st["seen"][key]["consumed"]["seq"] == seq
+    assert st["seen"][key]["consumed"]["decision_id"]
+    kind = key.split(":", 1)[0]
+    assert any(s.get("kind") == kind for s in res["fired"] if s.get("event") == "consumed")
+    assert at.latency_report(st["latency_samples"])["by_kind"][kind]["status"] == "MEASURED"
+    return st
+
+
+def test_equity_move_fires_on_material_move_not_noise_and_accumulates_drift(desk: Path) -> None:
+    clock = Clock(1_790_000_000.0)
+    _equity(desk, 1000.0)
+    st = _poll(None, clock, None, solve=False)["state"]
+    assert not st["seen"][EQUITY]["pending"]                  # first sight is the baseline
+    assert st["seen"][EQUITY]["observed"]["anchor"] == {"equity": 1000.0}
+
+    for eq in (1004.0, 1004.0, 996.0):                        # inside the band, and a rewrite
+        _equity(desk, eq, lot=0.01)
+        clock.t += 20
+        res = _poll(st, clock, None, solve=False)
+        st = res["state"]
+        assert not st["seen"][EQUITY]["pending"]
+    (row,) = [w for w in res["watch"] if w["key"] == EQUITY]
+    assert row["materiality"]["basis"].startswith("DEFAULT")  # no history: the stated prior
+    assert row["materiality"]["threshold_log"] == pytest.approx(at.EQUITY_DEFAULT_DAILY_VOL)
+
+    _equity(desk, 1006.0)                                     # 0.6% vs anchor: still noise
+    clock.t += 20
+    st = _poll(st, clock, None, solve=False)["state"]
+    assert not st["seen"][EQUITY]["pending"]
+    _equity(desk, 1012.0)                                     # slow drift reaches 1.19%: fires
+    clock.t += 20
+    st = _poll(st, clock, None, solve=False)["state"]
+    assert _pending(st, EQUITY) == [2]
+    assert st["seen"][EQUITY]["observed"]["anchor"] == {"equity": 1012.0}
+    _equity(desk, 1013.0)                                     # noise against the NEW anchor
+    clock.t += 20
+    st = _poll(st, clock, None, solve=False)["state"]
+    assert _pending(st, EQUITY) == [2]
+    _assert_consumed_only_by_landing(desk, st, EQUITY, clock)
+
+
+def test_equity_unreadable_is_not_an_observation_and_falls_back_to_account_state(
+        desk: Path) -> None:
+    clock = Clock(1_790_000_000.0)
+    _equity(desk, 1000.0)
+    st = _poll(None, clock, None, solve=False)["state"]
+    _w(desk / "data" / "gateway_state.json", {"lot": 0.01})   # no equity, no account_state
+    clock.t += 20
+    st = _poll(st, clock, None, solve=False)["state"]
+    assert not st["seen"][EQUITY]["pending"]
+    _w(desk / "data" / "account_state.json", {"equity": 1100.0})
+    clock.t += 20
+    st = _poll(st, clock, None, solve=False)["state"]
+    assert _pending(st, EQUITY) == [2]
+
+
+def test_equity_band_is_derived_from_the_deal_ledger(desk: Path) -> None:
+    """Realised daily returns rebuilt from cost_truth_quotes.json deals: the deposit is balance,
+    never a return, and the threshold is k x the measured sigma."""
+    base = 1_788_134_400                                      # a Monday 00:00 UTC
+    deals: list[dict[str, Any]] = [{"epoch": base - 86_400, "type": 2, "profit": 1000.0}]
+    bal, rets = 1000.0, []
+    for i in range(12):                                       # 12 weekdays, alternating +/- 2%
+        day = base + 86_400 * (i + 2 * (i // 5))
+        pnl = bal * (0.02 if i % 2 == 0 else -0.02)
+        deals.append({"epoch": day + 3600, "type": 0, "entry": 1, "profit": pnl,
+                      "swap": 0.0, "comm": 0.0, "fee": 0.0})
+        rets.append(math.log((bal + pnl) / bal))
+        bal += pnl
+    _w(desk / "data" / "cost_truth_quotes.json", {"deals": deals, "symbols": {}})
+    quotes = at._read(desk / "data" / "cost_truth_quotes.json")
+    sigma, n = at._deals_sigma(quotes)
+    assert n == 12 and sigma == pytest.approx(statistics.stdev(rets), rel=1e-9)
+    band = at._equity_band({}, quotes)
+    assert band["basis"].startswith("MEASURED")
+    assert band["threshold_log"] == pytest.approx(at.EQUITY_K_SIGMA * sigma, abs=1e-6)
+
+
+def _quotes(desk: Path, spread: float, swap_long: float = -5.0, swap_short: float = 1.0,
+            stamp: str = "2026-10-06T00:00:00+00:00", ask: float = 1.1) -> None:
+    _w(desk / "data" / "cost_truth_quotes.json", {"at": stamp, "symbols": {
+        "EURUSD": {"at": stamp, "ask": ask, "bid": 1.0, "live_spread_pts": spread,
+                   "swap_long": swap_long, "swap_short": swap_short},
+        "NOTHELD": {"live_spread_pts": 999.0 if ask > 1.1 else 1.0}}})
+
+
+def _roster(desk: Path) -> None:
+    _w(desk / "data" / "sleeve_registry.json", {"sleeves": {"EURUSD.x.asia": {
+        "status": "LIVE", "identity": {"symbol": "EURUSD"}}}})
+
+
+def test_cost_regime_fires_beyond_the_band_not_on_noise_or_rewrite(desk: Path) -> None:
+    clock = Clock(1_790_000_000.0)
+    _roster(desk)
+    _quotes(desk, 2.0)
+    st = _poll(None, clock, None, solve=False)["state"]
+    assert not st["seen"][COST]["pending"]
+    assert set(st["seen"][COST]["observed"]["anchor"]) == {"EURUSD"}  # sleeve symbols only
+
+    # a rewrite with new prices and stamps, a one-point spread tick, a swap that moved < 2x and
+    # a non-sleeve symbol blowing out: none of them is a regime change
+    for i, (spread, sl) in enumerate(((2.0, -5.0), (3.0, -5.0), (2.0, -8.0))):
+        _quotes(desk, spread, sl, stamp=f"2026-10-06T00:0{i + 1}:00+00:00", ask=1.2)
+        clock.t += 20
+        st = _poll(st, clock, None, solve=False)["state"]
+        assert not st["seen"][COST]["pending"]
+
+    _quotes(desk, 7.0)                                        # (7+1)/(2+1): 1.4 doublings
+    clock.t += 20
+    res = _poll(st, clock, None, solve=False)
+    st = res["state"]
+    assert _pending(st, COST) == [2]
+    (row,) = [w for w in res["watch"] if w["key"] == COST]
+    assert row["materiality"]["moved"] == {"EURUSD": ["spread"]}
+
+    _quotes(desk, 7.0, swap_short=-0.5)                       # swap sign flip: a new regime
+    clock.t += 20
+    st = _poll(st, clock, None, solve=False)["state"]
+    assert _pending(st, COST) == [2, 3]
+    _assert_consumed_only_by_landing(desk, st, COST, clock)
+
+
+def test_cost_band_widens_to_the_symbols_measured_dispersion(desk: Path) -> None:
+    clock = Clock(1_790_000_000.0)
+    _roster(desk)
+    _w(desk / "data" / "cost_surface.json",
+       {"symbols": {"EURUSD": {"stress_p90_over_p50": 8.0}}})  # log2 = 3 doublings
+    _quotes(desk, 2.0)
+    st = _poll(None, clock, None, solve=False)["state"]
+    _quotes(desk, 7.0)                                        # 1.4 doublings: inside 3
+    clock.t += 20
+    st = _poll(st, clock, None, solve=False)["state"]
+    assert not st["seen"][COST]["pending"]
+    _quotes(desk, 40.0)                                       # 41/3: 3.8 doublings
+    clock.t += 20
+    st = _poll(st, clock, None, solve=False)["state"]
+    assert _pending(st, COST) == [2]
+
+
+def _drift(desk: Path, hazards: dict[str, tuple[str, float | None]], verdict: str = "STABLE",
+           stamp: str = "2026-10-06T00:00:00+00:00", z: float = 0.1) -> None:
+    _w(desk / "reports" / "DRIFT.json", {
+        "generated_utc": stamp, "verdict": verdict, "structure_verdict": "STABLE",
+        "hazard_max": z, "what_changed": [f"z={z}"],
+        "hazard_by_sleeve": {k: {"verdict": v, "hazard": h, "components": {"z": z}}
+                             for k, (v, h) in hazards.items()}})
+
+
+def test_drift_health_fires_on_verdict_or_band_not_on_rewrite(desk: Path) -> None:
+    clock = Clock(1_790_000_000.0)
+    _drift(desk, {"s1": ("HOLDING", 0.05), "s2": ("HOLDING", None)})
+    st = _poll(None, clock, None, solve=False)["state"]
+    assert not st["seen"][DRIFT]["pending"]
+    # the unchanged observation rewritten; hazard moving INSIDE its band; z, prose, stamp moving
+    for i, h in enumerate((0.05, 0.10, 0.14)):
+        _drift(desk, {"s1": ("HOLDING", h), "s2": ("HOLDING", None)},
+               stamp=f"2026-10-06T0{i + 1}:00:00+00:00", z=0.1 + i)
+        clock.t += 20
+        st = _poll(st, clock, None, solve=False)["state"]
+        assert not st["seen"][DRIFT]["pending"]
+
+    _drift(desk, {"s1": ("HOLDING", 0.20), "s2": ("HOLDING", None)})  # crosses AT_RISK band
+    clock.t += 20
+    st = _poll(st, clock, None, solve=False)["state"]
+    assert _pending(st, DRIFT) == [2]
+    _drift(desk, {"s1": ("HOLDING", 0.20), "s2": ("BREAKING", None)})  # a verdict changed
+    clock.t += 20
+    st = _poll(st, clock, None, solve=False)["state"]
+    assert _pending(st, DRIFT) == [2, 3]
+    _drift(desk, {"s1": ("HOLDING", 0.20), "s2": ("BREAKING", None)}, verdict="DRIFT_AHEAD")
+    clock.t += 20
+    st = _poll(st, clock, None, solve=False)["state"]
+    assert _pending(st, DRIFT) == [2, 3, 4]
+    (desk / "reports" / "DRIFT.json").unlink()               # a missing report is not a verdict
+    clock.t += 20
+    st = _poll(st, clock, None, solve=False)["state"]
+    assert _pending(st, DRIFT) == [2, 3, 4]
+    _drift(desk, {"s1": ("HOLDING", 0.20), "s2": ("BREAKING", None)}, verdict="DRIFT_AHEAD")
+    clock.t += 20
+    st = _poll(st, clock, None, solve=False)["state"]
+    assert _pending(st, DRIFT) == [2, 3, 4]
+    _assert_consumed_only_by_landing(desk, st, DRIFT, clock)
+
+
+def test_report_publishes_latency_per_new_kind_and_keeps_foreign_state(desk: Path) -> None:
+    _w(at.STATE, {"schema": 2, "seen": {}, "book": {"owner": "book_trigger", "v": 7}})
+    _equity(desk, 1000.0)
+    rep = at.run(write=True, solve=False)
+    assert {"equity_move", "cost_regime", "drift_health"} <= set(rep["latency"]["by_kind"])
+    assert rep["latency"]["by_kind"]["drift_health"]["status"] == "UNMEASURED"
+    assert json.loads(at.STATE.read_text("utf-8"))["book"] == {"owner": "book_trigger", "v": 7}
+    keys = {s.key for s in at.sources()}
+    assert {EQUITY, "equity_move:E8_GOLD.json", COST, DRIFT} <= keys

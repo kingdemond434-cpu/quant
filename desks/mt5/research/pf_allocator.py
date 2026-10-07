@@ -1553,7 +1553,9 @@ def _objective_terms(book: Mapping[str, float], ev: Sequence[Any]) -> dict[str, 
 
 
 def no_trade(current: dict[str, float], proposed: dict[str, float],
-             gain_per_day: float) -> dict[str, Any]:
+             gain_per_day: float, *, one_way_cost: Mapping[str, float] | None = None,
+             half_life_days: Mapping[str, float] | None = None,
+             max_heat_now: float | None = None) -> dict[str, Any]:
     """Is the move worth its own cost? Returns the verdict and the arithmetic behind it.
 
     "Don't rebalance simply because the optimizer ran." Turnover is charged at a round trip on
@@ -1572,11 +1574,41 @@ def no_trade(current: dict[str, float], proposed: dict[str, float],
         inertia_mult = _rail_mult("position_inertia")
     except Exception:
         inertia_mult = 1.0
-    cost = turnover * TURNOVER_COST_R * inertia_mult
-    benefit = max(gain_per_day, 0.0) * NO_TRADE_HORIZON_DAYS
-    go = benefit > cost
+    # COST- AND EDGE-DERIVED (ALLOC-06/16, 2026-10-07). The cost of the move is each sleeve's OWN
+    # one-way cost on its own change (cost_r + measured under-charge), not one 0.06R for every
+    # instrument; the desk-wide round trip is the fallback for a sleeve with no cost on record.
+    # The benefit is the gain earned over the EFFECTIVE horizon of the edges being bought: an
+    # edge with hazard rate lam keeps (1 - e^(-lam T)) / lam of its value over the rebalance
+    # window T, so a perishable edge is credited less than five full days and a durable one up
+    # to five. One charge, once: nothing downstream adds another turnover penalty.
+    kap = one_way_cost or {}
+    hl = half_life_days or {}
+    cost = inertia_mult * sum(abs(v) * float(kap.get(n, TURNOVER_COST_R / 2.0))
+                              for n, v in moved.items())
+    w_tot = sum(abs(v) for v in moved.values())
+    if w_tot > 0:
+        def _eff(n: str) -> float:
+            h = float(hl.get(n, 0.0) or 0.0)
+            if h <= 0:
+                return NO_TRADE_HORIZON_DAYS
+            lam = math.log(2.0) / h
+            return (1.0 - math.exp(-lam * NO_TRADE_HORIZON_DAYS)) / lam
+        horizon = sum(abs(v) * _eff(n) for n, v in moved.items()) / w_tot
+    else:
+        horizon = NO_TRADE_HORIZON_DAYS
+    # A REQUIRED RISK REDUCTION NEVER WAITS FOR A PROFIT THRESHOLD (ALLOC-16): when the held
+    # book carries more heat than the law resolved for NOW (`max_heat_now`, the verdict), moving
+    # to the proposal is not a bet that has to pay for itself. A proposal that merely holds a
+    # little less heat on solver noise is NOT this case and still has to pay its cost.
+    held_total = sum(max(0.0, v) for v in current.values())
+    reduces = bool(max_heat_now is not None and held_total > float(max_heat_now) + 1e-9
+                   and sum(max(0.0, v) for v in proposed.values()) < held_total - 1e-9)
+    benefit = max(gain_per_day, 0.0) * horizon
+    go = benefit > cost or reduces
     return {
         "verdict": "REBALANCE" if go else "NO CHANGE",
+        "risk_reduction": bool(reduces),
+        "effective_horizon_days": round(horizon, 4),
         "turnover": round(turnover, 6),
         "cost": round(cost, 8),
         "inertia_multiplier": round(inertia_mult, 4),
@@ -1975,8 +2007,29 @@ def hazard_by_sleeve(drift: dict[str, Any] | None) -> HazardMap:
 HAZARD_MODE = "decay_posterior"
 
 
+def hazard_to_path_decay(p_horizon: float, *, horizon_days: float = 90.0,
+                         path_days: float) -> float:
+    """A hazard stated over `horizon_days` -> the decay charge for a world spanning `path_days`.
+
+    DECAY-03 (2026-10-06): the drift monitor's hazard is P(mechanism breaks within 90 calendar
+    days). `sample_worlds` applies a decayed edge to a WHOLE world path, so writing the 90-day
+    probability straight in read "breaks within 90 days" as "already broken for the whole path".
+    Under a constant hazard rate lam = -ln(1 - p) / horizon, the share of a T-day path the edge
+    is expected to spend decayed is 1 - (1 - e^(-lam T)) / (lam T), which is the per-world charge
+    with the same expected haircut over the path. The horizon is preserved and stated; nothing
+    reads p as "fails in the next hour" or "already gone".
+    """
+    p = min(max(float(p_horizon), 0.0), 1.0 - 1e-12)
+    if p <= 0.0 or path_days <= 0.0:
+        return 0.0
+    lam = -math.log1p(-p) / float(horizon_days)
+    x = lam * float(path_days)
+    return float(1.0 - (-math.expm1(-x)) / x) if x > 1e-12 else 0.0
+
+
 def apply_decay_posterior(ev: list[SleeveEvidence], haz: dict[str, float],
-                          blanket: float) -> dict[str, Any]:
+                          blanket: float, *, path_days: float | None = None,
+                          horizon_days: float = 90.0) -> dict[str, Any]:
     """Hand each sleeve its own decay probability (two-sided) and route the other causes once.
 
     THE OTHER HALF OF "DECAY IS A CONSTANT". `robust_elog` decayed every sleeve's edge in 30% of
@@ -2030,11 +2083,28 @@ def apply_decay_posterior(ev: list[SleeveEvidence], haz: dict[str, float],
         h = haz.get(e.name)
         if h is None:
             continue
-        p = min(max(float(h), 0.0), 1.0)
+        p90 = min(max(float(h), 0.0), 1.0)
+        # ANCHORED TO THE BLANKET, so a base-rate sleeve pays what an unmeasured one pays. The
+        # blanket (0.30) is the per-world charge the desk has always used for an edge of base
+        # hazard; read as a 90-day probability it is also the calibrated base rate (~0.31,
+        # DRIFT.hazard_calibration). Each sleeve's charge is the blanket scaled by ITS expected
+        # decayed share of the path relative to the base rate's -- horizon-consistent, monotone,
+        # two-sided, and with no level shift a 90-day-vs-path relabelling would smuggle in.
+        if path_days:
+            base = hazard_to_path_decay(float(blanket), horizon_days=horizon_days,
+                                        path_days=path_days)
+            mine = hazard_to_path_decay(p90, horizon_days=horizon_days, path_days=path_days)
+            p = min(1.0, float(blanket) * mine / base) if base > 0 else p90
+        else:
+            p = p90
         ev[i] = _replace(e, decay_prob_i=p)
         by_sleeve[e.name] = {"hazard": round(float(h), 6), "decay_prob_i": round(p, 6),
                              "relief_vs_blanket": round(float(blanket) - p, 6)}
     return {"mode": "decay_posterior", "blanket": float(blanket),
+            "hazard_horizon_days": horizon_days, "path_days": path_days,
+            "conversion": ("blanket x path-decay share(hazard) / path-decay share(blanket), "
+                           "constant hazard rate over the 90-day horizon" if path_days
+                           else "none (hazard used as stated)"),
             "n_from_hazard": len(by_sleeve), "n_blanket": len(ev) - len(by_sleeve),
             "n_charged_above_blanket": sum(1 for v in by_sleeve.values()
                                            if v["relief_vs_blanket"] < 0.0),
@@ -3750,6 +3820,45 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     if culture_meta.get("relabelled"):
         _log(f"culture labels: {culture_meta['merged']} merged, {culture_meta['split']} split "
              f"({culture_meta['why']})")
+    # GARCH VOLATILITY FORECAST (ALLOC-13): each sleeve's dispersion is scaled to its GARCH(1,1)
+    # forecast over the next week relative to its sample vol -- DEVIATIONS only, never the mean
+    # (decision role VOLATILITY_SCALE + UNCERTAINTY_WIDTH, `research.model_roles`). A calm
+    # forecast is only credited up to the fit's own upper band, so uncertainty never adds risk.
+    # Fitting costs ~0.3 s a sleeve, so the fast clock reuses the last normal/heavy fit (a model
+    # output, not a re-fit per trigger) and says so; a missing fit scales nothing.
+    garch_meta: dict[str, Any] = {"status": "UNMEASURED"}
+    try:
+        from dataclasses import replace as _gv_replace
+
+        from libs.portfolio.garch_vol import apply_vol_scale, vol_scale_by_sleeve
+        _gv_path = CACHE / "garch_vol.json"
+        _vscale: dict[str, float] = {}
+        if mode == "fast":
+            try:
+                _gv = json.loads(_gv_path.read_text("utf-8"))
+                if time.time() - float(_gv.get("t", 0.0)) < 26 * 3600:
+                    _vscale = {str(k): float(v) for k, v in (_gv.get("scale") or {}).items()}
+                    garch_meta = {"status": "REUSED", "fitted_at": _gv.get("t")}
+            except (OSError, ValueError, TypeError):
+                garch_meta = {"status": "UNMEASURED", "why": "no fit cached for the fast clock"}
+        else:
+            _vscale, _vdiag = vol_scale_by_sleeve(ev, horizon_days=int(NO_TRADE_HORIZON_DAYS))
+            garch_meta = {"status": "MEASURED", "diagnostics": _vdiag}
+            try:
+                _gv_path.parent.mkdir(parents=True, exist_ok=True)
+                _atomic_write_text(_gv_path, json.dumps({"t": time.time(), "scale": _vscale}))
+            except OSError:
+                pass
+        if _vscale:
+            for _i, _e in enumerate(ev):
+                _r = float(_vscale.get(_e.name, 1.0))
+                if abs(_r - 1.0) > 1e-12:
+                    ev[_i] = _gv_replace(_e, daily_r=apply_vol_scale(_e.daily_r, _r))
+            garch_meta["scale"] = {k: round(v, 4) for k, v in _vscale.items()}
+            _log(f"garch vol scale: {sum(1 for v in _vscale.values() if v > 1)} up, "
+                 f"{sum(1 for v in _vscale.values() if v < 1)} down ({garch_meta['status']})")
+    except Exception as exc:
+        garch_meta = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
     dd = worst_dd_r(daily)
     # THE MACRO TILTS THIS PASS APPLIES, MEASURED ONCE FOR THE ARTIFACT. `_posterior_mu` is the
     # only place the contrast is formed; asking it with `diag` returns exactly the tilts the
@@ -3861,7 +3970,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                                 for k, v in list(hazard_meta["applied"].items())[:5])
             _log(f"hazard shrink: {hazard_meta['n_shrunk']} sleeve(s) tilted ({_tilted})")
     else:
-        decay_meta = apply_decay_posterior(ev, _haz, _blanket)
+        # DECAY-03: the 90-day hazard converted to the world path the solve scores (trading days
+        # of resampled history, in calendar days), never written in as "already broken".
+        decay_meta = apply_decay_posterior(
+            ev, _haz, _blanket, path_days=(384 if mode == "heavy" else 256) * 365.0 / 252.0)
         hazard_meta = {"applied": {}, "n_shrunk": 0, "mode": HAZARD_MODE,
                        "superseded_by": "decay_posterior",
                        "rule": ("the hazard enters as each sleeve's own decay probability "
@@ -4436,7 +4548,14 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             # A currently-ruinous book has no growth rate to improve on, and refusing to move off
             # it because the arithmetic is undefined would be the worst possible reading.
             else float("inf"))
-    nt = no_trade(prev_book, funded, gain)
+    nt = no_trade(prev_book, funded, gain,
+                  one_way_cost={e.name: (abs(float(e.cost_r))
+                                         + max(0.0, float(e.cost_bias_r or 0.0))) / 2.0
+                                or TURNOVER_COST_R / 2.0 for e in ev},
+                  half_life_days={k: math.log(2.0) * 90.0 / -math.log1p(-min(float(v),
+                                                                           1.0 - 1e-9))
+                                  for k, v in (_haz or {}).items() if 0.0 < float(v) < 1.0},
+                  max_heat_now=float(verdict.total_heat))
     nt["held"] = {k: round(v, 8) for k, v in held.items()}
     # PUBLISHED, BECAUSE ANOTHER LAYER HAS TO PRICE THE SAME MOVE. `macro.interrupt.should_fire`
     # asks "is acting NOW worth more than waiting for the fast clock", and its economic gate needs
@@ -4942,10 +5061,24 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     if mode != "fast" and worlds is not None and verdict.total_heat > 0:
         try:
             from libs.portfolio.multiperiod_worlds import plan_receding
+            # EACH SLEEVE'S EDGE HALF-LIFE FROM ITS OWN HAZARD (ALLOC-04/07): a 90-day hazard p is
+            # a constant rate lam = -ln(1 - p) / 90, half-life ln 2 / lam. Without it the planner
+            # treated every edge as durable and the horizon check had nothing to compare.
+            _hl = {k: math.log(2.0) * 90.0 / -math.log1p(-min(float(v), 1.0 - 1e-9))
+                   for k, v in (_haz or {}).items() if 0.0 < float(v) < 1.0}
+            # PER-SLEEVE ONE-WAY COST, from the sleeve's own modelled cost plus the under-charge
+            # the cost surface measured (cost_r + cost_bias_r, in R per unit heat), never one
+            # constant for every instrument (ALLOC-06); the desk-wide round trip is the fallback.
+            _kappa = {e.name: max(abs(float(e.cost_r)) + max(0.0, float(e.cost_bias_r or 0.0)),
+                                  0.0) / 2.0 or TURNOVER_COST_R / 2.0 for e in ev}
             _rh = plan_receding(worlds, prev_book, cap=float(verdict.total_heat),
-                                upper=ub or None, cost_one_way=TURNOVER_COST_R / 2.0,
+                                upper=ub or None, cost_one_way=_kappa,
+                                half_life_days=_hl,
                                 robust_lambda=cfg.robust_lambda, cvar_alpha=cfg.cvar_alpha)
-            receding = {"status": "MEASURED",
+            receding = {"status": "MEASURED", "n_half_lives": len(_hl),
+                        "forecasts": ("none supplied: no term-structured sleeve forecast exists "
+                                      "on this desk yet (forecast_contract carries no live "
+                                      "DIRECTION_MEAN source besides the posterior)"),
                         **{k: _rh[k] for k in ("h_now", "path_total_heat", "stage_days",
                                                "objective", "vs_hold", "optimality_gap",
                                                "converged", "no_trade_horizon_check")},
@@ -5215,6 +5348,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                    "global_gap": _finite_or_none(getattr(book, "global_gap", None)),
                    "budget_hit": bool(getattr(book, "budget_hit", False))},
         "staleness_clamp": stale_clamp_doc,
+        "garch_vol": garch_meta,
         "receding_horizon": receding,
         # C17: the objective's two non-growth terms, written down instead of folded in, plus the
         # instrument and mechanism tiers as decompositions of the heat already resolved.

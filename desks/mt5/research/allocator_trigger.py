@@ -22,6 +22,25 @@ never replaces the hourly pass.
   cost_capacity_revision  reports/NET_EDGE.json          net-of-cost or capacity was re-priced
   news_resolve_request    data/allocator_resolve_request.json
                                                          `news_event_stream` asked for a re-solve
+  equity_move             data/gateway_state.json        Fusion equity moved > k x its measured
+                          (else data/account_state.json) daily volatility since the last version
+                          reports/E8_GOLD.json           the same, for the E8 account
+  cost_regime             data/cost_truth_quotes.json    a sleeve symbol's live spread or swap
+                                                         left its dispersion band
+  drift_health            reports/DRIFT.json             a sleeve's hazard verdict or hazard band
+                                                         moved, or the book verdict did
+
+ANCHORED FINGERPRINTS (2026-10-06). The first six inputs are hashed: any change to the watched
+keys is a change. Equity and quotes cannot work that way -- equity moves on every tick of an
+open position and a spread breathes by a point every minute, so a hash would make every rewrite a
+re-solve. Those three sources carry an ANCHOR in their OBSERVED record: the values the latest
+version recorded. A reading becomes a new version only when it leaves the anchor's band, and the
+anchor moves only then, so a slow drift accumulates against it until it is material and noise
+inside the band never moves the signature at all. Once that version is consumed, the anchor IS
+the value the landed decision used. An unreadable reading is not an observation: the previous
+signature and anchor stand. The bands, and what each is derived from, are at `_equity_band` and
+`_cost_fingerprint`; DRIFT.json needs no band beyond the drift monitor's own declared lines, so it
+is a plain hash of the fields the allocator reads from it and nothing else.
 
 THE THREE LEDGERS (2026-10-06). The first version kept ONE record per input, `seen`, and wrote it
 on every pass BEFORE deciding whether to solve. So a change that arrived inside the 60s debounce
@@ -85,7 +104,8 @@ import sys
 import time
 import uuid
 from collections.abc import Callable, Iterator
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -139,14 +159,45 @@ MAX_ISSUED = 24
 MAX_APPLIED = 64
 MAX_SAMPLES = 512
 
+#: EQUITY MATERIALITY. A move is material when |ln(equity / anchor)| > EQUITY_K_SIGMA x the
+#: book's measured DAILY log-equity volatility. k = 1: a move the size of an ordinary day's move
+#: is a move the hourly backstop would otherwise sit on for up to an hour, while anything inside
+#: one daily sigma is the noise the last solve already sized through (its worlds are drawn at
+#: that volatility). The sigma is measured, in this order: (1) this organ's own daily equity
+#: closes (equity incl. floating, one per UTC day, kept on the input's record); (2) the realised
+#: daily P&L reconstructed from the deal ledger in data/cost_truth_quotes.json (balance rebuilt
+#: by running sum, deposits excluded from P&L, weekdays only) -- realised only, so it UNDER-reads
+#: a book with open risk, which errs toward firing; (3) EQUITY_DEFAULT_DAILY_VOL, ONLY when
+#: neither has EQUITY_MIN_DAYS of history. Which one was used is published per pass.
+EQUITY_K_SIGMA = 1.0
+EQUITY_MIN_DAYS = 10
+#: The stated fallback, used only when no history exists. Not measured: a prior of the order of
+#: a diversified FX/metals book at the 20-30% heat law. Published as "DEFAULT" when it binds.
+EQUITY_DEFAULT_DAILY_VOL = 0.01
+EQUITY_MAX_CLOSES = 120
+#: COST MATERIALITY floor, in log2 units: a doubling. It is the bucket width `book_trigger` uses
+#: for the same quotes (one regime definition on the box, not two), and the floor under the
+#: symbol's own measured dispersion log2(p90/p50) from data/cost_surface.json, because spreads
+#: are quoted in whole points and a 1 -> 2 point tick is a doubling that means nothing. Swap has
+#: no measured dispersion anywhere on the box, so its band IS this floor, plus any sign change.
+COST_LOG2_FLOOR = 1.0
+#: drift_monitor's own lines (perishability.HAZARD_AT_RISK / HAZARD_BREAKING), read from the
+#: library at call time; these are only the fallback if the import fails.
+HAZARD_BANDS_FALLBACK = (0.15, 0.35)
+
 
 class Source:
     """One watched artifact: what makes it a CHANGE, and when the change happened."""
 
     def __init__(self, kind: str, path: Path, keys: tuple[str, ...], why: str, *,
                  fires_on_absent: bool = True, requires_nonempty: str | None = None,
-                 first_sight_pending: bool = False) -> None:
+                 first_sight_pending: bool = False,
+                 fingerprint: Callable[..., tuple[str, Any, dict[str, Any]]] | None = None,
+                 ) -> None:
         self.kind, self.path, self.keys, self.why = kind, path, keys, why
+        #: An ANCHORED fingerprint, `fn(doc, inp, now) -> (signature, anchor, detail)`, for an
+        #: input a hash would fire on noise (equity, quotes). None = hash `keys`.
+        self.fingerprint = fingerprint
         #: A state artifact disappearing IS a change of state. A request file disappearing is
         #: not a request.
         self.fires_on_absent = fires_on_absent
@@ -197,7 +248,271 @@ def sources() -> list[Source]:
         Source("news_resolve_request", RESOLVE_REQUEST, ("at", "requests"),
                "news_event_stream requested a re-solve: a news event moved the world state",
                fires_on_absent=False, requires_nonempty="requests", first_sight_pending=True),
+        # THE THREE EVENT-DRIVEN RE-SOLVES (principal, 2026-10-06). Kinds are named so they stay
+        # distinguishable from `book_trigger`'s (#264), which reads the same two files and keeps
+        # its own state under "book".
+        Source("equity_move", DATA / "gateway_state.json", ("equity",),
+               "account equity moved more than k x its measured daily volatility since the "
+               "equity the last version recorded",
+               fires_on_absent=False, fingerprint=_fusion_equity_fingerprint),
+        Source("equity_move", REPORTS / "E8_GOLD.json", ("equity",),
+               "E8 account equity moved more than k x its measured daily volatility",
+               fires_on_absent=False, fingerprint=_e8_equity_fingerprint),
+        Source("cost_regime", DATA / "cost_truth_quotes.json", ("symbols",),
+               "a sleeve symbol's live spread or swap left its measured dispersion band",
+               fires_on_absent=False, fingerprint=_cost_fingerprint),
+        Source("drift_health", REPORTS / "DRIFT.json",
+               ("verdict", "structure_verdict", "hazard_by_sleeve"),
+               "drift_monitor moved a sleeve's hazard verdict or band, or the book verdict",
+               fires_on_absent=False, fingerprint=_drift_fingerprint),
     ]
+
+
+# --------------------------------------------------------------------------- anchored inputs
+def _num(v: Any) -> float | None:
+    if isinstance(v, bool):
+        return None
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return f if math.isfinite(f) else None
+
+
+def _hash(obj: Any) -> str:
+    blob = json.dumps(obj, sort_keys=True, default=str)
+    return hashlib.sha1(blob.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
+
+
+def _prev(inp: dict[str, Any]) -> tuple[str | None, Any]:
+    obs = inp.get("observed") or {}
+    return obs.get("sig"), obs.get("anchor")
+
+
+def _std(xs: list[float]) -> float | None:
+    if len(xs) < 2:
+        return None
+    m = sum(xs) / len(xs)
+    return math.sqrt(sum((x - m) ** 2 for x in xs) / (len(xs) - 1))
+
+
+def _closes_sigma(closes: dict[str, Any]) -> tuple[float | None, int]:
+    """Daily log-equity volatility from this organ's own per-day closes (consecutive days)."""
+    days = sorted(d for d, v in closes.items() if (_num(v) or 0.0) > 0)
+    rets = [math.log(float(closes[b]) / float(closes[a])) for a, b in pairwise(days)]
+    return _std(rets), len(rets)
+
+
+def _deals_sigma(quotes: dict[str, Any] | None) -> tuple[float | None, int]:
+    """Daily realised log-return volatility from the deal ledger. The balance is rebuilt as the
+    running sum of every deal (the ledger opens with the deposit); P&L is trade deals only
+    (types 0/1: profit + swap + commission + fee), so a deposit is never a return."""
+    deals = (quotes or {}).get("deals")
+    if not isinstance(deals, list):
+        return None, 0
+    rows = sorted((d for d in deals if isinstance(d, dict) and _num(d.get("epoch")) is not None),
+                  key=lambda d: float(d["epoch"]))
+    bal = 0.0
+    open_bal: dict[date, float] = {}
+    pnl: dict[date, float] = {}
+    for d in rows:
+        amt = sum(_num(d.get(k)) or 0.0 for k in ("profit", "swap", "comm", "fee"))
+        day = datetime.fromtimestamp(float(d["epoch"]), tz=UTC).date()
+        if d.get("type") in (0, 1):
+            open_bal.setdefault(day, bal)
+            pnl[day] = pnl.get(day, 0.0) + amt
+        bal += amt
+    if not pnl:
+        return None, 0
+    first, last = min(pnl), max(pnl)
+    rets: list[float] = []
+    day, running = first, open_bal[first]
+    while day <= last:
+        if day.weekday() < 5:
+            start = open_bal.get(day, running)
+            p = pnl.get(day, 0.0)
+            if start > 0 and start + p > 0:
+                rets.append(math.log((start + p) / start))
+            running = start + p
+        day += timedelta(days=1)
+    return _std(rets), len(rets)
+
+
+def _equity_band(inp: dict[str, Any], quotes: dict[str, Any] | None) -> dict[str, Any]:
+    """The materiality threshold in log-equity, and the history it was derived from."""
+    sigma, n = _closes_sigma(inp.get("equity_closes") or {})
+    if sigma and n >= EQUITY_MIN_DAYS:
+        basis = f"MEASURED: {n} daily returns of this organ's own equity closes"
+    else:
+        sigma, n = _deals_sigma(quotes)
+        if sigma and n >= EQUITY_MIN_DAYS:
+            basis = f"MEASURED: {n} weekday realised returns from cost_truth_quotes.json deals"
+        else:
+            sigma, basis = EQUITY_DEFAULT_DAILY_VOL, (
+                f"DEFAULT: under {EQUITY_MIN_DAYS} days of equity history; stated prior "
+                f"{EQUITY_DEFAULT_DAILY_VOL} daily vol")
+    return {"daily_vol": round(float(sigma), 6), "k_sigma": EQUITY_K_SIGMA,
+            "threshold_log": round(EQUITY_K_SIGMA * float(sigma), 6), "basis": basis}
+
+
+def _equity_fingerprint(eq: float | None, inp: dict[str, Any], now: float,
+                        quotes: dict[str, Any] | None,
+                        src_name: str) -> tuple[str, Any, dict[str, Any]]:
+    prev_sig, anchor = _prev(inp)
+    if eq is None or eq <= 0:
+        # unreadable is not an observation: the previous version stands
+        return (prev_sig or "no-watched-key"), anchor, {"equity": None, "source": src_name}
+    closes = dict(inp.get("equity_closes") or {})
+    closes[datetime.fromtimestamp(now, tz=UTC).date().isoformat()] = round(eq, 2)
+    inp["equity_closes"] = dict(sorted(closes.items())[-EQUITY_MAX_CLOSES:])
+    band = _equity_band(inp, quotes)
+    a = _num((anchor or {}).get("equity")) if isinstance(anchor, dict) else None
+    move = math.log(eq / a) if a and a > 0 else None
+    if move is not None and abs(move) <= band["threshold_log"]:
+        new_anchor = anchor
+    else:
+        new_anchor = {"equity": round(eq, 2)}
+    return (_hash(new_anchor), new_anchor,
+            {"equity": eq, "anchor_equity": a, "log_move": None if move is None else
+             round(move, 6), "source": src_name, **band})
+
+
+def _fusion_equity_fingerprint(doc: dict[str, Any] | None, inp: dict[str, Any],
+                               now: float) -> tuple[str, Any, dict[str, Any]]:
+    """Fusion equity: gateway_state.json, else account_state.json (kelly_survival's order)."""
+    eq, src = _num((doc or {}).get("equity")), "gateway_state.json:equity"
+    if eq is None or eq <= 0:
+        eq, src = _num((_read(DATA / "account_state.json") or {}).get("equity")), \
+            "account_state.json:equity"
+    return _equity_fingerprint(eq, inp, now, _read(DATA / "cost_truth_quotes.json"), src)
+
+
+def _e8_equity_fingerprint(doc: dict[str, Any] | None, inp: dict[str, Any],
+                           now: float) -> tuple[str, Any, dict[str, Any]]:
+    """E8 equity: its own closes or the default -- the Fusion deal ledger is another account."""
+    return _equity_fingerprint(_num((doc or {}).get("equity")), inp, now, None,
+                               "E8_GOLD.json:equity")
+
+
+def _sleeve_symbols() -> set[str]:
+    """Every LIVE sleeve's symbol, from both rosters the gateway trades."""
+    out: set[str] = set()
+    reg = (_read(DATA / "sleeve_registry.json") or {}).get("sleeves")
+    if isinstance(reg, dict):
+        for row in reg.values():
+            if isinstance(row, dict) and row.get("status") == "LIVE":
+                sym = (row.get("identity") or {}).get("symbol")
+                if sym:
+                    out.add(str(sym))
+    rows = (_read(DATA / "sleeves.json") or {}).get("sleeves")
+    if isinstance(rows, list):
+        out.update(str(r["symbol"]) for r in rows
+                   if isinstance(r, dict) and r.get("symbol") and r.get("status") == "LIVE")
+    return out
+
+
+def _spread_band(surface_row: Any) -> tuple[float, str]:
+    ratio = _num((surface_row or {}).get("stress_p90_over_p50")) \
+        if isinstance(surface_row, dict) else None
+    if ratio and ratio > 1.0:
+        w = math.log2(ratio)
+        if w > COST_LOG2_FLOOR:
+            return w, f"measured log2(p90/p50)={w:.3f} from cost_surface.json"
+        return COST_LOG2_FLOOR, (f"measured log2(p90/p50)={w:.3f} below the one-doubling floor")
+    return COST_LOG2_FLOOR, "no measured dispersion in cost_surface.json: one-doubling floor"
+
+
+def _sign(x: float) -> int:
+    return (x > 0) - (x < 0)
+
+
+def _cost_fingerprint(doc: dict[str, Any] | None, inp: dict[str, Any],
+                      now: float) -> tuple[str, Any, dict[str, Any]]:
+    """Per sleeve symbol, an anchor of (spread, swap_long, swap_short) that moves only when one
+    leaves its band. SPREAD: |log2((pts+1)/(anchor+1))| > max(floor, log2(p90/p50)) -- the +1 is
+    the one-point quote grid, so 0 -> 1 point is not a regime. SWAP: a sign change, or a
+    magnitude move beyond the floor (a doubling or a halving)."""
+    prev_sig, anchor = _prev(inp)
+    quotes = (doc or {}).get("symbols")
+    if not isinstance(quotes, dict) or not quotes:
+        return (prev_sig or "no-watched-key"), anchor, {"n_symbols": 0}
+    roster = _sleeve_symbols()
+    syms = sorted(roster & set(quotes)) if roster else sorted(quotes)
+    surface = (_read(DATA / "cost_surface.json") or {}).get("symbols") or {}
+    old = anchor if isinstance(anchor, dict) else {}
+    new: dict[str, Any] = {}
+    moved: dict[str, list[str]] = {}
+    for sym in syms:
+        q = quotes.get(sym)
+        prev = old.get(sym)
+        if not isinstance(q, dict):
+            if prev is not None:
+                new[sym] = prev
+            continue
+        spread = _num(q.get("live_spread_pts"))
+        if spread is None:
+            spread = _num(q.get("spread"))
+        cur = {"spread": spread, "swap_long": _num(q.get("swap_long")),
+               "swap_short": _num(q.get("swap_short"))}
+        if not isinstance(prev, dict):
+            new[sym] = cur
+            continue
+        row = dict(prev)
+        w, _ = _spread_band(surface.get(sym))
+        s0 = _num(prev.get("spread"))
+        if spread is not None and spread >= 0 and (
+                s0 is None or abs(math.log2((spread + 1.0) / (max(s0, 0.0) + 1.0))) > w):
+            row["spread"] = spread
+            moved.setdefault(sym, []).append("spread")
+        for leg in ("swap_long", "swap_short"):
+            v, v0 = cur[leg], _num(prev.get(leg))
+            if v is None:
+                continue
+            if v0 is None or _sign(v) != _sign(v0) or (
+                    v != 0 and v0 != 0 and abs(math.log2(abs(v) / abs(v0))) > COST_LOG2_FLOOR):
+                row[leg] = v
+                moved.setdefault(sym, []).append(leg)
+        new[sym] = row
+    if not new:
+        return (prev_sig or "no-watched-key"), anchor, {"n_symbols": 0}
+    detail = {"n_symbols": len(new), "roster_symbols": len(roster), "moved": moved,
+              "swap_band_log2": COST_LOG2_FLOOR,
+              "spread_band": "max(1 doubling, log2(stress_p90_over_p50))"}
+    # A symbol joining or leaving the roster is `certificate_change`'s event, not a cost regime:
+    # the anchor takes it in silently and the signature stands unless a held symbol moved.
+    if prev_sig and prev_sig != "no-watched-key" and not moved:
+        return prev_sig, new, detail
+    return _hash(new), new, detail
+
+
+def _hazard_bands() -> tuple[float, float]:
+    try:
+        from libs.research import perishability as ph
+        return float(ph.HAZARD_AT_RISK), float(ph.HAZARD_BREAKING)
+    except Exception:                                          # pragma: no cover - lib optional
+        return HAZARD_BANDS_FALLBACK
+
+
+def _drift_fingerprint(doc: dict[str, Any] | None, inp: dict[str, Any],
+                       now: float) -> tuple[str, Any, dict[str, Any]]:
+    """Only what `pf_allocator` reads from DRIFT.json, discretised on drift_monitor's own lines:
+    the book `verdict` and `structure_verdict` (the crisis-world share) and, per sleeve, its
+    `verdict` and which hazard band its `hazard` sits in. A rewrite that moves a hazard inside
+    its band, a z-score, a timestamp or a `what_changed` line moves nothing."""
+    prev_sig, anchor = _prev(inp)
+    if not isinstance(doc, dict):
+        return (prev_sig or "no-watched-key"), anchor, {"readable": False}
+    at_risk, breaking = _hazard_bands()
+    sleeves: dict[str, Any] = {}
+    for name, row in (doc.get("hazard_by_sleeve") or {}).items():
+        if not isinstance(row, dict):
+            continue
+        h = _num(row.get("hazard"))
+        band = None if h is None else (2 if h >= breaking else 1 if h >= at_risk else 0)
+        sleeves[str(name)] = [row.get("verdict"), band]
+    fp = {"verdict": doc.get("verdict"), "structure_verdict": doc.get("structure_verdict"),
+          "sleeves": sleeves}
+    return _hash(fp), fp, {"n_sleeves": len(sleeves), "bands": [at_risk, breaking]}
 
 
 def _iso(ts: float) -> str:
@@ -455,6 +770,12 @@ def _load_state(raw: dict[str, Any] | None) -> dict[str, Any]:
     st = _fresh_state()
     if not isinstance(raw, dict):
         return st
+    # KEYS THIS ORGAN DOES NOT OWN ARE CARRIED THROUGH UNTOUCHED. `book_trigger` (#264) keeps its
+    # state under "book" in this same file; rebuilding the state from known keys only would erase
+    # it on every pass.
+    for k, v in raw.items():
+        if k not in st and k not in ("seen", "inputs", "at"):
+            st[k] = v
     for k in ("last_solve_at", "fail_count", "issued", "applied_decisions", "latency_samples"):
         if raw.get(k) is not None:
             st[k] = raw[k]
@@ -490,7 +811,12 @@ def _observe(src: Source, inp: dict[str, Any], now: float) -> dict[str, Any]:
     """Update OBSERVED; append to PENDING when the version moved. Never touches CONSUMED except
     to record the baseline on a state artifact's first sighting."""
     doc = _read(src.path)
-    sig = _signature(doc, src.keys)
+    anchor: Any = None
+    detail: dict[str, Any] | None = None
+    if src.fingerprint is not None:
+        sig, anchor, detail = src.fingerprint(doc, inp, now)
+    else:
+        sig = _signature(doc, src.keys)
     obs = dict(inp.get("observed") or {})
     prev_sig = obs.get("sig")
     prev_seq = int(obs.get("seq") or 0)
@@ -505,6 +831,8 @@ def _observe(src: Source, inp: dict[str, Any], now: float) -> dict[str, Any]:
         inp["observed"] = {"seq": seq, "sig": sig, "version": ver, "observed_at": _iso(now),
                            "observed_ts": now, "event_at": event_at, "event_at_basis": basis,
                            "checked_at": _iso(now)}
+        if src.fingerprint is not None:
+            inp["observed"]["anchor"] = anchor
         actionable = src.actionable(doc, sig)
         if actionable and (moved or src.first_sight_pending):
             start_ts, start_basis = _change_start(event_at, basis,
@@ -521,6 +849,8 @@ def _observe(src: Source, inp: dict[str, Any], now: float) -> dict[str, Any]:
                                "basis": "baseline: first sighting of a state artifact"}
     else:
         obs["checked_at"] = _iso(now)
+        if src.fingerprint is not None and anchor is not None:
+            obs["anchor"] = anchor            # same signature: the band held, or a roster join
         inp["observed"] = obs
     inp.setdefault("pending", [])
     inp["kind"], inp["path"] = src.kind, _rel(src.path)
@@ -528,7 +858,8 @@ def _observe(src: Source, inp: dict[str, Any], now: float) -> dict[str, Any]:
             "version": inp["observed"]["version"], "previous": prev_sig,
             "changed": bool(moved), "first_seen": first_sight, "became_pending": added,
             "n_pending": len(inp["pending"]), "event_at": event_at, "event_at_basis": basis,
-            "consumed_version": (inp.get("consumed") or {}).get("version"), "why": src.why}
+            "consumed_version": (inp.get("consumed") or {}).get("version"), "why": src.why,
+            **({"materiality": detail} if detail is not None else {})}
 
 
 def _land(st: dict[str, Any], dec: dict[str, Any] | None,
@@ -593,7 +924,7 @@ def _land(st: dict[str, Any], dec: dict[str, Any] | None,
 
 
 def _backoff_s(failures: int) -> float:
-    return min(RETRY_BACKOFF_CAP_S, MIN_SOLVE_GAP_S * 2 ** max(0, failures - 1))
+    return float(min(RETRY_BACKOFF_CAP_S, MIN_SOLVE_GAP_S * 2 ** max(0, failures - 1)))
 
 
 def _wait_s(failures: int) -> float:
@@ -738,7 +1069,8 @@ def _summary(vals: list[float]) -> dict[str, Any]:
             "status": "MEASURED" if v else "UNMEASURED"}
 
 
-def latency_report(samples: list[dict[str, Any]]) -> dict[str, Any]:
+def latency_report(samples: list[dict[str, Any]],
+                   kinds: list[str] | None = None) -> dict[str, Any]:
     """End-to-end latency, change start -> landed decision that consumed it, as p50/p95/p99.
 
     Three views: every consumed version, per kind, and per DECISION (its slowest input -- the
@@ -759,6 +1091,10 @@ def latency_report(samples: list[dict[str, Any]]) -> dict[str, Any]:
         by_dec[d] = max(by_dec.get(d, float("-inf")), float(lat))
     obs = [float(s["from_observation_s"]) for s in samples
            if isinstance(s.get("from_observation_s"), (int, float))]
+    # Every WATCHED kind gets a row, so a kind that has never been consumed reads UNMEASURED
+    # rather than being absent -- absence is not a latency.
+    for k in kinds or []:
+        by_kind.setdefault(k, [])
     return {
         "all_inputs": _summary(vals),
         "per_decision_slowest_input": _summary(list(by_dec.values())),
@@ -818,7 +1154,8 @@ def run(*, budget_s: float = 600.0, write: bool = True, solve: bool = True) -> d
         "retry_after": (_iso(float(st.get("last_solve_at") or 0.0)
                              + _wait_s(int(st.get("fail_count") or 0)))
                         if st.get("fail_count") else None),
-        "latency": latency_report(st.get("latency_samples") or []),
+        "latency": latency_report(st.get("latency_samples") or [],
+                                  sorted({s.kind for s in sources()})),
         "recent_attempts": attempts[-8:],
         "heat_reductions": len(heats),
         "heat_reduction_rows": heats[-4:],

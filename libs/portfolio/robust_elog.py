@@ -1345,34 +1345,52 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
             h, score, grad, g_w = hb, sb, grb, gwb
 
     gap = fw_gap(grad, h, cap, exact=exact, upper=ub) if math.isfinite(score) else float("inf")
-    #: 1e-8 log growth per day is 2.5e-6 per year: below anything an allocation could act on.
-    tol = max(1e-8, 1e-4 * abs(score)) if math.isfinite(score) else 0.0
-    # A solve stopped by its wall-clock budget is never called converged, whatever its gap: the
-    # starts it did not run are exactly the ones that could have beaten it.
-    converged = bool(math.isfinite(gap) and gap <= tol and not budget_hit)
+    #: The tolerance is ECONOMIC and RELATIVE (audit of PR #261): 1e-4 of the book's own robust
+    #: E[log W], floored at 1e-10/day so a near-zero book is not certified on rounding.
+    tol = max(1e-10, 1e-4 * abs(score)) if math.isfinite(score) else 0.0
+    local_ok = bool(math.isfinite(gap) and gap <= tol and not budget_hit)
     fin_starts = [x for x in starts if math.isfinite(x)]
     spread = (max(fin_starts) - min(fin_starts)) if len(fin_starts) > 1 else 0.0
 
-    # A GLOBAL BOUND, BESIDE THE LOCAL CERTIFICATE (audit of PR #261). The redundancy charge is
-    # >= 0 on the heat set (|C| - I has a zero diagonal and non-negative entries, h >= 0), so the
-    # objective is everywhere <= the same objective with the charge removed -- and THAT one is
-    # concave, so its Frank-Wolfe gap is a true bound on its own optimum. Hence
-    #     f* <= f_relax(h_r) + FW_gap_relax(h_r) =: upper_bound
-    # for any h_r, and `global_gap = upper_bound - score` bounds how far the returned book can be
-    # from the GLOBAL optimum of the real (non-convex) problem. It is loose exactly by the
-    # redundancy charge the optimum pays, and it is never a claim the arithmetic cannot back.
+    # A GLOBAL BOUND, BESIDE THE LOCAL CERTIFICATE (audit of PR #261). The redundancy charge
+    # h'(|C| - I)h is a sum of A_ij h_i h_j with A_ij >= 0 on 0 <= h <= u, and each product is
+    # bounded BELOW by its McCormick envelope max(0, u_j h_i + u_i h_j - u_i u_j), which is
+    # CONVEX. So the relaxation
+    #     R(h) = growth(h) - lambda * sum_ij A_ij max(0, u_j h_i + u_i h_j - u_i u_j)
+    # is CONCAVE and R >= f everywhere on the heat set: its Frank-Wolfe gap bounds its own
+    # optimum, hence
+    #     f* <= R(h_r) + FW_gap_R(h_r) =: upper_bound
+    # and `global_gap = upper_bound - score` bounds how far the returned book is from the GLOBAL
+    # optimum of the real non-convex problem. Tight where a sleeve's bound u is small; loose by
+    # at most the charge the optimum pays. `converged` means THIS gap is within tolerance.
     upper_bound, global_gap = float("inf"), float("inf")
     if math.isfinite(score) and not budget_hit:
         from dataclasses import replace as _dc_replace
         cfg0 = _dc_replace(cfg, redundancy_lambda=0.0)
+        u = np.minimum(np.where(np.isfinite(ub), ub, cap), cap)
+        a_off = corr_abs - np.diag(np.diag(corr_abs))
+        lam_r = float(cfg.redundancy_lambda)
+
+        def _relaxed(hh: np.ndarray) -> tuple[float, np.ndarray]:
+            g0, gr0, _gw0 = _objective(w_pop, hh, corr_abs, cfg0)
+            if not math.isfinite(g0) or lam_r == 0.0:
+                return g0, gr0
+            env = u[None, :] * hh[:, None] + u[:, None] * hh[None, :] - np.outer(u, u)
+            act = (env > 0.0) & (a_off > 0.0)
+            m_val = float((a_off * np.where(act, env, 0.0)).sum())
+            # d/dh_k of sum_ij A_ij (u_j h_i + u_i h_j - u_i u_j) over active pairs.
+            w_act = a_off * act
+            m_grad = (w_act * u[None, :]).sum(axis=1) + (w_act * u[:, None]).sum(axis=0)
+            return g0 - lam_r * m_val, gr0 - lam_r * m_grad
+
         hr = h.copy()
-        r_score, r_grad, _rg = _objective(w_pop, hr, corr_abs, cfg0)
+        r_score, r_grad = _relaxed(hr)
         lr0 = step
         for _ in range(max(1, iterations // 2)):
             if deadline is not None and time.time() > deadline:
                 break
             cand = project_capped_simplex(hr + lr0 * r_grad, cap, exact=exact, upper=ub)
-            c_s, c_g, _cg = _objective(w_pop, cand, corr_abs, cfg0)
+            c_s, c_g = _relaxed(cand)
             if c_s > r_score:
                 moved = float(np.abs(cand - hr).sum())
                 hr, r_score, r_grad = cand, c_s, c_g
@@ -1386,6 +1404,11 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
         if math.isfinite(r_score):
             upper_bound = r_score + fw_gap(r_grad, hr, cap, exact=exact, upper=ub)
             global_gap = max(0.0, upper_bound - score)
+    # CONVERGED MEANS GLOBAL (audit ruling): the returned book is within `tol` of the global
+    # optimum by the bound above. A KKT point the bound cannot certify is reported LOCAL --
+    # `converged=False`, `certificate="local_kkt_multistart"` -- and is still the best feasible
+    # book found, which the desk keeps trading; an honest gap is not a reason to stand down.
+    converged = bool(local_ok and global_gap <= tol)
 
     total = float(h.sum())
     # Marginal value of each sleeve's last unit of heat, at the solution. This is the ranking the
@@ -1409,7 +1432,8 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
         iterations=done, converged=converged, note=w_pop.note, budget_hit=budget_hit,
         optimality_gap=float(gap), gap_tolerance=float(tol), multistart_spread=float(spread),
         n_starts=len(starts),
-        certificate=("global_bound" if global_gap <= tol else "local_kkt_multistart"),
+        certificate=("global_bound" if converged else
+                     "local_kkt_multistart" if local_ok else "best_known_feasible"),
         upper_bound=float(upper_bound), global_gap=float(global_gap),
     )
 

@@ -75,7 +75,8 @@ def test_converged_means_the_published_gap_is_within_tolerance() -> None:
     ev, w = _identical_pair()
     for its in (1, 400):
         res = optimise(ev, hard_cap=0.2, target=None, worlds=w, iterations=its)
-        assert res.converged == (res.optimality_gap <= res.gap_tolerance)
+        assert res.converged == (res.optimality_gap <= res.gap_tolerance
+                                 and res.global_gap <= res.gap_tolerance)
 
 
 def test_global_certificate_on_the_twin_pair() -> None:

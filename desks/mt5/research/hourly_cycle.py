@@ -967,7 +967,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
-    "decay_monitor", "fill_markout",
+    "decay_monitor", "fill_markout", "drift_monitor",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
     # and the plain-English desk health check, each seconds, each writing a report that the
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
@@ -5202,6 +5202,13 @@ def main() -> None:
     # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
     fmk = _costed("fill_markout", lambda: _producer(
         "fill_markout", "research/daily_cycle.py", "--step", "markout"))
+    # THE HEALTH INPUT, HOURLY (DECAY-12, 2026-10-07). `reports/DRIFT.json` is the allocator's
+    # per-sleeve hazard and the change-point input `model_roles` holds critical with a one-day
+    # staleness budget, and its only writer was daily_cycle's feedback step -- so any day that
+    # step finished later than the day before, the input crossed 24h and the book was held. The
+    # monitor's hazard-history append is once per UTC day, so running hourly counts nothing twice.
+    drm = _costed("drift_monitor", lambda: _producer(
+        "drift_monitor", "research/drift_monitor.py", "--budget-s", "300"))
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
@@ -5802,7 +5809,7 @@ def main() -> None:
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls,
-                    "decay_monitor": dmo, "fill_markout": fmk,
+                    "decay_monitor": dmo, "fill_markout": fmk, "drift_monitor": drm,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,

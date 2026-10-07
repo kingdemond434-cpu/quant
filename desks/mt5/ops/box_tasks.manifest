@@ -211,7 +211,12 @@ TASK name="MT5-PlumbingWatchdog" trigger="every 15 minutes" runs="desks/mt5/rese
 # every stopped clock gets a live clock and every dead resident is restarted; verification by
 # observation. SYSTEM, PT12M limit, IgnoreNew.
 TASK name="MT5-ClockFixer" trigger="every 15 minutes" runs="desks/mt5/research/clock_fixer.py" installer="NONE" lane="research"
-TASK name="MT5-Daily" trigger="daily 23:50" runs="desks/mt5/research/daily_cycle.py" installer="NONE" lane="research"
+# THE DAILY CHAIN, REPRODUCIBLE (DECAY-12, 2026-10-07). daily_cycle.py is the only clock
+# drift_monitor (reports/DRIFT.json, the allocator's per-sleeve decay hazard) runs on, and
+# until this date the task had no installer: it existed on the box because it was once clicked
+# in. install_daily_task.ps1 registers it -- 23:50 local, IgnoreNew, PT4H derived from the
+# chain's measured ~10,600 s, StartWhenAvailable, log desks\mt5\logs\MT5-Daily.log.
+TASK name="MT5-Daily" trigger="daily 23:50" runs="desks/mt5/research/daily_cycle.py" installer="desks/mt5/scripts/install_daily_task.ps1" lane="research"
 TASK name="MT5-ForwardReconcile" trigger="daily 04:00" runs="desks/mt5/research/forward_reconcile.py" installer="NONE" lane="research"
 TASK name="MT5-CEODocket" trigger="every 1 hour, at :10" runs="ops/run_ceo_docket.cmd" installer="NONE" lane="research"
 TASK name="MT5-ProcessHealth" trigger="every 30 minutes" runs="ops/run_process_health.cmd" installer="NONE" lane="ops"

@@ -1018,21 +1018,27 @@ def calibrate_scale(records: list[ExitRecord], *, prior_scale_days: float = HAZA
     posterior_scale = b / a
     rate = a / b
     mp_measured = mean_pressure is not None and math.isfinite(float(mean_pressure))
-    mp = min(max(float(mean_pressure), 1e-6), 1.0) if mp_measured else 1.0
-    scale = mp * posterior_scale
+    mp = (min(max(float(mean_pressure), 1e-6), 1.0)
+          if mean_pressure is not None and mp_measured else 1.0)
+    # UNMEASURED PRESSURE MOVES NOTHING (re-audit of PR #261). Without a measured mean pressure
+    # the history's rate cannot be turned into a full-pressure scale, so the declared prior is
+    # used and the status says UNMEASURED -- never "FITTED" on an assumed pressure of 1.
+    scale = mp * posterior_scale if mp_measured else float(prior_scale_days)
     counts: dict[str, int] = {}
     for r in use:
         key = r.cause or "censored_live"
         counts[key] = counts.get(key, 0) + 1
-    status = "FITTED"
+    status = "FITTED" if mp_measured else "UNMEASURED"
     direction = ("shorter" if scale < prior_scale_days - 1e-9 else
                  "longer" if scale > prior_scale_days + 1e-9 else "equal")
     prior_weight = 1.0 - t_at_risk / (t_at_risk + prior_events * prior_scale_days)
     thin = d < 3
     verdict_txt = (f"FITTED {direction} than the declared {prior_scale_days:g}d: using "
-                   f"{scale:.1f}d (= mean pressure {mp:.3f}"
-                   f"{'' if mp_measured else ' UNMEASURED, taken as full'} x posterior "
-                   f"{posterior_scale:.1f}d)")
+                   f"{scale:.1f}d (= mean pressure {mp:.3f} x posterior {posterior_scale:.1f}d)"
+                   if mp_measured else
+                   f"UNMEASURED: no measured mechanism pressure, so the history's posterior "
+                   f"{posterior_scale:.1f}d cannot be converted; the declared "
+                   f"{prior_scale_days:g}d prior is used")
     return {
         "status": status, "scale_days": round(scale, 4), "direction": direction,
         "mean_pressure": round(mp, 6), "mean_pressure_measured": mp_measured,
@@ -1055,7 +1061,8 @@ def calibrate_scale(records: list[ExitRecord], *, prior_scale_days: float = HAZA
     }
 
 
-def calibrate_from_history(root: Path = _ROOT) -> dict[str, Any]:
+def calibrate_from_history(root: Path = _ROOT, *,
+                           mean_pressure: float | None = None) -> dict[str, Any]:
     """The primary (in-mandate) calibration, with the out-of-mandate fit beside it as sensitivity.
 
     The PRIMARY fit uses MT5/Fusion records only: the crypto-era clocks are a different universe
@@ -1063,10 +1070,11 @@ def calibrate_from_history(root: Path = _ROOT) -> dict[str, Any]:
     one real record of edges failing forward would move the scale.
     """
     records, notes = retirement_history(root)
-    primary = calibrate_scale(records)
+    primary = calibrate_scale(records, mean_pressure=mean_pressure)
     primary["notes"] = notes
     primary["sensitivity_with_out_of_mandate"] = {
-        k: v for k, v in calibrate_scale(records, include_out_of_mandate=True).items()
+        k: v for k, v in calibrate_scale(records, include_out_of_mandate=True,
+                                         mean_pressure=mean_pressure).items()
         if k in ("status", "scale_days", "posterior_scale_days", "n_decay_exits",
                  "days_at_risk", "base_rate_hazard", "why")}
     return primary

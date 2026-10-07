@@ -305,8 +305,11 @@ def test_calibration_prior_stands_without_decay_exits_and_says_it_is_thin() -> N
     out = calibrate_scale(recs)
     # TWO-SIDED: a quiet history LENGTHENS the scale (Gamma posterior 270d at full pressure),
     # and half the pressure halves it -- min(prior, posterior) could only ever shorten it.
-    assert out["status"] == "FITTED" and out["direction"] == "longer"
-    assert out["scale_days"] == pytest.approx(270.0)
+    # No measured pressure: UNMEASURED, the prior is used (never FITTED on an assumed pressure).
+    assert out["status"] == "UNMEASURED" and out["scale_days"] == pytest.approx(120.0)
+    full = calibrate_scale(recs, mean_pressure=1.0)
+    assert full["status"] == "FITTED" and full["direction"] == "longer"
+    assert full["scale_days"] == pytest.approx(270.0)
     assert calibrate_scale(recs, mean_pressure=0.5)["scale_days"] == pytest.approx(135.0)
     assert out["n_decay_exits"] == 0 and out["days_at_risk"] == 150.0
     assert out["days_blind"] == 900.0, "blind exposure is reported, never counted as survival"
@@ -314,7 +317,7 @@ def test_calibration_prior_stands_without_decay_exits_and_says_it_is_thin() -> N
     assert out["thin"] is True and "THIN" in out["why"]
     # Many quick mechanism deaths shorten the scale -- the data overrule the prior.
     quick = [ExitRecord(f"m{i}", 20.0, MECHANISM_DECAY, "t") for i in range(9)]
-    fit = calibrate_scale(quick)
+    fit = calibrate_scale(quick, mean_pressure=1.0)
     assert fit["status"] == "FITTED"
     assert fit["scale_days"] == pytest.approx((120.0 + 180.0) / 10.0)
 
@@ -325,7 +328,7 @@ def test_calibration_censors_competing_exits_and_keeps_out_of_mandate_aside() ->
             ExitRecord("crypto", 40.0, MECHANISM_DECAY, "t", in_mandate=False)]
     primary = calibrate_scale(recs)
     assert primary["n_decay_exits"] == 0 and primary["days_at_risk"] == 60.0
-    wide = calibrate_scale(recs, include_out_of_mandate=True)
+    wide = calibrate_scale(recs, include_out_of_mandate=True, mean_pressure=1.0)
     assert wide["n_decay_exits"] == 1
     assert wide["scale_days"] == pytest.approx((120.0 + 100.0) / 2.0)
 

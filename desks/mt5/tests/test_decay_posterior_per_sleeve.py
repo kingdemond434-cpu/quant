@@ -53,7 +53,7 @@ def test_the_decay_posterior_is_the_default_and_the_mean_shrink_is_still_availab
     src = inspect.getsource(pa.run)
     assert 'if HAZARD_MODE == "mean_shrink":' in src
     assert "hazard_meta = apply_hazard_shrink(ev, _haz)" in src
-    assert "decay_meta = apply_decay_posterior(ev, _haz, _blanket)" in src
+    assert "decay_meta = apply_decay_posterior(" in src
     assert '"decay_posterior": decay_meta' in src, "the artifact must carry the block"
     assert '"decay": {' in src, "both values belong on the evidence block"
 

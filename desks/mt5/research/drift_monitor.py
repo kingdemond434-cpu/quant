@@ -68,6 +68,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import os
 import sys
 import time
 from datetime import UTC, datetime
@@ -589,6 +591,27 @@ def last_trade_by_sleeve(trades: list[Any]) -> dict[str, pd.Timestamp]:
     return out
 
 
+def measured_mean_pressure(path: Path = REPORT) -> tuple[float | None, int]:
+    """The desk's mean MECHANISM pressure as last measured, for the scale calibration.
+
+    Read from the previous DRIFT report's per-sleeve rows (`mean_pressure`, the mechanism
+    channels' average). Returns (mean, n_rows); (None, 0) when no row carries a measured value,
+    which the calibration reports as UNMEASURED rather than assuming full pressure (re-audit of
+    PR #261: production was silently running at mp=1.0).
+    """
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None, 0
+    rows = (doc.get("hazard_by_sleeve") or {}) if isinstance(doc, dict) else {}
+    vals = []
+    for row in rows.values() if isinstance(rows, dict) else []:
+        v = row.get("mean_pressure") if isinstance(row, dict) else None
+        if isinstance(v, (int, float)) and math.isfinite(float(v)) and 0.0 <= float(v) <= 1.0:
+            vals.append(float(v))
+    return (sum(vals) / len(vals), len(vals)) if vals else (None, 0)
+
+
 def read_hazard_history(path: Path = HAZARD_HISTORY) -> dict[str, dict[str, Any]]:
     """Per sleeve, how many past passes called it BREAKING and when last. Read-only.
 
@@ -616,7 +639,24 @@ def read_hazard_history(path: Path = HAZARD_HISTORY) -> dict[str, dict[str, Any]
 
 def append_hazard_history(rows: dict[str, Any], calibration: dict[str, Any] | None,
                           path: Path = HAZARD_HISTORY) -> None:
-    """Append this pass's per-sleeve hazards. APPEND ONLY: opened with "a", never rewritten."""
+    """Append this pass's per-sleeve hazards. APPEND ONLY: opened with "a", never rewritten.
+
+    ONCE PER UTC DAY (2026-10-07). `read_hazard_history` counts past BREAKING verdicts, and the
+    monitor now also runs hourly so the allocator's hazard input stays fresh; appending every run
+    would count one day's verdict twenty-four times. The first run of a UTC day appends; later
+    runs that day leave the ledger alone (the report itself is still rewritten each run).
+    """
+    today = datetime.now(tz=UTC).date().isoformat()
+    try:
+        with path.open("rb") as fh:
+            fh.seek(0, 2)
+            fh.seek(max(0, fh.tell() - 65536))
+            tail = fh.read().decode("utf-8", "replace").splitlines()
+        last = json.loads(tail[-1]) if tail else {}
+        if str(last.get("at", ""))[:10] == today:
+            return
+    except (OSError, ValueError, AttributeError):
+        pass
     doc = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
            "scale_days": (calibration or {}).get("scale_days", ph.HAZARD_SCALE_DAYS),
            "rows": {k: {"hazard": v.get("hazard"), "verdict": v.get("verdict"),
@@ -729,7 +769,9 @@ def run(symbols: list[str] | None = None, budget_s: float = 300.0,
     # THE SCALE, CALIBRATED AGAINST THE DESK'S OWN RETIREMENTS (2026-10-06). The declared 120 days
     # is the prior; the history updates it and the block says by how much and on what count.
     try:
-        calibration = ph.calibrate_from_history()
+        _mp, _mp_n = measured_mean_pressure()
+        calibration = ph.calibrate_from_history(mean_pressure=_mp)
+        calibration["mean_pressure_rows"] = _mp_n
     except Exception as exc:                    # an unreadable history is the prior, said so
         calibration = {"status": "UNMEASURED", "scale_days": ph.HAZARD_SCALE_DAYS,
                        "why": f"calibration failed ({type(exc).__name__}: {exc}); the declared "
@@ -773,7 +815,10 @@ def run(symbols: list[str] | None = None, budget_s: float = 300.0,
                     "pre-retirement shrink.")}
     if write:
         REPORT.parent.mkdir(parents=True, exist_ok=True)
-        REPORT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        # ATOMIC: the allocator and the trigger read this report while it is written.
+        _tmp = REPORT.with_name(f".{REPORT.name}.{os.getpid()}.tmp")
+        _tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        os.replace(_tmp, REPORT)
         if haz:
             try:
                 append_hazard_history(haz, calibration)
