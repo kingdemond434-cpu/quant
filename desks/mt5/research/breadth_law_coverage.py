@@ -137,7 +137,7 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
      "field published UNMEASURED: needs realised forward streams per cluster"),
     ("0069", COVERED, (f"{CS}::\"remaining_unexplored_axes\": unexplored",), ""),
     ("0070", COVERED, (f"{CS}::saturated = n_k >= 2",), ""),
-    ("0071", PARTIAL, (f"{JC}::^def persist_breadth_order", f"{CS}::DUPLICATE TAX"),
+    ("0071", PARTIAL, (f"{JC}::^def persist_breadth_order", f"{CS}::^def duplicate_tax"),
      f"docket order and tax built; the judge consumes the order only once {PATCH}"),
     ("0072-0073", COVERED, (f"{BL}::^def split_budget", f"{BO}::breadth_debt",
                             f"{RA}::^def bounty_value"),

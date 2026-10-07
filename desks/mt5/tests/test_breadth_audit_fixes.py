@@ -85,7 +85,10 @@ def _docket() -> list[dict[str, Any]]:
 
 
 # ------------------------------------------------------------------ must-fix 1
-def test_breadth_order_survives_the_docket_write(sat: dict[str, Any], tmp_path: Path) -> None:
+def test_breadth_order_survives_the_docket_write(sat: dict[str, Any], tmp_path: Path,
+                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    # order_docket parks unrunnable cells in the bank: keep that write inside tmp_path
+    monkeypatch.setattr(jc, "UNRUNNABLE_BANK", tmp_path / "unrunnable_specs.json")
     rows = _docket()
     assert cs.stamp(rows, sat)["status"] == cs.MEASURED
     ordered = jc.coverage_order(rows, {"session_range_breakout": 1})
