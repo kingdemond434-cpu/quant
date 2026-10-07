@@ -885,7 +885,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "ws_vol_conditioner", "ws_option_chains", "ws_priced_in", "ws_name_sentiment",
     "ws_model_disagreement", "ws_regime_probabilities", "ws_news_hawkes", "ws_latent_states",
     "ws_implied_move", "ws_taiwan_options", "ws_fetch_alfred", "ws_pit_audit",
-    "ws_own_risk_index",
+    "ws_own_risk_index", "ws_expectation_gaps",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -2927,6 +2927,10 @@ WORLD_SENSOR_LEGS: dict[str, tuple[str, tuple[str, ...], float, str]] = {
     # coordinator 2026-10-07: the permitted risk state (libs.data.own_risk), the drop-in for the
     # held VIXCLS/BAML series on the allocator and gateway paths, from our own bars only
     "ws_own_risk_index": ("macro/own_risk_index.py", (), 2.0, "OWN_RISK_INDEX.json"),
+    # DATA-44 (2026-10-07): the multi-sensor release nowcast and its gaps to the consensus and
+    # the market-implied expectation; a gap with a held side is measured and kept, never a cell
+    "ws_expectation_gaps": ("research/expectation_gaps.py", ("--days", "1200"), 6.0,
+                            "EXPECTATION_GAPS.json"),
     # audit #15 (2026-10-06): ALFRED vintages and the PIT audit were executables on no clock.
     # fetch_alfred re-reads a series file older than a day (ALFRED never deletes a vintage, so
     # the new file holds every old one); pit_audit commits its verdict with --apply.
@@ -3854,6 +3858,8 @@ def main() -> None:
                                       lambda: world_sensor("ws_implied_move")),
            "ws_own_risk_index": _costed("ws_own_risk_index",
                                         lambda: world_sensor("ws_own_risk_index")),
+           "ws_expectation_gaps": _costed("ws_expectation_gaps",
+                                          lambda: world_sensor("ws_expectation_gaps")),
            "ws_taiwan_options": _costed("ws_taiwan_options",
                                         lambda: world_sensor("ws_taiwan_options")),
            "ws_fetch_alfred": _costed("ws_fetch_alfred",
