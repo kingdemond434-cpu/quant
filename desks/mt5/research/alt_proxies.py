@@ -3815,6 +3815,13 @@ TERMS_HOSTS: dict[str, str] = {
     # asia collector's bis_cbpol / bis_eer rows and bis_kr_policy_rate are judged here.
     "data.bis.org": "bis_statistics",
     "stats.bis.org": "bis_statistics",
+    # JAPAN (audit HOLD on PR #251, 2026-10-07): the asia collector's boj_timeseries,
+    # jp_boj_decisions and jp_tocom_settlements rows sat on hosts no row governed, so they read
+    # `ungoverned` and were FETCHED although their terms are not confirmed. The stat-search API
+    # (to_confirm: no permitting clause) is listed BEFORE boj.or.jp so the more specific host wins.
+    "stat-search.boj.or.jp": "jp_boj_call_rate",
+    "boj.or.jp": "jp_boj_site_releases",            # no table row -> to_confirm (fail closed)
+    "jpx.co.jp": "jp_jpx_market_data",              # no table row -> to_confirm (fail closed)
 }
 
 #: GATE-ONLY TERMS ROWS: decisions for feeds that are not alt_proxies sources (so they stay out
