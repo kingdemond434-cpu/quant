@@ -632,10 +632,10 @@ def test_event_surprise_consensus_future_perturbation_leaves_every_earlier_signa
         dirty.loc[later, "high"] = dirty.loc[later, ["open", "high", "close"]].max(axis=1)
         dirty.loc[later, "low"] = dirty.loc[later, ["open", "low", "close"]].min(axis=1)
         future = [dict(r, z=-3.0 * float(r["z"]) + 1.0)
-                  if pd.Timestamp(r["release_utc"]).tz_localize("UTC") > cut else r
+                  if pd.Timestamp(r["release_utc"]) > cut else r
                   for r in rows]
         future += [{"currency": "JPY", "z": 5.0,
-                    "release_utc": str((cut + pd.Timedelta(hours=k)).tz_localize(None))}
+                    "release_utc": str(cut + pd.Timedelta(hours=k))}
                    for k in (2, 5, 30)]
         assert clean == _entry_key(run(dirty, future), cut), f"reads the future after {cut}"
 
