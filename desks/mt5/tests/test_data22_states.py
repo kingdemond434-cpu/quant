@@ -42,7 +42,7 @@ def _pair(n: int = 600, seed: int = 7, up: float = 0.5, down: float = 1.5
           ) -> tuple[list[tuple[str, float]], list[tuple[str, float]]]:
     rng = np.random.default_rng(seed)
     x = rng.normal(0, 0.01, n)
-    y = np.where(x > 0, up * x, down * x) + rng.normal(0, 0.002, n)
+    y = np.where(x > 0, up * x, down * x) + rng.normal(0, 0.0005, n)
     days = _days(n + 1)
     bx = 100 * np.exp(np.concatenate([[0], np.cumsum(x)]))
     by = 50 * np.exp(np.concatenate([[0], np.cumsum(y)]))

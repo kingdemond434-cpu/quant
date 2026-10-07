@@ -110,7 +110,7 @@ def parse_13f(text: str) -> dict[str, Any]:
                      "value": _num(_text(it, "value")),
                      "shares": _num(_text(it, "shrsOrPrnAmt", "sshPrnamt")),
                      "put_call": _text(it, "putCall") or None})
-    filer = re.search(r"FILER:.*?COMPANY CONFORMED NAME:\s*(.+)", text, re.S)
+    filer = re.search(r"FILER:.*?COMPANY CONFORMED NAME:\s*([^\n]+)", text, re.S)
     period = re.search(r"CONFORMED PERIOD OF REPORT:\s*(\d{8})", text)
     return {"status": "PARSED", "form": "13F-HR", "holdings": rows,
             "filer": filer.group(1).strip() if filer else "",
@@ -123,8 +123,8 @@ def parse_13dg(text: str) -> dict[str, Any]:
     form = re.search(r"CONFORMED SUBMISSION TYPE:\s*(SC 13[DG](?:/A)?)", text)
     if not form:
         return {"status": "PARSE_FAILED", "why": "no SC 13D/13G submission type"}
-    subj = re.search(r"SUBJECT COMPANY:.*?COMPANY CONFORMED NAME:\s*(.+)", text, re.S)
-    filer = re.search(r"FILED BY:.*?COMPANY CONFORMED NAME:\s*(.+)", text, re.S)
+    subj = re.search(r"SUBJECT COMPANY:.*?COMPANY CONFORMED NAME:\s*([^\n]+)", text, re.S)
+    filer = re.search(r"FILED BY:.*?COMPANY CONFORMED NAME:\s*([^\n]+)", text, re.S)
     pct = re.search(r"PERCENT OF CLASS REPRESENTED BY AMOUNT IN ROW \(?\d+\)?\s*[:\-]?\s*"
                     r"([0-9]+(?:\.[0-9]+)?)\s*%", text, re.I)
     return {"status": "PARSED", "form": form.group(1),

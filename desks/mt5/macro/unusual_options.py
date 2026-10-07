@@ -10,7 +10,8 @@ computed here from that archive alone:
     vol_oi         today's volume over open interest: > 1 means more contracts traded than
                    were open, i.e. new positioning rather than churn
     oi_change_z    open interest now minus the same contract's in the PREVIOUS snapshot,
-                   as a robust z (median / 1.4826 MAD) across the snapshot's contracts
+                   as a robust z (median / 1.4826 MAD; the standard deviation when MAD is
+                   zero) across the snapshot's contracts
     premium        volume x mid x 100: the dollars that traded
 
 The score is the mean of the three cross-sectional percentile ranks (a contract with no prior
@@ -96,7 +97,8 @@ def rank(snap: Mapping[str, Any], prev: Mapping[str, Any] | None) -> list[dict[s
     chg = [r["oi_change"] for r in rows if r["oi_change"] is not None]
     if len(chg) >= 5:
         med = statistics.median(chg)
-        mad = statistics.median(abs(x - med) for x in chg) * 1.4826
+        # robust scale; when most contracts did not move (MAD = 0) the standard deviation
+        mad = statistics.median(abs(x - med) for x in chg) * 1.4826 or statistics.stdev(chg)
         for r in rows:
             r["oi_change_z"] = (round((r["oi_change"] - med) / mad, 4)
                                 if r["oi_change"] is not None and mad > 0 else None)
