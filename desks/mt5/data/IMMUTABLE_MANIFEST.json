@@ -1,8 +1,8 @@
 {
- "signed_utc": "2026-10-06T16:07:12.424992+00:00",
- "signed_by": "zuck",
+ "signed_utc": "2026-10-07T06:49:47.240803+00:00",
+ "signed_by": "principal",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "627c500ea5952dd8",
+  "desks/mt5/scripts/external_gauntlet.py": "8fb334d07cb6d9f0",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",

@@ -1906,7 +1906,7 @@ def cache_save(key: str, ds1, ds3) -> None:
         tmp = CACHE_DIR / f"{key}.{os.getpid()}.tmp"
         with open(tmp, "wb") as fh:
             _np.savez_compressed(fh,
-                                 dates=pd.to_datetime(common).astype("int64").to_numpy(),
+                                 dates=pd.to_datetime(common).as_unit("ns").asi8,
                                  v1=ds1.reindex(common).to_numpy(float),
                                  v3=ds3.reindex(common).to_numpy(float))
         os.replace(tmp, final)
@@ -3150,6 +3150,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         # candidate remains visible and the authority file is still published intact.
         pbo_val, pbo_ok = 1.0, False
         spa_p, spa_ok = 1.0, False
+        spa_cv: dict[str, Any] | None = None   # no bootstrap ran, so there is nothing to control
         print("  PBO: 1.0000 (FAIL: requires >=2 strategies)")
         print("  SPA: p=1.0000 (FAIL: requires >=2 strategies)")
     else:
@@ -3161,7 +3162,31 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         spa = hansen_spa(matrix)
         spa_p = float(spa.p_value)
         spa_ok = spa_p < SPA_ALPHA
-        print(f"  SPA: p={spa_p:.4f} ({'PASS' if spa_ok else 'FAIL'})")
+        # ROMAN-0972: the same 1,000 draws with exact-expectation control variates, RECORDED
+        # beside the raw verdict and never acting on it (audit 2026-10-07: a stricter-only guard
+        # flipped 23 of 400 correct passes at p~0.048 with no missed-growth line). `would_change`
+        # marks every disagreement in EITHER direction, so a would-pass is missed-growth evidence
+        # and a would-fail is measured before any authority is proposed. The import sits inside
+        # the try, so the patch is safe before libs/validation/control_variates.py lands; any
+        # failure here is a diagnostic and the raw decision stands.
+        try:
+            from libs.validation.control_variates import bootstrap_pvalue_cv
+            _cv = bootstrap_pvalue_cv(matrix)
+            _d = _cv.decision(SPA_ALPHA)
+            _pc = _cv.p_controlled
+            _reproduced = bool(_cv.p_raw == spa_p)
+            spa_cv = {k: v for k, v in _d.items() if k != "passed"}
+            spa_cv["guarded_passed"] = _d.get("passed")
+            spa_cv["raw_reproduced"] = _reproduced
+            spa_cv["variance_ratio"] = (None if _cv.estimate is None
+                                        else _num(_cv.estimate.variance_ratio))
+            spa_cv["would_change"] = bool(_reproduced and _pc is not None
+                                          and ((_pc < SPA_ALPHA) != spa_ok))
+            spa_cv["authority"] = "record-only"
+        except Exception as _cv_exc:  # a diagnostic: the raw decision stands
+            spa_cv = _unmeasured(f"control variate: {type(_cv_exc).__name__}: {_cv_exc}")
+        print(f"  SPA: p={spa_p:.4f} ({'PASS' if spa_ok else 'FAIL'}; "
+              f"controlled p={spa_cv.get('p_controlled')})")
 
     # 3x cost series
     daily_x3 = _cell_series_x3(cells)
@@ -3214,7 +3239,8 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
 
         # PBO + SPA (program-level)
         stages["pbo"] = {"passed": pbo_ok, "pbo": round(pbo_val, 4)}
-        stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(spa_p, 4)}
+        stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(spa_p, 4),
+                                       **({} if spa_cv is None else {"control_variate": spa_cv})}
 
         # CPCV, walk-forward, stress costs (cell-local)
         for _k in CELL_LOCAL_MID:
