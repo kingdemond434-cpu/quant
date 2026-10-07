@@ -170,7 +170,12 @@ def _weekly_hunt_refresh() -> None:
         return
     for module in ("fetch_universe", "run_hunt7", "run_hunt8", "run_hunt9",
                    "free_shadows", "run_hunt10", "run_hunt12"):
-        importlib.import_module(module).main()
+        runner = importlib.import_module(module).main
+        # These two CLIs parse sys.argv when called without an explicit argument list.
+        # The daily step's own --step flag must never become a hunt argument.
+        result = runner([]) if module in {"fetch_universe", "run_hunt12"} else runner()
+        if isinstance(result, int) and result != 0:
+            raise RuntimeError(f"{module} exited {result}; weekly stamp not advanced")
     marker.parent.mkdir(parents=True, exist_ok=True)
     marker.write_text(json.dumps({"last_sweep": now}), encoding="utf-8")
     dlog("weekly hunt7-12 + states sweep completed")
