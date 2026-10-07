@@ -9065,6 +9065,33 @@
    ]
   },
   {
+   "id": "ALT1",
+   "item": "The public alternative-data proxies (alt_proxies leg): every keyless or free-key source behind a fail-closed terms gate, each terms-blocked source carried by a lawful substitute that counts as COVERED only on a measured correlation >= 0.5 against the original with n reported (#152 law), else a named UNVERIFIED state, and the pass's report declared as the leg's artifact.",
+   "domain": "U",
+   "phase": "U",
+   "status": "PARTIAL",
+   "gap": "Built and wired, but two parts are not cashed. (1) LIVE YIELD UNMEASURED: no source has returned real data on the trading box yet (fetchers built against fixtures; keys/config ids pending on the box). (2) SUBSTITUTE COVERAGE 0 of 12: every terms-blocked source has only UNVERIFIED candidates (no substitute-vs-original correlation measured, SUBSTITUTE_VS_ORIGINAL empty), and za_statssa_retail is itself BLOCKED_ON_TERMS (terms read only on a mirror). Audit of PR #182, 2026-10-06.",
+   "next_step": "Box: run the leg with DATA_GOV_IN_KEY / ALT_DGI_IIP_RESOURCE and the other keys to measure live yield; align each blocked original's public monthly outputs with its candidate and record corr + n in SUBSTITUTE_VS_ORIGINAL; read the Stats SA notice on a statssa.gov.za page before confirming za_statssa_retail.",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:alt_proxies",
+   "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+   "evidence": [
+    "desks/mt5/research/hourly_cycle.py:5127 -- the leg (the alt_proxies producer, --once --budget-s 300)",
+    "desks/mt5/research/alt_proxies.py:4342 -- run(): one pass over every source; a to_confirm or refused source is never fetched",
+    "desks/mt5/research/alt_proxies.py:4428 -- the report written to desks/mt5/reports/ALT_PROXIES.json (Paths.report)",
+    "desks/mt5/research/alt_proxies.py:3170 -- status_of(): DEAD, BLOCKED+SUBSTITUTE (measured corr >= 0.5 only), BLOCKED_NO_SUBSTITUTE:UNVERIFIED, BLOCKED_ON_TERMS, BLOCKED_ON_KEY, UNCONFIGURED or UNMEASURED_LIVE_YIELD, one named state per source",
+    "desks/mt5/research/alt_proxies.py:3002 -- SUBSTITUTED_BY: candidate substitutes for the twelve terms-blocked sources; none counts until SUBSTITUTE_VS_ORIGINAL (line 3026, empty) records corr >= 0.5 with n; substitute_check (line 3042) applies the law",
+    "desks/mt5/research/alt_proxies.py:2699 -- TERMS_EVIDENCE: a verbatim terms quote and URL for every confirmed source, credit lines carried into the axis files and roster rows",
+    "libs/research/layers.py:266 -- layer: information",
+    "LIVE YIELD UNMEASURED: the fetchers were built against fixtures because the authoring container cannot reach the hosts; the report says so in live_yield until the box runs the leg with its keys"
+   ],
+   "consumer": "desks/mt5/data/digests/asia_alt_data_digest.json (written by libs/research/asia_alt_digest.py, section alt_proxies, on every non-dry pass) and the reviewer; the same pass writes the axis files, lake series and ALT_PROXIES_ALLOCATION_INTEL.json beside it",
+   "tests": [
+    "tests/test_alt_proxies.py",
+    "tests/test_alt_proxies_substitutes.py"
+   ]
+  },
+  {
    "id": "ASIA_P2",
    "item": "China exchange positioning, inventory and curves (directive 2026-10-05 PART II.B/C; audit asia_directive_diff_2026-10-06 rows 11-16): SHFE/INE member rankings, warehouse receipts and weekly inventory, DCE/CZCE/GFEX ranks and quotes, CFFEX index/bond futures ranks, parsed into top-5/20 concentration, top-20 net, state-broker net, HHI, curve slope/roll/curvature, with change, acceleration, seasonal surprise and four divergence scores, minted on mapped MT5 instruments through the free-stack door with every cell charged",
    "domain": "U",
