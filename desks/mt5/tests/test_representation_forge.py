@@ -45,6 +45,22 @@ def _series(name: str, dataset: str, n: int = 120, *, step: float = 1.0) -> R.Se
                     information_type="macro_state")
 
 
+def isolate_forge(monkeypatch, tmp_path: Path) -> None:
+    """Every path the forge's DATA-33/45/48 stages read or append to, pointed into tmp_path, so
+    no test touches the desk's trial ledger, vintage log or link-outcome ledger."""
+    store = tmp_path / "representations"
+    for name, path in {"NULL_TRIALS": tmp_path / "null_pass_trials.jsonl",
+                       "VINTAGE_ROOT": tmp_path / "vintage_root",
+                       "EQUIVALENCE": tmp_path / "series_equivalence.json",
+                       "CAUSAL_GRAPH": tmp_path / "world_causal_graph.json",
+                       "ASIA_TRANSMISSION": tmp_path / "ASIA_TRANSMISSION.json",
+                       "LINK_OUTCOMES": store / "link_outcomes.jsonl",
+                       "RESEARCH_ROI": tmp_path / "RESEARCH_ROI.json",
+                       "ROI_HISTORY": store / "source_roi_history.jsonl",
+                       "FALSIFIERS": tmp_path / "source_falsifiers.json"}.items():
+        monkeypatch.setattr(rf, name, path)
+
+
 @pytest.fixture
 def forge(tmp_path, monkeypatch):
     series = [_series("synth:a", "axis:synth"), _series("fred:DGS10", "fred_macro", step=1.7)]
@@ -56,6 +72,7 @@ def forge(tmp_path, monkeypatch):
     monkeypatch.setattr(rf, "DONATIONS", tmp_path / "intel" / "representation_forge")
     monkeypatch.setattr(rf, "OUT", tmp_path / "reports" / "REPRESENTATION_FORGE.json")
     monkeypatch.setattr(wm, "OUT", tmp_path / "reports" / "WORLD_MODEL.json")
+    isolate_forge(monkeypatch, tmp_path)
     monkeypatch.setattr(REG, "BACKUP", tmp_path / "no_backup")
     REG.set_path(tmp_path / "alpha_registry.sqlite")
     yield {"tmp": tmp_path, "inputs": inputs}
