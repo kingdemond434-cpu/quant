@@ -91,10 +91,14 @@ def test_swap_survives_a_cost_stress_derivation():
 def test_from_symbol_reads_the_registry_the_desk_already_keeps():
     """248 of 251 symbols carry swap_long/swap_short; the engine simply never looked."""
     meta = {"contract_size": 100.0, "tick_size": 0.01, "tick_value": 1.0,
-            "median_spread_pts": 29.0, "swap_long": -61.76, "swap_short": 29.45}
+            "median_spread_pts": 29.0, "swap_long": -61.76, "swap_short": 29.45,
+            "swap_mode": 1}
     c = Costs.from_symbol(meta)
     # The worse side, always: the book does not get to pick the cheaper financing afterwards.
     assert c.swap_per_lot_per_night == pytest.approx(61.76 * 0.01 * 100.0)
+    # The SAME numbers with no swap_mode are in an unknown unit: UNMEASURED, never points.
+    bare = Costs.from_symbol({k: v for k, v in meta.items() if k != "swap_mode"})
+    assert bare.swap_per_lot_per_night == 0.0 and bare.swap_unmeasured
     # And a symbol with no swap fields charges zero rather than guessing one.
     assert Costs.from_symbol({"contract_size": 1e5, "tick_size": 1e-5,
                               "tick_value": 1.0}).swap_per_lot_per_night == 0.0
