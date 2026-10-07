@@ -1853,7 +1853,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # their artifact; the cycle's cap sits above that for the reason `enrol_clocks` was raised.
     "event_graph_lab": 1_000,
     "attribution_reconcile": 400,
-    "macro_state_engine": 700,
+    "macro_state_engine": 850,
     "research_artifacts": 400,
     "engine_registry": 400,
     "counterfactual_attribution": 700,
@@ -3884,7 +3884,8 @@ def main() -> None:
     # hunter could reach. A link that turned on, flipped sign or died is now a dated ROW
     # with a change-point p-value, and the top ones are donated as hypotheses.
     mse = _costed("macro_state_engine", lambda: _producer(
-        "macro_state_engine", "research/macro_state_engine.py", "--once", "--budget-s", "600"))
+        "macro_state_engine", "research/macro_state_engine.py", "--once", "--budget-s", "600",
+        "--latent-budget-s", "150"))
     # THE HASH-LINKED RESEARCH CHAIN, POPULATED (W9): the chain library and its verifier
     # landed and the chain was EMPTY, which verifies clean at n=0. The gauntlet and the
     # promoter are sealed, so the writer is a HARVESTER: it appends the SOURCE -> CLAIM ->

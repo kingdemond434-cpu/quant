@@ -2519,6 +2519,29 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "checked_at": _CHK},
 }
 
+#: AXIS-ONLY TERMS. Sources this organ never fetches (no `Source` row, so never in BY_ID) whose
+#: data another organ reads from an axis door -- macro_state_engine's latent datasets read BIS
+#: policy rates from data/axes/bis.json. They are judged by the same verdict vocabulary
+#: (TERMS_VALUES) and carry verbatim evidence, but live apart from TERMS so TERMS stays exactly
+#: one row per fetched source. A source in neither table is unknown, i.e. blocked.
+AXIS_TERMS: dict[str, tuple[str, str]] = {
+    "bis_policy_rates": ("confirmed", "BIS Data Portal terms: use of the statistics is "
+                         "unrestricted, BIS cited as source"),
+}
+AXIS_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    "bis_policy_rates": {
+        "terms_url": "https://data.bis.org/help/legal",
+        "terms_quote": ("The use of the statistics is unrestricted, provided that: ... if the "
+                        "statistics are reproduced, the BIS must be cited in your publication "
+                        "or product as the source of the statistics"),
+        "policy_url": "https://www.bis.org/terms_conditions.htm",
+        "policy_quote": ("Users may use the statistics published in the BIS Data Portal in "
+                         "accordance with the terms set out under the heading 'About BIS "
+                         "statistics.'"),
+        "robots": "read from the axis door (data/axes/bis.json); not fetched by this organ",
+        "checked_at": "2026-10-06"},
+}
+
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
                 for s in (*SOURCES, *SUBSTITUTE_SOURCES))
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
