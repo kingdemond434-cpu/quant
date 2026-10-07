@@ -251,11 +251,20 @@ def ingest_document(store: dict[str, Any], row: Mapping[str, Any], *, add_node: 
             _bump(story, "follow_ups")
         conf = comps["confirmation"]
         if conf.get("score") == 1.0:
+            # One CORROBORATES edge per earlier EVIDENCE UNIT, to the unit's original: agreeing
+            # with a wire and its three syndications is agreeing with one source, once.
+            units: list[str] = []
             for ref in conf.get("confirms") or []:
                 node = store["nodes"].get(str(ref))
-                if node is None or node["attrs"].get("source_id") == source:
+                if node is None:
                     continue
-                if new_edge(store, did, str(ref), CORROBORATES):
+                root = str(node["attrs"].get("unit") or ref)
+                root_node = store["nodes"].get(root)
+                if (root_node is not None and root not in units
+                        and root_node["attrs"].get("source_id") != source):
+                    units.append(root)
+            for root in units:
+                if new_edge(store, did, root, CORROBORATES):
                     made[CORROBORATES] += 1
                     _bump(story, "corroborations")
         con = comps["contradiction"]
