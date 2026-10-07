@@ -571,6 +571,17 @@ NOT_SOURCED_HERE = {
                     "research/cross_sectional_breadth enumerates the class x family x params "
                     "grid, measures each cell's firing against the gauntlet's 60-day floor and "
                     "charges its own trials; sweeping it here would charge them twice"),
+    # The specialist families (mt5desk/families_specialist.py). Their windows, proxies and sides
+    # are a specialist's stated priors, enumerated and charged by research/specialist_cell; the
+    # entry filter's conditions are named by research/residual_search from the book's residual.
+    **dict.fromkeys(("carry_risk_off", "month_end_rebalance", "seasonal_window"),
+                    "research/specialist_cell enumerates each asset-class desk's catalogue, "
+                    "builds every cell through the sealed build_cell and charges its own trials; "
+                    "sweeping it here would charge them twice"),
+    "entry_conditioned": "an OPERATOR over a certified cell: its base and its hour, weekday, "
+                         "regime or cross-asset filter are named by research/residual_search "
+                         "from a BH-corrected residual finding, which charges its own tests. "
+                         "Called blind it has no base cell and returns [] on every symbol",
 }
 
 

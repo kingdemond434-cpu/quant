@@ -584,7 +584,8 @@ def seed_key_of(c: Mapping[str, Any]) -> str:
     by `lead_schema.compiler_parent_key` -- the ONLY deterministic join from a mined row to the
     cells it became, which is why it is kept in its own field rather than overwritten.
     """
-    return hashlib.sha256(json.dumps({"u": c.get("source_url"), "t": c.get("source_title"),
+    from libs.research.source_provenance import seed_url_of
+    return hashlib.sha256(json.dumps({"u": seed_url_of(c), "t": c.get("source_title"),
                                       "s": c.get("source")}, sort_keys=True,
                                      default=str).encode()).hexdigest()[:16]
 

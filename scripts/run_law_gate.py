@@ -397,6 +397,12 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # It can only ever demand MORE rows per second; there is no threshold here that minting or
     # judging less can satisfy. State, because it reads the hourly THROUGHPUT.json.
     ("check_throughput_ratchet.py", ()),
+    # SOURCE PROVENANCE IS A RATCHET (six-event trace 2026-09-30: 0 of 53,174 candidates named
+    # their source). Fails when the share of NEW compiled candidates carrying a content hash, a
+    # retrieval time and a URL or source id falls below its floor. The external-URL share is
+    # reported, never fenced -- an internal generator reads no page. State: reads the hourly
+    # miner_candidates.json; absent is UNMEASURED.
+    ("check_provenance_floor.py", ()),
     ("check_promotion_gate.py", ()),           # L1.6 -- expansion is bought with evidence
     ("check_excitation.py", ()),               # L1.45 -- no absorbing set, no dead experiment
     ("check_clock_provenance.py", ()),         # L1.46 -- the tape declares which clock stamped it
@@ -633,6 +639,26 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # `paid_substitute_engine`) is under six hours old. State, because reports/** is not in git:
     # without --require-state an absent report reads UNMEASURED; on the box it is the failure.
     ("check_paid_substitute_coverage.py", ("--require-state",)),
+    # RUNNING IS NOT PRODUCING (2026-09-25, recovered box patch 40). The question nothing asked:
+    # whether the box PLACES has its own fence; `check_leg_rotation` asks
+    # whether a leg RAN; `check_seat_health` asks whether a seat is OVERDUE. None of them joins
+    # "it ran" to "its output moved", and that join is the whole diagnosis: twelve intelligence
+    # seats had gone dark, five of them after hundreds of artifacts, and four of those five
+    # logged `LEG_DONE outcome=ok` EVERY HOUR while donating nothing -- rewriting their own
+    # reports faithfully on the way past, so the reports directory looked alive to the minute.
+    # The fifth logged `LEG_FAILED TIMEOUT` on every run for a day and a half and was counted as
+    # attendance. This reads the liveness contract the desk ALREADY declares (tier1_program.json's
+    # `scheduled_by` + `artifact`, which nothing had ever read as one) and separates the SELF
+    # channel (an organ describing its own run) from the PRODUCT channel (what the compiler eats).
+    # Four verdicts, four different repairs: SILENT_NOOP, REPORTS_BUT_PRODUCES_NOTHING,
+    # ALWAYS_FAILING, NO_CONTRACT. A mirror host judges nobody -- measured through
+    # `producer_census.runs_clocks_here`, not guessed -- and today's known-dark organs are
+    # declared by name in `docs/research/organ_cadence_debt.json` on a list that may only shrink,
+    # so the gate is usable tonight and tomorrow's nineteenth fails on the day it appears. It also
+    # publishes the SEAL'S DUTY CYCLE per sleeve-day window, which is how "the rail is green most
+    # of the day and red when a window opens" becomes a number rather than a feeling. It caps
+    # nothing and can only ever demand that MORE organs produce.
+    ("check_organ_cadence.py", ()),
 )
 
 

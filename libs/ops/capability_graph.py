@@ -832,6 +832,14 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/data/universe/universe.json")),
     Node("cost_to_edge", "desks/mt5/research/cost_to_edge.py",
          writes=("desks/mt5/reports/COST_TO_EDGE.json",)),
+    Node("cell_emitter", "desks/mt5/research/cell_emitter.py",
+         reads=("desks/mt5/data/cell_emitter_sources.json", "desks/mt5/data/universe/"),
+         writes=("desks/mt5/reports/CELL_EMITTER.json",
+                 "desks/mt5/data/intelligence/cell_emitter/",
+                 "desks/mt5/data/cell_emitter_state.json"),
+         # Its cells reach a decision only through the compiler that reads its intake glob, so
+         # it is priced there, as alpha_registry and intake_catchup are.
+         billed_as=("miner_candidate_compiler",)),
     # Prices every arm of one decision (veto, sizing, execution, exit, missed trade); the rent
     # ledger already bills two of those arms under their own names, and this node's output is
     # the union of them rather than a new line.
@@ -961,6 +969,9 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/ANOMALY_FACTORY.json", "desks/mt5/reports/SURVIVOR_DISTILLER.json",
     "desks/mt5/reports/COEVOLUTION.json", "desks/mt5/reports/REPO_MINER.json",
     "desks/mt5/reports/DEEP_FOREST.json", "desks/mt5/reports/REVIVAL.json",
+    # The cell emitter's per-ground yield: the donations reach decisions through the compiler
+    # (data/intelligence/cell_emitter/); this report is the evidence a person reads beside them.
+    "desks/mt5/reports/CELL_EMITTER.json",
     "desks/mt5/reports/EXIT_ACCOUNTS.json", "desks/mt5/reports/ACTION_COUNTERFACTUALS.json",
     "desks/mt5/reports/RESEARCH_PNL.json", "desks/mt5/reports/MUTATION_YIELD.json",
     "desks/mt5/reports/RESEARCH_BANDIT.json",
@@ -1073,6 +1084,8 @@ EXTERNAL_READERS = {
     "desks/mt5/data/intelligence/tail_alpha/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/anomaly_factory/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/survivor_distiller/": "miner_candidate_compiler intake glob",
+    "desks/mt5/data/intelligence/cell_emitter/": "miner_candidate_compiler intake glob",
+    "desks/mt5/data/cell_emitter_state.json": "cell_emitter (its own cursor and seen-ledger)",
     "desks/mt5/data/features/": "feature_store (content-addressed cache)",
     # CODE READERS OUTSIDE THE GRAPH, each found by grepping the artifact's filename and the
     # reader's own constant (2026-09-29). None of these is a graph node, so the edge lives here.
@@ -1146,6 +1159,7 @@ def _covers(declared: str, path: str) -> bool:
 #: Declared so a DEAD_CONSUMER verdict cannot be silenced by an unnamed "somebody writes it".
 CONFIG_INPUTS = frozenset({
     "desks/mt5/data/repo_watchlist.json", "desks/mt5/data/deep_forest_sources.json",
+    "desks/mt5/data/cell_emitter_sources.json",
     "desks/mt5/data/universe/universe.json",
     # Box-produced inputs: acquire_datasets fills this from the prospector's targets.
     "desks/mt5/data/acquired/",

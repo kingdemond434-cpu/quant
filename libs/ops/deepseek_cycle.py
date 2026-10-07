@@ -762,21 +762,26 @@ def _donate(rows: list[dict[str, Any]], role_name: str, *, root: Path | None = N
     out = base / DONATE_DIR
     out.mkdir(parents=True, exist_ok=True)
     path = out / f"discoveries_{_now().replace(':', '').replace('-', '')[:15]}.json"
+    generated = _now()
     from libs.data.pit import stamp_or_refuse
+    from libs.research.source_provenance import stamp_row
 
-    discoveries, refused = stamp_or_refuse([{
+    # Each row is stamped with its provenance (seat, role, generation time, content hash) before
+    # the PIT door: a seat reads no page, so its source is the seat's own id, never a fabricated
+    # URL.
+    discoveries, refused = stamp_or_refuse([stamp_row({
         "source": "deepseek", "title": r["title"], "symbols": r.get("symbols") or [],
         "family": r.get("family"), "mechanism": r.get("mechanism"),
         "testable_claim": r.get("testable_claim"),
         "mechanism_tags": [t for t in [r.get("family")] if t], "kind": "hypothesis",
         "url": f"deepseek://{role_name}/{r['ts']}",
-    } for r in rows], "deepseek")
+    }, ground=f"deepseek:{role_name}", retrieved_at=generated) for r in rows], "deepseek")
     if refused:
         raise ValueError(f"DeepSeek refused {len(refused)} unstamped discoveries")
     path.write_text(json.dumps({
         "source": "deepseek",
         "role": role_name,
-        "generated_at": _now(),
+        "generated_at": generated,
         # The compiler reads `discoveries`; each row carries what `compile_row` can actually use.
         # A row without symbols is not dropped -- it becomes a deepening task like any other
         # miner's, and is worked by research/deepening_worker.py rather than lost.
