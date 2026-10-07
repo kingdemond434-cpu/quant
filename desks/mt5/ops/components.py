@@ -430,6 +430,8 @@ REQUIRED_TASKS: frozenset[str] = frozenset(
 TASK_CANONICAL: dict[str, str] = {
     "MT5-GatewayResident": "resident:gateway",
     "MT5-ClockFixer": "component:control_plane",
+    # the private-network audit task: its organ is the artifact it writes (audit mode only)
+    "MT5-PrivateNetAudit": "task:MT5-PrivateNetAudit:artifact",
     # the departments (discovery rides MT5-Hourly -- see department_task)
     "MT5-Hourly": "resident:dept_discovery",
     "MT5-Dept-Data": "resident:dept_data",
@@ -874,7 +876,66 @@ def explicit_specs() -> list[ComponentSpec]:
             criticality="required", resource_budget={},
             schedule="MT5-GatewayResident", artifact_class="fifteen_minute",
             notes="resident loop; the task is its keep-alive, the pass is run_gateway_loop's"),
+        *_control_room_specs(),
     ]
+
+
+#: THE CONTROL ROOM'S ORGANS, ON THEIR REAL CLOCK (2026-09-30). The daily `control_room` step
+#: imports each of them, but the reach walk found them first through the drift fence that merely
+#: NAMES their paths and attested that as the clock. Declared here so the attestation names
+#: MT5-Daily's step, which is what actually runs them. (organ, report, consumer, daily step)
+_CONTROL_ROOM_ORGANS: tuple[tuple[str, str, str, str], ...] = (
+    ("control_room", "CONTROL_ROOM.json", "scripts/context.py", "control_room"),
+    ("regime_allocation_contract", "REGIME_ALLOCATION_CONTRACT.json",
+     "desks/mt5/research/practitioner_processes.py", "control_room"),
+    ("control_room_mechanisms", "CONTROL_ROOM_MECHANISMS.json",
+     "desks/mt5/research/practitioner_processes.py", "control_room"),
+    ("bench_bridge", "BENCH_BRIDGE.json", "desks/mt5/research/practitioner_processes.py",
+     "control_room"),
+    ("practitioner_processes", "PRACTITIONER_PROCESSES.json", "scripts/context.py",
+     "control_room"),
+    ("regime_split_miner", "regime_split_miner.json",
+     "desks/mt5/research/miner_candidate_compiler.py", "proposers"),
+    # Loaded by name in the proposers step, so the import walk never reached it. Its report is
+    # an admission verdict that no organ reads yet: the empty consumer says so instead of
+    # naming a reader that does not exist.
+    ("reflective_timing_contract", "REFLECTIVE_TIMING.json", "", "proposers"),
+)
+
+
+def _control_room_specs() -> list[ComponentSpec]:
+    out = [ComponentSpec(
+        component_id=f"daily:{step}:{organ}",
+        kind="daily_step", host="box",
+        code_paths=(f"desks/mt5/research/{organ}.py",),
+        outputs=(f"desks/mt5/reports/{report}",),
+        consumers=(consumer,) if consumer else (),
+        cadence_s=86_400, timeout_s=3_600, progress_metric="daily_step_completions",
+        expected_artifact_schema=f"desks/mt5/reports/{report}",
+        owner="daily_cycle", restart_action="restart:task:MT5-Daily",
+        criticality="optional", resource_budget={"budget_s": 3600},
+        # the STEP is the clock, as for every organ a daily step reaches: naming the task here
+        # would register a second organ for MT5-Daily beside `daily:<step>` (organ dedupe)
+        schedule=f"daily_cycle:{step}", artifact_class="daily",
+        notes=f"run by daily_cycle step `{step}`")
+        for organ, report, consumer, step in _CONTROL_ROOM_ORGANS]
+    # The private-network AUDIT is PowerShell, so no artifact is parsed out of it; its output is
+    # declared here so the attestation carries a row and a missing registration reads NEVER.
+    out.append(ComponentSpec(
+        component_id="task:MT5-PrivateNetAudit:artifact",
+        kind="task", host="box",
+        code_paths=("desks/mt5/scripts/install_private_net.ps1",),
+        outputs=("desks/mt5/data/private_net.json",),
+        consumers=("scripts/check_box_infra.py",),
+        cadence_s=86_400, timeout_s=300, progress_metric="task_runs",
+        expected_artifact_schema="desks/mt5/data/private_net.json",
+        owner="lane:ops", restart_action="restart:task:MT5-PrivateNetAudit",
+        criticality="optional", resource_budget={},
+        schedule="MT5-PrivateNetAudit", artifact_class="daily",
+        notes="audit mode only; -Enforce is an operator act and never scheduled; "
+              "trigger='daily at 06:40' "
+              "installer=desks/mt5/scripts/install_private_net_audit_task.ps1"))
+    return out
 
 
 #: The VPS's daily research cycle: a step table of scripts it runs by subprocess.

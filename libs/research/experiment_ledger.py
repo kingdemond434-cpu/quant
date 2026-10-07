@@ -42,13 +42,46 @@ def _graph_counts() -> tuple[int, dict[str, int]]:
     return sum(by_fam.values()), by_fam
 
 
+#: Censuses with a dedicated reader, so the generic `*_TRIALS.jsonl` sweep must not sum them as
+#: well: MASS_SCREEN_TRIALS.jsonl is charged by `_mass_screen_counts` in `lifetime`, and summing
+#: it here too charged every mass-screen cell twice (audit of #172, 2026-10-07).
+_DEDICATED_CENSUSES = frozenset({"MASS_SCREEN_TRIALS.jsonl"})
+
+
+def _census_files() -> list[str]:
+    """`data/*_TRIALS.jsonl`, matched case-SENSITIVELY: Windows globbing ignores case and would
+    also catch `learned_miners_trials.jsonl`, which is charged by its own reader below. A census
+    with its own reader (`_DEDICATED_CENSUSES`) is left to it: every trial is charged once."""
+    return sorted(f for f in glob.glob(str(DESK / "data" / "*_TRIALS.jsonl"))
+                  if Path(f).name.endswith("_TRIALS.jsonl")
+                  and Path(f).name not in _DEDICATED_CENSUSES)
+
+
+def _censused_sources() -> set[str]:
+    """Producers that keep their own `*_TRIALS.jsonl` census: their discovery files are NOT also
+    summed, or every donated pass would be charged twice."""
+    out: set[str] = set()
+    for f in _census_files():
+        try:
+            for ln in Path(f).read_text("utf-8").splitlines():
+                row = json.loads(ln) if ln.strip() else None
+                if isinstance(row, dict) and row.get("source"):
+                    out.add(str(row["source"]))
+        except (OSError, ValueError):
+            continue
+    return out
+
+
 def _proposer_counts() -> tuple[int, dict[str, int]]:
     """`tests_run` on every discovery file, attributed to the families it proposed."""
     total = 0
     by_fam: dict[str, int] = {}
     intel = DESK / "data" / "intelligence"
     # No early return when there is no intelligence dir: the side ledgers below still count.
+    censused = _censused_sources()
     for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
+        if Path(f).parent.name in censused:
+            continue            # charged cell by cell in its own *_TRIALS.jsonl census, below
         try:
             doc = json.loads(Path(f).read_text("utf-8"))
         except (OSError, ValueError):
@@ -107,6 +140,26 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             by_fam[fam] = by_fam.get(fam, 0) + 1
     except (OSError, ValueError, TypeError):
         pass
+    # A PRODUCER'S NULL PASSES ARE TRIALS TOO. `donate` writes a discovery file only when it has
+    # a candidate, so a sweep that found nothing charged nothing. A producer that keeps its own
+    # census writes `data/<NAME>_TRIALS.jsonl` rows {"family", "cells_screened"} -- each cell once,
+    # on its first screen -- and every such file is summed here (regime_split_miner, 2026-09-30).
+    for f in _census_files():
+        try:
+            lines = Path(f).read_text("utf-8").splitlines()
+        except OSError:
+            continue
+        for ln in lines:
+            try:
+                row = json.loads(ln) if ln.strip() else None
+            except ValueError:
+                continue
+            if not isinstance(row, dict) or row.get("dry_run"):
+                continue
+            k = int(row.get("cells_screened") or 0)
+            fam = str(row.get("family") or "?")
+            total += k
+            by_fam[fam] = by_fam.get(fam, 0) + k
     return total, by_fam
 
 
