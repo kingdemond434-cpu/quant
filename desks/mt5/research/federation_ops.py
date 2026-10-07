@@ -204,6 +204,14 @@ def surfaces_for(upstream: str) -> dict[str, str]:
     # whole public GitHub output -- used only where an author-monitoring exception is recorded
     # (`source_civilizations.MONITORED_AUTHOR_EXCEPTIONS`).
     if host in ("github.com", "www.github.com") and len(parts) == 1 and parts[0]:
+        # FAIL CLOSED: an account is watched only when the exception register names it; an
+        # unreadable register watches nobody.
+        try:
+            from research.source_civilizations import MONITORED_AUTHOR_EXCEPTIONS
+        except Exception:                                  # pragma: no cover - import guard
+            return {}
+        if parts[0].lower() not in {a.lower() for a in MONITORED_AUTHOR_EXCEPTIONS}:
+            return {}
         return {"commits": f"https://github.com/{parts[0]}.atom"}
     if host in ("arxiv.org", "export.arxiv.org"):
         return {"papers": full}

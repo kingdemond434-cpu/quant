@@ -328,7 +328,11 @@ def family_commodity_basis_carry(
             ok = np.isfinite(col)
             if ok.sum() < 10:
                 continue
-            r = float(np.nanvar(np.diff(col[ok]))) or 1e-8
+            # observation noise from the MAD of the stamped changes, so one repricing jump does
+            # not set the filter's scale; a flat history falls back to a tiny positive floor
+            dif = np.diff(col[ok])
+            mad = float(np.median(np.abs(dif - np.median(dif)))) * 1.4826
+            r = mad * mad if mad > 0 else max(float(np.var(dif)), 1e-8)
             pred = ss.local_level(col, float(q) * r, r).pred
             score[:, k] = col - pred
     else:

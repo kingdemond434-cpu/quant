@@ -30,7 +30,7 @@ def _bars(seed: int = 1, close: np.ndarray | None = None) -> pd.DataFrame:
     c = 1.3 * np.exp(np.cumsum(r)) if close is None else close
     o = np.r_[c[0], c[:-1]]
     w = np.abs(rng.normal(0, 0.0005, N)) * c
-    idx = pd.date_range("2020-01-01", periods=N, freq="h", tz="UTC")
+    idx = pd.date_range("2020-01-01", periods=N, freq="h", tz="UTC").as_unit("ns")
     vol = rng.lognormal(5, 0.5, N)
     burst = rng.choice(N, 60, replace=False)
     for b in burst:                                       # clustered activity
