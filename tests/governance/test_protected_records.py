@@ -424,3 +424,74 @@ def test_range_mode_refuses_a_p1_merge_commit(mod: ModuleType, repo: Path) -> No
     _merge_taking(repo, "side", take="side")
     _g(repo, "commit", "-q", "-m", "merge side, taking its blob")
     assert mod.main(["--range", "HEAD~1", "HEAD"]) == 2
+
+
+# ---------------------------------------------------------------------------------------------
+# CRISS-CROSS HISTORIES (2026-10-07): several merge-bases, and the waiver must hold against each.
+# Plain `git merge-base` prints ONE of them, chosen by git. Read against that base alone, a record
+# HEAD changed relative to the OTHER base could be waived; with `--all` it never is.
+# ---------------------------------------------------------------------------------------------
+
+
+def _criss_cross(root: Path) -> tuple[str, str]:
+    """X and Y cross-merge each other's first commit, so (X, Y) has two merge-bases X1 and Y1.
+
+    Y1 rewrites L1 to "y"; X1 leaves it "a". Then Y rewrites L1 to "p" and X (HEAD) puts it back
+    to "a" -- equal to X1's body, different from Y1's. Returns (X1, Y1).
+    """
+    _g(root, "checkout", "-q", "-b", "X", "main")
+    (root / "x.txt").write_text("x\n", encoding="utf-8")
+    _g(root, "add", "x.txt")
+    _g(root, "commit", "-q", "-m", "X1")
+    x1 = _g(root, "rev-parse", "HEAD").strip()
+    _g(root, "checkout", "-q", "-b", "Y", "main")
+    _commit_ledger(root, "Y1", _line("L1", "y"), _line("L2", "b"))
+    y1 = _g(root, "rev-parse", "HEAD").strip()
+    _g(root, "merge", "-q", "--no-ff", "-m", "Y2 takes X1", x1)
+    _commit_ledger(root, "Y3", _line("L1", "p"), _line("L2", "b"))
+    _g(root, "checkout", "-q", "X")
+    _g(root, "merge", "-q", "--no-ff", "-m", "X2 takes Y1", y1)
+    _commit_ledger(root, "X3", _line("L1", "a"), _line("L2", "b"))
+    return x1, y1
+
+
+def test_criss_cross_merge_requires_the_waiver_against_every_base(
+        mod: ModuleType, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    x1, y1 = _criss_cross(repo)
+    assert sorted(_g(repo, "merge-base", "--all", "X", "Y").split()) == sorted([x1, y1])
+    _merge_taking(repo, "Y", take="Y")
+    y = _g(repo, "rev-parse", "Y").strip()
+
+    m = mod._Merge(_g(repo, "rev-parse", "HEAD").strip(), [y])
+    assert sorted(m.bases[y]) == sorted([x1, y1])
+    head = _g(repo, "show", f"HEAD:{_LEDGER}")
+    staged = _g(repo, "show", f":{_LEDGER}")
+
+    def body(text: str) -> dict[str, str]:
+        return mod._bodies(_LEDGER, text)  # type: ignore[no-any-return]
+
+    # The defect: against X1 alone (one of the two bases git may print) L1 reads as waivable.
+    m.bases[y] = [x1]
+    assert mod._waiver(m, _LEDGER, "L1", head, staged, body) == y
+    # Against every base it is not: HEAD's "a" differs from Y1's "y".
+    m.bases[y] = [x1, y1]
+    assert mod._waiver(m, _LEDGER, "L1", head, staged, body) is None
+
+    assert mod.main([]) == 2
+    out = capsys.readouterr().out
+    assert "RECORDS_REWRITTEN" in out and "L1" in out
+    assert "waived against parent" not in out
+
+
+def test_criss_cross_merge_still_waives_when_every_base_agrees(
+        mod: ModuleType, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """L2 is "b" at both bases and at HEAD; Y retires it. Taking Y's blob waives the loss."""
+    _criss_cross(repo)
+    _g(repo, "checkout", "-q", "Y")
+    _commit_ledger(repo, "Y4 retires L2", _line("L1", "p"))
+    _g(repo, "checkout", "-q", "X")
+    _commit_ledger(repo, "X4 takes p for L1", _line("L1", "p"), _line("L2", "b"))
+    _merge_taking(repo, "Y", take="Y")
+    assert mod.main([]) == 0
+    y = _g(repo, "rev-parse", "Y").strip()
+    assert f"waived against parent {y}" in capsys.readouterr().out

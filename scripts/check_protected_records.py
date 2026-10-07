@@ -46,6 +46,32 @@ the strict staged-vs-HEAD rule. `--range A B` applies the same rule when B is a 
 whose first parent is A (the clocked `--range HEAD~1 HEAD` pass); any other range compares its
 two endpoints strictly, because a net loss across several commits is a loss whatever merged.
 
+A CRISS-CROSS HISTORY HAS SEVERAL MERGE-BASES, AND THE RULE HOLDS AGAINST EVERY ONE. Plain
+`git merge-base` prints one of them, chosen by git, not by this guard; a waiver read against that
+one base alone could pass a record HEAD did change relative to the other. So `merge-base --all`
+is read, and "HEAD's body == the base's body" (and "Q left it as its base had it") must hold for
+EVERY base of that parent, or the record is not waived.
+
+WHAT THIS GUARD DOES NOT COVER (residual cases, stated so nobody reads a pass as more than it is):
+
+  1. IT TRUSTS ANYONE WITH WRITE ACCESS TO .git. It runs as a pre-commit hook, so whoever can
+     write the repository's .git can bypass it outright: change `core.hooksPath` or the hook
+     script, or write MERGE_HEAD and MERGE_MSG by hand to name a real non-ancestor commit and so
+     have a staged blob judged as a merge taking that commit's records. The merge verification
+     above refuses MERGE_HEAD without MERGE_MSG, non-commits and ancestors of HEAD; it cannot
+     tell a hand-written pair naming a genuine side commit from one `git merge` wrote. The
+     clocked `--range HEAD~1 HEAD` audit is the backstop for a skipped hook on an ordinary
+     commit only: a forged pair commits a real merge with that parent, which the range pass
+     judges by the same three-way rule and waives the same way.
+  2. A WHOLE-FILE DELETION THAT ARRIVES THROUGH A MERGE. A protected path absent from the staged
+     tree reads as an empty blob, which the EMPTIED rule judges with the three-way rule on the
+     whole file: when the merging parent deleted the file and HEAD left it exactly as the base
+     had it, the deletion is waived like any other change that parent made. The deletion was
+     itself committed (and checked) on that parent's side, but a parent whose commits never ran
+     this hook -- another box, a web edit -- delivers the deletion unexamined. The clocked
+     `--range HEAD~1 HEAD` pass over the merge applies the same waiver; only a `--range` audit
+     over that parent's own commits would name the deletion.
+
     git diff --cached  ->  this only ever inspects what is ABOUT to be committed.
 
 Usage:
@@ -108,15 +134,16 @@ def _commit(rev: str) -> str:
 class _Merge:
     """A VERIFIED merge: HEAD-side commit, the merging parents, and each parent's merge-base.
 
-    `head` is the first parent (HEAD in pre-commit, A in `--range A B`). `bases[p]` is
-    merge-base(head, p), or "" when the two share no history -- an empty base holds no records,
-    so nothing HEAD holds can ever satisfy the three-way rule against it.
+    `head` is the first parent (HEAD in pre-commit, A in `--range A B`). `bases[p]` is EVERY
+    merge-base of (head, p) -- `merge-base --all`, because a criss-cross history has several and
+    the waiver must hold against each -- or [""] when the two share no history: an empty base
+    holds no records, so nothing HEAD holds can ever satisfy the three-way rule against it.
     """
 
     def __init__(self, head: str, parents: list[str]) -> None:
         self.head = head
         self.parents = parents
-        self.bases = {p: _git("merge-base", head, p).strip().split("\n")[0] for p in parents}
+        self.bases = {p: _git("merge-base", "--all", head, p).split() or [""] for p in parents}
         self._cache: dict[tuple[str, str], str] = {}
 
     def text(self, sha: str, rel: str) -> str:
@@ -355,10 +382,6 @@ def compare_all(rel: str, before: str, after: str) -> list[dict[str, object]]:
     rewritten = sorted(
         (k for k in b_before if k in b_after and b_before[k] != b_after[k]),
         key=lambda s: (len(s), s))
-    b_before, b_after = _bodies(rel, before), _bodies(rel, after)
-    rewritten = sorted(
-        (k for k in b_before if k in b_after and b_before[k] != b_after[k]),
-        key=lambda s: (len(s), s))
     if rewritten:
         out.append({"file": rel, "kind": "RECORDS_REWRITTEN", "lost": rewritten,
                     "detail": f"{len(rewritten)} record(s) keep their id and now assert "
@@ -377,17 +400,22 @@ def _waiver(m: _Merge, rel: str, key: str, head: str, staged: str,
             body: Callable[[str], dict[str, str]]) -> str | None:
     """The merging parent that waives record `key` under the three-way rule, else None.
 
-    P waives it only if HEAD's body equals merge-base(HEAD, P)'s, the staged body equals P's, and
-    every other merging parent left the record as its own merge-base had it. A body that is
-    absent is None on both sides, so a record P retired and HEAD never touched is waivable, while
-    a record HEAD ADDED since the base (absent there, present in HEAD) never is.
+    P waives it only if HEAD's body equals that of EVERY merge-base of (HEAD, P), the staged body
+    equals P's, and every other merging parent Q left the record as each of its own merge-bases
+    had it. A body that is absent is None on both sides, so a record P retired and HEAD never
+    touched is waivable, while a record HEAD ADDED since the base (absent there, present in HEAD)
+    never is. In a criss-cross history one base agreeing is not enough: HEAD may have changed the
+    record relative to another, and which base plain `merge-base` prints is git's choice.
     """
     hb, sb = body(head).get(key), body(staged).get(key)
+
+    def at(sha: str) -> str | None:
+        return body(m.text(sha, rel)).get(key)
+
     for p in m.parents:
-        if body(m.text(p, rel)).get(key) != sb or body(m.text(m.bases[p], rel)).get(key) != hb:
+        if at(p) != sb or any(at(b) != hb for b in m.bases[p]):
             continue
-        if all(body(m.text(q, rel)).get(key) == body(m.text(m.bases[q], rel)).get(key)
-               for q in m.parents if q != p):
+        if all(at(q) == at(b) for q in m.parents if q != p for b in m.bases[q]):
             return p
     return None
 
