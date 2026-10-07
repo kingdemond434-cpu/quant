@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import time
 from datetime import UTC, datetime, timedelta
@@ -202,7 +203,10 @@ def test_pass_questions_q1_to_q7_are_in_the_cycle_and_not_duty_rows() -> None:
 def test_pass_questions_are_scored_from_the_review(tmp_path: Path) -> None:
     """ARCH-30 is not doc-only: an absent, UNMEASURED or uncited answer is rewritten MISSED
     and counted in pass_questions_missed; a cited answer stands."""
-    good = {"answer": "re-judge the COT backlog", "evidence": ["reports/X.json@2026-10-07"]}
+    good = {"answer": "re-judge the COT backlog",
+            "evidence": ["reports/X.json@2026-10-07T01:00:00Z"]}
+    (tmp_path / "desks" / "mt5" / "reports").mkdir(parents=True)
+    (tmp_path / "desks" / "mt5" / "reports" / "X.json").write_text("{}")
     review = tmp_path / "review.json"
     review.write_text(json.dumps({"latest": {"at": datetime.now(UTC).isoformat(), "duties": {},
         "pass_questions": {"Q1": good, "Q2": dict(good), "Q3": {**good, "evidence": []},
@@ -211,7 +215,7 @@ def test_pass_questions_are_scored_from_the_review(tmp_path: Path) -> None:
                            "Q5": dict(good), "Q6": dict(good)}}}))
     measured = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)
     res = ccd.apply_to_review(review, measured, (datetime.now(UTC) - timedelta(minutes=1))
-                              .isoformat())
+                              .isoformat(), root=tmp_path)
     assert res["pass_questions_missed"] == ["Q3", "Q4", "Q7"]
     latest = json.loads(review.read_text())["latest"]
     assert latest["pass_questions_missed"] == ["Q3", "Q4", "Q7"]
@@ -225,7 +229,10 @@ def test_pass_questions_are_scored_from_the_review(tmp_path: Path) -> None:
 def test_judging_sweep_items_a_to_g_are_scored_from_the_review(tmp_path: Path) -> None:
     """The JUDGING BOTTLENECK SWEEP is enforced like the pass questions: every item (a)-(g)
     needs a finding and evidence, or it is MISSED and listed in judging_sweep_missed."""
-    item = {"finding": "0 first rulings/h", "evidence": ["reports/JUDGING_BURNDOWN.json"]}
+    item = {"finding": "0 first rulings/h",
+            "evidence": ["reports/JUDGING_BURNDOWN.json@2026-10-07T01:00:00Z"]}
+    (tmp_path / "desks" / "mt5" / "reports").mkdir(parents=True)
+    (tmp_path / "desks" / "mt5" / "reports" / "JUDGING_BURNDOWN.json").write_text("{}")
     sweep = {k: dict(item) for k in "abcdef"}
     sweep["c"] = {"finding": "UNMEASURED", "evidence": ["x"]}
     review = tmp_path / "review.json"
@@ -233,7 +240,7 @@ def test_judging_sweep_items_a_to_g_are_scored_from_the_review(tmp_path: Path) -
                                              "judging_sweep": sweep}}))
     measured = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)
     res = ccd.apply_to_review(review, measured, (datetime.now(UTC) - timedelta(minutes=1))
-                              .isoformat())
+                              .isoformat(), root=tmp_path)
     assert res["judging_sweep_missed"] == ["c", "g"]
     latest = json.loads(review.read_text())["latest"]
     assert latest["judging_sweep"]["a"]["status"] == "MEASURED"
@@ -268,3 +275,38 @@ def test_the_cycle_carries_the_judging_sweep_and_the_d3_d4_d38_extensions() -> N
     assert {"warm_rate", "cold_build_seconds", "build_failures_by_cause"} <= set(
         spec["duties"]["D38"]["metrics"])
     assert "1,389,434" in text and "`judging_sweep`" in text
+
+
+def test_a_citation_must_resolve_to_a_timestamped_artifact_a_ledger_row_or_a_commit(
+        tmp_path: Path) -> None:
+    """Any non-empty string is not evidence: only a timestamped path to a file on this host,
+    a cro_cycle_ledger row or work-item id, or a commit sha this checkout knows."""
+    data = tmp_path / "desks" / "mt5" / "data"
+    data.mkdir(parents=True)
+    (data / "cro_cycle_ledger.jsonl").write_text(json.dumps(
+        {"lane": "noon", "date": "2026-10-07", "work_items": [{"id": "noon-1007-01"}]}) + "\n")
+    (tmp_path / "desks" / "mt5" / "reports").mkdir()
+    (tmp_path / "desks" / "mt5" / "reports" / "JUDGE_COVERAGE.json").write_text("{}")
+    ok = ccd.citation_resolves
+    assert ok("reports/JUDGE_COVERAGE.json@2026-10-01T11:58:00Z", tmp_path)
+    assert ok("desks/mt5/reports/JUDGE_COVERAGE.json@2026-10-01T11:58:00+00:00", tmp_path)
+    assert not ok("reports/JUDGE_COVERAGE.json", tmp_path)            # no timestamp
+    assert not ok("reports/ABSENT.json@2026-10-01T11:58:00Z", tmp_path)  # not on this host
+    assert not ok("../etc/passwd@2026-10-01T11:58:00Z", tmp_path)
+    assert not ok("/etc/passwd@2026-10-01T11:58:00Z", tmp_path)           # absolute escapes
+    assert not ok(f"{tmp_path}/desks/mt5/reports/JUDGE_COVERAGE.json@2026-10-01T11:58:00Z",
+                  tmp_path)
+    assert not ok("reports@2026-10-01T11:58:00Z", tmp_path)                 # a directory
+    future = (datetime.now(UTC) + timedelta(days=1)).isoformat()
+    assert not ok(f"reports/JUDGE_COVERAGE.json@{future}", tmp_path)       # not yet measured
+    (tmp_path / "desks" / "mt5" / "reports" / "LINK.json").symlink_to("/etc/hostname")
+    assert not ok("reports/LINK.json@2026-10-01T11:58:00Z", tmp_path)       # symlink escape
+    assert ok("ledger:noon-2026-10-07", tmp_path) and ok("ledger:noon-1007-01", tmp_path)
+    assert not ok("ledger:noon-2026-10-08", tmp_path)
+    head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True,
+                          text=True, check=True).stdout.strip()
+    assert ok(f"sha:{head[:9]}", ROOT) and ok(head, ROOT)
+    assert not ok("sha:0000000deadbeef", ROOT)
+    assert not ok("the judge looked slow", tmp_path)
+    assert ccd._entry_miss({"answer": "x", "evidence": ["trust me"]}, "answer",
+                           tmp_path) == "evidence_unresolvable"

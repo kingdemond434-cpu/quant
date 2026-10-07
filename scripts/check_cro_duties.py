@@ -27,7 +27,7 @@ import re
 import subprocess
 import sys
 from collections.abc import Iterable, Mapping
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -255,7 +255,7 @@ def measure(rows: Mapping[str, Mapping[str, Any]], spec: Mapping[str, Any],
 
 
 def apply_to_review(review: Path, measured: Mapping[str, Any],
-                    started_at: str | None) -> dict[str, Any]:
+                    started_at: str | None, root: Path = ROOT) -> dict[str, Any]:
     out: dict[str, Any] = {"applied": False, "changed": []}
     try:
         doc = json.loads(review.read_text("utf-8-sig"))
@@ -276,9 +276,9 @@ def apply_to_review(review: Path, measured: Mapping[str, Any],
         return out
     for duty in _changed(duties, measured.get("duties") or {}):
         out["changed"].append(duty)
-    missed_q = score_pass_questions(latest)
+    missed_q = score_pass_questions(latest, root)
     out["pass_questions_missed"] = missed_q
-    out["judging_sweep_missed"] = score_judging_sweep(latest)
+    out["judging_sweep_missed"] = score_judging_sweep(latest, root)
     latest["artifact_check"] = {"at": measured.get("at"), "missed": measured.get("missed"),
                                 "source": "scripts/check_cro_duties.py"}
     write_text_resilient(review, json.dumps(doc, indent=1, ensure_ascii=False))
@@ -292,7 +292,75 @@ PASS_QUESTIONS = tuple(f"Q{i}" for i in range(1, 8))
 JUDGING_SWEEP = tuple("abcdefg")
 
 
-def _entry_miss(q: Any, text_key: str) -> str | None:
+LEDGER = DESK / "data" / "cro_cycle_ledger.jsonl"
+_SHA = re.compile(r"^(?:sha:|commit:)?([0-9a-f]{7,40})$")
+
+
+def _ledger_ids(root: Path) -> set[str]:
+    """Row ids the cycle ledger can resolve: `<lane>-<date>` per row and each work item's id."""
+    ids: set[str] = set()
+    try:
+        lines = (root / LEDGER.relative_to(ROOT)).read_text("utf-8-sig").splitlines()
+    except OSError:
+        return ids
+    for ln in lines:
+        try:
+            row = json.loads(ln)
+        except ValueError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        if row.get("lane") and row.get("date"):
+            ids.add(f"{row['lane']}-{row['date']}")
+        for item in row.get("work_items") or []:
+            if isinstance(item, dict) and item.get("id"):
+                ids.add(str(item["id"]))
+    return ids
+
+
+def _sha_resolves(sha: str, root: Path) -> bool:
+    try:
+        r = subprocess.run(["git", "-C", str(root), "cat-file", "-e", f"{sha}^{{commit}}"],
+                           capture_output=True, timeout=10, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return r.returncode == 0
+
+
+def citation_resolves(ev: Any, root: Path = ROOT, ledger: set[str] | None = None) -> bool:
+    """A citation is box evidence only in one of three resolvable forms:
+    `<artifact path>@<ISO timestamp>` naming a file that exists on this host,
+    `ledger:<row id>` naming a cro_cycle_ledger row (`<lane>-<date>`) or work item id,
+    or a commit sha (`sha:<hex>` or bare 7-40 hex) that this checkout resolves."""
+    if not isinstance(ev, str) or not ev.strip():
+        return False
+    ev = ev.strip()
+    if ev.startswith("ledger:"):
+        ids = ledger if ledger is not None else _ledger_ids(root)
+        return ev[len("ledger:"):] in ids
+    m = _SHA.match(ev)
+    if m:
+        return _sha_resolves(m.group(1), root)
+    path, sep, stamp = ev.rpartition("@")
+    when = _parse_ts(stamp)
+    if not sep or not path or when is None or when > datetime.now(UTC) + timedelta(minutes=5):
+        return False                    # no stamp, or one from the future, is not evidence
+    rel = Path(path)
+    if rel.is_absolute() or rel.drive or ".." in rel.parts:
+        return False                    # evidence lives in the repo, never outside it
+    top = root.resolve()
+    for cand in (root / rel, resolve(path, root)):
+        try:
+            real = cand.resolve()
+        except OSError:
+            continue
+        if real.is_relative_to(top) and real.is_file():
+            return True
+    return False
+
+
+def _entry_miss(q: Any, text_key: str, root: Path = ROOT,
+                ledger: set[str] | None = None) -> str | None:
     """Why a pass-question or sweep entry counts as MISSED, or None when it is cited."""
     if not isinstance(q, Mapping):
         return "absent"
@@ -302,19 +370,23 @@ def _entry_miss(q: Any, text_key: str) -> str | None:
     if "UNMEASURED" in answer.upper() or str(q.get("status") or "").upper() == "UNMEASURED":
         return "unmeasured"
     ev = q.get("evidence")
-    if not ev or (isinstance(ev, str) and not ev.strip()):
+    items = [ev] if isinstance(ev, str) else list(ev) if isinstance(ev, list) else []
+    if not any(isinstance(e, str) and e.strip() for e in items):
         return "no_evidence"
+    if not any(citation_resolves(e, root, ledger) for e in items):
+        return "evidence_unresolvable"
     return None
 
 
 def _score_block(latest: dict[str, Any], block: str, keys: Iterable[str], text_key: str,
-                 ok_status: str) -> list[str]:
+                 ok_status: str, root: Path = ROOT) -> list[str]:
+    ledger = _ledger_ids(root)
     raw = latest.get(block)
     entries: dict[str, Any] = dict(raw) if isinstance(raw, Mapping) else {}
     missed: list[str] = []
     for key in keys:
         cur = entries.get(key)
-        why = _entry_miss(cur, text_key)
+        why = _entry_miss(cur, text_key, root, ledger)
         entry: dict[str, Any] = dict(cur) if isinstance(cur, Mapping) else {}
         if why is None:
             entry.setdefault("status", ok_status)
@@ -331,15 +403,15 @@ def _score_block(latest: dict[str, Any], block: str, keys: Iterable[str], text_k
     return missed
 
 
-def score_pass_questions(latest: dict[str, Any]) -> list[str]:
+def score_pass_questions(latest: dict[str, Any], root: Path = ROOT) -> list[str]:
     """Rewrite `pass_questions` so an absent, unanswered, UNMEASURED or uncited answer reads
     MISSED (claim kept under `status_claimed`); set `pass_questions_missed`. Returns the misses."""
-    return _score_block(latest, "pass_questions", PASS_QUESTIONS, "answer", "ANSWERED")
+    return _score_block(latest, "pass_questions", PASS_QUESTIONS, "answer", "ANSWERED", root)
 
 
-def score_judging_sweep(latest: dict[str, Any]) -> list[str]:
+def score_judging_sweep(latest: dict[str, Any], root: Path = ROOT) -> list[str]:
     """The same for the judging sweep's items (a)-(g): `judging_sweep_missed`."""
-    return _score_block(latest, "judging_sweep", JUDGING_SWEEP, "finding", "MEASURED")
+    return _score_block(latest, "judging_sweep", JUDGING_SWEEP, "finding", "MEASURED", root)
 
 
 def _changed(duties: dict[str, Any], measured: Mapping[str, Any]) -> Iterable[str]:
