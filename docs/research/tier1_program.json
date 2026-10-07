@@ -6931,16 +6931,19 @@
    "phase": "D",
    "status": "LANDED",
    "gate": "none",
-   "item": "THE FACTORY BOTTLENECK LAW (Tier-5 mandate 131/132): the funnel's slowest stage measured hourly from the canonical registry's own counts and the desk's sleeve roster -- seven transitions from discovered to live -- the binding one named with the department that owns it, and a compute shift published TOWARD it. The shift is >= 1.0 for the binding department and exactly 1.0 for every other: compute moves toward the constraint, never away from anyone",
+   "item": "THE FACTORY BOTTLENECK LAW (Tier-5 mandate 131/132): the funnel's slowest stage measured hourly from the canonical registry's own counts and the desk's sleeve roster -- seven transitions from discovered to live -- the binding one named with the department that owns it, and a compute shift published TOWARD it. The shift is >= 1.0 for every department: the binding department (and, since ARCH-26, the departments of the full funnel's limiting stage, merged as the maximum per department) rises to 1+(1-ratio) capped at 2.0; the exploration departments (intel, discovery, regions and every forest department) are raised to the shift's geometric mean (full_funnel.exploration_guard, re-held by research_auction after the attacker blend) so their cleared auction share never falls; every other department stays at 1.0. Compute moves toward the constraint, never away from anyone, and never out of exploration",
    "evidence": [
     "desks/mt5/research/bottleneck_law.py:117 — transitions(): the seven stage ratios and backlogs, each marked measured or not",
     "desks/mt5/research/bottleneck_law.py:147 — compute_shift(): 1 + (1 - ratio), capped, for the binding department only",
     "tests/research/test_tier5_organs.py:71 — the shift only adds, and an empty funnel is UNMEASURED not a bottleneck",
-    "desks/mt5/research/full_funnel.py:382 — ARCH-26: transitions() over the six stages discovery -> acquisition -> usable observations -> tested hypotheses -> qualified forecasts -> portfolio decisions, each read from its owning artifact; an absent one is UNMEASURED and never limiting",
-    "desks/mt5/research/full_funnel.py:437 — exploration_guard(): exploration departments raised to the shift's geometric mean, so a shift toward the limiting stage never lowers discovery's cleared share; every factor >= 1.0",
+    "desks/mt5/research/full_funnel.py:557 — ARCH-26: transitions() over the six stages discovery -> acquisition -> usable observations -> tested hypotheses -> qualified forecasts -> portfolio decisions, each read from its owning artifact; an absent one is UNMEASURED and never limiting",
+    "desks/mt5/research/full_funnel.py:612 — exploration_guard(): exploration departments raised to the shift's geometric mean, so a shift toward the limiting stage never lowers discovery's cleared share; every factor >= 1.0",
     "desks/mt5/research/bottleneck_law.py:166 — merge_funnel(): the full funnel's shift merged (maximum per department) into the one compute_shift the auction reads; FUNNEL_BOTTLENECK.json written on the same hourly leg",
     "desks/mt5/research/research_auction.py:205 — the exploration guard re-held after the attacker's shift is blended in",
-    "tests/research/test_full_funnel.py:142 — the stage and exploration floors hold whatever binds, through the auction's real clearing"
+    "tests/research/test_full_funnel.py:142 — the stage and exploration floors hold whatever binds, through the auction's real clearing",
+    "desks/mt5/research/full_funnel.py:252 — measure_mt5_bars(): the MT5 bar store's rows and last bar from each parquet footer, a component of usable observations beside the acquired series; an absent store is UNMEASURED",
+    "desks/mt5/research/full_funnel.py:406 — match_clocks(): accruing forward clocks resolved to certified specs by exact identity (named certificate, own key, or shadow_forward.sleeve_key of the certificate's shadow_spec); qualified forecasts' 7-day rate from gated_at",
+    "desks/mt5/research/acquire_datasets.py:146 — the seeds' PIT declarations (ECB reference rates: all rows as published, never restated, one-day publication lag) so pit_authority is reachable; acquired_series joins on availability time (line 516)"
    ],
    "scheduled_by": "hourly_cycle:bottleneck_law (meta department)",
    "artifact": "desks/mt5/reports/BOTTLENECK_LAW.json",

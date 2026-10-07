@@ -142,3 +142,68 @@ def test_nonboolean_authority_never_reaches_primitives(tmp_path, monkeypatch, au
     monkeypatch.setattr(pd, "read_parquet", lambda path: reads.append(path))
     assert acquisition.acquired_series() == {}
     assert reads == []
+
+
+def _ecb_frame() -> pd.DataFrame:
+    """An ECB reference-rate series as `_dated` hands it on: business days at 00:00 UTC."""
+    idx = pd.bdate_range("2019-01-01", "2026-09-30", tz="UTC")
+    return pd.DataFrame({"value": [1.1 + (i % 50) * 1e-3 for i in range(len(idx))]}, index=idx)
+
+
+def test_declared_ecb_reference_rates_earn_authority_and_join_after_publication(
+        tmp_path, monkeypatch):
+    """ARCH-26: the declaration maps were empty, so `pit_authority` was unreachable for every
+    acquired series. A declared ECB reference rate earns it on its second certification (the
+    first records the schema hash), an undeclared source never does, and the authorised series is
+    joined from the NEXT UTC midnight -- never the morning before the ECB published it."""
+    ecb = "https://data-api.ecb.europa.eu/service/data/EXR/D.USD.EUR.SP00.A?format=csvdata"
+    other = "https://example.test/undeclared.csv"
+    assert acquisition._SELECTION[ecb] == "all_rows_as_published"
+    assert acquisition._REVISED[ecb] is False
+    assert acquisition._PUBLICATION_LAG_S[ecb] == 86400
+    assert other not in acquisition._SELECTION
+    monkeypatch.setattr(acquisition, "STORE", tmp_path)
+    monkeypatch.setattr(acquisition, "REGISTRY", tmp_path / "registry.json")
+    monkeypatch.setattr(acquisition, "REPORT", tmp_path / "report.json")
+    monkeypatch.setattr(acquisition, "write_certificate", lambda cert: None)
+    monkeypatch.setattr(acquisition, "_endpoints",
+                        lambda limit: [(ecb, "data-api.ecb.europa.eu"), (other, "example.test")])
+    monkeypatch.setattr(acquisition, "_fetch", lambda url: (b"data", "csv"))
+    frame = _ecb_frame()
+    monkeypatch.setattr(acquisition, "_parse", lambda raw, url: frame)
+    monkeypatch.setattr(acquisition, "_dated", lambda df: df)
+    monkeypatch.setattr(acquisition, "_numeric_series",
+                        lambda df, stem: {stem: df["value"]})
+
+    acquisition.acquire()
+    first = json.loads(acquisition.REGISTRY.read_text())["series"]
+    ecb_name = next(n for n, m in first.items() if m["url"] == ecb)
+    other_name = next(n for n, m in first.items() if m["url"] == other)
+    assert first[ecb_name]["pit_authority"] is False
+    assert first[ecb_name]["pit_blocking"] == ["schema"], "only the first-sight schema hash"
+    assert set(first[other_name]["pit_blocking"]) >= {"revision", "availability", "survivorship"}
+
+    acquisition.acquire()
+    second = json.loads(acquisition.REGISTRY.read_text())["series"]
+    assert second[ecb_name]["pit_authority"] is True, second[ecb_name]["pit_blocking"]
+    assert second[ecb_name]["publication_lag_s"] == 86400
+    assert second[other_name]["pit_authority"] is False
+
+    got = acquisition.acquired_series()
+    assert set(got) == {ecb_name}, "an undeclared source never reaches the vocabulary"
+    assert got[ecb_name].index[0] == frame.index[0] + pd.Timedelta(days=1)
+    bars = pd.date_range("2026-09-29 00:00", periods=48, freq="h", tz="UTC")
+    joined = acquisition.acquired_series(bars)[ecb_name]
+    # the 2026-09-29 fixing is published that afternoon: no bar of the 29th may read it
+    assert joined.loc["2026-09-29 15:00"] == frame["value"].loc["2026-09-28"]
+    assert joined.loc["2026-09-30 00:00"] == frame["value"].loc["2026-09-29"]
+
+
+def test_an_authorised_series_with_no_recorded_lag_is_withheld(tmp_path, monkeypatch):
+    registry = tmp_path / "registry.json"
+    registry.write_text(json.dumps({"series": {"x": {"path": "unused", "pit_authority": True}}}))
+    monkeypatch.setattr(acquisition, "REGISTRY", registry)
+    reads: list[str] = []
+    monkeypatch.setattr(pd, "read_parquet", lambda path: reads.append(path))
+    assert acquisition.acquired_series() == {}
+    assert reads == []

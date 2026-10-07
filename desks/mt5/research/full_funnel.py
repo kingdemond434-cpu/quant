@@ -19,10 +19,15 @@ The six stages and the artifact that owns each:
     acquisition          series fetched, parsed and dated (data/acquired/registry.json series)
     usable observations  series holding PIT authority (`pit_authority is True`, the same flag
                          `acquire_datasets.acquired_series` gates the cell vocabulary on) with at
-                         least MIN_ROWS rows; their rows are the observation count
+                         least MIN_ROWS rows; their rows are the observation count. The MT5 bar
+                         store (data/universe/*.parquet, row counts and last bar from each file's
+                         parquet footer) is its own component beside them: bars are not acquired
+                         through the acquirer, so they never enter the acquisition ratio
     tested hypotheses    judged cells in the canonical registry (research_candidates.judged_at)
-    qualified forecasts  certified specs (reports/UNIVERSAL_SURVIVORS.json); the forward clocks
-                         accruing in reports/shadow/*_state.json are reported beside them
+    qualified forecasts  certified specs (reports/UNIVERSAL_SURVIVORS.json; the 7-day rate from
+                         each certificate's gated_at); the forward clocks accruing in
+                         reports/shadow/*_state.json are reported beside them, with how many
+                         resolve to a certified spec and how (`match_clocks`)
     portfolio decisions  LIVE sleeves (data/sleeves.json) united with the allocator's last book
                          (data/pf_forecast_log.jsonl); decision_ledger.jsonl gives the 7-day rate
 
@@ -64,6 +69,7 @@ for _p in (str(REPO), str(BASE / "research")):
 OUT = BASE / "reports" / "FUNNEL_BOTTLENECK.json"
 WORLD = BASE / "data" / "intelligence" / "world"
 ACQUIRED = BASE / "data" / "acquired" / "registry.json"
+BARS = BASE / "data" / "universe"
 GROUNDS = BASE / "data" / "deep_forest_sources.json"
 SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
 SHADOW = BASE / "reports" / "shadow"
@@ -243,6 +249,80 @@ def measure_usable(acquired: dict[str, Any] | None, now: datetime,
             "basis": ["data/acquired/registry.json:series[pit_authority, rows, first, last]"]}
 
 
+def measure_mt5_bars(bar_dir: Path, now: datetime) -> dict[str, Any]:
+    """The MT5 bar store, read from each parquet's FOOTER (row count, and the `time` column's
+    max statistic as the last bar) -- no data page is read. An absent store, or no reader, is
+    UNMEASURED; a file whose footer will not open is counted as unreadable, never as zero rows."""
+    try:
+        import pyarrow.parquet as pq
+    except Exception as exc:
+        return {"measured": False, "reason": f"no parquet reader: {type(exc).__name__}"}
+    try:
+        files = sorted(bar_dir.glob("*_*.parquet"))
+    except OSError as exc:
+        return {"measured": False, "reason": f"{bar_dir} unreadable: {type(exc).__name__}"}
+    if not files:
+        return {"measured": False, "reason": f"no bar parquet under {bar_dir}"}
+    rows = 0
+    by_tf: dict[str, int] = {}
+    last: datetime | None = None
+    fresh_7d = unreadable = 0
+    cut = now - timedelta(days=7)
+    for f in files:
+        try:
+            meta = pq.read_metadata(f)
+        except Exception:
+            unreadable += 1
+            continue
+        rows += int(meta.num_rows)
+        tf = f.stem.rsplit("_", 1)[-1]
+        by_tf[tf] = by_tf.get(tf, 0) + int(meta.num_rows)
+        t_last: datetime | None = None
+        with contextlib.suppress(Exception):
+            names = [meta.schema.column(i).name for i in range(meta.num_columns)]
+            col = names.index("time")
+            for g in range(meta.num_row_groups):
+                st = meta.row_group(g).column(col).statistics
+                if st is not None and st.has_min_max:
+                    v = st.max
+                    t = (v.to_pydatetime() if hasattr(v, "to_pydatetime") else v)
+                    if isinstance(t, datetime):
+                        t = t if t.tzinfo else t.replace(tzinfo=UTC)
+                        t_last = _newest(t_last, t)
+        last = _newest(last, t_last)
+        fresh_7d += int(t_last is not None and t_last >= cut)
+    return {"measured": True, "files": len(files) - unreadable, "unreadable": unreadable,
+            "rows": rows, "rows_by_timeframe": dict(sorted(by_tf.items())),
+            "files_with_a_bar_in_7d": fresh_7d, "last_bar": _iso(last),
+            "basis": f"{bar_dir.name}/*_<TF>.parquet footers (num_rows, time max statistic)"}
+
+
+def with_bars(usable: dict[str, Any], bars: dict[str, Any]) -> dict[str, Any]:
+    """MT5 bar rows as their own component of usable observations. They join the observation
+    total but never the series count: the stage's count stays in the acquirer's unit so the
+    acquisition -> usable share means what it says."""
+    out = dict(usable)
+    comp = dict(_dct(usable.get("components")))
+    if bars.get("measured"):
+        comp.update({"mt5_bar_files": bars["files"], "mt5_bar_rows": bars["rows"],
+                     "mt5_bar_rows_by_timeframe": bars["rows_by_timeframe"],
+                     "mt5_bar_files_fresh_7d": bars["files_with_a_bar_in_7d"],
+                     "mt5_bar_last": bars["last_bar"],
+                     "mt5_bar_unreadable_files": bars["unreadable"]})
+        ext = usable.get("observations") if usable.get("measured") else UNMEASURED
+        comp["external_observations"] = ext
+        out["observations"] = (int(ext) + int(bars["rows"]) if isinstance(ext, int)
+                               else int(bars["rows"]))
+        out["observations_complete"] = isinstance(ext, int)
+    else:
+        comp["mt5_bar_rows"] = UNMEASURED
+        comp["mt5_bar_reason"] = bars.get("reason")
+    out["components"] = comp
+    out["basis"] = [*list(usable.get("basis") or []), str(bars.get("basis") or
+                                                           "data/universe/*.parquet")]
+    return out
+
+
 def measure_tested(conn: Any | None, usable_names: Iterable[str], now: datetime,
                    scan_limit: int = 200_000) -> dict[str, Any]:
     try:
@@ -292,26 +372,121 @@ def measure_tested(conn: Any | None, usable_names: Iterable[str], now: datetime,
                       "registry research_candidates.required_data_json/params_json/exact_rules"]}
 
 
-def measure_qualified(survivors: dict[str, Any] | None, shadow_dir: Path) -> dict[str, Any]:
-    clocks = 0
+#: The certificate a clock row may name as a field, in the order they are trusted.
+_CLOCK_CERT_FIELDS = ("certificate", "certificate_at_revival")
+
+
+def _spec_clock_keys(certified: Mapping[str, Any]) -> dict[str, list[str]]:
+    """{clock key: [certificate ids]}, each certificate's `shadow_spec` keyed by the forward
+    lane's OWN key function (`shadow_forward.sleeve_key`), so a clock and its certificate meet on
+    the exact string the lane wrote. Several certificates can share one key -- the same spec
+    certified under two ids (default parameters spelled out or not) -- and all are kept: the
+    clock is that spec's clock whichever id certified it."""
+    try:
+        import shadow_forward
+    except Exception:
+        return {}
+    out: dict[str, list[str]] = {}
+    for cid, row in certified.items():
+        spec = _dct(_dct(row).get("shadow_spec"))
+        sym, sel = spec.get("symbol"), spec.get("selector")
+        if not (isinstance(sym, str) and isinstance(sel, str)):
+            continue
+        try:
+            key = shadow_forward.sleeve_key(
+                sym, sel, dict(_dct(spec.get("params"))),
+                str(spec.get("family") or "session_range_breakout"),
+                str(spec.get("side") or "LONG"))
+        except Exception:
+            continue
+        out.setdefault(key, []).append(str(cid))
+    return {k: sorted(v) for k, v in out.items()}
+
+
+def match_clocks(clocks: Mapping[str, dict[str, Any]],
+                 certified: Mapping[str, Any] | Iterable[str]) -> dict[str, Any]:
+    """Which accruing forward clocks resolve to a certified spec, and how. Exact identities only:
+
+        named      the clock row names the certificate (`certificate` / `certificate_at_revival`,
+                   a string or a {cell|key} dict) and that id is a certified key
+        key        the clock's own key IS a certified key (the qquant lane keys clocks so)
+        spec       the clock's key equals `shadow_forward.sleeve_key` of a certificate's own
+                   `shadow_spec` (symbol, selector, family, params, side)
+
+    A clock none of these resolve is UNMATCHED and listed, never assumed to share a spec."""
+    specs = certified if isinstance(certified, Mapping) else {}
+    cert = {str(k) for k in (certified.keys() if isinstance(certified, Mapping)
+                             else certified)}
+    by_spec = _spec_clock_keys(specs)
+    matched: dict[str, list[str]] = {}
+    how: dict[str, int] = {"named": 0, "key": 0, "spec": 0}
+    unmatched: list[str] = []
+    for key, row in clocks.items():
+        hit = None
+        for fld in _CLOCK_CERT_FIELDS:
+            v = row.get(fld)
+            v = (v.get("cell") or v.get("key")) if isinstance(v, dict) else v
+            if isinstance(v, str) and v in cert:
+                hit, kind = v, "named"
+                break
+        if hit is None and key in cert:
+            hit, kind = key, "key"
+        hits = [hit] if hit is not None else list(by_spec.get(key) or [])
+        if hit is None and hits:
+            kind = "spec"
+        if not hits:
+            unmatched.append(key)
+        else:
+            matched[key] = hits
+            how[kind] += 1
+    return {"clocks": len(clocks), "matched": len(matched),
+            "specs_with_a_clock": len({c for cs in matched.values() for c in cs}),
+            "matched_by": how,
+            "unmatched": len(unmatched), "unmatched_sample": sorted(unmatched)[:20]}
+
+
+def measure_qualified(survivors: dict[str, Any] | None, shadow_dir: Path,
+                      now: datetime | None = None) -> dict[str, Any]:
+    now = now or datetime.now(tz=UTC)
+    clocks: dict[str, dict[str, Any]] = {}
     last: datetime | None = None
+    started_7d = 0
+    cut = now - timedelta(days=7)
     with contextlib.suppress(OSError):
-        for f in shadow_dir.glob("*_state.json"):
-            for row in _dct(_read(f)).values():
+        for f in sorted(shadow_dir.glob("*_state.json")):
+            for key, row in _dct(_read(f)).items():
                 if isinstance(row, dict) and str(row.get("status") or "") in (
                         "ACTIVE", "PROMOTION CANDIDATE"):
-                    clocks += 1
+                    clocks[f"{f.stem}:{key}" if key in clocks else str(key)] = row
                     last = _newest(last, _ts(row.get("last_attempt_at")))
+                    t0 = _ts(row.get("forward_start"))
+                    started_7d += int(t0 is not None and cut <= t0 <= now)
     if survivors is None:
         return _unmeasured("qualified_forecasts", "reports/UNIVERSAL_SURVIVORS.json absent",
-                           components={"forward_clocks_accruing": clocks})
+                           components={"forward_clocks_accruing": len(clocks)})
     sv = survivors.get("survivors")
+    rows = sv if isinstance(sv, dict) else {}
     n = len(sv) if isinstance(sv, (dict, list)) else int(survivors.get("n") or 0)
+    gated = [t for r in rows.values() if isinstance(r, dict)
+             if (t := _ts(r.get("gated_at"))) is not None]
+    # THE 7-DAY RATE IS MEASURED ONLY WHEN EVERY CERTIFICATE CARRIES ITS gated_at: a partial
+    # stamp would undercount, and an undercount reads as a slowdown.
+    rate: int | str = (sum(1 for t in gated if cut <= t <= now)
+                       if rows and len(gated) == len(rows) else UNMEASURED)
+    match = match_clocks(clocks, rows)
     return {"stage": "qualified_forecasts", "measured": True, "count": n, "unit": "spec",
-            "throughput_7d": UNMEASURED,
+            "throughput_7d": rate,
             "as_of": _iso(_newest(_ts(survivors.get("swept_at")), last)),
-            "components": {"certified_specs": n, "forward_clocks_accruing": clocks},
-            "basis": ["reports/UNIVERSAL_SURVIVORS.json", "reports/shadow/*_state.json"]}
+            "components": {"certified_specs": n, "certified_7d": rate,
+                           "certificates_with_gated_at": len(gated),
+                           "last_gated_at": _iso(max(gated) if gated else None),
+                           "forward_clocks_accruing": len(clocks),
+                           "forward_clocks_started_7d": started_7d,
+                           "clocks_matched_to_a_certified_spec": match["matched"],
+                           "certified_specs_with_a_clock": match["specs_with_a_clock"]},
+            "clock_match": match,
+            "basis": ["reports/UNIVERSAL_SURVIVORS.json (survivors[*].gated_at)",
+                      "reports/shadow/*_state.json (status, forward_start, certificate)"]}
 
 
 def _tail_lines(path: Path, max_bytes: int = 4 << 20) -> list[str]:
@@ -509,7 +684,7 @@ def build(now: datetime | None = None, conn: Any | None = None, *,
           grounds: dict[str, Any] | bool | None = True,
           survivors: dict[str, Any] | bool | None = True, shadow_dir: Path = SHADOW,
           sleeves: dict[str, Any] | bool | None = True, forecast_path: Path = FORECASTS,
-          decision_path: Path = DECISIONS,
+          decision_path: Path = DECISIONS, bar_dir: Path = BARS,
           legs: tuple[dict[str, str], tuple[str, ...]] | None = None) -> dict[str, Any]:
     """`True` for a document argument means "read it from its owning artifact"; None means
     absent (UNMEASURED); a dict is injected."""
@@ -523,11 +698,12 @@ def build(now: datetime | None = None, conn: Any | None = None, *,
                                        grd if isinstance(grd, dict) else None, now),
         "acquisition": measure_acquisition(acq if isinstance(acq, dict) else None, now),
     }
-    st["usable_observations"] = measure_usable(acq if isinstance(acq, dict) else None, now)
+    st["usable_observations"] = with_bars(
+        measure_usable(acq if isinstance(acq, dict) else None, now), measure_mt5_bars(bar_dir, now))
     st["tested_hypotheses"] = measure_tested(conn, st["usable_observations"].get("names") or (),
                                              now)
     st["qualified_forecasts"] = measure_qualified(srv if isinstance(srv, dict) else None,
-                                                  shadow_dir)
+                                                  shadow_dir, now)
     st["portfolio_decisions"] = measure_decisions(slv if isinstance(slv, dict) else None,
                                                   forecast_path, decision_path, now)
     trans = transitions(st, now)

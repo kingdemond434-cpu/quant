@@ -125,6 +125,32 @@ _SEED_ENDPOINTS: tuple[str, ...] = (
     for ccy in _ECB_CROSSES
 )
 
+#: WHAT THE DESK ACTUALLY KNOWS ABOUT ITS OWN SEEDS, DECLARED (ARCH-26, 2026-10-07). The three
+#: maps above were declared and left EMPTY, so `revision`, `availability` and `survivorship` read
+#: UNMEASURED for every series ever acquired and `pit_authority` was unreachable by construction:
+#: not one acquired series could enter the `ext_` vocabulary, however honest it was. Declared
+#: here only where the source's own publication rules answer the question:
+#:
+#:   ECB euro foreign-exchange REFERENCE RATES (EXR D.*.EUR.SP00.A). The full daily series as the
+#:   ECB publishes it (no row is selected by anything later than its own date); fixed once at
+#:   the daily concertation and never restated; published around 16:00 CET on the reference day.
+#:   The row is dated at that day's 00:00 UTC, so the declared lag is a FULL DAY -- the value is
+#:   joined from the next UTC midnight, never the morning before it was published. That costs
+#:   about nine hours of freshness and buys certainty; `acquired_series` applies it.
+#:   CFTC TFF positioning: the CFTC restates prior weeks (see `_REVISED` above), declared so the
+#:   revision check FAILS a series with no vintage -- the correct verdict.
+#:
+#: Everything else (Treasury curve, BIS policy rates, EIA, every crawler-found URL) stays
+#: undeclared and therefore UNMEASURED: nobody has read its revision policy, and a guess is not a
+#: declaration.
+_ECB_REFERENCE_LAG_S = 24 * 3600
+for _ccy in _ECB_CROSSES:
+    _u = f"https://data-api.ecb.europa.eu/service/data/EXR/D.{_ccy}.EUR.SP00.A?format=csvdata"
+    _SELECTION[_u] = "all_rows_as_published"
+    _REVISED[_u] = False
+    _PUBLICATION_LAG_S[_u] = _ECB_REFERENCE_LAG_S
+_REVISED["https://www.cftc.gov/dea/newcot/FinFutWk.txt"] = True
+
 
 def _fetch(url: str) -> tuple[bytes | None, str]:
     """Bytes and content-type. HTML is rejected AT THE HEADER rather than parsed and refused.
@@ -433,6 +459,7 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
                 "schema_hash": schema_hash,
                 "pit_certificate": cert_id,
                 "pit_authority": authority,
+                "publication_lag_s": _PUBLICATION_LAG_S.get(url),
                 "pit_blocking": blocking,
             }
             new_series.append(name)
@@ -486,9 +513,20 @@ def acquired_series(index: pd.Index | None = None, *,
         # fail-closed direction, and the reason the registry keeps `pit_blocking` per series.
         if require_authority and meta.get("pit_authority") is not True:
             continue
+        # AVAILABILITY TIME, NOT EVENT TIME. A certificate's `availability` check passes on a
+        # declared publication lag "that a joiner applies uniformly to the event time" -- and
+        # this is that joiner. Without the shift a value dated at its reference day's midnight
+        # would be read by every bar of a day it had not yet been published on. An authorised
+        # series whose lag was not recorded cannot be placed in time, so it is withheld.
+        lag = meta.get("publication_lag_s")
+        if require_authority and (isinstance(lag, bool) or not isinstance(lag, (int, float))
+                                  or lag < 0):
+            continue
         try:
             df = pd.read_parquet(meta["path"])
             s = df["value"].astype(float)
+            if isinstance(lag, (int, float)) and not isinstance(lag, bool) and lag > 0:
+                s.index = pd.DatetimeIndex(s.index) + pd.Timedelta(seconds=float(lag))
             # FORWARD-FILL ONLY. A macro series is knowable from its publication date onward and
             # never before; interpolating backwards is leakage wearing the shape of tidiness.
             out[name] = s.reindex(index).ffill() if index is not None else s

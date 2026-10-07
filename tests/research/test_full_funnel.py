@@ -64,7 +64,7 @@ def _registry(tmp: Path, judged: int, fed: list[str]) -> sqlite3.Connection:
 
 def _build(tmp: Path, *, acquired: dict | None, conn: sqlite3.Connection | None,
            survivors: dict | None = None, sleeves: dict | None = None,
-           urls: list[str] | None = None) -> dict:
+           urls: list[str] | None = None, bar_dir: Path | None = None) -> dict:
     shadow = tmp / "shadow"
     shadow.mkdir(exist_ok=True)
     (shadow / "shadow_state.json").write_text(json.dumps(
@@ -79,7 +79,8 @@ def _build(tmp: Path, *, acquired: dict | None, conn: sqlite3.Connection | None,
                     sleeves=sleeves if sleeves is not None else
                     {"sleeves": [{"name": "a", "status": "LIVE"},
                                  {"name": "b", "status": "STANDBY"}]},
-                    forecast_path=fc, decision_path=tmp / "absent.jsonl", legs=LEGS)
+                    forecast_path=fc, decision_path=tmp / "absent.jsonl",
+                    bar_dir=bar_dir if bar_dir is not None else tmp / "no_bars", legs=LEGS)
 
 
 def test_every_stage_is_measured_from_its_owning_artifact(tmp_path: Path) -> None:
@@ -189,3 +190,74 @@ def test_bottleneck_law_merges_the_funnel_and_the_leg_is_registered(
     import hourly_cycle
     assert hourly_cycle.LEG_DEPARTMENT.get("bottleneck_law") == "meta"
     assert "full_funnel" in (DESK / "research" / "bottleneck_law.py").read_text("utf-8")
+
+
+def _bars(tmp: Path) -> Path:
+    import pandas as pd
+    d = tmp / "universe"
+    d.mkdir()
+    for name, n, end in (("EURUSD_H1", 300, NOW - timedelta(hours=1)),
+                         ("XAUUSD_M5", 120, NOW - timedelta(days=20))):
+        t = pd.date_range(end=end, periods=n, freq="h", tz="UTC")
+        pd.DataFrame({"close": [1.0] * n, "time": t}).to_parquet(d / f"{name}.parquet")
+    return d
+
+
+def test_mt5_bar_rows_are_their_own_component_and_absence_is_unmeasured(tmp_path: Path) -> None:
+    conn = _registry(tmp_path, judged=6, fed=["s0"])
+    doc = _build(tmp_path, acquired=_acquired(5, 4), conn=conn, bar_dir=_bars(tmp_path))
+    u = doc["stages"]["usable_observations"]
+    c = u["components"]
+    assert c["mt5_bar_files"] == 2 and c["mt5_bar_rows"] == 420
+    assert c["mt5_bar_rows_by_timeframe"] == {"H1": 300, "M5": 120}
+    assert c["mt5_bar_files_fresh_7d"] == 1
+    assert c["mt5_bar_last"].startswith((NOW - timedelta(hours=1)).strftime("%Y-%m-%dT%H"))
+    assert c["external_observations"] == 2000 and u["observations"] == 2420
+    assert u["count"] == 4, "bars never enter the acquirer-unit series count"
+    t = {r["stage"]: r for r in doc["transitions"]}
+    assert t["acquisition->usable_observations"]["ratio"] == 0.8
+    empty = tmp_path / "e"
+    empty.mkdir()
+    for d in (tmp_path / "e", empty / "missing"):
+        u2 = ff.with_bars(ff.measure_usable(None, NOW), ff.measure_mt5_bars(d, NOW))
+        assert u2["components"]["mt5_bar_rows"] == ff.UNMEASURED
+        assert u2["components"]["mt5_bar_reason"]
+        assert u2["measured"] is False and "observations" not in u2
+
+
+def test_certified_rate_is_from_gated_at_and_clocks_match_by_exact_identity(
+        tmp_path: Path) -> None:
+    spec = {"symbol": "XAUUSD", "selector": "asia", "family": "session_range_breakout",
+            "params": {"rr": 1.5, "wait_bars": 8}}
+    carry = {"symbol": "CHFNOK", "selector": "asia", "family": "carry",
+             "params": {"input_symbol": "CHFNOK"}}
+    surv = {"swept_at": FRESH, "survivors": {
+        "external.XAUUSD.session_range_breakout.rr=1.5_wb=8":
+            {"gated_at": (NOW - timedelta(days=2)).isoformat(), "shadow_spec": spec},
+        "external.CHFNOK.carry.p=1": {"gated_at": (NOW - timedelta(days=30)).isoformat(),
+                                      "shadow_spec": carry},
+        "qquant.h.AUDNZD x": {"gated_at": (NOW - timedelta(days=1)).isoformat(),
+                              "shadow_spec": {}},
+        "external.EURUSD.carry.p=2": {"gated_at": (NOW - timedelta(days=3)).isoformat(),
+                                      "shadow_spec": {"symbol": "EURUSD", "selector": "asia",
+                                                      "family": "carry", "params": {}}}}}
+    shadow = tmp_path / "shadow"
+    shadow.mkdir()
+    (shadow / "shadow_state.json").write_text(json.dumps({
+        "XAUUSD.asia#rr=1.5_wait_bars=8": {"status": "ACTIVE", "forward_start": FRESH},
+        "CHFNOK.carry.asia#input_symbol=CHFNOK": {"status": "ACTIVE"},
+        "EURUSD.carry.asia": {"status": "RETIRED_ORPHAN"},          # not accruing: not counted
+        "GBPUSD.vol_mean_reversion.continuous": {"status": "ACTIVE"},
+        "OTHER.asia": {"status": "ACTIVE", "certificate": {"cell": "qquant.h.AUDNZD x"}}}),
+        "utf-8")
+    q = ff.measure_qualified(surv, shadow, NOW)
+    assert q["throughput_7d"] == 3 and q["components"]["certified_7d"] == 3
+    assert q["components"]["forward_clocks_accruing"] == 4
+    assert q["components"]["forward_clocks_started_7d"] == 1
+    m = q["clock_match"]
+    assert m["matched"] == 3 and m["matched_by"] == {"named": 1, "key": 0, "spec": 2}
+    assert m["unmatched"] == 1 and m["unmatched_sample"] == ["GBPUSD.vol_mean_reversion.continuous"]
+    assert q["components"]["clocks_matched_to_a_certified_spec"] == 3
+    # one certificate without its stamp makes the rate UNMEASURED, never an undercount
+    surv["survivors"]["external.CHFNOK.carry.p=1"].pop("gated_at")
+    assert ff.measure_qualified(surv, shadow, NOW)["throughput_7d"] == ff.UNMEASURED
