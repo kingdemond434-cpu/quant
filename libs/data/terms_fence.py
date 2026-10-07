@@ -32,6 +32,16 @@ The fenced platforms (2026-09-30 ruling): Reddit and its mirrors (pushshift, pul
 photon-reddit), StockTwits, X/Twitter (no paid X, no scraping), and the Discord user token.
 Wikipedia pageviews and GDELT are the substitutes; the gate fails closed.
 
+NO BYPASS (audit of #162, 2026-10-07). A fence that matches one spelling of one host is walked
+around, so the platform is matched however it is addressed: every Reddit FRONT-END (redlib,
+libreddit, teddit, reveddit, unddit -- any host label naming one) is Reddit, every nitter mirror
+and fork (any host label containing "nitter", xcancel, ...) is X, and a WRAPPER of a fenced URL
+-- web.archive.org, archive.ph/.today/.is/.li/.vn/.md, r.jina.ai, 12ft.io, Google cache,
+`*.translate.goog` and translate.google.com -- is the URL it wraps. Hosts are compared only after
+`normalize_host` (NFKC, IDNA, lowercase, trailing dot stripped), so a fullwidth `reddit.com`
+and REDDIT.COM. are reddit.com. The redirect guard calls the same `check_url`, so all of it
+holds for every hop of a redirect chain too.
+
 Every refusal carries its reason and its status, BLOCKED_WITH_SUBSTITUTE when the information
 class it served has a lawful substitute wired (`substitutes`), so no fenced route ever reads as
 silent, dead or UNMEASURED.
@@ -45,12 +55,15 @@ until re-certified on a clean one (`quarantined_certificate`).
 """
 from __future__ import annotations
 
+import contextlib
 import json
+import re
+import unicodedata
 import urllib.request
 from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import ParseResult, parse_qs, unquote, urlparse
 
 BLOCKED_WITH_SUBSTITUTE = "BLOCKED_WITH_SUBSTITUTE"
 BLOCKED_TERMS = "BLOCKED_TERMS"
@@ -87,12 +100,21 @@ PLATFORMS: dict[str, dict[str, Any]] = {
     "reddit": {
         # pushshift / pullpush / photon-reddit are Reddit MIRRORS: the data is Reddit's and the
         # ruling covers it wherever it is served from.
+        # redlib / libreddit / teddit / reveddit / unddit are Reddit FRONT-ENDS: every page they
+        # serve is fetched from Reddit, so they are Reddit under the same ruling (audit of #162,
+        # 2026-10-07). `host_labels` fences ANY host with a DNS label containing one of them, so
+        # an instance nobody listed yet is fenced too.
         "hosts": ("reddit.com", "redd.it", "redditmedia.com", "redditstatic.com",
                   "reddituploads.com", "redditblog.com", "pushshift.io", "pullpush.io",
-                  "photon-reddit.com"),
-        "sources": ("reddit", "miner:reddit", "pushshift", "pullpush", "photon_reddit"),
-        "source_prefixes": ("ext_reddit_", "reddit_", "pushshift_", "pullpush_"),
-        "routes": ("reddit",),
+                  "photon-reddit.com", "reveddit.com", "unddit.com", "libredd.it",
+                  "safereddit.com", "troddit.com", "removeddit.com", "ceddit.com",
+                  "resavr.com"),
+        "host_labels": ("redlib", "libreddit", "teddit", "reveddit", "unddit"),
+        "sources": ("reddit", "miner:reddit", "pushshift", "pullpush", "photon_reddit",
+                    "redlib", "libreddit", "teddit", "reveddit", "unddit"),
+        "source_prefixes": ("ext_reddit_", "reddit_", "pushshift_", "pullpush_", "redlib_",
+                            "libreddit_", "teddit_"),
+        "routes": ("reddit", "redlib", "libreddit", "teddit"),
         "reason": REDDIT_TERMS_REASON,
         "status": BLOCKED_WITH_SUBSTITUTE,
         "label": "reddit_fenced",
@@ -115,10 +137,22 @@ PLATFORMS: dict[str, dict[str, Any]] = {
         "substitutes": ("wikipedia_pageviews", "gdelt_doc_timeline", "google_trends"),
     },
     "x_paid": {
-        "hosts": ("x.com", "twitter.com", "api.twitter.com", "api.x.com", "nitter.net"),
-        "sources": ("twitter", "x_twitter", "twitter_api", "x_api", "miner:twitter"),
-        "source_prefixes": ("twitter_",),
-        "routes": ("twitter", "x_api"),
+        # Nitter and its forks are X MIRRORS: every page is X's data fetched from X, so no
+        # mirror is a lawful route to it (audit of #162, 2026-10-07: deep_forest's `nitter`
+        # route still reached X through nitter.privacydev.net and nitter.poast.org). Any host
+        # with a DNS label containing "nitter" is fenced, plus the forks that dropped the name.
+        "hosts": ("x.com", "twitter.com", "api.twitter.com", "api.x.com", "twimg.com",
+                  "nitter.net", "nitter.privacydev.net", "nitter.poast.org", "nitter.cz",
+                  "nitter.it", "nitter.1d4.us", "nitter.kavin.rocks", "nitter.unixfox.eu",
+                  "nitter.moomoo.me", "nitter.fdn.fr", "nitter.lacontrevoie.fr",
+                  "nitter.esmailelbob.xyz", "nitter.woodland.cafe", "nitter.space",
+                  "xcancel.com", "twiiit.com", "fxtwitter.com", "vxtwitter.com",
+                  "fixupx.com", "fixvx.com", "twstalker.com", "sotwe.com"),
+        "host_labels": ("nitter",),
+        "sources": ("twitter", "x_twitter", "twitter_api", "x_api", "miner:twitter", "nitter",
+                    "xcancel"),
+        "source_prefixes": ("twitter_", "nitter_"),
+        "routes": ("twitter", "x_api", "nitter"),
         "reason": X_PAID_REASON,
         "status": BLOCKED_WITH_SUBSTITUTE,
         "label": "x_paid_fenced",
@@ -144,8 +178,20 @@ PLATFORMS: dict[str, dict[str, Any]] = {
     },
 }
 
-#: Hosts whose path or query WRAPS another URL (an archive copy of a fenced page is that page).
+#: Hosts whose path or query WRAPS another URL: an archive, cache, reader or proxy copy of a
+#: fenced page IS that page (audit of #162, 2026-10-07). Each wraps its target its own way; the
+#: target is extracted (`_wrapped_url`) and fenced exactly as if it had been asked for directly.
 _ARCHIVE_HOSTS = ("web.archive.org", "archive.org")
+_ARCHIVE_TODAY = ("archive.ph", "archive.today", "archive.is", "archive.li", "archive.vn",
+                  "archive.md", "archive.fo")
+_READER_HOSTS = ("r.jina.ai", "12ft.io")
+_GOOGLE_CACHE = ("webcache.googleusercontent.com",)
+_GOOGLE_TRANSLATE = ("translate.google.com", "translate.googleusercontent.com")
+#: Google Translate's proxy encodes the target host into ONE label of `*.translate.goog`:
+#: every "." becomes "-" and every original "-" is doubled (www-reddit-com.translate.goog).
+_TRANSLATE_GOOG = "translate.goog"
+#: Full stops that IDNA treats as label separators (ideographic, fullwidth, halfwidth).
+_DOTS = ("\u3002", "\uff0e", "\uff61")
 
 
 class TermsFenced(RuntimeError):
@@ -162,47 +208,149 @@ def _active(platform: str) -> bool:
     return not PLATFORMS[platform].get("agreement")
 
 
-def _host(url: str) -> str:
-    u = str(url or "").strip()
+def normalize_host(host: str) -> str:
+    """The one spelling a host is matched under: percent-decoded, NFKC (fullwidth and
+    compatibility forms fold to ASCII: a fullwidth reddit.com -> reddit.com), every IDNA full stop
+    made a dot, IDNA-encoded where it can be (non-ASCII labels become their xn-- form, which
+    is the host a resolver would actually be asked for), lowercased, trailing dot stripped.
+    A host that will not encode keeps its NFKC form, so it is still matched, never dropped."""
+    h = unicodedata.normalize("NFKC", unquote(str(host or "")).strip())
+    for d in _DOTS:
+        h = h.replace(d, ".")
+    h = h.lower().rstrip(".")
+    if h and not h.isascii():
+        with contextlib.suppress(UnicodeError, ValueError):
+            h = h.encode("idna").decode("ascii")
+    return h.lower().rstrip(".")
+
+
+def _parse(url: str) -> ParseResult | None:
+    # NFKC first: a fullwidth solidus or colon in the authority would otherwise make urlsplit raise,
+    # and an unparseable URL must not read as an unfenced one.
+    u = unicodedata.normalize("NFKC", str(url or "")).strip()
+    for d in _DOTS:
+        u = u.replace(d, ".")
     if not u:
-        return ""
-    if "://" not in u:
+        return None
+    # A scheme with collapsed or missing slashes (`https:/reddit.com`, `//reddit.com`) is
+    # still that host.
+    u = re.sub(r"^([A-Za-z][A-Za-z0-9+.-]*):/*", r"\1://", u) if re.match(
+        r"^[A-Za-z][A-Za-z0-9+.-]*:/", u) else u
+    if not re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", u):
+        # Schemeless (`archive.li/?url=https://...` carries "://" only in its QUERY).
         u = "https://" + u.lstrip("/")
     try:
-        return (urlparse(u).hostname or "").lower().rstrip(".")
+        return urlparse(u)
+    except ValueError:
+        return None
+
+
+def _host(url: str) -> str:
+    parts = _parse(url)
+    if parts is None:
+        return ""
+    try:
+        raw = parts.hostname or ""
     except ValueError:
         return ""
+    return normalize_host(raw)
 
 
 def _host_platform(h: str, *, request_level: bool = False) -> str | None:
+    h = normalize_host(h)
+    labels = h.split(".") if h else []
     for name, p in PLATFORMS.items():
         if not _active(name) or bool(p.get("url_fenced", True)) == request_level:
             continue
         for dom in p["hosts"]:
             if h == dom or h.endswith("." + dom):
                 return name
+        for frag in p.get("host_labels") or ():
+            if any(frag in lab for lab in labels):
+                return name
+    return None
+
+
+def _on(h: str, roots: tuple[str, ...]) -> bool:
+    return any(h == a or h.endswith("." + a) for a in roots)
+
+
+def _decode_translate_goog(label: str) -> str:
+    """`www-reddit-com` -> `www.reddit.com`: Google's proxy turns "." into "-" and doubles an
+    original "-"."""
+    return label.replace("--", "\x00").replace("-", ".").replace("\x00", "-")
+
+
+def _embedded(rest: str) -> str | None:
+    """The target inside a reader / archive path: the first `scheme:/...` in it, else the first
+    path segment that looks like a host (has a dot), with everything after it."""
+    rest = unquote(rest or "").lstrip("/")
+    if not rest:
+        return None
+    m = re.search(r"[A-Za-z][A-Za-z0-9+.-]*:/+\S*", rest)
+    if m:
+        return m.group(0)
+    segs = rest.split("/")
+    for i, seg in enumerate(segs):
+        if "." in seg and not seg.replace(".", "").isdigit():
+            return "/".join(segs[i:])
     return None
 
 
 def _wrapped_url(url: str) -> str | None:
-    """The URL an archive address wraps (web.archive.org/web/<ts>/<url>, or the availability
-    API's `?url=`), else None. An archived copy of a fenced page is the fenced page."""
-    u = str(url or "").strip()
-    if "://" not in u:
-        u = "https://" + u.lstrip("/")
+    """The URL (or bare host) a wrapper address wraps, else None. An archived, cached, proxied,
+    translated or reader-mode copy of a fenced page is the fenced page:
+
+        web.archive.org/web/<ts>/<url>, archive.org/wayback/available?url=<url>
+        archive.ph|today|is|li|vn|md/[newest/|oldest/|<ts>/]<url>, ...?url=<url>
+        r.jina.ai/<url>, 12ft.io/[proxy?q=]<url>
+        webcache.googleusercontent.com/search?q=cache:[<id>:]<url>
+        <host-with-dashes>.translate.goog/<path>, translate.google.com/translate?u=<url>
+    """
+    parts = _parse(url)
+    if parts is None:
+        return None
     try:
-        parts = urlparse(u)
+        h = normalize_host(parts.hostname or "")
     except ValueError:
         return None
-    h = (parts.hostname or "").lower()
-    if not any(h == a or h.endswith("." + a) for a in _ARCHIVE_HOSTS):
+    if not h:
         return None
-    q = parse_qs(parts.query).get("url")
-    if q:
-        return unquote(q[0])
-    segs = parts.path.split("/", 3)
-    if len(segs) == 4 and segs[1] == "web" and segs[3]:
-        return segs[3] + (("?" + parts.query) if parts.query else "")
+    qs = parse_qs(parts.query)
+    tail = ("?" + parts.query) if parts.query else ""
+    if h.endswith("." + _TRANSLATE_GOOG):
+        sub = h[: -len("." + _TRANSLATE_GOOG)]
+        return _decode_translate_goog(sub.split(".")[-1]) + (parts.path or "/")
+    if _on(h, _GOOGLE_TRANSLATE):
+        for k in ("u", "url", "sl_url"):
+            if qs.get(k):
+                return unquote(qs[k][0])
+        return None
+    if _on(h, _GOOGLE_CACHE):
+        q = unquote((qs.get("q") or [""])[0])
+        if q.lower().startswith("cache:"):
+            q = q[len("cache:"):]
+            m = re.match(r"^[A-Za-z0-9_-]{6,}:(?!//)(.+)$", q)
+            if m and "." in m.group(1).split("/")[0]:
+                q = m.group(1)
+            return q or None
+        return None
+    if _on(h, _ARCHIVE_HOSTS):
+        qv = qs.get("url")
+        if qv:
+            return unquote(str(qv[0]))
+        segs = parts.path.split("/", 3)
+        if len(segs) == 4 and segs[1] == "web" and segs[3]:
+            return segs[3] + tail
+        return None
+    if _on(h, _ARCHIVE_TODAY) or _on(h, _READER_HOSTS):
+        for k in ("url", "q", "u"):
+            if qs.get(k):
+                inner = _embedded(qs[k][0])
+                if inner:
+                    return inner
+        inner = _embedded(parts.path)
+        return (inner + tail) if inner else None
     return None
 
 
@@ -216,7 +364,7 @@ def platform_of_url(url: str, _depth: int = 0) -> str | None:
     p = _host_platform(h)
     if p:
         return p
-    inner = _wrapped_url(url) if _depth < 3 else None
+    inner = _wrapped_url(url) if _depth < 4 else None
     return platform_of_url(inner, _depth + 1) if inner else None
 
 
@@ -402,10 +550,13 @@ def fenced_ground(g: Mapping[str, Any]) -> str | None:
         p = platform_of_url(str(g.get(k) or ""))
         if p:
             return p
-    for f in g.get("feeds") or []:
-        p = platform_of_url(str(f or ""))
-        if p:
-            return p
+    # Every address the ground could be fetched from: its feeds and its MIRRORS (a nitter
+    # ground lists its mirrors bare: `nitter.poast.org`).
+    for k in ("feeds", "mirrors", "urls", "seeds"):
+        for f in g.get(k) or []:
+            p = platform_of_url(str(f or ""))
+            if p:
+                return p
     return None
 
 
