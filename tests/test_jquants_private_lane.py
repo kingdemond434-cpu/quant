@@ -321,7 +321,8 @@ def test_private_summary_carries_bare_counts_only(scratch: dict[str, Any]) -> No
         assert T.has_private_lineage(h) and h["e8_ineligible"] is True
 
 
-_NUM = __import__("re").compile(r"-?\d[\d,]*(?:\.\d+)?")
+#: A STANDALONE number token (not digits inside an identifier such as a BOJ series code).
+_NUM = __import__("re").compile(r"(?<![\w.])-?\d[\d,]*(?:\.\d+)?(?![\w])")
 
 
 def _text_carries_a_value(text: str) -> bool:
