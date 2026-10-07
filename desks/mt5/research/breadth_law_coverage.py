@@ -86,6 +86,7 @@ VOD = f"{R_}value_of_data.py"
 UU, RF = f"{R_}unknown_unknowns.py", f"{R_}representation_forge.py"
 WDH, DK = f"{R_}world_dataset_hunter.py", f"{R_}docket_keff.py"
 CBS = f"{R_}cro_breadth_steps.py"
+BFN = f"{R_}breadth_funnel.py"
 
 #: (ids, status, anchors, note). ids: "0007" or "0008-0028". First match wins, so a narrower
 #: entry goes before a range that contains it.
@@ -276,6 +277,17 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0266", PARTIAL, (f"{BL}::^def split_budget",),
      "budget is REDIRECTED (order, split) and never cut: NEVER REDUCE research volume"),
     ("0268", COVERED, (f"{CS}::\"new_structural_clusters\"",), ""),
+    ("0267", COVERED, (f"{BFN}::^STAGES", f"{BFN}::st = {{\"generated\": True}}",
+                       f"{AB}::fdoc = bfn.build"), "BREADTH_FUNNEL.json per candidate, hourly"),
+    ("0269-0270", COVERED, (f"{BFN}::st\\[\"evaluator_admitted\"\\] = ",
+                            f"{BFN}::st\\[\"survives\"\\] = ", f"{BFN}::^def verdicts"),
+     "from the verdict ledger's tail"),
+    ("0271", COVERED, (f"{BFN}::st\\[\"forward_enrolled\"\\] = ",),
+     "survived AND a forward clock on its symbol x session (shadow_state)"),
+    ("0272", COVERED, (f"{BFN}::st\\[\"prospective_independence\"\\] = ",),
+     "enrolled AND its sleeve INDEPENDENT in the forward map"),
+    ("0273", COVERED, (f"{BFN}::st\\[\"promoted_live\"\\] = ",),
+     "survived AND a LIVE sleeve on its symbol x family (read-only)"),
     ("0274", PARTIAL, (f"{CS}::\"provisional_breadth_credit\"",),
      "provisional credit published; realised credit needs forward streams"),
     ("0276", COVERED, (f"{CS}::forward_adjusted_C",), ""),

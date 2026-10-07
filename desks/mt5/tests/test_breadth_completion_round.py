@@ -113,3 +113,50 @@ def test_no_owned_row_reads_covered_on_file_existence_alone() -> None:
     cro = [r for r in doc["rows"] if "0162" <= r["id"][-4:] <= "0172"]
     assert len(cro) == 11 and all(r["status"] == blc.COVERED for r in cro)
     assert all(any("cro_breadth_steps.py" in w for w in r["where"]) for r in cro)
+
+
+# ------------------------------------------------------------------ the funnel per candidate
+def test_funnel_credits_each_stage_only_after_the_earlier_one(tmp_path: Path) -> None:
+    import breadth_funnel as bfn
+    docket = [
+        {"symbol": "EURUSD", "family": "carry", "params": {"rr": 1.5}, "selector": "asia",
+         "producer": "kimi", "breadth_order": {"rank": 0, "dup": 0}},
+        {"symbol": "GBPUSD", "family": "carry", "params": {"rr": 1.5}, "selector": "asia",
+         "producer": "kimi", "breadth_order": {"rank": 1, "dup": 1}},
+        {"symbol": "XAUUSD", "family": "srb", "params": "{'rr': 2.0}", "selector": "asia",
+         "producer": "miner"},
+    ]
+    cid = {r["symbol"]: bfn._cell_id({"sym": r["symbol"], "family": r["family"],
+                                      "params": bfn._params(r)}) for r in docket}
+    vm = {cid["EURUSD"]: True, cid["GBPUSD"]: False, cid["XAUUSD"]: True}
+    shadow = {"EURUSD.asia": {}, "GBPUSD.asia": {}}
+    sleeves = {"sleeves": [{"symbol": "EURUSD", "family": "carry", "status": "LIVE"},
+                           {"symbol": "XAUUSD", "family": "srb", "status": "RETIRED"}]}
+    sat = {"forward_independence": {"status": "MEASURED", "pairs": [
+        {"a": "EURUSD_carry_asia", "b": "USDJPY_carry_asia", "state": "INDEPENDENT"}]}}
+    doc = bfn.build(docket=docket, verdict_map=vm, shadow=shadow, sleeves=sleeves,
+                    saturation=sat)
+    assert doc["stages"] == {"generated": 3, "structurally_novel": 1, "evaluator_admitted": 3,
+                             "survives": 2, "forward_enrolled": 1,
+                             "prospective_independence": 1, "promoted_live": 1}
+    assert doc["by_producer"]["kimi"]["survives"] == 1
+    top = doc["candidates"][0]
+    assert top["producer"] == "kimi" and top["stage"] == "promoted_live"
+    # GBPUSD is enrolled forward but never survived: no forward credit without the verdict
+    gbp = next(c for c in doc["candidates"] if c["cell"] == cid["GBPUSD"])
+    assert gbp["stages"]["forward_enrolled"] is False
+
+
+def test_funnel_absent_inputs_read_unmeasured_never_zero(tmp_path: Path) -> None:
+    import breadth_funnel as bfn
+    doc = bfn.build(docket=[{"symbol": "EURUSD", "family": "carry", "params": {}}],
+                    verdict_map=None, shadow=None, sleeves=None, saturation={},
+                    now=NOW)
+    assert doc["stages"]["generated"] == 1
+    for s in bfn.STAGES[1:]:
+        assert doc["stages"][s] is None, s
+        assert s in doc["unmeasured"]
+    gone = bfn.build(docket={"not": "a list"}, verdict_map=None)
+    assert gone["status"] == "UNMEASURED"
+    p = bfn.publish(doc, tmp_path / "BREADTH_FUNNEL.json")
+    assert json.loads(p.read_text("utf-8"))["n_candidates"] == 1
