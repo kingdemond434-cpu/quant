@@ -208,6 +208,8 @@ class Prepared:
         c = df["close"].to_numpy("float64")
         atr = MR._atr(df, 20).to_numpy("float64")
         self.valid = np.isfinite(atr) & (atr > 0) & np.isfinite(c)
+        # the side the swap KNOWABLE AT EACH BAR paid (0: neither, or none knowable yet)
+        self.carry_pit = MR.pit_paying_side(df.index, symbol)
         t0, t1 = self.t_ns[0], self.t_ns[-1]
         self.cut = int(np.searchsorted(self.t_ns, t0 + int(TRAIN_FRAC * (t1 - t0))))
         # entry day of a fire at bar i is the day of bar i + 1
@@ -277,6 +279,9 @@ class Prepared:
                               cond_lo=cond.get("cond_lo", -MR.OPEN_BOUND),
                               cond_hi=cond.get("cond_hi", MR.OPEN_BOUND),
                               hour=cond.get("hour", -1), weekday=cond.get("weekday", -1))
+        if cond.get("grammar") == "carry":
+            cs = int(cond.get("carry_side", 0) or 0)
+            m = m & (self.carry_pit == cs) & (cs != 0)
         return m & self.valid
 
 
@@ -287,13 +292,19 @@ def _q(a: np.ndarray, q: float) -> float | None:
     return float(f"{float(np.quantile(v, q)):.6g}")
 
 
-def carry_side(meta: dict[str, Any]) -> int:
-    """+1 / -1 for the side whose recorded swap is POSITIVE, 0 when neither pays."""
-    sl = float((meta or {}).get("swap_long", 0.0) or 0.0)
-    ss = float((meta or {}).get("swap_short", 0.0) or 0.0)
-    if max(sl, ss) <= 0:
+def carry_side(P: Prepared) -> int:
+    """+1 / -1 for the side the KNOWABLE swap paid on more training-window bars, 0 when no bar of
+    the training window had a paying swap knowable at it.
+
+    Point in time (2026-10-07): this read today's registry swap (`meta`) and applied it to every
+    past bar, so a symbol whose swap flipped was screened on the side it pays NOW across years it
+    paid the other. The side is now chosen from the training window only, and `Prepared.mask`
+    fires a carry cell only on bars where that side was paying then."""
+    w = P.carry_pit[: P.cut]
+    up, dn = int((w > 0).sum()), int((w < 0).sum())
+    if up == dn == 0:
         return 0
-    return 1 if sl >= ss else -1
+    return 1 if up >= dn else -1
 
 
 def conditions(P: Prepared, meta: dict[str, Any] | None = None) -> list[dict[str, Any]]:
@@ -339,7 +350,7 @@ def conditions(P: Prepared, meta: dict[str, Any] | None = None) -> list[dict[str
                 if thr is not None:
                     out.append({"grammar": "lead", "feat": f, "op": op, "thr": thr,
                                 "leader": leader, "_q": q})
-    cs = carry_side(meta or {})
+    cs = carry_side(P)
     if cs:
         vr = P.feats["volratio"][:cut]
         v1, v2 = _q(vr, TERCILE_Q[0]), _q(vr, TERCILE_Q[1])
@@ -493,7 +504,9 @@ def params_of(c: dict[str, Any]) -> dict[str, Any]:
             "cond_lo": float(cd.get("cond_lo", -MR.OPEN_BOUND)),
             "cond_hi": float(cd.get("cond_hi", MR.OPEN_BOUND)),
             "hour": int(cd.get("hour", -1)), "weekday": int(cd.get("weekday", -1)),
-            "leader": str(cd.get("leader", "")), "atr_n": 20, "gv": MR.GRAMMAR_VERSION}
+            "leader": str(cd.get("leader", "")), "atr_n": 20, "gv": MR.GRAMMAR_VERSION,
+            **({"symbol": str(c["symbol"]), "carry_side": int(cd["carry_side"])}
+               if c.get("grammar") == "carry" else {})}
 
 
 def structural_key(c: dict[str, Any]) -> str:
@@ -503,7 +516,10 @@ def structural_key(c: dict[str, Any]) -> str:
     return "|".join(str(x) for x in (
         c["symbol"], c["grammar"], cd.get("feat", ""), cd.get("op", ""), cd.get("_q", ""),
         cd.get("cond_feat", ""), _band_label(cd), cd.get("hour", -1), cd.get("weekday", -1),
-        cd.get("leader", ""), c["hold"], c["direction"], c["stop_atr"], MR.GRAMMAR_VERSION))
+        cd.get("leader", ""), c["hold"], c["direction"], c["stop_atr"], MR.GRAMMAR_VERSION)
+        # the point-in-time carry rule is a NEW rule, not the pre-2026-10-07 one that read today's
+        # swap onto every bar; only carry keys change, so no other cell is re-forwarded
+        + (("pit",) if c.get("grammar") == "carry" else ()))
 
 
 def _band_label(cd: dict[str, Any]) -> str:

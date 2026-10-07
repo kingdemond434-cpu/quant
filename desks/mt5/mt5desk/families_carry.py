@@ -219,23 +219,62 @@ def _yield(swap: np.ndarray, mode: np.ndarray, point: np.ndarray,
     return np.where(np.isfinite(price) & (price > 0), out, np.nan)
 
 
-def carry_at(symbol: str, stamps: np.ndarray, price: np.ndarray, orient: int,
-             max_age_h: float) -> np.ndarray:
-    """Oriented carry (half the long-minus-short yield of the oriented long) at each broker stamp,
-    from the newest row knowable at that stamp and no older than `max_age_h`; NaN otherwise."""
+#: A knowable row older than this at a bar reads as NO swap for the per-bar readers below
+#: (`swap_rows_at`, `paying_side_at`) -- the same 96 h `mt5desk.engine.SWAP_MAX_AGE_H` charges by
+#: (brokers revise financing about weekly; four days covers a weekend with the terminal offline).
+PIT_MAX_AGE_H = 96.0
+
+
+def swap_rows_at(symbol: str, stamps: np.ndarray,
+                 max_age_h: float = PIT_MAX_AGE_H) -> dict[str, np.ndarray] | None:
+    """The newest row knowable at each broker stamp: {"lo", "sh", "mode", "point", "fresh"}.
+
+    THE ONE POINT-IN-TIME LOOKUP every swap reader goes through (the carry books, the mass
+    screen's carry grammar, the feature store's swap block). `fresh` is False where no row was
+    knowable yet or the newest one is older than `max_age_h`; values there are not a swap of that
+    bar and every caller masks them. None when the symbol has no honest row at all."""
     hist, _ = swap_history()
     h = hist.get(symbol)
-    out = np.full(stamps.size, np.nan)
-    if h is None or stamps.size == 0:
-        return out
+    stamps = np.asarray(stamps, dtype="int64")
+    if h is None or not h["t"].size:
+        return None
     j = np.searchsorted(h["t"], stamps, side="right") - 1
     has = j >= 0
     jj = np.where(has, j, 0)
     fresh = has & ((stamps - h["t"][jj]) <= float(max_age_h) * HOUR_NS)
-    lo = _yield(h["lo"][jj], h["mode"][jj], h["point"][jj], price)
-    sh = _yield(h["sh"][jj], h["mode"][jj], h["point"][jj], price)
+    return {"lo": h["lo"][jj], "sh": h["sh"][jj], "mode": h["mode"][jj],
+            "point": h["point"][jj], "fresh": fresh}
+
+
+def paying_side_at(symbol: str, stamps: np.ndarray,
+                   max_age_h: float = PIT_MAX_AGE_H) -> np.ndarray:
+    """+1 / -1 for the side whose swap KNOWABLE AT EACH STAMP is positive (long on a tie), 0 where
+    neither pays, the mode is 0 (swaps disabled), or no fresh row was knowable. The per-bar
+    replacement for reading today's registry swap onto every past bar."""
+    stamps = np.asarray(stamps, dtype="int64")
+    out = np.zeros(stamps.size, dtype="int8")
+    r = swap_rows_at(symbol, stamps, max_age_h)
+    if r is None:
+        return out
+    lo, sh = r["lo"], r["sh"]
+    pays = r["fresh"] & (np.maximum(lo, sh) > 0) & (r["mode"] != 0)
+    out[pays & (lo >= sh)] = 1
+    out[pays & (sh > lo)] = -1
+    return out
+
+
+def carry_at(symbol: str, stamps: np.ndarray, price: np.ndarray, orient: int,
+             max_age_h: float) -> np.ndarray:
+    """Oriented carry (half the long-minus-short yield of the oriented long) at each broker stamp,
+    from the newest row knowable at that stamp and no older than `max_age_h`; NaN otherwise."""
+    out = np.full(stamps.size, np.nan)
+    r = swap_rows_at(symbol, stamps, max_age_h) if stamps.size else None
+    if r is None:
+        return out
+    lo = _yield(r["lo"], r["mode"], r["point"], price)
+    sh = _yield(r["sh"], r["mode"], r["point"], price)
     d = 0.5 * (lo - sh) * (1 if orient >= 0 else -1)
-    out[fresh] = d[fresh]
+    out[r["fresh"]] = d[r["fresh"]]
     return out
 
 
