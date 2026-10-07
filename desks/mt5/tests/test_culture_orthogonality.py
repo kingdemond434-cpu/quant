@@ -316,3 +316,51 @@ def test_the_occupancy_leg_runs_the_culture_pass() -> None:
     out = om.culture_pass([], dry_run=True)
     assert out["status"] in ("MEASURED", co.UNMEASURED)
     assert out["report"].endswith("CULTURE_ORTHOGONALITY.json")
+
+
+# ------------------------------------------------------------------------------ CRO D20 counter
+def _counter_doc() -> dict[str, Any]:
+    return {"per_culture": {"JP": {"survivors": 3}, "US": {"survivors": 5},
+                            "UNMEASURED": {"survivors": 9}},
+            "pairs": [{"cultures": ["JP", "US"], "verdict": co.DIVERGE, "rho": 0.1},
+                      {"cultures": ["US", "KR"], "verdict": co.UNMEASURED},
+                      {"cultures": ["CN", "GB"], "verdict": co.SAME_EDGE, "rho": 0.7},
+                      {"cultures": ["CN", "US"], "verdict": co.DIVERGE, "rho": 0.0}],
+            "pair_counts": {}}
+
+
+def test_d20_counter_verdicts_vs_western_and_unmeasured_cells_without_index() -> None:
+    out = co.verdicts_counter(_counter_doc(), summary={}, now=NOW)
+    pc = out["per_culture"]
+    assert pc["JP"]["verdict_vs_western"] == "ORTHOGONAL"
+    assert pc["CN"]["verdict_vs_western"] == "MIXED"
+    assert pc["KR"]["verdict_vs_western"] == co.UNMEASURED      # a pair, but none measurable
+    assert pc["US"]["verdict_vs_western"] == "REFERENCE"
+    assert out["culture_orthogonality_verdicts"] == 2
+    assert "KR" in out["cultures_without_verdict"]
+    # no #139 summary: cells/judged are UNMEASURED with the reason, never 0
+    assert pc["JP"]["cells"] == co.UNMEASURED and pc["JP"]["judged"] == co.UNMEASURED
+    assert out["cells_why"] == co.INDEX_ABSENT
+    assert out["non_western_share"]["cells"] == co.UNMEASURED
+    assert out["non_western_share"]["survivors"] == round(3 / 8, 4)
+
+
+def test_d20_counter_reads_cells_and_judged_from_the_culture_summary() -> None:
+    summary = {"by_culture": {"JP/ja": 10, "US/en": 30, "GLOBAL": 5},
+               "judged_by_culture": {"JP/ja": 2, "US/en": 2}}
+    out = co.verdicts_counter(_counter_doc(), summary=summary, now=NOW)
+    assert out["per_culture"]["JP"]["cells"] == 10
+    assert out["per_culture"]["JP"]["judged"] == 2
+    assert out["non_western_share"]["cells"] == 0.25
+    assert out["non_western_share"]["judged"] == 0.5
+    assert out["cells_why"] == ""
+
+
+def test_d20_counter_is_written_by_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(co, "REPORT", tmp_path / "CO.json")
+    monkeypatch.setattr(co, "VERDICTS_REPORT", tmp_path / "V.json")
+    monkeypatch.setattr(co, "CELL_CULTURE_SUMMARY", tmp_path / "absent.json")
+    monkeypatch.setattr(co, "build", lambda **_: _counter_doc())
+    co.run(docket=[])
+    doc = json.loads((tmp_path / "V.json").read_text())
+    assert doc["metric"] == "culture_orthogonality_verdicts" and doc["generated_at"]

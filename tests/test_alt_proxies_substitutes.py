@@ -654,3 +654,36 @@ def test_engine_rows_file_matches_the_code_and_the_engine_can_read_it() -> None:
         assert bool(r["free"]) == (sid in A.SUBSTITUTED_BY), sid
     lib = {r["id"] for r in doc["library_rows"]}
     assert lib == {f"asia_{x}" for v in A.SUBSTITUTED_BY.values() for x in v}
+
+
+# ------------------------------------------------------------------------------ CRO D19 counter
+def test_d19_counter_counts_and_never_covers_on_an_unmeasured_corr(tmp_path: Path) -> None:
+    doc = A.paid_sources_substituted(A.Paths(tmp_path), datetime(2026, 10, 6, tzinfo=UTC))
+    rows = doc["rows"]
+    assert doc["paid_sources_named"] == len(rows) > 0
+    assert doc["with_substitute"] == sum(1 for r in rows if r["substitutes"])
+    assert (doc["covered"] + doc["research_unverified"] + doc["measured_below_threshold"]
+            + doc["blocked_no_substitute"]) == len(rows)
+    for r in rows:
+        if r["corr"] == A.UNMEASURED:
+            assert r["status"] != "COVERED" and r["corr_why"]
+    blocked = {r["paid_source"] for r in rows if r["status"] == "BLOCKED_NO_SUBSTITUTE"}
+    assert len(blocked) == len(A.NO_SUBSTITUTE)
+    assert doc["engine_152"]["status"] == A.UNMEASURED
+
+
+def test_d19_row_status_ladder() -> None:
+    assert A._paid_row("p", "k", ["s"], 0.5, "")["status"] == "COVERED"
+    assert A._paid_row("p", "k", ["s"], 0.49, "")["status"] == "MEASURED_BELOW_THRESHOLD"
+    assert A._paid_row("p", "k", ["s"], None, "why")["status"] == "research_unverified"
+    assert A._paid_row("p", "k", [], None, "why")["status"] == "BLOCKED_NO_SUBSTITUTE"
+
+
+def test_d19_counter_reads_a_fresh_engine_report(tmp_path: Path) -> None:
+    now = datetime(2026, 10, 6, 12, tzinfo=UTC)
+    p = A.Paths(tmp_path)
+    p.engine_report.parent.mkdir(parents=True)
+    p.engine_report.write_text(json.dumps({"generated_at": now.isoformat(), "headline": {
+        "paid_sources_named": 400, "paid_sources_substituted": 7}}))
+    eng = A.paid_sources_substituted(p, now)["engine_152"]
+    assert eng["status"] == "MEASURED" and eng["paid_sources_substituted"] == 7

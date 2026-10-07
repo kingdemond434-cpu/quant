@@ -147,6 +147,16 @@ class Paths:
         return self.desk / "reports" / "ALT_PROXIES.json"
 
     @property
+    def paid_substituted(self) -> Path:
+        """CRO D19 counter (`paid_sources_substituted`), rewritten every pass."""
+        return self.desk / "reports" / "PAID_SOURCES_SUBSTITUTED.json"
+
+    @property
+    def engine_report(self) -> Path:
+        """The paid-substitute engine's report (#152), read when that engine is on this host."""
+        return self.desk / "reports" / "PAID_SUBSTITUTE_COVERAGE.json"
+
+    @property
     def allocation_intel(self) -> Path:
         return self.desk / "reports" / "ALT_PROXIES_ALLOCATION_INTEL.json"
 
@@ -3796,6 +3806,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         _atomic(paths.allocation_intel, intel)
         _atomic(paths.equity_handoff, handoff)
         _atomic(paths.report, report)
+        _atomic(paths.paid_substituted, paid_sources_substituted(paths, now))
         from libs.research import asia_alt_digest
         asia_alt_digest.publish(SOURCE, digest_section(report), paths.digest)
     return report
@@ -3961,6 +3972,117 @@ def engine_rows() -> dict[str, Any]:
                      "paid-substitute engine reads `rows` as an Asia-thread table. alt_proxies "
                      "fetches every substitute itself; nothing here is fetched twice."),
             "rows": rows, "library_rows": lib}
+
+
+#: D19: a substitute COVERS its paid source only on a MEASURED correlation at or above this
+#: (the same bar as the paid-substitute engine's MIN_CORRELATION, #152).
+COVER_MIN_CORR = 0.5
+#: PAID_ORIGINAL_AGREEMENT key -> the paid class it measures.
+_AGREEMENT_CLASS = {"news_analytics": _NEWS, "card_panels": _CARD, "foot_traffic": _FOOT,
+                    "satellite": _SAT}
+#: The engine's report is read only this fresh; older reads as UNMEASURED.
+ENGINE_MAX_AGE_H = 6.0
+
+
+def _measured_corr(entry: Any) -> float | None:
+    """A numeric correlation an agreement entry carries, or None (never a default)."""
+    if not isinstance(entry, dict):
+        return None
+    for k in ("corr", "rho", "correlation", "pearson"):
+        v = entry.get(k)
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and v == v:
+            return float(v)
+    return None
+
+
+def _paid_row(paid: str, kind: str, subs: list[str], corr: float | None, why: str,
+              note: str = "") -> dict[str, Any]:
+    if not subs:
+        status = "BLOCKED_NO_SUBSTITUTE"
+    elif corr is None:
+        status = "research_unverified"
+    elif corr >= COVER_MIN_CORR:
+        status = "COVERED"
+    else:
+        status = "MEASURED_BELOW_THRESHOLD"
+    return {"paid_source": paid, "kind": kind, "substitutes": subs,
+            "corr": round(corr, 4) if corr is not None else UNMEASURED,
+            "corr_why": "" if corr is not None else why, "status": status,
+            **({"note": note} if note else {})}
+
+
+def _engine_headline(paths: Paths, now: datetime) -> dict[str, Any]:
+    doc = _read_json(paths.engine_report, None)
+    if not isinstance(doc, dict):
+        return {"status": UNMEASURED, "path": str(paths.engine_report),
+                "why": "paid_substitute_engine (#152) is not on LIVE: its report is absent"}
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_at")).replace("Z", "+00:00"))
+        age_h = (now - (at if at.tzinfo else at.replace(tzinfo=UTC))).total_seconds() / 3600
+    except ValueError:
+        return {"status": UNMEASURED, "path": str(paths.engine_report), "why": "undated"}
+    if age_h > ENGINE_MAX_AGE_H:
+        return {"status": UNMEASURED, "path": str(paths.engine_report),
+                "why": f"{age_h:.1f}h old (fresh means <= {ENGINE_MAX_AGE_H}h)"}
+    h = doc.get("headline") or {}
+    keys = ("paid_sources_named", "paid_sources_substituted", "covered_share",
+            "matched_unverified", "blocked_no_substitute", "vendor_sample_only", "contradicted",
+            "unmatched", "enrolled")
+    return {"status": "MEASURED", "path": str(paths.engine_report), "age_h": round(age_h, 2),
+            **{k: h.get(k, UNMEASURED) for k in keys}}
+
+
+def paid_sources_substituted(paths: Paths = DEFAULT_PATHS,
+                             now: datetime | None = None) -> dict[str, Any]:
+    """CRO duty D19's counter, one row per paid source this organ names.
+
+    The roster is (a) every paid panel class a free source here stands in for (`substitutes_for`)
+    and (b) every terms-blocked source in the engine rows (SUBSTITUTED_BY / NO_SUBSTITUTE). A row
+    is COVERED only on a MEASURED correlation >= COVER_MIN_CORR between substitute and paid
+    original; a substitute with no measured correlation is `research_unverified` and counts as
+    uncovered (D19); a paid source with no lawful substitute is BLOCKED_NO_SUBSTITUTE. Nothing
+    here is fetched: it reads the code's roster and PAID_ORIGINAL_AGREEMENT."""
+    now = now or datetime.now(UTC)
+    rows: list[dict[str, Any]] = []
+    agree = {_AGREEMENT_CLASS[k]: v for k, v in PAID_ORIGINAL_AGREEMENT.items()
+             if k in _AGREEMENT_CLASS}
+    classes = sorted({s.substitutes_for for s in SOURCES if s.substitutes_for})
+    for cls in classes:
+        subs = sorted(s.id for s in SOURCES
+                      if s.substitutes_for == cls and s.terms == "confirmed" and not is_dead(s))
+        entry = agree.get(cls)
+        why = (str(entry.get("why") or "") if isinstance(entry, dict)
+               else "no paid-original agreement row for this class")
+        rows.append(_paid_row(cls, "paid_panel_class", subs, _measured_corr(entry), why))
+    for sid in sorted({*SUBSTITUTED_BY, *NO_SUBSTITUTE}):
+        src = BY_ID[sid]
+        subs = list(SUBSTITUTED_BY.get(sid, ()))
+        rows.append(_paid_row(
+            f"{src.name} [{sid}]", "terms_blocked_source", subs, None,
+            "the blocked original is never fetched (terms), so there is no series to correlate",
+            note=NO_SUBSTITUTE.get(sid, "")))
+    n = {k: sum(1 for r in rows if r["status"] == k)
+         for k in ("COVERED", "research_unverified", "MEASURED_BELOW_THRESHOLD",
+                   "BLOCKED_NO_SUBSTITUTE")}
+    named = len(rows)
+    return {
+        "generated_at": now.isoformat(timespec="seconds"),
+        "organ": "alt_proxies", "duty": "D19",
+        "metric": "paid_sources_substituted",
+        "rule": (f"COVERED needs a MEASURED corr >= {COVER_MIN_CORR} to the paid original; an "
+                 "unmeasured substitute is research_unverified and counts as uncovered"),
+        "paid_sources_named": named,
+        "with_substitute": sum(1 for r in rows if r["substitutes"]),
+        "paid_sources_substituted": n["COVERED"],
+        "covered": n["COVERED"],
+        "research_unverified": n["research_unverified"],
+        "measured_below_threshold": n["MEASURED_BELOW_THRESHOLD"],
+        "blocked_no_substitute": n["BLOCKED_NO_SUBSTITUTE"],
+        "covered_share": round(n["COVERED"] / named, 4) if named else UNMEASURED,
+        "corr_measured": sum(1 for r in rows if r["corr"] != UNMEASURED),
+        "rows": rows,
+        "engine_152": _engine_headline(paths, now),
+    }
 
 
 def write_rosters() -> list[Path]:
