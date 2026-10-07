@@ -9,6 +9,8 @@ import urllib.parse
 import urllib.request
 from email.message import Message
 
+import pytest
+
 from libs.data import keyed_sources as ks
 
 KEY = "ab+cd/ef==gh-0123456789"
@@ -111,3 +113,46 @@ def test_a_same_host_redirect_keeps_its_query() -> None:
     new = ks.SameHostAuthRedirect((), ["k1"]).redirect_request(
         req, io.BytesIO(), 302, "Found", msg, dst)
     assert new is not None and new.full_url == dst
+
+
+def test_a_truncated_gzip_body_is_scrubbed_on_what_decodes() -> None:
+    import gzip
+    raw = gzip.compress((f"key={KEY} " * 50).encode())
+    out = ks.scrub_body(raw[: len(raw) // 2], [KEY])
+    assert KEY.encode() not in gzip.decompress(out)
+
+
+def test_deflate_bodies_are_scrubbed() -> None:
+    import zlib
+    for packed, enc in ((zlib.compress(f"k={KEY}".encode()), ""),
+                        (zlib.compress(f"k={KEY}".encode())[2:-4], "deflate")):
+        out = ks.scrub_body(packed, [KEY], enc)
+        try:
+            plain = zlib.decompress(out)
+        except zlib.error:
+            plain = zlib.decompress(out, -15)
+        assert KEY.encode() not in plain
+
+
+def test_inflation_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
+    import gzip
+    monkeypatch.setattr(ks, "MAX_INFLATE", 1024)
+    out = ks.scrub_body(gzip.compress(b"a" * 100_000 + KEY.encode()), [KEY])
+    assert len(gzip.decompress(out)) <= 1024
+
+
+def _follow(src: str, dst: str, secrets: list[str]) -> urllib.request.Request | None:
+    req = urllib.request.Request(src)
+    msg = Message()
+    msg["Location"] = dst
+    return ks.SameHostAuthRedirect((), secrets).redirect_request(
+        req, io.BytesIO(), 302, "Found", msg, dst)
+
+
+def test_a_key_in_a_redirect_path_or_nested_value_is_refused() -> None:
+    src = "https://api.eia.gov/v2/x/?" + urllib.parse.urlencode({"api_key": KEY})
+    assert _follow(src, f"https://evil.example/{urllib.parse.quote(KEY, safe='')}/x", []) is None
+    nested = "https://evil.example/?" + urllib.parse.urlencode(
+        {"next": "/x?" + urllib.parse.urlencode({"api_key": KEY})})
+    assert _follow(src, nested, []) is None
+    assert _follow("https://api.darwinex.com/a", f"https://evil.example/?t={KEY}", [KEY]) is None

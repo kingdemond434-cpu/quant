@@ -27,6 +27,7 @@ import os
 import re
 import urllib.parse
 import urllib.request
+import zlib
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
@@ -49,6 +50,9 @@ class Request:
     headers: dict[str, str] = field(default_factory=dict)
     data: bytes | None = None
     part: str = ""
+    #: The credentials this request carries, so the opener can refuse a redirect that would
+    #: hand one to another host. Set by the caller that holds the keys; never logged.
+    secrets: tuple[str, ...] = field(default=(), repr=False)
 
 
 def _num(s: Any) -> float | None:
@@ -102,25 +106,65 @@ def _escape_pattern(form: str) -> re.Pattern[str]:
                               for p in parts if p))
 
 
-def scrub_body(body: bytes, secrets: Iterable[str]) -> bytes:
+#: Decompressed bytes a scrub will inflate at most: a zip bomb cannot exhaust memory, and the
+#: collectors read at most 16 MiB raw anyway.
+MAX_INFLATE = 64 * 1024 * 1024
+
+
+def _inflate(body: bytes, wbits: int) -> tuple[bytes, bool]:
+    """(bytes inflated, complete?) -- bounded by MAX_INFLATE; a truncated or corrupt stream
+    yields what decoded before the fault, which is everything anyone could ever read from it."""
+    d = zlib.decompressobj(wbits)
+    try:
+        out = d.decompress(body, MAX_INFLATE)
+        return out, d.eof and not d.unconsumed_tail
+    except zlib.error:
+        return b"", False
+
+
+def _is_zlib(body: bytes) -> bool:
+    return len(body) > 2 and body[0] & 0x0F == 8 and (body[0] << 8 | body[1]) % 31 == 0
+
+
+def scrub_body(body: bytes, secrets: Iterable[str], encoding: str = "") -> bytes:
     """A response body with any echoed credential removed BEFORE it reaches a vault or the lake.
 
     EIA v2 echoes the request back under `request.params`, `api_key` included; that param is
-    dropped from the JSON, and every encoded form of every secret is then replaced bytewise, so a
-    source that echoes the key anywhere else is covered too. A body with nothing to scrub is
-    returned unchanged (same bytes, same content hash)."""
+    dropped from the JSON, and every encoded form of every secret is then replaced, so a source
+    that echoes the key anywhere else is covered too. A body with nothing to scrub is returned
+    unchanged (same bytes, same content hash).
+
+    COMPRESSED BODIES (audit of #252): gzip and zlib/deflate are recognised by their magic or by
+    `encoding` (the Content-Encoding header) and inflated with a bound; a truncated or corrupt
+    stream is scrubbed on what decodes and, when anything was found or the stream was broken,
+    stored re-compressed from the scrubbed bytes. Brotli needs the `brotli` module; without it
+    a `br` body is refused (empty), never stored unread."""
     keys = [str(s) for s in secrets if s]
     if not keys or not body:
         return body
-    if body[:2] == b"\x1f\x8b":
-        # A gzip-encoded body (a .gz download, or Content-Encoding the opener did not undo) is
-        # scrubbed inside and re-compressed only when something changed.
-        try:
-            inner = gzip.decompress(body)
-        except (OSError, EOFError, ValueError):
-            return body
+    enc = (encoding or "").strip().lower()
+    if body[:2] == b"\x1f\x8b" or enc in ("gzip", "x-gzip"):
+        inner, whole = _inflate(body, 31)
         clean = scrub_body(inner, keys)
-        return body if clean == inner else gzip.compress(clean, mtime=0)
+        return body if whole and clean == inner else gzip.compress(clean, mtime=0)
+    if enc == "deflate" or _is_zlib(body):
+        inner, whole = _inflate(body, 15)
+        if not inner and not whole:
+            inner, whole = _inflate(body, -15)
+        if inner or enc == "deflate":    # zlib-looking bytes that do not inflate are plain
+            clean = scrub_body(inner, keys)
+            return body if whole and clean == inner else zlib.compress(clean)
+    if enc == "br":
+        try:
+            import brotli  # type: ignore[import-not-found]
+        except ImportError:
+            return b""
+        try:
+            inner = brotli.decompress(body)[:MAX_INFLATE]
+        except Exception:
+            return b""
+        clean = scrub_body(inner, keys)
+        return body if clean == inner else brotli.compress(clean)
     out = body
     if b"api_key" in out:
         doc = _json(out)
@@ -169,6 +213,13 @@ class SameHostAuthRedirect(urllib.request.HTTPRedirectHandler):
             if len(keep) != len(pairs):
                 new.full_url = urllib.parse.urlunsplit(
                     now._replace(query=urllib.parse.urlencode(keep)))
+            # ANYWHERE ELSE IN THE URL IS A REFUSAL (audit of #252): a key in the path, or nested
+            # in another value (`next=...api_key=...`), cannot be stripped without guessing, so
+            # the redirect is not followed at all. Every value the original query carried counts
+            # as a credential here, so a caller that declared no secrets is covered too.
+            carried = self.secrets | {v for _, v in sent if len(v) >= 8}
+            if carried and redact(new.full_url, carried) != new.full_url:
+                return None
         return new
 
 

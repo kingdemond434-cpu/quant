@@ -2601,8 +2601,11 @@ def _redact(url: str, src: Source) -> str:
 
 
 def http_get(url: str) -> tuple[bytes, str]:
+    from libs.data.keyed_sources import keyed_opener
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
-    with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
+    # The key rides in this url's query: the opener strips it from, or refuses, any redirect
+    # that would carry it to another host (audit of #252).
+    with keyed_opener(_tls()).open(req, timeout=TIMEOUT) as r:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
 

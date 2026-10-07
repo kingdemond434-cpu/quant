@@ -26,7 +26,7 @@ import argparse
 import hashlib
 import json
 from collections.abc import Callable, Iterable, Mapping
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -36,6 +36,8 @@ ROOT = Path(__file__).resolve().parents[2]
 REPORTS = ROOT / "desks" / "mt5" / "reports"
 OUT = REPORTS / "KEYS_NEEDED.json"
 
+#: Days a requested key stays parked before the alert names it again.
+REQUEST_STALE_DAYS = 14
 #: Groups whose keys the principal should register when missing.
 ASK_GROUPS = frozenset({"free_data", "free_llm", "free_infra"})
 #: Groups never asked for, whatever a report says: the principal marked them unavailable, or the
@@ -95,12 +97,21 @@ def _reasons(reports: Path) -> dict[str, list[str]]:
 def build(*, reports: Path = REPORTS, acquired: Iterable[str] = (),
           requested: Iterable[str] = (), present: Callable[[str], bool] | None = None,
           now: datetime | None = None) -> dict[str, Any]:
-    """`requested`: names the principal has applied for and is waiting on (a provider that
-    answers by email). Listed apart and kept out of the digest, so the alert does not nag about
-    a key nobody can fetch yet; a REJECTED key is never parked this way."""
+    """`requested`: `NAME@YYYY-MM-DD` for a key the principal applied for on that day and is
+    waiting on (a provider that answers by email). Parked out of the list and the digest so the
+    alert does not nag about a key nobody can fetch yet -- for REQUEST_STALE_DAYS only; after
+    that it comes back as REQUESTED_STALE. An undated name is never parked (audit of #252: an
+    undated park dropped a never-set key off the list for good), nor is a REJECTED key."""
     cat = _catalog_by_name()
     have = {str(n).strip() for n in acquired if str(n).strip()}
-    waiting = {str(n).strip() for n in requested if str(n).strip()}
+    today = (now or datetime.now(tz=UTC)).date()
+    waiting: dict[str, date] = {}
+    for entry in requested:
+        name, _, day = str(entry).strip().partition("@")
+        try:
+            waiting[name.strip()] = date.fromisoformat(day.strip())
+        except ValueError:
+            continue                     # undated: not parked
 
     def is_set(name: str) -> bool:
         if name in have:
@@ -123,11 +134,17 @@ def build(*, reports: Path = REPORTS, acquired: Iterable[str] = (),
         if not rejected and any(is_set(n) for n in [canon, *(hit.get("aliases") or ())]):
             continue   # set since the report was written; the next pass will agree
         items.setdefault(canon, {"name": canon, "reasons": []})["reasons"] += why
-    parked = sorted(n for n in items
-                    if n in waiting and not any(r.startswith("REJECTED")
-                                                for r in items[n]["reasons"]))
-    for n in parked:
-        items.pop(n)
+    parked: list[str] = []
+    for n in sorted(items):
+        if n not in waiting or any(r.startswith("REJECTED") for r in items[n]["reasons"]):
+            continue
+        age = (today - waiting[n]).days
+        if age < REQUEST_STALE_DAYS:
+            parked.append(n)
+            items.pop(n)
+        else:
+            items[n]["reasons"].append(f"REQUESTED_STALE: applied for {waiting[n]}, {age} days "
+                                       f"ago, and still not set")
     out = []
     for name in sorted(items):
         row = cat[name]
@@ -161,7 +178,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--acquired", default="",
                     help="file of key NAMES (one per line) to treat as set, for a host with no "
-                         "box state; a line ~NAME marks a key applied for and still waiting")
+                         "box state; a line ~NAME@YYYY-MM-DD marks a key applied for that day")
     ap.add_argument("--write", action="store_true", help=f"write {OUT.name}")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
@@ -169,7 +186,7 @@ def main(argv: list[str] | None = None) -> int:
     if a.acquired:
         names = [ln.split("#", 1)[0].strip() for ln in
                  Path(a.acquired).read_text("utf-8").splitlines()]
-    # A line `~NAME` means applied for and waiting on the provider.
+    # A line `~NAME@YYYY-MM-DD` means applied for that day and waiting on the provider.
     doc = build(acquired=[n for n in names if not n.startswith("~")],
                 requested=[n[1:] for n in names if n.startswith("~")])
     if a.write:
