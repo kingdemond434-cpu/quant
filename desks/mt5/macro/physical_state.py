@@ -27,6 +27,12 @@ earlier. `RELEASE_OVERRIDES` records any irregular week the EIA announces, by we
 THE CONSUMER. `store_rows` hands (actual change, seasonal expectation) pairs to `event_surprise`,
 which standardises each release on its OWN history and measures the USOIL/UKOIL reaction per
 bucket through the gauntlet's door. Nothing here has a direction.
+
+EVENT TO SCALE (DATA-26). `main` also runs `macro/supply_scale.py`: each supply-type event in the
+news stream's log is translated into lost output, share of global and regional supply, expected
+duration and cushion (spare capacity, and this report's crude inventory vs norm) from the
+declared capacity table, with the OPEC+ quota/compliance state; PHYSICAL_STATE.json carries both
+as `event_scale` and `opec`.
 """
 from __future__ import annotations
 
@@ -292,15 +298,36 @@ def observations(report: Mapping[str, Any], received_at: datetime) -> list[Any]:
     return out
 
 
+def scale_block(rep: Mapping[str, Any], now: datetime) -> dict[str, Any]:
+    """DATA-26: the event-to-scale estimator and OPEC+ compliance (`macro/supply_scale.py`),
+    with this report's own crude inventory vs norm as the cushion. UNMEASURED if it raises."""
+    try:
+        from macro import supply_scale as ss
+        return ss.build(now=now, physical=rep)
+    except Exception as exc:                             # pragma: no cover - organ guard
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+
+
 def main(argv: list[str] | None = None) -> int:
-    rep = build()
+    now = datetime.now(UTC)
+    rep = build(now=now)
+    scale = scale_block(rep, now)
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps({k: v for k, v in rep.items() if k != "store_rows"} |
-                                 {"n_store_rows": len(rep["store_rows"])},
+                                 {"n_store_rows": len(rep["store_rows"]),
+                                  "event_scale": {k: v for k, v in scale.items()
+                                                  if k != "opec"},
+                                  "opec": scale.get("opec")},
                                  indent=1, default=str), "utf-8")
     try:
         from libs.research import sensor_contract as sc
-        led = sc.SensorLedger().append(observations(rep, datetime.now(UTC)))
+        rows = observations(rep, now)
+        try:
+            from macro import supply_scale as ss
+            rows += ss.observations(scale, now)
+        except Exception:                                # pragma: no cover - ledger guard
+            pass
+        led = sc.SensorLedger().append(rows)
     except Exception as exc:                             # pragma: no cover - ledger guard
         led = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
     print(f"physical_state status={rep['status']} pairs={len(rep['store_rows'])} ledger={led}")

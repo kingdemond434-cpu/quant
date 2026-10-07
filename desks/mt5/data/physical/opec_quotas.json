@@ -1,0 +1,19 @@
+{
+ "schema": "opec_quotas/1",
+ "version": "2026-10-07.1",
+ "unit": "kb/d",
+ "rule": "Required crude production per OPEC+ country from public OPEC+ decisions. Every row is VERIFY: written from the decision's published required-production table, to be checked against the cited press release before any number is relied on. A country exempt from quotas is listed with required null and says so. Compliance is computed only against a production estimate on this host; without one it is UNMEASURED.",
+ "decisions": [
+  {"id": "onomm37_2025",
+   "decision": "37th OPEC and non-OPEC Ministerial Meeting: required production levels for 2025 (before the additional voluntary adjustments)",
+   "source": "OPEC press release, 2 June 2024 (Annex: required production levels for 2025)",
+   "source_url": "https://www.opec.org/opec_web/en/press_room/7313.htm",
+   "effective_from": "2025-01-01", "effective_to": "2026-12-31", "status": "VERIFY",
+   "required": {"DZ": 1007, "CG": 277, "GQ": 70, "GA": 169, "IQ": 4431, "KW": 2676,
+                "NG": 1500, "SA": 10478, "AE": 3519, "AZ": 551, "BH": 196, "BN": 83,
+                "KZ": 1628, "MY": 401, "OM": 841, "RU": 9949, "SD": 64,
+                "SS": 124},
+   "exempt": {"IR": "exempt (sanctions)", "LY": "exempt (security)", "VE": "exempt (sanctions)",
+              "MX": "no required level in the 2025 table (voluntary participant)"}}
+ ]
+}
