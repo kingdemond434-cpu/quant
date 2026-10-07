@@ -1,0 +1,852 @@
+{
+ "note": "Per catalogue host: the host's own terms page, the clause quoted verbatim, and a verdict. catalog_routes fetches a host only on verdict PERMITS with a quote; UNREAD and PROHIBITS fail closed. Quotes were read through a page-to-text fetcher on 2026-10-06; an UNREAD row is resolved by reading the page on the box, never by inference.",
+ "checked_at": "2026-10-06",
+ "hosts": {
+  "api-production.data.gov.sg": {
+   "terms_url": "https://data.gov.sg/open-data-licence",
+   "terms_quote": "The Agency grants you a worldwide, perpetual, royalty-free, non-exclusive licence to Use the datasets, subject to the terms of this Licence. ... You can use, access, download, copy, distribute, transmit, modify and adapt the datasets, or any derived analyses or applications, whether commercially or non-commercially.",
+   "gloss": "Singapore Open Data Licence v1.0 on data.gov.sg; API key / rate-limit terms not read.",
+   "licence": "Singapore Open Data Licence 1.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "api.beta.ons.gov.uk": {
+   "terms_url": "https://developer.ons.gov.uk/",
+   "terms_quote": "All content is available under the Open Government Licence v3.0, except where otherwise stated ... The API is open and unrestricted - no API keys are required",
+   "gloss": "ONS developer hub; a separate 'Guide to rate limiting and bot development' applies.",
+   "licence": "OGL-UK-3.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "api.data.gov.my": {
+   "terms_url": "https://data.gov.my/",
+   "terms_quote": "",
+   "gloss": "Footer shows only '© 2026 Public Sector Open Data'; the Terms of Use page could not be located (data.gov.my/terms-of-use 404). Developer docs mention a rate-limit page.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "api.data.stats.govt.nz": {
+   "terms_url": "https://www.stats.govt.nz/about-us/legal-matters/copyright",
+   "terms_quote": "",
+   "gloss": "Stats NZ copyright pages returned 404 or rendered no text; roster routes this host as 'keyed' (subscription key).",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "api.e-stat.go.jp": {
+   "terms_url": "https://www.e-stat.go.jp/api/terms-of-use",
+   "terms_quote": "",
+   "gloss": "Content reuse follows the main e-Stat terms (not read here). The API terms require registration and an application ID, so verdict is UNREAD pending the desk's own registration.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "本機能は、利用登録をした利用者のみ利用することができます。 (Only registered users may use this function.) ... 利用者は、発行を受けたアプリケーションIDを、第三者に譲渡・貸与してはならないものとします。 (Users must not transfer or lend the issued application ID to third parties.)",
+   "checked_at": "2026-10-06"
+  },
+  "api.imf.org": {
+   "terms_url": "https://www.imf.org/en/About/copyright-and-terms",
+   "terms_quote": "download, extract, copy, create derivative works, publish, distribute, and use Data",
+   "gloss": "Data reuse is granted with attribution, but the same page prohibits automated bulk download without explicit permission and requires permission for commercial reuse.",
+   "licence": "IMF Copyright and Usage terms",
+   "verdict": "PROHIBITS",
+   "prohibiting_quote": "The IMF prohibits bulk download of information by automated technology without explicit permission ... The IMF does not permit use of its Content or Sites for the training of large language models (LLMs) without explicit permission",
+   "checked_at": "2026-10-06"
+  },
+  "api.neso.energy": {
+   "terms_url": "https://www.neso.energy/data-portal/neso-open-licence",
+   "terms_quote": "copy, publish, distribute and transmit the Information; adapt the Information; exploit the Information commercially and non-commercially",
+   "gloss": "NESO Open Data Licence (datasets are licensed individually; this licence applies to datasets associated with it). API guidance (https://www.neso.energy/data-portal/api-guidance): CKAN API max one request per second; Datastore API max two requests per minute; IP may be blocked if overloading.",
+   "licence": "NESO Open Data Licence",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "If the data consumer is not following the best practise for using the API and therefore overloading the server which causes performance issues then we reserve the right to block that IP address.",
+   "checked_at": "2026-10-06"
+  },
+  "api.statistiken.bundesbank.de": {
+   "terms_url": "https://www.bundesbank.de/en/homepage/user-information/terms-of-use-regarding-the-reuse-of-escb-statistics-621188",
+   "terms_quote": "All publicly available ESCB statistics may be reused free of charge on the condition that the source is quoted (e.g. 'Source: ECB statistics.') and that the statistics (including metadata) are not modified.",
+   "gloss": "",
+   "licence": "ESCB statistics reuse policy",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "api.worldbank.org": {
+   "terms_url": "https://datacatalog.worldbank.org/public-licenses",
+   "terms_quote": "allows users to copy, modify and distribute data in any format for any purpose, including commercial use",
+   "gloss": "Datasets are CC BY 4.0 (World Bank Data Catalog public licences page), but the World Bank general terms (https://www.worldbank.org/en/about/legal/terms-of-use-for-datasets, as served) restrict API use to non-commercial purposes; a trading desk's use may be commercial.",
+   "licence": "CC-BY-4.0 (datasets)",
+   "verdict": "PROHIBITS",
+   "prohibiting_quote": "you may use the APIs to facilitate certain non-commercial uses of the Materials ... you may not in any event use the APIs to facilitate commercial uses ... You may not use the APIs in a manner that exceeds reasonable request volume",
+   "checked_at": "2026-10-06"
+  },
+  "bdm.insee.fr": {
+   "terms_url": "https://insee.fr/fr/information/2008466",
+   "terms_quote": "les informations publiques diffusées sur ce site (données, bases de données, publications, fichiers téléchargeables) sont mises à disposition sous la Licence Ouverte / Open Licence version 2.0",
+   "gloss": "Public information on this site (data, databases, publications, downloadable files) is made available under the Licence Ouverte / Open Licence 2.0. The same page directs large-scale collection to 'les services dédiés de diffusion de données (API, fichiers téléchargeables, bases open data)' and reserves throttling/IP blocking for excessive automated extraction.",
+   "licence": "Licence Ouverte 2.0 (Etalab)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "catalog.data.gov": {
+   "terms_url": "https://www.data.gov/privacy-policy/",
+   "terms_quote": "Data and content created by government employees within the scope of their employment are not subject to domestic copyright protection under 17 U.S.C. § 105. ... In most cases, U.S. Federal data available through Data.gov is offered free and without restriction. ... In most cases, federal data accessed through Data.gov do not, and should not, include controls over its end use.",
+   "gloss": "",
+   "licence": "public domain (US federal)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "catalogodatos.gub.uy": {
+   "terms_url": "https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/sites/agencia-gobierno-electronico-sociedad-informacion-conocimiento/files/documentos/publicaciones/licencia_de_datos_abiertos_0.pdf",
+   "terms_quote": "podrán ser: enajenados, reproducidos, distribuidos, publicados, traducidos, adaptados, transformados, comunicados o puestos a disposición del público",
+   "gloss": "Under the Uruguay Open Data Licence (which governs any catalogue dataset without its own licence, per https://catalogodatos.gub.uy/terminos-catalogodatos.pdf) the data may be: transferred, reproduced, distributed, published, translated, adapted, transformed, communicated or made available to the public; commercial and non-commercial use, with attribution.",
+   "licence": "Licencia de Datos Abiertos de Uruguay",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "catalogue.data.gov.bc.ca": {
+   "terms_url": "https://www2.gov.bc.ca/gov/content/data/policy-standards/open-data/open-government-licence-bc",
+   "terms_quote": "",
+   "gloss": "Catalogue is JavaScript-only. The OGL-BC grant was read on www2.gov.bc.ca ('The Information Provider grants you a worldwide, royalty-free, perpetual, non-exclusive licence to use the Information...'), but which licence each catalogue record carries was not read, so the link is inferred.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "catalogue.data.govt.nz": {
+   "terms_url": "https://www.data.govt.nz/terms-of-use",
+   "terms_quote": "Material on the Site is provided by DIA, that Material is licensed to Users under the Creative Commons Attribution 4.0 International licence",
+   "gloss": "",
+   "licence": "CC-BY-4.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "catalogue.data.wa.gov.au": {
+   "terms_url": "https://data.wa.gov.au/copyright",
+   "terms_quote": "",
+   "gloss": "Host redirects to data.wa.gov.au. Copyright page grants only personal / non-commercial-within-organisation use; whether desk research qualifies is ambiguous.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "You may copy, distribute, display, download or print the material on this website for your own personal use, for non-commercial educational purposes or for non-commercial use within your organisation, provided you attribute the source of the information and reference any copyright or licence conditions.",
+   "checked_at": "2026-10-06"
+  },
+  "ckan.opendata.swiss": {
+   "terms_url": "https://opendata.swiss/en/terms-of-use",
+   "terms_quote": "Open use: You may use this dataset for non-commercial purposes. You may use this dataset for commercial purposes.",
+   "gloss": "Terms are set per dataset (four categories); categories 3 and 4 require permission for commercial use, non-commercial use is open in all four.",
+   "licence": "per-dataset (opendata.swiss terms categories)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "cmr.earthdata.nasa.gov": {
+   "terms_url": "https://www.earthdata.nasa.gov/engage/open-data-services-software-policies",
+   "terms_quote": "",
+   "gloss": "Earthdata policy pages returned HTTP 403; not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "dados.antt.gov.br": {
+   "terms_url": "https://dados.antt.gov.br/about",
+   "terms_quote": "Livres de licenças: os dados não estão sujeitos a regulação de direitos autorais, marcas, patentes ou segredo industrial. ... os dados estão disponíveis a todos, sem que seja necessária identificação ou registro.",
+   "gloss": "Licence-free: the data are not subject to copyright, trademark, patent or trade-secret regulation ... data are available to all, without identification or registration.",
+   "licence": "open data, licence-free (Decreto 8.777/2016)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "dados.gov.br": {
+   "terms_url": "https://dados.gov.br/dados/conteudo/termos-de-uso",
+   "terms_quote": "",
+   "gloss": "Page is JavaScript-only; no text read. Roster routes this host as 'keyed' (API token).",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "dados.gov.pt": {
+   "terms_url": "https://dados.gov.pt/pt/terms/",
+   "terms_quote": "",
+   "gloss": "Fetcher could not read robots.txt (timeout); not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "dados.ons.org.br": {
+   "terms_url": "https://dados.ons.org.br/about",
+   "terms_quote": "garante liberdade para reuso e redistribuição de dados sem restrição de divulgação ... Disponibilidade de dados para todos, sem a necessidade de cadastro ou solicitação.",
+   "gloss": "Guarantees freedom to reuse and redistribute data without disclosure restriction ... Data available to everyone, without need for registration or request.",
+   "licence": "open data (Decreto 8.777/2016 principles)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "dadosabertos.aneel.gov.br": {
+   "terms_url": "https://dadosabertos.aneel.gov.br/about",
+   "terms_quote": "disponibilizados sob licença aberta que permita sua livre utilização, consumo ou cruzamento, limitando-se a creditar a autoria ou a fonte",
+   "gloss": "Made available under an open licence permitting free use, consumption or cross-referencing, limited to crediting the authorship or source.",
+   "licence": "open licence with attribution (Decreto 8.777/2016)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data-api.ecb.europa.eu": {
+   "terms_url": "https://www.ecb.europa.eu/stats/ecb_statistics/governance_and_quality_framework/html/usage_policy.en.html",
+   "terms_quote": "All publicly available ESCB statistics may be reused free of charge on the condition that the source is quoted (e.g. 'Source: ECB statistics.')",
+   "gloss": "ECB statistics reuse policy; statistics free of charge 'irrespective of any subsequent commercial or non-commercial use'. Access may be restricted if a user acts contrary to the interests of other users.",
+   "licence": "ECB statistics reuse policy (free reuse with attribution)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.api.abs.gov.au": {
+   "terms_url": "https://www.abs.gov.au/website-privacy-copyright-and-disclaimer",
+   "terms_quote": "All material presented on this website is provided under a Creative Commons Attribution 4.0 International licence",
+   "gloss": "Exceptions: coat of arms, logos, trade marks, unit-record microdata, third-party content.",
+   "licence": "CC-BY-4.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.bts.gov": {
+   "terms_url": "https://www.tylertech.com/terms",
+   "terms_quote": "",
+   "gloss": "Footer links only Tyler/Socrata terms (HTTP 403) and DOT web policies (no copyright text found). Not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.ca.gov": {
+   "terms_url": "https://data.ca.gov/pages/terms-of-use",
+   "terms_quote": "",
+   "gloss": "Terms page text did not render; privacy policy has no reuse clause; open data policy page has no licence text.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.cityofchicago.org": {
+   "terms_url": "https://www.chicago.gov/city/en/narr/foia/data_disclaimer.html",
+   "terms_quote": "",
+   "gloss": "Chicago's About page says 'Be sure to review the Terms of Use'; the terms/disclaimer page returned HTTP 403. Not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.cityofnewyork.us": {
+   "terms_url": "https://opendata.cityofnewyork.us/overview/",
+   "terms_quote": "",
+   "gloss": "NYC Open Data binds users to the NYC.gov Terms of Use; that page reserves all rights in site materials and states no data-reuse grant. No permitting clause read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "By accessing datasets and feeds available through NYC Open Data, the user agrees to all of the Terms of Use of NYC.gov as well as the Privacy Policy for NYC.gov. [NYC.gov Terms of Use, https://www.nyc.gov/main/terms-of-use:] All other design, information, text, graphics, images, pages, interfaces, links, software, and other items and materials contained in or displayed on NYC.gov...are the property of the City of New York. All rights are reserved.",
+   "checked_at": "2026-10-06"
+  },
+  "data.economie.gouv.fr": {
+   "terms_url": "https://data.economie.gouv.fr/",
+   "terms_quote": "Sauf indication contraire, tout le contenu de ce site est disponible sous Licence Ouverte 2.0",
+   "gloss": "Unless otherwise indicated, all content on this site is available under the Licence Ouverte 2.0. (Site footer; mentions légales at https://data.economie.gouv.fr/terms/terms-and-conditions/)",
+   "licence": "Licence Ouverte 2.0 (Etalab)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.enedis.fr": {
+   "terms_url": "https://data.enedis.fr/",
+   "terms_quote": "",
+   "gloss": "JavaScript-only; no footer or terms read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.europa.eu": {
+   "terms_url": "https://data.europa.eu/en/legal-notice",
+   "terms_quote": "the European Union has waived all copyright and related or neighbouring rights to metadata of the open data portal via Creative Commons CC0 1.0 Universal Public Domain Dedication deed",
+   "gloss": "Editorial content: 'reuse of the editorial content on this website owned by the EU is authorized under the Creative Commons Attribution 4.0 International (CC BY 4.0) licence'. Third-party datasets carry their own licences.",
+   "licence": "CC0-1.0 (metadata) / CC-BY-4.0 (editorial)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.go.th": {
+   "terms_url": "https://data.go.th/pages/dga-open-government-license",
+   "terms_quote": "",
+   "gloss": "Licence terms are only in linked PDFs (Terms-and-Conditions-for-DGA-Open-Government-License EN/TH, 04062021); the guessed PDF URL returned 404, so the grant was not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.gov.au": {
+   "terms_url": "https://data.gov.au/data/about",
+   "terms_quote": "With the exception of the Commonwealth Coat of Arms and where otherwise noted, material presented on is provided under a Creative Commons Attribution 3.0 Australia licence.",
+   "gloss": "Quoted as served (the site name is missing from the sentence in the source).",
+   "licence": "CC-BY-3.0-AU",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.gov.ie": {
+   "terms_url": "https://data.gov.ie/license",
+   "terms_quote": "Contains Irish Public Sector Data licensed under a Creative Commons Attribution 4.0 International (CC BY 4.0) licence",
+   "gloss": "Required attribution statement of the national Open Data Licence (CC-BY at a minimum, or CC0).",
+   "licence": "CC-BY-4.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.gov.lv": {
+   "terms_url": "https://data.gov.lv/lv/buj",
+   "terms_quote": "",
+   "gloss": "FAQ only describes open data generically ('brīvi izmantot jebkādam mērķim' = freely use for any purpose); no portal licence grant was read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.gov.ro": {
+   "terms_url": "https://data.gov.ro/",
+   "terms_quote": "",
+   "gloss": "Connection timed out; not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.gov.tw": {
+   "terms_url": "https://spdx.org/licenses/OGDL-Taiwan-1.0.html",
+   "terms_quote": "",
+   "gloss": "The OGDL-Taiwan-1.0 grant was read only on spdx.org ('...royalty-free copyright license to reproduce, distribute ... for any purpose'); no data.gov.tw page could be fetched (robots.txt unreachable), so the link between host and licence is inferred.",
+   "licence": "OGDL-Taiwan-1.0 (inferred)",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.gov.ua": {
+   "terms_url": "https://data.gov.ua/pages/rules",
+   "terms_quote": "Весь контент доступний за ліцензією Creative Commons Attribution 4.0 International license",
+   "gloss": "All content is available under the Creative Commons Attribution 4.0 International license.",
+   "licence": "CC-BY-4.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.gov.uk": {
+   "terms_url": "https://www.data.gov.uk/privacy-and-terms/",
+   "terms_quote": "All content is available under the Open Government Licence v3.0, except where otherwise stated.",
+   "gloss": "",
+   "licence": "OGL-UK-3.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.humdata.org": {
+   "terms_url": "https://data.humdata.org/faqs/terms",
+   "terms_quote": "",
+   "gloss": "HDX Terms of Service set no blanket licence: 'Organizations must specify an appropriate license for all data they share publicly' and 'After downloading a public dataset, users must follow the applicable license when using and sharing the data.' No clause on API/automated access found; no blanket grant read.",
+   "licence": "per-dataset",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.norges-bank.no": {
+   "terms_url": "https://www.norges-bank.no/en/topics/statistics/open-data/",
+   "terms_quote": "",
+   "gloss": "Open-data page describes the API but states no licence or terms; copyright page 404. Not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.nsw.gov.au": {
+   "terms_url": "https://data.nsw.gov.au/copyright",
+   "terms_quote": "",
+   "gloss": "Site content is CC BY 4.0 'save for the data and its associated metadata'; each data record carries its own licence, and unlicensed records are all-rights-reserved. No blanket grant covering the catalogue metadata was read.",
+   "licence": "per-record",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "Each data record available from this website is associated with a particular licence. The terms of the specific licences attached to each record will govern the reuse of the data and its associated metadata. ... the data and metadata must be regarded as being protected by Crown copyright, with all rights reserved",
+   "checked_at": "2026-10-06"
+  },
+  "data.ny.gov": {
+   "terms_url": "https://data.ny.gov/dataset/OPEN-NY-Terms-Of-Use/77gx-ii52",
+   "terms_quote": "",
+   "gloss": "Terms of Use is a Socrata asset whose body did not render (PDF download came back as binary). Not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.ontario.ca": {
+   "terms_url": "https://data.ontario.ca/about",
+   "terms_quote": "Most of the data available in the catalogue is released under Ontario's Open Government Licence.",
+   "gloss": "Licence is per dataset; not all datasets are licensed. The Datastore API must be called server-side.",
+   "licence": "OGL-Ontario (most datasets)",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "However, each dataset may be shared with the public under other kinds of licences or no licence at all. ... If a dataset doesn't have a licence, you don't have the right to use the data.",
+   "checked_at": "2026-10-06"
+  },
+  "data.public.lu": {
+   "terms_url": "https://data.public.lu/fr/",
+   "terms_quote": "Sauf indication contraire, tout le contenu de ce site est disponible sous Creative Commons CC0",
+   "gloss": "Unless otherwise indicated, all content on this site is available under Creative Commons CC0. (Site footer; CGU at https://data.public.lu/fr/pages/legal/terms)",
+   "licence": "CC0-1.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.sa.gov.au": {
+   "terms_url": "https://data.sa.gov.au/copyright",
+   "terms_quote": "content of this website is licensed under the Creative Commons Attribution 4.0 Licence",
+   "gloss": "",
+   "licence": "CC-BY-4.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.texas.gov": {
+   "terms_url": "http://www.socrata.com/terms-of-service",
+   "terms_quote": "",
+   "gloss": "Footer links only the Tyler/Socrata platform Terms of Service, which returned HTTP 403. Not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "data.wa.gov": {
+   "terms_url": "https://data.wa.gov/dataset/Terms-of-Service/wt8r-5xui",
+   "terms_quote": "",
+   "gloss": "Terms of Service page is disallowed to the fetcher by robots.txt; not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "datos.gob.ar": {
+   "terms_url": "https://datos.gob.ar/about",
+   "terms_quote": "",
+   "gloss": "Homepage summary only gave an English paraphrase ('may be freely reused with proper source attribution'); /about returned 502 twice, so no verbatim Spanish clause was read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "datos.gob.cl": {
+   "terms_url": "https://datos.gob.cl/terms_and_conditions",
+   "terms_quote": "",
+   "gloss": "Terms page text did not render for the fetcher; not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "datos.gob.es": {
+   "terms_url": "https://datos.gob.es/es/aviso-legal",
+   "terms_quote": "Las presentes condiciones generales permiten la reutilización de los documentos sometidas a ellas para fines comerciales y no comerciales. ... Esta autorización conlleva, asimismo, la cesión gratuita y no exclusiva de los derechos de propiedad intelectual.",
+   "gloss": "These general conditions permit reuse of the documents subject to them for commercial and non-commercial purposes ... This authorisation also entails the free, non-exclusive assignment of intellectual property rights. (Conditions: no distortion, cite source, keep update date and metadata.)",
+   "licence": "Spanish general reuse conditions (Ley 37/2007; CC-BY-4.0-equivalent)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "datos.gob.mx": {
+   "terms_url": "https://www.datos.gob.mx/terminos",
+   "terms_quote": "",
+   "gloss": "HTTP 403; not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "datos.magyp.gob.ar": {
+   "terms_url": "https://datos.magyp.gob.ar/about",
+   "terms_quote": "",
+   "gloss": "HTTP 403; not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "discover.data.vic.gov.au": {
+   "terms_url": "https://www.data.vic.gov.au/copyright",
+   "terms_quote": "All material provided on this website is provided under a Creative Commons Attribution 4.0 International licence ... We encourage the sharing and re-use of information provided on this website.",
+   "gloss": "Copyright page linked from the discover.data.vic.gov.au footer; third-party content and branding excluded.",
+   "licence": "CC-BY-4.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "earth-search.aws.element84.com": {
+   "terms_url": "https://element84.com/earth-search/",
+   "terms_quote": "",
+   "gloss": "Element 84 describes Earth Search as 'A free-to-use STAC API that gives you a central search catalog and standardized metadata for open geospatial data on AWS', but no terms of use or licence clause was found; underlying collection licences are per-collection.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "ec.europa.eu": {
+   "terms_url": "https://ec.europa.eu/eurostat/about-us/policies/copyright",
+   "terms_quote": "can be reused without any payment or written licence provided that: the source is indicated as Eurostat ... There is no special procedure or requirement for a written licence. Just download the material and use it",
+   "gloss": "Some categories (e.g. certain non-EU/EFTA country data, some Swiss/Austrian trade data) may not be reused commercially; non-commercial reuse is unrestricted. Covers both Eurostat SDMX and Comext SDMX endpoints on ec.europa.eu.",
+   "licence": "Eurostat reuse policy (Commission Decision 2011/833/EU)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "esploradati.istat.it": {
+   "terms_url": "https://www.istat.it/note-legali/",
+   "terms_quote": "Salvo diversa indicazione, tutti i contenuti pubblicati su questo sito sono soggetti alla licenza Creative Commons – Attribuzione – versione 4.0.",
+   "gloss": "Unless otherwise indicated, all content published on this site is subject to the Creative Commons Attribution 4.0 licence. (istat.it legal notice; esploradati is Istat's SDMX dissemination service)",
+   "licence": "CC-BY-4.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "evds2.tcmb.gov.tr": {
+   "terms_url": "https://evds3.tcmb.gov.tr/",
+   "terms_quote": "",
+   "gloss": "Host redirects to evds3.tcmb.gov.tr, a JavaScript-only page; no terms read. Roster routes this host as 'keyed' (EVDS API key).",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "explorer.dea.ga.gov.au": {
+   "terms_url": "https://www.ga.gov.au/copyright",
+   "terms_quote": "",
+   "gloss": "Geoscience Australia's copyright page states 'All material on this website is licensed under the Creative Commons Attribution 4.0 International Licence', but 'this website' is ga.gov.au; no terms page on explorer.dea.ga.gov.au itself was read (dea.ga.gov.au/about/terms-of-use redirects to a GA topic page).",
+   "licence": "CC-BY-4.0 (ga.gov.au, not confirmed for explorer)",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "explorer.digitalearth.africa": {
+   "terms_url": "https://www.digitalearthafrica.org/",
+   "terms_quote": "",
+   "gloss": "Only a mission statement ('process openly accessible and freely available data') found; no terms or licence page read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "index.commoncrawl.org": {
+   "terms_url": "https://commoncrawl.org/terms-of-use",
+   "terms_quote": "limited, non-assignable, non-transferable, non-sublicensable, non-exclusive, limited license",
+   "gloss": "Common Crawl grants a limited licence to access the Service (which includes the CDX index server). Prohibited: illegal use, privacy invasion, interfering with or disrupting the Service. Crawled content is provided as-is; third-party copyright in crawled pages is not licensed by CC.",
+   "licence": "Common Crawl Terms of Use",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "Interfering with or disrupting the Service",
+   "checked_at": "2026-10-06"
+  },
+  "katalog.data.go.id": {
+   "terms_url": "https://katalog.data.go.id/",
+   "terms_quote": "",
+   "gloss": "DNS lookup failed from the fetcher; not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "kosis.kr": {
+   "terms_url": "https://kosis.kr/openapi/",
+   "terms_quote": "",
+   "gloss": "Fetcher could not read robots.txt (timeout); roster routes this host as 'keyed' (인증키).",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "landsatlook.usgs.gov": {
+   "terms_url": "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits",
+   "terms_quote": "USGS-authored or produced data and information are considered to be in the U.S. Public Domain.",
+   "gloss": "Credit to USGS requested; non-USGS images may be copyrighted.",
+   "licence": "public domain (US federal)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "odre.opendatasoft.com": {
+   "terms_url": "https://odre.opendatasoft.com/pages/conditions-utilisation-v2/",
+   "terms_quote": "",
+   "gloss": "Conditions d'utilisation page is JavaScript-rendered; body not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "open.africa": {
+   "terms_url": "https://open.africa/about/terms-and-conditions",
+   "terms_quote": "The data and information available through openAFRICA are available under terms described in the 'licence' or 'constraints' field of individual dataset records (meta-data). Except where otherwise noted this is Open Government License.",
+   "gloss": "",
+   "licence": "per-dataset; default Open Government Licence",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "open.alberta.ca": {
+   "terms_url": "https://open.alberta.ca/licence",
+   "terms_quote": "The Information Provider grants you a worldwide, royalty-free, perpetual, non-exclusive licence to use the Information, including for commercial purposes, subject to the terms below. ... Copy, modify, publish, translate, adapt, distribute or otherwise use the Information in any medium, mode or format for any lawful purpose.",
+   "gloss": "",
+   "licence": "OGL-Alberta-2.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "open.canada.ca": {
+   "terms_url": "https://open.canada.ca/en/open-government-licence-canada",
+   "terms_quote": "The Information Provider grants you a worldwide, royalty-free, perpetual, non-exclusive licence to use the Information, including for commercial purposes, subject to the terms below. ... Copy, modify, publish, translate, adapt, distribute or otherwise use the Information in any medium, mode or format for any lawful purpose.",
+   "gloss": "",
+   "licence": "OGL-Canada-2.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "opendata.cbs.nl": {
+   "terms_url": "https://www.cbs.nl/en-gb/about-us/website/copyright",
+   "terms_quote": "Unless otherwise stated, the content of this website is subject to Creative Commons Attribution (CC BY 4.0).",
+   "gloss": "CBS (Statistics Netherlands) copyright page; logos, design and third-party photos excluded.",
+   "licence": "CC-BY-4.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "planetarycomputer.microsoft.com": {
+   "terms_url": "https://planetarycomputer.microsoft.com/terms",
+   "terms_quote": "",
+   "gloss": "Page is titled 'Supplemental Terms of Use for Microsoft Planetary Computer Previews' but is JavaScript-only; body not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "podatki.gov.si": {
+   "terms_url": "https://podatki.gov.si/pogoji-uporabe",
+   "terms_quote": "edini pogoj ponovne uporabe je navedba vira; CC BY 4.0 ... Ponovna uporaba metapodatkov je brezplačna in prosta... CC0",
+   "gloss": "The sole condition of reuse is attribution of the source; CC BY 4.0. Reuse of metadata is free of charge and unrestricted... CC0.",
+   "licence": "CC-BY-4.0 (data) / CC0 (metadata)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "ressources.data.sncf.com": {
+   "terms_url": "https://data.sncf.com/pages/cgu",
+   "terms_quote": "",
+   "gloss": "Footer links CGU and Licence (ODbL) pages on data.sncf.com, but their bodies did not render; not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "sdmx.ilo.org": {
+   "terms_url": "https://www.ilo.org/node/9321",
+   "terms_quote": "databases and datasets together with the accompanying referential metadata are covered by the Creative Commons CC BY 4.0 licence.",
+   "gloss": "ILO 'Rights and permissions' page; restricted microdata excluded.",
+   "licence": "CC-BY-4.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "sdmx.oecd.org": {
+   "terms_url": "https://t4.oecd.org/termsandconditions",
+   "terms_quote": "You can extract from, download, copy, adapt, print, distribute, share and embed Data for any purpose, even for commercial use",
+   "gloss": "OECD terms (fetched from t4.oecd.org mirror of oecd.org/termsandconditions). OECD may set query-size and query-rate limits and may limit or suspend a user's IP access; users must not 'place too great a strain on the infrastructure'.",
+   "licence": "OECD Terms and Conditions (attribution)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "stac.dataspace.copernicus.eu": {
+   "terms_url": "https://dataspace.copernicus.eu/terms-and-conditions",
+   "terms_quote": "The access and use of Copernicus Sentinel data is available on a free, full and open basis",
+   "gloss": "Sentinel data are free, full and open, but the same terms require registration to access EO data; whether anonymous STAC metadata queries are covered was not stated. The automation ban quoted applies to the forum.",
+   "licence": "Copernicus Sentinel data legal notice (free, full and open)",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "To access Earth observation data at the Copernicus Data Space Ecosystem, individuals and entities need to register as a user and provide the requested information. ... You may not automate access to the forum, or monitor the forum, such as with a web crawler, browser plug-in or add-on, or other computer program that is not a web browser.",
+   "checked_at": "2026-10-06"
+  },
+  "stats.bis.org": {
+   "terms_url": "https://www.bis.org/terms_statistics.htm",
+   "terms_quote": "Users may use the statistics published in the BIS Data Portal in accordance with the terms set out under the heading 'About BIS statistics'. ... if the statistics are reproduced, the BIS must be cited in your publication or product as the source",
+   "gloss": "First sentence from https://www.bis.org/terms_conditions.htm. APIs provided 'as-is'; BIS reserves the right to limit or suspend any user's IP address access without notice (rate-limit discipline matters).",
+   "licence": "BIS statistics terms of use (free reuse with attribution)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.avoindata.fi": {
+   "terms_url": "https://avoindata.fi/en/user-guide/finding-and-using-data",
+   "terms_quote": "Open data datasets are all licensed under an open licence, which means that anyone can use the data freely for any purpose. ... We recommend the following licences for open data datasets: Creative Commons BY 4.0 or Creative Commons CC0 1.0.",
+   "gloss": "",
+   "licence": "CC-BY-4.0 / CC0-1.0 (per dataset)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.banxico.org.mx": {
+   "terms_url": "https://www.banxico.org.mx/SieAPIRest/service/v1/",
+   "terms_quote": "",
+   "gloss": "SIE API page rendered empty; roster routes this host as 'keyed' (consulta token).",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.data.go.jp": {
+   "terms_url": "https://data.e-gov.go.jp/info/ja/terms",
+   "terms_quote": "「公共データ利用規約（第1.0版）」（PDL1.0）が適用されています。",
+   "gloss": "The Public Data License v1.0 (PDL1.0) applies. (www.data.go.jp redirects to data.e-gov.go.jp; PDL1.0 is the government's CC-BY-4.0-compatible reuse licence; attribution '出典：e-Govポータル' required.)",
+   "licence": "PDL-1.0 (Japan)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.data.go.kr": {
+   "terms_url": "https://www.data.go.kr/",
+   "terms_quote": "",
+   "gloss": "Fetcher could not read robots.txt so no page was fetched. Roster routes this host as 'keyed' (service key).",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.data.gouv.fr": {
+   "terms_url": "https://www.data.gouv.fr/pages/legal/cgu",
+   "terms_quote": "Les contenus proposés par l'Éditeur sont sous Licence Ouverte ... Les Jeux de données et API publiés sur la Plateforme doivent être gratuits et présenter un intérêt public",
+   "gloss": "Content provided by the publisher is under the Licence Ouverte (Etalab 2.0) ... Datasets and APIs published on the Platform must be free of charge and of public interest.",
+   "licence": "Licence Ouverte 2.0 (Etalab)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.data.gov.in": {
+   "terms_url": "https://www.data.gov.in/terms-of-use",
+   "terms_quote": "",
+   "gloss": "Terms page blocked to the fetcher by robots.txt; not read. Roster routes this host as 'keyed' (API key).",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.data.gov.qa": {
+   "terms_url": "https://www.data.gov.qa/pages/terms-of-use",
+   "terms_quote": "",
+   "gloss": "Terms of Use and Licence pages are JavaScript-rendered; body not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.data.gv.at": {
+   "terms_url": "https://www.data.gv.at/",
+   "terms_quote": "",
+   "gloss": "Pages are JavaScript-only; no terms text read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.data.qld.gov.au": {
+   "terms_url": "https://www.qld.gov.au/legal/copyright",
+   "terms_quote": "Unless otherwise noted, all copyright material available on or through this website is licensed under a Creative Commons Attribution 4.0 International licence (CC BY 4.0). ... You are free to use copyright material available on or through this website that is covered by a CC BY licence in line with the licence terms.",
+   "gloss": "Copyright page linked from the www.data.qld.gov.au footer.",
+   "licence": "CC-BY-4.0",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.dati.gov.it": {
+   "terms_url": "https://www.dati.gov.it/note-legali",
+   "terms_quote": "",
+   "gloss": "Terms pages returned HTTP 403 to the fetcher; homepage text carried no footer or licence.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.datos.gov.co": {
+   "terms_url": "https://herramientas.datos.gov.co/terminos",
+   "terms_quote": "se podrá hacer uso, aprovechamiento y/o transformación de forma libre y sin restricciones",
+   "gloss": "Use, exploitation and/or transformation may be made freely and without restrictions (public information under Ley 1712 de 2014); attribution 'Fuente: Portal de Datos Abiertos www.datos.gov.co' required; data meaning must not be distorted.",
+   "licence": "public information, free reuse with attribution (Ley 1712/2014)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.doi.gov": {
+   "terms_url": "https://www.doi.gov/copyright",
+   "terms_quote": "Generally, materials produced by federal agencies are in the public domain and may be reproduced without permission.",
+   "gloss": "Caveat on same page: not all materials on the site are public domain (donated/third-party items may be restricted); DOI trademarks protected.",
+   "licence": "public domain (US federal)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.energy.gov": {
+   "terms_url": "https://www.energy.gov/about-us/web-policies",
+   "terms_quote": "Government information at DOE websites is in the public domain. Public domain information may be freely distributed and copied...",
+   "gloss": "Acknowledgement of DOE requested; copyrighted third-party material excluded.",
+   "licence": "public domain (US federal)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.govdata.de": {
+   "terms_url": "https://www.govdata.de/impressum",
+   "terms_quote": "",
+   "gloss": "Impressum and licence pages are disallowed to the fetcher by robots.txt; not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.inegi.org.mx": {
+   "terms_url": "https://www.inegi.org.mx/inegi/terminos.html",
+   "terms_quote": "explotar comercialmente la información, utilizándola como insumo para generar otros productos ... hacer y distribuir copias de la información, sin alterar ni suprimir sus metadatos",
+   "gloss": "INEGI Free Use Terms: the user may commercially exploit the information as input to other products; make and distribute copies without altering metadata. Credit 'Fuente: INEGI'. Verdict UNREAD only because the roster routes this host as 'keyed' (the INEGI API needs a token) and no API-token terms were read.",
+   "licence": "Términos de Libre Uso de la Información del INEGI",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.transportation.gov": {
+   "terms_url": "https://www.transportation.gov/web-policies",
+   "terms_quote": "",
+   "gloss": "Web Policies index has no copyright/public-domain text; the Disclaimer page 404s. Not read.",
+   "licence": "",
+   "verdict": "UNREAD",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www.usda.gov": {
+   "terms_url": "https://www.usda.gov/node/6232",
+   "terms_quote": "Most information presented on the USDA Web site is considered public domain information. Public domain information may be freely distributed or copied, but use of appropriate byline/photo/image credits is requested.",
+   "gloss": "USDA 'Policies and Links' page; some materials are copyright/trademark/patent protected or personal-use only and are labelled as such.",
+   "licence": "public domain (US federal)",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  },
+  "www150.statcan.gc.ca": {
+   "terms_url": "https://www.statcan.gc.ca/en/reference/licence",
+   "terms_quote": "Subject to this licence, Statistics Canada grants you a worldwide, royalty-free, non-exclusive licence to: use, reproduce, publish, freely distribute, or sell the Information; use, reproduce, publish, freely distribute, or sell Value-added Products; and, sublicence any or all such rights, under terms consistent with this licence.",
+   "gloss": "",
+   "licence": "Statistics Canada Open Licence",
+   "verdict": "PERMITS",
+   "prohibiting_quote": "",
+   "checked_at": "2026-10-06"
+  }
+ }
+}
