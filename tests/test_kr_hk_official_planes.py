@@ -328,9 +328,15 @@ def test_every_collector_fetch_path_is_behind_the_terms_gate(
         state, _ = C._terms_state(r, C._resolve_url(r))
         before = len(sent)
         rec = C.collect_one(r)
-        if state not in ("confirmed", "ungoverned"):
-            # robots.txt included: a refused / to_confirm row sends NOTHING at all
-            assert len(sent) == before and rec["status"] == "BLOCKED_ON_TERMS", r["id"]
+        if state == "confirmed_private_use":
+            # J-Quants: past the gate only under its recorded private-use condition; with no key
+            # on this host it still sends nothing.
+            assert r["id"] == "jpx_jquants" and len(sent) == before, r["id"]
+        elif state not in ("confirmed", "ungoverned"):
+            # robots.txt included: a refused / to_confirm row sends NOTHING at all (a paid row
+            # is refused by rule one door earlier, #201)
+            want = "BLOCKED_PAID" if str(r.get("access")) == "paid" else "BLOCKED_ON_TERMS"
+            assert len(sent) == before and rec["status"] == want, r["id"]
     blocked = {r["id"] for r in rows
                if C._terms_state(r, C._resolve_url(r))[0] not in ("confirmed", "ungoverned")}
     assert {"krx_open_api", "krx_derivatives_stats", "hkex_data", "bok_ecos",
@@ -360,7 +366,12 @@ def test_a_keyed_source_without_confirmed_terms_sends_no_credential(
         rec = C.collect_one(r)
         state = C._terms_state(r, C._resolve_url(r))[0]
         verdicts[r["id"]] = state
-        if state != "confirmed":
+        if str(r.get("access")) == "paid":
+            # paid data is refused by rule one door EARLIER than terms (#201)
+            assert rec["status"] == "BLOCKED_PAID" and len(sent) == before, r["id"]
+        elif state == "confirmed_private_use":
+            assert r["id"] == "jpx_jquants" and rec.get("private_use") is True, r["id"]
+        elif state != "confirmed":
             assert rec["status"] == "BLOCKED_ON_TERMS" and len(sent) == before, r["id"]
     assert not any(v in s for v in secrets.values() for s in sent)
     assert "ungoverned" not in verdicts.values()               # a keyed row is always judged

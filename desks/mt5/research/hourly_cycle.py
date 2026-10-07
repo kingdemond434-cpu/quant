@@ -962,7 +962,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
-    "ops_redundancy", "forward_evidence_tracker",
+    "ops_redundancy", "recovery_drills", "forward_evidence_tracker",
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
@@ -1022,7 +1022,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "orthogonality_yield", "effective_trials",
-                     "occupancy_map", "dsr_inputs"), "data"),
+                     "occupancy_map", "dsr_inputs",
+                     # the free-key sources (EIA, Nasdaq Data Link, e-Stat, KOSIS, ECOS, BLS)
+                     # and the ledger of which keys are set (#144, 2026-09-30)
+                     "keyed_sources", "credential_coverage"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
@@ -1721,6 +1724,11 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # The keyed sources stop themselves at --budget-s 300 (70% of it fetching) and persist their
+    # cursor after every source; the cap sits above so the report and the donation are written.
+    "keyed_sources": 420,
+    # A registry read, a glob over clock files and the last 24h of donation files: seconds.
+    "credential_coverage": 180,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -3687,6 +3695,17 @@ def main() -> None:
     aj = _costed("allocator_join", allocator_join)
     # BEFORE pf_allocator, which conditions on the state this refreshes.
     fm = _costed("fred_macro", fred_macro)
+    # THE KEYED FREE SOURCES (#144): every free-key dataset no other lane builds (EIA weekly
+    # stocks, Nasdaq Data Link fixes, e-Stat, KOSIS, ECOS, BLS components) as PIT lake series,
+    # direct exogenous_conditioner cells, indirect conditioned parents and
+    # reports/KEYED_SOURCES_ALLOCATION_INTEL.json; BLOCKED_AUTH:<VAR> until set.
+    kys = _costed("keyed_sources", lambda: _producer(
+        "keyed_sources", "research/keyed_sources.py", "--once", "--budget-s", "300"))
+    # AND WHICH KEYS ARE SET: per env var, presence on this host (never a value), every
+    # consumer, whether it is on a clock, and cells minted from it in the last 24h, read from
+    # the consumers' own donation files. Writes reports/CREDENTIAL_COVERAGE.json.
+    ccv = _costed("credential_coverage", lambda: _producer(
+        "credential_coverage", "research/credential_coverage.py", "--once"))
     fzc = _costed("fusion_cost", fusion_cost)
     cxc = _costed("cost_construction", cost_construction)
     emf = _costed("edges_macro_fusion_sweep", edges_macro_fusion_sweep)
@@ -5540,6 +5559,8 @@ def main() -> None:
     #   experimental_budget         the principal's override sleeves in their own ledger/budget
     #   ops_redundancy              journal replay, off-box restore drill, terminal health,
     #                               independent price cross-check, duplicate-position count
+    #   recovery_drills             one PASS/FAIL/UNMEASURED row per named failure mode, graded
+    #                               from the drill artifacts above (CHAOS, offsite restore, ...)
     #   forward_evidence_tracker    survival / degradation / calibration / breadth / cost /
     #                               capacity / hit rate as an append-only hourly series
     lcp = _costed("live_calibration_posterior", lambda: _producer(
@@ -5556,6 +5577,8 @@ def main() -> None:
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
         "ops_redundancy", "research/ops_redundancy.py"))
+    rcd = _costed("recovery_drills", lambda: _producer(
+        "recovery_drills", "research/recovery_drills.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(
         "forward_evidence_tracker", "research/forward_evidence_tracker.py"))
     # THE ARENA AND THE CLOCK'S CAPITAL (Tier-1 AP5 and P18; 2026-09-09). The arena records a
@@ -5800,6 +5823,7 @@ def main() -> None:
                     "kelly_survival": kls,
                     "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
+                    "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,
@@ -5824,7 +5848,7 @@ def main() -> None:
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,
                     "futures_lead_lag": fll, "time_joins": tj, "allocator_join": aj,
-                    "fred_macro": fm,
+                    "fred_macro": fm, "keyed_sources": kys, "credential_coverage": ccv,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,

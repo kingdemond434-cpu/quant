@@ -93,6 +93,58 @@
    "evidence": ""
   },
   {
+   "class": "",
+   "paid": "BOJ uncollateralised overnight call rate (stat-search FM01) [jp_boj_call_rate]",
+   "free": "",
+   "region": "JP",
+   "measure": "call_rate_on",
+   "frequency": "daily",
+   "status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms": "to_confirm",
+   "blocked_because": "BOJ stat-search API notice: no permitting clause",
+   "unsubstituted_because": "the BOJ stat-search API notice quotes no clause permitting reuse and the Bank's copyright policy excludes commercial copying; no other free source publishes these BOJ series under quoted reuse terms. Box action: obtain the Bank's written permission (or a quotable permitting clause) and record it in _BOJ_API_EV",
+   "evidence": ""
+  },
+  {
+   "class": "",
+   "paid": "BOJ current-account balances (stat-search; code set on the box) [jp_boj_current_account]",
+   "free": "",
+   "region": "JP",
+   "measure": "boj_current_account",
+   "frequency": "daily",
+   "status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms": "to_confirm",
+   "blocked_because": "BOJ stat-search API notice: no permitting clause",
+   "unsubstituted_because": "the BOJ stat-search API notice quotes no clause permitting reuse and the Bank's copyright policy excludes commercial copying; no other free source publishes these BOJ series under quoted reuse terms. Box action: obtain the Bank's written permission (or a quotable permitting clause) and record it in _BOJ_API_EV",
+   "evidence": ""
+  },
+  {
+   "class": "",
+   "paid": "BOJ holdings of JGBs (Bank of Japan Accounts, stat-search; the Rinban footprint) [jp_boj_jgb_holdings]",
+   "free": "",
+   "region": "JP",
+   "measure": "boj_jgb_holdings",
+   "frequency": "10-daily",
+   "status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms": "to_confirm",
+   "blocked_because": "BOJ stat-search API notice: no permitting clause",
+   "unsubstituted_because": "the BOJ stat-search API notice quotes no clause permitting reuse and the Bank's copyright policy excludes commercial copying; no other free source publishes these BOJ series under quoted reuse terms. Box action: obtain the Bank's written permission (or a quotable permitting clause) and record it in _BOJ_API_EV",
+   "evidence": ""
+  },
+  {
+   "class": "",
+   "paid": "BOJ TANKAN business conditions DI (stat-search CO) [jp_boj_tankan]",
+   "free": "",
+   "region": "JP",
+   "measure": "tankan_tk99f1000601gcq01000",
+   "frequency": "quarterly",
+   "status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms": "to_confirm",
+   "blocked_because": "BOJ stat-search API notice: no permitting clause",
+   "unsubstituted_because": "the BOJ stat-search API notice quotes no clause permitting reuse and the Bank's copyright policy excludes commercial copying; no other free source publishes these BOJ series under quoted reuse terms. Box action: obtain the Bank's written permission (or a quotable permitting clause) and record it in _BOJ_API_EV",
+   "evidence": ""
+  },
+  {
    "class": "foot traffic (travel arrivals)",
    "paid": "JNTO monthly visitor arrivals (estimate) [jp_jnto_arrivals]",
    "free": "Immigration Services Agency entries of foreign nationals (e-Stat, monthly) [jp_estat_immigration]",

@@ -19,6 +19,7 @@ import tempfile
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -37,6 +38,19 @@ DEEPEN_WORKED = BASE / "data" / "hypotheses" / "deepening_worked.jsonl"
 DEEPENED = BASE / "data" / "hypotheses" / "deepened_candidates.json"
 CURSOR = BASE / "data" / "hypotheses" / "miner_compiler_cursor.json"
 FACTORY_RECEIPTS = BASE / "data" / "factory_federation" / "evaluator_receipts"
+#: PRIVATE-USE INTAKE (J-Quants, art. 8; the principal's answer of 2026-10-06). The repository is
+#: PUBLIC, so donations of private-use data land in this gitignored root
+#: (`proposer_common.PRIVATE_INTEL`) and are compiled into the gitignored sibling below by
+#: `compile_private` ONLY. They never enter `recent_rows`, the graph, the deepening queue, the
+#: build-failure bank, the cursor or OUT: OUT carries `private_intake` -- a private-ref id, counts
+#: and a status -- and nothing else about them.
+PRIVATE_INTEL_ROOTS = (BASE / "data" / "intelligence_private",)
+PRIVATE_OUT = BASE / "data" / "hypotheses_private" / "miner_candidates_private.json"
+#: The only keys of `private_intake` that may appear in OUT (a tracked artifact): BARE COUNTS and
+#: a status. No content hash: a digest of the private file is J-Quants-derived content (audit of
+#: #251, 2026-10-07), so it lives beside the private file (PRIVATE_REF), gitignored, only.
+PRIVATE_SUMMARY_KEYS = ("status", "files", "rows", "candidates", "refused_rows", "rule")
+PRIVATE_REF = PRIVATE_OUT.with_name("miner_candidates_private.ref.json")
 WINDOW_DAYS = 7
 #: The LLM seats' source names as they appear on their donated rows (`libs/ops/deepseek_cycle.py`
 #: `_donate`, `scripts/kimi_hunter.py` `_donate`). Reported as one block in the compiled artifact
@@ -1538,6 +1552,90 @@ def _graph_snapshot(path: Path | None = None):
     return PassGraph(path) if path is not None else PassGraph()
 
 
+def _mark_private(c: dict[str, Any]) -> dict[str, Any]:
+    """private_use=True, lineage jquants_private, e8_ineligible=True (libs.ops.token_refresh)."""
+    try:
+        from libs.ops.token_refresh import mark_private_lineage
+        return mark_private_lineage(c)
+    except Exception:                    # the tag is never lost to an import: write it literally
+        c.update({"private_use": True, "lineage": "jquants_private", "e8_ineligible": True})
+        return c
+
+
+def compile_private(now: datetime, *, roots: tuple[Path, ...] | None = None,
+                    out: Path | None = None,
+                    universe: set[str] | None = None) -> dict[str, Any]:
+    """Compile the PRIVATE-USE donations into the gitignored PRIVATE_OUT; return a summary that
+    carries counts and status only (`PRIVATE_SUMMARY_KEYS`), the one thing OUT may hold of them.
+
+    THE SAME ROW DOOR AS THE PUBLIC PASS (`compile_row` -> `expand_axes`, PIT-stamped), with every
+    side store left out: the hypothesis graph, the deepening queue, the build-failure bank, the
+    factory receipts and the cursor are all tracked or synced, so a private row reaching any of
+    them would publish it. Where a private candidate STOPS is therefore here: nothing that judges,
+    forwards or sizes reads PRIVATE_OUT, because each of those writes a tracked ledger."""
+    roots = PRIVATE_INTEL_ROOTS if roots is None else roots
+    target = PRIVATE_OUT if out is None else out
+    cutoff = now - timedelta(days=WINDOW_DAYS)
+    uni = known_symbols() if universe is None else universe
+    files = rows = refused = 0
+    cands: dict[str, dict[str, Any]] = {}
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for path in sorted(root.rglob("discoveries_*.json")):
+            try:
+                if datetime.fromtimestamp(path.stat().st_mtime, tz=UTC) < cutoff:
+                    continue
+            except OSError:
+                continue
+            files += 1
+            for row in _rows(_read(path)):
+                rows += 1
+                source = str(row.get("source") or path.parent.name or "private")
+                produced, _disp = compile_row(source, row, uni)
+                if not produced:
+                    refused += 1
+                    continue
+                for c in expand_axes(produced):
+                    ident = json.dumps({k: c.get(k) for k in ("symbol", "family", "params")},
+                                       sort_keys=True, default=str)
+                    # Lineage rides on every private candidate: jquants_private, e8_ineligible.
+                    cands.setdefault(ident, _mark_private({**c}))
+    status = ("NO_PRIVATE_INTAKE" if not files else
+              "COMPILED_PRIVATE" if cands else "PRIVATE_ROWS_REFUSED")
+    if files:
+        from libs.data.pit import stamp_or_refuse
+        t = datetime.now(UTC).isoformat()
+        emitted, unstamped = stamp_or_refuse(
+            [{**c, "available_time": t, "ingested_time": t} for c in cands.values()],
+            "miner_candidate_compiler:private")
+        body = json.dumps({"compiled_at": now.isoformat(timespec="seconds"),
+                           "private_use": True, "hypotheses": emitted,
+                           "refused_unstamped": len(unstamped),
+                           "consumer": "none: no judge, forward clock or allocator reads this "
+                                       "file, because each of them writes a tracked ledger",
+                           "rule": "PRIVATE USE ONLY: gitignored; never copied to a tracked "
+                                   "path, a synced report or anything shared"},
+                          indent=1, default=str)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(".json.tmp")
+        tmp.write_text(body, "utf-8")
+        os.replace(tmp, target)
+        # The digest that identifies this compile stays PRIVATE, beside the file it digests.
+        ref = hashlib.sha256(body.encode()).hexdigest()[:16]
+        ref_path = target.with_name(target.stem + ".ref.json")
+        ref_path.write_text(json.dumps({"private_ref": ref, "compiled_at":
+                                        now.isoformat(timespec="seconds")}), "utf-8")
+    return {"status": status, "files": files, "rows": rows,
+            "candidates": len(cands), "refused_rows": refused,
+            "rule": "counts and status only; the private candidates live in a gitignored file"}
+
+
+def private_intake_section(summary: dict[str, Any]) -> dict[str, Any]:
+    """What OUT carries of the private intake: the whitelisted keys, nothing else."""
+    return {k: summary[k] for k in PRIVATE_SUMMARY_KEYS if k in summary}
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     universe = known_symbols()
@@ -1886,6 +1984,10 @@ def main() -> int:
                      key=lambda c: (c.get("net_edge") is None,
                                     -(c.get("net_edge") or 0.0), str(c.get("symbol") or "")))
 
+    try:
+        private_note = private_intake_section(compile_private(now, universe=universe))
+    except Exception as exc:          # the private lane must never take the public pass down
+        private_note = {"status": "ERROR", "rule": f"{type(exc).__name__}"[:80]}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     convertible_total = sum(int(v["convertible_rows"]) for v in per_source.values())
     converted_total = sum(int(v["converted_rows"]) for v in per_source.values())
@@ -1927,6 +2029,7 @@ def main() -> int:
         | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
                                    if d.get("rows_with_outcomes")}},
         "graph": graph_note,
+        "private_intake": private_note,
         "impossible_metrics": fence_tally.to_dict(),
         "rows_accounted": rows_total,
         "executable_candidates": len(candidates),

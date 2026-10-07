@@ -716,8 +716,9 @@
    "plane": "jp",
    "country": "jp",
    "name": "JPX J-Quants",
-   "url": "https://jpx-jquants.com/",
-   "expect": "any",
+   "url": "https://api.jquants.com/v2/equities/investor-types",
+   "docs": "https://jpx-jquants.com/en/spec/migration-v1-v2 (V1 /v1/markets/trades_spec -> V2 /v2/equities/investor-types; auth: x-api-key header, JQUANTS_API_KEY)",
+   "expect": "json",
    "access": "key",
    "key_env": "JQUANTS_TOKEN",
    "cadence": "daily",
@@ -923,6 +924,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "C2_API_KEY",
+   "key_in": "query:apikey",
    "cadence": "weekly",
    "targets": [
     "EURUSD",
@@ -949,6 +951,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "DARWINEX_TOKEN",
+   "key_in": "bearer",
    "cadence": "weekly",
    "targets": [
     "EURUSD",
@@ -1106,6 +1109,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "EIA_API_KEY",
+   "key_in": "query:api_key",
    "cadence": "weekly",
    "pit": {
     "event_time": "reference week",
@@ -1651,6 +1655,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "BANXICO_TOKEN",
+   "key_in": "header:Bmx-Token",
    "cadence": "daily",
    "pit": {
     "event_time": "publication",
@@ -3994,7 +3999,9 @@
     "XAGUSD",
     "USOIL"
    ],
-   "mechanism": "the yen-denominated gold contract is the Japanese physical bid priced in the currency that moves it; its basis to the dollar price is a pure FX-hedging observation"
+   "mechanism": "the yen-denominated gold contract is the Japanese physical bid priced in the currency that moves it; its basis to the dollar price is a pure FX-hedging observation",
+   "access_label": "PUBLIC_WITH_TERMS",
+   "terms_note": "JPX Terms of Use (https://www.jpx.co.jp/english/term-of-use/index.html, read 2026-10-06): 'The collection of data or secondary use of information from this website for commercial purposes is strictly prohibited, unless JPX has granted prior permission or authorized such use under a paid contract.' The alt_proxies JP plane builds no JPX fetcher (lane jp_jpx_market_data, BLOCKED_ON_TERMS:refused); see reports/JP_OFFICIAL_PLANE.json"
   },
   {
    "id": "cn_mysteel_inventory",
@@ -4168,7 +4175,9 @@
     "EURJPY",
     "JP225"
    ],
-   "mechanism": "the yield-curve and rate decision is the single largest scheduled repricing of the desk's most-traded cross, on a published calendar"
+   "mechanism": "the yield-curve and rate decision is the single largest scheduled repricing of the desk's most-traded cross, on a published calendar",
+   "access_label": "PUBLIC_WITH_TERMS",
+   "terms_note": "BOJ copyright policy (https://www.boj.or.jp/en/about/copyright.htm, read 2026-10-06) excludes 'The copying or reproduction of the content for commercial purposes'. The alt_proxies JP plane reads the BOJ only through the stat-search API (its own notice: credit line, no commercial restriction) and carries meetings as calendar events (lane jp_boj_site_releases, BLOCKED_ON_TERMS:refused)"
   },
   {
    "id": "jp_estat_cpi",
