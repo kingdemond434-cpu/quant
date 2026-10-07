@@ -879,7 +879,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `state_vector` is listed here for the reader's sake and runs on NEITHER plan: it is in
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
-    "forward_reconcile", "clock_liveness", "certificate_clock_law",
+    "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
@@ -898,6 +898,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
     # a certificate minted by that task would wait for one. It reads two small JSON files.
     "canon_publication",
+    # THE RE-MINT QUEUE IS CORE FOR THE SAME REASON (2026-09-30): an attestation change freezes
+    # enrolment whole, and `MT5-Gauntlet` can sweep on a pass this cycle never ran. It reads two
+    # small JSON files, byte-scans the docket and appends only what is missing.
+    "attestation_remint",
     # THE LOCKBOX v4 RE-CERTIFICATION LEDGER (pass-2 P0, 2026-09-30), right after the seal it
     # reads: per canon certificate, lockbox Sharpe before and after the re-mint. Two small JSON
     # reads, seconds.
@@ -958,11 +962,14 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE INGESTION-EXPLOITATION GATE (LAWS 5c): an artifact read and two ratchets, every pass.
     # The LEDGER it reads is heavy and stays in the data department; the gate is not.
     "ingestion_exploitation",
+    # THE FOREST-ATTEMPT FENCE (2026-09-30): every deep-forest ground attempted daily, or
+    # LOW_EV_RETIRED by name; a reader of the miner's per-ground ledgers, a second at most.
+    "forest_attempts",
     # THE LIVE-TRUTH ORGANS (Tier-1 audit #6/#17/#18/#19/#20, 2026-09-29): readers of artifacts
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
-    "ops_redundancy", "forward_evidence_tracker",
+    "ops_redundancy", "recovery_drills", "forward_evidence_tracker",
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
@@ -1024,7 +1031,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "judge_coverage", "orthogonality_yield", "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
-    **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
+    **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "moat_miner",
+                     "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
@@ -1066,8 +1074,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "evaluator_lab", "lead_replication", "science_controller",
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "judging_throughput",
-                     "duty_cycle", "forward_enrolment", "residual_gate",
+                     "duty_cycle", "forward_enrolment", "clock_accrual", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
+                     "attestation_remint",
                      "lockbox_recert",
                      # each hunted family's own pipeline on null data: the gates' real
                      # false-positive rate, per family
@@ -1123,7 +1132,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "alpha_replenishment", "research_dashboard",
                      "research_roi", "experiment_spine", "implementer",
                      "research_debt", "paradigm_router", "meta_controller", "research_bandit",
-                     "ingestion_exploitation", "coverage_tensor", "research_evolution",
+                     "ingestion_exploitation", "forest_attempts",
+                     "coverage_tensor", "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
                      "search_paradigm_census", "producer_census", "productivity_census",
@@ -1788,6 +1798,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
+    # Reads the canon (through the admission door), three lane state files and the sleeve
+    # registry, and writes one report. No bars, no terminal: arithmetic over the rows above.
+    "clock_accrual": 180,
     # THE JUDGE WAS BEING KILLED AT 27% OF ITS OWN BUDGET (measured 2026-09-23). The sealed
     # gauntlet builds cells under `FRESH_BUILD_BUDGET_SEC = 2700` and stops ITSELF at that mark
     # to write `universal_gates_external.json`. This leg had no entry here, so it fell through to
@@ -1844,6 +1857,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # RECOVERY_BUDGET_SEC of 240. The cap sits above that plus the read, for the reason every
     # other entry here gives: a cap below an organ's own budget truncates it at the same prefix.
     "canon_publication": 600,
+    # THE RE-MINT QUEUE byte-scans the ~440 MB docket once (4 MB reads, no JSON parse) and appends
+    # in place; the git call that dates a new attestation is bounded at 20 s.
+    "attestation_remint": 300,
     # THE FOUR ACTIVATION LEGS ARE SEARCHES, NOT RENDERERS. `weak_signals` rebuilds member
     # signals for up to 24 members across 67 symbols and its own `run()` already self-limits at
     # 2400s; a cycle budget below that would kill it at the same prefix every hour, which is the
@@ -2028,6 +2044,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # sits above its budget, the cap is exported to the child (QUANT_LEG_BUDGET_S) so it
     # self-stops inside whatever the pricer grants, and it checkpoints per ground regardless.
     "deep_forest_miner": 1_020,
+    # The cell emitter stops itself at --budget-s 300 (it reads QUANT_LEG_BUDGET_S too); the cap
+    # sits above it so the pass writes its report, cursor and donations rather than being cut.
+    "cell_emitter": 420,
     # A FOREST IS GIVEN THE BUDGET IT IS ASKED FOR. Each leg passes `--budget-s 3000` down to
     # `forest_runner`, which divides it across eleven parallel agents; a 720 s cycle cap would
     # SIGKILL every forest at the same prefix every hour -- the truncated-job failure that cost
@@ -3075,6 +3094,19 @@ def deep_forest() -> dict:
     quiet pass still advances the queue (mandate section 70, never idle).
     """
     return _producer("deep_forest_miner", "research/deep_forest_miner.py", "--budget-s", "900")
+
+
+def cell_emitter() -> dict:
+    """Open-source STRATEGY CODE read as cells (the lost 2026-09-25 lane, rebuilt 2026-09-30).
+
+    Grounds in `data/cell_emitter_sources.json` (vn.py, backtrader, zipline, pysystemtrade,
+    EA31337 MQL, freqtrade/jesse on crypto CFDs only, Pine, TradingView); each pass lists and
+    fetches a cursor's slice, statically reads each file's indicator calls into a registered
+    family + exact params (or a STRUCTURED_HYPOTHESIS), maps instruments through
+    universe_policy, donates to data/intelligence/cell_emitter/ for miner_candidate_compiler,
+    and writes reports/CELL_EMITTER.json with per-ground yield and drop reasons.
+    """
+    return _producer("cell_emitter", "research/cell_emitter.py", "--once", "--budget-s", "300")
 
 
 def session_structure() -> dict:
@@ -4202,15 +4234,22 @@ def main() -> None:
     # registered, disposed, and given EXACTLY ONE downstream state; a stranded unit becomes a
     # discovery so `discovery_compiler` closes it rather than a report nobody reads. It runs
     # AFTER the compiler on purpose: this hour's conversions are what it measures. Data dept.
+    # 480 s (was 240): the index now streams the WHOLE registry instead of its first 20,000
+    # rows, and every stranded unit is routed and drained in the same pass; the 720 s default
+    # cap still sits above it, so the pass writes before any kill.
     igl = _costed("ingestion_ledger", lambda: _producer("ingestion_ledger",
                                                         "research/ingestion_ledger.py",
-                                                        "--budget-s", "240",
+                                                        "--budget-s", "480",
                                                         "--grace-hours", "24"))
     # ITS GATE: the exploitation ratchet (up only), the DATA STRANDING ratchet (down only) and
     # the twelve-question data-utilization audit per dataset. A cheap reader, so it is a CORE
     # leg -- a gate that never ran is a claim the desk cannot cash (L1.49). Meta dept.
     ige = _costed("ingestion_exploitation", lambda: _producer(
         "ingestion_exploitation", "scripts/check_ingestion_exploitation.py"))
+    # THE FOREST-ATTEMPT FENCE: attempted / never-attempted / yielded / retired / overdue per
+    # deep-forest ground, one history line an hour, RED when never-attempted does not fall.
+    fat = _costed("forest_attempts", lambda: _producer(
+        "forest_attempts", "scripts/check_forest_attempts.py"))
     # THE MINING OBJECTIVE (M17/M18): the five sovereign KPIs, the miner reward and the
     # separation-of-powers check, from the registry. Meta.
     mob = _costed("mining_objective", lambda: _producer("mining_objective",
@@ -4920,6 +4959,16 @@ def main() -> None:
     # refuse what the judge itself refuses terminally before a bar is read. It deletes nothing.
     fa = _costed("fast_admission", lambda: _producer(
         "fast_admission", "research/fast_admission.py"))
+    # RE-JUDGED, NEVER RE-STAMPED, AND FIRST (2026-09-30, lockbox v4). Immediately before the judge:
+    # when gate_policy.ATTESTATION changes, every certificate judged under the old one is refused
+    # whole by shadow_admission, and the sealed writer's way out is a re-stamp. This leg queues
+    # every certificate whose gates predate the attestation in force (exact certified params,
+    # PIT-stamped, charged to the trial census like any cell), writes the priority record the
+    # patched judge puts first, and publishes reports/REMINT_STATUS.json -- frozen since, pending,
+    # oldest age, ETA from the measured judge rate. Exit 3 = enrolment frozen past one sweep, or a
+    # row re-stamped rather than re-judged.
+    arm = _costed("attestation_remint", lambda: _producer(
+        "attestation_remint", "research/attestation_remint.py", "--apply"))
     # THE JUDGE DIES ON ITS ENVIRONMENT, NOT ITS BUDGET (recovered box patch 08). Measured over
     # 844 MB of MT5-Gauntlet.log: 129 of 168 tracebacks were the commit ceiling breaking the pool
     # at spawn and 19 were a torn universe frame read mid-rewrite. This measures both -- commit
@@ -4981,6 +5030,13 @@ def main() -> None:
     # promotes, sizes and retires nothing.
     ccl = _costed("certificate_clock_law", lambda: _producer(
         "certificate_clock_law", "scripts/check_certificate_clock_law.py"))
+    # AND FOR EVERY CLOCK THAT IS NOT TICKING, WHY -- as one named reason per certificate
+    # (NOT_ENROLLED, KEY_MISMATCH, FAMILY_UNBUILDABLE, BAR_FILE_MISSING, ENGINE_NOT_REACHED,
+    # GATE_NEVER_OPENS, ...). The two legs above count; this one routes. It writes
+    # reports/CLOCK_ACCRUAL.json, whose headline is the non-accruing count by reason and whose
+    # `bars_wanted` the MT5-Universe collector fetches first. It enrols and retires nothing.
+    cac = _costed("clock_accrual", lambda: _producer(
+        "clock_accrual", "research/clock_accrual.py", "--once"))
     # THE FALSIFIERS RUN AGAINST THE FRESH CANON (Tier-1 item V4, 2026-09-09). libs/validation/
     # falsifiers.py had zero callers; every certificate was minted and never attacked. The
     # producer budgets itself (600 s default) under this leg's timeout and writes
@@ -5243,6 +5299,9 @@ def main() -> None:
         "placebo_audit", "research/placebo_audit.py"))
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
+    # OPEN-SOURCE CODE -> CELLS: donates to data/intelligence/cell_emitter/, which the next
+    # pass's `compile_candidates` reads. Network leg; self-stops inside its budget.
+    cem = _costed("cell_emitter", cell_emitter)
     ssm_leg = _costed("session_structure", session_structure)
     mm = _costed("maintain_miners", maintain_miners)
     # MEASURE THE CONVERSION WHERE THE DISCOVERIES ARE, AND ON THIS HOUR'S CODE. Nothing on this
@@ -5583,6 +5642,8 @@ def main() -> None:
     #   experimental_budget         the principal's override sleeves in their own ledger/budget
     #   ops_redundancy              journal replay, off-box restore drill, terminal health,
     #                               independent price cross-check, duplicate-position count
+    #   recovery_drills             one PASS/FAIL/UNMEASURED row per named failure mode, graded
+    #                               from the drill artifacts above (CHAOS, offsite restore, ...)
     #   forward_evidence_tracker    survival / degradation / calibration / breadth / cost /
     #                               capacity / hit rate as an append-only hourly series
     lcp = _costed("live_calibration_posterior", lambda: _producer(
@@ -5599,6 +5660,8 @@ def main() -> None:
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
         "ops_redundancy", "research/ops_redundancy.py"))
+    rcd = _costed("recovery_drills", lambda: _producer(
+        "recovery_drills", "research/recovery_drills.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(
         "forward_evidence_tracker", "research/forward_evidence_tracker.py"))
     # THE ARENA AND THE CLOCK'S CAPITAL (Tier-1 AP5 and P18; 2026-09-09). The arena records a
@@ -5723,6 +5786,7 @@ def main() -> None:
                     "conversion_maximiser": cvm, "conversion_funnel": cfn,
                     "research_debt": rdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
+                    "forest_attempts": fat,
                     "macro_intelligence": mci, "market_constitution": mcc,
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
@@ -5810,6 +5874,7 @@ def main() -> None:
                     "forward_reconcile": fwr,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
+                    "cell_emitter": cem,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
@@ -5843,6 +5908,7 @@ def main() -> None:
                     "kelly_survival": kls,
                     "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
+                    "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,
@@ -5855,12 +5921,13 @@ def main() -> None:
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
-                    "certificate_clock_law": ccl,
+                    "certificate_clock_law": ccl, "clock_accrual": cac,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "gauntlet_guard": ggd,
                     "srb_uncorrelated_sweep": suw,
                     "srb_basket_judge": sbk,
                     "canon_publication": cpub, "judging_burndown": jbd, "lockbox_recert": lrc,
+                    "attestation_remint": arm,
                     "rejection_throughput": rjt,
                     "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,

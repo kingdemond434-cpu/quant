@@ -74,7 +74,8 @@ def test_an_honest_certificate_is_replicated_and_a_misspecified_one_is_quarantin
     assert wrong["verdict"] == rc.MISMATCH and "SIGN" in wrong["why"][0]
     inflated = rc.replicate_certificate(_certificate(ours * 5.0), meta=META, bars=bars)
     assert inflated["verdict"] == rc.MISMATCH and "MAGNITUDE" in inflated["why"][0]
-    unknown = rc.replicate_certificate({"shadow_spec": {"symbol": "TESTFX", "family": "carry"},
+    unknown = rc.replicate_certificate({"shadow_spec": {"symbol": "TESTFX",
+                                                        "family": "relative_value"},
                                         "gates": {}}, meta=META, bars=bars)
     assert unknown["verdict"] == rc.UNMEASURED and "spec book" in unknown["why"][0]
 
