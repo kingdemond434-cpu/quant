@@ -163,7 +163,10 @@ def test_planted_range_reversal_is_gain_and_noise_is_not(tmp_path: Path) -> None
         if planted:
             assert got["range_extreme->reversal"] == "GAIN"
         else:
-            assert "GAIN" not in got.values()
+            # the HAR forecast may legitimately win on iid ranges (it shrinks toward the long-run
+            # variance); the gated contracts must not
+            gated = {k: v for k, v in got.items() if k != "har->forward_variance"}
+            assert "GAIN" not in gated.values()
 
 
 def test_bar_cells_and_the_broker_cfd_are_admitted(tmp_path: Path) -> None:
