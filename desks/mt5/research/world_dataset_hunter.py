@@ -336,12 +336,16 @@ Fetcher = Callable[[str, float], bytes]
 
 
 def urllib_fetch(url: str, timeout: float) -> bytes:
-    """Default transport: urllib, a named UA, one polite retry on 429."""
+    """Default transport: urllib, a named UA, one polite retry on 429. TERMS-FENCED: a fenced
+    URL is refused before any request and a 30x into one is never followed."""
+    from libs.data import terms_fence as _tf
+    if _tf.platform_of_url(url):
+        raise FetchError("terms_fenced", url)
     for attempt in (0, 1):
         req = urllib.request.Request(url, headers={"User-Agent": UA,
                                                    "Accept": "application/json, text/csv, */*"})
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with _tf.guarded_urlopen(req, timeout=timeout) as resp:
                 raw = resp.read(MAX_DIRECT_BYTES + 1)
             if len(raw) > MAX_DIRECT_BYTES:
                 raise FetchError("too_large", url)
@@ -357,6 +361,8 @@ def urllib_fetch(url: str, timeout: float) -> bytes:
             raise FetchError(_classify(exc), str(exc)[:160]) from exc
         except FetchError:
             raise
+        except _tf.TermsFenced as exc:
+            raise FetchError("terms_fenced", f"redirected into {exc.platform}: {url}") from exc
         except Exception as exc:
             raise FetchError(_classify(exc), f"{type(exc).__name__}: {str(exc)[:160]}") from exc
     raise FetchError("rate_limited_429", url)

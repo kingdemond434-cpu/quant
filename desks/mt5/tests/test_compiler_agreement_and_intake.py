@@ -166,7 +166,7 @@ def test_a_prose_row_that_compiles_to_nothing_is_still_deepened(tmp_path, monkey
     """REGRESSION for 4aaede35: the per-candidate agreement loop was placed between the
     intake loop's candidate loop and its `if not produced` block, so every non-producing row
     was dropped instead of deepened (and the last row's `produced` decided for all)."""
-    res = _run_main(tmp_path, monkeypatch, {"reddit": [
+    res = _run_main(tmp_path, monkeypatch, {"forumx": [
         {"title": "vague EURUSD idea", "text": "EURUSD something happens sometimes"},
         {"kind": "hypothesis", "family": "overnight_gap_decay", "symbols": ["XAUUSD"],
          "title": "structured"}]})
@@ -175,20 +175,20 @@ def test_a_prose_row_that_compiles_to_nothing_is_still_deepened(tmp_path, monkey
     for emitted in (res["out"]["hypotheses"] + res["deepen"]["tasks"]):
         assert all(emitted.get(field) for field in (
             "available_time", "ingested_time", "payload_hash", "source_version"))
-    assert res["out"]["per_source"]["reddit"] == {
+    assert res["out"]["per_source"]["forumx"] == {
         "rows": 2, "candidates": 1, "deepening": 1, "convertible_rows": 1,
         "converted_rows": 1, "valid_refusals": 0, "invalid_cells": 0,
         "unresolved_rows": 1, "deepening_recovered": 0,
-        "deepening_terminal_refusals": 0, "owes_convertible_rows": 0,
+        "deepening_terminal_refusals": 0, "terms_fenced": 0, "owes_convertible_rows": 0,
         "convertible_conversion_rate": 1.0}
 
 
 def test_deepening_recovery_rejoins_the_canonical_docket(tmp_path, monkeypatch) -> None:
     row = {"title": "vague EURUSD idea", "url": "https://example.test/idea",
            "text": "EURUSD something happens sometimes"}
-    tid = mcc._deepening_task_id("reddit", row)
+    tid = mcc._deepening_task_id("forumx", row)
     recovered = {"symbol": "EURUSD", "family": "overnight_gap_decay", "params": {},
-                 "source": "miner:reddit", "source_url": row["url"],
+                 "source": "miner:forumx", "source_url": row["url"],
                  "source_title": row["title"], "mechanism_status": "NAMED",
                  "mechanism_note": "forced overnight inventory is reversed after the open"}
     (tmp_path / "deepened.json").write_text(
@@ -196,7 +196,7 @@ def test_deepening_recovery_rejoins_the_canonical_docket(tmp_path, monkeypatch) 
     (tmp_path / "deepening_worked.jsonl").write_text(
         json.dumps({"id": tid, "disposition": "RECOVERED_STRUCTURED"}) + "\n",
         encoding="utf-8")
-    res = _run_main(tmp_path, monkeypatch, {"reddit": [row]})
+    res = _run_main(tmp_path, monkeypatch, {"forumx": [row]})
     contract = res["out"]["conversion_contract"]
     assert res["out"]["executable_candidates"] == 1
     assert res["out"]["deepening_tasks"] == 0
@@ -230,8 +230,8 @@ def test_two_engines_naming_one_symbol_under_different_families_is_contested(
                       "symbols": ["EURUSD"], "title": "a"}],
         "kimi": [{"kind": "hypothesis", "family": "session_range_breakout",
                   "symbols": ["EURUSD"], "title": "b"}],
-        "reddit": [{"kind": "hypothesis", "family": "overnight_gap_decay",
-                    "symbols": ["XAUUSD"], "title": "c"}]})
+        "forumx": [{"kind": "hypothesis", "family": "overnight_gap_decay",
+                          "symbols": ["XAUUSD"], "title": "c"}]})
     dis = res["out"]["disagreement"]
     assert dis["contested_symbols"] == 1 and set(dis["cells"]) == {"EURUSD"}
     assert set(dis["cells"]["EURUSD"]) == {"overnight_gap_decay", "session_range_breakout"}
@@ -269,7 +269,7 @@ def test_a_deepening_task_for_a_contested_symbol_carries_the_flag(tmp_path, monk
         # A row whose SYMBOL resolves but whose rule does not: it is deepened, and the
         # symbol is what ties it to the contest. A prose row naming EURUSD only in its text
         # resolves to no symbol at all, so it carries no flag -- no symbol, no group.
-        "reddit": [{"symbol": "EURUSD", "title": "vague", "text": "something happens"}]})
+        "forumx": [{"symbol": "EURUSD", "title": "vague", "text": "something happens"}]})
     assert res["out"]["disagreement"]["contested_symbols"] == 1
     tasks = res["deepen"]["tasks"]
     assert tasks, "the prose row must have been deepened"
@@ -290,3 +290,28 @@ def test_the_scorer_rewards_disagreement_and_leaves_a_lone_task_where_it_was() -
     assert contested > agreed, "settling a disagreement is worth more than confirming an echo"
     assert score(dict(base, n_independent_sources=1)) == lone, \
         "one source multiplies by 1.0: an uncontested task sits exactly where it sat"
+
+
+def test_reddit_rows_mint_nothing_and_are_counted_by_name(tmp_path, monkeypatch) -> None:
+    """THE REDDIT TERMS FENCE (2026-09-30): rows from data/intelligence/reddit/, and a row from
+    any other directory whose url is on Reddit, are VALID REFUSALS counted under `terms_fenced`
+    and the top-level `terms_fence` -- no candidate, no deepening task, never a silent skip."""
+    res = _run_main(tmp_path, monkeypatch, {
+        "reddit": [{"kind": "hypothesis", "family": "overnight_gap_decay",
+                    "symbols": ["XAUUSD"], "title": "c"},
+                   {"title": "vague EURUSD idea", "text": "EURUSD something happens"}],
+        "forumx": [{"kind": "hypothesis", "family": "overnight_gap_decay",
+                          "symbols": ["EURUSD"], "title": "cross-post",
+                          "url": "https://old.reddit.com/r/Forex/comments/x"},
+                         {"kind": "hypothesis", "family": "overnight_gap_decay",
+                          "symbols": ["XAUUSD"], "title": "own"}]})
+    out = res["out"]
+    assert out["terms_fence"]["refused_rows"] == {"reddit": 3}
+    assert out["per_source"]["reddit"]["terms_fenced"] == 2
+    assert out["per_source"]["reddit"]["valid_refusals"] == 2
+    assert out["per_source"]["reddit"]["candidates"] == 0
+    assert out["per_source"]["forumx"]["terms_fenced"] == 1
+    assert {h["symbol"] for h in out["hypotheses"]} == {"XAUUSD"}
+    assert {h["source"] for h in out["hypotheses"]} == {"miner:forumx"}
+    assert res["deepen"]["tasks"] == []
+    assert "agreement" in out["terms_fence"]["reasons"]["reddit"]

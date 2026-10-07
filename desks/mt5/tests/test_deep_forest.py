@@ -370,8 +370,6 @@ _PAGE_EN2 = ("<html><title>Another thread</title><body><p>Gold typically reverts
              "two hours once the daily range is wide. EURUSD usually rallies for a week after an ECB rate "
              "decision when positioning is short. Soy exports from Brazil tend to weaken the real over the "
              "month.</p></body></html>")
-_NITTER = """<div class="timeline-item"><a class="tweet-link" href="/trader/status/123#m"></a>
-<div class="tweet-content media-body" dir="auto">XAUUSD fades the London fix within an hour most days, positioning is long.</div></div>"""
 _WAYBACK = json.dumps({"archived_snapshots": {"closest": {"available": True,
                        "url": "https://web.archive.org/web/20200601000000/https://www.quantopian.com/posts",
                        "timestamp": "20200601000000"}}})
@@ -392,7 +390,7 @@ def _dispatch(url: str, **kw) -> str:
     if url.endswith(".rss") or "/feed" in url or "rss" in url:
         return _ATOM if "reddit" in url else _RSS
     if "/search?f=tweets" in url:
-        return _NITTER if "nitter.net" in url else ""
+        raise AssertionError(f"a terms-fenced X mirror was requested: {url}")
     if "gitee.com/api/v5/search" in url:
         return json.dumps([{"full_name": "quant/cta", "html_url": "https://gitee.com/quant/cta",
                             "description": "CTA 策略", "license": "MIT", "stargazers_count": 3}])
@@ -510,7 +508,11 @@ def test_every_ground_in_the_world_file_resolves_offline_and_no_region_is_credit
     _offline(monkeypatch, tmp_path)
     doc = _run_grounds(monkeypatch, tmp_path, _SRC["grounds"], budget=3000)
     statuses = {g["ground"]: g for g in doc["grounds"]}
-    assert len(statuses) == len(_SRC["grounds"])
+    # A TERMS-FENCED ground (Reddit, 2026-09-30; libs/data/terms_fence.py) is never scheduled
+    # and never fetched; the run names every one of them under `terms_fenced`.
+    fenced = {str(g["name"]) for g in _SRC["grounds"] if dfm.fenced_ground(g)}
+    assert fenced and set(doc["terms_fenced"]) == fenced and not fenced & set(statuses)
+    assert len(statuses) == len(_SRC["grounds"]) - len(fenced)
     bad = {k: (v["status"], v.get("errors") or v.get("error")) for k, v in statuses.items()
            if v["status"] not in ("PRODUCTIVE", "REACHED_NO_CLAIMS", "UNREACHABLE")}
     assert not bad, bad
@@ -611,11 +613,14 @@ def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_r
     doc = _run_grounds(monkeypatch, tmp_path, grounds)
     st = {g["ground"]: g for g in doc["grounds"]}
     assert st["Medium"]["status"] == "PRODUCTIVE" and st["Medium"]["items"] == 1
-    assert st["reddit"]["status"] == "PRODUCTIVE" and st["reddit"]["subs"] == 1
+    # FENCED 2026-09-30 (Reddit terms): the ground is never scheduled and never fetched; the
+    # run names it under `terms_fenced` instead of a status row.
+    # FENCED 2026-10-07 (audit of #162): a nitter mirror is X; the ground is refused the same way.
+    assert "reddit" not in st and "nitter" not in st
+    assert doc["terms_fenced"] == ["nitter", "reddit"]
     assert st["Qiita"]["status"] == "PRODUCTIVE"
     assert st["arXiv"]["status"] == "PRODUCTIVE" and st["arXiv"]["papers"] == 1
     assert st["Quantopian"]["status"] == "PRODUCTIVE" and "web.archive.org" in st["Quantopian"]["snapshot"]
-    assert st["nitter"]["status"] == "PRODUCTIVE" and st["nitter"]["mirror"] == "nitter.net"
     # The YouTube route generalises the Bilibili one: metadata converts, the transcript gap is SAID.
     assert st["YouTube JP"]["status"] == "PRODUCTIVE" and st["YouTube JP"]["transcripts"] == 0
     assert any("mirror rotation dead" in e for e in st["YouTube JP"]["errors"])

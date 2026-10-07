@@ -1,140 +1,67 @@
-"""Reddit trading community miner.
+"""Reddit trading community miner -- FENCED 2026-09-30, BLOCKED_WITH_SUBSTITUTE.
 
-Scrapes Reddit RSS feeds for trading ideas from r/Forex, r/algotrading,
-r/wallstreetbets, r/gold, r/silverbugs.
-Uses RSS (not blocked like JSON API).
+Until 2026-09-30 this read the subreddit RSS feeds (r/Forex, r/algotrading, r/wallstreetbets,
+r/Gold, r/silverbugs, r/ForexTrading, r/Daytrading) through `run_all_miners` and wrote
+`data/intelligence/reddit/discoveries_*.json`, which `miner_candidate_compiler` read into cells.
+
+WHY IT NO LONGER FETCHES. Reddit's User Agreement and Data API terms cover ALL automated access --
+the RSS feeds and the anonymous JSON included -- and require a separate agreement for commercial
+use. The desk is commercial and holds none (project coordinator ruling 2026-09-30, the same basis
+as the Discord ruling; `libs/data/terms_fence.py`). So:
+
+  * nothing is requested from any Reddit host (and `polite_fetch.get` refuses one anyway);
+  * nothing is written under `data/intelligence/reddit/` -- the compiler refuses that directory's
+    rows with a counted reason in any case, and the cells already judged from it keep their
+    verdicts, labelled `provenance_label=reddit_fenced` by the organs that write docket rows;
+  * each call writes `data/terms_fences/reddit_miner.json`: the status, the ruling and the lawful
+    substitutes that carry retail attention now (`research/attention_substitutes.py`: Wikipedia
+    pageviews, GDELT, and the existing Google Trends miner).
+
+The module keeps its name and `run_and_save` so the miner roster still lists it -- as a fenced
+source, never a silently absent one.
 """
 
 import json
-import re
-import time
-from datetime import datetime, timezone
+import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
-import requests
-
 BASE = Path(__file__).resolve().parent.parent
-OUT = BASE / "data" / "intelligence" / "reddit"
-OUT.mkdir(parents=True, exist_ok=True)
+ROOT = BASE.parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-# RSS feeds are not blocked
+from libs.data import terms_fence as tf  # noqa: E402
+
+#: The fence artifact. NOT under data/intelligence/ -- the compiler reads that tree, and a
+#: refusal is not a discovery.
+FENCE_OUT = BASE / "data" / "terms_fences" / "reddit_miner.json"
+
 SUBREDDITS = ["Forex", "algotrading", "wallstreetbets", "Gold",
               "silverbugs", "ForexTrading", "Daytrading"]
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
-
-SYMBOLS = [
-    "XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF",
-    "NZDUSD", "EURJPY", "GBPJPY", "AUDJPY", "CADJPY", "NZDJPY", "CHFJPY",
-    "EURAUD", "GBPAUD", "AUDNZD", "NZDCAD", "AUDCAD", "BTCUSD", "ETHUSD",
-    "US500", "NAS100",
-]
-
-SLANG_MAP = {
-    "gold": "XAUUSD", "xau": "XAUUSD", "xauusd": "XAUUSD",
-    "silver": "XAGUSD", "xag": "XAGUSD",
-    "oil": "USOIL", "crude": "USOIL", "wti": "USOIL",
-    "dollar": "DXY", "dxy": "DXY",
-    "bitcoin": "BTCUSD", "btc": "BTCUSD", "eth": "ETHUSD",
-    "spy": "US500", "qqq": "NAS100", "nasdaq": "NAS100",
-    "eurusd": "EURUSD", "gbpusd": "GBPUSD", "usdjpy": "USDJPY",
-    "audusd": "AUDUSD", "nzdusd": "NZDUSD", "usdcad": "USDCAD",
-    "eurjpy": "EURJPY", "gbpjpy": "GBPJPY", "audjpy": "AUDJPY",
-}
-
-
-def _extract_symbols(text: str) -> list[str]:
-    found = set()
-    text_upper = text.upper()
-    for s in SYMBOLS:
-        if s in text_upper:
-            found.add(s)
-    text_lower = text.lower()
-    for slang, sym in SLANG_MAP.items():
-        if re.search(r'\b' + slang + r'\b', text_lower):
-            found.add(sym)
-    return list(found)
-
-
-def _extract_patterns(text: str) -> list[str]:
-    known = [
-        "breakout", "reversal", "pullback", "retest", "support", "resistance",
-        "fibonacci", "RSI", "MACD", "EMA", "SMA", "order block",
-        "fair value gap", "liquidity", "smart money", "scalp", "swing",
-        "trend", "momentum", "mean reversion",
-    ]
-    text_lower = text.lower()
-    return [p for p in known if p.lower() in text_lower]
-
-
-def _parse_rss(xml_text: str, sub: str) -> list[dict]:
-    """Parse Reddit RSS XML."""
-    import xml.etree.ElementTree as ET
-    items = []
-    try:
-        root = ET.fromstring(xml_text)
-        ns = {"atom": "http://www.w3.org/2005/Atom"}
-        for entry in root.findall("atom:entry", ns):
-            title = entry.findtext("atom:title", "", ns)
-            link = entry.findtext("atom:link", "", ns)
-            content = entry.findtext("atom:content", "", ns) or ""
-            # Strip HTML
-            clean = re.sub(r'<[^>]+>', ' ', content)[:500]
-            combined = f"{title} {clean}"
-
-            syms = _extract_symbols(combined)
-            if not syms:
-                continue
-
-            pats = _extract_patterns(combined)
-            items.append({
-                "source": "reddit",
-                "subreddit": sub,
-                "title": re.sub(r'<[^>]+>', '', title)[:200],
-                "url": link,
-                "symbols": syms,
-                "patterns": pats,
-                "confidence": 0.3,
-            })
-    except ET.ParseError:
-        pass
-    return items
-
 
 def mine_subreddit(sub: str) -> list[dict]:
-    """Mine via RSS feed."""
-    url = f"https://www.reddit.com/r/{sub}/.rss?limit=50"
-    try:
-        resp = requests.get(url, headers=HEADERS, timeout=15)
-        resp.raise_for_status()
-        return _parse_rss(resp.text, sub)
-    except Exception as e:
-        print(f"  reddit r/{sub}: {e}")
-        return []
+    """Refused: returns nothing and requests nothing (Reddit terms fence)."""
+    return []
 
 
 def mine_all() -> list[dict]:
-    all_disc = []
-    for i, sub in enumerate(SUBREDDITS):
-        if i > 0:
-            time.sleep(3)  # Rate limit: 1 request per 3 seconds
-        disc = mine_subreddit(sub)
-        all_disc.extend(disc)
-        if disc:
-            print(f"  r/{sub}: {len(disc)} posts with symbols")
-    return all_disc
+    return []
 
 
 def run_and_save() -> list[dict]:
-    discoveries = mine_all()
-    out_file = OUT / f"discoveries_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
+    doc = tf.refusal("reddit", organ="desks/mt5/side_channels/reddit_miner.py",
+                     subreddits_not_read=SUBREDDITS, written_to_intelligence=False,
+                     at=datetime.now(UTC).isoformat(timespec="seconds"),
+                     substitute_organ="desks/mt5/research/attention_substitutes.py")
     try:
-        from side_channels.discovery_io import write_discoveries
-    except ModuleNotFoundError:
-        from discovery_io import write_discoveries
-    discoveries = write_discoveries(out_file, discoveries)
-    print(f"reddit: {len(discoveries)} discoveries saved")
-    return discoveries
+        FENCE_OUT.parent.mkdir(parents=True, exist_ok=True)
+        FENCE_OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    except OSError as exc:
+        print(f"reddit: fence artifact not written ({type(exc).__name__})")
+    print(f"reddit: {doc['status']} -- nothing fetched ({tf.REDDIT_TERMS_REASON[:80]}...)")
+    return []
 
 
 if __name__ == "__main__":

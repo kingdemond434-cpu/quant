@@ -245,10 +245,21 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     `timeout` is per attempt; `deadline` (a `time.monotonic()` value) caps the whole call,
     retries and backoff included, so no fetch can outlive the budget of the leg that made it.
     """
+    resp = Response(url=url)
+    # THE PLATFORM TERMS FENCE (2026-09-30): a URL on a platform whose own agreement bars this
+    # desk's automated use (Reddit, StockTwits -- libs/data/terms_fence.py) is never requested.
+    # The Response carries the named refusal, so the caller records it instead of a silent miss.
+    from libs.data import terms_fence as _tf
+    _why = _tf.platform_of_url(url)
+    if _why:
+        resp.error = f"{_tf.PLATFORMS[_why]['status']}:{_why}: {_tf.PLATFORMS[_why]['reason']}"
+        _stat(leg, error=f"terms_fenced:{_why}")
+        return resp
     hdr = {**BROWSER_HEADERS, **(headers or {})}
     host = urlparse(url).netloc.lower()
-    open_ = opener or urllib.request.urlopen
-    resp = Response(url=url)
+    # THE REDIRECT GUARD: the default opener refuses a 30x into a fenced platform
+    # (`terms_fence.FencedRedirectHandler`); a caller-supplied opener is the caller's own test.
+    open_ = opener or _tf.guarded_urlopen
     t0 = time.monotonic()
     for attempt in range(max(0, retries) + 1):
         if deadline is not None and time.monotonic() >= deadline:
@@ -290,6 +301,12 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 break
             if gate is not None and host:
                 gate.penalise(host, wait or backoff_s * (2 ** attempt))
+        except _tf.TermsFenced as exc:
+            # A 30x INTO a fenced platform: refused by the redirect guard, never followed, and
+            # never retried -- the next attempt would be redirected to the same place.
+            resp.error = f"{exc.status}:{exc.platform}: {exc.reason}"
+            _stat(leg, error=f"terms_fenced:{exc.platform}")
+            break
         except Exception as exc:
             name = type(exc).__name__
             reason = getattr(exc, "reason", None)

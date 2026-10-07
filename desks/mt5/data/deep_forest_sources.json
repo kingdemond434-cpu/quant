@@ -17,7 +17,7 @@
     "ja"
    ],
    "market": "JP",
-   "grounds": 26
+   "grounds": 25
   },
   "kr": {
    "name": "Korea",
@@ -110,7 +110,7 @@
     "hi"
    ],
    "market": "IN",
-   "grounds": 19
+   "grounds": 18
   },
   "pk": {
    "name": "Pakistan",
@@ -184,7 +184,7 @@
     "tr"
    ],
    "market": "TR",
-   "grounds": 11
+   "grounds": 10
   },
   "il": {
    "name": "Israel",
@@ -251,7 +251,7 @@
     "en"
    ],
    "market": "US",
-   "grounds": 40
+   "grounds": 39
   },
   "gb": {
    "name": "United Kingdom",
@@ -279,7 +279,7 @@
     "en"
    ],
    "market": "US",
-   "grounds": 10
+   "grounds": 9
   },
   "de": {
    "name": "Germany, Austria, Switzerland",
@@ -405,7 +405,7 @@
     "ru"
    ],
    "market": "RU",
-   "grounds": 22
+   "grounds": 21
   },
   "br": {
    "name": "Brazil",
@@ -414,7 +414,7 @@
     "pt"
    ],
    "market": "BR",
-   "grounds": 19
+   "grounds": 18
   },
   "mx": {
    "name": "Mexico",
@@ -1097,24 +1097,6 @@
    ],
    "transcripts": 4,
    "market": "JP"
-  },
-  {
-   "name": "X (nitter) JP trader talk",
-   "region": "jp",
-   "language": "ja",
-   "route": "nitter",
-   "kind": "social",
-   "weight": 0.6,
-   "why": "public tweets through a nitter mirror when one is up; never auth",
-   "queries": [
-    "ドル円 手法 検証 勝率",
-    "ゴールド 逆張り 仲値"
-   ],
-   "mirrors": [
-    "nitter.net",
-    "nitter.privacydev.net",
-    "nitter.poast.org"
-   ]
   },
   {
    "name": "JPX 調査研究",
@@ -2620,24 +2602,6 @@
    "market": "IN"
   },
   {
-   "name": "X (nitter) India traders",
-   "region": "in",
-   "language": "en",
-   "route": "nitter",
-   "kind": "social",
-   "weight": 0.6,
-   "why": "public tweets via a mirror when one is up",
-   "queries": [
-    "nifty expiry strategy backtest",
-    "usdinr rbi intervention"
-   ],
-   "mirrors": [
-    "nitter.net",
-    "nitter.privacydev.net",
-    "nitter.poast.org"
-   ]
-  },
-  {
    "name": "RBI DBIE statistics",
    "region": "in",
    "language": "en",
@@ -3226,24 +3190,6 @@
    ],
    "transcripts": 4,
    "market": "TR"
-  },
-  {
-   "name": "X (nitter) Türkiye piyasa",
-   "region": "tr",
-   "language": "tr",
-   "route": "nitter",
-   "kind": "social",
-   "weight": 0.6,
-   "why": "public tweets via a mirror when one is up",
-   "queries": [
-    "dolar tl merkez bankası faiz",
-    "altın ons strateji"
-   ],
-   "mirrors": [
-    "nitter.net",
-    "nitter.privacydev.net",
-    "nitter.poast.org"
-   ]
   },
   {
    "name": "TCMB EVDS",
@@ -4038,25 +3984,6 @@
    "market": "US"
   },
   {
-   "name": "X (nitter) FX/quant",
-   "region": "us",
-   "language": "en",
-   "route": "nitter",
-   "kind": "social",
-   "weight": 0.6,
-   "why": "public tweets via a mirror when one is up",
-   "queries": [
-    "XAUUSD mean reversion london fix",
-    "EURUSD carry positioning cot",
-    "fintwit systematic strategy backtest"
-   ],
-   "mirrors": [
-    "nitter.net",
-    "nitter.privacydev.net",
-    "nitter.poast.org"
-   ]
-  },
-  {
    "name": "Quantocracy",
    "region": "us",
    "language": "en",
@@ -4430,21 +4357,6 @@
     "https://github.com/topics/metatrader5",
     "https://github.com/topics/mql5"
    ]
-  },
-  {
-   "name": "Twitter/X via nitter mirrors (search index)",
-   "region": "global",
-   "language": "en",
-   "route": "search",
-   "kind": "social",
-   "weight": 0.3,
-   "why": "the index's copy of a mirror; the nitter route reads live",
-   "site": "nitter.net",
-   "queries": [
-    "XAUUSD strategy backtest",
-    "carry trade positioning"
-   ],
-   "market": "US"
   },
   {
    "name": "Hacker News finance threads",
@@ -6178,24 +6090,6 @@
    "market": "RU"
   },
   {
-   "name": "X (nitter) RU трейдеры",
-   "region": "ru",
-   "language": "ru",
-   "route": "nitter",
-   "kind": "social",
-   "weight": 0.6,
-   "why": "public tweets via a mirror when one is up",
-   "queries": [
-    "золото стратегия бэктест",
-    "рубль интервенции минфин"
-   ],
-   "mirrors": [
-    "nitter.net",
-    "nitter.privacydev.net",
-    "nitter.poast.org"
-   ]
-  },
-  {
    "name": "MOEX research",
    "region": "ru",
    "language": "ru",
@@ -6425,24 +6319,6 @@
    ],
    "transcripts": 4,
    "market": "BR"
-  },
-  {
-   "name": "X (nitter) BR mercado",
-   "region": "br",
-   "language": "pt",
-   "route": "nitter",
-   "kind": "social",
-   "weight": 0.6,
-   "why": "public tweets via a mirror when one is up",
-   "queries": [
-    "dólar copom selic estratégia",
-    "mini índice estratégia backtest"
-   ],
-   "mirrors": [
-    "nitter.net",
-    "nitter.privacydev.net",
-    "nitter.poast.org"
-   ]
   },
   {
    "name": "BCB SGS time series",

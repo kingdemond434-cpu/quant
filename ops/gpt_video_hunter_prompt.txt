@@ -120,9 +120,16 @@ ROLE B: WHAT TO DO
 ------------------
 
 Hunt globally for unusually strong public return claims and records -- YouTube, interviews,
-podcasts, public dashboards, competition records, fund letters, blogs, Substack, Reddit, X, GitHub,
+podcasts, public dashboards, competition records, fund letters, blogs, Substack, GitHub,
 forums, public strategy repositories, bot reports, prop-trading disclosures, academic and
 practitioner reports.
+
+TERMS-FENCED, NEVER MINED (principal ruling 2026-09-30, LAWS 5e, libs/data/terms_fence.py):
+Reddit and its mirrors (pushshift, pullpush), StockTwits, X/Twitter (no paid API, no scraping)
+and any Discord reached with a user token. Do not search, read, cite or record them as a source,
+and do not follow a link into them. Retail attention is read through the lawful substitutes
+instead: Wikipedia pageviews (wikimedia.org pageviews API) and the GDELT doc timeline
+(api.gdeltproject.org), both minted by the hourly `attention_substitutes` leg.
 
 For each, record into data/intelligence/extreme_return_claims.json with its EVIDENCE CLASS:
     MARKETING_CLAIM | SELF_REPORTED | BACKTEST | PUBLIC_DASHBOARD | COMPETITION_RECORD |
@@ -419,8 +426,9 @@ The desk cannot tell those apart from the outside, so you must not let them look
 
 EVERY RUN, WITHOUT EXCEPTION, ATTEMPT TO FIND VENUES NOT ON THE LIST. Methods that work:
   * FOLLOW THE PRACTITIONERS OUT. In any good thread, people name where else they talk -- a
-    Discord, a Telegram, a QQ/WeChat group index, a Substack, a niche BBS, a Slack, a forum
-    nobody indexes. Those mentions ARE the discovery signal. Harvest them as you read.
+    public Telegram channel, a QQ/WeChat group index, a Substack, a niche BBS, a forum nobody
+    indexes. Those mentions ARE the discovery signal. Harvest them as you read (a terms-fenced
+    platform named above stays fenced however it is reached).
   * READ REPO METADATA. A quant repo's README, its issues, its CONTRIBUTING, its docs site and
     its star-graph neighbours all point at where the authors congregate.
   * FIND THE AGGREGATORS. "Best X communities", awesome-lists, link directories, conference

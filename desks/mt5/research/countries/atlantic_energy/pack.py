@@ -1745,8 +1745,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                            "discussion, the remittance and diaspora boards, and the local "
                            "investment forums",
         layer="retail_ecology",
-        roots=("https://www.facebook.com/groups", "https://www.reddit.com/r/TrinidadandTobago",
-               "https://www.guyanachronicle.com"),
+        roots=("https://www.facebook.com/groups", "https://www.guyanachronicle.com"),
         queries=("foreign exchange shortage Trinidad bank limit US dollar",
                  "wire transfer US dollars Trinidad waiting",
                  "sending money to Guyana rate remittance",

@@ -975,7 +975,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                             "threads, the Portfolio and Privátbankár comment sections, Facebook "
                             "investing groups and the Hungarian personal-finance blogs",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/hungary/", "https://www.facebook.com/groups/tozsdehu",
+        roots=("https://www.facebook.com/groups/tozsdehu",
                "https://www.penzcentrum.hu/forum/"),
         queries=("hova tegyem a pénzem", "állampapír vagy betét", "euróban tartsam a "
                  "megtakarítást", "forintgyengülés mit jelent", "tőzsdei kezdő tanácsok",

@@ -180,26 +180,36 @@ def mine() -> dict:
             items = json.loads(inbox.read_text(encoding="utf-8"))
         except Exception:
             items = []
+    # REDDIT WAS THE SOURCE HERE UNTIL 2026-09-30 (r/algotrading and r/quant top.json). It is
+    # terms-fenced now -- Reddit's User Agreement and Data API terms require an agreement for
+    # commercial use (libs/data/terms_fence.py) -- so the seeds come from GDELT's DOC API
+    # (keyless, open for any use with citation): recent news articles on systematic trading.
     urls = [
-        "https://www.reddit.com/r/algotrading/top.json?t=week&limit=15",
-        "https://www.reddit.com/r/quant/top.json?t=week&limit=15",
+        "https://api.gdeltproject.org/api/v2/doc/doc?query=%22algorithmic%20trading%22"
+        "&mode=artlist&format=json&maxrecords=25&timespan=7d&sort=hybridrel",
+        "https://api.gdeltproject.org/api/v2/doc/doc?query=%22quant%20fund%22"
+        "&mode=artlist&format=json&maxrecords=25&timespan=7d&sort=hybridrel",
     ]
     hits = []
     for u in urls:
         try:
             import urllib.request
+
+            from libs.data import terms_fence as _tf
+            _tf.check_url(u)
             req = urllib.request.Request(u, headers={"User-Agent": "quant-research-desk/1.0"})
             with urllib.request.urlopen(req, timeout=20) as r:
-                data = json.loads(r.read().decode("utf-8", "ignore"))
-            for child in data.get("data", {}).get("children", [])[:15]:
-                d = child.get("data", {})
-                hits.append({"src": u.split("/")[2], "title": d.get("title", "")[:200],
-                             "url": "https://www.reddit.com" + (d.get("permalink") or ""),
-                             "score": d.get("score", 0), "ts": d.get("created_utc")})
+                data = json.loads(r.read().decode("utf-8", "ignore") or "{}")
+            for a in (data.get("articles") or [])[:25]:
+                if _tf.platform_of_url(str(a.get("url") or "")):
+                    continue
+                hits.append({"src": "gdelt", "title": str(a.get("title") or "")[:200],
+                             "url": a.get("url") or "", "ts": a.get("seendate"),
+                             "domain": a.get("domain"), "language": a.get("language")})
         except Exception as e:
             hits.append({"src": u, "error": str(e)[:120], "bypass_tried": True})
     seen = {x.get("url") for x in items}
-    fresh = [h for h in hits if h.get("url") and h["url"] not in seen and h.get("score", 0) >= 20]
+    fresh = [h for h in hits if h.get("url") and h["url"] not in seen]
     items.extend(fresh)
     inbox.write_text(json.dumps(items[-500:], indent=1), encoding="utf-8")
     return {"sources_tried": len(urls), "new_seeds": len(fresh), "inbox": len(items)}
@@ -958,6 +968,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE INGESTION-EXPLOITATION GATE (LAWS 5c): an artifact read and two ratchets, every pass.
     # The LEDGER it reads is heavy and stays in the data department; the gate is not.
     "ingestion_exploitation",
+    # THE FOREST-ATTEMPT FENCE (2026-09-30): every deep-forest ground attempted daily, or
+    # LOW_EV_RETIRED by name; a reader of the miner's per-ground ledgers, a second at most.
+    "forest_attempts",
     # THE LIVE-TRUTH ORGANS (Tier-1 audit #6/#17/#18/#19/#20, 2026-09-29): readers of artifacts
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
@@ -1024,7 +1037,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "judge_coverage", "orthogonality_yield", "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
-    **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
+    **dict.fromkeys(("world_crawler", "deep_forest", "attention_substitutes", "moat_miner",
+                     "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
@@ -1117,7 +1131,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "alpha_replenishment", "research_dashboard",
                      "research_roi", "experiment_spine", "implementer",
                      "research_debt", "paradigm_router", "meta_controller", "research_bandit",
-                     "ingestion_exploitation", "coverage_tensor", "research_evolution",
+                     "ingestion_exploitation", "forest_attempts",
+                     "coverage_tensor", "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
                      "search_paradigm_census", "producer_census", "productivity_census",
@@ -1721,6 +1736,9 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # Stops itself at --budget-s 240 (70% of it fetching, ~70 keyless series); the cap sits above
+    # so the lake, the donation and the report are written.
+    "attention_substitutes": 360,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -4186,15 +4204,22 @@ def main() -> None:
     # registered, disposed, and given EXACTLY ONE downstream state; a stranded unit becomes a
     # discovery so `discovery_compiler` closes it rather than a report nobody reads. It runs
     # AFTER the compiler on purpose: this hour's conversions are what it measures. Data dept.
+    # 480 s (was 240): the index now streams the WHOLE registry instead of its first 20,000
+    # rows, and every stranded unit is routed and drained in the same pass; the 720 s default
+    # cap still sits above it, so the pass writes before any kill.
     igl = _costed("ingestion_ledger", lambda: _producer("ingestion_ledger",
                                                         "research/ingestion_ledger.py",
-                                                        "--budget-s", "240",
+                                                        "--budget-s", "480",
                                                         "--grace-hours", "24"))
     # ITS GATE: the exploitation ratchet (up only), the DATA STRANDING ratchet (down only) and
     # the twelve-question data-utilization audit per dataset. A cheap reader, so it is a CORE
     # leg -- a gate that never ran is a claim the desk cannot cash (L1.49). Meta dept.
     ige = _costed("ingestion_exploitation", lambda: _producer(
         "ingestion_exploitation", "scripts/check_ingestion_exploitation.py"))
+    # THE FOREST-ATTEMPT FENCE: attempted / never-attempted / yielded / retired / overdue per
+    # deep-forest ground, one history line an hour, RED when never-attempted does not fall.
+    fat = _costed("forest_attempts", lambda: _producer(
+        "forest_attempts", "scripts/check_forest_attempts.py"))
     # THE MINING OBJECTIVE (M17/M18): the five sovereign KPIs, the miner reward and the
     # separation-of-powers check, from the registry. Meta.
     mob = _costed("mining_objective", lambda: _producer("mining_objective",
@@ -5219,6 +5244,13 @@ def main() -> None:
         "placebo_audit", "research/placebo_audit.py"))
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
+    # RETAIL ATTENTION WITHOUT REDDIT (2026-09-30). Reddit is terms-fenced (libs/data/
+    # terms_fence.py); Wikipedia pageviews and GDELT news volume carry the class as PIT lake
+    # series and charged exogenous_conditioner cells, and the report measures attention cell
+    # volume per day before and after the fence (reports/ATTENTION_SUBSTITUTES.json).
+    ats = _costed("attention_substitutes", lambda: _producer(
+        "attention_substitutes", "research/attention_substitutes.py", "--once",
+        "--budget-s", "240"))
     ssm_leg = _costed("session_structure", session_structure)
     mm = _costed("maintain_miners", maintain_miners)
     # MEASURE THE CONVERSION WHERE THE DISCOVERIES ARE, AND ON THIS HOUR'S CODE. Nothing on this
@@ -5693,6 +5725,7 @@ def main() -> None:
                     "conversion_maximiser": cvm, "conversion_funnel": cfn,
                     "research_debt": rdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
+                    "forest_attempts": fat,
                     "macro_intelligence": mci, "market_constitution": mcc,
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
@@ -5780,6 +5813,7 @@ def main() -> None:
                     "forward_reconcile": fwr,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
+                    "attention_substitutes": ats,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,

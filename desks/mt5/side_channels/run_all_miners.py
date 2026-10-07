@@ -65,7 +65,6 @@ from mql5_signals import run_and_save as mql5_signals_mine
 from mql5_forum import run_and_save as mql5_forum_mine
 from tradingview_miner import run_and_save as tradingview_mine
 from quantconnect_miner import run_and_save as quantconnect_mine
-from reddit_miner import run_and_save as reddit_mine
 
 # --- Tier 2: Institutional/Calendar miners ---
 from central_bank_miner import run_and_save as central_bank_mine
@@ -107,7 +106,6 @@ ALL_MINERS = [
     ("mql5_forum", mql5_forum_mine),
     ("tradingview", tradingview_mine),
     ("quantconnect", quantconnect_mine),
-    ("reddit", reddit_mine),
     # Institutional/Calendar
     ("central_bank", central_bank_mine),
     ("forexfactory", forexfactory_mine),
@@ -132,8 +130,17 @@ ALL_MINERS = [
 ]
 
 
+#: Miners whose platform is terms-fenced are UNSCHEDULED (the principal's 2026-09-30 ruling: no
+#: Reddit or StockTwits at all): they are not in ALL_MINERS, are never imported or called, and
+#: are listed in every run's results as fenced, so the absence never reads as an outage.
+TERMS_FENCED = {"reddit": ("Reddit User Agreement + Data API terms require an agreement for "
+                           "commercial use; see libs/data/terms_fence.py")}
+
+
 def run_all_miners() -> dict:
-    results = {}
+    results: dict = {name: {"count": 0, "discoveries": [], "status": "BLOCKED_WITH_SUBSTITUTE",
+                            "scheduled": False, "reason": why}
+                     for name, why in TERMS_FENCED.items()}
     total = 0
     for name, fn in ALL_MINERS:
         status, payload = _run_miner(name, fn)

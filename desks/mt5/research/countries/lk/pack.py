@@ -896,8 +896,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         "lk_retail_forums", "CSE retail communities: r/srilanka and r/SriLankaStocks, the "
                             "Facebook investor groups, Sinhala YouTube finance channels, the "
                             "Elakiri forum", layer="retail_ecology",
-        roots=("https://www.reddit.com/r/srilanka/",
-               "https://www.youtube.com/results?search_query=කොටස්+වෙළඳපොල",
+        roots=("https://www.youtube.com/results?search_query=කොටස්+වෙළඳපොල",
                "https://www.elakiri.com"),
         queries=("කොටස් මිලදී ගන්නේ කොහොමද", "කොටස් වෙළඳපොල අද", "ඩොලර් ගන්නේ කොහෙන්ද",
                  "பங்கு சந்தை இன்று", "CSE tips", "ASPI today", "best stocks sri lanka"),

@@ -162,6 +162,14 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
     stops matching.
     """
     global _used
+    # THE TERMS FENCE (libs/data/terms_fence.py; audit of #162, 2026-10-07). A headless browser
+    # is a fetch like any other: a fenced URL is refused before Chromium is launched, and every
+    # request the page then makes -- each redirect hop and subresource included -- is checked
+    # by the route handler below and aborted when it is fenced.
+    from libs.data import terms_fence as _tf
+    fenced = _tf.platform_of_url(url)
+    if fenced:
+        return "", f"TERMS-FENCED: {_tf.PLATFORMS[fenced]['status']}:{fenced}"
     ok, why = render_available()
     if not ok:
         return "", f"RENDER-UNAVAILABLE: {why}"
@@ -198,6 +206,9 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
             browser = pw.chromium.launch(**launch_kw)
             try:
                 page = browser.new_context(**ctx_kw).new_page()
+                page.route("**/*", lambda route: (route.abort("blockedbyclient")
+                                                  if _tf.platform_of_url(route.request.url)
+                                                  else route.continue_()))
                 page.set_default_timeout(timeout_s * 1000)
                 page.goto(url, wait_until="domcontentloaded", timeout=timeout_s * 1000)
                 if wait_selector:

@@ -651,8 +651,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         "bd_retail_groups", "DSE retail investor groups on Facebook, YouTube stock channels, "
                             "the r/bangladesh finance threads", layer="retail_ecology",
         roots=("https://www.facebook.com/groups/dsebd", "https://www.youtube.com/results?"
-               "search_query=%E0%A6%B6%E0%A7%87%E0%A6%AF%E0%A6%BC%E0%A6%BE%E0%A6%B0%E0%A6%AC%E0%A6%BE%E0%A6%9C%E0%A6%BE%E0%A6%B0",
-               "https://www.reddit.com/r/bangladesh/"),
+               "search_query=%E0%A6%B6%E0%A7%87%E0%A6%AF%E0%A6%BC%E0%A6%BE%E0%A6%B0%E0%A6%AC%E0%A6%BE%E0%A6%9C%E0%A6%BE%E0%A6%B0"),
         queries=("শেয়ারবাজার টিপস", "কোন শেয়ার কিনব", "ফ্লোর প্রাইস উঠে গেছে", "মার্জিন কল",
                  "DSE tips", "which share to buy", "floor price lifted"),
         languages=("bn", "en"), access_label="PUBLIC_SOCIAL", credibility="FRINGE",

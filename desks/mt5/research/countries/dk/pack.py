@@ -1151,10 +1151,10 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
               "and this ecology is where its behaviour shows up"),
     source_class(
         "dk_retail_forums", "Danish investor forums and communities: the Euroinvestor boards, "
-                            "the Danish personal-finance subreddits and the large Facebook "
+                            "the Danish personal-finance boards and the large Facebook "
                             "investor groups",
         layer="retail_ecology",
-        roots=("https://www.euroinvestor.dk", "https://www.reddit.com/r/dkfinance/"),
+        roots=("https://www.euroinvestor.dk",),
         queries=("aktier debat", "boliglån råd", "opsparing investering", "skat på aktier",
                  "flexlån eller fast rente"),
         languages=("da",), access_label="PUBLIC_SOCIAL", credibility="FRINGE",
