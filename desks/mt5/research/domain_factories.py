@@ -139,6 +139,11 @@ class Paths:
         return self.base / "weather_forecast_vintages.json"
 
     @property
+    def forecast_archive(self) -> Path:
+        """Append-only: vintages whose target date left the working window, never deleted."""
+        return self.base / "weather_forecast_vintages_archive.jsonl"
+
+    @property
     def cpc_store(self) -> Path:
         return self.base / "cpc_degree_days.json"
 
@@ -537,7 +542,8 @@ OBS_EMIT_DAYS = 730
 REVISION_GAP_H = 20
 #: Two models' runs count as contemporaneous for the disagreement within this window.
 DISAGREE_WINDOW_H = 24
-#: Raw forecast vintages are kept while their target date is within this many days.
+#: Raw forecast vintages stay in the working store while their target date is within this many
+#: days; older ones MOVE to the append-only archive (nothing is deleted).
 VINTAGE_KEEP_D = 45
 
 
@@ -683,12 +689,23 @@ def merge_forecasts(store: dict[str, Any], rows: Iterable[Mapping[str, Any]],
     return added
 
 
-def prune_forecasts(store: dict[str, Any], today: date) -> int:
+def split_forecasts(store: Mapping[str, Any], today: date
+                    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """(working store, rows to archive): vintages whose target is older than VINTAGE_KEEP_D
+    leave the working store only by being appended to the archive -- every vintage is kept."""
     cut = (today - timedelta(days=VINTAGE_KEEP_D)).isoformat()
-    old = [k for k, r in store.items() if str(r.get("target")) < cut]
-    for k in old:
-        del store[k]
-    return len(old)
+    keep = {k: r for k, r in store.items() if str(r.get("target")) >= cut}
+    moved = [{"key": k, **r} for k, r in store.items() if str(r.get("target")) < cut]
+    return keep, moved
+
+
+def archive_forecasts(path: Path, rows: list[dict[str, Any]]) -> None:
+    if not rows:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        for r in rows:
+            fh.write(json.dumps(r, sort_keys=True) + "\n")
 
 
 def _runs(store: Mapping[str, Any], model: str, now: datetime
@@ -1069,9 +1086,11 @@ def run_weather(paths: Paths, state: dict[str, Any], now: datetime, getter: Gett
                 rows_n.extend(parse_nws_forecast(body, icao))
         merge_forecasts(vint, rows_n, now)
         _close(ndfd, len(rows_n))
-    pruned = prune_forecasts(vint, now.date())
+    working, moved = split_forecasts(vint, now.date())
     if not dry_run:
-        _atomic(paths.forecast_vintages, vint)
+        archive_forecasts(paths.forecast_archive, moved)       # archive FIRST, then trim
+        _atomic(paths.forecast_vintages, working)
+        vint = working
     metrics = forecast_metrics(vint, now)
     fobs = [A.Obs(k, now.date(), v, published_at=now) for k, v in sorted(metrics.items())]
     merged_f = merge_into(paths, WEATHER_FCST, fobs, now) if fobs and not dry_run else {}
@@ -1083,7 +1102,7 @@ def run_weather(paths: Paths, state: dict[str, Any], now: datetime, getter: Gett
             "regions": {"us": "conus + Census divisions 1-9 (observed and forecast)",
                         "europe": "UNMEASURED: " + runs["ecmwf_open_data"].why},
             "base": {"F": BASE_F, "C": BASE_C},
-            "forecast_vintages": {"rows": len(vint), "pruned": pruned,
+            "forecast_vintages": {"rows": len(vint), "archived": len(moved),
                                   "models": sorted({str(r.get("model")) for r in vint.values()})},
             "today": metrics, "normals_ready": normals_ready,
             "merge": {"observed": merged_obs, "forecast": merged_f},

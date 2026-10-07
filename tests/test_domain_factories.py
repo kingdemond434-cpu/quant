@@ -136,6 +136,19 @@ def test_every_vintage_is_kept_and_never_overwritten() -> None:
     assert row["tmin"] == 40.0 and row["first_seen_at"] == t0.isoformat(timespec="seconds")
 
 
+def test_old_vintages_move_to_the_archive_never_deleted(tmp_path: Path) -> None:
+    t0 = datetime(2026, 8, 1, 12, tzinfo=UTC)
+    s = _store((_run("gfs_mos", "KBOS", t0, {"2026-08-02": (40.0, 50.0),
+                                              "2026-10-06": (40.0, 50.0)}), t0))
+    keep, moved = D.split_forecasts(s, date(2026, 10, 7))
+    assert [r["target"] for r in keep.values()] == ["2026-10-06"]
+    assert [r["target"] for r in moved] == ["2026-08-02"] and len(s) == 2
+    arc = tmp_path / "a.jsonl"
+    D.archive_forecasts(arc, moved)
+    D.archive_forecasts(arc, moved)
+    assert len(arc.read_text().splitlines()) == 2                     # append-only
+
+
 def test_disagreement_needs_both_models_within_24h() -> None:
     t0 = datetime(2026, 10, 6, 12, tzinfo=UTC)
     s = _store((_run("gfs_mos", "KBOS", t0, {"2026-10-08": (30.0, 40.0)}), t0),
