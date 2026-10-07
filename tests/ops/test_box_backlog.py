@@ -260,14 +260,15 @@ def test_credential_formats_refuse_the_push(text: str) -> None:
 
 @pytest.mark.parametrize("data", [
     f"KEY = '{_GH}'\n".encode("utf-16"),
-    gzip.compress(f"KEY = '{_GH}'\n".encode()),
-])
+    gzip.compress(f"KEY = '{_GH}'\n".encode(), mtime=0),
+], ids=["utf16", "gzip"])
 def test_encoded_blobs_holding_a_token_refuse_the_push(data: bytes) -> None:
     assert bb.screen_bytes(data) == "strong"
 
 
-@pytest.mark.parametrize("data", [b"\x00\x01\x02 just bytes", gzip.compress(b"plain"),
-                                  b"PK\x03\x04 zipped", "plain".encode("utf-16")])
+@pytest.mark.parametrize("data", [b"\x00\x01\x02 just bytes", gzip.compress(b"plain", mtime=0),
+                                  b"PK\x03\x04 zipped", "plain".encode("utf-16")],
+                         ids=["nul", "gzip", "zip", "utf16"])
 def test_any_unscreenable_blob_is_withheld(data: bytes) -> None:
     assert bb.screen_bytes(data) in ("weak", "strong")
 
