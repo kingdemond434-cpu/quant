@@ -1939,6 +1939,34 @@ def rule_tankan(period: date) -> datetime:
 
 
 rule_mof_intervention.calendar = "JP"  # type: ignore[attr-defined]
+
+
+#: MOF "International Transactions in Securities" release time, from its own schedule page
+#: (https://www.mof.go.jp/english/policy/international_policy/reference/itn_transactions_in_securities/schedule.htm,
+#: read 2026-10-07): "8:50 AM (Japan Standard Time)".
+MOF_RELEASE_JST = (8, 50)
+#: The day of month M+2 on or after which the by-investor table for month M is stamped. The
+#: table rides the monthly release one month later (Nov 2023 printed 12 Jan 2024; Jul 2026 printed
+#: 8 Sep 2026, the fixture's "Final Update"); that schedule lists those monthly releases on the
+#: 8th to 12th, later after Japan's New Year and Golden Week holidays. The 15th is LATE ON
+#: PURPOSE: a conservative stamp costs a few days of freshness, an early one is look-ahead.
+MOF_INVESTOR_RELEASE_DAY = 15
+
+
+def rule_mof_investor(period: date) -> datetime:
+    """By-investor month M (period = its last day): 08:50 JST on the MOF_INVESTOR_RELEASE_DAY of
+    M+2, rolled forward past Tokyo weekends and holidays -- i.e. 23:50 UTC the day before that
+    Tokyo business day. Replaces `_lag_rule(42)`, which stamped Nov 2023 at 11 Jan 00:00Z against
+    a print at 12 Jan 08:50 JST (~24h early; audit of #251)."""
+    y, m = period.year, period.month + 2
+    if m > 12:
+        y, m = y + 1, m - 12
+    d = roll_business_day(_utc(y, m, MOF_INVESTOR_RELEASE_DAY), "JP")
+    hh, mm = MOF_RELEASE_JST
+    return d.replace(hour=hh, minute=mm) - timedelta(hours=9)
+
+
+rule_mof_investor.calendar = "JP"  # type: ignore[attr-defined]
 rule_tankan.calendar = "JP"  # type: ignore[attr-defined]
 
 
@@ -3283,7 +3311,7 @@ JP_PLANE_SOURCES: tuple[Source, ...] = (
         name="MOF residents' foreign long-term bond purchases by investor type (monthly)",
         url=os.environ.get("ALT_MOF_SEC_INVESTOR_URL", MOF_SEC + "monthb3.csv"), region="JP",
         language="ja", cadence="monthly", parse=make_mof_investor_parser("bonds"),
-        rule=_lag_rule(42, 0, calendar="JP"), transform="given", instruments=_JP_FX,
+        rule=rule_mof_investor, transform="given", instruments=_JP_FX,
         signal_series=("bonds_life_insurers_net", "bonds_trust_accounts_net",
                        "bonds_banks_net"),
         mechanism=("WHO sells the yen: life insurers and trust accounts (the pension money) "
@@ -3296,7 +3324,8 @@ JP_PLANE_SOURCES: tuple[Source, ...] = (
                                  "yen sale), which this table cannot see"),
         crowding_prior="low", data_source=_jp_data_source("mof", "intl_securities_investor"),
         note=("monthb3.csv (long-term debt); monthb1/b2/b4 share the layout and are selectable "
-              "with ALT_MOF_SEC_INVESTOR_URL; released with the balance of payments ~8th of M+2")),
+              "with ALT_MOF_SEC_INVESTOR_URL; released 08:50 JST with the monthly release of M+1, "
+              "the 8th-12th of M+2; stamped conservatively at rule_mof_investor")),
     Source(
         id="jp_mof_fx_intervention",
         name="MOF foreign exchange intervention operations (daily detail, disclosed quarterly)",
@@ -3411,20 +3440,56 @@ _BOJ_API_EV = {"terms_url": "https://www.stat-search.boj.or.jp/info/api_notice_e
                                "\"Excessive access frequency or other acts that interfere with "
                                "the operation of the API\""),
                "api_doc": "https://www.stat-search.boj.or.jp/info/api_manual_en.pdf",
-               "robots": ("the API is the Bank's documented interface; the notice states no "
-                          "commercial-use restriction. A service RELEASED to others must be "
-                          "notified to post.rsd17@boj.or.jp -- the desk's internal use releases "
-                          "none"),
-               "checked_at": _CHK_JP}
+               "robots": ("the API is the Bank's documented interface. A service RELEASED to "
+                          "others must be notified to post.rsd17@boj.or.jp"),
+               "decision": "to_confirm",
+               "why_to_confirm": ("re-read 2026-10-07: the notice (credit line, prohibited acts, "
+                                  "release notification, liability) carries no clause that "
+                                  "PERMITS copying or commercial use, and the Bank's copyright "
+                                  "policy (https://www.boj.or.jp/en/about/copyright.htm) "
+                                  "excludes 'The copying or reproduction of the content for "
+                                  "commercial purposes'. Silence is not a permission: fail "
+                                  "closed until a verbatim permitting clause (or a written "
+                                  "permission from the Bank) is quoted here"),
+               "checked_at": "2026-10-07"}
 JP_TERMS: dict[str, tuple[str, str]] = {
     "jp_mof_securities_weekly": ("confirmed", "MOF site: PDL 1.0, commercial use allowed"),
     "jp_mof_securities_investor_bonds": ("confirmed", "MOF site: PDL 1.0, commercial use allowed"),
     "jp_mof_fx_intervention": ("confirmed", "MOF site: PDL 1.0, commercial use allowed"),
-    "jp_boj_call_rate": ("confirmed", "BOJ stat-search API notice: credit line, no restriction"),
-    "jp_boj_tankan": ("confirmed", "BOJ stat-search API notice: credit line, no restriction"),
-    "jp_boj_current_account": ("confirmed", "BOJ stat-search API notice: credit line"),
-    "jp_boj_jgb_holdings": ("confirmed", "BOJ stat-search API notice: credit line"),
+    # FAIL CLOSED (audit of #251, 2026-10-07): the API notice states a credit line, a
+    # prohibited-acts list and a release notification, and NO clause permitting reuse; the Bank's
+    # site copyright policy excludes copying for commercial purposes. No verbatim permitting
+    # clause is quoted, so these rows send nothing until one is recorded in _BOJ_API_EV.
+    "jp_boj_call_rate": ("to_confirm", "BOJ stat-search API notice: no permitting clause"),
+    "jp_boj_tankan": ("to_confirm", "BOJ stat-search API notice: no permitting clause"),
+    "jp_boj_current_account": ("to_confirm", "BOJ stat-search API notice: no permitting clause"),
+    "jp_boj_jgb_holdings": ("to_confirm", "BOJ stat-search API notice: no permitting clause"),
 }
+#: BACKFILL IS NOT A VINTAGE (audit of #251, 2026-10-07). These APIs serve the CURRENT vintage,
+#: so a point first seen long after its publication (pit_quality=backfill) is a REVISED value
+#: stamped at the FIRST print's release time -- a back-dated revision. For the Japan plane's rows
+#: such points are dropped before anything judges them: gain tests, direct and indirect cells,
+#: allocation intel, the axis and lake series cells are rebuilt from, and the plane's events and
+#: funding state. They stay in the raw observation store, so the history is kept, never judged.
+BACKFILL_EXCLUDED: frozenset[str] = frozenset(JP_TERMS)
+
+
+def judged_points(source_id: str, pts: dict[str, list[dict[str, Any]]]
+                  ) -> tuple[dict[str, list[dict[str, Any]]], int]:
+    """`pts` with pit_quality=backfill points removed for a BACKFILL_EXCLUDED source, and how many
+    were removed. Every other source is returned unchanged."""
+    if source_id not in BACKFILL_EXCLUDED:
+        return pts, 0
+    out: dict[str, list[dict[str, Any]]] = {}
+    dropped = 0
+    for name, rows in pts.items():
+        keep = [p for p in rows if p.get("pit_quality") != "backfill"]
+        dropped += len(rows) - len(keep)
+        if keep:
+            out[name] = keep
+    return out, dropped
+
+
 #: Evidence for the plane rows AND for the hosts no fetcher is built for, read 2026-10-06.
 JP_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
     **{sid: dict(_PDL_EV) for sid in ("jp_mof_securities_weekly",
@@ -5280,7 +5345,9 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
             records[src.id] = {**rec, "series": {}}     # a stored history is not read either
             continue
         store = _read_json(paths.obs_dir / f"{src.id}.json", {})
-        pts = build_points(src, store) if store else {}
+        pts, n_backfill = judged_points(src.id, build_points(src, store) if store else {})
+        if n_backfill:
+            rec["backfill_excluded"] = n_backfill
         if pts:
             points_by_source[src.id] = pts
             if not dry_run:

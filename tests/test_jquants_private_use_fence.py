@@ -339,23 +339,30 @@ def test_no_planted_value_in_this_repository() -> None:
 #: `PRIVATE` constant that names it). A new reader is a new place a private value can leak from,
 #: so adding one is a reviewed edit to this list, never a silent import.
 PRIVATE_USE_ALLOWLIST = frozenset({
-    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/asia_collector.py",            # writes the private lake (#218)
+    "desks/mt5/research/alt_proxies.py",               # Paths.private_series / read_jquants_*
+    "desks/mt5/research/proposer_common.py",           # PRIVATE_INTEL: the private donation door
+    "desks/mt5/research/countries/jp/official_plane.py",  # jquants_cells -> private donation
+    "desks/mt5/research/miner_candidate_compiler.py",  # compile_private, the one reader
 })
 
-_PATHLIKE = re.compile(r"^[\w.\-/\\]*private_use[\w.\-/\\]*$")
+#: Every private root: the lake (#218), the private intake and the private compile (#251).
+PRIVATE_DIRS = ("private_use", "intelligence_private", "hypotheses_private")
+#: Module constants that name a private root.
+PRIVATE_NAMES = frozenset({"PRIVATE", "PRIVATE_INTEL", "PRIVATE_INTEL_ROOTS", "PRIVATE_OUT",
+                           "PRIVATE_REF", "private_series", "private_vault"})
+_PATHLIKE = re.compile(r"^[\w.\-/\\]*(?:" + "|".join(PRIVATE_DIRS) + r")[\w.\-/\\]*$")
 
 
 def _names_private_lake(node: ast.AST) -> bool:
     # a path-like literal naming it: "lake/private_use", "data\\lake\\private_use\\x"
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         v = node.value
-        return v != "private_use" and bool(_PATHLIKE.match(v)) and ("/" in v or "\\" in v)
+        return v not in PRIVATE_DIRS and bool(_PATHLIKE.match(v)) and ("/" in v or "\\" in v)
     # the collector's constant, imported or reached as an attribute
     if isinstance(node, ast.ImportFrom):
-        return bool(node.module and node.module.endswith("asia_collector")
-                    and any(a.name == "PRIVATE" for a in node.names))
-    return (isinstance(node, ast.Attribute) and node.attr == "PRIVATE"
-            and isinstance(node.value, ast.Name) and "collector" in node.value.id.lower())
+        return any(a.name in PRIVATE_NAMES for a in node.names)
+    return isinstance(node, ast.Attribute) and node.attr in PRIVATE_NAMES
 
 
 def _references_private_lake(tree: ast.AST) -> list[int]:
@@ -364,7 +371,7 @@ def _references_private_lake(tree: ast.AST) -> list[int]:
         # Path / "private_use" (or "private_use" / x)
         if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
             for side in (node.left, node.right):
-                if isinstance(side, ast.Constant) and side.value == "private_use":
+                if isinstance(side, ast.Constant) and side.value in PRIVATE_DIRS:
                     hits.append(node.lineno)
         elif _names_private_lake(node):
             hits.append(node.lineno)
@@ -376,7 +383,8 @@ def test_only_allowlisted_modules_reference_the_private_lake() -> None:
     outside the allowlist fails."""
     if shutil.which("git") is None:
         pytest.skip("git is not installed")
-    r = subprocess.run(["git", "-C", str(ROOT), "grep", "-l", "private_use", "--", "*.py"],
+    r = subprocess.run(["git", "-C", str(ROOT), "grep", "-l", "-E",
+                        "|".join((*PRIVATE_DIRS, *sorted(PRIVATE_NAMES))), "--", "*.py"],
                        capture_output=True, text=True, check=False)
     offenders: dict[str, list[int]] = {}
     seen_allowed = set()
@@ -404,7 +412,11 @@ def test_the_allowlist_check_sees_each_reference_shape() -> None:
     for src in ('from pathlib import Path\nP = Path("x") / "lake" / "private_use"\n',
                 'P = "desks/mt5/data/lake/private_use/series"\n',
                 'from research.asia_collector import PRIVATE\n',
-                'import research.asia_collector as collector\nx = collector.PRIVATE\n'):
+                'import research.asia_collector as collector\nx = collector.PRIVATE\n',
+                'P = BASE / "data" / "intelligence_private"\n',
+                'from research.proposer_common import PRIVATE_INTEL\n',
+                'x = pc.PRIVATE_INTEL / "jquants"\n',
+                'x = paths.private_series / "jpx_jquants.json"\n'):
         assert _references_private_lake(ast.parse(src)), src
     # prose naming the directory is not a read of it
     assert not _references_private_lake(ast.parse(

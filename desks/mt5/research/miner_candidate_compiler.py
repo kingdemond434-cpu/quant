@@ -46,9 +46,11 @@ FACTORY_RECEIPTS = BASE / "data" / "factory_federation" / "evaluator_receipts"
 #: and a status -- and nothing else about them.
 PRIVATE_INTEL_ROOTS = (BASE / "data" / "intelligence_private",)
 PRIVATE_OUT = BASE / "data" / "hypotheses_private" / "miner_candidates_private.json"
-#: The only keys of `private_intake` that may appear in OUT (a tracked artifact).
-PRIVATE_SUMMARY_KEYS = ("status", "private_ref", "files", "rows", "candidates",
-                        "refused_rows", "rule")
+#: The only keys of `private_intake` that may appear in OUT (a tracked artifact): BARE COUNTS and
+#: a status. No content hash: a digest of the private file is J-Quants-derived content (audit of
+#: #251, 2026-10-07), so it lives beside the private file (PRIVATE_REF), gitignored, only.
+PRIVATE_SUMMARY_KEYS = ("status", "files", "rows", "candidates", "refused_rows", "rule")
+PRIVATE_REF = PRIVATE_OUT.with_name("miner_candidates_private.ref.json")
 WINDOW_DAYS = 7
 #: The LLM seats' source names as they appear on their donated rows (`libs/ops/deepseek_cycle.py`
 #: `_donate`, `scripts/kimi_hunter.py` `_donate`). Reported as one block in the compiled artifact
@@ -1550,6 +1552,16 @@ def _graph_snapshot(path: Path | None = None):
     return PassGraph(path) if path is not None else PassGraph()
 
 
+def _mark_private(c: dict[str, Any]) -> dict[str, Any]:
+    """private_use=True, lineage jquants_private, e8_ineligible=True (libs.ops.token_refresh)."""
+    try:
+        from libs.ops.token_refresh import mark_private_lineage
+        return mark_private_lineage(c)
+    except Exception:                    # the tag is never lost to an import: write it literally
+        c.update({"private_use": True, "lineage": "jquants_private", "e8_ineligible": True})
+        return c
+
+
 def compile_private(now: datetime, *, roots: tuple[Path, ...] | None = None,
                     out: Path | None = None,
                     universe: set[str] | None = None) -> dict[str, Any]:
@@ -1587,10 +1599,10 @@ def compile_private(now: datetime, *, roots: tuple[Path, ...] | None = None,
                 for c in expand_axes(produced):
                     ident = json.dumps({k: c.get(k) for k in ("symbol", "family", "params")},
                                        sort_keys=True, default=str)
-                    cands.setdefault(ident, {**c, "private_use": True})
+                    # Lineage rides on every private candidate: jquants_private, e8_ineligible.
+                    cands.setdefault(ident, _mark_private({**c}))
     status = ("NO_PRIVATE_INTAKE" if not files else
               "COMPILED_PRIVATE" if cands else "PRIVATE_ROWS_REFUSED")
-    ref = None
     if files:
         from libs.data.pit import stamp_or_refuse
         t = datetime.now(UTC).isoformat()
@@ -1609,8 +1621,12 @@ def compile_private(now: datetime, *, roots: tuple[Path, ...] | None = None,
         tmp = target.with_suffix(".json.tmp")
         tmp.write_text(body, "utf-8")
         os.replace(tmp, target)
+        # The digest that identifies this compile stays PRIVATE, beside the file it digests.
         ref = hashlib.sha256(body.encode()).hexdigest()[:16]
-    return {"status": status, "private_ref": ref, "files": files, "rows": rows,
+        ref_path = target.with_name(target.stem + ".ref.json")
+        ref_path.write_text(json.dumps({"private_ref": ref, "compiled_at":
+                                        now.isoformat(timespec="seconds")}), "utf-8")
+    return {"status": status, "files": files, "rows": rows,
             "candidates": len(cands), "refused_rows": refused,
             "rule": "counts and status only; the private candidates live in a gitignored file"}
 

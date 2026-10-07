@@ -551,6 +551,13 @@ def donate(source: str, candidates: list[dict[str, Any]], tests_run: int, *,
     out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
     path = out / f"discoveries_{stamp}.json"
+    if private:
+        # TWO PRIVATE PASSES IN ONE MINUTE MUST NOT OVERWRITE EACH OTHER (audit of #251): the
+        # private root has no other copy, so a same-minute name would silently drop a donation.
+        # Seconds plus a random suffix; the compiler's `discoveries_*.json` glob still reads it.
+        import uuid
+        stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M%S")
+        path = out / f"discoveries_{stamp}_{uuid.uuid4().hex[:8]}.json"
     LAST_DONATION["donated"] = len(candidates)
     LAST_DONATION["path"] = str(path)
     path.write_text(json.dumps({"source": source,

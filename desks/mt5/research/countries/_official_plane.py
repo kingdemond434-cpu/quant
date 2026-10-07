@@ -67,6 +67,11 @@ def lane(A: Any, src: Any, paths: Any, gains: dict[str, Any]
     store = _read(paths.obs_dir / f"{src.id}.json")
     pts: dict[str, list[dict[str, Any]]] = (A.build_points(src, store)
                                             if store and src.terms == "confirmed" else {})
+    # A back-dated revision (pit_quality=backfill) is never judged on a plane that excludes it:
+    # the series, its events and its states read the honest points only.
+    n_backfill = 0
+    if pts and hasattr(A, "judged_points"):
+        pts, n_backfill = A.judged_points(src.id, pts)
     # Revisions are their own vintages, each knowable only from the instant it was first seen
     # (alt_proxies.revision_points), never folded back onto the first print.
     revs: dict[str, list[dict[str, Any]]] = (A.revision_points(src, store)
@@ -107,6 +112,8 @@ def lane(A: Any, src: Any, paths: Any, gains: dict[str, Any]
                              "(every look charged as a trial; PASS only is donated)"},
            "uses": ["direct_cells", "indirect_cells (params.conditioner)", "allocation_intel"],
            "unmeasured": unmeasured}
+    if n_backfill:
+        row["backfill_excluded"] = n_backfill
     if getattr(src, "data_source", ""):
         row["data_source"] = src.data_source
     # A fenced lane's lawful stand-in and its #152 verdict (COVERED only when measured).

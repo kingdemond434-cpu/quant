@@ -273,7 +273,7 @@ JQ_Z_OBS = 26
 JQ_MIN_OBS = 8
 JQ_Z_THRESHOLD = 0.5
 #: The only fields of the lane that may appear in a tracked or shared artifact.
-JQ_PUBLIC_KEYS = ("dataset", "status", "terms", "private_use", "private_ref", "investor_types",
+JQ_PUBLIC_KEYS = ("dataset", "status", "terms", "private_use", "investor_types",
                   "observations", "features", "looks", "tests_run", "proposed", "donated",
                   "trials_charged", "why")
 
@@ -452,18 +452,26 @@ def jquants_cells(paths: Any = None, now: datetime | None = None, *, donate: boo
         c.update({"kind": "hypothesis", "symbols": [r["symbol"]], "cell": r["cell"],
                   "data_source": JQ_DATA_SOURCE, "private_use": True,
                   "available_time": stamp, "event_time": stamp})
+        # LINEAGE: jquants_private, e8_ineligible (coordinator ruling, 2026-10-07). E8 trades
+        # the prop firm's capital, not the registered individual's own money; the E8 book
+        # (prop/e8_book.py) refuses any survivor that carries this tag at any depth.
+        T.mark_private_lineage(c)
         cands.append(c)
     root = private_root or _private_root()
     donated = None
     if donate and cands:
         donated = pc.donate(JQ_SOURCE, cands, looks, private_root=root)
     charged = _charge(paths, now, looks) if donate else 0
-    ref_basis = str(donated or "") + stamp
+    if donated:
+        # The donation's identifying digest stays PRIVATE, beside it (audit of #251): the tracked
+        # report carries bare counts and a status only.
+        ref = hashlib.sha256((str(donated) + stamp).encode()).hexdigest()[:16]
+        # Named so the compiler's `discoveries_*.json` glob never reads it as a donation.
+        Path(donated).with_name(f"ref_{Path(donated).stem}.json").write_text(
+            json.dumps({"private_ref": ref, "at": stamp}), "utf-8")
     lane.update({"status": "PRIVATE_USE:CELLS_BUILT", "looks": looks, "tests_run": looks,
                  "proposed": len(proposals), "donated": len(cands) if donated else 0,
-                 "trials_charged": charged,
-                 "private_ref": (hashlib.sha256(ref_basis.encode()).hexdigest()[:16]
-                                 if donated else None)})
+                 "trials_charged": charged})
     if looks == 0:
         lane["why"] = "no target instrument with H1 bars and contract terms on this host"
     return _jq_public(lane)
