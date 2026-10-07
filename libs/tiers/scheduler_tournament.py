@@ -123,6 +123,10 @@ ALPHA = 0.05
 LAMBDAS: tuple[float, ...] = (0.1, 0.3, 0.6, 0.9)
 MIN_BLOCKS = 3
 EPS = 1e-9
+#: each betting component is held at or below this, so a run that lasts months cannot overflow
+#: its persisted state. min(C, E) of a supermartingale E is a supermartingale (min is concave),
+#: and C is far above 1/ALPHA, so the cap changes no verdict and keeps Ville's bound.
+E_CAP = 1e12
 
 
 def _clip(x: float) -> float:
@@ -411,8 +415,10 @@ def _ep_step(ch: dict[str, Any], d: float) -> None:
     c = float(ch["c"])
     if c > EPS:
         x = max(-1.0, min(1.0, float(d) / c))
-        ch["up"] = [u * (1.0 + lam * x) for u, lam in zip(ch["up"], LAMBDAS, strict=True)]
-        ch["dn"] = [v * (1.0 - lam * x) for v, lam in zip(ch["dn"], LAMBDAS, strict=True)]
+        ch["up"] = [min(E_CAP, u * (1.0 + lam * x))
+                    for u, lam in zip(ch["up"], LAMBDAS, strict=True)]
+        ch["dn"] = [min(E_CAP, v * (1.0 - lam * x))
+                    for v, lam in zip(ch["dn"], LAMBDAS, strict=True)]
         ch["best_up"] = max(float(ch["best_up"]), sum(ch["up"]) / len(ch["up"]))
         ch["best_dn"] = max(float(ch["best_dn"]), sum(ch["dn"]) / len(ch["dn"]))
         ch["blocks"] = int(ch["blocks"]) + 1

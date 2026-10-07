@@ -537,7 +537,11 @@ def _isolate_l1(tmp_path: Path, monkeypatch: Any, weights: dict[str, float] | No
     monkeypatch.setattr(cp, "_department_of", lambda leg: _DEPTS.get(leg, "rest"))
     monkeypatch.setattr(cp, "JUDGE_LEGS", tour.JUDGE_LEGS)
     # a SPREAD of unsteered prices so legs above the median ask for spare even unsteered ...
-    prices = {lg: float(i) for i, lg in enumerate(sorted(_DEPTS))}
+    # (the judge legs priced high, so a steer that lifts a validation generation leg has a
+    # judge-side grant to take it from)
+    order = ["x0", "m0", "a0", "mc0", "i1", "d2", "r0", "i0", "d1", "model_search", "d0",
+             "falsifier_run", "backtest"]
+    prices = {lg: float(i) for i, lg in enumerate(order)}
     monkeypatch.setattr(cp, "_meta_prices", lambda: (prices, "isolated"))
     # ... and a spare that BINDS in every department, so sharing is pro rata and a steer that
     # raised one leg's ask would take seconds from its siblings
@@ -655,7 +659,7 @@ def test_the_e_process_accumulates_over_its_whole_run_and_never_slides() -> None
     assignment list to any window forgets nothing, so the persisted e-values equal the test run
     over EVERY hour since the start -- which a sliding window does not."""
     t0 = NOW - timedelta(hours=600)
-    diffs = [1.0 + 0.1 * (h % 5) for h in range(400)] + [(-1) ** h * 0.3 for h in range(150)]
+    diffs = [1.0 + 0.1 * (h % 5) for h in range(200)] + [(-1) ** h * 0.3 for h in range(350)]
     hist = _ep_hist(diffs, t0)
     st: dict[str, Any] | None = None
     for h in range(len(hist)):
@@ -669,7 +673,10 @@ def test_the_e_process_accumulates_over_its_whole_run_and_never_slides() -> None
     whole = tour.sequential_test(diffs)
     persisted = tour.eprocess_comparison(st)["up"]
     assert persisted["verdict"] == whole["verdict"] == "ADMITTED"
-    assert persisted["e_up"] == whole["e_up"] and persisted["blocks"] == whole["blocks"]
+    import math
+    assert persisted["blocks"] == whole["blocks"] == len(diffs) - 1
+    assert math.isclose(persisted["e_up"], whole["e_up"], rel_tol=1e-9)
+    assert math.isclose(persisted["e_down"], whole["e_down"], rel_tol=1e-9)
     # the descriptive window is published beside it and decides nothing
     cmp_ = tour.holdout_comparison(hist[-tour.WINDOW_H:], st)
     assert cmp_["primary"] == "ADMITTED"
