@@ -308,8 +308,10 @@ class BacktestResult:
             return {**out, "status": "UNMEASURED",
                     "why": "nights charged from a hand-built Costs with no swap history"}
         try:
-            from research.gate_policy import LOCKBOX_MIN_DAYS
-            floor = int(LOCKBOX_MIN_DAYS)
+            # The gauntlet's own floor, read and never restated (`research` is not on the path
+            # of every importer of this module, so it is resolved at call time).
+            import importlib
+            floor = int(importlib.import_module("research.gate_policy").LOCKBOX_MIN_DAYS)
         except Exception as exc:
             return {**out, "status": "UNMEASURED",
                     "why": f"lockbox floor unreadable: {type(exc).__name__}"}
