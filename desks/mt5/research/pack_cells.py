@@ -813,6 +813,18 @@ PACK_MINT_VERDICTS: frozenset[str] = frozenset({"confirmed"})
 _VERDICT_RANK = {"refused": 0, "to_confirm": 1, "ungoverned": 2, "confirmed": 3}
 
 
+def _has_quote(ref_or_url: str) -> bool:
+    """True when the terms row deciding this id or URL records a terms_url and a verbatim
+    terms_quote (alt_proxies TERMS_EVIDENCE / GATE_TERMS_EVIDENCE)."""
+    try:
+        from research.alt_proxies import GATE_TERMS_EVIDENCE, TERMS_EVIDENCE, _terms_id
+    except Exception:
+        return False
+    sid = _terms_id(ref_or_url) or ""
+    ev = TERMS_EVIDENCE.get(sid) or GATE_TERMS_EVIDENCE.get(sid) or {}
+    return bool(str(ev.get("terms_quote") or "").strip() and ev.get("terms_url"))
+
+
 def pack_terms(pack: dict[str, Any]) -> dict[str, Any]:
     """{terms, terms_ref, why} for one raw pack, read through the SAME gate the semantic lane
     uses (`alt_proxies.terms_gate`): the row's own `terms_ref`, its adapter's terms id
@@ -839,11 +851,73 @@ def pack_terms(pack: dict[str, Any]) -> dict[str, Any]:
         st, why = terms_gate(url)
         if st != "ungoverned" or not refs:
             verdicts.append((st, why, url.split("?")[0][:120]))
+    # A QUOTED CLAUSE OR NOTHING (#229 ruling): a `confirmed` row with no recorded terms_quote
+    # (an older row decided before evidence was kept) reads to_confirm for this lane.
+    verdicts = [(st, why, r) if st != "confirmed" or _has_quote(r) else
+                ("to_confirm", f"{r}: confirmed row carries no quoted clause -- fail closed "
+                 "until its terms_url and verbatim terms_quote are recorded", r)
+                for st, why, r in verdicts]
     if not verdicts:
         return {"terms": "to_confirm", "terms_ref": "",
                 "why": "no terms_ref, adapter or URL resolves a terms decision: fail closed"}
     worst = min(verdicts, key=lambda v: _VERDICT_RANK.get(v[0], 1))
     return {"terms": worst[0], "terms_ref": worst[2], "why": worst[1]}
+
+
+#: The census buckets, in the order the report prints them. `to_confirm_fetch_blocked` is a
+#: to_confirm whose deciding row could not be read from the authoring container (its evidence
+#: names a box_action); `ungoverned` should read 0 once every pack host has a row.
+CENSUS_BUCKETS: tuple[str, ...] = ("confirmed", "to_confirm", "to_confirm_fetch_blocked",
+                                   "refused", "ungoverned")
+
+
+def _pack_host(pack: dict[str, Any]) -> str:
+    url = str(pack.get("url_override") or pack.get("url") or "")
+    if "://" not in url:
+        return ""
+    import urllib.parse
+    return urllib.parse.urlsplit(url).netloc.lower().split(":")[0]
+
+
+def _census_bucket(verdict: str, ref: str) -> str:
+    if verdict == "to_confirm":
+        try:
+            from research.alt_proxies import terms_fetch_status
+            if terms_fetch_status(ref) == "FETCH_BLOCKED":
+                return "to_confirm_fetch_blocked"
+        except Exception:
+            pass
+    return verdict if verdict in CENSUS_BUCKETS else "to_confirm"
+
+
+def terms_census(rows_in: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """{bucket: {hosts, packs}} over the registry's packs, read through the same gate the lane
+    mints by. PACKS are bucketed by `pack_terms` (the verdict that decides minting); HOSTS by the
+    host's own row (`alt_proxies.terms_gate(url)`, a confirmed row with no quote counting as
+    to_confirm, as it does for minting). Only `confirmed` mints."""
+    packs_ = packs() if rows_in is None else rows_in
+    out: dict[str, dict[str, Any]] = {b: {"hosts": 0, "packs": 0} for b in CENSUS_BUCKETS}
+    host_bucket: dict[str, str] = {}
+    try:
+        from research.alt_proxies import terms_gate
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"terms gate unimportable: {type(exc).__name__}"}
+    for p in packs_:
+        gate = pack_terms(p)
+        out[_census_bucket(str(gate["terms"]), str(gate["terms_ref"]))]["packs"] += 1
+        host = _pack_host(p)
+        if host and host not in host_bucket:
+            url = str(p.get("url_override") or p.get("url"))
+            hv = terms_gate(url)[0]
+            hv = "to_confirm" if hv == "confirmed" and not _has_quote(url) else hv
+            host_bucket[host] = _census_bucket(hv, url)
+    for b in host_bucket.values():
+        out[b]["hosts"] += 1
+    return {"status": "OK", "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "n_packs": len(packs_), "n_hosts": len(host_bucket), "buckets": out,
+            "mints": "confirmed only (PACK_MINT_VERDICTS)",
+            "rule": ("packs by the verdict that decides minting (pack_terms: own terms_ref, "
+                     "adapter and host, worst wins); hosts by the host's own terms row")}
 
 
 def emit_for(pack: dict[str, Any], signals: list[str], targets: list[str], *,
@@ -1243,6 +1317,7 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
         "packs_at_zero": zero,
         "blocked_on_terms": {r["id"]: r["status"] for r in rows
                              if str(r.get("status", "")).startswith("BLOCKED_ON_TERMS")},
+        "terms_census": terms_census(rows_in),
         "rows": rows,
         "dry_run": bool(dry_run),
         "consumers": [

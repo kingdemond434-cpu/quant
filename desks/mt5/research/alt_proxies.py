@@ -2691,6 +2691,51 @@ CN_OFFICIAL_TERMS: tuple[str, ...] = ("cn_nbs_retail", "cn_nbs_official", "cn_sa
                                       "cn_cfets_chinamoney", "cn_sge_premium")
 
 
+#: THE RAW-PACK HOSTS' ROWS, MERGED INTO THIS ONE TABLE (#229 stacked, 2026-10-07). pack_cells'
+#: raw-pack lane mints on `confirmed` only, and 224 of 242 registry packs sat on hosts no row
+#: governed. `research/pack_host_terms.py` holds one reading per host (verbatim quote, URL,
+#: checked_at, and FETCH_BLOCKED + box_action where this container could not read the page);
+#: each row lands here as GATE_TERMS / GATE_TERMS_EVIDENCE under `pack_host:<host>` and is
+#: governed by host through TERMS_HOSTS. An `adopt` row points the host at a decision this table
+#: already holds. A host that is already governed is never overwritten (fail loudly instead).
+PACK_HOST_PREFIX = "pack_host:"
+
+
+def _merge_pack_host_terms() -> None:
+    from research.pack_host_terms import PACK_HOST_TERMS
+    for host, row in PACK_HOST_TERMS.items():
+        if host in TERMS_HOSTS:
+            raise ValueError(f"pack host {host} is already governed by {TERMS_HOSTS[host]}")
+        if "adopt" in row:
+            if row["adopt"] not in TERMS and row["adopt"] not in GATE_TERMS:
+                raise ValueError(f"pack host {host} adopts unknown terms id {row['adopt']}")
+            TERMS_HOSTS[host] = row["adopt"]
+            continue
+        tid = PACK_HOST_PREFIX + host
+        verdict = row["verdict"]
+        if verdict == "confirmed":
+            why = f"quoted clause permits use: '{row['terms_quote'][:160]}'"
+        else:
+            why = row["judgement"][:240]
+        GATE_TERMS[tid] = (verdict, why)
+        GATE_TERMS_EVIDENCE[tid] = {k: v for k, v in row.items()
+                                    if k not in ("verdict", "attribution")}
+        TERMS_HOSTS[host] = tid
+        if verdict == "confirmed" and row.get("attribution"):
+            ATTRIBUTION[tid] = {"credit": row["attribution"], "terms_url": row["terms_url"]}
+
+
+_merge_pack_host_terms()
+
+
+def terms_fetch_status(ref_or_url: str) -> str:
+    """`FETCH_BLOCKED` when the row deciding this id or URL could not be read from the authoring
+    container (its evidence names a box_action), else ''."""
+    sid = _terms_id(ref_or_url) or ""
+    ev = TERMS_EVIDENCE.get(sid) or GATE_TERMS_EVIDENCE.get(sid) or {}
+    return str(ev.get("fetch_status") or "")
+
+
 def _terms_id(ref_or_url: str) -> str | None:
     """The terms id for an id or URL; None for a URL on no governed host."""
     ref = str(ref_or_url or "")
