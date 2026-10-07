@@ -1072,7 +1072,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # each hunted family's own pipeline on null data: the gates' real
                      # false-positive rate, per family
                      "null_lab",
-                     "committees", "rejection_throughput"),
+                     "committees", "committee_ensembles", "rejection_throughput"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -1757,6 +1757,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "control_plane": 660,
     # The committees stop themselves at --budget-s 600 (experiments included); the cap sits above.
     "committees": 720,
+    # The six committees stop themselves at --budget-s 300 (traps and writes included).
+    "committee_ensembles": 420,
     "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
     "enrol_clocks": 2_700,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
@@ -5346,6 +5348,13 @@ def main() -> None:
     # self-scrapping when its kills stop paying for its calls. Dark seat -> UNMEASURED.
     cmt = _costed("committees", lambda: _producer(
         "committees", "research/committees.py", "--once", "--budget-s", "600"))
+    # THE SIX COMMITTEES (principal's rulings 2026-09-30 16:59 / 17:04): Scientific, Forensic,
+    # Portfolio & Tail, Execution, Data Integrity, Meta-Research, each a DETERMINISTIC specialist
+    # ensemble. Typed PASS/FAIL/UNMEASURED results, L0-L4 escalation, Python-ranked experiments,
+    # planted traps every pass, Brier calibration, ROI re-weighting and retirement. No LLM sits
+    # on a seat and no committee certifies, allocates or trades. The CRO reads its health file.
+    cme = _costed("committee_ensembles", lambda: _producer(
+        "committee_ensembles", "research/committee_ensembles.py", "--once", "--budget-s", "300"))
     # KIMI'S ONLY CLOCK WAS A VPS TIMER (measured 2026-09-23). `quant-kimi-hunter.timer` fires
     # hourly on the VPS; the box that holds the credentials ran it never, so
     # `data/intelligence/kimi` was 240 hours stale on the trading box while deepseek -- whose
@@ -5803,7 +5812,8 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
-                    "proposer_seat": prs, "committees": cmt, "kimi_hunt": kh,
+                    "proposer_seat": prs, "committees": cmt,
+                    "committee_ensembles": cme, "kimi_hunt": kh,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
