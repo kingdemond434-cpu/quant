@@ -293,7 +293,7 @@ def test_an_unusable_swap_feed_makes_the_whole_broker_swap_axis_unmeasured_by_na
 
 def _one_cap(evidence: str | None) -> list[dict]:
     row = {"kind": "swap_table", "symbols": ["XAUUSD"], "swap_long": -61.76,
-           "swap_short": 29.45, "found_at": "2026-08-20T06:00:00+00:00"}
+           "swap_short": 29.45, "found_at": "2026-08-21T06:00:00+00:00"}
     return [{**row, "last_evidence_at": evidence}] if evidence else [row]
 
 
@@ -308,12 +308,12 @@ def _carry_cell_keeps(pc: Any, tmp_path: Path, monkeypatch: Any, at: str) -> boo
 
 def test_last_evidence_keeps_an_unchanged_swap_fresh_past_the_stale_window(
         tmp_path, monkeypatch) -> None:
-    """found_at 08-20 alone is stale after 08-25 (1d cadence + 4d); evidence on 08-27 is a second
+    """found_at 08-21 alone is stale after 08-26 (1d cadence + 4d); evidence on 08-27 is a second
     knowable point at the evidence time, so 08-28 is still inside the window."""
     pc = _swap_fixture(tmp_path, monkeypatch, mode=1, long_=-61.76, short=29.45,
                        caps=_one_cap("2026-08-27T05:00:00"))
     rows = next(f for f in pc.carry()[0] if f["key"].iloc[0] == "XAUUSD")
-    assert list(rows["knowable_at"]) == [pd.Timestamp("2026-08-20T06:00:00Z"),
+    assert list(rows["knowable_at"]) == [pd.Timestamp("2026-08-21T06:00:00Z"),
                                          pd.Timestamp("2026-08-27T05:00:00Z")]
     assert _carry_cell_keeps(pc, tmp_path, monkeypatch, "2026-08-28T00:00:00Z")
 
@@ -322,5 +322,5 @@ def test_without_evidence_an_unchanged_swap_goes_stale(tmp_path, monkeypatch) ->
     pc = _swap_fixture(tmp_path, monkeypatch, mode=1, long_=-61.76, short=29.45,
                        caps=_one_cap(None))
     rows = next(f for f in pc.carry()[0] if f["key"].iloc[0] == "XAUUSD")
-    assert list(rows["stale_after"]) == [pd.Timestamp("2026-08-25T06:00:00Z")]
+    assert list(rows["stale_after"]) == [pd.Timestamp("2026-08-26T06:00:00Z")]
     assert not _carry_cell_keeps(pc, tmp_path, monkeypatch, "2026-08-28T00:00:00Z")
