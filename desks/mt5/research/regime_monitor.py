@@ -157,7 +157,7 @@ def main() -> None:
     # but a COSTS_EDGE verdict is the number a human reads before re-admitting a sleeve.
     state["hibernate_filter_value"] = _own_filter_value()
     STATE.parent.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    STATE.write_text(json.dumps(state, indent=2), encoding="utf-8", newline="\n")
     flags = {s: v["flag"] for s, v in state["sleeves"].items() if v["flag"] != "ok"}
     transitions = {s: f"{prev.get(s, {}).get('flag', 'new')}->{v['flag']}"
                    for s, v in state["sleeves"].items()
