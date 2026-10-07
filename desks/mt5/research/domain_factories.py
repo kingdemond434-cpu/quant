@@ -102,6 +102,8 @@ for _p in (str(ROOT), str(DESK)):
 from research import alt_proxies as A  # noqa: E402
 
 ORGAN = "domain_factories"
+#: The hourly artifact (the component registry reads this binding as the organ's own artifact).
+REPORT = DESK / "reports" / "DOMAIN_FACTORIES.json"
 FETCHED, HELD, NEEDS_KEY, UNMEASURED = "FETCHED", "HELD", "NEEDS_KEY", "UNMEASURED"
 STATUSES = (FETCHED, HELD, NEEDS_KEY, UNMEASURED)
 UA = "quant-desk-domain-factories/1.0 (public statistics research; internal use)"
@@ -142,7 +144,7 @@ class Paths:
 
     @property
     def report(self) -> Path:
-        return self.desk / "reports" / "DOMAIN_FACTORIES.json"
+        return self.desk / "reports" / REPORT.name
 
     @property
     def alt(self) -> A.Paths:
