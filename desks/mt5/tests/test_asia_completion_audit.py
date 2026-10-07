@@ -658,8 +658,9 @@ ROT = "desks/mt5/data/deep_forest_rotation.jsonl"
 
 
 def _ground_row(rid: str, ground: str, **kw: Any) -> dict[str, Any]:
+    kw.setdefault("probes", [{"kind": "artifact", "artifact": CLAIMS}])
     return _row(id=rid, region="CN", title=f"Explore Chinese practitioner ground: {ground}.",
-                probes=[{"kind": "artifact", "artifact": CLAIMS}], **kw)
+                **kw)
 
 
 def test_a_ground_is_credited_only_with_its_own_rows(tmp_path: Path) -> None:
