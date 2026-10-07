@@ -928,7 +928,9 @@ def _control_room_specs() -> list[ComponentSpec]:
         owner="lane:ops", restart_action="restart:task:MT5-PrivateNetAudit",
         criticality="optional", resource_budget={},
         schedule="MT5-PrivateNetAudit", artifact_class="daily",
-        notes="audit mode only; -Enforce is an operator act and never scheduled"))
+        notes="audit mode only; -Enforce is an operator act and never scheduled; "
+              "trigger='daily at 06:40' "
+              "installer=desks/mt5/scripts/install_private_net_audit_task.ps1"))
     return out
 
 
