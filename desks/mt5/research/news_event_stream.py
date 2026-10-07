@@ -1227,9 +1227,39 @@ def _ledger() -> Any:
     return sc.SensorLedger(SENSOR_ROOT)
 
 
+def novelty_traits(row: Mapping[str, Any], nov: Any) -> dict[str, Any]:
+    """The per-document readings the DATA-30 axes were computed from, carried on the row."""
+    comps = getattr(nov, "components", {}) or {}
+    figs = (comps.get("numerical") or {}).get("figures")
+    return {"figures": figs if isinstance(figs, list) else [],
+            "stance": (comps.get("policy_state") or {}).get("stance"),
+            "direction": (comps.get("contradiction") or {}).get("direction"),
+            "severity": (comps.get("severity") or {}).get("level")}
+
+
+def novelty_census(events: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
+    """Per DATA-30 axis: how many documents it MEASURED, how many it could not, and the mean.
+
+    An axis with nothing measured publishes UNMEASURED for its mean, never 0.0: a pass that read
+    no figure has not found that figures stopped changing.
+    """
+    out: dict[str, Any] = {}
+    rows = [e.get("novelty_vector") for e in events]
+    vectors = [v for v in rows if isinstance(v, Mapping)]
+    for name in onto.NOVELTY_COMPONENTS:
+        vals = [float(v[name]) for v in vectors if isinstance(v.get(name), int | float)]
+        out[name] = {"measured": len(vals), "unmeasured": len(vectors) - len(vals),
+                     "mean": round(sum(vals) / len(vals), 4) if vals else UNMEASURED,
+                     "new_share": (round(sum(1 for x in vals if x >= 0.5) / len(vals), 4)
+                                   if vals else UNMEASURED)}
+    return {"documents": len(vectors), "axes": out,
+            "rule": "None on a document is UNMEASURED on that axis and is never averaged in"}
+
+
 def _observation(item: Item, *, kind_label: str, story_id: str, event_id: str | None,
                  novelty: float | None, confidence: float | None, affected_classes: Sequence[str],
-                 copy_of: str = "", fp: str = "") -> Any:
+                 copy_of: str = "", fp: str = "",
+                 novelty_vector: Mapping[str, float | None] | None = None) -> Any:
     from libs.research import sensor_contract as sc
     know = item.knowable_at if item.knowable_at != UNMEASURED else None
     return sc.make(
@@ -1248,6 +1278,7 @@ def _observation(item: Item, *, kind_label: str, story_id: str, event_id: str | 
                  else UNMEASURED),
         provenance_hash=fp or fingerprint(item), raw_pointer=item.url,
         attributes={"story_id": story_id, "event_id": event_id, "novelty": novelty,
+                    "novelty_vector": dict(novelty_vector) if novelty_vector else None,
                     "event_kind": kind_label, "copy_of": copy_of, "copies": item.copies,
                     "item_id": item.item_id})
 
@@ -1354,8 +1385,12 @@ def _run_pass(*, limit: int, deep_threshold: float, dry_run: bool, now: datetime
         # "Israel and Iran" and "Iran" two events, and one story would walk the state twice.
         eid = onto.resolve_event_id(guess.kind, guess.entities, same_kind)
         row = {"kind": guess.kind, "entities": list(guess.entities), "claim": body[:600],
-               "event_id": eid, "title": item.title}
+               "event_id": eid, "title": item.title, "source_id": item.source_id,
+               "doc_id": item.item_id}
         nov = onto.novelty_of(row, same_kind)
+        # DATA-30: the readings the eleven axes are computed from travel with the row, so the
+        # next pass compares a figure against a FIGURE, not against a re-parse of a title.
+        traits = novelty_traits(row, nov)
         if item.preset_kind:
             sur = anomaly_surprise(cur["baseline"], item.anomaly_key, item.volume)
         else:
@@ -1384,6 +1419,7 @@ def _run_pass(*, limit: int, deep_threshold: float, dry_run: bool, now: datetime
             "entities": list(guess.entities), "confidence": round(confidence, 4),
             "source_tier": tier, "corroborations": corroborations,
             "novelty": nov.score, "novelty_basis": nov.basis,
+            "novelty_vector": nov.vector(), **traits,
             "surprise": sur.score, "surprise_basis": sur.basis,
             "surprise_measured": sur.measured,
             "affected": [{"asset": a.asset, "horizon": a.horizon,
@@ -1412,7 +1448,7 @@ def _run_pass(*, limit: int, deep_threshold: float, dry_run: bool, now: datetime
                         "here sizes, caps or vetoes anything"})
         obs = _observation(item, kind_label=guess.kind, story_id=eid,
                            event_id=f"{eid}:{fp[:10]}", novelty=nov.score,
-                           confidence=confidence,
+                           novelty_vector=nov.vector(), confidence=confidence,
                            affected_classes=[str(a.asset).split(":", 1)[0] for a in affected],
                            fp=fp)
         observations.append(obs)
@@ -1424,7 +1460,7 @@ def _run_pass(*, limit: int, deep_threshold: float, dry_run: bool, now: datetime
         log_rows.append(log_row)
         fresh_row = {"at": _iso(when), "event_id": eid, "kind": guess.kind,
                      "entities": list(guess.entities), "claim": body[:600],
-                     "source_id": item.source_id}
+                     "source_id": item.source_id, "doc_id": item.item_id, **traits}
         recent.append(fresh_row)
         by_kind.setdefault(guess.kind, []).append(fresh_row)
         cur["fps"][fp] = [when_s, obs.observation_id, 0, eid]
@@ -1457,6 +1493,7 @@ def _run_pass(*, limit: int, deep_threshold: float, dry_run: bool, now: datetime
                         for k, v in state["components"].items()},
         "world_state_fingerprint": fingerprint_now,
         "resolve_requests": requests, "shock_model": shocks,
+        "novelty_components": novelty_census(published),
         "execution_recommendations": execution_recommendations(affected_all, liquidity, notes),
         "liquidity_model": liquidity_model(affected_all, notes),
         "deep_threshold": deep_threshold, "deep_events": sum(1 for e in published if e["deep"]),
@@ -1557,6 +1594,7 @@ def _intake_report(led: Any, when: datetime, payload: Mapping[str, Any],
                                                   "items_spilled", "syndicated_copies",
                                                   "wall_s", "budget_s")},
         "news_day": dict(tallies),
+        "novelty_components": payload.get("novelty_components") or novelty_census(()),
         "grounds": payload.get("grounds"),
         "conversion": {
             "information_to_hypothesis": {
