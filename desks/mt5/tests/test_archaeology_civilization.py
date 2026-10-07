@@ -194,7 +194,10 @@ def test_only_an_access_control_never_reaches_the_fetch_door(desk):
     for url in desk["calls"]:
         host = url.split("/")[2] if "//" in url else ""
         assert host not in walled, f"{url} reached the fetch door past an access control"
-    assert any("mql5.com" in u for u in desk["calls"]), "an ALLOWED ground was still fetched"
+    allowed = {p.host for p in snap.PLATFORMS if snap.machine_use(p)[0] == snap.ALLOWED}
+    assert any(h in u for u in desk["calls"] for h in allowed), "an ALLOWED ground was fetched"
+    # MQL5 ToU 3.7/3.9/3.13 (side_channels/mql5_terms.py): terms PROHIBIT, so never fetched.
+    assert not any("mql5.com" in u for u in desk["calls"]), "a terms-refused host was fetched"
     assert any(h in u for u in desk["calls"] for h in labelled), (
         "a ground carrying only a policy LABEL must now be fetched")
 
@@ -237,8 +240,14 @@ def test_the_scout_registers_candidates_with_their_access_verdict(desk):
     got = civ.scout(c, fetch=False, limit=60)
     assert got["n_candidates"] == len(snap.PLATFORMS)
     by_id = {s["source_id"]: s for s in got["scored"]}
-    fine = by_id[civ.source_id_of("mql5_signals")]
+    fine = max((s for s in got["scored"]
+                if s["fetchable"] and s["machine_use_allowed"] == snap.ALLOWED),
+               key=lambda s: float(s["v_s"]))
     assert fine["machine_use_allowed"] == snap.ALLOWED and fine["fetchable"] is True
+    # MQL5 ToU 3.7/3.9/3.13 (side_channels/mql5_terms.py): a written prohibition is refused.
+    mql5 = by_id[civ.source_id_of("mql5_signals")]
+    assert mql5["machine_use_allowed"] == snap.FORBIDDEN and mql5["fetchable"] is False
+    assert civ.source_id_of("mql5_signals") in got["never_fetched"]
     walled = by_id[civ.source_id_of("myfxbook")]
     assert walled["fetchable"] is False, "an antibot challenge is hard-boundary act 2"
     assert walled["hard_boundary"] in snap.BOUNDARY_MARKERS
@@ -256,7 +265,8 @@ def test_the_scout_registers_candidates_with_their_access_verdict(desk):
     assert meta["terms_note"], "the unread policy is recorded, not forgotten"
     assert rows[civ.source_id_of("collective2")]["status"] == "active"
     assert "NOT FETCHED" not in rows[civ.source_id_of("collective2")]["licence_note"]
-    assert rows[civ.source_id_of("mql5_signals")]["status"] == "active"
+    assert rows[civ.source_id_of("mql5_signals")]["status"] == "candidate", "terms prohibit"
+    assert "BLOCKED_TERMS" in rows[civ.source_id_of("mql5_signals")]["licence_note"]
     assert "hard boundary" in rows[civ.source_id_of("myfxbook")]["licence_note"].lower()
 
 
