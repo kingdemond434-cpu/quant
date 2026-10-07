@@ -27,11 +27,13 @@ Stdlib only, and nothing is imported at module load that could open a socket.
 """
 from __future__ import annotations
 
+import re
 import sys
+import unicodedata
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import unquote, urljoin, urlparse
 
 STATUS = "BLOCKED_TERMS"
 REASON = "MQL5 ToU 3.7/3.9/3.13: automated access not permitted"
@@ -98,13 +100,33 @@ class MQL5TermsRefused(PermissionError):
     """Raised by `guard` instead of opening an mql5.com URL."""
 
 
+#: An mql5.com host named INSIDE another URL: an archive snapshot (web.archive.org/web/2024/
+#: https://www.mql5.com/...), a reader proxy (r.jina.ai/https://www.mql5.com/...), a cache or
+#: translate wrapper (...?url=https%3A%2F%2Fwww.mql5.com...). Each of those fetches MQL5's
+#: content by automated means through a third party, which ToU 3.7/3.9 refuse just the same.
+_WRAPPED = re.compile(r"(?:^|[^a-z0-9-])(?:[a-z0-9-]+\.)*mql5\.com(?:[/:?#&]|$)", re.I)
+
+
+def _host(url: str) -> str:
+    host = (urlparse(url).hostname or "").lower()
+    return unicodedata.normalize("NFKC", host).rstrip(".")
+
+
 def is_mql5_url(url: object) -> bool:
-    """True for any URL whose host is mql5.com or a subdomain of it. Never raises."""
+    """True for any URL whose host is mql5.com or a subdomain of it, or that wraps such a URL
+    in its path, query or fragment (archives, reader proxies, caches). Fullwidth and other
+    compatibility forms of the host are folded first. Never raises."""
     try:
-        host = (urlparse(str(url)).hostname or "").lower().rstrip(".")
+        text = str(url)
+        host = _host(text)
+        if any(host == h or host.endswith("." + h) for h in HOSTS):
+            return True
+        parts = urlparse(text)
+        tail = unicodedata.normalize("NFKC", unquote(unquote(
+            f"{parts.path}?{parts.query}#{parts.fragment}")))
     except ValueError:
         return False
-    return any(host == h or host.endswith("." + h) for h in HOSTS)
+    return bool(_WRAPPED.search(tail))
 
 
 def guard(url: object) -> None:
@@ -113,8 +135,27 @@ def guard(url: object) -> None:
         raise MQL5TermsRefused(f"{STATUS}: {REASON} ({url})")
 
 
+def refuse_redirect(resp: Any, *args: Any, **kwargs: Any) -> Any:
+    """A `requests` response hook that refuses a redirect INTO mql5.com before it is followed.
+
+    `requests` dispatches response hooks on every hop before `resolve_redirects` sends the next
+    one, so raising here means the Location is never opened. A checked first URL is not enough:
+    a link shortener or a moved page can 302 straight onto www.mql5.com.
+    """
+    guard(getattr(resp, "url", ""))
+    if getattr(resp, "is_redirect", False):
+        location = (getattr(resp, "headers", None) or {}).get("location") or ""
+        guard(urljoin(str(getattr(resp, "url", "")), str(location)))
+    return resp
+
+
+#: Pass as `hooks=HOOKS` on any `requests` call that is not on a fenced session.
+HOOKS: dict[str, list[Any]] = {"response": [refuse_redirect]}
+
+
 def fence_session(session: Any) -> Any:
-    """Make a `requests.Session` refuse mql5.com URLs before it opens a connection."""
+    """Make a `requests.Session` refuse mql5.com URLs before it opens a connection, including a
+    redirect target."""
     opened = session.request
 
     def request(method: str, url: object, *args: Any, **kwargs: Any) -> Any:
@@ -122,6 +163,7 @@ def fence_session(session: Any) -> Any:
         return opened(method, url, *args, **kwargs)
 
     session.request = request
+    session.hooks.setdefault("response", []).append(refuse_redirect)
     return session
 
 

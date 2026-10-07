@@ -296,7 +296,7 @@ _OFFICIAL_FEEDS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
      ("regulatory_exchange", "corporate_credit")),
     ("ESMA", "https://www.esma.europa.eu/rss.xml",
      ("regulatory_exchange",)),
-    ("STATCAN", "https://www150.statcan.gc.ca/n1/dai-quo/rss/'daily-quotidien-eng.xml",
+    ("STATCAN", "https://www150.statcan.gc.ca/n1/dai-quo/rss/daily-quotidien-eng.xml",
      ("statistics_other",)),
     ("ABS_RBA", "https://www.rba.gov.au/rss/rss-cb-media-releases.xml",
      ("statistics_asia", "central_bank_decisions")),
@@ -382,7 +382,7 @@ def coverage(sources: Sequence[Any] | None = None) -> dict[str, Any]:
     srcs = list(default_sources() if sources is None else sources)
     covered: dict[str, list[str]] = {}
     for s in srcs:
-        if getattr(s, "terms_status", CLEARED) != CLEARED:
+        if getattr(s, "terms_status", HOLD) != CLEARED:
             continue  # a held feed is never read, so it covers nothing
         for d in getattr(s, "domains", ()):
             covered.setdefault(d, []).append(getattr(s, "source_id", "?"))
@@ -393,11 +393,11 @@ def coverage(sources: Sequence[Any] | None = None) -> dict[str, Any]:
         "sources": [{"id": getattr(s, "source_id", "?"), "tier": getattr(s, "tier", "UNKNOWN"),
                      "licence": getattr(s, "licence", "UNDECLARED"),
                      "retrieval": getattr(s, "retrieval", "unknown"),
-                     "terms": getattr(s, "terms_status", CLEARED),
+                     "terms": getattr(s, "terms_status", HOLD),
                      "domains": list(getattr(s, "domains", ()))} for s in srcs],
         "terms_held": [{"id": getattr(s, "source_id", "?"), "url": getattr(s, "url", ""),
                         "why": getattr(s, "terms_reason", "")}
-                       for s in srcs if getattr(s, "terms_status", CLEARED) != CLEARED],
+                       for s in srcs if getattr(s, "terms_status", HOLD) != CLEARED],
         "domains_total": len(DOMAINS),
         "domains_covered": sorted(covered),
         "domains_blind": blind,

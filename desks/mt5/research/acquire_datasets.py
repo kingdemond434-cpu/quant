@@ -48,7 +48,7 @@ if str(_ROOT) not in sys.path:
 
 from libs.data.pit_certificate import certify  # noqa: E402
 from libs.data.pit_certificate import write as write_certificate  # noqa: E402
-from libs.data.polite_fetch import terms_refusal  # noqa: E402
+from libs.data.polite_fetch import TermsRedirectRefused, fenced_urlopen, terms_refusal  # noqa: E402
 from libs.research import country_lab as country_lab  # noqa: E402
 
 WORLD = DESK / "data" / "intelligence" / "world"
@@ -139,11 +139,13 @@ def _fetch(url: str) -> tuple[bytes | None, str]:
         return None, refused
     req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "*/*"})
     try:
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as r:
+        with fenced_urlopen(req, timeout=FETCH_TIMEOUT_S) as r:     # fences redirects too
             ctype = str(r.headers.get("Content-Type") or "").lower()
             if "html" in ctype:
                 return None, "html"
             return r.read(MAX_BYTES + 1), ctype
+    except TermsRedirectRefused as exc:
+        return None, str(exc.reason)
     except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError):
         return None, "unreachable"
 

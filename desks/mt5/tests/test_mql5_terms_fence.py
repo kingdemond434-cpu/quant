@@ -282,3 +282,121 @@ def test_censuses_count_mql5_seats_as_blocked_terms(tmp_path: Path,
     walls = cmh._walled()
     assert {s for s in mql5_terms.MQL5_SEATS if walls.get(s, {}).get("verdict") ==
             "BLOCKED_TERMS"} == set(mql5_terms.MQL5_SEATS)
+
+
+# ------------------------------------------------- redirects, wrappers and compatibility forms
+WRAPPED = ("https://web.archive.org/web/2024/https://www.mql5.com/en/signals/1",
+           "https://r.jina.ai/https://www.mql5.com/en/articles",
+           "https://translate.goog/?u=https%3A%2F%2Fwww.mql5.com%2Fen%2Fcode",
+           "https://archive.ph/newest/https://mql5.com/ru/forum",
+           "https://" + "".join(chr(0xFF4D + d) for d in (0, 4, -1)) + chr(0xFF15)
+           + ".com/en/signals")
+
+
+@pytest.mark.parametrize("url", WRAPPED)
+def test_wrapped_and_fullwidth_mql5_urls_are_refused(url: str) -> None:
+    from libs.data import polite_fetch as pf
+    assert mql5_terms.is_mql5_url(url)
+    assert pf.terms_refusal(url).startswith("BLOCKED_TERMS")
+    with pytest.raises(mql5_terms.MQL5TermsRefused):
+        mql5_terms.guard(url)
+
+
+@pytest.mark.parametrize("url", ("https://example.com/mql5.community",
+                                 "https://github.com/x/mql5-tools",
+                                 "https://fred.stlouisfed.org/series/DGS10"))
+def test_lookalikes_are_not_refused(url: str) -> None:
+    from libs.data import polite_fetch as pf
+    assert not mql5_terms.is_mql5_url(url) and pf.terms_refusal(url) == ""
+
+
+@pytest.fixture
+def redirect_server(monkeypatch: pytest.MonkeyPatch) -> Any:
+    """A local server whose every path 302s onto www.mql5.com; any TLS connect fails the test."""
+    import http.server
+    import threading
+
+    class _Redirect(http.server.BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            self.send_response(302)
+            self.send_header("Location", "https://www.mql5.com/en/signals/1")
+            self.end_headers()
+
+        def log_message(self, *_a: Any) -> None:
+            return
+
+    def _connect(self: Any) -> Any:
+        pytest.fail(f"a TLS connection was opened to {self.host} after a redirect")
+
+    for var in ("http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("no_proxy", "*")
+    monkeypatch.setenv("NO_PROXY", "*")
+    monkeypatch.setattr(http.client.HTTPSConnection, "connect", _connect)
+    srv = http.server.HTTPServer(("127.0.0.1", 0), _Redirect)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{srv.server_address[1]}/moved"
+    srv.shutdown()
+    srv.server_close()
+
+
+def test_polite_fetch_refuses_a_redirect_into_mql5(redirect_server: str) -> None:
+    from libs.data import polite_fetch as pf
+    r = pf.get(redirect_server, gate=None, retries=2, sleep=lambda _s: None)
+    assert not r.ok and r.error.startswith("BLOCKED_TERMS")
+    assert r.attempts == 1                         # deterministic: never retried
+
+
+def test_polite_fetch_refuses_an_opener_that_landed_on_mql5() -> None:
+    from libs.data import polite_fetch as pf
+
+    class _Landed:
+        status, url, headers = 200, "https://www.mql5.com/en/signals/1", {}
+
+        def __enter__(self) -> Any:
+            return self
+
+        def __exit__(self, *_a: Any) -> None:
+            return None
+
+        def read(self, _n: int) -> bytes:
+            return b"<html>signal</html>"
+
+    r = pf.get("https://example.org/x", opener=lambda *_a, **_k: _Landed(), gate=None)
+    assert not r.ok and r.error.startswith("BLOCKED_TERMS") and r.text == ""
+
+
+def test_acquire_datasets_refuses_a_redirect_into_mql5(redirect_server: str) -> None:
+    import acquire_datasets as ad
+    raw, why = ad._fetch(redirect_server)
+    assert raw is None and why.startswith("BLOCKED_TERMS")
+
+
+def test_seed_miners_fetch_refuses_a_redirect_into_mql5(redirect_server: str) -> None:
+    import seed_miners as sm
+    with pytest.raises(mql5_terms.MQL5TermsRefused):
+        sm.fetch(redirect_server)
+
+
+def test_a_fenced_session_refuses_a_redirect_into_mql5(redirect_server: str) -> None:
+    session = mql5_terms.fence_session(requests.Session())
+    with pytest.raises(mql5_terms.MQL5TermsRefused):
+        session.get(redirect_server, timeout=5)
+
+
+def test_cohort_never_refetches_an_mql5_member(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                               no_network: list[str]) -> None:
+    from side_channels import cohort_and_identity as ci
+    monkeypatch.setattr(ci, "OBS", tmp_path / "observations.jsonl")
+    monkeypatch.setattr(ci.time, "sleep", lambda _s: None)
+    t0 = "2025-01-01T00:00:00+00:00"
+    reg = {f"m{i}": {"t0": t0, "frozen": {"url": u, "source": "mql5_signals"},
+                     "status": "ALIVE", "observations": 0, "next_due_d": 30}
+           for i, u in enumerate(("https://www.mql5.com/en/signals/1",
+                                  "https://web.archive.org/web/2024/https://www.mql5.com/x"))}
+    assert ci.observe_due(reg) == 2
+    assert {m["status"] for m in reg.values()} == {mql5_terms.STATUS}
+    assert no_network == []
+    assert ci.observe_due(reg) == 0                # retired: never due again
+    rows = [json.loads(x) for x in ci.OBS.read_text("utf-8").splitlines()]
+    assert {r["verdict"] for r in rows} == {mql5_terms.STATUS}

@@ -131,7 +131,7 @@ def one_pass(*, ledger: EventLedger | None = None, fetch: bool = True,
     held: list[dict[str, str]] = []
     scored: list[Any] = []
     for s in srcs:
-        if getattr(s, "terms_status", "CLEARED") != "CLEARED":
+        if getattr(s, "terms_status", "HOLD") != "CLEARED":
             # Fail closed (#262): a feed without a quoted CLEARED terms row is never requested.
             held.append({"id": str(getattr(s, "source_id", "?")), "url": str(getattr(s, "url", "")),
                          "status": "HOLD", "why": str(getattr(s, "terms_reason", ""))})

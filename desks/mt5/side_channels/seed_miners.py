@@ -40,7 +40,8 @@ def fetch(url: str, as_json: bool = False, timeout: int = 20):
     # FAIL-CLOSED TERMS FENCE (mql5_terms): raises before any request for an mql5.com URL.
     mql5_terms.guard(url)
     time.sleep(1.0)
-    r = requests.get(url, headers=HEADERS, timeout=timeout)
+    # hooks: a redirect INTO mql5.com is refused before the Location is opened.
+    r = requests.get(url, headers=HEADERS, timeout=timeout, hooks=mql5_terms.HOOKS)
     r.raise_for_status()
     return r.json() if as_json else r.text
 

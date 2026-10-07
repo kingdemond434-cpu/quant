@@ -217,7 +217,7 @@
     "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
     "checked_at": "2026-10-07",
     "publisher": "Statistics Canada",
-    "feed_url": "https://www150.statcan.gc.ca/n1/dai-quo/rss/'daily-quotidien-eng.xml",
+    "feed_url": "https://www150.statcan.gc.ca/n1/dai-quo/rss/daily-quotidien-eng.xml",
     "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
   },
   "ABS_RBA": {

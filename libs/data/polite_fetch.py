@@ -33,6 +33,7 @@ import re
 import ssl
 import threading
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 import zlib
@@ -41,7 +42,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from email.message import Message
 from typing import Any, TypeVar
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
               "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
@@ -78,16 +79,58 @@ TERMS_REFUSED_HOSTS: dict[str, str] = {
 }
 
 
+#: A refused host named INSIDE another URL (an archive snapshot, a reader proxy, a cache or a
+#: translate wrapper): fetching through a third party is still automated access to that site.
+_WRAPPED = {h: re.compile(r"(?:^|[^a-z0-9-])(?:[a-z0-9-]+\.)*" + re.escape(h) + r"(?:[/:?#&]|$)",
+                          re.I)
+            for h in TERMS_REFUSED_HOSTS}
+
+
 def terms_refusal(url: str) -> str:
-    """`BLOCKED_TERMS: <reason>` when the URL's host (or a parent domain) is terms-refused."""
+    """`BLOCKED_TERMS: <reason>` when the URL's host (or a parent domain) is terms-refused, or the
+    URL wraps such a URL in its path, query or fragment. Compatibility forms (fullwidth) of the
+    host are folded first."""
     try:
-        host = (urlparse(str(url)).hostname or "").lower().rstrip(".")
+        parts = urlparse(str(url))
+        host = unicodedata.normalize("NFKC", (parts.hostname or "").lower()).rstrip(".")
+        tail = unicodedata.normalize("NFKC", unquote(unquote(
+            f"{parts.path}?{parts.query}#{parts.fragment}")))
     except ValueError:
         return ""
     for refused, reason in TERMS_REFUSED_HOSTS.items():
-        if host == refused or host.endswith("." + refused):
+        if host == refused or host.endswith("." + refused) or _WRAPPED[refused].search(tail):
             return f"BLOCKED_TERMS: {reason}"
     return ""
+
+
+class TermsRedirectRefused(urllib.error.URLError):
+    """A redirect whose target is terms-refused. Raised before the target is opened."""
+
+
+class TermsRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Follows redirects like urllib's own handler, except one INTO a terms-refused host: a moved
+    page or a shortener can 302 onto a refused site after the first URL passed the fence."""
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
+                         newurl: str) -> Any:
+        refused = terms_refusal(newurl)
+        if refused:
+            raise TermsRedirectRefused(f"{refused} (redirect to {newurl})")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def fenced_urlopen(req: Any, timeout: float | None = None,
+                   context: ssl.SSLContext | None = None) -> Any:
+    """`urllib.request.urlopen` with the terms fence on the first URL AND every redirect."""
+    url = req.full_url if isinstance(req, urllib.request.Request) else str(req)
+    refused = terms_refusal(url)
+    if refused:
+        raise TermsRedirectRefused(refused)
+    handlers: list[Any] = [TermsRedirectHandler()]
+    if context is not None:
+        handlers.append(urllib.request.HTTPSHandler(context=context))
+    opener = urllib.request.build_opener(*handlers)
+    return opener.open(req, timeout=timeout) if timeout is not None else opener.open(req)
 
 
 # --------------------------------------------------------------------------- TLS
@@ -273,7 +316,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
         return Response(url=url, error=refused)
     hdr = {**BROWSER_HEADERS, **(headers or {})}
     host = urlparse(url).netloc.lower()
-    open_ = opener or urllib.request.urlopen
+    open_ = opener or fenced_urlopen
     resp = Response(url=url)
     t0 = time.monotonic()
     for attempt in range(max(0, retries) + 1):
@@ -297,6 +340,11 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 cenc = str(h.get("Content-Encoding") or "") if h is not None else ""
                 resp.status = int(getattr(fh, "status", None) or getattr(fh, "code", 200) or 200)
                 resp.final_url = str(getattr(fh, "url", "") or url)
+                landed = terms_refusal(resp.final_url)
+                if landed:                  # an opener that followed a redirect unfenced
+                    resp.status, resp.text, resp.error = None, "", landed
+                    _stat(leg, error="BLOCKED_TERMS")
+                    break
                 resp.content_type = ctype
                 resp.text = decode_body(raw, ctype, cenc)
                 resp.error = ""
@@ -316,6 +364,10 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 break
             if gate is not None and host:
                 gate.penalise(host, wait or backoff_s * (2 ** attempt))
+        except TermsRedirectRefused as exc:           # deterministic: never retried
+            resp.error = str(exc.reason)[:240]
+            _stat(leg, error="BLOCKED_TERMS")
+            break
         except Exception as exc:
             name = type(exc).__name__
             reason = getattr(exc, "reason", None)
