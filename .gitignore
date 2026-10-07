@@ -466,3 +466,10 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
+# ROTATED DECISION LEDGERS (2026-10-07). libs/ops/ledger_rotation.rotate_if_over moves a ledger
+# past its bound WHOLE to `<stem>.<YYYYMMDDTHHMMSS>[_n].jsonl` beside it. The archives are the
+# box's own history (the Asia completion audit reads them on the box), never a commit: these are
+# the three ledgers that rotate today (source_evig, research_roi, deep_forest_miner).
+desks/mt5/data/evig_order_decisions.[0-9]*T[0-9]*.jsonl
+desks/mt5/data/roi_budget_decisions.[0-9]*T[0-9]*.jsonl
+desks/mt5/data/deep_forest_rotation.[0-9]*T[0-9]*.jsonl

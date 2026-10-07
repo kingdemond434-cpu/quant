@@ -647,3 +647,142 @@ def test_ledgers_rotate_whole_and_proofs_read_the_archives(tmp_path: Path,
     got = [json.loads(line)["at"] for f in lr.ledger_files(bpath)
            for line in f.read_text("utf-8").splitlines()]
     assert got == ["t1", "t2"]
+
+
+# ------------------------------------------------------------------- attribution by ground
+GROUNDS_REG = {"grounds": [
+    {"name": "七禾网 期货人物专访", "region": "cn", "language": "zh", "kind": "interview"},
+    {"name": "聚宽 JoinQuant 社区", "region": "cn", "language": "zh", "kind": "community"},
+    {"name": "雪球 港股", "region": "hk", "language": "zh", "kind": "social"}]}
+ROT = "desks/mt5/data/deep_forest_rotation.jsonl"
+
+
+def _ground_row(rid: str, ground: str, **kw: Any) -> dict[str, Any]:
+    return _row(id=rid, region="CN", title=f"Explore Chinese practitioner ground: {ground}.",
+                probes=[{"kind": "artifact", "artifact": CLAIMS}], **kw)
+
+
+def test_a_ground_is_credited_only_with_its_own_rows(tmp_path: Path) -> None:
+    """THE PR #232 HOLD: two grounds share a country, only one has claims, and only that one
+    reaches PRODUCING_DATA. Country (or language) attribution used to credit both with every CN
+    claim."""
+    _tree(tmp_path)
+    _w(tmp_path, CAD.FOREST_GROUNDS_REL, GROUNDS_REG)
+    _reqs(tmp_path, [_ground_row("G1", "七禾网"), _ground_row("G2", "聚宽"),
+                     _ground_row("G3", "defunct quant forums via Wayback")])
+    _jl(tmp_path, CLAIMS, [
+        {"ground": "七禾网 期货人物专访", "region": "cn", "language": "zh", "claim": "a"},
+        {"ground": "七禾网 期货人物专访", "region": "cn", "language": "zh", "claim": "b"},
+        {"ground": "雪球 港股", "region": "cn", "language": "zh", "claim": "c"}])
+    items = {i["id"]: i for i in CAD.audit(tmp_path, NOW)["items"]}
+    assert (items["G1"]["state"], items["G1"]["observations"]) == ("PRODUCING_DATA", 2)
+    # same country, same language, zero rows of its own ground: below PRODUCING_DATA
+    assert (items["G2"]["state"], items["G2"]["observations"]) == ("RUNNING", 0)
+    # a ground the registry does not hold matches nothing
+    assert (items["G3"]["state"], items["G3"]["observations"]) == ("RUNNING", 0)
+    att = next(e for e in items["G2"]["evidence"] if e.get("attribution"))["attribution"]
+    assert att["dimension"] == "ground" and att["values"] == ["聚宽 JoinQuant 社区"]
+    # rows that carry no ground field are never credited: UNMEASURED
+    _jl(tmp_path, CLAIMS, [{"region": "cn", "language": "zh", "claim": "a"}])
+    items = {i["id"]: i for i in CAD.audit(tmp_path, NOW)["items"]}
+    assert items["G1"]["state"] == "UNMEASURED" and items["G2"]["state"] == "UNMEASURED"
+
+
+def test_a_ground_status_row_counts_its_claims_not_itself() -> None:
+    flt = {"dimension": "ground", "values": ["a"], "basis": "t"}
+    assert CAD._matches({"ground": "a", "claims": 0}, flt)
+    assert not CAD._matches({"region": "cn"}, flt)
+
+
+def test_the_real_ground_rows_resolve_to_their_own_grounds() -> None:
+    rd = CAD.Reader(_ROOT)
+    rows = {r["id"]: r for r in CAD.load_requirements(rd)[0]}
+    reg = rd.json(CAD.FOREST_GROUNDS_REL)["grounds"]
+
+    def vals(rid: str) -> list[str]:
+        return CAD.requirement_filter(rows[rid], reg)["values"]
+    assert vals("ASIA-0382") == ["七禾网 期货人物专访"]
+    assert vals("ASIA-0396") == ["微信公众号 via 搜狗"]
+    assert vals("ASIA-0391") == ["雪球"]                 # the CN ground, never HK's 雪球 港股
+    assert vals("ASIA-0449") == ["Qiita systemtrade"]
+    assert vals("ASIA-0456") == []                       # J-STAGE is not a registered ground
+    assert CAD.requirement_filter(rows["ASIA-0382"])["dimension"] != "ground"  # no registry
+
+
+def test_the_rotation_proof_is_per_ground(tmp_path: Path) -> None:
+    _tree(tmp_path)
+    _w(tmp_path, CAD.FOREST_GROUNDS_REL, GROUNDS_REG)
+    proof = {"kind": "proof", "proof": "forest_rotation", "artifact": ROT}
+    _reqs(tmp_path, [_ground_row("G1", "七禾网", probes=[proof]),
+                     _ground_row("G2", "聚宽", probes=[proof]),
+                     _ground_row("G3", "university repositories", probes=[proof])])
+    t1, t2 = (NOW - timedelta(hours=3)).isoformat(), (NOW - timedelta(hours=1)).isoformat()
+    _jl(tmp_path, ROT, [
+        {"at": t1, "attempts_by_language": {"en": 2, "zh": 2, "ja": 1, "ko": 1},
+         "grounds": ["七禾网 期货人物专访", "g2", "g3"]},
+        {"at": t2, "attempts_by_language": {"en": 2, "zh": 1, "vi": 1, "ko": 1},
+         "grounds": ["g4", "g5", "g6", "g7"]}])
+    doc = CAD.audit(tmp_path, NOW)
+    assert doc["proofs"]["forest_rotation"]["verdict"] == "PROVEN"     # the global loop moved
+    items = {i["id"]: i for i in doc["items"]}
+    assert items["G1"]["proofs"][0]["verdict"] == "PROVEN"
+    assert items["G1"]["proofs"][0]["measures"]["runs_reaching_ground"] == 1
+    assert items["G2"]["proofs"][0]["verdict"] == "NOT_PROVEN"       # never reached
+    assert items["G3"]["proofs"][0]["verdict"] == "NOT_PROVEN"       # no registered ground
+    # the decision ledger's rows are nobody's observations
+    assert items["G1"]["observations"] == "UNMEASURED"
+
+
+def test_row_count_reads_the_archives_after_a_rotation(tmp_path: Path) -> None:
+    from libs.ops import ledger_rotation as lr
+    rel = "desks/mt5/data/roi_budget_decisions.jsonl"
+    _jl(tmp_path, rel, [{"at": "t1"}, {"at": "t2"}, {"at": "t3"}])
+    rd = CAD.Reader(tmp_path)
+    assert CAD._rows_in(rd, rel) == 3
+    lr.rotate_if_over(tmp_path / rel, 0)
+    assert not (tmp_path / rel).exists()
+    assert CAD._rows_in(rd, rel) == 3, "the live file is gone; the archive still holds 3 rows"
+    _jl(tmp_path, rel, [{"at": "t4"}])
+    assert CAD._rows_in(rd, rel) == 4
+    assert CAD._rows_in(rd, "desks/mt5/data/never_written.jsonl") is None
+
+
+def test_free_stack_seat_cells_count_once(tmp_path: Path) -> None:
+    """The proposer publishes ONE minted count for its seat; 60 rows naming free-stack sources
+    each used to add it again (twice for a row with two sources)."""
+    _tree(tmp_path)
+    fs = "desks/mt5/reports/FREE_STACK_YIELD.json"
+
+    def fsrow(rid: str, *ids: str) -> dict[str, Any]:
+        return _row(id=rid, probes=[{"kind": "free_stack", "artifact": fs, "ids": [i]}
+                                    for i in ids])
+    _reqs(tmp_path, [fsrow("F1", "akshare", "shfe_daily"), fsrow("F2", "akshare"),
+                     fsrow("F3", "shfe_daily")])
+    _w(tmp_path, fs, {"per_source": {
+        "akshare": {"status": "OK", "obs_total": 10, "columns": 2},
+        "shfe_daily": {"status": "OK", "obs_total": 5, "columns": 1}}})
+    _w(tmp_path, "desks/mt5/reports/FREE_STACK_PROPOSER.json",
+       {"built_at": "2026-10-06T11:00:00Z", "minted": 40, "cursor_from": 0, "cursor_to": 40})
+    doc = CAD.audit(tmp_path, NOW)
+    items = {i["id"]: i for i in doc["items"]}
+    assert items["F1"]["cells_emitted"] == 40           # two probes, one seat credit
+    assert items["F2"]["cells_emitted"] == items["F3"]["cells_emitted"] == 40
+    assert doc["by_region"]["CN"]["cells_emitted"] == 40  # three rows, one seat count
+    assert items["F1"]["observations"] == 15
+
+
+def test_rotated_ledger_archives_are_gitignored() -> None:
+    """The three rotating ledgers' archives never reach a commit; the live ledgers are untouched."""
+    import fnmatch
+
+    from libs.ops import ledger_rotation as lr
+    pats = [ln.strip() for ln in (_ROOT / ".gitignore").read_text("utf-8").splitlines()
+            if ln.strip() and not ln.startswith("#")]
+    data = _ROOT / "desks/mt5/data"
+    for stem in ("evig_order_decisions", "roi_budget_decisions", "deep_forest_rotation"):
+        live = data / f"{stem}.jsonl"
+        arch = lr.archive_path(live, NOW).relative_to(_ROOT).as_posix()
+        assert any(fnmatch.fnmatchcase(arch, p) for p in pats), arch
+        assert any(fnmatch.fnmatchcase(arch.replace(".jsonl", "_1.jsonl"), p) for p in pats)
+        assert not any(fnmatch.fnmatchcase(live.relative_to(_ROOT).as_posix(), p)
+                       for p in pats if "T[0-9]" in p)

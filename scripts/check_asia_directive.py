@@ -196,9 +196,30 @@ COUNTRIES = {
 REGION_VALUES = {"CN": ("cn", "china"), "JP": ("jp", "japan"), "KR": ("kr", "korea"),
                  "HK": ("hk", "hong_kong", "hong kong"), "SG": ("sg", "singapore"),
                  "TW": ("tw", "taiwan")}
-FILTER_FIELDS = {"language": ("language", "lang"),
+FILTER_FIELDS = {"ground": ("ground",),
+                 "language": ("language", "lang"),
                  "country": ("country", "country_code", "cc", "iso2", "region"),
                  "region": ("region", "forest", "country", "country_code")}
+#: THE MOST SPECIFIC DIMENSION IS THE GROUND. A requirement that names one practitioner ground
+#: ("Explore Chinese practitioner ground: 七禾网.") is credited only with rows whose `ground` is a
+#: registered ground (deep_forest_sources.json) the phrase resolves to, within the requirement's own
+#: region. Country or language is never enough: 23 CN ground rows once all read the same 55 CN
+#: claims. A phrase that resolves to no registered ground matches no row (0, below PRODUCING_DATA).
+GROUND_PHRASE = re.compile(r"\bground:\s*(.+)$", re.IGNORECASE)
+#: Words that describe a ground without naming one; never matched against a registered name.
+GROUND_GENERIC = frozenset({
+    "public", "only", "material", "historical", "articles", "references", "academic", "chinese",
+    "japanese", "papers", "university", "repositories", "brokerage", "broker", "educational",
+    "research", "archived", "communities", "defunct", "quant", "forums", "via", "wayback",
+    "blogs", "posts", "native", "search", "terms", "futures", "competitions", "and", "the"})
+#: A phrase word that names a ground KIND in the registry ("Japanese blogs" -> every registered
+#: blog ground of the region). Only kinds the phrase IS, never a looser "forum"/"community".
+GROUND_KIND_WORDS = (("competition", "competition"), ("academic", "academic"),
+                     ("paper", "academic"), ("blog", "blog"))
+#: The directive writes some grounds in English that the registry names in their own script.
+#: (phrase token, registered-name token, kind the ground must have or None).
+GROUND_ALIASES = (("wechat", "微信", None), ("hatena", "はてな", None),
+                  ("x posts", "x (nitter)", None), ("broker", "証券", "column"))
 
 ASIA_COUNTRIES = {
     "cn": "China", "jp": "Japan", "kr": "Korea", "hk": "HK", "sg": "SG", "tw": "Taiwan"}
@@ -365,9 +386,12 @@ def _row_stamp(row: dict[str, Any]) -> datetime | None:
 def _rows_in(rd: Reader, rel: str) -> int | None:
     """Row count of a parquet / jsonl / csv artifact; None when it cannot be counted here."""
     p = rd.path(rel)
-    if not p.exists():
-        return None
     suffix = p.suffix.lower()
+    # A JSON-lines ledger rotates WHOLE to `<stem>.<stamp>.jsonl`: right after a rotation the live
+    # path is absent and every row sits in the archives, which are read with it.
+    files = ledger_files(p) if suffix == ".jsonl" else ([p] if p.exists() else [])
+    if not files:
+        return None
     if suffix == ".parquet":
         try:
             import pyarrow.parquet as pq
@@ -381,7 +405,7 @@ def _rows_in(rd: Reader, rel: str) -> int | None:
     if suffix in (".jsonl", ".csv"):
         n = 0
         try:
-            for f in (ledger_files(p) if suffix == ".jsonl" else [p]):
+            for f in files:
                 with f.open("rb") as fh:
                     n += sum(1 for line in fh if line.strip())
         except OSError:
@@ -859,8 +883,31 @@ def probe_free_stack(rd: Reader, p: dict[str, Any]) -> dict[str, Any]:
     cols = sum(int(per[i].get("columns") or 0) for i in have)
     if isinstance(prop, dict) and cols > 0 and isinstance(prop.get("minted"), int):
         out["cells"] = int(prop["minted"])
-        out["notes"].append("cells are the free_stack_proposer seat's minted count (seat attribution)")
+        # ONE SEAT COUNT, CLAIMED BY MANY ROWS. The proposer publishes one minted total for the
+        # whole seat (no per-source split), so every row crediting it carries the same credit key
+        # and any sum -- a row's own probes, a region, a package -- counts it once.
+        out["cell_credit"] = (f"seat:free_stack_proposer@{prop.get('built_at') or '?'}"
+                              f"#{prop.get('cursor_from')}-{prop.get('cursor_to')}")
+        out["notes"].append("cells are the free_stack_proposer seat's minted count (seat "
+                            "attribution, counted once in any sum)")
     return out
+
+
+def _sum_cells(probes: Iterable[dict[str, Any]], seen: set[str] | None = None) -> int | None:
+    """Cells across probes, each SEAT credit counted once (`cell_credit` is its id): a row with an
+    akshare and a shfe_daily free-stack probe, or a region of 60 such rows, holds the seat's
+    minted cells once, not once per claimant. `seen` carries the ids across calls."""
+    seen = set() if seen is None else seen
+    vals: list[int | None] = []
+    for p in probes:
+        key = p.get("cell_credit")
+        if key and p.get("cells") is not None:
+            if key in seen:
+                vals.append(0)
+                continue
+            seen.add(str(key))
+        vals.append(p.get("cells"))
+    return _sum(vals)
 
 
 def probe_asia_plane(rd: Reader, p: dict[str, Any]) -> dict[str, Any]:
@@ -875,9 +922,44 @@ def probe_asia_plane(rd: Reader, p: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def requirement_filter(row: dict[str, Any]) -> dict[str, Any] | None:
+def ground_names(phrase: str, region: str | None,
+                 grounds: list[dict[str, Any]]) -> list[str]:
+    """The registered grounds (deep_forest_sources.json `grounds[].name`) a requirement's ground
+    phrase names, inside the requirement's own region when the registry has that region."""
+    text = re.sub(r"\([^)]*\)", " ", phrase).strip().rstrip(".").lower()
+    reg = str(region or "").lower()
+    pool = [g for g in grounds if isinstance(g, dict) and g.get("name")]
+    if any(str(g.get("region") or "").lower() == reg for g in pool):
+        pool = [g for g in pool if str(g.get("region") or "").lower() == reg]
+    toks = [t for t in re.split(r"[^\w-]+", text) if t and t not in GROUND_GENERIC
+            and (len(t) >= 2 if re.search(r"[^\x00-\x7f]", t) else len(t) >= 3)]
+    kinds = {k for w, k in GROUND_KIND_WORDS if re.search(rf"\b{w}", text)}
+    aliases = [(name_tok, kind) for word, name_tok, kind in GROUND_ALIASES
+               if re.search(rf"\b{re.escape(word)}\b", text)]
+    out: list[str] = []
+    for g in pool:
+        name, kind = str(g["name"]), str(g.get("kind") or "")
+        low = name.lower()
+        if (any(t in low for t in toks) or kind in kinds
+                or any(a in low and (k is None or k == kind) for a, k in aliases)):
+            out.append(name)
+    return sorted(set(out))
+
+
+def requirement_filter(row: dict[str, Any],
+                       grounds: list[dict[str, Any]] | None = None) -> dict[str, Any] | None:
     """The row filter that makes a shared artifact's rows THIS requirement's (see FILTER_FIELDS).
-    None when the requirement's text, modules and region name no language, country or region."""
+    None when the requirement's text, modules and region name no ground, language, country or
+    region. `grounds` is the deep-forest ground registry; a row that names a ground is filtered by
+    it alone, and resolves to an empty value list (no row ever matches) when no registered ground
+    answers to the name."""
+    m = GROUND_PHRASE.search(str(row.get("title") or ""))
+    if m and grounds is not None:
+        names = ground_names(m.group(1), row.get("region"), grounds)
+        return {"dimension": "ground", "values": names, "named": m.group(1).strip(),
+                "basis": (f"the ground the requirement names ({m.group(1).strip()!r}) resolved "
+                          f"against {FOREST_GROUNDS_REL}: "
+                          + (", ".join(names) if names else "no registered ground"))}
     text = f"{row.get('title') or ''} {row.get('source') or ''}"
     low = text.lower()
     if LANGUAGE_CONTEXT.search(text):
@@ -950,7 +1032,10 @@ def _matches(rec: dict[str, Any], flt: dict[str, Any]) -> bool:
         if v is None:
             continue
         got = str(v).lower()
-        if flt["dimension"] == "language":
+        if flt["dimension"] == "ground":
+            if got in want:
+                return True
+        elif flt["dimension"] == "language":
             if any(got == w or got.startswith(w + "-") for w in want):
                 return True
         elif got in want:
@@ -985,7 +1070,12 @@ def attribute(rd: Reader, out: dict[str, Any], p: dict[str, Any], flt: dict[str,
                             f"{list(fields)}, so the {flt['dimension']} filter "
                             f"{flt['values']} cannot be applied: UNMEASURED")
         return out
-    n = sum(1 for r in recs if _matches(r, flt))
+    # A per-ground STATUS row (DEEP_FOREST.json `grounds[]`) is an attempt, not data: it counts
+    # the claims it says it produced, so a ground worked with no claim credits 0.
+    per_ground = flt["dimension"] == "ground"
+    n = sum((int(r["claims"]) if per_ground and isinstance(r.get("claims"), int)
+             and not isinstance(r.get("claims"), bool) else 1)
+            for r in recs if _matches(r, flt))
     out["data"] = n
     out["attribution"] = {"dimension": flt["dimension"], "values": flt["values"],
                           "basis": flt["basis"], "rows_matched": n, "rows_total": len(recs),
@@ -1173,8 +1263,41 @@ PROOFS = {"evig_order": proof_evig_order, "roi_budget": proof_roi_budget,
           "forest_rotation": proof_forest_rotation}
 
 
+def ground_proof(rd: Reader, rel: str, now: datetime, glob: dict[str, Any],
+                 flt: dict[str, Any]) -> dict[str, Any]:
+    """THE SAME PROOF, FOR ONE GROUND. The global verdict says the loop moved; a requirement that
+    names a ground holds the proof only when the loop also reached ITS ground in the window. The
+    forest_rotation ledger names the grounds each run attempted; a proof whose ledger names no
+    ground cannot be attributed to one and is UNMEASURED for it, never the global verdict."""
+    name = str(glob.get("proof"))
+    want = {str(v).lower() for v in flt["values"]}
+    base = {"proof": name, "ground": flt.get("named"), "grounds": list(flt["values"]),
+            "global_verdict": glob.get("verdict")}
+    if name != "forest_rotation":
+        return {**base, "verdict": UNMEASURED,
+                "why": f"{name}'s ledger records no ground, so it proves nothing for one ground"}
+    if not want:
+        return {**base, "verdict": "NOT_PROVEN",
+                "why": f"the named ground {flt.get('named')!r} resolves to no registered ground, "
+                       "so no rotation can have reached it"}
+    recs = _within(rd.jsonl_tail(rel), now, ROTATION_WINDOW_H)
+    hit = [r for r in recs if want & {str(g).lower() for g in r.get("grounds") or []}]
+    base["measures"] = {"runs": len(recs), "runs_reaching_ground": len(hit),
+                        "window_h": ROTATION_WINDOW_H}
+    if glob.get("verdict") != "PROVEN":
+        return {**base, "verdict": glob.get("verdict") or UNMEASURED,
+                "why": f"the rotation itself is {glob.get('verdict')}: {glob.get('why', '')}"}
+    if not hit:
+        return {**base, "verdict": "NOT_PROVEN",
+                "why": f"the rotation is PROVEN overall but no run in {ROTATION_WINDOW_H:g}h "
+                       f"attempted {', '.join(flt['values'])}"}
+    return {**base, "verdict": "PROVEN",
+            "why": f"{len(hit)} of {len(recs)} rotating runs attempted this ground"}
+
+
 def probe_proof(rd: Reader, p: dict[str, Any], now: datetime,
-                cache: dict[str, dict[str, Any]]) -> dict[str, Any]:
+                cache: dict[str, dict[str, Any]],
+                flt: dict[str, Any] | None = None) -> dict[str, Any]:
     out = _blank(p["artifact"], rd)
     name = str(p.get("proof"))
     if name not in cache:
@@ -1192,9 +1315,16 @@ def probe_proof(rd: Reader, p: dict[str, Any], now: datetime,
                                       f"{tail.get('files_total')} ledger file(s); older rows were "
                                       "not read]")
     res = cache[name]
-    out["proof"] = res
-    if out["present"]:
+    if flt is not None and flt.get("dimension") == "ground":
+        key = f"ground_proof:{name}:{json.dumps(flt['values'], ensure_ascii=True)}"
+        if key not in rd.memo:
+            rd.memo[key] = ground_proof(rd, str(p["artifact"]), now, res, flt)
+        res = dict(rd.memo[key], ledger_read=cache[name].get("ledger_read"))
+        # The decision ledger's rows are every ground's runs, not this ground's data.
+        out["notes"].append("the decision ledger's rows are not this ground's observations")
+    elif out["present"]:
         out["data"] = _rows_in(rd, str(p["artifact"]))
+    out["proof"] = res
     out["notes"].append(f"proof {name}: {res['verdict']} -- {res.get('why', '')}")
     return out
 
@@ -1299,14 +1429,16 @@ def judge(rd: Reader, row: dict[str, Any], reach: Reach,
     claimants = claimants or {}
     inputs_only = {str(x) for x in row.get("inputs") or []} - {str(x) for x in
                                                                row.get("outputs") or []}
-    flt = requirement_filter(row)
+    reg = rd.json(FOREST_GROUNDS_REL)
+    reg_grounds = (reg.get("grounds") if isinstance(reg, dict) else reg)
+    flt = requirement_filter(row, reg_grounds if isinstance(reg_grounds, list) else None)
     probes: list[dict[str, Any]] = []
     for p in row.get("probes") or []:
         kind = str(p.get("kind"))
         if kind == "artifact" and len(p) == 2 and str(p.get("artifact")) in inputs_only:
             continue                        # an INPUT the organ reads is not evidence it ran
         if kind == "proof":
-            probes.append(probe_proof(rd, p, now, proof_cache))
+            probes.append(probe_proof(rd, p, now, proof_cache, flt))
         elif kind in PROBES:
             key = "probe:" + _probe_key(p)
             if key not in rd.memo:
@@ -1327,7 +1459,7 @@ def judge(rd: Reader, row: dict[str, Any], reach: Reach,
                      if r and r.get("last_run_outcome") == "ok" and r.get("last_run_at"))
     counted = [p for p in probes if not p.get("unattributed")]
     data = _sum(p["data"] for p in counted)
-    cells = _sum(p["cells"] for p in counted)
+    cells = _sum_cells(counted)
     judged = _sum(p["judged"] for p in counted)
     survivors = _sum(p["survivors"] for p in counted)
     blocked = [p["blocked"] for p in probes if p["blocked"]]
@@ -1422,6 +1554,8 @@ def judge(rd: Reader, row: dict[str, Any], reach: Reach,
         "runtime": {leg: (r or {}).get("state", UNMEASURED) for leg, r in rt.items()},
         "observations": data if data is not None else UNMEASURED,
         "cells_emitted": cells if cells is not None else UNMEASURED,
+        "cell_credits": sorted({str(p["cell_credit"]) for p in counted
+                                if p.get("cell_credit") and p.get("cells") is not None}),
         "cells_judged": judged if judged is not None else UNMEASURED,
         "survivors": survivors if survivors is not None else UNMEASURED,
         "forward": UNMEASURED, "live": UNMEASURED,
@@ -1490,6 +1624,8 @@ def asia_sources(rd: Reader) -> dict[str, Any]:
     by_cat = {cat: bucket([r for r in asia if str(r.get("plane") or "") in planes])
               for cat, planes in CATEGORY_PLANES.items()}
     grounds = rd.json(FOREST_GROUNDS_REL)
+    if isinstance(grounds, dict):                       # the registry is {"grounds": [...], ...}
+        grounds = grounds.get("grounds")
     glist = grounds if isinstance(grounds, list) else []
     asian_lang = ("zh", "zh-Hant", "ja", "ko", "vi", "th", "id", "ms", "hi", "tl")
     by_cat["practitioner forest"] = {
@@ -1718,6 +1854,11 @@ def audit(root: Path = ROOT, now: datetime | None = None) -> dict[str, Any]:
     claimants = claimants_by_probe(reqs)
     items = [judge(rd, r, reach, runtime, nowdt, cache, claimants) for r in reqs]
     census = Counter(i["state"] for i in items)
+    seat_cells: dict[str, int] = {}
+    for i in items:
+        for e in i["evidence"]:
+            if e.get("cell_credit") and isinstance(e.get("cells"), int):
+                seat_cells[str(e["cell_credit"])] = int(e["cells"])
     by_region: dict[str, dict[str, Any]] = {}
     for i in items:
         reg = by_region.setdefault(str(i.get("region") or "?"),
@@ -1729,9 +1870,15 @@ def audit(root: Path = ROOT, now: datetime | None = None) -> dict[str, Any]:
         reg["states"][i["state"]] += 1
         for k in ("observations", "cells_emitted", "cells_judged", "survivors"):
             v = i[k]
+            if k == "cells_emitted" and isinstance(v, int) and i.get("cell_credits"):
+                # a seat credit already counted in this region adds nothing again
+                seen = reg.setdefault("_credits", set())
+                v -= sum(seat_cells.get(c, 0) for c in i["cell_credits"] if c in seen)
+                seen.update(i["cell_credits"])
             if isinstance(v, int):
                 reg[k] = (reg[k] or 0) + v
     for reg in by_region.values():
+        reg.pop("_credits", None)
         reg["states"] = dict(reg["states"])
         reg["delta"] = dict(reg["delta"])
         for k in ("observations", "cells_emitted", "cells_judged", "survivors"):
