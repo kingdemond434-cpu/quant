@@ -9,11 +9,12 @@ conditioning key or a donation only when one of these holds for EVERY component 
     CLEARANCES       a clearance row for it carries status CLEARED AND the quoted permitting
                      clause (`terms_url` + `terms_quote`); a bare "CLEARED" admits nothing
 
-Everything else is HELD: an unknown source, a named hold (TERMS_HELD), a FRED/ALFRED series that
-republishes a third party's copyrighted index, and any source at all when the terms fence
-(`libs.data.terms_fence`, #162) is installed but cannot be consulted. A held source is MEASURED
-AND KEPT: its rows are stored, counted and written to the sensor ledger as state; it only stays
-out of cells until its terms are read and quoted.
+Everything else is HELD: an unknown source, a named hold (TERMS_HELD), EVERY FRED/ALFRED series
+(FRED is held as an input to fitted models: coordinator ruling on prohibition (j), 2026-10-07;
+the fitted inputs move to the public-domain owners' own feeds), and any source at all when the
+terms fence (`libs.data.terms_fence`, #162) is installed but cannot be consulted. A held source
+is MEASURED AND KEPT: its rows are stored, counted and written to the sensor ledger as state;
+it only stays out of cells until its terms are read and quoted.
 
 One door: `release_vintages`, `event_surprise`, `market_state` and every world-sensor engine's
 `sensor_engines.emit_conditioner_cells` call `gauntlet_terms` and nothing else.
@@ -50,8 +51,6 @@ _FRED_BASIS = {
 #: Recorded terms bases. A key with ":" admits that exact id; a bare provider key admits
 #: "<provider>:<series>" for any non-empty series (named holds still apply).
 TERMS_EVIDENCE: dict[str, dict[str, str]] = {
-    "fred": _FRED_BASIS,
-    "alfred": {**_FRED_BASIS, "scope": "ALFRED vintages of the same FRED series, same scope"},
     "mt5:bars": {"terms_url": "",
                  "terms_quote": "(own data: bars from the desk's own MT5 terminal on its own "
                                 "broker account, used for its own trading, never redistributed)",
@@ -80,6 +79,41 @@ TERMS_HELD: dict[str, str] = {
     "taifex": "TAIFEX statistics (TXO put/call): site terms unread (the cloud proxy refuses the "
               "host); machine use UNCLEARED",
     "ice_bofa": "ICE BofA indices republished on FRED: third-party copyright (FAQ Q3)",
+    "fred_index": "an equity index FRED republishes under its owner's copyright (S&P Dow Jones "
+                  "Indices, Nasdaq, Nikkei, Wilshire): FAQ Q3, FRED cannot grant the permission",
+    "fred_label": "a FRED series whose terms label is not on the display register: only series "
+                  "owned by a US federal agency (public domain, 17 USC 105) are fetched",
+}
+
+#: Why every FRED/ALFRED id is held from the gauntlet (coordinator ruling on prohibition (j),
+#: 2026-10-07): FRED is not an input to fitted models. The fitted inputs move to the owners' own
+#: feeds (Treasury H.15, BLS, BEA, the Fed board's H.10/G.19, EIA). A quoted clearance under the
+#: exact id or under "fred"/"alfred" is the only way back in.
+FRED_FITTED_HOLD = ("FRED/ALFRED is held as an input to fitted models (ruling on prohibition "
+                    "(j), 2026-10-07); read the public-domain owner's own feed instead")
+
+#: Equity indices FRED republishes under a third party's copyright. Held from every use.
+FRED_INDEX_SERIES = frozenset({"SP500", "DJIA", "DJCA", "DJTA", "DJUA", "NASDAQCOM", "NASDAQ100",
+                               "NIKKEI225", "WILL5000IND", "WILL5000INDFC", "WILL5000PR",
+                               "WILL5000PRFC", "WILLLRGCAP", "WILLSMLCAP"})
+
+#: THE DISPLAY REGISTER: the FRED series the desk may fetch for display and cross-check, each with
+#: the US federal owner whose work it is (public domain under 17 USC 105). A series not named here
+#: is never fetched (fails closed). FRED's own per-series label ("Public Domain: Citation
+#: requested") is owed a verbatim read on the box: the cloud proxy refuses fred.stlouisfed.org.
+FRED_DISPLAY: dict[str, str] = {
+    **dict.fromkeys(("DGS3MO", "DGS2", "DGS5", "DGS10", "DGS30", "DFII10"),
+                    "Board of Governors, H.15 Selected Interest Rates"),
+    "T10Y2Y": "St. Louis Fed calculation from H.15 (DGS10 - DGS2)",
+    "T5YIE": "St. Louis Fed calculation from H.15 nominal and TIPS yields",
+    "T10YIE": "St. Louis Fed calculation from H.15 nominal and TIPS yields",
+    "DTWEXBGS": "Board of Governors, H.10 Foreign Exchange Rates",
+    "WALCL": "Board of Governors, H.4.1 Factors Affecting Reserve Balances",
+    "M2SL": "Board of Governors, H.6 Money Stock Measures",
+    **dict.fromkeys(("WCESTUS1", "WCSSTUS1", "WGTSTUS1", "WDISTUS1", "WPULEUS3"),
+                    "U.S. Energy Information Administration, Weekly Petroleum Status Report"),
+    "CPIAUCSL": "U.S. Bureau of Labor Statistics, CPI-U",
+    "PCEPI": "U.S. Bureau of Economic Analysis, PCE price index",
 }
 
 
@@ -93,6 +127,25 @@ def fred_third_party(series: str) -> str | None:
     if s.startswith("BAML"):
         return "ice_bofa"
     return None
+
+
+def fred_display_terms(series: str, clearances: Path | None = None) -> tuple[bool, str]:
+    """(may the desk FETCH this FRED series for display or cross-check?, why). Never a licence
+    for a fitted model -- `gauntlet_terms` holds every FRED id. Fails closed: a series off the
+    display register, a third-party index or a copyrighted close is not fetched unless a quoted
+    clearance names it."""
+    s = str(series or "").strip().upper()
+    try:
+        doc: Any = json.loads((clearances or CLEARANCES).read_text("utf-8"))
+    except (OSError, ValueError):
+        doc = {}
+    key = fred_third_party(s) or ("fred_index" if s in FRED_INDEX_SERIES else None)
+    if key is None and s not in FRED_DISPLAY:
+        key = "fred_label"
+    if key is None:
+        return True, f"public domain: {FRED_DISPLAY[s]}"
+    cleared = _clearance(doc, [f"fred:{s.lower()}", key])
+    return (True, cleared) if cleared else (False, f"HELD_TERMS: {TERMS_HELD[key]}")
 
 
 def _clearance(doc: Any, keys: list[str]) -> str | None:
@@ -134,9 +187,13 @@ def _one(sid: str, doc: Any) -> tuple[bool, str]:
     provider, _, series = sid.partition(":")
     held = [k for k in TERMS_HELD if k in sid]
     if provider in ("fred", "alfred"):
-        third = fred_third_party(series)
+        third = fred_third_party(series) or (
+            "fred_index" if series.strip().upper() in FRED_INDEX_SERIES else None)
         if third and third not in held:
             held.append(third)
+    if provider in ("fred", "alfred") and not held:
+        cleared = _clearance(doc, [sid, provider])
+        return (True, cleared) if cleared else (False, f"HELD_TERMS: {FRED_FITTED_HOLD}")
     if held:
         whys = []
         for key in held:
@@ -172,4 +229,5 @@ def gauntlet_terms(source_id: str, clearances: Path | None = None) -> tuple[bool
     return True, "; ".join(whys)
 
 
-__all__ = ["CLEARANCES", "TERMS_EVIDENCE", "TERMS_HELD", "fred_third_party", "gauntlet_terms"]
+__all__ = ["CLEARANCES", "FRED_DISPLAY", "FRED_FITTED_HOLD", "FRED_INDEX_SERIES", "TERMS_EVIDENCE",
+           "TERMS_HELD", "fred_display_terms", "fred_third_party", "gauntlet_terms"]

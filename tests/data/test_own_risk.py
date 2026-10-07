@@ -1,12 +1,14 @@
 """The permitted risk state (coordinator, 2026-10-07): a VIXCLS/BAML drop-in from our own bars."""
 from __future__ import annotations
 
+import json
 import sys
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 _DESK = Path(__file__).resolve().parents[2] / "desks" / "mt5"
 for _p in (str(_DESK.parents[1]), str(_DESK)):
@@ -35,6 +37,13 @@ def _bars(uni: Path, symbol: str, seed: int, scale: float = 1.0) -> None:
         px = c
     pd.DataFrame(rows, columns=["open", "high", "low", "close"],
                  index=pd.DatetimeIndex(idx)).to_parquet(uni / f"{symbol}_H1.parquet")
+
+
+@pytest.fixture(autouse=True)
+def _no_held_copy(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """No test reads this host's held VIXCLS copy or writes the box-local comparison file."""
+    monkeypatch.setattr(ori, "held_vix", lambda: ({}, ""))
+    monkeypatch.setattr(ori, "COMPARISON", tmp_path / "vs_vixcls.json")
 
 
 def _world(tmp: Path, banks: bool = True, cfd: bool = False) -> Path:
@@ -68,7 +77,7 @@ def test_series_are_built_point_in_time_and_read_as_a_drop_in(tmp_path: Path) ->
     assert avail is not None
     assert own_risk.load_pit(arch, as_of=avail)[own_risk.RISK][-1][0] == day
     assert own_risk.load_pit(arch, as_of=avail - timedelta(minutes=1))[own_risk.RISK][-1][0] < day
-    assert own_risk.risk_drop_in(arch, as_of=now)["VIXCLS"] == got[own_risk.RISK]
+    assert own_risk.risk_series(arch, as_of=now) == {own_risk.RISK: got[own_risk.RISK]}
     # our own data passes the closed terms gate
     assert gauntlet_terms(own_risk.DATA_SOURCE)[0] is True
 
@@ -122,3 +131,23 @@ def test_the_vixcls_comparison_is_research_only_and_honest() -> None:
 
 def test_the_forced_flow_calendar_is_own_data() -> None:
     assert gauntlet_terms("forced_flow_calendar")[0] is True
+
+
+def test_held_vixcls_numbers_never_reach_the_tracked_report(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit #211 v3: the comparison is derived from held data, so its correlations and OLS go to
+    the gitignored box-local file and the tracked report carries only the status."""
+    uni = _world(tmp_path)
+    held = {(date(2024, 1, 1) + timedelta(days=i)).isoformat(): 15.0 + (i % 17)
+            for i in range(N)}
+    monkeypatch.setattr(ori, "held_vix", lambda: (held, "test"))
+    compare = tmp_path / "data" / "own_risk_vs_vixcls.json"
+    rep = ori.run(universe_dir=uni, now=datetime(2030, 1, 1, tzinfo=UTC),
+                  archive=tmp_path / "own.json", axes=tmp_path / "axes.json", compare=compare)
+    assert rep["vs_vixcls"]["status"] == "MEASURED"
+    text = json.dumps(rep)
+    for key in ("corr_level", "corr_rank", "corr_dlog", "ols_vix_on_own", "slope", "intercept",
+                "vix_over_own_mean"):
+        assert key not in text, key
+    assert "corr_level" in json.loads(compare.read_text("utf-8"))
+    assert ori.COMPARISON.relative_to(ori.ROOT).parts[0] == "data"

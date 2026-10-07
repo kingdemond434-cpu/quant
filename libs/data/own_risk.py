@@ -27,8 +27,9 @@ REALISED, not implied: it runs below VIX on average by the variance risk premium
 shock one bar late rather than ahead of it. Every current VIXCLS consumer is scale-free --
 `macro_view` and the regime kernel use its trailing RANK, `leg_factors` its DLOG change -- so the
 swap needs no rescaling. Any consumer with an absolute VIX threshold must re-derive it on
-OWN_VIX's own history; the builder's report carries the research-only fit against VIXCLS where a
-held copy exists on the host, and that fit is never used in production.
+OWN_VIX's own history; the builder writes a research-only fit against VIXCLS, where a held copy
+exists on the host, to the gitignored `data/own_risk_vs_vixcls.json`, and that fit is never used
+in production or tracked.
 
 POINT IN TIME. Every point carries `available_time`: the close of the last H1 bar of its day
 (our own bars), or for the CFD its daily close. `load_pit(as_of=t)` returns only points whose
@@ -103,12 +104,13 @@ def available_at(series: str, day: str, path: Path | None = None) -> datetime | 
     return None
 
 
-def risk_drop_in(path: Path | None = None, as_of: datetime | None = None
-                 ) -> dict[str, list[tuple[str, float]]]:
-    """{"VIXCLS": OWN_VIX rows}: for a consumer keyed on the FRED id that switches in one line."""
+def risk_series(path: Path | None = None, as_of: datetime | None = None
+                ) -> dict[str, list[tuple[str, float]]]:
+    """{"OWN_VIX": rows}: the permitted risk level under its OWN name. It is realised (or the
+    broker's CFD), never VIXCLS, so a consumer re-keys to OWN_VIX rather than relabelling it."""
     got = load_pit(path, as_of, (RISK,))
-    return {"VIXCLS": got[RISK]} if RISK in got else {}
+    return {RISK: got[RISK]} if RISK in got else {}
 
 
 __all__ = ["ARCHIVE", "CREDIT", "DATA_SOURCE", "INVERTED", "REPLACES", "RISK", "RISK_RV",
-           "SERIES", "TERM", "available_at", "load_doc", "load_pit", "risk_drop_in"]
+           "SERIES", "TERM", "available_at", "load_doc", "load_pit", "risk_series"]

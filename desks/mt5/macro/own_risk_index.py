@@ -14,11 +14,12 @@ Writes `data/own_risk_index.json` (the archive the allocator and gateway consume
 `libs.data.own_risk.load_pit`), `desks/mt5/data/axes/own_risk.json` (the world model's vol and
 credit nodes, via the field catalogue) and `desks/mt5/reports/OWN_RISK_INDEX.json`.
 
-THE COMPARISON WITH VIXCLS IS RESEARCH-ONLY EVIDENCE. Where a held copy of VIXCLS exists on the
-host (`data/fred_macro.json`, `data/fred_market_state.json`, or the vol archive's reference), the
-report gives the level, rank and dlog correlations and an OLS map of VIXCLS on OWN_VIX_RV. The held
-numbers never enter the archive, a cell or a consumer; absent the copy the comparison is
-UNMEASURED with the reason.
+THE COMPARISON WITH VIXCLS IS RESEARCH-ONLY EVIDENCE AND NEVER TRACKED. Where a held copy of
+VIXCLS exists on the host (`data/fred_macro.json`, `data/fred_market_state.json`, or the vol
+archive's reference), the level, rank and dlog correlations and an OLS map of VIXCLS on OWN_VIX_RV
+go to `data/own_risk_vs_vixcls.json` (gitignored, box-local): they are derived from held data, so
+they never enter the tracked report (audit #211 v3), the archive, a cell or a consumer. The report
+carries only the comparison's status and where it was written.
 """
 from __future__ import annotations
 
@@ -59,6 +60,8 @@ CREDIT_WINDOW = 21
 #: where a held VIXCLS copy may sit on a host -- read ONLY for the research comparison
 HELD_VIX = (ROOT / "data" / "fred_macro.json", ROOT / "data" / "fred_market_state.json")
 HELD_VIX_REFERENCE = DESK / "data" / "vol_archive" / "reference" / "VIX.json"
+#: box-local, gitignored: numbers derived from the held VIXCLS copy never reach a tracked file
+COMPARISON = ROOT / "data" / "own_risk_vs_vixcls.json"
 
 Bars = Mapping[str, tuple[float, float, float, float, str]]
 
@@ -245,7 +248,7 @@ def build(universe_dir: Path = UNIVERSE_DIR, now: datetime | None = None) -> dic
     rep: dict[str, Any] = {
         "at": when.isoformat(timespec="seconds"), "engine": "own_risk_index",
         "data_source": orisk.DATA_SOURCE, "archive": str(orisk.ARCHIVE.relative_to(ROOT)),
-        "reader": "libs.data.own_risk.load_pit(as_of=...) / risk_drop_in()",
+        "reader": "libs.data.own_risk.load_pit(as_of=...) / risk_series()",
         "replaces": orisk.REPLACES, "sources": sources, "members": used,
         "broker_vix_cfd": cfd[0] if cfd else None,
         "series": {k: {"points": len(v), "first": v[0][0] if v else None,
@@ -253,7 +256,6 @@ def build(universe_dir: Path = UNIVERSE_DIR, now: datetime | None = None) -> dic
                        "last_value": v[-1][1] if v else None} for k, v in series.items()},
         "credit": credit,
         "status": "MEASURED" if series.get(orisk.RISK) else UNMEASURED,
-        "vs_vixcls": comparison(series.get(orisk.RISK_RV, []), vix, where),
         "scale": ("OWN_VIX_RV is annualised realised vol in percent (VIX units, realised not "
                   "implied: below VIX on average by the variance risk premium). Rank and dlog "
                   "consumers need no rescaling; absolute thresholds must be re-derived on "
@@ -262,7 +264,11 @@ def build(universe_dir: Path = UNIVERSE_DIR, now: datetime | None = None) -> dic
     if not series.get(orisk.RISK):
         rep["why"] = (f"no member bars: tried {sorted(RISK_MEMBERS)} and the broker VIX CFD "
                       f"under {universe_dir}")
-    return {"report": rep, "series": series, "sources": sources}
+    vs = comparison(series.get(orisk.RISK_RV, []), vix, where)
+    rep["vs_vixcls"] = {"status": vs["status"], "note": vs["note"],
+                        "written_to": str(COMPARISON.relative_to(ROOT)) + " (gitignored)",
+                        **({"why": vs["why"]} if "why" in vs else {})}
+    return {"report": rep, "series": series, "sources": sources, "vs_vixcls": vs}
 
 
 def axes_doc(series: Mapping[str, Sequence[Sequence[Any]]], at: str) -> dict[str, Any]:
@@ -291,10 +297,14 @@ def _write(path: Path, doc: Mapping[str, Any]) -> None:
 
 def run(*, dry_run: bool = False, universe_dir: Path = UNIVERSE_DIR,
         now: datetime | None = None, archive: Path | None = None,
-        axes: Path | None = None) -> dict[str, Any]:
+        axes: Path | None = None, compare: Path | None = None) -> dict[str, Any]:
     got = build(universe_dir, now)
     rep: dict[str, Any] = got["report"]
-    if dry_run or not got["series"]:
+    if dry_run:
+        return rep
+    if got["vs_vixcls"]["status"] == "MEASURED":
+        _write(compare or COMPARISON, got["vs_vixcls"])
+    if not got["series"]:
         return rep
     _write(archive or orisk.ARCHIVE, {"at": rep["at"], "source": orisk.DATA_SOURCE,
                                       "sources": got["sources"], "replaces": orisk.REPLACES,

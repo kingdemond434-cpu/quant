@@ -31,6 +31,7 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.data.terms_hold import fred_display_terms  # noqa: E402
 from libs.research.vintage import record  # noqa: E402
 
 _KEYFILE = Path("data/secrets/fred.json")
@@ -47,8 +48,9 @@ _SERIES = ("DGS10", "T10Y2Y", "VIXCLS", "DTWEXBGS", "WALCL", "M2SL", "DFII10")
 #:                         WDISTUS1 (distillate) WPULEUS3 (refinery utilisation %)
 #:   CBOE implied vol as FRED republishes it: VIX, VIX3M, VXN, VXD, OVX, GVZ, EVZ, RVX, VXFXI,
 #:   VXEEM. HELD ON TERMS (2026-10-07): each carries CBOE's copyright notice and FRED's ToU FAQ
-#:   Q3 says FRED cannot license it, so these are archived as state and reach no cell or
-#:   consumer until a quoted CBOE clearance exists; the permitted risk level is
+#:   Q3 says FRED cannot license it, so `fred_display_terms` refuses them and they are NOT
+#:   FETCHED until a quoted CBOE clearance exists (named in the archive's `held` block, so the
+#:   allocator's macro_state reads their absence as a decision); the permitted risk level is
 #:   `libs.data.own_risk` (OWN_VIX, from our own bars)
 #:   Inflation (2026-10-06, desks/mt5/macro/latent_states.py, ROMAN-0839/0841): T5YIE T10YIE
 #:                     (breakevens, daily) CPIAUCSL PCEPI (monthly, REVISED -- the engine
@@ -96,8 +98,20 @@ def main() -> None:
     if not key:
         print("fred-macro: no key (data/secrets/fred.json or FRED_API_KEY) -- skipped")
         return
+    # THE TERMS GATE BEFORE THE NETWORK (audit #211 v3). A series off the display register (a
+    # CBOE close, a third-party index, anything not owned by a US federal agency) is never
+    # fetched; it is named in the archive's `held` block so its absence reads as a decision.
+    held: dict[str, str] = {}
+    for sid in dict.fromkeys(_SERIES + _STATE_SERIES):
+        ok, why = fred_display_terms(sid)
+        if not ok:
+            held[sid] = why
+    if held:
+        print(f"fred-macro: {len(held)} series HELD on terms, not fetched: {sorted(held)}")
     series: dict[str, list[tuple[str, float]]] = {}
     for sid in _SERIES:
+        if sid in held:
+            continue
         try:
             series[sid] = _fetch(key, sid)
         except Exception as e:                           # one dead series never kills the rest
@@ -107,6 +121,8 @@ def main() -> None:
     ts = datetime.now(tz=UTC).isoformat()
     state: dict[str, list[tuple[str, float]]] = {}
     for sid in _STATE_SERIES:
+        if sid in held:
+            continue
         try:
             state[sid] = series[sid] if sid in series else _fetch(key, sid)
         except Exception as e:                           # one dead series never kills the rest
@@ -116,7 +132,8 @@ def main() -> None:
             record(_ROOT, sid, dict(rows), vintage=ts)
     if state:
         _STATE_ARCHIVE.parent.mkdir(parents=True, exist_ok=True)
-        _STATE_ARCHIVE.write_text(json.dumps({"updated": ts, "series": state}), "utf-8")
+        _STATE_ARCHIVE.write_text(json.dumps({"updated": ts, "series": state, "held": held}),
+                                  "utf-8")
 
     # R0316: RECORD THE VINTAGE BEFORE OVERWRITING THE ARCHIVE. `_ARCHIVE.write_text` replaces the
     # file wholesale AND `_LOOKBACK_DAYS` truncates to a rolling window, so until now every run
@@ -139,10 +156,11 @@ def main() -> None:
     # fetch for the allocator's regime kernel and factor set (`libs.portfolio.macro_state`,
     # `libs.portfolio.leg_factors`), which rank against a TRAILING year and need every day of the
     # backtest matrix to carry a state.
-    _ARCHIVE_LONG.write_text(json.dumps({"updated": ts, "series": series}), "utf-8")
+    _ARCHIVE_LONG.write_text(json.dumps({"updated": ts, "series": series, "held": held}),
+                             "utf-8")
     cut = (datetime.now(tz=UTC) - timedelta(days=_SHORT_DAYS)).date().isoformat()
     short = {sid: [r for r in rows if r[0] >= cut] for sid, rows in series.items()}
-    _ARCHIVE.write_text(json.dumps({"updated": ts, "series": short}), "utf-8")
+    _ARCHIVE.write_text(json.dumps({"updated": ts, "series": short, "held": held}), "utf-8")
     latest = {sid: {"date": rows[-1][0], "value": rows[-1][1],
                     "chg_30obs": (round(rows[-1][1] - rows[-31][1], 4)
                                   if len(rows) > 31 else None)}
