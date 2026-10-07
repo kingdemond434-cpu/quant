@@ -175,3 +175,19 @@ def test_commodity_basis_ranks_the_implied_roll_yield(world, monkeypatch):
     assert len(res) < len(lvl)
     assert fc.family_commodity_basis_carry(d, symbol="XTIUSD", mode="spread") == []
     assert fc.GATES["commodity_basis_carry"]()["classes"] == ["commodity"]
+
+
+def test_the_floor_is_the_gauntlets_own_judgeable_minimum():
+    import inspect
+
+    from research.gate_policy import LOCKBOX_FRAC, LOCKBOX_MIN_DAYS
+    from scripts import external_gauntlet as eg
+
+    need = inspect.signature(eg.cell_lockbox_cut).parameters["need"].default
+    assert fc.GAUNTLET_DEV_DAYS == need
+    floor = fc.judgeable_floor()
+    assert floor >= need + LOCKBOX_MIN_DAYS == 100
+    cal = pd.date_range("2026-01-01", periods=floor, freq="D")
+    assert eg.cell_lockbox_cut(pd.Series(0.0, index=cal)) is not None
+    assert eg.cell_lockbox_cut(pd.Series(0.0, index=cal[1:])) is None
+    assert LOCKBOX_FRAC > 0

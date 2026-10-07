@@ -100,7 +100,7 @@ SYMBOL_KEYED = frozenset({"commodity_fx_residual", *cm.CLASS_MOMENT_FAMILIES,
 #: Families whose claim names one peer class (`universe_policy.peer_class`): the index calendar
 #: anomalies. Screened only there, so no trial is spent on a mechanism nobody proposed elsewhere.
 CLASS_ONLY = {**qr.CLASS_ONLY, **cm.CLASS_ONLY, **cy.CLASS_ONLY}
-#: Families that wait for their own input history to reach the gauntlet's lockbox floor: seeded
+#: Families that wait for their own input history to be judgeable by the gauntlet: seeded
 #: (and charged) only from the pass on which the gate reads ready, reported until then.
 HISTORY_GATED = dict(cy.GATES)
 #: Families that read a partner leg named by `pair_symbol`: screened only on the symbols the
