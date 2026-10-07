@@ -29,6 +29,8 @@ from __future__ import annotations
 import glob
 import io
 import json
+import math
+import os
 import re
 import sys
 import urllib.error
@@ -53,6 +55,10 @@ from libs.research import country_lab as country_lab  # noqa: E402
 WORLD = DESK / "data" / "intelligence" / "world"
 STORE = DESK / "data" / "acquired"
 REGISTRY = STORE / "registry.json"
+#: FIRST-SEEN VINTAGES (ARCH-26, 2026-10-07): one append-only parquet per series, every row the
+#: acquirer ever saw for the first time or saw CHANGED, with the UTC time it was captured.
+VINTAGES = STORE / "vintages"
+UNMEASURED = "UNMEASURED"
 REPORT = DESK / "reports" / "dataset_acquisition.json"
 
 #: A real browser UA. Measured on this box: the default urllib agent draws 403s from several
@@ -438,7 +444,161 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
     return out
 
 
-def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
+# ------------------------------------------------------------------ first-seen vintage capture
+#: A publisher that restates history and keeps no vintage cannot be read point-in-time from its
+#: own file: the file only ever shows today's opinion of the past. What the desk CAN know is what
+#: the file said each time the desk read it. So every acquisition appends each row it has never
+#: seen, or has seen with a different value, to `VINTAGES/<series>.parquet` stamped with the UTC
+#: capture time -- and never rewrites an earlier row. The point-in-time view built from that store:
+#:
+#:   * a value is usable from max(its capture time, event time + declared publication lag);
+#:   * a later revision is a NEW vintage, usable only from its own capture time, so it can never
+#:     reach a bar that the earlier value was already serving;
+#:   * before the series' first capture there is nothing -- UNMEASURED, never a backfill. History
+#:     the desk first saw today becomes usable today, all of it at once, and no earlier.
+#:
+#: That view carries its vintage on the row (`vintage`, `available_time`), so the certifier grades
+#: `revision` PASS for it -- and only for it: the as-published file of a revised source still FAILS.
+VINTAGE_COLUMNS = ("event_time", "value", "captured_at")
+
+
+def vintage_path(name: str) -> Path:
+    """Resolved against STORE at call time, so a run (or a test) pointed at another store never
+    writes vintages into this one."""
+    return STORE / VINTAGES.name / f"{name}.parquet"
+
+
+def _utc_index(idx: Any) -> pd.DatetimeIndex:
+    return pd.DatetimeIndex(pd.to_datetime(idx, utc=True, errors="coerce"))
+
+
+def read_vintages(path: Path) -> pd.DataFrame:
+    """The store as written: event_time, value, captured_at (both clocks UTC), in append order."""
+    if not path.exists():
+        return pd.DataFrame({"event_time": pd.DatetimeIndex([], tz="UTC"),
+                             "value": pd.Series([], dtype=float),
+                             "captured_at": pd.DatetimeIndex([], tz="UTC")})
+    v = pd.read_parquet(path)
+    v["event_time"] = pd.to_datetime(v["event_time"], utc=True)
+    v["captured_at"] = pd.to_datetime(v["captured_at"], utc=True)
+    v["value"] = v["value"].astype(float)
+    return v[list(VINTAGE_COLUMNS)].reset_index(drop=True)
+
+
+def _same(a: float, b: float) -> bool:
+    return (math.isnan(a) and math.isnan(b)) or a == b or math.isclose(a, b, rel_tol=1e-12,
+                                                                       abs_tol=0.0)
+
+
+def capture_vintages(path: Path, series: pd.Series, captured_at: datetime) -> dict[str, Any]:
+    """Append every new or changed row of `series` to the store at `path`. NEVER rewrites: the
+    file written is the old rows byte-for-byte in their order, then the new ones. A capture
+    clock that has gone backwards is held at the last capture, so vintages stay ordered."""
+    old = read_vintages(path)
+    now = pd.Timestamp(captured_at).tz_convert("UTC") if pd.Timestamp(captured_at).tzinfo \
+        else pd.Timestamp(captured_at, tz="UTC")
+    if len(old):
+        now = max(now, old["captured_at"].max())
+    known: dict[pd.Timestamp, float] = {}
+    for e, val in zip(old["event_time"], old["value"], strict=True):
+        known[e] = float(val)                     # append order: the last vintage wins
+    s = series.astype(float)
+    idx = _utc_index(s.index)
+    rows: list[tuple[pd.Timestamp, float]] = []
+    revisions = 0
+    for e, val in zip(idx, s.to_numpy(), strict=True):
+        if pd.isna(e) or not math.isfinite(float(val)):
+            continue                              # an unplaceable or empty cell is no observation
+        prior = known.get(e)
+        if prior is None or not _same(prior, float(val)):
+            revisions += int(prior is not None)
+            rows.append((e, float(val)))
+            known[e] = float(val)
+    first = old["captured_at"].min() if len(old) else (now if rows else None)
+    if rows:
+        new = pd.DataFrame({"event_time": pd.DatetimeIndex([r[0] for r in rows]),
+                            "value": [r[1] for r in rows],
+                            "captured_at": pd.DatetimeIndex([now] * len(rows))})
+        out = pd.concat([old, new], ignore_index=True) if len(old) else new
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(f"{path.stem}.tmp.parquet")   # ignored like the store itself
+        out.to_parquet(tmp, index=False)
+        os.replace(tmp, path)
+        total = len(out)
+    else:
+        total = len(old)
+    return {"appended": len(rows), "revisions": revisions, "rows": total,
+            "first_capture": first.isoformat() if first is not None else None,
+            "captured_at": now.isoformat()}
+
+
+def vintage_frame(v: pd.DataFrame, lag_s: float | None,
+                  now: datetime | None = None) -> pd.DataFrame:
+    """The vintage view to certify: indexed by event time, one row per vintage, with `vintage`
+    (capture time) and `available_time` = max(capture, event + lag). With `now`, only rows the
+    desk could already use are kept -- a row not yet usable is not yet part of the record."""
+    lag = pd.Timedelta(seconds=float(lag_s or 0.0))
+    f = pd.DataFrame({"value": v["value"].to_numpy(dtype=float),
+                      "vintage": pd.DatetimeIndex(v["captured_at"]),
+                      "available_time": pd.DatetimeIndex(
+                          [max(c, e + lag) for c, e in zip(v["captured_at"], v["event_time"],
+                                                           strict=True)])},
+                     index=pd.DatetimeIndex(v["event_time"], name="event_time"))
+    if now is not None:
+        f = f[f["available_time"] <= pd.Timestamp(now).tz_convert("UTC")]
+    return f.sort_values(["event_time", "vintage"], kind="stable")
+
+
+def vintage_view(frame: pd.DataFrame) -> pd.Series:
+    """What the desk could read at each instant: indexed by availability time, the value of the
+    latest event it knew of, in the latest vintage it had captured by then. A revision moves the
+    reading only from its own availability onward; it never rewrites an earlier reading."""
+    if frame.empty:
+        return pd.Series([], dtype=float, index=pd.DatetimeIndex([], tz="UTC"), name="value")
+    rows = sorted(zip(frame["available_time"], frame["vintage"], frame.index,
+                      frame["value"], strict=True), key=lambda r: (r[0], r[1]))
+    known: dict[pd.Timestamp, float] = {}
+    top: pd.Timestamp | None = None
+    times: list[pd.Timestamp] = []
+    vals: list[float] = []
+    for avail, _cap, ev, val in rows:
+        known[ev] = float(val)
+        top = ev if top is None or ev > top else top
+        if times and times[-1] == avail:
+            vals[-1] = known[top]
+        else:
+            times.append(avail)
+            vals.append(known[top])
+    return pd.Series(vals, index=pd.DatetimeIndex(times), name="value")
+
+
+def _join(s: pd.Series, index: pd.Index | None) -> pd.Series:
+    """As-of join, FORWARD ONLY: each bar reads the last value available at or before it, and a
+    bar before the first availability reads NaN -- UNMEASURED, never a backfill."""
+    if index is None:
+        return s
+    bars = pd.DatetimeIndex(index)
+    src = s.copy()
+    src.index = pd.DatetimeIndex(src.index)
+    if bars.tz is None and src.index.tz is not None:
+        src.index = src.index.tz_convert("UTC").tz_localize(None)
+    elif bars.tz is not None and src.index.tz is None:
+        src.index = src.index.tz_localize("UTC")
+    src = src[~src.index.duplicated(keep="last")].sort_index()
+    return src.reindex(src.index.union(bars)).ffill().reindex(bars)
+
+
+def as_of(name: str, at: datetime) -> float | str:
+    """One series' point-in-time reading at `at`, or UNMEASURED (before its first capture, for a
+    vintage-served series; unknown series; no authority)."""
+    got = acquired_series(pd.DatetimeIndex([pd.Timestamp(at)]))
+    s = got.get(name)
+    if s is None or s.empty or pd.isna(s.iloc[0]):
+        return UNMEASURED
+    return float(s.iloc[0])
+
+
+def acquire(limit: int = MAX_PER_RUN, *, now: datetime | None = None) -> dict[str, Any]:
     STORE.mkdir(parents=True, exist_ok=True)
     reg: dict[str, Any] = {"by_url": {}, "series": {}}
     if REGISTRY.exists():
@@ -501,22 +661,54 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
             # STORE -- the series stays, priced honestly -- it is a refusal of PROMOTION
             # authority, and `acquired_series` is what enforces that downstream.
             prior = reg["series"].get(name) or {}
+            run_at = now or datetime.now(UTC)
+            # EVERY SERIES' ROWS ARE CAPTURED AS VINTAGES, revised or not: the store costs a few
+            # rows a day and is the only record of what the file said when the desk read it.
+            vin: dict[str, Any] = {}
             try:
+                vin = capture_vintages(vintage_path(name), s, run_at)
+            except Exception as exc:                                        # noqa: BLE001
+                vin = {"error": f"{type(exc).__name__}: {exc}"}
+                _refuse("vintage not captured")
+            served_vintage = _REVISED.get(url) is True and "error" not in vin
+            lag_decl = _PUBLICATION_LAG_S.get(url)
+            vin_obs = 0
+            try:
+                if served_vintage:
+                    # A REVISED SOURCE IS CERTIFIED ON ITS VINTAGE VIEW, never its file: that is
+                    # the frame that carries the vintage on the row, so revision grades PASS for
+                    # it and for nothing else. Its schema is tracked under its own hash.
+                    vf = vintage_frame(read_vintages(vintage_path(name)), lag_decl, run_at)
+                    vin_obs = int(vf["available_time"].nunique())
+                    frame: pd.DataFrame = vf
+                    prior_hash = prior.get("vintage_schema_hash")
+                else:
+                    frame = s.rename("value").to_frame()
+                    prior_hash = prior.get("schema_hash")
                 cert = certify({"dataset": name, "url": url, "host": host, "provider": host,
                                 "selection": _SELECTION.get(url),
                                 "revised": _REVISED.get(url),
-                                "publication_lag_s": _PUBLICATION_LAG_S.get(url),
+                                "publication_lag_s": lag_decl,
                                 "history_starts": prior.get("first"),
-                                "schema_hash": prior.get("schema_hash")},
-                               s.rename("value").to_frame(), now=datetime.now(UTC))
+                                "schema_hash": prior_hash},
+                               frame, now=run_at)
                 write_certificate(cert)
                 blocking = sorted(set(cert.failures()) | set(cert.unmeasured()))
                 authority, cert_id = bool(cert.authority), cert.certificate_id
-                schema_hash = cert.span.get("schema_hash")
+                new_hash = cert.span.get("schema_hash")
+                if served_vintage and vin_obs < MIN_ROWS:
+                    # THE FLOOR IS POINT-IN-TIME OBSERVATIONS: distinct instants at which the
+                    # vintage view's reading could change. History first seen in one capture is
+                    # ONE such instant however many rows it holds -- it earns no backtest depth.
+                    blocking.append(f"vintage_floor: {vin_obs} of {MIN_ROWS} point-in-time "
+                                    "observations")
+                    authority = False
             except Exception as exc:                                        # noqa: BLE001
                 # A certifier that cannot run withholds authority; it never grants it.
                 blocking = [f"certify failed: {type(exc).__name__}: {exc}"]
-                authority, cert_id, schema_hash = False, "", prior.get("schema_hash")
+                authority, cert_id = False, ""
+                new_hash = prior.get("vintage_schema_hash" if served_vintage else "schema_hash")
+            schema_hash = new_hash if not served_vintage else prior.get("schema_hash")
             if not authority:
                 _refuse("no PIT authority: " + ", ".join(blocking))
             reg["series"][name] = {
@@ -529,6 +721,16 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
                 "pit_authority": authority,
                 "publication_lag_s": _PUBLICATION_LAG_S.get(url),
                 "pit_blocking": blocking,
+                "pit_view": "vintage" if served_vintage else "as_published",
+                "vintage_path": str(vintage_path(name)),
+                "vintage_rows": vin.get("rows"),
+                "vintage_appended": vin.get("appended"),
+                "revisions_captured": vin.get("revisions"),
+                "first_capture": vin.get("first_capture"),
+                "vintage_observations": vin_obs if served_vintage else None,
+                "vintage_schema_hash": (new_hash if served_vintage
+                                        else prior.get("vintage_schema_hash")),
+                "vintage_error": vin.get("error"),
             }
             new_series.append(name)
             persisted.append(name)
@@ -591,13 +793,23 @@ def acquired_series(index: pd.Index | None = None, *,
                                   or lag < 0):
             continue
         try:
-            df = pd.read_parquet(meta["path"])
-            s = df["value"].astype(float)
-            if isinstance(lag, (int, float)) and not isinstance(lag, bool) and lag > 0:
-                s.index = pd.DatetimeIndex(s.index) + pd.Timedelta(seconds=float(lag))
+            if meta.get("pit_view") == "vintage":
+                # A REVISED SOURCE IS SERVED FROM ITS VINTAGES: what the desk had captured by each
+                # instant, never the publisher's current opinion of the past. Before the first
+                # capture the reading is NaN -- UNMEASURED -- and nothing is backfilled.
+                vp = Path(str(meta.get("vintage_path") or vintage_path(name)))
+                frame = vintage_frame(read_vintages(vp), lag if isinstance(lag, (int, float))
+                                      and not isinstance(lag, bool) else None,
+                                      datetime.now(UTC))
+                s = vintage_view(frame)
+            else:
+                df = pd.read_parquet(meta["path"])
+                s = df["value"].astype(float)
+                if isinstance(lag, (int, float)) and not isinstance(lag, bool) and lag > 0:
+                    s.index = pd.DatetimeIndex(s.index) + pd.Timedelta(seconds=float(lag))
             # FORWARD-FILL ONLY. A macro series is knowable from its publication date onward and
             # never before; interpolating backwards is leakage wearing the shape of tidiness.
-            out[name] = s.reindex(index).ffill() if index is not None else s
+            out[name] = _join(s, index)
         except Exception:
             continue
     return out

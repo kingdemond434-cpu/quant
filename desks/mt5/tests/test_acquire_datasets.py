@@ -247,3 +247,109 @@ def test_reordering_the_seeds_cannot_misattach_a_declaration():
         assert [u for u in acquisition._SEED_ENDPOINTS if host in u] == [getattr(acquisition, attr)]
     with pytest.raises(ValueError):
         acquisition._seed("no-such-publisher.example")
+
+
+# ---- ARCH-26: first-seen vintage capture makes a revised source usable point-in-time
+T1 = pd.Timestamp("2026-10-01 12:00", tz="UTC")
+T2 = pd.Timestamp("2026-10-03 12:00", tz="UTC")
+
+
+def _daily(start: str, n: int, base: float = 4.0) -> pd.Series:
+    idx = pd.bdate_range(start, periods=n, tz="UTC")
+    return pd.Series([base + i * 0.01 for i in range(n)], index=idx, name="value")
+
+
+def test_vintages_append_only_and_a_revision_never_leaks_backwards(tmp_path):
+    path = tmp_path / "v.parquet"
+    s1 = _daily("2026-09-01", 20)
+    a = acquisition.capture_vintages(path, s1, T1.to_pydatetime())
+    assert a["appended"] == 20 and a["revisions"] == 0
+    first = acquisition.read_vintages(path)
+    # the publisher restates the LATEST event, and adds nothing else
+    s2 = s1.copy()
+    s2.iloc[-1] = 99.0
+    b = acquisition.capture_vintages(path, s2, T2.to_pydatetime())
+    assert b["appended"] == 1 and b["revisions"] == 1
+    # an unchanged re-read appends nothing
+    assert acquisition.capture_vintages(path, s2, T2.to_pydatetime())["appended"] == 0
+    after = acquisition.read_vintages(path)
+    # an earlier vintage is never rewritten
+    pd.testing.assert_frame_equal(after.iloc[:20], first)
+    assert len(after) == 21
+
+    lag = 2 * 86400
+    view = acquisition.vintage_view(acquisition.vintage_frame(after, lag))
+    bars = pd.date_range("2026-09-30", "2026-10-06", freq="h", tz="UTC")
+    joined = acquisition._join(view, bars)
+    last_event = s1.index[-1]
+    # between the two captures the desk reads the value it HAD; the revision appears only from T2
+    assert (joined[(joined.index >= T1) & (joined.index < T2)] == s1.iloc[-1]).all()
+    assert (joined[joined.index >= T2] == 99.0).all()
+    assert last_event + pd.Timedelta(seconds=lag) <= T1, "fixture: lag elapsed before capture"
+
+
+def test_reads_before_the_first_capture_are_unmeasured(tmp_path, monkeypatch):
+    monkeypatch.setattr(acquisition, "STORE", tmp_path)
+    monkeypatch.setattr(acquisition, "REGISTRY", tmp_path / "registry.json")
+    s = _daily("2020-01-01", 300)
+    acquisition.capture_vintages(acquisition.vintage_path("x"), s, T1.to_pydatetime())
+    (tmp_path / "registry.json").write_text(json.dumps({"series": {"x": {
+        "path": "unused", "pit_authority": True, "publication_lag_s": 86400,
+        "pit_view": "vintage", "vintage_path": str(acquisition.vintage_path("x"))}}}))
+    bars = pd.date_range("2026-09-30", "2026-10-02", freq="h", tz="UTC")
+    joined = acquisition.acquired_series(bars)["x"]
+    assert joined[joined.index < T1].isna().all(), "history first seen at T1 is not backfilled"
+    assert (joined[joined.index >= T1] == s.iloc[-1]).all()
+    assert acquisition.as_of("x", pd.Timestamp("2025-06-01", tz="UTC")) == "UNMEASURED"
+    assert acquisition.as_of("x", T1 + pd.Timedelta(hours=1)) == s.iloc[-1]
+
+
+def _revised_run(tmp_path, monkeypatch, frames):
+    """Run acquire() once per (capture time, frame) on the Treasury seed alone."""
+    url = acquisition.TREASURY_CURVE
+    monkeypatch.setattr(acquisition, "STORE", tmp_path)
+    monkeypatch.setattr(acquisition, "REGISTRY", tmp_path / "registry.json")
+    monkeypatch.setattr(acquisition, "REPORT", tmp_path / "report.json")
+    monkeypatch.setattr(acquisition, "write_certificate", lambda cert: None)
+    monkeypatch.setattr(acquisition, "_endpoints", lambda limit: [(url, "home.treasury.gov")])
+    monkeypatch.setattr(acquisition, "_fetch", lambda u: (b"data", "csv"))
+    monkeypatch.setattr(acquisition, "_dated", lambda df: df)
+    monkeypatch.setattr(acquisition, "_numeric_series", lambda df, stem: {stem: df["value"]})
+    out = []
+    for at, frame in frames:
+        monkeypatch.setattr(acquisition, "_parse", lambda raw, u, f=frame: f.to_frame())
+        acquisition.acquire(now=at.to_pydatetime())
+        reg = json.loads((tmp_path / "registry.json").read_text())["series"]
+        out.append(next(iter(reg.values())))
+    return out
+
+
+def test_the_vintage_view_earns_authority_once_it_reaches_the_floor(tmp_path, monkeypatch):
+    floor = 25
+    monkeypatch.setattr(acquisition, "MIN_ROWS", floor)
+    idx = pd.bdate_range(end="2026-09-30", periods=300, tz="UTC")
+    hist = pd.Series([4.0 + i * 0.01 for i in range(300)], index=idx, name="value")
+    days = pd.bdate_range("2026-10-01", periods=floor + 2, tz="UTC")
+    frames = []
+    for i, d in enumerate(days):
+        # one new trading day published per capture, read the morning after publication
+        grown = pd.concat([hist, pd.Series([5.0 + i * 0.001], index=[d], name="value")])
+        hist = grown
+        frames.append((d + pd.Timedelta(days=2, hours=9), grown))
+    runs = _revised_run(tmp_path, monkeypatch, frames)
+    assert all(r["pit_view"] == "vintage" for r in runs)
+    # the first capture: all 300+ history rows are ONE point-in-time instant -- no depth earned
+    assert runs[0]["vintage_observations"] == 1 and runs[0]["pit_authority"] is False
+    assert any(b.startswith("vintage_floor") for b in runs[1]["pit_blocking"])
+    assert "revision" not in runs[1]["pit_blocking"], "revision PASSES on the vintage view"
+    reached = [i for i, r in enumerate(runs) if r["vintage_observations"] >= floor]
+    assert reached, [r["vintage_observations"] for r in runs]
+    k = reached[0]
+    assert all(r["pit_authority"] is False for r in runs[:k])
+    assert runs[k]["pit_authority"] is True, runs[k]["pit_blocking"]
+    # the publisher's own file, certified as published, still FAILS revision
+    from libs.data.pit_certificate import certify as _certify
+    raw = _certify({"dataset": "raw", "revised": True, "selection": "all_rows_as_published",
+                    "publication_lag_s": 172800}, hist.to_frame(),
+                   now=frames[-1][0].to_pydatetime())
+    assert "revision" in raw.failures()
