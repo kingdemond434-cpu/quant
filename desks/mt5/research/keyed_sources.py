@@ -73,8 +73,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.data import credentials as cred  # noqa: E402
-from libs.ops.env_keys import read_key  # noqa: E402
 from libs.data import keyed_sources as ks  # noqa: E402
+from libs.ops.env_keys import read_key  # noqa: E402
 
 #: The leg's own artifact (the component registry and runtime attestation read this binding).
 REPORT = DESK / "reports" / "KEYED_SOURCES.json"

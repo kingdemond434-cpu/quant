@@ -218,9 +218,24 @@ class SameHostAuthRedirect(urllib.request.HTTPRedirectHandler):
             # the redirect is not followed at all. Every value the original query carried counts
             # as a credential here, so a caller that declared no secrets is covered too.
             carried = self.secrets | {v for _, v in sent if len(v) >= 8}
-            if carried and redact(new.full_url, carried) != new.full_url:
+            if carried and _carries(new.full_url, carried):
                 return None
         return new
+
+
+def _carries(url: str, secrets: Iterable[str]) -> bool:
+    """Whether ``url`` holds a secret, also once or twice percent-decoded (a key nested in
+    another parameter's value arrives encoded twice)."""
+    keys = list(secrets)
+    seen = url
+    for _ in range(3):
+        if redact(seen, keys) != seen:
+            return True
+        nxt = urllib.parse.unquote_plus(seen)
+        if nxt == seen:
+            return False
+        seen = nxt
+    return False
 
 
 def keyed_opener(tls: Any = None, drop: Iterable[str] = (),
