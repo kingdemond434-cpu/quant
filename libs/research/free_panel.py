@@ -202,7 +202,8 @@ def ask(role: str, system: str, user: str, *, max_tokens: int = 2000,
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
         tried.append(model)
         try:
-            with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:
+            from libs.data.keyed_sources import keyed_urlopen
+            with keyed_urlopen(req, timeout=TIMEOUT_S) as r:
                 out = json.loads(r.read())
             msg = out["choices"][0]["message"]
             text = str(msg.get("content") or msg.get("reasoning") or "").strip()

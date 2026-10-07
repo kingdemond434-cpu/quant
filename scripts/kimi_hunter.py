@@ -412,7 +412,8 @@ def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",
                                           "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
+    from libs.data.keyed_sources import keyed_urlopen
+    with keyed_urlopen(req, timeout=timeout, context=CTX) as r:
         out = json.loads(r.read())
     # A 200 WITH AN ERROR BODY IS THE PROVIDER TALKING, NOT A BUG IN THIS FILE.
     #

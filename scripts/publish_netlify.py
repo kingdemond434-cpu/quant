@@ -12,10 +12,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
+
+_R = Path(__file__).resolve().parent.parent   # the repo root, for libs.data.keyed_sources
+if str(_R) not in sys.path:
+    sys.path.insert(0, str(_R))
 
 _SECRETS = Path("data/secrets/netlify.json")
 _WEB = Path("web")
@@ -26,7 +31,8 @@ def _req(method: str, url: str, token: str, *, data: bytes | None = None,
          ctype: str = "application/json") -> Any:
     req = urllib.request.Request(url, data=data, method=method, headers={
         "Authorization": f"Bearer {token}", "Content-Type": ctype})
-    with urllib.request.urlopen(req, timeout=90) as r:
+    from libs.data.keyed_sources import keyed_urlopen
+    with keyed_urlopen(req, timeout=90) as r:
         body = r.read()
         return json.loads(body) if body else None
 
