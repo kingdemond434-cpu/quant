@@ -127,9 +127,90 @@ def regime_labels(series: Iterable[Mapping[str, float]], lag: int = REGIME_LAG
             for i in range(len(days)) if ok[i]}
 
 
+#: THE BEHAVIOURAL PROFILE (breadth law, BREADTH-0420/0421/0426/0434/0435/0437/0438). These are
+#: DISTANCES between what two streams look like, not dependence: two independent daily holders
+#: share a holding-time distribution by construction, so none of these may enter
+#: `overlap_score` (which links pairs as one bet). They feed the novelty/behavioural vector only.
+PROFILE = ("holding_time_ks", "turnover_gap", "spectral_distance", "factor_residual_distance",
+           "information_source_distance", "mechanism_distance")
+#: spectral bands in days per cycle: short (2-5), medium (5-20), long (>20)
+SPECTRAL_BANDS = ((2.0, 5.0), (5.0, 20.0), (20.0, float("inf")))
+MIN_RUNS = 5
+
+
+def _active_runs(x: np.ndarray) -> np.ndarray:
+    """Lengths of consecutive active (non-zero) day runs: the holding-time distribution."""
+    out, n = [], 0
+    for v in x != 0:
+        if v:
+            n += 1
+        elif n:
+            out.append(n)
+            n = 0
+    if n:
+        out.append(n)
+    return np.asarray(out, dtype=float)
+
+
+def _ks(a: np.ndarray, b: np.ndarray) -> float:
+    grid = np.union1d(a, b)
+    fa = np.searchsorted(np.sort(a), grid, side="right") / a.size
+    fb = np.searchsorted(np.sort(b), grid, side="right") / b.size
+    return float(np.max(np.abs(fa - fb)))
+
+
+def _band_shares(x: np.ndarray) -> np.ndarray | None:
+    if x.size < 2 * MIN_DAYS // 2 or x.std() <= 0:
+        return None
+    f = np.fft.rfftfreq(x.size, d=1.0)[1:]
+    pw = (np.abs(np.fft.rfft(x - x.mean())) ** 2)[1:]
+    period = 1.0 / f
+    sh = np.array([pw[(period >= lo) & (period < hi)].sum() for lo, hi in SPECTRAL_BANDS])
+    tot = sh.sum()
+    return sh / tot if tot > 0 else None
+
+
+def profile_distance(x: np.ndarray, y: np.ndarray, common: np.ndarray | None = None
+                     ) -> dict[str, Any]:
+    """Holding-time KS, turnover gap, spectral distance and factor-residual distance of two
+    aligned daily series; each None with its reason below its floor."""
+    out: dict[str, Any] = {}
+    why: dict[str, str] = {}
+    ra, rb = _active_runs(x), _active_runs(y)
+    if ra.size >= MIN_RUNS and rb.size >= MIN_RUNS:
+        out["holding_time_ks"] = round(_ks(ra, rb), 4)
+    else:
+        out["holding_time_ks"] = None
+        why["holding_time_ks"] = f"fewer than {MIN_RUNS} holding runs on a side"
+    # turnover: entries per active day (a new run starts) -- how often the stream re-trades
+    ta = ra.size / max(1, int((x != 0).sum())) if ra.size else None
+    tb = rb.size / max(1, int((y != 0).sum())) if rb.size else None
+    out["turnover_gap"] = round(abs(ta - tb), 4) if ta is not None and tb is not None else None
+    if out["turnover_gap"] is None:
+        why["turnover_gap"] = "a stream with no active day"
+    sa, sb = _band_shares(x), _band_shares(y)
+    out["spectral_distance"] = (round(0.5 * float(np.abs(sa - sb).sum()), 4)
+                                if sa is not None and sb is not None else None)
+    if out["spectral_distance"] is None:
+        why["spectral_distance"] = "a constant or too-short stream"
+    if common is not None and common.std() > 0 and x.std() > 0 and y.std() > 0:
+        ex = x - np.polyval(np.polyfit(common, x, 1), common)
+        ey = y - np.polyval(np.polyfit(common, y, 1), common)
+        if ex.std() > 0 and ey.std() > 0:
+            lo = _fisher_lo(float(np.corrcoef(ex, ey)[0, 1]), x.size)
+            out["factor_residual_distance"] = round(1.0 - lo, 4)
+    if out.get("factor_residual_distance") is None:
+        out["factor_residual_distance"] = None
+        why["factor_residual_distance"] = "no common book factor or a constant residual"
+    if why:
+        out["why"] = why
+    return out
+
+
 def pair_overlap(a: Mapping[str, float], b: Mapping[str, float], *,
                  events: set[str] | None = None,
-                 regimes: Mapping[str, str] | None = None) -> dict[str, Any]:
+                 regimes: Mapping[str, str] | None = None,
+                 common: Mapping[str, float] | None = None) -> dict[str, Any]:
     """The six overlap terms for one pair, each MEASURED with its n or UNMEASURED with why."""
     days = sorted(set(a) & set(b))
     out: dict[str, Any] = {"n": len(days)}
@@ -204,6 +285,9 @@ def pair_overlap(a: Mapping[str, float], b: Mapping[str, float], *,
     else:
         out["lead_lag"] = None
         why["lead_lag"] = "a constant stream"
+    cm = (np.array([float(common.get(d, 0.0)) for d in days])
+          if common is not None and all(d in common for d in days) else None)
+    out["profile"] = profile_distance(x, y, cm)
     vals = [float(out[t]) for t in TERMS if out.get(t) is not None]
     out["overlap_score"] = round(max(vals), 4) if vals else None
     out["binding_term"] = (max((t for t in TERMS if out.get(t) is not None),
@@ -214,6 +298,23 @@ def pair_overlap(a: Mapping[str, float], b: Mapping[str, float], *,
     return out
 
 
+def _identity(label: str) -> tuple[str, str] | None:
+    """(mechanism, information source) of a sleeve label, from the family registry; None when
+    the family is not registered."""
+    try:
+        try:
+            from research import axis_registry as ar
+            from research import certificate_saturation as cs
+        except ImportError:                                              # pragma: no cover
+            import axis_registry as ar  # type: ignore[import-not-found,no-redef]
+            import certificate_saturation as cs  # type: ignore[import-not-found,no-redef]
+        _sym, fam, _sess = cs.sleeve_identity(str(label))
+        mech, info, _ = ar.classify_family(fam)
+    except Exception:
+        return None
+    return None if mech == ar.UNKNOWN else (str(mech), str(info))
+
+
 def book_overlap(daily: Mapping[str, Mapping[str, float]], *,
                  events: set[str] | None = None) -> dict[str, Any]:
     """Every pair's overlap, and each stream's WORST overlap with the rest of the book."""
@@ -221,11 +322,23 @@ def book_overlap(daily: Mapping[str, Mapping[str, float]], *,
     if events is None:
         events = event_days()
     regimes = regime_labels(daily[n] for n in names)
+    pooled: dict[str, list[float]] = {}
+    for n in names:
+        for d, v in daily[n].items():
+            pooled.setdefault(d, []).append(float(v))
+    common = {d: float(np.mean(v)) for d, v in pooled.items()}
+    ident = {n: _identity(n) for n in names}
     pairs: dict[tuple[str, str], dict[str, Any]] = {}
     worst: dict[str, dict[str, Any]] = {}
     for i, a in enumerate(names):
         for b in names[i + 1:]:
-            o = pair_overlap(daily[a], daily[b], events=events, regimes=regimes)
+            o = pair_overlap(daily[a], daily[b], events=events, regimes=regimes, common=common)
+            if "profile" in o:
+                for key, axis in (("information_source_distance", 1),
+                                  ("mechanism_distance", 0)):
+                    ia, ib = ident[a], ident[b]
+                    o["profile"][key] = (None if ia is None or ib is None
+                                         else float(ia[axis] != ib[axis]))
             pairs[(a, b)] = o
             s = o.get("overlap_score")
             if s is None:
@@ -248,5 +361,5 @@ def book_overlap(daily: Mapping[str, Mapping[str, float]], *,
                      f"{MIN_ACTIVE} active, {MIN_TAIL} tail, {MIN_EVENT_DAYS} event days")}
 
 
-__all__ = ["MEASURED", "OVERLAP_INDEPENDENT", "OVERLAP_LINK", "TERMS", "UNMEASURED",
-           "book_overlap", "event_days", "pair_overlap", "regime_labels"]
+__all__ = ["MEASURED", "OVERLAP_INDEPENDENT", "OVERLAP_LINK", "PROFILE", "TERMS", "UNMEASURED",
+           "book_overlap", "event_days", "pair_overlap", "profile_distance", "regime_labels"]

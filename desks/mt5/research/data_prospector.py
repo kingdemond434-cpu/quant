@@ -155,6 +155,28 @@ def _barren() -> dict[str, float]:
         return {}
 
 
+def _book_hurts() -> list[str] | None:
+    try:
+        from research.certificate_saturation import book_hurts
+    except ImportError:                                                  # pragma: no cover
+        from certificate_saturation import book_hurts  # type: ignore[import-not-found,no-redef]
+    try:
+        return book_hurts()
+    except Exception:
+        return None
+
+
+def _failure_hedge(families: list, hurts: list[str] | None) -> dict:
+    try:
+        from research.certificate_saturation import failure_hedge
+    except ImportError:                                                  # pragma: no cover
+        from certificate_saturation import failure_hedge  # type: ignore[import-not-found,no-redef]
+    try:
+        return failure_hedge(families, hurts)
+    except Exception as exc:
+        return {"status": "UNMEASURED", "multiplier": 1.0, "why": type(exc).__name__}
+
+
 def rank() -> dict:
     uncovered, never = _coverage_gaps()
     gaps = _named_gaps()
@@ -183,6 +205,14 @@ def rank() -> dict:
                       "score": round(base * (1.0 + entered) + 1.5 * sum(
                           1 for f in unlocks if barren.get(f, 1.0) < 0.02), 3),
                       "kind": "catalogue"})
+
+    # WHAT FAILS FOR A DIFFERENT REASON THAN WHAT WE OWN (breadth law, BREADTH-0186): a source
+    # whose unlocked families fail for a reason the book does not hold is priced up, never down
+    hurts = _book_hurts()
+    for it in items:
+        h = _failure_hedge(it["unlocks"], hurts)
+        it["failure_hedge"] = h
+        it["score"] = round(it["score"] * float(h.get("multiplier") or 1.0), 3)
 
     seen: set[str] = set()
     ranked = []

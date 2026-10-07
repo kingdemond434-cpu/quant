@@ -103,6 +103,70 @@ def mode(cert: dict[str, Any], ladder: dict[str, Any], map_status: str) -> dict[
                         "and neither fires; UNMEASURED otherwise")}
 
 
+#: THE PAYOFF SHAPE a mechanism's returns take (BREADTH-0221, 0549): what the bet's P&L looks
+#: like, not what it trades. Two books of different instruments with one shape share their bad
+#: days; a shape the book does not hold is the cheapest independence on offer.
+PAYOFF_SHAPE = {
+    "trend_persistence": "convex_trend", "breakout_liquidity": "convex_trend",
+    "regime_transition": "convex_trend", "cross_market_lead": "convex_trend",
+    "range_reversion": "concave_reversion", "carry_rollover": "carry_accrual",
+    "macro_release": "event_jump", "volatility_shock": "event_jump",
+    "inventory_shock": "event_jump", "gamma_hedging_state": "event_jump",
+    "forced_flow": "liquidity_provision", "forced_liquidation": "liquidity_provision",
+    "fx_fixing_flow": "liquidity_provision", "hedging_demand_close_flow": "liquidity_provision",
+    "positioning_crowding": "liquidity_provision",
+    "relative_value_dislocation": "spread_convergence",
+    "calendar_seasonality": "calendar_drift", "session_handover": "calendar_drift",
+    "session_information_handoff": "calendar_drift",
+    "execution_microstructure": "microstructure_scalp",
+}
+PAYOFF_SHAPES = tuple(sorted(set(PAYOFF_SHAPE.values())))
+
+
+def payoff_shapes(doc: dict[str, Any]) -> dict[str, Any]:
+    """Certificates and effective bets per payoff shape, the shapes the book holds none of
+    (MISSING PAYOFF SHAPES, 0549) and every shape ordered by its effective occupancy, emptiest
+    first (the low-overlap return geometries, 0221). UNMEASURED without a map."""
+    clusters = doc.get("clusters") if isinstance(doc.get("clusters"), dict) else {}
+    if not clusters:
+        return {"status": UNMEASURED, "why": "no saturation clusters"}
+    n: Counter[str] = Counter()
+    eff: dict[str, float] = defaultdict(float)
+    for v in clusters.values():
+        mech = str((v.get("hierarchy") or {}).get("L1"))
+        shape = PAYOFF_SHAPE.get(mech)
+        if shape is None:
+            continue
+        n[shape] += int(v.get("certificate_count") or 0)
+        eff[shape] += float(v.get("effective_certificate_count") or 0.0)
+    rows = [{"shape": sh, "certificates": n.get(sh, 0), "effective": round(eff.get(sh, 0.0), 4)}
+            for sh in PAYOFF_SHAPES]
+    rows.sort(key=lambda r: (r["effective"], r["certificates"], r["shape"]))
+    return {"status": "MEASURED", "by_shape": rows,
+            "missing_payoff_shapes": [r["shape"] for r in rows if r["certificates"] == 0],
+            "low_overlap_order": [r["shape"] for r in rows]}
+
+
+def _structures(doc: dict[str, Any]) -> dict[str, list[str]]:
+    """Registered cross-asset residual and relative-value families the book holds no
+    certificate in (0223/0224), from the family table, never a hand list."""
+    held = {str(f).lower() for v in (doc.get("clusters") or {}).values() if isinstance(v, dict)
+            for f in (v.get("families") or [])}
+    try:
+        from research import axis_registry as ar
+    except ImportError:
+        import axis_registry as ar  # type: ignore[import-not-found,no-redef]
+    resid, rv = [], []
+    for fam, (mech, info, _style) in sorted(ar.FAMILY_TABLE.items()):
+        if fam in held:
+            continue
+        if info == "cross_asset" and mech in ("relative_value_dislocation", "cross_market_lead"):
+            resid.append(fam)
+        if mech == "relative_value_dislocation":
+            rv.append(fam)
+    return {"cross_asset_residual_structures": resid, "relative_value_structures": rv}
+
+
 def targets(doc: dict[str, Any], lane_factors: set[str] | None = None) -> dict[str, Any]:
     """What breadth-constrained mode prioritises, read from the saturation map."""
     clusters = doc.get("clusters") if isinstance(doc.get("clusters"), dict) else {}
@@ -117,6 +181,7 @@ def targets(doc: dict[str, Any], lane_factors: set[str] | None = None) -> dict[s
     empty_info = sorted({str(d.get("information_source")) for d in debts
                          if str(d.get("information_source")) not in occ_l2})
     low_occ = sorted(m for m, c in occ_l1.items() if c <= LOW_OCCUPANCY_GROUPS)
+    shapes = payoff_shapes(doc)
     unexplored: dict[str, Counter[str]] = defaultdict(Counter)
     for v in clusters.values():
         for axis, vals in (v.get("remaining_unexplored_axes") or {}).items():
@@ -140,6 +205,9 @@ def targets(doc: dict[str, Any], lane_factors: set[str] | None = None) -> dict[s
                                          unexplored.get("session", Counter()).most_common()],
         "unrepresented_asset_factor_exposures": (missing_factors if missing_factors is not None
                                                  else UNMEASURED),
+        "low_overlap_return_geometries": shapes.get("low_overlap_order", UNMEASURED),
+        "missing_payoff_shapes": shapes.get("missing_payoff_shapes", UNMEASURED),
+        **_structures(doc),
     }
 
 
@@ -216,6 +284,7 @@ def build(*, sat: dict[str, Any] | None = None, ladder: dict[str, Any] | None = 
                   "n_effective_status": cert.get("n_effective_status"),
                   "status": book.get("status", UNMEASURED)},
         "priority_targets": tg,
+        "payoff_shapes": payoff_shapes(sat) if st == "MEASURED" else {"status": UNMEASURED},
         "queue": [{k: d.get(k) for k in ("priority", "missing_cluster", "mechanism",
                                          "information_source", "asset_class", "alpha_cluster",
                                          "economic_rationale", "current_nearest_exposure",

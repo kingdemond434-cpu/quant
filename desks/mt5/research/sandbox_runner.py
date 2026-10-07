@@ -84,6 +84,26 @@ CORE_SYMBOLS: tuple[str, ...] = ("XAUUSD", "EURUSD", "USDJPY", "GBPUSD", "US500"
 #: and `build_bundle` ROTATES the frame order by the hour's seed, so a three-symbol adapter sees
 #: a different three every pass and the whole lane within a day rather than the same three
 #: forever. Never sized off a machine's nominal RAM.
+def _failure_hedges(systems: Any) -> dict[str, float]:
+    """system_id -> the breadth map's failure-mode hedge (>= 1) for the families its donated
+    cells name (BREADTH-0190). {} when the map or the cells are absent: every share unchanged."""
+    try:
+        from research import certificate_saturation as cs
+        hurts = cs.book_hurts()
+        if not hurts or not isinstance(systems, dict):
+            return {}
+        out: dict[str, float] = {}
+        for sid, row in systems.items():
+            cells = row.get("cells") if isinstance(row, dict) else None
+            fams = {str(c).split("|", 1)[0] for c in cells or []}
+            m = float(cs.failure_hedge(fams, hurts).get("multiplier") or 1.0)
+            if m > 1.0:
+                out[str(sid)] = m
+        return out
+    except Exception:
+        return {}
+
+
 def rotation_extra(free_mb: float | None) -> int:
     """How many NON-core instruments join the bundle, from measured free physical memory."""
     if free_mb is None:
@@ -700,7 +720,8 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
     #: 24h window) and spends the rest ROI-proportionally REWEIGHTED by measured marginal
     #: breadth, so orthogonal cells buy more of the hour than a crowded corner does.
     rotation = ROT.plan([p.system_id for p in runnable], state["systems"],
-                        budget_s=max(1.0, deadline.left()), floor_s=FLOOR_S) if runnable else {}
+                        budget_s=max(1.0, deadline.left()), floor_s=FLOOR_S,
+                        hedge=_failure_hedges(state["systems"])) if runnable else {}
     alloc = {str(k): int(v) for k, v in (rotation.get("shares") or {}).items()}
     _rot_rank = {sid: i for i, sid in enumerate(rotation.get("order") or [])}
     order = sorted(runnable, key=lambda p: (_rot_rank.get(p.system_id, 10 ** 6), p.system_id))

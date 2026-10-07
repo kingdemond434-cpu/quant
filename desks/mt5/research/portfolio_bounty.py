@@ -67,6 +67,8 @@ TARGETS: dict[str, tuple[str, ...]] = {
     #: breadth law (2026-10-05) producer law 27: the most valuable MISSING return streams,
     #: priced by expected dk_eff x information value x failure-mode hedge x empty-prior decay.
     "breadth_debt": ("discovery", "macro", "intel", "regions", "mathlab"),
+    #: BREADTH-0192: a mechanism that fails for a different reason than the book does
+    "failure_mode_hedge": ("discovery", "macro", "mathlab", "validate"),
 }
 
 
@@ -221,8 +223,42 @@ def bounties(alloc: dict[str, Any], exposure: dict[str, Any], regimes: dict[str,
                                            "hedges_failure_modes", "new_payer",
                                            "candidate_producers", "bounty", "priority")},
                     2 if d.get("new_payer") or d.get("hedges_failure_modes") else 3))
+    # 9. failure-mode hedge: what fails for a different reason than what the book owns
+    if saturation is not None:
+        out.extend(_failure_mode_bounties(saturation, unmeasured))
     out.sort(key=lambda b: (int(b["priority"]), b["kind"], b["bounty_id"]))
     return out, unmeasured
+
+
+def _failure_mode_bounties(saturation: dict[str, Any],
+                           unmeasured: list[str]) -> list[dict[str, Any]]:
+    """One bounty per registered mechanism whose failure modes are disjoint from the modes the
+    book fails on most (BREADTH-0192); ordered by how little of it the book holds."""
+    try:
+        from research import certificate_saturation as cs
+    except ImportError:                                                  # pragma: no cover
+        import certificate_saturation as cs  # type: ignore[import-not-found,no-redef]
+    hurts = _lst(_dct(saturation.get("failure_modes")).get("hurts_book"))
+    if not hurts:
+        unmeasured.append("CERTIFICATE_SATURATION.failure_modes.hurts_book absent")
+        return []
+    held: dict[str, int] = {}
+    for v in _dct(saturation.get("clusters")).values():
+        m = str(_dct(_dct(v).get("hierarchy")).get("L1"))
+        held[m] = held.get(m, 0) + int(_dct(v).get("certificate_count") or 0)
+    rows = []
+    for mech, modes in sorted(cs.MECHANISM_FAILURE.items(), key=lambda kv: (held.get(kv[0], 0),
+                                                                          kv[0])):
+        if set(modes) & set(map(str, hurts)):
+            continue
+        rows.append(_bounty("failure_mode_hedge", mech,
+                            f"need a certified {mech} edge: it fails on {', '.join(modes)}, "
+                            f"not on what the book fails on ({', '.join(map(str, hurts[:4]))})",
+                            {"fails_on": list(modes), "book_fails_on": hurts,
+                             "book_certificates_in_mechanism": held.get(mech, 0)}, 3))
+        if len(rows) >= MAX_PER_KIND:
+            break
+    return rows
 
 
 def missions(rows: list[dict[str, Any]], at: str) -> list[dict[str, Any]]:

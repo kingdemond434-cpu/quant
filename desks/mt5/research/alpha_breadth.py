@@ -544,8 +544,10 @@ def run(write_queue: bool = True) -> dict[str, Any]:
             "by name with its reason rather than folded into the verdict"),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     _append_history(doc)
+    doc["research_kpi"] = {"trials_per_independent_survivor":
+                           trials_per_independent_survivor(history())}
+    OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     if write_queue and tasks:
         try:
             from research.regime_coverage import _merge_into_queue
@@ -579,6 +581,7 @@ def certificate_saturation_pass() -> dict[str, Any]:
             cert["robust_k_eff_book"] = book.get("robust_k_eff")
             cert["stress_k_eff_book"] = book.get("k_eff_stress")
             cert["tail_k_eff_book"] = book.get("k_eff_tail")
+            cert["effective_trials_spent_total"] = effective_trials_total(doc)
         # beside EFFECTIVE_BREADTH.json, so a caller that redirects this leg's output (a test)
         # never overwrites the desk's published map
         path = cs.publish(doc, OUT.parent / cs.REPORT.name)
@@ -621,6 +624,17 @@ def breadth_debt_pass(sat: dict[str, Any]) -> dict[str, Any]:
         out["breadth_funnel"] = fdoc.get("stages")
     except Exception as exc:
         out["breadth_funnel_why"] = f"{type(exc).__name__}: {exc}"[:300]
+    # the edge-quality Pareto frontier over the docket (BREADTH-0560..0564), SHADOW
+    try:
+        try:
+            from research import edge_pareto as ep
+        except ImportError:                                           # pragma: no cover
+            import edge_pareto as ep  # type: ignore[import-not-found,no-redef]
+        pdoc = ep.build()
+        ep.publish(pdoc, OUT.parent / ep.OUT.name)
+        out["edge_pareto"] = {k: pdoc.get(k) for k in ("status", "n_measured", "n_dominated")}
+    except Exception as exc:
+        out["edge_pareto_why"] = f"{type(exc).__name__}: {exc}"[:300]
     # every producer's brief (producer law §1, §5), beside the map: the hourly launcher hands its
     # path to each producer leg and the proposer seat puts its lines into every organ's prompt
     try:
@@ -695,12 +709,62 @@ def _append_history(doc: dict[str, Any]) -> None:
               "n_saturated_clusters", "duplicate_survivor_share", "robust_k_eff_book",
               "stress_k_eff_book",
               "tail_k_eff_book", "median_validated_edge_recent", "basis", "source",
+              "effective_trials_spent_total",
               "source_mtime"):
         if k in cert:
             row[k] = cert.get(k)
     HISTORY.parent.mkdir(parents=True, exist_ok=True)
     with HISTORY.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, default=str) + "\n")
+
+
+def effective_trials_total(sat: dict[str, Any]) -> float | None:
+    """Effective trials the desk has spent across the map, counted once per ECONOMIC cluster
+    (structural clusters of one economic cluster share its judged cells). None when no cluster
+    carries a measured spend."""
+    per: dict[str, float] = {}
+    for k, v in (sat.get("clusters") or {}).items():
+        t = v.get("effective_trials_spent") if isinstance(v, dict) else None
+        if isinstance(t, (int, float)) and not isinstance(t, bool):
+            e = str(v.get("economic_cluster") or k)
+            per[e] = max(per.get(e, 0.0), float(t))
+    return round(sum(per.values()), 3) if per else None
+
+
+#: BREADTH-0390: the window the research KPI is read over.
+KPI_WINDOW_DAYS = 7.0
+
+
+def trials_per_independent_survivor(rows: list[dict[str, Any]], *,
+                                    window_days: float = KPI_WINDOW_DAYS) -> dict[str, Any]:
+    """EFFECTIVE TRIALS PER NEW INDEPENDENT SURVIVOR (BREADTH-0390): over the window, the rise
+    in effective trials spent divided by the rise in independent forward streams. No new
+    independent survivor while trials were spent reads NO_NEW_INDEPENDENT_SURVIVOR with the
+    trials it cost -- an infinite price, never zero; fewer than two readings is UNMEASURED."""
+    recs = []
+    for r in rows:
+        t, n = r.get("effective_trials_spent_total"), r.get("n_independent_forward_streams")
+        try:
+            at = datetime.fromisoformat(str(r.get("at")))
+        except ValueError:
+            continue
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=UTC)
+        if isinstance(t, (int, float)) and isinstance(n, (int, float)) \
+                and not isinstance(t, bool) and not isinstance(n, bool):
+            recs.append((at, float(t), float(n)))
+    if recs:
+        end = recs[-1][0]
+        recs = [x for x in recs if (end - x[0]).total_seconds() <= window_days * 86400.0]
+    if len(recs) < 2:
+        return {"status": UNMEASURED, "why": f"{len(recs)} reading(s) carry both counts"}
+    a, b = recs[0], recs[-1]
+    dt, dn = b[1] - a[1], b[2] - a[2]
+    base = {"from": a[0].isoformat(), "to": b[0].isoformat(), "trials_spent": round(dt, 3),
+            "new_independent_survivors": dn, "window_days": window_days}
+    if dn <= 0:
+        return {"status": "NO_NEW_INDEPENDENT_SURVIVOR", "value": None, **base}
+    return {"status": MEASURED, "value": round(max(dt, 0.0) / dn, 3), **base}
 
 
 def history() -> list[dict[str, Any]]:

@@ -136,7 +136,8 @@ def breadth(cells: Mapping[str, Sequence[str]]) -> dict[str, Any]:
 def plan(runnable: Sequence[str], state_rows: Mapping[str, Any], *, budget_s: float,
          floor_s: int, at: float | None = None,
          window_s: float = ROTATION_WINDOW_S,
-         cadence_s: float = CADENCE_S) -> dict[str, Any]:
+         cadence_s: float = CADENCE_S,
+         hedge: Mapping[str, float] | None = None) -> dict[str, Any]:
     """The pass's order and its shares: scouts by age, then ROI x breadth for the rest.
 
     `runnable` is the runner's own list of plannable system ids; `state_rows` is
@@ -164,7 +165,10 @@ def plan(runnable: Sequence[str], state_rows: Mapping[str, Any], *, budget_s: fl
     alloc = fed.allocation(rows, int(exploit_budget), floor_s=floor_s) if rows else {}
     #: breadth reweighting: a system that spans a direction nobody else spans buys more of the
     #: hour at equal ROI. 1.0 + marginal keeps an unmeasured system at its ROI share exactly.
+    #: and a system whose cells fail for a different reason than the book's (BREADTH-0190)
+    #: buys more again: `hedge` is >= 1 per system and absent means 1.0 (unchanged).
     weighted = {sid: alloc.get(sid, floor_s) * (1.0 + float(marginal.get(sid, 0.0)))
+                * max(1.0, float((hedge or {}).get(sid, 1.0)))
                 for sid in ids}
     total_w = sum(weighted.values()) or 1.0
     shares = {sid: max(floor_s, int(exploit_budget * w / total_w))
@@ -197,6 +201,7 @@ def plan(runnable: Sequence[str], state_rows: Mapping[str, Any], *, budget_s: fl
         "ages_s": {sid: (None if ages[sid] == float("inf") else round(ages[sid], 1))
                    for sid in ids},
         "overdue": overdue, "breadth": b,
+        "failure_hedge": {k: v for k, v in (hedge or {}).items() if v > 1.0},
         "rule": ("scouts first, ordered by age alone, so no runnable system goes a rotation "
                  "window without an hour; the rest ROI-proportional x (1 + marginal breadth), "
                  "floored so nothing is switched off"),

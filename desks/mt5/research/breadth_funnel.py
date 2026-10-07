@@ -121,6 +121,31 @@ def _session(row: Mapping[str, Any], params: Mapping[str, Any]) -> str:
     return str(params.get("session") or row.get("selector") or row.get("session") or "").lower()
 
 
+#: What every generator -- new machinery above all -- must DEMONSTRATE (BREADTH-0606..0609),
+#: each read from its own funnel stage: novel outputs, evaluation, conversion (a
+#: survivor), independent survivors.
+DEMONSTRATIONS = (("novel_outputs", "structurally_novel"), ("evaluation", "evaluator_admitted"),
+                  ("conversion", "survives"),
+                  ("independent_survivor", "prospective_independence"))
+
+
+def demonstrations(by_producer: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
+    """{producer: {property: DEMONSTRATED | NOT_DEMONSTRATED | UNMEASURED, ...}}. A stage whose
+    input is absent is UNMEASURED, never NOT_DEMONSTRATED (L1.28a). Published, never enforced
+    here: what a generator may run is decided elsewhere."""
+    out: dict[str, Any] = {}
+    for prod, st in by_producer.items():
+        rec: dict[str, Any] = {}
+        for name, stage in DEMONSTRATIONS:
+            n = st.get(stage)
+            rec[name] = (UNMEASURED if n is None else
+                         "DEMONSTRATED" if n > 0 else "NOT_DEMONSTRATED")
+            rec[f"{name}_n"] = n
+        rec["all_demonstrated"] = all(rec[n] == "DEMONSTRATED" for n, _ in DEMONSTRATIONS)
+        out[prod] = rec
+    return out
+
+
 def build(*, docket: Any = None, verdict_map: Mapping[str, Any] | str | None = "read",
           shadow: Any = None, sleeves: Any = None, saturation: Any = None,
           now: datetime | None = None) -> dict[str, Any]:
@@ -225,11 +250,13 @@ def build(*, docket: Any = None, verdict_map: Mapping[str, Any] | str | None = "
         na, nb = stages.get(a), stages.get(b)
         conv[f"{a}->{b}"] = (round(nb / na, 6) if isinstance(na, int) and isinstance(nb, int)
                              and na > 0 else None)
+    bp = {p: {s: (c.get(s, 0) if s not in why else None) for s in STAGES}
+          for p, c in sorted(by_producer.items())}
     return {"status": MEASURED, "at": t.isoformat(timespec="seconds"),
             "n_candidates": len(cands), "stages": stages, "unmeasured": why,
+            "generator_demonstrations": demonstrations(bp),
             "conversion": conv,
-            "by_producer": {p: {s: (c.get(s, 0) if s not in why else None) for s in STAGES}
-                            for p, c in sorted(by_producer.items())},
+            "by_producer": bp,
             "failures_by_producer": {
                 p: {"by_terminal_gate": dict(c.most_common()), "examples": examples[p],
                     "note": ("UNKNOWN is the judge's unmeasured path (too few observations), "

@@ -506,7 +506,16 @@ BEHAVIOUR_UNMEASURED: dict[str, str] = {
     "tail_dependence": "the map measures tail co-exceedance for the book, not per elite",
     "drawdown_overlap": "no per-elite drawdown windows are published",
     "signal_overlap": "no per-elite signal series is published",
-    "turnover": "no per-elite turnover is published",
+}
+#: Profile components read from the elite's measured forward pairs (stream_overlap.PROFILE):
+#: the CLOSEST pair binds, so the distance is the elite's least-distinct behaviour.
+BEHAVIOUR_PROFILE: dict[str, str] = {
+    "turnover": "turnover_gap",
+    "holding_time_distribution": "holding_time_ks",
+    "spectral_signature": "spectral_distance",
+    "factor_residual_correlation": "factor_residual_distance",
+    "information_source_measured": "information_source_distance",
+    "economic_mechanism_measured": "mechanism_distance",
 }
 
 
@@ -549,17 +558,29 @@ def behavioural_distance(elite: dict[str, Any], sat: dict[str, Any] | None) -> d
                        "basis": f"structural: {'+'.join(use)} vs {int(total)} certificates"}
     sym, fam = str(elite.get("instrument") or "").upper(), str(elite.get("family") or "")
     rhos = []
+    prof: dict[str, list[float]] = {k: [] for k in BEHAVIOUR_PROFILE}
     for pr in (sat.get("forward_independence") or {}).get("pairs") or []:
+        ids = [cs.sleeve_identity(str(pr.get(k))) for k in ("a", "b")]
+        if not any(i[0] == sym and i[1] == fam for i in ids):
+            continue
+        pf = pr.get("profile") if isinstance(pr.get("profile"), dict) else {}
+        for name, key in BEHAVIOUR_PROFILE.items():
+            v = pf.get(key)
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
+                prof[name].append(float(v))
         if pr.get("state") == "UNMEASURED":
             continue
-        ids = [cs.sleeve_identity(str(pr.get(k))) for k in ("a", "b")]
-        if any(i[0] == sym and i[1] == fam for i in ids):
-            rhos.append(abs(float(pr.get("rho") or 0.0)))
+        rhos.append(abs(float(pr.get("rho") or 0.0)))
     comps["pnl_correlation"] = ({"value": round(1.0 - max(rhos), 4),
                                  "basis": f"forward: {len(rhos)} measured pair(s)"}
                                 if rhos else
                                 {"value": None, "basis": "UNMEASURED: no forward pair at the "
                                                          "sample floor"})
+    for name, vs in prof.items():
+        comps[name] = ({"value": round(min(vs), 4),
+                        "basis": f"forward profile: closest of {len(vs)} pair(s)"} if vs else
+                       {"value": None, "basis": "UNMEASURED: no forward pair carries this "
+                                                "profile term"})
     for name, why in BEHAVIOUR_UNMEASURED.items():
         comps[name] = {"value": None, "basis": f"UNMEASURED: {why}"}
     vals = [c["value"] for c in comps.values() if isinstance(c.get("value"), (int, float))]

@@ -891,6 +891,9 @@ def forward_dependence(daily: Mapping[str, Mapping[str, float]], *,
                           "overlap_score": score,
                           "overlap_binding": (o.get("binding_term")
                                               if isinstance(o, Mapping) else None),
+                          # the behavioural PROFILE distance (holding time, turnover, spectrum,
+                          # factor residual, information source, mechanism) -- not dependence
+                          "profile": o.get("profile") if isinstance(o, Mapping) else None,
                           # the C a dependent pair is lifted to: the larger of its rho lower
                           # bound and its behavioural overlap
                           "dependence": round(max(lo, score or 0.0), 4)})
@@ -1461,6 +1464,85 @@ def edge_quality(certs: list[dict[str, Any]], *, now: datetime | None = None,
             "n_recent": len(recent), "n_prior": len(prior), "window_days": window_days}
 
 
+#: REOPEN TRIGGER TYPES (BREADTH-0593..0599). Each is a fingerprint read from its own artifact;
+#: a change in any reopens a retired (searched-empty) cluster with the type and the reason named.
+UNIVERSE = BASE / "data" / "universe" / "universe.json"
+BROKER_INFO = BASE / "data" / "universe" / "broker_info.json"
+DERIVED_SERIES = BASE / "data" / "universe" / "derived_series.json"
+MARKET_POSTERIORS = REPORTS / "MARKET_POSTERIORS.json"
+#: a symbol whose price process broke in scale or level with at least this posterior
+BREAK_POSTERIOR = 0.95
+
+
+def _exec_style(family: str) -> str:
+    try:
+        return str(ar.classify_family(family)[2])
+    except Exception:
+        return UNKNOWN
+
+
+def desk_reopen_fingerprints() -> tuple[dict[str, str], dict[str, Any]]:
+    """Desk-wide fingerprints: new_dataset (derived series held), broker_change (server and the
+    symbol set), cost_change (each symbol's spread and swaps), market_structure (symbols whose
+    process broke). An unreadable input leaves its
+    type out -- it can never fire, and the detail says UNMEASURED."""
+    fp: dict[str, str] = {}
+    detail: dict[str, Any] = {}
+    ds = _read(DERIVED_SERIES)
+    if isinstance(ds, Mapping) and isinstance(ds.get("series"), Mapping):
+        fp["new_dataset"] = ",".join(sorted(map(str, ds["series"])))
+    else:
+        detail["new_dataset"] = UNMEASURED
+    bi, un = _read(BROKER_INFO), _read(UNIVERSE)
+    if isinstance(bi, Mapping) and isinstance(un, Mapping):
+        fp["broker_change"] = f"{bi.get('server')}|" + ",".join(sorted(map(str, un)))
+    else:
+        detail["broker_change"] = UNMEASURED
+    if isinstance(un, Mapping):
+        # costs: each symbol's measured spread and swaps, so a token that changes names it
+        toks = []
+        for sym, r in sorted(un.items()):
+            if isinstance(r, Mapping) and r.get("median_spread_pts") is not None:
+                toks.append(f"{sym}:{r.get('median_spread_pts')}:{r.get('swap_long')}:"
+                            f"{r.get('swap_short')}")
+        if toks:
+            fp["cost_change"] = ",".join(toks)
+        else:
+            detail["cost_change"] = UNMEASURED
+    else:
+        detail["cost_change"] = UNMEASURED
+    mp = _read(MARKET_POSTERIORS)
+    per = mp.get("per_symbol") if isinstance(mp, Mapping) else None
+    if isinstance(per, Mapping):
+        broke = []
+        for sym, row in per.items():
+            sb = (row or {}).get("structural_break") if isinstance(row, Mapping) else None
+            if isinstance(sb, Mapping) and max(float(sb.get("p_break_in_scale") or 0.0),
+                                               float(sb.get("p_break_in_level") or 0.0)) \
+                    >= BREAK_POSTERIOR:
+                broke.append(str(sym))
+        fp["market_structure"] = ",".join(sorted(broke))
+    else:
+        detail["market_structure"] = UNMEASURED
+    return fp, detail
+
+
+def reopen_triggers(prev: Any, cur: Mapping[str, str]) -> list[dict[str, Any]]:
+    """Every trigger type whose fingerprint changed since the last reading, with an explicit
+    reason naming what appeared or went. No previous reading is a baseline, never a trigger."""
+    if not isinstance(prev, Mapping):
+        return []
+    out = []
+    for t, v in cur.items():
+        old = prev.get(t)
+        if old is None or old == v:
+            continue
+        a, b = set(str(old).split(",")), set(str(v).split(","))
+        out.append({"type": t, "reason": (f"{t}: +{sorted(b - a)[:6]} -{sorted(a - b)[:6]}")
+                    [:300]})
+    return out
+
+
 def _empty_priors(certs: list[dict[str, Any]], judged: Mapping[tuple[str, str], int],
                   global_yield: float | None, previous: Any) -> dict[str, Any]:
     """Per declared alpha cluster: the survivor prior after the effort spent there (law 17).
@@ -1485,6 +1567,7 @@ def _empty_priors(certs: list[dict[str, Any]], judged: Mapping[tuple[str, str], 
         fams_by[classify_family(fam)].add(fam)
     prev = (previous or {}).get("empty_cluster_priors") if isinstance(previous, dict) else None
     prev = prev if isinstance(prev, dict) else {}
+    desk_fp, desk_detail = desk_reopen_fingerprints()
     meaningful = (math.ceil(math.log(0.05) / math.log(1.0 - global_yield))
                   if global_yield and 0 < global_yield < 1 else None)
     out: dict[str, Any] = {}
@@ -1496,9 +1579,16 @@ def _empty_priors(certs: list[dict[str, Any]], judged: Mapping[tuple[str, str], 
         offset = int(p.get("effort_offset") or 0)
         reopened = p.get("reopened_at")
         trigger = p.get("reopen_trigger")
-        if p and p.get("families_fingerprint") not in (None, fp):
-            offset, reopened = judged_by.get(k, 0), None
-            trigger = "family set changed (new mechanism/representation reachable)"
+        fps = {**desk_fp, "new_representation": fp,
+               "new_execution_method": ",".join(sorted({_exec_style(f) for f in fams}))}
+        fired = reopen_triggers(p.get("reopen_fingerprints"), fps)
+        if p and p.get("families_fingerprint") not in (None, fp) \
+                and not any(f["type"] == "new_representation" for f in fired):
+            fired.append({"type": "new_representation",
+                          "reason": "family set changed (new mechanism/representation reachable)"})
+        if fired:
+            offset = judged_by.get(k, 0)
+            trigger = fired
             reopened = datetime.now(tz=UTC).isoformat(timespec="seconds")
         effort = max(0, judged_by.get(k, 0) - offset)
         nc = certs_by.get(k, 0)
@@ -1523,8 +1613,46 @@ def _empty_priors(certs: list[dict[str, Any]], judged: Mapping[tuple[str, str], 
                   "decay": round(decay, 4), "status": status, "families": fams,
                   "families_fingerprint": fp, "effort_offset": offset,
                   "reopened_at": reopened, "reopen_trigger": trigger,
+                  "reopen_fingerprints": fps, "reopen_unmeasured": desk_detail,
                   "reopen_when": ("a new family classifies into this cluster, a new dataset "
                                   "feeds it, or market structure changes; recorded here")}
+    return out
+
+
+def class_sizes() -> dict[str, int]:
+    """Tradable instruments per asset class in the broker's own registry; {} when unreadable."""
+    un = _read(UNIVERSE)
+    if not isinstance(un, Mapping):
+        return {}
+    return dict(Counter(asset_class(str(sym)) for sym in un))
+
+
+def bounty_terms(cls: str, mech: str, cls_size: Mapping[str, int], occ_cls: Mapping[str, int],
+                 judged_mech: Mapping[str, int], certs_mech: Mapping[str, int]
+                 ) -> dict[str, Any]:
+    """The breadth-debt bounty's pricing terms (BREADTH-0577..0579), each in [1, 2] so none can
+    shrink a bounty below its old price and each REPRICES AS NICHES FILL:
+
+    capacity_potential  the class's share of the broker's instruments, discounted by how many
+                        certified clusters the class already holds (room left to deploy)
+    difficulty          1 + the mechanism's judged-cell failure share (hard ground pays more);
+                        1.0 and UNMEASURED with no judged cell
+    information_value   1 + 1/(1 + effort/100): set by the caller from the cluster's own effort
+    """
+    out: dict[str, Any] = {}
+    tot = sum(cls_size.values())
+    if tot and cls_size.get(cls):
+        share = cls_size[cls] / max(cls_size.values())
+        out["capacity_potential"] = round(1.0 + share / (1.0 + occ_cls.get(cls, 0)), 6)
+    else:
+        out["capacity_potential"] = 1.0
+        out["capacity_status"] = UNMEASURED
+    j = judged_mech.get(mech, 0)
+    if j > 0:
+        out["difficulty"] = round(1.0 + max(0.0, 1.0 - certs_mech.get(mech, 0) / j), 6)
+    else:
+        out["difficulty"] = 1.0
+        out["difficulty_status"] = UNMEASURED
     return out
 
 
@@ -1552,9 +1680,17 @@ def _breadth_debts(clusters: Mapping[str, Mapping[str, Any]], glist: list[dict[s
         if mech != UNKNOWN and fam not in getattr(ar, "NOT_A_FAMILY", frozenset()):
             impl[(mech, info)].append(fam)
     effort: Counter[tuple[str, str, str]] = Counter()
+    judged_mech: Counter[str] = Counter()
     for (sym, fam), n in judged.items():
         mech, info, _ = ar.classify_family(fam)
         effort[(mech, info, asset_class(sym))] += int(n)
+        judged_mech[mech] += int(n)
+    certs_mech: Counter[str] = Counter()
+    occ_cls: Counter[str] = Counter()
+    for v in clusters.values():
+        certs_mech[str(v["hierarchy"]["L1"])] += int(v.get("certificate_count") or 0)
+        occ_cls[str(v["hierarchy"]["L3"])] += 1
+    cls_size = class_sizes()
     def _dk(rho: float) -> float | None:
         try:
             return (marginal_k_eff(max(n_cert, 2), max(n_eff, 1e-6), rho)
@@ -1585,7 +1721,10 @@ def _breadth_debts(clusters: Mapping[str, Mapping[str, Any]], glist: list[dict[s
             info_value = 1.0 + 1.0 / (1.0 + e / 100.0)
             hedge = 1.5 if not (set(MECHANISM_FAILURE.get(mech, ())) & set(hurts)) else 1.0
             payer_bonus = 1.5 if occ_l1.get(mech, 0) == 0 else 1.0
-            prio = float(dk if dk is not None else 1.0) * decay * info_value * hedge * payer_bonus
+            terms = bounty_terms(cls, mech, cls_size, occ_cls, judged_mech, certs_mech)
+            prio = (float(dk if dk is not None else 1.0) * decay * info_value * hedge
+                    * payer_bonus * terms["capacity_potential"] * terms["difficulty"])
+            terms["information_value"] = round(info_value, 6)
             debts.append({
                 "missing_cluster": f"{mech}/{info}/{cls}", "mechanism": mech,
                 "information_source": info, "asset_class": cls, "alpha_cluster": cluster,
@@ -1606,7 +1745,7 @@ def _breadth_debts(clusters: Mapping[str, Mapping[str, Any]], glist: list[dict[s
                 "hedges_failure_modes": hedge > 1.0, "new_payer": payer_bonus > 1.0,
                 "reopen_trigger": ("new family / dataset / representation for this payer, or "
                                    "market-structure change"),
-                "bounty": round(prio, 6),
+                "bounty": round(prio, 6), "bounty_terms": terms,
             })
     debts.sort(key=lambda d: (-d["bounty"], d["missing_cluster"]))
     for i, d in enumerate(debts):
@@ -2164,6 +2303,44 @@ def family_factor(rows: Iterable[Mapping[str, Any]]) -> dict[str, float]:
     return {f: 1.0 + tot[f] / n[f] for f in n if n[f]}
 
 
+CHART_BUCKETS = ("intraday", "hourly", "daily")
+
+
+def retarget_axes(top: Any, clusters: Any) -> dict[str, Any]:
+    """WHERE a stuck producer goes before it is parked (BREADTH-0334/0338): for each saturated
+    cluster it keeps hitting, the same mechanism in a different REGION (an unexplored session or
+    regime, another asset class) and through a different REPRESENTATION (an unexplored horizon or
+    another chart bucket). Read from the saturation map; UNMEASURED when the map is absent."""
+    keys = list(top.keys()) if isinstance(top, Mapping) else []
+    cl = clusters if isinstance(clusters, Mapping) else {}
+    if not keys or not cl:
+        return {"retarget_regions": UNMEASURED, "retarget_representations": UNMEASURED}
+    by_l1_l3: dict[str, set[str]] = defaultdict(set)
+    for v in cl.values():
+        h = v.get("hierarchy") if isinstance(v, Mapping) else None
+        if isinstance(h, Mapping):
+            by_l1_l3[str(h.get("L1"))].add(str(h.get("L3")))
+    all_l3 = {c for cs_ in by_l1_l3.values() for c in cs_}
+    regions: list[str] = []
+    reps: list[str] = []
+    for k in keys:
+        v = cl.get(k)
+        if not isinstance(v, Mapping):
+            continue
+        h = v.get("hierarchy") if isinstance(v.get("hierarchy"), Mapping) else {}
+        l1, l3 = str(h.get("L1")), str(h.get("L3"))
+        bucket = [*str(h.get("L5") or "").split("|"), "", ""][1]
+        un = v.get("remaining_unexplored_axes") if isinstance(
+            v.get("remaining_unexplored_axes"), Mapping) else {}
+        regions += [f"{l1} in {l3} @session={x}" for x in un.get("session") or []]
+        regions += [f"{l1} in {l3} @regime={x}" for x in un.get("regime") or []]
+        regions += [f"{l1} in {c}" for c in sorted(all_l3 - by_l1_l3[l1] - {UNKNOWN})]
+        reps += [f"{l1} @horizon={x}" for x in un.get("horizon") or []]
+        reps += [f"{l1} @chart={b}" for b in CHART_BUCKETS if b != bucket]
+    return {"retarget_regions": list(dict.fromkeys(regions))[:8],
+            "retarget_representations": list(dict.fromkeys(reps))[:8]}
+
+
 def write_feedback(evidence: Mapping[str, Any], *, path: Path | None = None,
                    now: datetime | None = None) -> Path | None:
     """Publish per-producer feedback (producer law 8, 9, 21, 26). RETARGET persists across
@@ -2210,6 +2387,7 @@ def write_feedback(evidence: Mapping[str, Any], *, path: Path | None = None,
                                 "already owns them. Retarget to the breadth debts named, or "
                                 "declare the work a QUALITY challenger (breadth_exception: G)")
             r["retarget_to"] = debts
+            r.update(retarget_axes(r.get("top_clusters"), (doc_map or {}).get("clusters")))
             r["saturated_clusters_hit"] = r.get("top_clusters")
         producers[src] = r
     methods: Counter[str] = Counter()
@@ -2276,6 +2454,8 @@ def producer_brief(source_token: str = "", *, doc: Mapping[str, Any] | None = No
             if source_token.lower() in str(src).lower() and isinstance(r, Mapping):
                 own[src] = {k: r.get(k) for k in ("rows", "duplicate_share", "state",
                                                   "top_clusters", "retarget_to",
+                                                  "retarget_regions",
+                                                  "retarget_representations",
                                                   "duplicate_budget",
                                                   "duplicate_survivor_share")}
     return {
@@ -2316,6 +2496,8 @@ def publish_briefs(*, doc: Mapping[str, Any] | None = None,
         if isinstance(r, Mapping):
             own[str(src)] = {k: r.get(k) for k in ("rows", "duplicate_share", "state",
                                                    "top_clusters", "retarget_to",
+                                                   "retarget_regions",
+                                                   "retarget_representations",
                                                    "duplicate_budget",
                                                    "duplicate_survivor_share")}
     p = path or BRIEFS
@@ -2419,6 +2601,11 @@ def brief_lines(name: str, *, limit: int = 12, path: Path | None = None) -> list
     if mode:
         out.append(f"breadth-constrained mode {mode.get('mode')}; empty clusters: "
                    + ", ".join(map(str, (mode.get("empty_clusters") or [])[:8])))
+        pt = mode.get("priority_targets") if isinstance(mode.get("priority_targets"),
+                                                         Mapping) else {}
+        miss = pt.get("missing_payoff_shapes")
+        if isinstance(miss, list) and miss:
+            out.append("missing payoff shapes (the book holds none): " + ", ".join(miss[:6]))
     ctx = b.get("book_context") if isinstance(b.get("book_context"), Mapping) else {}
     for key, label in (("information_source_clusters", "information sources held"),
                        ("factor_exposures", "factor exposures held"),
@@ -2494,6 +2681,43 @@ def _book_context(d: Mapping[str, Any], top: int = 12) -> dict[str, Any]:
         "tail_k_eff_book": (d.get("certificates") or {}).get("tail_k_eff_book")
         if isinstance(d.get("certificates"), Mapping) else None,
     }
+
+
+#: "WHAT BET FAILS FOR A DIFFERENT REASON THAN WHAT WE OWN?" (BREADTH-0186/0190/0192): the
+#: multiplier source acquisition, sandbox allocation and portfolio research apply to work whose
+#: mechanisms fail for a reason the book does not already hold -- the debts' own hedge price.
+FAILURE_HEDGE = 1.5
+
+
+def book_hurts(path: Path | None = None) -> list[str] | None:
+    """The failure modes the certified book holds most, from the published map; None when the
+    map is absent or carries none (UNMEASURED -- never "no failure modes")."""
+    d = _read(path or REPORT)
+    fm = d.get("failure_modes") if isinstance(d, Mapping) else None
+    h = fm.get("hurts_book") if isinstance(fm, Mapping) else None
+    return [str(x) for x in h] if isinstance(h, list) and h else None
+
+
+def failure_hedge(families: Iterable[Any], hurts: list[str] | None) -> dict[str, Any]:
+    """Does any of these families' mechanisms fail for a reason other than the book's own?
+    multiplier FAILURE_HEDGE when one does, 1.0 otherwise or when unmeasured (never below 1)."""
+    if not hurts:
+        return {"status": UNMEASURED, "multiplier": 1.0, "why": "book failure modes unmeasured"}
+    hit: dict[str, list[str]] = {}
+    known = False
+    for f in families:
+        mech = ar.classify_family(f)[0]
+        modes = MECHANISM_FAILURE.get(mech)
+        if not modes:
+            continue
+        known = True
+        if not set(modes) & set(hurts):
+            hit[str(f)] = sorted(modes)
+    if not known:
+        return {"status": UNMEASURED, "multiplier": 1.0,
+                "why": "no registered mechanism among the families"}
+    return {"status": MEASURED, "multiplier": FAILURE_HEDGE if hit else 1.0,
+            "hedges": bool(hit), "fails_differently": hit, "book_fails_on": hurts}
 
 
 def _debt_brief() -> dict[str, Any]:
