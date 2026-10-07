@@ -101,7 +101,10 @@ echo "gates:"
 # ruff first: it is the cheapest and its failures are the least interesting, so getting them out
 # of the way keeps the expensive output readable.
 run "lint (ruff)"          $PY -m ruff check .
-run "lint desks/mt5 (bugs)" $PY -m ruff check desks/mt5 --isolated --target-version py311 --select E9,F63,F7,F82
+# B023 (2026-09-30): the project config excludes desks/mt5, so two late-binding loop closures
+# (families_orthogonal, acquire_datasets) reached LIVE unseen. Fenced here and by
+# desks/mt5/tests/test_b023_loop_closures.py.
+run "lint desks/mt5 (bugs)" $PY -m ruff check desks/mt5 --isolated --target-version py311 --select E9,F63,F7,F82,B023
 # COMPILE IS ITS OWN GATE, AND RUFF IS NOT A SUBSTITUTE FOR IT (2026-08-26). scripts/
 # liquidation_listener.py sat in committed code with `await asyncio.sleep(30)` inside a plain
 # `def`, and ruff, mypy AND pytest --co all reported GREEN on it -- for at least 21h, during

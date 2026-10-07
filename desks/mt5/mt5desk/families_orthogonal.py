@@ -37,9 +37,12 @@ to say, and it says nothing.
 """
 from __future__ import annotations
 
+import functools
 import json
 import math
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -459,6 +462,31 @@ def family_cot_positioning(
     return signals
 
 
+def _lvc_bias_active(side: int, bars_from_start: int, *, bias_mode: str, bias_block_bars: int,
+                     recent_extreme_bars: int, source_high_age: int, source_low_age: int,
+                     session_high_age: int, session_low_age: int) -> bool:
+    """Whether the recent-Asia-extreme bias blocks a ``side`` entry this many bars into London."""
+    if bias_mode == "off" or bars_from_start > bias_block_bars:
+        return False
+    if bias_mode == "source_shift":
+        age = source_high_age if side > 0 else source_low_age
+    else:
+        age = session_high_age if side > 0 else session_low_age
+    return age <= recent_extreme_bars
+
+
+def _lvc_bias_gate(**bound: Any) -> Callable[[int, int], bool]:
+    """One session day's bias gate, with that day's extreme ages bound EARLY (ruff B023).
+
+    The gate used to be a closure defined inside the per-day loop that read the four ages from
+    the enclosing scope, i.e. whatever the LAST iteration left there. It was only ever called in
+    its own iteration, so no emitted signal was wrong, but any gate that outlived its day (kept,
+    deferred, or reordered) would have judged every day by the final day's Asia extremes.
+    ``functools.partial`` freezes the values at construction time instead.
+    """
+    return functools.partial(_lvc_bias_active, **bound)
+
+
 def family_lvc_asia_london(
     df: pd.DataFrame,
     *,
@@ -543,14 +571,12 @@ def family_lvc_asia_london(
             -1: {"seen": False, "pos": -1, "extreme": np.nan, "atr": np.nan},
         }
 
-        def bias_active(side: int, bars_from_start: int) -> bool:
-            if bias_mode == "off" or bars_from_start > bias_block_bars:
-                return False
-            if bias_mode == "source_shift":
-                age = source_high_age if side > 0 else source_low_age
-            else:
-                age = session_high_age if side > 0 else session_low_age
-            return age <= recent_extreme_bars
+        # B023: the four ages are bound per session day, never read late from the loop.
+        bias_active = _lvc_bias_gate(
+            bias_mode=bias_mode, bias_block_bars=bias_block_bars,
+            recent_extreme_bars=recent_extreme_bars,
+            source_high_age=source_high_age, source_low_age=source_low_age,
+            session_high_age=session_high_age, session_low_age=session_low_age)
 
         consumed = False
         for bars_from_start, pos_raw in enumerate(trade):
