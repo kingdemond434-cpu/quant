@@ -18,6 +18,15 @@ import uuid
 
 import numpy as np
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 try:
     from hypothesis_schema import HypothesisCard
 except ImportError:  # imported as the side_channels package
@@ -205,7 +214,7 @@ class HourlyController:
     def _save_state(self) -> None:
         """Save persistent state."""
         with open(self.source_reputation_file, "w") as f:
-            json.dump({k: v.__dict__ for k, v in self.source_reputations.items()}, 
+            json.dump(scrub({k: v.__dict__ for k, v in self.source_reputations.items()}), 
                       f, indent=2, default=str)
     
     def _initialize_miner_configs(self) -> None:
@@ -466,7 +475,7 @@ class HourlyController:
                             for item in items:
                                 item["miner"] = name
                                 item["acquired_at"] = datetime.now(UTC).isoformat()
-                                f.write(json.dumps(item) + "\n")
+                                f.write(json.dumps(scrub(item)) + "\n")
                                 
             except Exception as e:
                 print(f"  {name}: acquire failed - {e}")
@@ -499,7 +508,7 @@ class HourlyController:
                                 for h in hypotheses:
                                     h["extracted_by"] = name
                                     h["extracted_at"] = datetime.now(UTC).isoformat()
-                                    f.write(json.dumps(h) + "\n")
+                                    f.write(json.dumps(scrub(h)) + "\n")
                                     
             except Exception as e:
                 print(f"  {name}: extract failed - {e}")

@@ -27,4 +27,10 @@ if [ -z "$PY" ]; then
     exit 1
 fi
 "$PY" scripts/moneypath_precommit_guard.py || exit $?
+# 3. Credential scrub (2026-10-07, #246): a Google API key scraped into three intelligence
+#    artifacts was committed and served publicly. Staged blobs under data/intelligence/ and
+#    desks/mt5/data/intelligence/ are scrubbed IN THE INDEX here, whichever producer or box
+#    wrote them, so no commit -- the VPS hourly sync, a box state push, a session -- carries a
+#    literal. It rewrites only blobs that hold a key and never refuses the commit.
+"$PY" -m libs.ops.secret_scrub --staged
 exec "$PY" scripts/check_protected_records.py

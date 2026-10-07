@@ -20,6 +20,15 @@ from pathlib import Path
 
 import requests
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent
 if str(BASE.parent.parent) not in sys.path:
     sys.path.insert(0, str(BASE.parent.parent))
@@ -288,7 +297,7 @@ def mine_darwinex() -> list[dict]:
                        f"https://web.archive.org/web/{ts}/{orig}",
                        darwin=code.group(1) if code else ""))
     st["darwinex_cdx_offset"] = offset + max(len(rows_) - 1, 0)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    STATE.write_text(json.dumps(scrub(st), indent=0), "utf-8")
     return out[:120]
 
 # ---------------------------------------------------------------- S12 TradingView scripts
@@ -424,7 +433,7 @@ def mine_forextsd_cdx() -> list[dict]:
         out.append(row("forextsd_cdx", "era_archive", orig[:120],
                        f"https://web.archive.org/web/{ts}/{orig}"))
     st["forextsd_offset"] = offset + max(len(rows_) - 1, 0)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    STATE.write_text(json.dumps(scrub(st), indent=0), "utf-8")
     return out[:120]
 
 
@@ -571,7 +580,7 @@ def mine_github_topics() -> list[dict]:
                            (it.get("description") or "")[:400], topic=topic,
                            stars=s, star_delta=delta, pushed=it.get("pushed_at")))
     st["gh_topic_cursor"] = (topic_cursor + len(selected)) % len(topics)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    STATE.write_text(json.dumps(scrub(st), indent=0), "utf-8")
     return out
 
 
@@ -596,7 +605,7 @@ def mine_propfirm_boards() -> list[dict]:
     cur = int(st.get("propfirm_cursor", 0)) % len(locs)
     take = locs[cur:cur + 30]
     st["propfirm_cursor"] = (cur + 30) % len(locs)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    STATE.write_text(json.dumps(scrub(st), indent=0), "utf-8")
     return [row("propfirm_boards", "trading_update",
                 u.rstrip("/").rsplit("/", 1)[-1].replace("-", " "), u) for u in take]
 
@@ -728,7 +737,7 @@ def run_and_save() -> dict:
         _write_rows(name, rows_, ts, results, summary)
         real = [r_ for r_ in rows_ if not r_.get("needs_selector_work")]
         print(f"  {name}: {len(rows_)} rows ({'real' if real else 'RAW/selector-work'})")
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    STATE.write_text(json.dumps(scrub(st), indent=0), "utf-8")
     # merge into latest_discoveries.json so convert_to_hypotheses feeds the gauntlet queue
     latest_p = INTEL / "latest_discoveries.json"
     try:
@@ -755,7 +764,7 @@ def run_and_save() -> dict:
                                "verdict": _reply.verdict,
                                "discipline": ("candidate NAMES for the source registry to vet; "
                                               "nothing here fetches them")}
-        STATE.write_text(json.dumps(st, indent=0), "utf-8")
+        STATE.write_text(json.dumps(scrub(st), indent=0), "utf-8")
     except Exception as _exc:                             # pragma: no cover - optional seat
         print(f"  proposer_seat: UNMEASURED ({type(_exc).__name__}: {_exc})")
     latest_p.write_text(json.dumps(latest, indent=1, default=str), "utf-8")

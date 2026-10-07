@@ -11,6 +11,15 @@ from pathlib import Path
 # Import the miner runner and hypothesis converter
 import sys
 import os
+
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[2])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
 _side = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'side_channels')
 if _side not in sys.path:
     sys.path.insert(0, _side)
@@ -41,7 +50,7 @@ def phase_external_discovery(log_fn=None, data_dir=None) -> dict:
         intel_dir = Path(data_dir) / "intelligence"
         intel_dir.mkdir(parents=True, exist_ok=True)
         (intel_dir / "latest_discoveries.json").write_text(
-            json.dumps(miner_results, indent=2, default=str), encoding="utf-8"
+            json.dumps(scrub(miner_results), indent=2, default=str), encoding="utf-8"
         )
 
     # Step 3: Convert to hypotheses

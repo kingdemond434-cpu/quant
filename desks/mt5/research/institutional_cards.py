@@ -40,6 +40,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 BASE = Path(__file__).resolve().parents[1]
 UNIVERSE = BASE / "data" / "universe" / "universe.json"
 SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
@@ -246,7 +255,7 @@ def main(argv: list[str] | None = None) -> int:
     if a.apply:
         SEAT.mkdir(parents=True, exist_ok=True)
         out = SEAT / f"discoveries_{datetime.now(UTC):%Y%m%d}.json"
-        out.write_text(json.dumps(doc["cards"], indent=1), encoding="utf-8")
+        out.write_text(json.dumps(scrub(doc["cards"]), indent=1), encoding="utf-8")
         print(f"  donated -> {out}")
     else:
         print("  report only; re-run with --apply to donate them to the compiler")

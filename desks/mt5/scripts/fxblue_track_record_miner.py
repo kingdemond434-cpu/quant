@@ -32,6 +32,15 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub_text  # noqa: E402
+
 BASE = Path(__file__).resolve().parents[1]
 OUT = BASE / "data" / "intelligence" / "fxblue"
 API = "https://api.fxblue.com"
@@ -310,7 +319,7 @@ def main() -> int:
     # THIS, the staging file still holds every row and the run is replayable -- which is exactly
     # what the orphaned-inode failure destroyed.
     with out_path.open("a", encoding="utf-8") as fh:
-        fh.write(stage_path.read_text(encoding="utf-8"))
+        fh.write(scrub_text(stage_path.read_text(encoding="utf-8")))
     print(f"published {stage_path} -> {out_path}")
 
     if args.compact:

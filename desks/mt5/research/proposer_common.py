@@ -24,6 +24,15 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 _DESK = Path(__file__).resolve().parents[1]
 UNI = _DESK / "data" / "universe"
 INTEL = _DESK / "data" / "intelligence"
@@ -529,7 +538,7 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     LAST_DONATION["path"] = str(path)
     path.write_text(json.dumps({"source": source,
                                 "generated_at": datetime.now(tz=UTC).isoformat(),
-                                "tests_run": tests_run, "discoveries": candidates,
+                                "tests_run": tests_run, "discoveries": scrub(candidates),
                                 "counts": {"donated": len(candidates),
                                            "refused_unstamped": len(refused),
                                            "refused_wrong_lane": len(lane_refused),

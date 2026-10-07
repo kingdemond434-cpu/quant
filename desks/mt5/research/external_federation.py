@@ -50,6 +50,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.research import external_federation as fed  # noqa: E402
 from research import factory_federation as factory_surface  # noqa: E402
 
@@ -324,7 +325,7 @@ def drain_packets(state: dict[str, Any], apply: bool) -> dict[str, Any]:
                 os.replace(p, PROCESSED / p.name)
     if rows and apply:
         DONATIONS.mkdir(parents=True, exist_ok=True)
-        _write(DONATIONS / f"discoveries_{int(time.time())}.json", rows)
+        _write(DONATIONS / f"discoveries_{int(time.time())}.json", scrub(rows))
     out["donated"] = len(rows)
     state["packets_seen"] = sorted(seen)[-500:]
     return out

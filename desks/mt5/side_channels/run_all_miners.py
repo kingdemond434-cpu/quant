@@ -11,6 +11,15 @@ import multiprocessing
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 # Hard wall-clock budget per miner (seconds). A miner that exceeds it is killed
 # so one hung channel can never stall the hourly pipeline. 2026-08-31: academic
 # miner was observed spinning CPU for 20+ min and never returning.
@@ -166,5 +175,5 @@ if __name__ == "__main__":
 
     out = Path(__file__).resolve().parent.parent / "data" / "intelligence" / "latest_discoveries.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(r, indent=2, default=str), encoding="utf-8")
+    out.write_text(json.dumps(scrub(r), indent=2, default=str), encoding="utf-8")
     print(f"Saved to {out}")

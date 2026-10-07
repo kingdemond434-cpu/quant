@@ -53,6 +53,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 BASE = Path(__file__).resolve().parents[1]
 REPO = BASE.parents[1]
 for _p in (str(REPO), str(BASE), str(BASE / "research")):
@@ -839,7 +848,7 @@ def write(report: dict[str, Any], cells: dict[str, dict[str, Any]],
              for r in sorted(cells.values(), key=lambda r: r["cell_id"])]
     _atomic_write(OUT_CELLS, "\n".join(lines) + ("\n" if lines else ""))
     donation = INTAKE / f"discoveries_{datetime.now(UTC).strftime('%Y%m%d_%H%M')}.json"
-    _atomic_write(donation, json.dumps(proposals, indent=1, default=str))
+    _atomic_write(donation, json.dumps(scrub(proposals), indent=1, default=str))
     return donation
 
 

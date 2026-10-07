@@ -47,6 +47,7 @@ from libs.doctrine.constitution import (  # noqa: E402
     OBJECTIVE_PREAMBLE,
 )
 from libs.ops.llm_route import build_chain  # noqa: E402
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.research import hunt_frontier as hf  # noqa: E402
 from libs.research.free_panel import HEAVY as _FREE_PANEL_HEAVY  # noqa: E402
 
@@ -652,7 +653,7 @@ def _donate(findings: list[dict]) -> Path | None:
     path.write_text(json.dumps({
         "source": "kimi_k3_deep_forest",
         "generated_at": now.isoformat(),
-        "discoveries": discoveries,
+        "discoveries": scrub(discoveries),
     }, indent=1), "utf-8")
     return path
 

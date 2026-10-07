@@ -60,6 +60,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
@@ -613,7 +622,7 @@ def run(targets: list[str] | None = None, shuffle: bool = False,
                    "discoveries": [_candidate(r, n_tests, r["t_deflated_sweep"])
                                    for r in report["proposals"]]}
         (INTEL / f"discoveries_{stamp}.json").write_text(
-            json.dumps(payload, indent=1, default=str), "utf-8")
+            json.dumps(scrub(payload), indent=1, default=str), "utf-8")
     return report
 
 

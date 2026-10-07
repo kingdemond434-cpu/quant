@@ -220,7 +220,10 @@ def run_and_save() -> list[dict]:
         from side_channels.discovery_io import write_discoveries
     except ModuleNotFoundError:
         from discovery_io import write_discoveries
-    results = write_discoveries(out_file, results)
+    # discovery_io put the repo root on sys.path. Scrub explicitly as well as inside the helper:
+    # this miner holds a key of its own, and a titles/URL row must never carry one.
+    from libs.ops.secret_scrub import scrub
+    results = write_discoveries(out_file, scrub(results))
     print(f"youtube: {len(results)} discoveries saved to {out_file.name}")
     return results
 

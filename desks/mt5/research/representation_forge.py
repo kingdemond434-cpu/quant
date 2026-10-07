@@ -65,6 +65,7 @@ try:
 except ImportError:                                                          # pragma: no cover
     import world_model as WM  # type: ignore[no-redef]
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.research import representations as R  # noqa: E402
 
 STORE = DESK / "data" / "representations"
@@ -146,7 +147,7 @@ def _read_json(path: Path) -> Any:
 def _atomic(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(payload, indent=1, default=str), encoding="utf-8")
+    tmp.write_text(json.dumps(scrub(payload), indent=1, default=str), encoding="utf-8")
     try:
         os.replace(tmp, path)
     except PermissionError:

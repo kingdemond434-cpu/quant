@@ -63,6 +63,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.research import external_federation as fed  # noqa: E402
 from libs.research import federation_registry as FR  # noqa: E402
 from libs.research import forests as F  # noqa: E402
@@ -802,7 +803,7 @@ def spawn_step(reg: FR.Registry, existing: Sequence[fed.ExternalSystem],
         else:
             out["refused"].append(entry)
     if rows_out and apply:
-        _write(DONATIONS / f"discoveries_{int(time.time())}.json", rows_out)
+        _write(DONATIONS / f"discoveries_{int(time.time())}.json", scrub(rows_out))
         out["donated"] = len(rows_out)
         if conn is not None:
             from libs.moat import registry as R

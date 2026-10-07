@@ -46,6 +46,15 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "central_banks"
 ZIP = OUT / "bis_speeches" / "speeches.zip"
@@ -184,11 +193,11 @@ def main() -> int:
     per_speech = OUT / "bis_speech_tone.jsonl"
     with per_speech.open("w", encoding="utf-8") as fh:
         for r in rows:
-            fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+            fh.write(json.dumps(scrub(r), ensure_ascii=False) + "\n")
     series_path = OUT / "cb_tone_series.jsonl"
     with series_path.open("w", encoding="utf-8") as fh:
         for r in series:
-            fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+            fh.write(json.dumps(scrub(r), ensure_ascii=False) + "\n")
 
     by_ccy: dict[str, int] = defaultdict(int)
     for r in rows:

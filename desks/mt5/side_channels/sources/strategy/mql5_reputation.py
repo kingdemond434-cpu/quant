@@ -29,6 +29,15 @@ import numpy as np
 
 from ...base import SideChannelAxis, SideChannelHypothesis, generate_id, save_hypothesis, DATA_DIR
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[5])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 
 @dataclass
 class MQL5SourceMetrics:
@@ -180,10 +189,10 @@ class MQL5ReputationTracker:
     
     def _save_state(self) -> None:
         with open(self.metrics_file, "w") as f:
-            json.dump({k: v.__dict__ for k, v in self.metrics.items()}, f, indent=2, default=str)
+            json.dump(scrub({k: v.__dict__ for k, v in self.metrics.items()}), f, indent=2, default=str)
         
         with open(self.reputation_file, "w") as f:
-            json.dump({k: v.__dict__ for k, v in self.reputations.items()}, f, indent=2, default=str)
+            json.dump(scrub({k: v.__dict__ for k, v in self.reputations.items()}), f, indent=2, default=str)
     
     def _log_history(self, source_id: str, event: str, details: dict) -> None:
         with open(self.history_file, "a") as f:
@@ -191,7 +200,7 @@ class MQL5ReputationTracker:
                 "timestamp": datetime.now(UTC).isoformat(),
                 "source_id": source_id,
                 "event": event,
-                "details": details,
+                "details": scrub(details),
             }) + "\n")
     
     def record_cost(self, source_id: str, source_type: str, 

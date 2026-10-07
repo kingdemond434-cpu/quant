@@ -34,6 +34,7 @@ sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "desks" / "mt5"))
 sys.path.insert(0, str(BASE / "desks" / "mt5" / "side_channels"))
 
+from libs.ops.secret_scrub import scrub
 from libs.validation.cpcv import CPCV
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.pbo import probability_backtest_overfitting
@@ -154,7 +155,7 @@ def step_discover():
           f"returned {s.get('total_discoveries', 0)} discoveries")
     out = SC / "data" / "intelligence" / "latest_discoveries.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(results, indent=2, default=str), encoding="utf-8")
+    out.write_text(json.dumps(scrub(results), indent=2, default=str), encoding="utf-8")
     return results
 
 

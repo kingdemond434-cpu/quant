@@ -32,6 +32,15 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
 for p in (str(BASE), str(BASE / "research"), str(ROOT)):
@@ -455,7 +464,7 @@ def run() -> dict:
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
     path = OUT / f"discoveries_{stamp}.json"
     path.write_text(json.dumps({"source": SOURCE, "generated_at": datetime.now(tz=UTC).isoformat(),
-                                "discoveries": donate + deepen}, indent=1, default=str), "utf-8")
+                                "discoveries": scrub(donate + deepen)}, indent=1, default=str), "utf-8")
     try:
         from libs.research.hypothesis_graph import BORN, Graph, Node
         g = Graph()

@@ -68,6 +68,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.ops.secret_scrub import scrub as scrub_secrets
+
 ROOT = Path(__file__).resolve().parents[2]
 #: THE REPOSITORY ROOT ON sys.path, BECAUSE THIS FILE IS ALSO A LEG.
 #:
@@ -615,7 +617,7 @@ def _atomic(path: Path, doc: Any) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_suffix(path.suffix + ".tmp")
-        tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        tmp.write_text(json.dumps(scrub_secrets(doc), indent=1, default=str), encoding="utf-8")
         os.replace(tmp, path)
     except OSError:
         pass                     # a queue write must never take down the organ that made it

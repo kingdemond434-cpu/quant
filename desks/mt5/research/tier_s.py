@@ -50,6 +50,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.tiers import (  # noqa: E402
     agent_worlds,
     allocator_tilts,
@@ -385,7 +386,7 @@ def _emit(kind: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
         r.setdefault("source", f"tier_s:{kind}")
         r.setdefault("seat", "tier_s")
     _write(INTEL / f"{kind}_{stamp}.json", {"kind": kind, "generated_utc": NOW.isoformat(),
-                                             "rows": rows})
+                                             "rows": scrub(rows)})
     return {"kind": kind, "emitted": len(rows)}
 
 

@@ -26,8 +26,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+# The repo root too: libs.ops.secret_scrub scrubs every row before it is written.
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 from fetch_video_transcript import TranscriptUnavailable as _TranscriptUnavailable
 from fetch_video_transcript import youtube as _yt_transcript
+
+from libs.ops.secret_scrub import scrub
 
 ROOT = Path(__file__).resolve().parent.parent
 KEYFILE = ROOT / "data" / "secrets" / "youtube_api_key"
@@ -230,8 +234,8 @@ def main() -> int:
     if rows:
         out = OUTDIR / f"videos_{now:%Y%m%d}.json"
         existing = read_json(out, [])
-        (out).write_text(json.dumps(existing + rows, indent=1), "utf-8")
-    REGISTRY.write_text(json.dumps(reg, indent=1), "utf-8")
+        (out).write_text(json.dumps(scrub(existing + rows), indent=1), "utf-8")
+    REGISTRY.write_text(json.dumps(scrub(reg), indent=1), "utf-8")
     cov = read_json(COVERAGE, {})
     cov.update({"last_sweep": now.isoformat(), **report})
     COVERAGE.write_text(json.dumps(cov, indent=1), "utf-8")

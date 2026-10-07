@@ -64,6 +64,7 @@ for _p in (str(_ROOT), str(_DESK), str(_DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.moat import registry as reg  # noqa: E402
 from libs.research import country_lab as lab  # noqa: E402
 from libs.research import market_constitution as mc  # noqa: E402
@@ -111,7 +112,7 @@ def _atomic_json(path: Path, value: Any) -> None:
     fd, name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            json.dump(value, handle, indent=2, default=str)
+            json.dump(scrub(value), handle, indent=2, default=str)
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(name, path)

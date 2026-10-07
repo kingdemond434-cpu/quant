@@ -35,6 +35,7 @@ if str(_R) not in sys.path:  # run by path: scripts/ is on sys.path, the root is
 
 from libs.ops.canon_lease import hold  # noqa: E402
 from libs.ops.repair_invoke import request_repair  # noqa: E402
+from libs.ops.secret_scrub import scrub  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
@@ -221,7 +222,7 @@ def restore_cohorts_from_git(minimum: int) -> str | None:
         if len(merged) < minimum:
             continue
         with hold(relative, "authority-ratchet"):
-            _atomic_json(COHORT_FILE, merged)
+            _atomic_json(COHORT_FILE, scrub(merged))
         return (f"cohorts restored from git {revision[:12]}: {len(current)} -> {len(merged)} "
                 "members; live observations retained")
     return None

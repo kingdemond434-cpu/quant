@@ -62,6 +62,15 @@ from typing import Any
 
 import numpy as np
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
 for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
@@ -188,7 +197,7 @@ def _read_json(path: Path) -> Any:
 def _atomic(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(payload, indent=1, default=str), encoding="utf-8")
+    tmp.write_text(json.dumps(scrub(payload), indent=1, default=str), encoding="utf-8")
     try:
         os.replace(tmp, path)
     except PermissionError:

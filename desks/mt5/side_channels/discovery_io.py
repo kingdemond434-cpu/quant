@@ -13,13 +13,16 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from libs.data.pit import stamp_or_refuse  # noqa: E402
+from libs.ops.secret_scrub import scrub  # noqa: E402
 
 
 def write_discoveries(path: Path, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Refuse malformed batches before replacing an existing discovery artifact."""
     if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
         raise ValueError(f"{path}: discovery batch must be a list of objects")
-    stamped, refused = stamp_or_refuse(rows, path.parent.name)
+    # Scraped text and LLM answers carry other people's keys: scrub before the provenance stamp,
+    # so the stamp's content hash describes exactly what is written (libs/ops/secret_scrub.py).
+    stamped, refused = stamp_or_refuse(scrub(rows), path.parent.name)
     if refused:
         raise ValueError(f"{path}: {len(refused)} discovery rows refused for missing provenance")
     path.parent.mkdir(parents=True, exist_ok=True)

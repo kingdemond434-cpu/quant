@@ -66,6 +66,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 
 import latency_lab as ll  # noqa: E402
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.research import feed_observatory as fo  # noqa: E402
 from libs.research import impact_lab as il  # noqa: E402
 
@@ -891,7 +892,7 @@ def impact_pass(*, base: Path, budget_s: float, dry_run: bool, conn: Any = None
             stamp = now_iso().replace(":", "").replace("-", "")[:15]
             ll._write_atomic(out / f"discoveries_{stamp}.json",
                              {"source": GENERATOR, "generated_at": now_iso(),
-                              "discoveries": seeds})
+                              "discoveries": scrub(seeds)})
             doc["donated"] = str(out / f"discoveries_{stamp}.json")
     return doc
 

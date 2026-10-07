@@ -41,6 +41,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 BASE = Path(__file__).resolve().parents[1]
 ROOT = BASE.parent.parent
 for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
@@ -603,7 +612,7 @@ def parse_all(only: list[str] | None = None) -> dict[str, Any]:
         FOUND.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H")
         (FOUND / f"endpoints_{stamp}.json").write_text(
-            json.dumps(endpoints_out, indent=1), encoding="utf-8")
+            json.dumps(scrub(endpoints_out), indent=1), encoding="utf-8")
 
     census = Counter(str(r.get("status")) for r in rows)
     return {

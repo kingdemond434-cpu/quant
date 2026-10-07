@@ -44,6 +44,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.ops.secret_scrub import scrub
+
 __all__ = [
     "CAPABILITY_LEDGER",
     "CONTAMINATION_KEYS",
@@ -626,7 +628,7 @@ def _build_prompt(role_name: str, role_brief: str, cold: dict[str, Any]) -> tupl
 def _append_jsonl(path: Path, row: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+        fh.write(json.dumps(scrub(row), ensure_ascii=False, default=str) + "\n")
 
 
 def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, Any] | None = None,
@@ -780,7 +782,7 @@ def _donate(rows: list[dict[str, Any]], role_name: str, *, root: Path | None = N
         # The compiler reads `discoveries`; each row carries what `compile_row` can actually use.
         # A row without symbols is not dropped -- it becomes a deepening task like any other
         # miner's, and is worked by research/deepening_worker.py rather than lost.
-        "discoveries": discoveries,
+        "discoveries": scrub(discoveries),
     }, indent=1, default=str), encoding="utf-8")
     return path
 

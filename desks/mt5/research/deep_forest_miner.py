@@ -96,6 +96,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "side_channels"), str
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.data import polite_fetch as pf  # noqa: E402
 from libs.research import mechanism_claims as mc  # noqa: E402
 
@@ -1435,7 +1436,7 @@ def _write_discoveries(rows: list[dict[str, Any]]) -> Path | None:
     try:
         WORLD.mkdir(parents=True, exist_ok=True)
         out = WORLD / f"discoveries_deepforest_{datetime.now(tz=UTC):%Y%m%d_%H%M}.json"
-        out.write_text(json.dumps(rows, indent=1, ensure_ascii=False, default=str), "utf-8")
+        out.write_text(json.dumps(scrub(rows), indent=1, ensure_ascii=False, default=str), "utf-8")
         return out
     except OSError:
         return None
@@ -1847,7 +1848,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
                     "acquire_datasets")}
     if write:
         out = report_path or REPORT
-        _atomic_text(out, json.dumps(doc, indent=1, ensure_ascii=False, default=str))
+        _atomic_text(out, json.dumps(scrub(doc), indent=1, ensure_ascii=False, default=str))
         if fetch:
             _append_run({"at": doc["generated_utc"], "leg": leg, "region_filter": region,
                          "only": len(only or []), "seconds": doc["elapsed_s"],

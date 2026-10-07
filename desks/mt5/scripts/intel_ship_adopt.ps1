@@ -84,6 +84,19 @@ try {
     & git checkout $shipRef -- data/intelligence desks/mt5/data/intelligence 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) { Log "git checkout failed (rc=$LASTEXITCODE)"; exit 4 }
 
+    # 4b. CREDENTIAL SCRUB (2026-10-07, #246). The checkout above STAGES what the VPS shipped,
+    # and the box's next state commit carries it -- so a key a VPS miner scraped would be pushed
+    # back up from here even after origin was cleaned. Scrub the staged blobs (and their working
+    # copies) now, while this task holds the git-writer lock. Non-fatal: the pre-commit hook
+    # scrubs the same blobs again at commit time.
+    $scrubPy = Join-Path $RepoRoot ".venv\Scripts\python.exe"; $scrubArgs = @()
+    if (-not (Test-Path -LiteralPath $scrubPy)) {
+        if (Get-Command py -ErrorAction SilentlyContinue) { $scrubPy = "py"; $scrubArgs = @("-3") }
+        else { $scrubPy = "python" }
+    }
+    $scrubOut = @(& $scrubPy @scrubArgs -m libs.ops.secret_scrub --staged 2>&1 | ForEach-Object { "$_" })
+    foreach ($line in $scrubOut) { if ($line) { Log $line } }
+
     # 5. verify a marker from the ship is actually on disk (the ship always carries the
     #    discovery per-miner corpus; count what came down)
     $n = (Get-ChildItem -Recurse -File "C:\opt\quant\data\intelligence","C:\opt\quant\desks\mt5\data\intelligence" -ErrorAction SilentlyContinue | Measure-Object).Count

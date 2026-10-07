@@ -72,6 +72,7 @@ for _p in (str(_ROOT), str(_DESK), str(_DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.research import event_ontology as onto  # noqa: E402
 
 DATA = _DESK / "data"
@@ -254,7 +255,7 @@ def _read_json(path: Path) -> Any:
 def _atomic_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(value, indent=2, default=str), "utf-8")
+    tmp.write_text(json.dumps(scrub(value), indent=2, default=str), "utf-8")
     try:
         os.replace(tmp, path)
     except PermissionError:                  # a read-only destination is WinError 5 on this box
@@ -269,7 +270,7 @@ def _append(path: Path, rows: Sequence[Mapping[str, Any]]) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         for row in rows:
-            handle.write(json.dumps(dict(row), default=str) + "\n")
+            handle.write(json.dumps(scrub(dict(row)), default=str) + "\n")
     return len(rows)
 
 

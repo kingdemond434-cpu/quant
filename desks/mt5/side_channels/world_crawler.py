@@ -47,6 +47,15 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urljoin, urlparse, urlsplit, urlunsplit
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE.parent.parent))
 sys.path.insert(0, str(BASE / "side_channels"))
@@ -236,7 +245,7 @@ def vault(url: str, raw: bytes) -> str:
         "sha256_20": digest,
         "bytes": len(raw),
     }).encode() + b"\n" + raw
-    out.write_bytes(gzip.compress(payload))
+    out.write_bytes(gzip.compress(scrub(payload)))
     return digest
 
 

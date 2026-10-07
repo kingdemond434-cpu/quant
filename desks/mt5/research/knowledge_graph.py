@@ -52,6 +52,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.research import lead_schema as ls  # noqa: E402
 
 STORE = DESK / "data" / "knowledge_graph" / "graph.json"
@@ -151,7 +152,7 @@ _OPERATIONAL_STATE = frozenset({
 def _atomic(path: Path, doc: Any) -> None:
     """Write or leave the previous version intact. Never a half-written graph."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    text = json.dumps(doc, ensure_ascii=False, indent=1, default=str)
+    text = json.dumps(scrub(doc), ensure_ascii=False, indent=1, default=str)
     fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:

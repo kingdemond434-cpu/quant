@@ -334,16 +334,41 @@ def scrub_staged(prefixes: tuple[str, ...] = INTEL_PREFIXES) -> list[str]:
 
     The index entry is rewritten with the scrubbed blob, and the working copy too when it
     carries a key, so neither this commit nor the next `git add` restores the literal."""
-    names = _git("diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR").split(b"\0")
-    paths = [n.decode("utf-8", "surrogateescape") for n in names if n]
-    paths = [p for p in paths if p.startswith(prefixes) and _is_text_artifact(p)]
-    changed: list[str] = []
-    for rel in paths:
-        entry = _git("ls-files", "-s", "--", rel).decode("utf-8", "surrogateescape").split()
-        if len(entry) < 2:
+    # Batched: one diff, one ls-files, one cat-file process however many paths are staged. An
+    # intel-ship checkout stages ~20k paths, and a child process per path is what kept
+    # Adopt-Release holding the git-writer lock for half an hour (Adopt-Release.ps1, 2026-09-23).
+    spec = ["--", *prefixes]
+    names = _git("diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR", *spec)
+    paths = {n.decode("utf-8", "surrogateescape") for n in names.split(b"\0") if n}
+    paths = {p for p in paths if p.startswith(prefixes) and _is_text_artifact(p)}
+    if not paths:
+        return []
+    entries: dict[str, tuple[str, str]] = {}
+    for rec in _git("ls-files", "-s", "-z", *spec).split(b"\0"):
+        head, _, name = rec.decode("utf-8", "surrogateescape").partition("\t")
+        meta = head.split()
+        if name in paths and len(meta) >= 2:
+            entries[name] = (meta[0], meta[1])
+    order = sorted(entries)
+    request = "".join(entries[p][1] + "\n" for p in order).encode()
+    out = _git("cat-file", "--batch", input_bytes=request)
+    blobs: dict[str, bytes] = {}
+    pos = 0
+    for rel in order:
+        nl = out.index(b"\n", pos)
+        header = out[pos:nl].split()
+        pos = nl + 1
+        if len(header) < 3 or header[1] != b"blob":
             continue
-        mode, sha = entry[0], entry[1]
-        text = _git("cat-file", "blob", sha).decode("utf-8", errors="surrogateescape")
+        size = int(header[2])
+        blobs[rel] = out[pos:pos + size]
+        pos += size + 1
+    changed: list[str] = []
+    for rel in order:
+        if rel not in blobs:
+            continue
+        mode = entries[rel][0]
+        text = blobs[rel].decode("utf-8", errors="surrogateescape")
         if not contains_key(text):
             continue
         clean = scrub_text(text).encode("utf-8", errors="surrogateescape")

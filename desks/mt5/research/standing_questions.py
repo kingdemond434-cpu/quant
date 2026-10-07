@@ -65,6 +65,15 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
 for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
@@ -990,7 +999,7 @@ def run(*, n_symbols: int = 25, budget_s: float = 240.0, dry_run: bool = False) 
     if donor.rows and not dry_run:
         donated_path = INTEL / f"discoveries_{datetime.now(tz=UTC):%Y%m%dT%H%M%S}.json"
         _atomic_json(donated_path, {"source": SOURCE, "generated_at": _now(), "rule": RULE,
-                                    "discoveries": donor.rows})
+                                    "discoveries": scrub(donor.rows)})
     report = {"at": _now(), "questions": out, "donated": len(donor.rows),
               "no_family": donor.no_family[:40], "rule": RULE, "skipped": skipped,
               "symbols": syms, "budget_s": float(budget_s),
