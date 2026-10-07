@@ -242,6 +242,9 @@ ORGANS: tuple[Entry, ...] = (
     # broker charges from the desk's ledgers, the hurdle over them, and how much of the alert
     # traffic deserves a person. It ran only in the VPS daily cycle, which the box never sees.
     _e("scripts/run_desk_economics.py", "the hurdle from measured costs, and the alert burden"),
+    # EVERY ACTIVE LIMIT, BY KIND (ARCH-25): implementation budget, machine resource, access
+    # and spend, statistical safeguard, capital control -- each binding, headroom or unmeasured.
+    _e("desks/mt5/research/limits_census.py", "which limits bind, and what kind each one is"),
     _e("desks/mt5/research/empty_cluster_forcer.py", "force cells into every EMPTY alpha cluster"),
     _e("desks/mt5/research/institutional_cards.py", "mechanism cards for never-certified axes"),
     _e("desks/mt5/research/local_converter.py", "mined rows -> candidates, no seat, no network"),
