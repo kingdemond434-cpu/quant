@@ -65,6 +65,7 @@ from mt5desk.decision_core import (
     bar_already_traded,
     basket_lots,
     basket_record,
+    book_carriers,
     book_from_allocation,
     book_shares,
     bracket_deadline,
@@ -4435,7 +4436,11 @@ def main() -> None:
     st["consumed_decision_why"] = _consumed.get("why") or None
     # ONE KEY, ONE FRACTION: rows that reach the same book key through a fallback join split
     # the optimiser's h for it, so the pass deploys exactly what it solved (`book_shares`).
-    _shares = book_shares((str(_r.get("name") or ""), _book_key(_r, _book)) for _r in sleeves)
+    _joins = [(str(_r.get("name") or ""), _book_key(_r, _book)) for _r in sleeves]
+    _shares = book_shares(_joins)
+    # SNAP THE TOTAL, THEN SPLIT: the key's whole h goes through ONE carrier row, so the lot
+    # snap acts once on the solved h instead of three times on h/3 (`book_carriers`).
+    _carriers = book_carriers(_joins)
     # EACH SLEEVE'S LAST REAL STOP, so the cap prices legs on what they actually traded rather
     # than on a house average. The gateway already records every bracket it places; not reading
     # them back meant the one number that decides how much heat a leg costs was the only number
@@ -4462,11 +4467,13 @@ def main() -> None:
         from_book = _key is not None
         if from_book:
             _n_share = max(1, int(_shares.get(_s["name"], 1)))
-            _s["risk_frac"] = float(_book[_key]) / _n_share
+            _carrier = _carriers.get(_s["name"], _s["name"])
+            _s["risk_frac"] = float(_book[_key]) if _carrier == _s["name"] else 0.0
             _s["sized_by"] = "allocator_book"
             if _n_share > 1:
                 _s["book_key"] = _key
                 _s["book_key_shared_by"] = _n_share
+                _s["book_key_carrier"] = _carrier
         if _s.get("exec") not in ("family_market", "scalp_market"):
             # EVERY BRACKET-LANE SLEEVE IS BILLED AT THE ORDER IT WILL ACTUALLY SEND -- gold,
             # promoted and fixed-lot alike. Three external audit rounds found the same defect

@@ -303,7 +303,11 @@ def test_calibration_prior_stands_without_decay_exits_and_says_it_is_thin() -> N
     recs = [ExitRecord("a", 100.0, None, "t"), ExitRecord("b", 50.0, DATA_FAILURE, "t"),
             ExitRecord("c", 900.0, None, "t", detectable=False)]
     out = calibrate_scale(recs)
-    assert out["status"] == "PRIOR_STANDS" and out["scale_days"] == 120.0
+    # TWO-SIDED: a quiet history LENGTHENS the scale (Gamma posterior 270d at full pressure),
+    # and half the pressure halves it -- min(prior, posterior) could only ever shorten it.
+    assert out["status"] == "FITTED" and out["direction"] == "longer"
+    assert out["scale_days"] == pytest.approx(270.0)
+    assert calibrate_scale(recs, mean_pressure=0.5)["scale_days"] == pytest.approx(135.0)
     assert out["n_decay_exits"] == 0 and out["days_at_risk"] == 150.0
     assert out["days_blind"] == 900.0, "blind exposure is reported, never counted as survival"
     assert out["posterior_scale_days"] == pytest.approx(270.0)
@@ -331,5 +335,5 @@ def test_the_desk_history_is_read_with_every_exit_labelled() -> None:
     recs, _notes = ph.retirement_history()
     assert all(r.cause in (None, "unclassified", ph.POLICY, *ph.CAUSES) for r in recs)
     out = ph.calibrate_from_history()
-    assert out["scale_days"] <= ph.HAZARD_SCALE_DAYS, "history can only shorten the scale"
+    assert out["scale_days"] > 0 and out["direction"] in ("shorter", "longer", "equal")
     assert "sensitivity_with_out_of_mandate" in out and isinstance(out["notes"], list)

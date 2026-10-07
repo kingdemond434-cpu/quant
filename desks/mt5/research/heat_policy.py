@@ -95,8 +95,9 @@ So, in `resolve`:
     `certify` says the target is at or below the curve's peak, or on its flat top inside
     CERTIFY_TOLERANCE. That keeps capital at work exactly when it is free to;
   * when the measured curve says the target gives up real growth (or growth is non-positive at
-    every heat, or the curve is unmeasured), the target binds nothing and the book runs the
-    growth optimum, which may be cash;
+    every heat), the target binds nothing and the book runs the growth optimum, which may be
+    cash; an UNMEASURED curve (fewer than three points) keeps the target, because only a
+    measurement may release it;
   * a state curve with enough worlds moves the heat in EITHER direction to its own argmax.
 The survival bars, the effective-heat ceiling and the catastrophe layer are unchanged and still
 bind first: the change can only lower exposure where growth no longer pays for it.
@@ -597,14 +598,21 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
     # THE TARGET HOLDS THE BOOK UP ONLY WHILE IT IS FREE (principal, 2026-10-06, superseding the
     # flat 24/7 floor of 2026-09-02/09-05 -- see the module docstring for the words). `certify`
     # is the measurement of "free": the target is at or below the growth curve's peak, or on its
-    # flat top within CERTIFY_TOLERANCE. When the curve says the target gives up real growth, or
-    # growth is non-positive everywhere, or the curve is unmeasured, the target floors nothing and
-    # the growth optimum runs -- which may be cash. An unmeasured curve never forces exposure:
-    # a stale or missing input must not be what authorises risk.
-    floor = target if (mandate and ok) else 0.0
+    # flat top within CERTIFY_TOLERANCE. When the MEASURED curve says the target gives up real
+    # growth, or growth is non-positive everywhere, the target floors nothing and the growth
+    # optimum runs -- which may be cash.
+    #
+    # AN UNMEASURED CURVE KEEPS THE TARGET (audit ruling on PR #261). Releasing the 20% needs a
+    # measurement that it costs growth; with fewer than three curve points there is none, and
+    # the standing target holds exactly as it did before the two-sided change. Absence of a
+    # measurement is never what moves exposure in either direction.
+    unmeasured = len(curve or {}) < 3
+    floor = target if (mandate and (ok or unmeasured)) else 0.0
     if mandate:
         reasons.append((f"utilisation target {target:.2%} holds the book up: it is certified free "
                         f"on the measured curve" if ok else
+                        f"utilisation target {target:.2%} holds the book up: the growth curve is "
+                        f"UNMEASURED, and only a measurement may release it" if unmeasured else
                         f"utilisation target {target:.2%} RELEASED: not certified on the measured "
                         f"curve, so the growth optimum runs (cash is an allocation)")
                        + f"; readiness {r:.1%} is REPORTED, not gating"

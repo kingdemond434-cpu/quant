@@ -72,7 +72,7 @@ def check() -> list[dict[str, str]]:
     dc = _src("desks/mt5/mt5desk/decision_core.py")
 
     # G1 -- flat floor, growth free above it
-    if "floor = target if (mandate and ok) else 0.0" not in hp:
+    if "floor = target if (mandate and (ok or unmeasured)) else 0.0" not in hp:
         f.append({"check": "G1_CERTIFIED_FLOOR",
                   "why": "heat_policy.resolve no longer holds the target when it is certified free"})
     if re.search(r"floor\s*=\s*target\s*\*", hp):

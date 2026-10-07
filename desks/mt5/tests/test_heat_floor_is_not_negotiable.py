@@ -67,10 +67,13 @@ def test_negative_growth_everywhere_resolves_to_cash() -> None:
     assert v.binding == "cash"
 
 
-def test_an_unmeasured_curve_never_forces_exposure() -> None:
-    """A missing measurement must not be what authorises risk: no curve, no target."""
-    v = _resolve(0.03, curve={}, readiness=1.0)
-    assert v.floor == 0.0 and v.total_heat == pytest.approx(0.03)
+def test_an_unmeasured_curve_keeps_the_target() -> None:
+    """Only a MEASUREMENT may release the target (audit ruling on PR #261): no curve, the 20%
+    holds exactly as it did before the two-sided change."""
+    for curve in ({}, None, {0.2: 0.001, 0.3: 0.002}):
+        v = _resolve(0.03, curve=curve, readiness=1.0)
+        assert v.floor == pytest.approx(hp.HEAT_TARGET)
+        assert v.total_heat >= hp.HEAT_TARGET - 1e-9
 
 
 def test_concentration_never_cuts_below_a_free_target() -> None:

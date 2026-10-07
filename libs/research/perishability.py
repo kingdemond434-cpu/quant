@@ -990,7 +990,8 @@ def retirement_history(root: Path = _ROOT) -> tuple[list[ExitRecord], list[str]]
 def calibrate_scale(records: list[ExitRecord], *, prior_scale_days: float = HAZARD_SCALE_DAYS,
                     prior_events: float = HAZARD_SCALE_PRIOR_EVENTS,
                     include_out_of_mandate: bool = False,
-                    horizon_days: float = HAZARD_HORIZON_DAYS) -> dict[str, Any]:
+                    horizon_days: float = HAZARD_HORIZON_DAYS,
+                    mean_pressure: float | None = None) -> dict[str, Any]:
     """The decay scale, updated by the desk's own retirement history. Never silently the prior.
 
     Censored exponential survival on DECAY exits: d decay exits over T detectable days at risk
@@ -999,9 +1000,14 @@ def calibrate_scale(records: list[ExitRecord], *, prior_scale_days: float = HAZA
     (prior_events x prior_scale + T) / (prior_events + d) -- the declared scale shrunk toward the
     history by exactly as much evidence as the history holds.
 
-    The scale USED is min(prior, posterior): the history measures E[pressure] / scale, mean
-    pressure is at most 1, so the history bounds the full-pressure scale from above and can
-    shorten it but never lengthen it (module docstring).
+    TWO-SIDED (audit of PR #261, 2026-10-06). The history measures the rate E[pressure] / scale,
+    so the full-pressure scale it implies is `mean_pressure x T / d` -- shrunk by the conjugate
+    prior, `mean_pressure x posterior_scale`. That is used whichever side of the declared 120d it
+    falls: a history of fast deaths shortens it, a long quiet history lengthens it. Taking
+    min(prior, posterior) (the first version) could only ever shorten the scale, which is a
+    one-sided ratchet the data could never relax. `mean_pressure` is the desk's measured mean
+    mechanism pressure over the exposure; None means unmeasured and is taken as 1.0 (full
+    pressure), which is said in the output, never assumed silently.
     """
     use = [r for r in records if r.in_mandate or include_out_of_mandate]
     d = sum(1 for r in use if r.cause in DECAY_CAUSES)
@@ -1011,20 +1017,25 @@ def calibrate_scale(records: list[ExitRecord], *, prior_scale_days: float = HAZA
     b = prior_events * prior_scale_days + t_at_risk
     posterior_scale = b / a
     rate = a / b
-    scale = min(prior_scale_days, posterior_scale)
+    mp_measured = mean_pressure is not None and math.isfinite(float(mean_pressure))
+    mp = min(max(float(mean_pressure), 1e-6), 1.0) if mp_measured else 1.0
+    scale = mp * posterior_scale
     counts: dict[str, int] = {}
     for r in use:
         key = r.cause or "censored_live"
         counts[key] = counts.get(key, 0) + 1
-    status = "FITTED" if posterior_scale < prior_scale_days else "PRIOR_STANDS"
+    status = "FITTED"
+    direction = ("shorter" if scale < prior_scale_days - 1e-9 else
+                 "longer" if scale > prior_scale_days + 1e-9 else "equal")
     prior_weight = 1.0 - t_at_risk / (t_at_risk + prior_events * prior_scale_days)
     thin = d < 3
-    verdict_txt = (f"FITTED: the history says edges break faster than declared; using "
-                   f"{scale:.1f}d" if status == "FITTED" else
-                   f"PRIOR STANDS: the history bounds the scale at {posterior_scale:.1f}d, above "
-                   "the prior, and a bound from above cannot lengthen it")
+    verdict_txt = (f"FITTED {direction} than the declared {prior_scale_days:g}d: using "
+                   f"{scale:.1f}d (= mean pressure {mp:.3f}"
+                   f"{'' if mp_measured else ' UNMEASURED, taken as full'} x posterior "
+                   f"{posterior_scale:.1f}d)")
     return {
-        "status": status, "scale_days": round(scale, 4),
+        "status": status, "scale_days": round(scale, 4), "direction": direction,
+        "mean_pressure": round(mp, 6), "mean_pressure_measured": mp_measured,
         "prior_scale_days": prior_scale_days, "prior_events": prior_events,
         "posterior_scale_days": round(posterior_scale, 4),
         "posterior_shape": a, "posterior_rate_per_day": round(rate, 8),

@@ -338,7 +338,7 @@ def test_heat_floor_is_never_breached() -> None:
         if str(v.binding) == "catastrophe":
             continue
         assert float(v.total_heat) >= 0.0
-        if hp.certify(curve or {}, floor)[0]:
+        if hp.certify(curve or {}, floor)[0] or len(curve or {}) < 3:
             assert float(v.total_heat) >= floor - 1e-9, (
                 f"resolved heat {v.total_heat} fell under the certified {floor} target "
                 f"(binding={v.binding}, free_optimum={opt})")

@@ -324,8 +324,13 @@ class AllocationResult:
     #: Best minus worst robust score across the starts tried; > tolerance means a start stalled.
     multistart_spread: float = 0.0
     n_starts: int = 1
-    #: What `converged` certifies. The objective is non-convex, so this is never "global".
+    #: What is certified. "local_kkt_multistart" when only stationarity is shown;
+    #: "global_bound" when `global_gap` (a TRUE bound on the distance to the global optimum, see
+    #: `optimise`) is within tolerance.
     certificate: str = "local_kkt_multistart"
+    #: Upper bound on the global optimum of the real objective, and score's distance below it.
+    upper_bound: float = float("inf")
+    global_gap: float = float("inf")
 
 
 def _stationary_bootstrap_index(n_rows: int, n_obs: int, block_days: float,
@@ -1348,6 +1353,40 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
     fin_starts = [x for x in starts if math.isfinite(x)]
     spread = (max(fin_starts) - min(fin_starts)) if len(fin_starts) > 1 else 0.0
 
+    # A GLOBAL BOUND, BESIDE THE LOCAL CERTIFICATE (audit of PR #261). The redundancy charge is
+    # >= 0 on the heat set (|C| - I has a zero diagonal and non-negative entries, h >= 0), so the
+    # objective is everywhere <= the same objective with the charge removed -- and THAT one is
+    # concave, so its Frank-Wolfe gap is a true bound on its own optimum. Hence
+    #     f* <= f_relax(h_r) + FW_gap_relax(h_r) =: upper_bound
+    # for any h_r, and `global_gap = upper_bound - score` bounds how far the returned book can be
+    # from the GLOBAL optimum of the real (non-convex) problem. It is loose exactly by the
+    # redundancy charge the optimum pays, and it is never a claim the arithmetic cannot back.
+    upper_bound, global_gap = float("inf"), float("inf")
+    if math.isfinite(score) and not budget_hit:
+        from dataclasses import replace as _dc_replace
+        cfg0 = _dc_replace(cfg, redundancy_lambda=0.0)
+        hr = h.copy()
+        r_score, r_grad, _rg = _objective(w_pop, hr, corr_abs, cfg0)
+        lr0 = step
+        for _ in range(max(1, iterations // 2)):
+            if deadline is not None and time.time() > deadline:
+                break
+            cand = project_capped_simplex(hr + lr0 * r_grad, cap, exact=exact, upper=ub)
+            c_s, c_g, _cg = _objective(w_pop, cand, corr_abs, cfg0)
+            if c_s > r_score:
+                moved = float(np.abs(cand - hr).sum())
+                hr, r_score, r_grad = cand, c_s, c_g
+                lr0 *= 1.10
+                if moved < 1e-7:
+                    break
+            else:
+                lr0 *= 0.5
+                if lr0 < 1e-9:
+                    break
+        if math.isfinite(r_score):
+            upper_bound = r_score + fw_gap(r_grad, hr, cap, exact=exact, upper=ub)
+            global_gap = max(0.0, upper_bound - score)
+
     total = float(h.sum())
     # Marginal value of each sleeve's last unit of heat, at the solution. This is the ranking the
     # execution path must trim by when it cannot fit the whole book -- dropping the sleeve with
@@ -1369,7 +1408,9 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
                   sorted(marginal.items(), key=lambda kv: -kv[1])},
         iterations=done, converged=converged, note=w_pop.note, budget_hit=budget_hit,
         optimality_gap=float(gap), gap_tolerance=float(tol), multistart_spread=float(spread),
-        n_starts=len(starts), certificate="local_kkt_multistart",
+        n_starts=len(starts),
+        certificate=("global_bound" if global_gap <= tol else "local_kkt_multistart"),
+        upper_bound=float(upper_bound), global_gap=float(global_gap),
     )
 
 

@@ -40,7 +40,10 @@ def test_mandated_identical_pair_escapes_the_saddle(ub: float | None) -> None:
     best = max(score_book(ev, {"a": x, "b": 0.2 - x}, worlds=w)["robust_score"] for x in grid)
     assert res.robust_score >= best - 1e-9, (res.heat, res.robust_score, best)
     assert res.n_starts >= 2
-    assert res.certificate == "local_kkt_multistart"
+    assert res.certificate in ("local_kkt_multistart", "global_bound")
+    # The global bound is a true bound: no feasible book on the grid scores above it.
+    assert best <= res.upper_bound + 1e-9
+    assert res.global_gap >= 0.0
 
 
 def test_converged_never_marks_a_point_a_feasible_book_beats() -> None:
@@ -73,3 +76,12 @@ def test_converged_means_the_published_gap_is_within_tolerance() -> None:
     for its in (1, 400):
         res = optimise(ev, hard_cap=0.2, target=None, worlds=w, iterations=its)
         assert res.converged == (res.optimality_gap <= res.gap_tolerance)
+
+
+def test_global_certificate_on_the_twin_pair() -> None:
+    """At the corner the redundancy charge is zero, so the relaxation's optimum IS reached and the
+    certificate upgrades to global -- the bound is tight exactly when the charge is not paid."""
+    ev, w = _identical_pair()
+    res = optimise(ev, hard_cap=0.2, target=0.2, worlds=w)
+    assert res.global_gap <= res.gap_tolerance + 1e-12
+    assert res.certificate == "global_bound"

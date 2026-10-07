@@ -5201,14 +5201,18 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             },
         },
         "solver": {"iterations": book.iterations, "converged": book.converged,
-                   # A LOCAL certificate: the objective is non-convex (robust_elog._redundancy),
-                   # so `converged` means a KKT point of the heat set, best of several starts.
+                   # The objective is non-convex (robust_elog._redundancy): `converged` means a
+                   # KKT point, best of several starts; `certificate` is "global_bound" only when
+                   # the relaxation bound `global_gap` is within tolerance.
                    "certificate": getattr(book, "certificate", "local_kkt_multistart"),
                    "optimality_gap": _finite_or_none(getattr(book, "optimality_gap", None)),
                    "gap_tolerance": _finite_or_none(getattr(book, "gap_tolerance", None)),
                    "multistart_spread": _finite_or_none(getattr(book, "multistart_spread",
                                                                 None)),
                    "n_starts": int(getattr(book, "n_starts", 1)),
+                   # A TRUE bound on the distance to the GLOBAL optimum (charge-free relaxation).
+                   "upper_bound": _finite_or_none(getattr(book, "upper_bound", None)),
+                   "global_gap": _finite_or_none(getattr(book, "global_gap", None)),
                    "budget_hit": bool(getattr(book, "budget_hit", False))},
         "staleness_clamp": stale_clamp_doc,
         "receding_horizon": receding,

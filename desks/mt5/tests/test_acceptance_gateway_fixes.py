@@ -80,7 +80,15 @@ def test_a_shared_book_key_splits_the_solved_fraction() -> None:
     # The exact owner is never divided, and fallback rows never count against it.
     assert dc.book_shares([("gold_asia", "gold_asia"), ("gold_asia_v2", "gold_asia")]) == {
         "gold_asia": 1, "gold_asia_v2": 1}
-    assert "_book[_key]) / _n_share" in _GW
+    # SNAP THE TOTAL, THEN SPLIT (audit of PR #261): one carrier deploys the key's whole h, so
+    # the lot snap acts once on the solved total; an exact owner carries its key for everyone.
+    carriers = dc.book_carriers(joins)
+    assert {carriers[n] for n in ("gold_afternoon_v2", "gold_afternoon_v3",
+                                  "gold_afternoon_v4")} == {"gold_afternoon_v2"}
+    assert carriers["gold_asia"] == "gold_asia" and carriers["eurchf_x_p_1"] == "eurchf_x_p_1"
+    assert dc.book_carriers([("gold_asia_v2", "gold_asia"), ("gold_asia", "gold_asia")]) == {
+        "gold_asia_v2": "gold_asia", "gold_asia": "gold_asia"}
+    assert 'float(_book[_key]) if _carrier == _s["name"] else 0.0' in _GW
 
 
 def _heat(op: float, growth: float = 0.5, surv: float = 0.5) -> dict:
@@ -104,10 +112,12 @@ def test_a_consistent_artifact_passes_unchanged() -> None:
 def test_the_check_binds_only_on_a_contradiction() -> None:
     cap, why = dc.verify_heat_ceiling(0.4, "m", _heat(0.4, surv=0.3), _surface((0.1, 0)))
     assert cap == 0.3 and "BINDS" in why
+    # The report surface is REPORTED, never binding (audit of PR #261): a coarse-grid ruinous
+    # row inside the bar is named in the reason and moves no heat.
     cap, why = dc.verify_heat_ceiling(0.4, "m", _heat(0.4),
                                       _surface((0.1, 0), (0.2, 0), (0.3, 0.01), (0.4, 0)))
-    assert cap == 0.2 and "P(ruin)" in why
+    assert cap == 0.4 and "P(ruin)" in why and "REPORT ONLY" in why
     cap, _ = dc.verify_heat_ceiling(0.4, "m", _heat(0.4), _surface((0.1, 0.01), (0.2, 0)))
-    assert cap == min(0.4, float(dc.MAX_HEAT_CEILING))
+    assert cap == 0.4
     assert 'verify_heat_ceiling(cap, cap_why, heat, art.get("kelly_surface"))' in (
         _DESK / "mt5desk" / "decision_core.py").read_text(encoding="utf-8")

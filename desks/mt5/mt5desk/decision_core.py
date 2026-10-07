@@ -945,12 +945,13 @@ def verify_heat_ceiling(cap: float, cap_why: str, heat: dict[str, Any],
       1. The rule the artifact states for itself: operative = min(growth, survival, ...). An
          operative ceiling above its own growth or survival ceiling is a contradiction; the
          lower stated bar binds.
-      2. The survival surface the artifact publishes (`kelly_surface.rows`). A row at or below
-         the ceiling with P(ruin) > 0 is a sampled world where the book at that heat is wiped
-         out -- the one clause no growth can pay for. The ceiling falls to the highest heat
-         below the first ruinous row; when the very lowest row is ruinous, to the recorded
-         constant, exactly as `kelly_surface.envelope` treats a surface that refuses its
-         smallest book.
+      2. The survival surface the artifact publishes (`kelly_surface.rows`), REPORTED, NOT
+         BINDING (audit of PR #261, 2026-10-06). That surface is labelled report-only by the
+         allocator, sampled on a coarse grid, and one ruined world in 64 at 0.18 cut the cap
+         0.30 -> 0.12 -- below the 20% target, from grid spacing and a single draw, one-sided,
+         with no missed-growth line to bill it. Sizing belongs to the solver's own survival
+         envelope (clause 1 reads it). A ruinous row inside the claimed bar is named in the
+         reason so a reader and the auditors see it; it moves no heat.
 
     An absent or unreadable surface leaves `cap` as it was and says UNVERIFIED: a missing second
     reading is reported, never turned into a smaller book.
@@ -975,16 +976,15 @@ def verify_heat_ceiling(cap: float, cap_why: str, heat: dict[str, Any],
             tail = "; ".join(notes) + "; " if notes else ""
             return cap, f"{cap_why} [independent check: {tail}surface UNVERIFIED]"
         ruin = next((i for i, (h, p) in enumerate(clean) if p > 0.0 and h <= cap + 1e-9), None)
+        flag = ""
         if ruin is not None:
-            h_bad = clean[ruin][0]
-            safe = clean[ruin - 1][0] if ruin > 0 else float(MAX_HEAT_CEILING)
-            safe = min(safe, cap)
-            notes.append(f"P(ruin) {clean[ruin][1]:.3g} at heat {h_bad:.4f} inside the claimed "
-                         f"bar; held at {safe:.4f}")
-            cap = safe
+            flag = (f"; REPORT ONLY: kelly_surface row heat {clean[ruin][0]:.4f} shows P(ruin) "
+                    f"{clean[ruin][1]:.3g} inside the claimed bar (coarse report surface, not "
+                    f"the solver's envelope -- moves no heat)")
         if notes:
-            return cap, f"{cap_why} [independent check BINDS: {'; '.join(notes)}]"
-        return cap, f"{cap_why} [independent check: consistent over {len(clean)} surface rows]"
+            return cap, f"{cap_why} [independent check BINDS: {'; '.join(notes)}{flag}]"
+        return cap, (f"{cap_why} [independent check: consistent over {len(clean)} surface rows"
+                     f"{flag}]")
     except Exception as exc:
         return cap, f"{cap_why} [independent check UNVERIFIED ({type(exc).__name__})]"
 
@@ -2152,6 +2152,26 @@ def book_shares(joins: Iterable[tuple[str, str | None]]) -> dict[str, int]:
         if n != k:
             counts[k] = counts.get(k, 0) + 1
     return {n: (1 if n == k else counts[k]) for n, k in rows}
+
+
+def book_carriers(joins: Iterable[tuple[str, str | None]]) -> dict[str, str]:
+    """For each row on a SHARED fallback key, the one row that carries the key's whole h.
+
+    SNAP THE KEY'S TOTAL, THEN SPLIT (audit of PR #261, 2026-10-06). `book_shares` divided h by
+    the number of rows BEFORE the lot snap, so three rows at h/3 could each fall under the
+    venue's minimum lot and deploy nothing -- the solved h lost to rounding three times over. The
+    key's h is now deployed ONCE, at its full size, through the first row (roster order) that
+    joined it: one snap on the total, and the total deployed is exactly the solved h. The other
+    rows on that key carry zero and name their carrier, so attribution stays readable. A row that
+    matched its key EXACTLY owns it and is its own carrier, as before.
+    """
+    rows = [(str(n), k) for n, k in joins if k is not None]
+    # An EXACT owner carries its key for everyone: a `_v2` that falls back onto a key a live row
+    # owns by name is the same solved h, and deploying it again would double it.
+    first: dict[str, str] = {k: n for n, k in rows if n == k}
+    for n, k in rows:
+        first.setdefault(k, n)
+    return {n: first[k] for n, k in rows}
 
 
 def sleeve_from_comment(comment: str, unattributed: str = "") -> str:
