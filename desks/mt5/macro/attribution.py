@@ -69,6 +69,7 @@ __all__ = [
     "Attribution",
     "attribute",
     "feedback",
+    "persist_new",
     "report",
 ]
 
@@ -373,3 +374,30 @@ def report(attributions: Sequence[Attribution], ledger: EventLedger | None = Non
                 fh.write(json.dumps(a.to_dict(), separators=(",", ":"), sort_keys=True,
                                     default=str) + "\n")
     return payload
+
+
+def persist_new(attributions: Sequence[Attribution], path: Any = None) -> int:
+    """Append each MEASURED attribution whose event id the file does not hold yet; returns the
+    count appended. An event is attributed only after its horizon closed, so its marking is final
+    and the first write stands: re-marking the same due events every pass appends nothing.
+    `source_event_quality` reads this file for the per-(source, event class) price verdicts."""
+    import json
+    from pathlib import Path
+    target = Path(path) if path is not None else ATTRIBUTION_PATH
+    have: set[str] = set()
+    if target.exists():
+        with open(target, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                try:
+                    have.add(str(json.loads(line).get("event_id")))
+                except (ValueError, AttributeError):
+                    continue
+    new = [a for a in attributions if a.status == Status.MEASURED and a.event_id not in have]
+    if not new:
+        return 0
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with open(target, "a", encoding="utf-8") as fh:
+        for a in new:
+            fh.write(json.dumps(a.to_dict(), separators=(",", ":"), sort_keys=True,
+                                default=str) + "\n")
+    return len(new)

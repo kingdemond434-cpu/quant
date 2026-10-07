@@ -110,6 +110,9 @@ def one_pass(*, ledger: EventLedger | None = None, fetch: bool = True,
            if (dt := parse_ts(r.received_at)) is not None and dt.timestamp() <= horizon_cut]
     attributions = [attribution.attribute(r, reader, basis=basis) for r in due[-500:]]
     fb = attribution.feedback(attributions)
+    # DATA-31: the per-event markings are kept (first write stands) so the per-(source, event
+    # class) table can read move confirmation and lead to move; they were in memory only
+    attributed_new = attribution.persist_new(attributions)
     decay_samples = fb["decay_samples"]
     cred.fit(fb["source_outcomes"],
              tier_of={r.source_id: r.source_tier for r in led.records()})
@@ -201,6 +204,7 @@ def one_pass(*, ledger: EventLedger | None = None, fetch: bool = True,
         "replay": replay.coverage(led, rep),
         "replay_cleared": cleared, "replay_refused": refused,
         "attribution": attribution.report(attributions, led),
+        "attributions_persisted": attributed_new,
         "category_loadings": loadings,
         "interrupt": decision,
         "rent": {
