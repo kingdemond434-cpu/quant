@@ -199,9 +199,9 @@ def macro_weights(train_days: list[str], asof: str) -> np.ndarray | None:
     if not use:
         return None
     # KNOWN, NOT VALID, DATES, READ THROUGH THE BITEMPORAL STORE (data_os, Tier S AC3): each
-    # FRED state becomes `BitemporalStore` rows (knowledge = valid + the declared fred_macro
-    # lag). TODAY is `latest_known` at the start of `asof` -- the newest print published before
-    # that day opened -- and a training day reads only the print whose knowledge time first falls
+    # FRED state becomes `BitemporalStore` rows (knowledge = `data_os.knowledge_at` for that
+    # state's own FRED series). TODAY is `latest_known` at the start of `asof` -- the newest
+    # print published before that day opened -- and a training day reads only the print whose knowledge time first falls
     # inside it, so neither "today" nor any training day's kernel reads a print that did not yet
     # exist.
     from datetime import UTC as _UTC
@@ -223,7 +223,11 @@ def macro_weights(train_days: list[str], asof: str) -> np.ndarray | None:
                             index=pd.to_datetime([str(k)[:10] for k in raw], utc=True))
         except (TypeError, ValueError):
             return None
-        store = data_os.store_from_series(ser, source="fred_macro", entity=d, attribute="state")
+        # THE DIMENSION'S OWN FRED SERIES, so its own release timing applies (2026-10-07): with
+        # no `series_id` every state read the flat 27h daily lag, and the WEEKLY-posted dollar
+        # index (DTWEXBGS, H.10) entered the kernel about a week before it was published.
+        store = data_os.store_from_series(ser, source="fred_macro", entity=d, attribute="state",
+                                          series_id=ms.SERIES.get(d))
         by = {_known_day(r.knowledge_time): r.value for r in store.rows}
         now = store.latest_known(d, "state", [asof_open])[0]
         if now is None:

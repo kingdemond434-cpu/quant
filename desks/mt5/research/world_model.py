@@ -375,8 +375,10 @@ def load_inputs(*, max_series: int = 240) -> Inputs:
             # THE SERIES' OWN DECLARED LAG, never less than a day plus the pad (Tier S AC3,
             # 2026-10-06): the flat day admitted a monthly M2 print weeks before H.6 published it
             # and the weekly-posted dollar index days early (`data_os.FRED_SERIES_LAGS`).
-            lag = data_os.effective_lag("fred_macro", str(name),
-                                        min_lag=timedelta(days=1, hours=CLOCK_PAD_H))
+            # Rule-timed series (H.15, VIX, SOFR, DFF, OAS, WTI) are placed by their own release
+            # calendar per point (`data_os.knowledge_at`, 2026-10-07), weekends and holidays
+            # included, never sooner than the day plus the pad.
+            floor = timedelta(days=1, hours=CLOCK_PAD_H)
             for row in rows[-MAX_POINTS_PER_SERIES:]:
                 if not isinstance(row, (list, tuple)) or len(row) < 2:
                     continue
@@ -390,7 +392,8 @@ def load_inputs(*, max_series: int = 240) -> Inputs:
                 # A daily market print is knowable the next day; the pad then covers the broker
                 # clock (`libs/data/pit_stamp.DEFAULT_LAG_DAYS["daily"]`); a slower series waits
                 # its own declared cadence.
-                available = (stamp + lag).isoformat()
+                available = data_os.knowledge_at("fred_macro", stamp, str(name),
+                                                 min_lag=floor).isoformat()
                 points.append(R.Point(available_time=available, period_time=str(row[0]),
                                       value=value))
             if len(points) >= R.MIN_PRIOR:

@@ -79,6 +79,7 @@ import argparse
 import ast
 import json
 import sys
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -104,22 +105,91 @@ CERT_CALLERS = ("desks/mt5/scripts/external_gauntlet.py", "desks/mt5/mt5desk/fam
 REGISTRIES = ("desks/mt5/data/data_registry.json", "desks/mt5/data_registry.json")
 
 # ------------------------------------------------------------------ the producer census (AC3)
-PRODUCER_TREES = (*TREES, "desks/mt5/macro")
+#: the research trees plus the macro desk and the two library trees that feed the ALLOCATOR
+#: (`libs/portfolio`: `leg_factors`, `macro_state`; `libs/regime`), widened 2026-10-07
+PRODUCER_TREES = (*TREES, "desks/mt5/macro", "libs/portfolio", "libs/regime")
 PRODUCER_FLOOR = ROOT / "docs" / "research" / "bitemporal_producer_floor.json"
 #: macro / alt-data tokens beyond the registered sources' `readers`: FRED and ALFRED, vintages,
 #: macro states and regimes, surprises, alt-data conditioners
 PRODUCER_TOKENS = ("fred", "alfred", "data/vintages", "release_vintages", "macro_regime",
                    "macro_state", "alt_proxies", "alt_data", "event_surprise", "surprise_z",
-                   "cot.json", "gdelt", "exogenous_conditioner")
-#: a read through the bitemporal store (the three data_os doors are store-backed since AC3)
-BITEMPORAL_TOKENS = ("latest_known", "BitemporalStore", "store_from_series", "pit_align",
-                     "known_series", "known_as_of", "known_axis_series")
-#: a join on the row's own knowledge-time column
+                   "cot.json", "gdelt", "exogenous_conditioner",
+                   # the acquirer's publishers, by host (`data_os.ACQUIRED_HOST_SOURCES`)
+                   "cftc.gov", "ecb.europa.eu", "eia.gov")
+#: THE STORE'S DOORS, as CALLS. A module is `bitemporal` only when its code CALLS one of these
+#: (`libs/tiers/bitemporal.BitemporalStore` itself, its `latest_known`, or a `data_os` door that is
+#: store-backed since AC3). A name in a comment, a docstring or a message string is not a read.
+STORE_DOORS = frozenset({"BitemporalStore", "latest_known", "store_from_series", "pit_align",
+                         "known_series", "known_as_of", "known_axis_series"})
+BITEMPORAL_TOKENS = tuple(sorted(STORE_DOORS))
+#: a join on the row's own knowledge-time column: the column name as a subscript / key / attribute
 KNOWLEDGE_COLUMNS = ("knowable_at", "available_time", "usable_at", "knowledge_time")
-#: a module that shifts a dated input by a lag produces a time-aligned value even with no join
-SHIFT_TOKENS = ("lag_of(", "knowledge_time(", "PUBLICATION_LAG", "RELEASE_LAG", "PUB_LAG",
-                "KNOWABLE", *BITEMPORAL_TOKENS)
+#: an IDENTIFIER that shifts a dated input by a lag (a constant or a data_os lag function)
+LAG_IDENTIFIERS = ("PUBLICATION_LAG", "RELEASE_LAG", "PUB_LAG", "KNOWABLE", "lag_of",
+                   "knowledge_time", "knowledge_at", "declared_lag", "effective_lag",
+                   "publication_lag", "vintage")
+#: what puts a module with NO join in the census: it shifts a dated input itself (a lag constant
+#: or lag function) or calls a store door -- a vintage reader with no join is not a producer
+SHIFT_IDENTIFIERS = ("PUBLICATION_LAG", "RELEASE_LAG", "PUB_LAG", "KNOWABLE", "lag_of",
+                     "knowledge_time", "knowledge_at")
 PRODUCER_CLASSES = ("bitemporal", "knowledge_stamped", "lag_shift", "declared", "not_pit")
+
+
+@dataclass(frozen=True)
+class CodeView:
+    """What a module's CODE says, comments and docstrings excluded (they never reach the AST or
+    are dropped here): every identifier, every non-docstring string constant, and every call into
+    a store door with its line."""
+
+    identifiers: frozenset[str]
+    strings: tuple[str, ...]
+    door_calls: tuple[tuple[int, str], ...]
+
+    def mentions(self, token: str) -> bool:
+        return any(token in i for i in self.identifiers) or any(token in s for s in self.strings)
+
+
+def _docstring_nodes(tree: ast.AST) -> set[int]:
+    out: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            body = getattr(node, "body", None) or []
+            if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant) \
+                    and isinstance(body[0].value.value, str):
+                out.add(id(body[0].value))
+    return out
+
+
+def code_view(tree: ast.AST) -> CodeView:
+    docs = _docstring_nodes(tree)
+    idents: set[str] = set()
+    strings: list[str] = []
+    doors: list[tuple[int, str]] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name):
+            idents.add(node.id)
+        elif isinstance(node, ast.Attribute):
+            idents.add(node.attr)
+        elif isinstance(node, ast.alias):
+            idents.update(p for p in (node.name, node.asname or "") if p)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            idents.add(node.module)
+        elif isinstance(node, ast.keyword) and node.arg:
+            idents.add(node.arg)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            idents.add(node.name)
+        elif isinstance(node, ast.arg):
+            idents.add(node.arg)
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str) \
+                and id(node) not in docs:
+            strings.append(node.value)
+        if isinstance(node, ast.Call):
+            fn = node.func
+            name = fn.attr if isinstance(fn, ast.Attribute) else \
+                fn.id if isinstance(fn, ast.Name) else None
+            if name in STORE_DOORS:
+                doors.append((node.lineno, name))
+    return CodeView(frozenset(idents), tuple(strings), tuple(sorted(doors)))
 
 
 def _joins(tree: ast.AST) -> list[tuple[int, str]]:
@@ -206,12 +276,14 @@ def scan(root: Path | None = None) -> dict[str, Any]:
                                                   + len(declared))}}
 
 
-def _producer_class(rel: str, text: str) -> str:
-    if any(t in text for t in BITEMPORAL_TOKENS):
+def _producer_class(rel: str, view: CodeView) -> str:
+    """The read path, from CODE only (AST): a store-door CALL, a knowledge-time column used as a
+    key / attribute, a lag identifier, a declaration -- in that order -- else not point-in-time."""
+    if view.door_calls:
         return "bitemporal"
-    if any(t in text for t in KNOWLEDGE_COLUMNS):
+    if any(c in view.identifiers or c in view.strings for c in KNOWLEDGE_COLUMNS):
         return "knowledge_stamped"
-    if any(t in text for t in LAG_TOKENS):
+    if any(t in i for t in LAG_IDENTIFIERS for i in view.identifiers):
         return "lag_shift"
     if rel in data_os.READER_ROUTES or rel in data_os.PRODUCER_ROUTES:
         return "declared"
@@ -233,19 +305,22 @@ def producer_census(root: Path | None = None, floor: set[str] | None = None) -> 
                     or "/tests/" in p.as_posix():
                 continue
             try:
-                text = p.read_text("utf-8")
-                tree = ast.parse(text)
+                tree = ast.parse(p.read_text("utf-8"))
             except (OSError, SyntaxError, ValueError):
                 continue
-            hits = sorted({t for t in toks if t in text})
-            if not hits:
+            view = code_view(tree)
+            hits = sorted({t for t in toks if view.mentions(t)})
+            if not hits and not view.door_calls:     # a store read IS a dated-source read
                 continue
             joins = _joins(tree)
-            if not joins and not any(t in text for t in SHIFT_TOKENS):
+            shifts = view.door_calls or any(t in i for t in SHIFT_IDENTIFIERS
+                                            for i in view.identifiers)
+            if not joins and not shifts:
                 continue
             rel = p.relative_to(root).as_posix()
-            rows[rel] = {"class": _producer_class(rel, text), "tokens": hits[:6],
-                         "joins": [f"{ln}:{kind}" for ln, kind in joins[:3]]}
+            rows[rel] = {"class": _producer_class(rel, view), "tokens": hits[:6],
+                         "joins": [f"{ln}:{kind}" for ln, kind in joins[:3]],
+                         "store_calls": [f"{ln}:{name}" for ln, name in view.door_calls[:3]]}
     counts = {c: sum(1 for r in rows.values() if r["class"] == c) for c in PRODUCER_CLASSES}
     non_store = {r for r, v in rows.items() if v["class"] != "bitemporal"}
     not_pit = sorted(r for r, v in rows.items() if v["class"] == "not_pit")

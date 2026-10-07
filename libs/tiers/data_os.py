@@ -28,7 +28,8 @@ from __future__ import annotations
 import re
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from datetime import datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -381,12 +382,41 @@ PUBLICATION_LAGS: dict[str, dict[str, Any]] = {
               "basis": "15-minute update cadence; one bar is conservative",
               "knowledge_column": "published_time", "readers": ("gdelt",)},
     # the ECB axis (`data/axes/ecb.json`, `series[name].points [{d, v}]`): `d` is the REFERENCE
-    # date, not a publication stamp (Tier S AC3, 2026-10-06)
-    "ecb_axis": {"lag_s": 27 * 3600, "valid": "reference date of the ECB print",
-                 "basis": "assumed, conservative: the euro reference rates print about 16:00 CET "
-                          "on the day and the AAA curve estimates the next TARGET day; one day "
-                          "plus the broker offset covers both",
-                 "assumed": True, "readers": ("axes/ecb", "ecb.json")},
+    # date, not a publication stamp (Tier S AC3, 2026-10-06). TIMED BY RULE, NOT A FLAT LAG
+    # (2026-10-07): the AAA yield curve for a reference date is published at 12:00 CET on the
+    # NEXT TARGET business day, so a flat 27h made every Friday and pre-holiday point (2,283 of
+    # them on the axis) visible up to 59h early. Knowledge = the next TARGET business day after
+    # the reference date at 12:00 CET (11:00 UTC; CET, not CEST, is the later of the two), plus
+    # the broker offset. The euro reference rate prints at about 16:00 CET on its own day, so the
+    # same rule is conservative for it. `lag_s` bounds the worst case (Thursday before Easter:
+    # 5d 14h).
+    "ecb_axis": {"lag_s": 6 * 86400, "valid": "reference date of the ECB print",
+                 "rule": {"calendar": "target", "hour_utc": 11},
+                 "basis": "ECB AAA yield curve: published 12:00 CET on the next TARGET business "
+                          "day after the reference date (TARGET closes weekends, 1 Jan, Good "
+                          "Friday, Easter Monday, 1 May, 25-26 Dec); plus the broker offset",
+                 "readers": ("axes/ecb", "ecb.json")},
+    # ---- THE ACQUIRER'S DATASETS (`desks/mt5/research/acquire_datasets`, 2026-10-07). Its
+    # frames are stamped by their own date column -- the REFERENCE date -- and `acquired_series`
+    # forward-filled them onto bars with no lag at all. Each seed host is routed to the source
+    # whose release it is (`ACQUIRED_HOST_SOURCES`); everything else reads `acquired_dataset`.
+    "ust_par_curve": {"lag_s": 6 * 86400, "valid": "the curve date",
+                      "rule": {"calendar": "us", "hour_utc": 23},
+                      "basis": "US Treasury daily par yield curve: posted the same business day "
+                               "after the close; the next US business day is used, "
+                               "conservatively, as for H.15",
+                      "readers": ()},
+    "eia_spot": {"lag_s": 14 * 86400, "valid": "the trading date of the spot price",
+                 "rule": {"calendar": "eia_weekly", "hour_utc": 23, "days_after_friday": 6},
+                 "basis": "assumed, conservative: EIA spot prices are updated weekly (Wednesday) "
+                          "through the prior Friday -- the DCOILWTICO rule",
+                 "assumed": True, "readers": ()},
+    "acquired_dataset": {"lag_s": 20 * 86400, "valid": "the frame's own date column",
+                         "basis": "assumed, conservative: a crawler-found frame has told the desk "
+                                  "nothing about its release; pit_stamp.FALLBACK_LAG_DAYS (20d), "
+                                  "lengthened by the frame's own cadence "
+                                  "(`acquired_cadence_floor`)",
+                         "assumed": True, "readers": ()},
     # ---- THE CERTIFICATE PATH'S OWN INPUTS (2026-09-30). `edge_search.resolve_inputs` feeds
     # every `discovered` cell with an `ext_` feature, in the gauntlet (`build_cell`) and on the
     # forward/live path (`family_inputs.resolve`). These four were read there with no
@@ -441,16 +471,67 @@ FRED_SERIES_LAGS: dict[str, dict[str, Any]] = {
     # the two collector series (`scripts/collect_fred_macro._SERIES`) that are NOT published
     # daily, found by the AC3 producer census (2026-10-06): read under the 27h daily lag, a
     # monthly M2 print and a weekly-posted dollar index reached bars weeks / days early
-    "DTWEXBGS": {"lag_s": 8 * 86400, "valid": "the daily observation date",
+    "DTWEXBGS": {"lag_s": 9 * 86400, "valid": "the daily observation date",
                  "basis": "assumed, conservative: the broad dollar index is DAILY data posted "
                           "WEEKLY (Federal Reserve H.10, Mondays, for the week before), so a "
-                          "Monday value is first public the following Monday; 8 days covers it "
-                          "and the broker offset",
+                          "Monday value is first public the following Monday -- and a Monday "
+                          "federal holiday moves that posting to Tuesday; 9 days covers both and "
+                          "the broker offset",
                  "assumed": True},
     "M2SL": {"lag_s": 60 * 86400, "valid": "first day of the reference month",
              "basis": "assumed, conservative: H.6 money stock, monthly, month-start stamp, "
                       "released in the fourth week of the following month",
              "assumed": True},
+    # ---- DAILY SERIES TIMED BY THEIR OWN RELEASE CALENDAR (2026-10-07). The flat 27h of
+    # `fred_macro` is calendar-blind: a Friday print became "known" on Saturday 03:00 although
+    # FRED posts it on MONDAY, and a print before a US holiday a day earlier still. Each of these
+    # is known on the NEXT US BUSINESS DAY after its observation date (weekends, federal holidays
+    # and -- conservatively -- Good Friday closed) at the UTC hour FRED has posted it by, plus
+    # the broker offset. `lag_s` is the worst case (a Thursday before a Friday holiday).
+    "DGS10": {"lag_s": 6 * 86400, "valid": "the observation date (H.15)",
+              "rule": {"calendar": "us", "hour_utc": 23},
+              "basis": "H.15 Treasury constant maturities: FRED posts day t on the next US "
+                       "business day, about 15:15-16:15 CT (20:15-22:15 UTC)"},
+    "DGS2": {"lag_s": 6 * 86400, "valid": "the observation date (H.15)",
+             "rule": {"calendar": "us", "hour_utc": 23}, "basis": "as DGS10 (H.15)"},
+    "DGS5": {"lag_s": 6 * 86400, "valid": "the observation date (H.15)",
+             "rule": {"calendar": "us", "hour_utc": 23}, "basis": "as DGS10 (H.15)"},
+    "DGS30": {"lag_s": 6 * 86400, "valid": "the observation date (H.15)",
+              "rule": {"calendar": "us", "hour_utc": 23}, "basis": "as DGS10 (H.15)"},
+    "DFII10": {"lag_s": 6 * 86400, "valid": "the observation date (H.15)",
+               "rule": {"calendar": "us", "hour_utc": 23}, "basis": "as DGS10 (H.15 TIPS)"},
+    "T10Y2Y": {"lag_s": 6 * 86400, "valid": "the observation date",
+               "rule": {"calendar": "us", "hour_utc": 23},
+               "basis": "FRED-computed from DGS10 and DGS2: posted with them"},
+    "T10YIE": {"lag_s": 6 * 86400, "valid": "the observation date",
+               "rule": {"calendar": "us", "hour_utc": 23},
+               "basis": "FRED-computed from DGS10 and DFII10: posted with them"},
+    "DFF": {"lag_s": 6 * 86400, "valid": "the observation date (the rate's business day)",
+            "rule": {"calendar": "us", "hour_utc": 23},
+            "basis": "effective fed funds: NY Fed publishes 09:00 ET the next business day; "
+                     "FRED's DFF is the H.15 copy, posted that afternoon (about 15:15 CT)"},
+    "SOFR": {"lag_s": 6 * 86400, "valid": "the observation date (the rate's business day)",
+             "rule": {"calendar": "us", "hour_utc": 16},
+             "basis": "NY Fed publishes SOFR 08:00 ET on the next business day (12:00-13:00 "
+                      "UTC); FRED posts it the same morning -- 16:00 UTC covers both"},
+    "VIXCLS": {"lag_s": 6 * 86400, "valid": "the trading date of the close",
+               "rule": {"calendar": "us", "hour_utc": 16},
+               "basis": "CBOE close; FRED posts day t on the next US business day at about "
+                        "08:35 CT (13:35-14:35 UTC) -- 16:00 UTC covers it"},
+    "BAMLH0A0HYM2": {"lag_s": 6 * 86400, "valid": "the observation date",
+                     "rule": {"calendar": "us", "hour_utc": 23},
+                     "basis": "assumed, conservative: ICE BofA indices reach FRED on the next "
+                              "US business day (usually the morning); end of that day is used",
+                     "assumed": True},
+    # EIA spot prices are DAILY data posted WEEKLY: the Wednesday release carries the days
+    # through the previous Friday, and FRED copies it after. Knowledge = the Friday of the
+    # observation's week + 6 days (Thursday, one day of slack for a holiday-delayed release) at
+    # 23:00 UTC, plus the broker offset. A Monday waits 11d 2h; `lag_s` bounds any weekday.
+    "DCOILWTICO": {"lag_s": 14 * 86400, "valid": "the trading date of the spot price",
+                   "rule": {"calendar": "eia_weekly", "hour_utc": 23, "days_after_friday": 6},
+                   "basis": "assumed, conservative: EIA spot prices (RWTC) are updated weekly on "
+                            "Wednesday through the prior Friday; FRED reposts them after",
+                   "assumed": True},
     "IR3TIB01JPM156N": {"lag_s": 75 * 86400, "valid": "first day of the reference month",
                         "basis": "assumed, conservative: OECD MEI monthly, month-start stamp, "
                                  "released one to two months later",
@@ -489,15 +570,53 @@ def knowledge_time(source: str, valid_time: datetime) -> datetime:
     return valid_time + timedelta(seconds=float(lag["lag_s"]))
 
 
-def lag_of(source: str, series_id: str | None = None) -> timedelta:
-    """The declared lag as a timedelta; a FRED series with its own cadence entry wins over the
-    source's. KeyError for an undeclared source, exactly like `knowledge_time`."""
+#: ACQUIRED FRAMES BY HOST -> (declared source, FRED-style series id or None). A host absent here
+#: is `acquired_dataset`. The CFTC frame is dated by its Tuesday report date.
+ACQUIRED_HOST_SOURCES: dict[str, tuple[str, str | None]] = {
+    "www.cftc.gov": ("cot_fx", None),
+    "home.treasury.gov": ("ust_par_curve", None),
+    "www.eia.gov": ("eia_spot", None),
+    "data-api.ecb.europa.eu": ("ecb_axis", None),
+}
+
+
+def acquired_source(host: str | None) -> str:
+    """The declared source an acquired frame from `host` is read under."""
+    return ACQUIRED_HOST_SOURCES.get(str(host or "").lower(), ("acquired_dataset", None))[0]
+
+
+def acquired_cadence_floor(index: Any) -> timedelta:
+    """A floor for an UNKNOWN publisher, from the frame's own median spacing: a monthly frame is
+    stamped at the period and released weeks later (60d), a quarterly one months later (135d), a
+    slower one later still (400d). Faster frames get no floor beyond the source's own lag."""
+    import pandas as pd
+
+    try:
+        idx = pd.DatetimeIndex(index).sort_values()
+        gaps = idx[1:] - idx[:-1]
+        step = gaps.median() if len(gaps) else pd.Timedelta(0)
+    except (TypeError, ValueError):
+        return timedelta(0)
+    days = float(step / pd.Timedelta(days=1)) if step == step else 0.0
+    return timedelta(days=400 if days > 120 else 135 if days > 45 else 60 if days > 20 else 0)
+
+
+def _lag_entry(source: str, series_id: str | None = None) -> dict[str, Any]:
     if series_id is not None and series_id in FRED_SERIES_LAGS:
-        return timedelta(seconds=float(FRED_SERIES_LAGS[series_id]["lag_s"]))
+        return FRED_SERIES_LAGS[series_id]
     lag = declared_lag(source)
     if lag is None:
         raise KeyError(f"source {source!r} has no declared publication lag")
-    return timedelta(seconds=float(lag["lag_s"]))
+    return lag
+
+
+def lag_of(source: str, series_id: str | None = None) -> timedelta:
+    """The declared lag as a timedelta; a FRED series with its own cadence entry wins over the
+    source's. KeyError for an undeclared source, exactly like `knowledge_time`. For a source or
+    series TIMED BY A RULE (`rule`: next business day, weekly posting) this is the WORST CASE of
+    that rule -- the bound a reader that can only shift by a constant must use; `knowledge_at`
+    gives each point its own instant."""
+    return timedelta(seconds=float(_lag_entry(source, series_id)["lag_s"]))
 
 
 def effective_lag(source: str, series_id: str | None = None,
@@ -509,6 +628,86 @@ def effective_lag(source: str, series_id: str | None = None,
     by it rather than trusted."""
     lag = lag_of(source, series_id)
     return max(lag, min_lag) if min_lag is not None else lag
+
+
+# ------------------------------------------------- release calendars (rule-timed knowledge)
+#: The broker clock's largest offset over UTC (+3h in summer). A bar index is BROKER time under
+#: a UTC tzinfo (`libs/research/bar_clock`), so a knowledge instant on the real UTC clock is moved
+#: this much later before it is compared with a bar: under either DST state no bar reads it early.
+BROKER_OFFSET = timedelta(hours=3)
+
+
+def _easter(year: int) -> date:
+    """Western (Gregorian) Easter Sunday -- the anonymous Gregorian algorithm."""
+    a, b, c = year % 19, year // 100, year % 100
+    d, e = divmod(b, 4)
+    g = (8 * b + 13) // 25
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = divmod(c, 4)
+    m = (32 + 2 * e + 2 * i - h - k) % 7
+    n = (a + 11 * h + 22 * m) // 451
+    month, day = divmod(h + m - 7 * n + 114, 31)
+    return date(year, month, day + 1)
+
+
+@lru_cache(maxsize=64)
+def _holidays(calendar: str, year: int) -> frozenset[date]:
+    """Closed weekdays of one calendar-year. `us`: the federal holidays (H.15 / FRED / the NY Fed
+    publish nothing on them) plus Good Friday, conservatively (SIFMA closes; SOFR is not
+    published). `target`: the TARGET2 closing days."""
+    easter = _easter
+    good_friday = easter(year) - timedelta(days=2)
+    if calendar == "target":
+        return frozenset({date(year, 1, 1), good_friday, easter(year) + timedelta(days=1),
+                          date(year, 5, 1), date(year, 12, 25), date(year, 12, 26)})
+    if calendar == "us":
+        from pandas.tseries.holiday import USFederalHolidayCalendar
+
+        days = USFederalHolidayCalendar().holidays(start=f"{year - 1}-12-25",
+                                                   end=f"{year + 1}-01-07")
+        return frozenset({*(d.date() for d in days), good_friday})
+    raise KeyError(f"unknown business calendar {calendar!r}")
+
+
+def is_business_day(d: date, calendar: str) -> bool:
+    return d.weekday() < 5 and d not in _holidays(calendar, d.year)
+
+
+def next_business_day(d: date, calendar: str) -> date:
+    """The first business day of `calendar` STRICTLY after `d`."""
+    nxt = d + timedelta(days=1)
+    while not is_business_day(nxt, calendar):
+        nxt += timedelta(days=1)
+    return nxt
+
+
+@lru_cache(maxsize=65536)
+def _rule_instant(calendar: str, hour_utc: int, days_after_friday: int, ref: date) -> datetime:
+    if calendar == "eia_weekly":
+        friday = ref + timedelta(days=(4 - ref.weekday()) % 7)
+        day = friday + timedelta(days=days_after_friday)
+    else:
+        day = next_business_day(ref, calendar)
+    return datetime.combine(day, time(hour_utc), tzinfo=UTC) + BROKER_OFFSET
+
+
+def knowledge_at(source: str, valid: datetime, series_id: str | None = None, *,
+                 min_lag: timedelta | None = None) -> datetime:
+    """WHEN a value valid at `valid` was first knowable, as an aware UTC datetime.
+
+    A rule-timed entry (`rule`) is placed by its release calendar from the REFERENCE DATE of
+    `valid` (its UTC date); a flat entry is `valid + lag_s`. `min_lag` (a reader's own stricter
+    constant) can only push the instant later. KeyError for an undeclared source."""
+    v = valid.replace(tzinfo=UTC) if valid.tzinfo is None else valid.astimezone(UTC)
+    entry = _lag_entry(source, series_id)
+    rule = entry.get("rule")
+    if isinstance(rule, Mapping):
+        at = _rule_instant(str(rule["calendar"]), int(rule.get("hour_utc", 23)),
+                           int(rule.get("days_after_friday", 6)), v.date())
+        at = max(at, v)
+    else:
+        at = v + timedelta(seconds=float(entry["lag_s"]))
+    return max(at, v + min_lag) if min_lag is not None else at
 
 
 def _utc(t: Any) -> Any:
@@ -535,7 +734,7 @@ def known_series(series: Any, source: str, series_id: str | None = None, *,
     `merge_asof`) can only hand a bar a value that was already published.
 
     THE STORE IS THE READ (Tier S AC3, 2026-10-06). The series becomes `BitemporalStore` rows
-    (`store_from_series`: valid = its index, knowledge = valid + `effective_lag`) and each output
+    (`store_from_series`: valid = its index, knowledge = `knowledge_at`) and each output
     point is `latest_known` AT its own knowledge time -- so a value is only ever the newest one
     the desk could have held then, and a repeated valid stamp is a REVISION (the later row wins
     from its own knowledge time, never retroactively). Missing values are not knowledge and are
@@ -581,7 +780,7 @@ def pit_align(series: Any, index: Any, *, source: str, series_id: str | None = N
               min_lag: timedelta | None = None) -> Any:
     """A valid-dated Series carried onto a bar `index` AS KNOWN AT EACH BAR: every bar reads
     `BitemporalStore.latest_known` at its own stamp -- the newest valid point whose knowledge
-    time (valid + `effective_lag`) is at or before the bar, NaN while nothing was knowable. The
+    time (`knowledge_at`) is at or before the bar, NaN while nothing was knowable. The
     bitemporal replacement for `shift(lag)` + `reindex(...).ffill()`: a bar exactly at the
     knowledge instant may read it, one before may not. Bars on a naive index are read as UTC."""
     import pandas as pd
@@ -613,6 +812,27 @@ def known_axis_series(axis: str, series_id: str, series: Any) -> Any:
     if src is None:
         return series
     return known_series(series, src, series_id=str(series_id) if src == "fred_macro" else None)
+
+
+#: LAG REVISIONS: a declared lag made LATER after certificates were already judged under the
+#: shorter one. A certificate of `families` conditioned on one of `series` and gated before the
+#: revision reached the box was judged on prints it could not yet have held, so it is QUEUED FOR
+#: RE-JUDGING through the normal gauntlet (`libs/ops/queue_cycle` producer `pit_lag_rejudge` ->
+#: a `recertify` task -> the hourly `recertify_canon` leg) -- never demoted by hand. Append-only:
+#: a revision, once listed, stays, so the journal's record of what it queued keeps its meaning.
+LAG_REVISIONS: tuple[dict[str, Any], ...] = (
+    {"id": "fred-release-calendars-2026-10-07", "source": "fred_macro",
+     "families": ("macro_conditional",),
+     "series": ("DTWEXBGS", "DGS10", "DGS2", "T10Y2Y", "VIXCLS", "SOFR", "DFF", "BAMLH0A0HYM2",
+                "DCOILWTICO"),
+     "was": "27h flat (`fred_macro`), or 24h (`orthogonal_sweep.MACRO_PUBLICATION_LAG_D`)",
+     "now": "FRED_SERIES_LAGS: DTWEXBGS 9 days (weekly H.10 posting); the others their own "
+            "next-business-day / weekly release calendars",
+     "why": "the AC3 audit (PR #249): DTWEXBGS is daily data posted WEEKLY, so a macro_conditional "
+            "certificate conditioned on it read the dollar about 7 days before publication; "
+            "the gauntlet's default macro series (`orthogonal_sweep.DAILY_MACRO_SERIES[0]`) is "
+            "DTWEXBGS"},
+)
 
 
 def assumed_lags() -> dict[str, str]:
@@ -727,6 +947,33 @@ PRODUCER_ROUTES: dict[str, dict[str, Any]] = {
                  "exists, the current-vintage fallback stamped VINTAGE_CURRENT); its own reindex "
                  "joins certified return columns, not macro values. Routing that provider onto "
                  "the bitemporal store is money-path work, out of a research session's reach"},
+    # ---- found by the AST census (2026-10-07): modules that carry a macro/alt token and JOIN,
+    # but whose joins are on the desk's own bars or on series a provider already placed on its
+    # knowledge clock. Declared with the provider, never counted as bitemporal.
+    "desks/mt5/mt5desk/cell_modifiers.py": {
+        "route": "via_provider", "sources": ("exogenous_conditioner",),
+        "basis": "`_alt_filter` reads `family_exogenous_conditioner.conditioner` (each value on "
+                 "its own availability clock) and forward-fills it onto the bars: the series it "
+                 "joins is already knowledge-stamped"},
+    "desks/mt5/mt5desk/family_alt_series.py": {
+        "route": "via_provider", "sources": ("exogenous_conditioner",),
+        "basis": "every series comes from `family_exogenous_conditioner.conditioner` (the "
+                 "module docstring's point-in-time join); its searchsorted / reindex place "
+                 "those knowledge-stamped values on the bar clock"},
+    "desks/mt5/mt5desk/families_orthogonal.py": {
+        "route": "via_provider", "sources": ("fred_macro", "tick_tape"),
+        "basis": "a family library: `macro` / `spread_series` arrive already aligned by the "
+                 "certificate path's providers (`orthogonal_sweep._macro_series`, "
+                 "`family_inputs`); its own joins are bar-to-bar (peer closes, its own ATR)"},
+    "desks/mt5/research/event_surprise.py": {
+        "route": "event_time", "sources": ("event_calendar",),
+        "basis": "a release's surprise is known at the release instant `at`, and each event is "
+                 "placed on the bar clock by `_bar_time` (UTC to broker) before the searchsorted"},
+    "libs/regime/state_admission.py": {
+        "route": "own_bars", "sources": ("mt5_h1_universe",),
+        "basis": "its one join reads the symbol's own realised-vol percentile strictly BEFORE "
+                 "the trade (`searchsorted(...) - 1`); the macro labels it names are consumed "
+                 "from `macro_state` rows, not joined here"},
 }
 
 
@@ -762,14 +1009,14 @@ def certificate_input_lags(family: str, params: Mapping[str, Any] | None = None
 def store_from_series(series: Any, *, source: str, entity: str, attribute: str,
                       series_id: str | None = None, min_lag: timedelta | None = None) -> Any:
     """A valid-dated pandas Series as BITEMPORAL rows: valid time = its index, knowledge time =
-    valid + the source's declared lag (a FRED `series_id` with its own cadence entry uses that;
-    `min_lag` can only lengthen it, `effective_lag`). The one door a research reader uses to turn
+    `knowledge_at` (valid + the declared lag, or the entry's release calendar when it is
+    rule-timed; a FRED `series_id` with its own entry uses that; `min_lag` can only lengthen
+    it). The one door a research reader uses to turn
     a dataset it would otherwise join by date into one it can only read as of what was known. A
     valid stamp seen again is a later REVISION of the same point (revision 1, 2, ...)."""
     from libs.tiers.bitemporal import BitemporalStore, Datum
     if declared_lag(source) is None:
         raise KeyError(f"source {source!r} has no declared publication lag")
-    delta = effective_lag(source, series_id, min_lag)
     import pandas as pd
 
     store = BitemporalStore()
@@ -785,9 +1032,10 @@ def store_from_series(series: Any, *, source: str, entity: str, attribute: str,
             continue
         vt = ts.isoformat()
         rev = seen[vt] = seen.get(vt, -1) + 1
+        kt = knowledge_at(source, ts, series_id, min_lag=min_lag)
         store.add(Datum(entity=entity, attribute=attribute, value=val,
-                        valid_time=vt, knowledge_time=(ts + delta).isoformat(),
-                        source=source, revision=rev, latency_s=delta.total_seconds()))
+                        valid_time=vt, knowledge_time=kt.isoformat(),
+                        source=source, revision=rev, latency_s=(kt - ts).total_seconds()))
     return store
 
 

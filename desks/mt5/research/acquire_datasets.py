@@ -35,7 +35,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections import defaultdict, deque
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +49,7 @@ if str(_ROOT) not in sys.path:
 from libs.data.pit_certificate import certify  # noqa: E402
 from libs.data.pit_certificate import write as write_certificate  # noqa: E402
 from libs.research import country_lab as country_lab  # noqa: E402
+from libs.tiers import data_os  # noqa: E402
 
 WORLD = DESK / "data" / "intelligence" / "world"
 STORE = DESK / "data" / "acquired"
@@ -489,9 +490,24 @@ def acquired_series(index: pd.Index | None = None, *,
         try:
             df = pd.read_parquet(meta["path"])
             s = df["value"].astype(float)
-            # FORWARD-FILL ONLY. A macro series is knowable from its publication date onward and
-            # never before; interpolating backwards is leakage wearing the shape of tidiness.
-            out[name] = s.reindex(index).ffill() if index is not None else s
+            if index is None:
+                # VALID-DATED, AS STORED: a caller with no clock applies its own availability
+                # (`global_research_os.SeriesLoader` moves a date-only row to the next UTC day).
+                out[name] = s
+                continue
+            # ON A CLOCK, READ AS KNOWN AT EACH BAR THROUGH THE BITEMPORAL STORE (2026-10-07).
+            # The frame's index is its own date column -- the date a value DESCRIBES -- and the
+            # forward-fill this replaces handed each bar the value of its own day with no lag
+            # at all. Knowledge = the source its host publishes under (`data_os.
+            # ACQUIRED_HOST_SOURCES`), never sooner than the frame's own cadence floor for an
+            # unknown publisher, nor than a lag the acquirer recorded for the URL.
+            src = data_os.acquired_source(meta.get("host"))
+            floor = data_os.acquired_cadence_floor(s.index) \
+                if src == "acquired_dataset" else timedelta(0)
+            if meta.get("publication_lag_s") is not None:
+                floor = max(floor, timedelta(seconds=float(meta["publication_lag_s"])))
+            out[name] = data_os.pit_align(s.dropna().sort_index(), index, source=src,
+                                          min_lag=floor or None)
         except Exception:
             continue
     return out
