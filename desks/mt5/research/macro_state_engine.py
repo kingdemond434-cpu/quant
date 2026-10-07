@@ -1270,6 +1270,14 @@ FED_CONSUMER = "macro_state_engine.latent"
 #: Key in `data/latent/state.json` holding when each `<spec>.<input>` was last LOADED (attempted,
 #: whatever it returned). The load order is read from it: least recently loaded first.
 LOADED_AT_KEY = "loaded_at"
+#: The share of the latent budget that input LOADING may spend once a loaded input has
+#: observations to build. The rest is the BUILD share: inputs loaded in a pass must reach a
+#: vintage in that pass, or loading them bought nothing (audit HOLD on #283: with one shared
+#: deadline every input loaded first and the build found the deadline already spent -- 0
+#: vintage-days while up to 46 inputs read FED). A third keeps the build at least as long as the
+#: old per-dataset order gave it when loading binds; while nothing loaded so far has anything to
+#: build, loading may run on to the whole budget.
+LOAD_SHARE = 1.0 / 3.0
 
 
 @dataclass(frozen=True)
@@ -1822,9 +1830,11 @@ def _hit(sign_obs: float, level: float | None) -> int | None:
 
 
 def build_vintages(spec: LatentSpec, prep: list[_Prepared], ledger: list[dict[str, Any]],
-                   now: datetime, deadline: float) -> tuple[list[dict[str, Any]], int]:
+                   now: datetime, deadline: float, progress: dict[str, int] | None = None,
+                   ) -> tuple[list[dict[str, Any]], int]:
     """New vintages after the ledger's last, chronologically, until the deadline. Returns
-    (records, release dates still owed)."""
+    (records, release dates still owed). `progress`, when given, receives `todo` (release dates
+    due this pass) and `days` (release dates actually re-estimated before the deadline)."""
     last_k = _iso_t(ledger[-1]["knowable_at"]) if ledger else None
     floor = now - timedelta(days=HISTORY_DAYS)
     dates: set[str] = set()
@@ -1935,6 +1945,8 @@ def build_vintages(spec: LatentSpec, prep: list[_Prepared], ledger: list[dict[st
         hist_levels.append(nc["level"])
         prev = rec
         last_k = knowable
+    if progress is not None:
+        progress.update({"todo": len(todo), "days": done})
     return out, len(todo) - done
 
 
@@ -2518,19 +2530,48 @@ def record_fed_reads(consumed: dict[str, dict[str, Any]], now: datetime) -> str:
 
 
 # ---------------------------------------------------------------------------- the latent pass
+def _loaded_stamp(v: Any, now: datetime | None) -> datetime | None:
+    """A `loaded_at` stamp, or None when it reads as NEVER LOADED: absent, not an ISO string
+    (a number is not this file's format), unparseable, or after `now`. A future stamp (a skewed
+    clock, a hand edit, 2099) would otherwise sort after every real one and starve its input for
+    ever; read as never loaded it goes first and the load overwrites it with the real time."""
+    if not isinstance(v, str):
+        return None
+    t = _iso_t(v)
+    if t is None or (now is not None and t > (now if now.tzinfo else now.replace(tzinfo=UTC))):
+        return None
+    return t
+
+
 def load_order(specs: tuple[LatentSpec, ...] | list[LatentSpec],
-               loaded_at: dict[str, Any]) -> list[str]:
+               loaded_at: dict[str, Any], now: datetime | None = None) -> list[str]:
     """Every declared `<spec>.<input>` key, least recently loaded first.
 
-    A key never loaded (or whose stamp cannot be read) goes before every stamped one; ties keep
-    the declared order. When the latent budget fits k of n inputs a pass loads the k oldest and
-    stamps them newest, so the order ROTATES and every input is loaded within ceil(n/k) passes.
-    A fixed declared order skipped the same tail inputs every pass, for ever."""
+    A key never loaded (or whose stamp cannot be read, or lies after `now`) goes before every
+    stamped one; ties keep the declared order. When the latent budget fits k of n inputs a pass
+    loads the k oldest and stamps them newest, so the order ROTATES and every input is loaded
+    within ceil(n/k) passes. A fixed declared order skipped the same tail inputs every pass, for
+    ever."""
     keyed: list[tuple[int, float, int, str]] = []
     for i, key in enumerate(f"{spec.id}.{inp.id}" for spec in specs for inp in spec.inputs):
-        t = _iso_t(loaded_at.get(key))
+        t = _loaded_stamp(loaded_at.get(key), now)
         keyed.append((0, 0.0, i, key) if t is None else (1, t.timestamp(), i, key))
     return [k for *_r, k in sorted(keyed)]
+
+
+def _safe_load(inp: LatentInput, axes_dir: Path, docs: dict[str, Any],
+               environ: dict[str, str] | None,
+               ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """`load_input`, but a load that RAISES is named LOAD_FAILED with its exception type and
+    yields no observations, so one broken input never kills the latent pass for the others."""
+    try:
+        return load_input(inp, axes_dir, docs, environ)
+    except Exception as exc:
+        return [], {"input": inp.id, "label": inp.label, "kind": inp.kind,
+                    "sign": inp.sign, "cadence": inp.cadence,
+                    "axis": inp.axis or None, "series": inp.series or None,
+                    "status": f"LOAD_FAILED:{type(exc).__name__}",
+                    "why": f"load raised {type(exc).__name__}: {str(exc)[:160]}"}
 
 
 def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
@@ -2546,12 +2587,15 @@ def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
     latent_dir = latent_dir or LATENT_DIR
     series_root = series_root or LAKE_SERIES
     intel_path = intel_path or LATENT_INTEL
-    deadline = time.monotonic() + max(1.0, float(budget_s))
+    budget = max(1.0, float(budget_s))
+    t_start = time.monotonic()
+    deadline = t_start + budget
     docs: dict[str, Any] = {}
     report: dict[str, Any] = {}
     ledgers: dict[str, list[dict[str, Any]]] = {}
     consumed: dict[str, dict[str, Any]] = {}
     skipped_inputs: list[str] = []
+    not_reached: list[str] = []
     state_path = latent_dir / "state.json"
     state = _read_json(state_path)
     state = state if isinstance(state, dict) else {}
@@ -2562,34 +2606,69 @@ def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
     # loaded first, across every dataset, and each load is stamped in state.json, so a budget
     # that cannot fit them all skips a DIFFERENT tail each pass instead of starving one for ever.
     by_key = {f"{spec.id}.{inp.id}": inp for spec in specs for inp in spec.inputs}
+    spec_of = {f"{spec.id}.{inp.id}": spec.id for spec in specs for inp in spec.inputs}
     loads: dict[str, tuple[list[dict[str, Any]], dict[str, Any]]] = {}
     skipped: set[str] = set()
-    for key in load_order(specs, loaded_at):
+    order = load_order(specs, loaded_at, now)
+    # THE BUDGET IS SPLIT (audit HOLD on #283). Loading may spend LOAD_SHARE of it once anything
+    # loaded has observations to build; the rest is reserved for the build, so an input loaded
+    # in this pass reaches a vintage in this pass. Until something is buildable, loading may run
+    # to the whole deadline (an input with nothing to build costs the build nothing).
+    load_deadline = t_start + LOAD_SHARE * budget
+    buildable = False
+    for key in order:
         inp = by_key[key]
-        if time.monotonic() > deadline:
-            # Past the latent budget no further input is LOADED; it is named, never silently
+        if time.monotonic() > (load_deadline if buildable else deadline):
+            # Past the load share no further input is LOADED; it is named, never silently
             # dropped, and the dataset rule below reads it as not fed this pass.
             skipped.add(key)
             loads[key] = ([], {"input": inp.id, "label": inp.label, "kind": inp.kind,
                                "status": "SKIPPED_BUDGET",
                                "why": "latent budget spent: not loaded this pass"})
             continue
-        loads[key] = load_input(inp, axes_dir, docs, environ)
+        loads[key] = _safe_load(inp, axes_dir, docs, environ)
         loaded_at[key] = at
+        buildable = buildable or bool(loads[key][0])
+    # The build runs dataset by dataset in the order their inputs were loaded (so the dataset
+    # rotation follows the input rotation), each on a FAIR SLICE of what is left: the time
+    # remaining divided by the datasets still to build. A slice that is still open always
+    # re-estimates at least one release date, so no loaded dataset is starved by the one ahead.
+    build_order: list[str] = []
+    for key in order:
+        if loads[key][0] and spec_of[key] not in build_order:
+            build_order.append(spec_of[key])
+    built: dict[str, tuple[list[dict[str, Any]], int, bool]] = {}
+    for n_left, sid in zip(range(len(build_order), 0, -1), build_order, strict=True):
+        spec = next(sp for sp in specs if sp.id == sid)
+        prep = [_Prepared(inp, loads[f"{sid}.{inp.id}"][0]) for inp in spec.inputs
+                if loads[f"{sid}.{inp.id}"][0]]
+        t_now = time.monotonic()
+        slice_deadline = t_now + max(0.0, deadline - t_now) / n_left
+        prog: dict[str, int] = {}
+        new, owed = build_vintages(spec, prep, read_ledger(_ledger_path(spec, latent_dir)), now,
+                                   slice_deadline if t_now <= deadline else deadline,
+                                   progress=prog)
+        # REACHED A VINTAGE: this pass re-estimated at least one release date with it, or the
+        # dataset owed none (its ledger already holds every release its inputs carry).
+        built[sid] = (new, owed, prog.get("days", 0) > 0 or owed == 0)
     for spec in specs:
         recs: list[dict[str, Any]] = []
-        prep: list[_Prepared] = []
+        new, owed, reached = built.get(spec.id, ([], 0, False))
         for inp in spec.inputs:
             obs, rec = loads[f"{spec.id}.{inp.id}"]
             if f"{spec.id}.{inp.id}" in skipped:
                 skipped_inputs.append(f"{spec.id}.{inp.id}")
+            if obs and not reached:
+                rec = {**rec, "vintage": "NOT_REACHED",
+                       "why": ("loaded, but the latent budget was spent before a vintage was "
+                               "re-estimated with it: not fed this pass")}
+                not_reached.append(f"{spec.id}.{inp.id}")
             recs.append(rec)
-            consumed[f"{spec.id}.{inp.id}"] = {"inp": inp, "rec": rec, "fed": bool(obs)}
-            if obs:
-                prep.append(_Prepared(inp, obs))
+            # FED only when the observations actually reached a vintage, never on a load alone.
+            consumed[f"{spec.id}.{inp.id}"] = {"inp": inp, "rec": rec,
+                                               "fed": bool(obs) and reached}
         lpath = _ledger_path(spec, latent_dir)
         ledger = read_ledger(lpath)
-        new, owed = (build_vintages(spec, prep, ledger, now, deadline) if prep else ([], 0))
         full = ledger + new
         ledgers[spec.id] = full
         last = full[-1] if full else None
@@ -2657,6 +2736,10 @@ def build_latent(now: datetime, *, budget_s: float = 120.0, apply: bool = True,
             "skipped_inputs": {"n": len(skipped_inputs), "inputs": skipped_inputs,
                                "why": ("latent budget spent before these inputs were loaded"
                                        if skipped_inputs else "")},
+            "loaded_not_built": {"n": len(not_reached), "inputs": not_reached,
+                                 "why": ("loaded with observations, but the budget was spent "
+                                         "before a vintage was re-estimated with them"
+                                         if not_reached else "")},
             "rule": ("one vintage per release date, re-estimated on the data knowable at that "
                      "date and appended; no price series fused; not-yet-collected inputs are "
                      "named with the package that delivers them")}

@@ -716,3 +716,178 @@ def test_a_stale_asia_events_file_is_named_stale_and_not_used(
     path.unlink()
     ev, _ = svb.event_state(now, ["USDKRW"])
     assert ev["asia_events_status"].startswith("UNMEASURED") and ev["n_asia_objects"] == 0
+
+
+# ------------------------------------- latent budget: loaded inputs reach a vintage (#283 HOLD)
+def _synthetic_specs(sizes: tuple[int, ...] = (16, 10, 12, 10),
+                     ) -> tuple[tuple[mse.LatentSpec, ...], dict[str, list[dict[str, Any]]]]:
+    """Datasets in the declared 48-input shape, every input carrying 150 weekly observations."""
+    rng = np.random.default_rng(7)
+    specs: list[mse.LatentSpec] = []
+    obs: dict[str, list[dict[str, Any]]] = {}
+    for d, size in enumerate(sizes):
+        inps = tuple(mse.LatentInput(f"i{j}", f"in{j}", f"ax{d}", f"s{j}", 1, "W")
+                     for j in range(size))
+        spec = mse.LatentSpec(f"syn{d}", f"syn{d}", "X", "e", "CN", "m", inps, {"AUDUSD": 1})
+        specs.append(spec)
+        for i in inps:
+            off = int(rng.integers(0, 7))
+            obs[f"{spec.id}.{i.id}"] = [
+                {"arrival": NOW - timedelta(days=7 * w + off + 1), "value": float(rng.normal()),
+                 "period": str(w), "vintage": f"{spec.id}.{i.id}:{w}", "revision": False,
+                 "pit_quality": "pit"} for w in range(150, 0, -1)]
+    return tuple(specs), obs
+
+
+def _costed_world(monkeypatch: pytest.MonkeyPatch, specs: tuple[mse.LatentSpec, ...],
+                  obs: dict[str, list[dict[str, Any]]]) -> tuple[list[str], _Clock]:
+    """Fake clock: an input load costs 1 s and every re-estimated release date costs 1 s."""
+    import types
+    clock = _Clock()
+    monkeypatch.setattr(mse, "time", types.SimpleNamespace(monotonic=clock.monotonic))
+    owner = {id(i): f"{s.id}.{i.id}" for s in specs for i in s.inputs}
+    loaded: list[str] = []
+
+    def load(inp: Any, *a: Any) -> Any:
+        clock.jump(1.0)
+        loaded.append(owner[id(inp)])
+        return ([dict(o) for o in obs[owner[id(inp)]]],
+                {"input": inp.id, "label": inp.label, "kind": inp.kind, "status": "COLLECTED"})
+
+    real_nowcast = mse.nowcast
+
+    def nowcast(prep: Any, cutoff: datetime) -> Any:
+        clock.jump(1.0)
+        return real_nowcast(prep, cutoff)
+
+    monkeypatch.setattr(mse, "load_input", load)
+    monkeypatch.setattr(mse, "nowcast", nowcast)
+    monkeypatch.setattr(mse, "record_fed_reads", lambda consumed, now: "test")
+    for s in specs:
+        monkeypatch.setitem(mse.LATENT_BY_ID, s.id, s)
+    return loaded, clock
+
+
+#: Vintage-days the pre-#283 code built in this same harness (one shared deadline, loading and
+#: building dataset by dataset in declared order), measured at de9d6eedf: the floor to hold.
+_OLD_VINTAGE_DAYS = {20: 5, 30: 15, 45: 30}
+
+
+@pytest.mark.parametrize("budget", [20, 30, 45])
+def test_inputs_loaded_in_a_pass_reach_a_vintage_in_that_pass(
+        world: Path, monkeypatch: pytest.MonkeyPatch, budget: int) -> None:
+    specs, obs = _synthetic_specs()
+    loaded, _ = _costed_world(monkeypatch, specs, obs)
+    rep = mse.build_latent(NOW, budget_s=budget, apply=True, cells=False, specs=specs,
+                           environ={})
+    days = sum(d["new_vintages"] for d in rep["datasets"].values())
+    assert days >= _OLD_VINTAGE_DAYS[budget] > 0                  # #283 built 0 here
+    rows = rep["fed"]["datasets"]
+    reached = {k for k, r in rows.items() if r["consumed_this_pass"]}
+    # FED counts exactly the inputs that reached a vintage, and every loaded input did.
+    assert rep["fed"]["fed"] == len(reached) == len(loaded) and reached == set(loaded)
+    assert rep["loaded_not_built"]["n"] == 0
+    assert rep["skipped_inputs"]["n"] == 48 - len(loaded)
+    for sid, d in rep["datasets"].items():
+        if any(k.startswith(f"{sid}.") for k in loaded):
+            assert d["new_vintages"] > 0, sid
+
+
+def test_every_input_reaches_a_vintage_within_ceil_n_over_k_passes_when_building(
+        world: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import math
+    specs, obs = _synthetic_specs()
+    loaded, _ = _costed_world(monkeypatch, specs, obs)
+    fed: set[str] = set()
+    rep = mse.build_latent(NOW, budget_s=20, apply=True, cells=False, specs=specs, environ={})
+    k = len(loaded)
+    fed |= {x for x, r in rep["fed"]["datasets"].items() if r["consumed_this_pass"]}
+    for p in range(1, math.ceil(48 / k)):
+        rep = mse.build_latent(NOW + timedelta(hours=p), budget_s=20, apply=True, cells=False,
+                               specs=specs, environ={})
+        fed |= {x for x, r in rep["fed"]["datasets"].items() if r["consumed_this_pass"]}
+    assert len(fed) == 48, f"never fed in {math.ceil(48 / k)} passes: {48 - len(fed)} inputs"
+
+
+def test_a_loaded_input_whose_build_never_ran_is_not_fed(
+        world: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    specs, obs = _synthetic_specs((4,))
+    _, clock = _costed_world(monkeypatch, specs, obs)
+    real_load = mse.load_input
+
+    def slow(inp: Any, *a: Any) -> Any:          # the first load spends the whole budget
+        clock.jump(30.0)
+        return real_load(inp, *a)
+
+    monkeypatch.setattr(mse, "load_input", slow)
+    rep = mse.build_latent(NOW, budget_s=10, apply=True, cells=False, specs=specs, environ={})
+    assert rep["fed"]["fed"] == 0 and rep["datasets"]["syn0"]["new_vintages"] == 0
+    assert rep["loaded_not_built"]["inputs"] == ["syn0.i0"]
+    row = rep["fed"]["datasets"]["syn0.i0"]
+    assert row["status"] == "UNFED" and not row["consumed_this_pass"]
+    assert rep["datasets"]["syn0"]["inputs"][0].get("vintage") == "NOT_REACHED"
+
+
+def test_a_future_loaded_at_is_read_as_never_loaded(
+        world: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    spec = mse.LATENT_BY_ID["asia_export"]
+    keys = [f"{spec.id}.{i.id}" for i in spec.inputs]
+    stamps = {k: (NOW - timedelta(hours=1)).isoformat() for k in keys}
+    stamps[keys[-1]] = "2099-01-01T00:00:00+00:00"
+    assert mse.load_order((spec,), stamps, NOW)[0] == keys[-1]
+    assert mse.load_order((spec,), {**stamps, keys[-1]: 4_070_908_800}, NOW)[0] == keys[-1]
+    # ... and the pass that reads it loads that input first and overwrites the stamp.
+    state = world / "latent" / "state.json"
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text(json.dumps({mse.LOADED_AT_KEY: stamps}))
+    import types
+    clock = _Clock()
+    monkeypatch.setattr(mse, "time", types.SimpleNamespace(monotonic=clock.monotonic))
+    loaded: list[str] = []
+
+    def one_second(inp: Any, *a: Any) -> Any:
+        loaded.append(inp.id)
+        clock.jump(1.0)
+        return [], {"input": inp.id, "label": inp.label, "kind": inp.kind, "status": "ABSENT"}
+
+    monkeypatch.setattr(mse, "load_input", one_second)
+    mse.build_latent(NOW, budget_s=1.5, apply=True, cells=False, specs=(spec,), environ={})
+    assert loaded[0] == spec.inputs[-1].id
+    got = json.loads(state.read_text())[mse.LOADED_AT_KEY][keys[-1]]
+    assert got == NOW.isoformat(timespec="seconds")
+
+
+def test_a_raising_load_is_named_load_failed_and_the_pass_continues(world: Path,
+                                                                   monkeypatch: pytest.MonkeyPatch,
+                                                                   ) -> None:
+    spec = mse.LATENT_BY_ID["asia_export"]
+    real_load = mse.load_input
+    bad = spec.inputs[0].id
+
+    def flaky(inp: Any, *a: Any) -> Any:
+        if inp.id == bad:
+            raise RuntimeError("axis doc half-written")
+        return real_load(inp, *a)
+
+    monkeypatch.setattr(mse, "load_input", flaky)
+    rep = _run(world, specs=(spec,))
+    rec = next(r for r in rep["datasets"]["asia_export"]["inputs"] if r["input"] == bad)
+    assert rec["status"] == "LOAD_FAILED:RuntimeError" and "RuntimeError" in rec["why"]
+    row = rep["fed"]["datasets"][f"asia_export.{bad}"]
+    assert row["status"] == "UNFED" and not row["consumed_this_pass"]
+    assert rep["datasets"]["asia_export"]["status"] == "OK"        # the others still built
+    assert rep["fed"]["fed"] > 0
+
+
+def test_a_numeric_asia_events_stamp_is_epoch_seconds_not_a_stale_1970() -> None:
+    import state_vector_build as svb
+    now = datetime(2026, 9, 21, 4, 0, tzinfo=UTC)
+    one_h = (now - timedelta(hours=1)).timestamp()
+    for v in (one_h, int(one_h), str(int(one_h))):
+        st, age = svb.asia_events_age({"generated_at": v, "events": []}, now)
+        assert st == "OK" and age == pytest.approx(1.0), (v, st)
+    st, _ = svb.asia_events_age({"generated_at": (now - timedelta(hours=7)).timestamp()}, now)
+    assert st.startswith("STALE") and "2026-09-20" in st             # stale for the TRUE reason
+    for v in (0, True, float("nan"), 1e18):                        # not a plausible epoch stamp
+        st, age = svb.asia_events_age({"generated_at": v, "events": []}, now)
+        assert st.startswith("UNMEASURED") and age is None, (v, st)

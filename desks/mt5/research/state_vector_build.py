@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import time
 from contextlib import suppress
@@ -263,6 +264,25 @@ ASIA_EVENTS_SKEW_S = 300.0
 _ASIA_NOT_YET_KNOWN = ("ANNOUNCED", "EXPECTATION")
 
 
+def _asia_stamp(v: object) -> pd.Timestamp | None:
+    """One Asia events stamp as a UTC timestamp, or None when it cannot be read.
+
+    A NUMBER is epoch SECONDS. `pd.to_datetime` alone reads a bare number as NANOSECONDS, so a
+    current epoch-seconds stamp landed in January 1970 and the file read STALE for a reason that
+    was not true. A bool, a non-finite number, or a number outside 2000..2100 reads None (the
+    age is then UNMEASURED, said so), never a confident verdict off a misread unit."""
+    if isinstance(v, bool):
+        return None
+    if isinstance(v, str) and v.strip().lstrip("-").replace(".", "", 1).isdigit():
+        v = float(v)
+    if isinstance(v, (int, float)):
+        if not math.isfinite(v) or not 946_684_800 <= v <= 4_102_444_800:
+            return None
+        return pd.Timestamp(float(v), unit="s", tz="UTC")
+    t = pd.to_datetime(v, utc=True, errors="coerce")
+    return None if t is None or pd.isna(t) else t
+
+
 def asia_events_age(doc: object, now: datetime) -> tuple[str, float | None]:
     """(status, age in hours) of a published Asia events document, from its OWN stamps.
 
@@ -274,16 +294,14 @@ def asia_events_age(doc: object, now: datetime) -> tuple[str, float | None]:
         return "UNMEASURED: asia_events.json is not a JSON object", None
     now = now if now.tzinfo else now.replace(tzinfo=UTC)
     basis = "generated_at"
-    stamp = pd.to_datetime(doc.get("generated_at"), utc=True, errors="coerce")
-    if stamp is None or pd.isna(stamp):
-        basis = "newest released row's knowable_at (generated_at absent)"
-        known = [pd.to_datetime(o.get("knowable_at"), utc=True, errors="coerce")
-                 for o in doc.get("events") or []
+    stamp = _asia_stamp(doc.get("generated_at"))
+    if stamp is None:
+        basis = "newest released row's knowable_at (generated_at absent or unreadable)"
+        known = [_asia_stamp(o.get("knowable_at")) for o in doc.get("events") or []
                  if isinstance(o, dict) and o.get("stage") not in _ASIA_NOT_YET_KNOWN]
-        known = [t for t in known if t is not None and not pd.isna(t)
-                 and t.to_pydatetime() <= now]
-        stamp = max(known) if known else None
-    if stamp is None or pd.isna(stamp):
+        known_t = [t for t in known if t is not None and t.to_pydatetime() <= now]
+        stamp = max(known_t) if known_t else None
+    if stamp is None:
         return "UNMEASURED: asia_events.json carries no generated_at and no released row", None
     age_h = (now - stamp.to_pydatetime()).total_seconds() / 3600.0
     if age_h < -ASIA_EVENTS_SKEW_S / 3600.0:
