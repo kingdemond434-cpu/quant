@@ -512,7 +512,13 @@ def test_engine_fences_era5_on_terms_and_reads_the_key_by_name(
     assert pse.usable(row, {e5.KEY_NAME: FAKE_KEY}) == (False, "BLOCKED_ON_TERMS:to_confirm")
     ev = tmp_path / "data" / "era5" / "terms_evidence.json"
     ev.parent.mkdir(parents=True)
+    # "confirmed" with any old quote is not evidence (#263 audit, M3): still fenced
     ev.write_text(json.dumps({"verdict": "confirmed", "terms_quote": "a quote"}), "utf-8")
+    assert pse.usable(row, {e5.KEY_NAME: FAKE_KEY}) == (False, "BLOCKED_ON_TERMS:to_confirm")
+    # the evidence confirm_terms writes from the CDS host is
+    paths = _desk(tmp_path / "e")
+    _confirm(paths)
+    ev.write_text(paths.terms_evidence.read_text("utf-8"), "utf-8")
     assert pse.usable(row, {})[0] is False
     ok, why = pse.usable(row, {e5.KEY_NAME: FAKE_KEY})
     assert ok and FAKE_KEY not in why
