@@ -78,9 +78,29 @@ and told to go find independent risk, never de-risked to 13% on a correlation es
 H*_t IS CONDITIONED ON THE STATE. "Dynamic 20-30% heat should use marginal opportunity: H*_t =
 argmax_{H in [20,30]} E[logW | X_t]; learn the surface, don't map it manually." `state_target()`
 reads the growth curve measured on the CURRENT state's own worlds and returns its argmax inside
-the band. It may only RAISE the resolved heat: a state whose curve wants LESS than the
-unconditional optimum does not get to cut, because a reduction is a rail and this one has not
-proved its dE[log W] (growth governance, rule 1).
+the band.
+
+TWO-SIDED SINCE 2026-10-06, AND THE 20% FLOOR IS NO LONGER UNCONDITIONAL. The principal's
+instructions of that day supersede the 2026-09-02/09-05 "never below 20%" order: "Cash is an
+allocation. If nothing has positive robust marginal value after costs and uncertainty, the
+growth-optimal answer can be little or no exposure" (10:48Z); "Allow exposure to rise or fall
+when justified ... being aggressive when the evidence supports aggression -- not remaining
+maximally exposed regardless of opportunity" (12:35Z); and the 12:32Z review named the raise-only
+state adjustment as a defect. The standing sizing decision is MAXIMUM AGGRESSIVENESS WITHIN
+SURVIVAL, which is the growth optimum inside the survival bars -- above it is overbetting, below
+it is leaving growth on the table, and both cost E[log W].
+
+So, in `resolve`:
+  * the utilisation target still holds the book UP when holding it costs no measurable growth --
+    `certify` says the target is at or below the curve's peak, or on its flat top inside
+    CERTIFY_TOLERANCE. That keeps capital at work exactly when it is free to;
+  * when the measured curve says the target gives up real growth (or growth is non-positive at
+    every heat), the target binds nothing and the book runs the growth optimum, which may be
+    cash; an UNMEASURED curve (fewer than three points) keeps the target, because only a
+    measurement may release it;
+  * a state curve with enough worlds moves the heat in EITHER direction to its own argmax.
+The survival bars, the effective-heat ceiling and the catastrophe layer are unchanged and still
+bind first: the change can only lower exposure where growth no longer pays for it.
 """
 from __future__ import annotations
 
@@ -262,10 +282,10 @@ def effective_ceiling(effective_heat: Mapping[str, Any] | None, *,
     says what they do on the book's worst days, and the ceiling has to answer to the worst of the
     three because that is the day it exists for.
 
-    IT CANNOT GO BELOW THE FLOOR. `clip(..., target, ...)` is what makes this a ceiling rather
-    than a de-risking mechanism: a concentrated book is held AT the floor -- 20% deployed, 24/7 --
-    and the answer to its concentration is research that finds independent risk, not a smaller
-    book. Growth governance rule 1 is satisfied because nothing below the floor is ever taken.
+    IT DOES NOT GO BELOW THE TARGET. `clip(..., target, ...)` keeps this a ceiling on the room
+    ABOVE the utilisation target rather than a de-risking mechanism; whether the book runs below
+    the target is decided by the growth curve in `resolve` (two-sided since 2026-10-06), not by
+    a correlation estimate here.
 
     AN UNMEASURED BOOK KEEPS THE NOMINAL BAR, and says so rather than falling back silently. The
     alternative -- clamping to the floor whenever the measurement fails -- would let a broken
@@ -324,6 +344,10 @@ def state_target(curves: Mapping[str, StateCurve] | None, state: str | None, *,
                  min_worlds: int = MIN_STATE_WORLDS) -> tuple[float, str, dict[str, float]]:
     """H*_t = argmax_{H in [floor, ceiling]} E[log W | X_t]. Returns (H*, why, detail).
 
+    `detail["state_curve"]` is 1.0 only when the STATE's own curve (not the global fallback) set
+    the answer; `resolve` lets only that move heat downward, because the global curve is already
+    what the free optimum was solved on.
+
     THE SURFACE IS LEARNED, NOT MAPPED. Nothing here says "widen in trends, tighten in chop": the
     growth curve is re-measured every heavy pass on the worlds the desk believes it is in, and the
     target is wherever that curve peaks inside the band. A state whose curve peaks at 27% gets
@@ -359,7 +383,8 @@ def state_target(curves: Mapping[str, StateCurve] | None, state: str | None, *,
     h_star = max(inside, key=lambda h: inside[h])
     detail = {"h_star": round(h_star, 6), "growth": round(inside[h_star], 8),
               "n_worlds": float(picked.n_worlds if picked is not None else 0),
-              "points": float(len(inside))}
+              "points": float(len(inside)),
+              "state_curve": 1.0 if picked is not None else 0.0}
     return float(h_star), (f"H*_t = {h_star:.2%} ({inside[h_star]:+.5f} log/day) is the argmax of "
                            f"E[log W | state] over [{band[0]:.0%}, {band[1]:.0%}] on "
                            f"{len(inside)} point(s) -- {why_src}"), detail
@@ -529,13 +554,12 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
             **integrity: bool) -> HeatVerdict:
     """Total heat the desk should run right now, and why.
 
-    `mandate=True` is the standing policy: the floor IS the target, flat, deployed 24/7. An
-    earlier version ramped it with `readiness` so the budget had to be earned out of sample; the
-    principal's instruction of 2026-09-02 supersedes that, and the comment on `floor` below
-    records why. `readiness` is still measured and still reported every pass -- it is the honest
-    statement of how much of this book has traded rather than been fitted -- and it gates nothing.
-    `mandate=False` is pure E[log W]: the book may hold back. Both obey the ceiling and both obey
-    integrity.
+    `mandate=True` (2026-10-06): the utilisation target holds the book up ONLY while `certify`
+    says holding it costs no measurable growth; otherwise the growth optimum runs, down to cash.
+    See the module docstring for the principal's words that replaced the flat 24/7 floor.
+    `readiness` is still measured and reported -- the honest statement of how much of this book
+    has traded rather than been fitted -- and gates nothing. `mandate=False` is pure E[log W]
+    with no target at all. Both obey the ceilings and both obey integrity.
 
     Growth is ALWAYS free to exceed the target up to the hard ceiling. A book whose robust optimum
     genuinely wants 24% gets 24% on day one.
@@ -547,7 +571,8 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
     ceiling is the nominal bar exactly as before.
 
     `state` and `curves` condition the target on the market: H*_t is the argmax of that state's
-    own growth curve inside the band, and it may only RAISE the number (`state_target`).
+    own growth curve inside the band, and it moves the number in EITHER direction when the
+    state's own curve (enough worlds) set it (`state_target`).
 
     `survival_ceiling` is `libs.portfolio.kelly_surface.envelope` -- the highest sampled heat at
     which P(ruin) is zero, P(drawdown > tolerance) stays inside the CVaR fraction, margin use is
@@ -570,20 +595,27 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
 
     r = float(min(max(readiness, 0.0), 1.0))
 
-    # THE FLOOR IS THE TARGET, FLAT. "it should minimum cover 20% heat cap 24/7 deployed minimum
-    # ... if it allows up to 30 we let it do 30" -- the principal, 2026-09-02, after being shown
-    # that 20% on the current three-leg gold book implies ~90% drawdown on that book's own worst
-    # 33.7R run against a stated 35% tolerance. That is their decision, recorded here rather than
-    # re-litigated on every pass.
+    # THE TARGET HOLDS THE BOOK UP ONLY WHILE IT IS FREE (principal, 2026-10-06, superseding the
+    # flat 24/7 floor of 2026-09-02/09-05 -- see the module docstring for the words). `certify`
+    # is the measurement of "free": the target is at or below the growth curve's peak, or on its
+    # flat top within CERTIFY_TOLERANCE. When the MEASURED curve says the target gives up real
+    # growth, or growth is non-positive everywhere, the target floors nothing and the growth
+    # optimum runs -- which may be cash.
     #
-    # An earlier version ramped this floor with `readiness` so the target had to be EARNED with
-    # out-of-sample evidence. The instruction supersedes it. Readiness is still measured and
-    # still reported every pass -- it is the honest statement of how much of this book has traded
-    # rather than been fitted -- it simply no longer gates the budget.
-    floor = target if mandate else 0.0
+    # AN UNMEASURED CURVE KEEPS THE TARGET (audit ruling on PR #261). Releasing the 20% needs a
+    # measurement that it costs growth; with fewer than three curve points there is none, and
+    # the standing target holds exactly as it did before the two-sided change. Absence of a
+    # measurement is never what moves exposure in either direction.
+    unmeasured = len(curve or {}) < 3
+    floor = target if (mandate and (ok or unmeasured)) else 0.0
     if mandate:
-        reasons.append(f"utilisation floor {floor:.2%} (flat target, principal 2026-09-02); "
-                       f"readiness {r:.1%} is REPORTED, not gating"
+        reasons.append((f"utilisation target {target:.2%} holds the book up: it is certified free "
+                        f"on the measured curve" if ok else
+                        f"utilisation target {target:.2%} holds the book up: the growth curve is "
+                        f"UNMEASURED, and only a measurement may release it" if unmeasured else
+                        f"utilisation target {target:.2%} RELEASED: not certified on the measured "
+                        f"curve, so the growth optimum runs (cash is an allocation)")
+                       + f"; readiness {r:.1%} is REPORTED, not gating"
                        + (f" -- {readiness_why}" if readiness_why else ""))
 
     # THE SURVIVAL BAR (principal, 2026-09-07: "remove 30 heat cap fully so if growth optimum
@@ -611,26 +643,30 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
 
     # H*_t: the current state's own growth curve, inside the band the two bars leave open.
     h_state, state_why, state_detail = state_target(
-        curves, state, floor=floor, ceiling=min(op_ceiling, eff_cap), fallback=curve)
+        curves, state, floor=floor, ceiling=max(floor, op_ceiling), fallback=curve)
+    # The effective-heat cap is applied AFTER the state moves heat, not inside the state's band:
+    # clipping the band first made a state that wants MORE look like a state that wants less,
+    # and a cap would have been reported as a state headwind instead of by its own name.
     if curves or state:
         reasons.append(state_why)
 
-    h = float(free_optimum)
-    binding = "growth"
-    if mandate and h < floor:
+    h = max(float(free_optimum), 0.0)
+    binding = "growth" if h > 1e-12 else "cash"
+    if mandate and floor > 0.0 and h < floor:
         h, binding = floor, "mandate"
-        # NO READINESS CLAUSE HERE, and the removal is the point. This line used to add "the full
-        # 20% applies at readiness 100%" whenever readiness was short, which described a ramp the
-        # code above had already stopped doing -- a message that contradicts its own function is
-        # worse than no message, because a reader trusts it and stops reading the code. The floor
-        # is flat. Readiness is reported beside it and gates nothing.
-        reasons.append(f"utilisation mandate: floored {free_optimum:.2%} -> {floor:.2%} "
-                       f"(FLAT -- readiness {r:.1%} does not scale this floor)")
-    # THE STATE MAY ONLY RAISE. A state whose curve wants LESS than the unconditional optimum is
-    # not permitted to cut here: a reduction is a rail, and this one has not proved its
-    # dE[log W] (growth governance rule 1). Wanting MORE is rule 2 in one line.
+        reasons.append(f"utilisation target: {free_optimum:.2%} -> {floor:.2%}, certified free on "
+                       f"the curve (readiness {r:.1%} does not scale it)")
+    # THE STATE MOVES HEAT BOTH WAYS (2026-10-06). Its own curve, measured on the worlds of the
+    # state the desk is in, is better evidence about NOW than the unconditional optimum: wanting
+    # more is taken, and wanting less is taken too -- "a strategy that fails in one state may
+    # remain useful elsewhere", and the same is true of total exposure. Only a state curve with
+    # enough worlds may cut; the global fallback is what the free optimum was already solved on.
     if (curves or state) and h_state > h + 1e-12:
         reasons.append(f"state opportunity: {h:.2%} -> {h_state:.2%} on E[log W | X_t]")
+        h, binding = float(h_state), "state_growth"
+    elif (curves or state) and state_detail.get("state_curve") and h_state < h - 1e-12:
+        reasons.append(f"state headwind: {h:.2%} -> {h_state:.2%} on E[log W | X_t] -- this "
+                       f"state's own curve peaks lower")
         h, binding = float(h_state), "state_growth"
     # THE SURVIVAL BAR IS CHECKED FIRST AND NAMED SEPARATELY, because the two clips mean opposite
     # things to a reader and to `missed_growth`. "growth wanted more than growth pays for" is the
