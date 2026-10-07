@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 765,
+  "NEVER": 766,
   "UNMEASURED": 37
  },
  "scope": {
-  "attested": 983,
+  "attested": 984,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -295,6 +295,16 @@
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "leg:committee_ensembles"
+    ]
+   },
+   {
+    "at": "2026-10-07T06:09:32+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:options_implied"
     ]
    }
   ]
@@ -25364,6 +25374,34 @@
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
    "measured_at": "2026-10-07T01:02:10+00:00"
+  },
+  {
+   "organ": "leg:options_implied",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/options_implied.py"
+   ],
+   "clock": "hourly_cycle:options_implied",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/OPTIONS_IMPLIED.json",
+   "artifact_declared": "desks/mt5/reports/OPTIONS_IMPLIED.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-07T06:09:32+00:00"
   }
  ],
  "ratchet": {

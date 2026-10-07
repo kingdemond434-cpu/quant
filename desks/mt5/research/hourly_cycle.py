@@ -1020,6 +1020,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
+                     # options-implied state from vol_archive, fed to the forge (2026-10-06)
+                     "options_implied",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "orthogonality_yield", "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
@@ -3992,6 +3994,15 @@ def main() -> None:
     egl = _costed("event_graph_lab", lambda: _producer("event_graph_lab",
                                                         "research/event_graph_lab.py",
                                                         "--once", "--budget-s", "900"))
+    # THE OPTIONS-IMPLIED STATE (2026-10-06, completion audit repair rank 2): vol_archive's CBOE
+    # implied series (GVZ/VIX+term/VXN/VXD/EVZ/OVX) turned into PIT features per mapped MT5
+    # underlying -- IV level, 1y percentile, change, VIX term slope/inversion, IV minus this
+    # broker's realised vol -- published to data/lake/series/oi_<SYM> (the families' input) and
+    # data/lake/axes/options_implied.json (the world model's and the forge's input, so it runs
+    # BEFORE them), and every new implied_vol_state / implied_vol_conditioned cell donated once to
+    # the one gauntlet. Writes reports/OPTIONS_IMPLIED.json. Never promotes.
+    oim = _costed("options_implied", lambda: _producer("options_implied",
+                                                        "research/options_implied.py", "--once"))
     # THE GLOBAL PROBABILISTIC WORLD MODEL (principal 2026-09-17): forward log returns of the
     # hypothesis lane at 1h/4h/1d/5d from every PIT series the desk holds, strictly
     # anti-lookahead, with per-dataset contribution and the regime forecast. It ALLOCATES NO
@@ -5680,7 +5691,7 @@ def main() -> None:
                     "news_event_stream": nes, "event_sleeves": evs,
                     "causal_lab": clb, "event_graph_lab": egl,
                     "world_model": wmd, "residual_hunt": rhu, "residual_gate": rsg,
-                    "representation_forge": rfg,
+                    "representation_forge": rfg, "options_implied": oim,
                     "registry_sync": rsy, "axis_proposer": axp,
                     "program_alpha_lane": pal, "trajectory_evolution": tev,
                     "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,

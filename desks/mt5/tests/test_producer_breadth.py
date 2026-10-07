@@ -278,7 +278,11 @@ def test_the_leg_measures_each_producer_from_the_registry(tmp_path: Path) -> Non
     # cross_asset_graph's lead_lag cell is buildable since 76895fedc, so the registry's fresh
     # cell FEEDS the lead-lag cluster: it is no longer listed as unfed at all.
     assert "cross_asset_lead_lag" not in unfed
-    assert unfed["options_implied"].startswith("NO_FAMILY")
+    # options_implied HAS buildable families since 2026-10-06 (mt5desk/family_implied_vol.py),
+    # so with no registry cell in this fixture it is UNMINTED, no longer NO_FAMILY.
+    assert unfed["options_implied"].startswith("UNMINTED")
+    assert "implied_vol_state" in next(u for u in doc["totals"]["empty_clusters_unfed"]
+                                       if u["cluster"] == "options_implied")["buildable_families"]
 
 
 def test_a_producer_no_source_can_see_is_unmeasured_never_zero(
