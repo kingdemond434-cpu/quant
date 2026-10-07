@@ -496,3 +496,6 @@ desks/mt5/data/taifex/
 # Option-chain snapshots (gzip per-expiry summaries), the feature history and the 6h fetch state
 # are box-local and grow every six hours; the lake series and reports/OPTION_CHAINS.json carry them.
 desks/mt5/data/option_chains/
+# DATA-22 (HDS): EDGAR ownership filings (13F/13D/G/Form 4) a fetcher drops for
+# macro/ownership_state.py -- box-local state, never committed
+data/edgar_ownership/
