@@ -140,8 +140,10 @@ def build(*, reports: Path = REPORTS, acquired: Iterable[str] = (),
         if n not in waiting or any(r.startswith("REJECTED") for r in items[n]["reasons"]):
             continue
         age = (today - waiting[n]).days
-        if age < 0:
-            continue   # a future application date would park the key until then (re-audit)
+        if age < 0:   # a future date would park the key until then (re-audits of #252)
+            items[n]["reasons"].append(f"REQUESTED_FUTURE_DATE: marked applied for "
+                                       f"{waiting[n]}, after today, so it is not parked")
+            continue
         if age < REQUEST_STALE_DAYS:
             parked.append(n)
             items.pop(n)
