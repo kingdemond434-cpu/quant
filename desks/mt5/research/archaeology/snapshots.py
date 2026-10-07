@@ -55,6 +55,8 @@ for _p in (str(_ROOT), str(_DESK), str(_DESK / "research"), str(_DESK / "side_ch
 import deep_forest_miner as dfm  # noqa: E402  (the desk's ONE http client and its parsers)
 import moat_collectors as mc  # noqa: E402  (the immutable-capture contract and the fetch doors)
 
+from libs.data.polite_fetch import terms_refusal  # noqa: E402
+
 UNMEASURED = mc.UNMEASURED
 
 #: The population table. A module global so a test can point it at `tmp_path`; retention is
@@ -167,6 +169,14 @@ class Platform:
                                                                     "UNKNOWN")
 
 
+#: MQL5 ToU 3.7/3.9/3.13 prohibit automated access and reproduction, and the desk holds no
+#: permitting agreement (side_channels/mql5_terms.py, checked 2026-10-06). A written prohibition is
+#: not one of LAWS 5e's labels: `may_fetch` refuses it (fail-closed), and the snapshots already
+#: archived stay as research history and are never refetched.
+_MQL5_TERMS_NOTE = ("BLOCKED_TERMS: MQL5 ToU 3.7/3.9/3.13: automated access not permitted "
+                    "(https://www.mql5.com/en/about/terms); archived captures kept, never "
+                    "refetched")
+
 #: THE DECLARED POPULATIONS. `machine_use_allowed` is the desk's honest reading of the POLICY, and
 #: since LAWS 5e (2026-09-23) it is a LABEL: a host measured as walled is `forbidden`, a host whose
 #: policy cannot be read is `unknown`, and BOTH ARE MINED unless the reason names an access
@@ -175,11 +185,11 @@ class Platform:
 #: unknown -- a population nobody has registered is one nobody can notice is missing (L1.28a).
 PLATFORMS: tuple[Platform, ...] = (
     # ---- family 1: historical performance archaeology -----------------------------------
-    Platform("mql5_signals", "https://www.mql5.com/en/signals", "track_record", ALLOWED,
+    Platform("mql5_signals", "https://www.mql5.com/en/signals", "track_record", FORBIDDEN,
              "platform_verified",
              ("growth", "months", "trades", "win_rate", "profit_factor", "max_drawdown",
               "subscribers", "algo_share", "symbols"),
-             parser="cards", note="the desk already mines this ground (side_channels/mql5_*)"),
+             parser="cards", note=_MQL5_TERMS_NOTE),
     Platform("ctrader_copy", "https://ct.spotware.com/copy", "track_record", UNKNOWN,
              "platform_verified", ("return", "drawdown", "fee", "aum", "months"),
              parser="json_rows", access_label="ACCESS_UNCLEAR",
@@ -242,14 +252,14 @@ PLATFORMS: tuple[Platform, ...] = (
              UNKNOWN, "audited_standings", ("rank", "return", "sharpe", "year"),
              parser="json_rows", family="competition_archaeology"),
     # ---- family 3/4: product and code archaeology ----------------------------------------
-    Platform("mql5_market", "https://www.mql5.com/en/market/mt5", "product", ALLOWED,
+    Platform("mql5_market", "https://www.mql5.com/en/market/mt5", "product", FORBIDDEN,
              "self_reported",
              ("title", "price", "version", "updated", "reviews", "rating", "symbols",
               "timeframe", "parameters", "changelog"),
-             parser="cards", family="product_archaeology"),
-    Platform("mql5_codebase", "https://www.mql5.com/en/code", "code", ALLOWED, "code",
+             parser="cards", family="product_archaeology", note=_MQL5_TERMS_NOTE),
+    Platform("mql5_codebase", "https://www.mql5.com/en/code", "code", FORBIDDEN, "code",
              ("title", "author", "published", "downloads", "rating", "category"),
-             parser="cards", family="code_archaeology"),
+             parser="cards", family="code_archaeology", note=_MQL5_TERMS_NOTE),
     Platform("github_strategies", "https://api.github.com/search/repositories", "code", ALLOWED,
              "code", ("repo", "stars", "created", "pushed", "language", "archived", "topics"),
              parser="json_rows", family="code_archaeology",
@@ -263,9 +273,9 @@ PLATFORMS: tuple[Platform, ...] = (
              "self_reported", ("thread", "replies", "started", "last_post", "author"),
              parser="cards", family="forum_archaeology",
              note="the desk already mines this ground (side_channels/forexfactory_miner)"),
-    Platform("mql5_forum", "https://www.mql5.com/en/forum", "forum", ALLOWED, "self_reported",
+    Platform("mql5_forum", "https://www.mql5.com/en/forum", "forum", FORBIDDEN, "self_reported",
              ("thread", "replies", "started", "author"), parser="cards",
-             family="forum_archaeology"),
+             family="forum_archaeology", note=_MQL5_TERMS_NOTE),
     Platform("smartlab", "https://smart-lab.ru/algotrading", "forum", UNKNOWN, "self_reported",
              ("post", "author", "date", "comments"), parser="cards", region="ru", language="ru",
              family="forum_archaeology"),
@@ -539,7 +549,8 @@ def machine_use(p: Platform) -> tuple[str, str]:
     wall = _walls().get(p.host)
     if wall is not None:
         verdict = str(wall.get("verdict") or "")
-        reasons.append((FORBIDDEN if verdict == "ROBOTS_DISALLOW" else UNKNOWN,
+        reasons.append((FORBIDDEN if verdict in ("ROBOTS_DISALLOW", "BLOCKED_TERMS")
+                        else UNKNOWN,
                         f"desk-measured wall {verdict} on {p.host}: "
                         f"{str(wall.get('evidence') or '')[:200]}"))
     barred = mc.robots_barred(p.root)
@@ -577,6 +588,11 @@ def may_fetch(p: Platform, *, probe: bool = False) -> tuple[bool, str]:
     because reading those would mean defeating them (hard-boundary acts 1 and 2).
     """
     verdict, why = machine_use(p)
+    terms = terms_refusal(p.root)
+    if terms:
+        # TERMS PROHIBIT (fail-closed): a written prohibition with no permitting clause is not a
+        # label. Refused before any request, and no probe is sent either.
+        return False, f"REFUSED: {terms} -- {why}"
     hit = boundary_hit(f"{why} {p.note}")
     if hit:
         return False, (f"REFUSED on the hard boundary ({hit}): reading this would mean defeating "

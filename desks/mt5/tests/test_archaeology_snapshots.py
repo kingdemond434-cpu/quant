@@ -193,9 +193,22 @@ def test_unknown_access_is_a_label_and_the_ground_is_fetched(archive):
 
 
 def test_an_allowed_platform_reaches_the_fetch_door(archive):
-    got = snap.snapshot(_platform("mql5_signals"), 30.0, fetch=True, at="2026-09-01")
-    assert archive["calls"] == ["https://www.mql5.com/en/signals"]
-    assert got["fetched"] == 1 and got["n"] == 3
+    got = snap.snapshot(_platform("forexfactory"), 30.0, fetch=True, at="2026-09-01")
+    assert archive["calls"] == ["https://www.forexfactory.com/forum"]
+    assert got["fetched"] == 1 and got["refused"] == ""
+
+
+@pytest.mark.parametrize("name", ["mql5_signals", "mql5_market", "mql5_codebase", "mql5_forum"])
+def test_a_terms_prohibited_platform_is_never_fetched(archive, name):
+    """MQL5 ToU 3.7/3.9/3.13 (side_channels/mql5_terms.py, 2026-10-06). A written prohibition is
+    not a LAWS 5e label: the door refuses it before any request, and the probe is not sent."""
+    p = _platform(name)
+    assert snap.machine_use(p)[0] == snap.FORBIDDEN
+    ok, why = snap.may_fetch(p, probe=True)
+    assert ok is False and "BLOCKED_TERMS" in why
+    got = snap.snapshot(p, 30.0, fetch=True, at="2026-09-01")
+    assert archive["calls"] == [] and got["fetched"] == 0
+    assert "BLOCKED_TERMS" in got["refused"]
 
 
 def test_no_fetch_with_no_fixture_is_unmeasured_not_empty(archive):
@@ -223,7 +236,8 @@ def test_summary_names_what_is_fetchable_and_what_is_not(archive):
                   at="2026-09-01")
     s = snap.summary()
     assert s["n_rows"] == 3
-    assert "mql5_signals" in s["fetchable"]
+    assert "mql5_signals" not in s["fetchable"]
+    assert "mql5_signals" in s["never_fetched"], "terms prohibit it (mql5_terms)"
     # LAWS 5e (2026-09-23): `never_fetched` is the five-acts list now, and `collective2` --
     # whose policy is merely UNREAD -- moved out of it into `policy_labelled`.
     assert "myfxbook" in s["never_fetched"]

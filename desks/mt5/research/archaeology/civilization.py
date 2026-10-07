@@ -311,6 +311,10 @@ def scout(conn: Any, *, discovered: Sequence[Mapping[str, Any]] = (), fetch: boo
         # `forbidden` or `unknown` robots reading is provenance; only an access control, a login,
         # a paywall or an antibot challenge -- which reading would mean DEFEATING -- refuses.
         boundary = snap.boundary_hit(f"{why} {cand.get('note') or ''}")
+        if snap.terms_refusal(url):
+            # TERMS PROHIBIT (side_channels/mql5_terms.py): a written prohibition with no
+            # permitting clause is refused like a boundary act, and priced the same way.
+            boundary = "BLOCKED_TERMS"
         candidates.append({**dict(cand), "source_id": sid, "host": host,
                            "machine_use_allowed": access, "access_why": why[:240],
                            "terms_note": "" if access == snap.ALLOWED else why[:240],

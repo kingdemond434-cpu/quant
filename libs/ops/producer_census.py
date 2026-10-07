@@ -36,6 +36,8 @@ intelligence roots, and from the sandbox roster. Nothing here enumerates organs 
 """
 from __future__ import annotations
 
+import functools
+import importlib.util
 import json
 import os
 import re
@@ -55,6 +57,13 @@ DARK = "DARK"
 RETIRED = "RETIRED"
 UNMEASURED = "UNMEASURED"
 UNMEASURED_HERE = "UNMEASURED_HERE"
+#: A seat whose ground's Terms of Use prohibit automated access. Not dark, not stale, not unfed:
+#: refused on purpose, before any request, and recorded (desks/mt5/side_channels/mql5_terms.py).
+BLOCKED_TERMS = "BLOCKED_TERMS"
+#: Used only if mql5_terms.py cannot be loaded, so the census fails CLOSED on the same seats.
+_MQL5_SEATS_FALLBACK: frozenset[str] = frozenset({"mql5", "mql5_signals", "mql5_survivors",
+                                                  "mql5_catalog", "mql5_prospector",
+                                                  "mql5_reputation"})
 
 #: THE DARK RATCHET. Producers allowed to read DARK before the census is a fence failure.
 #:
@@ -464,6 +473,30 @@ def retirements(root: Path | None = None) -> dict[str, dict[str, Any]]:
     return out
 
 
+@functools.lru_cache(maxsize=1)
+def terms_blocked_seats() -> dict[str, str]:
+    """seat -> why, for every seat whose ground's Terms of Use prohibit automated access.
+
+    Read from `desks/mt5/side_channels/mql5_terms.py` by file path (the side_channels package's
+    own __init__ is not imported). An unloadable module falls back to the same seat names, so a
+    broken import can never turn a terms refusal back into a DARK seat with a "run_organ" repair.
+    """
+    path = ROOT / "desks" / "mt5" / "side_channels" / "mql5_terms.py"
+    seats: Iterable[str] = _MQL5_SEATS_FALLBACK
+    why = ("BLOCKED_TERMS: MQL5 ToU 3.7/3.9/3.13: automated access not permitted "
+           "(https://www.mql5.com/en/about/terms)")
+    try:
+        spec = importlib.util.spec_from_file_location("_mql5_terms_census", path)
+        if spec is not None and spec.loader is not None:
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            seats = mod.MQL5_SEATS
+            why = f"{mod.STATUS}: {mod.REASON} ({mod.TERMS_URL}); never refetched"
+    except Exception:  # fail closed on the fallback names
+        pass
+    return {str(s): why for s in sorted(seats)}
+
+
 # ------------------------------------------------------------------------------- census rows
 @dataclass
 class Row:
@@ -579,6 +612,7 @@ def seat_rows(*, root: Path | None = None, clocks: Mapping[str, Any],
     dec = dict(declared or {})
     der = {k: dict(v) for k, v in (derived or {}).items()}
     ret = dict(retired or {})
+    blocked = terms_blocked_seats()
     here = host()
     rows: list[Row] = []
 
@@ -596,6 +630,12 @@ def seat_rows(*, root: Path | None = None, clocks: Mapping[str, Any],
                                      "retirement")),
                             paths, organ=None,
                             details={"inheritor": rec.get("inheritor")}))
+            continue
+        if seat in blocked:
+            rows.append(Row(seat, "seat", None, "n/a", None, None, produced or None, age,
+                            BLOCKED_TERMS, blocked[seat], paths,
+                            organ=dec.get(seat) or (der.get(seat) or {}).get("organ"),
+                            details={"terms_blocked": True}))
             continue
 
         organ = dec.get(seat) or (der.get(seat) or {}).get("organ")

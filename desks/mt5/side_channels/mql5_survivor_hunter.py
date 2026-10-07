@@ -19,16 +19,27 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
 
+try:
+    from side_channels import mql5_terms
+except ModuleNotFoundError:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import mql5_terms
+
 BASE = Path(__file__).resolve().parent.parent
 INTEL = BASE / "data" / "intelligence"
 OUT = INTEL / "mql5_survivors"
 SHORTLIST = INTEL / "survivor_shortlist.json"
+#: Fixed name: a refused hour overwrites the last refusal (mql5_terms). The shortlist and the
+#: rows already harvested stay as research history and are never refetched.
+REFUSAL = OUT / "discoveries_blocked_terms_survivor_hunter.json"
+LIST_URL = "https://www.mql5.com/en/signals"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                          "(KHTML, like Gecko) Chrome/126.0 Safari/537.36",
            "Accept-Language": "en-US,en;q=0.9"}
@@ -51,6 +62,8 @@ TRADES_LABEL = r"(?<!Profit )(?<!Profitable )(?<!Loss )(?<!Losing )\bTrades"
 
 
 def fetch(url: str) -> str:
+    # FAIL-CLOSED TERMS FENCE: MQL5 ToU 3.7/3.9/3.13 -- raises before any request or sleep.
+    mql5_terms.guard(url)
     time.sleep(1.2)
     r = requests.get(url, headers=HEADERS, timeout=25)
     r.raise_for_status()
@@ -197,6 +210,10 @@ def ev_score(s: dict) -> float:
 
 
 def run_and_save() -> list[dict]:
+    # Refused before any request; the refusal is the hour's recorded artifact.
+    if mql5_terms.is_mql5_url(LIST_URL):
+        mql5_terms.refuse("mql5_survivors", REFUSAL)
+        return []
     now = datetime.now(tz=UTC)
     cards: dict[str, dict] = {}
     for platform, page in LIST_PAGES:

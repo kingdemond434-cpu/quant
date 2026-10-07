@@ -31,6 +31,11 @@ from pathlib import Path
 
 import requests
 
+try:
+    from side_channels import mql5_terms
+except ModuleNotFoundError:                 # run as a script from side_channels/
+    import mql5_terms  # type: ignore[no-redef]
+
 BASE = Path(__file__).resolve().parent.parent
 INTEL = BASE / "data" / "intelligence"
 COHORTS = INTEL / "cohorts"
@@ -98,7 +103,7 @@ def observe_due(reg: dict) -> int:
     now = datetime.now(tz=UTC)
     due = []
     for cid, m in reg.items():
-        if m.get("status") in ("DEAD", "EXHAUSTED"):
+        if m.get("status") in ("DEAD", "EXHAUSTED", mql5_terms.STATUS):
             continue
         t0 = datetime.fromisoformat(m["t0"])
         age_d = (now - t0).days
@@ -120,10 +125,20 @@ def observe_due(reg: dict) -> int:
             m = reg[cid]
             url = m["frozen"].get("url", "")
             verdict, code = "ALIVE", None
+            if mql5_terms.is_mql5_url(url):
+                # MQL5 ToU 3.7: no automated access. The member is retired from observation
+                # with no request made; its frozen t0 snapshot stays as research history.
+                m["status"] = m["last_verdict"] = mql5_terms.STATUS
+                m["last_observed"] = now.isoformat(timespec="seconds")
+                obs.write(json.dumps({"cid": cid, "ts": now.isoformat(timespec="seconds"),
+                                      "verdict": mql5_terms.STATUS, "http": None,
+                                      "source": m["frozen"].get("source")}) + "\n")
+                checked += 1
+                continue
             try:
                 time.sleep(1.0)
                 resp = requests.get(url, headers=HEADERS, timeout=20,
-                                    allow_redirects=True)
+                                    allow_redirects=True, hooks=mql5_terms.HOOKS)
                 code = resp.status_code
                 if code in (404, 410):
                     verdict = "DEAD"
@@ -134,6 +149,8 @@ def observe_due(reg: dict) -> int:
                     if any(t in low for t in ("signal was blocked", "no longer available",
                                               "has been removed", "deleted")):
                         verdict = "DELISTED"
+            except mql5_terms.MQL5TermsRefused:
+                verdict = mql5_terms.STATUS                  # redirected into mql5.com: refused
             except Exception:                                            # noqa: BLE001
                 verdict = "UNREACHABLE"
             m["observations"] += 1
