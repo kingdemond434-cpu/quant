@@ -48,6 +48,15 @@ _FRED_BASIS = {
              "verbatim read on the box",
     "checked_at": "2026-10-07"}
 
+#: 17 U.S.C. 105, verbatim. The only basis quoted for the owners' own feeds: each agency's own
+#: site-terms page is owed a verbatim read ON THE BOX (the cloud proxy refuses treasury.gov,
+#: bls.gov and eia.gov), and a term found there that narrows machine use re-holds the provider.
+_USC105_URL = "https://www.law.cornell.edu/uscode/text/17/105"
+_USC105_QUOTE = ("Copyright protection under this title is not available for any work of the "
+                 "United States Government")
+_USC105_NOTE = ("statute only: the agency's own site-terms page is owed a verbatim read on the "
+                "box (the cloud proxy refuses the host)")
+
 #: Recorded terms bases. A key with ":" admits that exact id; a bare provider key admits
 #: "<provider>:<series>" for any non-empty series (named holds still apply).
 TERMS_EVIDENCE: dict[str, dict[str, str]] = {
@@ -62,6 +71,20 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                                             "research/forced_flow_calendar.py; no vendor feed)",
                              "scope": "exact id (event_response_atlas source)",
                              "checked_at": "2026-10-07"},
+    # THE PUBLIC-DOMAIN OWNERS (2026-10-07, ruling on prohibition (j)): the fitted inputs FRED
+    # used to carry, read from the executive agency that publishes them. Bare provider keys, so
+    # "treasury:DGS10", "bls:CUSR0000SA0" and "eia:WCESTUS1" pass. Fed board (H.10/G.19) and BEA
+    # ids are NOT admitted: no quoted basis for either is held (see TERMS_HELD "frb:"/"bea:").
+    **{owner: {"terms_url": _USC105_URL, "terms_quote": _USC105_QUOTE,
+               "scope": f"{agency}: an executive agency of the United States Government, so its "
+                        "published statistics are a work of the United States Government",
+               "note": _USC105_NOTE, "checked_at": "2026-10-07"}
+       for owner, agency in (("treasury", "U.S. Department of the Treasury (daily par and real "
+                                          "yield curve rates)"),
+                             ("bls", "U.S. Bureau of Labor Statistics, Department of Labor "
+                                     "(CPI-U)"),
+                             ("eia", "U.S. Energy Information Administration, Department of "
+                                     "Energy (Weekly Petroleum Status Report)"))},
     "desk:sensor_ledger": {"terms_url": "",
                            "terms_quote": "(own data: the desk's derived ledger of sensor rows)",
                            "scope": "exact id", "checked_at": "2026-10-07"},
@@ -81,6 +104,10 @@ TERMS_HELD: dict[str, str] = {
     "ice_bofa": "ICE BofA indices republished on FRED: third-party copyright (FAQ Q3)",
     "fred_index": "an equity index FRED republishes under its owner's copyright (S&P Dow Jones "
                   "Indices, Nasdaq, Nikkei, Wilshire): FAQ Q3, FRED cannot grant the permission",
+    "bea:": "BEA (PCE): no BEA API key is held and BEA's terms have not been quoted; held until "
+            "a quoted basis exists",
+    "frb:": "Federal Reserve Board releases (H.10 dollar index, G.19): the Board's site terms "
+            "have not been quoted; held until a quoted basis exists",
     "fred_label": "a FRED series whose terms label is not on the display register: only series "
                   "owned by a US federal agency (public domain, 17 USC 105) are fetched",
 }

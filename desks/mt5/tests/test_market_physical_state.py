@@ -91,11 +91,12 @@ def test_beta_from_bars() -> None:
 
 
 def test_curve_regime_and_ledger(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from libs.data import own_risk
     from macro import release_vintages as rv
+
+    from libs.data import own_risk
     monkeypatch.setattr(own_risk, "ARCHIVE", tmp_path / "own_risk_index.json")
     monkeypatch.setattr(rv, "CLEARANCES", tmp_path / "clear.json")
-    rep = ms.build(now=NOW, series=_series(), charts={}, vol_rows=_vol_rows())
+    rep = ms.build(now=NOW, series=_series(), charts={}, vol_rows=_vol_rows(), owner=_series())
     gc = rep["curve"]
     assert gc["slope_10y3m"] == pytest.approx(4.1 - 4.5, abs=1e-6)
     assert gc["inverted_10y3m"] is True
@@ -122,7 +123,9 @@ def test_curve_regime_and_ledger(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
            "OWN_VIX_INVERTED": [(d, 1.0) for d in _days(300)]}
     own["OWN_VIX"][-1] = (own["OWN_VIX"][-1][0], 40.0)
     assert ms.own_regime(NOW, own) == "vol_backwardation_high"
-    assert rep["terms"]["curve"]["gauntlet"] == "HELD"          # FRED: ruling on (j)
+    # the curve is Treasury's own feed (17 USC 105): admitted, where FRED's H.15 copy is held
+    assert rep["terms"]["curve"]["gauntlet"] == "admitted"
+    assert ms.terms("fred:h15")["gauntlet"] == "HELD"              # FRED: ruling on (j)
     assert rep["option_chains"]["status"] == "EXTERNALLY_BLOCKED"
     obs = ms.observations(rep, NOW)
     assert obs and all(sc.defects(o) == [] for o in obs)
@@ -130,7 +133,8 @@ def test_curve_regime_and_ledger(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
                                           "market:vol_term", "market:ust_curve"}
     assert all(o.authority == "NONE" for o in obs)
     src = {o.sensor_id: o.source_id for o in obs}
-    assert src["market:implied_vol"] == ms.VOL_SOURCE and src["market:ust_curve"] == "fred:h15"
+    assert src["market:implied_vol"] == ms.VOL_SOURCE
+    assert src["market:ust_curve"] == "treasury:par_yield_curve"
 
 
 def test_terms_gate_on_vol_sources_and_chains_routed_to_discovery(
@@ -186,8 +190,15 @@ def test_physical_state_seasonal_surprise_and_clock() -> None:
     assert early["series"]["WCESTUS1"]["week_end"] == "2026-09-25"
     joined = es.join_sides(rep["store_rows"])
     assert joined and all(j["joined"] == "single_document" for j in joined)
+    # the owner's own feed (ruling on FRED prohibition (j)): EIA ids, which the gauntlet admits
+    assert {r["source_id"] for r in rep["store_rows"]} == {"eia:WCESTUS1"}
+    from libs.data.terms_hold import gauntlet_terms
+    assert gauntlet_terms("eia:WCESTUS1")[0] is True
+    assert gauntlet_terms("fred:WCESTUS1")[0] is False
+    assert ps.ARCHIVE.name == "owner_macro.json"
     obs = ps.observations(rep, datetime(2026, 10, 9, tzinfo=UTC))
     assert len(obs) == 1 and sc.defects(obs[0]) == []
+    assert obs[0].source_id == "eia:WCESTUS1"
     assert obs[0].seasonal_expected == pytest.approx(1000.0)
 
 
@@ -294,7 +305,7 @@ def test_store_reads_only_the_current_eia_clock(tmp_path: Path,
     monkeypatch.setattr(es, "STORE", tmp_path / "store.jsonl")
     base = {"release": "EIA crude oil stocks ex SPR w/w|seasonal5y", "actual": 4.0,
             "consensus": 1.0, "provides": "both", "kind": "inventory_surprise",
-            "instruments": ["USOIL"], "source_id": "fred:WCESTUS1",
+            "instruments": ["USOIL"], "source_id": "eia:WCESTUS1",
             "reference_period": "2026-09-25"}
     old = {**base, "period": "2026-10-01", "at": "2026-10-01T14:30:00+00:00"}
     new = {**base, "period": "2026-09-30", "at": "2026-09-30T14:30:00+00:00",
