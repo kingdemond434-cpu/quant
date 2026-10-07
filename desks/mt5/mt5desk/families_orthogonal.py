@@ -402,6 +402,28 @@ def family_liquidity_regime(
     return signals
 
 
+def _adjacent_change(cot: pd.DataFrame, series: str, weeks: int) -> pd.Series:
+    """The `weeks`-report change of `cot[series]`, NaN wherever the two reports are not exactly
+    `weeks` report weeks apart -- never a difference taken across a gap.
+
+    The frame's `report_week` column (`mt5desk.cot_frames.REPORT_WEEK`) names each row's report
+    week; when it is present a change is kept only where the week ordinals differ by exactly
+    `weeks`. MEASURED 2026-10-06: the TFF files had lost 86 (EUR), 85 (GBP) and 55 (JPY) outright
+    weeks, and a plain `diff` over the surviving rows traded 1-12 week moves labelled "weekly" in
+    16 cells. A frame without the column (a bare cache frame) falls back to the labels: a gap
+    longer than `weeks` weeks plus two days (a holiday-delayed release) leaves the change NaN.
+    """
+    raw = cot[series].astype(float)
+    if "report_week" in cot.columns:
+        wk = pd.to_numeric(cot["report_week"], errors="coerce")
+        ok = raw.notna() & wk.notna()
+        r, w = raw[ok], wk[ok]
+        return r.diff(weeks).where(w.diff(weeks) == weeks).dropna()
+    r = raw.dropna()
+    gap = r.index.to_series().diff(weeks)
+    return r.diff(weeks).where(gap <= pd.Timedelta(days=7 * weeks + 2)).dropna()
+
+
 def family_cot_positioning(
     df: pd.DataFrame,
     *,
@@ -436,15 +458,18 @@ def family_cot_positioning(
     hypothesis (a class still adding is not yet done) beside the crowding one. The defaults are
     the original construction exactly; a column the frame does not carry, or an unknown
     transform or mode, refuses ([]) rather than substituting another series.
+
+    A CHANGE NEVER SPANS A MISSING REPORT (2026-10-07): see `_adjacent_change`.
     """
     if cot is None or cot.empty or series not in cot.columns:
         return []
     if transform not in ("level", "change") or mode not in ("fade", "follow"):
         return []
     d = _h1(df)
-    net = cot[series].astype(float).dropna()
     if transform == "change":
-        net = net.diff(max(1, int(change_weeks))).dropna()
+        net = _adjacent_change(cot, series, max(1, int(change_weeks)))
+    else:
+        net = cot[series].astype(float).dropna()
     toward = 1 if mode == "follow" else -1
     hi = net.rolling(lookback_weeks, min_periods=26).quantile(extreme_pct)
     lo = net.rolling(lookback_weeks, min_periods=26).quantile(1 - extreme_pct)

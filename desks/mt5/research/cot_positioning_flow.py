@@ -20,8 +20,10 @@ WHAT A PASS DOES:
      net change at an extreme, faded (crowding) and followed (flow).
   2. Build the cell's signals with the SAME frame the sealed gauntlet hands the family
      (`orthogonal_sweep._cot_frame`, point-in-time: a Tuesday report is first usable on the
-     Monday after its Friday 15:30 ET release) and count its firing. A cell under SEED_FLOOR
-     trade days is HELD BACK and counted -- the gauntlet would drop it under 60 days as UNKNOWN.
+     Monday after its Friday 15:30 ET release, or after its TRUE release when a holiday or a
+     shutdown delayed it -- `mt5desk.cot_frames.release_schedule`) and count its firing. A
+     cell under SEED_FLOOR trade days is HELD BACK and counted -- the gauntlet would drop it
+     under 60 days as UNKNOWN.
   3. Donate the rest through `proposer_common.donate` (two-lane filter, point-in-time stamp,
      preregistration, canonical registry) into `data/intelligence/cot_positioning_flow/`, which
      `miner_candidate_compiler` compiles as EXACT_RECIPE into the docket the gauntlet judges.
@@ -78,6 +80,9 @@ FIRE_FLOOR = 60
 #: both remove days the count here assumed.
 SEED_FLOOR = 66
 VERDICT_TAIL_BYTES = 64 * 1024 * 1024
+#: Seconds the refetch step may spend on the network before the measuring pass (the hourly cap on
+#: this leg covers both).
+REFETCH_BUDGET_S = 150.0
 
 MECHANISM = {
     "fade": ("{cls} moved its {sym} net position by an extreme amount in one week; a class that "
@@ -229,8 +234,10 @@ def seed(*, budget_s: float = 300.0, dry_run: bool = False) -> dict[str, Any]:
                 # as a read of gate outcomes and withholds the seat's passes for it.
                 {"firing": c["firing"], "seed_floor": SEED_FLOOR, "target_cluster": CLUSTER,
                  "cot_report": report, "trader_class": cls,
-                 "release_clock": ("Tuesday report usable from the Monday after its Friday "
-                                   "15:30 ET release (orthogonal_sweep.COT_RELEASE_LAG_DAYS)")}))
+                 "release_clock": ("report usable from the later of the Monday after its "
+                                   "nominal Friday release and the first hour after its TRUE "
+                                   "release (holiday and shutdown delays: "
+                                   "mt5desk.cot_frames.release_schedule)")}))
         path = pc.donate(SOURCE, rows, len(plan))
         counts = pc.donation_counts()
         donated = int(counts.get("donated") or 0)
@@ -265,8 +272,48 @@ def seed(*, budget_s: float = 300.0, dry_run: bool = False) -> dict[str, Any]:
     }
 
 
+def donated_keys() -> dict[str, dict[str, str]]:
+    """{key kind: {key: donated cell label}} for every cell this organ donated.
+
+    THE JOIN KEYS THE DONATION AND THE BOX'S VERDICT LEDGER SHARE (traced 2026-10-07). The
+    compiler keeps a donated row's params EXACTLY (`miner_candidate_compiler.compile_row`,
+    EXACT_RECIPE), and `external_gauntlet` writes each verdict row with
+      * `cell`     = `frontier_identity.cell_id({sym, family, params})` -- `<SYM>.cot_positioning.
+                     p=<sha256(params)[:16]>`, the name the off-box judge also printed;
+      * `graph_id` = `hypothesis_graph.node_id_for_spec(...)` of the same spec;
+      * `prereg_hash` -- when that sweep stamped the verdict: the content hash of the registered
+                     card (`preregistration.row_hash`), so the SAME spec registered by this
+                     proposer and by the docket carries the same hash.
+    The join tries `prereg_hash` first (the one key that names the pre-registered card itself),
+    then `cell`, then `graph_id`, so a verdict the sweep did not stamp is still read.
+    The reader used to look for the literal '"transform": "change"' inside `cell`, a string no
+    real cell name contains, so it read UNMEASURED forever whatever the box had judged."""
+    from libs.research.hypothesis_graph import node_id_for_spec
+    from research.frontier_identity import cell_id
+    out: dict[str, dict[str, str]] = {"cell": {}, "graph_id": {}, "prereg_hash": {}}
+    for path in sorted(SEAT.glob("discoveries_*.json")):
+        doc = _read(path)
+        if not isinstance(doc, dict):
+            continue
+        for row in doc.get("discoveries") or []:
+            if not (isinstance(row, dict) and row.get("family") == FAMILY and row.get("symbol")):
+                continue
+            params = dict(row.get("params") or {})
+            spec = {"sym": str(row["symbol"]), "family": FAMILY, "params": params}
+            label = cell_id(spec)
+            out["cell"][label] = label
+            out["graph_id"][node_id_for_spec(spec)] = label
+            if row.get("prereg_hash"):
+                out["prereg_hash"][str(row["prereg_hash"])] = label
+    return out
+
+
 def verdicts() -> dict[str, Any]:
-    """The gauntlet's recorded verdicts on these cells (positioning-change cot_positioning)."""
+    """The gauntlet's recorded verdicts on the cells this organ donated (latest per cell)."""
+    keys = donated_keys()
+    if not keys["cell"]:
+        return {"status": UNMEASURED, "why": "this organ has donated no cell yet, so there is "
+                                             "nothing whose verdict could be read"}
     try:
         size = VERDICTS.stat().st_size
         with VERDICTS.open("rb") as fh:
@@ -279,21 +326,31 @@ def verdicts() -> dict[str, Any]:
                 "why": f"{type(exc).__name__} reading {VERDICTS.name}: the gauntlet's verdict "
                        "ledger is not on this tree, so no verdict can be read here"}
     latest: dict[str, dict[str, Any]] = {}
+    joined_by: Counter = Counter()
+    needle = FAMILY.encode()
     for line in blob.splitlines():
-        if FAMILY.encode() not in line or b"change" not in line:
+        if needle not in line:
             continue
         try:
             row = json.loads(line)
         except ValueError:
             continue
-        cell = str(row.get("cell") or "")
-        if row.get("family") == FAMILY and '"transform": "change"' in cell:
-            latest[cell] = row
+        if not isinstance(row, dict) or row.get("family") != FAMILY:
+            continue
+        for kind in ("prereg_hash", "cell", "graph_id"):
+            label = keys[kind].get(str(row.get(kind) or ""))
+            if label:
+                latest[label] = row
+                joined_by[kind] += 1
+                break
     if not latest:
-        return {"status": UNMEASURED, "why": ("the gauntlet has recorded no verdict on any "
-                                              "positioning-change cell yet")}
+        return {"status": UNMEASURED, "cells_donated": len(keys["cell"]),
+                "why": ("the gauntlet's ledger holds no verdict on any donated positioning-change "
+                        "cell yet (joined on prereg hash, cell id and graph id)")}
     gates = Counter(str(r.get("terminal_gate") or "?") for r in latest.values())
-    return {"status": "MEASURED", "cells_judged": len(latest), "by_terminal_gate": dict(gates),
+    return {"status": "MEASURED", "cells_donated": len(keys["cell"]),
+            "cells_judged": len(latest), "joined_by": dict(joined_by),
+            "by_terminal_gate": dict(gates),
             "passed": sorted(c for c, r in latest.items() if r.get("passed"))}
 
 
@@ -331,9 +388,26 @@ def report(seeded: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def refetch(*, budget_s: float, dry_run: bool) -> dict[str, Any]:
+    """THE REFETCH STEP (2026-10-07): bring the in-git CFTC files up to the newest RELEASED
+    report before measuring. Every file had stopped at the 2026-08-11 report because nothing ran
+    a fetcher after the first hand run; `mt5desk.cot_refetch` fetches only a report family that is
+    behind the release schedule, at most once per its retry window, and never writes less than
+    the stored file holds. A failure is recorded in the report, never raised."""
+    if dry_run:
+        return {"status": "SKIPPED_DRY_RUN"}
+    try:
+        from mt5desk import cot_refetch
+        return {"status": "RAN", **cot_refetch.run(budget_s=budget_s)}
+    except Exception as exc:
+        return {"status": "FAILED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+
+
 def run(*, budget_s: float = 300.0, dry_run: bool = False, out: Path | None = None
         ) -> dict[str, Any]:
+    fetched = refetch(budget_s=REFETCH_BUDGET_S, dry_run=dry_run)
     doc = report(seed(budget_s=budget_s, dry_run=dry_run))
+    doc["refetch"] = fetched
     target = out or OUT
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(doc, indent=1, default=str), "utf-8")

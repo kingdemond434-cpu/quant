@@ -364,7 +364,7 @@ def _cot_frame(symbol: str | None = None):
         try:
             frame = pd.read_parquet(cache, columns=[symbol])
             series = frame[symbol].astype(float).dropna().resample("W-FRI").last().dropna()
-            series.index = series.index + pd.Timedelta(days=COT_RELEASE_LAG_DAYS)
+            series.index = _release_labels(series.index)
             if len(series) >= 52:
                 return _cot_enriched(series.rename("net").to_frame(), symbol)
         except Exception:
@@ -401,6 +401,24 @@ def _cot_frame(symbol: str | None = None):
         except Exception:
             continue
     return None
+
+
+def _release_labels(fridays):
+    """Report-week Fridays -> the first instant each report was public.
+
+    THE TRUE RELEASE, NOT THE NOMINAL ONE (2026-10-07). Friday + COT_RELEASE_LAG_DAYS is right for
+    a normal week and EARLY for every report the CFTC published late: a closure on the Wednesday-
+    Friday (Thanksgiving, Juneteenth, Christmas weeks: released the next business day, ~20 h after
+    the Monday label) and the 2013, 2018-19 and 2025 appropriation lapses (weeks late).
+    `mt5desk.cot_frames.release_schedule` models both and never labels a normal week differently,
+    so the cache's rows and the in-git columns share one clock. If it cannot be imported the
+    nominal lag stands, exactly as before."""
+    import pandas as pd
+    try:
+        from mt5desk import cot_frames
+        return cot_frames.relabel_weeks(fridays)
+    except Exception:
+        return fridays + pd.Timedelta(days=COT_RELEASE_LAG_DAYS)
 
 
 def _cot_enriched(base, symbol: str):

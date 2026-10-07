@@ -164,14 +164,15 @@ def test_verdicts_unmeasured_without_a_ledger(tmp_path, monkeypatch):
     from research import cot_positioning_flow as cpf
     monkeypatch.setattr(cpf, "VERDICTS", tmp_path / "absent.jsonl")
     assert cpf.verdicts()["status"] == "UNMEASURED"
+    # The pre-2026-10-07 reader matched this literal inside `cell`; no real cell name holds it,
+    # so a row shaped like it must NOT read as a verdict on a donated cell.
     ledger = tmp_path / "ledger.jsonl"
     ledger.write_text(json.dumps({"family": "cot_positioning", "passed": False,
                                   "terminal_gate": "deflated_sharpe",
                                   "cell": 'XAUUSD.cot_positioning.{"transform": "change"}'})
                       + "\n")
     monkeypatch.setattr(cpf, "VERDICTS", ledger)
-    v = cpf.verdicts()
-    assert v["status"] == "MEASURED" and v["by_terminal_gate"] == {"deflated_sharpe": 1}
+    assert cpf.verdicts()["status"] == "UNMEASURED"
 
 
 def test_hourly_leg_is_wired():
@@ -183,4 +184,4 @@ def test_hourly_leg_is_wired():
     import importlib
     hc = importlib.import_module("research.hourly_cycle")
     assert hc.department_of("cot_positioning_flow") == "discovery"
-    assert hc.LEG_BUDGET_SEC["cot_positioning_flow"] >= 300
+    assert hc.LEG_BUDGET_SEC["cot_positioning_flow"] >= 300 + 150

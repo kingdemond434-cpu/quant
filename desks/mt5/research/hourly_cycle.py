@@ -1951,8 +1951,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The forcer reads two reports and writes at most CELLS_PER_CLUSTER rows per cluster.
     "empty_cluster_forcer": 180,
     # 82 cells on nine symbols' H1 bars, measured at most once a day; ~15 s on the build box.
-    # Its own --budget-s 300 bounds it, and the cap sits above that.
-    "cot_positioning_flow": 420,
+    # Its own --budget-s 300 bounds it; since 2026-10-07 it first refetches any CFTC report
+    # family that is behind the release schedule (REFETCH_BUDGET_S = 150, at most once per 6 h
+    # per family), so the cap sits above 300 + 150.
+    "cot_positioning_flow": 600,
     # The north star reads ~60 certificates and their instruments' daily bars (measured ~1 s
     # here); the contracts join three JSON artifacts. Both caps are generous and never bind.
     "alpha_rank": 240,
