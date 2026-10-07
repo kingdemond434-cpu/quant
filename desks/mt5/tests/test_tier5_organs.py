@@ -210,8 +210,19 @@ def _bounty_inputs() -> dict[str, dict[str, Any]]:
         "universe": {"XAUUSD": {"asset_class": "metals"}, "EURUSD": {"asset_class": "fx"}},
         # the breadth law's input, measured with no open debt (the desk's published map would
         # otherwise be read from disk; tests/test_certificate_saturation.py covers the debts)
-        "saturation": {"breadth_debts": []},
+        # and failure modes measured with every mechanism's mode held, so no failure-mode
+        # hedge bounty is open either (test_breadth_completion_round covers those)
+        "saturation": {"breadth_debts": [], "failure_modes": {"hurts_book": sorted(
+            {m for ms in _cs().MECHANISM_FAILURE.values() for m in ms})}},
     }
+
+
+def _cs():
+    try:
+        from research import certificate_saturation as cs
+    except ImportError:
+        import certificate_saturation as cs
+    return cs
 
 
 def test_bounties_name_every_missing_payoff_shape_and_absent_inputs() -> None:
