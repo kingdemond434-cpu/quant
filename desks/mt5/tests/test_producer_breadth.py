@@ -313,6 +313,36 @@ def test_seat_files_are_read_when_the_registry_is_silent(tmp_path: Path,
     assert ecf["scheduled"] and "hourly_cycle:empty_cluster_forcer" in ecf["clocks"]
 
 
+def test_producer_breadth_counts_a_mechanism_once(tmp_path: Path,
+                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    """A grid of one mechanism over many symbols and parameter points is ONE breadth unit:
+    `breadth_k` counts mechanisms, `cells_7d` still counts every cell."""
+    intel = tmp_path / "intel" / "specialist_cell"
+    intel.mkdir(parents=True)
+    now = datetime(2026, 9, 30, 12, tzinfo=UTC)
+    rows: list[dict[str, Any]] = [
+        {"family": "fx_fixing_reversal", "symbol": f"FX{i:02d}",
+         "params": {"fix_hour": 18 + (j % 2), "hold_bars": 3 + j},
+         "breadth_unit": "fx/wmr_fix_reversal",
+         "evidence": {"specialist_mechanism": "wmr_fix_reversal", "asset_class_desk": "fx"}}
+        for i in range(22) for j in range(16)]
+    rows.append({"family": "forced_flow", "symbol": "EURUSD", "params": {"mode": "pre_flow"},
+                 "evidence": {"specialist_mechanism": "fix_forced_flow",
+                              "asset_class_desk": "fx"}})
+    rows.append({"family": "overnight_gap_decay", "symbol": "US500", "params": {}})
+    (intel / "discoveries_20260930T11.json").write_text(json.dumps(rows), "utf-8")
+    monkeypatch.setattr(pb, "INTEL", tmp_path / "intel")
+    doc = pb.build(now=now, db=tmp_path / "absent.sqlite")
+    sc = doc["producers"]["specialist_cell"]
+    assert sc["cells_7d"] == 354
+    assert sc["breadth_k"] == 3
+    assert sc["units"]["fx/wmr_fix_reversal"] == 352
+    assert set(sc["units"]) == {"fx/wmr_fix_reversal", "fx/fix_forced_flow",
+                                "overnight_gap_decay"}
+    assert sc["largest_unit_share"] == round(352 / 354, 4)
+    assert doc["totals"]["breadth_k"] >= 3
+
+
 def test_the_leg_is_on_a_clock_in_a_department_a_layer_and_the_results() -> None:
     hc = importlib.import_module("research.hourly_cycle")
     from libs.research.layers import LEG_LAYER
