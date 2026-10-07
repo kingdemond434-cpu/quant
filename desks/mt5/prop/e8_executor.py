@@ -781,6 +781,29 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         doc["why"] = f"{BOOK.name} unreadable ({type(exc).__name__}) -- nothing to trade"
         return doc
 
+    book_fresh_error = ""
+    try:
+        book_at = datetime.fromisoformat(str(book["generated_utc"]).replace("Z", "+00:00"))
+        age_s = (now - book_at).total_seconds()
+        if book_at.tzinfo is None or not (0 <= age_s <= 7200):
+            raise ValueError(f"book age {age_s:.0f}s exceeds 2h or is in the future")
+    except (KeyError, TypeError, ValueError) as exc:
+        book_fresh_error = f"E8 book has no fresh generation proof ({exc}); no new entries"
+
+    entry_authority_error = ""
+    try:
+        from admission_integrity import IntegrityGate, REPLICATED
+        from libs.tiers import promotion_authority
+        from mt5desk.kelly_sizing import CERT_BOOK_FILE
+        exclusions = json.loads(CERT_BOOK_FILE.read_text(encoding="utf-8"))["excluded"]
+        if not isinstance(exclusions, dict):
+            raise ValueError("principal exclusion map is not an object")
+        integrity = IntegrityGate.load()
+    except (OSError, ValueError, KeyError, ImportError) as exc:
+        entry_authority_error = (f"E8 certificate authority unavailable "
+                                 f"({type(exc).__name__}: {exc})")
+        exclusions, integrity = {}, None
+
     risk_usd = float(book["risk_frac"]) * e8_guard.START_BALANCE
     # THE PRINCIPAL'S CERTIFIED BOOK SIZES THE KEYS IT NAMES (data/CERT_BOOK_LIVE.json,
     # 2026-10-07), keyed the allocator's way: SYMBOL_family_selector. Every other sleeve keeps the
@@ -882,6 +905,42 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             row["closed_positions"] = closed
             doc["sleeves"].append(row)
             _record(row, now, armed)
+            continue
+        if book_fresh_error:
+            row.update(status="STALE_BOOK", why=book_fresh_error)
+            doc["sleeves"].append(row)
+            continue
+        if entry_authority_error:
+            row.update(status="NO_ENTRY_AUTHORITY", why=entry_authority_error)
+            doc["sleeves"].append(row)
+            continue
+        cert_id = str(s.get("key") or "")
+        book_key = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
+        if not (cert.get(book_key, 0) > 0):
+            row.update(status="NOT_IN_PRINCIPAL_BOOK",
+                       why="no positive risk for this sleeve in the E8 certified book")
+            doc["sleeves"].append(row)
+            continue
+        if book_key in exclusions:
+            row.update(status="PRINCIPAL_EXCLUDED", why=str(exclusions[book_key]))
+            doc["sleeves"].append(row)
+            continue
+        if integrity.alarm.get("blocks"):
+            row.update(status="CERTIFIER_ALARM", why=str(integrity.alarm.get("why")))
+            doc["sleeves"].append(row)
+            continue
+        verdict, why = integrity.replication(cert_id, str(s.get("fingerprint") or ""))
+        if verdict != REPLICATED:
+            row.update(status="UNREPLICATED", why=f"{verdict}: {why}")
+            doc["sleeves"].append(row)
+            continue
+        try:
+            tier_reason = promotion_authority.block(cert_id)
+        except Exception as exc:
+            tier_reason = f"Tier S door error ({type(exc).__name__}: {exc})"
+        if tier_reason:
+            row.update(status="TIER_S_BLOCKED", why=str(tier_reason))
+            doc["sleeves"].append(row)
             continue
         func = get_family_func(fam)
         if func is None:
@@ -1118,7 +1177,10 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         doc["sleeves"].append(row)
         _record(row, now, armed)
 
-    doc["status"] = "OK"
+    doc["status"] = ("STALE_BOOK" if book_fresh_error else
+                     "NO_ENTRY_AUTHORITY" if entry_authority_error else "OK")
+    if book_fresh_error or entry_authority_error:
+        doc["why"] = book_fresh_error or entry_authority_error
     doc["n_considered"] = considered
     doc["n_sent" if armed else "n_would_send"] = sent
     doc["risk_usd_per_trade"] = round(risk_usd, 2)
