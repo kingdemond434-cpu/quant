@@ -593,3 +593,49 @@ def test_the_law_gate_stays_green_hours_after_a_cloud_attest(tmp_path: Path, mon
     _write(tmp_path, _stamped(True, hours=5))
     rep = gate.full_gate(tmp_path, laws_only=False)
     assert not rep["ok"] and len(rep["failures"]) == 2
+
+
+# ------------------------------------------ desk_host is case- and domain-insensitive
+def test_an_uppercase_desk_hostname_is_a_desk_host(tmp_path: Path, monkeypatch) -> None:
+    # Windows reports the box as "VMI3571445"; DESK_HOSTS holds "vmi3571445". A case-sensitive
+    # `in` stamped the box itself desk_host: false, and that is never judged stale (fails open).
+    for name in ("VMI3571445", "Vmi3571445", "vmi3571445.contaboserver.net"):
+        _as_host(monkeypatch, name)
+        assert ra.is_desk_host(name)
+        assert ra.host_identity_key() == {"hostname": name, "machine_id": "box-machine-id",
+                                          "desk_host": True}
+    for name in ("vm", "vmi3500897", "VMI35714450", "", "runsc"):
+        _as_host(monkeypatch, name)
+        assert not ra.is_desk_host(name)
+        assert ra.host_identity_key()["desk_host"] is False
+
+
+def test_an_uppercase_desk_host_is_judged_stale(tmp_path: Path, monkeypatch) -> None:
+    _as_host(monkeypatch, "VMI3571445")
+    stamp = ra.host_identity_key()
+    old = ra._iso(time.time() - ra.MAX_SILENCE_S - 600)
+    # the stamp as a full pass on that box writes it ...
+    host = {"hostname": "VMI3571445", "role": "trading_host",
+            "role_evidence": "gateway_state.json is 0.1h old (fresh)",
+            "machine_id": stamp["machine_id"], "desk_host": stamp["desk_host"]}
+    _write(tmp_path, _doc(host=host, attests_to_host="VMI3571445", generated_at=old))
+    v = fence.measure(tmp_path)
+    assert v["desk_attestation"] is True and v["on_attesting_host"] and v["age_judged"]
+    assert v["staleness"].startswith("STALE")
+    assert any("stale on its own host" in f for f in v["failures"])
+    assert fence.main(["--root", str(tmp_path), "--require-state"]) == 2
+    # ... and a lower-case stamp read back on the same box when it reports upper case is still
+    # its own document: not drift, not off-host, still judged
+    host["hostname"] = "vmi3571445"
+    _write(tmp_path, _doc(host=host, attests_to_host="VMI3571445", generated_at=old))
+    v = fence.measure(tmp_path)
+    assert not any("host drift" in f for f in v["failures"])
+    assert v["on_attesting_host"] and v["age_judged"]
+    assert any("stale on its own host" in f for f in v["failures"])
+    ok, why = ra.attesting_identity({"host": host})
+    assert ok, why
+    # an unrelated host reading the same document does not judge its age
+    _as_host(monkeypatch, "vm")
+    v = fence.measure(tmp_path)
+    assert not v["on_attesting_host"] and not v["age_judged"]
+    assert not any("stale on its own host" in f for f in v["failures"])

@@ -208,6 +208,26 @@ def _read_json(path: Path, max_bytes: int = MAX_PARSE_BYTES) -> dict[str, Any] |
 #: stamp's machine id matches this machine's AND this machine's name is declared here.
 DESK_HOSTS: tuple[str, ...] = ("vmi3571445",)
 
+
+def host_key(name: object) -> str:
+    """A hostname as an identity compares it: casefolded, stripped, without a domain suffix.
+
+    Windows reports the box's name in UPPER CASE ("VMI3571445") while `DESK_HOSTS` and the
+    committed stamps hold it lower-case. A case-sensitive `in DESK_HOSTS` stamped the box itself
+    `desk_host: false`, and a non-desk attestation is never judged stale -- the fence failed OPEN
+    on exactly the machine it exists to watch. Every hostname comparison in this module and in
+    `scripts/check_runtime_attestation.py` goes through this key (the same normalisation
+    `libs/ops/host_identity.classify` already applies). The raw name is still what gets recorded.
+    """
+    return str(name or "").strip().casefold().split(".")[0]
+
+
+def is_desk_host(name: object) -> bool:
+    """Is `name` one of the declared desk hosts, case- and domain-insensitively?"""
+    key = host_key(name)
+    return bool(key) and key in {host_key(h) for h in DESK_HOSTS}
+
+
 #: How a stamp with no machine id reads: written before identities were recorded, so nothing can
 #: confirm or refute that this machine wrote it. Not a defect in the document -- just unverifiable.
 UNVERIFIABLE = "UNVERIFIABLE (old-format host stamp: no machine_id)"
@@ -233,7 +253,7 @@ def host_identity_key() -> dict[str, Any]:
     """The identity recorded in every host stamp: name, machine id, and whether the name is one
     of the declared desk hosts."""
     name = socket.gethostname()
-    return {"hostname": name, "machine_id": _machine_id(), "desk_host": name in DESK_HOSTS}
+    return {"hostname": name, "machine_id": _machine_id(), "desk_host": is_desk_host(name)}
 
 
 def attesting_identity(doc: dict[str, Any]) -> tuple[bool, str]:
@@ -247,7 +267,8 @@ def attesting_identity(doc: dict[str, Any]) -> tuple[bool, str]:
     mid = h.get("machine_id")
     if not isinstance(mid, str) or not mid or mid == UNMEASURED:
         return False, f"{UNVERIFIABLE}; stamp names {name}"
-    if me["machine_id"] == UNMEASURED or mid != me["machine_id"] or name != me["hostname"]:
+    if (me["machine_id"] == UNMEASURED or mid != me["machine_id"]
+            or host_key(name) != host_key(me["hostname"])):
         return False, f"off-host: stamp is {name}/{mid[:12]}, this is " \
                       f"{me['hostname']}/{str(me['machine_id'])[:12]}"
     if not me["desk_host"]:
@@ -368,7 +389,7 @@ def run_index(paths: Paths, *, hostname: str | None = None,
         stamp = d.get("host")
         if stamp is None or stamp == "":
             return trust_unstamped
-        return hostname is None or str(stamp) == hostname
+        return hostname is None or host_key(stamp) == host_key(hostname)
 
     def put(name: str, at: str, outcome: str, source: str, extra: dict[str, Any]) -> None:
         if not name or not at:
