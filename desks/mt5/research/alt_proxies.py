@@ -61,6 +61,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import functools
 import gzip
 import hashlib
 import html as _html
@@ -2600,12 +2601,13 @@ def _redact(url: str, src: Source) -> str:
     return redact(url, (key,)).replace("<redacted>", f"<{src.key_env}>") if key else url
 
 
-def http_get(url: str) -> tuple[bytes, str]:
+def http_get(url: str, secrets: tuple[str, ...] = ()) -> tuple[bytes, str]:
     from libs.data.keyed_sources import keyed_opener
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
-    # The key rides in this url's query: the opener strips it from, or refuses, any redirect
-    # that would carry it to another host (audit of #252).
-    with keyed_opener(_tls()).open(req, timeout=TIMEOUT) as r:
+    # The key rides in this url's query or PATH (NASA FIRMS): the opener strips it from, or
+    # refuses, any redirect that would carry it to another host. A path key is only found when
+    # the opener is told the secret (re-audit of #252), so `collect` passes the source's key.
+    with keyed_opener(_tls(), secrets=secrets).open(req, timeout=TIMEOUT) as r:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
 
@@ -3426,6 +3428,9 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     sst = state.setdefault("sources", {}).setdefault(src.id, {})
+    if getter is http_get and src.key_env:
+        key = read_key(src.key_env)
+        getter = functools.partial(http_get, secrets=(key,) if key else ())
     if src.id == "gdelt_events_country":
         rec.update(collect_gdelt(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
                                  deadline=deadline, getter=getter))

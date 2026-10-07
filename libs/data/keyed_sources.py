@@ -113,13 +113,28 @@ MAX_INFLATE = 64 * 1024 * 1024
 
 def _inflate(body: bytes, wbits: int) -> tuple[bytes, bool]:
     """(bytes inflated, complete?) -- bounded by MAX_INFLATE; a truncated or corrupt stream
-    yields what decoded before the fault, which is everything anyone could ever read from it."""
-    d = zlib.decompressobj(wbits)
-    try:
-        out = d.decompress(body, MAX_INFLATE)
-        return out, d.eof and not d.unconsumed_tail
-    except zlib.error:
-        return b"", False
+    yields what decoded before the fault, which is everything anyone could ever read from it.
+
+    EVERY MEMBER (re-audit of #252): a gzip file may be several members back to back and a
+    reader decodes them all, so each one is inflated; bytes after the last stream that do not
+    inflate are kept raw so the scrub still sees them, and the body is then never "whole", so
+    it is stored re-compressed from the scrubbed bytes."""
+    out = b""
+    rest = body
+    while rest:
+        if len(out) >= MAX_INFLATE:      # max_length 0 would mean unbounded
+            return out, False
+        d = zlib.decompressobj(wbits)
+        try:
+            out += d.decompress(rest, MAX_INFLATE - len(out))
+        except zlib.error:
+            return (out + rest, False) if out else (b"", False)
+        if not d.eof or d.unconsumed_tail:
+            return out, False
+        rest = d.unused_data
+        if rest and (wbits != 31 or rest[:2] != b"\x1f\x8b"):
+            return out + rest, False
+    return out, True
 
 
 def _is_zlib(body: bytes) -> bool:
