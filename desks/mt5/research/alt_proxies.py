@@ -4027,6 +4027,12 @@ def main(argv: list[str] | None = None) -> int:
     if not a.dry_run:
         sa = sensor_adapter_pass()
         print(f"  asia sensor ledger: {sa}")
+        if sa.get("status") != "OK":
+            # the ledger rows landed (or the mapping failed) but the census on disk did not:
+            # a leg that exits 0 here reads as a clean hour to every scheduler and status board
+            print(f"alt_proxies: asia sensor ledger {sa.get('status')}: "
+                  f"{sa.get('report_write') or sa.get('why')}", file=sys.stderr)
+            return 1
     return 0
 
 

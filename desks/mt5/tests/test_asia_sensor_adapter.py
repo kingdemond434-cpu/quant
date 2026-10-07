@@ -684,6 +684,19 @@ def test_the_leg_reports_a_failed_census_write(tmp_path: Path, monkeypatch: Any)
     assert out["status"] == "REPORT_WRITE_FAILED" and out["appended"] == 7
 
 
+def test_the_leg_exits_nonzero_when_the_census_write_fails(monkeypatch: Any) -> None:
+    from research import alt_proxies as A
+    monkeypatch.setattr(A, "run", lambda **_: {"mode": "test", "sources": {}, "n_cells_tested": 0,
+                                               "n_cells_total": 0, "direct_cells": {"n": 0},
+                                               "indirect_cells": {"n": 0}})
+    monkeypatch.setattr(A, "sensor_adapter_pass",
+                        lambda: {"status": "REPORT_WRITE_FAILED",
+                                 "report_write": "WRITE_FAILED: PermissionError"})
+    assert A.main(["--once", "--no-fetch", "--no-donate"]) == 1
+    monkeypatch.setattr(A, "sensor_adapter_pass", lambda: {"status": "OK", "report_write": "OK"})
+    assert A.main(["--once", "--no-fetch", "--no-donate"]) == 0
+
+
 def test_report_temp_names_are_unique_per_thread_and_never_left(tmp_path: Path,
                                                                monkeypatch: Any) -> None:
     import threading
