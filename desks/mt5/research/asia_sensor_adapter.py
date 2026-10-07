@@ -79,7 +79,9 @@ import json
 import math
 import os
 import sys
+import threading
 import time
+import uuid
 from collections import Counter
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import fields
@@ -94,6 +96,7 @@ for _p in (str(DESK), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.win_write import replace_resilient  # noqa: E402
 from libs.research import sensor_contract as sc  # noqa: E402
 
 UNMEASURED = sc.UNMEASURED
@@ -754,6 +757,23 @@ def ledger_state(ledger: sc.SensorLedger) -> str:
     return "OK"
 
 
+def ledger_owned(path: Path, ledger: sc.SensorLedger, report: Path | None = None) -> bool:
+    """True for a path the source scan must never read: the ledger's index (`index_path`),
+    anything under the ledger's root (shards, clock rows, lock, index temp files), or this
+    organ's own census. Compared on resolved paths, so a symlinked or relative spelling of the
+    same file is caught too."""
+    def res(p: Path) -> Path:
+        try:
+            return p.resolve()
+        except OSError:
+            return p.absolute()
+    rp = res(path)
+    banned = {res(ledger.index_path)}
+    if report is not None:
+        banned.add(res(report))
+    return rp in banned or rp.is_relative_to(res(ledger.root))
+
+
 def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float = 60.0,
         report: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     """One pass: every Asia store whose bytes changed since the last pass, mapped and appended."""
@@ -785,6 +805,12 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
                                                                   f"{str(exc)[:120]}"}
             continue
         for name, path, load in items:
+            if ledger_owned(path, ledger, report):
+                # the ledger's own index, shards, lock or temp files (and this census) are
+                # OUTPUTS, never a source: reading them back would re-append the ledger to itself
+                stores[name] = {"status": "BANNED_LEDGER_FILE", "path": str(path)}
+                totals["banned_ledger_file"] += 1
+                continue
             sig = _sig(path)
             if seen.get(name) == sig:
                 stores[name] = {"status": "UNCHANGED"}
@@ -869,11 +895,36 @@ def run(desk: Path = DESK, *, ledger_root: Path | None = None, budget_s: float =
         "intraday_held": held_after,
         "wall_s": round(time.monotonic() - t0, 2),
     }
-    report.parent.mkdir(parents=True, exist_ok=True)
-    tmp = report.with_suffix(f".tmp{os.getpid()}")
-    tmp.write_text(json.dumps(doc, indent=1, default=str, ensure_ascii=False), encoding="utf-8")
-    os.replace(tmp, report)
+    doc["report_write"] = write_report(report, doc)
     return doc
+
+
+def write_report(report: Path, doc: Mapping[str, Any]) -> str:
+    """Write the pass census WITHOUT raising, and never leave a temp file behind.
+
+    By the time this runs the ledger appends are done, so an exception here would only throw
+    away the census and strand a `.tmp`. On Windows `os.replace` onto a held or read-only
+    report is WinError 5; `replace_resilient` retries it, clears the read-only bit and falls back
+    to an in-place write. If even that is refused the pass still completes: the old cursor
+    stands, so the next pass re-sends the same stores and the ledger's own index makes every
+    re-sent row a duplicate. The verdict is returned (and printed by `main`), never swallowed.
+    The temp name is unique per process AND per thread (two passes in one process never share
+    one), and it is removed in `finally` whatever happened."""
+    tmp = report.with_name(f".{report.name}.{os.getpid()}.{threading.get_ident()}."
+                           f"{uuid.uuid4().hex[:12]}.tmp")
+    try:
+        report.parent.mkdir(parents=True, exist_ok=True)
+        tmp.write_text(json.dumps(doc, indent=1, default=str, ensure_ascii=False),
+                       encoding="utf-8")
+        replace_resilient(tmp, report)
+        return "OK"
+    except OSError as exc:
+        return f"WRITE_FAILED: {type(exc).__name__}: {str(exc)[:160]}"
+    finally:
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -885,8 +936,9 @@ def main(argv: list[str] | None = None) -> int:
     t = doc["totals"]
     print(f"asia_sensor_adapter: mapped {t.get('mapped')} appended {t.get('appended', 0)} "
           f"revisions {t.get('revisions', 0)} refused {t.get('refused', 0)} "
-          f"duplicates {t.get('duplicates', 0)}; deferred {len(doc['deferred_over_budget'])}")
-    return 0
+          f"duplicates {t.get('duplicates', 0)}; deferred {len(doc['deferred_over_budget'])}; "
+          f"report {doc.get('report_write')}")
+    return 0 if doc.get("report_write") == "OK" else 1
 
 
 if __name__ == "__main__":

@@ -3993,7 +3993,9 @@ def sensor_adapter_pass(paths: Paths = DEFAULT_PATHS, *, ledger_root: Path | Non
     except Exception as exc:
         return {"status": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
     t = doc.get("totals") or {}
-    return {"status": "OK", "appended": t.get("appended", 0), "revisions": t.get("revisions", 0),
+    wrote = str(doc.get("report_write") or "UNMEASURED")
+    return {"status": "OK" if wrote == "OK" else "REPORT_WRITE_FAILED", "report_write": wrote,
+            "appended": t.get("appended", 0), "revisions": t.get("revisions", 0),
             "refused": t.get("refused", 0), "mapped": t.get("mapped", 0),
             "deferred": len(doc.get("deferred_over_budget") or [])}
 

@@ -598,3 +598,203 @@ def test_concurrent_passes_lose_nothing_and_conflict_nowhere(tmp_path: Path) -> 
         keys = {"|".join((r["sensor_id"], r["entity"], r["metric"], r["event_time"]))
                 for r in rows}
         assert set(led.latest_index()) == keys
+
+
+# ---------------------------------------------------------------- audit #225 round 3
+def _strays(*roots: Path) -> list[Path]:
+    return [p for r in roots if r.exists() for p in r.rglob("*") if ".tmp" in p.name]
+
+
+def _index_matches_rows(root: Path) -> list[dict[str, Any]]:
+    rows = _all_rows(root)
+    led = sc.SensorLedger(root)
+    keys = {"|".join((r["sensor_id"], r["entity"], r["metric"], r["event_time"])) for r in rows}
+    assert set(led.latest_index()) == keys
+    for r in rows:
+        got = led.as_of(r["sensor_id"], r["entity"], r["metric"], r["event_time"],
+                        r["knowable_at"], basis="world")
+        assert got is not None and got["knowable_at"] == r["knowable_at"], r["metric"]
+    return rows
+
+
+def _refuse_replace_onto(monkeypatch: Any, target: Path) -> list[str]:
+    """os.replace onto `target` raises what Windows raises for a held or read-only destination
+    (PermissionError, WinError 5); every other replace -- the ledger's index -- is real."""
+    import os as _os
+
+    from libs.ops import win_write
+    real = _os.replace
+    refused: list[str] = []
+
+    def replace(src: Any, dst: Any) -> None:
+        if Path(dst) == target:
+            refused.append(Path(src).name)
+            raise PermissionError(13, "[WinError 5] Access is denied", str(dst))
+        real(src, dst)
+    monkeypatch.setattr(_os, "replace", replace)
+    monkeypatch.setattr(win_write, "time", type("T", (), {"sleep": staticmethod(lambda s: None)}))
+    return refused
+
+
+def test_a_refused_report_replace_falls_back_in_place_and_strands_no_tmp(
+        tmp_path: Path, monkeypatch: Any) -> None:
+    desk = _desk(tmp_path)
+    root = tmp_path / "sensors"
+    rep = tmp_path / "reports" / "rep.json"
+    refused = _refuse_replace_onto(monkeypatch, rep)
+    doc = ad.run(desk, ledger_root=root, report=rep, now=NOW)
+    assert refused, "the report's replace was never attempted"
+    assert doc["report_write"] == "OK"                      # the in-place fallback landed it
+    assert json.loads(rep.read_text(encoding="utf-8"))["stores_seen"] == doc["stores_seen"]
+    assert _strays(tmp_path) == []
+    assert len(_index_matches_rows(root)) == doc["totals"]["appended"] == 7
+
+
+def test_a_report_refused_every_way_completes_the_pass_and_the_ledger_stays_whole(
+        tmp_path: Path, monkeypatch: Any) -> None:
+    """The WinError-5 case of audit #225: run() used to raise AFTER the ledger appends and leave
+    the .tmp behind. Now the pass completes, the tmp is gone, the verdict is reported, and the
+    next pass (whose cursor never landed) re-sends everything as duplicates."""
+    from libs.ops import win_write
+    desk = _desk(tmp_path)
+    root = tmp_path / "sensors"
+    rep = tmp_path / "reports" / "rep.json"
+    _refuse_replace_onto(monkeypatch, rep)
+
+    def no_open(*a: Any, **k: Any) -> Any:
+        raise PermissionError(13, "[WinError 5] Access is denied", str(a[0]))
+    monkeypatch.setattr(win_write, "open", no_open, raising=False)
+    doc = ad.run(desk, ledger_root=root, report=rep, now=NOW)       # does not raise
+    assert doc["report_write"].startswith("WRITE_FAILED: PermissionError")
+    assert not rep.exists() and _strays(tmp_path) == []
+    rows = _index_matches_rows(root)
+    assert len(rows) == doc["totals"]["appended"] == 7
+    assert ad.main.__module__ == ad.__name__
+    monkeypatch.undo()
+    again = ad.run(desk, ledger_root=root, report=rep, now=NOW + timedelta(hours=1))
+    assert again["report_write"] == "OK"
+    assert again["totals"].get("appended", 0) == 0
+    assert again["totals"]["duplicates"] == again["totals"]["mapped"] == 7
+    assert len(_index_matches_rows(root)) == 7 and _strays(tmp_path) == []
+
+
+def test_the_leg_reports_a_failed_census_write(tmp_path: Path, monkeypatch: Any) -> None:
+    from research import alt_proxies as A
+    monkeypatch.setattr(ad, "write_report", lambda report, doc: "WRITE_FAILED: PermissionError")
+    out = A.sensor_adapter_pass(A.Paths(_desk(tmp_path)), ledger_root=tmp_path / "sensors")
+    assert out["status"] == "REPORT_WRITE_FAILED" and out["appended"] == 7
+
+
+def test_report_temp_names_are_unique_per_thread_and_never_left(tmp_path: Path,
+                                                               monkeypatch: Any) -> None:
+    import threading
+    real = ad.replace_resilient
+    names: list[str] = []
+    lock = threading.Lock()
+    gate = threading.Barrier(8)
+
+    def slow(tmp: Path, dest: Path) -> None:
+        with lock:
+            names.append(tmp.name)
+        gate.wait(10)                 # every thread holds its temp file at the same moment
+        real(tmp, dest)
+    monkeypatch.setattr(ad, "replace_resilient", slow)
+    rep = tmp_path / "rep.json"
+    verdicts: list[str] = []
+    threads = [threading.Thread(target=lambda i=i: verdicts.append(
+        ad.write_report(rep, {"writer": i}))) for i in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(30)
+    assert verdicts == ["OK"] * 8
+    assert len(set(names)) == 8, names            # pid alone would give all eight one name
+    import os as _os
+    assert all(f".{_os.getpid()}." in n for n in names)
+    assert json.loads(rep.read_text(encoding="utf-8"))["writer"] in range(8)
+    assert _strays(tmp_path) == []
+
+
+def test_the_source_scan_never_reads_the_ledger_index_or_its_files(tmp_path: Path,
+                                                                   monkeypatch: Any) -> None:
+    desk = _desk(tmp_path)
+    root = tmp_path / "sensors"
+    rep = tmp_path / "rep.json"
+    ad.run(desk, ledger_root=root, report=rep, now=NOW)
+    led = sc.SensorLedger(root)
+    shard = next((root / "observations").glob("*.jsonl"))
+    read: list[str] = []
+
+    def own_files(_desk: Path) -> Any:
+        def boom(p: Path) -> Any:
+            def load() -> list[Any]:
+                read.append(p.name)
+                raise AssertionError(f"ledger file read as a source: {p}")
+            return load
+        yield "rogue:index", led.index_path, boom(led.index_path)
+        yield "rogue:index_relative", Path(_relpath(led.index_path)), boom(led.index_path)
+        yield "rogue:shard", shard, boom(shard)
+        yield "rogue:census", rep, boom(rep)
+    monkeypatch.setattr(ad, "COLLECTORS", (*ad.COLLECTORS, own_files))
+    rep.unlink()
+    doc = ad.run(desk, ledger_root=root, report=rep, now=NOW + timedelta(hours=1))
+    assert read == []
+    for k in ("rogue:index", "rogue:index_relative", "rogue:shard", "rogue:census"):
+        assert doc["stores"][k]["status"] == "BANNED_LEDGER_FILE", k
+        assert k not in doc["stores_seen"]
+    assert doc["totals"]["banned_ledger_file"] == 4
+    assert ad.ledger_owned(led.index_path, led) and not ad.ledger_owned(shard.parent.parent.parent
+                                                                         / "x.jsonl", led)
+
+
+def _relpath(p: Path) -> str:
+    import os as _os
+    return _os.path.relpath(p)
+
+
+_PROC = """
+import json, sys, time
+from datetime import datetime
+from pathlib import Path
+sys.path[:0] = [{desk_dir!r}, {root_dir!r}]
+from research import asia_sensor_adapter as ad
+go = Path(sys.argv[1])
+while not go.exists():
+    time.sleep(0.005)
+now = datetime.fromisoformat({now!r})
+out = []
+for desk, rep in json.loads(sys.argv[2]):
+    out.append(ad.run(Path(desk), ledger_root=Path(sys.argv[3]), report=Path(rep), now=now))
+print(json.dumps([d["totals"] for d in out]))
+"""
+
+
+def test_two_processes_share_one_ledger_through_the_lock(tmp_path: Path) -> None:
+    """Cross-PROCESS, not threads: two interpreters append the same and different stores to one
+    ledger at once. #208's file lock must leave no lost row, no duplicated row and an index that
+    agrees with the shards."""
+    import os as _os
+    import subprocess
+    code = _PROC.format(desk_dir=str(DESK), root_dir=str(ROOT), now=NOW.isoformat())
+    env = {**_os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+    for round_ in range(2):
+        base = tmp_path / f"p{round_}"
+        desk1, desk2 = _desk(base), _other_desk(base)
+        root = base / "sensors"
+        go = base / "go"
+        plans = [[(str(desk1), str(base / "a1.json")), (str(desk2), str(base / "a2.json"))],
+                 [(str(desk2), str(base / "b2.json")), (str(desk1), str(base / "b1.json"))]]
+        procs = [subprocess.Popen([sys.executable, "-c", code, str(go), json.dumps(plan),
+                                   str(root)], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                  text=True, env=env) for plan in plans]
+        go.write_text("go", encoding="utf-8")
+        outs = [p.communicate(timeout=180) for p in procs]
+        assert all(p.returncode == 0 for p in procs), [o[1][-2000:] for o in outs]
+        totals = [t for o in outs for t in json.loads(o[0].strip().splitlines()[-1])]
+        assert all(t.get("conflicts", 0) == 0 and t.get("refused", 0) == 0 for t in totals)
+        rows = _index_matches_rows(root)
+        # the deduplicated union: desk1's 7 rows and desk2's 2, each exactly once
+        assert len(rows) == 9 == len({r["observation_id"] for r in rows})
+        assert sum(t.get("appended", 0) for t in totals) == 9
+        assert sum(t.get("duplicates", 0) for t in totals) == 9    # the other process's copy
+        assert _strays(base) == []
