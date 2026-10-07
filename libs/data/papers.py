@@ -277,7 +277,8 @@ def github(query: str, *, kind: str = "repositories", limit: int = 20
         **_UA, "Authorization": f"Bearer {tok}",
         "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"})
     try:
-        with urllib.request.urlopen(req, timeout=30) as fh:
+        from libs.data.keyed_sources import keyed_urlopen
+        with keyed_urlopen(req, timeout=30, secrets=(tok,)) as fh:
             body = json.loads(fh.read().decode("utf8", errors="ignore"))
     except Exception as exc:
         return [], f"{type(exc).__name__}: {str(exc)[:140]}"
