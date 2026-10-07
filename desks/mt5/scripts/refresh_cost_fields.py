@@ -129,8 +129,8 @@ def main() -> int:
                 continue
             os.replace(tmp, REGISTRY)
         finally:
-            if os.path.exists(tmp):
-                os.unlink(tmp)
+            if Path(tmp).exists():
+                Path(tmp).unlink()
         break
     else:
         print("refresh_cost_fields: registry changed three times -- refusing to clobber")
