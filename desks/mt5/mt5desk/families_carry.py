@@ -36,8 +36,9 @@ price; mode 0 is zero; any other mode is unknown and reads NaN. The `swap_mode` 
 from the row itself, then from `data/carry_state.json` (units only; never its values).
 
 ENTERING THE GAUNTLET. `history_status()` counts the distinct UTC dates holding an honest row
-and compares them with the gauntlet's lockbox floor (`research.gate_policy.LOCKBOX_MIN_DAYS`,
-never lowered here). `research/elitequant_breadth.py` seeds these families only once that count
+and compares them with the fewest days the gauntlet can judge, derived from its own minimum:
+60 development days plus the held-out tail (`research.gate_policy.LOCKBOX_MIN_DAYS`, 40, or
+LOCKBOX_FRAC of the history), so 100 today (`judgeable_floor`; never lowered here). `research/elitequant_breadth.py` seeds these families only once that count
 reaches the floor and reports PENDING_HISTORY with the count until then, so the cells enter on
 their own the hour the history is long enough, and charge no trial before.
 """
@@ -328,7 +329,11 @@ def family_commodity_basis_carry(
             ok = np.isfinite(col)
             if ok.sum() < 10:
                 continue
-            r = float(np.nanvar(np.diff(col[ok]))) or 1e-8
+            # observation noise from the MAD of the stamped changes, so one repricing jump does
+            # not set the filter's scale; a flat history falls back to a tiny positive floor
+            dif = np.diff(col[ok])
+            mad = float(np.median(np.abs(dif - np.median(dif)))) * 1.4826
+            r = mad * mad if mad > 0 else max(float(np.var(dif)), 1e-8)
             pred = ss.local_level(col, float(q) * r, r).pred
             score[:, k] = col - pred
     else:
@@ -388,15 +393,31 @@ CULTURE: dict[str, dict[str, str]] = {
 }
 
 
+#: The development days the gauntlet's own per-cell cut requires before its held-out tail
+#: (`scripts/external_gauntlet.cell_lockbox_cut`, `need=60`); a test pins the two together.
+GAUNTLET_DEV_DAYS = 60
+
+
+def judgeable_floor(dev_days: int = GAUNTLET_DEV_DAYS) -> int:
+    """The fewest history days the gauntlet can judge: n with n - max(LOCKBOX_MIN_DAYS,
+    ceil(n * LOCKBOX_FRAC)) >= dev_days. With 60 development and a 40-day / 20% holdout this is
+    100, never the 40-day holdout floor alone (audit PR269 M1)."""
+    from research.gate_policy import LOCKBOX_FRAC, LOCKBOX_MIN_DAYS
+    n = int(dev_days) + int(LOCKBOX_MIN_DAYS)
+    while n - max(int(LOCKBOX_MIN_DAYS), math.ceil(n * float(LOCKBOX_FRAC))) < int(dev_days):
+        n += 1
+    return n
+
+
 def history_status(floor_days: int | None = None,
                    classes: tuple[str, ...] = FX_CLASSES) -> dict[str, Any]:
-    """Whether the honest swap history has reached the lockbox floor, with the count.
+    """Whether the honest swap history is long enough for the gauntlet to judge, with the count.
 
-    The floor is the gauntlet's own; an unreadable floor is UNMEASURED and seeds nothing."""
+    The floor is DERIVED from the gauntlet's own minimum (development days plus its held-out
+    tail, `judgeable_floor`); an unreadable floor is UNMEASURED and seeds nothing."""
     if floor_days is None:
         try:
-            from research.gate_policy import LOCKBOX_MIN_DAYS
-            floor_days = int(LOCKBOX_MIN_DAYS)
+            floor_days = judgeable_floor()
         except Exception as exc:                     # pragma: no cover - import guard
             return {"status": "UNMEASURED", "ready": False,
                     "why": f"lockbox floor unreadable: {type(exc).__name__}"}
@@ -409,8 +430,9 @@ def history_status(floor_days: int | None = None,
             "honest_days": len(days), "floor_days": int(floor_days),
             "first_day": days[0] if days else None, "last_day": days[-1] if days else None,
             "symbols": len(fx), "classes": list(classes), "data_source": DATA_SOURCE, **stats,
-            "why": ("the cells enter the gauntlet when the honest history reaches the lockbox "
-                    "floor; nothing before a row's knowable instant is ever filled")}
+            "why": ("the cells enter the gauntlet when the honest history covers the gauntlet's "
+                    "development days plus its held-out tail; nothing before a row's knowable "
+                    "instant is ever filled")}
 
 
 def _commodity_status() -> dict[str, Any]:

@@ -1869,7 +1869,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The class-book seeder stops itself at --budget-s 900 and resumes from its state file (each
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
-    "elitequant_breadth": 700,
+    # elitequant_breadth carves --budget-s 780 into the seeder (600) and its two add-on reports
+    # (120 + 60), checks the budget per cell, and writes its report before the add-ons run.
+    "elitequant_breadth": 900,
     # analyst_panel stops itself at --budget-s 420 and at 10 seat calls; the cap sits above.
     "analyst_panel": 540,
     # zoo_breadth stops measuring books at --budget-s 600 and screens survivor legs for at most
@@ -3949,7 +3951,7 @@ def main() -> None:
     # every hypothesis-lane cell on cost and donates the payers through the one proposer door;
     # writes reports/ELITEQUANT_BREADTH.json. Additive: no other miner is touched.
     eqb = _costed("elitequant_breadth", lambda: _producer(
-        "elitequant_breadth", "research/elitequant_breadth.py", "--once", "--budget-s", "600"))
+        "elitequant_breadth", "research/elitequant_breadth.py", "--once", "--budget-s", "780"))
     # THE ANALYST PANEL (TradingAgents, 2026-09-30): four analyst lenses propose cells in the
     # registered price-only grammar on the proposer seat, the bear attacks each one, the payers
     # are screened and donated through the one proposer door; writes reports/ANALYST_PANEL.json.
