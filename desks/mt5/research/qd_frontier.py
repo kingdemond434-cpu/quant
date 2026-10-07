@@ -581,6 +581,132 @@ def attach_behavioural_distance(niches: dict[str, dict[str, Any]],
     return n
 
 
+# ------------------------------------------------------------------ per-niche records
+#: What each niche records (breadth law, BREADTH-0441..0448): the BEST of each kind among the
+#: niche's cells, not the elite's. A record whose input is absent reads None with the reason.
+NICHE_RECORDS = ("best_capacity", "best_execution", "best_robustness", "best_forward_evidence",
+                 "best_marginal_delta_elogw", "local_saturation", "effective_trial_spend",
+                 "remaining_uncertainty")
+
+
+def _sleeve_delta_elogw(note: dict[str, str]) -> dict[tuple[str, str], float]:
+    """(SYMBOL, family) -> the allocator's measured delta E[log W]/day, from data/sleeves.json
+    (read-only). Absent or unmeasured rows contribute nothing."""
+    out: dict[tuple[str, str], float] = {}
+    doc = ar._read_json(SLEEVES, note) if ar else None
+    rows = doc.get("sleeves") if isinstance(doc, dict) else doc
+    for r in rows if isinstance(rows, list) else []:
+        if not isinstance(r, dict):
+            continue
+        adm = r.get("admission")
+        d = _num(adm.get("delta_elogw_per_day")) if isinstance(adm, dict) else None
+        if d is not None:
+            k = (str(r.get("symbol") or "").upper(), ar._tok(r.get("family") or "") if ar else "")
+            out[k] = max(out.get(k, d), d)
+    return out
+
+
+def niche_records(niches: dict[str, dict[str, Any]], evidence: dict[str, dict[str, Any]],
+                  sat: dict[str, Any] | None, *, delta_elogw: dict[tuple[str, str], float],
+                  capacity_terms: Any = None) -> int:
+    """Stamp `records` on every niche from its cells' evidence; returns niches with any record.
+
+    best_capacity / best_execution   the capacity term and turnover x liquidity of
+                                     research/breadth_capacity (registry spreads, CAPACITY.json)
+    best_robustness                  deepest fraction of the ten-gate ladder a cell reached
+    best_forward_evidence            max forward exp_r x sqrt(n)
+    best_marginal_delta_elogw        max allocator delta E[log W]/day of a sleeve in the niche
+    local_saturation                 the saturation map's state and effective count for the
+                                     elite's cluster
+    effective_trial_spend            that cluster's effective trials (else cells tried, labelled)
+    remaining_uncertainty            1/sqrt(n) of the best forward reading (None without one)
+    """
+    try:
+        from research import certificate_saturation as cs
+    except ImportError:                                             # pragma: no cover
+        import certificate_saturation as cs  # type: ignore[import-not-found,no-redef]
+    by_niche: dict[str, list[dict[str, Any]]] = {}
+    for row in evidence.values():
+        by_niche.setdefault(niche_key(niche_of(row)), []).append(row)
+    clusters = (sat or {}).get("clusters") if isinstance((sat or {}).get("clusters"), dict) \
+        else {}
+    n_any = 0
+    for key, niche in niches.items():
+        cells = by_niche.get(key, [])
+        rec: dict[str, Any] = {}
+        why: dict[str, str] = {}
+        caps, execs = [], []
+        if capacity_terms is not None:
+            for c in cells:
+                t = capacity_terms(str(c.get("instrument") or ""),
+                                   {"timeframe": c.get("chart"), "horizon": c.get("horizon")})
+                tt = (t or {}).get("terms") or {}
+                if tt.get("capacity") is not None:
+                    caps.append(float(tt["capacity"]))
+                if tt.get("turnover") is not None and tt.get("liquidity") is not None:
+                    execs.append(float(tt["turnover"]) * float(tt["liquidity"]))
+        rec["best_capacity"] = round(max(caps), 6) if caps else None
+        if not caps:
+            why["best_capacity"] = "no measured capacity headroom for the niche's instruments"
+        rec["best_execution"] = round(max(execs), 6) if execs else None
+        if not execs:
+            why["best_execution"] = "no measured spread / chart for the niche's instruments"
+        depths = [float(c["gate_depth"]) for c in cells if c.get("gate_depth") is not None]
+        rec["best_robustness"] = round(max(depths), 4) if depths else None
+        if not depths:
+            why["best_robustness"] = "no cell of this niche has reached the judge"
+        fwd = [(float(c["exp_r"]) * math.sqrt(float(c["n"])), float(c["n"])) for c in cells
+               if c.get("exp_r") is not None and c.get("n")]
+        best_fwd = max(fwd) if fwd else None
+        rec["best_forward_evidence"] = round(best_fwd[0], 6) if best_fwd else None
+        rec["remaining_uncertainty"] = round(1.0 / math.sqrt(best_fwd[1]), 6) if best_fwd \
+            else None
+        if not best_fwd:
+            why["best_forward_evidence"] = why["remaining_uncertainty"] = (
+                "no forward reading in this niche")
+        dl = [delta_elogw[k] for c in cells
+              if (k := (str(c.get("instrument") or "").upper(), str(c.get("family") or "")))
+              in delta_elogw]
+        rec["best_marginal_delta_elogw"] = round(max(dl), 10) if dl else None
+        if not dl:
+            why["best_marginal_delta_elogw"] = "no allocator-measured sleeve in this niche"
+        elite = niche.get("elite") or {}
+        cl = None
+        if elite and clusters:
+            ax = cs.axes_of(str(elite.get("instrument") or ""), str(elite.get("family") or ""),
+                            {}, timeframe=elite.get("chart"), session=elite.get("session"))
+            cl = clusters.get(str(cs.cluster_key(ax)))
+        if isinstance(cl, dict):
+            rec["local_saturation"] = {"state": cl.get("state"),
+                                       "effective": cl.get("effective_certificate_count"),
+                                       "nominal": cl.get("certificate_count")}
+            tri = cl.get("effective_trials_spent")
+            rec["effective_trial_spend"] = tri
+            rec["effective_trial_spend_basis"] = "saturation map cluster"
+        else:
+            rec["local_saturation"] = None
+            why["local_saturation"] = ("no fresh saturation map" if not clusters
+                                       else "the elite's cluster is not in the map")
+            rec["effective_trial_spend"] = niche.get("n_cells_tried")
+            rec["effective_trial_spend_basis"] = "cells tried (no saturation cluster)"
+        niche["records"] = rec
+        niche["records_unmeasured"] = why
+        n_any += int(any(v is not None for k, v in rec.items() if k in NICHE_RECORDS))
+    return n_any
+
+
+def _capacity_terms() -> Any:
+    try:
+        try:
+            from research import breadth_capacity as bc
+        except ImportError:                                         # pragma: no cover
+            import breadth_capacity as bc  # type: ignore[import-not-found,no-redef]
+        ctx = bc.Context()
+        return lambda sym, axes: bc.terms(sym, axes, ctx)
+    except Exception:
+        return None
+
+
 def _distance_rank(row: dict[str, Any]) -> float:
     """Coarse (one decimal) mean distance, so evidence still orders inside a band; 0 unmeasured."""
     v = (row.get("behavioural_distance") or {}).get("mean_distance")
@@ -811,13 +937,20 @@ def build(max_proposals: int = DEFAULT_PROPOSALS, previous: dict[str, Any] | Non
     else:
         doc = ar._read_json(AXIS_REPORT, note)
         registry_at = str(doc.get("at")) if isinstance(doc, dict) else UNKNOWN
-        cells = collect_cells(note, collect_evidence(note))
+        evidence = collect_evidence(note)
+        cells = collect_cells(note, evidence)
         niches = build_niches(cells)
         if previous is None:
             doc = ar._read_json(OUT_MAP, note)
             previous = doc if isinstance(doc, dict) else {}
         merge_map(niches, previous, now.isoformat())
-        n_bd = attach_behavioural_distance(niches, _saturation_map())
+        sat_map = _saturation_map()
+        n_bd = attach_behavioural_distance(niches, sat_map)
+        n_rec = niche_records(niches, evidence, sat_map,
+                              delta_elogw=_sleeve_delta_elogw(note),
+                              capacity_terms=_capacity_terms())
+        if not n_rec:
+            why.append("per-niche records UNMEASURED: no niche had a measured record")
         if not n_bd:
             why.append("behavioural distance UNMEASURED: no fresh certificate saturation map")
         families, by_class = ar.registered_families(), ar.instruments_by_class()

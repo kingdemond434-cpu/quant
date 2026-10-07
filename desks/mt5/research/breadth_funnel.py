@@ -44,6 +44,7 @@ STAGES = ("generated", "structurally_novel", "evaluator_admitted", "survives",
 #: The verdict ledger is the box's largest file; its tail is what the window can speak for.
 VERDICT_TAIL_BYTES = 64 * 1024 * 1024
 MAX_CANDIDATES_PUBLISHED = 2000
+FAILURE_EXAMPLES = 8
 
 
 def _cs() -> Any:
@@ -79,8 +80,9 @@ def _read_json(path: Path) -> Any:
         return None
 
 
-def verdicts(path: Path | None = None) -> dict[str, bool] | None:
-    """{cell: passed-ever} from the ledger's tail; None when the ledger is absent."""
+def verdicts(path: Path | None = None) -> dict[str, Any] | None:
+    """{cell: {"passed": ever, "gate": the last failing terminal gate}} from the ledger's tail;
+    None when the ledger is absent."""
     p = path or VERDICTS
     try:
         size = p.stat().st_size
@@ -91,23 +93,35 @@ def verdicts(path: Path | None = None) -> dict[str, bool] | None:
             raw = fh.read()
     except OSError:
         return None
-    out: dict[str, bool] = {}
+    out: dict[str, Any] = {}
     for ln in raw.decode("utf-8", errors="replace").splitlines():
         try:
             r = json.loads(ln)
         except ValueError:
             continue
         if isinstance(r, dict) and r.get("cell"):
-            c = str(r["cell"])
-            out[c] = out.get(c, False) or r.get("passed") is True
+            v = out.setdefault(str(r["cell"]), {"passed": False, "gate": None})
+            if r.get("passed") is True:
+                v["passed"] = True
+            else:
+                v["gate"] = str(r.get("terminal_gate") or "UNKNOWN")
     return out
+
+
+def _verdict(vm: Mapping[str, Any], cell: str) -> dict[str, Any] | None:
+    v = vm.get(cell)
+    if v is None:
+        return None
+    if isinstance(v, Mapping):
+        return {"passed": bool(v.get("passed")), "gate": v.get("gate")}
+    return {"passed": bool(v), "gate": None if v else "UNKNOWN"}
 
 
 def _session(row: Mapping[str, Any], params: Mapping[str, Any]) -> str:
     return str(params.get("session") or row.get("selector") or row.get("session") or "").lower()
 
 
-def build(*, docket: Any = None, verdict_map: dict[str, bool] | str | None = "read",
+def build(*, docket: Any = None, verdict_map: Mapping[str, Any] | str | None = "read",
           shadow: Any = None, sleeves: Any = None, saturation: Any = None,
           now: datetime | None = None) -> dict[str, Any]:
     t = now or datetime.now(tz=UTC)
@@ -115,7 +129,8 @@ def build(*, docket: Any = None, verdict_map: dict[str, bool] | str | None = "re
     if not isinstance(rows, list):
         return {"status": UNMEASURED, "at": t.isoformat(timespec="seconds"),
                 "why": "docket absent or unreadable", "stages": dict.fromkeys(STAGES)}
-    vm = verdicts() if verdict_map == "read" else verdict_map
+    vm: Mapping[str, Any] | None = (verdicts() if verdict_map == "read" else
+                                    verdict_map if isinstance(verdict_map, Mapping) else None)
     sh = shadow if shadow is not None else _read_json(SHADOW)
     sl = sleeves if sleeves is not None else _read_json(SLEEVES)
     sat = saturation if saturation is not None else _read_json(SATURATION)
@@ -156,6 +171,8 @@ def build(*, docket: Any = None, verdict_map: dict[str, bool] | str | None = "re
             why.setdefault(s, "requires `survives`, which is unmeasured on this host")
         enrolled = independent = live = None
     counts: Counter[str] = Counter()
+    failures: dict[str, Counter[str]] = defaultdict(Counter)
+    examples: dict[str, list[dict[str, Any]]] = defaultdict(list)
     by_producer: dict[str, Counter[str]] = defaultdict(Counter)
     novel_measured = 0
     cands: list[dict[str, Any]] = []
@@ -169,13 +186,14 @@ def build(*, docket: Any = None, verdict_map: dict[str, bool] | str | None = "re
             cell = _cell_id({"sym": sym, "family": fam, "params": params})
         except Exception:
             cell = f"{sym}.{fam}"
-        st = {"generated": True}
+        st: dict[str, bool | None] = {"generated": True}
         bo = r.get("breadth_order")
         if isinstance(bo, Mapping) and "dup" in bo:
             novel_measured += 1
             st["structurally_novel"] = not bo.get("dup")
-        st["evaluator_admitted"] = None if vm is None else cell in vm
-        st["survives"] = None if vm is None else bool(vm.get(cell))
+        ver = None if vm is None else _verdict(vm, cell)
+        st["evaluator_admitted"] = None if vm is None else ver is not None
+        st["survives"] = None if vm is None else bool(ver and ver["passed"])
         sess = _session(r, params)
         st["forward_enrolled"] = (None if enrolled is None
                                   else bool(st["survives"]) and (sym, sess) in enrolled)
@@ -185,6 +203,12 @@ def build(*, docket: Any = None, verdict_map: dict[str, bool] | str | None = "re
         st["promoted_live"] = (None if live is None
                                else bool(st["survives"]) and (sym, fam) in live)
         producer = str(r.get("producer") or r.get("source") or "unknown")
+        if ver is not None and not ver["passed"]:
+            # WHICH FAILED AND WHY (BREADTH-0364/0365): the judge's terminal gate, per producer
+            gate = str(ver.get("gate") or "UNKNOWN")
+            failures[producer][gate] += 1
+            if len(examples[producer]) < FAILURE_EXAMPLES:
+                examples[producer].append({"cell": cell, "terminal_gate": gate})
         reached = [s for s in STAGES if st.get(s) is True]
         for s in reached:
             counts[s] += 1
@@ -206,6 +230,11 @@ def build(*, docket: Any = None, verdict_map: dict[str, bool] | str | None = "re
             "conversion": conv,
             "by_producer": {p: {s: (c.get(s, 0) if s not in why else None) for s in STAGES}
                             for p, c in sorted(by_producer.items())},
+            "failures_by_producer": {
+                p: {"by_terminal_gate": dict(c.most_common()), "examples": examples[p],
+                    "note": ("UNKNOWN is the judge's unmeasured path (too few observations), "
+                             "not a rejection")}
+                for p, c in sorted(failures.items())},
             "candidates": cands[:MAX_CANDIDATES_PUBLISHED],
             "rule": ("a stage is credited only when its own artifact shows it and every earlier "
                      "stage held; a stage whose input is absent reads None (UNMEASURED), never 0")}

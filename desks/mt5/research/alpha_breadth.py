@@ -609,6 +609,18 @@ def breadth_debt_pass(sat: dict[str, Any]) -> dict[str, Any]:
     except Exception as exc:
         out = {"breadth_constrained_mode": UNMEASURED,
                "why": f"{type(exc).__name__}: {exc}"[:300]}
+    # the end-to-end funnel per candidate (BREADTH-0267..0273), beside the map; it runs
+    # before the briefs, which carry its failures
+    try:
+        try:
+            from research import breadth_funnel as bfn
+        except ImportError:                                           # pragma: no cover
+            import breadth_funnel as bfn  # type: ignore[import-not-found,no-redef]
+        fdoc = bfn.build(saturation=sat)
+        bfn.publish(fdoc, OUT.parent / bfn.OUT.name)
+        out["breadth_funnel"] = fdoc.get("stages")
+    except Exception as exc:
+        out["breadth_funnel_why"] = f"{type(exc).__name__}: {exc}"[:300]
     # every producer's brief (producer law §1, §5), beside the map: the hourly launcher hands its
     # path to each producer leg and the proposer seat puts its lines into every organ's prompt
     try:
@@ -643,17 +655,6 @@ def breadth_debt_pass(sat: dict[str, Any]) -> dict[str, Any]:
         out["coverage_report"] = str(cov)
     except Exception as exc:
         out["coverage_why"] = f"{type(exc).__name__}: {exc}"[:300]
-    # the end-to-end funnel per candidate (BREADTH-0267..0273), beside the map
-    try:
-        try:
-            from research import breadth_funnel as bfn
-        except ImportError:                                           # pragma: no cover
-            import breadth_funnel as bfn  # type: ignore[import-not-found,no-redef]
-        fdoc = bfn.build(saturation=sat)
-        bfn.publish(fdoc, OUT.parent / bfn.OUT.name)
-        out["breadth_funnel"] = fdoc.get("stages")
-    except Exception as exc:
-        out["breadth_funnel_why"] = f"{type(exc).__name__}: {exc}"[:300]
     # did the CRO's breadth steps run (BREADTH-0162..0172): the cycle ledger against the
     # artifacts this leg just wrote
     try:
