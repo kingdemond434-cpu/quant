@@ -37,6 +37,7 @@ import tempfile
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -65,6 +66,7 @@ from mt5desk.decision_core import (
     bar_already_traded,
     basket_lots,
     basket_record,
+    book_carrier_order,
     book_carriers,
     book_from_allocation,
     book_shares,
@@ -1252,6 +1254,20 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
                              price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
                              taken=False, reason="shadow_not_armed")
         return {"shadow": True, "orders": []}
+    # MARKET HOURS, PER SYMBOL (2026-10-06): a pending stop sent into a closed session, or onto a
+    # symbol the broker has made close-only, is refused here rather than by the venue. A blocked
+    # leg makes the bracket one-sided, so the session is asked about the leg that will be sent.
+    _gate = globals().get("symbol_risk_refusal")
+    _leg_side = {"buy_stop": -1, "sell_stop": 1}.get(str(blocked_side))
+    _closed = _gate(symbol, _leg_side) if _gate else None
+    if _closed:
+        log(f"[{sleeve}] NOT SENT: {_closed}; no new risk on {symbol}, open positions managed")
+        for side in ("buy_stop", "sell_stop"):
+            s = spec.get(side) or {}
+            _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+                             price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
+                             taken=False, reason="session_closed", detail=_closed)
+        return {"ok": False, "stage": "session_closed", "why": _closed, "orders": []}
     sent = []
     # Current market, read ONCE for the legality check below. A pending order
     # whose entry sits inside the broker's freeze band is refused with 10015,
@@ -2163,6 +2179,8 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
     st["last_deal_msc"] = max([int(st.get("last_deal_msc") or 0),
                                *(int(getattr(d, "time_msc", 0) or 0) for d in deals)])
     written = 0
+    _roster_names = {str(s.get("name")) for s in sleeves if s.get("name")}
+    _history: list[str] | None = None            # read once, and only if a tag needs it
     for d in deals:
         if d.entry not in (mt5.DEAL_ENTRY_OUT, getattr(mt5, "DEAL_ENTRY_OUT_BY", 3)):
             continue
@@ -2211,6 +2229,19 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # name is taken from the comment when it is there and marked unattributed when it is not,
         # which is a recoverable gap, unlike never recording the fill at all.
         sleeve = sleeve_from_tag(comment, [s.get("name") for s in sleeves], "UNATTRIBUTED")
+        if sleeve not in _roster_names and comment.startswith("DW"):
+            # A RETIRED SLEEVE'S HASHED TAG (#205 carry-over, 2026-10-06). A name over 27
+            # characters is tagged `first 18 + "~" + sha1[:8]`, and the roster is the only list
+            # this resolved against -- so a position that closed after its sleeve left the
+            # roster was booked under the truncated stem, a ledger key no sleeve has, and its
+            # trade fell out of that sleeve's record. The full history of names this desk has
+            # traded or registered (`_tag_history_names`) is asked second, by the same rule:
+            # the current tag exactly, a legacy tag only when ONE name owns it.
+            if _history is None:
+                _history = _tag_history_names()
+            _hist = sleeve_from_tag(comment, _history, "")
+            if _hist in _history:
+                sleeve = _hist
         sym_info = mt5.symbol_info(d.symbol)
         if sym_info is None:
             continue
@@ -2269,6 +2300,43 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         written += 1
     if written:
         log(f"ledger: recorded {written} closed trade(s)")
+
+
+def _tag_history_names() -> list[str]:
+    """Every sleeve name this desk has ever sent an order for, recorded a trade under, queued
+    for retirement or registered -- the list a retired sleeve's tag is resolved against when the
+    roster no longer holds it. Read only; an unreadable source contributes nothing, never a
+    guess. Sources: the intent ledger (`sleeve` on every order sent), the live ledger, the
+    retired-close queue and the sleeve registries (current, archive, `sleeves.json`)."""
+    names: set[str] = set()
+    for path in (INTENTS, LEDGER):
+        with contextlib.suppress(OSError):
+            for ln in path.read_text("utf-8").splitlines():
+                with contextlib.suppress(ValueError, AttributeError):
+                    n = json.loads(ln).get("sleeve")
+                    if isinstance(n, str) and n and not n.startswith("["):
+                        names.add(n)
+
+    def _walk(o: object, depth: int = 0) -> None:
+        if depth > 6:
+            return
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k in ("name", "sleeve", "names") and isinstance(v, str) and v:
+                    names.add(v)
+                elif k == "names" and isinstance(v, list):
+                    names.update(str(x) for x in v if isinstance(x, str) and x)
+                else:
+                    _walk(v, depth + 1)
+        elif isinstance(o, list):
+            for v in o:
+                _walk(v, depth + 1)
+
+    for path in (RETIRED_CLOSE_QUEUE, SLEEVES_FILE, BASE / "data" / "sleeve_registry.json",
+                 BASE / "data" / "sleeve_registry_archive.json"):
+        with contextlib.suppress(OSError, ValueError):
+            _walk(json.loads(path.read_text("utf-8")))
+    return sorted(names)
 
 
 def ledger_rows() -> list[dict]:
@@ -2338,10 +2406,14 @@ def unarmed_why(st: dict[str, object]) -> str:
 NEW_RISK_OK: bool = False
 
 #: `order_door.SUCCESS` and `order_door.RETCODE_DONE_PARTIAL` as literals, bound to the door's
-#: own values by the assertions below so they cannot drift. The send and close sites write the
-#: same numbers out inline (10010; 10008/10009/10010) because several test harnesses slice
-#: single functions out of this file over the decision core alone, where neither `_door` nor a
-#: gateway constant exists; these assertions are what ties those inline numbers to the door.
+#: own values by the assertions below so they cannot drift. EXTERNAL FACT, not a desk choice:
+#: the MQL5 trade server return codes are published in the MQL5 reference ("Trade Server Return
+#: Codes"): 10008 TRADE_RETCODE_PLACED, 10009 TRADE_RETCODE_DONE, 10010 TRADE_RETCODE_DONE_PARTIAL
+#: ("only part of the request was completed"). A venue protocol table, like a fee schedule.
+#: The send and close sites write the same numbers out inline (10010; 10008/10009/10010)
+#: because several test harnesses slice single functions out of this file over the decision
+#: core alone, where neither `_door` nor a gateway constant exists; these assertions are what
+#: ties those inline numbers to the door.
 FILL_RETCODES: tuple[int, ...] = (10008, 10009, 10010)
 RETCODE_DONE_PARTIAL: int = 10010
 assert frozenset(FILL_RETCODES) == _door.SUCCESS, "gateway FILL_RETCODES drifted from order_door"
@@ -2349,7 +2421,8 @@ assert RETCODE_DONE_PARTIAL == _door.RETCODE_DONE_PARTIAL
 
 
 def new_risk_gate(release_ok: bool, release_why: str, reconcile: dict[str, Any] | None,
-                  terminal: object) -> tuple[bool, str]:
+                  terminal: object, *, session: dict[str, Any] | None = None
+                  ) -> tuple[bool, str]:
     """May this pass open NEW exposure? Management of open positions never asks.
 
     RECONCILE BEFORE EXPOSURE (recovery drills, 2026-10-06). The gateway drill ran this file
@@ -2378,17 +2451,59 @@ def new_risk_gate(release_ok: bool, release_why: str, reconcile: dict[str, Any] 
               if isinstance(k, dict) and k.get("unreadable")]
     if unread:
         return False, f"{len(unread)} in-doubt send(s) could not be settled at the venue"
+    # PER SYMBOL, LAST (principal 2026-10-06, market hours). Everything above is a verdict on the
+    # PASS; this one is a verdict on ONE SYMBOL (`mt5desk.sessions.symbol_session`): a symbol
+    # whose session has closed or whose broker trade_mode forbids opening refuses new risk on
+    # that symbol only. Every other symbol's verdict, and the management of open positions on
+    # this one, are untouched. `session=None` is the pass-level call and behaves as before.
+    if isinstance(session, dict) and session.get("open") is False:
+        return False, f"session: {session.get('why') or 'symbol closed for new risk'}"
     return True, release_why
 
 
+def symbol_risk_refusal(symbol: str, side: int | None = None) -> str | None:
+    """Why NEW risk on `symbol` (side +1/-1, None = a two-sided bracket) is refused by the
+    symbol's own session this pass, or None. Folded through `new_risk_gate` so there is one gate
+    and one wording. The PASS verdict is not re-asked here: every send site already carries it
+    (`armed` includes `NEW_RISK_OK` on the market lanes, and `main` gates the bracket loop), so
+    a site that reaches this has passed the pass-level gate and is asking about ONE symbol.
+    Read only, never raises: a fault reading the session is reported by `symbol_session` as
+    UNMEASURED and does not refuse (see sessions.py for why that exception is deliberate).
+
+    CALLED THROUGH `globals().get` AT THE SEND SITES. Several test harnesses exec single
+    executor functions out of this file over the decision core alone (test_scalp_promotion,
+    test_execution_attribution, test_placement_health); a bare name there would raise NameError
+    inside a harness that seeds no session double, so the send sites look this up and skip it
+    when absent. In the real module it is always present.
+    """
+    try:
+        from mt5desk import sessions as _sessions
+        sess = _sessions.symbol_session(mt5, symbol, side=side,
+                                        utc_offset_h=_sessions.recorded_utc_offset_h(BASE))
+    except Exception as exc:
+        log(f"[session] {symbol} unmeasured ({type(exc).__name__}: {exc}); venue is the backstop")
+        return None
+    ok, why = new_risk_gate(True, "pass verdict taken in main", {"verdict": "OK"},
+                            SimpleNamespace(connected=True), session=sess)
+    return None if ok else why
+
+
 #: How far back the pre-exposure book check reads deals. The lag it guards against is a
-#: terminal whose position list trails its deal history by seconds to minutes; a day covers
-#: every realistic lag and keeps the read cheap. Deals older than this are `record_trades`'s
-#: business (it dedupes by ticket, so a late deal is never lost to the ledger).
+#: terminal whose position list trails its deal history by seconds to minutes. DERIVED FROM THE
+#: SCHEDULE: the gateway runs one pass per minute (`scripts/Install-QuantWindows.ps1`, "One
+#: gateway pass per minute"), so 1 day is 1440 consecutive passes -- every pass that could have
+#: opened a position the terminal is still lagging on, several orders of magnitude past a lag
+#: measured in seconds to minutes. Deals older than this are `record_trades`'s business (it
+#: dedupes by ticket, so a late deal is never lost to the ledger).
 BOOK_CHECK_LOOKBACK = timedelta(days=1)
-#: At most this many single-ticket confirmations per read, so a pathological history cannot turn
-#: one pass into hundreds of terminal round trips.
-BOOK_CHECK_MAX_PROBES = 20
+#: At most this many single-ticket confirmations per read. MEASURED 2026-10-07 on
+#: data/live_ledger.jsonl (151 closed trades, 2026-09-07..09-16): the most positions this desk
+#: closed inside any 24h window was 116 -- so a probe bound of 116 covers every position one
+#: BOOK_CHECK_LOOKBACK can hold, and only a history beyond anything this desk has traded is
+#: truncated. It was 20, which a busy measured day exceeded almost six times over; a candidate
+#: beyond the bound is now named as UNREAD and refuses new risk rather than passing unprobed
+#: (`_book_read`), so the cap bounds terminal round trips without hiding a ghost.
+BOOK_CHECK_MAX_PROBES = 116
 
 
 def _book_read(st: dict[str, Any]) -> dict[str, Any]:
@@ -2430,9 +2545,14 @@ def _book_read(st: dict[str, Any]) -> dict[str, Any]:
     ghosts = sorted(set(closed) & tickets)
     if ghosts:
         why.append(f"position(s) {ghosts[:5]} listed open after their closing deal")
-    for pid in sorted(set(vin) - set(closed) - tickets)[:BOOK_CHECK_MAX_PROBES]:
+    _candidates = sorted(set(vin) - set(closed) - tickets)
+    for pid in _candidates[:BOOK_CHECK_MAX_PROBES]:
         if mt5.positions_get(ticket=pid):
             why.append(f"position {pid} open at the venue but missing from the book read")
+    if len(_candidates) > BOOK_CHECK_MAX_PROBES:
+        # FAIL CLOSED PAST THE BOUND: an unprobed candidate is an unread book, not a clean one.
+        why.append(f"{len(_candidates) - BOOK_CHECK_MAX_PROBES} opened position(s) beyond the "
+                   f"{BOOK_CHECK_MAX_PROBES}-probe bound left unread")
     return {"positions": tickets, "position_snapshot_msc": snap,
             "last_deal_msc": max((int(getattr(d, "time_msc", 0) or 0) for d in deals), default=0),
             "closed_position_ids": closed, "inconsistent": why}
@@ -2627,6 +2747,333 @@ def _net_routes(symbols: set[str]) -> None:
                     f" -- broker-side exits or pre-ledger fills; reported, not corrected")
         except Exception as exc:
             log(f"[netting] {symbol} route unmeasured ({type(exc).__name__}: {exc})")
+
+
+#: THE NETTING ARM SWITCH (principal 2026-10-06: "net compatible sleeve intents before
+#: execution, preserving attribution and hedge requirements"). Its own file beside
+#: GENERIC_EXEC_ENABLED, for the reason E2 gives for its own switch: arming execution says "this
+#: lane may send"; arming this says "opposing sleeves' orders on one symbol become ONE order",
+#: which changes what the venue sees for sleeves already trading. ABSENT = today's behaviour
+#: exactly (every sleeve sends its own order) plus the NET WOULD SEND measurement. Arming
+#: capital-path behaviour is principal-gated on this desk; nothing in the code creates it.
+NETTING_ENABLED = BASE / "data" / "NETTING_ENABLED"
+#: The lanes whose intents may be netted: market orders that trade NOW. The bracket lane is
+#: never netted -- a resting pending stop is not an intent to trade now; it may never fill, and
+#: crossing it against a market order would net a position against one that does not exist.
+NETTABLE_LANES: tuple[str, ...] = ("family_market", "scalp_market")
+
+
+def _net_leg(s: dict) -> dict | None:
+    """One sleeve's sendable market intent this pass, in the shape `netting.plan_net` reads,
+    or None when the sleeve has no NEW entry to net (no plan, refused, no heat, an add-on)."""
+    plan = s.get("pending_order")
+    if s.get("exec") not in NETTABLE_LANES or not isinstance(plan, dict) or not plan.get("ok"):
+        return None
+    if s["exec"] == "family_market":
+        lots, price = float(plan.get("lot") or 0.0), float(plan.get("entry_ref") or 0.0)
+        g = plan.get("signal")
+        sl, tp = float(getattr(g, "stop", 0.0) or 0.0), float(getattr(g, "target", 0.0) or 0.0)
+    else:
+        # AN ADD-ON IS NEVER NETTED. It is a slice on an OPEN basket, sized against that
+        # basket's stop and retargeting every slice after it fills; crossing it would leave the
+        # basket's arithmetic describing slices the venue does not hold.
+        if plan.get("kind") == "addon":
+            return None
+        lots, price = float(plan.get("per") or 0.0), float(plan.get("price") or 0.0)
+        sl, tp = float(plan.get("stop") or 0.0), float(plan.get("tp") or 0.0)
+    if not (lots > 0.0) or int(plan.get("side") or 0) not in (1, -1):
+        return None
+    from mt5desk import netting
+    return {"sleeve": s["name"], "side": int(plan["side"]), "lots": lots,
+            "dist": float(plan.get("dist") or 0.0) or float("inf"), "price": price,
+            "sl": sl, "tp": tp, "hedge": netting.is_hedge(s), "row": s}
+
+
+def _net_market_intents(st: dict, sleeves: list[dict]) -> dict[str, dict]:
+    """NET OPPOSING SAME-PASS MARKET INTENTS INTO ONE ORDER PER SYMBOL, when armed.
+
+    Runs after `cap_by_heat` and before the lane executors, on the plans the pre-cap phase
+    resolved (`pending_order`). Per symbol, the family and scalp NEW entries this pass would
+    send are handed to `netting.plan_net`; where two or more sleeves want OPPOSITE sides:
+
+      * ONE order is sent for the net (rounded DOWN to the lot step, refused under the venue
+        minimum, capped by the venue maximum, margin-checked, session-checked), carrying the
+        anchor sleeve's stop, target and order comment, so the venue position is managed as
+        the anchor's (its TTL, its basket, its trail);
+      * NOTHING is sent when the intents cancel; the legs cross internally;
+      * every leg is booked in the theoretical ledger with ITS OWN fill (`netting.fill` per
+        sleeve, shares from `netting.net_fill_shares`): the opposing legs at their whole size,
+        the majority pro rata, summing exactly to what the venue filled -- so per-sleeve
+        attribution survives and the book's account position equals the terminal's;
+      * each netted sleeve's `pending_order` is replaced by a not-ok stage "netted", so its
+        lane executor applies the bar MARK (the decision was taken) and sends nothing.
+
+    WHAT A CROSSED LEG IS AFTERWARDS. It holds a theoretical position with no venue position
+    of its own: its stop and target live in the book's marks, not at the broker, and its time
+    exit (`open_ttl_until`) flattens its book target when it expires. This is UNDER-exposure
+    relative to the sleeves' sum, never over: the venue carries at most the net, at the
+    tightest majority stop, which is at most the heat already charged (`plan_net`). The gap
+    between the book and the venue that crossed legs leave when the anchor exits is reported
+    by `_net_routes` and never auto-traded.
+
+    UNARMED (no `NETTING_ENABLED`, or the lanes themselves unarmed): sends nothing, changes
+    nothing, and logs what it WOULD net; every sleeve then sends its own order as before.
+    Hedges (`netting.is_hedge`), add-ons and brackets never net. Any reason the one order
+    cannot go (venue maximum, closed session, margin) is a FALLBACK to today's per-sleeve
+    path, never a silent refusal. Returns {symbol: report}.
+    """
+    from mt5desk import netting
+    by_sym: dict[str, list[dict]] = {}
+    for s in sleeves:
+        leg = _net_leg(s)
+        if leg is not None:
+            by_sym.setdefault(s["symbol"], []).append(leg)
+    lanes_armed = bool(st.get("armed")) and GENERIC_EXEC_ENABLED.exists() and NEW_RISK_OK
+    armed = lanes_armed and NETTING_ENABLED.exists()
+    reports: dict[str, dict] = {}
+    for symbol, legs in sorted(by_sym.items()):
+        sym = mt5.symbol_info(symbol)
+        step = float(getattr(sym, "volume_step", 0.01) or 0.01)
+        vmin = float(getattr(sym, "volume_min", 0.01) or 0.01)
+        plan = netting.plan_net(legs, lot_step=step, lot_min=vmin)
+        if plan is None:
+            continue
+        names = ", ".join(f"{x['sleeve']} {'+' if x['side'] > 0 else '-'}{x['lots']:g}"
+                          for x in plan["legs"])
+        verb = "buy" if plan["side"] > 0 else ("sell" if plan["side"] < 0 else "flat")
+        desc = (f"{symbol} net {verb} {plan['lots']:g} lots for {names} "
+                f"(gross {plan['gross_lots']:g}, netted {plan['netted_lots']:g})")
+        reports[symbol] = {"plan": plan, "armed": armed, "sent": False}
+        if not armed:
+            log(f"[netting] WOULD NET (unarmed: "
+                f"{'NETTING_ENABLED absent' if lanes_armed else unarmed_why(st)}; every sleeve "
+                f"sends its own order): {desc}")
+            continue
+        vmax = float(getattr(sym, "volume_max", 0.0) or 0.0)
+        side, lots = int(plan["side"]), float(plan["lots"])
+        anchor = next((x for x in plan["legs"] if x["sleeve"] == plan["anchor"]), None)
+        price = float(anchor["price"]) if anchor else float(plan["legs"][0]["price"])
+        fallback = None
+        _gate = globals().get("symbol_risk_refusal")
+        if lots > 0 and vmax > 0 and lots > vmax + 1e-12:
+            fallback = f"net {lots:g} exceeds the venue maximum {vmax:g}"
+        elif lots > 0 and _gate and _gate(symbol, side):
+            fallback = str(_gate(symbol, side))
+        elif lots > 0 and not margin_ok(symbol, lots, price):
+            fallback = f"margin tight for the net {lots:g}"
+        if fallback:
+            log(f"[netting] {symbol} NOT NETTED ({fallback}); each sleeve's lane decides: {desc}")
+            reports[symbol]["fallback"] = fallback
+            continue
+        venue_filled, fill_px = 0.0, price
+        if lots > 0 and anchor is not None:
+            _t0 = time.perf_counter()
+            try:
+                res = mt5.order_send({
+                    "action": mt5.TRADE_ACTION_DEAL, "symbol": symbol, "volume": lots,
+                    "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
+                    "price": price, "sl": float(anchor["sl"]), "tp": float(anchor["tp"]),
+                    "deviation": 20, "magic": MAGIC, "comment": order_comment(anchor["sleeve"]),
+                })
+            except Exception as exc:
+                # IN DOUBT IS NOT A LICENCE TO SEND PER SLEEVE. A send that raised may have
+                # landed; letting each lane now send its own order could put the gross on top
+                # of the net. Every leg stands down for the pass and the restart reconcile
+                # settles what the venue holds before the next one opens anything.
+                for x in plan["legs"]:
+                    x["row"]["pending_order"] = {
+                        **x["row"]["pending_order"], "ok": False, "stage": "netted_in_doubt",
+                        "why": f"net {symbol} send raised ({type(exc).__name__}); in doubt"}
+                log(f"[netting] {symbol} NET SEND RAISED ({type(exc).__name__}: {exc}); every "
+                    f"leg stands down this pass")
+                reports[symbol]["in_doubt"] = True
+                continue
+            _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
+            rc = res.retcode if res else None
+            _record_intent(sleeve=anchor["sleeve"], symbol=symbol,
+                           side=("buy" if side == 1 else "sell"), lot=lots, intended=price,
+                           sl=float(anchor["sl"]), tp=float(anchor["tp"]),
+                           ticket=(getattr(res, "order", None) if res else None), retcode=rc,
+                           latency_ms=_lat_ms, netted=True,
+                           net_legs=[{"sleeve": x["sleeve"], "side": x["side"],
+                                      "lots": x["lots"]} for x in plan["legs"]],
+                           gross_lots=plan["gross_lots"], netted_lots=plan["netted_lots"],
+                           fill_price=(float(getattr(res, "price", 0.0) or 0.0) if res else None),
+                           fill_volume=(float(getattr(res, "volume", 0.0) or 0.0) if res
+                                        else None),
+                           deal_ticket=(getattr(res, "deal", None) if res else None),
+                           **_sleeve_identity(anchor["row"]))
+            log(f"[netting] NET ORDER -> retcode={rc} "
+                f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} | {desc}")
+            if rc not in (10008, 10009, 10010):
+                # REJECTED: nothing reached the venue, so nothing is crossed either -- a cross
+                # booked against a majority the venue refused would credit sleeves with a
+                # position the account does not have. Every leg waits for its next bar.
+                for x in plan["legs"]:
+                    x["row"]["pending_order"] = {
+                        **x["row"]["pending_order"], "ok": False, "stage": "netted_rejected",
+                        "why": f"netted into one {symbol} order the venue refused (retcode {rc})"}
+                reports[symbol]["rejected"] = rc
+                continue
+            _vol = float(getattr(res, "volume", 0.0) or 0.0)
+            venue_filled = _vol if 0.0 < _vol < lots else lots
+            fill_px = float(getattr(res, "price", 0.0) or price)
+        shares = netting.net_fill_shares(plan, venue_filled)
+        # THE LEGS ARE STOOD DOWN FIRST, before any bookkeeping that could raise: once the net
+        # has been decided (and possibly sent) no lane may also send its own order for it.
+        _orig = {x["sleeve"]: x["row"]["pending_order"] for x in plan["legs"]}
+        for x in plan["legs"]:
+            got = float(shares.get(x["sleeve"], 0.0))
+            x["row"]["pending_order"] = {**_orig[x["sleeve"]], "ok": False, "stage": "netted",
+                                         "why": f"netted: attributed {got:+g} lots of {desc}"}
+        for x in plan["legs"]:
+            try:
+                _net_book_leg(st, x, plan, _orig[x["sleeve"]], shares, symbol, side, lots,
+                              venue_filled, price, fill_px, desc)
+            except Exception as exc:
+                log(f"[netting] {x['sleeve']} attribution not recorded "
+                    f"({type(exc).__name__}: {exc}); the order stands")
+        reports[symbol].update(sent=bool(lots > 0), venue_filled=venue_filled, shares=shares)
+    return reports
+
+
+def _net_book_leg(st: dict, x: dict, plan: dict, p: dict, shares: dict, symbol: str,
+                  side: int, lots: float, venue_filled: float, price: float, fill_px: float,
+                  desc: str) -> None:
+    """Book ONE netted leg: its attributed fill in the theoretical ledger, its lane state (the
+    anchor's describes the venue position; a crossed leg's carries only its time exit) and a
+    decision row. Bookkeeping only -- the order, if any, has already been sent."""
+    row, name = x["row"], x["sleeve"]
+    got = float(shares.get(name, 0.0))
+    lane = "family_market" if row.get("exec") == "family_market" else "scalp_market"
+    # The target IS the attributed fill: a majority leg's rounding or partial-fill
+    # remainder is cancelled, never left outstanding for a later pass to send unpriced.
+    _book_target(name, symbol, got, f"{lane}/netted", price=float(x["price"]))
+    if got:
+        _book_fill(name, symbol, got, fill_px)
+    gst = st.setdefault("generic" if lane == "family_market" else "scalp", {})
+    srec = gst.setdefault(name, {})
+    ttl = p.get("ttl_until") if lane == "family_market" else \
+        getattr(p.get("plan"), "ttl_until", None)
+    if name == plan["anchor"] and venue_filled > 0:
+        # THE ANCHOR'S LANE STATE DESCRIBES THE VENUE POSITION IT NOW CARRIES.
+        if lane == "family_market":
+            srec["open_ttl_until"] = str(ttl)
+            srec["trail_k"] = float(getattr(p.get("signal"), "runner_trail_k", 0.0)
+                                    or 0.0)
+        else:
+            srec["open_ttl_until"] = ttl
+            srec["basket"] = basket_record(p["plan"], venue_filled, str(p["mode"]),
+                                           float(p["target_atr"]))
+        if venue_filled < lots:
+            srec["residual"] = {"lots": round(lots - venue_filled, 8), "side": side,
+                                "at": now(), "netted": True,
+                                "expires": str(ttl) if ttl else None}
+            log(f"[netting] {symbol} PARTIAL {venue_filled}/{lots} lots; residual "
+                f"recorded on {name}, never resent")
+        _record_exec_outcome(symbol, side, venue_filled, price, p.get("tick"),
+                             float(x["dist"]), p.get("signal") or p.get("plan"),
+                             fill_px)
+    elif ttl:
+        # A CROSSED LEG'S TIME EXIT flattens its theoretical position on schedule; the
+        # lane's close finds no position under its tag, which is correct.
+        srec["open_ttl_until"] = str(ttl)
+    srec["netted"] = {"into": plan["anchor"], "symbol": symbol, "lots": got,
+                      "at": now()}
+    _record_decision(sleeve=name, symbol=symbol,
+                     side=("buy" if x["side"] > 0 else "sell"), lot=x["lots"],
+                     price=x["price"], sl=x["sl"], tp=x["tp"], taken=True,
+                     reason="netted", execution="net_order",
+                     detail=f"attributed {got:+g} of {desc}")
+
+
+def _carrier_evidence(name: str, row: dict) -> tuple[float, float, float]:
+    """(live closed trades, forward/shadow trades, admission streak) for one roster row -- the
+    evidence `decision_core.book_carrier_order` ranks a shared key's carriers by. Every term is
+    a count this desk already wrote: the live ledger (`sleeve_live_n`), the promoter's
+    `shadow_n` and `admit_streak` on the row. An unreadable term is 0, which ranks the row
+    behind any row with a record and never ahead of one."""
+    def _num(v: object) -> float:
+        try:
+            f = float(v)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return 0.0
+        return f if f == f else 0.0
+    try:
+        live = float(sleeve_live_n(name))
+    except Exception:
+        live = 0.0
+    return (live, _num(row.get("shadow_n")), _num(row.get("admit_streak")))
+
+
+def _carrier_walk_order(sleeves: list[dict], joins: list[tuple[str, str | None]],
+                        order: dict[str, list[str]]) -> list[dict]:
+    """The roster with each shared key's rows re-seated in carrying order, every other row
+    exactly where it was. The fallback needs the better-evidenced row resolved first; moving
+    only the rows that share a key keeps every other row's place (and so what `_pending_legs`
+    shows it) unchanged."""
+    key_of = {str(n): k for n, k in joins}
+    groups = {k: v for k, v in order.items() if len(v) > 1}
+    if not groups:
+        return sleeves
+    by_name = {str(r.get("name") or ""): r for r in sleeves}
+    slots: dict[str, list[int]] = {}
+    for i, r in enumerate(sleeves):
+        k = key_of.get(str(r.get("name") or ""))
+        if k in groups:
+            slots.setdefault(k, []).append(i)
+    out = list(sleeves)
+    for k, idx in slots.items():
+        names = [n for n in groups[k] if n in by_name]
+        if len(names) != len(idx):
+            continue                                  # a duplicate name: leave the group alone
+        for i, n in zip(idx, names, strict=True):
+            out[i] = by_name[n]
+    return out
+
+
+def _row_fires(s: dict) -> bool:
+    """Did this row's resolution produce an order this pass (so it may carry a shared key)?
+    A market lane fires when its plan resolved with a positive size; a bracket when its window
+    resolved (or its bracket is already on the book)."""
+    if s.get("exec") == "family_market":
+        p = s.get("pending_order") or {}
+        return bool(p.get("ok")) and float(p.get("lot") or 0.0) > 0.0
+    if s.get("exec") == "scalp_market":
+        p = s.get("pending_order") or {}
+        return bool(p.get("ok")) and float(p.get("per") or 0.0) > 0.0
+    return bool((s.get("pending_bracket") or {}).get("ok"))
+
+
+def _shadow_non_carrier(st: dict, s: dict, day_key: str) -> None:
+    """A NON-CARRIER'S RECORD KEEPS GROWING (#261 re-audit, 2026-10-06). A row on a shared key
+    that does not carry it trades nothing, and before this it left no trace either -- so the
+    evidence that would let it carry one day never accumulated. Its would-be order is written
+    to the decision ledger as a not-taken observation (reason `book_key_non_carrier`), which
+    `counterfactual_markout` replays exactly as it replays every other veto. Bracket rows are
+    written once per day (their window resolves every pass); a market lane's executor writes
+    its own signal (see `run_family_sleeves` / `run_scalp_sleeves`). Never sends, never raises.
+    """
+    try:
+        if s.get("exec") in NETTABLE_LANES:
+            return
+        pend = s.get("pending_bracket") or {}
+        spec = pend.get("spec")
+        if not (pend.get("ok") and isinstance(spec, dict)):
+            return
+        seen = st.setdefault("non_carrier_shadow", {})
+        if seen.get(s["name"]) == day_key:
+            return
+        for side in ("buy_stop", "sell_stop"):
+            leg = spec.get(side) or {}
+            _record_decision(sleeve=s["name"], symbol=s["symbol"], side=side, lot=None,
+                             price=leg.get("price"), sl=leg.get("sl"), tp=leg.get("tp"),
+                             taken=False, reason="book_key_non_carrier",
+                             detail=f"key {s.get('book_key')} carried by "
+                                    f"{s.get('book_key_carrier')}")
+        seen[s["name"]] = day_key
+    except Exception as exc:
+        log(f"[{s.get('name')}] non-carrier observation not recorded ({type(exc).__name__})")
 
 
 def _closing_fill(ticket: int) -> tuple[float, float] | None:
@@ -3506,7 +3953,12 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         # The dedupe itself is unchanged when the desk CAN act -- including when it looks and
         # declines, which is a real decision about the bar. Only a pass under a new-risk refusal
         # leaves no trace, so the next permitted pass sees the signal still standing.
-        if plan.get("mark") and NEW_RISK_OK:
+        # A CLOSED SESSION IS A PASS FORBIDDEN TO PLACE ON THIS SYMBOL, so it leaves the bar
+        # unconsumed for the same reason (market hours gate, 2026-10-06).
+        _gate = globals().get("symbol_risk_refusal")
+        _closed = (_gate(s["symbol"], int(plan.get("side") or 0) or None)
+                   if (_gate and armed and plan.get("ok")) else None)
+        if plan.get("mark") and NEW_RISK_OK and not _closed:
             gstate.setdefault(name, {})["last_signal_bar"] = str(plan.get("last_bar"))
         if plan.get("note"):
             log(f"[{name}] {plan['note']}")
@@ -3525,6 +3977,16 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             plan["signal"]
         if not (lot > 0):
             log(f"[{name}] FAMILY-EXEC: allocator gave this sleeve no heat; skipped")
+            if s.get("book_key_carrier") not in (None, name) and plan.get("mark"):
+                # A NON-CARRIER'S SIGNAL IS STILL EVIDENCE: written as a shadow observation so
+                # its forward record grows while another row carries the shared key's h.
+                _record_decision(sleeve=name, symbol=s["symbol"],
+                                 side=("buy" if side == 1 else "sell"), lot=None,
+                                 price=entry_ref, sl=float(getattr(g, "stop", 0.0) or 0.0),
+                                 tp=float(getattr(g, "target", 0.0) or 0.0), taken=False,
+                                 reason="book_key_non_carrier",
+                                 detail=f"key {s.get('book_key')} carried by "
+                                        f"{s.get('book_key_carrier')}")
             continue
         # EXECUTION POLICY, IN SHADOW: what the utility-maximising plan would have been for this
         # order (market / passive / pullback / split / skip), recorded on the intent so the
@@ -3572,6 +4034,9 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             log(f"[{name}] WOULD PLACE (generic exec blocked: "
                 f"{unarmed_why(st)}): {order_desc}")
             continue
+        if _closed:
+            log(f"[{name}] FAMILY-EXEC NOT SENT: {_closed}; open positions still managed")
+            continue
         if not margin_ok(s["symbol"], lot, entry_ref):
             log(f"[{name}] FAMILY-EXEC SKIPPED: margin tight (lot={lot})")
             continue
@@ -3600,14 +4065,35 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} "
             f"| {order_desc}")
-        if rc in (10008, 10009):
+        # A PARTIAL FILL IS A POSITION, ON THIS LANE TOO (#261 re-audit M4, 2026-10-06). This read
+        # `rc in (10008, 10009)`, so a 10010 (DONE_PARTIAL) left the filled part running with no
+        # TTL record -- no time exit, no trail flag, no book fill -- the defect the scalp lane
+        # fixed for itself the same day. The set is `order_door.SUCCESS` written out (see the
+        # scalp lane for why it is a literal). What was FILLED is what is booked; the residual
+        # is recorded with its own expiry (`family_residual_expiry`) and is NEVER resent: the
+        # cap priced this pass's order, not a remainder sent on a later one -- which is why
+        # re-quoting was rejected and `expire_family_residuals` cancels whatever of it rests.
+        if rc in (10008, 10009, 10010):
             srec["open_ttl_until"] = ttl_until
             # Whether this signal's certificate carried a trail: `manage_open_positions` ratchets
             # only positions whose own signal did (engine.Signal.runner_trail_k, 0 = fixed).
             srec["trail_k"] = float(getattr(g, "runner_trail_k", 0.0) or 0.0)
             fill_px = float(getattr(res, "price", 0.0) or entry_ref)
-            _book_fill(name, s["symbol"], side * lot, fill_px)
-            _record_exec_outcome(s["symbol"], side, lot, entry_ref, tick, dist, g, fill_px)
+            _vol = float(getattr(res, "volume", 0.0) or 0.0)
+            filled = _vol if 0.0 < _vol < lot else lot
+            if filled < lot:
+                _bar_min = globals().get("_BAR_MINUTES", {}).get(str(plan.get("tf")), 60)
+                srec["residual"] = {
+                    "lots": round(lot - filled, 8), "side": side, "symbol": s["symbol"],
+                    "at": datetime.now(tz=UTC).isoformat(), "order": getattr(res, "order", None),
+                    "expires": family_residual_expiry(datetime.now(tz=UTC), _bar_min)}
+                _book_target(name, s["symbol"], side * filled,
+                             f"family_market/{family}/{selector}/partial", price=entry_ref)
+                log(f"[{name}] FAMILY-EXEC PARTIAL {filled}/{lot} lots filled; residual "
+                    f"{srec['residual']['lots']} recorded until {srec['residual']['expires']}, "
+                    f"not resent")
+            _book_fill(name, s["symbol"], side * filled, fill_px)
+            _record_exec_outcome(s["symbol"], side, filled, entry_ref, tick, dist, g, fill_px)
     # TTL housekeeping: positions past their deadline are closed regardless of P&L -- the
     # replay's ttl exit is part of the certified strategy, not an optional tidy-up.
     for s in fam_sleeves:
@@ -3635,6 +4121,81 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             else:
                 log(f"[{s['name']}] SHADOW would TTL-close open position(s)")
             srec.pop("open_ttl_until", None)
+    _expire = globals().get("expire_family_residuals")
+    if _expire:
+        _expire(st)
+
+
+def family_residual_expiry(sent_at: datetime, bar_minutes: int) -> str:
+    """When a family order's UNFILLED remainder stops being this signal's trade, as ISO text.
+
+    THE BASIS IS THE CERTIFIED FILL RULE. The replay enters "market at the open following the
+    signal bar" (`run_family_sleeves`); a fill one full bar of the sleeve's own chart after the
+    send is no longer that entry, it is a different trade under the certificate's name. So the
+    residual lives one bar (`bar_minutes`, MetaTrader's chart definition via `_BAR_MINUTES`) and
+    no longer. THE OUTER BOUND is the desk's existing end-of-day backstop, CLOSE_HOUR (19:30
+    UTC, `decision_core.CLOSE_HOUR`): nothing of a day's residual survives the force-close, and
+    a send at or after it expires at once.
+    """
+    end = sent_at + timedelta(minutes=max(1, int(bar_minutes)))
+    day_close = sent_at.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(
+        hours=float(CLOSE_HOUR))
+    if sent_at >= day_close:
+        end = sent_at
+    elif end > day_close:
+        end = day_close
+    return end.isoformat()
+
+
+def expire_family_residuals(st: dict) -> int:
+    """Cancel and forget family residuals past their expiry. Returns how many were retired.
+
+    THE BACKSTOP AGAINST AN ORPHAN. Walks EVERY record in `st["generic"]`, not the roster, so a
+    sleeve that left the roster (retired, hibernated, capped) cannot strand a residual. A market
+    order's remainder normally dies at the venue (FOK/IOC filling); under RETURN filling it can
+    REST as an order, so on expiry any market-type order (ORDER_TYPE_BUY/SELL, never a pending
+    stop) under the sleeve's own tags on that symbol is removed. The record leaves once the
+    venue shows nothing of it resting; an unreadable venue or a refused cancel keeps it and the
+    next pass asks again. A record whose expiry cannot be read is expired, never kept forever.
+    SHADOW unless armed, like every other close. Never re-quotes: see `family_residual_expiry`.
+    """
+    retired = 0
+    now_iso = datetime.now(tz=UTC).isoformat()
+    for name, srec in list((st.get("generic") or {}).items()):
+        res = srec.get("residual") if isinstance(srec, dict) else None
+        if not isinstance(res, dict):
+            continue
+        exp = res.get("expires")
+        try:
+            due = exp is None or ttl_expired(str(exp), now_iso)
+        except Exception:
+            due = True
+        if not due:
+            continue
+        symbol = str(res.get("symbol") or "")
+        if not st.get("armed"):
+            log(f"[{name}] SHADOW would cancel the expired residual {res.get('lots')} on {symbol}")
+            continue
+        try:
+            tags = owned_tags(name)
+            market_types = (mt5.ORDER_TYPE_BUY, mt5.ORDER_TYPE_SELL)
+            resting = [o for o in (mt5.orders_get(symbol=symbol) or [])
+                       if str(getattr(o, "comment", "") or "") in tags
+                       and getattr(o, "type", None) in market_types]
+        except Exception as exc:
+            log(f"[{name}] residual cancel deferred: venue unreadable ({type(exc).__name__})")
+            continue
+        ok = True
+        for o in resting:
+            r = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+            rc = r.retcode if r else None
+            log(f"[{name}] RESIDUAL CANCEL order {o.ticket} -> retcode={rc}")
+            ok = ok and rc in (10008, 10009)
+        if ok:
+            srec.pop("residual", None)
+            retired += 1
+            log(f"[{name}] residual {res.get('lots')} on {symbol} expired at {exp}; retired")
+    return retired
 
 
 def _sleeve_positions(symbol: str, name: str) -> list:
@@ -3960,8 +4521,12 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
                 "why": "allocator gave this sleeve no heat; skipped"}
     per, mode = sx.slice_lot(lot, vmin, vstep)
     if not (per > 0):
+        # The signal rides along (side and levels) so a NON-CARRIER row on a shared book key --
+        # sized at zero by design -- can still write its observation (`run_scalp_sleeves`).
         return {"ok": False, "stage": "below_min", "forming": forming, "mark": True,
-                "why": f"lot {lot} below the symbol's minimum; skipped"}
+                "why": f"lot {lot} below the symbol's minimum; skipped",
+                "side": int(plan.side), "price": float(plan.entry_ref),
+                "stop": float(plan.stop), "tp": float(plan.target)}
     return {"ok": True, "stage": "ok", "why": "resolved", "kind": "entry", "forming": forming,
             "mark": True, "per": float(per), "mode": mode, "side": int(plan.side),
             "price": float(plan.entry_ref), "stop": float(plan.stop), "tp": float(plan.target),
@@ -4001,11 +4566,24 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             continue
         # THE MARK IS APPLIED HERE AND NOWHERE ELSE: a bar considered by a pass the cap then
         # rejected must be reconsidered next pass, not thrown away by the resolver.
-        if plan.get("mark") and plan.get("forming") is not None:
+        # A CLOSED SESSION LEAVES THE BAR UNCONSUMED (market hours gate, 2026-10-06).
+        _gate = globals().get("symbol_risk_refusal")
+        _closed = (_gate(s["symbol"], int(plan.get("side") or 0) or None)
+                   if (_gate and armed and plan.get("ok")) else None)
+        if plan.get("mark") and plan.get("forming") is not None and not _closed:
             gstate.setdefault(name, {})["last_signal_bar"] = str(plan["forming"])
         if not plan.get("ok"):
             if plan["stage"] not in ("already_considered", "no_signal", "no_addon"):
                 log(f"[{name}] SCALP-EXEC {plan['why']}")
+            if plan.get("stage") == "below_min" and plan.get("side") \
+                    and s.get("book_key_carrier") not in (None, name):
+                # The non-carrier's signal, as a shadow observation (see `_shadow_non_carrier`).
+                _record_decision(sleeve=name, symbol=s["symbol"],
+                                 side=("buy" if int(plan["side"]) == 1 else "sell"), lot=None,
+                                 price=plan.get("price"), sl=plan.get("stop"),
+                                 tp=plan.get("tp"), taken=False, reason="book_key_non_carrier",
+                                 detail=f"key {s.get('book_key')} carried by "
+                                        f"{s.get('book_key_carrier')}")
             continue
         srec = gstate.setdefault(name, {})
         per, side, price = float(plan["per"]), int(plan["side"]), float(plan["price"])
@@ -4021,6 +4599,9 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         if not armed:
             log(f"[{name}] WOULD PLACE (scalp exec blocked: "
                 f"{unarmed_why(st)}): {desc}")
+            continue
+        if _closed:
+            log(f"[{name}] SCALP-EXEC NOT SENT: {_closed}; the open basket is still managed")
             continue
         if not margin_ok(s["symbol"], per, price):
             log(f"[{name}] SCALP-EXEC{' add-on' if is_addon else ''} SKIPPED: margin tight "
@@ -4088,6 +4669,11 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             _retarget_sleeve_positions(s["symbol"], name, stop, tp)
         else:
             srec["open_ttl_until"] = plan["plan"].ttl_until
+            if residual:
+                # The theoretical target is what was FILLED: the residual is never resent, so
+                # leaving the asked size as the target would show a phantom outstanding order.
+                _book_target(name, s["symbol"], side * filled,
+                             f"scalp_market/{plan['family']}/partial", price=price)
             _book_fill(name, s["symbol"], side * filled, fill_px)
             _record_exec_outcome(s["symbol"], side, filled, price, tick, float(plan["dist"]),
                                  plan["plan"], fill_px)
@@ -4440,7 +5026,29 @@ def main() -> None:
     _shares = book_shares(_joins)
     # SNAP THE TOTAL, THEN SPLIT: the key's whole h goes through ONE carrier row, so the lot
     # snap acts once on the solved h instead of three times on h/3 (`book_carriers`).
-    _carriers = book_carriers(_joins)
+    # THE CARRIER IS THE BEST-EVIDENCED ROW, AND IT FALLS BACK (#261 re-audit, 2026-10-06). The
+    # evidence per row is what this gateway holds: live closed trades (`sleeve_live_n`), the
+    # forward/shadow trade count and the admission streak the promoter wrote on the row. Rows on
+    # a shared key are walked in that order (`_carry_order`), and the key's h goes to the first
+    # row whose window or entry actually FIRES this pass -- a carrier with no signal no longer
+    # strands the whole h. Exact owners still carry their own key.
+    # The helpers are looked up, not named, for the reason `symbol_risk_refusal` gives: test
+    # harnesses exec `main` out of this file with a fixed slice of functions, and a pass in such
+    # a harness keeps the pre-pass carrier (roster order, no fallback) rather than raising.
+    _ev_fn = globals().get("_carrier_evidence")
+    _walk_fn = globals().get("_carrier_walk_order")
+    _fires_fn = globals().get("_row_fires")
+    _shadow_fn = globals().get("_shadow_non_carrier")
+    _shared_rows = [n for n, k in _joins if k is not None and n != k
+                    and int(_shares.get(n, 1)) > 1]
+    _evidence = {n: _ev_fn(n, next((r for r in sleeves
+                                    if str(r.get("name") or "") == n), {}))
+                 for n in _shared_rows} if _ev_fn else {}
+    _carriers = book_carriers(_joins, _evidence)
+    _carry_order = book_carrier_order(_joins, _evidence)
+    if _walk_fn:
+        sleeves = _walk_fn(sleeves, _joins, _carry_order)
+    _carried: dict[str, str] = {}
     # EACH SLEEVE'S LAST REAL STOP, so the cap prices legs on what they actually traded rather
     # than on a house average. The gateway already records every bracket it places; not reading
     # them back meant the one number that decides how much heat a leg costs was the only number
@@ -4468,6 +5076,10 @@ def main() -> None:
         if from_book:
             _n_share = max(1, int(_shares.get(_s["name"], 1)))
             _carrier = _carriers.get(_s["name"], _s["name"])
+            if _n_share > 1 and _carrier != _key and _fires_fn:
+                # Walking the evidence order: the key is this row's until a better-evidenced row
+                # has FIRED with it this pass; a row before it that did not fire passed it on.
+                _carrier = _carried.get(_key, _s["name"])
             _s["risk_frac"] = float(_book[_key]) if _carrier == _s["name"] else 0.0
             _s["sized_by"] = "allocator_book"
             if _n_share > 1:
@@ -4663,12 +5275,30 @@ def main() -> None:
             # heat ledger and the order path could come to disagree about the same leg.
             _s["q_charge"] = ramped_fraction(_s.get("risk_frac"), sleeve_live_n(_s["name"]),
                                              _s.get("decay_faded"))
+        if from_book and _n_share > 1 and _key not in _carried and _fires_fn \
+                and _s["risk_frac"] > 0.0 and _fires_fn(_s):
+            _carried[_key] = _s["name"]
+        if from_book and _n_share > 1 and _s["risk_frac"] == 0.0 and _shadow_fn:
+            _shadow_fn(st, _s, day_key)
+    for _s in sleeves:
+        # The FINAL carrier, for attribution: a row that took the key by fallback names itself.
+        if _s.get("book_key_carrier") is not None and _s.get("book_key") in _carried:
+            _s["book_key_carrier"] = _carried[_s["book_key"]]
     sleeves, heat_note = cap_by_heat(sleeves, equity, k_eff=k_eff)
     if heat_note:
         log(heat_note)
     # Hunt-certified family sleeves run their own replay-faithful executor -- AFTER the heat
     # cap, so an inadmissible sleeve never reaches it, and OUTSIDE the bracket loop, whose
     # session-window semantics they do not share.
+    # NETTING, BEFORE EITHER MARKET LANE SENDS (2026-10-06). Opposing family/scalp entries on one
+    # symbol become ONE order when `data/NETTING_ENABLED` is armed; unarmed this only logs what it
+    # would net and every sleeve sends its own order exactly as before (`_net_market_intents`).
+    try:
+        _net_fn = globals().get("_net_market_intents")      # see `_ev_fn` above for the lookup
+        if _net_fn:
+            _net_fn(st, sleeves)
+    except Exception as exc:
+        log(f"NETTING FAILED (each lane sends per sleeve): {type(exc).__name__}: {exc}")
     try:
         run_family_sleeves(st, sleeves, equity)
     except Exception as exc:
@@ -4868,6 +5498,11 @@ def main() -> None:
                 continue
             res = place_bracket(st, spec, s["name"], s["symbol"], lot, sleeve_row=s,
                                 blocked_side=OPPOSING_LEG.get(_direction))
+            if isinstance(res, dict) and res.get("stage") == "session_closed":
+                # NOTHING WENT TO THE VENUE, SO NOTHING IS RECORDED AS ON THE BOOK: recording it
+                # would make the next pass charge heat for a bracket that does not exist and
+                # never retry it. The window's own `session_ended` rule retires a stale one.
+                continue
             # THE LOT IS RECORDED WITH THE BRACKET (2026-09-09). Without it, the next pass had
             # to RE-SIZE an order the venue was already holding in order to charge heat for it --
             # a different number at a different equity, so the cap priced a trade the book does

@@ -7,9 +7,12 @@
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+
+import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
@@ -91,6 +94,32 @@ def test_a_shared_book_key_splits_the_solved_fraction() -> None:
     assert 'float(_book[_key]) if _carrier == _s["name"] else 0.0' in _GW
 
 
+def test_the_carrier_is_the_best_evidenced_row_with_a_stable_tie_break() -> None:
+    """#261 re-audit: the key's h rides on the row with the most record behind it (live, then
+    forward, then admission streak), not on whichever row `sleeves.json` listed first."""
+    joins = [("gold_afternoon_v2", "gold_afternoon"), ("gold_afternoon_v3", "gold_afternoon"),
+             ("gold_afternoon_v4", "gold_afternoon")]
+    ev = {"gold_afternoon_v2": (0, 3, 9), "gold_afternoon_v3": (12, 0, 1),
+          "gold_afternoon_v4": (12, 5, 0)}
+    order = dc.book_carrier_order(joins, ev)
+    assert order["gold_afternoon"] == ["gold_afternoon_v4", "gold_afternoon_v3",
+                                       "gold_afternoon_v2"]
+    assert set(dc.book_carriers(joins, ev).values()) == {"gold_afternoon_v4"}
+    # equal evidence -> roster order, every pass
+    tie = {n: (4, 4, 4) for n, _ in joins}
+    assert dc.book_carrier_order(joins, tie)["gold_afternoon"][0] == "gold_afternoon_v2"
+    assert dc.book_carrier_order(joins)["gold_afternoon"][0] == "gold_afternoon_v2"
+    # an exact owner carries its own key whatever a fallback row's record says
+    own = [("gold_asia_v2", "gold_asia"), ("gold_asia", "gold_asia")]
+    best = dc.book_carrier_order(own, {"gold_asia_v2": (99, 99, 99)})["gold_asia"][0]
+    assert best == "gold_asia"
+    # the gateway walks that order and falls back when the carrier does not fire, and a
+    # non-carrier's signal is recorded as a shadow observation
+    assert "_carry_order = book_carrier_order(_joins, _evidence)" in _GW
+    assert "_carrier = _carried.get(_key, _s[\"name\"])" in _GW
+    assert 'reason="book_key_non_carrier"' in _GW
+
+
 def _heat(op: float, growth: float = 0.5, surv: float = 0.5) -> dict:
     return {"envelope": {"operative_ceiling": op, "growth_ceiling": growth,
                          "survival_ceiling": surv, "survival": {"status": "MEASURED"}}}
@@ -119,5 +148,26 @@ def test_the_check_binds_only_on_a_contradiction() -> None:
     assert cap == 0.4 and "P(ruin)" in why and "REPORT ONLY" in why
     cap, _ = dc.verify_heat_ceiling(0.4, "m", _heat(0.4), _surface((0.1, 0.01), (0.2, 0)))
     assert cap == 0.4
-    assert 'verify_heat_ceiling(cap, cap_why, heat, art.get("kelly_surface"))' in (
+    assert 'verify_heat_ceiling(cap, cap_why, heat, art.get("kelly_surface"),' in (
         _DESK / "mt5desk" / "decision_core.py").read_text(encoding="utf-8")
+
+
+def test_a_binding_contradiction_is_billed_once_a_day(tmp_path) -> None:
+    """When clause 1 binds, its cost in forward log-wealth is one missed-growth ledger line."""
+    heat = {**_heat(0.4, surv=0.3), "curve": [[0.3, 0.010], [0.4, 0.012]]}
+    cap, why = dc.verify_heat_ceiling(0.4, "m", heat, None, base=tmp_path)
+    assert cap == 0.3 and "above its own stated bar" in why
+    dc.verify_heat_ceiling(0.4, "m", heat, None, base=tmp_path)          # same day: no 2nd row
+    rows = [json.loads(x) for x in (tmp_path / "data" / "missed_growth.jsonl").read_text(
+        "utf-8").splitlines()]
+    assert len(rows) == 1 and rows[0]["rail"] == dc.HEAT_CONTRADICTION_RAIL
+    assert rows[0]["value"] == pytest.approx(-0.002)                    # g(0.3) - g(0.4)
+    # unmeasurable curve: billed as UNMEASURED, never as a zero
+    other = tmp_path / "b"
+    dc.verify_heat_ceiling(0.4, "m", _heat(0.4, surv=0.3), None, base=other)
+    row = json.loads((other / "data" / "missed_growth.jsonl").read_text("utf-8"))
+    assert row["value"] is None and "UNMEASURED" in row["why"]
+    # a consistent artifact writes nothing
+    calm = tmp_path / "c"
+    dc.verify_heat_ceiling(0.4, "m", _heat(0.4), None, base=calm)
+    assert not (calm / "data" / "missed_growth.jsonl").exists()

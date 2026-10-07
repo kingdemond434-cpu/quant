@@ -24,13 +24,14 @@ test can hand it a tmp_path and a fixed time and cover every branch on any host.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import math
 import re
 import sys
 import time
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -930,8 +931,68 @@ def live_heat_ceiling(heat: dict) -> tuple[float, str]:
                  f"{surv.get('why') or 'survival constraint'}")
 
 
+#: The rail name the contradiction clause bills under in `data/missed_growth.jsonl`, the same
+#: row shape `research/missed_growth.py` appends for every registered rail.
+HEAT_CONTRADICTION_RAIL = "heat_ceiling_contradiction"
+
+
+def _bill_heat_contradiction(base: Path, claimed: float, stated: float,
+                             heat: dict[str, Any]) -> None:
+    """One missed-growth ledger line for a day the contradiction clause bound. Never raises.
+
+    THE CLAUSE COSTS GROWTH WHEN IT BINDS, SO IT IS BILLED (#261 re-audit, 2026-10-06). Every
+    rail on this desk that can make the book smaller is priced in forward log-wealth
+    (`research/missed_growth.py`: OpportunityCost = E[log W without rail] - E[log W with
+    rail]). The clause lowers the cap from the operative bar the artifact claimed to the lower
+    bar it stated; its cost is the allocator's own growth curve (`heat.curve`) read at both,
+    value = g(stated) - g(claimed), negative when the cut cost growth -- the sign and the
+    0.05-heat nearest-point read are `missed_growth._growth_at`'s. A curve that does not cover
+    both points writes the line with `value: null` and the reason: UNMEASURED, never zero.
+    ONE line per day, appended to the same `data/missed_growth.jsonl`, deduplicated on
+    (rail, day) exactly as `missed_growth.run` does.
+    """
+    try:
+        ledger = Path(base) / "data" / "missed_growth.jsonl"
+        day = datetime.now(tz=UTC).date().isoformat()
+        if ledger.exists():
+            for ln in ledger.read_text("utf-8").splitlines():
+                with contextlib.suppress(ValueError, TypeError, IndexError, KeyError,
+                                         AttributeError):
+                    r = json.loads(ln)
+                    if r.get("rail") == HEAT_CONTRADICTION_RAIL and r.get("day") == day:
+                        return
+        curve: dict[float, float] = {}
+        for pt in (heat.get("curve") or []):
+            with contextlib.suppress(ValueError, TypeError, IndexError, KeyError,
+                                         AttributeError):
+                curve[float(pt[0])] = float(pt[1])
+
+        def g_at(h: float) -> float | None:
+            if not curve:
+                return None
+            k = min(curve, key=lambda x: abs(x - h))
+            return curve[k] if abs(k - h) <= 0.05 else None
+
+        g_claim, g_stated = g_at(claimed), g_at(stated)
+        row: dict[str, Any] = {"day": day, "rail": HEAT_CONTRADICTION_RAIL,
+                               "value": (round(g_stated - g_claim, 8)
+                                         if g_claim is not None and g_stated is not None
+                                         else None),
+                               "at": datetime.now(tz=UTC).isoformat(),
+                               "claimed_operative": round(float(claimed), 6),
+                               "stated_bar": round(float(stated), 6),
+                               "where": "decision_core.verify_heat_ceiling clause 1"}
+        if row["value"] is None:
+            row["why"] = "UNMEASURED: heat.curve does not cover both the claimed and stated bar"
+        ledger.parent.mkdir(parents=True, exist_ok=True)
+        with ledger.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row) + "\n")
+    except Exception:
+        return
+
+
 def verify_heat_ceiling(cap: float, cap_why: str, heat: dict[str, Any],
-                        surface: object) -> tuple[float, str]:
+                        surface: object, *, base: Path | None = None) -> tuple[float, str]:
     """The ceiling after the money path checks the allocator's claim against its own evidence.
 
     RISK CONTROL WAS NOT INDEPENDENT (acceptance map V7, 2026-10-06). `live_heat_ceiling` takes
@@ -955,6 +1016,10 @@ def verify_heat_ceiling(cap: float, cap_why: str, heat: dict[str, Any],
 
     An absent or unreadable surface leaves `cap` as it was and says UNVERIFIED: a missing second
     reading is reported, never turned into a smaller book.
+
+    WHEN CLAUSE 1 BINDS IT IS BILLED: with `base` (the desk root `allocator_heat` passes), one
+    missed-growth ledger line per day prices the cut on the allocator's own growth curve
+    (`_bill_heat_contradiction`). Without `base` (a pure call, the tests) nothing is written.
     """
     try:
         notes: list[str] = []
@@ -965,6 +1030,8 @@ def verify_heat_ceiling(cap: float, cap_why: str, heat: dict[str, Any],
                       and float(env[k]) > 0.0]
             if stated and cap > min(stated) + 1e-9:
                 notes.append(f"operative {cap:.4f} above its own stated bar {min(stated):.4f}")
+                if base is not None:
+                    _bill_heat_contradiction(base, cap, min(stated), heat)
                 cap = min(stated)
         rows = surface.get("rows") if isinstance(surface, dict) else None
         clean = sorted(
@@ -1022,7 +1089,8 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
             return None, "allocator did not certify the utilisation target"
         total = float(heat.get("total") or 0.0)
         cap, cap_why = live_heat_ceiling(heat)
-        cap, cap_why = verify_heat_ceiling(cap, cap_why, heat, art.get("kelly_surface"))
+        cap, cap_why = verify_heat_ceiling(cap, cap_why, heat, art.get("kelly_surface"),
+                                           base=base)
         # A FILL THAT OVERSHOOTS THE BAR IS CLAMPED, NOT DISCARDED. The heat law FILLS the
         # resolved heat rather than reporting it short (`heat.filled`), and that fill lands a
         # rounding step ABOVE the ceiling it filled to. Measured 2026-09-11: a certified, armed
@@ -2154,24 +2222,59 @@ def book_shares(joins: Iterable[tuple[str, str | None]]) -> dict[str, int]:
     return {n: (1 if n == k else counts[k]) for n, k in rows}
 
 
-def book_carriers(joins: Iterable[tuple[str, str | None]]) -> dict[str, str]:
+def book_carrier_order(joins: Iterable[tuple[str, str | None]],
+                       evidence: Mapping[str, Sequence[float]] | None = None
+                       ) -> dict[str, list[str]]:
+    """Per book key, the rows that may carry it, BEST-EVIDENCED FIRST.
+
+    WHY EVIDENCE AND NOT ROSTER ORDER (#261 re-audit, 2026-10-06). `book_carriers` handed a
+    shared key's whole h to the first row in roster order -- an accident of how `sleeves.json`
+    was written, so the h could ride on the row with the least record behind it while a sibling
+    with forty live trades carried zero. The order is now the evidence the gateway holds per
+    row, compared lexicographically, larger first: `evidence[name]` is a tuple such as
+    (live closed trades, forward/shadow trades, admission streak) -- the gateway passes exactly
+    that (`sleeve_live_n`, `shadow_n`, `admit_streak`). A row with no evidence entry ranks as
+    all zeros. TIES BREAK BY ROSTER ORDER, so with no evidence at all the order is exactly the
+    old one and the choice is stable pass to pass.
+
+    An EXACT owner (name == key) is first on its key whatever the evidence: it owns the key by
+    name, and a `_v2` that falls back onto it is the same solved h. The list after the first
+    is the FALLBACK order the gateway walks when the carrier's window or entry does not fire.
+    """
+    rows = [(str(n), k) for n, k in joins if k is not None]
+    ev = dict(evidence or {})
+    order: dict[str, list[tuple[int, str]]] = {}
+    for i, (n, k) in enumerate(rows):
+        order.setdefault(k, []).append((i, n))
+
+    def rank(item: tuple[int, str], key: str) -> tuple:
+        i, n = item
+        e = tuple(-float(x) for x in (ev.get(n) or ()))
+        return (0 if n == key else 1, e, i)
+
+    return {k: [n for _, n in sorted(v, key=lambda it, k=k: rank(it, k))]
+            for k, v in order.items()}
+
+
+def book_carriers(joins: Iterable[tuple[str, str | None]],
+                  evidence: Mapping[str, Sequence[float]] | None = None) -> dict[str, str]:
     """For each row on a SHARED fallback key, the one row that carries the key's whole h.
 
     SNAP THE KEY'S TOTAL, THEN SPLIT (audit of PR #261, 2026-10-06). `book_shares` divided h by
     the number of rows BEFORE the lot snap, so three rows at h/3 could each fall under the
     venue's minimum lot and deploy nothing -- the solved h lost to rounding three times over. The
-    key's h is now deployed ONCE, at its full size, through the first row (roster order) that
-    joined it: one snap on the total, and the total deployed is exactly the solved h. The other
-    rows on that key carry zero and name their carrier, so attribution stays readable. A row that
-    matched its key EXACTLY owns it and is its own carrier, as before.
+    key's h is deployed ONCE, at its full size, through ONE row: one snap on the total, and the
+    total deployed is exactly the solved h. The other rows on that key carry zero and name their
+    carrier, so attribution stays readable. A row that matched its key EXACTLY owns it and is
+    its own carrier, as before.
+
+    THE CARRIER IS THE BEST-EVIDENCED ROW (`book_carrier_order`), not the first in roster order;
+    with no `evidence` the two coincide. This is the PRE-PASS answer -- the gateway walks the
+    same order and hands h to the next row when this one's window or entry does not fire.
     """
     rows = [(str(n), k) for n, k in joins if k is not None]
-    # An EXACT owner carries its key for everyone: a `_v2` that falls back onto a key a live row
-    # owns by name is the same solved h, and deploying it again would double it.
-    first: dict[str, str] = {k: n for n, k in rows if n == k}
-    for n, k in rows:
-        first.setdefault(k, n)
-    return {n: first[k] for n, k in rows}
+    order = book_carrier_order(rows, evidence)
+    return {n: order[k][0] for n, k in rows}
 
 
 def sleeve_from_comment(comment: str, unattributed: str = "") -> str:
