@@ -1224,7 +1224,6 @@ def emit_cells(plans: list[dict[str, Any]], *, deadline: float, dry_run: bool = 
                         if have:
                             remint_same += 1
                             superseded += _supersede(stale, "existing purged rule")
-                            legacy.discard(key)
                             done.add(key)
                             fed += 1
                             continue
@@ -1254,7 +1253,6 @@ def emit_cells(plans: list[dict[str, Any]], *, deadline: float, dry_run: bool = 
                     if key in legacy:
                         remint_new += 1
                         superseded += _supersede(stale, cid)
-                        legacy.discard(key)
                     done.add(key)
                     fed += 1
                     culture_rows.append({"cell_id": cid, "source_id": p["source_id"],
@@ -1268,11 +1266,12 @@ def emit_cells(plans: list[dict[str, Any]], *, deadline: float, dry_run: bool = 
     for k, v in (("reminted", remint_new), ("already_purged", remint_same),
                  ("superseded", superseded)):
         migrated[k] = int(migrated.get(k) or 0) + v
-    migrated["pending"] = len(legacy)
+    pending = legacy - done                     # legacy keys this pass did not reach yet
+    migrated["pending"] = len(pending)
     if not dry_run:
         _write_json(EMITTED, {"at": now_utc().isoformat(timespec="seconds"),
                               "spec": EMITTED_SPEC, "keys": sorted(done),
-                              "legacy_pending": sorted(legacy), "migration": migrated,
+                              "legacy_pending": sorted(pending), "migration": migrated,
                               "credited": dict(sorted(credited.items()))})
         if culture_rows:
             CULTURE_LOG.parent.mkdir(parents=True, exist_ok=True)
