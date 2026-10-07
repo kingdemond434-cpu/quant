@@ -9037,6 +9037,27 @@
    "landed": [
     "mass screen 2026-09-30"
    ]
+  },
+  {
+   "id": "ASIA_SENSOR_ADAPTER",
+   "item": "Every Asia observation the desk already stores (alt_proxies vintage stores, asia_parser PIT frames; and, as they land, the asia_parser vintage ledger, free_stack_cnx exchange records and the latent datasets) mapped into the ONE universal sensor contract and appended to its ledger (MANDATE 2026-10-06 s2.5, s2.13): pure mapping, knowable_at = publication bounded by first sight with its contract knowable_basis (printed_stamp / calendar / declared_lag / bounded_by_receipt), received_at = first sight, revisions appended, licence and provenance carried, authority NONE, idempotent through the contract",
+   "domain": "U",
+   "phase": 3,
+   "status": "PARTIAL",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:alt_proxies",
+   "artifact": "desks/mt5/reports/ASIA_SENSOR_ADAPTER.json",
+   "consumer": "desks/mt5/research/sensor_ledger_digest.py (the hourly `sensor_ledger` leg, hourly_cycle.py:2891) reads the ledger the adapter appends to and publishes desks/mt5/reports/SENSOR_LEDGER.json (shards, index keys, revised keys, per-receipt-day intake metrics by sensor class); desks/mt5/tests/test_asia_sensor_adapter.py:259 proves the Asia rows are counted there. libs/data/pit.py usable_at reads the rows through their available_time alias (:126)",
+   "evidence": [
+    "desks/mt5/research/asia_sensor_adapter.py:232 -- map_alt_proxies_row: first print with publication_time only when the page printed it (else the release calendar as scheduled_time), knowable_at = min(publication, first sight) with knowable_basis printed_stamp/calendar/bounded_by_receipt, received_at = first sight; a stored revision becomes its own observation the ledger chains with revision_of",
+    "desks/mt5/research/asia_sensor_adapter.py:291 -- map_asia_frame_row: one observation per (row, numeric column) of a PIT-stamped asia_parser frame, knowable_basis declared_lag (the registry's lag) or bounded_by_receipt, Asian registry rows only",
+    "desks/mt5/research/asia_sensor_adapter.py:333 -- map_contract_record and the three hook points map_cn_exchange_record (:378, claude/asia-cn-futures-positioning), map_asia_history_record (:387, claude/asia-cn-official-sge), map_latent_record (:395, claude/asia-latent-datasets): s2.5 names one to one, producer ids kept in attributes, producer basis read into the contract vocabulary by _basis_of (:210)",
+    "desks/mt5/research/asia_sensor_adapter.py:595 -- the pass hands every mapped observation to SensorLedger.append, which owns idempotency (a re-sent first print is a duplicate); the ledger is read only via latest_index()",
+    "desks/mt5/research/alt_proxies.py:3983 -- sensor_adapter_pass runs the adapter on the alt_proxies hourly leg after the pass writes its stores; never raises",
+    "desks/mt5/tests/test_asia_sensor_adapter.py:178 -- re-runs append nothing even with the cursor deleted; :204 each knowable_basis; :259 the rows show up in SENSOR_LEDGER.json"
+   ],
+   "gap": "Live yield is UNMEASURED until the box runs the alt_proxies leg with #208 merged. The asia_parser history ledger, free_stack_cnx and latent stores are read only once their branches merge (ABSENT in the report until then). asia_sources.json rows carry no licence/terms field, so their observations carry commercial_rights UNMEASURED.",
+   "next_step": "Merge #208 first, then this branch; box: after the next alt_proxies leg read reports/ASIA_SENSOR_ADAPTER.json (totals.appended, refusals) and reports/SENSOR_LEDGER.json (sensor_classes.asia_structured)."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

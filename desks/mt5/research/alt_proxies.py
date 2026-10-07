@@ -3974,6 +3974,32 @@ def write_rosters() -> list[Path]:
     return [ROSTER_FILE, ENGINE_ROWS_FILE]
 
 
+#: Seconds the Asia sensor adapter may spend after a pass. The leg's cap (hourly_cycle, 400s) sits
+#: above the pass's own --budget-s 300, and the adapter skips every store whose bytes did not
+#: change, so an ordinary hour costs it a stat per store.
+SENSOR_ADAPTER_BUDGET_S = 60.0
+
+
+def sensor_adapter_pass(paths: Paths = DEFAULT_PATHS, *, ledger_root: Path | None = None,
+                        budget_s: float = SENSOR_ADAPTER_BUDGET_S) -> dict[str, Any]:
+    """Every stored Asia observation (this organ's vintage stores, asia_parser's frames, the
+    s2.5-named free-stack and latent stores) into the universal sensor ledger
+    (`research.asia_sensor_adapter`, a pure mapping). Runs on THIS organ's hourly leg, after the
+    pass has written its stores. Never raises: a failed mapping costs the ledger an hour, never
+    the pass."""
+    try:
+        from research import asia_sensor_adapter as adapter
+        doc = adapter.run(paths.desk, ledger_root=ledger_root, budget_s=budget_s)
+    except Exception as exc:
+        return {"status": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+    t = doc.get("totals") or {}
+    wrote = str(doc.get("report_write") or "UNMEASURED")
+    return {"status": "OK" if wrote == "OK" else "REPORT_WRITE_FAILED", "report_write": wrote,
+            "appended": t.get("appended", 0), "revisions": t.get("revisions", 0),
+            "refused": t.get("refused", 0), "mapped": t.get("mapped", 0),
+            "deferred": len(doc.get("deferred_over_budget") or [])}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--once", action="store_true")
@@ -3998,6 +4024,15 @@ def main(argv: list[str] | None = None) -> int:
         n = sum((r.get("series") or {}).values())
         print(f"  {sid:<28} {r['status']:<30} points={n:<6} "
               f"{'; '.join(r.get('errors') or [])[:80] or r.get('why', '')[:80]}")
+    if not a.dry_run:
+        sa = sensor_adapter_pass()
+        print(f"  asia sensor ledger: {sa}")
+        if sa.get("status") != "OK":
+            # the ledger rows landed (or the mapping failed) but the census on disk did not:
+            # a leg that exits 0 here reads as a clean hour to every scheduler and status board
+            print(f"alt_proxies: asia sensor ledger {sa.get('status')}: "
+                  f"{sa.get('report_write') or sa.get('why')}", file=sys.stderr)
+            return 1
     return 0
 
 
