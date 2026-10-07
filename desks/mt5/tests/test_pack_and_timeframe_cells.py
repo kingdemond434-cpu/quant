@@ -75,7 +75,9 @@ def test_every_pack_at_zero_carries_a_named_reason(monkeypatch: Any, tmp_path: P
 def test_an_unmeasured_chain_is_not_an_empty_eligible_set(monkeypatch: Any) -> None:
     """L1.28a: absence never resolves to a clean verdict. No chain state means UNMEASURED per
     pack, not 'no pack qualifies'."""
-    monkeypatch.setattr(pc, "packs", lambda: [{"id": "a", "targets": ["XAUUSD"]}])
+    # a registry pack always names its URL; one with no terms mapping at all fails closed
+    monkeypatch.setattr(pc, "packs", lambda: [{"id": "a", "targets": ["XAUUSD"],
+                                              "url": "https://example.org/a"}])
     monkeypatch.setattr(pc, "chain", dict)
     monkeypatch.setattr(pc, "_registry_counts", lambda: ({}, ""))
     doc = pc.build(budget_s=5.0, dry_run=True)
@@ -92,7 +94,8 @@ def test_cells_go_through_the_one_registry_door(monkeypatch: Any) -> None:
                         lambda **kw: (calls.append({"kind": "discovery", **kw}), ("D1", True))[1])
     monkeypatch.setattr(reg, "enqueue_candidate",
                         lambda **kw: (calls.append({"kind": "cell", **kw}), ("C1", True))[1])
-    res = pc.emit_for({"id": "p", "targets": ["XAUUSD"]}, ["v"], ["XAUUSD"], dry_run=False)
+    res = pc.emit_for({"id": "p", "targets": ["XAUUSD"], "url": "https://example.org/p"}, ["v"],
+                      ["XAUUSD"], dry_run=False)
     assert res["emitted"] == len(pc.TRANSFORMS) * len(pc.CHARTS)
     cells = [c for c in calls if c["kind"] == "cell"]
     assert len(cells) == res["emitted"]
