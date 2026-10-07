@@ -9060,6 +9060,26 @@
    ],
    "gap": "BLOCKED_ON_TERMS: cnx_shfe and cnx_ine hold terms=refused (SHFE's statement grants only non-commercial browse/download; trading use is not granted; INE is SHFE's subsidiary and its own page is unreadable), so they are never fetched and name CFTC COT (axis_ingest.py) as the substitute, coverage UNMEASURED under the #152 law (no measured corr >= 0.5 with n). The DCE, CZCE, GFEX and CFFEX rows hold terms=to_confirm (pages unreadable from the build sandbox); the principal (or the box, reading the page) flips each row's `terms` to confirmed. Live yield, the exchanges' current URL paths and the exact release instants are UNMEASURED until the box runs the leg; no exchange host is reachable from the sandbox, so every parser is proven on hand-built fixtures in the documented layouts. Not built here: SGE (P1/P4), spot basis and delivery volumes (no free dated file found), CFFEX option IV.",
    "next_step": "Principal: settle exchange terms (one field per roster row). Box: first free_stack_hunt pass after the flip; read FREE_STACK_YIELD.json per cnx_* row and each day's missing_surfaces in data/free_stack/raw/cnx_*/ to see which URL template answers."
+  },
+  {
+   "id": "ASIA_D24",
+   "item": "AKShare / TuShare only after licence validation (directive 2026-10-05; PM delivery check 2026-10-07 DATA-24): every AKShare upstream (Eastmoney push2his klines, Sina futures klines, the akshare package's data), TuShare Pro, BaoStock and jqdatasdk passes the one terms gate (alt_proxies.terms_gate) before any request, fail closed, with a per-upstream licence validation report and named lawful substitutes",
+   "domain": "U",
+   "phase": 3,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:free_stack_hunt",
+   "artifact": "desks/mt5/reports/CN_AGGREGATOR_LICENCE.json",
+   "consumer": "desks/mt5/research/free_stack_proposer.py licence_fence / build_grid reads reports/CN_AGGREGATOR_LICENCE.json and never mints a column a fenced upstream produced (no report fences every governed source); tested in desks/mt5/tests/test_free_stack_licence.py",
+   "evidence": [
+    "desks/mt5/research/alt_proxies.py:2530 -- TERMS_HOSTS governs eastmoney.com, sina.com.cn, tushare.pro, baostock.com, joinquant.com; :2541 GATE_TERMS verdicts; :2562 GATE_TERMS_EVIDENCE with terms_url, verbatim quote or why unread, checked_at 2026-10-07, box_action; cn_akshare_data records MIT-code-vs-data; :2656 terms_gate (the #229 mechanism)",
+    "libs/data/free_stack.py:1428 -- terms_verdict: unimportable table -> unreadable, ungoverned host -> to_confirm, confirmed without a verbatim terms_quote -> to_confirm",
+    "libs/data/free_stack.py:1457 -- fetch_akshare_direct gates each route's host; a fenced route sends nothing; all fenced -> BLOCKED_ON_TERMS:<verdicts> naming each source; :1526 tushare gated before the token; :1556 package route gated before import/login; :1614 akshare package data gated by cn_akshare_data",
+    "libs/data/free_stack.py:1740 -- licence_validation: per-upstream host / verdict / terms_url / quote / checked_at / box_action, fenced_columns, code_vs_data, and :1697 CN_SUBSTITUTES (lawful candidates, each UNMEASURED under the #152 law)",
+    "desks/mt5/research/free_stack_hunter.py:628 -- run() writes reports/CN_AGGREGATOR_LICENCE.json every pass of the free_stack_hunt leg"
+   ],
+   "gap": "Verdicts read 2026-10-07: Eastmoney REFUSED (agreement: individual non-commercial use only), TuShare REFUSED (non-commercial personal-viewing licence; also no TUSHARE_TOKEN), AKShare data REFUSED (README Statement: academic research only; MIT covers the code only), Sina, BaoStock and JoinQuant TO_CONFIRM (terms unreadable from the build container). Every CN_MARKET series is therefore fenced; substitutes are named but their agreement is UNMEASURED (no corr >= 0.5 with n >= 12 measured). Quotes read through the web reader may carry normalised quotation marks. Other organs on the same hosts (free_stack cn_guba on guba.eastmoney.com; asia_collector's akshare/tushare rows) are governed by these rows only once they ask terms_gate.",
+   "next_step": "Box: re-read the Eastmoney agreement, the Sina footer terms, BaoStock's and JoinQuant's pages in a browser and quote them in alt_proxies.GATE_TERMS_EVIDENCE; a flip needs a clause permitting commercial automated use (or a written licence). Measure each substitute's agreement before calling it a stand-in."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

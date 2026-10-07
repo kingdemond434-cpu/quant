@@ -2519,6 +2519,218 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "checked_at": _CHK},
 }
 
+#: HOSTS GOVERNED BY A TERMS ROW -- the mechanism of PR #229 (and PR #239, which carries it
+#: verbatim), carried here for the CN aggregator upstreams of `libs/data/free_stack.py` (DATA-24,
+#: 2026-10-07). One decision binds every organ that touches the host: free_stack's AKShare /
+#: TuShare / BaoStock paths ask `terms_gate` before any request. Matched on the host's registrable
+#: suffix, so push2his./quote./guba. and stock2./finance. sub-hosts are governed together.
+#: MERGE NOTE: #229 and #239 add rows to these same three tables at this same place; the merge is
+#: the UNION of the rows. Where #239 holds `asia_tushare` as to_confirm (agreement unread), the row
+#: below has since READ it and quotes the refusing clause -- keep this one.
+TERMS_HOSTS: dict[str, str] = {
+    "eastmoney.com": "cn_eastmoney_quotes",
+    "sina.com.cn": "cn_sina_finance",
+    "tushare.pro": "asia_tushare",
+    "baostock.com": "cn_baostock",
+    "joinquant.com": "cn_jqdatasdk",
+    # Every free_stack fetcher asks this table before its first request (DATA-24 follow-up). The
+    # project's standing platform bans (coordinator ruling 2026-09-30, carried on #162's
+    # libs/data/terms_fence.py) are rows here too, so the gate refuses them by host.
+    "reddit.com": "project_ban_reddit",
+    "redd.it": "project_ban_reddit",
+    "redditmedia.com": "project_ban_reddit",
+    "pushshift.io": "project_ban_reddit",
+    "pullpush.io": "project_ban_reddit",
+    "photon-reddit.com": "project_ban_reddit",
+    "x.com": "project_ban_x",
+    "twitter.com": "project_ban_x",
+    "twimg.com": "project_ban_x",
+    "stocktwits.com": "project_ban_stocktwits",
+    "t.me": "telegram_public_preview",
+    "telegram.me": "telegram_public_preview",
+    # Discord is NOT host-mapped: the ban is on a USER token (a bot token is permitted), which a
+    # host cannot tell apart; #162's terms_fence.check_request enforces it per credential.
+}
+
+#: THE PROJECT'S STANDING PLATFORM BANS -- a ruling, not a reading of terms, so no `terms_quote`
+#: can unfence them: an entry leaves only on a recorded agreement (the #162 rule). Reasons are the
+#: rulings' own words as #162 carries them (libs/data/terms_fence.py on that branch).
+_BAN_REDDIT = ("Reddit's User Agreement and Data API terms cover all automated access, including "
+               "RSS and the anonymous JSON listings, and require a separate agreement for "
+               "commercial use; this desk is commercial and holds none (project coordinator "
+               "ruling 2026-09-30)")
+_BAN_X = ("X's Developer Agreement makes its paid API the only authorized automated access and "
+          "its Terms forbid crawling or scraping without prior written consent; the principal "
+          "ruled no paid X (2026-09-30)")
+_BAN_STOCKTWITS = ("StockTwits Terms s.5 forbid extracting data by automated means except as "
+                   "expressly authorized in writing or through an approved API; the desk holds no "
+                   "authorization (checked 2026-09-30)")
+_BAN_DISCORD = ("Discord permits automation only through a bot account; a user token driving the "
+                "API is barred (the Discord ruling: bot token only, never a user token)")
+PROJECT_BANS: frozenset[str] = frozenset({"project_ban_reddit", "project_ban_x",
+                                          "project_ban_stocktwits", "project_ban_discord_user"})
+#: GATE-ONLY TERMS ROWS: decisions for feeds that are not alt_proxies sources (so they stay out of
+#: TERMS, whose keys are exactly this organ's sources) but are fetched by another organ through
+#: `terms_gate`. Same vocabulary, same fail-closed rule, same evidence shape.
+GATE_TERMS: dict[str, tuple[str, str]] = {
+    "cn_eastmoney_quotes": ("refused", "Eastmoney software licence and service agreement: the "
+                            "product and its services are for individual users in non-commercial, "
+                            "non-profit settings only; no use or copying of its content without "
+                            "Eastmoney's written consent"),
+    "cn_sina_finance": ("to_confirm", "Sina's copyright statement / terms could not be read on "
+                        "2026-10-07 (404 or empty to the reader; the proxy refuses the host)"),
+    "asia_tushare": ("refused", "Tushare data service agreement 2(1)5: a personal, "
+                     "non-transferable, NON-COMMERCIAL licence, for personal viewing only"),
+    "cn_baostock": ("to_confirm", "baostock.com served no readable terms text on 2026-10-07 (a "
+                    "script shell to the reader; the proxy refuses the host)"),
+    "cn_akshare_data": ("refused", "AKShare README Statement 1: 'All data provided by AKShare is "
+                        "just for academic research purpose'. Its MIT licence covers the wrapper "
+                        "CODE only, never the upstream DATA"),
+    "project_ban_reddit": ("refused", "BANNED_BY_PROJECT: " + _BAN_REDDIT),
+    "project_ban_x": ("refused", "BANNED_BY_PROJECT: " + _BAN_X),
+    "project_ban_stocktwits": ("refused", "BANNED_BY_PROJECT: " + _BAN_STOCKTWITS),
+    "project_ban_discord_user": ("refused", "BANNED_BY_PROJECT: " + _BAN_DISCORD),
+    "telegram_public_preview": ("refused", "Telegram ToS: data scraping is prohibited under its "
+                                "Content Licensing and AI Scraping Terms; no permitting clause"),
+    "cn_jqdatasdk": ("to_confirm", "JoinQuant / jqdatasdk terms not read; an authenticated "
+                     "account route, so a credential waits on a quoted permitting clause"),
+}
+_CHK_D24 = "2026-10-07"
+#: Every quote below is what the authoring session actually read on _CHK_D24 (never written from
+#: memory). `read_via` says how: the web reader can normalise quotation marks, so `box_action`
+#: says what the box re-reads before any flip.
+GATE_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    "cn_eastmoney_quotes": {
+        "terms_url": "https://emuserh5.eastmoney.com/useragreement",
+        "terms_quote": ("本'产品'及其相关服务仅供个人用户用于非商业环境及非盈利活动。"
+                        "未经我公司授权，任何用于商业用途的拷贝、销售、转让、出租、修改本'产品'的"  # noqa: RUF001
+                        "行为均被认为是侵权行为。 / 3.2.3 对于本'产品'的图像、文字等相关信息，"  # noqa: RUF001
+                        "未经东方财富信息股份有限公司书面同意，用户不得擅自实施包括但不限于下列"  # noqa: RUF001
+                        "行为：使用、复制、修改、链接、转载、汇编、发表、出版，建立镜像站点"),  # noqa: RUF001
+        "also_quote": ("1.1 本'产品'的一切版权等知识产权，以及与'产品'相关的所有信息内容，"  # noqa: RUF001
+                       "包括但不限于：文字表述及其组合、商标、图标图饰、界面设计、版面框架、"  # noqa: RUF001
+                       "有关数据、印刷材料、电子文档等均受著作权法和国际著作权条约保护"),
+        "judgement": ("REFUSED: the publisher's agreement (东方财富软件许可及服务协议) limits its "
+                      "product and services, data included (1.1 有关数据), to individual "
+                      "non-commercial use and bars use without written consent. Nothing permits "
+                      "a commercial desk's automated use of the push2his klines"),
+        "read_via": "web reader; www.eastmoney.com and push2his are proxy-refused (403) here",
+        "box_action": ("re-read the agreement and the www.eastmoney.com footer 免责声明 in a "
+                       "browser on the box; a flip needs a quoted clause permitting commercial "
+                       "automated use, or a written Eastmoney (Choice) data licence"),
+        "checked_at": _CHK_D24},
+    "cn_sina_finance": {
+        "terms_url": "https://www.sina.com.cn/intro/copyright.shtml",
+        "terms_quote": ("(not readable: that page returned only a tracking beacon to the reader; "
+                        "https://finance.sina.com.cn/copyright.html and "
+                        "https://www.sina.com.cn/intro/lawfirm.shtml returned 404; curl through "
+                        "the container proxy: 'CONNECT tunnel failed, response 403' for "
+                        "finance.sina.com.cn)"),
+        "judgement": ("TO_CONFIRM: no permitting clause read. Fail closed: the Sina futures "
+                      "kline endpoint (stock2.finance.sina.com.cn) is not fetched"),
+        "box_action": ("open finance.sina.com.cn on the box, follow the footer 版权声明 / "
+                       "服务条款 links and quote them here; a flip needs a clause permitting "
+                       "commercial automated use of the quote data"),
+        "checked_at": _CHK_D24},
+    "asia_tushare": {
+        "terms_url": "https://tushare.pro/document/1?doc_id=405",
+        "terms_quote": ("Tushare数据服务协议 第二条(一)5: 本服务是在您遵守本协议及相关法律、法规、"
+                        "政策、公序良俗等的前提下，Tushare给予您一项个人的、不可转让的、"  # noqa: RUF001
+                        "非商业用途的、可撤销的、有期限及非排他性的许可。 / "
+                        "您须遵守各项法律、法规及与Tushare达成的各项协议，仅可为非商业目的使用，"  # noqa: RUF001
+                        "并仅可用作个人查看使用。 / 第二条(一)3: 用户不得通过以下任何方式为自己或"
+                        "他人开通本服务：（1）以营利、经营等非个人使用的目的为自己或他人开通本服务；"),  # noqa: RUF001
+        "also_read": ("https://tushare.pro/document/1?doc_id=409 (user agreement): "
+                      "'所有数据及内容仅供参考，不构成投资建议或者其他实际的操作意见' -- "  # noqa: RUF001
+                      "no commercial grant"),
+        "judgement": ("REFUSED: personal, non-commercial, personal-viewing-only licence. The "
+                      "pricing page (doc_id=290) prices institutions at 10x, but the agreement "
+                      "read grants no commercial use. TuShare is also on the project's "
+                      "UNAVAILABLE list (no TUSHARE_TOKEN)"),
+        "read_via": "web reader; api.tushare.pro and tushare.pro are proxy-refused (403) here",
+        "box_action": ("none while this agreement stands; a flip needs a written institutional "
+                       "TuShare licence permitting commercial research use, quoted here"),
+        "checked_at": _CHK_D24},
+    "cn_baostock": {
+        "terms_url": "http://www.baostock.com/",
+        "terms_quote": ("(not readable: www.baostock.com and "
+                        "baostock.com/baostock/index.php/免责声明 served a script shell with no "
+                        "text to the reader; curl through the container proxy: HTTP 403)"),
+        "judgement": ("TO_CONFIRM: no licence or terms text read. Fail closed: the baostock "
+                      "package's login/query socket is never opened"),
+        "box_action": ("open www.baostock.com in a browser on the box and quote its 使用说明 / "
+                       "免责声明; a flip needs a clause permitting commercial use"),
+        "checked_at": _CHK_D24},
+    "cn_akshare_data": {
+        "terms_url": "https://github.com/akfamily/akshare/blob/main/README.md#statement",
+        "terms_quote": ("1. All data provided by [AKShare](https://github.com/akfamily/akshare) is "
+                        "just for academic research purpose;"),
+        "code_licence_url": "https://github.com/akfamily/akshare/blob/main/LICENSE",
+        "code_licence_quote": ("MIT License / Permission is hereby granted, free of charge, to "
+                               "any person obtaining a copy of this software and associated "
+                               "documentation files (the \"Software\"), to deal in the Software "
+                               "without restriction"),
+        "code_vs_data": ("MIT governs the AKShare SOFTWARE (the wrapper code) only. It grants "
+                         "nothing over the DATA, which belongs to the upstream publishers "
+                         "(Eastmoney, Sina, exchanges) under THEIR terms, and AKShare's own "
+                         "Statement limits the data it provides to academic research. So the "
+                         "package route is judged by this row AND by each upstream host's row"),
+        "judgement": ("REFUSED for the data: academic research only. The code may be read and "
+                      "reused under MIT; no AKShare data call is made"),
+        "read_via": "raw.githubusercontent.com (curl, verbatim)",
+        "box_action": ("none: the data route is closed by AKShare's own statement and by its "
+                       "upstreams' terms; lawful substitutes are named in "
+                       "reports/CN_AGGREGATOR_LICENCE.json"),
+        "checked_at": _CHK_D24},
+    **{b: {"terms_url": "(project ruling, not a terms page)",
+           "terms_quote": "(a project ban: no quote can unfence it)",
+           "ban": "BANNED_BY_PROJECT",
+           "judgement": "REFUSED: " + GATE_TERMS[b][1],
+           "box_action": "none: lifted only by a recorded agreement and the coordinator's ruling",
+           "checked_at": "2026-09-30"} for b in sorted(PROJECT_BANS)},
+    "telegram_public_preview": {
+        "terms_url": "https://telegram.org/tos",
+        "terms_quote": ("Telegram additionally prohibits data scraping as part of its Content "
+                        "Licensing and AI Scraping Terms, which apply to all users, businesses, "
+                        "and third-party services accessing the platform."),
+        "judgement": ("REFUSED: the ToS prohibits data scraping for all users and businesses; "
+                      "nothing permits automated reading of t.me/s channel previews"),
+        "read_via": "web reader (WebFetch); re-read character-exact on the box",
+        "box_action": ("re-read telegram.org/tos and the Content Licensing and AI Scraping Terms; "
+                       "a flip needs a clause permitting automated reading of public previews"),
+        "checked_at": _CHK_D24},
+    "cn_jqdatasdk": {
+        "terms_url": "https://www.joinquant.com/",
+        "terms_quote": "(not read on 2026-10-07)",
+        "judgement": ("TO_CONFIRM: no terms read; authenticated account route (JQ_USER/JQ_PASS), "
+                      "so no credential is sent"),
+        "box_action": ("read JoinQuant's 用户协议 / the jqdatasdk licence and quote it; a flip "
+                       "needs a clause permitting commercial use"),
+        "checked_at": _CHK_D24},
+}
+
+
+def terms_gate(ref_or_url: str) -> tuple[str, str]:
+    """(state, why) for a TERMS id or a URL. `confirmed` / `to_confirm` / `refused` for a governed
+    id or host, `ungoverned` for a URL on no governed host. FAIL CLOSED: an id this table does not
+    know is `to_confirm`, never permission."""
+    ref = str(ref_or_url or "")
+    if "://" in ref or ref.startswith("//"):
+        host = urllib.parse.urlsplit(ref if "://" in ref else "https:" + ref).netloc.lower()
+        host = host.split(":")[0]
+        sid = next((v for k, v in TERMS_HOSTS.items() if host == k or host.endswith("." + k)),
+                   None)
+        if sid is None:
+            return "ungoverned", ""
+        ref = sid
+    state, why = TERMS.get(ref) or GATE_TERMS.get(
+        ref, ("to_confirm", f"{ref}: no terms row -- fail closed"))
+    ev = TERMS_EVIDENCE.get(ref) or GATE_TERMS_EVIDENCE.get(ref) or {}
+    if ev.get("terms_url"):
+        why = f"{why} [{ev['terms_url']}, checked {ev.get('checked_at', '?')}]"
+    return state, why
+
+
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
                 for s in (*SOURCES, *SUBSTITUTE_SOURCES))
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
