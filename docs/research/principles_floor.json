@@ -1,0 +1,13 @@
+{
+ "updated_utc": "2026-10-07T02:05:53+00:00",
+ "measured_by": "scripts/check_principles.py",
+ "law": "ARCH-32: these names are pre-existing debt. The floor only shrinks; a name not listed here that appears is an arrival and fails the law gate.",
+ "findings": [],
+ "unmeasured": [
+  "P2_RELEARN_ON_CHANGE",
+  "P3_CASH_IS_AN_ALLOCATION",
+  "P4_RESEARCH_NEVER_STOPS",
+  "P6_EXECUTION_TEACHES_RESEARCH",
+  "P7_ONTOLOGY_STAYS_OPEN"
+ ]
+}

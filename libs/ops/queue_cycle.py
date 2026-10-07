@@ -64,7 +64,7 @@ OUT_REL = "desks/mt5/reports/QUEUE.json"
 #: Producers, in the order they run. Each is (name, callable(root, queue) -> dict). A producer
 #: that raises is recorded by name and the pass continues: the sweep in step 2 is what tells a
 #: person about failures, so it must not be skipped because a producer was broken.
-PRODUCERS = ("wiring_campaign", "coverage_governor", "cost_evidence")
+PRODUCERS = ("wiring_campaign", "coverage_governor", "cost_evidence", "structural_change")
 
 
 def queue_path(root: Path) -> Path:
@@ -131,8 +131,50 @@ def _cost_evidence(root: Path, queue: TaskQueue) -> dict[str, Any]:
                     "were fine")}
 
 
+def _structural_change(root: Path, queue: TaskQueue) -> dict[str, Any]:
+    """STRUCTURAL CHANGE TRIGGERS RELEARNING (ARCH-32, principle P2). Every distribution shift
+    `shift_watch` publishes under a LIVE symbol, and every decay FADE `decay_monitor` issues, is
+    queued as a `recertify` task for the validation role -- the organ that re-runs the gates.
+
+    THE WIRE THAT WAS MISSING. `shift_watch` has said since 2026-09-12 that a shift "FLAGS the
+    sleeve for RE-VALIDATION", and nothing read `DIST_SHIFT.json`: the flag reached no organ, so a
+    structural change was published and forgotten. This is that organ's consumer.
+
+    A RE-JUDGE, NEVER A DEMOTION. The task asks the gates the question again on today's data; it
+    lowers no fraction and retires nothing, so it owes no missed-growth line (Rule 1). Each
+    trigger is queued ONCE per detector day: the key is checked against every task the journal
+    has ever carried, not only live ones, so a recertification that finished is not re-queued
+    every hour for the same shift. The trigger set and its keys come from
+    `libs.tiers.principles.structural_triggers`, the same function the P2 measurement reads.
+    """
+    from libs.tiers.principles import structural_triggers
+
+    triggers, seen = structural_triggers(root)
+    known = {t.dedupe_key for t in queue.tasks().values() if t.dedupe_key}
+    o = desk_org()
+    queued, skipped = [], []
+    for t in triggers:
+        key = str(t["dedupe_key"])
+        if key in known:
+            skipped.append(f"{t['kind']}:{t['subject']} (already queued for recertification)")
+            continue
+        task = o.delegate(
+            queue, "recertify", frm="ops",
+            payload={"trigger": t["kind"], "subject": t["subject"], "verdict": t.get("verdict"),
+                     "sleeves": t.get("sleeves") or [], "detected_at": t.get("at"),
+                     "why": ("structural change: re-run the certificate gates on today's data "
+                             "(ARCH-32 P2)")},
+            priority=float(len(t.get("sleeves") or []) or 1),
+            dedupe_key=key)
+        (queued.append(f"{t['kind']}:{t['subject']}") if task is not None
+         else skipped.append(f"{t['kind']}:{t['subject']} (not owned or already live)"))
+    return {"queued": queued, "skipped": skipped, "detectors": seen,
+            "why": ("a structural change is re-judged by the gates that admitted the sleeve; "
+                    "absent detector artifacts queue nothing and say so in `detectors`")}
+
+
 _IMPL = {"wiring_campaign": _wiring_campaign, "coverage_governor": _coverage_governor,
-         "cost_evidence": _cost_evidence}
+         "cost_evidence": _cost_evidence, "structural_change": _structural_change}
 
 
 def human_inbox(queue: TaskQueue) -> list[dict[str, Any]]:

@@ -190,6 +190,21 @@
     "threshold": 20,
     "after": "30 days in which 20 or more of the drill rows stay UNMEASURED on the box: the scorecard grades nothing and the drills it reads are not running"
    }
+  },
+  "principles": {
+   "hypothesis": "Mapping each of the seven standing principles to the organs that enforce it, and measuring each from live artifacts every hour, turns a principle that silently stops holding (a sacred row, an unanswered structural-change trigger, a relaxed gate, a stalled judge, a closed registry) into a named VIOLATED finding the law gate refuses, instead of a gap a delivery audit finds weeks later.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "counts.VIOLATED",
+    "better": "down",
+    "organ": "report:PRINCIPLES.json"
+   },
+   "falsifier": {
+    "metric": "counts.UNMEASURED",
+    "op": ">=",
+    "threshold": 4,
+    "after": "30 days in which four or more principles stay UNMEASURED on the box: the organ measures nothing and the principles remain prose"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
