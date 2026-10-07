@@ -84,6 +84,9 @@ def _populate(tmp: Path) -> wsg.Paths:
     (rep / "EVENT_RESPONSE_ATLAS.json").write_text(json.dumps({
         "at": (NOW - timedelta(hours=3)).isoformat(), "n_events": 120, "n_cells": 40,
         "clearing": [{"cell": "a"}], "n_events_by_kind": {"cpi": 50, "nfp": 70}}), "utf-8")
+    (rep / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps({"n": 2, "survivors": {
+        "hunt.EURUSD cpi_surprise_fade": {"cell": "cpi_surprise_fade", "status": "PASS"},
+        "hunt.XAUUSD donchian": {"cell": "donchian", "status": "PASS"}}}), "utf-8")
     (data / "sleeves.json").write_text(json.dumps({"sleeves": [
         {"name": "cpi_surprise_eurusd", "family": "event_surprise", "status": "LIVE"},
         {"name": "xau_breakout", "family": "donchian", "status": "LIVE"},
@@ -124,7 +127,8 @@ def test_a_populated_host_measures_every_gap_with_numbers(tmp_path: Path) -> Non
     assert g["measured_reactions"]["metrics"]["clearing"] == 1
     assert g["measured_reactions"]["metrics"]["event_surprise_age_s"] == "UNMEASURED"
     ca = g["event_capital_authority"]["metrics"]
-    assert ca["live"] == 2 and ca["event_live"] == 1 and ca["certified_cells"] == "UNMEASURED"
+    assert ca["live"] == 2 and ca["event_live"] == 1
+    assert ca["certified_cells"] == 2 and ca["event_certified_cells"] == 1   # keyed by cell id
     ar = g["event_allocator_reaction"]["metrics"]
     assert ar["requests_24h"] == 2 and ar["allocator_listens_to_news"] is False
     assert ar["event_triggered_solves_7d"] == 0 and g["event_allocator_reaction"]["open"] is True

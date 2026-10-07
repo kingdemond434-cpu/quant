@@ -368,20 +368,25 @@ def event_capital_authority(ctx: Ctx) -> dict[str, Any]:
     live = [r for r in rows if str(r.get("status")).upper() == "LIVE"]
     ev_live = [r for r in live if _is_event(f"{r.get('family')} {r.get('name')}")]
     surv = _json(ctx.paths.survivors)
-    cells: list[Any] = []
+    cells: list[dict[str, Any]] | None = None          # None: absent or an unknown shape
     if isinstance(surv, dict):
         for key in ("survivors", "certified", "cells", "rows"):
-            if isinstance(surv.get(key), list):
-                cells = surv[key]
+            got = surv.get(key)
+            if isinstance(got, list):
+                cells = [c for c in got if isinstance(c, dict)]
+                break
+            if isinstance(got, dict):                  # keyed by cell id
+                cells = [{**v, "_key": k} for k, v in got.items() if isinstance(v, dict)]
                 break
     elif isinstance(surv, list):
-        cells = surv
-    ev_cert = [c for c in cells if isinstance(c, dict)
-               and _is_event(f"{c.get('family')} {c.get('cell')} {c.get('name')}")]
+        cells = [c for c in surv if isinstance(c, dict)]
+    ev_cert = [c for c in cells or []
+               if _is_event(f"{c.get('family')} {c.get('cell')} {c.get('name')} "
+                            f"{c.get('_key')}")]
     m = {"sleeves": len(rows), "live": len(live), "event_live": len(ev_live),
          "event_live_names": [str(r.get("name")) for r in ev_live][:10],
-         "certified_cells": len(cells) if surv is not None else UNMEASURED,
-         "event_certified_cells": len(ev_cert) if surv is not None else UNMEASURED,
+         "certified_cells": len(cells) if cells is not None else UNMEASURED,
+         "event_certified_cells": len(ev_cert) if cells is not None else UNMEASURED,
          "markers": list(EVENT_MARKERS)}
     return _measured([_rel(ctx.paths.sleeves), _rel(ctx.paths.survivors)], m,
                      not (ev_live or ev_cert))
