@@ -17,8 +17,10 @@ WHAT CHANGES, AND WHY EACH IS A MEASUREMENT RATHER THAN A GUESS:
 
 1. ADMISSION BY MEASURED FREE MEMORY. A shard starts only when psutil says the box has room for
    its PREDICTED peak plus the live terminal's reserve; otherwise it waits for a running shard
-   to finish. At least one shard always runs, so this can delay a shard but never stop the
-   judge. The prediction comes from the peaks this launcher MEASURED on earlier shards (Windows'
+   to finish. The FIRST shard is held to the same rule: no child is ever launched into memory
+   the box does not have (an 8 GB box with 1 GB free waits, then re-cuts the shard smaller, then
+   names it BLOCKED -- see 5). The prediction comes from the peaks this launcher MEASURED on
+   earlier shards (Windows'
    own ``peak_wset``, else sampled RSS of the child's whole tree), persisted in
    ``data/judging_shard_memory.json`` and refined on every run.
 2. EACH CHILD GETS ITS OWN MEMORY BUDGET, NOT THE SWEEP'S. ``GAUNTLET_MEMORY_BUDGET_MB`` for a
@@ -33,6 +35,12 @@ WHAT CHANGES, AND WHY EACH IS A MEASUREMENT RATHER THAN A GUESS:
 4. ONLY UNFINISHED SHARDS RUN. With the patched judge the dispatcher receives ``ks``, the
    shards still pending, so a resumed epoch never reruns a finished shard. With the unpatched
    judge, all shards run, exactly as before.
+5. OUT OF MEMORY ALONE IS RE-CUT, NOT REPEATED. A shard that dies of memory with nothing beside
+   it (or cannot be admitted alone) would fail the same way for the epoch's whole 24 h life at
+   the same shard count. It is recorded in ``reports/BLOCKED_SHARD_OOM.json`` and its cells are
+   re-cut into parts sized from measured free memory, each ruled by the sealed ``shard_worker``
+   and joined into the one shard file the merge reads (``split_shard``). A single cell that
+   still dies alone is DEFERRED, the sealed build loop's own over-budget rule.
 
 A missing psutil, an unreadable model or an unwritable file changes nothing: the dispatcher falls
 back to the measured worker count with no admission wait, never to a stop.
@@ -70,6 +78,17 @@ SHARD_DIR = DESK / "reports" / "gauntlet_cache" / "shards"
 
 #: What the live terminal, the gateway and the merging parent keep however many shards run.
 RESERVE_MB = float(os.environ.get("GAUNTLET_SHARD_RESERVE_MB", "6144"))
+#: ...but never more than this share of the MEASURED total: 6 GB is right on the 96 GB trading
+#: box and is three quarters of an 8 GB one, where it would admit nothing ever (see reserve_mb).
+RESERVE_SHARE = 0.25
+#: With no measured MB/cell yet, a planned cell is assumed to take this much above the base
+#: (2026-10-06: ~9 GB peaks over ~39,000-cell shards measured ~0.23 MB/cell; this is 2x that).
+DEFAULT_CELL_MB = 0.5
+#: How long a shard with NOTHING running beside it waits for memory to appear before its cells
+#: are re-cut smaller (or, when even one cell cannot fit, the shard is named BLOCKED).
+ADMIT_WAIT_S = float(os.environ.get("GAUNTLET_ADMIT_WAIT_S", "600"))
+#: The named record of every shard that ran out of memory ALONE, or could not be admitted alone.
+BLOCKED_FILE = DESK / "reports" / "BLOCKED_SHARD_OOM.json"
 #: The share of measured free memory the shards may take together.
 FREE_SHARE = float(os.environ.get("GAUNTLET_SHARD_FREE_SHARE", "0.8"))
 #: Before any shard has been measured: the first wave assumes this peak per shard. It is
@@ -133,6 +152,12 @@ def total_mb() -> float | None:
         return float(psutil.virtual_memory().total) / 1048576.0
     except Exception:
         return None
+
+
+def reserve_mb(total: float | None = None) -> float:
+    """The memory no shard may take: RESERVE_MB, capped at RESERVE_SHARE of the measured total."""
+    t = total_mb() if total is None else total
+    return RESERVE_MB if t is None else min(RESERVE_MB, RESERVE_SHARE * float(t))
 
 
 def tree_peak_mb(pid: int, prior: float = 0.0) -> float:
@@ -249,28 +274,51 @@ class Admission:
     so the memory a running shard is still going to take is charged before it takes it. With NO
     measured model (no MB/cell on file and no shard finished this run) exactly ONE shard runs
     until its peak is sampled, then admission widens on that measurement. Failed shards' peaks
-    feed the prediction too. One shard always runs, so admission can delay the judge and never
-    stop it. `limit` is lowered after a memory failure (D3) and never raised within a run.
+    feed the prediction too. The first shard is admitted only when measured free memory covers
+    it (an unmeasurable host still runs one); a shard that cannot be admitted alone within
+    ADMIT_WAIT_S is re-cut by the dispatcher. `limit` is lowered after a memory failure (D3)
+    and never raised within a run.
     """
 
-    def __init__(self, model: dict[str, Any], measure: Callable[[], float | None] = free_mb):
+    def __init__(self, model: dict[str, Any], measure: Callable[[], float | None] | None = None,
+                 reserve: float | None = None):
         self.model = model
-        self.measure = measure
+        # Resolved at call time, so the module's `free_mb` is the one measured.
+        self.measure: Callable[[], float | None] = measure or (lambda: free_mb())
+        self.reserve = reserve_mb() if reserve is None else float(reserve)
         self.cond = threading.Condition()
         self.running = 0
         self.seen_peaks: list[float] = []
+        self.seen_pc: list[float] = []
         self.live: dict[int, dict[str, float]] = {}
         self.limit: int | None = None
 
     def measured(self) -> bool:
         return per_cell_mb(self.model) is not None or bool(self.seen_peaks)
 
+    def cell_mb(self) -> float | None:
+        """MB per planned cell: the model's, or the largest measured in this run."""
+        vals = [v for v in (per_cell_mb(self.model), *self.seen_pc) if v is not None]
+        return max(vals) if vals else None
+
     def predict(self, base: float, cells: int | None) -> float:
-        pc = per_cell_mb(self.model)
-        guess = (base + cells * pc * MODEL_MARGIN) if (pc is not None and cells) else None
+        pc = self.cell_mb()
+        if cells:
+            # Unmeasured: the conservative default per cell, so a SMALLER part predicts smaller
+            # and a re-cut shard can fit where the whole one could not (8 GB cold start).
+            return base + cells * (pc if pc is not None else DEFAULT_CELL_MB) * MODEL_MARGIN
         observed = max(self.seen_peaks) if self.seen_peaks else None
-        cands = [x for x in (guess, observed) if x is not None]
-        return max(cands) if cands else DEFAULT_SHARD_PEAK_MB
+        return observed if observed is not None else DEFAULT_SHARD_PEAK_MB
+
+    def room(self) -> float | None:
+        """Measured free memory less the reserve and every running shard's predicted growth."""
+        free = self.measure()
+        return None if free is None else free - self.reserve - self.outstanding()
+
+    def fits(self, need_mb: float) -> bool:
+        room = self.room()
+        # Unmeasurable host: the unchanged fallback (one shard at a time, see `admits`).
+        return True if room is None else room >= need_mb
 
     def outstanding(self) -> float:
         """Memory the running shards are predicted to take beyond what they hold now."""
@@ -278,23 +326,34 @@ class Admission:
 
     def admits(self, need_mb: float) -> bool:
         if self.running == 0:
-            return True
+            # NEVER INTO AN OOM (2026-10-06, 8 GB cold start): even the first shard starts only
+            # when measured free memory covers it. Unmeasurable: one shard runs, as before.
+            return self.fits(need_mb)
         if self.limit is not None and self.running >= self.limit:
             return False
         if not self.measured():
             return False                       # one shard first; widen on its measured peak
-        free = self.measure()
-        if free is None:
+        if self.measure() is None:
             return False                       # unmeasurable: never widen past one shard
-        return free - RESERVE_MB - self.outstanding() >= need_mb
+        return self.fits(need_mb)
 
-    def acquire(self, need_mb: float, poll_s: float = 5.0, key: int | None = None) -> None:
+    def acquire(self, need_mb: float, poll_s: float = 5.0, key: int | None = None,
+                wait_s: float | None = None) -> bool:
+        """Wait for room. A shard waits as long as others run (they release memory); with
+        NOTHING running it waits at most `wait_s` (ADMIT_WAIT_S) and returns False -- the caller
+        re-cuts it smaller or names it BLOCKED, and no child is launched into memory that is not
+        there."""
+        limit_s = ADMIT_WAIT_S if wait_s is None else float(wait_s)
+        t_end = time.monotonic() + limit_s
         with self.cond:
             while not self.admits(need_mb):
+                if self.running == 0 and time.monotonic() >= t_end:
+                    return False
                 self.cond.wait(timeout=poll_s)
             self.running += 1
             self.live[key if key is not None else -len(self.live) - 1] = {
                 "predicted": float(need_mb), "rss": 0.0}
+            return True
 
     def sample(self, key: int, rss_mb: float) -> None:
         with self.cond:
@@ -307,7 +366,8 @@ class Admission:
             cur = self.limit if self.limit is not None else max(1, self.running)
             self.limit = max(1, min(cur, max(1, self.running)) // 2)
 
-    def release(self, peak_mb: float | None, key: int | None = None) -> None:
+    def release(self, peak_mb: float | None, key: int | None = None,
+                base: float | None = None, cells: int | None = None) -> None:
         with self.cond:
             self.running = max(0, self.running - 1)
             if key is not None:
@@ -316,6 +376,8 @@ class Admission:
                 self.live.pop(next(iter(self.live)))
             if peak_mb:
                 self.seen_peaks.append(float(peak_mb))
+                if cells:
+                    self.seen_pc.append(max(0.0, float(peak_mb) - float(base or 0.0)) / cells)
             self.cond.notify_all()
 
 
@@ -329,7 +391,10 @@ def child_env(budget_mb: float | None) -> dict[str, str]:
         env[var] = "1"
     if budget_mb is not None:
         # The CHILD's budget, not the sweep's: the sealed build loop defers fresh cells at it.
-        env["GAUNTLET_MEMORY_BUDGET_MB"] = str(int(max(1200.0, budget_mb)))
+        # No fixed floor (it was 1200 MB whatever the box had free): admission has already
+        # checked that measured free memory covers this child's predicted need, and the budget
+        # it exports is that measured room -- never a figure the box does not have.
+        env["GAUNTLET_MEMORY_BUDGET_MB"] = str(max(1, int(budget_mb)))
     return env
 
 
@@ -397,6 +462,177 @@ def _persist(model_path: Path | None = None) -> None:
     _write_json(path, model)
 
 
+
+# ------------------------------------------------------------------- out of memory, alone (M3)
+class ShardNoRoom(MemoryError):
+    """Measured free memory does not cover a shard even with nothing else running."""
+
+
+class ShardBlocked(RuntimeError):
+    """A shard that cannot be ruled at any cut this box has memory for: fail closed, named."""
+
+
+def _judge() -> Any:
+    """The sealed judge module, for its OWN shard-file helpers (format owned by the seal)."""
+    import importlib
+    return sys.modules.get("scripts.external_gauntlet") or importlib.import_module(
+        "scripts.external_gauntlet")
+
+
+def record_blocked(entry: dict[str, Any], path: Path | None = None) -> None:
+    """BLOCKED_SHARD_OOM.json: the latest named event and the last 50. Never raises."""
+    path = path or BLOCKED_FILE
+    doc = _read_json(path, {})
+    doc = doc if isinstance(doc, dict) else {}
+    entry = {"at": datetime.now(UTC).isoformat(timespec="seconds"),
+             "run_id": RUN.get("run_id"), **entry}
+    hist = [h for h in (doc.get("history") or []) if isinstance(h, dict)][-49:]
+    hist.append(entry)
+    doc.update(latest=entry, history=hist, count=int(doc.get("count") or 0) + 1,
+               why=("written by scripts/run_sharded_gauntlet.py when a shard runs out of memory "
+                    "ALONE or cannot be admitted alone. Before 2026-10-06 that shard was retried "
+                    "at the same cut for the epoch's whole life (24 h) and nothing published; it "
+                    "is now re-cut into parts that fit, and a cell that still cannot be built "
+                    "alone is DEFERRED exactly as the sealed memory budget defers one."))
+    _write_json(path, doc)
+    RUN.setdefault("blocked", []).append(entry)
+
+
+def _chunks(items: list[Any], size: int) -> list[list[Any]]:
+    size = max(1, int(size))
+    return [items[i:i + size] for i in range(0, len(items), size)]
+
+
+def split_shard(shard_dir: Path, k: int, phase: str, adm: Admission, *,
+                runner: Callable[[list[str], dict[str, str]], tuple[Any, ...]] | None = None,
+                judge: Any = None, cause: str = "oom") -> dict[str, Any]:
+    """RE-CUT shard k's cells into parts that fit and rule them one part at a time, alone.
+
+    Each part is a sub-plan in `shard_dir/split_<k>_<phase>_<j>/` that the SEALED
+    `shard_worker` rules exactly as it rules a shard (same plan header, same token, a slice of
+    the same cells); the parts' outputs are joined, in plan order, into `shard_<k>.pkl` and its
+    done marker, so `_shard_collect` reads one shard as it always has. Part size comes from
+    measured free memory and the measured MB/cell. A part that still dies of memory is halved;
+    a SINGLE cell that dies alone is DEFERRED (`passed: None`, re-queued, no trial charged) --
+    the sealed build loop's own over-budget rule -- in phase `build`. In phase `rule` (one
+    series a cell) a single cell that cannot be ruled is BLOCKED and the merge fails closed.
+    """
+    J = judge or _judge()
+    run_ = runner or run_child
+    shard_dir = Path(shard_dir)
+    plan_k, out_k = shard_dir / f"plan_{k}.pkl", shard_dir / f"shard_{k}.pkl"
+    header = J._unpickle(shard_dir / "plan.pkl")
+    base = plan_base_mb(shard_dir, k)
+    if phase == "build":
+        if header.get("specs") is not None or not plan_k.exists():
+            raise ShardBlocked(f"shard {k}: the plan has no per-shard slice to re-cut "
+                               "(unpatched judge)")
+        items: list[Any] = list(J._unpickle(plan_k))
+        built: dict[str, Any] | None = None
+    else:
+        built = J._unpickle(out_k)
+        if built.get("phase") != "build":
+            raise ShardBlocked(f"shard {k}: no build output to re-cut for phase {phase}")
+        items = list(built["rows"])
+    pc = adm.cell_mb() or DEFAULT_CELL_MB
+    room = adm.room()
+    if room is not None:
+        fit = int((room - base) // (pc * MODEL_MARGIN)) if room > base else 0
+        if fit < 1:
+            raise ShardBlocked(f"shard {k} {phase}: {room:.0f} MB free over the reserve cannot "
+                               f"hold one cell ({base:.0f} MB base + {pc:.3f} MB/cell)")
+        size = min(fit, max(1, (len(items) + 1) // 2))
+    else:
+        size = max(1, (len(items) + 1) // 2)
+    queue = _chunks(items, size)
+    rows: list[dict[str, Any]] = []
+    syms: set[str] = set()
+    dates: set[Any] = set()
+    secs = 0.0
+    peak_all = 0.0
+    ruled = 0
+    stage_cache: dict[str, Any] = {}
+    deferred: list[Any] = []
+    parts_run = 0
+    j = 0
+    while queue:
+        part = queue.pop(0)
+        sub = shard_dir / f"split_{k}_{phase}_{j}"
+        j += 1
+        import shutil
+        shutil.rmtree(sub, ignore_errors=True)
+        sub.mkdir(parents=True)
+        shutil.copyfile(shard_dir / "plan.pkl", sub / "plan.pkl")
+        if phase == "build":
+            J._pickle_atomic(sub / f"plan_{k}.pkl", part)
+        else:
+            shutil.copyfile(shard_dir / "cut.pkl", sub / "cut.pkl")
+            J._pickle_atomic(sub / f"shard_{k}.pkl", {**(built or {}), "rows": part})
+        need = adm.predict(base, len(part))
+        key = -(10_000 + j)
+        if not adm.acquire(need, key=key):
+            shutil.rmtree(sub, ignore_errors=True)
+            raise ShardBlocked(f"shard {k} {phase}: a {len(part)}-cell part needing "
+                               f"{need:.0f} MB was not admitted within {ADMIT_WAIT_S:.0f} s")
+        peak: float | None = None
+        oom = False
+        try:
+            room_now = adm.measure()
+            budget = (room_now - adm.reserve) if room_now is not None else None
+            argv = [sys.executable, "-u", "-c", _CODE, str(sub), str(k), phase]
+            out = run_(argv, child_env(max(need, budget) if budget is not None else None))
+            rc, peak = int(out[0]), out[1]
+            info = out[2] if len(out) > 2 and isinstance(out[2], dict) else {}
+            oom = bool(info.get("oom"))
+        finally:
+            adm.release(peak, key=key, base=base, cells=len(part))
+        parts_run += 1
+        if rc != 0:
+            shutil.rmtree(sub, ignore_errors=True)
+            if not oom:
+                raise ShardBlocked(f"shard {k} {phase}: part of {len(part)} cell(s) failed "
+                                   f"(rc={rc}), not of memory")
+            if len(part) > 1:
+                queue[:0] = _chunks(part, (len(part) + 1) // 2)
+                continue
+            if phase != "build":
+                raise ShardBlocked(f"shard {k} rule: one cell cannot be ruled alone")
+            i, sp = part[0]
+            deferred.append(J._spec_ident(sp) if hasattr(J, "_spec_ident") else i)
+            rows.append({"idx": i, "kind": "deferred", "obj": sp,
+                         "stage0": (J.stage0_new_summary(), {}), "cache_hits": 0,
+                         "built_fresh": 0, "mem_deferred": 1})
+            continue
+        got = J._unpickle(sub / f"shard_{k}.pkl")
+        shutil.rmtree(sub, ignore_errors=True)
+        rows.extend(got["rows"])
+        syms |= set(got.get("built_syms") or ())
+        dates.update(got.get("dates") or ())
+        secs += float(got.get("seconds" if phase == "rule" else "build_seconds") or 0.0)
+        peak_all = max(peak_all, float(got.get("peak_rss_mb" if phase == "rule"
+                                               else "build_peak_rss_mb") or 0.0))
+        ruled += int(got.get("cells_ruled") or 0)
+        for kk, vv in (got.get("stage_cache") or {}).items():
+            stage_cache[kk] = stage_cache.get(kk, 0) + vv
+    rows.sort(key=lambda r: int(r["idx"]))
+    if phase == "build":
+        merged = {"protocol": header["protocol"], "token": header["token"], "k": int(k),
+                  "n": int(header["n"]), "pid": os.getpid(), "phase": "build", "rows": rows,
+                  "built_syms": sorted(syms), "dates": list(dates),
+                  "build_seconds": round(secs, 3), "build_peak_rss_mb": round(peak_all, 1)}
+        J._pickle_atomic(out_k, merged)
+        J._mark_done(shard_dir, k, header["token"], "build")
+    else:
+        cut = J._unpickle(shard_dir / "cut.pkl")["cut"]
+        merged = {**(built or {}), "rows": rows, "phase": "rule", "cut": cut,
+                  "cells_ruled": ruled, "seconds": round(secs, 3),
+                  "peak_rss_mb": round(peak_all, 1), "stage_cache": stage_cache}
+        J._pickle_atomic(out_k, merged)
+        J._mark_done(shard_dir, k, header["token"], "rule", cut)
+    return {"k": int(k), "phase": phase, "cause": cause, "cells": len(items),
+            "part_size": size, "parts_run": parts_run, "deferred_cells": deferred}
+
+
 def dispatch(shard_dir: Path, n: int, phase: str, ks: list[int] | None = None, *,
              runner: Callable[[list[str], dict[str, str]], tuple[Any, ...]] | None = None,
              admission: Admission | None = None) -> None:
@@ -411,14 +647,15 @@ def dispatch(shard_dir: Path, n: int, phase: str, ks: list[int] | None = None, *
     model = load_model()
     adm = admission or Admission(model)
     cap = max(1, min(_max_concurrency(), len(todo) or 1))
-    box_free = free_mb()
-    budget = ((FREE_SHARE * box_free - RESERVE_MB) / cap) if box_free is not None else None
+    box_free = adm.measure()
+    budget = ((FREE_SHARE * box_free - adm.reserve) / cap) if box_free is not None else None
     records: list[dict[str, Any]] = RUN.setdefault("shards", [])
     planned = RUN.get("planned_cells")
     RUN.setdefault("dispatch", []).append(
         {"phase": phase, "ks": todo, "n": n, "max_concurrency": cap,
          "free_mb_at_start": round(box_free, 1) if box_free is not None else None,
-         "child_budget_mb": round(budget, 1) if budget is not None else None})
+         "child_budget_mb": round(budget, 1) if budget is not None else None,
+         "reserve_mb": round(adm.reserve, 1)})
 
     def one(k: int, serial: bool = False) -> Exception | None:
         """One shard attempt. EVERYTHING is inside the try (audit D5): a prediction, admission
@@ -436,12 +673,16 @@ def dispatch(shard_dir: Path, n: int, phase: str, ks: list[int] | None = None, *
             base = plan_base_mb(Path(shard_dir), k)
             cells = shard_cells(Path(shard_dir), k, planned, n)
             need = adm.predict(base, cells)
-            if not serial:
-                adm.acquire(need, key=k)
-                admitted = True
+            # Every attempt, first wave or serial retry, is admitted on MEASURED free memory:
+            # no child is launched into memory the box does not have (8 GB cold start).
+            if not adm.acquire(need, key=k):
+                raise ShardNoRoom(f"shard {k} {phase}: {need:.0f} MB predicted, not admitted "
+                                  f"within {ADMIT_WAIT_S:.0f} s with nothing else running")
+            admitted = True
             # A serial retry runs alone, so it may take the whole measured room.
-            room = free_mb() if serial else None
-            env = child_env((room - RESERVE_MB) if room is not None else budget)
+            room = adm.measure() if serial else None
+            child = (room - adm.reserve) if room is not None else budget
+            env = child_env(max(need, child) if child is not None else None)
             argv = [sys.executable, "-u", "-c", _CODE, str(shard_dir), str(k), phase]
             if run_ is run_child:
                 out = run_child(argv, env, on_sample=lambda mb: adm.sample(k, mb))
@@ -453,13 +694,15 @@ def dispatch(shard_dir: Path, n: int, phase: str, ks: list[int] | None = None, *
             if rc != 0:
                 err = (MemoryError(f"shard {k} {phase} died of memory (rc={rc})") if oom
                        else subprocess.CalledProcessError(rc, f"shard {k} {phase}"))
+        except ShardNoRoom as exc:       # never launched: no memory death, nothing to shrink
+            err = exc
         except MemoryError as exc:       # the parent itself ran out: still this shard's failure
             err, oom = exc, True
         except Exception as exc:         # launch / bookkeeping failure is evidence, retried below
             err = exc
         finally:
             if admitted:
-                adm.release(peak, key=k)
+                adm.release(peak, key=k, base=base, cells=cells)
         if oom:
             # AUDIT D3: a memory death lowers this run's concurrency and its peak feeds the model.
             adm.shrink()
@@ -505,6 +748,28 @@ def dispatch(shard_dir: Path, n: int, phase: str, ks: list[int] | None = None, *
 
     # A MISSING RESULT IS A FAILURE (audit D5): only an explicit None is success.
     failed = [k for k in todo if k not in results or results[k] is not None]
+
+    def _recut(shard_dir: Path, k: int, phase: str, adm: Admission, run_: Any,
+               exc: BaseException) -> bool:
+        cause = "not_admitted" if isinstance(exc, ShardNoRoom) else "oom_alone"
+        last = next((r for r in reversed(records) if r.get("k") == k), {})
+        entry = {"k": k, "phase": phase, "n": n, "cause": cause, "error": str(exc)[:300],
+                 "cells": last.get("cells"), "peak_mb": last.get("peak_mb"),
+                 "predicted_mb": last.get("predicted_mb"), "free_mb": adm.measure(),
+                 "reserve_mb": round(adm.reserve, 1)}
+        try:
+            got = split_shard(shard_dir, k, phase, adm,
+                              runner=None if run_ is run_child else run_, cause=cause)
+        except Exception as split_exc:
+            record_blocked({**entry, "action": "BLOCKED",
+                            "why": f"{type(split_exc).__name__}: {split_exc}"[:300]})
+            print(f"BLOCKED_SHARD_OOM: {phase} shard {k}: {split_exc}", flush=True)
+            return False
+        record_blocked({**entry, "action": "SPLIT", **got})
+        print(f"BLOCKED_SHARD_OOM: {phase} shard {k} re-cut into {got['parts_run']} part(s) of "
+              f"<= {got['part_size']} cell(s); {len(got['deferred_cells'])} cell(s) deferred",
+              flush=True)
+        return True
     if failed:
         print(f"SHARD RECOVERY: {len(failed)}/{len(todo)} {phase} shard(s) failed; retrying "
               "only those shards serially (alone) after peer memory was released", flush=True)
@@ -519,6 +784,13 @@ def dispatch(shard_dir: Path, n: int, phase: str, ks: list[int] | None = None, *
             last_exc = exc
             print(f"SHARD RECOVERY: {phase} shard {k} retry {attempt} failed: "
                   f"{type(exc).__name__}: {exc}", flush=True)
+            if isinstance(exc, MemoryError):
+                # OUT OF MEMORY ALONE (audit M3). The same cut would fail the same way on every
+                # attempt for the epoch's whole life; it is named and RE-CUT instead.
+                if _recut(shard_dir, k, phase, adm, run_, exc):
+                    break
+                raise RuntimeError(f"{phase} shard {k} BLOCKED_SHARD_OOM: no cut this box has "
+                                   "memory for; refusing partial merge") from exc
         else:
             with contextlib.suppress(Exception):
                 _persist()

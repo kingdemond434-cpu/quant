@@ -19,6 +19,8 @@ def _isolated(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(runner, "MODEL_FILE", tmp_path / "judging_shard_memory.json")
     monkeypatch.setattr(runner, "SHARD_DIR", tmp_path / "shards")
     monkeypatch.setattr(runner, "free_mb", lambda: 100_000.0)
+    monkeypatch.setattr(runner, "total_mb", lambda: 131_072.0)
+    monkeypatch.setattr(runner, "BLOCKED_FILE", tmp_path / "BLOCKED_SHARD_OOM.json")
     monkeypatch.setenv("GAUNTLET_SHARD_CONCURRENCY", "4")
     runner.RUN.clear()
 
@@ -115,20 +117,27 @@ def test_admission_never_starts_more_than_measured_memory_allows(tmp_path, monke
     adm = runner.Admission({}, measure=measure)
     adm_acquire = runner.Admission.acquire
 
-    def acquire(self, need, poll_s=0.01):
-        return adm_acquire(self, need, poll_s=0.01)
+    def acquire(self, need, poll_s=0.01, key=None, wait_s=None):
+        return adm_acquire(self, need, poll_s=0.01, key=key)
 
     monkeypatch.setattr(runner.Admission, "acquire", acquire)
     runner.dispatch(tmp_path, 6, "build", runner=fake, admission=adm)
     assert running["max"] <= 2
 
 
-def test_admission_always_lets_one_shard_run() -> None:
-    adm = runner.Admission({}, measure=lambda: 0.0)
-    adm.acquire(10_000.0)           # nothing running: admitted although the box looks full
+def test_an_unmeasurable_host_still_runs_one_shard() -> None:
+    adm = runner.Admission({}, measure=lambda: None)
+    assert adm.acquire(10_000.0, wait_s=0) is True      # psutil absent: the old fallback
     assert adm.running == 1
     adm.release(123.0)
     assert adm.seen_peaks == [123.0]
+
+
+def test_a_box_with_no_room_launches_nothing_even_first() -> None:
+    """8 GB cold start: the first shard no longer starts unconditionally."""
+    adm = runner.Admission({}, measure=lambda: 0.0, reserve=0.0)
+    assert adm.acquire(10_000.0, poll_s=0.01, wait_s=0.05) is False
+    assert adm.running == 0
 
 
 def test_the_model_learns_mb_per_cell_and_sizes_the_next_shard_count(tmp_path) -> None:
@@ -168,8 +177,9 @@ def test_decide_reads_an_unfinished_epoch(tmp_path, monkeypatch) -> None:
     assert runner.decide({})["n_shards"] == 9
 
 
-def test_child_env_never_exports_a_budget_below_the_declared_floor() -> None:
-    assert runner.child_env(10.0)["GAUNTLET_MEMORY_BUDGET_MB"] == "1200"
+def test_child_env_exports_the_measured_room_with_no_fixed_floor() -> None:
+    # it was floored at 1200 MB whatever the box had free; admission now guarantees the room
+    assert runner.child_env(500.0)["GAUNTLET_MEMORY_BUDGET_MB"] == "500"
     assert "GAUNTLET_MEMORY_BUDGET_MB" not in runner.child_env(None) or \
         runner.child_env(None)["GAUNTLET_MEMORY_BUDGET_MB"] == \
         __import__("os").environ.get("GAUNTLET_MEMORY_BUDGET_MB")
@@ -223,9 +233,10 @@ def test_free_memory_that_never_falls_still_does_not_over_admit(tmp_path, monkey
     adm = runner.Admission(_model_with(8.6), measure=lambda: 60_000.0)
     acquire = runner.Admission.acquire
     monkeypatch.setattr(runner.Admission, "acquire",
-                        lambda self, need, poll_s=0.01, key=None: acquire(self, need, 0.01, key))
+                        lambda self, need, poll_s=0.01, key=None, wait_s=None:
+                        acquire(self, need, 0.01, key))
     runner.dispatch(sd, 15, "build", runner=fake, admission=adm)
-    assert 1 <= running["max"] <= int((60_000 - runner.RESERVE_MB) // 9000)
+    assert 1 <= running["max"] <= int((60_000 - adm.reserve) // 9000)
 
 
 def test_with_no_model_one_shard_runs_first_then_admission_widens(tmp_path, monkeypatch) -> None:
@@ -243,7 +254,8 @@ def test_with_no_model_one_shard_runs_first_then_admission_widens(tmp_path, monk
 
     acquire = runner.Admission.acquire
     monkeypatch.setattr(runner.Admission, "acquire",
-                        lambda self, need, poll_s=0.01, key=None: acquire(self, need, 0.01, key))
+                        lambda self, need, poll_s=0.01, key=None, wait_s=None:
+                        acquire(self, need, 0.01, key))
     adm = runner.Admission({}, measure=lambda: 100_000.0)
     runner.dispatch(tmp_path, 4, "build", runner=fake, admission=adm)
     # nothing else starts until the first shard has ended and its peak is known
@@ -367,3 +379,162 @@ def test_no_arguments_still_runs_the_sharded_sweep(monkeypatch) -> None:
     monkeypatch.setattr(runner, "decide", lambda *a, **k: {
         "n_shards": 3, "shards_why": "t", "max_concurrency": 1})
     assert runner.main([]) == 0 and calls == [3]
+
+
+# ------------------------------------------------- M3: out of memory ALONE, and 8 GB cold start
+class _FakeJudge:
+    """The sealed judge's shard-file helpers, as the patched judge defines them."""
+
+    SHARD_PROTOCOL = 2
+
+    @staticmethod
+    def _unpickle(path):
+        with open(path, "rb") as fh:
+            return pickle.load(fh)  # noqa: S301 - the test's own file
+
+    @staticmethod
+    def _pickle_atomic(path, obj):
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "wb") as fh:
+            pickle.dump(obj, fh)
+
+    @staticmethod
+    def _mark_done(shard_dir, k, token, phase, cut=None):
+        (Path(shard_dir) / f"shard_{k}.done.json").write_text(
+            json.dumps({"token": token, "k": k, "phase": phase, "cut": str(cut)}), "utf-8")
+
+    @staticmethod
+    def stage0_new_summary():
+        return {"rejected": 0}
+
+    @staticmethod
+    def _spec_ident(sp):
+        return f"{sp['sym']}.{sp['family']}"
+
+
+def _epoch_dir(tmp_path, n: int = 2, cells: int = 8) -> Path:
+    sd = tmp_path / "sd"
+    sd.mkdir()
+    _FakeJudge._pickle_atomic(sd / "plan.pkl", {"protocol": 2, "token": "tok", "n": n,
+                                                "specs": None, "build_t0": 0.0, "meta": {}})
+    for k in range(n):
+        _FakeJudge._pickle_atomic(sd / f"plan_{k}.pkl",
+                                  [(k * 100 + i, {"sym": f"S{k}{i}", "family": "carry"})
+                                   for i in range(cells)])
+    return sd
+
+
+def _worker(oom_over: int, always_oom: set[int] | None = None):
+    """A fake child that behaves like the sealed `shard_worker` build phase: it reads its plan
+    slice from the directory in argv and writes `shard_<k>.pkl`; a slice of more than
+    `oom_over` cells (or any slice holding a cell in `always_oom`) dies of memory."""
+    launches: list[tuple[int, int]] = []
+
+    def fake(argv, env):
+        d, k = Path(argv[-3]), int(argv[-2])
+        mine = _FakeJudge._unpickle(d / f"plan_{k}.pkl")
+        launches.append((k, len(mine)))
+        if len(mine) > oom_over or any(i in (always_oom or set()) for i, _ in mine):
+            return 1, 9000.0, {"oom": True}
+        _FakeJudge._pickle_atomic(d / f"shard_{k}.pkl", {
+            "protocol": 2, "token": "tok", "k": k, "n": 2, "phase": "build",
+            "rows": [{"idx": i, "kind": "cell", "obj": sp} for i, sp in mine],
+            "built_syms": [sp["sym"] for _i, sp in mine], "dates": [], "build_seconds": 1.0,
+            "build_peak_rss_mb": 100.0})
+        return 0, 500.0, {"oom": False}
+    fake.launches = launches  # type: ignore[attr-defined]
+    return fake
+
+
+def test_an_oom_alone_is_named_and_the_shard_is_recut_not_repeated(tmp_path, monkeypatch):
+    """M3: a shard that dies of memory with nothing beside it used to be retried at the same cut
+    for the epoch's 24 h life. It is now recorded BLOCKED_SHARD_OOM and re-cut; the parts are
+    joined into the one `shard_<k>.pkl` the sealed merge reads."""
+    monkeypatch.setattr(runner, "_judge", lambda: _FakeJudge)
+    sd = _epoch_dir(tmp_path)
+    fake = _worker(oom_over=2)
+    runner.RUN.update(run_id="r", planned_cells=16)
+    adm = runner.Admission(_model_with(1.0), measure=lambda: 100_000.0, reserve=0.0)
+    runner.dispatch(sd, 2, "build", ks=[0], runner=fake, admission=adm)
+    out = _FakeJudge._unpickle(sd / "shard_0.pkl")
+    assert [r["idx"] for r in out["rows"]] == list(range(8))           # every cell, in order
+    assert all(r["kind"] == "cell" for r in out["rows"])
+    assert out["token"] == "tok"  # noqa: S105 - the epoch token, not a secret
+    assert json.loads((sd / "shard_0.done.json").read_text("utf-8"))["phase"] == "build"
+    blocked = json.loads(runner.BLOCKED_FILE.read_text("utf-8"))
+    assert blocked["latest"]["action"] == "SPLIT" and blocked["latest"]["k"] == 0
+    assert blocked["latest"]["cause"] == "oom_alone" and blocked["latest"]["parts_run"] >= 4
+    # the whole-shard cut ran twice (wave + one serial retry), never a third time
+    assert sum(1 for k, n in fake.launches if n == 8) == 2
+    assert not list(sd.glob("split_*"))
+
+
+def test_a_cell_that_dies_alone_is_deferred_never_dropped(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "_judge", lambda: _FakeJudge)
+    sd = _epoch_dir(tmp_path)
+    runner.RUN.update(run_id="r", planned_cells=16)
+    adm = runner.Admission(_model_with(1.0), measure=lambda: 100_000.0, reserve=0.0)
+    runner.dispatch(sd, 2, "build", ks=[0], runner=_worker(oom_over=8, always_oom={3}),
+                    admission=adm)
+    rows = _FakeJudge._unpickle(sd / "shard_0.pkl")["rows"]
+    assert [r["idx"] for r in rows] == list(range(8))
+    kinds = {r["idx"]: r["kind"] for r in rows}
+    assert kinds[3] == "deferred" and sum(k == "cell" for k in kinds.values()) == 7
+    assert json.loads(runner.BLOCKED_FILE.read_text("utf-8"))["latest"]["deferred_cells"] == \
+        ["S03.carry"]
+
+
+def test_8gb_box_with_1gb_free_never_launches_a_child_into_an_oom(tmp_path, monkeypatch):
+    """The cold-start profile measured on the build box: 8 GB total, ~1 GB free. The reserve is
+    a quarter of the total (2 GB), so 1 GB free admits nothing: no child launches, the shard is
+    named BLOCKED and the merge fails closed -- instead of a child exported a 1200 MB budget
+    the box did not have."""
+    monkeypatch.setattr(runner, "_judge", lambda: _FakeJudge)
+    monkeypatch.setattr(runner, "total_mb", lambda: 8192.0)
+    monkeypatch.setattr(runner, "free_mb", lambda: 1024.0)
+    monkeypatch.setattr(runner, "ADMIT_WAIT_S", 0.05)
+    assert runner.reserve_mb() == 2048.0
+    sd = _epoch_dir(tmp_path)
+    fake = _worker(oom_over=100)
+    runner.RUN.update(run_id="r", planned_cells=16)
+    adm = runner.Admission({}, measure=runner.free_mb)
+    acquire = runner.Admission.acquire
+    monkeypatch.setattr(runner.Admission, "acquire",
+                        lambda self, need, poll_s=0.01, key=None, wait_s=None:
+                        acquire(self, need, 0.01, key))
+    with pytest.raises(RuntimeError, match="BLOCKED_SHARD_OOM"):
+        runner.dispatch(sd, 2, "build", ks=[0], runner=fake, admission=adm)
+    assert fake.launches == []                                   # never launched into an OOM
+    latest = json.loads(runner.BLOCKED_FILE.read_text("utf-8"))["latest"]
+    assert latest["action"] == "BLOCKED" and latest["cause"] == "not_admitted"
+    assert latest["reserve_mb"] == 2048.0 and latest["free_mb"] == 1024.0
+
+
+def test_8gb_box_admits_once_memory_frees_and_exports_only_what_is_there(tmp_path,
+                                                                        monkeypatch):
+    """Same box, the measured 1 GB rising to 3.5 GB while the shard waits: it launches then,
+    with a child budget no larger than free memory over the reserve."""
+    monkeypatch.setattr(runner, "_judge", lambda: _FakeJudge)
+    monkeypatch.setattr(runner, "total_mb", lambda: 8192.0)
+    polls = {"n": 0}
+
+    def measure() -> float:
+        polls["n"] += 1
+        return 1024.0 if polls["n"] < 4 else 3584.0
+    monkeypatch.setattr(runner, "free_mb", measure)
+    sd = _epoch_dir(tmp_path)
+    envs: list[dict[str, str]] = []
+    fake = _worker(oom_over=100)
+
+    def capture(argv, env):
+        envs.append(env)
+        return fake(argv, env)
+    runner.RUN.update(run_id="r", planned_cells=16)
+    adm = runner.Admission({}, measure=runner.free_mb)
+    acquire = runner.Admission.acquire
+    monkeypatch.setattr(runner.Admission, "acquire",
+                        lambda self, need, poll_s=0.01, key=None, wait_s=None:
+                        acquire(self, need, 0.01, key, wait_s=5.0))
+    runner.dispatch(sd, 2, "build", ks=[0], runner=capture, admission=adm)
+    assert len(envs) == 1 and polls["n"] >= 4
+    assert int(envs[0]["GAUNTLET_MEMORY_BUDGET_MB"]) <= 3584 - 2048
