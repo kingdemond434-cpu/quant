@@ -160,3 +160,79 @@ def test_funnel_absent_inputs_read_unmeasured_never_zero(tmp_path: Path) -> None
     assert gone["status"] == "UNMEASURED"
     p = bfn.publish(doc, tmp_path / "BREADTH_FUNNEL.json")
     assert json.loads(p.read_text("utf-8"))["n_candidates"] == 1
+
+
+def test_funnel_names_each_producers_failures_by_terminal_gate() -> None:
+    import breadth_funnel as bfn
+    docket = [{"symbol": s, "family": "carry", "params": {"rr": 1.5}, "producer": "kimi"}
+              for s in ("EURUSD", "GBPUSD", "AUDUSD")]
+    cid = {r["symbol"]: bfn._cell_id({"sym": r["symbol"], "family": "carry",
+                                      "params": bfn._params(r)}) for r in docket}
+    vm = {cid["EURUSD"]: {"passed": False, "gate": "deflated_sharpe"},
+          cid["GBPUSD"]: {"passed": False, "gate": "deflated_sharpe"},
+          cid["AUDUSD"]: {"passed": True, "gate": None}}
+    doc = bfn.build(docket=docket, verdict_map=vm, shadow={}, sleeves={"sleeves": []},
+                    saturation={})
+    f = doc["failures_by_producer"]["kimi"]
+    assert f["by_terminal_gate"] == {"deflated_sharpe": 2}
+    assert {e["cell"] for e in f["examples"]} == {cid["EURUSD"], cid["GBPUSD"]}
+
+
+# ------------------------------------------------------------------ QD niche records
+def test_qd_niche_records_best_of_each_kind_and_unmeasured_with_reason() -> None:
+    import qd_frontier as qd
+    a = {"instrument": "EURUSD", "family": "carry", "exp_r": 0.2, "n": 25, "gate_depth": 0.6}
+    b = {"instrument": "GBPUSD", "family": "carry", "exp_r": 0.1, "n": 100, "gate_depth": 0.9}
+    key = qd.niche_key(qd.niche_of(a))
+    assert key == qd.niche_key(qd.niche_of(b))
+    niches = {key: {"elite": None, "n_cells_tried": 2}, "empty": {"elite": None,
+                                                                   "n_cells_tried": 0}}
+    n = qd.niche_records(niches, {"a": a, "b": b}, None,
+                         delta_elogw={("GBPUSD", "carry"): 0.0004},
+                         capacity_terms=lambda s, ax: {"terms": {"capacity": 2.0 if s ==
+                                                                 "EURUSD" else 1.0,
+                                                                 "turnover": 1.0,
+                                                                 "liquidity": 0.5}})
+    r = niches[key]["records"]
+    assert n == 1
+    assert r["best_robustness"] == 0.9 and r["best_capacity"] == 2.0
+    assert r["best_execution"] == 0.5 and r["best_marginal_delta_elogw"] == 0.0004
+    assert r["best_forward_evidence"] == 1.0 and r["remaining_uncertainty"] == 0.2
+    assert r["local_saturation"] is None and "local_saturation" in niches[key][
+        "records_unmeasured"]
+    e = niches["empty"]
+    assert e["records"]["best_forward_evidence"] is None
+    assert "best_forward_evidence" in e["records_unmeasured"]
+
+
+# ------------------------------------------------------------------ briefs carry both
+def test_briefs_carry_each_producers_failures_and_the_repertoire(tmp_path: Path) -> None:
+    import certificate_saturation as cs
+    (tmp_path / "BREADTH_FUNNEL.json").write_text(json.dumps({
+        "at": NOW.isoformat(), "failures_by_producer": {"kimi": {
+            "by_terminal_gate": {"deflated_sharpe": 3}, "examples": [{"cell": "c1"}]}}}),
+        "utf-8")
+    (tmp_path / "QD_FRONTIER.json").write_text(json.dumps({
+        "at": NOW.isoformat(), "summary": {"niches_occupied": 2, "niches_empty": 9},
+        "niches": {"n1": {"elite": {"instrument": "EURUSD", "family": "carry"},
+                          "n_cells_tried": 4, "records": {"best_forward_evidence": 1.2}}}}),
+        "utf-8")
+    doc = {"certificates": {"n_certificates": 4, "n_effective_certificates": 2},
+           "clusters": {}}
+    fb = {"producers": {"kimi_hunt": {"rows": 10, "state": "OK"}}}
+    p = cs.publish_briefs(doc=doc, feedback=fb, path=tmp_path / "PRODUCER_BRIEFS.json")
+    assert p is not None
+    out = json.loads(p.read_text("utf-8"))
+    assert out["producers"]["kimi_hunt"]["failures"]["by_terminal_gate"] == {
+        "deflated_sharpe": 3}
+    assert out["desk"]["repertoire"]["niches_occupied"] == 2
+    lines = cs.brief_lines("kimi", path=p)
+    assert any("failed at" in ln and "deflated_sharpe=3" in ln for ln in lines)
+    assert any(ln.startswith("repertoire: 2 niches occupied") for ln in lines)
+    # absent artifacts: the repertoire reads UNMEASURED and no failure record is invented
+    (tmp_path / "QD_FRONTIER.json").unlink()
+    (tmp_path / "BREADTH_FUNNEL.json").unlink()
+    out = json.loads(cs.publish_briefs(doc=doc, feedback=fb,
+                                       path=tmp_path / "PRODUCER_BRIEFS.json").read_text("utf-8"))
+    assert out["desk"]["repertoire"]["status"] == "UNMEASURED"
+    assert "failures" not in out["producers"]["kimi_hunt"]

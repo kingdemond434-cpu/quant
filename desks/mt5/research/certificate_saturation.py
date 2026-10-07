@@ -2318,16 +2318,63 @@ def publish_briefs(*, doc: Mapping[str, Any] | None = None,
                                                    "top_clusters", "retarget_to",
                                                    "duplicate_budget",
                                                    "duplicate_survivor_share")}
+    p = path or BRIEFS
+    # WHICH OF ITS CANDIDATES FAILED AND WHY (BREADTH-0364/0365): the funnel's terminal gates,
+    # carried into the producer's own record; and THE REPERTOIRE MAP (BREADTH-0449) on the desk
+    # brief. Both are read beside the brief and are absent -- never zero -- when unpublished.
+    fails = _read(p.parent / "BREADTH_FUNNEL.json")
+    fbp = fails.get("failures_by_producer") if isinstance(fails, Mapping) else None
+    if isinstance(fbp, Mapping):
+        for prod, rec in fbp.items():
+            if not isinstance(rec, Mapping):
+                continue
+            tok = str(prod).lower()
+            hit = [k for k in own if tok and (tok in k.lower() or k.lower() in tok)]
+            for k in hit or [str(prod)]:
+                own.setdefault(k, {})["failures"] = {
+                    "by_terminal_gate": rec.get("by_terminal_gate"),
+                    "examples": list(rec.get("examples") or [])[:BRIEF_FAILURE_EXAMPLES],
+                    "funnel_at": fails.get("at")}
+    desk_out = {k: v for k, v in desk.items() if k != "own_recent_output"}
+    desk_out["repertoire"] = _repertoire(_read(p.parent / "QD_FRONTIER.json"))
     out = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-           "desk": {k: v for k, v in desk.items() if k != "own_recent_output"},
+           "desk": desk_out,
            "producers": own,
            "rule": "facts only: counts and names, no ranking and no instruction"}
-    p = path or BRIEFS
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(out, default=str), encoding="utf-8")
     os.replace(tmp, p)
     return p
+
+
+BRIEF_FAILURE_EXAMPLES = 4
+BRIEF_REPERTOIRE_NICHES = 8
+
+
+def _repertoire(qd: Any) -> dict[str, Any]:
+    """The QD repertoire map a producer sees (BREADTH-0449): how much of the niche space is
+    occupied, which niches hold elites and with what records. UNMEASURED when unpublished."""
+    if not isinstance(qd, Mapping) or not isinstance(qd.get("niches"), Mapping):
+        return {"status": UNMEASURED, "why": "QD_FRONTIER.json absent or unreadable"}
+    summ = qd.get("summary") if isinstance(qd.get("summary"), Mapping) else {}
+    top = []
+    for key, n in list(qd["niches"].items())[:BRIEF_REPERTOIRE_NICHES]:
+        if not isinstance(n, Mapping):
+            continue
+        el = n.get("elite") if isinstance(n.get("elite"), Mapping) else {}
+        rec = n.get("records") if isinstance(n.get("records"), Mapping) else {}
+        top.append({"niche": key, "elite": {k: el.get(k) for k in ("instrument", "family",
+                                                                    "state", "basis")},
+                    "n_cells_tried": n.get("n_cells_tried"), "n_certified": n.get("n_certified"),
+                    "records": {k: rec.get(k) for k in ("best_forward_evidence",
+                                                        "local_saturation",
+                                                        "remaining_uncertainty")
+                                if k in rec}})
+    return {"status": "MEASURED", "at": qd.get("at"),
+            "niches_occupied": summ.get("niches_occupied"),
+            "niches_empty": summ.get("niches_empty"),
+            "dominance": summ.get("dominance"), "niches": top}
 
 
 def brief_for(name: str, *, path: Path | None = None, max_age_h: float = 6.0,
@@ -2384,10 +2431,21 @@ def brief_lines(name: str, *, limit: int = 12, path: Path | None = None) -> list
     hurts = b.get("failure_modes_the_book_holds_most")
     if hurts:
         out.append("the book fails most on: " + ", ".join(map(str, hurts)))
+    rep = b.get("repertoire") if isinstance(b.get("repertoire"), Mapping) else {}
+    if rep.get("status") == "MEASURED":
+        out.append(f"repertoire: {rep.get('niches_occupied')} niches occupied, "
+                   f"{rep.get('niches_empty')} empty; elites in: " + "; ".join(
+                       str(n.get("niche")) for n in (rep.get("niches") or [])[:3]))
     for src, r in list((b.get("own_recent_output") or {}).items())[:2]:
         if isinstance(r, Mapping):
-            out.append(f"your recent output ({src}): {r.get('rows')} rows, duplicate share "
-                       f"{r.get('duplicate_share')}, state {r.get('state')}")
+            if r.get("rows") is not None or r.get("state") is not None:
+                out.append(f"your recent output ({src}): {r.get('rows')} rows, duplicate share "
+                           f"{r.get('duplicate_share')}, state {r.get('state')}")
+            f = r.get("failures") if isinstance(r.get("failures"), Mapping) else {}
+            g = f.get("by_terminal_gate") if isinstance(f.get("by_terminal_gate"), Mapping) else {}
+            if g:
+                out.append(f"your candidates failed at ({src}): " + ", ".join(
+                    f"{k}={v}" for k, v in list(g.items())[:6]))
     return [line[:240] for line in out[:limit]]
 
 
