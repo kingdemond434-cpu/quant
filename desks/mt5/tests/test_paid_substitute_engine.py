@@ -44,7 +44,7 @@ HONEST_SOURCES = ("public_listing:", "model_knowledge_unverified", "crawl:", "as
 def test_catalogue_covers_every_class_with_honest_seed_sources() -> None:
     cat = pse.seed_entries()
     assert len(cat) >= pse.catalogue_floor() > 0
-    assert REQUIRED_CLASSES <= {e["class"] for e in cat}
+    assert {e["class"] for e in cat} >= REQUIRED_CLASSES
     for e in cat:
         for k in ("id", "vendor", "dataset", "class", "region", "measures", "frequency"):
             assert e.get(k), (e.get("id"), k)
@@ -857,9 +857,10 @@ def test_research_lane_is_carried_from_registry_through_donation_to_the_docket(
     at every step it still says campaign_id / source_id / validation_lane = research_unverified,
     so it can never be certified or sized unmarked."""
     pytest.importorskip("pandas")
-    from libs.moat import registry as R
-    import moat_candidate_compiler as mcc
     import miner_candidate_compiler as mc
+    import moat_candidate_compiler as mcc
+
+    from libs.moat import registry as R
     from research import proposer_common as pc
 
     monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
@@ -909,3 +910,95 @@ def test_provenance_mark_reads_the_lane_off_the_campaign_id() -> None:
         "validation_lane": "validated_substitute"}
     assert mcc.provenance_mark({"campaign_id": "other:1"}) == {"campaign_id": "other:1"}
     assert mcc.provenance_mark({}) == {}
+
+
+# ------------------------------------- terms evidence: "confirmed" is a word, not evidence (#263)
+_CC_GRANT = ("the Licensor hereby grants You a worldwide, royalty-free, non-sublicensable, "
+             "non-exclusive, irrevocable license to exercise the Licensed Rights in the Licensed "
+             "Material to: A. reproduce and Share the Licensed Material, in whole or in part; and "
+             "B. produce, reproduce, and Share Adapted Material.")
+_CDS = "https://cds.climate.copernicus.eu/licences/cc-by"
+
+
+@pytest.mark.parametrize("ev, fenced", [
+    ({"kind": "cc-by-4.0", "terms_quote": _CC_GRANT, "terms_url": _CDS}, False),
+    ({"kind": "cc-by-4.0", "terms_quote": "all rights reserved", "terms_url": _CDS}, True),
+    ({"kind": "cc-by-4.0", "terms_quote": _CC_GRANT,
+      "terms_url": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/x.txt"},
+     True),
+    ({"kind": "cc-by-4.0", "terms_quote": _CC_GRANT, "terms_url": "https://cds.example/l"}, True),
+    ({"kind": "licence_clause", "terms_url": _CDS,
+      "terms_quote": "Free worldwide use, but commercial use is not permitted."}, True),
+    ({"kind": "licence_clause", "terms_url": _CDS,
+      "terms_quote": "The licence is free and worldwide and prohibits commercial use."}, True),
+    ({"kind": "licence_clause", "terms_url": _CDS,
+      "terms_quote": "Access is free of charge, worldwide, for any purpose including commercial "
+                     "use, with attribution."}, False),
+    ({"kind": "cc-by-4.0", "terms_quote": _CC_GRANT, "terms_url": _CDS, "sha256": ""}, True),
+])
+def test_evidence_terms_requires_verified_evidence(tmp_path: Path,
+                                                   monkeypatch: pytest.MonkeyPatch,
+                                                   ev: dict, fenced: bool) -> None:
+    monkeypatch.setattr(pse, "DESK", tmp_path)
+    doc = {"verdict": "confirmed", "checked_at": "2026-10-07", "sha256": "a" * 64, **ev}
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "ev.json").write_text(json.dumps(doc), "utf-8")
+    got = pse.evidence_terms({"terms_evidence": "data/ev.json"})
+    assert (got is not None) is fenced, (ev, got)
+    if fenced:
+        assert got.startswith(pse.BLOCKED_ON_TERMS)
+        ok, why = pse.usable({"terms_evidence": "data/ev.json", "auth": "none",
+                              "url": "https://cds.climate.copernicus.eu/api"})
+        assert not ok and why.startswith(pse.BLOCKED_ON_TERMS)
+
+
+def test_evidence_terms_fails_closed_on_a_missing_file(tmp_path: Path,
+                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(pse, "DESK", tmp_path)
+    assert pse.evidence_terms({"terms_evidence": "data/absent.json"}) == \
+        f"{pse.BLOCKED_ON_TERMS}:to_confirm"
+    assert pse.evidence_terms({}) is None
+
+
+# ----------------------------------------------- correlation is OUT OF SAMPLE (#263 audit)
+def _pair(tmp: Path, da: list[float], db: list[float]) -> tuple[dict, dict]:
+    pd = pytest.importorskip("pandas")
+    np = pytest.importorskip("numpy")
+    idx = pd.date_range("2010-01-01", periods=len(da), freq="MS", tz="UTC")
+    paid = {"id": "paid:v:oos", "public_sample": {"status": "MACHINE_SERIES",
+                                                  "endpoints": ["https://v/oos.csv"]}}
+    sub = {"id": "free_oos", "latency_days": 1}
+    pd.DataFrame({"value": np.cumsum(da), "available_time": idx}).to_parquet(
+        tmp / f"{pse.sample_id(paid)}.parquet")
+    pd.DataFrame({"value": np.cumsum(db), "event_time": idx,
+                  "available_time": idx + pd.Timedelta(days=1)}).to_parquet(
+        tmp / f"{pse.dataset_id(sub)}.parquet")
+    return paid, sub
+
+
+def test_correlation_that_holds_only_in_sample_is_not_covered(tmp_path: Path) -> None:
+    np = pytest.importorskip("numpy")
+    rng = np.random.default_rng(21)
+    da = rng.normal(size=72)
+    db = np.concatenate([da[:50] + rng.normal(scale=0.1, size=50), rng.normal(size=22)])
+    paid, sub = _pair(tmp_path, list(da), list(db))
+    full = float(np.corrcoef(np.diff(np.cumsum(da)), np.diff(np.cumsum(db)))[0, 1])
+    assert full >= pse.MIN_CORRELATION, "the whole-sample number would have passed"
+    c = pse.correlation(paid, sub, lake=tmp_path)
+    assert isinstance(c, float) and c < pse.MIN_CORRELATION
+    assert pse.verification({"components": {"class": 1.0, "region": 1.0}, "coverage": 1.0,
+                             "correlation": c}) == "REJECTED"
+
+
+def test_correlation_that_holds_out_of_sample_passes_and_short_history_is_unmeasured(
+        tmp_path: Path) -> None:
+    np = pytest.importorskip("numpy")
+    rng = np.random.default_rng(22)
+    da = rng.normal(size=72)
+    paid, sub = _pair(tmp_path, list(da), list(da + rng.normal(scale=0.2, size=72)))
+    c = pse.correlation(paid, sub, lake=tmp_path)
+    assert isinstance(c, float) and c >= 0.9
+    short = tmp_path / "short"
+    short.mkdir()
+    paid, sub = _pair(short, list(da[:20]), list(da[:20]))
+    assert pse.correlation(paid, sub, lake=short) == pse.UNMEASURED

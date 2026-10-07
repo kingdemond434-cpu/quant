@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 764,
+  "NEVER": 766,
   "UNMEASURED": 38
  },
  "scope": {
-  "attested": 983,
+  "attested": 985,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -276,16 +276,27 @@
     ]
    },
    {
-    "at": "2026-10-06T16:28:08+00:00",
+    "at": "2026-10-06T15:32:32+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:scripts/lessons.py",
+     "leg:recovery_drills",
+     "task:E8-Book"
+    ]
+   },
+   {
+    "at": "2026-10-07T02:03:59+00:00",
     "host": "vm",
     "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
     "on_attesting_host": false,
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "fence:check_paid_substitute_coverage",
-     "executable:scripts/lessons.py",
-     "leg:paid_substitute_engine",
-     "task:E8-Book"
+     "leg:era5_reader",
+     "leg:paid_substitute_engine"
     ]
    }
   ]
@@ -25245,36 +25256,6 @@
    "measured_at": "2026-10-01T12:25:50+00:00"
   },
   {
-   "organ": "fence:check_paid_substitute_coverage",
-   "kind": "task",
-   "code": [
-    "scripts/check_paid_substitute_coverage.py"
-   ],
-   "clock": "run_law_gate.py",
-   "cadence_s": 3600,
-   "max_silence_s": 7200,
-   "state": "UNMEASURED",
-   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
-   "last_run_at": "UNMEASURED",
-   "last_run_outcome": "UNMEASURED",
-   "last_run_source": "UNMEASURED",
-   "artifact": "data/law_gate.json",
-   "artifact_declared": "data/law_gate.json",
-   "artifact_resolved_by": "declared",
-   "artifact_declared_n": 1,
-   "artifact_age_s": 151,
-   "artifact_bytes": 8986,
-   "artifact_sha256": "274536b42570a4006a52f044e9607d0437941aa9fc20e53ad6e4fc2930190d37",
-   "summary": {
-    "ok": true
-   },
-   "progress_metric": "gate_runs",
-   "consumer": "desks/mt5/research/plumbing_watchdog.py",
-   "measured_on": "vm",
-   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-06T16:28:08+00:00"
-  },
-  {
    "organ": "executable:scripts/lessons.py",
    "kind": "executable",
    "code": [
@@ -25299,8 +25280,122 @@
    "progress_metric": "UNMEASURED",
    "consumer": "UNMEASURED",
    "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T15:32:32+00:00"
+  },
+  {
+   "organ": "leg:recovery_drills",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/recovery_drills.py"
+   ],
+   "clock": "hourly_cycle:recovery_drills",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/RECOVERY_DRILLS.json",
+   "artifact_declared": "desks/mt5/reports/RECOVERY_DRILLS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T15:32:32+00:00"
+  },
+  {
+   "organ": "task:E8-Book",
+   "kind": "task",
+   "code": [
+    "desks/mt5/prop/e8_book.py"
+   ],
+   "clock": "E8-Book",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/E8_BOOK.json",
+   "artifact_declared": "desks/mt5/reports/E8_BOOK.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "task_runs",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-06T15:32:32+00:00"
+  },
+  {
+   "organ": "fence:check_paid_substitute_coverage",
+   "kind": "task",
+   "code": [
+    "scripts/check_paid_substitute_coverage.py"
+   ],
+   "clock": "run_law_gate.py",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/law_gate.json",
+   "artifact_declared": "data/law_gate.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 2203,
+   "artifact_bytes": 8999,
+   "artifact_sha256": "0fa197b4ab14f661e7ef34b150311722f1c5ed71a9b8a430cb7824b7d1e4814e",
+   "summary": {
+    "ok": true
+   },
+   "progress_metric": "gate_runs",
+   "consumer": "desks/mt5/research/plumbing_watchdog.py",
+   "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-06T16:28:08+00:00"
+   "measured_at": "2026-10-07T02:03:59+00:00"
+  },
+  {
+   "organ": "leg:era5_reader",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/era5_reader.py"
+   ],
+   "clock": "hourly_cycle:era5_reader",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/ERA5_STATUS.json",
+   "artifact_declared": "desks/mt5/reports/ERA5_STATUS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-07T02:03:59+00:00"
   },
   {
    "organ": "leg:paid_substitute_engine",
@@ -25328,35 +25423,7 @@
    "consumer": "desks/mt5/research/deep_forest_miner.py (queued grounds), desks/mt5/side_channel",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-06T16:28:08+00:00"
-  },
-  {
-   "organ": "task:E8-Book",
-   "kind": "task",
-   "code": [
-    "desks/mt5/prop/e8_book.py"
-   ],
-   "clock": "E8-Book",
-   "cadence_s": 3600,
-   "max_silence_s": 7200,
-   "state": "NEVER",
-   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
-   "last_run_at": "UNMEASURED",
-   "last_run_outcome": "UNMEASURED",
-   "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/E8_BOOK.json",
-   "artifact_declared": "desks/mt5/reports/E8_BOOK.json",
-   "artifact_resolved_by": "absent",
-   "artifact_declared_n": 1,
-   "artifact_age_s": null,
-   "artifact_bytes": 0,
-   "artifact_sha256": "UNMEASURED",
-   "summary": {},
-   "progress_metric": "task_runs",
-   "consumer": "UNMEASURED",
-   "measured_on": "vm",
-   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-06T16:28:08+00:00"
+   "measured_at": "2026-10-07T02:03:59+00:00"
   }
  ],
  "ratchet": {

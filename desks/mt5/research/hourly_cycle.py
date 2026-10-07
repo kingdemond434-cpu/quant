@@ -962,7 +962,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
-    "ops_redundancy", "forward_evidence_tracker",
+    "ops_redundancy", "recovery_drills", "forward_evidence_tracker",
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
@@ -1017,6 +1017,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
+                     # ERA5 reanalysis (Copernicus CDS) as PIT weather series: collection
+                     "era5_reader",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -1872,6 +1874,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # era5_reader stops itself at --budget-s 600 (CDS requests queue server-side) and then
+    # publishes from the points it holds; the cap sits above so the publish is never cut off.
+    "era5_reader": 900,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -5186,6 +5191,12 @@ def main() -> None:
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
+    # ERA5 (Copernicus CDS, 2026-10-06): incremental per-point fetch past each cursor, then the
+    # three uses -- gain-tested exogenous_conditioner cells, lake + axis conditioning series,
+    # reports/ERA5_ALLOCATION_INTEL.json -- and the psub_era5_* series the paid-substitute engine
+    # correlates. Fails closed on terms (BLOCKED_ON_TERMS) and on a missing key (BLOCKED_AUTH).
+    e5r = _costed("era5_reader", lambda: _producer(
+        "era5_reader", "research/era5_reader.py", "--once", "--budget-s", "600"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -5553,6 +5564,8 @@ def main() -> None:
     #   experimental_budget         the principal's override sleeves in their own ledger/budget
     #   ops_redundancy              journal replay, off-box restore drill, terminal health,
     #                               independent price cross-check, duplicate-position count
+    #   recovery_drills             one PASS/FAIL/UNMEASURED row per named failure mode, graded
+    #                               from the drill artifacts above (CHAOS, offsite restore, ...)
     #   forward_evidence_tracker    survival / degradation / calibration / breadth / cost /
     #                               capacity / hit rate as an append-only hourly series
     lcp = _costed("live_calibration_posterior", lambda: _producer(
@@ -5569,6 +5582,8 @@ def main() -> None:
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
         "ops_redundancy", "research/ops_redundancy.py"))
+    rcd = _costed("recovery_drills", lambda: _producer(
+        "recovery_drills", "research/recovery_drills.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(
         "forward_evidence_tracker", "research/forward_evidence_tracker.py"))
     # THE ARENA AND THE CLOCK'S CAPITAL (Tier-1 AP5 and P18; 2026-09-09). The arena records a
@@ -5766,6 +5781,7 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "alt_proxies": alp,
+                    "era5_reader": e5r,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,
@@ -5813,6 +5829,7 @@ def main() -> None:
                     "kelly_survival": kls,
                     "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
+                    "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,

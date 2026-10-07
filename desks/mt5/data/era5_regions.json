@@ -1,0 +1,145 @@
+{
+ "schema": "era5_regions/1",
+ "note": "ERA5 (Copernicus Climate Data Store) regions read by desks/mt5/research/era5_reader.py. Each region is a small set of representative points (lat, lon, weight) inside the growing or demand area; the region value for a day is the weighted mean over the points that have that day. Fields are the reader's own aggregate names (see era5_reader.FIELDS). `instruments` maps a field to the MT5 symbols it bears on, with a DECLARED PRIOR sign (+1: a high reading is expected to lift the price). The prior is never traded: a direct cell's side is the MEASURED sign of its gain-test IC. `headline` is the field the paid-substitute engine correlates (lake id psub_era5_<region>). `library_region` is the region code the engine scores against paid catalogue rows. Point coordinates are representative locations chosen for the crop belt or demand centre, not a gridded area mean.",
+ "dataset": {
+  "name": "reanalysis-era5-single-levels-timeseries",
+  "variables": ["2m_temperature", "total_precipitation"],
+  "data_format": "csv",
+  "status": "needs-box-confirmation: the dataset name and request shape were written off-box (the CDS host is unreachable from the build container); the first box pass records the CDS reply in reports/ERA5_STATUS.json"
+ },
+ "release_lag_days": 5,
+ "backfill_start": "1991-01-01",
+ "chunk_days": 3660,
+ "climatology_min_years": 3,
+ "regions": [
+  {
+   "id": "us_midwest_corn_soy",
+   "label": "US Corn Belt (Iowa, Illinois, Indiana, Nebraska, Minnesota)",
+   "library_region": "US",
+   "hdd_base_c": 18.3,
+   "points": [
+    {"id": "us_ia_central", "lat": 42.0, "lon": -93.5, "weight": 0.28},
+    {"id": "us_il_central", "lat": 40.0, "lon": -89.0, "weight": 0.25},
+    {"id": "us_in_central", "lat": 40.0, "lon": -86.3, "weight": 0.14},
+    {"id": "us_ne_east", "lat": 41.5, "lon": -97.5, "weight": 0.18},
+    {"id": "us_mn_south", "lat": 44.3, "lon": -94.5, "weight": 0.15}
+   ],
+   "instruments": {
+    "cdd_anom_7d": {"CORN": 1, "SOYBEAN": 1},
+    "t2m_anom_7d": {"CORN": 1, "SOYBEAN": 1},
+    "precip_anom_30d": {"CORN": -1, "SOYBEAN": -1}
+   },
+   "headline": "cdd_anom_7d",
+   "mechanism": "summer heat and dry spells in the Corn Belt cut US corn and soybean yield expectations; a wet, mild season raises them"
+  },
+  {
+   "id": "us_plains_wheat",
+   "label": "US Southern Plains hard red winter wheat (Kansas, Oklahoma)",
+   "library_region": "US",
+   "hdd_base_c": 18.3,
+   "points": [
+    {"id": "us_ks_central", "lat": 38.5, "lon": -98.5, "weight": 0.65},
+    {"id": "us_ok_north", "lat": 36.3, "lon": -98.0, "weight": 0.35}
+   ],
+   "instruments": {
+    "precip_anom_30d": {"WHEAT": -1},
+    "frost_days_7d": {"WHEAT": 1}
+   },
+   "headline": "precip_anom_30d",
+   "mechanism": "drought and late freezes over the HRW belt cut winter-wheat condition ratings"
+  },
+  {
+   "id": "brazil_coffee",
+   "label": "Brazil coffee belt (Sul de Minas, Cerrado Mineiro, Mogiana, Espirito Santo conilon)",
+   "library_region": "BR",
+   "hdd_base_c": 18.3,
+   "points": [
+    {"id": "br_mg_sul", "lat": -21.5, "lon": -45.5, "weight": 0.35},
+    {"id": "br_mg_cerrado", "lat": -18.9, "lon": -47.0, "weight": 0.25},
+    {"id": "br_sp_mogiana", "lat": -21.0, "lon": -47.3, "weight": 0.15},
+    {"id": "br_es_conilon", "lat": -19.0, "lon": -40.5, "weight": 0.25}
+   ],
+   "instruments": {
+    "frost_days_7d": {"COFARA": 1, "COFROB": 1},
+    "precip_anom_30d": {"COFARA": -1, "COFROB": -1},
+    "t2m_anom_7d": {"COFARA": 1, "COFROB": 1}
+   },
+   "headline": "precip_anom_30d",
+   "mechanism": "frost (Jun-Aug) and dry flowering seasons (Sep-Nov) in Minas Gerais damage the next arabica crop; ES drought hits robusta (conilon)"
+  },
+  {
+   "id": "brazil_sugar",
+   "label": "Brazil centre-south cane (Sao Paulo, Goias, Mato Grosso do Sul)",
+   "library_region": "BR",
+   "hdd_base_c": 18.3,
+   "points": [
+    {"id": "br_sp_ribeirao", "lat": -21.2, "lon": -47.8, "weight": 0.4},
+    {"id": "br_sp_west", "lat": -22.0, "lon": -50.5, "weight": 0.25},
+    {"id": "br_go_south", "lat": -17.8, "lon": -50.9, "weight": 0.2},
+    {"id": "br_ms_east", "lat": -21.0, "lon": -54.0, "weight": 0.15}
+   ],
+   "instruments": {
+    "precip_anom_30d": {"SUGAR": -1, "SUGARRAW": -1},
+    "t2m_anom_7d": {"SUGAR": 1, "SUGARRAW": 1}
+   },
+   "headline": "precip_anom_30d",
+   "mechanism": "a dry, hot centre-south lowers cane yields and ATR, tightening sugar supply"
+  },
+  {
+   "id": "west_africa_cocoa",
+   "label": "West Africa cocoa belt (Cote d'Ivoire, Ghana)",
+   "library_region": "CI",
+   "hdd_base_c": 18.3,
+   "points": [
+    {"id": "ci_soubre", "lat": 5.8, "lon": -6.6, "weight": 0.3},
+    {"id": "ci_daloa", "lat": 6.9, "lon": -6.4, "weight": 0.25},
+    {"id": "ci_abengourou", "lat": 6.7, "lon": -3.5, "weight": 0.15},
+    {"id": "gh_kumasi", "lat": 6.7, "lon": -1.6, "weight": 0.3}
+   ],
+   "instruments": {
+    "precip_anom_30d": {"USCOCOA": -1, "UKCOCOA": -1},
+    "t2m_anom_7d": {"USCOCOA": 1, "UKCOCOA": 1}
+   },
+   "headline": "precip_anom_30d",
+   "mechanism": "a dry, hot main-crop season (and a strong Harmattan) cuts Ivorian and Ghanaian cocoa arrivals"
+  },
+  {
+   "id": "europe_gas_demand",
+   "label": "Europe gas-demand centres (Germany, France, Italy, Netherlands, UK)",
+   "library_region": "EU",
+   "hdd_base_c": 15.5,
+   "points": [
+    {"id": "eu_de_central", "lat": 51.0, "lon": 10.0, "weight": 0.3},
+    {"id": "eu_fr_north", "lat": 48.8, "lon": 2.4, "weight": 0.2},
+    {"id": "eu_it_north", "lat": 45.5, "lon": 9.2, "weight": 0.2},
+    {"id": "eu_nl", "lat": 52.2, "lon": 5.3, "weight": 0.1},
+    {"id": "eu_uk_midlands", "lat": 52.5, "lon": -1.5, "weight": 0.2}
+   ],
+   "instruments": {
+    "hdd_anom_7d": {"XNGUSD": 1}
+   },
+   "headline": "hdd_anom_7d",
+   "mechanism": "cold European weeks raise heating gas demand and storage draws, pulling US LNG feedgas and Henry Hub with them"
+  },
+  {
+   "id": "us_natgas_demand",
+   "label": "US gas- and power-demand centres (NY, Boston, Philadelphia, Chicago, Atlanta, Dallas)",
+   "library_region": "US",
+   "hdd_base_c": 18.3,
+   "points": [
+    {"id": "us_nyc", "lat": 40.7, "lon": -74.0, "weight": 0.25},
+    {"id": "us_bos", "lat": 42.4, "lon": -71.1, "weight": 0.1},
+    {"id": "us_phl", "lat": 40.0, "lon": -75.2, "weight": 0.1},
+    {"id": "us_chi", "lat": 41.9, "lon": -87.6, "weight": 0.25},
+    {"id": "us_atl", "lat": 33.7, "lon": -84.4, "weight": 0.12},
+    {"id": "us_dfw", "lat": 32.8, "lon": -96.8, "weight": 0.18}
+   ],
+   "instruments": {
+    "hdd_anom_7d": {"XNGUSD": 1},
+    "cdd_anom_7d": {"XNGUSD": 1}
+   },
+   "headline": "hdd_anom_7d",
+   "mechanism": "heating degree days drive residential/commercial gas burn in winter; cooling degree days drive power burn in summer"
+  }
+ ]
+}
