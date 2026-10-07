@@ -91,6 +91,7 @@ from shadow_admission import authorized_specs
 BASE = Path(__file__).resolve().parent.parent
 SHADOW_DIR = BASE / "reports" / "shadow"
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
+PRINCIPAL_PROMOTIONS = BASE / "data" / "PRINCIPAL_PROMOTIONS.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
 LOG = BASE / "logs" / "promoter.log"
 #: The recertification audit (scripts/recertify_canon.py, daily before this runs): every
@@ -373,6 +374,102 @@ def load_sleeves() -> list[dict]:
         return json.loads(SLEEVES_FILE.read_text(encoding="utf-8")).get("sleeves", [])
     except Exception:
         return []
+
+
+def apply_principal_promotions(sleeves: list[dict], *, now: datetime | None = None) -> tuple[bool, set[str]]:
+    """One-time, named early promotions through the ordinary cost and Tier S doors.
+
+    The retired source row is immutable. A new identity is created exactly once, so a later
+    evidence retirement cannot be undone by this standing principal instruction. While the
+    certified book names the row, its explicit risk replaces the allocator admission scan;
+    disabling the book demotes it. All other live policy and retirement doors still run.
+    """
+    try:
+        order = json.loads(PRINCIPAL_PROMOTIONS.read_text("utf-8"))
+        from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
+        from mt5desk.live_policy import policy, refuse
+        from mt5desk.executables import executor_gap
+        book = load_cert_book(CERT_BOOK_FILE, "fusion") or {}
+        pol = policy()
+    except (OSError, ValueError, ImportError) as exc:
+        plog(f"principal promotions unavailable ({type(exc).__name__}: {exc})")
+        return False, set()
+    if order.get("enabled") is not True:
+        book = {}
+    rows = order.get("fusion") or []
+    if not isinstance(rows, list):
+        return False, set()
+    by_name = {str(s.get("name")): s for s in sleeves}
+    stamp = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    changed, held = False, set()
+    for entry in rows:
+        if not isinstance(entry, dict):
+            continue
+        source_name, name = str(entry.get("source_name") or ""), str(entry.get("name") or "")
+        cert_id, book_key = str(entry.get("certificate") or ""), str(entry.get("book_key") or "")
+        source = by_name.get(source_name)
+        risk = book.get(book_key)
+        row = by_name.get(name)
+        if row is not None:
+            if row.get("principal_source") != source_name or row.get("principal_certificate") != cert_id:
+                plog(f"principal promotion {name}: identity collision; refusing")
+                continue
+            if row.get("status") == "RETIRED":
+                continue  # one-way evidence retirement; never resurrect it
+            if risk is None or risk <= 0:
+                if row.get("status") == "LIVE":
+                    row.update(status="STANDBY", risk_frac=0.0, risk_frac_source="none",
+                               demoted_at=stamp, demote_reason="principal book disabled or row absent")
+                    changed = True
+                continue
+            if row.get("status") == "LIVE":
+                held.add(name)
+                if row.get("risk_frac") != risk:
+                    row.update(risk_frac=risk, risk_frac_source="principal_cert_book")
+                    changed = True
+            continue
+        if not (source and source.get("status") == "RETIRED" and
+                str(source.get("retire_reason") or "").startswith("principal 2026-09-16") and
+                isinstance(source.get("certificate"), dict) and
+                source["certificate"].get("cell") == cert_id and risk and risk > 0):
+            plog(f"principal promotion {name}: source, certificate or book risk missing; refusing")
+            continue
+        if regrade_block(source_name, regrade_failures()) or blind_review_veto(source_name):
+            plog(f"principal promotion {name}: regrade or blind review veto; refusing")
+            continue
+        tier = tier_s_block(source_name)
+        if tier:
+            plog(f"principal promotion {name}: Tier S {tier}; refusing")
+            continue
+        candidate = {k: v for k, v in source.items()
+                     if k not in ("retired_at", "retire_reason", "retired_by", "demoted_at", "demote_reason")}
+        candidate.update(name=name, status="LIVE", risk_frac=risk,
+                         risk_frac_source="principal_cert_book", promoted_at=stamp,
+                         principal_source=source_name, principal_certificate=cert_id,
+                         principal_order=str(order.get("by") or ""), exec="family_market",
+                         lot="auto_ramp")
+        if refuse(candidate, pol):
+            plog(f"principal promotion {name}: live policy refuses; refusing")
+            continue
+        family, tf = str(candidate.get("family") or ""), _sleeve_timeframe(candidate.get("params"))
+        gap = executor_gap(family) if tf == "H1" else executor_gap(family, tf)
+        if gap:
+            plog(f"principal promotion {name}: executor missing; refusing")
+            continue
+        cost, basis = cost_basis_of(candidate)
+        if not cost:
+            plog(f"principal promotion {name}: {basis}; refusing")
+            continue
+        candidate.update(cost_hash=cost, cost_basis_source=basis)
+        sleeves.append(candidate)
+        by_name[name] = candidate
+        held.add(name)
+        changed = True
+        note_door(name, door="PROMOTED", from_status="", to_status="LIVE",
+                  evidence={"certificate": cert_id, "principal_source": source_name,
+                            "risk_frac": risk, "cost_hash": cost, "tier_s": "PASS"})
+        plog(f"PRINCIPAL-PROMOTED {name}: {risk:.2%} risk via {book_key}, {basis}")
+    return changed, held
 
 
 # --------------------------------------------- IDENTITY ON THE ROW, AND THE ALPHA-STATE LEDGER
@@ -2284,7 +2381,9 @@ def main() -> None:
     # asymmetry lives. It runs BEFORE retirement so a sleeve the solve no longer wants is at 0%
     # risk on this pass whatever the retirement thresholds later decide, and it never retires
     # anything itself.
-    if reconcile_capital(sleeves, view, only=existing):
+    principal_changed, principal_held = apply_principal_promotions(sleeves)
+    changed = changed or principal_changed
+    if reconcile_capital(sleeves, view, only=existing - principal_held):
         changed = True
 
     for s in sleeves:

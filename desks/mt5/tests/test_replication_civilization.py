@@ -24,6 +24,43 @@ META = {"contract_size": 100000.0, "tick_size": 0.00001, "median_spread_pts": 12
         "tick_value": 0.86}
 
 
+def test_certificate_sharpe_has_the_gauntlets_per_day_units() -> None:
+    day = 86_400_000_000_000
+    fills = [rc.Fill(i * day, i * day, 1, 1.0, 1.0, r, "ttl", 1)
+             for i, r in enumerate((0.1, 0.2, 0.4), start=1)]
+    got, n = rc.sharpe(fills)
+    daily = np.asarray([0.1, 0.2, 0.4])
+    assert n == 3
+    assert got == np.mean(daily) / np.std(daily, ddof=1)
+    assert got < 2.0  # annualising here would compare unlike metrics and veto the cell
+
+
+def test_successful_recheck_removes_only_its_prior_quarantine(tmp_path: Path) -> None:
+    quarantine = tmp_path / "quarantine.json"
+    quarantine.write_text(json.dumps({"rows": [
+        {"lane": "certificate", "key": "A"},
+        {"lane": "certificate", "key": "B"}]}), encoding="utf-8")
+    rc.record([{"lane": "certificate", "key": "A", "verdict": rc.REPLICATED}],
+              conn=_NoRegistry(), dry_run=False, quarantine_path=quarantine)
+    assert [r["key"] for r in json.loads(quarantine.read_text("utf-8"))["rows"]] == ["B"]
+
+
+def test_exact_priority_certificate_is_judged_first_with_the_normal_budget(
+        tmp_path: Path, monkeypatch) -> None:
+    seen = []
+    def fake_replicate(row, *, meta, bars):
+        seen.append(row["certificate"])
+        return {"lane": "certificate", "key": row["certificate"],
+                "certificate": row["certificate"], "verdict": rc.UNMEASURED, "why": []}
+    monkeypatch.setattr(rc, "replicate_certificate", fake_replicate)
+    certs = [{"certificate": key, "shadow_spec": {"symbol": "TESTFX"}}
+             for key in ("A", "B", "C")]
+    doc = rc.build(certificates=certs, forward=[], universe_meta={},
+                   bars_loader=lambda *_: None, cursor_path=tmp_path / "cursor.json",
+                   dry_run=True, max_per_pass=2, priority_certificates=["C"])
+    assert seen == ["C"] and doc["population"]["certificates"] == 3
+
+
 def _gap_bars(seed: int = 5, fade: float = 0.0009, gap: float = 0.002) -> rc.Bars:
     """Hourly bars with a planted overnight gap that decays over the next eight bars.
 

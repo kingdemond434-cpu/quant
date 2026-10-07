@@ -83,6 +83,7 @@ COMMISSION_PER_LOT_PER_SIDE = 2.00
 #: side and closed on the other, or a cost term off by more than 2x.
 SHARPE_NOISE = 0.05
 SHARPE_RATIO = (0.5, 2.0)
+SHARPE_METRIC_VERSION = "daily-r-per-period-v2"
 FILL_SHARE = 0.5
 MATCH_SHARE = 0.5
 R_TOLERANCE = 0.25
@@ -583,7 +584,13 @@ def simulate(b: Bars, orders: Sequence[Order], cost_price_units: float) -> list[
 
 
 def sharpe(fills: Sequence[Fill]) -> tuple[float | None, int]:
-    """Annualised Sharpe of the DAILY sums of R (sqrt 252), as the certificate's screen states."""
+    """Per-day Sharpe of active-day R, in the certificate screen's units.
+
+    The gauntlet's in_sample_screen uses libs.validation.dsr.sharpe_ratio on
+    daily_series, which groups trades by entry date and does not annualise.
+    Comparing an annualised rebuild with that screen falsely quarantined
+    otherwise matching certificates by a factor of sqrt(252).
+    """
     if not fills:
         return None, 0
     days: dict[int, float] = {}
@@ -591,9 +598,9 @@ def sharpe(fills: Sequence[Fill]) -> tuple[float | None, int]:
         d = int(f.entry_t // 86_400_000_000_000)
         days[d] = days.get(d, 0.0) + f.r
     x = np.asarray(list(days.values()), dtype="float64")
-    if len(x) < 2 or float(np.std(x)) == 0:
+    if len(x) < 2 or float(np.std(x, ddof=1)) == 0:
         return 0.0, len(x)
-    return float(np.mean(x) / np.std(x) * np.sqrt(252.0)), len(x)
+    return float(np.mean(x) / np.std(x, ddof=1)), len(x)
 
 
 # -------------------------------------------------------------------------------- rebuild
@@ -854,11 +861,12 @@ def record(rows: Sequence[Mapping[str, Any]], *, conn: Any, dry_run: bool,
     mismatches = [r for r in rows if r.get("verdict") == MISMATCH]
     if dry_run:
         return out
-    if mismatches:
+    definitive = [r for r in rows if r.get("verdict") in (MISMATCH, REPLICATED)]
+    if definitive:
         doc = _read_json(quarantine_path, {}) or {}
-        kept = [r for r in (doc.get("rows") or []) if isinstance(r, dict)]
-        keys = {r.get("key") for r in mismatches}
-        kept = [r for r in kept if r.get("key") not in keys]
+        old = [r for r in (doc.get("rows") or []) if isinstance(r, dict)]
+        keys = {(r.get("lane"), r.get("key")) for r in definitive}
+        kept = [r for r in old if (r.get("lane"), r.get("key")) not in keys]
         for r in mismatches:
             kept.append({"key": r["key"], "lane": r["lane"], "symbol": r["symbol"],
                          "family": r["family"], "why": r["why"],
@@ -920,7 +928,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
           bars_loader: Callable[[str, str], Bars | None] = load_bars,
           ledger_loader: Callable[[str, Mapping[str, Any]], list[dict[str, Any]]] = ledger_for,
           cursor_path: Path = CURSOR, quarantine_path: Path = QUARANTINE,
-          report: Path = REPORT, max_per_pass: int = MAX_PER_PASS) -> dict[str, Any]:
+          report: Path = REPORT, max_per_pass: int = MAX_PER_PASS,
+          priority_certificates: Sequence[str] = ()) -> dict[str, Any]:
     t0 = time.monotonic()
     deadline = t0 + max(1.0, float(budget_s))
     meta_all = dict(universe_meta) if universe_meta is not None else (
@@ -939,10 +948,22 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
     # NEVER-JUDGED FIRST. A certificate the book has no verdict for -- or a verdict under a
     # different spec -- cannot start a forward clock (the admission door), so it is judged ahead
     # of the rotation: a new certificate waits about one pass, never a full cycle of the canon.
-    pending = [i for i, r in enumerate(certs)
-               if (book.get(certificate_id(r)) or {}).get("fp") != certificate_fp(r)]
+    # Recheck every old verdict under the corrected unit before judging new
+    # certificates. A historical MISMATCH cannot remain a capital veto after
+    # its checker changed, and its removal must come from a real rerun.
+    old_metric = [i for i, r in enumerate(certs)
+                  if book.get(certificate_id(r)) and
+                  (book[certificate_id(r)].get("sharpe_metric_version")
+                   != SHARPE_METRIC_VERSION)]
+    pending = old_metric + [i for i, r in enumerate(certs)
+                            if i not in set(old_metric) and
+                            (book.get(certificate_id(r)) or {}).get("fp")
+                            != certificate_fp(r)]
     rotation = [(ci + k) % len(certs) for k in range(len(certs))] if certs else []
-    order = pending + [i for i in rotation if i not in set(pending)]
+    wanted = set(priority_certificates)
+    priority = [i for i, r in enumerate(certs) if certificate_id(r) in wanted]
+    first = list(dict.fromkeys(priority + pending))
+    order = first + [i for i in rotation if i not in set(first)]
     for n, idx in enumerate(order[:per_lane]):
         if time.monotonic() > deadline:
             notes.append("budget: certificates left for the next pass")
@@ -953,7 +974,7 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         tf = str((spec.get("params") or {}).get("timeframe") or "H1")
         rows.append(replicate_certificate(row, meta=dict(meta_all.get(sym) or {}),
                                           bars=bars_loader(sym, tf)))
-        if n >= len(pending):
+        if n >= len(first):
             cursor["certificates"] = (idx + 1) % len(certs)
     for k in range(min(per_lane, len(fwd))):
         if time.monotonic() > deadline:
@@ -971,6 +992,7 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
               for v in (REPLICATED, MISMATCH, UNMEASURED)}
     doc = {
         "at": _now(), "rule": RULE, "dry_run": bool(dry_run),
+        "sharpe_metric_version": SHARPE_METRIC_VERSION,
         "population": {"certificates": len(certs), "forward_rows": len(fwd),
                        "spec_book": sorted(SPEC_BOOK)},
         "n": len(rows), "counts": counts, "verdicts": rows,
@@ -991,6 +1013,7 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         for r in rows:
             if r.get("lane") == "certificate" and r.get("certificate"):
                 book[str(r["certificate"])] = {"verdict": r["verdict"], "fp": r.get("fp"),
+                                               "sharpe_metric_version": SHARPE_METRIC_VERSION,
                                                "why": list(r.get("why") or [])[:4],
                                                "key": r.get("key"), "at": _now()}
         _write_atomic(verdicts_path, {"at": _now(), "rule": RULE, "certificates": book})
@@ -1020,8 +1043,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="rebuild, compare, print; write "
                                                             "nothing")
     ap.add_argument("--max-per-pass", type=int, default=MAX_PER_PASS)
+    ap.add_argument("--priority-certificate", action="append", default=[],
+                    help="judge an exact certificate first in this bounded pass")
     a = ap.parse_args(argv)
-    doc = build(budget_s=a.budget_s, dry_run=a.dry_run, max_per_pass=a.max_per_pass)
+    doc = build(budget_s=a.budget_s, dry_run=a.dry_run, max_per_pass=a.max_per_pass,
+                priority_certificates=a.priority_certificate)
     for line in render(doc):
         print(line)
     if a.dry_run:

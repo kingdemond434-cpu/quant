@@ -528,6 +528,73 @@ def _pos_field(p: dict[str, Any], *names: str) -> float | None:
     return None
 
 
+def outstanding_stop_risk(venue: Any, positions: list[dict[str, Any]],
+                          orders: list[dict[str, Any]]) -> tuple[float | None, str]:
+    """Reserve the broker's current downside, including unfilled bracket entries.
+
+    Equity already includes open P&L, so an open position is measured from the current
+    executable quote to its protective stop.  A missing stop, contract, conversion, or
+    instrument mapping makes new exposure unsafe; it does not make existing risk zero.
+    Both sides of a resting gold bracket count until the venue cancels one.
+    """
+    iid_to_sym = {int(v): k for k, v in getattr(venue, "_by_key", {}).items()}
+    by_id = {int(o["id"]): o for o in orders if o.get("id") is not None}
+
+    def dollars(symbol: str, distance: float, qty: float) -> float | None:
+        if not (distance >= 0 and qty > 0):
+            return None
+        detail = venue.details(symbol)
+        contract = next((float(detail[k]) for k in
+                         ("contractSize", "contract_size", "lotSize", "units")
+                         if isinstance(detail.get(k), (int, float)) and detail[k] > 0), None)
+        if contract is None:
+            return None
+        quote_ccy = str(detail.get("currency") or detail.get("quoteCurrency")
+                        or detail.get("quotingCurrency") or _quote_ccy_from_symbol(symbol)).upper()
+        conversion = 1.0 if quote_ccy == "USD" else _usd_per_unit(venue, quote_ccy)
+        return (distance * qty * contract * conversion
+                if conversion is not None and conversion > 0 else None)
+
+    total = 0.0
+    for p in positions:
+        iid = p.get("tradableInstrumentId") or p.get("instrumentId")
+        symbol = iid_to_sym.get(int(iid)) if iid is not None else None
+        qty = _pos_field(p, "qty", "quantity")
+        stop = _pos_field(p, "stopLoss", "stopLossPrice", "sl")
+        if stop is None or stop <= 0:
+            stop_id = p.get("stopLossId") or p.get("stopOrderId")
+            order = by_id.get(int(stop_id)) if stop_id is not None else None
+            stop = _pos_field(order or {}, "stopPrice", "stopLoss")
+        side = str(p.get("side") or "").lower()
+        if (symbol is None or qty is None or stop is None or stop <= 0
+                or side not in ("buy", "sell")):
+            return None, "an open position has no measurable protective stop or instrument"
+        bid, ask = venue.quote(symbol)
+        distance = ((bid - stop) if side == "buy" else (stop - ask))
+        risk = dollars(symbol, distance, abs(qty))
+        if risk is None:
+            return None, f"{symbol} open stop downside cannot be priced"
+        total += risk
+
+    for o in orders:
+        # Protective stops and take-profits carry no attached stopLoss.  A pending
+        # entry does, and can fill while the FX lane is evaluating its next order.
+        trigger = _pos_field(o, "stopPrice", "limitPrice", "price")
+        stop = _pos_field(o, "stopLoss", "stopLossPrice", "sl")
+        if stop is None or stop <= 0:
+            continue
+        iid = o.get("tradableInstrumentId") or o.get("instrumentId")
+        symbol = iid_to_sym.get(int(iid)) if iid is not None else None
+        qty = _pos_field(o, "qty", "quantity")
+        if symbol is None or trigger is None or trigger <= 0 or qty is None:
+            return None, "a resting entry has no measurable instrument, trigger, or size"
+        risk = dollars(symbol, abs(trigger - stop), abs(qty))
+        if risk is None:
+            return None, f"{symbol} resting-entry stop downside cannot be priced"
+        total += risk
+    return total, "broker stops and pending entries priced"
+
+
 def manage_breakeven(venue: Any, *, armed: bool = False,
                      exclude_symbols: set[str] | None = None) -> list[dict[str, Any]]:
     """Move every E8 stop to costed break-even once it has earned it. SHADOW unless armed.
@@ -781,6 +848,29 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         doc["why"] = f"{BOOK.name} unreadable ({type(exc).__name__}) -- nothing to trade"
         return doc
 
+    book_fresh_error = ""
+    try:
+        book_at = datetime.fromisoformat(str(book["generated_utc"]).replace("Z", "+00:00"))
+        age_s = (now - book_at).total_seconds()
+        if book_at.tzinfo is None or not (0 <= age_s <= 7200):
+            raise ValueError(f"book age {age_s:.0f}s exceeds 2h or is in the future")
+    except (KeyError, TypeError, ValueError) as exc:
+        book_fresh_error = f"E8 book has no fresh generation proof ({exc}); no new entries"
+
+    entry_authority_error = ""
+    try:
+        from admission_integrity import IntegrityGate, REPLICATED
+        from libs.tiers import promotion_authority
+        from mt5desk.kelly_sizing import CERT_BOOK_FILE
+        exclusions = json.loads(CERT_BOOK_FILE.read_text(encoding="utf-8"))["excluded"]
+        if not isinstance(exclusions, dict):
+            raise ValueError("principal exclusion map is not an object")
+        integrity = IntegrityGate.load()
+    except (OSError, ValueError, KeyError, ImportError) as exc:
+        entry_authority_error = (f"E8 certificate authority unavailable "
+                                 f"({type(exc).__name__}: {exc})")
+        exclusions, integrity = {}, None
+
     risk_usd = float(book["risk_frac"]) * e8_guard.START_BALANCE
     # THE PRINCIPAL'S CERTIFIED BOOK SIZES THE KEYS IT NAMES (data/CERT_BOOK_LIVE.json,
     # 2026-10-07), keyed the allocator's way: SYMBOL_family_selector. Every other sleeve keeps the
@@ -789,6 +879,17 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     cert = load_cert_book(CERT_BOOK_FILE, "e8") or {}
     doc["cert_book"] = cert or None
     committed_usd = 0.0
+    try:
+        open_positions = venue.positions()
+        resting_orders = venue.orders()
+        outstanding_usd, outstanding_why = outstanding_stop_risk(
+            venue, open_positions, resting_orders)
+    except Exception as exc:
+        outstanding_usd = None
+        outstanding_why = f"broker exposure read failed ({type(exc).__name__}: {exc})"
+    doc["outstanding_stop_risk_usd"] = (round(outstanding_usd, 2)
+                                         if outstanding_usd is not None else None)
+    doc["outstanding_stop_risk_why"] = outstanding_why
     # THE DEDUPE KEY IS THE INSTRUMENT AND SIDE, BECAUSE THIS VENUE HAS NO COMMENTS.
     #
     # MEASURED 2026-09-15, and it cost the account 0.85% in half an hour. This read
@@ -804,7 +905,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     # fails OPEN -- the one direction a position guard must never fail. Matching on what the
     # venue DOES return cannot silently become a no-op the same way.
     open_keys: set[tuple[int, str]] = set()
-    for p in venue.positions():
+    for p in open_positions:
         iid = p.get("tradableInstrumentId") or p.get("instrumentId") or p.get("id")
         sd = str(p.get("side") or p.get("Side") or "").lower()
         if iid is not None and sd:
@@ -823,7 +924,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             self.symbol, self.volume, self.type = symbol, volume, typ
 
     _leg_positions = []
-    for p in venue.positions():
+    for p in open_positions:
         iid = p.get("tradableInstrumentId") or p.get("instrumentId") or p.get("id")
         nm = _iid_to_sym.get(int(iid)) if iid is not None else None
         if not nm:
@@ -882,6 +983,46 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             row["closed_positions"] = closed
             doc["sleeves"].append(row)
             _record(row, now, armed)
+            continue
+        if book_fresh_error:
+            row.update(status="STALE_BOOK", why=book_fresh_error)
+            doc["sleeves"].append(row)
+            continue
+        if entry_authority_error:
+            row.update(status="NO_ENTRY_AUTHORITY", why=entry_authority_error)
+            doc["sleeves"].append(row)
+            continue
+        if outstanding_usd is None:
+            row.update(status="NO_RISK_PROOF", why=outstanding_why)
+            doc["sleeves"].append(row)
+            continue
+        cert_id = str(s.get("key") or "")
+        book_key = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
+        if not (cert.get(book_key, 0) > 0):
+            row.update(status="NOT_IN_PRINCIPAL_BOOK",
+                       why="no positive risk for this sleeve in the E8 certified book")
+            doc["sleeves"].append(row)
+            continue
+        if book_key in exclusions:
+            row.update(status="PRINCIPAL_EXCLUDED", why=str(exclusions[book_key]))
+            doc["sleeves"].append(row)
+            continue
+        if integrity.alarm.get("blocks"):
+            row.update(status="CERTIFIER_ALARM", why=str(integrity.alarm.get("why")))
+            doc["sleeves"].append(row)
+            continue
+        verdict, why = integrity.replication(cert_id, str(s.get("fingerprint") or ""))
+        if verdict != REPLICATED:
+            row.update(status="UNREPLICATED", why=f"{verdict}: {why}")
+            doc["sleeves"].append(row)
+            continue
+        try:
+            tier_reason = promotion_authority.block(cert_id)
+        except Exception as exc:
+            tier_reason = f"Tier S door error ({type(exc).__name__}: {exc})"
+        if tier_reason:
+            row.update(status="TIER_S_BLOCKED", why=str(tier_reason))
+            doc["sleeves"].append(row)
             continue
         func = get_family_func(fam)
         if func is None:
@@ -1085,10 +1226,10 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         # THE DAILY FLOOR IS CHECKED AGAINST THE WHOLE BOOK, not one order at a time. Twenty
         # sleeves firing together is twenty simultaneous risks, and a per-order check would wave
         # each one through on its own merits into a floor none of them breaches alone.
-        if committed_usd + row_risk_usd > decision.room_to_daily_floor:
+        if outstanding_usd + committed_usd + row_risk_usd > decision.room_to_daily_floor:
             row["status"] = "WOULD_BREACH_DAILY"
-            row["why"] = (f"{sent + 1} open risks totalling "
-                          f"${committed_usd + row_risk_usd:.0f} exceed the "
+            row["why"] = (f"broker stops and new risks totalling "
+                          f"${outstanding_usd + committed_usd + row_risk_usd:.0f} exceed the "
                           f"${decision.room_to_daily_floor:.0f} left to today's floor")
             doc["sleeves"].append(row)
             continue
@@ -1118,7 +1259,10 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         doc["sleeves"].append(row)
         _record(row, now, armed)
 
-    doc["status"] = "OK"
+    doc["status"] = ("STALE_BOOK" if book_fresh_error else
+                     "NO_ENTRY_AUTHORITY" if entry_authority_error else "OK")
+    if book_fresh_error or entry_authority_error:
+        doc["why"] = book_fresh_error or entry_authority_error
     doc["n_considered"] = considered
     doc["n_sent" if armed else "n_would_send"] = sent
     doc["risk_usd_per_trade"] = round(risk_usd, 2)

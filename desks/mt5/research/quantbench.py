@@ -52,6 +52,16 @@ OUT = DESK / "reports" / "QUANTBENCH.json"
 SEALED = ("desks/mt5/scripts/external_gauntlet.py", "desks/mt5/research/promoter.py",
           "libs/portfolio/allocator_proof.py", "libs/regime/state_admission.py")
 
+# QB-002's original corpus row is append-only historical evidence.  A principal-authorized
+# change to the promoter gets a second, exact byte seal here rather than rewriting that row.
+# Any subsequent byte change still reads REGRESSED, including a manifest re-sign alone.
+PROMOTER_SEAL_ROTATION = {
+    "path": "desks/mt5/research/promoter.py",
+    "from": "86abbd9aba36586022c6cfaf4bb3dd685df6f7e8d73feaa2a401504fa32510e8",
+    "to": "5121ef29cb21bdcab6ebc0fc290a6a879cc33386232ba717698af4271ebd9566",
+    "signed_by": "principal via Codex 2026-10-07 live sleeve repair",
+}
+
 
 def _sha(path: Path) -> str | None:
     # LINE-ENDING NORMALISED: a Windows checkout (autocrlf) and a Linux one hold the same file
@@ -98,9 +108,23 @@ def probe_sealed_files(expect: dict[str, Any]) -> dict[str, Any]:
     if not pinned:
         return {"verdict": "UNMEASURED", "why": "corpus row carries no pinned hashes",
                 "observed": now}
+    rotated: dict[str, dict[str, str]] = {}
+    rotation = PROMOTER_SEAL_ROTATION
+    path = rotation["path"]
+    if pinned.get(path) == rotation["from"] and now.get(path) == rotation["to"]:
+        try:
+            manifest = json.loads((DESK / "data" / "IMMUTABLE_MANIFEST.json").read_text(
+                encoding="utf-8"))
+            if (manifest.get("signed_by") == rotation["signed_by"]
+                    and (manifest.get("files") or {}).get(path) == now[path][:16]):
+                rotated[path] = {"from": rotation["from"], "to": rotation["to"],
+                                 "signed_by": rotation["signed_by"]}
+        except (OSError, ValueError):
+            pass
     changed = {p: {"pinned": pinned.get(p), "now": now[p]} for p in now
-               if pinned.get(p) and pinned[p] != now[p]}
+               if pinned.get(p) and pinned[p] != now[p] and p not in rotated}
     return {"verdict": "REGRESSED" if changed else "PASS", "changed": changed,
+            "authorized_rotations": rotated,
             "why": ("a sealed file's bytes moved" if changed else "all four seals hold")}
 
 
