@@ -3,16 +3,23 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-06T23:06:49.141918+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-07T00:14:01.055417+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
+  },
+  "external_queue_projection": {
+   "finished_at": "2026-10-07T00:19:24.436821+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
+  "external_queue_reconciliation": {
+   "finished_at": "2026-10-07T00:46:58.934899+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   }
  },
- "updated_at": "2026-10-06T23:06:49.141918+00:00"
+ "updated_at": "2026-10-07T00:46:58.934899+00:00"
 }
