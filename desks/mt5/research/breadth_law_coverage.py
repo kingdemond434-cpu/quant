@@ -74,6 +74,17 @@ CCS = "desks/mt5/research/cluster_cap_shadow.py"
 PS = "libs/research/proposer_seat.py"
 CRO = "docs/cro/CRO_CYCLE.md"
 PATCH = "gauntlet_consume_breadth_order.patch (sealed; desktop applies it)"
+EB = "libs/research/effective_breadth.py"
+AF = "libs/research/alpha_fitness.py"
+AC = "libs/research/alpha_clusters.py"
+R_ = "desks/mt5/research/"
+CT, QD, DE = f"{R_}coverage_tensor.py", f"{R_}qd_frontier.py", f"{R_}descendants.py"
+ARC, MR, RE = f"{R_}alpha_recombination.py", f"{R_}meta_rnd.py", f"{R_}research_evolution.py"
+MS, DAM = f"{R_}miner_specialisation.py", f"{R_}drawdown_alpha_miner.py"
+FRE, ED, VOD = f"{R_}factor_residual_engine.py", f"{R_}experiment_design.py", f"{R_}value_of_data.py"
+UU, RF = f"{R_}unknown_unknowns.py", f"{R_}representation_forge.py"
+WDH, DK = f"{R_}world_dataset_hunter.py", f"{R_}docket_keff.py"
+CBS = f"{R_}cro_breadth_steps.py"
 
 #: (ids, status, anchors, note). ids: "0007" or "0008-0028". First match wins, so a narrower
 #: entry goes before a range that contains it.
@@ -200,9 +211,12 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0161", COVERED, (f"{CS}::^INDEPENDENT_RHO",), ""),
     ("0154", COVERED, (f"{ND}::return \"renamed_source\"",), ""),
     ("0156", COVERED, (f"{ND}::return \"symbol\"",), ""),
-    ("0162-0172", PARTIAL, (f"{CRO}::STEP 4D", f"{CRO}::BREADTH_LAW_COVERAGE"),
-     "procedure text only: the noon CRO step reads the map, saturation, debts, split, mode and "
-     "this table, but no code checks the step ran (a document is not a code anchor)"),
+    ("0172", COVERED, (f"{CBS}::^def success_law", f"{AB}::steps = cbs.build"),
+     "a cycle that minted certificates without raising N_EFFECTIVE_CERT reads "
+     "NOT_SUCCESS_NOMINAL_ONLY"),
+    ("0162-0171", COVERED, (f"{CBS}::^STEPS:", f"{CBS}::^def build", f"{AB}::steps = cbs.build",
+                            f"{CRO}::CRO_BREADTH_STEPS"),
+     "each step ruled RAN / MISSED / UNMEASURED hourly from the cycle ledger and its artifact"),
     ("0175", COVERED, (f"{CS}::\"n_effective_certificates\": round",), ""),
     ("0176", COVERED, (f"{CS}::\"n_payer_clusters\"",), ""),
     ("0178", COVERED, (f"{CS}::\"n_independent_forward_streams\"",), ""),
@@ -354,6 +368,108 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0618", COVERED, (f"{CS}::^def _breadth_debts",), ""),
     ("0621", COVERED, (f"{ND}::^def near_duplicate", f"{ND}::^def structural_key"), ""),
     ("0627", COVERED, (f"{AB}::def certificate_saturation_pass",), ""),
+    # ------------------------------------------- audit rows re-anchored on code (2026-10-07)
+    # Each row below read COVERED on the audit's `module:1` alone (file existence). It is now
+    # anchored on the def / call / assignment that implements it, or demoted with the reason.
+    ("0043", COVERED, (f"{AB}::^def timestamp_overlap", f"{AB}::^def trading_minutes"),
+     "trade-time (held-minute) overlap measured from the forward ledgers' entry/exit times"),
+    ("0108", COVERED, (f"{AB}::^def timestamp_overlap",),
+     "position-time Jaccard; informational beside the headline"),
+    ("0109", COVERED, (f"{CS}::rho = float\\(np.corrcoef\\(x, y\\)", f"{AB}::^def daily_sleeve_returns"),
+     "pairwise daily P&L correlation at Fisher bounds on the forward sleeves"),
+    ("0135", PARTIAL, (f"{AB}::^def factor_rank_reading",),
+     "participation-ratio rank is published, informational only: the headline is the minimum of "
+     "the exposure / systematic / stress / realised readings (diversification ratio), and putting "
+     "the eigen rank in it would move the allocator-facing number (capital side)"),
+    ("0138", COVERED, (f"{EB}::^def conditional_breadth", f"{CS}::out\\[\"k_eff_stress\"\\] = keff"),
+     ""),
+    ("0152", COVERED, (f"{CS}::^def forward_dependence", f"{AB}::forward_daily=daily_sleeve_returns"),
+     "every pass re-reads the forward sleeves; a DEPENDENT pair lifts C and revokes credit"),
+    ("0173", COVERED, (f"{EB}::^def headline", f"{AB}::\"effective\": head"), ""),
+    ("0174", COVERED, (f"{CS}::\"n_certificates\": n_cert",), ""),
+    ("0177", COVERED, (f"{AB}::\"occupied_either\": clusters",), ""),
+    ("0180", COVERED, (f"{EB}::ratio = None if", f"{EB}::\"breadth_ratio\""), ""),
+    ("0194", COVERED, (f"{DK}::^def empty_prior_decay", f"{BL}::^def temperature",
+                       f"{CS}::\"n_effective_certificates\": round"),
+     "the canonical organs (docket_keff, breadth_ladder, effective_breadth) read the map; no "
+     "parallel scorer"),
+    ("0226-0242", COVERED, (f"{HC}::_env.update\\(_brief_env", f"{CS}::^def publish_briefs",
+                            f"{CS}::^def duplicate_tax", f"{PB}::^def duplicate_block"),
+     "saturation awareness is producer-agnostic: every docket row is stamped and taxed whatever "
+     "its producer class, every producer leg receives the brief, and BREADTH_FEEDBACK publishes "
+     "each producer's duplicate budget"),
+    ("0257", PARTIAL, (f"{CS}::^def duplicate_tax", f"{JC}::^def persist_breadth_order"),
+     f"near-duplicates are taxed and ordered to the tail; the judge consumes it once {PATCH}"),
+    ("0275", COVERED, (f"{CS}::def expected_dk", f"{CS}::\"expected_delta_k_eff\": \\(round"), ""),
+    ("0279", COVERED, (f"{CS}::^def duplicate_tax", f"{CS}::^EXPLORE_FLOOR",
+                       f"{BL}::^def exploration_floor"),
+     "saturated ground is taxed, never removed; the exploration floor keeps it reachable"),
+    ("0299", COVERED, (f"{AB}::^def timestamp_overlap", f"{SO}::out\\[\"signal\"\\] = _assoc_lo"),
+     "minute Jaccard; label-only differences earn nothing because credit is behavioural"),
+    ("0300", COVERED, (f"{SO}::^def pair_overlap", f"{CS}::^def forward_dependence"), ""),
+    ("0339", COVERED, (f"{CS}::r\\[\"state\"\\] = \"PARK_CANDIDATE\"",
+                       f"{CS}::streak = int\\(old.get\\(\"retarget_streak\""),
+     "PARK_CANDIDATE only after RETARGET_PATIENCE retarget readings whose duplicate share did "
+     "not fall; published, never acted on"),
+    ("0340", COVERED, (f"{RA}::^def clear", f"{RA}::^def producer_scores"),
+     "two-sided clearing over every department's measured bid; the clip floor is the only "
+     "guarantee"),
+    ("0347", COVERED, (f"{BL}::^def exploration_floor", f"{HC}::research/unknown_unknowns.py"),
+     ""),
+    ("0378", COVERED, (f"{CS}::\"n_certificates\": n_cert",), ""),
+    ("0381", COVERED, (f"{AB}::cert\\[\"robust_k_eff_book\"\\] = book.get",), ""),
+    ("0387", COVERED, (f"{AB}::\"timestamp_overlap\": overlap", f"{AB}::^def timestamp_overlap"),
+     ""),
+    ("0395", PARTIAL, (f"{AB}::\"effective\": head",),
+     "measured only through the certificates the sealed judge mints; profitability is the "
+     "judge's, and 'continuously' is the hourly cycle"),
+    ("0396", COVERED, (f"{CS}::^def build\\(", f"{BL}::^def budget_split"),
+     "orthogonality priced into every docket row and the A/C/D split"),
+    ("0398", COVERED, (f"{CAP}::^def terms", f"{CS}::credit \\*= float\\(base.get\\(\"capacity_factor\""),
+     "cost/turnover/capacity terms multiply breadth credit; the judge's cost stages are sealed"),
+    ("0401", COVERED, (f"{HC}::research/unknown_unknowns.py", f"{BL}::^def budget_split"),
+     "the D budget (unknown frontier) is never below its floor"),
+    ("0402", COVERED, (f"{HC}::research/world_dataset_hunter.py", f"{BL}::^def budget_split"), ""),
+    ("0403", COVERED, (f"{HC}::_costed\\(\"representation_forge\"", f"{BL}::^def budget_split"),
+     ""),
+    ("0412", COVERED, (f"{QD}::^def build_niches", f"{QD}::^def merge_map",
+                       f"{HC}::_costed\\(\"qd_frontier\""), ""),
+    ("0425", COVERED, (f"{CS}::rho = float\\(np.corrcoef\\(x, y\\)",), ""),
+    ("0427", COVERED, (f"{CS}::out\\[\"k_eff_stress\"\\] = keff", f"{SO}::out\\[\"regime\"\\] = round"),
+     ""),
+    ("0431", COVERED, (f"{AB}::^def timestamp_overlap",), ""),
+    ("0436", COVERED, (f"{AB}::\"exposure_by_instrument\":", f"{CS}::\"economic_factor\": 1.0"),
+     ""),
+    ("0450", COVERED, (f"{AC}::\"trend\", \"Trend and momentum\"", f"{AF}::\"axis_scarcity\": 0.5"),
+     ""),
+    ("0451", COVERED, (f"{AC}::\"mean_reversion\", \"Mean reversion", f"{AF}::\"axis_scarcity\": 0.5"),
+     ""),
+    ("0452", COVERED, (f"{AC}::\"carry\": \"macro_rates\"", f"{AF}::\"axis_scarcity\": 0.5"), ""),
+    ("0458", COVERED, (f"{CS}::\"information_source\": 2.0", f"{CS}::^def _breadth_debts"), ""),
+    ("0486-0488", COVERED, (f"{CS}::^def _chart_bucket", f"{CS}::^def _breadth_debts"),
+     "chart / session / horizon are map axes and debt targets"),
+    ("0491", COVERED, (f"{CS}::^def factor_of", f"{CS}::^def _breadth_debts"), ""),
+    ("0493", COVERED, (f"{CS}::return \"PRECIOUS_REAL_YIELD\"", f"{CS}::^def _breadth_debts"), ""),
+    ("0509", COVERED, (f"{CT}::^SUBSETS_PER_PASS", f"{CT}::^MAX_ENUMERATE"),
+     "axis subsets rotate per pass; the frontier is never brute-forced"),
+    ("0510", COVERED, (f"{ED}::^def evsi", f"{VOD}::^def sd_reduction"), ""),
+    ("0524", COVERED, (f"{DE}::^def neighbours", f"{HC}::_costed\\(\"descendants\""), ""),
+    ("0525", COVERED, (f"{HC}::_costed\\(\"alpha_recombination\"",), ""),
+    ("0531", COVERED, (f"{DE}::out\\[\"exit\"\\].append",), ""),
+    ("0541-0543", COVERED, (f"{FRE}::^def residual_z", f"{FRE}::^def run",
+                            f"{HC}::research/factor_residual_engine.py"),
+     "residual-first engine over book driver sets (USD/real yield/risk/energy)"),
+    ("0544", COVERED, (f"{DAM}::^def mine", f"{DAM}::^def missions"), ""),
+    ("0567", COVERED, (f"{MS}::^def routing_table", f"{MS}::^def posterior"), ""),
+    ("0600", COVERED, (f"{MR}::^def operator_mixes", f"{RE}::^def variant_fitness"), ""),
+    ("0605", COVERED, (f"{MR}::^def ordering_kill_rates",), ""),
+    ("0611", COVERED, (f"{UU}::^ROTATION_CELLS", f"{BL}::^def budget_split"), ""),
+    ("0612", COVERED, (f"{BL}::fired.append\\(\"stall\"\\)", f"{BL}::mode = \"EXPLORE\""), ""),
+    ("0613", COVERED, (f"{BL}::fired.append\\(\"new_clusters_not_surviving\"\\)",
+                       f"{BL}::mode = \"FALSIFY\""),
+     "many new clusters, N_EFFECTIVE_CERT flat -> FALSIFY (depth/falsification)"),
+    ("0614", COVERED, (f"{BL}::fired.append\\(\"independent_survivors_accumulating\"\\)",
+                       f"{BL}::mode = \"EXPLOIT\""), ""),
 )
 
 

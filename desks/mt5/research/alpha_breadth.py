@@ -643,6 +643,19 @@ def breadth_debt_pass(sat: dict[str, Any]) -> dict[str, Any]:
         out["coverage_report"] = str(cov)
     except Exception as exc:
         out["coverage_why"] = f"{type(exc).__name__}: {exc}"[:300]
+    # did the CRO's breadth steps run (BREADTH-0162..0172): the cycle ledger against the
+    # artifacts this leg just wrote
+    try:
+        try:
+            from research import cro_breadth_steps as cbs
+        except ImportError:                                           # pragma: no cover
+            import cro_breadth_steps as cbs  # type: ignore[import-not-found,no-redef]
+        steps = cbs.build(reports=OUT.parent)
+        cbs.publish(steps, OUT.parent / cbs.OUT.name)
+        out["cro_breadth_steps"] = {"counts": steps.get("counts"),
+                                    "success": (steps.get("success_law") or {}).get("verdict")}
+    except Exception as exc:
+        out["cro_breadth_steps_why"] = f"{type(exc).__name__}: {exc}"[:300]
     return out
 
 
