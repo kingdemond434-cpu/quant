@@ -188,30 +188,30 @@ def test_allocator_book_reads_once_and_lets_the_core_decide(tmp_path, monkeypatc
            "book": {"a": 0.12, "b": 0.08},
            "book_fallback": {"name": "inverse_vol", "book": {"a": 0.09, "b": 0.11}}}
     (tmp_path / "reports" / "pf_allocation.json").write_text(json.dumps(art))
-    ns = _exec(("allocator_book",), {"BASE": tmp_path,
+    ns = _exec(("_allocator_book",), {"BASE": tmp_path,
                                      "allocator_heat": lambda: (0.2, "allocator book (ok)")})
     monkeypatch.setattr(ap, "read_certificate", lambda root: (None, "proof failed"))
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.09, "b": 0.11} and "inverse_vol" in why and "withheld" in why
     monkeypatch.setattr(ap, "read_certificate", lambda root: ({"passed": True}, "proof 1h old"))
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.12, "b": 0.08} and "proof 1h old" in why
     # No fallback carried and no proof: rank but do not size.
     art["book_fallback"] = {}
     (tmp_path / "reports" / "pf_allocation.json").write_text(json.dumps(art))
     monkeypatch.setattr(ap, "read_certificate", lambda root: (None, "proof failed"))
-    assert ns["allocator_book"]()[0] is None
+    assert ns["_allocator_book"]()[0] is None
     # Every read fails closed with its own reason.
     (tmp_path / "reports" / "pf_allocation.json").write_text("{ nope")
     monkeypatch.setattr(ap, "read_certificate", lambda root: ({"passed": True}, "ok"))
-    assert ns["allocator_book"]()[1] == "pf_allocation unreadable (JSONDecodeError)"
+    assert ns["_allocator_book"]()[1] == "pf_allocation unreadable (JSONDecodeError)"
 
     def _boom(root):
         raise OSError("disk")
     monkeypatch.setattr(ap, "read_certificate", _boom)
-    assert ns["allocator_book"]()[1] == "proof unreadable (OSError: disk)"
+    assert ns["_allocator_book"]()[1] == "proof unreadable (OSError: disk)"
     ns["allocator_heat"] = lambda: (None, "no pf_allocation.json")
-    assert ns["allocator_book"]() == (None, "no allocator book: no pf_allocation.json")
+    assert ns["_allocator_book"]() == (None, "no allocator book: no pf_allocation.json")
 
 
 def test_the_book_is_the_allocator_that_won_in_this_state(tmp_path, monkeypatch) -> None:
@@ -229,7 +229,7 @@ def test_the_book_is_the_allocator_that_won_in_this_state(tmp_path, monkeypatch)
            "book": {"a": 0.12, "b": 0.08},
            "book_fallback": {"name": "inverse_vol", "book": {"a": 0.09, "b": 0.11}}}
     (tmp_path / "reports" / "pf_allocation.json").write_text(json.dumps(art))
-    ns = _exec(("allocator_book",), {"BASE": tmp_path,
+    ns = _exec(("_allocator_book",), {"BASE": tmp_path,
                                      "allocator_heat": lambda: (0.2, "allocator book (ok)")})
     cert = {"passed": True, "why": "global ok", "best_baseline": "risk_parity",
             "books": {"risk_parity": {"a": 0.05, "b": 0.15}},
@@ -237,19 +237,19 @@ def test_the_book_is_the_allocator_that_won_in_this_state(tmp_path, monkeypatch)
                                            "scores": {"risk_parity": 0.004}, "n_worlds": 96,
                                            "why": "risk_parity beat it here"}}}
     monkeypatch.setattr(ap, "read_certificate", lambda root: (cert, "proof 1h old"))
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.05, "b": 0.15}, "the state's winner did not size the book"
     assert "state-conditioned" in why and "risk_parity" in why
     assert "authoritative" not in why, "a challenger's book is not the certified one"
 
     # The same state, won by the dynamic allocator: the certified book, exactly as before.
     cert["by_state"]["asia|calm|MON"] = {"passed": True, "n_worlds": 96, "why": "dynamic won"}
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.12, "b": 0.08} and "authoritative" in why and "proof 1h old" in why
 
     # No per-state bucket at all -> the global verdict, which is what the desk had before.
     cert["by_state"] = {}
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.12, "b": 0.08} and "authoritative" in why
 
     # The state's winner has no finite score: `select` refuses, and a refusal sizes the
@@ -257,7 +257,7 @@ def test_the_book_is_the_allocator_that_won_in_this_state(tmp_path, monkeypatch)
     cert["by_state"] = {"asia|calm|MON": {"passed": False, "best": "risk_parity",
                                           "scores": {"risk_parity": float("nan")},
                                           "n_worlds": 96, "why": "all wiped out"}}
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.09, "b": 0.11} and "inverse_vol" in why and "withheld" in why
 
 

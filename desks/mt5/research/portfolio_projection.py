@@ -296,7 +296,7 @@ def main() -> None:
                mean_corr=mean_corr, n_eff=n_eff, port_sharpe=sharpe,
                port_daily_mean=m, port_daily_std=s)
     (BASE / "reports" / "portfolio_projection.json").write_text(
-        json.dumps(out, indent=2, default=str), encoding="utf-8")
+        json.dumps(out, indent=2, default=str), encoding="utf-8", newline="\n")
     print("\n-> reports/portfolio_projection.json")
 
 
