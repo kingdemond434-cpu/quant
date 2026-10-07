@@ -1,6 +1,13 @@
 """The scheduler inventory must not hide a stalled money path behind false alarms."""
 
-from ops import process_health as ph
+import importlib.util
+from pathlib import Path
+
+SCRIPT = Path(__file__).resolve().parents[3] / "ops" / "process_health.py"
+SPEC = importlib.util.spec_from_file_location("root_process_health", SCRIPT)
+assert SPEC is not None and SPEC.loader is not None
+ph = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(ph)
 
 
 def _row(doc, name):
