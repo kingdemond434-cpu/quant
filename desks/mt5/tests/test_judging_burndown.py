@@ -49,7 +49,7 @@ def test_only_a_cells_first_real_verdict_is_a_drain(tmp_path: Path) -> None:
     ]), encoding="utf-8")
     d = JB.drain(NOW, led)
     assert d["first_rulings"] == {"24h": 2, "7d": 3}
-    assert d["rows"]["24h"] == {"ruled": 3, "unknown": 1, "not_run": 1}
+    assert d["rows"]["24h"] == {"ruled": 3, "not_testable": 0, "unknown": 1, "not_run": 1}
 
 
 def test_inflow_is_the_dockets_first_seen_clock(tmp_path: Path) -> None:

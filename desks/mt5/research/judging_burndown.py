@@ -78,13 +78,26 @@ def _read(path: Path) -> dict[str, Any]:
         return {}
 
 
+#: The judge's own UNKNOWN reasons that mean "under 60 daily observations" (`external_gauntlet.
+#: classify_unknown`). Such a row is NOT TESTABLE on today's history: the cell leaves the backlog
+#: (`judge_coverage.NOT_TESTABLE_REASONS`, parked in the unrunnable bank) and comes back when the
+#: bank re-admits it. `series_exception`, `no_series` and an unnamed UNKNOWN stay `unknown` --
+#: those are defects, not data scarcity.
+NOT_TESTABLE_UNKNOWN: frozenset[str] = frozenset({
+    "no_signals", "signals_no_trades", "no_trades", "too_rare", "observations_under_60_days",
+    "short_history_after_cut", "lockbox_consumed_history"})
+
+
 def classify(row: dict[str, Any]) -> str:
-    """'ruled' (a real verdict), 'unknown' (no terminal gate) or 'not_run' (never computed)."""
+    """'ruled' (a real verdict), 'not_testable' (UNKNOWN for want of observations), 'unknown' (no
+    terminal gate, any other cause) or 'not_run' (never computed)."""
     if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
         return "not_run"
     gate = str(row.get("terminal_gate") or "")
     if row.get("passed") is True or (gate and gate != "UNKNOWN"):
         return "ruled"
+    if str(row.get("unknown_reason") or "") in NOT_TESTABLE_UNKNOWN:
+        return "not_testable"
     return "unknown"
 
 
@@ -102,8 +115,13 @@ def drain(now: datetime, path: Path | None = None) -> dict[str, Any]:
             for w, h in WINDOWS_H.items()}
     earliest = min(cuts.values())
     ruled_before: set[str] = set()
+    settled_before: set[str] = set()
     first: dict[str, int] = dict.fromkeys(cuts, 0)
-    rows: dict[str, dict[str, int]] = {w: {"ruled": 0, "unknown": 0, "not_run": 0} for w in cuts}
+    # FIRST SETTLED: a cell's first real ruling OR its first NOT_TESTABLE reading, counted once.
+    # Both take a cell out of the backlog `judge_coverage` counts, so both are drain.
+    settled: dict[str, int] = dict.fromkeys(cuts, 0)
+    rows: dict[str, dict[str, int]] = {w: {"ruled": 0, "not_testable": 0, "unknown": 0,
+                                           "not_run": 0} for w in cuts}
     total = 0
     try:
         with p.open("r", encoding="utf-8", errors="replace") as fh:
@@ -124,6 +142,8 @@ def drain(now: datetime, path: Path | None = None) -> dict[str, Any]:
                 if at < earliest:
                     if kind == "ruled" and cell:
                         ruled_before.add(cell)
+                    if kind in ("ruled", "not_testable") and cell:
+                        settled_before.add(cell)
                     continue
                 for w, cut in cuts.items():
                     if at >= cut:
@@ -133,10 +153,17 @@ def drain(now: datetime, path: Path | None = None) -> dict[str, Any]:
                     for w, cut in cuts.items():
                         if at >= cut:
                             first[w] += 1
+                if kind in ("ruled", "not_testable") and cell and cell not in settled_before:
+                    settled_before.add(cell)
+                    for w, cut in cuts.items():
+                        if at >= cut:
+                            settled[w] += 1
     except OSError as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     return {"status": "MEASURED", "rows_total": total, "first_rulings": first, "rows": rows,
-            "first_rulings_per_hour": {w: round(first[w] / WINDOWS_H[w], 3) for w in cuts}}
+            "first_rulings_per_hour": {w: round(first[w] / WINDOWS_H[w], 3) for w in cuts},
+            "first_settled": settled,
+            "first_settled_per_hour": {w: round(settled[w] / WINDOWS_H[w], 3) for w in cuts}}
 
 
 def inflow(now: datetime, path: Path | None = None) -> dict[str, Any]:
@@ -336,12 +363,16 @@ def verdict(b: dict[str, Any], d: dict[str, Any], i: dict[str, Any],
             or i.get("status") != "MEASURED":
         why = "; ".join(str(x.get("why")) for x in (b, d, i) if x.get("status") != "MEASURED")
         return {"status": UNMEASURED, "why": why}
-    out_h = float(d["first_rulings_per_hour"][window])
+    # THE BACKLOG'S OWN OUTFLOW: first rulings plus first NOT_TESTABLE readings, because
+    # `judge_coverage` takes both out of the count this is divided into. Older drains without
+    # the field fall back to first rulings.
+    out_h = float((d.get("first_settled_per_hour") or d["first_rulings_per_hour"])[window])
     in_h = float(i["created_per_hour"][window])
     n = int(b["unjudged"])
     net_day = round((out_h - in_h) * 24.0, 1)
     need_h = round(in_h + n / (TARGET_DAYS * 24.0), 1)
-    doc: dict[str, Any] = {"window": window, "first_rulings_per_hour": out_h,
+    doc: dict[str, Any] = {"window": window, "first_settled_per_hour": out_h,
+                           "first_rulings_per_hour": float(d["first_rulings_per_hour"][window]),
                            "created_per_hour": in_h, "net_per_day": net_day,
                            "needed_first_rulings_per_hour": need_h,
                            "needed_multiple_of_today": (round(need_h / out_h, 2) if out_h > 0
