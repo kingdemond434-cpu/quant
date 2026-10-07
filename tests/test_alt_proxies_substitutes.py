@@ -536,7 +536,9 @@ BLOCKED = ("jp_jnto_arrivals", "cn_holiday_spend", "tr_bkm_card", "br_cielo_icva
            "za_beti", "kr_busan_port", "cn_mot_port_weekly",
            # ECOS terms unread, fenced 2026-10-06 (audit of PR #239)
            "kr_bok_card_spend", "kr_ecos_base_rate", "kr_ecos_call_rate", "kr_ecos_fx_reserves",
-           "kr_ecos_export_prices")
+           "kr_ecos_export_prices",
+           # BOJ stat-search: no permitting clause quoted, fenced 2026-10-07 (audit of PR #251)
+           "jp_boj_call_rate", "jp_boj_tankan", "jp_boj_current_account", "jp_boj_jgb_holdings")
 
 
 def test_every_blocked_source_is_substituted_or_says_why_not() -> None:
@@ -575,7 +577,9 @@ def test_a_substituted_source_is_still_never_fetched(tmp_path: Path) -> None:
     assert rep["blocked_substituted"]["kr_busan_port"] == ["kr_mof_container_teu",
                                                            "imf_portwatch_ports"]
     assert set(A.NO_SUBSTITUTE) == {"in_npci_upi", "za_beti", "kr_bok_card_spend",
-                                    "kr_ecos_fx_reserves", "kr_ecos_export_prices"}
+                                    "kr_ecos_fx_reserves", "kr_ecos_export_prices",
+                                    "jp_boj_call_rate", "jp_boj_tankan",
+                                    "jp_boj_current_account", "jp_boj_jgb_holdings"}
     # the two ECOS rows with an UNMEASURED candidate still count as unsubstituted
     assert set(rep["blocked_unsubstituted"]) == set(A.unsubstituted()) == {
         *A.NO_SUBSTITUTE, "kr_ecos_base_rate", "kr_ecos_call_rate"}

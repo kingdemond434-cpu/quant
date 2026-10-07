@@ -67,17 +67,20 @@ def lane(A: Any, src: Any, paths: Any, gains: dict[str, Any]
     store = _read(paths.obs_dir / f"{src.id}.json")
     pts: dict[str, list[dict[str, Any]]] = (A.build_points(src, store)
                                             if store and src.terms == "confirmed" else {})
-    # A back-dated revision (pit_quality=backfill) is never judged on a plane that excludes it:
-    # the series, its events and its states read the honest points only.
+    # A back-dated revision (pit_quality=backfill) is never JUDGED on a plane that excludes it:
+    # the series summary below describes the whole store (so a backfilled history still reads
+    # PARSED, with its backfill counted), while the points returned -- what the events and the
+    # states are built from -- are the honest ones only.
+    stored = pts
     n_backfill = 0
     if pts and hasattr(A, "judged_points"):
         pts, n_backfill = A.judged_points(src.id, pts)
     # Revisions are their own vintages, each knowable only from the instant it was first seen
     # (alt_proxies.revision_points), never folded back onto the first print.
     revs: dict[str, list[dict[str, Any]]] = (A.revision_points(src, store)
-                                             if pts else {})
+                                             if stored else {})
     series: dict[str, Any] = {}
-    for name, rows in sorted(pts.items()):
+    for name, rows in sorted(stored.items()):
         if not rows:
             continue
         last = rows[-1]

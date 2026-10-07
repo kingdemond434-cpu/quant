@@ -39,6 +39,23 @@ def box_codes(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv(k, v)
 
 
+BOJ_IDS = ("jp_boj_call_rate", "jp_boj_tankan", "jp_boj_current_account", "jp_boj_jgb_holdings")
+
+
+@pytest.fixture
+def plumbing(monkeypatch: pytest.MonkeyPatch, box_codes: None) -> None:
+    """TEST-ONLY: exercise the plane's plumbing on the offline fixtures. (1) The BOJ rows are
+    treated as terms-confirmed (production fails closed: no permitting clause is quoted). (2) The
+    backfill exclusion is lifted: every fixture point is first seen long after its publication,
+    so in production all of them are pit_quality=backfill and none is judged (see
+    test_backfill_is_never_judged_on_the_jp_plane). Neither switch exists outside this fixture."""
+    from dataclasses import replace
+    srcs = tuple(replace(x, terms="confirmed") if x.id in BOJ_IDS else x for x in A.SOURCES)
+    monkeypatch.setattr(A, "SOURCES", srcs)
+    monkeypatch.setattr(A, "BY_ID", {x.id: x for x in srcs})
+    monkeypatch.setattr(A, "BACKFILL_EXCLUDED", frozenset())
+
+
 def _obs(sid: str) -> list[A.Obs]:
     parse = A.BY_ID[sid].parse
     assert parse is not None
@@ -210,10 +227,18 @@ def test_points_carry_the_five_alpha_objects_and_revisions_are_vintages() -> Non
 # ---------------------------------------------------------------------------- terms
 def test_plane_rows_are_confirmed_with_evidence_and_blocked_hosts_are_not_sources() -> None:
     for sid in PLANE_IDS:
-        assert A.BY_ID[sid].terms == "confirmed" and sid in A.JP_TERMS_EVIDENCE, sid
+        assert sid in A.JP_TERMS_EVIDENCE, sid
         ev = A.JP_TERMS_EVIDENCE[sid]
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"]
-        assert ev["checked_at"] == "2026-10-06"
+        if sid in BOJ_IDS:
+            # FAIL CLOSED (audit of #251): no permitting clause is quoted for stat-search
+            assert A.BY_ID[sid].terms == "to_confirm", sid
+            assert ev["decision"] == "to_confirm" and ev["checked_at"] == "2026-10-07"
+            assert "commercial purposes" in ev["why_to_confirm"]
+            assert A.status_of(A.BY_ID[sid]) == "BLOCKED_ON_TERMS:to_confirm"
+        else:
+            assert A.BY_ID[sid].terms == "confirmed", sid
+            assert ev["checked_at"] == "2026-10-06"
     for sid, meta in A.JP_REFUSED.items():
         assert sid not in A.BY_ID                                  # no fetcher exists to run
         assert A.JP_TERMS_EVIDENCE[sid]["terms_quote"], sid
@@ -226,7 +251,8 @@ def test_plane_rows_are_confirmed_with_evidence_and_blocked_hosts_are_not_source
     assert A.JP_TERMS_EVIDENCE["jp_jquants_investor_types"]["decision"] == "confirmed_private_use"
 
 
-def test_unconfigured_boj_codes_build_no_request(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_unconfigured_boj_codes_build_no_request(monkeypatch: pytest.MonkeyPatch,
+                                                plumbing: None) -> None:
     src = A.BY_ID["jp_boj_current_account"]
     for env in src.config_env:
         monkeypatch.delenv(env, raising=False)
@@ -253,7 +279,7 @@ def test_plane_cells_route_through_the_lane_policy_and_name_their_data_source() 
     assert {c["data_source"] for c in cells} >= {"mof:fx_intervention", "boj:call_rate"}
 
 
-def test_fixture_pass_publishes_axes_and_never_mints(tmp_path: Path, box_codes: None) -> None:
+def test_fixture_pass_publishes_axes_and_never_mints(tmp_path: Path, plumbing: None) -> None:
     paths = A.Paths(tmp_path / "desk")
     rep = A.run(paths, fixtures=FIX, donate=False, now=NOW)
     assert rep["direct_cells"]["n"] == 0
@@ -264,7 +290,7 @@ def test_fixture_pass_publishes_axes_and_never_mints(tmp_path: Path, box_codes: 
 
 # ---------------------------------------------------------------------------- department
 def test_jp_plane_reports_lanes_events_and_funding_state(tmp_path: Path,
-                                                         box_codes: None) -> None:
+                                                         plumbing: None) -> None:
     from countries.jp import official_plane as J
     paths = A.Paths(tmp_path / "desk")
     A.run(paths, fixtures=FIX, donate=False, now=NOW)
@@ -329,3 +355,79 @@ def test_refused_registry_rows_carry_the_terms_label() -> None:
     rows = {r["id"]: r for r in reg["sources"]}
     for sid in ("jp_tocom_settlements", "jp_boj_decisions"):
         assert rows[sid]["access_label"] == "PUBLIC_WITH_TERMS" and rows[sid]["terms_note"]
+
+
+# ---------------------------------------------------------------------------- audit of #251
+def test_backfill_is_never_judged_on_the_jp_plane(tmp_path: Path, box_codes: None) -> None:
+    """A backfilled point is a CURRENT-vintage value stamped at the first print's release, i.e.
+    a back-dated revision. On the fixtures every MOF point is backfill: none may reach a gain
+    test, a cell, allocation intel, an axis or lake series, an event or the funding state; the
+    store keeps them and the reports count them."""
+    from countries.jp import official_plane as J
+    assert set(PLANE_IDS) == set(A.BACKFILL_EXCLUDED)
+    paths = A.Paths(tmp_path / "desk")
+    rep = A.run(paths, fixtures=FIX, donate=False, now=NOW)
+    mof = [sid for sid in PLANE_IDS if sid not in BOJ_IDS]
+    for sid in mof:
+        assert rep["sources"][sid].get("backfill_excluded", 0) > 0, sid
+        assert not any(k.startswith(f"{sid}|") for k in rep["gain_tests"]), sid
+        assert not (paths.axes / f"alt_{sid}.json").exists(), sid
+        assert not list(paths.series.glob(f"alt_{sid}__*.csv")), sid
+        assert (paths.obs_dir / f"{sid}.json").exists(), sid          # the history is kept
+    intel = json.dumps(rep.get("allocation_intel") or {})
+    assert not any(sid in intel for sid in mof)
+    doc = J.run(paths=paths, report_default=tmp_path / "JP.json", now=NOW)
+    lanes = {r["dataset"]: r for r in doc["lanes"]}
+    for sid in mof:
+        assert lanes[sid]["status"] == "PARSED" and lanes[sid]["backfill_excluded"] > 0, sid
+    assert not [e for e in doc["events"] if e["event"] in ("jp_mof_intervention",
+                                                           "jp_mof_weekly_securities")
+                and e["lifecycle"] == "RELEASED"]
+    fs = doc["states"]["japan_funding_state"]
+    assert fs["yen_strength_z"] == "UNMEASURED" and fs["measured_components"] == 0
+
+
+def test_judged_points_keeps_live_and_drops_backfill() -> None:
+    pts = {"x": [{"d": "1", "pit_quality": "backfill"}, {"d": "2", "pit_quality": "live"}]}
+    got, n = A.judged_points("jp_mof_securities_weekly", pts)
+    assert n == 1 and [p["d"] for p in got["x"]] == ["2"]
+    same, n0 = A.judged_points("kr_exports_early", pts)                # not a JP plane row
+    assert n0 == 0 and same is pts
+
+
+def test_mof_by_investor_stamps_are_never_early() -> None:
+    """MOF's own schedule: the monthly releases at 08:50 JST on the 8th-12th, and the
+    by-investor table for month M rides the release of M+2 (Nov 2023 -> 12 Jan 2024; Jul 2026
+    -> 8 Sep 2026, the fixture's Final Update; the 2026-27 schedule page lists 8 Oct, 10 Nov,
+    8 Dec, 12 Jan, 8 Feb, 8 Mar). Over every month 2000-2030 the stamp is at or after 08:50
+    JST on the 14th of M+2 (no early stamp against any release on or before the 14th) and
+    never later than the 22nd."""
+    from datetime import timedelta as td
+    rule = A.BY_ID["jp_mof_securities_investor_bonds"].rule
+    assert rule is A.rule_mof_investor
+    known = {(2023, 11): datetime(2024, 1, 12, 8, 50) - td(hours=9),
+             (2026, 7): datetime(2026, 9, 8, 8, 50) - td(hours=9),
+             (2026, 8): datetime(2026, 10, 8, 8, 50) - td(hours=9),
+             (2026, 9): datetime(2026, 11, 10, 8, 50) - td(hours=9),
+             (2026, 10): datetime(2026, 12, 8, 8, 50) - td(hours=9),
+             (2026, 11): datetime(2027, 1, 12, 8, 50) - td(hours=9),
+             (2026, 12): datetime(2027, 2, 8, 8, 50) - td(hours=9),
+             (2027, 1): datetime(2027, 3, 8, 8, 50) - td(hours=9)}
+    early = []
+    for (y, m), rel in known.items():
+        stamp = rule(A._month_end(y, m))
+        if stamp < rel.replace(tzinfo=UTC):
+            early.append((y, m, stamp, rel))
+    assert not early, early
+    # the audit's case: Nov 2023 was stamped 11 Jan 00:00Z by _lag_rule(42)
+    assert rule(date(2023, 11, 30)) > datetime(2024, 1, 11, 23, 50, tzinfo=UTC)
+    n = 0
+    for y in range(2000, 2031):
+        for m in range(1, 13):
+            stamp = rule(A._month_end(y, m))
+            y2, m2 = (y + (m + 2 > 12), (m + 2 - 1) % 12 + 1)
+            floor = datetime(y2, m2, 13, 23, 50, tzinfo=UTC)       # 08:50 JST on the 14th
+            assert floor <= stamp <= datetime(y2, m2, 22, tzinfo=UTC), (y, m, stamp)
+            assert (stamp.hour, stamp.minute) == (23, 50)            # 08:50 JST
+            n += 1
+    assert n == 31 * 12

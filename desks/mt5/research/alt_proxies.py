@@ -3977,6 +3977,14 @@ NO_SUBSTITUTE: dict[str, str] = {
     "za_beti": ("SARB disclaimer: IP 'cannot be used without written permission'; Stats SA's "
                 "copyright page and PDFs are behind an Incapsula wall, so no reuse text could be "
                 "read"),
+    # BOJ stat-search, fenced to_confirm 2026-10-07 (audit of #251): no permitting clause.
+    **dict.fromkeys(("jp_boj_call_rate", "jp_boj_tankan", "jp_boj_current_account",
+                     "jp_boj_jgb_holdings"),
+                    ("the BOJ stat-search API notice quotes no clause permitting reuse and the "
+                     "Bank's copyright policy excludes commercial copying; no other free source "
+                     "publishes these BOJ series under quoted reuse terms. Box action: obtain "
+                     "the Bank's written permission (or a quotable permitting clause) and record "
+                     "it in _BOJ_API_EV")),
 }
 
 
