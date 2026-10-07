@@ -24,7 +24,14 @@ WHAT THIS DOES.
     claim family and the selection it was charged; `libs.research.experiment_ledger` adds each
     family's N to the lifetime trial census exactly once. A charge only ever ratchets up.
   * `breadth(rows)` is the measurement: cells, independent breadth units (a claim family counts
-    as one), and the families behind the collapse.
+    as one), `k_eff` (the effective independent bets the lineage implies) and the families
+    behind the collapse. `publish_breadth` writes it to `reports/CLAIM_BREADTH.json`, which
+    alpha_breadth, the coverage tensor and the Tier-1 scorecard read beside their own numbers.
+  * A source that DECLARES its search (`claim_selection_trials`, `claims_searched`,
+    `variations_searched`) is charged that number, never less, even when its prose states none.
+  * `claim_charge(row)` is the provider the deflated-Sharpe charge reads: the largest selection
+    any record of the row's claim family carries -- its own declaration, its own words, or the
+    lifetime ledger (by claim family, or by genome id for a cell long gone from the docket).
 
 WHAT IT IS NOT. Nothing is removed, capped or re-ordered: every cell is still built and judged.
 Only the COUNTING changes -- one searched claim is one unit of breadth and 200 trials of
@@ -44,6 +51,22 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 LEDGER = ROOT / "desks" / "mt5" / "data" / "hypotheses" / "claim_families.json"
+#: The published breadth measurement: cells, breadth units and k_eff from the claim lineage.
+BREADTH_REPORT = ROOT / "desks" / "mt5" / "reports" / "CLAIM_BREADTH.json"
+UNMEASURED = "UNMEASURED"
+#: Fields in which a producer DECLARES how many claims/variations its source searched. A
+#: declaration is charged as stated -- never less -- whether or not the prose repeats it.
+DECLARED_KEYS: tuple[str, ...] = ("claim_selection_trials", "claims_searched",
+                                  "variations_searched")
+#: Text fields that are SHARED by every cell of one claim (the claim's own words). A declared-only
+#: claim is identified by these first, so a grid's per-cell titles never split one claim in two.
+_IDENTITY_FIELDS: tuple[str, ...] = ("mechanism", "mechanism_note", "prior", "claim", "text",
+                                     "source_url", "url", "title", "source_title")
+
+
+class MalformedGrid(ValueError):
+    """`register_grid` was handed something that is not a grid of cells it can key. Raised, never
+    swallowed: a grid that silently registers nothing loses every member's lineage for good."""
 
 #: What a search is counted in, as sources write it.
 _UNITS = (r"(?:variations?|variants?|combinations?|backtests?|back-tests?|parameter\s+sets?|"
@@ -74,6 +97,29 @@ TEXT_FIELDS: tuple[str, ...] = ("mechanism", "mechanism_note", "prior", "claim",
 
 def _int(s: str) -> int:
     return int(re.sub(r"[,\s]", "", s))
+
+
+def _as_int(v: Any) -> int:
+    """A declared count as a reader would take it: 200, 200.0, "200", "1,200", "~200". 0 when the
+    value states no count (None, a bool, prose) -- 0 here means NOT DECLARED, never "searched 0"."""
+    if isinstance(v, bool) or v is None:
+        return 0
+    if isinstance(v, int):
+        return max(0, v)
+    if isinstance(v, float):
+        return max(0, int(v)) if v == v and v not in (float("inf"), float("-inf")) else 0
+    if isinstance(v, str):
+        m = re.search(r"\d{1,3}(?:[,\s]\d{3})+|\d+", v)
+        if m:
+            with contextlib.suppress(ValueError):
+                return _int(m.group(0))
+    return 0
+
+
+def declared_trials(row: Mapping[str, Any]) -> int:
+    """The largest search a producer DECLARED on the row (0 when it declared none)."""
+    n = max((_as_int(row.get(k)) for k in DECLARED_KEYS), default=0)
+    return n if n <= MAX_SELECTION else 0
 
 
 @lru_cache(maxsize=4096)
@@ -122,6 +168,16 @@ def claim_family_id(seat: str, sentence: str) -> str:
     return "claim:" + hashlib.sha256(f"{seat}|{sentence}".encode()).hexdigest()[:16]
 
 
+def _declared_identity(row: Mapping[str, Any]) -> str:
+    """The claim's identity when only a declaration (no sentence) names its search: the first
+    shared text field, normalised. Per-cell fields come last so one claim stays one family."""
+    for k in _IDENTITY_FIELDS:
+        v = row.get(k)
+        if isinstance(v, str) and v.strip():
+            return "declared:" + re.sub(r"\s+", " ", v.lower()).strip()[:400]
+    return "declared:" + str(row.get("family") or "?")
+
+
 def _scan_row(row: Mapping[str, Any]) -> tuple[int, str]:
     """(N, the claim sentence) over the row's text fields, each field scanned ON ITS OWN so the
     identity sentence never runs from a shared mechanism note into a per-cell title."""
@@ -147,13 +203,20 @@ def stamp(row: dict[str, Any], *, text: str | None = None) -> bool:
         sentence = _sentence(text, span) if n else ""
     else:
         n, sentence = _scan_row(row)
+    # A DECLARED SEARCH IS CHARGED AS DECLARED, NEVER LESS (2026-10-01). A producer that states
+    # how many claims it searched -- `claim_selection_trials: 200` with no "best of" sentence --
+    # was ignored here unless its prose repeated the number, so its cells went uncharged.
+    declared = declared_trials(row)
+    if declared > n:
+        n = declared
+        if not sentence:
+            sentence = _declared_identity(row)
     have = row.get("claim_family")
-    if not n and not have:
+    if n <= 1 and not have:
         return False
     if not have:
         row["claim_family"] = claim_family_id(_seat(row), sentence)
-    prior = row.get("claim_selection_trials")
-    row["claim_selection_trials"] = max(int(prior) if isinstance(prior, int) else 0, n)
+    row["claim_selection_trials"] = max(_as_int(row.get("claim_selection_trials")), n)
     row["breadth_unit"] = row["claim_family"]
     return True
 
@@ -177,13 +240,16 @@ def breadth(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     """Cells versus independent breadth units, and the claim families behind the collapse."""
     cells = 0
     units: set[str] = set()
+    unit_sizes: dict[str, int] = {}
     fams: dict[str, dict[str, Any]] = {}
     mechanisms: set[str] = set()
     for r in rows:
         if not isinstance(r, Mapping):
             continue
         cells += 1
-        units.add(breadth_unit(r))
+        u = breadth_unit(r)
+        units.add(u)
+        unit_sizes[u] = unit_sizes.get(u, 0) + 1
         mechanisms.add(str(r.get("claim_family") or r.get("family") or "?"))
         cf = r.get("claim_family")
         if cf:
@@ -198,12 +264,75 @@ def breadth(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
             f["sources"].add(str(r.get("source") or ""))
             f["families"].add(str(r.get("family") or ""))
     return {"cells": cells, "breadth_units": len(units), "distinct_mechanisms": len(mechanisms),
+            **k_eff(unit_sizes.values()),
             "claim_families": {k: {"cells": v["cells"], "selection_trials": v["selection_trials"],
                                    "sources": sorted(v["sources"]),
                                    "families": sorted(v["families"]),
                                    "genome_ids": sorted(v["genomes"])}
                                for k, v in sorted(fams.items())},
             "cells_in_claim_families": sum(v["cells"] for v in fams.values())}
+
+
+def k_eff(unit_sizes: Iterable[int]) -> dict[str, Any]:
+    """EFFECTIVE INDEPENDENT BETS FROM THE CLAIM LINEAGE.
+
+    Cells of one breadth unit are one bet (correlation 1 within a claim family, a cell alone is
+    its own unit), units are independent: the correlation matrix is block-diagonal with blocks of
+    the unit sizes n_i, and its participation ratio -- the estimator `trial_ledger` and
+    `mt5desk.canonical.effective_trials` already use -- is (sum n_i)^2 / sum n_i^2. It equals the
+    unit count when every unit is the same size and falls toward 1 as one claim dominates the
+    docket; `breadth_units` (the rank) is its ceiling. No cells is UNMEASURED, never 0."""
+    sizes = [int(n) for n in unit_sizes if int(n) > 0]
+    if not sizes:
+        return {"k_eff": None, "k_eff_status": UNMEASURED}
+    total, sq = float(sum(sizes)), float(sum(n * n for n in sizes))
+    return {"k_eff": round(total * total / sq, 4), "k_eff_status": "MEASURED",
+            "largest_unit_cells": max(sizes)}
+
+
+def publish_breadth(measured: Mapping[str, Any], *, path: Path | None = None,
+                    now: datetime | None = None,
+                    lifetime_selection_trials: int | None = None) -> dict[str, Any]:
+    """Write the breadth the claim lineage implies -- one searched claim = one breadth unit -- to
+    `reports/CLAIM_BREADTH.json` for alpha_breadth, the coverage tensor and the Tier-1 scorecard.
+    A pass with no cells publishes UNMEASURED, never a zero."""
+    cells = int(measured.get("cells") or 0)
+    fams = measured.get("claim_families") or {}
+    doc = {
+        "generated_utc": (now or datetime.now(tz=UTC)).isoformat(timespec="seconds"),
+        "status": "MEASURED" if cells else UNMEASURED,
+        "cells": cells if cells else None,
+        "breadth_units": int(measured.get("breadth_units") or 0) if cells else None,
+        "k_eff": measured.get("k_eff") if cells else None,
+        "distinct_mechanisms": measured.get("distinct_mechanisms") if cells else None,
+        "largest_unit_cells": measured.get("largest_unit_cells"),
+        "claim_families": len(fams),
+        "cells_in_claim_families": int(measured.get("cells_in_claim_families") or 0),
+        "selection_trials_in_docket": sum(int((v or {}).get("selection_trials") or 0)
+                                          for v in fams.values()),
+        "lifetime_selection_trials": lifetime_selection_trials,
+        "rule": ("one searched claim = ONE breadth unit; k_eff = (sum n_i)^2 / sum n_i^2 over "
+                 "breadth-unit sizes (cells of one claim family move as one bet, units are "
+                 "independent); breadth_units is its ceiling. Counting only -- no cell is "
+                 "removed, capped or re-ordered by this"),
+    }
+    target = path or BREADTH_REPORT
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(doc, indent=1), "utf-8")
+    return doc
+
+
+def read_breadth(path: Path | None = None) -> dict[str, Any]:
+    """The published claim-lineage breadth, or UNMEASURED naming the path it looked for."""
+    target = path or BREADTH_REPORT
+    try:
+        doc = json.loads(target.read_text("utf-8"))
+    except (OSError, ValueError):
+        doc = None
+    if not isinstance(doc, dict):
+        return {"status": UNMEASURED, "k_eff": None, "breadth_units": None, "cells": None,
+                "why": f"absent or unreadable: {target}"}
+    return doc
 
 
 def read_ledger(path: Path | None = None) -> dict[str, Any]:
@@ -262,13 +391,31 @@ def register_grid(rows: Iterable[Mapping[str, Any]], *, path: Path | None = None
     from it would never gain its lineage. A producer that minted a searched claim knows its full
     grid, so it stamps every row and hands the ledger every member's genome id -- the id the
     hypothesis graph keys its verdicts by -- and the verdict joins to the family from then on."""
+    if rows is None or isinstance(rows, (str, bytes, Mapping)):
+        raise MalformedGrid(f"a grid is an iterable of cell mappings, not {type(rows).__name__}")
+    try:
+        cells = list(rows)
+    except TypeError as exc:
+        raise MalformedGrid(f"a grid must be iterable: {exc}") from exc
+    if not cells:
+        raise MalformedGrid("an empty grid registers nothing; a producer that minted cells "
+                            "hands them all over")
+    bad = [i for i, r in enumerate(cells) if not isinstance(r, Mapping)]
+    if bad:
+        raise MalformedGrid(f"{len(bad)} grid row(s) are not mappings (first at index {bad[0]}: "
+                            f"{type(cells[bad[0]]).__name__})")
     genome_id: Any = None
     with contextlib.suppress(Exception):
         from libs.research.alpha_genome import genome_id
     fams: dict[str, dict[str, Any]] = {}
-    for r in rows:
+    unkeyed: list[int] = []
+    for i, r in enumerate(cells):
         probe = dict(r)
         if not stamp(probe):
+            continue
+        if not (probe.get("genome_id") or (probe.get("symbol") and probe.get("family")
+                                           and isinstance(probe.get("params") or {}, Mapping))):
+            unkeyed.append(i)
             continue
         f = fams.setdefault(probe["claim_family"], {"cells": 0, "selection_trials": 0,
                                                     "sources": set(), "families": set(),
@@ -287,6 +434,13 @@ def register_grid(rows: Iterable[Mapping[str, Any]], *, path: Path | None = None
                 gid = None
         if gid:
             f["genome_ids"].add(str(gid))
+    if unkeyed:
+        raise MalformedGrid(f"{len(unkeyed)} stamped grid cell(s) carry neither a genome_id nor "
+                            f"a symbol, family and params mapping to key one (first at index "
+                            f"{unkeyed[0]}); their lineage could never join a verdict")
+    if not fams:
+        raise MalformedGrid(f"none of the grid's {len(cells)} cell(s) states or declares a "
+                            "searched claim; register_grid is for a searched claim's grid")
     measured = {"claim_families": {k: {"cells": v["cells"],
                                        "selection_trials": v["selection_trials"],
                                        "sources": sorted(v["sources"]),
@@ -311,3 +465,60 @@ def lifetime_charges(path: Path | None = None) -> dict[str, int]:
     return {k: int(v.get("selection_trials") or 0)
             for k, v in read_ledger(path)["families"].items()
             if int(v.get("selection_trials") or 0) > 0}
+
+
+_INDEX_CACHE: dict[str, Any] = {}
+
+
+def _charge_index(path: Path | None = None) -> tuple[dict[str, int], dict[str, set[str]]]:
+    """({claim_family: N}, {genome_id: {claim_family}}) from the lifetime ledger, re-read only
+    when the file changes -- the judge asks once per cell and must not parse it per cell."""
+    target = path or LEDGER
+    try:
+        st = target.stat()
+        key = (str(target), st.st_mtime_ns, st.st_size)
+    except OSError:
+        key = (str(target), -1, -1)
+    if _INDEX_CACHE.get("key") != key:
+        fams = read_ledger(target)["families"]
+        charges = {fid: _as_int(f.get("selection_trials")) for fid, f in fams.items()}
+        by_gid: dict[str, set[str]] = {}
+        for fid, f in fams.items():
+            for g in f.get("member_genome_ids") or []:
+                by_gid.setdefault(str(g), set()).add(fid)
+        _INDEX_CACHE.update({"key": key, "charges": charges, "by_gid": by_gid})
+    return _INDEX_CACHE["charges"], _INDEX_CACHE["by_gid"]
+
+
+def claim_charge(row: Mapping[str, Any], *, path: Path | None = None) -> int:
+    """THE CLAIM CHARGE THE DEFLATED-SHARPE TRIAL COUNT READS for one cell: the largest selection
+    any record of its claim family carries -- the row's own declaration, its own words, the
+    lifetime ledger by claim family, and the ledger by genome id (so a judged cell whose docket
+    row no longer carries the stamp is still charged). 0 when no record names a searched claim:
+    the caller's max() then leaves its other terms exactly as they were."""
+    probe = dict(row) if isinstance(row, Mapping) else {}
+    stamp(probe)
+    n = _as_int(probe.get("claim_selection_trials"))
+    charges, by_gid = _charge_index(path)
+    fids = {str(probe["claim_family"])} if probe.get("claim_family") else set()
+    gid = probe.get("genome_id")
+    if gid:
+        fids |= by_gid.get(str(gid), set())
+    for fid in fids:
+        n = max(n, charges.get(fid, 0))
+    return n
+
+
+def family_floors(path: Path | None = None) -> dict[str, int]:
+    """{strategy family: the largest claim selection charged to any claim family whose cells
+    were built in it}. A strategy family that swept a searched claim is charged at least that
+    claim's N -- the family term of max(campaign, family, claim)."""
+    out: dict[str, int] = {}
+    for f in read_ledger(path)["families"].values():
+        n = _as_int(f.get("selection_trials"))
+        if n <= 0:
+            continue
+        for fam in f.get("families") or []:
+            if fam:
+                out[str(fam)] = max(out.get(str(fam), 0), n)
+    return out

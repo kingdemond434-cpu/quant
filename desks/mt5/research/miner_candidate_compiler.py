@@ -694,7 +694,7 @@ def _claim_lineage(row: dict, mechanism: str, source: str) -> dict:
 
     A row whose words say its result was the best of N searched variations -- or a producer that
     declares `claim_selection_trials` itself -- stamps every candidate minted from it with ONE
-    `claim_family`, `breadth_unit` and N. {} for every other row."""
+    `claim_family`, `breadth_unit` and N. Every other row gets `claim_family: None`."""
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
     from libs.research import claim_selection as cs
@@ -704,8 +704,15 @@ def _claim_lineage(row: dict, mechanism: str, source: str) -> dict:
     for k in ("claim_family", "claim_selection_trials"):
         if row.get(k):
             probe[k] = row[k]
+    for k in cs.DECLARED_KEYS:
+        if row.get(k) and k not in probe:
+            probe[k] = row[k]
     if not cs.stamp(probe):
-        return {}
+        # EVERY CANDIDATE CARRIES `claim_family` (follow-up to #169): None says "the source stated
+        # and declared no search" -- a recorded reading, so a consumer can tell it from a candidate
+        # minted before lineage existed (key absent). `breadth_unit` is NOT set here: a cell that
+        # is its own unit is keyed by its genome id downstream, per chart and session.
+        return {"claim_family": None}
     return {k: probe[k] for k in ("claim_family", "breadth_unit", "claim_selection_trials")}
 
 
@@ -1207,6 +1214,20 @@ def compile_from_text(source: str, row: dict, universe: set[str]) -> tuple[list[
     return (out, "TEXT_EXTRACTED") if out else ([], "NEEDS_EXACT_RULE_EXTRACTION")
 
 
+def _metric_repair(row: dict) -> list[str]:
+    """Repair the row's DERIVABLE impossible metrics IN PLACE (metric_fence.repair_row) and return
+    what was repaired; the repairs ride on the row as `metric_repairs` so the pass can count them.
+    A row that needs none is left untouched."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.research.metric_fence import repair_row
+    fixed, notes = repair_row(row)
+    if notes:
+        row.update(fixed)
+        row["metric_repairs"] = notes
+    return notes
+
+
 def _metric_fence(row: dict) -> list[str]:
     """The shared bounds fence's reasons for this row. The box runs this file by path, so the
     repository root is put on the path first rather than letting an ImportError pass rows."""
@@ -1235,6 +1256,11 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
     # 2,296% "win rate" was an MQL5 win COUNT parsed into the percent field, and 2,985 of 3,154
     # committed mql5_survivors rows carried one. The fence runs before any family is read, for
     # every seat, and the refusal is counted by reason in `impossible_metrics` -- never silent.
+    # REPAIR BEFORE REFUSAL (2026-10-01): a win rate derivable from the row's own counts (wins /
+    # trades -- including the MQL5 count written into the percent field) is recomputed, counted
+    # as `repaired` in `impossible_metrics`, and the row goes on to compile. Only what no
+    # arithmetic on the row can recover is refused.
+    _metric_repair(row)
     if _metric_fence(row):
         return [], "IMPOSSIBLE_METRIC"
 
@@ -1607,6 +1633,8 @@ def main() -> int:
         impossible = disposition == "IMPOSSIBLE_METRIC"
         fence_tally.add(source, _metric_fence(row) if impossible else [],
                         str(row.get("url") or row.get("title") or ""))
+        fence_tally.repair(source, list(row.get("metric_repairs") or []),
+                           str(row.get("url") or row.get("title") or ""))
         refusal = (disposition in {"OPERATIONAL_ROW", "EMPTY_CAPTURE", "BANNED_FAMILY",
                                    "IMPOSSIBLE_METRIC"}
                    or terminal_refusal)
@@ -1658,6 +1686,19 @@ def main() -> int:
             sources_by_identity.setdefault(identity, set()).add(source)
             if identity not in candidates:
                 candidates[identity] = candidate
+            # THE CLAIM LINEAGE SURVIVES THE COLLISION (follow-up to #169). Two sources naming one
+            # cell used to keep the FIRST candidate whole, so a searched claim arriving second lost
+            # its claim_family and its charge. The largest stated selection wins -- a charge only
+            # ratchets up -- and a recovered candidate minted before lineage existed gets the key.
+            _kept = candidates[identity]
+            if candidate.get("claim_family") and (
+                    not _kept.get("claim_family")
+                    or int(candidate.get("claim_selection_trials") or 0)
+                    > int(_kept.get("claim_selection_trials") or 0)):
+                for _k in ("claim_family", "breadth_unit", "claim_selection_trials"):
+                    if _k in candidate:
+                        _kept[_k] = candidate[_k]
+            _kept.setdefault("claim_family", None)
             # Keep all contributing miners without submitting the same experiment twice.
             origins = candidates[identity].setdefault("contributing_sources", [])
             if source not in origins:

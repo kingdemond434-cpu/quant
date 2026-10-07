@@ -155,6 +155,17 @@ def _claim_selection_counts() -> tuple[int, dict[str, int]]:
     return sum(by_fam.values()), by_fam
 
 
+def _claim_family_floors() -> dict[str, int]:
+    """{strategy family: the largest claim selection swept into it} (claim_selection.family_floors).
+    The family term of the DSR charge is max(family's own trials, that claim N): a strategy family
+    that carried a searched claim's cells cannot be charged less than the claim's own search."""
+    try:
+        from libs.research.claim_selection import family_floors
+        return family_floors()
+    except Exception:
+        return {}
+
+
 def _prereg_counts() -> int:
     try:
         from libs.research.preregistration import cards
@@ -174,15 +185,26 @@ def lifetime(write: bool = True) -> dict[str, Any]:
     prereg = _prereg_counts()
     fams = sorted(set(g_fam) | set(p_fam) | set(s_fam))
     by_fam = {f: int(g_fam.get(f, 0) + p_fam.get(f, 0) + s_fam.get(f, 0)) for f in fams}
+    # THE CLAIM CHARGE REACHES THE FAMILY TERM (follow-up to #169, 2026-10-01). The judge charges
+    # DSR max(campaign, family, union) and reads `family` from `by_family`; a claim family's N sat
+    # under its own `claim:` key, so the strategy family that swept the claim was charged its own
+    # slice only. Each strategy family is raised to the largest claim N swept into it -- a max,
+    # so nothing is counted twice and no family figure ever falls. The union is unchanged.
+    floors = _claim_family_floors()
+    for f, n in floors.items():
+        by_fam[f] = max(int(by_fam.get(f, 0)), int(n))
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(),
            "lifetime_trials": int(g_total + p_total + s_total),
            "judged_cells": g_total, "screened_cells": p_total,
            "source_selection_trials": s_total, "preregistered_cards": prereg,
+           "claim_trials": dict(sorted(s_fam.items(), key=lambda kv: -kv[1])),
+           "family_claim_floor": dict(sorted(floors.items(), key=lambda kv: -kv[1])),
            "mass_screen_cells": m_total,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
                     "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl) + "
-                    "each claim family's stated source selection, once; "
+                    "each claim family's stated source selection, once; a strategy family's "
+                    "count is at least the largest claim selection swept into it; "
                     "consumers may only deflate MORE with it, never less")}
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -210,3 +232,66 @@ def family_trials(family: str, *, max_age_s: float = 3600.0) -> int:
 def total_trials() -> int:
     family_trials("_")
     return int((_CACHE["doc"] or {}).get("lifetime_trials", 0))
+
+
+_RO: dict[str, Any] = {"key": None, "doc": {}}
+
+
+def _read_only() -> dict[str, Any]:
+    """The last written ledger, re-read when the file changes, and NEVER recomputed or written:
+    the judge reads this through `claim_campaign` and must not write another organ's artifact.
+    Unreadable is {} -- the max() then falls back to its other terms, never below them."""
+    try:
+        st = OUT.stat()
+        key = (str(OUT), st.st_mtime_ns, st.st_size)
+    except OSError:
+        return {}
+    if _RO["key"] != key:
+        try:
+            doc = json.loads(OUT.read_text("utf-8"))
+        except (OSError, ValueError):
+            doc = {}
+        _RO.update({"key": key, "doc": doc if isinstance(doc, dict) else {}})
+    cached: dict[str, Any] = _RO["doc"]
+    return cached
+
+
+def family_charge(campaign: int, family: str, claim_family: str | None = None, *,
+                  doc: dict[str, Any] | None = None) -> tuple[int, str]:
+    """THE FAMILY CHARGE = max(campaign, family, claim) -- the provider the deflated-Sharpe trial
+    count reads. `family` is the strategy family's lifetime trials (already floored at every claim
+    N swept into it), `claim` the cell's own claim family's N. Never below the campaign charge."""
+    if doc is None:
+        doc = _read_only()
+    fam_n = int((doc.get("by_family") or {}).get(family, 0) or 0)
+    fam_n = max(fam_n, int((doc.get("family_claim_floor") or {}).get(family, 0) or 0))
+    claim_n = int((doc.get("claim_trials") or {}).get(claim_family or "", 0) or 0)
+    n = max(int(campaign), fam_n, claim_n)
+    return n, (f"max(campaign {int(campaign)}, family {family or '?'} {fam_n}, "
+               f"claim {claim_family or 'none'} {claim_n}) = {n}")
+
+
+def claim_campaign(campaign: int, cell: dict[str, Any]) -> int:
+    """`campaign` raised to the cell's claim charge and its family's claim floor: the ONE value
+    the sealed judge's `charged_lifetime_trials` needs in its campaign slot for
+    max(campaign, family, claim) to reach DSR. A cell that names no searched claim gets
+    `campaign` back unchanged; this can only raise the count, never lower it."""
+    n = int(campaign)
+    try:
+        from libs.research.claim_selection import claim_charge
+        row = dict(cell)
+        if not row.get("symbol") and row.get("sym"):
+            row["symbol"] = row["sym"]
+        if not row.get("genome_id") and row.get("symbol") and row.get("family"):
+            try:
+                from libs.research.alpha_genome import genome_id
+                row["genome_id"] = genome_id(str(row["symbol"]), str(row["family"]),
+                                             dict(row.get("params") or {}))
+            except Exception:
+                pass
+        n = max(n, claim_charge(row))
+        floor = (_read_only().get("family_claim_floor") or {}).get(str(cell.get("family") or ""), 0)
+        n = max(n, int(floor or 0))
+    except Exception:
+        return int(campaign)
+    return n

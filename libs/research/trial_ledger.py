@@ -336,10 +336,17 @@ def trial_from_record(rec: Mapping[str, Any] | Any, *, index: int = 0) -> Trial:
         width_i = 1
     # A CLAIM FAMILY OUTRANKS EVERY OTHER GROUPING (libs.research.claim_selection): the cells a
     # single searched claim was swept into are one mechanism, whatever strategy family built them.
-    try:
-        sel = max(0, int(get("claim_selection_trials") or 0))
-    except (TypeError, ValueError):
-        sel = 0
+    # A DECLARED SEARCH IS CHARGED AS DECLARED, never less, under any of the names a producer
+    # writes it (`claim_selection.DECLARED_KEYS`), and a "200" or 200.0 reads as 200.
+    sel = 0
+    for key in ("claim_selection_trials", "claims_searched", "variations_searched"):
+        raw_sel = get(key)
+        if isinstance(raw_sel, bool) or raw_sel in (None, ""):
+            continue
+        try:
+            sel = max(sel, int(float(str(raw_sel).replace(",", "").strip())))
+        except (TypeError, ValueError, OverflowError):
+            continue
     return Trial(tid, str(get("family") or get("trial_family") or ""), desc, params, width_i,
                  str(get("claim_family") or get("lineage") or get("family_id") or ""), sel)
 

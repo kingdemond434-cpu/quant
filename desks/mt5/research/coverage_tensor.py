@@ -1118,6 +1118,7 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, top_k: int = TOP
                       "why": "single-name equities are the event lane and are never hunted for "
                              "statistical hypotheses (two-lane order 2026-09-06)"},
             "representation_basis": rep_basis,
+            "research_breadth": _research_breadth(),
             "unmeasured": absent.to_json(),
         }
         if not dry_run:
@@ -1130,6 +1131,22 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, top_k: int = TOP
         if own_conn and c is not None:
             with contextlib.suppress(Exception):
                 c.close()
+
+
+def _research_breadth() -> dict[str, Any]:
+    """How many INDEPENDENT ideas fill the cells counted above (follow-up to #169): breadth units
+    and k_eff from the claim lineage, read from reports/CLAIM_BREADTH.json. A cell count says how
+    much of the tensor was touched; this says how many searched claims touched it -- one claim
+    swept into 25,000 cells is one unit. Reported beside the tensors and never ratcheted as a
+    floor (it is a reading of the docket, not coverage). Absent is UNMEASURED, never 0."""
+    try:
+        from libs.research.claim_selection import read_breadth
+        doc = read_breadth()
+    except Exception as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    return {k: doc.get(k) for k in ("status", "cells", "breadth_units", "k_eff",
+                                    "claim_families", "cells_in_claim_families",
+                                    "generated_utc", "why") if k in doc}
 
 
 def _named_examples(world: CV.Tensor, forest: CV.Tensor) -> list[dict[str, Any]]:

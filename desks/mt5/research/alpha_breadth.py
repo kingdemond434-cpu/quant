@@ -432,6 +432,28 @@ def _tasks(empty: list[str], head: dict[str, Any], clusters: dict[str, Any]) -> 
     return tasks
 
 
+def research_breadth() -> dict[str, Any]:
+    """THE SEVENTH READING, OF THE RESEARCH DOCKET AND NOT THE BOOK (follow-up to #169): breadth
+    units and k_eff from the claim lineage (`libs.research.claim_selection`, published hourly by
+    merge_hypotheses to reports/CLAIM_BREADTH.json). One searched claim is ONE breadth unit
+    however many cells it was swept into, so this is how many independent ideas the gauntlet is
+    being fed. It counts research, not P&L, so it sits BESIDE the readings and never in the
+    headline minimum. Absent is UNMEASURED with the path, never 0."""
+    try:
+        from libs.research.claim_selection import read_breadth
+        doc = read_breadth()
+    except Exception as exc:
+        return {"status": "UNMEASURED", "k_eff": None, "breadth_units": None,
+                "why": f"{type(exc).__name__}: {exc}"}
+    out = {k: doc.get(k) for k in ("status", "cells", "breadth_units", "k_eff",
+                                   "distinct_mechanisms", "claim_families",
+                                   "cells_in_claim_families", "generated_utc", "why")
+           if k in doc}
+    out["headline_unchanged"] = True
+    out["source"] = "desks/mt5/reports/CLAIM_BREADTH.json"
+    return out
+
+
 def run(write_queue: bool = True) -> dict[str, Any]:
     exp = book_exposure()
     exposure = exp["exposure"]
@@ -501,6 +523,7 @@ def run(write_queue: bool = True) -> dict[str, Any]:
         "generated_utc": datetime.now(tz=UTC).isoformat(),
         "gaps": gaps,
         "timestamp_overlap": overlap,
+        "research_breadth": research_breadth(),
         "factor_rank": factor_rank,
         "nominal": {
             "sleeves_with_ledgers": exp["n_sleeves_total"],

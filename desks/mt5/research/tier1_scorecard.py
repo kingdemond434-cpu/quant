@@ -65,6 +65,9 @@ ALLOCATOR_PROOF, PF_ALLOCATION = REPORTS / "ALLOCATOR_PROOF.json", REPORTS / "pf
 TAPE_RECORDER, MOAT_COVERAGE = REPORTS / "TAPE_RECORDER.json", DATA / "moat_coverage.json"
 TAPE_TICKS, ROW_CONVERSION = DATA / "tape" / "ticks", REPORTS / "ROW_CONVERSION.json"
 CANDIDATE_CONSERVATION = REPORTS / "CANDIDATE_CONSERVATION.json"
+#: Breadth units and k_eff from the claim lineage (libs.research.claim_selection), published by
+#: merge_hypotheses. Read BESIDE the fourteen rows: it measures the research docket, not the book.
+CLAIM_BREADTH = REPORTS / "CLAIM_BREADTH.json"
 OUT = REPORTS / "TIER1_SCORECARD.json"
 
 BELOW, AT, ABOVE, UNMEASURED = "BELOW", "AT", "ABOVE", "UNMEASURED"
@@ -545,6 +548,21 @@ def _overall(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "weakest_measured": [r["dimension"] for r in weakest], "why": why}
 
 
+def _research_breadth() -> dict[str, Any]:
+    """Breadth units and k_eff from the claim lineage -- one searched claim = one unit (follow-up
+    to #169). BESIDE the fourteen rows, not a fifteenth: row 1 counts independent bets in the BOOK,
+    this counts independent ideas in the DOCKET that feeds it. Absent reads UNMEASURED with the
+    path it looked for, never 0."""
+    doc = _read(CLAIM_BREADTH)
+    if not isinstance(doc, dict):
+        return {"status": UNMEASURED, "k_eff": None, "breadth_units": None,
+                "basis": f"ABSENT/UNREADABLE: {_rel(CLAIM_BREADTH)}"}
+    return {"status": doc.get("status") or UNMEASURED, "k_eff": _num(doc.get("k_eff")),
+            "breadth_units": _num(doc.get("breadth_units")), "cells": _num(doc.get("cells")),
+            "claim_families": doc.get("claim_families"),
+            "basis": f"{_rel(CLAIM_BREADTH)} k_eff, breadth_units", "measured_at": _stamp(doc)}
+
+
 def build() -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for builder in BUILDERS:
@@ -556,6 +574,7 @@ def build() -> dict[str, Any]:
                          "basis": f"UNMEASURED: builder raised {type(exc).__name__}: {exc}",
                          "measured_at": None, "lower_is_better": False})
     return {"generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "research_breadth": _research_breadth(),
             "authority": ("MEASUREMENT ONLY -- sizes nothing, gates nothing, certifies nothing. "
                           "It reports where the fourteen Tier-1 dimensions stand, read from the "
                           "artifacts that own them."),
