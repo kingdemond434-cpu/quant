@@ -59,6 +59,7 @@ organ adds is the PRICE that act was previously taken without.
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import math
 import sys
@@ -184,21 +185,59 @@ def provider_cards() -> dict[str, Any]:
     return {"status": "MEASURED", "files": len(files), "providers": n, "unreadable": bad}
 
 
+def _terms_evidence(row: dict[str, Any]) -> str | None:
+    """The positive terms evidence a source card carries, or None: a declared
+    `machine_use_allowed: true`, a quoted permitting clause on the card, a `confirmed` verdict in
+    alt_proxies.TERMS, or admission by the one terms gate (libs.data.terms_hold)."""
+    if row.get("machine_use_allowed") is True:
+        return "machine_use_allowed: true on its card"
+    if str(row.get("terms_url") or "").strip() and str(row.get("terms_quote") or "").strip():
+        return "quoted terms on its card"
+    sid = str(row.get("id") or "")
+    try:
+        import alt_proxies  # type: ignore[import-not-found]
+        verdict = alt_proxies.TERMS.get(sid)
+        if verdict and verdict[0] == "confirmed":
+            return f"alt_proxies.TERMS: {verdict[1]}"
+    except Exception:  # an unreadable verdict table is no evidence, never a pass
+        pass
+    try:
+        from libs.data.terms_hold import gauntlet_terms
+        ok, _why = gauntlet_terms(sid)
+        if ok:
+            return "terms gate admits the id"
+    except Exception:  # an unreadable gate is no evidence, never a pass
+        pass
+    return None
+
+
 def acquisition_gate(row: dict[str, Any]) -> str | None:
-    """Why a source may NOT be proposed for acquisition, or None. Paid ground, a declared
-    `machine_use_allowed: false`, and a source the terms fence blocks are never proposed: they
-    stay priced and visible, but the collector is never pointed at them."""
+    """Why a source may NOT be proposed for acquisition, or None. FAILS CLOSED (audit #211,
+    2026-10-07): paid ground, a declared `machine_use_allowed: false`, a source the terms fence
+    blocks, a fence that cannot be consulted, and a source with NO positive terms evidence are
+    never proposed. They stay priced and visible (rows, `terms_review`), but the collector is
+    never pointed at them until their terms are read and quoted."""
     if str(row.get("access") or "").lower() == "paid":
         return "paid access: blocked by the data-access rule (public or licensed only)"
     if row.get("machine_use_allowed") is False:
         return "machine_use_allowed: false on its card"
+    tf: Any = None
     try:
-        from libs.data import terms_fence as tf
-        fenced = tf.fenced_source(str(row.get("id") or ""))
+        tf = importlib.import_module("libs.data.terms_fence")
+    except ModuleNotFoundError as exc:
+        if exc.name != "libs.data.terms_fence":
+            return f"terms fence unavailable ({type(exc).__name__}): held"
+    except Exception as exc:
+        return f"terms fence unavailable ({type(exc).__name__}): held"
+    if tf is not None:
+        try:
+            fenced = tf.fenced_source(str(row.get("id") or ""))
+        except Exception as exc:
+            return f"terms fence failed ({type(exc).__name__}): held"
         if fenced:
             return f"terms fence: {fenced}"
-    except Exception:
-        pass
+    if _terms_evidence(row) is None:
+        return "terms UNMEASURED: no permitting evidence on its card (held for terms review)"
     return None
 
 
@@ -434,6 +473,8 @@ def build(budget_s: float = 120.0) -> dict[str, Any]:
         "provider_cards": cards,
         "n_gated_from_proposals": sum(1 for r in rows if r["never_collected"]
                                       and r["acquisition_gate"]),
+        "terms_review": [r["id"] for r in rows if r["never_collected"]
+                         and str(r["acquisition_gate"] or "").startswith("terms UNMEASURED")][:20],
         "n_never_collected": sum(1 for r in rows if r["never_collected"]),
         "prior_basis": ("POSTERIOR_ALPHA mean mu_sd per symbol" if sd
                         else f"flat prior 1.0: {sd_why}"),

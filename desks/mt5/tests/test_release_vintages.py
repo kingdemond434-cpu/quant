@@ -220,8 +220,15 @@ def test_ff_consensus_pairs_are_stored_but_held_from_the_gauntlet(
         json.dumps({"ff_calendar": {"status": "PENDING"}}), "utf-8")
     assert rv.gauntlet_terms("ff_calendar_vintage+alfred:PAYEMS")[0] is False
     (tmp_path / "terms_clearances.json").write_text(
-        json.dumps({"ff_calendar": {"status": "CLEARED", "by": "terms review"}}), "utf-8")
+        json.dumps({"ff_calendar": {"status": "CLEARED", "by": "terms review",
+                                    "terms_url": "https://example.test/terms",
+                                    "terms_quote": "machine use permitted"}}), "utf-8")
     kept, held = es.terms_filter(rows)
     assert len(kept) == len(rows) and held["n"] == 0
-    # the nowcast source was never held, and an unknown source is not whitelisted away
+    # a bare CLEARED with no quoted clause admits nothing (audit #211)
+    (tmp_path / "terms_clearances.json").write_text(
+        json.dumps({"ff_calendar": {"status": "CLEARED", "by": "terms review"}}), "utf-8")
+    assert rv.gauntlet_terms("ff_calendar_vintage+alfred:PAYEMS")[0] is False
+    # the nowcast source rides FRED's recorded basis; an unknown source fails closed
     assert rv.gauntlet_terms("alfred:PAYEMS") == (True, "")
+    assert rv.gauntlet_terms("some_new_calendar")[0] is False

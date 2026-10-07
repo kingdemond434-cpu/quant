@@ -2906,7 +2906,9 @@ def sensor_ledger() -> dict:
 #: through the one terms-gated door (sensor_engines.emit_conditioner_cells), never sizes.
 WORLD_SENSOR_LEGS: dict[str, tuple[str, tuple[str, ...], float, str]] = {
     "ws_vol_conditioner": ("macro/vol_conditioner.py", (), 1.0, "VOL_CONDITIONER.json"),
-    "ws_option_chains": ("macro/option_chains.py", (), 1.0, "OPTION_CHAINS.json"),
+    # audit #211 (2026-10-07): CBOE delayed quotes and TAIFEX are HELD on terms, so their legs
+    # measure the archive only (--no-fetch) until terms_clearances.json carries a quoted clearance.
+    "ws_option_chains": ("macro/option_chains.py", ("--no-fetch",), 1.0, "OPTION_CHAINS.json"),
     "ws_priced_in": ("research/priced_in.py", ("--days", "1200"), 6.0, "PRICED_IN.json"),
     "ws_name_sentiment": ("research/name_sentiment.py", ("--days", "400"), 20.0,
                           "NAME_SENTIMENT.json"),
@@ -2919,7 +2921,8 @@ WORLD_SENSOR_LEGS: dict[str, tuple[str, tuple[str, ...], float, str]] = {
     "ws_news_hawkes": ("macro/news_hawkes.py", (), 20.0, "NEWS_HAWKES.json"),
     "ws_latent_states": ("macro/latent_states.py", (), 20.0, "LATENT_STATES.json"),
     "ws_implied_move": ("macro/implied_move.py", (), 20.0, "IMPLIED_MOVE.json"),
-    "ws_taiwan_options": ("macro/taiwan_options.py", (), 20.0, "TAIWAN_OPTIONS.json"),
+    "ws_taiwan_options": ("macro/taiwan_options.py", ("--no-fetch",), 20.0,
+                          "TAIWAN_OPTIONS.json"),
     # audit #15 (2026-10-06): ALFRED vintages and the PIT audit were executables on no clock.
     # fetch_alfred re-reads a series file older than a day (ALFRED never deletes a vintage, so
     # the new file holds every old one); pit_audit commits its verdict with --apply.

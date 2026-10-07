@@ -195,16 +195,19 @@ def test_cboe_cells_are_terms_held_but_state_is_still_measured(tmp_path: Path) -
     assert doc["cells"][0].get("emitted", 0) == 0          # held: nothing reaches the registry
     assert doc["symbols"]["SPY"]["latest"]["gex"] < 0      # ...while the state is measured
     clear = tmp_path / "terms_clearances.json"
-    clear.write_text(json.dumps({"cboe": {"status": "CLEARED", "by": "terms review"}}), "utf-8")
+    clear.write_text(json.dumps({"cboe": {"status": "CLEARED", "by": "terms review",
+                                        "terms_url": "https://example.test/terms",
+                                        "terms_quote": "machine use permitted"}}), "utf-8")
     assert oc.terms_status(path=clear)["status"] == "CLEARED"
-    assert oc.terms_status("prediction_markets:forecast_store")["status"] == "CLEARED"
+    # the forecast store has no recorded terms basis: the allow-list holds it (audit #211)
+    assert oc.terms_status("prediction_markets:forecast_store")["status"] == "HELD"
 
 
-def test_cell_door_holds_cboe_and_admits_the_forecast_store() -> None:
+def test_cell_door_holds_cboe_and_admits_own_bars() -> None:
     got = oc.emit_gated("s", ["a"], ["US500"], data_source="cboe_delayed:options",
                         mechanism="m", falsifier="f", generator="g", dry_run=True)
     assert got["status"] == "HELD_TERMS" and got["emitted"] == 0
-    assert oc.emit_gated("s", ["a"], ["US500"], data_source="prediction_markets:forecast_store",
+    assert oc.emit_gated("s", ["a"], ["US500"], data_source="mt5:bars",
                          mechanism="m", falsifier="f", generator="g", dry_run=True)["emitted"] > 0
 
 

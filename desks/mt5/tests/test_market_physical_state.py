@@ -122,7 +122,9 @@ def test_terms_gate_on_vol_sources_and_chains_routed_to_discovery(
     monkeypatch.setattr(rv, "CLEARANCES", tmp_path / "clear.json")
     assert ms.terms(ms.VOL_SOURCE)["gauntlet"] == "HELD"
     (tmp_path / "clear.json").write_text(json.dumps(
-        {"yahoo": {"status": "CLEARED", "by": "t"}, "cboe": {"status": "CLEARED", "by": "t"}}))
+        {k: {"status": "CLEARED", "by": "t", "terms_url": "https://example.test/terms",
+              "terms_quote": "machine use permitted"}
+         for k in ("yahoo", "cboe")}))
     rep = ms.build(now=NOW, series=_series(), charts={}, vol_rows=_vol_rows())
     assert rep["regime"] == "vol_backwardation_high"
     req = tmp_path / "endpoints_world_sensor.json"
@@ -249,17 +251,20 @@ def test_absent_provider_cards_are_unmeasured_and_gated_cards_never_proposed(
     (donors / "providers_20261006.json").write_text("{not json")
     assert se.provider_cards()["status"] == "UNMEASURED"
     (donors / "providers_20261007.json").write_text(json.dumps({"providers": [
-        {"id": "open", "targets": ["US500"], "access": "public"},
+        {"id": "open", "targets": ["US500"], "access": "public", "machine_use_allowed": True},
+        {"id": "unread", "targets": ["US500"], "access": "public"},
         {"id": "paid_feed", "targets": ["US500"], "access": "paid"},
         {"id": "no_machine", "targets": ["XAUUSD"], "access": "public",
          "machine_use_allowed": False}]}))
     cards = se.provider_cards()
-    assert cards["status"] == "MEASURED" and cards["providers"] == 3
+    assert cards["status"] == "MEASURED" and cards["providers"] == 4
     rep = se.build()
     ids = {r["id"] for r in rep["proposals"]}
     assert "donor:openterminal:open" in ids
-    assert not ids & {"donor:openterminal:paid_feed", "donor:openterminal:no_machine"}
-    assert rep["n_gated_from_proposals"] == 2
+    assert not ids & {"donor:openterminal:paid_feed", "donor:openterminal:no_machine",
+                      "donor:openterminal:unread"}
+    assert rep["n_gated_from_proposals"] == 3
+    assert "donor:openterminal:unread" in rep["terms_review"]   # fail closed, still visible
     gated = {r["id"]: r["acquisition_gate"] for r in rep["rows"]}
     assert "paid" in gated["donor:openterminal:paid_feed"]
     assert "machine_use_allowed" in gated["donor:openterminal:no_machine"]
