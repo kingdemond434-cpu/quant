@@ -215,17 +215,37 @@ def _period_end_dt(p: str) -> datetime | None:
         return None
 
 
+#: The universal sensor contract's names (MANDATE 2026-10-06 s2.5) a fetcher may set on an
+#: observation; they are carried onto the stored vintage verbatim so a later adapter is a pure
+#: mapping. The store itself adds knowable_at / received_at / revision_of / revision_delta.
+CONTRACT_FIELDS = ("sensor_id", "source_id", "dataset_id", "entity", "geography",
+                   "asset_domain", "metric", "unit", "event_time", "scheduled_time",
+                   "publication_time", "expected_value", "consensus", "seasonal_expected",
+                   "raw_surprise", "surprise_z", "percentile", "delta", "acceleration",
+                   "source_confidence", "measurement_uncertainty", "commercial_rights",
+                   "licence", "provenance_hash", "raw_pointer", "derived")
+
+
 def merge_obs(path: Path, new: list[dict[str, Any]], *, now: datetime, lag_h: float
               ) -> dict[str, int]:
     """Append what is NEW: an unseen (key, period_end), or a changed value for a seen one (a
-    revision, kept as its own vintage). Returns counts."""
+    revision, kept as its own vintage). Returns counts.
+
+    A DATED ARCHIVE (an observation carrying `publication_time`, e.g. an exchange's per-day
+    file) is stamped at that publication time on its first vintage, whenever the box first read
+    it: the file was world-knowable then, and `received_at` keeps the box's own sight apart
+    (PIT law: never replace when the market could know with when the desk saw it). A changed
+    value later is a revision, stamped no earlier than its first sight."""
     have = load_obs(path)
     first_fetch = not have
     last: dict[tuple[str, str], float] = {}
+    last_id: dict[tuple[str, str], str] = {}
     for r in have:
-        last[_obs_key(r)] = float(r.get("value"))
+        last[_obs_key(r)] = float(r["value"])
+        if r.get("observation_id"):
+            last_id[_obs_key(r)] = str(r["observation_id"])
     rows: list[dict[str, Any]] = []
-    counts = Counter()
+    counts: Counter[str] = Counter()
     for o in new:
         try:
             v = float(o["value"])
@@ -240,12 +260,27 @@ def merge_obs(path: Path, new: list[dict[str, Any]], *, now: datetime, lag_h: fl
         if pe is None:
             counts["refused_bad_period"] += 1
             continue
-        avail = pe + timedelta(hours=lag_h)
+        pub = _parse(o.get("publication_time"))
+        avail = pub if pub is not None else pe + timedelta(hours=lag_h)
         backfill = first_fetch and k not in last
-        at = avail if backfill else max(avail, now)
-        rows.append({"key": k[0], "period_end": k[1], "value": v, "available_time": _iso(at),
-                     "first_seen_utc": _iso(now), "vintage": BACKFILL if backfill else
-                     ("revision" if k in last else "first")})
+        archive = pub is not None and k not in last
+        at = avail if (backfill or archive) else max(avail, now)
+        vintage = ("archive" if archive else BACKFILL if backfill else
+                   "revision" if k in last else "first")
+        rec: dict[str, Any] = {"key": k[0], "period_end": k[1], "value": v,
+                               "available_time": _iso(at), "first_seen_utc": _iso(now),
+                               "vintage": vintage}
+        if any(f in o for f in CONTRACT_FIELDS):
+            rec.update({f: o[f] for f in CONTRACT_FIELDS if f in o})
+            rec["observation_id"] = hashlib.sha1(
+                f"{path.stem}|{k[0]}|{k[1]}|{_iso(now)}".encode()).hexdigest()[:16]
+            rec["knowable_at"] = _iso(at)
+            rec["received_at"] = _iso(now)
+            if k in last:
+                rec["revision_of"] = last_id.get(k)
+                rec["revision_delta"] = round(v - last[k], 12)
+            last_id[k] = rec["observation_id"]
+        rows.append(rec)
         counts["revisions" if k in last else "added"] += 1
         last[k] = v
     if rows:
@@ -398,8 +433,7 @@ def build_alt_state(store: Store, columns: dict[str, Any], now: datetime) -> dic
         df = first_vintage_frame(store.obs / f"{sid}.jsonl")
         if df is None or df.empty:
             continue
-        df = df[[_parse(a) is not None and _parse(a) <= now
-                 for a in df["available_time"]]]
+        df = df[[(t := _parse(a)) is not None and t <= now for a in df["available_time"]]]
         for col, meta in cols.items():
             if col not in df.columns:
                 continue
@@ -467,10 +501,45 @@ def run_source(row: dict[str, Any], store: Store, fetch: fs.Fetch, cstate: dict[
         h.obs = aggregate_posts(store, row, now)
     if h.obs:
         extra["merge"] = merge_obs(store.obs / f"{sid}.jsonl", h.obs, now=now, lag_h=lag_h)
+        if kind == "cn_exchange":
+            extra["derived"] = derive_exchange(store, row, h, now, lag_h)
         extra["series"] = publish_series(store, sid)
     if h.datasets:
         extra["catalogue"] = feed_catalogue(store, h.datasets, row, now)
     return h, extra
+
+
+def derive_exchange(store: Store, row: dict[str, Any], h: fs.Harvest, now: datetime,
+                    lag_h: float) -> dict[str, Any]:
+    """Change, acceleration, seasonal surprise and divergence (libs.data.free_stack_cnx.derive)
+    from the FIRST-VINTAGE history of the base keys, merged back as their own observations, and
+    the hypothesis columns for every signal key the store now holds."""
+    from libs.data import free_stack_cnx as cnx
+    sid = str(row["id"])
+    path = store.obs / f"{sid}.jsonl"
+    series: dict[str, dict[str, float]] = {}
+    pub: dict[str, str] = {}
+    seen: set[tuple[str, str]] = set()
+    for r in load_obs(path):
+        k = _obs_key(r)
+        if k in seen or cnx.is_derived(k[0]):
+            continue
+        seen.add(k)
+        series.setdefault(k[0], {})[k[1]] = float(r["value"])
+        if r.get("publication_time"):
+            pub[k[1]] = max(pub.get(k[1], ""), str(r["publication_time"]))
+    rows = cnx.derive(series, pub)
+    base = {"source_id": sid, "geography": "CN", "asset_domain": "futures",
+            **cnx.licence_fields(row)}
+    for o in rows:
+        prod, metric = str(o["key"]).split("_", 1)
+        o.update({**base, "entity": f"{str(row.get('exchange')).upper()}:{prod}",
+                  "metric": metric, "event_time": o["period_end"],
+                  "dataset_id": f"{row.get('exchange')}.derived"})
+    counts = merge_obs(path, rows, now=now, lag_h=lag_h) if rows else {}
+    keys = sorted(set(series) | {str(o["key"]) for o in rows})
+    h.columns.update(cnx.signal_columns(keys, str(row.get("exchange") or "")))
+    return {"rows": len(rows), **counts, "signal_columns": len(h.columns)}
 
 
 def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
@@ -502,6 +571,11 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
                        "last_attempt": _iso(now)})
             continue
         s0 = time.monotonic()
+        if row.get("kind") == "cn_exchange":
+            # a multi-day exchange walk stops inside what is left of the pass, keeping the leg
+            # under the cycle's cap; its cursor resumes the walk next pass
+            row = {**row, "max_seconds": max(5.0, min(float(row.get("max_seconds") or 150),
+                                                      budget_s - spent - 30.0))}
         h, extra = run_source(row, store, fetch, st, now)
         secs = round(time.monotonic() - s0, 2)
         cad = CADENCE_H.get(str(row.get("cadence")), 24.0)
