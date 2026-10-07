@@ -24,10 +24,12 @@ MONEY_PATH = (
     "desks/mt5/research/pf_allocator.py", "desks/mt5/research/promoter.py",
 )
 
-#: Any of these in a module's source means it reaches the control room's weights: the library,
-#: the daily organs that publish them, or their reports read off disk.
+#: Any of these in a module's source means it reaches the control room's WEIGHTS: the weight
+#: functions, the daily organs that publish them, or their reports read off disk. Its day LABELS
+#: (`label_days`, `daily_frame`) are a signal conditioner a family may test like any other
+#: feature, so importing the module alone is not a reach.
 _REACH = re.compile(
-    r"regime\.control_room|regime import control_room|\bsleeve_weights\b"
+    r"\bsleeve_weights\b|control_room\.kernel|control_room import[^\n]*\bkernel\b"
     r"|research\.control_room|regime_allocation_contract"
     r"|CONTROL_ROOM(_MECHANISMS)?\.json|REGIME_ALLOCATION_CONTRACT\.json")
 
@@ -65,9 +67,12 @@ def test_the_fence_catches_an_unbilled_reader(tmp_path):
     f = tmp_path / "sizer.py"
     f.write_text("from libs.regime.control_room import sleeve_weights\n", encoding="utf-8")
     assert len(violations([f])) == 1
-    f.write_text("from libs.regime import control_room\n"
-                 "from libs.portfolio import capital_modifiers\n", encoding="utf-8")
+    f.write_text("from libs.regime import control_room as cr\n"
+                 "from libs.portfolio import capital_modifiers\n"
+                 "w = cr.sleeve_weights\n", encoding="utf-8")
     assert len(violations([f])) == 1, "two-sided alone is not enough without a rail line"
+    f.write_text("from libs.regime.control_room import label_days\n", encoding="utf-8")
+    assert violations([f]) == [], "a family conditioning on day labels is not a weight reader"
 
 
 def test_the_fence_passes_a_billed_two_sided_reader(tmp_path):
