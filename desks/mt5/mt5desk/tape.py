@@ -161,10 +161,19 @@ def contract_terms_row(symbol: str, info: object, at: datetime) -> dict:
     }
 
 
+def _ny_offset_h(wall: datetime) -> int:
+    """New York's UTC offset at a New York wall time: -4 from the second Sunday of March 02:00 to
+    the first Sunday of November 02:00, else -5. The US rule since 2007, used only when the OS
+    has no time-zone database (a bare Windows Python without `tzdata`)."""
+    def sunday(month: int, nth: int) -> datetime:
+        first = datetime(wall.year, month, 1, 2)
+        return first + timedelta(days=(6 - first.weekday()) % 7, weeks=nth - 1)
+    return -4 if sunday(3, 2) <= wall < sunday(11, 1) else -5
+
+
 def broker_epoch_to_utc(stamp: object) -> str | None:
     """`symbol_info().time` is epoch seconds on the BROKER's clock (New York wall time + 7h,
     `libs.regime.session_clock`); the true UTC instant, or None when the terminal gave none."""
-    from zoneinfo import ZoneInfo
     try:
         sec = int(stamp)  # type: ignore[call-overload]
     except (TypeError, ValueError):
@@ -172,8 +181,12 @@ def broker_epoch_to_utc(stamp: object) -> str | None:
     if sec <= 0:
         return None
     wall = datetime.fromtimestamp(sec, UTC).replace(tzinfo=None) - timedelta(hours=7)
-    return wall.replace(tzinfo=ZoneInfo("America/New_York")).astimezone(UTC).isoformat(
-        timespec="seconds")
+    try:
+        from zoneinfo import ZoneInfo
+        utc = wall.replace(tzinfo=ZoneInfo("America/New_York")).astimezone(UTC)
+    except (KeyError, OSError, ValueError):     # ZoneInfoNotFoundError is a KeyError
+        utc = (wall - timedelta(hours=_ny_offset_h(wall))).replace(tzinfo=UTC)
+    return utc.isoformat(timespec="seconds")
 
 
 def record_contract_terms(symbols: list[str]) -> dict:
@@ -289,8 +302,12 @@ def publish_swap_panel(terms: dict, now: datetime | None = None) -> dict:
     """Write a panel file when a swap changed or the heartbeat is due -- only from live evidence --
     and ALWAYS the freshness report, so a capture that stopped is visible by its age."""
     now = now or datetime.now(UTC)
+    # A corrupt or hand-edited file must not raise on every run: it reads as empty, which can only
+    # make the feed look OLDER (no previous capture, every value newly seen), never fresher.
     prev = _load(SWAP_FRESHNESS, {})
+    prev = prev if isinstance(prev, dict) else {}
     state = _load(SWAP_STATE, {})
+    state = {k: v for k, v in state.items() if isinstance(v, dict)} if isinstance(state, dict) else {}
     records = evidenced_records(terms, now)
     rows = swap_panel_rows(records, state)
     changed = any(r["value_since"] == r["observed_at"] for r in rows)     # new or repriced
