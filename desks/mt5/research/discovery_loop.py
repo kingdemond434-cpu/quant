@@ -847,7 +847,7 @@ def settle_missions(missions: Sequence[Mapping[str, Any]], recs: Mapping[str, Ma
         else:
             open_.append(str(m["key"]))
     completed: list[str] = []
-    queue_state = UNMEASURED
+    queue_state = "READ" if queue_path.exists() else UNMEASURED
     if met and queue_path.exists():
         try:
             from libs.ops.task_queue import TaskQueue
@@ -924,7 +924,10 @@ def weakness_fix(doc: Mapping[str, Any]) -> list[dict[str, Any]]:
          "weakness": ("one queue with no release timing, no per-host rate limit and no "
                       "targeted invalidation; a new data version re-ran nothing or everything"),
          "metric": "QUEUE.json produced.lanes (invalidated vs untouched, waiting_release)",
-         "value": lanes if lanes is not None else UNMEASURED},
+         "value": ({k: lanes.get(k, UNMEASURED) for k in
+                    ("drained_information", "affected_total", "untouched_total", "lineage_rows",
+                     "rate_limits_added", "next_eligible_at")}
+                   if isinstance(lanes, dict) else UNMEASURED)},
         {"organ": "frontier_intel/unknowns.py promote_recurring + main",
          "weakness": ("the frontier_unknowns leg exited 1 every hour (relative import as a "
                       "script, measured 2026-10-07) and candidate classes never left the log"),
