@@ -33,8 +33,8 @@ THE FAMILIES, BY CLUSTER, WITH THE PAYER EACH ONE NAMES (priors written before a
         day). The z-SCORED variant of the VRP question: PR #234's `implied_vol_state` asks it on
         `vrp` / `vrp_pct_1y`, a PERCENTILE of the premium, fires once per episode onset and takes
         its direction from the cell; this one holds while the z-score is beyond `z_thr`, one
-        position at a time, with its side from `IMPLIED_MAP`'s risk orientation. A rich premium is what option sellers are paid to warehouse
-        crash risk; the underlying's risk-on drift is that premium's other face (Bollerslev,
+        position at a time, with its side from `IMPLIED_MAP`'s risk orientation. A rich premium
+        is what option sellers are paid to warehouse crash risk; the underlying's risk-on drift is that premium's other face (Bollerslev,
         Tauchen & Zhou 2009). `harvest` holds the risk-on side while it is rich; `stress` holds
         the risk-off side while realised exceeds implied. Payer: the insurance buyer.
     implied_vol_shock_fade      A one-day jump in the implied index against its own trailing
@@ -1135,9 +1135,14 @@ EMPTY_CLUSTER_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
 #: any chart, and its `hold_bars` is a WALL-CLOCK span rescaled by `WALL_CLOCK_PARAMS`. The rest
 #: read an hour-wide event bar, a session's opening stamp-hour or an H1 driver panel, so they stay
 #: pinned to H1 with that reason (families_orthogonal.FAMILY_TIMEFRAMES).
+#: `entry_alpha_spread_gate` is chart-native: its trailing spread window and `max_wait` are counted
+#: in the chart's OWN bars, and it reads only the closed decision bar's spread column, which every
+#: chart carries -- no stamp-hour, no driver panel. On M5 it asks the same question at 5-minute
+#: resolution (did waiting out a wide spread pay), which is a new cell, not a mis-dated one.
 ALL_CHART_FAMILIES: frozenset[str] = frozenset({
-    "implied_vol_risk_premium", "implied_vol_shock_fade", "positioning_crowding_unwind", "positioning_hedging_pressure", "positioning_flow_momentum",
-    "event_surprise_consensus"})
+    "implied_vol_risk_premium", "implied_vol_shock_fade", "positioning_crowding_unwind",
+    "positioning_hedging_pressure", "positioning_flow_momentum",
+    "event_surprise_consensus", "entry_alpha_spread_gate"})
 #: Bar-count parameters that mean a WALL-CLOCK span (rescaled from their H1 defaults).
 WALL_CLOCK: dict[str, tuple[str, ...]] = {"event_surprise_consensus": ("hold_bars",)}
 
