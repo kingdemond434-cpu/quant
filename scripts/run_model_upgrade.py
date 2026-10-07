@@ -52,6 +52,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from libs.data.keyed_sources import keyed_urlopen  # noqa: E402
 from libs.ops.agent_denials import append_jsonl, denial_rows, parse_stream  # noqa: E402
 from libs.ops.model_chain import (  # noqa: E402
     CHAIN_FILE,
@@ -117,7 +118,7 @@ def _list_models_api() -> list[str]:
     for hdrs in _auth_headers():
         req = urllib.request.Request(_API, headers=hdrs)
         try:
-            with urllib.request.urlopen(req, timeout=20) as r:
+            with keyed_urlopen(req, timeout=20) as r:
                 body = json.loads(r.read().decode("utf-8"))
         except (urllib.error.URLError, OSError, ValueError, TimeoutError):
             continue

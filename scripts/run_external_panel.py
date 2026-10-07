@@ -266,7 +266,8 @@ def _ask_once(base_url: str, key: str, model: str, messages: list[dict[str, str]
     req = urllib.request.Request(
         base_url.rstrip("/") + "/chat/completions", data=body, method="POST",
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout, context=_CTX) as r:
+    from libs.data.keyed_sources import keyed_urlopen
+    with keyed_urlopen(req, timeout=timeout, context=_CTX) as r:
         out = json.loads(r.read())
     msg = out["choices"][0]["message"]
     return str(msg.get("content") or msg.get("reasoning") or "")
@@ -337,7 +338,8 @@ def main() -> None:
         _bal_req = urllib.request.Request(
             "https://openrouter.ai/api/v1/credits",
             headers={"Authorization": f"Bearer {providers[0]['key']}"})
-        with urllib.request.urlopen(_bal_req, timeout=20, context=_CTX) as _r:
+        from libs.data.keyed_sources import keyed_urlopen
+        with keyed_urlopen(_bal_req, timeout=20, context=_CTX) as _r:
             _d = json.loads(_r.read())["data"]
         _left = float(_d.get("total_credits", 0)) - float(_d.get("total_usage", 0))
         # EMPIRICAL RUN COST (2026-07-26). This was a hardcoded `0.05 * len(providers)` -- $0.65

@@ -296,6 +296,16 @@ def keyed_opener(tls: Any = None, drop: Iterable[str] = (),
                                        SameHostAuthRedirect(drop, secrets))
 
 
+def keyed_urlopen(req: urllib.request.Request | str, *, timeout: float, context: Any = None,
+                  secrets: Iterable[str] = ()) -> Any:
+    """`urllib.request.urlopen` for a request that carries a credential (a bearer header, a key
+    in the query or path): same TLS context, but every redirect goes through
+    `SameHostAuthRedirect`, so the credential never follows a 30x to another host or down to
+    http. Plain `urlopen` copies every header to whatever host a redirect names (audit of the
+    keyed fetches, 2026-10-07)."""
+    return keyed_opener(context, secrets=secrets).open(req, timeout=timeout)
+
+
 def _period(text: str) -> date | None:
     """'2024-08-30' | '2024-08' | '202408' | '2024M08' | '20240830' -> the period's end date."""
     t = str(text or "").strip()

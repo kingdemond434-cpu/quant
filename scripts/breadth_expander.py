@@ -148,7 +148,8 @@ def _ask(base_url: str, key: str, model: str, messages, timeout: float = 110.0) 
                                  method="POST",
                                  headers={"Authorization": f"Bearer {key}",
                                           "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
+    from libs.data.keyed_sources import keyed_urlopen
+    with keyed_urlopen(req, timeout=timeout, context=CTX) as r:
         out = json.loads(r.read())
     m = out["choices"][0]["message"]
     return str(m.get("content") or m.get("reasoning") or "")

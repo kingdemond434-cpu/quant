@@ -103,7 +103,8 @@ def _ask(prompt: str, model: str, timeout: float = 360.0) -> tuple[str, str]:
             base.rstrip("/") + "/chat/completions", data=body, method="POST",
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
         try:
-            with urllib.request.urlopen(req, timeout=timeout, context=_CTX) as r:
+            from libs.data.keyed_sources import keyed_urlopen
+            with keyed_urlopen(req, timeout=timeout, context=_CTX) as r:
                 doc = json.loads(r.read())
             msg = doc["choices"][0]["message"]
             return str(msg.get("content") or msg.get("reasoning") or ""), ""
