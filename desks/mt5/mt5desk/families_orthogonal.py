@@ -2491,6 +2491,8 @@ ORTHOGONAL_FAMILIES.update(MASS_SCREEN_FAMILIES)
 for _ms_name in MASS_SCREEN_FAMILIES:
     FAMILY_INPUTS[_ms_name] = ("price only (lead: the named leader's bars too)",
                                "data/universe/*_H1.parquet")
+FAMILY_INPUTS["mass_screen_carry"] = ("price + the broker swap knowable at each bar "
+                                      "(mt5:broker_swaps)", "data/universe/*_H1.parquet")
 # THE FREE-STACK FAMILIES (2026-09-30): the DIRECT (series momentum) and INDIRECT (a price-only
 # base family gated by the series' regime) uses of every alt series `free_stack_hunter` publishes
 # under data/lake/series/fs_<id>.parquet. Both load their own series from `source`/`signal` on

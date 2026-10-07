@@ -211,3 +211,32 @@ def test_the_cache_stamp_moves_only_when_a_row_that_matters_arrives(tape, monkey
     b = engine.swap_cache_stamp("TESTFX", "2026-09-05")
     monkeypatch.setattr(engine, "ENGINE_COST_VERSION", "next")
     assert engine.swap_cache_stamp("TESTFX", "2026-09-05") != b
+
+
+def test_mass_screen_swap_cost_is_the_rate_knowable_at_entry(tape):
+    from research import mass_screen as ms
+    tape["hist"] = {"TESTFX": _hist([("2026-09-05 00:00", 2.0, -30.0)])}
+    t = pd.date_range("2026-09-01", periods=24 * 20, freq="h").as_unit("ns")
+    rate = ms.swap_rate_pit("TESTFX", t.asi8, np.ones(t.size), 10.0e-5)
+    knowable = t >= pd.Timestamp("2026-09-05 03:00")
+    stale = t > pd.Timestamp("2026-09-09 03:00")
+    assert np.allclose(rate[~knowable], 10.0e-5)                         # today's floor
+    assert np.allclose(rate[knowable & ~stale], 30.0e-5)                 # the knowable row
+    assert np.allclose(rate[stale], 30.0e-5)                             # worst knowable so far
+
+
+def test_swap_asof_is_the_shared_lookup_priced(tape):
+    """swap_asof prices exactly the row swap_rows_at picks; a later, larger row never reaches an
+    earlier stamp's peak."""
+    tape["hist"] = {"TESTFX": _hist([("2026-09-02 00:00", -6.0, 1.0),
+                                     ("2026-09-10 00:00", -40.0, 1.0)])}
+    t = pd.date_range("2026-09-01", periods=24 * 14, freq="h").as_unit("ns").asi8
+    rows = families_carry.swap_rows_at("TESTFX", t)
+    a = families_carry.swap_asof("TESTFX", t, 1.0)
+    assert rows is not None
+    fresh = rows["fresh"]
+    assert np.allclose(a["worse_px"][fresh],
+                       np.maximum(np.abs(rows["lo"]), np.abs(rows["sh"]))[fresh] * 1e-5)
+    assert np.isnan(a["worse_px"][~fresh]).all()
+    before = t < pd.Timestamp("2026-09-10 03:00").value
+    assert np.nanmax(a["peak_px"][before]) == pytest.approx(6.0e-5)
