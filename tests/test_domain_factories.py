@@ -402,7 +402,7 @@ def test_fixture_pass_writes_the_report_series_and_statuses(tmp_path: Path,
     assert report["organ"] == "domain_factories"
     assert (tmp_path / "data" / "lake" / "series" / "alt_dfw_weather_obs__conus_hdd.csv").exists()
     # Too little history for any hypothesis: each is held back with the reason, none donated.
-    assert rep["hypotheses"]["minted"] == 0 and donated == []
+    assert rep["hypotheses"]["built"] == 0 and donated == []
     held = rep["factories"]["weather"]["held_back"]
     assert held and all(h["why"].startswith("UNMEASURED") for h in held)
 

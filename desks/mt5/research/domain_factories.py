@@ -1100,7 +1100,7 @@ INDEED_AGG = INDEED_BASE + "aggregate_job_postings_{cc}.csv"
 INDEED_SECTOR = INDEED_BASE + "job_postings_by_sector_{cc}.csv"
 #: Days of daily aggregate history kept, and of weekly (Friday) sector history.
 INDEED_KEEP_D = 3 * 365
-SECTOR_KEEP_D = 2 * 365
+SECTOR_KEEP_D = 365
 #: A point dated within this many days of the fetch is stamped at the fetch (it is new); older
 #: rows are history, stamped by the release rule and flagged backfill by build_points.
 FRESH_D = 14
@@ -1652,7 +1652,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 240.0, fixtures: Path
         "requirements": ["DATA-43", "DATA-25"],
         "status_counts": statuses,
         "factories": factories, "domains": alt, "no_parser_domains": NO_PARSER_DOMAINS,
-        "hypotheses": {"minted": len(rows), "donation": donation,
+        "hypotheses": {"built": len(rows), "donation": donation,
                        "cells": [r["cell"] for r in rows][:200],
                        "rule": ("EXACT_RECIPE exogenous_conditioner rows on the factory's lake "
                                 "series, a declared prior sign each, minted once the series holds "
@@ -1684,7 +1684,8 @@ def main(argv: list[str] | None = None) -> int:
     rep = run(budget_s=a.budget_s, fixtures=a.fixtures, dry_run=a.dry_run,
               donate=not a.no_donate)
     print(json.dumps({"at": rep["at"], "status_counts": rep["status_counts"],
-                      "minted": rep["hypotheses"]["minted"],
+                      "hypotheses_built": rep["hypotheses"]["built"],
+                      "donated": rep["hypotheses"]["donation"].get("donated", 0),
                       "report": str(DEFAULT_PATHS.report)}, indent=1))
     return 0
 
