@@ -288,13 +288,13 @@
     ]
    },
    {
-    "at": "2026-10-06T21:01:13+00:00",
+    "at": "2026-10-07T01:02:10+00:00",
     "host": "vm",
-    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
     "on_attesting_host": false,
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
-     "leg:sensor_ledger"
+     "leg:committee_ensembles"
     ]
    }
   ]
@@ -15126,8 +15126,8 @@
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/COMMITTEES.json",
-   "artifact_declared": "desks/mt5/reports/COMMITTEES.json",
+   "artifact": "desks/mt5/reports/COMMITTEE_IDEA_MINER.json",
+   "artifact_declared": "desks/mt5/reports/COMMITTEE_IDEA_MINER.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -25338,12 +25338,12 @@
    "measured_at": "2026-10-06T15:32:32+00:00"
   },
   {
-   "organ": "leg:sensor_ledger",
+   "organ": "leg:committee_ensembles",
    "kind": "leg",
    "code": [
-    "desks/mt5/research/sensor_ledger_digest.py"
+    "desks/mt5/research/committee_ensembles.py"
    ],
-   "clock": "hourly_cycle:sensor_ledger",
+   "clock": "hourly_cycle:committee_ensembles",
    "cadence_s": 3600,
    "max_silence_s": 7200,
    "state": "NEVER",
@@ -25351,8 +25351,8 @@
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/SENSOR_LEDGER.json",
-   "artifact_declared": "desks/mt5/reports/SENSOR_LEDGER.json",
+   "artifact": "desks/mt5/reports/COMMITTEES.json",
+   "artifact_declared": "desks/mt5/reports/COMMITTEES.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -25362,8 +25362,8 @@
    "progress_metric": "leg_completions",
    "consumer": "UNMEASURED",
    "measured_on": "vm",
-   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-06T21:01:13+00:00"
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-07T01:02:10+00:00"
   }
  ],
  "ratchet": {

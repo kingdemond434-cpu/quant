@@ -440,6 +440,9 @@ LEG_LAYER: dict[str, str] = {
     # THE TWO ADVERSARIAL COMMITTEES argue explanations and run the falsifiers the judge picks:
     # they decide which experiments a hypothesis meets, so prediction, like falsifier_run.
     "committees": "prediction",
+    # THE SIX COMMITTEES (deterministic specialist ensembles, 2026-09-30 17:04 ruling) choose the
+    # next experiment each hypothesis meets and run the falsifiers on the gauntlet's own cell.
+    "committee_ensembles": "prediction",
     # ONE CERTIFICATE TRUTH: the audit of every certificate/clock store against the one lane is a
     # fence over the machine's own bookkeeping -- meta, like every other fence.
     "certificate_truth": "meta",

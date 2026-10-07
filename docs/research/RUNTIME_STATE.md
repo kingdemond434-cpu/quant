@@ -621,7 +621,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:clock_ledger` | `hourly_cycle:clock_ledger` | UNMEASURED UNMEASURED | `desks/mt5/reports/FORWARD_CLOCK_LEDGER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:closed_loop` | `hourly_cycle:closed_loop` | UNMEASURED UNMEASURED | `desks/mt5/data/architecture/closed_loop_attestation.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:coevolution` | `hourly_cycle:coevolution` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_BANDIT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:committees` | `hourly_cycle:committees` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMMITTEES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:committees` | `hourly_cycle:committees` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMMITTEE_IDEA_MINER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:compute_economics` | `hourly_cycle:compute_economics` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMPUTE_ECONOMICS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:constrained_book` | `hourly_cycle:constrained_book` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONSTRAINED_BOOK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:control_plane` | `hourly_cycle:control_plane` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTROL_PLANE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -985,7 +985,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:scripts/lessons.py` | `invoked:libs/ops/agent_denials.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/NIGHTLY_CATCHUP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:recovery_drills` | `hourly_cycle:recovery_drills` | UNMEASURED UNMEASURED | `desks/mt5/reports/RECOVERY_DRILLS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:E8-Book` | `E8-Book` | UNMEASURED UNMEASURED | `desks/mt5/reports/E8_BOOK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:sensor_ledger` | `hourly_cycle:sensor_ledger` | UNMEASURED UNMEASURED | `desks/mt5/reports/SENSOR_LEDGER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:committee_ensembles` | `hourly_cycle:committee_ensembles` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMMITTEES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (37)
 
