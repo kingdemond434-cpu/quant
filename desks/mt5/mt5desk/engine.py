@@ -81,6 +81,26 @@ class Costs:
     #: silently -- the same discipline `quote_per_account` and `spread_pts` document above, and
     #: for the same reason: this class is on the money path.
     swap_per_lot_per_night: float = 0.0
+    #: THE SYMBOL WHOSE SWAP HISTORY PRICES EACH NIGHT, POINT IN TIME (2026-10-07). Empty for a
+    #: hand-built `Costs`, which keeps exactly the arithmetic above. `from_symbol` sets it, and
+    #: `run_backtest` then charges each rollover the swap KNOWABLE AT THAT ROLLOVER, read through
+    #: `families_carry.swap_history` -- the same point-in-time reader #166/#269 use on the signal
+    #: side: a row is usable from its own `observed_at` + 3 h, an unstamped row never.
+    #:
+    #: WHY. `swap_per_lot_per_night` is TODAY's registry value, and the engine applied it to
+    #: every bar since 2018. That is a look-ahead on the cost side. Measured over the 17 days of
+    #: panel rows on disk, today's worse side differs from the range those days show on 113 of
+    #: 248 symbols and is BELOW their maximum on 79 (XPBUSD 182 against 940, USDCZK 83 against
+    #: 277, USDBRL 506 against 942).
+    swap_symbol: str = ""
+    #: Whether the registry carries a swap for `swap_symbol` at all. A night with NO KNOWABLE
+    #: SWAP is charged a stand-in: the larger of today's registry worse side (the floor, never
+    #: zero) and the worst side any row KNOWABLE UP TO THAT NIGHT ever showed
+    #: (`families_carry.swap_asof(...)["peak_px"]`) -- point in time, so a later and larger row
+    #: never reaches an earlier night. Such a night is counted UNMEASURED and the run reports
+    #: PENDING_HISTORY. With no registry swap and no knowable row there is no stand-in at all:
+    #: that night is UNPRICED (`BacktestResult.swap_report`).
+    swap_registry_known: bool = True
 
     def per_oz_roundtrip(self) -> float:
         """Round-trip cost per lot, in the convention the engine divides by `contract_oz`.
@@ -175,10 +195,16 @@ class Costs:
         # `scripts/check_swap_pricing.py` is what stops that silence becoming a clean verdict.
         swap_pts = max(abs(float(meta.get("swap_long", 0.0) or 0.0)),
                        abs(float(meta.get("swap_short", 0.0) or 0.0)))
+        # POINT IN TIME. `swap_per_lot_per_night` stays today's registry value (its consumers
+        # read it as that); the engine prices each night from the history instead and charges a
+        # night with no knowable swap the stand-in below. See `swap_symbol`.
+        sym = str(meta.get("symbol") or "")
+        has_reg = meta.get("swap_long") is not None or meta.get("swap_short") is not None
         return cls(spread_per_lot=max(spread * mult, 0.05),
                    commission_per_lot=commission_per_lot, contract_oz=cs,
                    quote_per_account=qpa,
-                   swap_per_lot_per_night=swap_pts * ts * cs)
+                   swap_per_lot_per_night=swap_pts * ts * cs,
+                   swap_symbol=sym, swap_registry_known=bool(has_reg))
 
 
 @dataclass
@@ -195,6 +221,8 @@ class Trade:
     reason: str
     units: float = 1.0  # total size held at exit, in initial-unit multiples
     adds: int = 0       # pyramid adds that actually filled
+    #: nights this trade held with NO knowable swap (charged the stand-in; see Costs.swap_symbol)
+    swap_nights_unmeasured: float = 0.0
 
 
 @dataclass
@@ -243,6 +271,60 @@ class BacktestResult:
     trades: list[Trade]
     signal_count: int
     equity: float = 0.0
+    #: Nights charged from a swap KNOWABLE at that rollover, and nights charged the stand-in.
+    swap_nights_measured: float = 0.0
+    swap_nights_unmeasured: float = 0.0
+    swap_symbol: str = ""
+    swap_honest_days: int = 0
+    #: Unmeasured nights for which NO stand-in existed (no registry swap, no row ever on disk).
+    swap_nights_unpriced: float = 0.0
+
+    def swap_report(self) -> dict[str, Any]:
+        """Whether this run's swap cost was MEASURED, by name. Never a clean verdict by default.
+
+        NO_OVERNIGHT   no trade crossed a rollover: there was no swap to measure.
+        UNPRICED       some night had no knowable swap AND no stand-in at all (no registry value,
+                       no row ever on disk): its cost is unknown, and this alone is a refusal.
+        UNMEASURED     nights were charged but the cost carries no symbol (a hand-built `Costs`),
+                       so no history could price them point in time.
+        PENDING_HISTORY some night had no knowable swap (charged the stand-in), or the symbol's
+                       honest swap history is shorter than the gauntlet's judgeable floor
+                       (`families_carry.judgeable_floor`, the floor #269 holds carry to).
+        MEASURED       every night priced from a swap knowable at it, over a long enough history.
+
+        PENDING_HISTORY and UNMEASURED are EVIDENCE, not refusals: those nights were charged a
+        stand-in at least as costly as today's swap and the worst ever seen, so a run that clears
+        its gates on them is priced no cheaper than reality as far as the desk can know it.
+        """
+        nm, nu = float(self.swap_nights_measured), float(self.swap_nights_unmeasured)
+        npr = float(self.swap_nights_unpriced)
+        out: dict[str, Any] = {"symbol": self.swap_symbol, "nights_measured": nm,
+                               "nights_unmeasured": nu, "nights_unpriced": npr,
+                               "honest_days": int(self.swap_honest_days)}
+        if nm + nu <= 0:
+            return {**out, "status": "NO_OVERNIGHT"}
+        if npr > 0:
+            return {**out, "status": "UNPRICED",
+                    "why": (f"{npr:g} nights had no knowable swap and no stand-in (no registry "
+                            f"swap for {self.swap_symbol or '?'}, no row ever on disk)")}
+        if not self.swap_symbol:
+            return {**out, "status": "UNMEASURED",
+                    "why": "nights charged from a hand-built Costs with no swap history"}
+        try:
+            # The gauntlet's JUDGEABLE minimum (60 development + its held-out tail = 100 days),
+            # the floor #166/#269 hold the carry books to -- read, never restated.
+            from mt5desk import families_carry
+            floor = int(families_carry.judgeable_floor())
+        except Exception as exc:
+            return {**out, "status": "UNMEASURED",
+                    "why": f"judgeable floor unreadable: {type(exc).__name__}"}
+        out["floor_days"] = floor
+        if nu > 0 or int(self.swap_honest_days) < floor:
+            return {**out, "status": "PENDING_HISTORY",
+                    "why": (f"{nu:g} of {nm + nu:g} nights had no knowable swap and were charged "
+                            f"the stand-in; {int(self.swap_honest_days)} honest swap days "
+                            f"against a floor of {floor}")}
+        return {**out, "status": "MEASURED"}
 
     @property
     def n(self) -> int:
@@ -325,6 +407,117 @@ def rollovers_between(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
     return float(k + 2 * triples)
 
 
+#: Bump when the engine's COST arithmetic changes, so a series cached under the old arithmetic
+#: is never served under the new one. Read by `swap_cache_stamp`.
+ENGINE_COST_VERSION = "swap-pit-2"
+
+
+def swap_cache_stamp(symbol: str, until: Any = None) -> str:
+    """A short digest of everything the engine's swap charge for `symbol` reads, for cache keys.
+
+    The engine version and the knowable rows BEFORE `until` (the
+    series' last complete day): a row knowable later cannot change a night inside the series, so
+    the stamp stays stable within the day while the hourly tape grows, and moves the day a row
+    that matters arrives. Unreadable tape stamps as such rather than raising."""
+    import hashlib
+    parts: list[str] = [ENGINE_COST_VERSION, str(symbol)]
+    try:
+        from mt5desk import families_carry
+        h, _ = families_carry.swap_history()
+        rows = h.get(symbol)
+        if rows is not None:
+            t = rows["t"]
+            if until is not None:
+                try:
+                    u = pd.Timestamp(str(until))
+                    u = u.tz_localize("UTC") if u.tzinfo is None else u.tz_convert("UTC")
+                    t = t[t < int(u.value)]
+                except (TypeError, ValueError):
+                    pass
+            k = int(t.size)
+            parts.append(str(k))
+            if k:
+                parts.append(hashlib.sha1(np.ascontiguousarray(np.column_stack(
+                    [t, rows["lo"][:k], rows["sh"][:k], rows["mode"][:k]])).tobytes()
+                ).hexdigest()[:16])
+    except Exception as exc:
+        parts.append(f"tape-unreadable:{type(exc).__name__}")
+    return hashlib.sha1("|".join(parts).encode()).hexdigest()[:16]
+
+
+_DAY_NS = 86_400_000_000_000
+#: The staleness the engine's cost side charges by: a knowable row older than this at a rollover
+#: leaves the night UNMEASURED. The lookup itself lives in `families_carry.swap_rows_at`, whose
+#: `PIT_MAX_AGE_H` must equal this (pinned by test_mass_screen_carry_pit); it is restated here
+#: only because this module cannot import that one at load time.
+SWAP_MAX_AGE_H = 96.0
+
+
+def rollover_instants(t0: pd.Timestamp, t1: pd.Timestamp) -> tuple[np.ndarray, np.ndarray]:
+    """(UTC epoch-ns of each rollover crossed, nights each one carries) for a hold t0 -> t1.
+
+    The same instants `rollovers_between` counts, listed: `weights.sum()` equals it exactly."""
+    empty = (np.zeros(0, dtype="int64"), np.zeros(0))
+    if t0 is None or t1 is None:
+        return empty
+    a, b = pd.Timestamp(t0), pd.Timestamp(t1)
+    if a.tzinfo is not None:
+        a = a.tz_convert("UTC").tz_localize(None)
+    if b.tzinfo is not None:
+        b = b.tz_convert("UTC").tz_localize(None)
+    if not (b > a):
+        return empty
+    cur = a.normalize() + pd.Timedelta(hours=ROLLOVER_HOUR_UTC)
+    if cur <= a:
+        cur = cur + pd.Timedelta(days=1)
+    if cur > b:
+        return empty
+    k = int((b - cur) // pd.Timedelta(days=1)) + 1
+    steps = np.arange(k, dtype="int64")
+    inst = int(cur.as_unit("ns").value) + steps * _DAY_NS
+    weights = np.where((cur.weekday() + steps) % 7 == TRIPLE_SWAP_WEEKDAY, 3.0, 1.0)
+    return inst, weights
+
+
+class _SwapTape:
+    """One symbol's point-in-time swap, as the engine charges it per night (price units/unit).
+
+    Built once per `run_backtest`; every read goes through `families_carry.swap_asof`. A night
+    whose newest knowable row is missing, stale, or in an unknown unit is charged the stand-in
+    (see `Costs.swap_registry_known`) and counted UNMEASURED; with no stand-in it is UNPRICED."""
+
+    def __init__(self, costs: Costs) -> None:
+        self.symbol = str(getattr(costs, "swap_symbol", "") or "")
+        cs = float(costs.contract_oz) or 1.0
+        #: today's registry worse side, price units per unit per night: the stand-in's floor
+        self.today = float(costs.swap_per_lot_per_night or 0.0) / cs
+        self.registry_known = bool(getattr(costs, "swap_registry_known", True))
+        self.hist: dict[str, np.ndarray] | None = None
+        self.days = 0
+        try:
+            from mt5desk import families_carry
+            h, _ = families_carry.swap_history()
+            self.hist = h.get(self.symbol)
+        except Exception:
+            self.hist = None
+        if self.hist is not None and self.hist["t"].size:
+            obs = (self.hist["t"] - families_carry.BROKER_LEAD_NS) // _DAY_NS
+            self.days = int(np.unique(obs).size)
+
+    def charge(self, inst: np.ndarray,
+               price: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """(per-night charge in price units per unit, measured mask, unpriced mask)."""
+        from mt5desk import families_carry
+        a = families_carry.swap_asof(self.symbol, inst, price)
+        peak = a["peak_px"]
+        standin = np.maximum(self.today, np.where(np.isfinite(peak), peak, 0.0))
+        ok = np.isfinite(a["worse_px"])
+        per = np.where(ok, a["worse_px"], standin)
+        unpriced = ~ok & ~(self.registry_known | np.isfinite(peak))
+        return per, ok, unpriced
+
+
+
 def run_backtest(
     df: pd.DataFrame,
     signals: list[Signal],
@@ -367,6 +560,12 @@ def run_backtest(
     filled = 0
     per_oz_cost = costs.per_oz_roundtrip() / costs.contract_oz
     last_exit_idx = -1  # single-position discipline: no overlapping trades
+    # POINT-IN-TIME FINANCING (2026-10-07): a cost built by `from_symbol` names its symbol, and
+    # each night is then charged the swap knowable at it. A hand-built cost keeps the old path.
+    tape = _SwapTape(costs) if getattr(costs, "swap_symbol", "") else None
+    nights_measured = 0.0
+    nights_unmeasured = 0.0
+    nights_unpriced = 0.0
 
     for sig, i0 in zip(signals, locs, strict=True):
         i = i0 + 1
@@ -547,10 +746,35 @@ def run_backtest(
         # trade record (it was boxed twice each); a Timestamp is immutable, so sharing it is free.
         entry_ts = pd.Timestamp(idx[fill_bar])
         exit_ts = pd.Timestamp(idx[min(fill_bar + bars_held - 1, len(idx) - 1)])
-        if costs.swap_per_lot_per_night:
+        trade_unmeasured = 0.0
+        if tape is not None:
+            if tape.hist is None:
+                # No history for this symbol at all: every night is the stand-in, which is then
+                # today's registry floor. Counted, not walked -- the same integer
+                # `rollovers_between` gives, with no per-night array.
+                nights = rollovers_between(entry_ts, exit_ts)
+                if nights:
+                    trade_unmeasured = nights
+                    r -= tape.today * nights * units / stop_dist
+                    if not tape.registry_known:
+                        nights_unpriced += nights
+            else:
+                inst, wts = rollover_instants(entry_ts, exit_ts)
+                if inst.size:
+                    per, ok, unp = tape.charge(inst, entry)
+                    trade_unmeasured = float(wts[~ok].sum())
+                    nights_measured += float(wts[ok].sum())
+                    nights_unpriced += float(wts[unp].sum())
+                    r -= float((per * wts).sum()) * units / stop_dist
+            nights_unmeasured += trade_unmeasured
+        else:
+            # A hand-built cost: today's arithmetic, and every night it crossed is UNMEASURED.
             nights = rollovers_between(entry_ts, exit_ts)
             if nights:
-                r -= (costs.financing(nights) / costs.contract_oz) * units / stop_dist
+                trade_unmeasured = nights
+                nights_unmeasured += nights
+                if costs.swap_per_lot_per_night:
+                    r -= (costs.financing(nights) / costs.contract_oz) * units / stop_dist
         trades.append(
             Trade(
                 entry_time=entry_ts,
@@ -559,11 +783,17 @@ def run_backtest(
                 stop=sig.stop, target=sig.target,
                 bars_held=bars_held, r_multiple=float(r), reason=reason,
                 units=float(units), adds=len(adds),
+                swap_nights_unmeasured=float(trade_unmeasured),
             )
         )
         filled += 1
 
-    return BacktestResult(trades=trades, signal_count=len(signals))
+    return BacktestResult(trades=trades, signal_count=len(signals),
+                          swap_nights_measured=nights_measured,
+                          swap_nights_unmeasured=nights_unmeasured,
+                          swap_symbol=tape.symbol if tape is not None else "",
+                          swap_honest_days=tape.days if tape is not None else 0,
+                          swap_nights_unpriced=nights_unpriced)
 
 
 def walk_forward_splits(n_bars: int, folds: int = 4) -> list[tuple[int, int, int, int, int]]:
