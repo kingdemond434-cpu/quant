@@ -121,6 +121,24 @@ DECIDED_STATUSES = frozenset({"KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED",
 SILENT_TICK_HOURS = 3.0 * CYCLE_HOURS
 ENGINE_SILENT = "ENGINE_SILENT"
 
+#: THE SUCCESSOR HUNT'S READER (audit 2026-10-07, must-fix 3). `research/hazard_engine.py` (its
+#: own `QUEUE`, pinned equal by tests/test_forward_enrolment_successors.py) appends one
+#: `successor_search` per AMBER/RED or tradability-DEGRADING/BROKEN live sleeve per day, naming up
+#: to three certified replacement cells. Until this reader, nothing on any clock opened the file.
+#: This organ owns the step those rows ask for -- a certified replacement accruing forward
+#: evidence -- so it reads them every pass, answers per incumbent whether its replacement is on a
+#: ticking clock, and puts every clockless or silent replacement into the repair sweep it already
+#: runs. Mirrored, not imported: hazard_engine imports numpy and the whole hazard model.
+SUCCESSOR_QUEUE = BASE / "data" / "hypotheses" / "successor_queue.jsonl"
+#: A hunt is OPEN while its incumbent was re-queued within this window. hazard_engine re-queues
+#: an incumbent every day its reading stays bad, so a row two days old with no successor row
+#: after it is a condition that cleared, not a hunt still waiting.
+SUCCESSOR_OPEN_H = 48.0
+#: Per-incumbent hunt states, worst first.
+HUNT_NO_CANDIDATE = "NO_CANDIDATE"      # no certified different-family cell in the asset class
+HUNT_STALLED = "STALLED"                # candidates exist, none of them is accruing evidence
+HUNT_COVERED = "COVERED"                # at least one candidate is on a ticking forward clock
+
 BLOCKED_WHY = ("a clock exists and is accruing NO forward evidence: the certificate can never "
                "mature, so it can never be promoted. Fix the blocker named in `status`/"
                "`last_error` -- never the certificate, and never by retiring the clock")
@@ -390,6 +408,112 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
     }
 
 
+def _candidate_state(entries: list[dict[str, Any]]) -> tuple[str, list[str], str]:
+    """(state, certificate keys, reason) for one replacement cell across its certificates."""
+    if not entries:
+        return ("NOT_ADMITTED", [], "the cell is in the survivors canon but authorized_runs "
+                "returned no certificate for it: see `dropped_at_admission`")
+    keys = [str(e.get("key")) for e in entries]
+    if any(e.get("accruing") is True for e in entries):
+        return "ACCRUING", keys, "on a ticking forward clock"
+    if any(e.get("decided") for e in entries):
+        return "DECIDED", keys, "its forward clock reached a verdict"
+    held = next((e for e in entries if e.get("held")), None)
+    if held is not None:
+        return "HELD", keys, str(held.get("held"))
+    if any(not e.get("enrolled") for e in entries):
+        return "NO_CLOCK", keys, "certified with no forward clock: in this pass's repair sweep"
+    blk = next((e for e in entries if e.get("accruing") is False), entries[0])
+    return "BLOCKED", keys, str(blk.get("blocker") or blk.get("why") or "not accruing")
+
+
+def successor_hunt(body: dict[str, Any], path: Path | None = None,
+                   now: datetime | None = None) -> dict[str, Any]:
+    """Read hazard_engine's successor queue and answer, per incumbent, whether its replacement
+    is accruing forward evidence. Returns the report block and the certificates to repair.
+
+    A missing file is a state with its reason, never an all-clear (L1.28a). A malformed line is
+    counted, not fatal. Nothing here sizes, fades or retires anything: a successor hunt adds
+    independent bets inside the same heat (GROWTH GOVERNANCE Rule 2)."""
+    p = Path(path or SUCCESSOR_QUEUE)
+    t = _now(now)
+    try:
+        lines = p.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return {"status": "NO_QUEUE", "path": str(p), "n_open": 0, "hunts": [],
+                "repair_keys": [], "why": ("hazard_engine has queued no successor_search yet "
+                                           "(the file is absent): nothing to hunt")}
+    except OSError as exc:
+        return {"status": UNMEASURED, "path": str(p), "n_open": None, "hunts": [],
+                "repair_keys": [], "why": f"successor queue unreadable: {type(exc).__name__}"}
+    latest: dict[str, dict[str, Any]] = {}
+    malformed = 0
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            malformed += 1
+            continue
+        if not isinstance(row, dict) or row.get("kind") != "successor_search" \
+                or not row.get("for"):
+            continue
+        name = str(row["for"])
+        if name not in latest or str(row.get("at") or "") >= str(latest[name].get("at") or ""):
+            latest[name] = row
+    by_cell: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for e in body.get("certificates") or []:
+        by_cell.setdefault((str(e.get("symbol")), str(e.get("family"))), []).append(e)
+    hunts: list[dict[str, Any]] = []
+    repair_keys: list[str] = []
+    for name, row in sorted(latest.items()):
+        at = _parse_ts(row.get("at"))
+        age_h = (t - at).total_seconds() / 3600.0 if at is not None else None
+        if age_h is not None and age_h > SUCCESSOR_OPEN_H:
+            continue
+        cands = []
+        for c in row.get("replacement_candidates") or []:
+            if not isinstance(c, dict):
+                continue
+            entries = by_cell.get((str(c.get("symbol")), str(c.get("family"))), [])
+            state, keys, why = _candidate_state(entries)
+            if state in ("NO_CLOCK", "BLOCKED"):
+                repair_keys.extend(k for k in keys if k not in repair_keys)
+            cands.append({"cell": c.get("cell"), "symbol": c.get("symbol"),
+                          "family": c.get("family"), "state": state, "keys": keys, "why": why})
+        if not cands:
+            hunt, hwhy = HUNT_NO_CANDIDATE, ("no certified cell of a different family in this "
+                                             "asset class: the hunt waits on the gauntlet, "
+                                             "not on enrolment")
+        elif any(c["state"] == "ACCRUING" for c in cands):
+            hunt, hwhy = HUNT_COVERED, "a replacement is accruing forward evidence"
+        else:
+            hunt, hwhy = HUNT_STALLED, ("candidates exist and none is accruing: "
+                                        + "; ".join(f"{c['cell']}={c['state']}" for c in cands))
+        hunts.append({"for": name, "symbol": row.get("symbol"), "family": row.get("family"),
+                      "trigger": row.get("trigger") or "hazard", "state": row.get("state"),
+                      "queued_at": row.get("at"),
+                      "age_h": round(age_h, 3) if age_h is not None else UNMEASURED,
+                      "hunt": hunt, "why": hwhy, "candidates": cands})
+    order = {HUNT_NO_CANDIDATE: 0, HUNT_STALLED: 1, HUNT_COVERED: 2}
+    hunts.sort(key=lambda h: (order[h["hunt"]], h["for"]))
+    uncovered = [h for h in hunts if h["hunt"] != HUNT_COVERED]
+    ages = [h["age_h"] for h in uncovered if isinstance(h["age_h"], float)]
+    return {"status": "MEASURED", "path": str(p), "open_window_h": SUCCESSOR_OPEN_H,
+            "n_rows_read": len(lines), "n_malformed": malformed, "n_open": len(hunts),
+            "n_covered": len(hunts) - len(uncovered),
+            "n_stalled": sum(1 for h in hunts if h["hunt"] == HUNT_STALLED),
+            "n_no_candidate": sum(1 for h in hunts if h["hunt"] == HUNT_NO_CANDIDATE),
+            "oldest_uncovered_h": round(max(ages), 3) if ages else None,
+            "repair_keys": repair_keys, "hunts": hunts,
+            "rule": ("one hunt per incumbent: its newest successor_search row within "
+                     f"{SUCCESSOR_OPEN_H:g}h. COVERED when a replacement cell is accruing on a "
+                     "forward clock; STALLED when candidates exist and none is; NO_CANDIDATE "
+                     "when hazard_engine found no certified replacement. Clockless or blocked "
+                     "candidates join this pass's repair sweep.")}
+
+
 def repair(missing: list[dict[str, Any]], deadline: float,
            engine: Path | None = None) -> dict[str, Any]:
     """Re-run the enrolment engine so anything clockless gets a clock inside the hour.
@@ -434,14 +558,23 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
     stamps = certification_stamps()
     gate, gate_why = integrity_gate()
     body = census(runs, clocks, stamps, now, gate=gate)
+    hunt = successor_hunt(body, now=now)
+    # A SUCCESSOR'S REPLACEMENT THAT IS BLOCKED IS REPAIRED TOO. A clockless one is already in
+    # `missing`; a blocked one is not, and it is the cell an ailing live sleeve is waiting on.
+    keys = set(hunt.get("repair_keys") or [])
+    successor_blocked = [e for e in body["blocked"] if e.get("key") in keys
+                         and e not in body["silent"]]
     # A SILENT ENGINE IS REPAIRED THE SAME WAY A MISSING CLOCK IS: by running the engine now, so
     # its failure lands in this leg's tail (and in `logs/shadow.log`) instead of in nobody's.
-    rep = (repair(body["missing"] + body["silent"], deadline) if do_repair and not why
+    rep: dict[str, Any] = (repair(body["missing"] + body["silent"] + successor_blocked, deadline)
+           if do_repair and not why
            else {"status": "NOT_RUN", "why": why or "repair disabled for this pass"})
+    rep["successor_keys"] = sorted(keys)
     if rep.get("status") in {"RAN", "RAN_NONZERO"}:
         # RE-MEASURE AFTER THE REPAIR, because the whole point is the state AFTER the sweep. A
         # report that shows the gap it just closed is a report that will be read as a defect.
         body = census(runs, clock_rows(), stamps, now, gate=gate)
+        hunt = successor_hunt(body, now=now)
     payload: dict[str, Any] = {
         "at": _now(now).isoformat(timespec="seconds"),
         "status": UNMEASURED if why else "MEASURED",
@@ -468,6 +601,7 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
         "integrity": (gate.summary() if gate is not None
                       else {"status": UNMEASURED, "why": gate_why}),
         "cycle_hours": CYCLE_HOURS,
+        "successor_hunt": hunt,
     }
     payload.update(body)
     if write:
@@ -480,7 +614,10 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
             leg_events("forward_enrolment", "OK", certificates=payload["n_certificates"],
                        enrolled=payload["n_enrolled"], missing=payload["n_missing"],
                        overdue=payload["n_overdue"], held=payload.get("n_held"),
-                       accruing=payload.get("n_accruing"), blocked=payload.get("n_blocked"))
+                       accruing=payload.get("n_accruing"), blocked=payload.get("n_blocked"),
+                       successor_hunts=hunt.get("n_open"),
+                       successor_stalled=hunt.get("n_stalled"),
+                       successor_no_candidate=hunt.get("n_no_candidate"))
         except Exception as exc:
             payload["events"] = f"UNMEASURED: {type(exc).__name__}: {exc}"
     return payload
@@ -497,6 +634,13 @@ def render(payload: dict[str, Any]) -> str:
              f"target={lat.get('target')} measured_on={lat.get('n_measured')}",
              f"  repair={(payload.get('repair') or {}).get('status')} "
              f"quota_capped={(payload.get('quota') or {}).get('capped')}"]
+    hunt = payload.get("successor_hunt") or {}
+    lines.append(f"  successor hunts open={hunt.get('n_open')} stalled={hunt.get('n_stalled')} "
+                 f"no_candidate={hunt.get('n_no_candidate')} "
+                 f"oldest_uncovered_h={hunt.get('oldest_uncovered_h')} ({hunt.get('status')})")
+    for h in (hunt.get("hunts") or [])[:10]:
+        if h.get("hunt") != HUNT_COVERED:
+            lines.append(f"    SUCCESSOR {h.get('hunt')} for {h.get('for')} -- {h.get('why')}")
     for row in (payload.get("missing") or [])[:10]:
         lines.append(f"    NO CLOCK {row.get('key')} clockless_h={row.get('clockless_hours')} "
                      f"-- {row.get('why', '')}")

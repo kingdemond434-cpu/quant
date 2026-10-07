@@ -78,13 +78,34 @@ def test_leg_is_on_the_clock_and_in_a_layer():
 def test_no_artifacts_reads_unmeasured_never_healthy(tmp_path):
     _roster(tmp_path, LIVE, {**LIVE, "name": "standby", "status": "STANDBY"})
     doc = TH.measure(NOW, _paths(tmp_path))
-    assert doc["n_live"] == 1
-    row = doc["sleeves"][0]
-    assert row["verdict"] == TH.UNMEASURED
-    for f in TH.FIELDS:
-        assert row["fields"][f]["value"] == TH.UNMEASURED
-        assert row["fields"][f]["why"]
+    assert doc["n_live"] == 1 and doc["n_standby"] == 1 and doc["n_sleeves"] == 2
+    for row in doc["sleeves"]:
+        assert row["verdict"] == TH.UNMEASURED
+        for f in TH.FIELDS:
+            assert row["fields"][f]["value"] == TH.UNMEASURED
+            assert row["fields"][f]["why"]
     json.dumps(doc, allow_nan=False)
+
+
+# ------------------------------------------------------------ STANDBY is judged (must-fix 1)
+def test_standby_sleeves_are_judged_and_report_their_state(tmp_path):
+    _roster(tmp_path, LIVE, {**LIVE, "name": "xau_sb", "status": "STANDBY"},
+            {**LIVE, "name": "gone", "status": "RETIRED"})
+    doc = TH.measure(NOW, _paths(tmp_path, identity={
+        "generated_utc": STAMP,
+        "rows": [{"name": "xau_sb", "verdict": "MISMATCH", "fields": ["params"]}]}))
+    by_name = {s["name"]: s for s in doc["sleeves"]}
+    assert set(by_name) == {"xau_a", "xau_sb"}
+    assert by_name["xau_a"]["state"] == "LIVE"
+    assert by_name["xau_sb"]["state"] == "STANDBY"
+    assert by_name["xau_sb"]["verdict"] == TH.BROKEN and doc["broken"] == ["xau_sb"]
+    assert doc["states_judged"] == ["LIVE", "STANDBY"]
+
+
+def test_roster_states_are_the_hazard_engines_live_lane():
+    src = (DESK / "research" / "hazard_engine.py").read_text("utf-8")
+    assert 'not in ("LIVE", "STANDBY")' in src
+    assert TH.ROSTER_STATES == ("LIVE", "STANDBY")
 
 
 def test_unreadable_roster_is_unknown_not_empty(tmp_path):
@@ -202,6 +223,38 @@ def test_hazard_engine_reading_states(tmp_path):
     _write(p, {"generated_utc": (NOW - timedelta(hours=5)).isoformat(), "sleeves": []})
     assert HZ.tradability_reading(p, NOW)[1].startswith("stale")
     _write(p, {"generated_utc": STAMP,
-               "sleeves": [{"name": "a", "verdict": "BROKEN", "why": "w"}]})
-    got, state = HZ.tradability_reading(p, NOW)
+               "sleeves": [{"name": "a", "verdict": "BROKEN", "why": "w", "state": "LIVE"}]})
+    got, state, meta = HZ.tradability_reading(p, NOW)
     assert state == "present" and got["a"]["verdict"] == "BROKEN"
+    assert got["a"]["state"] == "LIVE" and meta["states_judged"] == ["LIVE"]
+
+
+# ------------------------------------------------ STANDBY cards get the real reason (must-fix 2)
+def test_standby_card_reads_its_own_verdict_from_the_report(tmp_path):
+    _roster(tmp_path, LIVE, {**LIVE, "name": "xau_sb", "status": "STANDBY"})
+    p = _write(tmp_path / "TRADABILITY_HEALTH.json", TH.measure(NOW, _paths(tmp_path)))
+    trad, state, meta = HZ.tradability_reading(p, NOW)
+    card = {**_card("xau_sb"), "state": "STANDBY"}
+    HZ.attach_tradability([card], trad, state, meta)
+    assert card["tradability"]["state"] == "STANDBY"
+    assert card["tradability"]["verdict"] == TH.UNMEASURED
+    assert "no row" not in str(card["tradability"]["why"])
+
+
+def test_a_missing_standby_row_names_the_real_reason():
+    sb = {**_card("xau_sb"), "state": "STANDBY"}
+    # A report from before STANDBY was judged: the scope is the reason, not a missing row.
+    old = {"generated_utc": STAMP, "status": "MEASURED", "states_judged": ["LIVE"]}
+    why = HZ.missing_tradability_why(sb, "present", old)
+    assert "STANDBY" in why and "judged LIVE sleeves only" in why
+    # A report that judges STANDBY but predates the row: the roster moved after the pass.
+    new = {**old, "states_judged": ["LIVE", "STANDBY"]}
+    assert "roster gained it after" in HZ.missing_tradability_why(sb, "present", new)
+    # A report that could not read the roster judged nobody.
+    blind = {**new, "status": "UNMEASURED", "roster_why": "sleeves.json absent"}
+    assert "could not read the roster" in HZ.missing_tradability_why(sb, "present", blind)
+    # An absent or stale report says so, whatever the sleeve's state.
+    assert HZ.missing_tradability_why(sb, "stale: x", {}) == "tradability report stale: x"
+    HZ.attach_tradability([sb], {}, "present", old)
+    assert sb["tradability"] == {"verdict": "UNMEASURED", "state": "STANDBY",
+                                 "why": HZ.missing_tradability_why(sb, "present", old)}

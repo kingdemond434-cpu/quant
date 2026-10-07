@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""TRADABILITY HEALTH -- is each LIVE sleeve still forward-operationally tradable, field by field?
+"""TRADABILITY HEALTH -- is each LIVE/STANDBY sleeve still forward-operationally tradable?
 
     python desks/mt5/research/tradability_health.py             # writes the report
     python desks/mt5/research/tradability_health.py --dry-run   # prints, writes nothing
@@ -110,6 +110,9 @@ FIELDS: tuple[str, ...] = ("feature_drift", "parameter_drift", "cost_drift", "ex
 #: conditions the market moves in and out of: they can say DEGRADING, never BROKEN.
 STRUCTURAL: frozenset[str] = frozenset({"feature_drift", "parameter_drift", "cost_drift",
                                         "execution_drift", "recent_forward_posterior"})
+#: The roster states this report judges -- the same set `hazard_engine.collect_alphas` puts on
+#: lane `live`. Pinned equal by the test so the two readers cannot drift apart again.
+ROSTER_STATES: tuple[str, ...] = ("LIVE", "STANDBY")
 DEGRADING_AT = 0.5
 BROKEN_AT = 1.0
 #: The promoter's `certificate_drift` flag, read only when the identity join has no row.
@@ -413,8 +416,13 @@ def verdict_of(fields: dict[str, dict[str, Any]]) -> tuple[str, str]:
 
 
 def live_rows(doc: Any) -> list[dict[str, Any]]:
+    """Every roster row the gateway trades or is one admitting reading from trading: LIVE AND
+    STANDBY (audit 2026-10-07, must-fix 1). A STANDBY row is the next thing the gateway places;
+    leaving it out hid its tradability exactly when it was about to carry capital, and left
+    `hazard_engine` (whose lane `live` is LIVE + STANDBY) stamping it with a false "no row".
+    Each sleeve's own roster state is reported beside its verdict."""
     return [r for r in dm.roster_rows(doc).values()
-            if str(r.get("status") or "").upper() == "LIVE"]
+            if str(r.get("status") or "").upper() in ROSTER_STATES]
 
 
 def measure(now: datetime | None = None,
@@ -443,6 +451,7 @@ def measure(now: datetime | None = None,
         }
         verdict, why = verdict_of(fields)
         sleeves.append({"name": name, "symbol": sym, "family": fam or UNMEASURED,
+                        "state": str(row.get("status") or "").upper(),
                         "verdict": verdict, "why": why,
                         "n_measured": sum(1 for f in fields.values()
                                           if f["value"] != UNMEASURED),
@@ -454,7 +463,11 @@ def measure(now: datetime | None = None,
     return {
         "schema": SCHEMA, "generated_utc": now.isoformat(timespec="seconds"),
         "status": "MEASURED" if roster_ok else UNMEASURED,
-        "n_live": len(sleeves) if roster_ok else None,
+        "n_live": sum(1 for s in sleeves if s["state"] == "LIVE") if roster_ok else None,
+        "n_standby": (sum(1 for s in sleeves if s["state"] == "STANDBY") if roster_ok
+                      else None),
+        "n_sleeves": len(sleeves) if roster_ok else None,
+        "states_judged": list(ROSTER_STATES),
         "roster_why": None if roster_ok else (src["sleeves"].why or "roster unreadable: the "
                                               "live set is UNKNOWN, not empty"),
         "counts": counts,
@@ -504,7 +517,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     doc = run(write=not args.dry_run)
     c = doc["counts"]
-    print(f"tradability health: {doc['n_live']} live sleeve(s) -- "
+    print(f"tradability health: {doc['n_live']} live + {doc['n_standby']} standby -- "
           + ", ".join(f"{k}={v}" for k, v in c.items())
           + f"; field coverage {doc['field_coverage']}"
           + (" (dry run: nothing written)" if args.dry_run else f" -> {OUT}"))

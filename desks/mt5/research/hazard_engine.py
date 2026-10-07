@@ -55,6 +55,9 @@ SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
 COST_SURFACE = BASE / "data" / "cost_surface.json"
 REGIME_STATE = BASE / "data" / "regime_state.json"
 OUT = BASE / "reports" / "ALPHA_HAZARD.json"
+#: Its reader is `research/forward_enrolment.py` (hourly leg `forward_enrolment`), which answers
+#: per incumbent whether a named replacement is accruing forward evidence and puts every clockless
+#: or blocked replacement into its repair sweep (FORWARD_ENROLMENT.json `successor_hunt`).
 QUEUE = BASE / "data" / "hypotheses" / "successor_queue.jsonl"
 #: research/tradability_health.py's artifact (its own `OUT`, pinned equal by its test). Read so a
 #: live sleeve whose TRADABILITY is DEGRADING or BROKEN starts its successor hunt too, even while
@@ -631,6 +634,7 @@ def _card(alpha: dict, series_by_id: dict[str, dict], pool: Pool, k: int, names:
     fam = alpha["family"]
     card: dict[str, Any] = {
         "name": alpha["name"], "lane": alpha["lane"], "symbol": alpha["symbol"], "family": fam,
+        "state": str((alpha.get("row") or {}).get("status") or "").upper() or None,
         "n": len(series), "trailing_t": None, "mean_r": None, "drawdown_r": None,
         "posterior_edge": None, "p_die_k": None, "k": k, "health": "UNMEASURED",
         "capacity": _capacity_note(alpha["row"], alpha["lane"]), "replacement_candidates": [],
@@ -724,24 +728,66 @@ def build_cards(k: int = K_DEFAULT) -> tuple[list[dict], dict]:
 
 # ---------------------------------------------------------------------------- the successor hunt
 def tradability_reading(path: Path | None = None, now: datetime | None = None
-                        ) -> tuple[dict[str, dict], str]:
-    """{live sleeve: {verdict, why}} from TRADABILITY_HEALTH.json, and the read's state.
+                        ) -> tuple[dict[str, dict[str, Any]], str, dict[str, Any]]:
+    """{sleeve: {verdict, why, state}} from TRADABILITY_HEALTH.json, the read's state, and the
+    report's own facts a missing row is explained by (`generated_utc`, `states_judged`,
+    `status`, `roster_why`).
 
     An absent, unreadable or stale report is a STATE with its reason, never an empty all-clear:
     every live card then carries `tradability: UNMEASURED` (L1.28a)."""
     p = path or TRADABILITY
     doc = _read_json(p, None)
     if not isinstance(doc, dict):
-        return {}, f"absent or unreadable: {p.name}"
+        return {}, f"absent or unreadable: {p.name}", {}
+    meta = {"generated_utc": doc.get("generated_utc"), "status": doc.get("status"),
+            "roster_why": doc.get("roster_why"),
+            # A report written before STANDBY was judged carries no `states_judged`: it judged
+            # LIVE only, and the reason for a missing STANDBY row must say so.
+            "states_judged": [str(x).upper() for x in (doc.get("states_judged") or ["LIVE"])]}
     t = _row_time({"time": doc.get("generated_utc")})
     age = ((now or datetime.now(tz=UTC)) - t).total_seconds() / 3600.0 if t else None
     if age is None or age > TRADABILITY_LEASE_H:
         return {}, (f"stale: {p.name} is {age:.1f}h old (lease {TRADABILITY_LEASE_H:g}h)"
-                    if age is not None else f"undated: {p.name} carries no generated_utc")
+                    if age is not None else f"undated: {p.name} carries no generated_utc"), meta
     out = {str(s["name"]): {"verdict": str(s.get("verdict") or "UNMEASURED"),
-                            "why": s.get("why")}
+                            "why": s.get("why"), "state": s.get("state")}
            for s in (doc.get("sleeves") or []) if isinstance(s, dict) and s.get("name")}
-    return out, "present"
+    return out, "present", meta
+
+
+def missing_tradability_why(card: dict[str, Any], trad_state: str,
+                            meta: dict[str, Any]) -> str:
+    """THE REAL REASON a live-lane card has no tradability row (audit 2026-10-07, must-fix 2).
+
+    It used to say "the report carries no row for this sleeve" for every miss, which was false
+    for a STANDBY sleeve: the report had not judged STANDBY at all, so the absence was a scope
+    decision, not a missing measurement. Each cause is named for what it is."""
+    if trad_state != "present":
+        return f"tradability report {trad_state}"
+    state = str(card.get("state") or "").upper() or "UNKNOWN"
+    judged = list(meta.get("states_judged") or [])
+    if meta.get("status") and meta.get("status") != "MEASURED":
+        return (f"tradability report could not read the roster ({meta.get('roster_why')}), so "
+                f"no sleeve was judged; this {state} sleeve is UNMEASURED, not clear")
+    if state not in judged:
+        return (f"this sleeve is {state} and the tradability report written "
+                f"{meta.get('generated_utc')} judged {'/'.join(judged) or 'no'} sleeves only; "
+                f"its next pass judges LIVE and STANDBY")
+    return (f"this {state} sleeve is not in the tradability report written "
+            f"{meta.get('generated_utc')}: the roster gained it after that pass; the next hourly "
+            f"pass judges it")
+
+
+def attach_tradability(cards: list[dict[str, Any]], trad: dict[str, dict[str, Any]],
+                       trad_state: str,
+                       meta: dict[str, Any]) -> None:
+    """Stamp each live-lane (LIVE + STANDBY) card with its tradability reading, or the literal
+    UNMEASURED with the real reason it has none."""
+    for c in cards:
+        if c["lane"] == "live":
+            c["tradability"] = trad.get(c["name"]) or {
+                "verdict": "UNMEASURED", "state": c.get("state"),
+                "why": missing_tradability_why(c, trad_state, meta)}
 
 
 def queue_successors(cards: list[dict], now: str, path: Path | None = None) -> list[dict]:
@@ -765,7 +811,7 @@ def queue_successors(cards: list[dict], now: str, path: Path | None = None) -> l
                          "family": c["family"], "trigger": "tradability_health",
                          "why": (f"tradability {trad.get('verdict')}: {trad.get('why')} "
                                  f"({TRADABILITY.name}); hazard health {c['health']}"),
-                         "at": now, "lane": c["lane"],
+                         "at": now, "lane": c["lane"], "state": c.get("state"),
                          "replacement_candidates": c["replacement_candidates"],
                          "note": ("hunt only: nothing is faded, resized or retired by this "
                                   "row; the kill stays with decay_monitor on its unchanged "
@@ -812,13 +858,8 @@ RULE = (f"p_die_k = P(the decay_monitor demotion rule fires within k observation
 def main(k: int = K_DEFAULT, dry_run: bool = False) -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     cards, model = build_cards(k)
-    trad, trad_state = tradability_reading()
-    for c in cards:
-        if c["lane"] == "live":
-            c["tradability"] = trad.get(c["name"]) or {
-                "verdict": "UNMEASURED",
-                "why": (f"tradability report {trad_state}" if trad_state != "present"
-                        else "the tradability report carries no row for this sleeve")}
+    trad, trad_state, trad_meta = tradability_reading()
+    attach_tradability(cards, trad, trad_state, trad_meta)
     by_health: dict[str, int] = {}
     for c in cards:
         by_health[c["health"]] = by_health.get(c["health"], 0) + 1
