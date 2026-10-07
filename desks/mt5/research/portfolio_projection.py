@@ -26,6 +26,10 @@ from mt5desk.engine import Costs, run_backtest
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
+#: THE ARTIFACT THIS MODULE WRITES, bound where the component registry reads it (`own_artifact`)
+#: so the hourly leg `portfolio_projection` is attested against it. `swap_exposure.PROJECTION` and
+#: the write at the end of `main` name the same path; a test pins all three together.
+OUT = BASE / "reports" / "portfolio_projection.json"
 
 GOLD_WINDOWS = {
     "asia": dict(range_start=7, wait_bars=12, rr=2.0, ttl_bars=12),
@@ -296,7 +300,7 @@ def main() -> None:
                mean_corr=mean_corr, n_eff=n_eff, port_sharpe=sharpe,
                port_daily_mean=m, port_daily_std=s)
     (BASE / "reports" / "portfolio_projection.json").write_text(
-        json.dumps(out, indent=2, default=str), encoding="utf-8")
+        json.dumps(out, indent=2, default=str), encoding="utf-8", newline="\n")
     print("\n-> reports/portfolio_projection.json")
 
 

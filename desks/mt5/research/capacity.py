@@ -426,7 +426,7 @@ def measure(sleeves: list[dict[str, Any]] | None = None,
         equity, equity_source = 0.0, "NONE"
         for candidate, keys, label in (
             (BASE / "data" / "account_state.json", ("equity",), "account_state.json"),
-            (BASE / "data" / "gateway_state.json", ("equity",), "gateway_state.json"),
+            (BASE / "data" / "gateway_state.json", ("equity",), "data/gateway_state.json"),
             (BASE / "web" / "desk_state.json", ("account", "equity"), "web/desk_state.json"),
             (REPO / "web" / "desk_state.json", ("account", "equity"),
              "REPO web/desk_state.json (display artifact -- may be another box's)"),

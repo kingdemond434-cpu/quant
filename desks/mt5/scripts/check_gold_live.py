@@ -22,8 +22,12 @@ nothing in between. An empty book at 09:40 is the schedule working, and without 
 next to it that is indistinguishable from the failure this script exists to find.
 
     python desks/mt5/scripts/check_gold_live.py
+    python desks/mt5/scripts/check_gold_live.py --out     # the hourly leg `gold_live_check`
 
-Exit 0 when every step that can be checked is clear, 1 when something refuses the book.
+Exit 0 when every step that can be checked is clear, 1 when something refuses the book. With
+`--out` the verdict is the ARTIFACT (`reports/GOLD_LIVE_CHECK.json`: ARMED or NOT_ARMED, every
+blocking reason by name, every line) and the exit is 0 whenever the walk completed, so a refusal
+is recorded as the finding it is and a crash is the only failure.
 """
 from __future__ import annotations
 
@@ -36,6 +40,8 @@ BASE = Path(__file__).resolve().parent.parent
 DATA = BASE / "data"
 #: The gateway's own state file, written by `gateway.save_state`. Never the desk-root copy.
 GATEWAY_STATE = DATA / "gateway_state.json"
+#: The hourly leg's artifact (`--out`).
+REPORT = BASE / "reports" / "GOLD_LIVE_CHECK.json"
 sys.path.insert(0, str(BASE))
 
 OK, BAD, INFO = "OK  ", "STOP", "    "
@@ -286,6 +292,14 @@ def main(argv: list[str] | None = None) -> int:
 
     print("\n".join(lines))
     print()
+    if argv is not None and "--out" in argv:
+        REPORT.parent.mkdir(parents=True, exist_ok=True)
+        REPORT.write_text(json.dumps({
+            "written_at": datetime.now(UTC).isoformat(),
+            "verdict": "NOT_ARMED" if blocking else "ARMED",
+            "blocking": blocking, "lines": lines,
+            "gateway_state": "data/gateway_state.json"}, indent=1),
+            encoding="utf-8", newline="\n")
     if blocking:
         print(f"VERDICT: the gold book is NOT fully armed -- {len(blocking)} thing(s) refuse it:")
         for b in blocking:
@@ -297,4 +311,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    _argv = sys.argv[1:]
+    _rc = main(_argv)
+    sys.exit(0 if "--out" in _argv else _rc)

@@ -858,6 +858,9 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     "model_skill": (2,),
     "deep_forest": (1,),
     "maintain_miners": (2,),
+    # swap_exposure writes its refusal INTO the artifact and exits 3 (UNMEASURED: no live
+    # reports/portfolio_projection.json) or 4 (STALE: older than a week) -- verdicts, not crashes.
+    "swap_exposure": (3, 4),
 }
 
 
@@ -973,6 +976,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
     # 48h law-gate rotation and the health check ran on no clock at all.
     "box_state_freshness", "desk_health",
+    # IS THE GOLD BOOK ARMED (2026-10-07): check_gold_live walks the money path in order and had
+    # no clock -- runtime_state read it NEVER. Seconds, read-only, its verdict is the artifact.
+    "gold_live_check",
 })
 
 
@@ -1101,6 +1107,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
+                     "portfolio_projection", "swap_exposure", "gold_live_check",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
                      "missed_trade_archaeologist", "portfolio_bounty",
@@ -1997,6 +2004,12 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "free_stack_proposer": 900,
     # A reader of the factory's report and journal tail; seconds.
     "factory_throughput": 180,
+    # The deployed book's projection (backtests every hunt12 survivor cell) and the overnight
+    # financing exposure measured on it (backtests the same cells again). Both are bounded by the
+    # survivor count, not by a search; the gold-live walk is file reads plus one terminal query.
+    "portfolio_projection": 600,
+    "swap_exposure": 600,
+    "gold_live_check": 120,
     # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
     # writes COEVOLUTION.json; the cap sits above it so it is never cut at the same prefix.
     "coevolution": 1_020,
@@ -5034,6 +5047,17 @@ def main() -> None:
     # pass for want of a file nothing produced. `hunt12` runs first, and only when the sweep is
     # absent, unfinished or a week old.
     h12 = _costed("hunt12", hunt12)
+    # THE DEPLOYED BOOK AND ITS FINANCING, GIVEN A CLOCK (2026-10-07). `portfolio_projection.py`
+    # is the only writer of reports/portfolio_projection.json and had never run on any clock
+    # (runtime_state: NEVER); `swap_exposure.py` reads that report and read UNMEASURED. They run
+    # here, right after the hunt12 sweep they are built from, the projection first so the swap
+    # verdict is measured on THIS pass's book. The projection refuses (exit 1) without
+    # reports/hunt12_partial.json, which is the truth and is recorded as such; swap_exposure then
+    # names UNMEASURED or STALE in its own artifact. Both are reports: they size nothing.
+    ppj = _costed("portfolio_projection", lambda: _producer(
+        "portfolio_projection", "research/portfolio_projection.py"))
+    swx = _costed("swap_exposure", lambda: _producer(
+        "swap_exposure", "research/swap_exposure.py"))
     # AND ITS STATE GATE HAD NO CLOCK OF ITS OWN (measured 2026-09-24). `pf_allocator` refuses to
     # condition on any dimension `reports/STATE_ADMISSION.json` sends to the graveyard, and reads
     # it through `state_admission_run.read_graveyard()` -- an import of the READER, which never
@@ -5632,6 +5656,8 @@ def main() -> None:
         "box_state_freshness", "scripts/check_box_state_freshness.py"))
     dhl = _costed("desk_health", lambda: _producer(
         "desk_health", "scripts/check_desk_health.py", "--out"))
+    glc = _costed("gold_live_check", lambda: _producer(
+        "gold_live_check", "scripts/check_gold_live.py", "--out"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -5812,6 +5838,7 @@ def main() -> None:
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
                     "box_state_freshness": bsf, "desk_health": dhl,
+                    "gold_live_check": glc,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
@@ -5833,6 +5860,7 @@ def main() -> None:
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,
+                    "portfolio_projection": ppj, "swap_exposure": swx,
                     "state_admission": sad,
                     "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
                     "promoter": pr,

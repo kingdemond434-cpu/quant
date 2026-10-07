@@ -104,17 +104,19 @@ if (Test-Path $srcReports) { Copy-Item -Path $srcReports -Destination $bundle -R
 
 $dataOut = Join-Path $bundle "data"
 New-Item -ItemType Directory -Force -Path $dataOut | Out-Null
-$src = Join-Path $base "data"
-foreach ($d in @("universe", "states", "cot", "cot_tff", "cot_disagg", "lake",
-                 "gateway_state.json","live_ledger.jsonl","order_intents.jsonl",
-                 "daily_cycle_state.json","regime_state.json",
-                 "sleeves.json","terminal_path.txt","GATEWAY_PAUSED",
-                 "frontier_inbox.json","sync_marker.json","data_registry.json",
-                 "free_data_frontier.json","cot_tff.json","research_queue.json",
-                 "macro_state.json","cross_asset_anchors.pkl","crowding_state.json",
-                 "options_archive.parquet","news_state.json","HOLD_qquant_gates",
-                 "HOLD_universal","HOLD_merge","HOLD_allocation","HOLD_qquant")) {
-    $p = Join-Path $src $d
+# EVERY ENTRY NAMES ITS OWN data\ DIRECTORY (2026-10-06). A bare "gateway_state.json" here read
+# as the desk-root copy to anyone grepping, and the desk-root copies are stale 2026-08-17 records;
+# the files copied are, and always were, the live ones under data\. Same items, same destination.
+foreach ($d in @("data\universe", "data\states", "data\cot", "data\cot_tff", "data\cot_disagg", "data\lake",
+                 "data\gateway_state.json","data\live_ledger.jsonl","data\order_intents.jsonl",
+                 "data\daily_cycle_state.json","data\regime_state.json",
+                 "data\sleeves.json","data\terminal_path.txt","data\GATEWAY_PAUSED",
+                 "data\frontier_inbox.json","data\sync_marker.json","data\data_registry.json",
+                 "data\free_data_frontier.json","data\cot_tff.json","data\research_queue.json",
+                 "data\macro_state.json","data\cross_asset_anchors.pkl","data\crowding_state.json",
+                 "data\options_archive.parquet","data\news_state.json","data\HOLD_qquant_gates",
+                 "data\HOLD_universal","data\HOLD_merge","data\HOLD_allocation","data\HOLD_qquant")) {
+    $p = Join-Path $base $d
     if (Test-Path $p) { Copy-Item $p -Destination $dataOut -Recurse -Force }
 }
 

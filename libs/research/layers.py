@@ -238,6 +238,10 @@ LEG_LAYER: dict[str, str] = {
     "forward_evidence_tracker": "meta",
     # The box-state freshness fence and the desk health report, hourly before publication.
     "box_state_freshness": "meta", "desk_health": "meta",
+    # The deployed book's projection, its overnight financing cost, and whether the gold book is
+    # armed on the live account (2026-10-07).
+    "portfolio_projection": "portfolio", "swap_exposure": "execution",
+    "gold_live_check": "execution",
     # THE 2026-09-16 BLUEPRINT ORGANS (Tier-1 phases C/D).
     "axis_registry": "information", "forced_flow_calendar": "information",
     "standing_questions": "information",

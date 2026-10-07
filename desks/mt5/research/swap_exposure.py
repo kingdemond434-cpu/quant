@@ -18,8 +18,11 @@ It answers two questions and refuses the third:
     python desks/mt5/research/swap_exposure.py --swap-per-lot XAUUSD=12.5 --swap-per-lot AUDCAD=0.4
 
 Reads reports/portfolio_projection.json (UNMEASURED when absent, STALE past a week).
-Writes desks/mt5/swap_exposure.json. Wired by `run_hunt11.py`'s cadence and safe to run alone --
-it reads bars and writes one artifact, and places no orders.
+Writes desks/mt5/swap_exposure.json, LF on every host. Runs as the hourly_cycle leg
+`swap_exposure`, immediately after the `portfolio_projection` leg that writes its input, and is
+safe to run alone -- it reads bars and writes one artifact, and places no orders. Exit 3 is the
+UNMEASURED verdict and 4 the STALE one (`hourly_cycle.VERDICT_EXITS`); both are written into the
+artifact by name.
 """
 from __future__ import annotations
 
@@ -187,7 +190,7 @@ def main() -> int:
             "version": FINANCING_VERSION, "stamp": stamp_provenance(),
             "state": proj["state"], "why": proj["why"], "projection": proj["path"],
             "projection_age_hours": proj["age_hours"], "rows": [], "most_exposed": None},
-            indent=1), encoding="utf-8")
+            indent=1), encoding="utf-8", newline="\n")
         print(f"{proj['state']}: {proj['why']}", file=sys.stderr)
         return 3 if proj["state"] == "UNMEASURED" else 4
     cells = proj["cells"]
@@ -286,7 +289,9 @@ def main() -> int:
             "crosses it twice.",
         ],
     }
-    OUT.write_text(json.dumps(art, indent=1), encoding="utf-8")
+    # LF on every host: this is a release.py STATE_FILES path the Windows box commits, and
+    # desks/mt5/.gitattributes stores *.json as eol=lf.
+    OUT.write_text(json.dumps(art, indent=1), encoding="utf-8", newline="\n")
 
     if args.json:
         print(json.dumps(art, indent=1))
