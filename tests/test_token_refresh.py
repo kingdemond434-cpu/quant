@@ -365,6 +365,39 @@ def test_jquants_is_permitted_for_private_use_only(monkeypatch: pytest.MonkeyPat
     assert not T.get_token("CDSE_TOKEN", environ={}, now=NOW).private_use
 
 
+def test_jquants_permitting_clause_and_conditions_are_recorded(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit of #218 (2026-10-07): the clause that PERMITS the use is recorded verbatim with its
+    URL, its conditions are structured fields, the stale BLOCKED_ON_TERMS note is gone, and the
+    principal's approval is stored with the question it answered."""
+    ev = T.TERMS_EVIDENCE["jquants"]
+    assert ev["permitting_url"] == "https://jpx-jquants.com/en/help/usage"
+    assert "own investment analysis, portfolio management" in ev["permitting_quote"]
+    assert ev["permitting_quote_source"] in ("fetched_2026-10-07", "quoted_via_audit")
+    assert "scope_note" not in ev and "BLOCKED_ON_TERMS" not in json.dumps(ev)
+    assert "private use by the registered individual" in ev["principal_question"]
+    assert ev["principal_answer"].endswith("yes fr j quants")
+    assert ev["principal_answered_by"] == "zuck"
+    c = T.TERMS_CONDITIONS["jquants"]
+    assert c["corporate_use_permitted"] is False
+    assert any("not reused for training" in x for x in c["ai_use"]["permitted_only_if"])
+    assert any("not distributed or published" in x for x in c["ai_use"]["permitted_only_if"])
+    assert c["repeated_publishing_is_personal_use"] is False
+    assert c["delete_on_cancellation"] is True and "copies" in c["delete_on_cancellation_quote"]
+    assert c["lineage"] == T.PRIVATE_LINEAGE and c["e8_eligible"] is False
+    # the structured conditions are part of the permission: without them it is not one
+    monkeypatch.delitem(T.TERMS_CONDITIONS, "jquants")
+    assert not T.terms_ok(T.PROVIDERS["JQUANTS_TOKEN"])
+
+
+def test_private_lineage_is_seen_at_any_depth() -> None:
+    cell = T.mark_private_lineage({"family": "x"})
+    assert cell["lineage"] == T.PRIVATE_LINEAGE and cell[T.E8_INELIGIBLE] is True
+    assert T.has_private_lineage({"spec": {"parents": [cell]}})
+    assert T.has_private_lineage({"lineages": [T.PRIVATE_LINEAGE]})
+    assert not T.has_private_lineage({"spec": {"family": "carry", "private_use": False}})
+
+
 def test_cdse_attribution_duty_rides_on_every_record(monkeypatch: pytest.MonkeyPatch,
                                                       tmp_path: Path) -> None:
     """The Sentinel Data Legal Notice requires the source notice on anything communicated or

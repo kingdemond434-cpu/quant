@@ -1,5 +1,14 @@
 """FENCE: no J-Quants (private-use) value reaches a tracked path. The repository is PUBLIC.
 
+FOUR LAYERS (audit of #218, 2026-10-07; a planted print in `_print_summary` passed the first):
+  (a) the J-Quants pass's STDOUT AND STDERR, and the hourly leg that runs it, carry no planted
+      value -- hourly_cycle keeps each leg's stdout tail in the TRACKED sync_marker.json;
+  (b) a static allowlist of the modules that may reference data/lake/private_use;
+  (c) a downstream grep, after a planted run, over EVERY unignored file of a scratch repository
+      carrying this repository's .gitignore, sync_marker.json included, and over this
+      repository's own tracked and unignored files;
+  (d) private-lineage cells never reach the E8 book (prop capital is not the individual's own).
+
 J-Quants is permitted for the registered individual's private use only (art. 8; the principal's
 answer of 2026-10-06, recorded in libs.ops.token_refresh.TERMS_EVIDENCE["jquants"]). This runs the
 asia collector's whole pass against a fake transport inside a scratch git repository that carries
@@ -8,11 +17,14 @@ it holds no J-Quants value and no private-use row content.
 """
 from __future__ import annotations
 
+import ast
 import json
+import re
 import shutil
 import subprocess
 import sys
 import urllib.request
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -26,9 +38,12 @@ if str(ROOT / "desks" / "mt5") not in sys.path:
 
 from libs.ops import token_refresh as T  # noqa: E402
 
-SENTINEL = "JQ-PRIVATE-VALUE-7731"      # a value only the J-Quants payload carries
-COLUMN = "ForeignersNetJQ"              # a field name only the J-Quants payload carries
-API_KEY = "fake-jq-key-0123456789"
+# PLANTED SENTINELS, minted per run so that no tracked file -- this one included -- can carry
+# them: a hit anywhere after a planted run is a leak, never a coincidence.
+SENTINEL = f"JQPRIV{uuid.uuid4().hex}"      # a value only the J-Quants payload carries
+COLUMN = f"JQCOL{uuid.uuid4().hex[:12]}"     # a field name only the J-Quants payload carries
+API_KEY = f"fake-jq-key-{uuid.uuid4().hex}"
+PLANTED = (SENTINEL, COLUMN, API_KEY)
 
 
 class _Resp:
@@ -150,3 +165,267 @@ def test_public_row_strips_values_and_keeps_counts() -> None:
     assert "vault" not in out and "url" not in out and COLUMN not in json.dumps(out)
     other = {"id": "boj", "status": "COLLECTED", "parse": {"path": "/q", "n": 1}}
     assert C.public_row(other) is other
+
+
+# ---------------------------------------------------------------------------------------------
+# (a) stdout / stderr, and the hourly leg that runs the pass; (c) the downstream grep
+# ---------------------------------------------------------------------------------------------
+
+def _plant(monkeypatch: pytest.MonkeyPatch, scratch_repo: Path) -> Any:
+    """Point the collector at the scratch repository and give it a fake J-Quants transport
+    whose payload carries the planted sentinels. Returns the collector module."""
+    from research import asia_collector as C
+
+    base = scratch_repo / "desks" / "mt5"
+    for name, rel in (("VAULT", "data/lake/vault"), ("SERIES", "data/lake/series"),
+                      ("STATE", "data/lake/collector_state.json"),
+                      ("PRIVATE", "data/lake/private_use"),
+                      ("OUT", "reports/ASIA_COLLECTOR.json"),
+                      ("FOUND", "data/intelligence/asia_endpoints")):
+        monkeypatch.setattr(C, name, base / rel)
+    monkeypatch.setenv("QUANT_TOKEN_CACHE_DIR",
+                       str(scratch_repo / "data" / "secrets" / "token_cache"))
+    monkeypatch.setattr(T, "_read_key", lambda n: API_KEY if n == "JQUANTS_API_KEY" else "")
+    monkeypatch.setattr(C, "_robots_allows", lambda u, agent="": (True, "stub"))
+    payload = json.dumps({"data": [{"Date": "2026-10-02", COLUMN: SENTINEL}]}).encode()
+    monkeypatch.setattr(urllib.request.OpenerDirector, "open",
+                        lambda self, req, data=None, timeout=0: _Resp(payload))
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: _Resp(payload))
+    return C
+
+
+def _leaks_in(text: str) -> list[str]:
+    return [s for s in PLANTED if s in text]
+
+
+def _run_hourly_leg(monkeypatch: pytest.MonkeyPatch, C: Any) -> dict[str, Any]:
+    """hourly_cycle's REAL `asia_collector` leg, with its subprocess replaced by the collector run
+    in-process (so the planted transport and scratch paths apply) and its stdout and stderr
+    captured exactly as `_producer` captures a child's. Returns the leg's result dict -- the
+    thing hourly_cycle writes into sync_marker.json."""
+    import contextlib
+    import io
+
+    import research.hourly_cycle as H
+
+    def fake_run(argv: list[str], **kw: Any) -> subprocess.CompletedProcess[str]:
+        out, err = io.StringIO(), io.StringIO()
+        script = next(i for i, a in enumerate(argv) if str(a).endswith("asia_collector.py"))
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            try:
+                rc = C.main([str(a) for a in argv[script + 1:]] + ["--id", "jpx_jquants"])
+            except SystemExit as exc:                          # pragma: no cover
+                rc = int(exc.code or 0)
+        return subprocess.CompletedProcess(argv, rc, out.getvalue(), err.getvalue())
+
+    monkeypatch.setattr(H, "_run_tree", fake_run)
+    return H.asia_collector()
+
+
+def test_jquants_pass_prints_no_private_value(monkeypatch: pytest.MonkeyPatch,
+                                              scratch_repo: Path,
+                                              capfd: pytest.CaptureFixture[str]) -> None:
+    """(a) The pass's stdout and stderr carry counts and status only."""
+    C = _plant(monkeypatch, scratch_repo)
+    C.main(["--id", "jpx_jquants"])
+    out, err = capfd.readouterr()
+    assert "jpx_jquants" in out and "private use" in out      # the pass did report
+    assert not _leaks_in(out) and not _leaks_in(err), "a private value was printed"
+
+
+def test_hourly_leg_tail_carries_no_private_value(monkeypatch: pytest.MonkeyPatch,
+                                                  scratch_repo: Path) -> None:
+    """(a) The hourly leg that runs the pass keeps its stdout/stderr tail in sync_marker.json."""
+    C = _plant(monkeypatch, scratch_repo)
+    leg = _run_hourly_leg(monkeypatch, C)
+    assert leg.get("exit_code") == 0 and "jpx_jquants" in str(leg.get("tail"))
+    assert not _leaks_in(json.dumps(leg)), "a private value reached the leg's recorded tail"
+
+
+def test_a_planted_print_is_caught(monkeypatch: pytest.MonkeyPatch,
+                                   scratch_repo: Path) -> None:
+    """The fence is not vacuous: the exact regression the audit planted -- a print of a private
+    row inside `_print_summary` -- reaches the leg tail, and this fence sees it there."""
+    C = _plant(monkeypatch, scratch_repo)
+    real = C._print_summary
+
+    def planted(rows: list[dict[str, Any]], *a: Any) -> int:
+        print(json.dumps(rows, default=str))
+        for p in (C.PRIVATE / "series").glob("*.json"):
+            print(p.read_text("utf-8"))
+        return real(rows, *a)
+    monkeypatch.setattr(C, "_print_summary", planted)
+    leg = _run_hourly_leg(monkeypatch, C)
+    assert _leaks_in(json.dumps(leg)), "the fence missed a planted print"
+
+
+def _unignored_files(repo: Path) -> list[str]:
+    r = _git(repo, "ls-files", "--cached", "--others", "--exclude-standard", "-z")
+    assert r.returncode == 0, r.stderr
+    return [x for x in r.stdout.split("\0") if x]
+
+
+def test_downstream_grep_finds_no_planted_value_on_any_unignored_file(
+        monkeypatch: pytest.MonkeyPatch, scratch_repo: Path) -> None:
+    """(c) After a planted run through the hourly leg, the leg result is written where
+    hourly_cycle writes it (desks/mt5/data/sync_marker.json, a TRACKED file), and every
+    unignored file of the scratch repository is grepped for every planted value."""
+    C = _plant(monkeypatch, scratch_repo)
+    leg = _run_hourly_leg(monkeypatch, C)
+    marker = scratch_repo / "desks" / "mt5" / "data" / "sync_marker.json"
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(json.dumps({"last_cycle": "planted", "asia_collector": leg}, indent=1),
+                      encoding="utf-8")
+    # the private lake really holds the planted value, and its attribution sidecar
+    priv = [p for p in (scratch_repo / "desks/mt5/data/lake/private_use").rglob("*")
+            if p.is_file()]
+    assert any(SENTINEL in p.read_text("utf-8", errors="replace") for p in priv
+               if p.suffix == ".json")
+    assert any(p.name.endswith(".attribution.json") for p in priv)
+
+    files = _unignored_files(scratch_repo)
+    assert "desks/mt5/data/sync_marker.json" in files, "sync_marker.json must be checked"
+    assert not any("private_use" in f for f in files), files
+    leaks = [f for f in files
+             if _leaks_in((scratch_repo / f).read_bytes().decode("utf-8", errors="replace"))]
+    assert not leaks, f"planted J-Quants value on an unignored path: {leaks}"
+
+
+def test_no_planted_value_in_this_repository() -> None:
+    """(c) And none reached THIS repository's tracked or unignored files: the planted values are
+    minted per run, so any hit is a write that escaped the scratch paths."""
+    if shutil.which("git") is None:
+        pytest.skip("git is not installed")
+    args = ["git", "-C", str(ROOT), "grep", "--untracked", "-I", "-l", "-F"]
+    for s in PLANTED:
+        args += ["-e", s]
+    r = subprocess.run(args, capture_output=True, text=True, check=False, timeout=600)
+    assert r.returncode == 1 and not r.stdout.strip(), r.stdout[:2000]
+
+
+# ---------------------------------------------------------------------------------------------
+# (b) the static allowlist of modules that may reference the private lake
+# ---------------------------------------------------------------------------------------------
+
+#: The ONLY non-test modules that may reference data/lake/private_use (or the collector's
+#: `PRIVATE` constant that names it). A new reader is a new place a private value can leak from,
+#: so adding one is a reviewed edit to this list, never a silent import.
+PRIVATE_USE_ALLOWLIST = frozenset({
+    "desks/mt5/research/asia_collector.py",
+})
+
+_PATHLIKE = re.compile(r"^[\w.\-/\\]*private_use[\w.\-/\\]*$")
+
+
+def _names_private_lake(node: ast.AST) -> bool:
+    # a path-like literal naming it: "lake/private_use", "data\\lake\\private_use\\x"
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        v = node.value
+        return v != "private_use" and bool(_PATHLIKE.match(v)) and ("/" in v or "\\" in v)
+    # the collector's constant, imported or reached as an attribute
+    if isinstance(node, ast.ImportFrom):
+        return bool(node.module and node.module.endswith("asia_collector")
+                    and any(a.name == "PRIVATE" for a in node.names))
+    return (isinstance(node, ast.Attribute) and node.attr == "PRIVATE"
+            and isinstance(node.value, ast.Name) and "collector" in node.value.id.lower())
+
+
+def _references_private_lake(tree: ast.AST) -> list[int]:
+    hits: list[int] = []
+    for node in ast.walk(tree):
+        # Path / "private_use" (or "private_use" / x)
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+            for side in (node.left, node.right):
+                if isinstance(side, ast.Constant) and side.value == "private_use":
+                    hits.append(node.lineno)
+        elif _names_private_lake(node):
+            hits.append(node.lineno)
+    return hits
+
+
+def test_only_allowlisted_modules_reference_the_private_lake() -> None:
+    """(b) Every tracked non-test .py file is parsed; any reference to data/lake/private_use
+    outside the allowlist fails."""
+    if shutil.which("git") is None:
+        pytest.skip("git is not installed")
+    r = subprocess.run(["git", "-C", str(ROOT), "grep", "-l", "private_use", "--", "*.py"],
+                       capture_output=True, text=True, check=False)
+    offenders: dict[str, list[int]] = {}
+    seen_allowed = set()
+    for rel in r.stdout.split():
+        parts = Path(rel).parts
+        if "tests" in parts or Path(rel).name.startswith("test_"):
+            continue
+        path = ROOT / rel
+        if not path.exists():
+            continue
+        lines = _references_private_lake(ast.parse(path.read_text("utf-8")))
+        if not lines:
+            continue
+        if rel in PRIVATE_USE_ALLOWLIST:
+            seen_allowed.add(rel)
+        else:
+            offenders[rel] = lines
+    assert not offenders, f"modules reference the private lake outside the allowlist: {offenders}"
+    assert seen_allowed == PRIVATE_USE_ALLOWLIST, (
+        f"allowlisted but not found referencing it (stale entry?): "
+        f"{sorted(PRIVATE_USE_ALLOWLIST - seen_allowed)}")
+
+
+def test_the_allowlist_check_sees_each_reference_shape() -> None:
+    for src in ('from pathlib import Path\nP = Path("x") / "lake" / "private_use"\n',
+                'P = "desks/mt5/data/lake/private_use/series"\n',
+                'from research.asia_collector import PRIVATE\n',
+                'import research.asia_collector as collector\nx = collector.PRIVATE\n'):
+        assert _references_private_lake(ast.parse(src)), src
+    # prose naming the directory is not a read of it
+    assert not _references_private_lake(ast.parse(
+        'NOTE = "writes only under the gitignored desks/mt5/data/lake/private_use/ dir"\n'))
+
+
+# ---------------------------------------------------------------------------------------------
+# (d) lineage, and E8
+# ---------------------------------------------------------------------------------------------
+
+def test_private_records_carry_the_lineage_and_are_e8_ineligible(
+        monkeypatch: pytest.MonkeyPatch, scratch_repo: Path) -> None:
+    C = _plant(monkeypatch, scratch_repo)
+    C.main(["--id", "jpx_jquants"])
+    report = json.loads((scratch_repo / "desks/mt5/reports/ASIA_COLLECTOR.json")
+                        .read_text("utf-8"))
+    (row,) = report["rows"]
+    assert row["lineage"] == T.PRIVATE_LINEAGE and row["e8_ineligible"] is True
+    side = json.loads(next((scratch_repo / "desks/mt5/data/lake/private_use/series")
+                           .glob("*.attribution.json")).read_text("utf-8"))
+    assert side["terms_url"] and side["permitting_url"] == "https://jpx-jquants.com/en/help/usage"
+    assert side["conditions"]["corporate_use_permitted"] is False and side["e8_ineligible"]
+
+
+def _survivor(sym: str, fam: str, **spec_extra: Any) -> dict[str, Any]:
+    return {"shadow_spec": {"symbol": sym, "family": fam, "selector": "asia", **spec_extra},
+            "gates": {"expected_value": {"ev": 0.3}, "stress_costs": {"exp_x3": 0.1}},
+            "days": 200}
+
+
+def test_e8_book_refuses_private_lineage(monkeypatch: pytest.MonkeyPatch,
+                                         tmp_path: Path) -> None:
+    """COORDINATOR RULING (2026-10-07): J-Quants-derived cells never feed an E8 sleeve; the
+    refusal is named in the book. A Fusion-only cell is unaffected."""
+    from prop import e8_book as B
+
+    surv = tmp_path / "UNIVERSAL_SURVIVORS.json"
+    surv.write_text(json.dumps({"survivors": {
+        "pub": _survivor("USDJPY", "session_range_breakout"),
+        "priv_spec": _survivor("JP225", "overnight_gap_decay", lineage=T.PRIVATE_LINEAGE),
+        "priv_flag": {**_survivor("EURJPY", "carry"), "e8_ineligible": True},
+        "priv_parent": {**_survivor("GBPJPY", "carry"),
+                        "parents": [{"source": "jpx_jquants", "private_use": True}]},
+    }}), encoding="utf-8")
+    monkeypatch.setattr(B, "SURVIVORS", surv)
+    monkeypatch.setattr(B, "_family_banned", lambda fam: False)
+    doc = B.select(tradeable=None)
+    chosen = {r["key"] for r in doc["sleeves"]}
+    refused = {r["key"] for r in doc["refused_private_lineage"]}
+    assert "pub" in chosen
+    assert refused == {"priv_spec", "priv_flag", "priv_parent"} and not (chosen & refused)
+    assert doc["n_refused_private_lineage"] == 3

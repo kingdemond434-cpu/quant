@@ -143,10 +143,12 @@ TERMS: dict[str, tuple[str, str]] = {
                                "data -- not a clear permission for this desk's use"),
     "jquants": ("confirmed_private_use",
                 "J-Quants API Terms of Service art. 8: use is limited to the registered "
-                "(individual) user's private use. The principal confirmed 2026-10-06 that the "
-                "desk trades only their own money, i.e. private use by the registered "
-                "individual. PERMITTED FOR PRIVATE USE ONLY: no redistribution, no sharing -- "
-                "nothing from it reaches git (the repository is public) or any shared output"),
+                "(individual) user's private use, which the usage page defines as 'one's own "
+                "investment analysis, portfolio management'. The principal confirmed "
+                "2026-10-06 that the desk trades only their own money, i.e. private use by the "
+                "registered individual. PERMITTED FOR PRIVATE USE ONLY, under the conditions in "
+                "TERMS_CONDITIONS: no redistribution, no sharing -- nothing from it reaches git "
+                "(the repository is public), a leg's stdout, any shared output, or E8"),
 }
 #: Verdicts under which a provider's credential may be sent. "confirmed_private_use" permits the
 #: fetch ONLY under its private-use condition: every result carries `private_use=True` and every
@@ -229,31 +231,88 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                           "しません。"),
         "definition_quote": ("登録ユーザー: 第3条(登録)に基づいて本サービスの利用者としての登録が"
                              "なされた個人"),
-        # THE PRINCIPAL'S ANSWER (2026-10-06): the art. 8 question was put to the principal,
-        # who answered that the desk trades only their own money -- private use by the
-        # registered individual. Recorded verbatim with the message that carries it.
-        "principal_answer": "yes fr j quants",
+        # THE PERMITTING CLAUSE (audit of #218, 2026-10-07). Art. 8 confines use to "private
+        # use"; the provider's own usage page says what private use IS, and that page is the
+        # clause that permits this desk's use: the registered individual's own investment
+        # analysis and portfolio management. Fetched 2026-10-07 through a fetch tool that renders
+        # the page for a reader (the host is not reachable from this container directly); the
+        # sentences were requested character for character and agree across two fetches. The
+        # conditions that come with it are recorded as structured fields in TERMS_CONDITIONS.
+        "permitting_url": "https://jpx-jquants.com/en/help/usage",
+        "permitting_quote": ("Private use refers to utilizing this data for one's own "
+                             "investment analysis, portfolio management, etc."),
+        "permitting_quote_source": "fetched_2026-10-07",
+        "conditions": "TERMS_CONDITIONS['jquants']",
+        # THE PRINCIPAL'S APPROVAL (2026-10-06), with the question it answered. The coordinator's
+        # post of 2026-10-06 asked whether the desk's J-Quants use is private use by the
+        # registered individual (the art. 8 question); the principal answered in the message
+        # below. The question is recorded as the coordinator's brief states it (a paraphrase of
+        # that post, not its verbatim text); the answer is verbatim.
+        "principal_question": ("Is the desk's use of J-Quants private use by the registered "
+                               "individual (J-Quants Terms of Service art. 8: use limited to "
+                               "the registered user's own private use)?"),
+        "principal_question_source": "coordinator post 2026-10-06, as paraphrased in the brief",
+        "principal_answer": "no run the current youtube key doesnt matter and yes fr j quants",
+        "principal_answer_part": "yes fr j quants",
+        "principal_answered_by": "zuck",
         "principal_message_id": "cmsg_012XFUfE12Rvggnu86fDb8pr9aLZ8EJUKTqaxiniyhzvSK",
         "principal_answered_at": "2026-10-06T21:11:56Z",
         "principal_basis": ("the desk trades only the principal's own money, so its use is "
                             "private use by the registered individual under art. 8"),
         "condition": ("PRIVATE USE ONLY: no redistribution, no sharing. The repository is "
                       "public, so no J-Quants value, derived value, cached response or cell may "
-                      "be committed to git, written to a report that syncs to git, or put in "
-                      "anything shared. Records carry private_use=True; the collector writes "
+                      "be committed to git, written to a report that syncs to git, printed to a "
+                      "leg's stdout (hourly_cycle keeps each leg's stdout tail in the tracked "
+                      "sync_marker.json), or put in anything shared. Records carry "
+                      "private_use=True and lineage 'jquants_private'; the collector writes "
                       "them only under the gitignored desks/mt5/data/lake/private_use/ and its "
-                      "tracked-path-safe report keeps counts and status only"),
-        "scope_note": ("Art. 8 confines use to the registered individual's private use and "
-                       "excludes commercial use and making the data (or anything derived from "
-                       "it) usable by third parties. No clause clearly permits use by an "
-                       "automated trading/research desk whose artifacts are committed to a "
-                       "shared repository and read by external LLM seats; art. 9(2) applies a "
-                       "separate paid-service agreement to use outside the purpose. A key does "
-                       "not override terms: stays BLOCKED_ON_TERMS until a written permission "
-                       "or a paid/commercial licence that covers this use is recorded here. "
-                       "Read through a fetch tool (host not reachable from this container); "
-                       "the art. 8 sentences agree across two fetches"),
+                      "tracked-path-safe report and summary keep counts and status only. "
+                      "Cells of this lineage are e8_ineligible: E8 trades the prop firm's "
+                      "capital, which is not the registered individual's own money"),
         "checked_at": _TERMS_CHK},
+}
+
+#: THE CONDITIONS A PRIVATE-USE PERMISSION COMES WITH, as structured fields a test and a consumer
+#: can read (audit of #218, 2026-10-07). Each is quoted from the provider's usage page
+#: (https://jpx-jquants.com/en/help/usage, fetched 2026-10-07; same fetch caveat as above).
+TERMS_CONDITIONS: dict[str, dict[str, Any]] = {
+    "jquants": {
+        "source_url": "https://jpx-jquants.com/en/help/usage",
+        "quote_source": "fetched_2026-10-07",
+        "permitted_purpose": ("own investment analysis, portfolio management (private use by "
+                              "the registered individual)"),
+        "corporate_use_permitted": False,
+        "corporate_use_quote": ("No. Even for internal-only, non-profit purposes, corporations "
+                                "cannot use J-Quants API."),
+        "raw_redistribution_permitted": False,
+        "raw_redistribution_quote": ("Distributing or sharing raw data directly is prohibited, "
+                                     "but sharing analysis results (charts, graphs, reports, "
+                                     "etc.) is permitted."),
+        "ai_use": {
+            "permitted_only_if": [
+                "the inputs are used for one's own analysis",
+                "the AI is configured so that the input data is not reused for training",
+                "the input data is not viewable by third parties",
+                "the generated results are not distributed or published",
+            ],
+            "quote": ("The AI is configured so that the input data is not reused for training "
+                      "... The generated results are not distributed or published"),
+        },
+        "repeated_publishing_is_personal_use": False,
+        "repeated_publishing_quote": ("continuously and repeatedly publishing analysis results "
+                                      "is not considered personal use"),
+        "delete_on_cancellation": True,
+        "delete_on_cancellation_quote": ("after you cancel your subscription or withdraw from "
+                                         "the service, you must delete all data you acquired up "
+                                         "to that point, together with any copies and any "
+                                         "derivatives from which the original data can be "
+                                         "reconstructed"),
+        "delete_scope": "desks/mt5/data/lake/private_use/ and data/secrets/token_cache/",
+        #: How the desk honours them: nothing to git, nothing printed, nothing to a shared
+        #: report or an LLM seat's input; lineage-tagged cells never reach E8 (prop capital).
+        "lineage": "jquants_private",
+        "e8_eligible": False,
+    },
 }
 
 
@@ -265,8 +324,10 @@ def terms_ok(p: Provider) -> bool:
     verdict = TERMS.get(p.name)
     if verdict is None or verdict[0] not in PERMITTED_VERDICTS or p.name not in TERMS_EVIDENCE:
         return False
-    # A private-use permission is only a permission together with its recorded condition.
-    return verdict[0] != PRIVATE_USE or bool(TERMS_EVIDENCE[p.name].get("condition"))
+    # A private-use permission is only a permission together with its recorded condition and
+    # its structured conditions (TERMS_CONDITIONS).
+    return verdict[0] != PRIVATE_USE or (bool(TERMS_EVIDENCE[p.name].get("condition"))
+                                         and bool(TERMS_CONDITIONS.get(p.name)))
 
 
 def private_use(env_or_name: str) -> bool:
@@ -275,6 +336,41 @@ def private_use(env_or_name: str) -> bool:
     p = PROVIDERS.get(env_or_name)
     name = p.name if p is not None else str(env_or_name)
     return TERMS.get(name, ("", ""))[0] == PRIVATE_USE
+
+
+#: THE LINEAGE TAG on every record and cell derived from a private-use source (J-Quants). A cell
+#: carrying it is `e8_ineligible`: E8 trades the prop firm's capital, which is not the
+#: registered individual's own money (coordinator ruling, 2026-10-07). Fusion is the
+#: individual's own account and is unaffected.
+PRIVATE_LINEAGE = "jquants_private"
+E8_INELIGIBLE = "e8_ineligible"
+
+
+def mark_private_lineage(rec: dict[str, Any]) -> dict[str, Any]:
+    """Tag a record or cell derived from private-use data, in place, and return it."""
+    rec["lineage"] = PRIVATE_LINEAGE
+    rec["private_use"] = True
+    rec[E8_INELIGIBLE] = True
+    return rec
+
+
+def has_private_lineage(obj: Any, _depth: int = 0) -> bool:
+    """True when a record, a cell, or anything nested in it (a spec, a parent, a candidate's
+    source list) carries the private lineage, `private_use=True` or `e8_ineligible=True`.
+    A consumer that must keep private-lineage candidates out (the E8 book) calls this on the
+    whole candidate; it reads every nesting level up to a bound, so a tag on the spec counts."""
+    if _depth > 6:
+        return False
+    if isinstance(obj, dict):
+        if (obj.get("lineage") == PRIVATE_LINEAGE or obj.get(E8_INELIGIBLE) is True
+                or obj.get("private_use") is True):
+            return True
+        return any(has_private_lineage(v, _depth + 1) for v in obj.values()
+                   if isinstance(v, (dict, list, tuple)))
+    if isinstance(obj, (list, tuple)):
+        return any(has_private_lineage(v, _depth + 1) for v in obj
+                   if isinstance(v, (dict, list, tuple)) or v == PRIVATE_LINEAGE)
+    return bool(obj == PRIVATE_LINEAGE)
 
 
 def attribution(env_or_name: str, year: int | None = None) -> str:
