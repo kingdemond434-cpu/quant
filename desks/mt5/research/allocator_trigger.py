@@ -20,23 +20,53 @@ never replaces the hourly pass.
   certificate_change      data/sleeve_registry.json      a certificate arriving or dying
   fill                    data/gateway_state.json        realised risk moved at the venue
   cost_capacity_revision  reports/NET_EDGE.json          net-of-cost or capacity was re-priced
+  news_resolve_request    data/allocator_resolve_request.json
+                                                         `news_event_stream` asked for a re-solve
+
+THE THREE LEDGERS (2026-10-06). The first version kept ONE record per input, `seen`, and wrote it
+on every pass BEFORE deciding whether to solve. So a change that arrived inside the 60s debounce
+was recorded as seen, logged as "served by the next pass, not dropped" -- and the next pass
+compared against the record that already held it, saw no change, and never served it. The same
+held for a solve that failed: the change was seen, the solve did not land, and nothing would ever
+fire for it again. The log row promised a retry that the state made impossible. And "landed" was
+read off `generated_utc` moving forward, which the HOURLY leg also moves: a fast solve that stood
+down on the allocator lock while the hourly pass wrote a book read as a landed reaction.
+
+Each watched input now carries three separate records in `data/allocator_trigger_state.json`:
+
+  OBSERVED   the latest version on disk (a monotone per-input sequence number plus the signature;
+             the sequence is what orders versions, because a signature can return to an old value
+             and A -> B -> A is two changes, not zero)
+  PENDING    every version observed and not yet consumed by a landed decision. It survives the
+             debounce, a failed solve, a timeout, a stand-down and a process restart, because it
+             is only ever removed by the step below
+  CONSUMED   the version a LANDED decision actually used
+
+A decision has LANDED only when `pf_allocation.json` carries a `decision_id` together with the
+input versions it consumed, and those versions echo the request this organ issued. A newer
+timestamp is not proof of anything. A solve issued with versions V can consume only V: a version
+observed after the request was issued has a higher sequence number and stays pending, and an
+echo that claims a version this organ never sent is refused. The contract the solver must honour
+is in `_request_env` / `_decision_of` and in the report's `decision_contract` block.
 
 WHY IT IS SAFE UNDER GROWTH GOVERNANCE. It fires the SAME solver the hourly leg fires, with the
 same heat law, the same floor and the same certificate contest. It sets no fraction and passes no
 override: a re-solve can only reallocate between sleeves inside the heat the law already
-resolved. Every re-solve records `heat_before` and `heat_after` so the two-sidedness is a
-MEASUREMENT -- a reaction that lowered total heat would show up here as its own defect rather
-than hiding inside an average.
+resolved. The only thing it passes the solver is the list of input versions it is asking about,
+and the solver echoes them back -- an identifier, never a parameter. Every re-solve records
+`heat_before` and `heat_after` so the two-sidedness is a MEASUREMENT -- a reaction that lowered
+total heat would show up here as its own defect rather than hiding inside an average.
 
 CROSS-ASSET BY CONSTRUCTION, and that is the solver's property, not this organ's: `pf_allocator`
 solves E[log W] over the WHOLE book at once, so gold, FX, indices and the rest compete for the
 same heat on their conditional expected log growth. This organ only decides WHEN that joint solve
 happens.
 
-REACTION LATENCY IS PUBLISHED, so "not slow" is a number. Every firing records the triggering
-artifact's OWN timestamp, the moment this organ detected it, and the timestamp of the allocation
-that came out; `reports/ALLOCATOR_REACTION.json` carries per-kind n / last / median / worst, and
-a regression is visible the hour it happens.
+REACTION LATENCY IS PUBLISHED, so "not slow" is a number. Every consumed version records the
+change's OWN start (its timestamp field, else its file mtime, clamped into the window in which
+this organ could have seen it) and the landed decision that consumed it;
+`reports/ALLOCATOR_REACTION.json` carries p50 / p95 / p99 over every sample and per kind, set
+against the 20s poll and the 60s solve gap, so a regression is visible the hour it happens.
 
     python desks/mt5/research/allocator_trigger.py --once --budget-s 600
     python desks/mt5/research/allocator_trigger.py --resident --interval-s 20   # the 24/7 shape
@@ -44,11 +74,17 @@ a regression is visible the hour it happens.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
+import inspect
 import json
+import math
+import os
 import subprocess
 import sys
 import time
+import uuid
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -59,15 +95,23 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+import book_trigger  # noqa: E402
+
 REPORTS = DESK / "reports"
 DATA = DESK / "data"
 OUT = REPORTS / "ALLOCATOR_REACTION.json"
-#: Append-only: one row per firing. The report is a summary and is overwritten; this is the
-#: record a latency regression is measured against.
+#: Append-only: one row per solve attempt and one per consumed input version. The report is a
+#: summary and is overwritten; this is the record a latency regression is measured against.
 LOG = DATA / "allocator_reactions.jsonl"
-#: What each watched source looked like when it was last acted on.
+#: The three ledgers (observed / pending / consumed) per watched input. Written atomically.
 STATE = DATA / "allocator_trigger_state.json"
+#: One trigger pass at a time. The resident and the hourly `--once` leg both run this module; two
+#: read-modify-write passes over STATE would let the later writer erase a version the earlier
+#: one had just made pending -- the very loss this file exists to prevent.
+LOCK = DATA / "allocator_trigger.lock"
 ALLOCATION = REPORTS / "pf_allocation.json"
+#: Written by `news_event_stream` (its RESOLVE_REQUEST) only when a pass produced requests.
+RESOLVE_REQUEST = DATA / "allocator_resolve_request.json"
 
 #: The poll interval of the 24/7 resident. Not a tuning knob: it is the smallest interval at
 #: which the watched artifacts can change (their producers are minute-scale at best), and a
@@ -76,15 +120,55 @@ DEFAULT_INTERVAL_S = 20.0
 #: A fast solve costs ~15-30s on this box. Two firings inside one of those would queue behind the
 #: allocator's own lock and the second would stand down with nothing to add, so a firing waits
 #: this long for the previous one to land. It is a DEBOUNCE, not a rate limit: a trigger that
-#: arrives during the wait is still served, just by the next pass.
+#: arrives during the wait stays PENDING and is served by the first pass after the gap.
+#: (pf_allocator's own docstring prices `--mode fast` at "~5 min"; the 15-30s figure above is
+#: this file's claim and the published `solve_wall_s` samples are what settle it. Neither
+#: constant is changed here: the gap is measured from the END of the previous solve, so it bounds
+#: solver occupancy either way.)
 MIN_SOLVE_GAP_S = 60.0
+#: After a solve that did not LAND (non-zero rc, timeout, stand-down, or an output without the
+#: decision contract) the next attempt waits MIN_SOLVE_GAP_S * 2**(failures-1), capped here.
+#: Without the cap a solver that never honours the contract would be retried every 60s forever;
+#: with it the retry rate falls to four an hour, and the hourly full solve stays the backstop.
+RETRY_BACKOFF_CAP_S = 900.0
+#: The single env var the trigger hands the solver: {"request_id", "input_versions"}.
+REQUEST_ENV = "QUANT_ALLOC_TRIGGER_REQUEST"
+STATE_SCHEMA = 2
+#: Bounds on what the state file carries. Pending is never truncated by age -- only by count, and
+#: then the OLDEST entry is kept (it is the one the latency is measured from) with the newest.
+MAX_PENDING_PER_INPUT = 64
+MAX_ISSUED = 24
+MAX_APPLIED = 64
+MAX_SAMPLES = 512
 
 
 class Source:
     """One watched artifact: what makes it a CHANGE, and when the change happened."""
 
-    def __init__(self, kind: str, path: Path, keys: tuple[str, ...], why: str) -> None:
+    def __init__(self, kind: str, path: Path, keys: tuple[str, ...], why: str, *,
+                 fires_on_absent: bool = True, requires_nonempty: str | None = None,
+                 first_sight_pending: bool = False) -> None:
         self.kind, self.path, self.keys, self.why = kind, path, keys, why
+        #: A state artifact disappearing IS a change of state. A request file disappearing is
+        #: not a request.
+        self.fires_on_absent = fires_on_absent
+        #: A request-shaped input is a change only when this list field is non-empty.
+        self.requires_nonempty = requires_nonempty
+        #: A state artifact seen for the first time is the BASELINE the book was already solved
+        #: against. A request seen for the first time is an unanswered request.
+        self.first_sight_pending = first_sight_pending
+
+    @property
+    def key(self) -> str:
+        return f"{self.kind}:{self.path.name}"
+
+    def actionable(self, doc: dict[str, Any] | None, sig: str) -> bool:
+        if sig in ("absent", "no-watched-key") and not self.fires_on_absent:
+            return False
+        if self.requires_nonempty:
+            val = (doc or {}).get(self.requires_nonempty)
+            return isinstance(val, list) and len(val) > 0
+        return True
 
 
 def sources() -> list[Source]:
@@ -107,7 +191,19 @@ def sources() -> list[Source]:
         Source("cost_capacity_revision", REPORTS / "NET_EDGE.json",
                ("capacity_by_sleeve", "n_sign_flips", "ranked_if_net_were_the_only_ranking"),
                "net-of-cost or per-sleeve capacity was re-priced"),
+        # NEWS RE-SOLVE REQUESTS REACHED NOBODY. `news_event_stream` writes this file (atomically,
+        # only when a pass produced requests) and nothing read it: the fast lane's whole output
+        # was a request with no listener. `at` IS part of the signature here, unlike the state
+        # artifacts above -- every write is a new request, and two identical requests an hour
+        # apart are two requests.
+        Source("news_resolve_request", RESOLVE_REQUEST, ("at", "requests"),
+               "news_event_stream requested a re-solve: a news event moved the world state",
+               fires_on_absent=False, requires_nonempty="requests", first_sight_pending=True),
     ]
+
+
+def _iso(ts: float) -> str:
+    return datetime.fromtimestamp(ts, tz=UTC).isoformat(timespec="seconds")
 
 
 def _read(p: Path) -> dict[str, Any] | None:
@@ -116,6 +212,73 @@ def _read(p: Path) -> dict[str, Any] | None:
     except (OSError, ValueError):
         return None
     return doc if isinstance(doc, dict) else None
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Temp file in the same directory, then `os.replace` -- never a half-written state file.
+
+    WINDOWS: `os.replace` onto a READ-ONLY destination raises PermissionError (WinError 5) where
+    POSIX would succeed, and a reader holding the file open raises it too (WinError 32). The first
+    is cured by clearing the read-only bit, the second by a short wait; both are retried a bounded
+    number of times and then raised, because a state write that silently failed would be the
+    lost-change defect again. The temp name carries pid + nonce so two writers never share one.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{uuid.uuid4().hex[:8]}.tmp")
+    try:
+        tmp.write_text(text, encoding="utf-8")
+        for attempt in range(5):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                if attempt == 4:
+                    raise
+                with contextlib.suppress(OSError):
+                    path.chmod(0o644)
+                time.sleep(0.05 * (attempt + 1))
+    finally:
+        with contextlib.suppress(OSError):
+            if tmp.exists():
+                tmp.unlink()
+
+
+@contextlib.contextmanager
+def _pass_lock(stale_after_s: float) -> Iterator[bool]:
+    """Yield True to one trigger pass at a time; False to a pass that must stand down.
+
+    An O_EXCL lock file, stale after `stale_after_s` (a pass is bounded by its solve budget).
+    No pid probe: on Windows `os.kill(pid, 0)` TERMINATES the process rather than testing it.
+    A pass that stands down loses nothing -- whatever it would have observed is still on disk
+    for the holder or the next pass.
+    """
+    LOCK.parent.mkdir(parents=True, exist_ok=True)
+    fd: int | None = None
+    for _ in range(2):
+        try:
+            fd = os.open(str(LOCK), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            break
+        except FileExistsError:
+            try:
+                age = time.time() - LOCK.stat().st_mtime
+            except OSError:
+                continue
+            if age <= stale_after_s:
+                break
+            with contextlib.suppress(OSError):
+                LOCK.unlink()
+        except OSError:
+            break
+    if fd is None:
+        yield False
+        return
+    try:
+        os.write(fd, json.dumps({"pid": os.getpid(), "at": _iso(time.time())}).encode())
+        os.close(fd)
+        yield True
+    finally:
+        with contextlib.suppress(OSError):
+            LOCK.unlink()
 
 
 def _signature(doc: dict[str, Any] | None, keys: tuple[str, ...]) -> str:
@@ -151,7 +314,7 @@ def _event_at(doc: dict[str, Any] | None, p: Path) -> tuple[str, str]:
         return datetime.now(tz=UTC).isoformat(timespec="seconds"), "absent artifact"
 
 
-def _parse(stamp: str | None) -> float | None:
+def _parse(stamp: Any) -> float | None:
     if not stamp:
         return None
     try:
@@ -159,6 +322,37 @@ def _parse(stamp: str | None) -> float | None:
     except ValueError:
         return None
     return (dt if dt.tzinfo else dt.replace(tzinfo=UTC)).timestamp()
+
+
+def _version(seq: int, sig: str) -> str:
+    return f"{int(seq)}:{sig}"
+
+
+def _seq_of(version: Any) -> int | None:
+    try:
+        return int(str(version).split(":", 1)[0])
+    except (TypeError, ValueError):
+        return None
+
+
+def _change_start(event_at: str, basis: str, prev_checked: float | None,
+                  now: float) -> tuple[float, str]:
+    """When the change began, for latency: its own stamp, clamped into the provable window.
+
+    Upper clamp (now): a stamp in this host's future is clock skew, not a negative latency.
+    Lower clamp (the previous look at this input): that look saw the OLD version, so the new one
+    cannot have been on disk before it. Producers stamp `at` when they START, and an artifact
+    that took ten minutes to build would otherwise charge ten minutes to the allocator.
+    """
+    ev = _parse(event_at)
+    if ev is None:
+        return now, "first observation (no parseable timestamp)"
+    if ev > now:
+        return now, f"{basis}, ahead of this host's clock: clamped to first observation"
+    if prev_checked is not None and ev < prev_checked:
+        return prev_checked, (f"{basis} predates the previous look that saw the old version: "
+                              f"clamped to that look")
+    return ev, basis
 
 
 def _heat_now() -> float | None:
@@ -175,12 +369,36 @@ def _heat_now() -> float | None:
 
 
 def _allocation_stamp() -> tuple[str | None, float | None]:
+    """The allocation artifact's `generated_utc`, for REPORTING ONLY. It moves whenever ANY
+    allocator pass writes -- the hourly leg included -- so it is never read as a landing."""
     art = _read(ALLOCATION)
     stamp = (art or {}).get("generated_utc")
     return (str(stamp) if stamp else None), _parse(stamp)
 
 
-def _solve(budget_s: float) -> dict[str, Any]:
+def _rel(p: Path) -> str:
+    try:
+        return str(p.relative_to(ROOT)).replace("\\", "/")
+    except ValueError:
+        return str(p).replace("\\", "/")
+
+
+def _request_env(request: dict[str, Any]) -> dict[str, str]:
+    """THE TRIGGER'S HALF OF THE DECISION CONTRACT: what the solver is told it is answering.
+
+    `QUANT_ALLOC_TRIGGER_REQUEST` = {"request_id": str, "input_versions": {input key: version}}.
+    An env var rather than an argument: `pf_allocator`'s argparse rejects an unknown flag, so an
+    argument would turn every reaction into rc=2 until the solver learned it, while an env var it
+    does not read yet is simply ignored -- and the trigger then reads "not landed" and retries.
+    """
+    env = dict(os.environ)
+    env[REQUEST_ENV] = json.dumps({"request_id": request["request_id"],
+                                   "input_versions": request["input_versions"]},
+                                  sort_keys=True)
+    return env
+
+
+def _solve(budget_s: float, request: dict[str, Any] | None = None) -> dict[str, Any]:
     """Fire the SAME solver the hourly leg fires, in its fast mode. Never in-process: the solver
     allocates heavily and a crash inside it must not take the watcher down with it."""
     started = time.time()
@@ -189,6 +407,7 @@ def _solve(budget_s: float) -> dict[str, Any]:
             [sys.executable, "-u", str(DESK / "research" / "pf_allocator.py"),
              "--mode", "fast"],
             cwd=str(DESK), capture_output=True, text=True,
+            env=_request_env(request) if request else None,
             timeout=max(60.0, float(budget_s)), check=False)
         return {"rc": int(r.returncode), "wall_s": round(time.time() - started, 2),
                 "tail": ((r.stdout or "") + (r.stderr or ""))[-400:]}
@@ -200,97 +419,447 @@ def _solve(budget_s: float) -> dict[str, Any]:
                 "tail": f"{type(exc).__name__}: {exc}"}
 
 
+def _decision_of(art: dict[str, Any] | None) -> dict[str, Any] | None:
+    """THE SOLVER'S HALF OF THE CONTRACT, read from `pf_allocation.json`. None = no decision.
+
+    Required: `decision_id` (non-empty string, unique per pass) and `consumed_input_versions`
+    (non-empty object: input key -> version, echoed from the request). `trigger_request_id`
+    (echo of request_id) ties it to the request; `decided_utc` (else `generated_utc`) is when it
+    was decided. An allocation lacking any required field is NOT a landed decision, however
+    fresh its timestamp.
+    """
+    if not isinstance(art, dict):
+        return None
+    did = art.get("decision_id")
+    consumed = art.get("consumed_input_versions")
+    if not (isinstance(did, str) and did.strip()):
+        return None
+    if not isinstance(consumed, dict) or not consumed:
+        return None
+    req = art.get("trigger_request_id")
+    return {"decision_id": did.strip(),
+            "request_id": req if isinstance(req, str) and req else None,
+            "consumed": {str(k): str(v) for k, v in consumed.items()},
+            "decided_at": art.get("decided_utc") or art.get("generated_utc")}
+
+
+def _fresh_state() -> dict[str, Any]:
+    return {"schema": STATE_SCHEMA, "seen": {}, "last_solve_at": 0.0, "fail_count": 0,
+            "issued": [], "applied_decisions": [], "latency_samples": []}
+
+
+def _load_state(raw: dict[str, Any] | None) -> dict[str, Any]:
+    """The ledgers live under `seen`, keyed `<kind>:<file name>` -- the key schema 1 used, so a
+    reader of the old state file finds the same rows. Each row is read by its SHAPE, not by the
+    file's schema number: a schema-2 row (it has `observed`) is kept as-is; a schema-1 row
+    (`sig` only) is migrated as the baseline, because whether a solve consumed it is unknowable
+    now -- schema 1 marked debounced and failed changes seen too."""
+    st = _fresh_state()
+    if not isinstance(raw, dict):
+        return st
+    for k in ("last_solve_at", "fail_count", "issued", "applied_decisions", "latency_samples"):
+        if raw.get(k) is not None:
+            st[k] = raw[k]
+    st["last_solve_at"] = float(st.get("last_solve_at") or 0.0)
+    if isinstance(raw.get("book"), dict):          # book_trigger's fingerprint ledger
+        st["book"] = raw["book"]
+    rows = raw.get("seen") or raw.get("inputs") or {}
+    for key, rec in rows.items():
+        if not isinstance(rec, dict):
+            continue
+        if "observed" in rec:
+            st["seen"][key] = rec
+            continue
+        sig = rec.get("sig")
+        if not sig:
+            continue
+        at = rec.get("at")
+        ver = _version(1, sig)
+        st["seen"][key] = {
+            "observed": {"seq": 1, "sig": sig, "version": ver, "observed_at": at,
+                         "checked_at": at},
+            "pending": [],
+            "consumed": {"seq": 1, "version": ver, "decision_id": None,
+                         "basis": "migrated from schema-1 `seen`; consumption unverifiable"}}
+    return st
+
+
+def _cap_pending(pend: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if len(pend) <= MAX_PENDING_PER_INPUT:
+        return pend
+    return [pend[0], *pend[-(MAX_PENDING_PER_INPUT - 1):]]
+
+
+def _observe(src: Source, inp: dict[str, Any], now: float) -> dict[str, Any]:
+    """Update OBSERVED; append to PENDING when the version moved. Never touches CONSUMED except
+    to record the baseline on a state artifact's first sighting."""
+    doc = _read(src.path)
+    sig = _signature(doc, src.keys)
+    obs = dict(inp.get("observed") or {})
+    prev_sig = obs.get("sig")
+    prev_seq = int(obs.get("seq") or 0)
+    prev_checked = _parse(obs.get("checked_at"))
+    first_sight = prev_sig is None
+    moved = (not first_sight) and sig != prev_sig
+    event_at, basis = _event_at(doc, src.path)
+    added = False
+    if first_sight or moved:
+        seq = prev_seq + 1
+        ver = _version(seq, sig)
+        inp["observed"] = {"seq": seq, "sig": sig, "version": ver, "observed_at": _iso(now),
+                           "observed_ts": now, "event_at": event_at, "event_at_basis": basis,
+                           "checked_at": _iso(now)}
+        actionable = src.actionable(doc, sig)
+        if actionable and (moved or src.first_sight_pending):
+            start_ts, start_basis = _change_start(event_at, basis,
+                                                  None if first_sight else prev_checked, now)
+            pend = list(inp.get("pending") or [])
+            pend.append({"seq": seq, "version": ver, "kind": src.kind,
+                         "observed_at": _iso(now), "observed_ts": now,
+                         "event_at": event_at, "event_at_basis": basis,
+                         "start_ts": start_ts, "start_basis": start_basis})
+            inp["pending"] = _cap_pending(pend)
+            added = True
+        elif first_sight and not inp.get("consumed"):
+            inp["consumed"] = {"seq": seq, "version": ver, "decision_id": None,
+                               "basis": "baseline: first sighting of a state artifact"}
+    else:
+        obs["checked_at"] = _iso(now)
+        inp["observed"] = obs
+    inp.setdefault("pending", [])
+    inp["kind"], inp["path"] = src.kind, _rel(src.path)
+    return {"key": src.key, "kind": src.kind, "path": inp["path"], "signature": sig,
+            "version": inp["observed"]["version"], "previous": prev_sig,
+            "changed": bool(moved), "first_seen": first_sight, "became_pending": added,
+            "n_pending": len(inp["pending"]), "event_at": event_at, "event_at_basis": basis,
+            "consumed_version": (inp.get("consumed") or {}).get("version"), "why": src.why}
+
+
+def _land(st: dict[str, Any], dec: dict[str, Any] | None,
+          now: float) -> tuple[str, list[dict[str, Any]]]:
+    """Apply a decision to the ledgers. Returns (verdict, latency samples).
+
+    Consumption is per input and by SEQUENCE: the decision consumes, for each input, exactly the
+    version this organ sent in that request and the allocator echoed back, and with it every
+    older pending version of that input (a later state supersedes an earlier one). Anything
+    pending with a higher sequence -- observed after the request was issued -- stays pending.
+    CONSUMED only ever moves forward, so a late or stale decision can never roll it back.
+    """
+    if dec is None:
+        return "NO_DECISION_CONTRACT", []
+    if dec["decision_id"] in (st.get("applied_decisions") or []):
+        return "ALREADY_APPLIED", []
+    issued = {r.get("request_id"): r for r in (st.get("issued") or [])}
+    req = issued.get(dec["request_id"])
+    if req is None:
+        return "NOT_A_REQUEST_THIS_TRIGGER_ISSUED", []
+    landed_ts = _parse(dec.get("decided_at"))
+    issued_ts = float(req.get("issued_ts") or 0.0)
+    if landed_ts is None or landed_ts > now or landed_ts < issued_ts:
+        landed_ts = now
+    samples: list[dict[str, Any]] = []
+    attested = 0
+    for key, sent in (req.get("input_versions") or {}).items():
+        if dec["consumed"].get(key) != sent:
+            continue                      # the solver did not attest THIS version: not consumed
+        seq = _seq_of(sent)
+        inp = (st.get("seen") or {}).get(key)
+        if seq is None or inp is None:
+            continue
+        attested += 1
+        pend = list(inp.get("pending") or [])
+        served = [p for p in pend if int(p.get("seq") or 0) <= seq]
+        inp["pending"] = [p for p in pend if int(p.get("seq") or 0) > seq]
+        if int((inp.get("consumed") or {}).get("seq") or 0) < seq:
+            inp["consumed"] = {"seq": seq, "version": sent, "decision_id": dec["decision_id"],
+                               "request_id": req["request_id"], "landed_at": _iso(landed_ts)}
+        for p in served:
+            samples.append({
+                "schema": STATE_SCHEMA, "event": "consumed", "at": _iso(now),
+                "decision_id": dec["decision_id"], "request_id": req["request_id"],
+                "key": key, "kind": p.get("kind") or inp.get("kind"),
+                "version": p.get("version"), "consumed_as": sent,
+                "event_at": p.get("event_at"), "start_basis": p.get("start_basis"),
+                "observed_at": p.get("observed_at"), "landed_at": _iso(landed_ts),
+                # THE NUMBER THE PRINCIPAL ASKED FOR: the change's own start to the landed
+                # decision that consumed it.
+                "latency_s": round(landed_ts - float(p.get("start_ts") or landed_ts), 2),
+                "from_observation_s": round(landed_ts - float(p.get("observed_ts") or landed_ts),
+                                            2)})
+    if attested == 0:
+        return "CONSUMED_VERSIONS_DO_NOT_ECHO_THE_REQUEST", []
+    req["outcome"] = "LANDED"
+    req["decision_id"] = dec["decision_id"]
+    st["applied_decisions"] = [*(st.get("applied_decisions") or []),
+                               dec["decision_id"]][-MAX_APPLIED:]
+    st["latency_samples"] = [*(st.get("latency_samples") or []), *samples][-MAX_SAMPLES:]
+    return "LANDED", samples
+
+
+def _backoff_s(failures: int) -> float:
+    return min(RETRY_BACKOFF_CAP_S, MIN_SOLVE_GAP_S * 2 ** max(0, failures - 1))
+
+
+def _wait_s(failures: int) -> float:
+    """How long after the last attempt the next may start: the gap, or the backoff if longer."""
+    return max(MIN_SOLVE_GAP_S, _backoff_s(failures)) if failures else MIN_SOLVE_GAP_S
+
+
+def _call_solver(fn: Callable[..., dict[str, Any]], budget_s: float,
+                 req: dict[str, Any]) -> dict[str, Any]:
+    """Call `fn(budget_s, request)`; a one-argument solver (`_solve(budget)`, the shape test
+    harnesses patch in) is called with the budget only and so carries no request -- its output
+    can then only land if it echoes a request by other means, which is the conservative side."""
+    try:
+        params = [p for p in inspect.signature(fn).parameters.values()
+                  if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD, p.VAR_POSITIONAL)]
+    except (TypeError, ValueError):
+        params = []
+    if len(params) >= 2 or any(p.kind is p.VAR_POSITIONAL for p in params):
+        return fn(budget_s, req)
+    return fn(budget_s)
+
+
 def poll(*, budget_s: float = 600.0, state: dict[str, Any] | None = None,
-         write: bool = True, solve: bool = True) -> dict[str, Any]:
-    """One pass: look at every source, fire once if anything moved, record what happened."""
-    st = state if state is not None else (_read(STATE) or {})
-    seen: dict[str, Any] = dict(st.get("seen") or {})
-    fired: list[dict[str, Any]] = []
-    watch: list[dict[str, Any]] = []
-    now = time.time()
+         write: bool = True, solve: bool = True, now: float | None = None,
+         clock: Callable[[], float] = time.time,
+         solver: Callable[[float, dict[str, Any]], dict[str, Any]] | None = None,
+         book_solver: Callable[[float], dict[str, Any]] | None = None,
+         ) -> dict[str, Any]:
+    """One pass: settle any decision already on disk, observe every input, solve once if anything
+    is pending and the gap/backoff allows, and settle the decision that solve produced."""
+    st = _load_state(state if state is not None else _read(STATE))
+    t0 = clock() if now is None else float(now)
+    solver = solver or _solve
+    rows: list[dict[str, Any]] = []
+
+    # 1. A decision already on disk -- a previous pass that read the artifact before it landed,
+    # or a process that died between the solve and the state write -- is applied first.
+    verdict0, samples0 = _land(st, _decision_of(_read(ALLOCATION)), t0)
+    rows.extend(samples0)
+
+    # 2. OBSERVED and PENDING.
+    inputs: dict[str, Any] = st["seen"]
+    watch = [_observe(src, inputs.setdefault(src.key, {}), t0) for src in sources()]
+    pending_keys = sorted(k for k, inp in inputs.items() if inp.get("pending"))
+
     last_solve = float(st.get("last_solve_at") or 0.0)
+    # The backoff is measured FROM the last attempt (`last_solve_at`), never stored as an
+    # absolute deadline: one clock, one field, and a caller that resets `last_solve_at` (an
+    # operator forcing a retry) is genuinely past the wait rather than fighting a hidden second
+    # deadline.
+    wait_until = last_solve + _wait_s(int(st.get("fail_count") or 0))
+    debounced = bool(pending_keys) and t0 < wait_until
+    attempt: dict[str, Any] | None = None
 
-    changes: list[tuple[Source, dict[str, Any] | None, str]] = []
-    for src in sources():
-        doc = _read(src.path)
-        sig = _signature(doc, src.keys)
-        key = f"{src.kind}:{src.path.name}"
-        prev = (seen.get(key) or {}).get("sig")
-        moved = prev is not None and sig != prev
-        event_at, basis = _event_at(doc, src.path)
-        watch.append({"kind": src.kind, "path": str(src.path.relative_to(ROOT)).replace("\\", "/"),
-                      "signature": sig, "previous": prev, "changed": bool(moved),
-                      "event_at": event_at, "event_at_basis": basis, "why": src.why,
-                      "first_seen": prev is None})
-        seen[key] = {"sig": sig, "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}
-        if moved:
-            changes.append((src, doc, event_at))
-
-    debounced = bool(changes) and (now - last_solve) < MIN_SOLVE_GAP_S
-    if changes and solve and not debounced:
+    if pending_keys and solve and not debounced:
+        # 3. Issue a request for EXACTLY the versions observed now. The solve can consume these
+        # and nothing newer.
+        req = {"request_id": uuid.uuid4().hex, "issued_at": _iso(t0), "issued_ts": t0,
+               "input_versions": {k: inp["observed"]["version"] for k, inp in inputs.items()
+                                  if (inp.get("observed") or {}).get("version")},
+               "pending_keys": pending_keys, "outcome": "ISSUED"}
+        st["issued"] = [*(st.get("issued") or []), req][-MAX_ISSUED:]
         heat_before = _heat_now()
-        _, alloc_before = _allocation_stamp()
-        res = _solve(budget_s)
-        alloc_stamp, alloc_after = _allocation_stamp()
+        res = _call_solver(solver, budget_s, req)
+        t1 = max(t0, clock())
         heat_after = _heat_now()
-        landed = bool(alloc_after is not None
-                      and (alloc_before is None or alloc_after > alloc_before))
-        for src, _doc, event_at in changes:
-            ev = _parse(event_at)
-            fired.append({
-                "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-                "kind": src.kind,
-                "source": str(src.path.relative_to(ROOT)).replace("\\", "/"),
-                "why": src.why,
-                "event_at": event_at,
-                "detected_at": datetime.fromtimestamp(now, tz=UTC).isoformat(timespec="seconds"),
-                "allocation_at": alloc_stamp,
-                # THE NUMBER THE PRINCIPAL ASKED FOR: the triggering artifact's own stamp to the
-                # allocation that answered it. `None` when either side is unparseable, which is
-                # UNMEASURED and not a zero.
-                "latency_s": (round(alloc_after - ev, 2)
-                              if (ev is not None and alloc_after is not None) else None),
-                "detect_latency_s": round(now - ev, 2) if ev is not None else None,
-                "solve_wall_s": res["wall_s"], "solver_rc": res["rc"],
-                "allocation_landed": landed,
-                "heat_before": heat_before, "heat_after": heat_after,
-                # TWO-SIDED, MEASURED. A reaction reallocates; it must not shrink the book. This
-                # is reported, never enforced -- the heat law owns the total and this organ has
-                # no path to it.
-                "heat_preserved": (None if (heat_before is None or heat_after is None)
-                                   else bool(heat_after >= heat_before - 5e-4)),
-                "note": res["tail"][-200:] if not landed else "",
-            })
-        last_solve = time.time()
-    elif changes and debounced:
-        for src, _doc, event_at in changes:
-            fired.append({"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-                          "kind": src.kind,
-                          "source": str(src.path.relative_to(ROOT)).replace("\\", "/"),
-                          "event_at": event_at, "allocation_at": None, "latency_s": None,
-                          "stood_down": "DEBOUNCED",
-                          "why": f"a solve landed {now - last_solve:.0f}s ago "
-                                 f"(< {MIN_SOLVE_GAP_S:.0f}s); this trigger is served by the "
-                                 f"next pass, not dropped"})
-    elif changes and not solve:
-        for src, _doc, event_at in changes:
-            fired.append({"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-                          "kind": src.kind,
-                          "source": str(src.path.relative_to(ROOT)).replace("\\", "/"),
-                          "event_at": event_at, "allocation_at": None, "latency_s": None,
-                          "stood_down": "SOLVE_DISABLED", "why": "--no-solve: watch only"})
+        st["last_solve_at"] = t1
+        dec = _decision_of(_read(ALLOCATION))
+        # Settled on its own merits even when it answers ANOTHER request: an earlier request of
+        # ours landing late consumes only what IT was sent, which `_land` enforces by sequence.
+        verdict, samples = _land(st, dec, t1)
+        rows.extend(samples)
+        if dec is not None and dec.get("request_id") != req["request_id"]:
+            verdict = "DECISION_ANSWERS_ANOTHER_REQUEST"
+        if res.get("rc") not in (0, None) and verdict != "LANDED":
+            verdict = f"SOLVER_FAILED rc={res.get('rc')}"
+        elif res.get("rc") is None and verdict != "LANDED":
+            verdict = "SOLVER_DID_NOT_FINISH"
+        landed = verdict == "LANDED"
+        if landed:
+            st["fail_count"] = 0
+        else:
+            req["outcome"] = verdict
+            st["fail_count"] = int(st.get("fail_count") or 0) + 1
 
-    st = {"seen": seen, "last_solve_at": last_solve,
-          "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}
+        attempt = {
+            "schema": STATE_SCHEMA, "event": "attempt", "at": _iso(t1),
+            "request_id": req["request_id"], "pending_keys": pending_keys,
+            "input_versions": req["input_versions"], "verdict": verdict, "landed": landed,
+            "decision_id": (dec or {}).get("decision_id") if landed else None,
+            "solve_wall_s": res.get("wall_s"), "solver_rc": res.get("rc"),
+            "heat_before": heat_before, "heat_after": heat_after,
+            # TWO-SIDED, MEASURED. A reaction reallocates; it must not shrink the book. This is
+            # reported, never enforced -- the heat law owns the total and this organ has no path
+            # to it.
+            "heat_preserved": (None if (heat_before is None or heat_after is None)
+                               else bool(heat_after >= heat_before - 5e-4)),
+            "retry_after": None if landed else _iso(t1 + _wait_s(st["fail_count"])),
+            # The allocation artifact's own stamp, for the reader. NOT evidence of landing.
+            "allocation_at": _allocation_stamp()[0],
+            "note": "" if landed else str(res.get("tail") or "")[-200:]}
+        rows.insert(0, attempt)
+    elif pending_keys:
+        rows.append({"schema": STATE_SCHEMA, "event": "deferred", "at": _iso(t0),
+                     "pending_keys": pending_keys,
+                     "stood_down": "SOLVE_DISABLED" if not solve else "DEBOUNCED",
+                     "why": ("--no-solve: watch only; pending is kept" if not solve else
+                             f"next solve allowed at {_iso(wait_until)} (gap "
+                             f"{MIN_SOLVE_GAP_S:.0f}s, failures {st.get('fail_count', 0)}); "
+                             f"pending is kept and served then")})
+
+    # 4. THE CERTIFIED BOOK, on the same pass (book_trigger): re-solved when its fingerprint
+    # moved, so a fill is sized against a book that has seen it within one tick, not the hour.
+    t_book = t0 if now is not None else max(t0, clock())
+    try:
+        book = book_trigger.poll(st.setdefault("book", {}), t_book, solve=solve,
+                                 solver=book_solver)
+    except Exception as exc:                       # never let the book cost the allocator a pass
+        book = {"event": "book_error", "why": f"{type(exc).__name__}: {exc}"}
+    if book.get("event") in ("solved", "solve_failed", "book_error"):
+        rows.append({"schema": STATE_SCHEMA, "event": f"book_{book['event']}",
+                     "at": _iso(t_book), **{k: v for k, v in book.items() if k != "event"}})
+
+    st["at"] = _iso(t0)
+    st["schema"] = STATE_SCHEMA
     if write:
-        STATE.parent.mkdir(parents=True, exist_ok=True)
-        STATE.write_text(json.dumps(st, indent=1, default=str) + "\n", encoding="utf-8")
-        if fired:
+        _atomic_write_text(STATE, json.dumps(st, indent=1, default=str) + "\n")
+        if rows:
             LOG.parent.mkdir(parents=True, exist_ok=True)
             with LOG.open("a", encoding="utf-8") as fh:
-                for row in fired:
+                for row in rows:
                     fh.write(json.dumps(row, default=str) + "\n")
-    return {"watch": watch, "fired": fired, "state": st, "debounced": debounced}
+    return {"watch": watch, "fired": rows, "state": st, "debounced": debounced, "book": book,
+            "attempt": attempt, "settled_on_entry": verdict0, "pending_keys": sorted(
+                k for k, inp in inputs.items() if inp.get("pending"))}
+
+
+def _percentile(sorted_vals: list[float], p: float) -> float | None:
+    """Nearest-rank percentile: always an observed sample, never an interpolation."""
+    if not sorted_vals:
+        return None
+    rank = max(1, math.ceil(p / 100.0 * len(sorted_vals)))
+    return sorted_vals[min(rank, len(sorted_vals)) - 1]
+
+
+def _summary(vals: list[float]) -> dict[str, Any]:
+    v = sorted(vals)
+    return {"n": len(v), "p50_s": _percentile(v, 50), "p95_s": _percentile(v, 95),
+            "p99_s": _percentile(v, 99), "best_s": v[0] if v else None,
+            "worst_s": v[-1] if v else None,
+            "share_within_poll_interval": (round(sum(x <= DEFAULT_INTERVAL_S for x in v)
+                                                 / len(v), 4) if v else None),
+            "share_within_poll_plus_gap": (round(sum(x <= DEFAULT_INTERVAL_S + MIN_SOLVE_GAP_S
+                                                     for x in v) / len(v), 4) if v else None),
+            "status": "MEASURED" if v else "UNMEASURED"}
+
+
+def latency_report(samples: list[dict[str, Any]]) -> dict[str, Any]:
+    """End-to-end latency, change start -> landed decision that consumed it, as p50/p95/p99.
+
+    Three views: every consumed version, per kind, and per DECISION (its slowest input -- the
+    oldest change that decision answered). Set beside the poll interval and the solve gap,
+    because those are the delay this organ adds by construction: a change can wait up to one
+    poll to be seen and up to one gap to be solved, before the solve's own wall time.
+    """
+    vals = [float(s["latency_s"]) for s in samples
+            if isinstance(s.get("latency_s"), (int, float))]
+    by_kind: dict[str, list[float]] = {}
+    by_dec: dict[str, float] = {}
+    for s in samples:
+        lat = s.get("latency_s")
+        if not isinstance(lat, (int, float)):
+            continue
+        by_kind.setdefault(str(s.get("kind") or "unknown"), []).append(float(lat))
+        d = str(s.get("decision_id") or "")
+        by_dec[d] = max(by_dec.get(d, float("-inf")), float(lat))
+    obs = [float(s["from_observation_s"]) for s in samples
+           if isinstance(s.get("from_observation_s"), (int, float))]
+    return {
+        "all_inputs": _summary(vals),
+        "per_decision_slowest_input": _summary(list(by_dec.values())),
+        "from_first_observation": _summary(obs),
+        "by_kind": {k: _summary(v) for k, v in sorted(by_kind.items())},
+        "poll_interval_s": DEFAULT_INTERVAL_S,
+        "min_solve_gap_s": MIN_SOLVE_GAP_S,
+        "structural_delay_s": {"detect_worst": DEFAULT_INTERVAL_S,
+                               "debounce_worst": MIN_SOLVE_GAP_S,
+                               "sum_before_solve_wall": DEFAULT_INTERVAL_S + MIN_SOLVE_GAP_S},
+        "n_decisions": len(by_dec),
+    }
+
+
+DECISION_CONTRACT = {
+    "request_env": REQUEST_ENV,
+    "request_shape": {"request_id": "str", "input_versions": {"<input key>": "<seq>:<sig>"}},
+    "allocation_fields": {
+        "decision_id": "non-empty str, unique per pass",
+        "trigger_request_id": "the request_id from the env var, verbatim",
+        "consumed_input_versions": "the input_versions object from the env var, verbatim",
+        "decided_utc": "ISO-8601 UTC instant of the decision (optional; else generated_utc)",
+    },
+    "landed_iff": ("decision_id present AND trigger_request_id names a request this trigger "
+                   "issued AND consumed_input_versions echoes that request's versions; a newer "
+                   "timestamp alone is never a landing"),
+}
+
+
+def run(*, budget_s: float = 600.0, write: bool = True, solve: bool = True) -> dict[str, Any]:
+    started = time.monotonic()
+    with _pass_lock(stale_after_s=float(budget_s) + 300.0) if write else \
+            contextlib.nullcontext(True) as got:
+        if not got:
+            return {"at": _iso(time.time()), "schema": STATE_SCHEMA, "stood_down": "LOCKED",
+                    "why": "another trigger pass holds the state; it observes the same disk",
+                    "watch": [], "n_watched": 0, "n_changed_this_pass": 0,
+                    "fired_this_pass": [], "n_pending_inputs": None, "latency": {}}
+        res = poll(budget_s=budget_s, write=write, solve=solve)
+    st = res["state"]
+    attempts = [r for r in _tail() if r.get("event") == "attempt"]
+    heats = [r for r in attempts if r.get("heat_preserved") is False]
+    rep = {
+        "at": _iso(time.time()),
+        "schema": STATE_SCHEMA,
+        "watch": res["watch"],
+        "n_watched": len(res["watch"]),
+        "n_changed_this_pass": sum(1 for w in res["watch"] if w["changed"]),
+        "fired_this_pass": res["fired"],
+        "debounced": res["debounced"],
+        "pending": {k: [p.get("version") for p in (inp.get("pending") or [])]
+                    for k, inp in st["seen"].items() if inp.get("pending")},
+        "n_pending_inputs": len(res["pending_keys"]),
+        "consumed": {k: (inp.get("consumed") or {}).get("version")
+                     for k, inp in st["seen"].items()},
+        "fail_count": st.get("fail_count"),
+        "retry_after": (_iso(float(st.get("last_solve_at") or 0.0)
+                             + _wait_s(int(st.get("fail_count") or 0)))
+                        if st.get("fail_count") else None),
+        "latency": latency_report(st.get("latency_samples") or []),
+        "recent_attempts": attempts[-8:],
+        "heat_reductions": len(heats),
+        "heat_reduction_rows": heats[-4:],
+        "poll_interval_s": DEFAULT_INTERVAL_S,
+        "min_solve_gap_s": MIN_SOLVE_GAP_S,
+        "retry_backoff_cap_s": RETRY_BACKOFF_CAP_S,
+        "decision_contract": DECISION_CONTRACT,
+        "backstop": ("the hourly `pf_allocator` leg still runs its full solve on its own "
+                     "cadence; these reactions are added to it, never instead of it"),
+        "boundary": ("fires the same solver with the same heat law. It sets no fraction, no cap "
+                     "and no veto, and it cannot move the 20% heat floor or the 0.02-lot gold "
+                     "floor; heat_before/heat_after are recorded so a reaction that shrank the "
+                     "book would be visible as its own defect"),
+        "elapsed_s": round(time.monotonic() - started, 3),
+    }
+    if write:
+        _atomic_write_text(OUT, json.dumps(rep, indent=1, sort_keys=True, default=str) + "\n")
+        try:
+            from libs.ops.events import leg_events
+            leg_events("allocator_trigger", "OK", n_fired=len(res["fired"]),
+                       n_changed=rep["n_changed_this_pass"], artifact=str(OUT))
+        except Exception:                                      # pragma: no cover - events opt.
+            pass
+    return rep
 
 
 def _tail(n: int = 400) -> list[dict[str, Any]]:
@@ -309,86 +878,24 @@ def _tail(n: int = 400) -> list[dict[str, Any]]:
     return out
 
 
-def latency_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Per trigger kind: how many, how fast, and the worst one -- so "not slow" is a number."""
-    by: dict[str, list[float]] = {}
-    last: dict[str, dict[str, Any]] = {}
-    for r in rows:
-        kind = str(r.get("kind") or "unknown")
-        lat = r.get("latency_s")
-        if isinstance(lat, (int, float)):
-            by.setdefault(kind, []).append(float(lat))
-        prev = last.get(kind)
-        if prev is None or str(r.get("at") or "") >= str(prev.get("at") or ""):
-            last[kind] = r
-    out: dict[str, Any] = {}
-    for kind in sorted(set(list(by) + list(last))):
-        vals = sorted(by.get(kind) or [])
-        out[kind] = {
-            "n_fired": sum(1 for r in rows if str(r.get("kind")) == kind),
-            "n_measured": len(vals),
-            "median_latency_s": (vals[len(vals) // 2] if vals else None),
-            "worst_latency_s": (vals[-1] if vals else None),
-            "best_latency_s": (vals[0] if vals else None),
-            "last_at": (last.get(kind) or {}).get("at"),
-            "last_latency_s": (last.get(kind) or {}).get("latency_s"),
-            "status": "MEASURED" if vals else "UNMEASURED",
-            "why": ("" if vals else "fired but no allocation timestamp to measure against, or "
-                    "no firing yet on this host"),
-        }
-    return out
-
-
-def run(*, budget_s: float = 600.0, write: bool = True, solve: bool = True) -> dict[str, Any]:
-    started = time.monotonic()
-    res = poll(budget_s=budget_s, write=write, solve=solve)
-    rows = _tail()
-    heats = [r for r in rows if r.get("heat_preserved") is False]
-    rep = {
-        "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-        "schema": 1,
-        "watch": res["watch"],
-        "n_watched": len(res["watch"]),
-        "n_changed_this_pass": sum(1 for w in res["watch"] if w["changed"]),
-        "fired_this_pass": res["fired"],
-        "debounced": res["debounced"],
-        "reaction_latency_by_kind": latency_report(rows),
-        "recent": rows[-12:],
-        "n_recorded": len(rows),
-        "heat_reductions": len(heats),
-        "heat_reduction_rows": heats[-4:],
-        "poll_interval_s": DEFAULT_INTERVAL_S,
-        "min_solve_gap_s": MIN_SOLVE_GAP_S,
-        "backstop": ("the hourly `pf_allocator` leg still runs its full solve on its own "
-                     "cadence; these reactions are added to it, never instead of it"),
-        "boundary": ("fires the same solver with the same heat law. It sets no fraction, no cap "
-                     "and no veto, and it cannot move the 20% heat floor or the 0.02-lot gold "
-                     "floor; heat_before/heat_after are recorded so a reaction that shrank the "
-                     "book would be visible as its own defect"),
-        "elapsed_s": round(time.monotonic() - started, 3),
-    }
-    if write:
-        OUT.parent.mkdir(parents=True, exist_ok=True)
-        OUT.write_text(json.dumps(rep, indent=1, sort_keys=True, default=str) + "\n", "utf-8")
-        try:
-            from libs.ops.events import leg_events
-            leg_events("allocator_trigger", "OK", n_fired=len(res["fired"]),
-                       n_changed=rep["n_changed_this_pass"], artifact=str(OUT))
-        except Exception:                                      # pragma: no cover - events opt.
-            pass
-    return rep
-
-
 def _print(rep: dict[str, Any]) -> None:
+    if rep.get("stood_down"):
+        print(f"ALLOCATOR TRIGGERS  stood down: {rep['stood_down']} ({rep.get('why')})")
+        return
     print(f"ALLOCATOR TRIGGERS  watched={rep['n_watched']} changed={rep['n_changed_this_pass']} "
-          f"fired={len(rep['fired_this_pass'])} recorded={rep['n_recorded']}")
-    for k, v in (rep["reaction_latency_by_kind"] or {}).items():
-        print(f"  {k:24} n={v['n_fired']:4} median={v['median_latency_s']}s "
-              f"worst={v['worst_latency_s']}s last={v['last_latency_s']}s ({v['status']})")
+          f"pending_inputs={rep['n_pending_inputs']} fail_count={rep['fail_count']}")
+    lat = (rep.get("latency") or {}).get("all_inputs") or {}
+    print(f"  latency n={lat.get('n')} p50={lat.get('p50_s')}s p95={lat.get('p95_s')}s "
+          f"p99={lat.get('p99_s')}s (poll {DEFAULT_INTERVAL_S:.0f}s, gap "
+          f"{MIN_SOLVE_GAP_S:.0f}s)")
     for f in rep["fired_this_pass"]:
-        print(f"  FIRED {f['kind']}: latency={f.get('latency_s')}s "
-              f"heat {f.get('heat_before')} -> {f.get('heat_after')} "
-              f"{f.get('stood_down') or ''}")
+        if f.get("event") == "attempt":
+            print(f"  SOLVE {f['verdict']}: wall={f.get('solve_wall_s')}s "
+                  f"heat {f.get('heat_before')} -> {f.get('heat_after')}")
+        elif f.get("event") == "consumed":
+            print(f"  CONSUMED {f['key']} {f['version']}: latency={f.get('latency_s')}s")
+        else:
+            print(f"  DEFERRED {f.get('pending_keys')}: {f.get('stood_down')}")
     if rep["heat_reductions"]:
         print(f"  WARNING: {rep['heat_reductions']} recorded reaction(s) lowered total heat")
 

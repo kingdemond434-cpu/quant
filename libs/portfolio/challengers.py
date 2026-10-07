@@ -11,6 +11,7 @@ not the libraries, so they are reimplemented here in numpy from `SleeveEvidence.
     min_variance    long-only minimum variance on a shrunk covariance
     max_diversification  maximises the diversification ratio w'sigma / sqrt(w' Sigma w)
     mean_variance   Markowitz frontier point at the book's own budget, risk aversion stated
+    black_litterman the same frontier point on Black-Litterman posterior means (equal-heat prior)
     mean_cvar       weights by mean return per unit of conditional value-at-risk
     kelly           unconstrained Kelly  Sigma^-1 mu, long-only, scaled
     robust_kelly    Kelly on mu shrunk by one standard error
@@ -239,8 +240,12 @@ def mean_variance(ev: Sequence[Any], total: float, lam: float = MV_RISK_AVERSION
     their inverse variances. That difference is the whole point of entering both.
     """
     m, names = _matrix(ev)
-    cov = _cov(m)
-    mu = m.mean(axis=0)
+    return _mv_book(m.mean(axis=0), _cov(m), names, total, lam)
+
+
+def _mv_book(mu: np.ndarray, cov: np.ndarray, names: list[str], total: float,
+             lam: float = MV_RISK_AVERSION) -> dict[str, float]:
+    """The long-only budgeted frontier point for a GIVEN mean vector (shared by MV and BL)."""
     n = len(names)
     ones = np.ones(n)
     a = np.linalg.solve(cov, mu)
@@ -263,6 +268,37 @@ def mean_variance(ev: Sequence[Any], total: float, lam: float = MV_RISK_AVERSION
                 break
             keep = w > 0
     return _scale(w, names, total)
+
+
+#: Black-Litterman prior uncertainty scale. STATED, the textbook 0.05: the equilibrium prior is
+#: treated as twenty times more certain than one period's covariance, nothing fitted to win.
+BL_TAU = 0.05
+
+
+def black_litterman(ev: Sequence[Any], total: float, tau: float = BL_TAU,
+                    lam: float = MV_RISK_AVERSION) -> dict[str, float]:
+    """Black-Litterman posterior means, then the same budgeted frontier point as `mean_variance`.
+
+    A CHALLENGER ONLY (audit repair #7 / QG26-10, 2026-10-06). The prior is the equilibrium
+    implied by an equal-heat book, pi = lam * Sigma * w_eq -- "no sleeve is special" -- and the
+    views are each sleeve's own sample mean with confidence Omega = diag(var_i / n_i), the
+    sampling variance of that mean. The posterior
+        mu_BL = [(tau Sigma)^-1 + Omega^-1]^-1 [(tau Sigma)^-1 pi + Omega^-1 mu_hat]
+    pulls a thinly-measured sleeve toward equilibrium and lets a long, precise history speak.
+    It is scored by robust E[log W] on the desk's worlds like every other book here and is never
+    sovereign: it keeps no authority it does not win in `allocator_proof.contest`.
+    """
+    m, names = _matrix(ev)
+    cov = _cov(m)
+    n = len(names)
+    w_eq = np.full(n, 1.0 / max(n, 1))
+    pi = lam * cov @ w_eq
+    obs = np.array([max(int(np.isfinite(np.asarray(e.daily_r, dtype=float)).sum()), 2)
+                    for e in ev], dtype=float)
+    omega_inv = np.diag(obs / np.clip(np.diag(cov), 1e-18, None))
+    prior_prec = np.linalg.inv(tau * cov)
+    post = np.linalg.solve(prior_prec + omega_inv, prior_prec @ pi + omega_inv @ m.mean(axis=0))
+    return _mv_book(post, cov, names, total, lam)
 
 
 def mean_cvar(ev: Sequence[Any], total: float, alpha: float = 0.1) -> dict[str, float]:
@@ -302,7 +338,7 @@ def bayesian_kelly(ev: Sequence[Any], total: float, k: float = BAYES_K) -> dict[
 CHALLENGERS: dict[str, Callable[[Sequence[Any], float], dict[str, float]]] = {
     "hrp": hrp, "herc": herc, "nco": nco, "min_variance": min_variance,
     "max_diversification": max_diversification, "mean_variance": mean_variance,
-    "mean_cvar": mean_cvar,
+    "black_litterman": black_litterman, "mean_cvar": mean_cvar,
     "kelly": kelly, "robust_kelly": robust_kelly, "bayesian_kelly": bayesian_kelly,
 }
 

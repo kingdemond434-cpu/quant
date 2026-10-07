@@ -116,10 +116,9 @@ TASK name="MT5-Dept-Mathlab" trigger="at startup + every 10 minutes (keep-alive 
 # MACRO_VIEW / regime_state / REGIME_ROUTER / sleeve_registry / gateway_state / NET_EDGE and
 # fires `pf_allocator --mode fast` the moment one of them carries a real state change, then
 # publishes the event-to-allocation latency per trigger kind in reports/ALLOCATOR_REACTION.json.
-# NOT YET REGISTERED ON THE BOX -- declared here first, as the manifest's own rule requires, so
-# `scripts/check_box_tasks.py` reports it as drift until the task exists rather than the task
-# existing with nothing declaring it. lane=money: it is the sizing path.
-TASK name="MT5-AllocatorPulse" trigger="at startup + every 5 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/allocator_trigger.py" installer="NONE" lane="money"
+# INSTALLER ADDED 2026-10-06 (`install_allocator_pulse_task.ps1`); until it is run on the box,
+# `scripts/check_box_tasks.py` reports the task as drift. lane=money: it is the sizing path.
+TASK name="MT5-AllocatorPulse" trigger="at startup + every 5 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/allocator_trigger.py" installer="desks/mt5/scripts/install_allocator_pulse_task.ps1" lane="money"
 # THE FOREST FEDERATION (principal 2026-09-17). Eleven regional research civilizations,
 # each a 24/7 resident running the eleven agent roles of libs/research/forests.ROLES in
 # parallel through desks/mt5/research/forest_runner.py. Japan and global macro already

@@ -114,7 +114,23 @@ ROI_EVIDENCE = BASE / "data" / "roi_capital_evidence.json"
 POSTERIOR_ALPHA = BASE / "reports" / "POSTERIOR_ALPHA.json"
 EXPOSURE_DECOMPOSITION = BASE / "reports" / "EXPOSURE_DECOMPOSITION.json"
 CACHE = BASE / "data" / "pf_allocator_cache"
-ARMED = BASE / "data" / "PF_ALLOCATOR_ARMED"
+#: THE SCENARIO CACHE IS KEYED ON WHAT DREW IT, NOT ON HOW OLD IT IS (2026-10-06). The fast
+#: clock reused `worlds.npz` whenever it was under an hour old and the sleeve NAMES matched -- so a
+#: new forecast, a re-fitted regime, a re-measured cost surface, a drift hazard that moved a
+#: sleeve's decay, or a change to the sampler itself all left the fast clock solving on worlds
+#: drawn under the previous state, and the fast clock skipped the regime fit outright. The key is
+#: now a sha256 over canonical JSON of every input `sample_worlds` actually reads (see
+#: `world_fingerprint`), stored INSIDE the npz so worlds and key can never be torn apart, and a
+#: reuse needs an exact match. Bump this constant whenever the world-sampling arithmetic changes
+#: in a way the `robust_elog` source digest would not see (a dependency, a numpy behaviour).
+SCENARIO_MODEL_VERSION = 1
+#: Age stays as an UPPER bound beside the fingerprint, never as the key: one firing interval of
+#: the heavy clock, the same derivation as `EVIDENCE_MAX_AGE_S`.
+WORLD_CACHE_MAX_AGE_S = 3600
+#: The file `regime_state` fits on. Named here so the fast clock can digest it without fitting;
+#: `test_world_cache_fingerprint` pins that `regime_state` still reads exactly this file.
+REGIME_SOURCE = BASE / "data" / "universe" / "XAUUSD_H1.parquet"
+ARMED =BASE / "data" / "PF_ALLOCATOR_ARMED"
 #: Append-only record of what each pass EXPECTED. Read by `allocator_attribution.py`.
 FORECASTS = BASE / "data" / "pf_forecast_log.jsonl"
 
@@ -1893,73 +1909,144 @@ def _live_state() -> tuple[str | None, dict[str, list[dict]], int]:
     return phase, trades, off
 
 
-def hazard_by_sleeve(drift: dict[str, Any] | None) -> dict[str, float]:
-    """P(edge breaks next horizon | history) per sleeve, from drift_monitor's nine channels.
+class HazardMap(dict[str, float]):
+    """{sleeve: decay hazard}, carrying each sleeve's non-decay CAUSES beside it (2026-10-06).
 
-    Only rows that carry a hazard: `perishability.edge_hazard` returns None under its own floors
-    (fewer than three measured channels, or no sleeve-scoped one), and an absent hazard must read
-    as no tilt rather than as a confident zero.
+    A plain dict to every reader that wants the decay number -- `apply_hazard_shrink`, the logs,
+    the tests -- so the hazard's call sites are unchanged; `causes` rides along for
+    `apply_decay_posterior`, which is the one consumer that routes execution-cost decay to COST.
+    """
+
+    causes: dict[str, dict[str, Any]]
+
+    def __init__(self, *args: Any, **kw: Any) -> None:
+        super().__init__(*args, **kw)
+        self.causes = {}
+
+
+def hazard_by_sleeve(drift: dict[str, Any] | None) -> HazardMap:
+    """P(edge's MECHANISM breaks next horizon | history) per sleeve, from drift_monitor.
+
+    Only rows that carry a hazard: `perishability.hazard_by_cause` returns None under its own
+    floors (too few mechanism channels measured, or no sleeve-scoped one), and an absent hazard
+    must read as the blanket rather than as a confident zero. A MEASURED zero is a reading and
+    is kept (it was dropped before 2026-10-06, so a sleeve measured healthy paid the blanket
+    while one measured at 0.01 paid 0.01). Values are clamped to [0, 1].
+
+    Since 2026-10-06 the number is MECHANISM decay (union signal expiry) only: drift_monitor no
+    longer averages cost, fill, crowding or regime drift into it. Those ride on `.causes` so the
+    allocator can route each to its own destination exactly once.
     """
     rows = (drift or {}).get("hazard_by_sleeve") or {}
-    out: dict[str, float] = {}
+    out = HazardMap()
     for name, row in rows.items():
-        h = (row or {}).get("hazard") if isinstance(row, dict) else None
-        if isinstance(h, (int, float)) and 0.0 < float(h) <= 1.0:
-            out[str(name)] = float(h)
+        if not isinstance(row, dict):
+            continue
+        causes = row.get("causes")
+        if isinstance(causes, dict):
+            out.causes[str(name)] = causes
+        h = row.get("hazard")
+        if isinstance(h, bool) or not isinstance(h, (int, float)) or not math.isfinite(float(h)):
+            continue
+        out[str(name)] = min(max(float(h), 0.0), 1.0)
     return out
 
 
 #: HOW THE DRIFT MONITOR'S PER-SLEEVE HAZARD REACHES THE SOLVE.
 #:
-#:   "decay_posterior"  (the path since 2026-09-09) each sleeve with a measured hazard carries
-#:                      it as its OWN decay probability, `decay_prob_i = min(hazard, blanket)`,
-#:                      and the world population decays that sleeve's edge in that share of
-#:                      worlds instead of the blanket 30%. A sleeve the monitor calls healthy
-#:                      stops paying the blanket and can earn MORE heat; a sleeve it calls
-#:                      breaking is charged the blanket -- never more than every sleeve was
-#:                      charged before, because the blanket is the ceiling (`robust_elog.
-#:                      decay_prob_of`). Billed by `missed_growth.measure_decay_posterior`.
+#:   "decay_posterior"  (the path since 2026-09-09; TWO-SIDED since 2026-10-06) each sleeve with
+#:                      a measured MECHANISM hazard carries it as its OWN decay probability,
+#:                      `decay_prob_i = hazard`, and the world population decays that sleeve's
+#:                      edge in that share of worlds instead of the blanket 30%. A sleeve the
+#:                      monitor calls healthy pays less than the blanket and can earn MORE heat;
+#:                      a sleeve it calls breaking pays MORE than the blanket and is sized down
+#:                      before any retirement threshold (until 2026-10-06 the blanket was the
+#:                      ceiling and a breaking sleeve paid exactly 30%). Sleeves sharing a
+#:                      mechanism decay together in the same worlds (`robust_elog.
+#:                      DECAY_MECHANISM_SHARE`). Execution-cost decay is routed to `cost_bias_r`
+#:                      by the same function and NEVER to decay. Billed by
+#:                      `missed_growth.measure_decay_posterior`.
 #:   "mean_shrink"      the previous path: `apply_hazard_shrink` tilts the posterior mean by
 #:                      (1 - hazard) post hoc and every sleeve pays the blanket decay. Kept
 #:                      available behind the same `hazard_shrink` rail and its billing.
 #:
-#: One of the two runs on a pass, never both: the hazard entering twice would charge one fact
-#: as two.
+#: One of the two runs on a pass, never both: the hazard entering twice -- as decay_prob_i AND
+#: as a shrink of the mean -- would charge one fact as two.
 HAZARD_MODE = "decay_posterior"
 
 
 def apply_decay_posterior(ev: list[SleeveEvidence], haz: dict[str, float],
                           blanket: float) -> dict[str, Any]:
-    """Hand each sleeve with a measured hazard its own decay probability, capped at the blanket.
+    """Hand each sleeve its own decay probability (two-sided) and route the other causes once.
 
     THE OTHER HALF OF "DECAY IS A CONSTANT". `robust_elog` decayed every sleeve's edge in 30% of
     worlds whatever the desk had measured about it, and the only per-sleeve decay input was a
     post-hoc shrink of the mean -- so a sleeve the drift monitor had watched for weeks and found
-    stable paid exactly what an unwatched one paid. This writes the monitor's P(edge breaks |
-    history) onto the sleeve as `decay_prob_i`, which `sample_worlds` uses in place of the
-    blanket. Both numbers are returned per sleeve so the artifact can show the relief.
+    stable paid exactly what an unwatched one paid. This writes the monitor's P(mechanism breaks
+    | history) onto the sleeve as `decay_prob_i`, which `sample_worlds` uses in place of the
+    blanket. Both numbers are returned per sleeve so the artifact can show the relief or charge.
 
-    NEVER ABOVE THE BLANKET. `min(hazard, blanket)` here, and `decay_prob_of` caps again inside
-    the library: a sleeve's decay can only be relieved by this, never deepened, which is what
-    lets it run on the money path under the standing order that nothing may size a sleeve below
-    what it gets today. A sleeve without a measured hazard keeps the blanket exactly as before.
+    TWO-SIDED (principal's spec, 2026-10-06). Until that date this was `min(hazard, blanket)`
+    under the 2026-09-08 order that nothing may size a sleeve below what it gets today, so a
+    sleeve measured at 90% paid 30% and kept its heat while its edge broke. The 2026-10-06 spec
+    supersedes that for decay: a measured hazard above the blanket charges MORE, and
+    `relief_vs_blanket` is negative for it. A sleeve without a measured hazard keeps the blanket.
+
+    EACH CAUSE ONCE, IN ITS OWN CURRENCY (`haz.causes`, when the drift report carries them):
+
+      execution_cost_decay  -> `cost_bias_r` = max(existing, |cost_r| x (slip_ratio - 1)): the
+                               twin's realised/modelled slip applied to the cost the replay
+                               charged. MAX, not sum: `cost_bias_r` may already hold the cost
+                               surface's measurement of the same under-charge, and two
+                               instruments reading one fact charge it once, at the larger.
+      regime_mismatch       -> nothing: transient, and the regime posterior already prices it.
+      data_failure          -> named in `integrity_hold`; never a decay charge.
+      displacement          -> nothing here: the solve compares books.
     """
     from dataclasses import replace as _replace
+    causes: dict[str, dict[str, Any]] = getattr(haz, "causes", {}) or {}
     by_sleeve: dict[str, dict[str, float]] = {}
+    cost_routed: dict[str, dict[str, float]] = {}
+    transient: list[str] = []
+    integrity: list[str] = []
     for i, e in enumerate(ev):
+        c = causes.get(e.name) or {}
+        cost = c.get("execution_cost_decay") or {}
+        ratio, n_slip = cost.get("slip_ratio"), cost.get("slip_n") or 0
+        if (isinstance(ratio, (int, float)) and math.isfinite(float(ratio)) and ratio > 1.0
+                and int(n_slip) >= 10 and abs(float(e.cost_r)) > 0.0):
+            extra = abs(float(e.cost_r)) * (float(ratio) - 1.0)
+            before = max(0.0, float(getattr(e, "cost_bias_r", 0.0) or 0.0))
+            if extra > before:
+                ev[i] = e = _replace(e, cost_bias_r=extra)
+            cost_routed[e.name] = {"slip_ratio": round(float(ratio), 6),
+                                   "cost_bias_before": round(before, 8),
+                                   "cost_bias_after": round(max(before, extra), 8)}
+        regime = c.get("regime_mismatch") or {}
+        if (regime.get("pressure") or 0.0) > 0.0:
+            transient.append(e.name)
+        if (c.get("data_failure") or {}).get("flag"):
+            integrity.append(e.name)
         h = haz.get(e.name)
         if h is None:
             continue
-        p = min(float(h), float(blanket))
+        p = min(max(float(h), 0.0), 1.0)
         ev[i] = _replace(e, decay_prob_i=p)
         by_sleeve[e.name] = {"hazard": round(float(h), 6), "decay_prob_i": round(p, 6),
                              "relief_vs_blanket": round(float(blanket) - p, 6)}
     return {"mode": "decay_posterior", "blanket": float(blanket),
             "n_from_hazard": len(by_sleeve), "n_blanket": len(ev) - len(by_sleeve),
+            "n_charged_above_blanket": sum(1 for v in by_sleeve.values()
+                                           if v["relief_vs_blanket"] < 0.0),
             "by_sleeve": by_sleeve,
-            "rule": ("decay_prob_i = min(drift_monitor hazard, blanket) per sleeve; a sleeve "
-                     "without a measured hazard pays the blanket; nothing is ever charged above "
-                     "the blanket, so this can only relieve today's haircut")}
+            "cost_routed": cost_routed, "regime_transient": sorted(transient),
+            "integrity_hold": sorted(integrity),
+            "rule": ("decay_prob_i = drift_monitor MECHANISM hazard per sleeve, two-sided: above "
+                     "the blanket it charges more, below it it relieves; a sleeve without a "
+                     "measured hazard pays the blanket. Execution-cost decay goes to cost_bias_r "
+                     "(max with the existing measurement, never added), regime mismatch is "
+                     "transient and charged nowhere here, data failure is an integrity hold, "
+                     "displacement is the solve's book comparison -- each fact once")}
 
 
 def apply_culture_labels(ev: list[SleeveEvidence], doc: Any = None
@@ -2017,6 +2104,9 @@ def apply_hazard_shrink(ev: list[SleeveEvidence], haz: dict[str, float]) -> dict
     dispersion exactly where it was; scaling the series by (1 - h) would shrink its variance too
     and make a decaying sleeve look SAFER as its edge disappeared -- the opposite of the truth,
     and the kind of error that is invisible until the drawdown arrives.
+
+    ONLY UNDER `HAZARD_MODE = "mean_shrink"`, and only the MECHANISM hazard (2026-10-06): the
+    same number never also becomes `decay_prob_i`, and cost or regime drift never reach it.
     """
     from dataclasses import replace as _replace
     applied: dict[str, float] = {}
@@ -3316,6 +3406,310 @@ def kelly_fraction(ev: list[SleeveEvidence], cfg: WorldConfig, *,
     return out
 
 
+# ------------------------------------------------------------ THE SCENARIO CACHE AND ITS KEY
+# WHAT `sample_worlds` READS, TRACED 2026-10-06, and therefore what the key covers -- no more,
+# because a key that hashes things the sampler never reads only buys spurious misses, and no less,
+# because anything left out is a way to be served worlds drawn under a state that has gone:
+#
+#   per sleeve   name/family/symbol/n_trials ("sleeve_spec": the hierarchical prior's pools and
+#                the deflation), daily_r -- backtest + appended forward days + every posterior
+#                tilt `apply_allocator_evidence` / `apply_hazard_shrink` wrote into it --,
+#                state_r, macro_w, forward_days, live_days ("forecast": `_posterior_mu`),
+#                cost_r, cost_bias_r ("cost": the execution surface as it entered), decay_prob_i
+#                ("health": DRIFT.json's hazard as it entered).
+#   WorldConfig  every field except the three only the OBJECTIVE reads; cost_uncertainty joins
+#                "cost", decay_prob/decay_floor/crisis_prob (the DRIFT-scaled crisis share) join
+#                "health", regime_labels/regime_probs/regime_min_days join "regime", the rest
+#                (population size, block length, crisis shares/vol, seed, budget) is
+#                "world_config".
+#   regime       also the regime's own INPUTS (`_regime_inputs`), so the fast clock can tell a
+#                changed regime without paying for the fit when nothing changed.
+#   model        SCENARIO_MODEL_VERSION and the sha256 of robust_elog's source.
+#
+# NOT IN THE KEY, BY MEASUREMENT: `data/sleeves.json` (read only by `zeroed_live`, after the
+# solve; a sleeve's presence enters through the matrix and so through "sleeve_spec"), state_key,
+# factor_load/factor_resid_var, inputs, trade_hours, mechanism (all read by `_corr_abs` /
+# `optimise`, which recompute every pass, never by the sampler).
+_CFG_OBJECTIVE_ONLY = frozenset({"robust_lambda", "cvar_alpha", "redundancy_lambda"})
+_CFG_COMPONENT = {"cost_uncertainty": "cost", "decay_prob": "health", "decay_floor": "health",
+                  "crisis_prob": "health", "regime_labels": "regime", "regime_probs": "regime",
+                  "regime_min_days": "regime"}
+#: The regime engine's code, digested with `regime_state` itself: a re-written HMM is a changed
+#: regime input exactly as a new day of XAUUSD is.
+_REGIME_CODE = ("engine.py", "transitions.py", "hmm.py", "gmm.py", "bayesian.py", "features.py")
+
+
+def _sha(obj: Any) -> str:
+    """sha256 over CANONICAL JSON: sorted keys, no whitespace, floats at full repr precision."""
+    import hashlib
+    blob = json.dumps(obj, sort_keys=True, separators=(",", ":"), default=str, allow_nan=True)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def _arr_sha(a: Any) -> str:
+    """Content digest of an array: shape plus float64 bytes, every NaN written the same way."""
+    import hashlib
+    if a is None:
+        return "none"
+    x = np.ascontiguousarray(np.asarray(a, dtype=np.float64))
+    x = np.where(np.isnan(x), np.nan, x)
+    h = hashlib.sha256(str(x.shape).encode("utf-8"))
+    h.update(np.ascontiguousarray(x).tobytes())
+    return h.hexdigest()
+
+
+def _file_sha(p: Path) -> str:
+    """Content digest of a file; an unreadable one is its own named value, never a match."""
+    import hashlib
+    try:
+        return hashlib.sha256(p.read_bytes()).hexdigest()
+    except OSError as exc:
+        return f"absent:{type(exc).__name__}"
+
+
+def _regime_inputs(daily: pd.DataFrame) -> str:
+    """Digest of everything `regime_state(daily)` reads, WITHOUT fitting anything.
+
+    The XAUUSD H1 file it fits on, the matrix days its labels are laid onto, the mixture bounds
+    and forecast horizon it tempers with, and the code of the fit itself.
+    """
+    import inspect
+    try:
+        code = [_sha(inspect.getsource(regime_state))]
+    except (OSError, TypeError):
+        code = ["regime_state:source-unavailable"]
+    code += [_file_sha(ROOT / "libs" / "regime" / f) for f in _REGIME_CODE]
+    return _sha({"source": _file_sha(REGIME_SOURCE),
+                 "matrix_days": _sha([str(d) for d in daily.index]),
+                 "bounds": [REGIME_MIN_SHARE, REGIME_MAX_SHARE, REGIME_FORECAST_H,
+                            list(REGIME_TERM_STRUCTURE)],
+                 "code": code})
+
+
+#: The env var `allocator_trigger` sets on the solve it launches:
+#: {"request_id": str, "input_versions": {key: "seq:sig"}}. Echoed verbatim into the artifact.
+TRIGGER_REQUEST_ENV = "QUANT_ALLOC_TRIGGER_REQUEST"
+
+
+def _finite_or_none(x: Any) -> float | None:
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return None
+    return v if math.isfinite(v) else None
+
+
+def _atomic_write_text(path: Path, text: str, *, retries: int = 5) -> None:
+    """Temp file + fsync + os.replace, retrying the Windows sharing violation a reader causes."""
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
+        fh.write(text)
+        fh.flush()
+        os.fsync(fh.fileno())
+    for i in range(retries):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            if i == retries - 1:
+                raise
+            time.sleep(0.05 * (i + 1))
+
+
+def decision_identity(world_cache: Mapping[str, Any] | None,
+                      decided: datetime) -> dict[str, Any]:
+    """decision_id, the world fingerprint it was solved on, and the trigger echo when asked.
+
+    The id is unique per pass (time + pid + fingerprint prefix), so two passes can never share
+    one, and the gateway can record which id it consumed. The trigger's request is echoed only
+    when it parses; a malformed request is named, never half-echoed (half an echo would let the
+    trigger mark versions consumed that this pass never saw).
+    """
+    fp = str((world_cache or {}).get("fingerprint") or "")
+    out: dict[str, Any] = {
+        "decision_id": f"{decided:%Y%m%dT%H%M%S%fZ}-{os.getpid()}-{fp[:10] or 'nofp'}",
+        "world_fingerprint": fp or None,
+        "decided_utc": decided.isoformat(),
+    }
+    raw = os.environ.get(TRIGGER_REQUEST_ENV)
+    if raw:
+        try:
+            req = json.loads(raw)
+            rid = req.get("request_id")
+            ver = req.get("input_versions")
+            if isinstance(rid, str) and rid and isinstance(ver, dict):
+                out["trigger_request_id"] = rid
+                out["consumed_input_versions"] = ver
+            else:
+                out["trigger_request_error"] = "request lacks request_id or input_versions"
+        except (ValueError, AttributeError) as exc:
+            out["trigger_request_error"] = f"unparseable: {type(exc).__name__}"
+    return out
+
+
+def decision_state_fingerprint(ev: Sequence[SleeveEvidence], cfg: WorldConfig,
+                               regime_inputs: str = "") -> str:
+    """The fingerprint alone -- the contract name the acceptance suite (PR #198) calls."""
+    return world_fingerprint(ev, cfg, regime_inputs)[0]
+
+
+def world_fingerprint(ev: Sequence[SleeveEvidence], cfg: WorldConfig,
+                      regime_inputs: str) -> tuple[str, dict[str, str]]:
+    """The decision-state fingerprint of a world population, and its named components.
+
+    Returns (fingerprint, {component: digest}). Two populations drawn from equal fingerprints
+    are byte-identical, which is the only condition under which reusing one is not a decision
+    made on a state that no longer exists. See the block comment above for what each component
+    covers and why the rest is left out.
+    """
+    import dataclasses
+    import inspect
+    rows: dict[str, list[Any]] = {"sleeve_spec": [], "forecast": [], "cost": [], "health": []}
+    for e in ev:
+        rows["sleeve_spec"].append([e.name, e.family, e.symbol, int(e.n_trials)])
+        rows["forecast"].append([e.name, _arr_sha(e.daily_r), _arr_sha(e.state_r),
+                                 _arr_sha(e.macro_w), int(e.forward_days), int(e.live_days)])
+        rows["cost"].append([e.name, float(e.cost_r), float(e.cost_bias_r)])
+        rows["health"].append([e.name, None if e.decay_prob_i is None
+                               else float(e.decay_prob_i)])
+    parts: dict[str, dict[str, Any]] = {"world_config": {}, "cost": {}, "health": {},
+                                        "regime": {}}
+    for f in dataclasses.fields(cfg):
+        if f.name not in _CFG_OBJECTIVE_ONLY:
+            parts[_CFG_COMPONENT.get(f.name, "world_config")][f.name] = getattr(cfg, f.name)
+    components = {
+        "sleeve_spec": _sha(rows["sleeve_spec"]),
+        "forecast": _sha(rows["forecast"]),
+        "cost": _sha([rows["cost"], parts["cost"]]),
+        "health": _sha([rows["health"], parts["health"]]),
+        "regime": _sha([regime_inputs, parts["regime"]]),
+        "world_config": _sha(parts["world_config"]),
+        "model": _sha([SCENARIO_MODEL_VERSION, _file_sha(Path(inspect.getfile(sample_worlds)))]),
+    }
+    return _sha(components), components
+
+
+def read_world_cache(path: Path) -> dict[str, Any]:
+    """The cached population with its stored key, or {"error": why}. Never raises.
+
+    A CACHE READ MAY NEVER STOP A DECISION. Missing, truncated, garbage, an old-format file with no
+    key, a zip a crashed writer left behind -- each is a named miss and the pass resamples.
+    """
+    if not path.exists():
+        return {"error": "absent"}
+    try:
+        # The handle is OURS so a truncated zip cannot leak it (np.load(path) does, on Windows
+        # that would also block the next writer's os.replace).
+        with open(path, "rb") as fh, np.load(fh, allow_pickle=False) as z:
+            meta = json.loads(str(z["meta"][()]))
+            worlds = Worlds(r=np.array(z["r"]), names=tuple(str(x) for x in z["names"]),
+                            crisis=np.array(z["crisis"]), mu_draws=np.array(z["mu"]),
+                            regimes=tuple(str(x) for x in z["regimes"]),
+                            note="reused cached world population")
+        if not isinstance(meta, dict):
+            raise ValueError("cache meta is not an object")
+        return {"worlds": worlds, "meta": meta, "age_s": time.time() - path.stat().st_mtime}
+    except Exception as exc:                    # see docstring: every failure is a miss
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
+def write_world_cache(path: Path, worlds: Worlds, meta: dict[str, Any]) -> str | None:
+    """Write worlds + key ATOMICALLY: temp file in the same directory, fsync, `os.replace`.
+
+    A reader therefore sees the old file or the new one, never half of either. On Windows
+    `os.replace` raises PermissionError while another process holds the target open (a fast pass
+    mid-read), so it is retried briefly before the write is declared failed. Returns None on
+    success, else the reason; the temp file never outlives a failure.
+    """
+    tmp = path.with_name(f".{path.stem}.{os.getpid()}.{time.time_ns()}.tmp")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(tmp, "wb") as fh:
+            np.savez_compressed(fh, r=worlds.r, names=np.array(worlds.names, dtype=str),
+                                crisis=worlds.crisis, mu=worlds.mu_draws,
+                                regimes=np.array(worlds.regimes, dtype=str),
+                                meta=np.array(json.dumps(meta, default=str)))
+            fh.flush()
+            os.fsync(fh.fileno())
+        for attempt in range(5):
+            try:
+                os.replace(tmp, path)
+                return None
+            except PermissionError:
+                time.sleep(0.05 * (attempt + 1))
+        os.replace(tmp, path)
+        return None
+    except OSError as exc:
+        with suppress(OSError):
+            tmp.unlink()
+        return f"{type(exc).__name__}: {exc}"
+
+
+def fast_regime(daily: pd.DataFrame, cached: dict[str, Any] | None, regime_inputs: str,
+                ) -> tuple[tuple[str, ...], tuple[tuple[str, float], ...], dict[str, Any]]:
+    """The fast clock's regime: the cached fit when its inputs are unchanged, else a REFIT.
+
+    The fast clock used to skip the regime outright, so a fast pass solved on unconditioned
+    config while reusing worlds a normal pass had drawn regime-conditioned -- and never noticed a
+    new day of XAUUSD. It now reuses the stored labels/probabilities only on an exact
+    `_regime_inputs` match and pays for `regime_state` whenever they differ.
+    """
+    meta = (cached or {}).get("meta") or {}
+    if meta.get("regime_inputs") == regime_inputs and "regime_labels" in meta:
+        diag = dict(meta.get("regime_diag") or {})
+        diag["fast_clock"] = {"rebuilt": False, "why": "regime inputs unchanged since cached fit"}
+        return (tuple(str(x) for x in meta["regime_labels"]),
+                tuple((str(k), float(v)) for k, v in meta.get("regime_probs") or ()), diag)
+    why = ("no readable cache" if not meta else "regime inputs changed since cached fit")
+    labels, probs, diag = regime_state(daily)
+    diag = dict(diag)
+    diag["fast_clock"] = {"rebuilt": True, "why": why}
+    return labels, probs, diag
+
+
+def world_population(mode: str, ev: Sequence[SleeveEvidence], cfg: WorldConfig, *,
+                     regime_inputs: str, regime_diag: dict[str, Any], cachef: Path,
+                     cached: dict[str, Any] | None) -> tuple[Worlds, dict[str, Any]]:
+    """Reuse the cached population ONLY on an exact fingerprint match; otherwise draw and store.
+
+    Returns (worlds, report). The report is the artifact's `world_cache`: `hit`, and on a miss
+    `changed` -- the components whose digests differ from the stored ones (plus "max_age" when
+    the age bound alone refused it), so a reader can see WHY the fast clock paid to resample.
+    Heavy and normal clocks always draw; the fast clock may reuse.
+    """
+    fp, comps = world_fingerprint(ev, cfg, regime_inputs)
+    report: dict[str, Any] = {"mode": mode, "hit": False, "fingerprint": fp, "components": comps}
+    if mode == "fast":
+        if not cached or "error" in cached:
+            report["changed"] = ["cache_unreadable"]
+            report["why"] = (cached or {}).get("error", "no cache read")
+        else:
+            old = cached["meta"].get("components") or {}
+            changed = sorted(k for k in set(comps) | set(old) if comps.get(k) != old.get(k))
+            if not changed and cached["meta"].get("fingerprint") != fp:
+                changed = ["fingerprint"]
+            if not changed and tuple(cached["worlds"].names) != tuple(e.name for e in ev):
+                changed = ["sleeve_spec"]
+            if not changed and float(cached["age_s"]) >= WORLD_CACHE_MAX_AGE_S:
+                changed = ["max_age"]
+            if not changed:
+                report.update(hit=True, changed=[], age_s=round(float(cached["age_s"]), 1))
+                return cached["worlds"], report
+            report["changed"] = changed
+    else:
+        report["changed"] = []
+        report["why"] = f"{mode} clock always draws its own population"
+    worlds = sample_worlds(ev, cfg)
+    meta = {"fingerprint": fp, "components": comps, "regime_inputs": regime_inputs,
+            "regime_labels": list(cfg.regime_labels),
+            "regime_probs": [[k, float(v)] for k, v in cfg.regime_probs],
+            "regime_diag": regime_diag, "mode": mode,
+            "scenario_model_version": SCENARIO_MODEL_VERSION,
+            "written_at": datetime.now(UTC).isoformat(timespec="seconds")}
+    report["write_error"] = write_world_cache(cachef, worlds, meta)
+    return worlds, report
+
+
 def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     """One allocator pass. Returns the artifact it wrote."""
     t0 = time.time()
@@ -3398,8 +3792,16 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             state_vec, sv_why = None, f"{type(exc).__name__}: {exc}"
         _log(f"state vector: {sv_why}")
 
-    labels, probs, regime_diag = (regime_state(daily) if mode in ("heavy", "normal")
-                                  else ((), (), {"skipped": f"{mode} clock"}))
+    # THE FAST CLOCK NO LONGER SKIPS THE REGIME: it reuses the cached fit when the regime's own
+    # inputs are unchanged and refits when they are not (`fast_regime`), so the config it solves
+    # on is the config the reused worlds were drawn under.
+    regime_in = _regime_inputs(daily)
+    cached_worlds = read_world_cache(CACHE / "worlds.npz") if mode == "fast" else None
+    if mode == "fast":
+        labels, probs, regime_diag = fast_regime(daily, cached_worlds, regime_in)
+    else:
+        labels, probs, regime_diag = (regime_state(daily) if mode in ("heavy", "normal")
+                                      else ((), (), {"skipped": f"{mode} clock"}))
     # CRISIS SEVERITY, MEASURED RATHER THAN ASSUMED. `crisis_common_share` IS the pairwise
     # correlation the crisis worlds impose (a one-factor overlay with share s has pairwise
     # correlation exactly s), and it was the constant 0.55 with nothing behind it. The book's own
@@ -3509,27 +3911,21 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                       crisis_prob=crisis_share,
                       **(cov_cal.as_overrides() if cov_cal else {}))
 
+    # REUSED ONLY ON AN EXACT DECISION-STATE FINGERPRINT (`decision_state_fingerprint`, built by
+    # `world_fingerprint`); a miss names the components that changed in the artifact's
+    # `world_cache`, and the write is atomic.
     cachef = CACHE / "worlds.npz"
-    worlds: Worlds | None = None
-    if mode == "fast" and cachef.exists() and time.time() - cachef.stat().st_mtime < 3600:
-        try:
-            z = np.load(cachef, allow_pickle=False)
-            if tuple(z["names"]) == tuple(e.name for e in ev):
-                worlds = Worlds(r=z["r"], names=tuple(str(x) for x in z["names"]),
-                                crisis=z["crisis"], mu_draws=z["mu"],
-                                note="reused cached world population")
-                _log("world population reused from cache")
-        except (OSError, ValueError, KeyError):
-            worlds = None
-    if worlds is None:
-        worlds = sample_worlds(ev, cfg)
-        _log(f"worlds {worlds.r.shape} crisis={int(worlds.crisis.sum())} {worlds.note}")
-        try:
-            CACHE.mkdir(parents=True, exist_ok=True)
-            np.savez_compressed(cachef, r=worlds.r, names=np.array(worlds.names),
-                                crisis=worlds.crisis, mu=worlds.mu_draws)
-        except OSError as exc:
-            _log(f"world cache not written ({exc}); next fast pass will resample")
+    worlds, world_cache = world_population(mode, ev, cfg, regime_inputs=regime_in,
+                                           regime_diag=regime_diag, cachef=cachef,
+                                           cached=cached_worlds)
+    if world_cache["hit"]:
+        _log(f"world population reused from cache (fingerprint {world_cache['fingerprint'][:12]})")
+    else:
+        _log(f"worlds {worlds.r.shape} crisis={int(worlds.crisis.sum())} {worlds.note} "
+             f"(cache miss: {', '.join(world_cache['changed']) or world_cache.get('why')})")
+        if world_cache.get("write_error"):
+            _log(f"world cache not written ({world_cache['write_error']}); "
+                 f"next fast pass will resample")
 
     # 1. WHAT GROWTH ACTUALLY WANTS -- no mandate, no floor, AND NO POLICY CAP. This number
     # certifies the target, so a cap on it is a cap on the whole law: the free optimum was solved
@@ -3803,8 +4199,16 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # opportunity cost. The one thing the fill never overrides is the ruin guard below: a
         # filled book that is wiped out in a sampled world is still not a book.
         held_before = book.total_heat
-        book, fill_note = fill_floor(book, ev, verdict.total_heat, ub, family_of,
-                                     cfg=cfg, worlds=worlds)
+        # TWO-SIDED SINCE 2026-10-06: the fill exists to hold the UTILISATION TARGET, so it runs
+        # only when the target is what bound (`binding == "mandate"`, i.e. certified free on the
+        # curve). A growth-optimum or state-curve heat is never forced by relaxing per-sleeve
+        # bounds -- those bounds are survival-derived, and growth does not outrank survival.
+        if verdict.binding == "mandate":
+            book, fill_note = fill_floor(book, ev, verdict.total_heat, ub, family_of,
+                                         cfg=cfg, worlds=worlds)
+        else:
+            fill_note = {"needed": False,
+                         "why": f"heat bound by {verdict.binding}, not the target: no fill"}
         if fill_note.get("needed"):
             _log(f"FLOOR FILL: bounded solve held {held_before:.2%} of the "
                  f"{verdict.total_heat:.2%} resolved; {fill_note}")
@@ -3968,7 +4372,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                 _cbp = _cb_paths(ev, n_paths=400, horizon=max(1, int(NO_TRADE_HORIZON_DAYS)),
                                  worlds=worlds, seed=seed)
                 _cb_book, constrained_feed = _ce.adopt_if_proven(
-                    _sw, funded, _cbp, floor=float(HEAT_TARGET),
+                    _sw, funded, _cbp, floor=float(verdict.floor),
                     score=lambda b: float(score_book(ev, b, cfg=cfg,
                                                      worlds=worlds)["mean_log_growth"]),
                     h_prev=_cb_prev, turnover_cost=TURNOVER_COST_R, seed=seed)
@@ -4490,8 +4894,70 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     except Exception as exc:
         _log(f"capital modifier ledger not written: {type(exc).__name__}: {exc}")
 
+    # THE DECISION HAS AN IDENTITY AND SAYS WHAT IT CONSUMED (2026-10-06). A newer timestamp is
+    # not proof that the triggering input was used; an id that echoes the trigger's request and
+    # the exact input versions it was sent is. The chain this starts -- input versions ->
+    # world fingerprint -> decision_id -> gateway consumed id -> order -> fill -- is what a
+    # reader replays a decision along. Without a trigger request the echo fields are omitted.
+    # STALE CRITICAL INPUT NEVER ADDS RISK (model_roles.staleness_clamp). A critical model whose
+    # input is past its staleness budget, missing or future-dated holds the book: no sleeve rises
+    # above what is held, no new sleeve opens, reductions the solve chose still go through.
+    stale_clamp_doc: dict[str, Any] = {"active": False}
+    try:
+        from research.model_roles import as_of_from_doc, staleness_clamp
+
+        def _doc_of(path: Path) -> tuple[Any, float | None]:
+            try:
+                return json.loads(path.read_text("utf-8")), path.stat().st_mtime
+            except (OSError, ValueError):
+                return None, None
+        _clamp = staleness_clamp({
+            "change_point": as_of_from_doc(*_doc_of(DRIFT)),
+            "bayesian_edge": as_of_from_doc(*_doc_of(POSTERIOR_ALPHA)),
+            "execution_cost": as_of_from_doc(*_doc_of(BASE / "data" / "cost_surface.json")),
+            "liquidity": as_of_from_doc(*_doc_of(BASE / "reports" / "CAPACITY.json"))})
+        stale_clamp_doc = {"active": bool(_clamp.active), "reasons": list(_clamp.reasons)}
+        if _clamp.active and funded:
+            clamped = _clamp.apply_to_book(funded, prev_book)
+            if clamped != funded:
+                sc = score_book(ev, clamped, cfg=cfg, worlds=worlds)
+                book = AllocationResult(
+                    heat=dict(clamped), total_heat=float(sum(clamped.values())),
+                    robust_score=float(sc["robust_score"]),
+                    mean_log_growth=float(sc["mean_log_growth"]),
+                    cvar_log_growth=float(sc["cvar_log_growth"]),
+                    annual_growth_pct=float(sc["annual_growth_pct"]),
+                    prob_annual_loss=float(sc["prob_annual_loss"]),
+                    note="stale critical input: held, no adds")
+                funded = {k: round(v, 6) for k, v in clamped.items() if v > 1e-5}
+            _log(f"stale critical input -> HOLD, no adds: {'; '.join(_clamp.reasons)}")
+    except Exception as exc:
+        stale_clamp_doc = {"active": False, "status": "UNMEASURED",
+                           "why": f"{type(exc).__name__}: {exc}"}
+
+    # THE RECEDING-HORIZON CHALLENGER (multiperiod_worlds.plan_receding): trade now, partially,
+    # wait or hold, on these worlds from the held book, at the resolved heat. Reported beside the
+    # published book -- it sizes nothing until it wins the proof contest like any challenger.
+    receding: dict[str, Any] = {"status": "SKIPPED", "why": f"{mode} clock"}
+    if mode != "fast" and worlds is not None and verdict.total_heat > 0:
+        try:
+            from libs.portfolio.multiperiod_worlds import plan_receding
+            _rh = plan_receding(worlds, prev_book, cap=float(verdict.total_heat),
+                                upper=ub or None, cost_one_way=TURNOVER_COST_R / 2.0,
+                                robust_lambda=cfg.robust_lambda, cvar_alpha=cfg.cvar_alpha)
+            receding = {"status": "MEASURED",
+                        **{k: _rh[k] for k in ("h_now", "path_total_heat", "stage_days",
+                                               "objective", "vs_hold", "optimality_gap",
+                                               "converged", "no_trade_horizon_check")},
+                        "actions": dict(list(_rh["actions"].items())[:40])}
+        except Exception as exc:
+            receding = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
+    _decided = datetime.now(UTC)
+    _trace = decision_identity(world_cache, _decided)
     art: dict[str, Any] = {
-        "generated_utc": datetime.now(UTC).isoformat(),
+        "generated_utc": _decided.isoformat(),
+        **_trace,
         "mode": mode,
         "elapsed_s": round(time.time() - t0, 1),
         "armed": ARMED.exists(),
@@ -4540,7 +5006,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             # thing that bit. A floor nobody audits is a belief; a floor whose cost is on the
             # dashboard every pass is a decision, with the evidence to overturn it.
             **heat_accounting(raw=free.total_heat, robust=verdict.total_heat, curve=curve,
-                              floor=HEAT_TARGET),
+                              floor=float(verdict.floor)),
             # THE CEILING THE BOOK'S INDEPENDENCE EARNED, and the four heats behind it. `binding`
             # above reads "effective_ceiling" when this is what bound rather than the nominal bar.
             "effective_ceiling": round(verdict.effective_ceiling, 6),
@@ -4658,6 +5124,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # the size of the forward adjustment is always visible rather than inferred.
         "regime": {"probabilities": dict(probs), "conditioned": bool(labels),
                    "transition": regime_diag},
+        # WHETHER THESE WORLDS WERE REUSED, AND IF NOT WHY: `changed` names the decision-state
+        # components (forecast, regime, cost, health, sleeve_spec, world_config, model) whose
+        # digests differ from the cached population's. See `world_population`.
+        "world_cache": {k: v for k, v in world_cache.items() if k != "components"},
         # The world as the desk described it when this book was solved. `state_vector_id` is what
         # ties a fill, weeks later, back to the conditions the decision was made under.
         "state_vector": ({"id": state_vec.id, "at": state_vec.at, "why": sv_why,
@@ -4730,7 +5200,18 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                                          default=None)),
             },
         },
-        "solver": {"iterations": book.iterations, "converged": book.converged},
+        "solver": {"iterations": book.iterations, "converged": book.converged,
+                   # A LOCAL certificate: the objective is non-convex (robust_elog._redundancy),
+                   # so `converged` means a KKT point of the heat set, best of several starts.
+                   "certificate": getattr(book, "certificate", "local_kkt_multistart"),
+                   "optimality_gap": _finite_or_none(getattr(book, "optimality_gap", None)),
+                   "gap_tolerance": _finite_or_none(getattr(book, "gap_tolerance", None)),
+                   "multistart_spread": _finite_or_none(getattr(book, "multistart_spread",
+                                                                None)),
+                   "n_starts": int(getattr(book, "n_starts", 1)),
+                   "budget_hit": bool(getattr(book, "budget_hit", False))},
+        "staleness_clamp": stale_clamp_doc,
+        "receding_horizon": receding,
         # C17: the objective's two non-growth terms, written down instead of folded in, plus the
         # instrument and mechanism tiers as decompositions of the heat already resolved.
         "objective_terms": _objective_terms(funded, ev),
@@ -4739,7 +5220,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "capacity_growth": _capacity_growth(),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(art, indent=2, default=str), encoding="utf-8")
+    # ATOMIC: the gateway and the trigger read this file while it is written; a torn read of a
+    # half-written book is a decision nobody made.
+    _atomic_write_text(OUT, json.dumps(art, indent=2, default=str))
     DONE.write_text(datetime.now(UTC).isoformat(), encoding="utf-8")
 
     # THE FORECAST LOG IS APPEND-ONLY AND IT IS WHAT MAKES THIS LOOP LEARN. `pf_allocation.json`
@@ -4759,6 +5242,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                 "expected_cvar_per_day": art["growth"]["cvar_log_per_day"],
                 "prob_annual_loss": art["growth"]["prob_annual_loss"],
                 "book": funded,
+                "decision_id": art.get("decision_id"),
+                "world_fingerprint": art.get("world_fingerprint"),
                 "regime": dict(probs),
                 "n_universe": len(ev),
             }, default=str) + "\n")

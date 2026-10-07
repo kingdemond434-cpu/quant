@@ -57,6 +57,8 @@ __all__ = [
     "Worlds",
     "crisis_share_vector",
     "decay_prob_of",
+    "fw_gap",
+    "fw_vertex",
     "marginal_delta_elog",
     "optimise",
     "project_capped_simplex",
@@ -116,11 +118,24 @@ class SleeveEvidence:
     #: a separate post-hoc shrink of the posterior mean. This is the per-sleeve posterior the
     #: decay haircut is drawn from instead.
     #:
-    #: THE BLANKET IS THE CEILING, NOT THE DEFAULT. `sample_worlds` draws each sleeve's decay at
-    #: `min(decay_prob_i, cfg.decay_prob)`: a sleeve the monitor calls healthy stops paying the
-    #: blanket, and a sleeve it calls breaking is never charged MORE than the blanket by this
-    #: field -- so it can only relieve today's haircut, never deepen it, and a reference
-    #: population drawn with `decay_prob=0` stays decay-free whatever the sleeves carry.
+    #: TWO-SIDED SINCE 2026-10-06 (principal's spec of that date). Until then the blanket was the
+    #: CEILING -- `min(decay_prob_i, cfg.decay_prob)` -- so a sleeve the drift monitor measured at
+    #: a 90% chance of its mechanism breaking was charged exactly the 30% an unwatched sleeve
+    #: paid: relief-only, and a breaking edge kept its heat. Now `decay_prob_of` uses the
+    #: sleeve's own probability in BOTH directions: below the blanket it relieves, above it it
+    #: charges more, so a breaking sleeve is sized down before any retirement threshold.
+    #:
+    #: WHAT MAY BE IN IT. Only MECHANISM decay (and signal expiry on its own horizon) --
+    #: `perishability.hazard_by_cause` keeps execution-cost drift (routed to `cost_bias_r`),
+    #: regime mismatch (transient) and data failure (integrity) out of this number, so no fact
+    #: is charged here AND somewhere else. None, non-finite or negative is the blanket (an
+    #: unpriced decay is the blanket, never zero); above 1 is clamped to 1. `cfg.decay_prob == 0`
+    #: still switches decay OFF for the whole population: that is how the decay-free reference
+    #: (`kelly_fraction`'s full-Kelly yardstick) is drawn, whatever the sleeves carry.
+    #:
+    #: SLEEVES SHARING A MECHANISM DECAY TOGETHER. `sample_worlds` correlates the decay draw
+    #: across sleeves with the same `mechanism` (else `family`): a mechanism that stops being
+    #: true stops for every instrument it is traded on (`DECAY_MECHANISM_SHARE`).
     decay_prob_i: float | None = None
     #: THE MACRO REGIME, AS A WEIGHT PER DAY OF `daily_r` (2026-09-16). Each entry in [0, 1] is
     #: how much that day's macro state (dollar / risk / rates rank, `libs.portfolio.macro_state`)
@@ -302,6 +317,15 @@ class AllocationResult:
     #: the iteration budget. A partial solve is still a feasible book with a real score; the flag
     #: is what lets a caller carry it forward warm-started instead of calling it an answer.
     budget_hit: bool = False
+    #: Frank-Wolfe gap at the returned book: zero at a KKT point of the heat set. inf when the
+    #: book is ruinous. `converged` means gap <= tolerance -- a LOCAL certificate only.
+    optimality_gap: float = float("inf")
+    gap_tolerance: float = 0.0
+    #: Best minus worst robust score across the starts tried; > tolerance means a start stalled.
+    multistart_spread: float = 0.0
+    n_starts: int = 1
+    #: What `converged` certifies. The objective is non-convex, so this is never "global".
+    certificate: str = "local_kkt_multistart"
 
 
 def _stationary_bootstrap_index(n_rows: int, n_obs: int, block_days: float,
@@ -611,15 +635,38 @@ def _posterior_mu(ev: Sequence[SleeveEvidence], rng: np.random.Generator,
     return draws, post_mean
 
 
-def decay_prob_of(e: SleeveEvidence, cfg: WorldConfig) -> float:
-    """The decay probability THIS sleeve is charged: its own posterior, capped at the blanket.
+#: HOW MUCH OF A SLEEVE'S DECAY RISK IS ITS MECHANISM'S, not its own (2026-10-06). In each world a
+#: sleeve's decay uniform is, with this probability, its mechanism's COMMON uniform, else its own:
+#: every sleeve keeps exactly its own marginal P(decay) -- the one fact `decay_prob_i` states is
+#: charged once, unchanged -- while siblings decay together. At 0.7 and p = 0.30 two siblings
+#: decay jointly in 0.49p + 0.51p^2 = 19% of worlds instead of 9%, so given one has decayed the
+#: other has a 64% chance, not 30%. DECLARED, not fitted: the desk's retirement history holds no
+#: co-retirement of siblings to fit it to (`perishability.calibrate_from_history`); the one
+#: pooled family retirement it ordered (decay_monitor, 2026-09-16, the `discovered` family) is
+#: exactly the event this models and is not in the ledger this host can read.
+DECAY_MECHANISM_SHARE = 0.7
 
-    None, a non-finite or a negative value falls back to the blanket -- an unpriced decay is the
-    blanket, never zero. The cap is what makes the field relief-only: it can never charge a
-    sleeve more than every sleeve was already charged before it existed.
+
+def decay_group_of(e: SleeveEvidence) -> str:
+    """The shared-failure key: the declared mechanism, else the family, else no group ("")."""
+    return str(getattr(e, "mechanism", "") or getattr(e, "family", "") or "")
+
+
+def decay_prob_of(e: SleeveEvidence, cfg: WorldConfig) -> float:
+    """The decay probability THIS sleeve is charged: its own posterior, in BOTH directions.
+
+    TWO-SIDED (2026-10-06; it was `min(own, blanket)` -- relief-only -- from 2026-09-08). A
+    measured probability above the blanket now charges MORE than the blanket, so a breaking
+    mechanism is sized down; below it, it relieves. None, a non-finite or a negative value falls
+    back to the blanket -- an unpriced or malformed decay is the blanket, never zero, and a
+    negative is not clamped to 0 because that would turn a corrupt number into full relief. Above
+    1 is clamped to 1. A population drawn with `cfg.decay_prob == 0` is decay-free whatever the
+    sleeves carry: that switch is how the decay-free reference is drawn.
     """
-    p = getattr(e, "decay_prob_i", None)
     blanket = float(cfg.decay_prob)
+    if blanket <= 0.0:
+        return 0.0
+    p = getattr(e, "decay_prob_i", None)
     if p is None:
         return blanket
     try:
@@ -628,7 +675,7 @@ def decay_prob_of(e: SleeveEvidence, cfg: WorldConfig) -> float:
         return blanket
     if not math.isfinite(v) or v < 0.0:
         return blanket
-    return min(v, blanket)
+    return min(v, 1.0)
 
 
 def crisis_share_vector(names: Sequence[str], cfg: WorldConfig) -> np.ndarray:
@@ -686,14 +733,44 @@ def sample_worlds(ev: Sequence[SleeveEvidence], cfg: WorldConfig | None = None) 
     # halved still has its old volatility, and modelling decay as a scale on the whole return
     # series would quietly halve the risk along with the reward.
     #
-    # PER SLEEVE, CAPPED AT THE BLANKET. `decay_prob_i` is the sleeve's own posterior of having
-    # decayed; the blanket `cfg.decay_prob` is the most any sleeve is charged. The random stream
-    # is the same one the scalar draw used, so a population in which every sleeve carries the
-    # blanket is byte-identical to the one drawn before this field existed.
+    # PER SLEEVE, TWO-SIDED (2026-10-06). `decay_prob_of` is the sleeve's own probability of its
+    # mechanism having broken, above or below the blanket; the blanket is what an unmeasured
+    # sleeve pays. The main random stream is the same one the scalar draw used, so a population
+    # in which every sleeve carries the blanket and no two share a mechanism is byte-identical
+    # to the one drawn before either change.
+    #
+    # SHARED MECHANISM, SHARED FAILURE. Sleeves with the same `decay_group_of` key take, with
+    # probability DECAY_MECHANISM_SHARE, their group's COMMON uniform instead of their own, so
+    # when a mechanism stops being true it stops in the same world for every instrument it is
+    # traded on -- independent draws would let ten sleeves of one mechanism diversify away a
+    # failure that is in fact one event. The common uniforms and the coin come from a SIDE
+    # stream seeded off `cfg.seed`, so the main stream (posterior, cost, crisis, bootstrap) is
+    # untouched by grouping, and each sleeve's marginal P(decay) is still exactly its own.
     decay = np.ones((n_worlds, n), dtype=np.float64)
     p_decay = np.array([decay_prob_of(e, cfg) for e in ev], dtype=np.float64)
-    hit = rng.random((n_worlds, n)) < p_decay[None, :]
-    decay[hit] = rng.uniform(cfg.decay_floor, 1.0, size=int(hit.sum()))
+    u_decay = rng.random((n_worlds, n))
+    groups: dict[str, list[int]] = {}
+    for i, e in enumerate(ev):
+        key = decay_group_of(e)
+        if key:
+            groups.setdefault(key, []).append(i)
+    shared = [m for m in groups.values() if len(m) >= 2]
+    if shared and DECAY_MECHANISM_SHARE > 0.0:
+        side = np.random.default_rng([abs(int(cfg.seed)), 0xDECA])
+        common = side.random((n_worlds, len(shared)))
+        for g, members in enumerate(shared):
+            take = side.random((n_worlds, len(members))) < DECAY_MECHANISM_SHARE
+            u_decay[:, members] = np.where(take, common[:, [g]], u_decay[:, members])
+    hit = u_decay < p_decay[None, :]
+    # ONE DEPTH PER CELL, DRAWN WHETHER OR NOT THE CELL DECAYS (2026-10-06). The depth used to be
+    # drawn only for the cells that hit, so the number of uniforms consumed depended on the
+    # sleeves' probabilities and every later draw -- cost, crisis, the bootstrap itself -- moved
+    # whenever one sleeve's decay_prob_i did. The with/without-hazard billing pair and every
+    # "relief earns at least as much heat" comparison were then two different populations, not
+    # one population differing only in which sleeves decay where. A fixed-size draw makes them
+    # common random numbers, which is what both comparisons always claimed to be.
+    depth = rng.uniform(cfg.decay_floor, 1.0, size=(n_worlds, n))
+    decay = np.where(hit, depth, decay)
 
     # Execution cost: spread around the modelled level, in R, charged per day in proportion to
     # how often the sleeve trades (a sleeve flat 90% of days pays 10% of the daily cost draw).
@@ -843,12 +920,54 @@ def project_capped_simplex(v: np.ndarray, cap: float, *, exact: bool = False,
     return out
 
 
+def fw_vertex(grad: np.ndarray, cap: float, *, exact: bool = False,
+              upper: np.ndarray | None = None) -> np.ndarray:
+    """argmax over {0 <= s <= upper, sum(s) <= cap (== cap when exact)} of grad . s.
+
+    The linear oracle of the heat set: fill the highest-gradient sleeves to their bound until the
+    budget is spent; a free solve stops at the first non-positive gradient, a mandated one does not.
+    """
+    g = np.asarray(grad, dtype=float)
+    ub = np.full_like(g, np.inf) if upper is None else np.asarray(upper, dtype=float)
+    s = np.zeros_like(g)
+    left = float(max(cap, 0.0))
+    for i in np.argsort(-g):
+        if left <= 0.0:
+            break
+        if not exact and g[i] <= 0.0:
+            break
+        take = min(left, float(ub[i]))
+        s[i] = take
+        left -= take
+    return s
+
+
+def fw_gap(grad: np.ndarray, h: np.ndarray, cap: float, *, exact: bool = False,
+           upper: np.ndarray | None = None) -> float:
+    """Frank-Wolfe gap max_s g.(s - h) >= 0. Zero means `h` is a KKT point of the heat set; for a
+    concave objective it would also bound f* - f(h), but `optimise`'s objective is NOT concave
+    (see `_redundancy`), so there it certifies stationarity only."""
+    s = fw_vertex(grad, cap, exact=exact, upper=upper)
+    return float(max(0.0, float(np.dot(grad, s - np.asarray(h, dtype=float)))))
+
+
 def _redundancy(corr_abs: np.ndarray, h: np.ndarray) -> tuple[float, np.ndarray]:
     """Correlation-weighted overlap of the book, and its gradient.
 
     `h' |C| h - h' h` is the risk that is DUPLICATED: everything the book holds twice. Charging
     it is what makes the optimiser prefer the same expected growth from more independent sources,
     and it is the term that stops a heat budget being filled with five copies of one dollar bet.
+
+    IT IS NOT CONCAVE, AND THE SOLVER NO LONGER PRETENDS IT IS (2026-10-06). |C| - I has a zero
+    diagonal and a non-negative off-diagonal, so it is indefinite: for two identical streams the
+    charge is 2*h1*h2, a saddle. The ascent used to start at the equal split, find a symmetric
+    gradient, shrink its step to nothing and report `converged=True` at a point a feasible book
+    beat on the solver's own objective. A PSD replacement was built and MEASURED before being
+    discarded: any PSD form charges the diagonal through a book-wide eigenvalue shift, so adding
+    one diversifier raised the charge on every held sleeve and the admission test that pins "a
+    low-Sharpe diversifier beats a high-Sharpe copy" turned over. The charge is therefore kept
+    as designed and the PROBLEM is treated as non-convex in `optimise`: several starts, the best
+    feasible book kept, stationarity checked, and the certificate says local, never global.
     """
     off = corr_abs @ h - h
     return float(h @ off), 2.0 * off
@@ -856,7 +975,10 @@ def _redundancy(corr_abs: np.ndarray, h: np.ndarray) -> tuple[float, np.ndarray]
 
 def _objective(worlds: Worlds, h: np.ndarray, corr_abs: np.ndarray, cfg: WorldConfig,
                ) -> tuple[float, np.ndarray, np.ndarray]:
-    """Robust score, its gradient, and the per-world growth vector.
+    """Robust score, its (super)gradient, and the per-world growth vector.
+
+    The growth part (mean and lower-tail CVaR of per-world log growth) is concave; the redundancy
+    charge is an indefinite quadratic (`_redundancy`), so the whole is not.
 
     Returns (-inf, zeros, g) when any world is wiped out by this book: a book that can go to zero
     has no log growth to compare, and reporting a large negative number instead would let the
@@ -1034,7 +1156,8 @@ def breadth_channels(ev: Sequence[SleeveEvidence]) -> dict[str, Any]:
 
 
 def _corr_abs(ev: Sequence[SleeveEvidence]) -> np.ndarray:
-    """|correlation| between sleeves: realised where measured, factor-structured where not.
+    """Duplication between sleeves: realised POSITIVE correlation where measured (a hedge is
+    charged nothing), factor-structured where not.
 
     THE REALISED NUMBER NEEDS COMMON DAYS AND A NEW SLEEVE HAS NONE. Measured 2026-09-16: the
     gateway reported `k_eff UNMEASURED: no sleeve pair has 20 overlapping trading days yet` on
@@ -1060,7 +1183,12 @@ def _corr_abs(ev: Sequence[SleeveEvidence]) -> np.ndarray:
     c = np.zeros((n, n))
     if live.sum() > 1:
         sub = np.corrcoef(m[:, live], rowvar=False)
-        c[np.ix_(live, live)] = np.abs(np.nan_to_num(sub, nan=0.0))
+        # POSITIVE CO-MOVEMENT ONLY (2026-09-25). This took |corr|, so a measured HEDGE -- two
+        # sleeves that lose on different days -- was charged as duplicated risk exactly like
+        # two copies of one bet, and the optimiser was paid to hold less of the pair that makes
+        # the book's growth smoother. Duplication is a positive-correlation property; a
+        # negative one is diversification the worlds already credit, never a cost to charge.
+        c[np.ix_(live, live)] = np.clip(np.nan_to_num(sub, nan=0.0), 0.0, None)
     np.fill_diagonal(c, 1.0)
     target, _meta = _structured_corr(ev)
     if not np.any(target - np.eye(n)):
@@ -1096,9 +1224,19 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
     `converged=False` so the caller can warm-start the next attempt from it rather than treat
     it as the optimum. None means no wall-clock bound, which is what every caller had before.
 
-    Projected gradient ascent with backtracking: the objective is concave in `h` on the feasible
-    set (log of an affine function, minus a positive-semidefinite quadratic), so a projected
-    gradient converges to the global optimum and there is no restart strategy to get wrong.
+    Projected gradient ascent with backtracking, run as a NON-CONVEX problem (2026-10-06). The
+    growth part is concave but the redundancy charge is an indefinite quadratic (`_redundancy`),
+    so a single ascent can stop on a saddle; until that day this docstring claimed concavity and
+    the solver reported `converged=True` on one.
+
+    WHAT IS CERTIFIED, AND WHAT IS NOT. The ascent runs from the equal split (or warm start),
+    then from the midpoint toward the Frank-Wolfe vertex of the first solve (which breaks any
+    symmetry the first start sat on), a seeded random point of the heat set, and -- with a warm
+    start -- the equal split. The best feasible book across starts is returned (best-known
+    feasible), `multistart_spread` publishes how far the starts disagreed, and `converged` means
+    the returned book is a KKT point (Frank-Wolfe gap `optimality_gap` within `gap_tolerance`).
+    That is a LOCAL certificate: `certificate` says so, and nothing here claims a global optimum.
+    A step size shrinking to nothing is not convergence and is no longer reported as one.
     """
     cfg = cfg or WorldConfig()
     if not ev:
@@ -1147,28 +1285,68 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
             h = np.zeros(n)
             score, grad, g_w = _objective(w_pop, h, corr_abs, cfg)
 
-    lr, converged, done, budget_hit = step, False, 0, False
-    for i in range(iterations):
-        if deadline is not None and time.time() > deadline:
-            budget_hit = True
-            break
-        done = i + 1
-        cand = project_capped_simplex(h + lr * grad, cap, exact=exact, upper=ub)
-        c_score, c_grad, c_g = _objective(w_pop, cand, corr_abs, cfg)
-        if c_score > score:
-            moved = float(np.abs(cand - h).sum())
-            h, score, grad, g_w = cand, c_score, c_grad, c_g
-            lr *= 1.10
-            if moved < 1e-7:
-                converged = True
+    def _ascend(h0: np.ndarray, s0: float, gr0: np.ndarray, gw0: np.ndarray, n_it: int
+                ) -> tuple[np.ndarray, float, np.ndarray, np.ndarray, int, bool]:
+        hh, sc, gr, gw = h0, s0, gr0, gw0
+        lr, done_, hit = step, 0, False
+        for i in range(n_it):
+            if deadline is not None and time.time() > deadline:
+                hit = True
                 break
-        else:
-            lr *= 0.5
-            if lr < 1e-9 or score == -np.inf:
+            done_ = i + 1
+            cand = project_capped_simplex(hh + lr * gr, cap, exact=exact, upper=ub)
+            c_score, c_grad, c_g = _objective(w_pop, cand, corr_abs, cfg)
+            if c_score > sc:
+                moved = float(np.abs(cand - hh).sum())
+                hh, sc, gr, gw = cand, c_score, c_grad, c_g
+                lr *= 1.10
+                if moved < 1e-7:
+                    break
+            else:
+                lr *= 0.5
                 # -inf cannot be improved on by comparison, so an exact solve that starts ruinous
                 # would otherwise spin the full iteration budget doing nothing.
-                converged = True
-                break
+                if lr < 1e-9 or sc == -np.inf:
+                    break
+        return hh, sc, gr, gw, done_, hit
+
+    h, score, grad, g_w, done, budget_hit = _ascend(h, score, grad, g_w, iterations)
+    starts = [score]
+    # MULTI-START. The objective is non-convex (`_redundancy`), so one ascent can stop on a saddle
+    # -- measured on two identical streams, where the equal split is exactly that. The
+    # Frank-Wolfe vertex breaks the symmetry, a seeded random start samples elsewhere, and the
+    # equal split checks a warm start; the best feasible book wins and the spread is published.
+    alt_starts: list[np.ndarray] = []
+    if math.isfinite(score):
+        alt_starts.append(fw_vertex(grad, cap, exact=exact, upper=ub))
+    _rng = np.random.default_rng(int(cfg.seed) + 104729)
+    alt_starts.append(project_capped_simplex(_rng.dirichlet(np.ones(n)) * cap, cap, exact=exact,
+                                             upper=ub))
+    if warm_start:
+        alt_starts.append(project_capped_simplex(np.full(n, cap / n), cap, exact=exact, upper=ub))
+    for h0 in alt_starts:
+        if budget_hit or (deadline is not None and time.time() > deadline):
+            budget_hit = True
+            break
+        h0 = project_capped_simplex(0.5 * (h0 + h), cap, exact=exact, upper=ub)
+        s0, gr0, gw0 = _objective(w_pop, h0, corr_abs, cfg)
+        if s0 == -np.inf:
+            continue
+        hb, sb, grb, gwb, d_b, hit_b = _ascend(h0, s0, gr0, gw0, max(1, iterations // 2))
+        done += d_b
+        budget_hit = budget_hit or hit_b
+        starts.append(sb)
+        if sb > score:
+            h, score, grad, g_w = hb, sb, grb, gwb
+
+    gap = fw_gap(grad, h, cap, exact=exact, upper=ub) if math.isfinite(score) else float("inf")
+    #: 1e-8 log growth per day is 2.5e-6 per year: below anything an allocation could act on.
+    tol = max(1e-8, 1e-4 * abs(score)) if math.isfinite(score) else 0.0
+    # A solve stopped by its wall-clock budget is never called converged, whatever its gap: the
+    # starts it did not run are exactly the ones that could have beaten it.
+    converged = bool(math.isfinite(gap) and gap <= tol and not budget_hit)
+    fin_starts = [x for x in starts if math.isfinite(x)]
+    spread = (max(fin_starts) - min(fin_starts)) if len(fin_starts) > 1 else 0.0
 
     total = float(h.sum())
     # Marginal value of each sleeve's last unit of heat, at the solution. This is the ranking the
@@ -1190,6 +1368,8 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
         marginal={k: round(v, 6) for k, v in
                   sorted(marginal.items(), key=lambda kv: -kv[1])},
         iterations=done, converged=converged, note=w_pop.note, budget_hit=budget_hit,
+        optimality_gap=float(gap), gap_tolerance=float(tol), multistart_spread=float(spread),
+        n_starts=len(starts), certificate="local_kkt_multistart",
     )
 
 

@@ -389,7 +389,7 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
                   "_sleeve_identity", "unarmed_why",
                   # 2026-09-15/16: single-position discipline, the per-sleeve TTL close, the
                   # allocator book key and the shared order-comment helper.
-                  "_sleeve_positions", "_book_key", "order_comment", "_exec_route", "_send_error",
+                  "_sleeve_positions", "_book_key", "order_comment", "owned_tags", "_exec_route", "_send_error",
                   # 2026-09-16: the per-symbol same-side cap and its refusal journal
                   "same_side_count", "journal_refusal"), ns)
 
@@ -558,7 +558,7 @@ def _bracket_book_ns(tmp_path: Path, term: _BracketTerminal) -> dict:
     book = netting.TheoreticalBook(tmp_path / "theoretical_positions.jsonl")
     logs: list[str] = []
     ns = _exec(("_book_bracket_lane", "_closing_fill", "_sleeve_positions", "_book_target",
-                "_book_fill", "order_comment"),
+                "_book_fill", "order_comment", "owned_tags"),
                {"mt5": term, "log": logs.append, "_netting_book": lambda: book})
     ns["_book"], ns["_logs"], ns["netting"] = book, logs, netting
     return ns
@@ -810,7 +810,7 @@ def test_the_end_of_day_close_leaves_the_scalp_lane_s_positions_to_their_own_exi
     logs: list[str] = []
     mt5 = _positions_mt5([_pos(1, "DWgold_london_am"), _pos(2, "DWxau_m15_anti_momentum_all"),
                           _pos(3, "DWgold_afternoon")])
-    ns = _exec(("close_positions", "scalp_position_tags", "order_comment"),
+    ns = _exec(("close_positions", "scalp_position_tags", "order_comment", "owned_tags"),
                {"mt5": mt5, "log": logs.append, "MAGIC": 1})
     sleeves = [{"name": "gold_london_am", "symbol": "XAUUSD"},
                {"name": "xau_m15_anti_momentum_all", "symbol": "XAUUSD", "exec": "scalp_market"}]
@@ -825,11 +825,14 @@ def test_the_end_of_day_close_leaves_the_scalp_lane_s_positions_to_their_own_exi
 
 
 def test_the_scalp_tag_is_the_lane_s_own_and_only_the_scalp_lane_s() -> None:
-    ns = _exec(("scalp_position_tags", "order_comment"), {})
+    ns = _exec(("scalp_position_tags", "order_comment", "owned_tags"), {})
     assert ns["scalp_position_tags"]([{"name": "gold_asia"}, {"name": "x", "exec": "family_market"},
                                       {"exec": "scalp_market"}]) == frozenset()
     tag = ns["scalp_position_tags"]([{"name": "a" * 40, "exec": "scalp_market"}])
-    assert tag == frozenset({("DW" + "a" * 40)[:29]})            # the venue's measured 29-char comment
+    # the venue's measured 29-char comment: the collision-free tag, plus the legacy truncation
+    # positions opened before 2026-10-06 still carry
+    assert tag == frozenset({("DW" + "a" * 40)[:29], dc.sleeve_tag("a" * 40)})
+    assert all(len(t) <= 29 for t in tag)
 
 
 def test_position_bars_use_the_broker_clock_not_wall_clock() -> None:
@@ -866,7 +869,7 @@ def test_gold_bracket_hedges_are_collapsed_by_close_by_and_nothing_else() -> Non
         TRADE_ACTION_CLOSE_BY=10, TRADE_RETCODE_DONE=10009,
         order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009, comment="")))
     logs: list[str] = []
-    ns = _exec(("collapse_opposing_gold_positions", "order_comment"),
+    ns = _exec(("collapse_opposing_gold_positions", "order_comment", "owned_tags"),
                {"mt5": mt5, "log": logs.append, "diagnose": lambda *a: "",
                 "MAGIC": 341953})
     assert ns["collapse_opposing_gold_positions"]({"armed": True}) == 1
@@ -902,7 +905,7 @@ def test_filled_gold_bracket_cancels_only_its_own_pending_sibling() -> None:
         orders_get=lambda symbol=None: list(orders),
         TRADE_ACTION_REMOVE=12, TRADE_RETCODE_DONE=10009,
         order_send=send)
-    ns = _exec(("cancel_filled_gold_siblings", "order_comment"),
+    ns = _exec(("cancel_filled_gold_siblings", "order_comment", "owned_tags"),
                {"mt5": mt5, "log": lambda *_: None, "diagnose": lambda *a: "",
                 "MAGIC": 341953})
     assert ns["cancel_filled_gold_siblings"]({"armed": True}) == 1
@@ -1094,6 +1097,15 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
         "scalp_position_tags": lambda sleeves: frozenset(),
         "record_trades": lambda st, sleeves: None,
         "reconcile": lambda st: {**st, "position": [], "pending": []},
+        # RECONCILE BEFORE EXPOSURE (2026-10-06): `main` now refuses new risk on a pass whose
+        # restart reconcile did not read the venue. This slice used to leave `_door` unbound, so
+        # the reconcile raised NameError, was logged and ignored -- the very defect the gate
+        # closes. The venue here is the test's own terminal, read clean; the gate itself and
+        # the book check are pinned in test_gateway_new_risk_gate.py.
+        "_door": SimpleNamespace(
+            restart_reconcile=lambda *a, **k: {"verdict": "OK", "in_doubt": []}),
+        "_recent_intents": lambda: [],
+        "book_order_check": lambda st: None,
         "_logs": logs, "_decisions": decisions, "_intents": intents, "_calls": calls,
         "_state_file": state_file,
     }
@@ -1119,7 +1131,8 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     return _exec(("main", "_past_cancel_hour", "place_bracket", "note_placement",
                   "_rejection_streak_expired", "load_state", "save_state", "now",
                   "_sleeve_identity", "resolve_pending_bracket", "bracket_lane_lot",
-                  "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error"), ns)
+                  "_book_key", "order_comment", "owned_tags", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error",
+                  "new_risk_gate"), ns)
 
 
 def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(
@@ -1221,7 +1234,7 @@ def test_the_pause_file_readers_look_under_data_and_main_consults_gateway_paused
 def _manage_ns(mt5: SimpleNamespace) -> dict:
     logs: list[str] = []
     ns = {"mt5": mt5, "log": logs.append, "MAGIC": 1, "_logs": logs}
-    return _exec(("manage_open_positions", "order_comment", "_original_stop_distance",
+    return _exec(("manage_open_positions", "order_comment", "owned_tags", "_original_stop_distance",
                   "_rates_since_position"), ns)
 
 
@@ -1285,7 +1298,7 @@ def test_retired_sleeves_open_positions_are_closed_from_the_queue(tmp_path) -> N
         order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009)))
     queue = tmp_path / "RETIRED_CLOSE_QUEUE.json"
     queue.write_text(json.dumps({"names": [_NAME, "already_flat"]}), "utf-8")
-    ns = _exec(("close_retired_positions", "order_comment"),
+    ns = _exec(("close_retired_positions", "order_comment", "owned_tags"),
                {"mt5": mt5, "log": logs.append, "MAGIC": 1, "RETIRED_CLOSE_QUEUE": queue})
     ns["close_retired_positions"]({"armed": True})
     (req,) = sent
@@ -1311,7 +1324,7 @@ def test_unarmed_the_retired_close_only_logs(tmp_path) -> None:
                           order_send=lambda req: sent.append(req))
     queue = tmp_path / "q.json"
     queue.write_text(json.dumps({"names": [_NAME]}), "utf-8")
-    ns = _exec(("close_retired_positions", "order_comment"),
+    ns = _exec(("close_retired_positions", "order_comment", "owned_tags"),
                {"mt5": mt5, "log": logs.append, "MAGIC": 1, "RETIRED_CLOSE_QUEUE": queue})
     ns["close_retired_positions"]({"armed": False})
     assert sent == [] and any("SHADOW would close 1 retired position" in x for x in logs)

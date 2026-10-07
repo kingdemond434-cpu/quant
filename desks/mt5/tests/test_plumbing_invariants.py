@@ -318,12 +318,13 @@ def test_no_inserted_gate_producer_cannot_move_the_bar() -> None:
 # ------------------------------------------------------- the heat floor is never breached (2a)
 
 def test_heat_floor_is_never_breached() -> None:
-    """GROWTH_GOVERNANCE: 20% floor, flat, 24/7; the resolved heat is FILLED, never reported
-    short. Generated over free optima and growth curves, including pathological ones.
+    """GROWTH_GOVERNANCE, TWO-SIDED SINCE 2026-10-06: the 20% target is never breached WHILE THE
+    MEASURED CURVE CERTIFIES IT FREE, and the resolved heat is never negative. Below the target is
+    legal only when `certify` says the target costs growth (principal: "cash is an allocation").
+    Generated over free optima and growth curves, including pathological ones.
 
-    The ONE exception the policy itself declares is `binding == "catastrophe"` -- the objective's
-    own survival constraint (L1.23, sealed), which is not a timidity rail and is not tuned here.
-    Every other binding layer must still land on or above the floor."""
+    The other exception the policy declares is `binding == "catastrophe"` -- the objective's
+    own survival constraint (L1.23, sealed), which is not a timidity rail and is not tuned here."""
     hp = pytest.importorskip("heat_policy", reason="desk heat policy")
     floor = float(hp.HEAT_TARGET)
     rng = _cases(6)
@@ -336,7 +337,9 @@ def test_heat_floor_is_never_breached() -> None:
         v = hp.resolve(opt, curve=curve)
         if str(v.binding) == "catastrophe":
             continue
-        assert float(v.total_heat) >= floor - 1e-9, (
-            f"resolved heat {v.total_heat} fell under the {floor} floor "
-            f"(binding={v.binding}, free_optimum={opt})")
+        assert float(v.total_heat) >= 0.0
+        if hp.certify(curve or {}, floor)[0]:
+            assert float(v.total_heat) >= floor - 1e-9, (
+                f"resolved heat {v.total_heat} fell under the certified {floor} target "
+                f"(binding={v.binding}, free_optimum={opt})")
         assert float(v.total_heat) <= float(v.hard_ceiling) + 1e-9

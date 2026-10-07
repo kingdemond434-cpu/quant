@@ -1,11 +1,12 @@
-"""Per-sleeve decay, per-sleeve crisis share and the solve deadline: relief-only by construction.
+"""Per-sleeve decay (TWO-SIDED since 2026-10-06), per-sleeve crisis share and the solve deadline.
 
-THE LAW THESE PIN (principal, 2026-09-08, three times): nothing added to the allocator may size
-any sleeve below what it gets today. So every new field here is a CEILING relationship with the
-constant it replaces -- `decay_prob_i` is applied at `min(own, blanket)`, a per-sleeve crisis
-share at `min(own, scalar)` -- and a population in which every sleeve carries the old constant is
-byte-identical to the one the desk drew yesterday. Each test below measures one direction of
-that: identical when absent, more heat when relieved, never less.
+THE LAW THESE PINNED UNTIL 2026-10-06 (principal, 2026-09-08): nothing added to the allocator may
+size any sleeve below what it gets today, so `decay_prob_i` was applied at `min(own, blanket)` and
+a sleeve measured at 90% was charged the blanket 30%. The principal's spec of 2026-10-06 replaced
+that for DECAY: a measured hazard above the blanket must charge MORE (a breaking sleeve is sized
+down) and below it relieves, None / non-finite / negative still fall back to the blanket, and a
+population drawn with `decay_prob=0` stays decay-free. Sleeves sharing a mechanism now decay
+TOGETHER in a world. The crisis-share vector is unchanged: the scalar is still its ceiling.
 """
 from __future__ import annotations
 
@@ -51,12 +52,17 @@ def test_a_population_without_per_sleeve_fields_is_byte_identical_to_the_scalar_
     np.testing.assert_array_equal(w0.r, w1.r)
 
 
-# ------------------------------------------------------------------------- decay: relief only
-def test_decay_prob_i_is_applied_at_the_blanket_or_below_never_above() -> None:
+# ---------------------------------------------------------------------- decay: two-sided
+def test_decay_prob_i_is_two_sided_around_the_blanket() -> None:
+    """2026-10-06: this test pinned `decay_prob_i=0.90 -> 0.30` (the blanket was the ceiling). The
+    spec of that date made it two-sided: 0.90 is now charged 0.90, so a breaking mechanism costs
+    more than an unwatched one, and the malformed cases still fall back to the blanket."""
     cfg = WorldConfig(decay_prob=0.30)
     assert decay_prob_of(SleeveEvidence("x", np.zeros(3)), cfg) == pytest.approx(0.30)
     assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=0.05), cfg) == 0.05
-    assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=0.90), cfg) == 0.30
+    assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=0.90), cfg) == 0.90
+    assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=0.0), cfg) == 0.0
+    assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=1.7), cfg) == 1.0
     assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=-1.0), cfg) == 0.30
     assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=float("nan")), cfg) == 0.30
     # A decay-free reference population stays decay-free whatever the sleeves carry.
@@ -64,14 +70,63 @@ def test_decay_prob_i_is_applied_at_the_blanket_or_below_never_above() -> None:
                          WorldConfig(decay_prob=0.0)) == 0.0
 
 
-def test_a_decay_posterior_above_the_blanket_changes_nothing_in_the_worlds() -> None:
+def test_a_decay_free_population_without_hazards_has_no_decay_in_any_world() -> None:
     base = [_sleeve("a", 0.05, 1.0, seed=1), _sleeve("b", 0.04, 1.0, seed=2)]
-    worse = [SleeveEvidence(name=e.name, daily_r=e.daily_r, decay_prob_i=0.95) for e in base]
-    np.testing.assert_array_equal(sample_worlds(base, CFG).r, sample_worlds(worse, CFG).r)
+    cfg0 = WorldConfig(n_worlds=64, n_rows=128, seed=3, decay_prob=0.0)
+    cfg_hi = WorldConfig(n_worlds=64, n_rows=128, seed=3, decay_prob=0.0, decay_floor=0.0)
+    w = sample_worlds(base, cfg0)
+    # The edge in every world is the posterior draw undecayed: the same population as one drawn
+    # with any decay floor, because no cell decays.
+    np.testing.assert_array_equal(w.r, sample_worlds(base, cfg_hi).r)
+
+
+def test_a_decay_posterior_above_the_blanket_charges_more_and_sizes_the_sleeve_down() -> None:
+    """2026-10-06: this test used to assert that a 0.95 posterior changed NOTHING in the worlds.
+    Two-sided, the same sleeve now decays in more worlds, so its world means are lower and the
+    free optimum gives it less heat than the blanket did."""
+    base = [_sleeve("a", 0.05, 1.0, seed=1), _sleeve("b", 0.04, 1.0, seed=2)]
+    worse = [SleeveEvidence(name="a", daily_r=base[0].daily_r, decay_prob_i=0.95), base[1]]
+    w0, w1 = sample_worlds(base, CFG), sample_worlds(worse, CFG)
+    assert float(w1.r[:, :, 0].mean()) < float(w0.r[:, :, 0].mean())
+    # Common random numbers: only the breaking sleeve's column moved.
+    np.testing.assert_array_equal(w0.r[:, :, 1], w1.r[:, :, 1])
+    before = optimise(base, hard_cap=0.45, target=None, cfg=CFG)
+    after = optimise(worse, hard_cap=0.45, target=None, cfg=CFG)
+    assert after.heat["a"] < before.heat["a"] - 1e-6
+
+
+def test_sleeves_sharing_a_mechanism_decay_together_at_their_own_marginals() -> None:
+    """Two sleeves of one mechanism decay in the same worlds far more often than independence
+    allows, while each still decays in its own share of worlds."""
+    from libs.portfolio.robust_elog import DECAY_MECHANISM_SHARE
+
+    def _decayed(ev: list[SleeveEvidence]) -> np.ndarray:
+        cfg = WorldConfig(n_worlds=4000, n_rows=8, seed=5, decay_prob=0.30, crisis_prob=0.0,
+                          cost_uncertainty=0.0, max_elements=10**9)
+        free = sample_worlds(ev, WorldConfig(**{**cfg.__dict__, "decay_prob": 0.0}))
+        w = sample_worlds(ev, cfg)
+        return np.asarray(w.r.mean(axis=1) < free.r.mean(axis=1) - 1e-4)
+
+    rng = np.random.default_rng(7)
+    edge = 0.5 + 0.05 * rng.standard_normal(600)     # a strong, long-lived edge to decay
+    kw = {"forward_days": 600, "live_days": 600}
+    alone = [SleeveEvidence("x", edge.copy(), **kw), SleeveEvidence("y", edge.copy(), **kw)]
+    siblings = [SleeveEvidence("x", edge.copy(), mechanism="m", **kw),
+                SleeveEvidence("y", edge.copy(), mechanism="m", **kw)]
+    d_ind, d_sib = _decayed(alone), _decayed(siblings)
+    for d in (d_ind, d_sib):
+        assert abs(d[:, 0].mean() - 0.30) < 0.03 and abs(d[:, 1].mean() - 0.30) < 0.03
+    joint_ind = float((d_ind[:, 0] & d_ind[:, 1]).mean())
+    joint_sib = float((d_sib[:, 0] & d_sib[:, 1]).mean())
+    rho = DECAY_MECHANISM_SHARE
+    assert joint_ind == pytest.approx(0.09, abs=0.02)
+    assert joint_sib == pytest.approx(rho * rho * 0.3 + (1 - rho * rho) * 0.09, abs=0.025)
+    assert joint_sib > joint_ind + 0.05
 
 
 def test_a_healthy_sleeve_pays_less_decay_and_earns_at_least_what_it_earned() -> None:
-    """The drift monitor calls one sleeve healthy: it stops paying the blanket 30% and the free
+    """The relief direction, unchanged by 2026-10-06. The drift monitor calls one sleeve
+    healthy: it stops paying the blanket 30% and the free
     optimum gives it MORE heat, with the book's total never lower than before."""
     base = [_sleeve("healthy", 0.06, 1.0, seed=11), _sleeve("other", 0.05, 1.0, seed=12)]
     relieved = [SleeveEvidence(name="healthy", daily_r=base[0].daily_r, decay_prob_i=0.02),

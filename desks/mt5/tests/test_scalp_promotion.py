@@ -443,7 +443,7 @@ def _ns(tmp_path: Path, mt5: SimpleNamespace, *, armed_file: bool) -> dict:
                   # floors the plan's stop to the spread (`floor_stop_to_spread`, bounded by
                   # MIN_STOP_SPREAD_MULT); both are module-level in the gateway and were missing
                   # from this slice -- the third time, same symptom as above.
-                  "order_comment", "COMMENT_MAX", "floor_stop_to_spread",
+                  "order_comment", "owned_tags", "COMMENT_MAX", "floor_stop_to_spread",
                   "MIN_STOP_SPREAD_MULT",
                   # ...and caps same-side exposure per symbol before pricing the lot.
                   "same_side_count", "MAX_SAME_SIDE_PER_SYMBOL",
