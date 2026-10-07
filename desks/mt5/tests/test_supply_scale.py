@@ -22,12 +22,12 @@ from libs.research import sensor_contract as sc  # noqa: E402
 
 NOW = datetime(2026, 10, 7, 12, 0, tzinfo=UTC)
 TABLE = ss.load_table()
-UNIVERSE = {"XTIUSD": {}, "XBRUSD": {}, "XCUUSD": {}, "UKCOCOA": {}}
+UNIVERSE: dict[str, dict[str, object]] = {"XTIUSD": {}, "XBRUSD": {}, "XCUUSD": {}, "UKCOCOA": {}}
 PHYS = {"series": {"WCESTUS1": {"status": "MEASURED", "level_vs_norm": 21000.0}}}
 
 
 def _ev(title: str, kind: str = "supply_disruption", entities: tuple[str, ...] = (),
-        hours_ago: float = 2.0, eid: str = "e1") -> dict:
+        hours_ago: float = 2.0, eid: str = "e1") -> dict[str, object]:
     return {"id": eid, "kind": kind, "title": title, "claim": title,
             "entities": list(entities),
             "knowable_at": (NOW - timedelta(hours=hours_ago)).isoformat()}
