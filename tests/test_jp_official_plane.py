@@ -198,8 +198,13 @@ def test_points_carry_the_five_alpha_objects_and_revisions_are_vintages() -> Non
     assert all(k in p2 for k in ("knowable_at", "expected_value", "raw_surprise", "revision_of"))
     later = datetime(2026, 10, 2, tzinfo=UTC)
     A.merge_vintages(store, src, [A.Obs("call_rate_on", date(2026, 7, 1), 0.5)], later)
-    rev = next(p for p in A.build_points(src, store)["call_rate_on"] if p["d"] == "2026-07-01")
-    assert rev["value"] == pytest.approx(0.477) and rev["revision_delta"] == pytest.approx(0.023)
+    # #239: the first print stays on its own stamp; the revision is its own vintage, knowable
+    # only from the instant it was seen.
+    first = next(p for p in A.build_points(src, store)["call_rate_on"] if p["d"] == "2026-07-01")
+    assert first["value"] == pytest.approx(0.477) and first["revision_delta"] is None
+    (rev,) = [p for p in A.revision_points(src, store)["call_rate_on"] if p["d"] == "2026-07-01"]
+    assert rev["value"] == pytest.approx(0.5) and rev["revision_delta"] == pytest.approx(0.023)
+    assert rev["knowable_at"] == later.isoformat()
 
 
 # ---------------------------------------------------------------------------- terms
