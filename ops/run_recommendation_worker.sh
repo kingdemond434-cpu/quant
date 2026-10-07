@@ -23,6 +23,8 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
+# Scoped agent runner (no permission bypass; refusals recorded as MISSED): ops/scoped_claude.sh
+source ops/scoped_claude.sh
 # SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
 # offset; a commit that changes this file's LENGTH while it is running resumes execution inside
 # a line. Measured on 63680c05 (ops/run_frontier_rotation.sh): comment text ran as a command,
@@ -142,8 +144,7 @@ echo "=== owed-work worker start $(date -u) ===" >> "$LOG"
 # tick, so the queue can never stall for more than one cycle. Exit 124 feeds the ratchet as a
 # ceiling signal and halves the batch, which is correct: a run that could not finish in 50
 # minutes was too big.
-timeout 3000 claude --effort max --append-system-prompt "$_DOCTRINE" -p "$PROMPT" \
-    --dangerously-skip-permissions >> "$LOG" 2>&1
+scoped_claude recommendation_worker "$LOG" max timeout 3000 <<<"$PROMPT"
 RC=$?
 if [ "$RC" = "124" ]; then
     echo "TIMED OUT after 3000s -- the ratchet halves the batch next run" >> "$LOG"
