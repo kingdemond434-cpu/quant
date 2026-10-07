@@ -155,6 +155,9 @@ web/*
 **/reports/shadow/*
 !**/reports/shadow/shadow_health.json
 lake/
+# domain_factories' axis docs are DERIVED every pass from its vintage store (~20 MB each for the
+# job-postings panels); the store under data/domain_factories/ is the record, these are views.
+desks/mt5/data/axes/alt_df[jnpw]_*.json
 docs/EXTERNAL_PANEL_DOSSIER.md
 # commit-audit payload: 425KB of `git log --since=24h` patches, REGENERATED on every run by
 # ops/run_commit_audit.sh. Same class as EXTERNAL_PANEL_DOSSIER.md above -- a derived panel

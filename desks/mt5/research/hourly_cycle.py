@@ -1026,6 +1026,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
+                     # weather degree days / job postings / payments / NDVI factories
+                     "domain_factories",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -1885,6 +1887,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # domain_factories stops its fetches at 80% of --budget-s 240 and writes; cap above it.
+    "domain_factories": 300,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -5210,6 +5214,13 @@ def main() -> None:
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
+    # DOMAIN HYPOTHESIS FACTORIES (DATA-43/DATA-25, 2026-10-07): NOAA CPC degree days, GFS-MOS
+    # and NDFD forecast vintages (revision, model disagreement), Indeed/JOLTS job postings, the
+    # payments re-read of alt_proxies' store and ORNL MODIS NDVI, each as PIT lake series with
+    # pre-registered exogenous_conditioner hypotheses; reports/DOMAIN_FACTORIES.json. After
+    # alt_proxies, whose store the payments factory reads.
+    dfx = _costed("domain_factories", lambda: _producer(
+        "domain_factories", "research/domain_factories.py", "--once", "--budget-s", "240"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -5805,6 +5816,7 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "alt_proxies": alp,
+                    "domain_factories": dfx,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,
