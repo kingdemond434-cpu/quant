@@ -1,0 +1,198 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2308093",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "found_at": "2026-10-07T07:28:27+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 5.33,
+  "growth_pct": 305.79,
+  "weeks": 158.0,
+  "pf": 1.91,
+  "max_dd_pct": null,
+  "trades": 1710.0,
+  "win_pct": 1248.0,
+  "algo_pct": 99.0,
+  "subscribers": 10.0,
+  "author": "/en/users/tec_daniel",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "06": 1,
+   "12": 2,
+   "10": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2349227",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-10-07T07:28:27+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 2.618,
+  "growth_pct": 272.49,
+  "weeks": 48.0,
+  "pf": 3.07,
+  "max_dd_pct": null,
+  "trades": 402.0,
+  "win_pct": 300.0,
+  "algo_pct": 100.0,
+  "subscribers": 20.0,
+  "author": "/en/users/kuropatkin",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "12": 1,
+   "14": 3,
+   "22": 1,
+   "19": 2,
+   "04": 2,
+   "13": 2,
+   "05": 2,
+   "20": 1,
+   "10": 1,
+   "17": 1,
+   "02": 2,
+   "03": 1,
+   "11": 1,
+   "08": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2389881",
+  "symbols": [
+   "CUSTOM",
+   "XAUUSD"
+  ],
+  "found_at": "2026-10-07T07:28:27+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "high_pf",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 34.336,
+  "growth_pct": 2581.39,
+  "weeks": 92.0,
+  "pf": 2.28,
+  "max_dd_pct": null,
+  "trades": 964.0,
+  "win_pct": 775.0,
+  "algo_pct": 100.0,
+  "subscribers": 1.0,
+  "author": "/en/users/ideatrader89",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "01": 1,
+   "14": 1,
+   "19": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2329267",
+  "symbols": [
+   "AUDCAD",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "ETHUSD",
+   "EURUSD",
+   "GBPCHF",
+   "NZDCAD",
+   "NZDUSD",
+   "USDCAD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-10-07T07:28:27+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "high_pf",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 23.733,
+  "growth_pct": 1436.21,
+  "weeks": 142.0,
+  "pf": 2.01,
+  "max_dd_pct": null,
+  "trades": 2590.0,
+  "win_pct": 1861.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/nekto61",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "06": 1,
+   "02": 1,
+   "16": 2,
+   "15": 1,
+   "18": 3,
+   "09": 1,
+   "03": 1,
+   "13": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2382360",
+  "symbols": [
+   "EURUSD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-10-07T07:28:27+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "gold"
+  ],
+  "ev_score": 30.755,
+  "growth_pct": 1297.85,
+  "weeks": 292.0,
+  "pf": 1.35,
+  "max_dd_pct": null,
+  "trades": 1159.0,
+  "win_pct": 667.0,
+  "algo_pct": 22.0,
+  "subscribers": 1.0,
+  "author": "/en/users/anson5129",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "04": 1,
+   "05": 1
+  }
+ }
+]
