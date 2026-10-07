@@ -124,8 +124,10 @@ CACHE = BASE / "data" / "pf_allocator_cache"
 #: reuse needs an exact match. Bump this constant whenever the world-sampling arithmetic changes
 #: in a way the `robust_elog` source digest would not see (a dependency, a numpy behaviour).
 SCENARIO_MODEL_VERSION = 1
-#: Age stays as an UPPER bound beside the fingerprint, never as the key: one firing interval of
-#: the heavy clock, the same derivation as `EVIDENCE_MAX_AGE_S`.
+#: Age stays as an UPPER bound beside the fingerprint, never as the key. DERIVED FROM THE
+#: PRODUCERS' OWN CADENCE exactly as `EVIDENCE_MAX_AGE_S`: 3600s is one firing interval of the
+#: hourly heavy/normal clock that redraws worlds, so a cache younger than 3600s cannot have
+#: missed a redraw and an older one may have missed exactly one.
 WORLD_CACHE_MAX_AGE_S = 3600
 #: The file `regime_state` fits on. Named here so the fast clock can digest it without fitting;
 #: `test_world_cache_fingerprint` pins that `regime_state` still reads exactly this file.

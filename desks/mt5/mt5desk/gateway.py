@@ -56,6 +56,7 @@ from mt5desk.decision_core import (
     CANCEL_HOUR,
     CLOSE_HOUR,
     GOLD_SYMBOL,
+    HEAT_CONTRADICTION_RAIL,  # noqa: F401 -- re-exported: readers bind it off mt5desk.gateway
     MAX_TOTAL_REJECTIONS,
     PROMOTED_MIN_EQUITY,
     REJECTION_STREAK_WINDOW_H,
