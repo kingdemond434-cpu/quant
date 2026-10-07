@@ -20,7 +20,7 @@ than the desk root? The answer comes from the string itself when it carries a di
 its context otherwise (the left operand of `/` or `+`, the receiver or preceding argument of a
 call, the preceding f-string piece), resolving names through their assignments. Anything it cannot
 prove qualified is a finding. Prose (a constant containing whitespace) is not a path and is
-skipped. .ps1 and .cmd files are scanned textually: a match must follow `data\` or `reports\`.
+skipped. .ps1 and .cmd files are scanned textually: a match must follow a data or reports directory and its separator.
 
 ALLOWED, AND ONLY: the STATE_FILES definitions that name the root copies as box state
 (libs/ops/release.py, desks/mt5/mt5desk/release_identity.py, Adopt-Release.ps1's $StateFiles).
@@ -195,7 +195,7 @@ _LIVE_BEFORE = re.compile(r"(?:^|[\\/\"' $({])(?:data|reports)[\\/]$")
 
 
 def scan_text(src: str, allowed_block: str | None = None) -> list[tuple[int, str]]:
-    """.ps1 / .cmd: a stale name must follow `data\` or `reports\` on its own line."""
+    """.ps1 / .cmd: a stale name must follow a data or reports directory on its own line."""
     out, inside = [], False
     for i, line in enumerate(src.splitlines(), 1):
         if allowed_block and re.search(allowed_block, line):
