@@ -441,7 +441,12 @@ def _live_slots(s: dict[str, Any], ks: list[str]) -> list[tuple[str, dict[str, A
                             separators=(",", ":"))}
         slots = ff.session_cells(s["family"], s["params"], ks, taken=taken,
                                  symbol=s.get("symbol") or None, held=[s["session"]])
-        got = {k: (str(p.get("session") or "all"), {**(n or {}), "params": p} if n else None)
+        # A slot is keyed by the AXIS session it answers. A remapped stand-in LANDS in another
+        # session (re-homed or re-anchored) and names the slot it replaces in `dead_session`;
+        # keyed by where it landed it was missed below and dropped as a duplicate -- a stand-in
+        # is a distinct cell, never a fold.
+        got = {str((n or {}).get("dead_session") or k):
+               (str(p.get("session") or "all"), {**(n or {}), "params": p} if n else None)
                for k, p, n in slots}
         # ONE ANCHOR, ONE CELL: a session the oracle folds into the card's own cell (or into an
         # earlier slot) is that cell already -- no child, and the note says so.

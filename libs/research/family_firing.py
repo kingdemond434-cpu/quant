@@ -175,6 +175,8 @@ def clock_settings() -> dict[str, Any]:
             # The anchor rule decides which window a family's count is taken in, so a change to
             # it re-measures every key.
             "anchor_families": sorted(session_clock.ANCHOR_FAMILIES),
+            "anchor_name_rule": session_clock.ANCHOR_NAME_RULE,
+            "anchor_params": "never: the judge reads the signal's tag only",
             "anchor_rule": "prior close (server 00:00) through the market's session end"}
 
 
@@ -224,12 +226,16 @@ def market_masks(times: Any) -> dict[str, Any]:
 
 
 def _digest(times: Any) -> str:
-    """Order-free fingerprint of a set of signal times: equal digests, equal masks."""
+    """Order-free fingerprint of a set of signal times: equal digests, equal masks.
+
+    UNIT-FREE: the instants are read as nanoseconds whatever resolution the index carries
+    (pandas 3 builds microsecond and second indexes), so the same signals give the same digest
+    from any bar file -- a bare `.asi8` would hash the resolution, not the times."""
     import hashlib
 
     import numpy as np
     import pandas as pd
-    raw = np.sort(np.asarray(pd.DatetimeIndex(times).asi8, dtype=np.int64))
+    raw = np.sort(np.asarray(pd.DatetimeIndex(times).as_unit("ns").asi8, dtype=np.int64))
     return hashlib.sha256(raw.tobytes()).hexdigest()[:20]
 
 

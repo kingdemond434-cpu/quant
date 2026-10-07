@@ -534,3 +534,77 @@ def test_unreadable_universe_is_warned_and_published_and_stays_unmeasured(
     assert any("broker registry unreadable" in r.getMessage() for r in caplog.records)
     # Nothing is cached off the broken read: the class returns the moment the file does.
     assert ff._CLASS_CACHE == {}
+
+
+# ------------------------------------------------- #230 hold fixes (2026-10-07)
+def test_remapped_standins_are_minted_not_dropped_as_duplicates(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """A family that fires in Tokyo only: its london and ny slots are DEAD and come back as two
+    stand-ins that LAND in asia. The moat explosion keyed slots by where they landed, so both
+    were read as folds (DUPLICATE_ANCHORED_MASK) and the card minted 0 of them; LIVE minted 2."""
+    mce = pytest.importorskip("research.moat_card_explosion")
+    fam = "asia_momentum"
+    from libs.regime import session_clock
+    assert not session_clock.anchor_clocked(fam)
+    cache = _cache({ff.key(fam, {}, SYM): _rec({4: 100}, {"asia": 100})})
+    monkeypatch.setattr(ff, "current_cache", lambda path=None: cache)
+    monkeypatch.setattr(ff, "_safe_guard", lambda: None)
+    card = {"family": fam, "params": {}, "session": "all", "symbol": SYM}
+    got = mce._live_slots(card, ["asia", "london", "ny"])
+    assert got[0] == ("asia", None)
+    standins = [(landed, note) for landed, note in got[1:] if note and note.get("remapped")]
+    assert len(standins) == 2
+    assert {n["dead_session"] for _l, n in standins} == {"london", "ny"}
+    assert all(n.get("cause") != ff.DUPLICATE for _l, n in got[1:] if n)
+    # Two distinct cells, each distinct from the asia child.
+    idents = {json.dumps(n["params"], sort_keys=True) for _l, n in standins}
+    assert len(idents) == 2 and json.dumps({"session": "asia"}) not in idents
+
+
+#: Real tags the two families emit, with the spec parameters that the old rule read as clocks.
+_NOT_CLOCKS = {"pin_bar_reversal": {"anchor": "open"},
+               "hedging_demand_close": {"close_hour": 22}}
+
+
+def test_pin_bar_reversal_and_hedging_demand_close_stay_distinct_cells() -> None:
+    """The judge filters by each signal's tag (no params), so the oracle must too: a price
+    `anchor` and a firing-hour `close_hour` are not clocks. Neither family is anchor-clocked, and
+    every session variant is its own cell even when the recorded masks happen to be equal."""
+    from libs.regime import session_clock
+    for fam, params in _NOT_CLOCKS.items():
+        assert session_clock.anchor_clocked(fam, params) is False, fam
+        assert session_clock.anchor_clocked(fam, params) == session_clock.anchor_clocked(fam)
+        rec = _rec({3: 50, 12: 50, 18: 50}, {"asia": 50, "london": 50, "ny": 50}, None,
+                   dict.fromkeys(("asia", "london", "ny", "all"), "same-mask"))
+        cache = _cache({ff.key(fam, params, SYM): rec})
+        keys = ff.anchor_keys(fam, params, ("asia", "london", "ny"), cache=cache, symbol=SYM)
+        assert keys == {"asia": "asia", "london": "london", "ny": "ny"}, fam
+        assert not ff.same_cell(fam, params, "asia", "london", cache=cache, symbol=SYM)
+        slots = ff.session_cells(fam, params, ("all", "asia", "london", "ny"), cache=cache,
+                                 symbol=SYM)
+        assert [s for s, _p, _n in slots] == ["all", "asia", "london", "ny"], fam
+    # The two families are two cells on every axis: distinct oracle keys.
+    keys_ = {ff.key(f, p, SYM) for f, p in _NOT_CLOCKS.items()}
+    assert len(keys_) == 2
+
+
+def test_oracle_and_judge_read_the_same_anchor_rule() -> None:
+    """`family_firing` decides the window with (family, params); the judge with the signal's tag
+    alone. They agree for every family the desk builds, because params never decide."""
+    from libs.regime import session_clock
+    cases = [("overnight_gap_decay", {}), ("opening_range", {"open_hour": 8}),
+             ("overnight_drift", {"anchor_hour": 0}), ("htf_anchor_trend", {"anchor_mult": 4}),
+             ("some_family", {"open_hour": 9}), *_NOT_CLOCKS.items()]
+    for fam, params in cases:
+        assert session_clock.anchor_clocked(fam, params) == session_clock.anchor_clocked(fam), fam
+
+
+def test_filter_digest_is_the_same_in_every_unit() -> None:
+    import pandas as pd
+    idx = pd.DatetimeIndex(["2026-07-15 00:00", "2026-07-16 00:00", "2026-07-17 09:00"],
+                           tz="UTC")
+    want = ff._digest(idx.as_unit("ns"))
+    assert ff._digest(idx.as_unit("us")) == want
+    assert ff._digest(idx.as_unit("ms")) == want
+    assert ff._digest(idx.as_unit("s")) == want
+    assert ff._digest(list(idx.as_unit("us"))[::-1]) == want      # Timestamps, any order

@@ -38,7 +38,11 @@ def test_which_families_are_anchor_clocked() -> None:
     for fam in ("overnight_gap_decay", "session_range_breakout", "opening_range", "carry",
                 "family_overnight_gap_decay", "fx_rollover_drift"):
         assert sc.anchor_clocked(fam), fam
-    assert sc.anchor_clocked("some_family", {"open_hour": 9})
+    # Params never decide: the judge filters by the signal's tag alone (2026-10-07).
+    assert not sc.anchor_clocked("some_family", {"open_hour": 9})
+    assert not sc.anchor_clocked("pin_bar_reversal", {"anchor": "open"})
+    assert not sc.anchor_clocked("hedging_demand_close", {"close_hour": 22})
+    assert sc.anchor_clocked("opening_range", {"open_hour": 8})
     for fam in ("trend_ma_cross", "london_close_momentum", "asia_momentum", "", None):
         assert not sc.anchor_clocked(fam), fam
 

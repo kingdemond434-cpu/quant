@@ -107,18 +107,28 @@ ANCHOR_FAMILIES = frozenset({"overnight_gap_decay", "session_range_breakout", "o
                              "carry"})
 #: ...and any family whose NAME says the same.
 _ANCHOR_NAME = re.compile(r"(^|_)(gap|overnight|opening|rollover)(_|$)|(^|_)session_range(_|$)")
-#: ...or whose spec carries an open/close anchor parameter.
-_ANCHOR_PARAM = re.compile(r"(^|_)anchor$|^(open|close)_hour$|^anchor_")
+#: The name rule as text, for readers that version a cache by it (`family_firing.clock_settings`).
+ANCHOR_NAME_RULE = _ANCHOR_NAME.pattern
 
 
 def anchor_clocked(family: Any, params: dict[str, Any] | None = None) -> bool:
-    """Is this family's signal defined by a market's open, close, gap or the rollover?"""
+    """Is this family's signal defined by a market's open, close, gap or the rollover?
+
+    BY NAME ONLY -- THE JUDGE'S RULE (2026-10-07). The sealed judge filters a replay with
+    `family_call.session_filter(sigs, session)` and no family, so each signal's own `tag` (the
+    family's name) is all it can read; `cell_modifiers.apply` does the same for a `selector`.
+    The oracle (`family_firing`), the forward clock and the executor must call the same window
+    on the same cell, so `params` never decide. A spec-parameter rule did, and it disagreed with
+    the judge on parameters that are not clocks: `pin_bar_reversal`'s `anchor` is a PRICE
+    reference (open or mid of the bar), `htf_anchor_trend`'s `anchor_mult` a lookback, and
+    `hedging_demand_close`'s `close_hour` the hour it fires, which the judge filters on the
+    market's own session. The oracle then folded session variants the judge scores apart.
+    `params` stays in the signature for callers that pass it."""
+    del params
     name = str(family or "").strip().lower().removeprefix("family_")
     if not name:
         return False
-    if name in ANCHOR_FAMILIES or _ANCHOR_NAME.search(name):
-        return True
-    return any(_ANCHOR_PARAM.search(str(k).lower()) for k in (params or {}))
+    return name in ANCHOR_FAMILIES or bool(_ANCHOR_NAME.search(name))
 
 
 def in_anchored_session(index: Any, session: str) -> np.ndarray | None:
