@@ -88,6 +88,9 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 
 SOURCE = "era5_reader"
 LEG = "era5_reader"
+#: The leg's own artifact on the desk (DEFAULT_PATHS.report), declared as a constant so the
+#: component registry and the runtime attestation can name it (desks/mt5/ops/components.py).
+REPORT = DESK / "reports" / "ERA5_STATUS.json"
 UNMEASURED = "UNMEASURED"
 KEY_NAME = "CDSAPI_KEY"
 URL_NAME = "CDSAPI_URL"
