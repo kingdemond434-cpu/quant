@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-BASE = Path(__file__).resolve().parents[2] / "desks" / "mt5"
+BASE = Path(__file__).resolve().parents[1]
 for _p in (str(BASE), str(BASE / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)

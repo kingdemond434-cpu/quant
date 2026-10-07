@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 DESK = ROOT / "desks" / "mt5"
 for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
