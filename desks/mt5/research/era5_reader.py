@@ -3,9 +3,9 @@
 MT5 soft-commodity and gas instruments, fed to all three uses.
 
 WHAT IT READS. ERA5 (ECMWF's global reanalysis, hourly since 1940) at a handful of representative
-points per region (`data/era5_regions.json`: US Corn Belt, US Plains wheat, Brazil coffee and cane,
-West Africa cocoa, Europe and US gas-demand centres), through the CDS API's single-point time
-series product. Hourly 2 m temperature and total precipitation become daily mean/min/max and
+points in each of SEVEN regions (`data/era5_regions.json`: US Corn Belt, US Plains wheat, Brazil
+coffee, Brazil cane, West Africa cocoa, Europe gas demand, US gas demand), through the CDS API's
+single-point time series product. Hourly 2 m temperature and total precipitation become daily mean/min/max and
 precipitation per point; points become a weighted region day; the region day becomes the fields
 in `FIELDS` -- temperature anomaly, heating/cooling degree days and their anomalies, 30-day
 precipitation and its anomaly, frost days. An anomaly is against the climatology of PRIOR years
@@ -62,7 +62,6 @@ import argparse
 import contextlib
 import csv
 import hashlib
-import html as _html
 import importlib
 import io
 import json
@@ -121,13 +120,12 @@ HORIZON_BARS = 120
 AXIS_DAYS = 730
 #: A field older than this (days since available) no longer describes "now" for allocation intel.
 STALE_DAYS = 10
-#: The licence's permitting clause must be found in the fetched licence itself. These are the two
-#: shapes the matcher accepts (see `permitting_clause`).
-CC_BY_GRANT = re.compile(
-    r"the licensor hereby grants you a worldwide, royalty-free, non-sublicensable, "
-    r"non-exclusive, irrevocable license to exercise the licensed rights in the licensed "
-    r"material to: a\. reproduce and share the licensed material, in whole or in part; and "
-    r"b\. produce, reproduce, and share adapted material\.")
+#: The licence matcher lives in `libs.data.licence_evidence` (shared with the paid-substitute
+#: engine): only Copernicus/ECMWF hosts count, and a negated or prohibiting clause never
+#: confirms.
+from libs.data import licence_evidence as _lic  # noqa: E402
+
+CC_BY_GRANT = _lic.CC_BY_GRANT
 TERMS_VALUES = ("confirmed", "to_confirm", "refused")
 
 #: THE TERMS GATE, FAIL CLOSED. `confirmed` only from verified evidence. Off-box this reads
@@ -219,6 +217,10 @@ class Paths:
     @property
     def allocation_intel(self) -> Path:
         return self.desk / "reports" / "ERA5_ALLOCATION_INTEL.json"
+
+    @property
+    def charges(self) -> Path:
+        return self.desk / "data" / "era5" / "trial_charges.json"
 
     @property
     def null_trials(self) -> Path:
@@ -354,53 +356,23 @@ def psub_lake_id(region_id: str) -> str:
 
 
 # ============================================================================== terms
-def _norm(text: str) -> str:
-    t = _html.unescape(text)
-    t = t.replace("’", "'").replace("“", '"').replace("”", '"')
-    return re.sub(r"\s+", " ", t).strip()
+def permitting_clause(text: str, url: str | None) -> dict[str, str] | None:
+    """The permitting clause (free, worldwide, commercial use, attribution) of a licence text
+    SERVED BY ``url``, verbatim, or None -- `libs.data.licence_evidence.permitting_clause`. Fail
+    closed: a non-Copernicus/ECMWF host, a non-commercial restriction, or a clause that negates
+    or prohibits anything is never accepted."""
+    return _lic.permitting_clause(text, url)
 
 
-def permitting_clause(text: str) -> dict[str, str] | None:
-    """The clause of a licence text that permits free, worldwide use including commercial use,
-    with attribution -- verbatim -- or None. Fail closed: a text that mentions a non-commercial
-    restriction anywhere is never accepted here (a human reads it)."""
-    norm = _norm(text)
-    low = norm.lower()
-    if re.search(r"non-?commercial|noncommercial", low):
-        return None
-    attrib = re.search(r"attribut|acknowledg", low) is not None
-    if not attrib:
-        return None
-    m = CC_BY_GRANT.search(re.sub(r"\s*([ab])\.\s+", r" \1. ", low))
-    if m and "creative commons attribution 4.0" in low:
-        i = low.find("the licensor hereby grants you")
-        j = low.find("share adapted material.", i)
-        quote = norm[i:j + len("share adapted material.")] if i >= 0 and j > i else m.group(0)
-        return {"kind": "cc-by-4.0", "quote": quote}
-    for sent in re.split(r"(?<=[.;])\s+", norm):
-        s = sent.lower()
-        if ("worldwide" in s and re.search(r"free of charge|royalty-free|\bfree\b", s)
-                and re.search(r"(?<!non-)(?<!non )commercial", s)):
-            return {"kind": "licence_clause", "quote": sent.strip()}
-    return None
-
-
-def clause_holds(kind: str, quote: str) -> bool:
-    """Re-read a STORED quote: does it still say what `permitting_clause` accepted?"""
-    low = _norm(quote).lower()
-    if not low or re.search(r"non-?commercial|noncommercial", low):
-        return False
-    if kind == "cc-by-4.0":
-        return CC_BY_GRANT.search(re.sub(r"\s*([ab])\.\s+", r" \1. ", low)) is not None
-    if kind == "licence_clause":
-        return ("worldwide" in low and re.search(r"free of charge|royalty-free|\bfree\b", low)
-                is not None and re.search(r"(?<!non-)(?<!non )commercial", low) is not None)
-    return False
+def clause_holds(kind: str, quote: str, url: str | None) -> bool:
+    """Re-read a STORED quote against its URL: does it still say what was accepted?"""
+    return _lic.clause_holds(kind, quote, url)
 
 
 def terms_status(paths: Paths = DEFAULT_PATHS) -> tuple[str, dict[str, Any]]:
-    """(verdict, evidence). `confirmed` ONLY when the box's evidence file holds a quote the
-    matcher re-reads as permitting; a file that merely says "confirmed" is not evidence."""
+    """(verdict, evidence). `confirmed` ONLY when the box's evidence file passes
+    `licence_evidence.verified`: an allowed host, a quote that re-reads as permitting with no
+    prohibition, a hash and a date. A file that merely says "confirmed" is not evidence."""
     static = TERMS["era5_cds"][0]
     ev = _read_json(paths.terms_evidence, None)
     if not isinstance(ev, dict):
@@ -409,11 +381,10 @@ def terms_status(paths: Paths = DEFAULT_PATHS) -> tuple[str, dict[str, Any]]:
     if verdict == "refused":
         return "refused", ev
     if verdict == "confirmed":
-        if (clause_holds(str(ev.get("kind") or ""), str(ev.get("terms_quote") or ""))
-                and ev.get("terms_url") and ev.get("checked_at") and ev.get("sha256")):
+        ok, why = _lic.verified(ev)
+        if ok:
             return "confirmed", ev
-        return "to_confirm", {**ev, "why": "evidence file says confirmed but its quote does not "
-                                           "read as a permitting clause: fail closed"}
+        return "to_confirm", {**ev, "why": f"evidence file says confirmed but {why}: fail closed"}
     return "to_confirm", ev
 
 
@@ -439,7 +410,7 @@ def _licence_links(doc: Any) -> list[str]:
 
 def _http_get(url: str, timeout: float = 30.0) -> tuple[int, str, bytes]:
     req = urllib.request.Request(url, headers={"User-Agent": "quant-desk-era5-reader/1 (terms)"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 - https only, public
+    with urllib.request.urlopen(req, timeout=timeout) as r:
         return int(r.status), str(r.headers.get("Content-Type") or ""), r.read(8 * 1024 * 1024)
 
 
@@ -477,7 +448,12 @@ def confirm_terms(paths: Paths = DEFAULT_PATHS, *, dataset: str | None = None,
     tried: list[dict[str, Any]] = []
     bodies: list[tuple[str, bytes, str]] = []
     if text_file is not None:
-        bodies.append((text_url or f"file:{text_file.name}", text_file.read_bytes(), "text"))
+        if _lic.allowed_url(text_url):
+            bodies.append((str(text_url), text_file.read_bytes(), "text"))
+        else:
+            tried.append({"url": text_url or f"file:{text_file.name}",
+                          "rejected": "a saved licence text counts only with --terms-url on a "
+                                      "Copernicus/ECMWF https host"})
     else:
         base = CDS_URL
         with contextlib.suppress(Exception):
@@ -492,6 +468,9 @@ def confirm_terms(paths: Paths = DEFAULT_PATHS, *, dataset: str | None = None,
             tried.append({"url": coll, "error": redact(f"{type(exc).__name__}: {exc}")})
             links = []
         for u in links:
+            if not _lic.allowed_url(u):
+                tried.append({"url": u, "rejected": "not a Copernicus/ECMWF https host"})
+                continue
             try:
                 st, ct, body = get(u)
                 tried.append({"url": u, "status": st, "content_type": ct})
@@ -506,13 +485,15 @@ def confirm_terms(paths: Paths = DEFAULT_PATHS, *, dataset: str | None = None,
             ev.setdefault("unread", []).append({"url": url, "why": "PDF: no text extractor on "
                                                                   "this box; read it by hand"})
             continue
-        clause = permitting_clause(text)
+        clause = permitting_clause(text, url)
         if clause:
             ev.update({"verdict": "confirmed", "terms_url": url, "kind": clause["kind"],
                        "terms_quote": clause["quote"],
                        "sha256": hashlib.sha256(body).hexdigest(),
                        "attribution": ATTRIBUTION})
             break
+    if ev["verdict"] == "confirmed" and not _lic.verified(ev)[0]:
+        ev["verdict"] = "to_confirm"
     if ev["verdict"] != "confirmed":
         ev["why"] = ("no permitting clause (free, worldwide, commercial use, attribution) was "
                      "found in the licence text read: BLOCKED_ON_TERMS until one is")
@@ -971,6 +952,52 @@ def gain_tests(paths: Paths, doc: Mapping[str, Any],
     return out
 
 
+#: Bump when the gain test or the cell recipe changes meaning: every cell is then re-charged.
+CELL_SPEC_VERSION = "era5-cell/1"
+
+
+def cell_charge_key(doc: Mapping[str, Any], key: str,
+                    rows: Mapping[tuple[str, str], list[dict[str, Any]]]) -> str:
+    """What a trial charge is FOR: (cell id, spec hash, data fingerprint). A cell is charged once
+    per key and re-charged only when its spec or its ERA5 data (last valid date, row count)
+    changes -- never because another hourly pass re-ran the same test (zuck's trial rule)."""
+    rid, field, sym = key.split("|")
+    prior = next((sg for r, f, s_, sg in mapped_cells(doc) if (r, f, s_) == (rid, field, sym)),
+                 None)
+    spec = {"v": CELL_SPEC_VERSION, "family": "exogenous_conditioner", "horizon": HORIZON_BARS,
+            "transform": "level_z", "threshold": 1.0, "lag_hours": 24, "prior": prior,
+            "lag_days": lag_days(doc)}
+    spec_hash = hashlib.sha256(json.dumps(spec, sort_keys=True).encode()).hexdigest()[:16]
+    rs = rows.get((rid, field)) or []
+    last = max((str(r.get("d") or r.get("event_time") or "") for r in rs), default="")
+    return f"{key}#{spec_hash}#{last}|{len(rs)}"
+
+
+def fresh_charges(paths: Paths, doc: Mapping[str, Any],
+                  gains: Mapping[str, Mapping[str, Any]],
+                  rows: Mapping[tuple[str, str], list[dict[str, Any]]]) -> dict[str, str]:
+    """Tested cells (verdict not UNMEASURED) whose charge key is not the one already charged."""
+    led = _read_json(paths.charges, {}) or {}
+    charged = led.get("cells") if isinstance(led.get("cells"), dict) else {}
+    out: dict[str, str] = {}
+    for key, g in sorted(gains.items()):
+        if g.get("verdict") == UNMEASURED:
+            continue
+        ck = cell_charge_key(doc, key, rows)
+        if charged.get(key) != ck:
+            out[key] = ck
+    return out
+
+
+def record_charges(paths: Paths, fresh: Mapping[str, str], now: datetime) -> None:
+    led = _read_json(paths.charges, {}) or {}
+    cells = dict(led.get("cells") or {}) if isinstance(led.get("cells"), dict) else {}
+    cells.update(fresh)
+    _atomic(paths.charges, {"schema": "era5_trial_charges/1", "updated_at": _iso(now),
+                            "rule": "one charge per (cell, spec hash, data fingerprint)",
+                            "cells": dict(sorted(cells.items()))})
+
+
 def direct_cells(doc: Mapping[str, Any], gains: Mapping[str, Mapping[str, Any]],
                  now: datetime, mint: Callable[[str], bool] = may_mint) -> list[dict[str, Any]]:
     """PASSING cells only, as `exogenous_conditioner` recipes on the lake series. The side is the
@@ -1182,9 +1209,22 @@ def _publish(paths: Paths, doc: Mapping[str, Any], rep: dict[str, Any], *, now: 
                     "passed": len(cells),
                     "verdicts": {k: g.get("verdict") for k, g in sorted(gains.items())}}
     rep["direct_cells"] = [c["cell"] for c in cells]
+    # ONE CHARGE PER (cell, spec, data). An unchanged cell re-tested this pass is neither
+    # re-charged nor re-donated; its earlier charge stands.
+    fresh = fresh_charges(paths, doc, gains, rows)
+    new_cells = [c for c in cells
+                 if f"{c['provenance']['region']}|{c['provenance']['field']}|{c['symbol']}"
+                 in fresh]
+    rep["gains"]["charged"] = len(fresh)
+    rep["gains"]["unchanged_not_recharged"] = tested - len(fresh)
     if not dry_run:
-        rep["donation"] = donor(paths, cells, tested, now) if (cells or tested) else {
-            "donated": 0, "path": None}
+        if fresh:
+            rep["donation"] = donor(paths, new_cells, len(fresh), now)
+            if not (isinstance(rep["donation"], dict) and rep["donation"].get("error")):
+                record_charges(paths, fresh, now)
+        else:
+            rep["donation"] = {"donated": 0, "path": None,
+                               "why": "no cell's spec or data changed: nothing re-charged"}
         _atomic(paths.allocation_intel, allocation_intel(doc, rows, gains, now))
     rep["uses"] = {"direct_cells": len(cells), "conditioning_series": len(lake),
                    "axes": len(regions_rep) - sum(1 for v in regions_rep.values()

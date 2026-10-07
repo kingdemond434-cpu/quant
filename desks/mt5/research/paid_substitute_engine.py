@@ -77,6 +77,7 @@ import hashlib
 import html
 import json
 import logging
+import math
 import os
 import re
 import sqlite3
@@ -208,6 +209,14 @@ ENROL_THRESHOLD = 0.70
 MIN_REGION = 0.7
 MIN_MEASURED_COMPONENTS = 4
 MIN_CORRELATION = 0.50
+#: The correlation is measured OUT OF SAMPLE (`correlation`): the alignment is selected on the
+#: earlier months and graded on the held-out later ones, which are at least CORR_HOLDOUT_MIN
+#: months or CORR_HOLDOUT_SHARE of the joined history, whichever is more.
+CORR_FIT_MIN = 12
+CORR_HOLDOUT_MIN = 12
+CORR_HOLDOUT_SHARE = 0.30
+#: Month offsets of the substitute tried on the fit window (0 = same month).
+CORR_LAGS: tuple[int, ...] = (-1, 0, 1)
 #: What a catalogue row's `public_sample` can be. Only MACHINE_SERIES can ever be correlated.
 SAMPLE_STATUSES = ("MACHINE_SERIES", "HEADLINE_ONLY", "FREE_TIER", "NONE_KNOWN")
 #: The two enrolment lanes. A substitute whose correlation to a paid set was MEASURED at or above
@@ -867,8 +876,14 @@ def evidence_terms(src: Mapping[str, Any]) -> str | None:
     if not isinstance(doc, dict):
         return f"{BLOCKED_ON_TERMS}:to_confirm"
     v = str(doc.get("verdict") or "").lower()
-    if v == "confirmed" and str(doc.get("terms_quote") or "").strip():
-        return None
+    if v == "confirmed":
+        # "confirmed" is a word, not evidence: the same test the reader applies (an allowed
+        # Copernicus/ECMWF host, a quote that re-reads as the permitting clause, no prohibition).
+        try:
+            from libs.data.licence_evidence import verified
+        except Exception:
+            return f"{BLOCKED_ON_TERMS}:to_confirm"
+        return None if verified(doc)[0] else f"{BLOCKED_ON_TERMS}:to_confirm"
     return f"{BLOCKED_ON_TERMS}:{v if v in TERMS_VERDICTS else 'to_confirm'}"
 
 
@@ -1074,7 +1089,15 @@ def correlation(
     lake: Path | None = None,
     acquired: Mapping[str, Any] | None = None,
 ) -> float | str:
-    """Pearson correlation of monthly changes when BOTH series are on disk; else UNMEASURED.
+    """OUT-OF-SAMPLE Pearson correlation of monthly changes when BOTH series are on disk; else
+    UNMEASURED.
+
+    The joined months are split in time: the EARLIER window (all but the last
+    max(CORR_HOLDOUT_MIN, CORR_HOLDOUT_SHARE) months) is where the alignment is fitted -- the
+    substitute's month offset in CORR_LAGS that correlates best there is selected -- and the
+    value returned is the correlation at that offset on the HELD-OUT later window only, so a
+    selection can never grade itself. Fewer than CORR_FIT_MIN fit months or CORR_HOLDOUT_MIN
+    held-out months is UNMEASURED.
 
     The paid side is only ever the vendor's own PUBLIC release the catalogue row names in
     `public_sample` (a MACHINE_SERIES: its endpoints are fetched by acquire_datasets like any
@@ -1099,9 +1122,26 @@ def correlation(
         am = a.resample("ME").last().diff()
         bm = b.resample("ME").last().diff()
         j = am.to_frame("a").join(bm.to_frame("b"), how="inner").dropna()
-        if len(j) < 12:
+        hold = max(CORR_HOLDOUT_MIN, math.ceil(CORR_HOLDOUT_SHARE * len(j)))
+        if len(j) - hold < CORR_FIT_MIN:
             return UNMEASURED
-        c = float(j["a"].corr(j["b"]))
+        cut = j.index[len(j) - hold]
+        fit_a, test_a = am[am.index < cut], am[am.index >= cut]
+        fit_b = bm[bm.index < cut]           # the fit never sees a held-out month of either side
+        best: tuple[float, int] | None = None
+        for lag in CORR_LAGS:
+            fj = fit_a.to_frame("a").join(fit_b.shift(lag).to_frame("b"), how="inner").dropna()
+            if len(fj) < CORR_FIT_MIN:
+                continue
+            fc = float(fj["a"].corr(fj["b"]))
+            if fc == fc and (best is None or fc > best[0]):
+                best = (fc, lag)
+        if best is None:
+            return UNMEASURED
+        tj = test_a.to_frame("a").join(bm.shift(best[1]).to_frame("b"), how="inner").dropna()
+        if len(tj) < CORR_HOLDOUT_MIN:
+            return UNMEASURED
+        c = float(tj["a"].corr(tj["b"]))
         # UNROUNDED: every threshold compares this value, and a rounded 0.49995 read as 0.5.
         return c if c == c else UNMEASURED
     except Exception:

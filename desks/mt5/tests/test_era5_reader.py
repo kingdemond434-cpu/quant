@@ -37,6 +37,8 @@ import era5_reader as e5  # noqa: E402
 
 NOW = datetime(2026, 10, 6, 12, 0, tzinfo=UTC)
 FAKE_KEY = "fake-cds-token-for-tests-only"
+UNMEASURED_V = e5.UNMEASURED
+CDS_LICENCE = "https://cds.climate.copernicus.eu/licences/cc-by"
 CC_BY_TEXT = (
     "Creative Commons Attribution 4.0 International Public License. Section 2 - Scope. "
     "a. License grant. 1. Subject to the terms and conditions of this Public License, the "
@@ -76,7 +78,7 @@ def _desk(tmp: Path, regions: dict[str, Any] | None = None) -> e5.Paths:
 
 def _confirm(paths: e5.Paths) -> None:
     ev = e5.confirm_terms(paths, text_file=_licence(paths.desk.parent, CC_BY_TEXT),
-                          text_url="https://cds.example/licences/cc-by", now=NOW)
+                          text_url=CDS_LICENCE, now=NOW)
     assert ev["verdict"] == "confirmed"
 
 
@@ -181,7 +183,8 @@ def test_evidence_that_says_confirmed_without_a_permitting_quote_stays_blocked(
 def test_confirm_terms_quotes_the_clause_and_refuses_non_commercial(tmp_path: Path) -> None:
     paths = _desk(tmp_path)
     nc = CC_BY_TEXT.replace("Attribution 4.0", "Attribution-NonCommercial 4.0")
-    ev = e5.confirm_terms(paths, text_file=_licence(tmp_path, nc), now=NOW)
+    ev = e5.confirm_terms(paths, text_file=_licence(tmp_path, nc), text_url=CDS_LICENCE,
+                          now=NOW)
     assert ev["verdict"] == "to_confirm"
     assert e5.terms_status(paths)[0] == "to_confirm"
     _confirm(paths)
@@ -199,7 +202,7 @@ def test_confirm_terms_follows_the_catalogue_licence_link_without_network(tmp_pa
         seen.append(url)
         if url.endswith("/collections/reanalysis-era5-single-levels-timeseries"):
             return 200, "application/json", json.dumps({"links": [
-                {"rel": "license", "href": "https://cds.example/licences/cc-by.txt"}]}).encode()
+                {"rel": "license", "href": CDS_LICENCE + ".txt"}]}).encode()
         return 200, "text/plain", CC_BY_TEXT.encode()
 
     ev = e5.confirm_terms(paths, get=get, now=NOW)
@@ -208,11 +211,93 @@ def test_confirm_terms_follows_the_catalogue_licence_link_without_network(tmp_pa
 
     def pdf(url: str) -> tuple[int, str, bytes]:
         if "collections" in url:
-            return 200, "application/json", b'{"links":[{"rel":"license","href":"https://x/l.pdf"}]}'
+            return 200, "application/json", json.dumps({"links": [{"rel": "license",
+                                                       "href": CDS_LICENCE + ".pdf"}]}).encode()
         return 200, "application/pdf", b"%PDF-1.7 ..."
 
     ev = e5.confirm_terms(paths, get=pdf, now=NOW)
     assert ev["verdict"] == "to_confirm" and ev["unread"][0]["why"].startswith("PDF")
+
+
+PROHIBITING = (
+    "Use of the data is free and worldwide, but commercial use is not permitted. Attribution "
+    "is required.",
+    "This licence is free of charge and worldwide and prohibits commercial exploitation; "
+    "attribution is required.",
+    "Free worldwide use of the products is granted except commercial use, with attribution.",
+    "Users may not use the data commercially; otherwise access is free and worldwide with "
+    "attribution.",
+)
+
+
+@pytest.mark.parametrize("text", PROHIBITING)
+def test_negated_or_prohibiting_clauses_never_confirm(tmp_path: Path, text: str) -> None:
+    assert e5.permitting_clause(text, CDS_LICENCE) is None
+    paths = _desk(tmp_path)
+    ev = e5.confirm_terms(paths, text_file=_licence(tmp_path, text), text_url=CDS_LICENCE,
+                          now=NOW)
+    assert ev["verdict"] == "to_confirm" and e5.terms_status(paths)[0] == "to_confirm"
+    # a stored quote that prohibits is refused on re-read too, whatever its verdict says
+    assert not e5.clause_holds("licence_clause", text, CDS_LICENCE)
+    # and the positive shape still confirms, so the fence is not a blanket refusal
+    ok = ("Access to the products is free of charge, worldwide, for any purpose including "
+          "commercial use, with attribution to the source.")
+    got = e5.permitting_clause(ok, CDS_LICENCE)
+    assert got is not None and got["kind"] == "licence_clause"
+
+
+def test_only_copernicus_and_ecmwf_hosts_count(tmp_path: Path) -> None:
+    from libs.data.licence_evidence import allowed_url
+    for good in ("https://cds.climate.copernicus.eu/licences/cc-by",
+                 "https://www.copernicus.eu/en/access-data/copyright-and-licences",
+                 "https://confluence.ecmwf.int/display/CKB/ERA5", "https://apps.ecmwf.int/x"):
+        assert allowed_url(good), good
+    for bad in ("http://cds.climate.copernicus.eu/licences/cc-by", "https://cds.example/l",
+                "https://copernicus.eu.evil.example/l", "https://evilcopernicus.eu/l",
+                "https://ecmwf.int.example/l", "file:licence.txt", "", None):
+        assert not allowed_url(bad), bad
+    paths = _desk(tmp_path)
+    seen: list[str] = []
+
+    def get(url: str) -> tuple[int, str, bytes]:
+        seen.append(url)
+        if "collections" in url:
+            return 200, "application/json", json.dumps({"links": [
+                {"rel": "license", "href": "https://licences.example/cc-by.txt"}]}).encode()
+        return 200, "text/plain", CC_BY_TEXT.encode()
+
+    ev = e5.confirm_terms(paths, get=get, now=NOW)
+    assert ev["verdict"] == "to_confirm"
+    assert seen == [seen[0]], "a licence link on a foreign host is never fetched"
+    assert any(t.get("rejected") for t in ev["tried"])
+
+
+def test_cc_by_text_counts_only_from_an_allowed_host(tmp_path: Path) -> None:
+    spdx = "https://raw.githubusercontent.com/spdx/license-list-data/main/text/CC-BY-4.0.txt"
+    assert e5.permitting_clause(CC_BY_TEXT, spdx) is None
+    got = e5.permitting_clause(CC_BY_TEXT, CDS_LICENCE)
+    assert got is not None and got["kind"] == "cc-by-4.0"
+    # an evidence file holding the genuine CC BY grant, but read from SPDX, is not evidence
+    paths = _desk(tmp_path)
+    paths.terms_evidence.parent.mkdir(parents=True)
+    paths.terms_evidence.write_text(json.dumps({
+        "verdict": "confirmed", "kind": "cc-by-4.0", "terms_quote": got["quote"],
+        "terms_url": spdx, "checked_at": "2026-10-06", "sha256": "a" * 64}), "utf-8")
+    assert e5.terms_status(paths)[0] == "to_confirm"
+    assert e5.run(paths, now=NOW, client_factory=_never)["status"].startswith("BLOCKED_ON_TERMS")
+
+
+@pytest.mark.parametrize("url", [None, "https://spdx.org/licenses/CC-BY-4.0.html",
+                                 "http://cds.climate.copernicus.eu/licences/cc-by"])
+def test_terms_text_without_an_allowed_terms_url_never_writes_confirmed(
+        tmp_path: Path, url: str | None) -> None:
+    paths = _desk(tmp_path)
+    ev = e5.confirm_terms(paths, text_file=_licence(tmp_path, CC_BY_TEXT), text_url=url,
+                          now=NOW)
+    assert ev["verdict"] == "to_confirm"
+    stored = json.loads(paths.terms_evidence.read_text("utf-8"))
+    assert stored["verdict"] != "confirmed" and "terms_quote" not in stored
+    assert e5.terms_status(paths)[0] == "to_confirm"
 
 
 def test_a_licence_not_accepted_reply_is_blocked_on_terms(tmp_path: Path) -> None:
@@ -251,8 +336,8 @@ def test_missing_key_is_blocked_auth_and_missing_package_unavailable() -> None:
 
 
 def test_key_and_url_go_through_read_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    from libs.ops import env_keys
-    monkeypatch.setattr(env_keys, "_registry", lambda hive, name: None)
+    from libs.ops import env_keys, env_secret
+    monkeypatch.setattr(env_secret, "_registry", lambda hive, name: None)
     monkeypatch.setenv(e5.KEY_NAME, FAKE_KEY)
     monkeypatch.delenv(e5.URL_NAME, raising=False)
     assert env_keys.read_key(e5.KEY_NAME) == FAKE_KEY
@@ -260,11 +345,36 @@ def test_key_and_url_go_through_read_key(monkeypatch: pytest.MonkeyPatch) -> Non
     client, st, _ = e5.make_client(importer=lambda n: _fake_cdsapi(rec))
     assert st == e5.OK and rec["key"] == FAKE_KEY and rec["url"] == e5.CDS_URL
     # the machine registry beats a stale inherited copy (a setx /M after the resident started)
-    monkeypatch.setattr(env_keys, "_registry",
+    monkeypatch.setattr(env_secret, "_registry",
                         lambda hive, name: "https://mirror.example/api"
                         if hive == "machine" and name == e5.URL_NAME else None)
     e5.make_client(importer=lambda n: _fake_cdsapi(rec))
     assert rec["url"] == "https://mirror.example/api"
+
+
+def test_client_takes_url_and_key_from_machine_scope_with_no_cdsapirc(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A SYSTEM task has no profile and no ~/.cdsapirc: both values come from the Machine scope
+    through read_key and are handed to cdsapi.Client explicitly."""
+    from libs.ops import env_secret
+    machine = {e5.KEY_NAME: FAKE_KEY, e5.URL_NAME: "https://cds.climate.copernicus.eu/api"}
+    monkeypatch.setattr(env_secret, "_registry",
+                        lambda hive, name: machine.get(name) if hive == "machine" else None)
+    for n in (e5.KEY_NAME, e5.URL_NAME, "CDSAPI_RC"):
+        monkeypatch.delenv(n, raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    assert not (tmp_path / ".cdsapirc").exists()
+    rec: dict[str, Any] = {}
+    client, st, why = e5.make_client(importer=lambda n: _fake_cdsapi(rec))
+    assert st == e5.OK and client is not None, why
+    assert rec["key"] == FAKE_KEY and rec["url"] == machine[e5.URL_NAME]
+    # no URL anywhere: the default endpoint, still with the explicit key
+    machine.pop(e5.URL_NAME)
+    rec.clear()
+    e5.make_client(importer=lambda n: _fake_cdsapi(rec))
+    assert rec["url"] == e5.CDS_URL and rec["key"] == FAKE_KEY
+    assert FAKE_KEY not in why
 
 
 def test_missing_key_on_a_full_run_is_a_named_state_and_no_key_is_written(
@@ -469,3 +579,34 @@ def test_tree_carries_no_key_value() -> None:
 def _no_leftovers(tmp_path: Path) -> Any:
     yield
     shutil.rmtree(tmp_path / "desk", ignore_errors=True)
+
+
+# --------------------------------------------------------------------------- trial charges
+def test_two_identical_passes_charge_once_and_new_data_recharges(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    paths, _, _ = _fetched(tmp_path)
+    verdicts = {"us_test_belt|cdd_anom_7d|CORN": {"verdict": "PASS", "ic": 0.2, "n": 60},
+                "us_test_belt|hdd_anom_7d|XNGUSD": {"verdict": "FAIL", "ic": 0.01, "n": 60},
+                "us_test_belt|precip_anom_30d|CORN": {"verdict": UNMEASURED_V, "why": "no bars"}}
+    monkeypatch.setattr(e5, "gain_tests", lambda *a, **k: dict(verdicts))
+    calls: list[tuple[int, int]] = []
+
+    def donor(p: Any, cands: list[Any], tested: int, now: Any) -> dict[str, Any]:
+        calls.append((len(cands), tested))
+        return {"donated": len(cands)}
+
+    first = e5.run(paths, now=NOW, fetch=False, mint=lambda s: True, donor=donor)
+    second = e5.run(paths, now=NOW, fetch=False, mint=lambda s: True, donor=donor)
+    assert calls == [(1, 2)], "two identical passes charge the two tested cells ONCE"
+    assert first["gains"]["charged"] == 2 and second["gains"]["charged"] == 0
+    assert second["gains"]["unchanged_not_recharged"] == 2
+    assert second["donation"]["donated"] == 0
+    # a later pass that fetched new ERA5 days changes the data fingerprint: charged again
+    e5.run(paths, now=NOW + timedelta(days=3), client_factory=_factory(FakeClient()),
+           key_reader=lambda n: None, mint=lambda s: True, donor=donor)
+    assert calls[-1] == (1, 2) and len(calls) == 2
+    # and a spec change re-charges too
+    monkeypatch.setattr(e5, "CELL_SPEC_VERSION", "era5-cell/test-bump")
+    e5.run(paths, now=NOW + timedelta(days=3), fetch=False, mint=lambda s: True, donor=donor)
+    assert len(calls) == 3
+
