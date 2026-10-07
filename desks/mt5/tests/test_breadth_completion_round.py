@@ -8,8 +8,6 @@ import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-import pytest
-
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
 for p in (str(DESK / "research"), str(DESK), str(ROOT)):

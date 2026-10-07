@@ -81,7 +81,8 @@ R_ = "desks/mt5/research/"
 CT, QD, DE = f"{R_}coverage_tensor.py", f"{R_}qd_frontier.py", f"{R_}descendants.py"
 ARC, MR, RE = f"{R_}alpha_recombination.py", f"{R_}meta_rnd.py", f"{R_}research_evolution.py"
 MS, DAM = f"{R_}miner_specialisation.py", f"{R_}drawdown_alpha_miner.py"
-FRE, ED, VOD = f"{R_}factor_residual_engine.py", f"{R_}experiment_design.py", f"{R_}value_of_data.py"
+FRE, ED = f"{R_}factor_residual_engine.py", f"{R_}experiment_design.py"
+VOD = f"{R_}value_of_data.py"
 UU, RF = f"{R_}unknown_unknowns.py", f"{R_}representation_forge.py"
 WDH, DK = f"{R_}world_dataset_hunter.py", f"{R_}docket_keff.py"
 CBS = f"{R_}cro_breadth_steps.py"
@@ -375,15 +376,18 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
      "trade-time (held-minute) overlap measured from the forward ledgers' entry/exit times"),
     ("0108", COVERED, (f"{AB}::^def timestamp_overlap",),
      "position-time Jaccard; informational beside the headline"),
-    ("0109", COVERED, (f"{CS}::rho = float\\(np.corrcoef\\(x, y\\)", f"{AB}::^def daily_sleeve_returns"),
+    ("0109", COVERED, (f"{CS}::rho = float\\(np.corrcoef\\(x, y\\)",
+                       f"{AB}::^def daily_sleeve_returns"),
      "pairwise daily P&L correlation at Fisher bounds on the forward sleeves"),
     ("0135", PARTIAL, (f"{AB}::^def factor_rank_reading",),
      "participation-ratio rank is published, informational only: the headline is the minimum of "
      "the exposure / systematic / stress / realised readings (diversification ratio), and putting "
      "the eigen rank in it would move the allocator-facing number (capital side)"),
-    ("0138", COVERED, (f"{EB}::^def conditional_breadth", f"{CS}::out\\[\"k_eff_stress\"\\] = keff"),
+    ("0138", COVERED, (f"{EB}::^def conditional_breadth",
+                       f"{CS}::out\\[\"k_eff_stress\"\\] = keff"),
      ""),
-    ("0152", COVERED, (f"{CS}::^def forward_dependence", f"{AB}::forward_daily=daily_sleeve_returns"),
+    ("0152", COVERED, (f"{CS}::^def forward_dependence",
+                       f"{AB}::forward_daily=daily_sleeve_returns"),
      "every pass re-reads the forward sleeves; a DEPENDENT pair lifts C and revokes credit"),
     ("0173", COVERED, (f"{EB}::^def headline", f"{AB}::\"effective\": head"), ""),
     ("0174", COVERED, (f"{CS}::\"n_certificates\": n_cert",), ""),
@@ -425,7 +429,8 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
      "judge's, and 'continuously' is the hourly cycle"),
     ("0396", COVERED, (f"{CS}::^def build\\(", f"{BL}::^def budget_split"),
      "orthogonality priced into every docket row and the A/C/D split"),
-    ("0398", COVERED, (f"{CAP}::^def terms", f"{CS}::credit \\*= float\\(base.get\\(\"capacity_factor\""),
+    ("0398", COVERED, (f"{CAP}::^def terms",
+                       f"{CS}::credit \\*= float\\(base.get\\(\"capacity_factor\""),
      "cost/turnover/capacity terms multiply breadth credit; the judge's cost stages are sealed"),
     ("0401", COVERED, (f"{HC}::research/unknown_unknowns.py", f"{BL}::^def budget_split"),
      "the D budget (unknown frontier) is never below its floor"),
@@ -435,14 +440,16 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0412", COVERED, (f"{QD}::^def build_niches", f"{QD}::^def merge_map",
                        f"{HC}::_costed\\(\"qd_frontier\""), ""),
     ("0425", COVERED, (f"{CS}::rho = float\\(np.corrcoef\\(x, y\\)",), ""),
-    ("0427", COVERED, (f"{CS}::out\\[\"k_eff_stress\"\\] = keff", f"{SO}::out\\[\"regime\"\\] = round"),
+    ("0427", COVERED, (f"{CS}::out\\[\"k_eff_stress\"\\] = keff",
+                       f"{SO}::out\\[\"regime\"\\] = round"),
      ""),
     ("0431", COVERED, (f"{AB}::^def timestamp_overlap",), ""),
     ("0436", COVERED, (f"{AB}::\"exposure_by_instrument\":", f"{CS}::\"economic_factor\": 1.0"),
      ""),
     ("0450", COVERED, (f"{AC}::\"trend\", \"Trend and momentum\"", f"{AF}::\"axis_scarcity\": 0.5"),
      ""),
-    ("0451", COVERED, (f"{AC}::\"mean_reversion\", \"Mean reversion", f"{AF}::\"axis_scarcity\": 0.5"),
+    ("0451", COVERED, (f"{AC}::\"mean_reversion\", \"Mean reversion",
+                       f"{AF}::\"axis_scarcity\": 0.5"),
      ""),
     ("0452", COVERED, (f"{AC}::\"carry\": \"macro_rates\"", f"{AF}::\"axis_scarcity\": 0.5"), ""),
     ("0458", COVERED, (f"{CS}::\"information_source\": 2.0", f"{CS}::^def _breadth_debts"), ""),
