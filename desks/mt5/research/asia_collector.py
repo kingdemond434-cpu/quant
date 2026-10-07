@@ -89,7 +89,8 @@ PRIVATE = BASE / "data" / "lake" / "private_use"
 #: The only fields a private-use row keeps in the collector's report: status and counts, never a
 #: value, a column name, a vault path or a parsed frame.
 PRIVATE_REPORT_KEYS = ("id", "plane", "access", "status", "http", "bytes", "collected_utc",
-                       "key_env", "token_status", "token_http", "private_use", "attribution")
+                       "key_env", "token_status", "token_http", "private_use", "attribution",
+                       "lineage", "e8_ineligible")
 OUT = BASE / "reports" / "ASIA_COLLECTOR.json"
 
 #: Bytes read per fetch. Generous enough for a daily statistics file, small enough that a
@@ -494,7 +495,9 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     key_env = str(src.get("key_env") or "")
     tok = (_token_refresh.get_token(key_env) if key_env in _token_refresh.MANAGED else None)
     if tok is not None and tok.private_use:
-        rec["private_use"] = True
+        # private_use=True, lineage "jquants_private", e8_ineligible=True: every record (and so
+        # every cell derived from it) carries the lineage the E8 book refuses on.
+        _token_refresh.mark_private_lineage(rec)
     if tok is not None and tok.attribution:
         # The licence's source notice rides on every record this token path produces (CDSE:
         # "Contains modified Copernicus Sentinel data <year>"), whatever the fetch's outcome.
@@ -627,7 +630,39 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     parsed = _parse(body, expect, sid, PRIVATE / "series" if private else None)
     rec["parse"] = parsed
     rec["status"] = "COLLECTED" if parsed.get("parsed") else "NEEDS_PARSER"
+    if private:
+        _write_attribution_sidecar(sid, key_env)
     return rec
+
+
+def _write_attribution_sidecar(source_id: str, key_env: str) -> Path | None:
+    """ATTRIBUTION SIDECAR next to a private-use series (audit of #218, 2026-10-07): the source,
+    its terms and permitting-clause URLs and the conditions the permission comes with, written
+    INTO THE GITIGNORED PRIVATE LAKE ONLY, so whoever opens the series on the box reads what it
+    may and may not be used for. Holds no value. Never raises; a failure is named on stderr."""
+    try:
+        p = _token_refresh.PROVIDERS.get(key_env)
+        name = p.name if p is not None else key_env
+        ev = _token_refresh.TERMS_EVIDENCE.get(name, {})
+        out = PRIVATE / "series" / f"{source_id}.attribution.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        _write_atomic(out, json.dumps({
+            "source_id": source_id, "provider": name,
+            "terms_verdict": _token_refresh.TERMS.get(name, ("", ""))[0],
+            "terms_url": ev.get("terms_url"), "licence_url": ev.get("licence_url"),
+            "permitting_url": ev.get("permitting_url"),
+            "permitting_quote": ev.get("permitting_quote"),
+            "condition": ev.get("condition"),
+            "conditions": _token_refresh.TERMS_CONDITIONS.get(name, {}),
+            "lineage": _token_refresh.PRIVATE_LINEAGE, "e8_ineligible": True,
+            "written_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+        }, indent=1, ensure_ascii=False))
+        return out
+    except Exception as exc:
+        # Named, never swallowed: the type only (no path, no value), on stderr.
+        print(f"asia collector: attribution sidecar for {source_id} not written "
+              f"({type(exc).__name__})", file=sys.stderr)
+        return None
 
 
 FOUND = BASE / "data" / "intelligence" / "asia_endpoints"
@@ -777,8 +812,20 @@ def main(argv: list[str] | None = None) -> int:
         with guard:
             state[str(s.get("id"))] = keep
 
-    with cf.ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        list(pool.map(lambda t: _one(*t), list(enumerate(todo))))
+    # A PRIVATE-USE PASS NEVER PRINTS A TRACEBACK. hourly_cycle keeps the last lines of this
+    # process's stdout and stderr in the TRACKED sync_marker.json; an exception raised while a
+    # private payload was in hand could carry a value into its message. With a private-use
+    # source in the pass, a failure prints its type only (status, never content).
+    has_private = any(_token_refresh.private_use(str(s.get("key_env") or "")) for s in todo)
+    try:
+        with cf.ThreadPoolExecutor(max_workers=WORKERS) as pool:
+            list(pool.map(lambda t: _one(*t), list(enumerate(todo))))
+    except Exception as exc:
+        if not has_private:
+            raise
+        print(f"asia collector: pass failed ({type(exc).__name__}); a private-use source was "
+              f"in the pass, so no detail is printed", file=sys.stderr)
+        return 2
     rows = [r for r in rows if r is not None]
 
     _write_atomic(STATE, json.dumps(state, indent=1))
@@ -833,7 +880,15 @@ def _print_summary(rows: list[dict[str, Any]], sources: list[dict[str, Any]],
             extra = ""
             if st == "COLLECTED" and isinstance(r.get("parse"), dict):
                 extra = f"  n={r['parse'].get('n')}"
+            if r.get("private_use"):
+                # COUNTS ONLY for a private-use row (audit of #218): this stdout's tail is kept
+                # in the tracked sync_marker.json, so neither `why` nor anything parsed is shown.
+                print(f"    {r.get('id')!s:24} [private use: status and counts only]{extra}")
+                continue
             print(f"    {r.get('id')!s:24} {str(r.get('why') or '')[:58]}{extra}")
+    n_priv = sum(1 for r in rows if r.get("private_use"))
+    if n_priv:
+        print(f"  private use: {n_priv} row(s), values kept in the gitignored private lake only")
     print(f"  -> {OUT}")
     # ROUTE_CHANGED is the only fatal verdict: it is the one that silently becomes "no data".
     return 1 if census.get("ROUTE_CHANGED") else 0

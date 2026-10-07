@@ -43,6 +43,19 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 SURVIVORS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 
 
+def _private_lineage(val: Any) -> bool:
+    """libs.ops.token_refresh.has_private_lineage: True when a survivor (its spec, gates or any
+    nested source list) carries the private-use lineage `jquants_private` / `e8_ineligible`.
+    An unreadable helper reads as private for any row that names the tag in its text, so a
+    missing import can never let such a row through."""
+    try:
+        from libs.ops.token_refresh import has_private_lineage
+        return bool(has_private_lineage(val))
+    except Exception:
+        text = json.dumps(val, default=str)
+        return "jquants_private" in text or '"e8_ineligible": true' in text
+
+
 def _family_banned(family: str) -> bool:
     """research/family_policy.family_banned, reached from this lane's own path; an unreadable
     policy reads as nothing banned, the same way the policy module itself reads it."""
@@ -181,6 +194,11 @@ def _load_survivors() -> list[dict[str, Any]]:
             "lockbox": ((val.get("gates") or {}).get("lockbox") or {}).get("lockbox_sharpe"),
             "days": val.get("days"),
             "n_trials": ((val.get("gates") or {}).get("deflated_sharpe") or {}).get("n_trials"),
+            # PRIVATE-USE LINEAGE IS NEVER IN THE E8 BOOK (coordinator ruling, 2026-10-07).
+            # J-Quants is permitted for the registered individual's private use only; E8 trades
+            # the prop firm's capital, so a cell derived from it is e8_ineligible. Fusion (the
+            # individual's own account) is unaffected. `select` names the refusal.
+            "private_lineage": _private_lineage(val),
         })
     return rows
 
@@ -298,9 +316,16 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES) ->
     """The book, plus everything refused and why. An absence here is always named (L1.28a)."""
     rows = _load_survivors()
     blocked = []
+    private_refused = []
     live = []
     for r in rows:
-        if tradeable is not None and r["symbol"] not in tradeable:
+        if r.get("private_lineage"):
+            private_refused.append({"key": r["key"], "symbol": r["symbol"],
+                                    "family": r["family"],
+                                    "why": "private-use lineage (jquants_private): e8_ineligible, "
+                                           "the prop firm's capital is not the registered "
+                                           "individual's own money"})
+        elif tradeable is not None and r["symbol"] not in tradeable:
             blocked.append({**r, "why": "not listed by the venue"})
         else:
             live.append(r)
@@ -430,6 +455,8 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES) ->
         "n_certified": len(rows),
         "n_tradeable": len(live),
         "n_blocked_by_venue": len(blocked),
+        "n_refused_private_lineage": len(private_refused),
+        "refused_private_lineage": private_refused,
         "n_duplicate_mechanism_symbol": len(dupes),
         "n_blocked_by_correlation": len(blocked_by_corr),
         "blocked_by_correlation": blocked_by_corr,
