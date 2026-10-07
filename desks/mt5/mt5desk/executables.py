@@ -25,6 +25,7 @@ next run without any other change, exactly as this note said it would.
 """
 from __future__ import annotations
 
+import re
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -168,3 +169,51 @@ def executor_gap(fam: str, timeframe: str = "H1") -> str | None:
                 f"Trading it would compute this sleeve's signals from a chart it was never "
                 f"certified on -- a different strategy under a certified name")
     return None
+
+
+#: ORDER STYLES THE GATEWAY CAN PLACE (audit of #222, 2026-10-07). The family executor sends a
+#: MARKET order at the open after the signal bar, and nothing else: it has no resting-limit
+#: executor. A cell certified with `execution_style=limit` (or `entry_style=limit`) was judged on
+#: a resting limit at the signal close that fills only when price comes back to it
+#: (`engine.run_backtest`, `Signal.order_type == "limit"`); traded at market it is a different
+#: strategy under a certified name -- it pays the spread the limit earned, fills every signal
+#: instead of the ones price returned to, and takes the adverse-selection the limit avoided.
+#:
+#: So a limit-style certificate is PENDING_EXECUTOR: withheld from capital BY NAME until a limit
+#: executor exists (spec: /mnt/project-files/patches/limit_executor_spec.md). It is not retired
+#: and its forward clock keeps running -- the day the executor lands, "limit" joins this set and
+#: the same certificate promotes on its own evidence with no other change.
+GATEWAY_ORDER_STYLES: frozenset[str] = frozenset({"", "market"})
+#: The params keys that declare an order style (`cell_modifiers.refusal` reads the same two).
+ORDER_STYLE_KEYS: tuple[str, ...] = ("execution_style", "entry_style")
+#: The status/verdict name every reader shows for a certificate this boundary withholds.
+PENDING_EXECUTOR = "PENDING_EXECUTOR"
+
+
+def order_styles(params: Any) -> dict[str, str]:
+    """{key: style} for every order-style key `params` declares (lower-cased, stripped)."""
+    if not isinstance(params, dict):
+        return {}
+    return {k: str(params.get(k) or "").strip().lower() for k in ORDER_STYLE_KEYS if k in params}
+
+
+def order_style_gap(params: Any) -> str | None:
+    """`PENDING_EXECUTOR: ...` when `params` declare an order style the gateway cannot place,
+    else None. A row with no style key is a market row -- every certificate before #222."""
+    for key, style in order_styles(params).items():
+        if style not in GATEWAY_ORDER_STYLES:
+            return (f"{PENDING_EXECUTOR}: {key}={style!r} was certified on a resting "
+                    f"{style} order and the gateway's family executor places only market orders; "
+                    f"traded at market it would be a different strategy under a certified name. "
+                    f"Withheld from capital (not retired) until a {style} executor exists")
+    return None
+
+
+_STYLE_IN_KEY = re.compile(r"(?:^|[#_.])(" + "|".join(ORDER_STYLE_KEYS) + r")=([A-Za-z]+)")
+
+
+def order_style_gap_of_key(name: str) -> str | None:
+    """`order_style_gap` read off a clock key. `shadow_forward.sleeve_key` writes every non-window
+    param into the key as `#k=v_k=v`, so the name a promoted row carries says its order style."""
+    found = {m.group(1): m.group(2) for m in _STYLE_IN_KEY.finditer(str(name or ""))}
+    return order_style_gap(found) if found else None

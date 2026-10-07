@@ -120,8 +120,13 @@ def run(force: bool = False, steps: tuple[tuple[str, Callable[[], Any], float], 
         buf = io.StringIO()
         try:
             with contextlib.redirect_stdout(buf):
-                fn()
-            rec = {"outcome": "OK", "ok_ts": time.time()}
+                ret = fn()
+            # A CLI-style main that RETURNS a non-zero code failed, even though it did not raise
+            # (`fetch_fred.main` returns 1 on a partial fetch): recorded FAILED, retried next pass.
+            if isinstance(ret, int) and not isinstance(ret, bool) and ret != 0:
+                rec = {"outcome": "FAILED", "ok_ts": ok_at, "why": f"returned exit code {ret}"}
+            else:
+                rec = {"outcome": "OK", "ok_ts": time.time()}
         except BaseException as exc:          # SystemExit from a CLI main is an outcome too
             if isinstance(exc, KeyboardInterrupt):
                 raise

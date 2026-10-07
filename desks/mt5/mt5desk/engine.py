@@ -238,15 +238,53 @@ class Signal:
     add_ratchets_stop: bool = True
     # --- DECLARED order type for a resting `trigger` (2026-10-06). "auto" keeps the inferred
     # behaviour every older family relies on: limit when the trigger sits on the far side of the
-    # next open, else stop. "limit" is a real limit order and NEVER a stop: a buy fills only on a
-    # bar whose low reaches the trigger, at min(that bar's open, trigger) -- a gap through the
-    # level fills at the better open, never above the limit; sells mirror it. Untouched for
+    # next open, else stop. "limit" is a real limit order and NEVER a stop, filled by
+    # `limit_fill` (the queue haircut and the buy side's ask; audit of #222). Untouched for
     # `wait_bars` bars = no trade.
     order_type: str = "auto"
 
 
 #: The order types `Signal.order_type` may declare.
 ORDER_TYPES = frozenset({"auto", "limit"})
+
+
+def price_tick(df: pd.DataFrame) -> float:
+    """The price grid of `df`, read off its own closes: the smallest positive step between two
+    distinct closes (rounded to 10 decimals so float noise is not a tick). 0.0 when the frame has
+    fewer than two distinct closes. Run once per backtest, and only when it holds a limit."""
+    vals = np.unique(np.round(df["close"].to_numpy(dtype=float), 10))
+    vals = vals[np.isfinite(vals)]
+    if len(vals) < 2:
+        return 0.0
+    steps = np.diff(vals)
+    steps = steps[steps > 0]
+    return float(steps.min()) if len(steps) else 0.0
+
+
+def limit_fill(side: int, limit: float, bar_open: float, bar_high: float, bar_low: float,
+               spread_px: float, through_px: float) -> float | None:
+    """The BID-terms entry of a resting limit on one bar, or None when it does not fill there.
+
+    THE BARS ARE BID AND A BUY LIMIT EXECUTES ON THE ASK (audit of #222). The first cut filled a
+    buy when the BID low touched the limit and then charged the spread on top -- filled on a
+    price the buyer's side never reached, and paid a spread the limit was placed to earn. Here a
+    buy fills only when the ASK (bid + `spread_px`) trades down to the limit, at the limit or the
+    better ask open; the returned entry is that ask fill LESS the spread, because the engine
+    charges the spread once per round trip on top of the entry (`per_oz_roundtrip`) -- so the
+    trade pays exactly its ask fill. A sell limit executes on the bid, which the bars are.
+
+    THE QUEUE HAIRCUT. A resting order joins the BACK of the queue at its price: a touch fills
+    the orders ahead of it, not it. So a limit is filled only when the market trades THROUGH it
+    by `through_px` (one price tick); a bar that merely touches the level is a queue-position
+    loss, not a fill. Biased toward fewer fills -- the direction an unmodelled queue must err.
+    """
+    if side > 0:
+        if bar_low + spread_px > limit - through_px:
+            return None
+        return min(bar_open, limit - spread_px)
+    if bar_high < limit + through_px:
+        return None
+    return max(bar_open, limit)
 
 
 @dataclass
@@ -377,6 +415,9 @@ def run_backtest(
     trades: list[Trade] = []
     filled = 0
     per_oz_cost = costs.per_oz_roundtrip() / costs.contract_oz
+    # The spread in PRICE units (`spread_per_lot` is pts x tick x contract), for a limit's ask.
+    spread_px = float(costs.spread_per_lot) / float(costs.contract_oz)
+    tick_px: float | None = None          # the frame's price grid, read on the first limit only
     last_exit_idx = -1  # single-position discipline: no overlapping trades
 
     for sig, i0 in zip(signals, locs, strict=True):
@@ -394,17 +435,22 @@ def run_backtest(
         if sig.trigger is not None and sig.order_type == "limit":
             tgt = float(sig.trigger)
             limit_entry = True
+            if tick_px is None:
+                tick_px = price_tick(df)
+            # One tick through; a frame with no readable grid falls back to half the spread.
+            through = tick_px if tick_px > 0 else 0.5 * spread_px
             hit = -1
+            fill_px = 0.0
             for j in range(i, min(i + sig.wait_bars, len(idx))):
-                if (sig.side > 0 and float(lows[j]) <= tgt) or \
-                        (sig.side < 0 and float(h[j]) >= tgt):
-                    hit = j
+                got = limit_fill(sig.side, tgt, float(o[j]), float(h[j]), float(lows[j]),
+                                 spread_px, through)
+                if got is not None:
+                    hit, fill_px = j, got
                     break
             if hit < 0:
                 continue
             fill_bar = hit
-            op = float(o[hit])
-            entry = min(op, tgt) if sig.side > 0 else max(op, tgt)
+            entry = fill_px
         elif sig.trigger is not None:
             tgt = sig.trigger
             # A LIMIT entry sits on the far side of the market from the trade's

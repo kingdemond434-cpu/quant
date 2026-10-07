@@ -432,6 +432,13 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # row on the money path and the residue is thirteen rows, not a debt in someone else's file.
     # A STATE fence: no registry on this host reads NOT-READABLE-HERE, a verdict about the HOST.
     ("check_live_sleeve_cost.py", ()),
+    # THE ORDER THE GATEWAY CAN PLACE (audit of #222, 2026-10-07). A cell certified on a resting
+    # LIMIT order (`execution_style=limit`) would be traded at MARKET by the family executor --
+    # a different strategy under a certified name. Fails while any LIVE/STANDBY row declares an
+    # order style outside `executables.GATEWAY_ORDER_STYLES`; the sealed promoter patch
+    # `limit_executor_refusal.patch` is what writes such rows PENDING_EXECUTOR at the door.
+    # A STATE fence: no roster and no registry on this host reads NOT-READABLE-HERE.
+    ("check_order_style_executor.py", ()),
     # THE STATE HALF of the enrolment law: no certificate clockless past one cycle. An absent
     # FORWARD_ENROLMENT.json is UNMEASURED, which is a real answer on a clean checkout.
     ("check_forward_enrolment.py", ("--state-only",)),

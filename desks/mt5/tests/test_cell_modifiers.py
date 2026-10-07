@@ -273,6 +273,63 @@ def test_the_engine_fills_the_limit_only_on_a_touch() -> None:
     assert run_backtest(b, [sig], Costs()).n == 1
 
 
+def _grid_bars(rows: list[tuple[float, float, float, float]]) -> pd.DataFrame:
+    """Bars on a 0.01 price grid (the closes include a 0.01 step, so the read tick is 0.01)."""
+    idx = pd.date_range("2026-01-01", periods=len(rows), freq="h", tz="UTC")
+    return pd.DataFrame(rows, columns=["open", "high", "low", "close"], index=idx)
+
+
+def test_the_engine_reads_the_price_grid_off_the_closes() -> None:
+    from mt5desk.engine import price_tick
+
+    assert price_tick(_grid_bars([(1, 1, 1, 100.00), (1, 1, 1, 100.01), (1, 1, 1, 100.05)])) == \
+        pytest.approx(0.01)
+    assert price_tick(_grid_bars([(1, 1, 1, 100.0)])) == 0.0
+
+
+def test_a_buy_limit_executes_on_the_ask_not_the_bid() -> None:
+    """Bid bars: a buy limit at 100 needs the ASK (bid + spread 0.16) one tick through it. A bid
+    low of 99.85 is an ask of 100.01 -- above the limit -- so the first cut's fill was a price the
+    buyer's side never reached."""
+    from mt5desk.engine import Costs, limit_fill, run_backtest
+
+    assert limit_fill(1, 100.0, 100.2, 100.3, 99.85, 0.16, 0.01) is None
+    # Ask low 99.82 trades through 99.99: filled AT the limit, booked as limit - spread in bid
+    # terms so the round-trip spread charge lands the trade on its ask fill exactly.
+    assert limit_fill(1, 100.0, 100.2, 100.3, 99.66, 0.16, 0.01) == pytest.approx(99.84)
+    # A gap down fills at the better ask open (bid open 99.0 + spread), never above the limit.
+    assert limit_fill(1, 100.0, 99.0, 99.2, 98.9, 0.16, 0.01) == pytest.approx(99.0)
+    b = _grid_bars([(100.00, 100.05, 99.95, 100.00), (100.00, 100.05, 99.95, 100.00),
+                    (100.10, 100.20, 99.85, 100.01), (100.0, 100.1, 99.9, 100.0),
+                    (100.0, 100.1, 99.9, 100.0), (100.0, 100.1, 99.9, 100.0)])
+    sig = Signal(time=b.index[1], side=1, stop=98.0, target=110.0, ttl_bars=3, tag="t")
+    limited = cm.apply([sig], b, {"execution_style": "limit"})
+    assert run_backtest(b, limited, Costs()).n == 0            # the bid touched; the ask did not
+
+
+def test_a_touch_is_a_queue_loss_and_a_trade_through_fills() -> None:
+    from mt5desk.engine import limit_fill
+
+    assert limit_fill(-1, 100.0, 99.9, 100.00, 99.8, 0.16, 0.01) is None      # touch only
+    assert limit_fill(-1, 100.0, 99.9, 100.01, 99.8, 0.16, 0.01) == 100.0     # one tick through
+    assert limit_fill(-1, 100.0, 100.5, 100.6, 100.4, 0.16, 0.01) == 100.5    # gap up: the open
+
+
+def test_a_limit_buy_pays_its_ask_fill_and_no_spread_twice() -> None:
+    """Entry is booked bid-terms (limit - spread) and the engine charges the spread once: the
+    trade's cost basis is its ask fill at the limit, the price the order rested at."""
+    from mt5desk.engine import Costs, run_backtest
+
+    b = _grid_bars([(100.00, 100.05, 99.95, 100.00), (100.00, 100.05, 99.95, 100.00),
+                    (100.10, 100.20, 99.70, 99.80), (99.80, 99.90, 99.70, 99.81),
+                    (99.81, 99.90, 99.70, 99.80), (99.80, 99.90, 99.70, 99.80)])
+    sig = Signal(time=b.index[1], side=1, stop=98.0, target=110.0, ttl_bars=2, tag="t")
+    limited = cm.apply([sig], b, {"execution_style": "limit"})
+    res = run_backtest(b, limited, Costs())
+    assert res.n == 1
+    assert res.trades[0].entry == pytest.approx(100.0 - 0.16)
+
+
 def test_residual_frame_is_inert_until_the_sealed_patch_lands() -> None:
     assert "residualise" in cm.refusal({"residual": "gold", "residual_tag": "residual"})
     b = _bars(400)

@@ -77,13 +77,40 @@ def reindex_ff(s: pd.Series, idx: pd.DatetimeIndex, ffill: bool = True) -> pd.Se
     return out
 
 
+#: FRED RELEASE CADENCE, in days between prints (audit of #222, 2026-10-07). A series absent
+#: here is a DAILY market series (yields, breakevens, VIX, HY OAS, the dollar and FX noon rates).
+#: WALCL is the weekly H.4.1; PCOPPUSDM (IMF) and IR3TIB01JPM156N (OECD MEI) are monthly -- the
+#: same three `data_os.FRED_SERIES_LAGS` declares non-daily publication lags for.
+FRED_RELEASE_DAYS: dict[str, float] = {"WALCL": 7.0, "PCOPPUSDM": 31.0,
+                                       "IR3TIB01JPM156N": 31.0}
+#: A weekend plus one market holiday: the longest a DAILY series goes quiet with nothing wrong.
+RELEASE_SLACK = timedelta(days=3)
+
+
+def fred_max_staleness(series_id: str) -> pd.Timedelta:
+    """How long a FRED value may be carried forward before it is UNMEASURED: TWO release periods
+    (the next print is late, and the one after it is due) plus the weekend/holiday slack, counted
+    from the value's KNOWLEDGE time. Daily 5 days, weekly 17, monthly 65. One missed release is
+    tolerated; two are a feed that stopped, and a stopped feed's last print is not today's state.
+
+    WHY A CAP AT ALL. `ff_daily` forward-filled without limit, so when the FRED fetch stopped
+    (it wrote to the retired laptop until #222) every H1 bar after the last print read that print
+    as current -- `gold_risk_off_z` and `gold_macro_stress` published a weeks-old VIX/credit
+    reading as the live risk state, and `cell_modifiers` conditioned cells on it as fresh."""
+    period = float(FRED_RELEASE_DAYS.get(series_id, 1.0))
+    return pd.Timedelta(days=2.0 * period) + pd.Timedelta(RELEASE_SLACK)
+
+
 def ff_daily(sr: pd.Series, idx: pd.DatetimeIndex,
              series_id: str | None = None) -> pd.Series:
     """Daily series -> H1 index, PIT-safe: the value dated D applies to the
     first bar strictly AFTER its knowledge time (no exact-match reindex, which
     silently fails when bar timestamps never equal midnight). A FRED `series_id`
     moves D to D + its declared publication lag first; a broker price series
-    (no id) is known at its own stamp."""
+    (no id) is known at its own stamp.
+
+    A FRED value is carried forward only to `fred_max_staleness(series_id)` past its knowledge
+    time; a bar beyond that is NaN -- UNMEASURED, never the last print restated."""
     src = sr.dropna()
     if series_id is not None:
         src = data_os.known_series(src, "fred_macro", series_id)
@@ -93,7 +120,25 @@ def ff_daily(sr: pd.Series, idx: pd.DatetimeIndex,
     out = pd.Series(np.nan, index=idx, dtype=float)
     valid = pos < len(idx)
     out.iloc[pos[valid]] = src.to_numpy()[valid]
-    return out.ffill()
+    filled = out.ffill()
+    if series_id is None:
+        return filled
+    # The knowledge time of the value each bar carries, forward-filled beside it; a bar older
+    # than the cap past that time is UNMEASURED.
+    known_ns = np.full(len(idx), np.nan)
+    known_ns[pos[valid]] = pd.DatetimeIndex(src.index).as_unit("ns").asi8[valid].astype(float)
+    carried = pd.Series(known_ns, index=idx).ffill().to_numpy()
+    bar_ns = pd.DatetimeIndex(idx).as_unit("ns").asi8.astype(float)
+    cap_ns = float(fred_max_staleness(series_id).value)
+    too_old = (bar_ns - carried) > cap_ns              # NaN (nothing known yet) compares False
+    filled[too_old] = np.nan
+    return filled
+
+
+def stopped(ff: pd.Series) -> pd.Series:
+    """Bars where a capped series HAD a value and no longer has one: the feed stopped. Before the
+    first value is warm-up, which is not this."""
+    return ff.isna() & ff.notna().cummax()
 
 
 def cot_net_pct(legacy_df: pd.DataFrame, col: str, idx: pd.DatetimeIndex,
@@ -219,9 +264,13 @@ def main() -> None:
     s["gold_real_yield_z"] = z(real_y)
     s["gold_usd_z"] = z(usd)
     s["gold_ratio_z"] = z(ratio)
-    s["gold_risk_off_z"] = (z(vix) + z(credit)).fillna(0.0)
+    # The warm-up fill to 0.0 stays (it is what `run_hunt10.GATES` was measured on); a bar where
+    # an input STOPPED arriving is NaN -- the fill must not turn an unmeasured risk state into
+    # "neutral", and a composite must not quietly drop the leg that went dark.
+    s["gold_risk_off_z"] = (z(vix) + z(credit)).fillna(0.0).mask(stopped(vix) | stopped(credit))
     s["gold_macro_stress"] = (z(vix).fillna(0) * 0.4 + z(credit).fillna(0) * 0.25
-                              - z(real_y).fillna(0) * 0.2 + z(usd).fillna(0) * 0.15)
+                              - z(real_y).fillna(0) * 0.2 + z(usd).fillna(0) * 0.15).mask(
+        stopped(vix) | stopped(credit) | stopped(real_y) | stopped(usd))
     s["usd_liquidity_z"] = z(ff_daily(fr["WALCL"]["value"], xidx, "WALCL"))
 
     aud = ff_daily(fr["DEXUSAL"]["value"], xidx, "DEXUSAL")

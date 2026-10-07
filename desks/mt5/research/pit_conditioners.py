@@ -164,22 +164,30 @@ def _json(path: Path) -> dict[str, Any]:
 
 
 def swap_carry(missing: set[str] | None = None) -> tuple[list[pd.DataFrame], dict[str, Any]]:
-    """The broker-swap-implied carry, % p.a. of notional, (long - short) -- the same differential
-    `family_carry` trades on -- for every symbol in `missing` (None = all). Each row's
-    `knowable_at` is the capture's own `found_at`. A symbol whose unit cannot be established, or
-    whose POINTS swap has no price to scale against, is named in `unmeasured`, never guessed.
+    """The broker-swap-implied carry, % p.a. of notional, PER SIDE: (long - short) / 2 -- the
+    same per-side differential the BIS rows carry (`axis_ingest`: base rate - quote rate) -- for
+    every symbol in `missing` (None = all). Each row's `knowable_at` is the capture's own
+    `found_at`. A symbol whose unit cannot be established, or whose POINTS swap has no price to
+    scale against, is named in `unmeasured`, never guessed.
 
-    THE FEED GATE FIRST (#244). A swap the box cannot show is live is not a rate the desk holds:
-    when `carry_state.swap_feed()` is not usable (STALE, UNMEASURED, MISSING) the whole broker-swap
-    axis reads UNMEASURED under `_feed`, by name, and no row is emitted. A row's
-    `last_evidence_at` (the terminal's quote time for an UNCHANGED value) is a second knowable
-    point, so a swap stays fresh while the terminal keeps evidencing it and goes stale when that
-    evidence stops; a point never precedes the capture's own `found_at`."""
+    WHY HALF (audit of #222). A long is paid about (r_base - r_quote) less the broker's markup
+    and a short about (r_quote - r_base) less the markup, so swap_long - swap_short is TWICE the
+    rate differential (the markup cancels). Read unhalved, every broker-swap key carried double
+    the carry of a BIS key and cleared `family_carry`'s per-side floor at half the real edge.
+
+    THE FEED GATE (#244), CLIPPED NOT DROPPED. A swap the box cannot show is live is not a rate
+    the desk holds TODAY -- but the captures already on disk are still what the desk was charged
+    on their own dates. So when `carry_state.swap_feed()` is not usable (STALE, UNMEASURED,
+    MISSING) the history is kept and `meta["clip_at"]` names the last instant any capture is
+    vouched for (the feed's `last_capture_at`, else the newest capture on disk): `carry()` clips
+    every row's `stale_after` to it, so nothing reads fresh past the moment the feed went dark,
+    and `_feed` names the condition. A row's `last_evidence_at` (the terminal's quote time for an
+    UNCHANGED value) is a second knowable point, so a swap stays fresh while the terminal keeps
+    evidencing it and goes stale when that evidence stops; a point never precedes `found_at`."""
     from research.carry_state import swap_feed
 
     feed = swap_feed()
-    if not feed["usable"]:
-        return [], {"unmeasured": {"_feed": f"{feed['status']}: {feed['why']}"}}
+    feed_down = not feed["usable"]
     modes = {k.upper(): v.get("swap_mode") for k, v in
              (_json(CARRY_STATE).get("symbols") or {}).items() if isinstance(v, dict)}
     uni = _json(UNIVERSE_JSON)
@@ -215,7 +223,7 @@ def swap_carry(missing: set[str] | None = None) -> tuple[list[pd.DataFrame], dic
         mode = modes.get(sym)
         diff = frame["long"] - frame["short"]
         if mode == SWAP_MODE_INTEREST_CURRENT:
-            value = diff                                     # already annual percent
+            value = diff / 2.0                               # already annual percent; per side
         elif mode == SWAP_MODE_POINTS:
             tick = float((uni.get(sym) or {}).get("tick_size") or 0.0)
             close = _daily_close(sym)
@@ -225,7 +233,7 @@ def swap_carry(missing: set[str] | None = None) -> tuple[list[pd.DataFrame], dic
                 continue
             # The last close KNOWN at the capture: a day's close is stamped at the day's end.
             px = close.reindex(close.index.union(frame.index)).ffill().reindex(frame.index)
-            value = diff * tick / px * 365.0 * 100.0
+            value = diff / 2.0 * tick / px * 365.0 * 100.0   # per side, % p.a. of notional
         else:
             unmeasured[sym] = f"swap_mode {mode!r}: unit not established"
             continue
@@ -235,7 +243,22 @@ def swap_carry(missing: set[str] | None = None) -> tuple[list[pd.DataFrame], dic
             continue
         out.append(pd.DataFrame({"value": value}))
         out[-1].attrs["key"] = sym
-    return out, {"unmeasured": unmeasured}
+    meta: dict[str, Any] = {"unmeasured": unmeasured}
+    if feed_down:
+        clip = None
+        last = feed.get("last_capture_at")
+        if last:
+            try:
+                clip = pd.Timestamp(str(last))
+                clip = clip.tz_localize("UTC") if clip.tzinfo is None else clip.tz_convert("UTC")
+            except (TypeError, ValueError):
+                clip = None
+        if clip is None and out:
+            clip = max(pd.DatetimeIndex(f.index).max() for f in out)
+        meta["clip_at"] = clip
+        unmeasured["_feed"] = (f"{feed['status']}: {feed['why']}; history kept, nothing fresh "
+                               f"after {clip}")
+    return out, meta
 
 
 def carry() -> tuple[list[pd.DataFrame], dict[str, Any]]:
@@ -264,7 +287,13 @@ def carry() -> tuple[list[pd.DataFrame], dict[str, Any]]:
         if key in have:
             continue
         frame = pd.DataFrame({"value": f["value"], "pressed": f["value"].abs() >= floor})
-        out.append(_rows("carry", key, frame, 1.0).assign(source="broker_swap"))
+        rows = _rows("carry", key, frame, 1.0).assign(source="broker_swap")
+        clip = smeta.get("clip_at")
+        if clip is not None:            # the feed is down: nothing is fresh past its last capture
+            rows["stale_after"] = rows["stale_after"].where(rows["stale_after"] <= clip, clip)
+        if rows.empty:
+            continue
+        out.append(rows)
         n_swap += 1
     if not out:
         return [], {"state": "UNMEASURED", "unmeasured": smeta["unmeasured"],
@@ -273,7 +302,8 @@ def carry() -> tuple[list[pd.DataFrame], dict[str, Any]]:
                  "source": "data/axes/bis.json, then data/intelligence/broker_swaps",
                  "rule": f"|carry| >= {floor:.3f}% p.a. (family_carry.min_edge_bp_per_day, "
                          "annualised): the policy-rate differential where BIS has the pair, "
-                         "else the broker's (swap_long - swap_short) as % p.a. of notional",
+                         "else the broker's per-side (swap_long - swap_short) / 2 as % p.a. of "
+                         "notional",
                  "n_keys_bis": len(have), "n_keys_broker_swap": n_swap,
                  "unmeasured": {**smeta["unmeasured"],
                                 "_fallback": ("no public gold lease / forward series is on the "
@@ -391,7 +421,7 @@ def main(argv: list[str] | None = None) -> int:
     frame.to_parquet(tmp, index=False)
     tmp.replace(path)
     doc = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-           "file": str(path.relative_to(DESK)), "n_rows": int(len(frame)), "axes": axes,
+           "file": str(path.relative_to(DESK)), "n_rows": len(frame), "axes": axes,
            "max_age_days": cm.STATE_MAX_AGE / pd.Timedelta(days=1),
            "rule": ("a row is used from knowable_at until stale_after (cadence + the state "
                     "freshness window); a key absent here is refused UNMEASURED by name")}

@@ -157,12 +157,17 @@ def _states(path: Path | None = None) -> Any:
 def _state_rule(name: str, op: str, thr: float, sigs: list[Any],
                 path: Path | None = None) -> list[Any]:
     """Keep a signal only where the state, as last published at or before its bar (and no older
-    than STATE_MAX_AGE), meets the rule."""
+    than STATE_MAX_AGE), meets the rule.
+
+    A NaN ON THE STATE'S OWN BAR IS UNMEASURED, NOT A GAP TO STEP OVER (audit of #222). The
+    builder (`free_shadows`) writes NaN where an input stopped arriving past its release-cadence
+    cap; reading the last non-NaN bar instead would carry that stale value up to STATE_MAX_AGE
+    further. So the lookup is over every published bar and a NaN there keeps nothing."""
     frame = _states(path)
     if frame is None or name not in frame.columns or not sigs:
         return []
-    col = frame[name].dropna()
-    if col.empty:
+    col = frame[name]
+    if col.dropna().empty:
         return []
     out = []
     for sig in sigs:
@@ -172,6 +177,8 @@ def _state_rule(name: str, op: str, thr: float, sigs: list[Any],
         if i < 0 or t - col.index[i] > STATE_MAX_AGE:
             continue
         v = float(col.iloc[i])
+        if v != v:                                  # NaN: the state is UNMEASURED at this bar
+            continue
         ok = abs(v) > thr if op == "abs_gt" else ALT_OPS[op](v, thr)
         if ok:
             out.append(sig)
@@ -302,10 +309,13 @@ MARKET_STYLES = frozenset({"", "market"})
 #: after a gap down a "limit" buy filled as a STOP above the market, and when the next open equals
 #: the close (22% of XAUUSD M5 bars, 63% of EURUSD H1) it filled exactly like market. The engine
 #: now has `Signal.order_type == "limit"`: a buy rests at the signal bar's close for one bar and
-#: fills only if the low reaches it, at min(open, limit) -- never above the limit, never as a stop;
-#: sells mirror it. A signal that already rests on its own trigger is a STOP entry by the family's
-#: design; it has no limit expression, so the limit variant drops it rather than re-labelling the
-#: parent's order as the child's.
+#: fills only if the ASK trades one tick through it, at the limit or the better open -- never
+#: above the limit, never as a stop; sells mirror it on the bid (`engine.limit_fill`, the queue
+#: haircut and the buy-side spread, second audit of #222). THE GATEWAY CANNOT PLACE IT YET: a
+#: certificate carrying this style is PENDING_EXECUTOR (`mt5desk.executables.order_style_gap`)
+#: until a limit executor exists. A signal that already rests on its own trigger is a STOP entry
+#: by the family's design; it has no limit expression, so the limit variant drops it rather than
+#: re-labelling the parent's order as the child's.
 LIMIT_STYLES = frozenset({"limit"})
 
 
