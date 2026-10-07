@@ -181,9 +181,21 @@ def _measure(root: Path, doc: dict[str, Any], *, ref: str | None, threshold_h: f
         doc["newest_box_commit"] = {"sha": sha, "author": " ".join(who),
                                     "at": commit_at.isoformat(timespec="seconds")}
     stamps: dict[str, str] = {}
+    not_box_written: dict[str, str] = {}
     newest_stamp = None
     for rel in paths:
         if not rel.endswith(".json"):
+            continue
+        # ONLY THE BOX'S OWN WRITE COUNTS (2026-10-06). RELEASE.json is on the publisher's list,
+        # but since release promotion (#90) CI's "seal release" commit rewrites it with a fresh
+        # `generated_utc` every release -- measured on 2d61e69a1, that stamp (11:11Z) read the
+        # fence FRESH at 4.3h while the newest box-authored commit on any published path was
+        # bcbec41f0 of 2026-09-24. A stamp counts only when the newest commit touching its file
+        # at the ref is a box identity's; anyone else's write is listed, never believed.
+        rc_a, writer = _git(root, "log", "-1", "--format=%an", use, "--", rel)
+        if rc_a != 0 or box_author.lower() not in writer.strip().lower():
+            if writer.strip():
+                not_box_written[rel] = writer.strip()
             continue
         rc, text = _git(root, "show", f"{use}:{rel}")
         if rc != 0:
@@ -204,6 +216,7 @@ def _measure(root: Path, doc: dict[str, Any], *, ref: str | None, threshold_h: f
             stamps[rel] = best.isoformat(timespec="seconds")
             newest_stamp = best if newest_stamp is None or best > newest_stamp else newest_stamp
     doc["stamps_inside_state"] = stamps
+    doc["stamps_ignored_not_box_written"] = not_box_written
     doc["newest_stamp_inside_state"] = newest_stamp.isoformat(timespec="seconds") \
         if newest_stamp else None
     freshest = newest_stamp or commit_at
