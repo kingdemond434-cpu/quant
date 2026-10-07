@@ -182,3 +182,89 @@ def test_d34_backpressure_goes_to_the_judge_only() -> None:
     assert action == ("Raise judge capacity (backpressure goes to the judge only). "
                       "Never throttle onboarding, mining or research generation.")
     assert "throttle onboarding and" not in row.lower()
+
+
+def test_pass_questions_q1_to_q7_are_in_the_cycle_and_not_duty_rows() -> None:
+    """ARCH-30: every pass answers Q1-Q7 with box evidence into `pass_questions`; an
+    unmeasured answer is MISSED. The Q rows must never be read as duty rows."""
+    text = (ROOT / "docs" / "cro" / "CRO_CYCLE.md").read_text(encoding="utf-8")
+    qs = [ln.split("|")[1].strip() for ln in text.splitlines() if ln.startswith("| Q")]
+    assert qs[1:] == [f"Q{i}" for i in range(1, 8)]
+    assert "`pass_questions`" in text and "`pass_questions_missed`" in text
+    assert "UNMEASURED or cites nothing counts as MISSED" in text
+    assert not any(k.startswith("Q") for k in ccd.duty_rows(text))
+    q4 = next(ln for ln in text.splitlines() if ln.startswith("| Q4 |"))
+    for baseline in ("equal-risk", "inverse-vol", "best-single-sleeve",
+                     "after lot rounding and costs"):
+        assert baseline in q4
+
+
+def test_pass_questions_are_scored_from_the_review(tmp_path: Path) -> None:
+    """ARCH-30 is not doc-only: an absent, UNMEASURED or uncited answer is rewritten MISSED
+    and counted in pass_questions_missed; a cited answer stands."""
+    good = {"answer": "re-judge the COT backlog", "evidence": ["reports/X.json@2026-10-07"]}
+    review = tmp_path / "review.json"
+    review.write_text(json.dumps({"latest": {"at": datetime.now(UTC).isoformat(), "duties": {},
+        "pass_questions": {"Q1": good, "Q2": dict(good), "Q3": {**good, "evidence": []},
+                           "Q4": {"answer": "UNMEASURED: no baseline artifact",
+                                  "evidence": ["x"], "status": "ANSWERED"},
+                           "Q5": dict(good), "Q6": dict(good)}}}))
+    measured = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)
+    res = ccd.apply_to_review(review, measured, (datetime.now(UTC) - timedelta(minutes=1))
+                              .isoformat())
+    assert res["pass_questions_missed"] == ["Q3", "Q4", "Q7"]
+    latest = json.loads(review.read_text())["latest"]
+    assert latest["pass_questions_missed"] == ["Q3", "Q4", "Q7"]
+    pq = latest["pass_questions"]
+    assert pq["Q1"]["status"] == "ANSWERED"
+    assert pq["Q3"]["reason"] == "no_evidence"
+    assert pq["Q4"]["status"] == "MISSED" and pq["Q4"]["status_claimed"] == "ANSWERED"
+    assert pq["Q7"] == {"status": "MISSED", "reason": "absent"}
+
+
+def test_judging_sweep_items_a_to_g_are_scored_from_the_review(tmp_path: Path) -> None:
+    """The JUDGING BOTTLENECK SWEEP is enforced like the pass questions: every item (a)-(g)
+    needs a finding and evidence, or it is MISSED and listed in judging_sweep_missed."""
+    item = {"finding": "0 first rulings/h", "evidence": ["reports/JUDGING_BURNDOWN.json"]}
+    sweep = {k: dict(item) for k in "abcdef"}
+    sweep["c"] = {"finding": "UNMEASURED", "evidence": ["x"]}
+    review = tmp_path / "review.json"
+    review.write_text(json.dumps({"latest": {"at": datetime.now(UTC).isoformat(), "duties": {},
+                                             "judging_sweep": sweep}}))
+    measured = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)
+    res = ccd.apply_to_review(review, measured, (datetime.now(UTC) - timedelta(minutes=1))
+                              .isoformat())
+    assert res["judging_sweep_missed"] == ["c", "g"]
+    latest = json.loads(review.read_text())["latest"]
+    assert latest["judging_sweep"]["a"]["status"] == "MEASURED"
+    assert latest["judging_sweep"]["g"] == {"status": "MISSED", "reason": "absent"}
+
+
+def test_a_burndown_older_than_two_hours_is_stale_for_d3(tmp_path: Path) -> None:
+    """D3 reads the burndown at a 2h window even though the duty default is 26h."""
+    rep = tmp_path / "desks" / "mt5" / "reports"
+    rep.mkdir(parents=True)
+    at = (datetime.now(UTC) - timedelta(hours=3)).isoformat()
+    (rep / "JUDGING_BURNDOWN.json").write_text(json.dumps(
+        {"generated_at": at, "first_rulings_per_hour": 0.0, "created_per_hour": 3750.0}))
+    rows = {"D3": {"name": "Judging", "artifacts": ["reports/JUDGING_BURNDOWN.json"]}}
+    spec = {"duties": {"D3": {"artifact_max_age_h": {"reports/JUDGING_BURNDOWN.json": 2},
+                              "metrics": ["first_rulings_per_hour"]}}}
+    d3 = ccd.measure(rows, spec, root=tmp_path)["duties"]["D3"]
+    assert d3["artifacts"]["reports/JUDGING_BURNDOWN.json"]["status"] == "STALE"
+    assert d3["counts_as"] == "MISSED"
+
+
+def test_the_cycle_carries_the_judging_sweep_and_the_d3_d4_d38_extensions() -> None:
+    text = (ROOT / "docs" / "cro" / "CRO_CYCLE.md").read_text(encoding="utf-8")
+    items = [ln.split("|")[1].strip() for ln in text.splitlines()
+             if len(ln) > 4 and ln[:2] == "| " and ln[2] in "abcdefg" and ln[3:5] == " |"]
+    assert items == list("abcdefg")
+    rows = ccd.duty_rows(text)
+    assert "reports/JUDGING_BURNDOWN.json" in rows["D3"]["artifacts"]
+    assert "reports/JUDGE_COVERAGE.json" in rows["D4"]["artifacts"]
+    spec = json.loads((ROOT / "docs" / "cro" / "cro_duty_metrics.json").read_text("utf-8"))
+    assert spec["duties"]["D3"]["artifact_max_age_h"]["reports/JUDGING_BURNDOWN.json"] == 2
+    assert {"warm_rate", "cold_build_seconds", "build_failures_by_cause"} <= set(
+        spec["duties"]["D38"]["metrics"])
+    assert "1,389,434" in text and "`judging_sweep`" in text
