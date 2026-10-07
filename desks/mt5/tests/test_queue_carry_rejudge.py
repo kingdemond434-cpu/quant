@@ -51,3 +51,11 @@ def test_a_queue_for_another_attestation_is_never_replaced(tmp_path) -> None:
     doc, why = q.build_queue(certs, {"attestation": {"version": "v5"}, "cells": ["a"]},
                              {"version": "v4"})
     assert doc is None and "ANOTHER attestation" in why
+
+
+def test_the_queue_runs_on_the_hourly_clock_and_reaches_the_judge() -> None:
+    cycle = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    assert '_producer("carry_rejudge", "scripts/queue_carry_rejudge.py", "--write")' in cycle
+    assert '"carry_rejudge": crj' in cycle and '"carry_rejudge": 120' in cycle
+    judge = (DESK / "scripts" / "external_gauntlet.py").read_text("utf-8")
+    assert '"priority_remint.json"' in judge and "def remint_partition" in judge

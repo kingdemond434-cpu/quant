@@ -937,7 +937,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
     "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
-    "fill_attribution", "execution_resolver", "markout", "swap_rejudge", "queue_compact",
+    "fill_attribution", "execution_resolver", "markout", "swap_rejudge", "carry_rejudge",
+    "queue_compact",
     "requeue_unrunnable", "merge_docket", "miner_conversion", "graveyard_model",
     "research_exchange_score", "model_skill", "research_org", "experiment_design",
     "experiment_cache", "opportunity_gap", "opportunity_forecast", "forecast_contract",
@@ -1018,7 +1019,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "ground_depth",
                      "asia_plane", "archive_tape", "reclaim_disk", "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
-                     "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
+                     "cost_construction", "swap_rejudge", "carry_rejudge", "sge_premium",
+                     "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "orthogonality_yield", "effective_trials",
@@ -1731,6 +1733,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
     "acquire_datasets": 1_100,
+    # Two survivor JSON reads and one small write (carry_pit, 2026-10-07).
+    "carry_rejudge": 120,
     # THE WORLD DATASET HUNTER stops itself at --budget-s 900 and writes its catalog, registry
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
@@ -2536,6 +2540,18 @@ def swap_rejudge() -> dict:
     overnight_gap_decay sleeves is where `cost_to_edge` finds cost exceeding the whole edge.
     """
     return _producer("swap_rejudge", "research/swap_rejudge.py")
+
+
+def carry_rejudge() -> dict:
+    """`carry_rejudge`: queue every carry certificate the look-ahead `family_carry` minted.
+
+    `family_carry` applied TODAY's swap to every past bar until 2026-10-07 (carry_pit). Each
+    hour this leg merges any carry certificate gated before the fix that is still in the
+    survivor set into `priority_remint.json`, so the judge re-judges the exact spec under the
+    point-in-time family first and its own `remint_partition` retires, replaces or holds it
+    outside the survivor set. Idempotent: once none remains it writes only its report.
+    """
+    return _producer("carry_rejudge", "scripts/queue_carry_rejudge.py", "--write")
 
 
 def asia_plane() -> dict:
@@ -5191,6 +5207,7 @@ def main() -> None:
     fat = _costed("fill_attribution", fill_attribution)
     c2e = _costed("cost_to_edge", cost_to_edge)
     swr = _costed("swap_rejudge", swap_rejudge)
+    crj = _costed("carry_rejudge", carry_rejudge)
     asp = _costed("asia_plane", asia_plane)
     sge = _costed("sge_premium", sge_premium)
     aco = _costed("asia_collector", asia_collector)
@@ -5784,6 +5801,7 @@ def main() -> None:
                     "fill_attribution": fat,
                     "cost_to_edge": c2e,
                     "swap_rejudge": swr,
+                    "carry_rejudge": crj,
                     "asia_plane": asp,
                     "sge_premium": sge,
                     "asia_collector": aco,

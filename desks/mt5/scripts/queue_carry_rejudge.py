@@ -15,13 +15,15 @@ HOW: THE JUDGE'S OWN RE-MINT PATH, NOTHING NEW. `external_gauntlet` reads
 The promoter's own automatic retirement then acts on the survivor set. This script only
 writes the queue. It never edits a certificate, a sleeve or a cap.
 
-Run on the box, after the release carrying `claude/carry-pit` is adopted:
+Runs hourly as the `carry_rejudge` leg of hourly_cycle (`--write`), so adoption of the release
+is all the box needs; by hand on the box:
 
     py -3 desks\\mt5\\scripts\\queue_carry_rejudge.py           # dry run: lists the queue
     py -3 desks\\mt5\\scripts\\queue_carry_rejudge.py --write    # merges into priority_remint.json
 
-It MERGES into a queue already there for the attestation in force and REFUSES to replace a
-queue written for another attestation (that one belongs to an attestation change in flight).
+It MERGES into a queue already there for the attestation in force and does not replace a queue
+written for another attestation (that one belongs to an attestation change in flight): the
+report reads WAITING and the next hour tries again.
 """
 from __future__ import annotations
 
@@ -40,6 +42,8 @@ for _p in (str(DESK), str(DESK / "research"), str(DESK.parents[1])):
 SURVIVOR_FILES = (DESK / "reports" / "UNIVERSAL_SURVIVORS.json",
                   DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json")
 PRIORITY = DESK / "data" / "hypotheses" / "priority_remint.json"
+#: What each pass found and did; its consumer is the judge through PRIORITY.
+REPORT = DESK / "reports" / "CARRY_REJUDGE.json"
 #: Certificates gated before this instant were judged by the look-ahead family.
 FIXED_AT = "2026-10-07T00:00:00+00:00"
 
@@ -104,9 +108,21 @@ def build_queue(certs: dict[str, dict[str, Any]], existing: Any,
     return doc, "ok"
 
 
+def _report(certs: dict[str, dict[str, Any]], status: str, why: str) -> None:
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    REPORT.write_text(json.dumps({
+        "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+        "status": status, "why": why, "fixed_at": FIXED_AT, "n_queued": len(certs),
+        "consumer": "external_gauntlet.remint_cells / remint_partition via priority_remint.json",
+        "certificates": {k: {"cell": r["cell"], "symbol": r["symbol"], "gated_at": r["gated_at"]}
+                         for k, r in sorted(certs.items())},
+    }, indent=1, default=str), encoding="utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--write", action="store_true", help="merge into priority_remint.json")
+    ap.add_argument("--write", action="store_true",
+                    help="merge into priority_remint.json and write the report")
     ap.add_argument("--fixed-at", default=FIXED_AT)
     args = ap.parse_args(argv)
     from research.gate_policy import ATTESTATION
@@ -116,17 +132,23 @@ def main(argv: list[str] | None = None) -> int:
     for key, r in sorted(certs.items()):
         print(f"  {key}  sym={r['symbol']}  gated_at={r['gated_at']}  in={','.join(r['source'])}")
     if not certs:
+        if args.write:
+            _report(certs, "CLEAN", "no carry certificate gated before the fix is in the "
+                                    "survivor set")
         return 0
     doc, why = build_queue(certs, _read(PRIORITY), ATTESTATION)
     if doc is None:
         print(f"REFUSED: {why}")
-        return 2
+        if args.write:
+            _report(certs, "WAITING", why)
+        return 0
     if not args.write:
         print(f"dry run: would queue {len(doc['cells'])} cell(s), "
               f"{len(doc['stale_certificate_keys'])} stale key(s) -> {PRIORITY}")
         return 0
     PRIORITY.parent.mkdir(parents=True, exist_ok=True)
     PRIORITY.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    _report(certs, "QUEUED", "merged into priority_remint.json under the attestation in force")
     print(f"queued -> {PRIORITY}")
     return 0
 

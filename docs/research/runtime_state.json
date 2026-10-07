@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 768,
+  "NEVER": 769,
   "UNMEASURED": 37
  },
  "scope": {
-  "attested": 986,
+  "attested": 987,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -298,6 +298,16 @@
      "leg:elitequant_breadth",
      "leg:zoo_breadth",
      "library:desks/mt5/research/cross_excitation.py"
+    ]
+   },
+   {
+    "at": "2026-10-07T01:40:34+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:carry_rejudge"
     ]
    }
   ]
@@ -25451,6 +25461,34 @@
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
    "measured_at": "2026-10-06T21:26:24+00:00"
+  },
+  {
+   "organ": "leg:carry_rejudge",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/scripts/queue_carry_rejudge.py"
+   ],
+   "clock": "hourly_cycle:carry_rejudge",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CARRY_REJUDGE.json",
+   "artifact_declared": "desks/mt5/reports/CARRY_REJUDGE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-07T01:40:34+00:00"
   }
  ],
  "ratchet": {
