@@ -70,6 +70,108 @@ function Git-In-Repo {
     return $LASTEXITCODE
 }
 
+# OWNERSHIP AND CREDENTIAL, BEFORE THE FIRST GIT CALL (2026-10-06). See GitBoxEnv.ps1: the box
+# refused every git call for "dubious ownership" and had no credential a scheduled task could use,
+# and the log said only "git add failed rc=128" and "push failed". Both are now set for this
+# process (safe.directory = this repo; GITHUB_TOKEN as a header when the machine has one) and a
+# missing credential is named BLOCKED_AUTH instead of a bare exit code.
+. (Join-Path $PSScriptRoot "GitBoxEnv.ps1")
+$script:GitEnv = Initialize-BoxGitEnv -RepoRoot $RepoRoot
+$script:BlockedAuth = $false
+Write-SyncLog ("git env: safe.directory={0} auth={1} git={2}" -f $script:GitEnv.SafeDirectory,
+               $script:GitEnv.Auth, $script:GitEnv.GitVersion)
+if ($script:GitEnv.GitTooOldForEnvSafeDirectory) {
+    Write-SyncLog (("WARN: '{0}' is older than {1}: it may ignore safe.directory from the environment, " +
+                    "and the ownership refusal (rc=128) would come straight back. Upgrade Git for " +
+                    "Windows or run install_adopt_release_task.ps1 (system safe.directory).") -f
+                   $script:GitEnv.GitVersion, $script:MinGitForEnvSafeDirectory)
+}
+
+# THE CRASH, RECORDED WELL ENOUGH TO ROOT-CAUSE (2026-10-06). The 13:54 `git commit` died with
+# rc=-1073741819 (0xC0000005) and the log kept only the number. A crashed git (an exit code outside
+# 0..255) now writes desks\mt5\reports\GIT_CRASH_DIAG.json: the command (paths counted, never
+# listed), the code in hex, git's version, the index and object-store sizes, how many git
+# processes were alive, and the Windows Application-log entries naming git from the last ten
+# minutes. The publisher carries that file off the box on its next publish (Publish-StateOnto's
+# -Extra list), so the next crash reaches a reader with its cause attached.
+$script:CrashDiagRel = "desks/mt5/reports/GIT_CRASH_DIAG.json"
+function Write-GitCrashDiag {
+    param([string[]]$GitArgs, [int]$Rc, [string]$What)
+    try {
+        $verb = if ($GitArgs.Count -gt 0) { $GitArgs[0] } else { "" }
+        $sep = [array]::IndexOf($GitArgs, "--")
+        $shown = if ($sep -ge 0) { @($GitArgs[0..$sep]) + @("<{0} path(s)>" -f ($GitArgs.Count - $sep - 1)) } else { @($GitArgs | Select-Object -First 8) }
+        $idxFile = Join-Path $RepoRoot ".git\index"
+        $idxBytes = if (Test-Path -LiteralPath $idxFile) { (Get-Item -LiteralPath $idxFile).Length } else { $null }
+        $objects = @(Git-Lines @("count-objects", "-v"))
+        $events = @()
+        try {
+            # Only the crash reporters (Application Error, Windows Error Reporting) and only events
+            # that name git.exe: a bare 'git' match caught "digital" and "legitimate".
+            $events = @(Get-WinEvent -FilterHashtable @{ LogName = "Application"; StartTime = (Get-Date).AddMinutes(-10);
+                                                         ProviderName = @("Application Error", "Windows Error Reporting") } -MaxEvents 200 -ErrorAction Stop |
+                        Where-Object { $_.Message -match '(?i)\bgit\.exe\b' } | Select-Object -First 3 |
+                        ForEach-Object { [ordered]@{ time = $_.TimeCreated.ToUniversalTime().ToString("o");
+                                                     provider = $_.ProviderName; id = $_.Id;
+                                                     message = ("$($_.Message)" -replace '\s+', ' ').Substring(0, [math]::Min(800, "$($_.Message)".Length)) } })
+        } catch { $events = @([ordered]@{ error = "Get-WinEvent: $($_.Exception.Message)" }) }
+        $doc = [ordered]@{
+            schema = "git_crash_diag/1"
+            at = (Get-Date).ToUniversalTime().ToString("o")
+            what = $What; verb = $verb; command = ($shown -join " ")
+            rc = $Rc; rc_hex = ("0x{0:X8}" -f ([int64]$Rc -band 0xFFFFFFFF))
+            git_version = $script:GitEnv.GitVersion
+            index_bytes = $idxBytes
+            count_objects = $objects
+            git_processes_alive = @(Get-Process -Name git -ErrorAction SilentlyContinue).Count
+            application_events = $events
+        }
+        $path = Join-Path $RepoRoot ($script:CrashDiagRel -replace "/", "\")
+        New-Item -ItemType Directory -Force -Path (Split-Path $path) | Out-Null
+        ($doc | ConvertTo-Json -Depth 5) | Set-Content -LiteralPath $path -Encoding utf8
+        Write-SyncLog ("CRASH DIAG: {0} rc={1} ({2}) git={3} index={4} bytes -> {5}" -f
+                       $What, $Rc, $doc.rc_hex, $doc.git_version, $idxBytes, $script:CrashDiagRel)
+    } catch {
+        Write-SyncLog ("CRASH DIAG could not be written: " + $_.Exception.Message)
+    }
+}
+
+# A GIT WRITE THAT CRASHES IS RETRIED, NOT FATAL (2026-10-06). Measured 13:54 on the box: `git
+# commit` died with rc=-1073741819 (0xC0000005, an access violation) and the pass aborted, so the
+# state waited fifteen minutes for a slot that could crash the same way. A crashed git can leave
+# .git\index.lock behind, which then refuses every later write with rc=128. This pass HOLDS the
+# git-writer mutex, so no coordinated writer owns that lock; one older than five minutes is the
+# crash's debris and is removed (logged). Three attempts, a short pause between.
+function Invoke-GitWriteRetry {
+    param([string[]]$GitArgs, [string]$What)
+    $rc = 1
+    for ($try = 1; $try -le 3; $try++) {
+        $rc = Git-In-Repo $GitArgs
+        if ($rc -eq 0) { return 0 }
+        Write-SyncLog ("{0} failed rc={1} (attempt {2}/3)" -f $What, $rc, $try)
+        if ($rc -lt 0 -or $rc -gt 255) { Write-GitCrashDiag -GitArgs $GitArgs -Rc $rc -What $What }
+        $lock = Join-Path $RepoRoot ".git\index.lock"
+        if (Test-Path -LiteralPath $lock) {
+            $age = (Get-Date) - (Get-Item -LiteralPath $lock).LastWriteTime
+            # AGE ALONE IS NOT DEBRIS. The mutex coordinates writers that take it, but a git child
+            # that outlived a killed task does not hold it (see "CODE ADOPTION HAS ONE OWNER"
+            # below: an orphan `git merge` once ran on against index.lock after its PowerShell was
+            # terminated). Deleting the lock under a live git corrupts the index of the tree that
+            # trades. So the lock goes only when it is old AND no git process is alive at all.
+            $alive = @(Get-Process -Name git -ErrorAction SilentlyContinue)
+            if ($age.TotalMinutes -ge 5 -and $alive.Count -eq 0) {
+                Write-SyncLog ("removing stale .git\index.lock ({0:N0} min old, no git process alive; this pass holds the git-writer lock)" -f $age.TotalMinutes)
+                Remove-Item -LiteralPath $lock -Force -ErrorAction SilentlyContinue
+            } elseif ($age.TotalMinutes -ge 5) {
+                Write-SyncLog ("KEEPING .git\index.lock ({0:N0} min old): {1} git process(es) alive (pid {2}); not deleting a lock a live git may hold" -f
+                               $age.TotalMinutes, $alive.Count, (($alive | ForEach-Object { $_.Id }) -join ","))
+            }
+        }
+        if ($try -lt 3) { Start-Sleep -Seconds (5 * $try) }
+    }
+    return $rc
+}
+
 # YIELD TO AN ADOPTION IN PROGRESS (2026-09-08). MT5-AdoptRelease rewrites the tree in place and
 # commits by name; this pass would `git checkout -- <path>` its dirty incoming paths (undoing the
 # adoption's writes), race it for `.git/index.lock`, and sweep its chunk-staged code into a
@@ -390,17 +492,43 @@ function Push-Logged {
         foreach ($l in @($out | Where-Object { $_ -match '\S' } | Select-Object -Last 12)) {
             Write-SyncLog ("  push said: " + $l.Trim())
         }
+        if (Test-GitAuthFailure -Lines $out) { $script:BlockedAuth = $true }
     }
     return $rc
 }
 
 function Publish-StateOnto {
-    param([string]$RepoRoot, [string]$Branch, [string[]]$Paths)
+    param([string]$RepoRoot, [string]$Branch, [string[]]$Paths, [switch]$FromDisk, [string[]]$Extra = @())
     if (-not $Paths -or $Paths.Count -eq 0) { Write-SyncLog "publish: no state paths"; return $false }
-    $entries = @(Git-Lines (@("ls-tree", "HEAD", "--") + $Paths) | Where-Object { $_ -match '\S' })
+    if ($FromDisk) {
+        # THE LOCAL COMMIT FAILED, THE STATE STILL TRAVELS (2026-10-06). The blobs are written
+        # straight from the files on disk (`hash-object -w`) in the same "<mode> blob <sha>`t<path>"
+        # shape ls-tree prints, so everything below is unchanged. HEAD, the real index and the
+        # working tree are still never touched.
+        $entries = @()
+        foreach ($rel in $Paths) {
+            $sha = "$(Git-Lines @("hash-object", "-w", "--", $rel) | Select-Object -First 1)".Trim()
+            if ($sha -match '^[0-9a-f]{40}$') { $entries += ("100644 blob {0}`t{1}" -f $sha, $rel) }
+            else { Write-SyncLog ("publish (from disk): could not hash {0} (rc={1}); it is NOT in this publish" -f $rel, $script:GitLinesRc) }
+        }
+        Write-SyncLog ("publish (from disk): {0} of {1} listed path(s) hashed" -f $entries.Count, $Paths.Count)
+        if ($entries.Count -eq 0) {
+            Write-SyncLog "publish (from disk): EVERY state file failed to hash -- git cannot write objects here; nothing to publish"
+            return $false
+        }
+    } else {
+        $entries = @(Git-Lines (@("ls-tree", "HEAD", "--") + $Paths) | Where-Object { $_ -match '\S' })
+    }
     if ($entries.Count -eq 0) {
         Write-SyncLog "publish: HEAD carries none of the state paths yet; nothing to publish"
         return $false
+    }
+    # DIAGNOSTICS RIDE ALONG (2026-10-06): reports this script itself writes (the crash record, the
+    # backlog drain) go up from disk on every publish, so their findings reach a reader off the box.
+    foreach ($rel in @($Extra)) {
+        if (-not $rel -or -not (Test-Path -LiteralPath (Join-Path $RepoRoot ($rel -replace "/", "\")))) { continue }
+        $sha = "$(Git-Lines @("hash-object", "-w", "--", $rel) | Select-Object -First 1)".Trim()
+        if ($sha -match '^[0-9a-f]{40}$') { $entries += ("100644 blob {0}`t{1}" -f $sha, $rel) }
     }
     $idx = Join-Path ([System.IO.Path]::GetTempPath()) ("mt5-state-index-{0}" -f $PID)
     $prevIndex = $env:GIT_INDEX_FILE
@@ -450,6 +578,13 @@ function Publish-StateOnto {
             Write-SyncLog ("published box state onto origin/{0} as {1} ({2} path(s)) without merging code" -f
                            $Branch, $commit.Substring(0, 12), $n)
             return $true
+        }
+        if ($script:BlockedAuth) {
+            # Re-fetching cannot mint a credential, so the other two attempts would only repeat it.
+            Write-SyncLog (("BLOCKED_AUTH: the push needs a credential this unattended task cannot get " +
+                            "(auth={0}). Set GITHUB_TOKEN as a MACHINE variable on the box (setx /M); " +
+                            "the next slot publishes the state.") -f $script:GitEnv.Auth)
+            return $false
         }
         Write-SyncLog "publish: push of $($commit.Substring(0, 12)) failed rc=$rc (attempt $try); re-fetching and re-basing onto origin's tip"
     }
@@ -644,12 +779,17 @@ if ($existing.Count -eq 0) {
     exit 0
 }
 
-$addRc = Git-In-Repo (@("add", "--") + $existing)
-if ($addRc -ne 0) { Write-SyncLog "ABORT: git add failed rc=$addRc"; exit 1 }
+$script:PublishFromDisk = $false
+$addRc = Invoke-GitWriteRetry -GitArgs (@("add", "--") + $existing) -What "git add"
+if ($addRc -ne 0) {
+    Write-SyncLog "git add failed rc=$addRc after 3 attempts; publishing the state straight from disk"
+    $script:PublishFromDisk = $true
+}
 
 # Nothing changed since the last cycle -- do not create empty commits every 15 minutes forever.
-& git -C $RepoRoot diff --cached --quiet
-if ($LASTEXITCODE -eq 0) {
+if ($script:PublishFromDisk) {
+    Write-SyncLog "local commit skipped (index unusable this pass)"
+} elseif ($(& git -C $RepoRoot diff --cached --quiet; $LASTEXITCODE) -eq 0) {
     # NOTHING NEW TO COMMIT IS NOT NOTHING TO DELIVER. A state commit that was made and then
     # failed to reach origin sits local; delivery must not depend on having something NEW to
     # say, so this pass still publishes what HEAD carries (Publish-StateOnto is idempotent: when
@@ -657,8 +797,11 @@ if ($LASTEXITCODE -eq 0) {
     Write-SyncLog "no new state since last sync; making sure origin carries the committed state"
 } else {
     $stamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd_HHmm")
-    $commitRc = Git-In-Repo @("commit", "-m", "mt5 shadow state sync $stamp")
-    if ($commitRc -ne 0) { Write-SyncLog "ABORT: git commit failed rc=$commitRc"; exit 1 }
+    $commitRc = Invoke-GitWriteRetry -GitArgs @("commit", "-m", "mt5 shadow state sync $stamp") -What "git commit"
+    if ($commitRc -ne 0) {
+        Write-SyncLog "git commit failed rc=$commitRc after 3 attempts; publishing the state straight from disk"
+        $script:PublishFromDisk = $true
+    }
 }
 
 # ONE DELIVERY PATH: THE STATE BLOBS, ONTO ORIGIN'S TIP, NEVER THE BOX'S BRANCH (2026-10-01).
@@ -680,10 +823,48 @@ if ($script:InboundAdoptionRequired) {
     Write-SyncLog "local state commit is safe; inbound code is left to MT5-AdoptRelease"
 }
 $branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD).Trim()
-$ok = Publish-StateOnto -RepoRoot $RepoRoot -Branch $branch -Paths $existing
+$script:BacklogRel = "desks/mt5/reports/BOX_BACKLOG.json"
+$ok = Publish-StateOnto -RepoRoot $RepoRoot -Branch $branch -Paths $existing -FromDisk:$script:PublishFromDisk `
+                        -Extra @($script:CrashDiagRel, $script:BacklogRel)
 if (-not $ok) {
+    if ($script:BlockedAuth) {
+        # A NAMED STATE, NOT rc=1: Task Scheduler's LastTaskResult reads 3, and the log says why.
+        Write-SyncLog "ABORT: BLOCKED_AUTH -- box state did not reach origin/$branch (no usable git credential)"
+        exit 3
+    }
     Write-SyncLog "ABORT: box state did not reach origin/$branch this pass; the next slot retries"
     exit 1
 }
 Write-SyncLog ("shadow state synced to origin/{0} (state blobs onto origin's tip): {1} path(s)" -f $branch, $existing.Count)
+
+# DRAIN THE BACKLOG, ONCE A DAY, ONLY ONCE THE CREDENTIAL HAS JUST WORKED (2026-10-06). The box's
+# branch was 823 commits ahead of origin and is never pushed whole (HTTP 408, #181). State-only
+# commits are superseded by the publish above; libs/ops/box_backlog.py classifies any box-only
+# CODE (it can lift it to a review branch box/backlog-<stamp> with --push, never the live branch,
+# but the box runs it classify-only until the audit clears that) and reports the counts in
+# BOX_BACKLOG.json, which the next publish carries. It inherits this process's git environment.
+$backlogFull = Join-Path $RepoRoot ($script:BacklogRel -replace "/", "\")
+$due = -not (Test-Path -LiteralPath $backlogFull) -or
+       (((Get-Date) - (Get-Item -LiteralPath $backlogFull).LastWriteTime).TotalHours -ge 24)
+if ($due) {
+    $py = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+    # CLASSIFY-ONLY (audit HOLD on #210, 2026-10-06): the repository is public, so the first box
+    # runs only measure and report the backlog. Adding --push here waits on the audit's clearance.
+    $pyArgs = @("-m", "libs.ops.box_backlog")
+    if (-not (Test-Path -LiteralPath $py)) { $py = "py"; $pyArgs = @("-3") + $pyArgs }
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        Push-Location $RepoRoot
+        $summary = @(& $py @pyArgs 2>&1 | ForEach-Object { "$_" })
+        $drainRc = $LASTEXITCODE
+    } catch {
+        $summary = @("could not start: " + $_.Exception.Message); $drainRc = 127
+    } finally {
+        Pop-Location
+        $ErrorActionPreference = $prev
+    }
+    foreach ($l in @($summary | Where-Object { $_ -match '\S' } | Select-Object -Last 3)) { Write-SyncLog ("backlog drain: " + $l.Trim()) }
+    if ($drainRc -ne 0) { Write-SyncLog "backlog drain exited rc=$drainRc (state publish above is unaffected)" }
+}
 exit 0
