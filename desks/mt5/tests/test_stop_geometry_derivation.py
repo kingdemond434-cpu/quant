@@ -131,3 +131,119 @@ def test_a_value_kept_on_the_evidence_is_a_solved_constant(monkeypatch) -> None:
     monkeypatch.setattr(sgd, "derive_min_stop_spread_mult", lambda deals, **k: dict(kept))
     monkeypatch.setattr(sgd, "derive_entry_drift_tol_frac", lambda deals, **k: dict(ok))
     assert sgd.derive()["status"] == "OK"
+
+
+# --------------------------------------------------------------------- the robustness gate
+def _solved(derived: float, today: float, *, n: int, mean: float | None, sd: float | None,
+            prior_r: float = 0.29, delta: float = 1.7e-4) -> dict:
+    return {"status": "OK", "derived": derived, "today": today,
+            "vs_today": {"delta_elog_per_day": delta},
+            "inputs": {"edge": {"prior_r": prior_r, "live_n": n, "live_mean_r": mean,
+                                "live_sd_r": sd}}}
+
+
+@pytest.mark.parametrize(("derived", "prior_value"), [(0.05, 0.9), (0.9, 0.05)],
+                         ids=["thin_move_down", "thin_move_up"])
+def test_ten_trades_cannot_move_a_money_path_number_either_way(derived: float,
+                                                               prior_value: float) -> None:
+    """The 2026-10-06 dry run: 10 live trades took ENTRY_DRIFT_TOL_FRAC to 0.05 against a
+    prior-only 0.9. That move is held -- and so is its mirror image toward more aggression."""
+    res = _solved(derived, 0.25, n=10, mean=-0.33467, sd=1.1)
+    out = sgd.robustness_gate(res, prior_value, 0.25)
+    assert out["adopt"] is False
+    assert out["adopted_value"] == 0.25                 # the current value stays
+    assert out["gate"]["verdict"] == "THIN_EVIDENCE" and out["gate"]["held"] is True
+    mg = out["gate"]["missed_growth"]
+    assert mg["held_value"] == 0.25 and mg["refused_value"] == derived
+    assert mg["direction"] == ("down" if derived < 0.25 else "up")
+    assert mg["claimed_delta_elog_per_day"] == pytest.approx(1.7e-4)
+
+
+@pytest.mark.parametrize(("derived", "prior_value", "mean"),
+                         [(0.05, 0.9, -0.40), (0.9, 0.05, 0.98)],
+                         ids=["ample_move_down", "ample_move_up"])
+def test_ample_evidence_adopts_in_either_direction(derived: float, prior_value: float,
+                                                   mean: float) -> None:
+    res = _solved(derived, 0.25, n=200, mean=mean, sd=1.0)    # ~9.8 SEs from the 0.29R prior
+    out = sgd.robustness_gate(res, prior_value, 0.25)
+    assert out["adopt"] is True and out["adopted_value"] == derived
+    assert out["gate"]["verdict"] == "ADOPT" and out["gate"]["held"] is False
+    assert "missed_growth" not in out["gate"]
+
+
+@pytest.mark.parametrize(("derived", "prior_value", "mean"),
+                         [(0.05, 0.9, 0.29 - 0.1), (0.9, 0.05, 0.29 + 0.1)],
+                         ids=["noisy_move_down", "noisy_move_up"])
+def test_a_move_inside_the_samples_noise_is_held_either_way(derived: float,
+                                                            prior_value: float,
+                                                            mean: float) -> None:
+    # 40 trades clear the floor, but a 0.1R gap at sd 1.0 is 0.63 SEs: not a refutation.
+    out = sgd.robustness_gate(_solved(derived, 0.25, n=40, mean=mean, sd=1.0), prior_value, 0.25)
+    assert out["adopt"] is False and out["adopted_value"] == 0.25
+    assert out["gate"]["verdict"] == "WITHIN_SAMPLING_UNCERTAINTY"
+    assert out["gate"]["z"] == pytest.approx(0.1 / (1.0 / 40 ** 0.5), abs=1e-3)
+
+
+def test_the_gate_holds_only_moves_the_live_ledger_made() -> None:
+    # No move: nothing to hold. The certified prior's own answer: adopted, live n irrelevant.
+    out = sgd.robustness_gate(_solved(0.25, 0.25, n=0, mean=None, sd=None), 0.9, 0.25)
+    assert out["adopt"] is True and out["gate"]["verdict"] == "NO_MOVE"
+    out = sgd.robustness_gate(_solved(0.9, 0.25, n=3, mean=0.1, sd=None), 0.9, 0.25)
+    assert out["adopt"] is True and out["adopted_value"] == 0.9
+    assert out["gate"]["verdict"] == "PRIOR_ANSWER"
+    # Nothing solved: today stands and nothing is billed (there is no refused value).
+    out = sgd.robustness_gate({"status": "UNMEASURED: x"}, None, 3.0)
+    assert out["adopt"] is False and out["adopted_value"] == 3.0
+    assert out["gate"]["held"] is False
+
+
+def test_the_thresholds_are_the_desks_two_se_bar_and_a_thirty_trade_floor() -> None:
+    assert sgd.MIN_LIVE_N == 30
+    assert sgd.Z_ADOPT == sgd.TIE_SE == 2.0
+
+
+def test_derive_reports_the_dry_runs_case_as_held(monkeypatch) -> None:
+    """End to end through derive(): the live-moved 0.05 is reported adopt:false, 0.25 stands."""
+    def drift(deals, prior_only=False, **_k):
+        return (_solved(0.9, 0.25, n=0, mean=None, sd=None) if prior_only
+                else _solved(0.05, 0.25, n=10, mean=-0.33467, sd=1.1))
+    kept = {"status": "TODAY_OPTIMAL_WITHIN_NOISE", "derived": 3.0, "today": 3.0}
+    monkeypatch.setattr(sgd, "derive_min_stop_spread_mult", lambda deals, **k: dict(kept))
+    monkeypatch.setattr(sgd, "derive_entry_drift_tol_frac", drift)
+    doc = sgd.derive()
+    assert doc["ENTRY_DRIFT_TOL_FRAC"]["derived"] == 0.05        # the solve's answer, published
+    assert doc["ENTRY_DRIFT_TOL_FRAC"]["adopt"] is False
+    assert doc["adopted"] == {"MIN_STOP_SPREAD_MULT": 3.0, "ENTRY_DRIFT_TOL_FRAC": 0.25}
+    assert doc["held"] == ["ENTRY_DRIFT_TOL_FRAC"]
+
+
+def test_missed_growth_bills_every_held_move(tmp_path, monkeypatch) -> None:
+    """The report's consumer: the daily missed-growth organ reads the gate and bills each hold."""
+    import json
+    from datetime import UTC, datetime
+
+    import missed_growth as mg
+
+    from libs.portfolio.rails import rail
+
+    r = rail("stop_geometry_robustness_gate")
+    assert r.measure in mg.MEASURES
+    path = tmp_path / "STOP_GEOMETRY_DERIVATION.json"
+    monkeypatch.setattr(mg, "STOP_GEOMETRY", path)
+    assert mg.measure_stop_geometry_gate(r, {}, {})["verdict"] == mg.UNMEASURED
+    held = sgd.robustness_gate(_solved(0.05, 0.25, n=10, mean=-0.3, sd=1.1, delta=2e-4),
+                               0.9, 0.25)
+    kept = sgd.robustness_gate(_solved(3.0, 3.0, n=0, mean=None, sd=None), 3.0, 3.0)
+    doc = {"generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+           "ENTRY_DRIFT_TOL_FRAC": held, "MIN_STOP_SPREAD_MULT": kept}
+    path.write_text(json.dumps(doc), "utf-8")
+    m = mg.measure_stop_geometry_gate(r, {}, {})
+    assert m["verdict"] == mg.COSTS and m["sample"] is True
+    assert m["value_logw_per_day"] == pytest.approx(-2e-4)
+    assert m["by_direction"] == {"up": 0, "down": 1}
+    doc["ENTRY_DRIFT_TOL_FRAC"] = kept
+    path.write_text(json.dumps(doc), "utf-8")
+    assert mg.measure_stop_geometry_gate(r, {}, {})["verdict"] == mg.NOT_BINDING
+    doc["generated_at"] = "2026-01-01T00:00:00+00:00"           # stale: the gate's state unknown
+    path.write_text(json.dumps(doc), "utf-8")
+    assert mg.measure_stop_geometry_gate(r, {}, {})["verdict"] == mg.UNMEASURED

@@ -590,6 +590,64 @@ def measure_e8_unowned_block(r: Any, _alloc: dict[str, Any],
                     "published rather than priced as zero")}
 
 
+#: The hourly stop-geometry re-solve's report; its `gate` blocks are this rail's evidence.
+STOP_GEOMETRY = BASE / "reports" / "STOP_GEOMETRY_DERIVATION.json"
+#: A report older than this is not today's gate: the leg is hourly, so six hours is six misses.
+STOP_GEOMETRY_MAX_AGE_H = 6.0
+
+
+def measure_stop_geometry_gate(r: Any, _alloc: dict[str, Any],
+                               _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the stop-geometry robustness gate held, priced by the solve's own claimed gain.
+
+    `stop_geometry_derivation.robustness_gate` refuses a re-solved MIN_STOP_SPREAD_MULT or
+    ENTRY_DRIFT_TOL_FRAC that the live evidence cannot carry (under 30 trades, or inside two
+    SEs of the prior), in either direction, and keeps today's value. Each hold publishes the
+    solve's `claimed_delta_elog_per_day` for the refused value; the day's sample is minus their
+    sum (the unit `run` accumulates), so a gate that keeps holding claimed gains reads
+    COSTS_GROWTH and is queued for review. The claim is made on the evidence the gate found
+    thin, so it is an upper reading of the cost -- billed in full rather than discounted."""
+    doc = _json(STOP_GEOMETRY)
+    if not doc:
+        return {"verdict": UNMEASURED,
+                "why": "no reports/STOP_GEOMETRY_DERIVATION.json on this host: the hourly "
+                       "stop_geometry_derivation leg has not written one"}
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_at")))
+        age_h = (datetime.now(tz=UTC) - at).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        age_h = math.inf
+    if not age_h <= STOP_GEOMETRY_MAX_AGE_H:
+        return {"verdict": UNMEASURED, "age_h": None if math.isinf(age_h) else round(age_h, 2),
+                "why": f"the stop-geometry report is older than {STOP_GEOMETRY_MAX_AGE_H:g}h or "
+                       f"unstamped: the gate's state today is unknown"}
+    holds, gates = [], {}
+    for k in ("MIN_STOP_SPREAD_MULT", "ENTRY_DRIFT_TOL_FRAC"):
+        g = (doc.get(k) or {}).get("gate")
+        if not isinstance(g, dict):
+            continue
+        gates[k] = {"verdict": g.get("verdict"), "adopt": (doc.get(k) or {}).get("adopt"),
+                    "adopted_value": (doc.get(k) or {}).get("adopted_value")}
+        if g.get("held"):
+            holds.append({"constant": k, **(g.get("missed_growth") or {})})
+    if not gates:
+        return {"verdict": UNMEASURED, "why": "the report carries no gate block (pre-gate build)"}
+    if not holds:
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True,
+                "gates": gates, "why": "no re-solved value was held this pass"}
+    claims = [float(h["claimed_delta_elog_per_day"]) for h in holds
+              if isinstance(h.get("claimed_delta_elog_per_day"), (int, float))]
+    if not claims:
+        return {"verdict": UNMEASURED, "holds": holds, "gates": gates,
+                "why": "a value was held but the solve published no claimed gain to bill"}
+    forgone = sum(max(0.0, c) for c in claims)
+    return {"verdict": COSTS if forgone > 0 else NOT_BINDING,
+            "value_logw_per_day": round(-forgone, 10), "sample": True,
+            "holds": holds, "gates": gates,
+            "by_direction": {d: sum(1 for h in holds if h.get("direction") == d)
+                             for d in ("up", "down")}}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 

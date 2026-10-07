@@ -52,6 +52,12 @@ m the same way); and the family drift delay is a single measurement from one ses
 
 An absent input is UNMEASURED, never a default: the report names what it needs.
 
+A SOLVED VALUE IS NOT AN ADOPTED ONE. `robustness_gate` (two-sided: a live-sample floor and a
+confidence test on the evidence that moved the answer) sets `adopt` and `adopted_value` per
+constant; a held move leaves today's value and publishes its claimed gain under
+`gate.missed_growth`, which `missed_growth.measure_stop_geometry_gate` (daily cycle) bills
+against the `stop_geometry_robustness_gate` rail.
+
     python desks/mt5/research/stop_geometry_derivation.py   # writes the report below
     -> desks/mt5/reports/STOP_GEOMETRY_DERIVATION.json
 """
@@ -92,6 +98,8 @@ OUT = BASE / "reports" / "STOP_GEOMETRY_DERIVATION.json"
 #: The values the money path carries today, read for the missed-growth comparison only.
 TODAY_MIN_STOP_SPREAD_MULT = 3.0
 TODAY_ENTRY_DRIFT_TOL_FRAC = 0.25
+TODAY = {"MIN_STOP_SPREAD_MULT": TODAY_MIN_STOP_SPREAD_MULT,
+         "ENTRY_DRIFT_TOL_FRAC": TODAY_ENTRY_DRIFT_TOL_FRAC}
 
 #: The grids searched. m below 1 would place the stop inside the entry spread itself; tau at 1
 #: is the stale-signal line `family_bracket` already draws, so neither grid can leave its domain.
@@ -309,7 +317,95 @@ def _posterior_edge(prior: float, sleeve_names: set[str],
     mean, w = posterior_shift(prior, live)
     return mean, {"prior_r": round(prior, 5), "live_n": len(live),
                   "live_mean_r": round(float(np.mean(live)), 5) if live else None,
+                  "live_sd_r": round(float(np.std(live, ddof=1)), 5) if len(live) > 1 else None,
                   "live_weight": round(w, 4), "posterior_r": round(mean, 5)}
+
+
+#: THE ROBUSTNESS GATE (audit of PR #191, 2026-10-07). The dry run of 2026-10-06 derived
+#: ENTRY_DRIFT_TOL_FRAC = 0.05 from TEN live trades against a prior-only answer of 0.9: the
+#: posterior convention (K_SLEEVE 60, LIVE_WEIGHT 12) gives ten trades two thirds of the weight,
+#: so a handful of fills could swing a money-path number across the whole grid. A derived value
+#: is ADOPTED only when the evidence that moved it carries the weight of the move:
+#:
+#:   1. SAMPLE FLOOR. When the live ledger changed the answer (full solve != prior-only solve),
+#:      fewer than MIN_LIVE_N live trades is thin evidence and the move is held. 30 is the
+#:      point where the live mean's sampling distribution is usable as a normal at all.
+#:   2. CONFIDENCE TEST. Above the floor, the live mean must differ from the prior it overturns
+#:      by at least Z_ADOPT standard errors of that mean -- the same two-SE bar the solve uses
+#:      for a tie (TIE_SE) and missed_growth uses for a verdict. Inside it, the live sample is
+#:      consistent with the prior and the prior's answer has not been refuted.
+#:
+#: TWO-SIDED BY CONSTRUCTION: both tests read |distance| and the sample count, never the sign, so
+#: a thin-evidence move toward MORE aggression is held exactly as one toward less. A move the
+#: live ledger did not cause (full solve == prior-only solve) is the certified prior's answer,
+#: already significant against today's value on the solve's own paired SEs, and is adopted.
+#: Every hold publishes the solve's claimed gain as its missed-growth line (`gate.missed_growth`),
+#: which missed_growth.measure_stop_geometry_gate bills against the rail of the same name.
+MIN_LIVE_N = 30
+Z_ADOPT = 2.0
+
+
+def robustness_gate(res: dict[str, Any], prior_value: float | None,
+                    today: float) -> dict[str, Any]:
+    """{adopt, adopted_value, gate} for one solved constant. A held value leaves `today` standing.
+
+    `res` is the full solve (its `inputs.edge` carries the live sample); `prior_value` is the
+    same solve on the certified/forward prior alone. Never reads the direction of the move."""
+    derived = res.get("derived")
+    edge = (res.get("inputs") or {}).get("edge") or {}
+    n = int(edge.get("live_n") or 0)
+    gate: dict[str, Any] = {"rule": "two-sided: sample floor + confidence test on the live "
+                                    "evidence that moved the answer",
+                            "min_live_n": MIN_LIVE_N, "z_adopt": Z_ADOPT, "today": today,
+                            "derived": derived, "prior_value": prior_value, "live_n": n,
+                            "held": False}
+
+    def _out(adopt: bool, verdict: str, why: str) -> dict[str, Any]:
+        gate.update({"verdict": verdict, "why": why})
+        if not adopt and derived is not None and abs(float(derived) - today) > 1e-12:
+            delta = (res.get("vs_today") or {}).get("delta_elog_per_day")
+            gate["held"] = True
+            gate["missed_growth"] = {
+                "held_value": today, "refused_value": derived,
+                "direction": "up" if float(derived) > today else "down",
+                # The solve's own claim for the refused move, published so the hold is billed
+                # rather than free. It is a claim made ON the evidence the gate found too thin.
+                "claimed_delta_elog_per_day": (float(delta) if isinstance(delta, (int, float))
+                                               else None)}
+        return {"adopt": adopt, "adopted_value": derived if adopt else today, "gate": gate}
+
+    if derived is None:
+        return _out(False, "NO_DERIVED_VALUE", "the solve produced no value; today stands")
+    derived = float(derived)
+    if abs(derived - today) <= 1e-12:
+        return _out(True, "NO_MOVE", "the solve keeps today's value")
+    live_moved = prior_value is None or abs(derived - float(prior_value)) > 1e-12
+    if not live_moved:
+        return _out(True, "PRIOR_ANSWER",
+                    f"the certified prior alone solves to {derived:g}; the live ledger "
+                    f"({n} trade(s)) did not move it")
+    if n < MIN_LIVE_N:
+        return _out(False, "THIN_EVIDENCE",
+                    f"{n} live trade(s) moved the answer from the prior's {prior_value} to "
+                    f"{derived:g}; {MIN_LIVE_N} are needed before the live ledger may move a "
+                    f"money-path number in either direction, so today's {today:g} stands")
+    raw = [edge.get("live_mean_r"), edge.get("live_sd_r"), edge.get("prior_r")]
+    if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in raw):
+        return _out(False, "UNMEASURED_UNCERTAINTY",
+                    "the live sample's mean/sd or the prior is missing; today stands")
+    mean, sd, prior_r = (float(v) for v in raw)  # type: ignore[arg-type]
+    se = sd / math.sqrt(n)
+    z = abs(mean - prior_r) / se if se > 0 else (math.inf if mean != prior_r else 0.0)
+    gate.update({"live_mean_r": mean, "prior_r": prior_r, "se_live_mean": round(se, 6),
+                 "z": round(z, 3) if math.isfinite(z) else None})
+    if z < Z_ADOPT:
+        return _out(False, "WITHIN_SAMPLING_UNCERTAINTY",
+                    f"the live mean {mean:g}R is {z:.2f} SEs from the prior's {prior_r:g}R "
+                    f"(< {Z_ADOPT:g}): the move to {derived:g} is inside the sample's noise, "
+                    f"so today's {today:g} stands")
+    return _out(True, "ADOPT",
+                f"{n} live trades, mean {mean:g}R, {z:.2f} SEs from the prior's {prior_r:g}R: "
+                f"the evidence carries the move to {derived:g}")
 
 
 def _activity(rng: np.random.Generator, rate: float, slots: int) -> np.ndarray:
@@ -534,6 +630,11 @@ def derive() -> dict[str, Any]:
                                 "why": alt.get("why"),
                                 "edge_r": ((alt.get("inputs") or {}).get("edge") or {})
                                 .get("posterior_r")}
+        # THE ROBUSTNESS GATE: the solve's answer is a recommendation; `adopted_value` is what
+        # the evidence carries. A held move leaves today's value and bills its claimed gain.
+        doc[k].update(robustness_gate(doc[k], alt.get("derived"), TODAY[k]))
+    doc["adopted"] = {k: doc[k]["adopted_value"] for k in TODAY}
+    doc["held"] = sorted(k for k in TODAY if doc[k]["gate"]["held"])
     states = [doc[k].get("status", "") for k in ("MIN_STOP_SPREAD_MULT", "ENTRY_DRIFT_TOL_FRAC")]
     # SOLVED covers "today's value is optimal within noise": the solve ran and answered.
     solved = {"OK", "TODAY_OPTIMAL_WITHIN_NOISE"}
@@ -554,7 +655,8 @@ def main(argv: list[str] | None = None) -> int:
     for k in ("MIN_STOP_SPREAD_MULT", "ENTRY_DRIFT_TOL_FRAC"):
         r = doc[k]
         print(f"{k}: {r.get('status')} derived={r.get('derived')} today={r.get('today')} "
-              f"less_aggressive={r.get('less_aggressive_than_today')}")
+              f"less_aggressive={r.get('less_aggressive_than_today')} adopt={r.get('adopt')} "
+              f"adopted={r.get('adopted_value')} gate={r['gate'].get('verdict')}")
     return 0
 
 
