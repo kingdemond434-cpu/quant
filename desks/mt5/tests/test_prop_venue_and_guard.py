@@ -25,7 +25,26 @@ from prop.tradelocker_venue import (  # noqa: E402
     TradeLockerVenue,
     VenueError,
     load_credentials,
+    _bounded_request,
 )
+
+
+def test_venue_request_retries_once_then_returns_or_raises() -> None:
+    from requests.exceptions import Timeout
+    calls = []
+    def transient():
+        calls.append(1)
+        if len(calls) == 1:
+            raise Timeout("transient")
+        return "ok"
+    assert _bounded_request(transient) == "ok" and len(calls) == 2
+    calls.clear()
+    def unavailable():
+        calls.append(1)
+        raise Timeout("unavailable")
+    with pytest.raises(Timeout):
+        _bounded_request(unavailable)
+    assert len(calls) == 2
 
 
 # ------------------------------------------------------------------------------ the fake venue
