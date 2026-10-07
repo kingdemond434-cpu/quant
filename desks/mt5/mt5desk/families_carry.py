@@ -68,7 +68,7 @@ BROKER_LEAD_NS = 3 * 3_600_000_000_000
 FX_CLASSES = ("fx_usd", "fx_cross")
 HOUR_NS = 3_600_000_000_000
 
-_CACHE: dict[str, Any] = {"key": None, "hist": None, "stats": None}
+_CACHE: dict[str, Any] = {"key": None, "hist": None, "stats": None, "ceiling": None}
 
 
 def _ns(stamp: Any) -> int | None:
@@ -134,9 +134,23 @@ def swap_history() -> tuple[dict[str, dict[str, np.ndarray]], dict[str, Any]]:
     units = _units()
     raw: dict[str, dict[int, tuple[float, float, float, float]]] = {}
     stats = {"terms_rows": 0, "panel_rows_honest": 0, "panel_rows_unstamped": 0}
+    ceiling: dict[str, float] = {}
+
+    def peak(sym: str, lo: Any, sh: Any) -> None:
+        # The worse side's magnitude, in the row's own units, over EVERY row with values --
+        # stamped or not. A value is used here only to RAISE a cost ceiling, never as the swap
+        # of any instant, so an unstamped row's timing cannot leak into it. See `swap_ceiling`.
+        try:
+            w = max(abs(float(lo)), abs(float(sh)))
+        except (TypeError, ValueError):
+            return
+        if math.isfinite(w) and w > ceiling.get(sym, -1.0):
+            ceiling[sym] = w
 
     def add(sym: str, obs: Any, lo: Any, sh: Any, mode: Any, point: Any) -> bool:
         t = _ns(obs)
+        if lo is not None and sh is not None:
+            peak(sym, lo, sh)
         if t is None or lo is None or sh is None:
             return False
         if mode is None:
@@ -165,6 +179,8 @@ def swap_history() -> tuple[dict[str, dict[str, np.ndarray]], dict[str, Any]]:
                 continue
             if not r.get("observed_at"):
                 stats["panel_rows_unstamped"] += 1
+                if r.get("swap_long") is not None and r.get("swap_short") is not None:
+                    peak(str(r["symbols"][0]), r.get("swap_long"), r.get("swap_short"))
                 continue
             stats["panel_rows_honest"] += add(str(r["symbols"][0]), r["observed_at"],
                                               r.get("swap_long"), r.get("swap_short"),
@@ -175,8 +191,20 @@ def swap_history() -> tuple[dict[str, dict[str, np.ndarray]], dict[str, Any]]:
         vals = np.array([rows[int(t)] for t in ts], dtype="float64")
         hist[sym] = {"t": ts, "lo": vals[:, 0], "sh": vals[:, 1], "mode": vals[:, 2],
                      "point": vals[:, 3]}
-    _CACHE.update(key=key, hist=hist, stats=stats)
+    _CACHE.update(key=key, hist=hist, stats=stats, ceiling=ceiling)
     return hist, stats
+
+
+def swap_ceiling() -> dict[str, float]:
+    """{symbol: the largest worse-side swap magnitude any row on disk has ever shown}.
+
+    For the backtest engine's cost side (`mt5desk.engine`), never for a signal. A night before
+    the first knowable row has NO knowable swap; the engine charges it at the larger of today's
+    registry value and this ceiling and marks it UNMEASURED. Measured 2026-10-07 over the 17 days
+    of panel rows on disk, today's value sat below this ceiling on 79 of 248 symbols (XPBUSD by
+    81%), so today's value alone is not the conservative stand-in the engine took it for."""
+    swap_history()
+    return dict(_CACHE.get("ceiling") or {})
 
 
 def _yield(swap: np.ndarray, mode: np.ndarray, point: np.ndarray,
