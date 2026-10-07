@@ -26,12 +26,16 @@ def test_paid_source_is_refused_even_with_its_key_set(monkeypatch: pytest.Monkey
     assert not called
 
 
-def test_login_cookie_source_reads_unconfigured_even_when_set(
+def test_login_cookie_source_sends_nothing_even_when_set(
         monkeypatch: pytest.MonkeyPatch) -> None:
+    """Index.baidu.com's terms are refused, so #239's terms gate stops the row before the
+    cookie is even read (it used to read UNCONFIGURED, one door later)."""
     monkeypatch.setenv("BAIDU_INDEX_COOKIE", "cookie")
+    called: list[Any] = []
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: called.append(a))
     rec = ac.collect_one({"id": "baidu_index", "access": "key",
                           "key_env": "BAIDU_INDEX_COOKIE", "url": "https://index.baidu.com/"})
-    assert rec["status"] == "UNCONFIGURED"
+    assert rec["status"] == "BLOCKED_ON_TERMS" and not called
 
 
 @pytest.mark.parametrize(("place", "check"), [
@@ -62,9 +66,10 @@ def _keyed_fetch(monkeypatch: pytest.MonkeyPatch, key: str, fail: Any) -> tuple[
         seen.append(req.full_url)
         raise fail(req.full_url)
     monkeypatch.setattr(urllib.request.OpenerDirector, "open", opened)
+    # The registry row's own terms decision (#239's gate sends a key only under confirmed terms).
     rec = ac.collect_one({"id": "eia_energy", "access": "key", "key_env": "QK_ASIA_KEY",
                           "key_in": "query:api_key", "url": "https://api.eia.gov/v2/x/data/",
-                          "expect": "json"})
+                          "terms_ref": "asia_eia_energy", "expect": "json"})
     return rec, seen
 
 
