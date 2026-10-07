@@ -365,7 +365,11 @@ def _proposers() -> None:
                  # THE REGIME SPLIT (2026-09-30): every price-only family searched inside one
                  # control-room regime at a time, purged walk-forward as the kill, survivors
                  # donated as family `regime_split` to the same gauntlet.
-                 "regime_split_miner"):
+                 "regime_split_miner",
+                 # THE PUBLIC TRADER GENOME WITH ITS GRAVEYARD (2026-10-06, audit row 35): the
+                 # own-book forensics plus the alive+dead genome, its base rates, failure memory,
+                 # crowding prior and style-analogue cells through the donor door.
+                 "book_forensics"):
         try:
             mod = __import__(name)
             kwargs = {}
