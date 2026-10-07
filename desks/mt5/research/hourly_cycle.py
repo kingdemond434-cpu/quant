@@ -1017,6 +1017,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
+                     # ERA5 reanalysis (Copernicus CDS) as PIT weather series: collection
+                     "era5_reader",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -1872,6 +1874,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # era5_reader stops itself at --budget-s 600 (CDS requests queue server-side) and then
+    # publishes from the points it holds; the cap sits above so the publish is never cut off.
+    "era5_reader": 900,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -5186,6 +5191,12 @@ def main() -> None:
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
+    # ERA5 (Copernicus CDS, 2026-10-06): incremental per-point fetch past each cursor, then the
+    # three uses -- gain-tested exogenous_conditioner cells, lake + axis conditioning series,
+    # reports/ERA5_ALLOCATION_INTEL.json -- and the psub_era5_* series the paid-substitute engine
+    # correlates. Fails closed on terms (BLOCKED_ON_TERMS) and on a missing key (BLOCKED_AUTH).
+    e5r = _costed("era5_reader", lambda: _producer(
+        "era5_reader", "research/era5_reader.py", "--once", "--budget-s", "600"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -5766,6 +5777,7 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "alt_proxies": alp,
+                    "era5_reader": e5r,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,

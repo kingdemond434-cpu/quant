@@ -840,9 +840,36 @@ def load_library(path: Path | None = None) -> list[dict[str, Any]]:
 
 
 def key_present(env_name: str, environ: Mapping[str, str] | None = None) -> bool:
-    """Is the NAMED key configured? Reads presence only -- the value never leaves os.environ."""
-    env = os.environ if environ is None else environ
-    return bool(env_name) and bool(str(env.get(env_name, "")).strip())
+    """Is the NAMED key configured? Presence only -- the value is never kept or returned.
+
+    With no mapping given, the box's own lookup answers (`libs.ops.env_keys.read_key`: the
+    Windows machine/user registry, then process env), so a key set with `setx /M` after a
+    resident started still counts. A test passes its own mapping and the registry is never read."""
+    if not env_name:
+        return False
+    if environ is not None:
+        return bool(str(environ.get(env_name, "")).strip())
+    try:
+        from libs.ops.env_keys import read_key
+    except Exception:
+        return bool(str(os.environ.get(env_name, "")).strip())
+    return bool(read_key(env_name))
+
+
+def evidence_terms(src: Mapping[str, Any]) -> str | None:
+    """A row that names a `terms_evidence` file is fenced by it, FAIL CLOSED: None only when the
+    file (desk-relative) holds verdict `confirmed` WITH a quote; else `BLOCKED_ON_TERMS:<v>`.
+    Rows that name no evidence file are not fenced here (their licence is in `licence`)."""
+    rel = str(src.get("terms_evidence") or "")
+    if not rel:
+        return None
+    doc = _read_json(DESK / rel)
+    if not isinstance(doc, dict):
+        return f"{BLOCKED_ON_TERMS}:to_confirm"
+    v = str(doc.get("verdict") or "").lower()
+    if v == "confirmed" and str(doc.get("terms_quote") or "").strip():
+        return None
+    return f"{BLOCKED_ON_TERMS}:{v if v in TERMS_VERDICTS else 'to_confirm'}"
 
 
 def usable(src: Mapping[str, Any], environ: Mapping[str, str] | None = None) -> tuple[bool, str]:
@@ -850,6 +877,9 @@ def usable(src: Mapping[str, Any], environ: Mapping[str, str] | None = None) -> 
     url = str(src.get("url") or "")
     if banned(url) or banned(str(src.get("endpoint") or "")):
         return False, "crypto-exchange ground (MT5 mandate)"
+    fenced = evidence_terms(src)
+    if fenced:
+        return False, fenced
     auth = str(src.get("auth") or "none")
     if auth == "none":
         return True, "key-less"
