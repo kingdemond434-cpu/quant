@@ -576,7 +576,7 @@ def _write_attribution_sidecar(source_id: str, key_env: str) -> Path | None:
     """ATTRIBUTION SIDECAR next to a private-use series (audit of #218, 2026-10-07): the source,
     its terms and permitting-clause URLs and the conditions the permission comes with, written
     INTO THE GITIGNORED PRIVATE LAKE ONLY, so whoever opens the series on the box reads what it
-    may and may not be used for. Holds no value. Never raises."""
+    may and may not be used for. Holds no value. Never raises; a failure is named on stderr."""
     try:
         p = _token_refresh.PROVIDERS.get(key_env)
         name = p.name if p is not None else key_env
@@ -595,7 +595,10 @@ def _write_attribution_sidecar(source_id: str, key_env: str) -> Path | None:
             "written_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         }, indent=1, ensure_ascii=False))
         return out
-    except Exception:
+    except Exception as exc:
+        # Named, never swallowed: the type only (no path, no value), on stderr.
+        print(f"asia collector: attribution sidecar for {source_id} not written "
+              f"({type(exc).__name__})", file=sys.stderr)
         return None
 
 
