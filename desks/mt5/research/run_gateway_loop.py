@@ -8,6 +8,7 @@ Never trade a weekend/holiday: gateway.main() itself idles on stale ticks.
 
 from __future__ import annotations
 
+import contextlib
 import sys
 from pathlib import Path
 
@@ -30,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 # `tests`... imported bare anywhere in mt5desk/ or research/).
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from mt5desk import gateway  # noqa: E402
+from mt5desk import gateway
 
 # LATENT ON THIS BRANCH, ALREADY CORRECT ON THE BOX'S -- which is the dangerous shape.
 #
@@ -86,10 +87,8 @@ def main() -> None:
     # rather than after an arbitrary wait.
     if LOCK.exists():
         raw = ""
-        try:
+        with contextlib.suppress(OSError):
             raw = LOCK.read_text(encoding="utf-8").strip()
-        except OSError:
-            pass
         pid = int(raw) if raw.isdigit() else 0
         age_min = (__import__("time").time() - LOCK.stat().st_mtime) / 60
         if pid and _holder_alive(pid):
@@ -104,7 +103,7 @@ def main() -> None:
         # gateway lock while doing either blocks every minute-by-minute order check. In
         # particular, the former 22:00 UTC branch ran on *every* gateway pass in that hour,
         # not once per day, and could strand the resident inside shadow processing.
-    except Exception as e:  # noqa: BLE001 - watchdog must never die
+    except Exception as e:  # watchdog must never die
         gateway.log(f"LOOP ERROR: {e!r}")
     finally:
         LOCK.unlink(missing_ok=True)

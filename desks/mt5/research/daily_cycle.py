@@ -168,10 +168,10 @@ def _weekly_hunt_refresh() -> None:
         return
     # Explicit imports make every member visible to the canonical wiring census.
     import fetch_universe
+    import free_shadows
     import run_hunt7
     import run_hunt8
     import run_hunt9
-    import free_shadows
     import run_hunt10
     import run_hunt12
     jobs = (("fetch_universe", fetch_universe.main), ("run_hunt7", run_hunt7.main),
