@@ -156,6 +156,26 @@ def _promote() -> None:
     promoter.main()
 
 
+def _weekly_hunt_refresh() -> None:
+    """Keep the existing six-day research sweep off the gateway's order lock."""
+    import importlib
+
+    marker = BASE / "data" / "hunt7_state.json"
+    try:
+        last = float(json.loads(marker.read_text(encoding="utf-8")).get("last_sweep", 0))
+    except (OSError, ValueError, TypeError):
+        last = 0.0
+    now = datetime.now(UTC).timestamp()
+    if now - last <= 6 * 86400:
+        return
+    for module in ("fetch_universe", "run_hunt7", "run_hunt8", "run_hunt9",
+                   "free_shadows", "run_hunt10", "run_hunt12"):
+        importlib.import_module(module).main()
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(json.dumps({"last_sweep": now}), encoding="utf-8")
+    dlog("weekly hunt7-12 + states sweep completed")
+
+
 def _reconcile() -> None:
     import forward_reconcile
     forward_reconcile.main()
@@ -747,6 +767,7 @@ STEPS = (("research_gap_map", _research_gap_map),
          ("module_rent_research", _module_rent_research), ("build_allocator", _build_allocator),
          ("simplifier", _simplifier), ("capacity_watch", _capacity_watch),
          ("six_event_trace", _six_event_trace),
+         ("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
 
 def main(argv: list[str] | None = None) -> int:
