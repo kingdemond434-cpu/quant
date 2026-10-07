@@ -840,12 +840,72 @@ def expand_axes(cands: list[dict]) -> list[dict]:
                 if remap:
                     v["session_remap"] = remap
                 v["priority"] = (1 if tf == "H1" else 0) + demote
+                # THE SOURCE'S OWN WINDOW (DATA-46): a chart outside the state's declared
+                # horizon sorts later. Queue order only; nothing is removed.
+                v["priority"] += _horizon_demotion(v, tf, sess)
+                if inv:
+                    v["causal_invariance"] = {"verdict": inv.get("verdict"),
+                                              "broken_axes": inv.get("broken_axes") or [],
+                                              "why": str(inv.get("why") or "")[:200]}
+                out.append(v)
+            # SESSION-TRANSFER CELLS (DATA-46 audit): for a seat with a scheduled release, NEW
+            # cells that keep the rule only in the k-th session after the release instant, once
+            # the state is public and while it has not decayed. Added beside the session cells
+            # above, never instead of them; the gate is in `params`, so each is its own identity.
+            for k, gate in _transfer_gates(c):
+                v = dict(c)
+                v["params"] = {**chart_base, "release_gate": gate}
+                gid = _genome_id(sym, fam, v["params"])
+                if gid:
+                    v["genome_id"] = gid
+                v["axis"] = {"chart": tf, "session": f"release+{k}"}
+                v["priority"] = (1 if tf == "H1" else 0) + demote
+                v["priority"] += _horizon_demotion(v, tf, "all")
+                v["session_transfer"] = {"seat": gate.rpartition(":")[0], "lag_sessions": k,
+                                         "kind": "own" if k == 0 else "transfer"}
                 if inv:
                     v["causal_invariance"] = {"verdict": inv.get("verdict"),
                                               "broken_axes": inv.get("broken_axes") or [],
                                               "why": str(inv.get("why") or "")[:200]}
                 out.append(v)
     return out
+
+
+def _transfer_gates(cand: dict) -> list[tuple[int, str]]:
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.mining import release_clock, source_horizon
+        seat = source_horizon.seat_of(cand)
+        return [(k, f"{seat}:{k}") for k in release_clock.mintable_lags(seat)]
+    except Exception:                  # an unreadable clock mints no transfer cell, removes none
+        return []
+
+
+def _horizon_demotion(cell: dict, chart: str, session: str) -> int:
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.mining import source_horizon
+        return source_horizon.annotate(cell, chart, session)
+    except Exception:                  # an unreadable table leaves the cell exactly as it was
+        return 0
+
+
+def _resolve_horizon(cell: dict, sources: list[str]) -> None:
+    try:
+        from libs.mining import source_horizon
+        source_horizon.resolve(cell, sources)
+    except Exception:                  # an unreadable table leaves the first label in place
+        pass
+
+
+def _horizon_tally(cells: list[dict]) -> dict:
+    try:
+        from libs.mining import source_horizon
+        return source_horizon.tally(cells)
+    except Exception as exc:
+        return {"state": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
 
 def _registered_family(name: str) -> bool:
@@ -1709,6 +1769,9 @@ def main() -> int:
         candidate["n_independent_sources"] = len(srcs)
         if len(srcs) > 1:
             candidate["agreeing_sources"] = srcs
+            # ONE LABEL PER CELL, WHATEVER ORDER THE SEATS ARRIVED IN (DATA-46 audit): the fit
+            # and its demotion are re-read across every contributing seat.
+            _resolve_horizon(candidate, srcs)
 
     for stats in per_source.values():
         convertible = int(stats["convertible_rows"])
@@ -1920,6 +1983,7 @@ def main() -> int:
         "per_source": per_source,
         "seats": seats,
         "seats_dark": seats_dark,
+        "source_horizon": _horizon_tally(emitted),
         "agreement": {"candidates_with_2plus_sources": agreement},
         "disagreement": disagreement,
         "intake": {"max_rows_per_pass": MAX_ROWS_PER_PASS, **_LAST_INTAKE},
