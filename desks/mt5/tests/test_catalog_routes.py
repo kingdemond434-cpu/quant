@@ -599,3 +599,38 @@ def test_permission_needs_a_quote_and_a_terms_url() -> None:
 def test_the_real_roster_refuses_every_banned_platform(host: str) -> None:
     roster = cr.load_roster(cr.ROSTER)
     assert cr.is_blocked(host, [str(b) for b in roster.get("blocked_hosts") or []])
+
+
+def test_a_redirect_to_another_host_is_not_followed(monkeypatch):
+    """Terms and robots were checked for the host asked; a 3xx elsewhere comes back unfollowed."""
+    import http.server
+    import threading
+
+    class _Redirect(http.server.BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            self.send_response(302)
+            self.send_header("Location", "http://elsewhere.invalid/data.csv")
+            self.end_headers()
+
+        def log_message(self, *_a) -> None:
+            return
+
+    for var in ("http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("no_proxy", "*")
+    monkeypatch.setenv("NO_PROXY", "*")
+    srv = http.server.HTTPServer(("127.0.0.1", 0), _Redirect)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        r = cr.urllib_fetch(f"http://127.0.0.1:{srv.server_address[1]}/x", {}, 5.0)
+    finally:
+        srv.shutdown()
+        srv.server_close()
+    assert r.status == 302 and r.body == b""
+    assert r.headers.get("location") == "http://elsewhere.invalid/data.csv"
+
+
+def test_open_africa_is_not_permitted_without_a_permitting_clause():
+    ev = cr.load_terms_evidence()
+    assert ev["open.africa"]["verdict"] != "PERMITS"
+    assert not cr.terms_permit("open.africa", cr.permitted_hosts(ev))
