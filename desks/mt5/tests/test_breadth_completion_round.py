@@ -237,3 +237,197 @@ def test_briefs_carry_each_producers_failures_and_the_repertoire(tmp_path: Path)
                                        path=tmp_path / "PRODUCER_BRIEFS.json").read_text("utf-8"))
     assert out["desk"]["repertoire"]["status"] == "UNMEASURED"
     assert "failures" not in out["producers"]["kimi_hunt"]
+
+
+# ------------------------------------------------------------------ the owned MISSING rows
+def test_retarget_names_a_region_and_a_representation() -> None:
+    import certificate_saturation as cs
+    clusters = {
+        "trend_persistence/price_only/forex/USD/london|hourly|intraday": {
+            "hierarchy": {"L1": "trend_persistence", "L3": "forex",
+                          "L5": "london|hourly|intraday"},
+            "remaining_unexplored_axes": {"session": ["asia"], "regime": ["high_vol"],
+                                          "horizon": ["multi_day"]}},
+        "range_reversion/price_only/indices/RISK/ny|daily|multi_day": {
+            "hierarchy": {"L1": "range_reversion", "L3": "indices", "L5": "ny|daily|multi_day"},
+            "remaining_unexplored_axes": {}},
+    }
+    top = {"trend_persistence/price_only/forex/USD/london|hourly|intraday": 9}
+    r = cs.retarget_axes(top, clusters)
+    assert "trend_persistence in forex @session=asia" in r["retarget_regions"]
+    assert "trend_persistence in indices" in r["retarget_regions"]
+    assert "trend_persistence @horizon=multi_day" in r["retarget_representations"]
+    assert "trend_persistence @chart=daily" in r["retarget_representations"]
+    assert "trend_persistence @chart=hourly" not in r["retarget_representations"]
+    assert cs.retarget_axes(top, {})["retarget_regions"] == "UNMEASURED"
+
+
+def test_generator_demonstrations_unmeasured_is_never_not_demonstrated() -> None:
+    import breadth_funnel as bfn
+    d = bfn.demonstrations({"kimi": {"structurally_novel": 3, "evaluator_admitted": 2,
+                                     "survives": 0, "prospective_independence": None}})
+    k = d["kimi"]
+    assert k["novel_outputs"] == "DEMONSTRATED" and k["evaluation"] == "DEMONSTRATED"
+    assert k["conversion"] == "NOT_DEMONSTRATED"
+    assert k["independent_survivor"] == "UNMEASURED" and k["all_demonstrated"] is False
+
+
+def test_trials_per_new_independent_survivor_kpi() -> None:
+    import alpha_breadth as ab
+    t0 = NOW - timedelta(days=3)
+    rows = [{"at": t0.isoformat(), "effective_trials_spent_total": 1000.0,
+             "n_independent_forward_streams": 4},
+            {"at": NOW.isoformat(), "effective_trials_spent_total": 1600.0,
+             "n_independent_forward_streams": 6}]
+    k = ab.trials_per_independent_survivor(rows)
+    assert k["status"] == "MEASURED" and k["value"] == 300.0
+    rows[1]["n_independent_forward_streams"] = 4
+    k = ab.trials_per_independent_survivor(rows)
+    assert k["status"] == "NO_NEW_INDEPENDENT_SURVIVOR" and k["value"] is None
+    assert k["trials_spent"] == 600.0
+    assert ab.trials_per_independent_survivor(rows[:1])["status"] == "UNMEASURED"
+    sat = {"clusters": {"a": {"economic_cluster": "e1", "effective_trials_spent": 50},
+                        "b": {"economic_cluster": "e1", "effective_trials_spent": 50},
+                        "c": {"economic_cluster": "e2", "effective_trials_spent": 7}}}
+    assert ab.effective_trials_total(sat) == 57.0
+    assert ab.effective_trials_total({"clusters": {}}) is None
+
+
+def test_reopen_triggers_name_the_type_and_reason_and_baseline_never_fires() -> None:
+    import certificate_saturation as cs
+    assert cs.reopen_triggers(None, {"new_dataset": "a,b"}) == []
+    fired = cs.reopen_triggers({"new_dataset": "a,b", "broker_change": "S|X,Y",
+                                "cost_change": "X:1:0:0"},
+                               {"new_dataset": "a,b,c", "broker_change": "S|X,Y",
+                                "cost_change": "X:2:0:0"})
+    types = {f["type"]: f["reason"] for f in fired}
+    assert set(types) == {"new_dataset", "cost_change"}
+    assert "'c'" in types["new_dataset"]
+
+
+def test_payoff_shapes_and_mode_structures() -> None:
+    import breadth_debt as bd
+    doc = {"clusters": {
+        "k1": {"hierarchy": {"L1": "trend_persistence", "L2": "price_only"},
+               "certificate_count": 5, "effective_certificate_count": 2.0,
+               "families": ["relative_value"]},
+        "k2": {"hierarchy": {"L1": "carry_rollover", "L2": "carry"},
+               "certificate_count": 1, "effective_certificate_count": 1.0}}}
+    ps = bd.payoff_shapes(doc)
+    assert ps["status"] == "MEASURED"
+    assert "convex_trend" not in ps["missing_payoff_shapes"]
+    assert "spread_convergence" in ps["missing_payoff_shapes"]
+    assert ps["low_overlap_order"][-1] == "convex_trend"
+    st = bd._structures(doc)
+    assert "relative_value" not in st["relative_value_structures"]
+    assert "pca_residual" in st["cross_asset_residual_structures"]
+    assert bd.payoff_shapes({})["status"] == "UNMEASURED"
+
+
+def test_bounty_terms_never_shrink_and_reprice_as_niches_fill() -> None:
+    import certificate_saturation as cs
+    sizes = {"forex": 60, "indices": 15}
+    empty = cs.bounty_terms("indices", "carry_rollover", sizes, {}, {"carry_rollover": 100},
+                            {"carry_rollover": 1})
+    filled = cs.bounty_terms("indices", "carry_rollover", sizes, {"indices": 4},
+                             {"carry_rollover": 100}, {"carry_rollover": 1})
+    assert 1.0 <= filled["capacity_potential"] < empty["capacity_potential"] <= 2.0
+    assert empty["difficulty"] == 1.99
+    none = cs.bounty_terms("bonds", "x", {}, {}, {}, {})
+    assert none["capacity_potential"] == 1.0 and none["difficulty"] == 1.0
+    assert none["capacity_status"] == "UNMEASURED" and none["difficulty_status"] == "UNMEASURED"
+
+
+def test_edge_pareto_marks_dominated_rows_in_shadow_only() -> None:
+    import edge_pareto as ep
+    import numpy as np
+    pts = np.array([[1, 1, 1, 1], [0.5, 1, 1, 1], [2, 0, 1, 1]], dtype=float)
+    assert ep.dominated_mask(pts).tolist() == [False, True, False]
+    docket = [
+        {"symbol": "EURUSD", "family": "carry", "params": {"timeframe": "H1"},
+         "breadth_order": {"rank": 0, "dup": 0, "sat": 0.9}},
+        {"symbol": "EURUSD", "family": "carry", "params": {"timeframe": "H1"},
+         "breadth_order": {"rank": 1, "dup": 0, "sat": 0.2}},
+        {"symbol": "GBPUSD", "family": "carry", "params": {"timeframe": "H1"}},
+    ]
+    doc = ep.build(docket=docket,
+                   capacity=lambda s, tf: {"terms": {"capacity": None, "liquidity": 1.0}})
+    if doc["status"] == "MEASURED":
+        assert doc["n_dominated"] == 1 and doc["compute_shift_shadow"]["live"] is False
+        assert doc["unmeasured_by_objective"].get("independence") == 1
+    else:  # the family table names no mechanism for `carry` on this clone
+        assert doc["why"]
+    gone = ep.build(docket={"x": 1})
+    assert gone["status"] == "UNMEASURED" and gone["mode"] == "SHADOW"
+
+
+def test_profile_distance_is_reported_beside_and_never_inside_overlap_score() -> None:
+    import numpy as np
+    import stream_overlap as so
+    rng = np.random.default_rng(7)
+    days = [f"2026-0{1 + i // 28}-{1 + i % 28:02d}" for i in range(200)]
+    xa = rng.normal(size=200) * (rng.random(200) < 0.6)
+    xb = rng.normal(size=200) * (rng.random(200) < 0.3)
+    a, b = dict(zip(days, xa, strict=True)), dict(zip(days, xb, strict=True))
+    common = {d: (a[d] + b[d]) / 2 for d in days}
+    o = so.pair_overlap(a, b, common=common)
+    pf = o["profile"]
+    for k in ("holding_time_ks", "turnover_gap", "spectral_distance",
+              "factor_residual_distance"):
+        assert pf[k] is not None and 0.0 <= pf[k] <= 1.0, k
+    no_prof = so.pair_overlap(a, b)
+    assert no_prof["overlap_score"] == o["overlap_score"]
+    assert no_prof["profile"]["factor_residual_distance"] is None
+
+
+def test_failure_hedge_prices_up_never_down(tmp_path: Path) -> None:
+    import certificate_saturation as cs
+    hurts = list(cs.MECHANISM_FAILURE["trend_persistence"])
+    same = cs.failure_hedge(["htf_anchor_trend"], hurts)
+    assert cs.failure_hedge([], None)["multiplier"] == 1.0
+    assert same["multiplier"] >= 1.0
+    import axis_registry as ar
+    other = next(f for f, v in ar.FAMILY_TABLE.items()
+                 if v[0] in cs.MECHANISM_FAILURE
+                 and not set(cs.MECHANISM_FAILURE[v[0]]) & set(hurts))
+    h = cs.failure_hedge([other], hurts)
+    assert h["multiplier"] == cs.FAILURE_HEDGE and other in h["fails_differently"]
+    (tmp_path / "m.json").write_text(json.dumps({"failure_modes": {"hurts_book": hurts}}),
+                                     "utf-8")
+    assert cs.book_hurts(tmp_path / "m.json") == hurts
+    assert cs.book_hurts(tmp_path / "absent.json") is None
+
+
+def test_portfolio_bounty_posts_failure_mode_hedges() -> None:
+    import certificate_saturation as cs
+    import portfolio_bounty as pb
+    hurts = list(cs.MECHANISM_FAILURE["trend_persistence"])
+    un: list[str] = []
+    rows = pb._failure_mode_bounties({"failure_modes": {"hurts_book": hurts},
+                                      "clusters": {}}, un)
+    assert rows and all(r["kind"] == "failure_mode_hedge" for r in rows)
+    assert all(not set(r["evidence"]["fails_on"]) & set(hurts) for r in rows)
+    un2: list[str] = []
+    assert pb._failure_mode_bounties({}, un2) == [] and un2
+
+
+def test_sandbox_plan_hedge_only_ever_adds_share() -> None:
+    from libs.research import sandbox_rotation as rot
+    rows = {s: {"last_at": NOW.isoformat(), "roi": 1.0} for s in ("a", "b")}
+    base = rot.plan(["a", "b"], rows, budget_s=10_000, floor_s=10, at=NOW.timestamp())
+    hed = rot.plan(["a", "b"], rows, budget_s=10_000, floor_s=10, at=NOW.timestamp(),
+                   hedge={"a": 1.5, "b": 0.2})
+    assert hed["shares"]["a"] >= base["shares"]["a"]
+    assert hed["failure_hedge"] == {"a": 1.5}
+
+
+def test_qd_distance_reads_the_forward_profile() -> None:
+    import qd_frontier as qd
+    sat = {"groups": [{"sig": ["x"] * 30, "n": 1}], "forward_independence": {"pairs": [
+        {"a": "EURUSD_carry_asia", "b": "GBPUSD_carry_asia", "state": "UNMEASURED",
+         "rho": 0.1, "profile": {"turnover_gap": 0.3, "holding_time_ks": 0.4}}]}}
+    bd = qd.behavioural_distance({"instrument": "EURUSD", "family": "carry"}, sat)
+    c = bd["components"]
+    assert c["turnover"]["value"] == 0.3 and c["holding_time_distribution"]["value"] == 0.4
+    assert c["spectral_signature"]["value"] is None
+    assert c["pnl_correlation"]["value"] is None
