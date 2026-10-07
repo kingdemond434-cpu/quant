@@ -757,12 +757,14 @@ def sweep(budget_s: float | None = None) -> dict:
     from mt5desk.families_orthogonal import (
         FAMILY_INPUTS,
         ORTHOGONAL_FAMILIES,
+        carry_history_status,
         timeframe_overrides,
         timeframe_refusal,
     )
 
     meta = _read(UNIVERSE / "universe.json") or {}
     pairs = sweep_pairs(meta)
+    carry_status: dict[str, dict] = {}          # one history read per symbol per sweep
     # RESUME, THEN ROTATE: the whole universe is still swept, one full lap per however many
     # passes it takes, instead of the first K pairs forever.
     _start = _read_cursor(len(pairs))
@@ -934,6 +936,19 @@ def sweep(budget_s: float | None = None) -> dict:
                 key = f"{fam}:needs-source-evidence ({need_args})"
                 gaps[key] = gaps.get(key, 0) + 1
                 continue
+            # CARRY IS POINT-IN-TIME, SO ITS HISTORY IS ONLY AS LONG AS THE SWAP TAPE (2026-10-07).
+            # Below the lockbox floor the cell is named PENDING_HISTORY and not proposed: a
+            # candidate whose honest history its own lockbox could not hold spends a trial and
+            # can never pass.
+            if fam == "carry":
+                if sym not in carry_status:
+                    carry_status[sym] = carry_history_status(sym)
+                _hs = carry_status[sym]
+                if not _hs.get("ready"):
+                    key = (f"carry:{_hs.get('status')} (honest swap history below the "
+                           f"{_hs.get('floor_days', '?')}-day lockbox floor)")
+                    gaps[key] = gaps.get(key, 0) + 1
+                    continue
             try:
                 sigs = fn(df, **kw)
             except Exception as exc:
