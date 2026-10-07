@@ -47,6 +47,13 @@ the sealed doctrine, forced push/reset/stash/commit -a), blanket `git add -A/./-
 LANE_SELF_RULES -- no lane may edit this module, the shared runner, the recorder, the denial
 parser, the fence or its own launcher, because a seat that can rewrite its own allowlist has none.
 
+THE WHOLE-COMMAND FENCE. CLI permission rules are PREFIX matchers and cannot see a flag placed
+after the remote (`git push origin x --force`) or a secrets path handed to `head`/`grep`/`jq`/a
+`scripts/*` CLI. So every lane also runs libs/ops/lane_guard.py as a PreToolUse hook (passed with
+`--settings`), which parses the full command and refuses forced, deleting, mirroring and
+box-branch pushes and any read that reaches data/secrets; it fails closed, and its refusals are
+recorded as MISSED like any other refused call.
+
     python -m libs.ops.vps_lane_scopes argv <lane> [--effort low]  < prompt   # NUL-separated
     python -m libs.ops.vps_lane_scopes rules <lane>                            # one rule per line
 """
@@ -58,6 +65,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from libs.ops.agent_denials import NEVER_RULES, READ_ONLY_RULES, scoped_claude_args, write_rules
+from libs.ops.lane_guard import BOX_BRANCH, hook_settings
 
 #: Where every lane's refusal rows land (beside the lanes' own logs; the log gets the same rows
 #: as human lines).
@@ -73,7 +81,8 @@ LAUNCHERS: tuple[str, ...] = (
 )
 LANE_SELF_RULES: tuple[str, ...] = (
     *write_rules(
-        "libs/ops/vps_lane_scopes.py", "libs/ops/agent_denials.py", "ops/scoped_claude.sh",
+        "libs/ops/vps_lane_scopes.py", "libs/ops/agent_denials.py", "libs/ops/lane_guard.py",
+        "ops/scoped_claude.sh",
         "scripts/record_agent_denials.py", "tests/ops/test_no_permission_bypass.py",
         "tests/ops/test_vps_shell_agents_scoped.py", *LAUNCHERS,
     ),
@@ -83,6 +92,13 @@ LANE_SELF_RULES: tuple[str, ...] = (
     "Bash(git push origin --force:*)", "Bash(git push origin -f:*)",
     "Bash(git push origin --force-with-lease:*)", "Bash(git push --force-with-lease:*)",
     "Bash(git push origin +*)", "Bash(git push origin --delete:*)",
+    "Bash(git push origin --mirror:*)", "Bash(git push --mirror:*)",
+    "Bash(git push --delete:*)", "Bash(git push origin -d:*)",
+    f"Bash(git push origin {BOX_BRANCH}:*)", f"Bash(git push origin HEAD:{BOX_BRANCH}:*)",
+    f"Bash(git push origin HEAD:refs/heads/{BOX_BRANCH}:*)",
+    # These prefixes are a second layer only: a prefix cannot see a flag placed after the
+    # remote (`git push origin x --force`), so the fence that reads the WHOLE command is the
+    # PreToolUse hook lane_guard.hook_settings builds (see lane_args).
 )
 
 LANE_DENIED: tuple[str, ...] = (*NEVER_RULES, *LANE_SELF_RULES)
@@ -189,8 +205,12 @@ def allowlist_note(lane: Lane) -> str:
 def lane_args(name: str, prompt: str, *, effort: str | None = None) -> list[str]:
     """The arguments after `claude --append-system-prompt "$_DOCTRINE"` for one lane run."""
     lane = LANES[name]
-    return scoped_claude_args(prompt + allowlist_note(lane), allowed=lane.rules, effort=effort,
+    args = scoped_claude_args(prompt + allowlist_note(lane), allowed=lane.rules, effort=effort,
                               denied=LANE_DENIED)
+    # The whole-command fence (forced / deleting / box-branch pushes, any read of data/secrets by
+    # any program) as a PreToolUse hook. Inserted right after `-p <prompt>`: --allowedTools and
+    # --disallowedTools are variadic and would swallow it at the end.
+    return [*args[:2], "--settings", hook_settings(sys.executable), *args[2:]]
 
 
 def main(argv: list[str] | None = None) -> int:

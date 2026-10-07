@@ -10,7 +10,9 @@
 #
 # 1. libs/ops/vps_lane_scopes.py builds the lane's arguments from the prompt on stdin: the
 #    lane's --allowedTools, NEVER_RULES + the lane-self rules as --disallowedTools, stream-json
-#    output, and the allowlist stated at the end of the prompt. If that cannot be built the run
+#    output, the allowlist stated at the end of the prompt, and --settings carrying the
+#    libs/ops/lane_guard.py PreToolUse hook (the whole-command fence: no forced / deleting /
+#    box-branch push, no read of data/secrets by any program; it fails closed). If that cannot be built the run
 #    does NOT start (and never falls back to a bypass): the log says UNMEASURED and we return 2.
 # 2. claude runs (behind any wrapper words, e.g. `timeout 3000`) with the stream going to
 #    data/cro_ai_logs/.streams/ and stderr to the log, stdin closed so -p never swallows it.
