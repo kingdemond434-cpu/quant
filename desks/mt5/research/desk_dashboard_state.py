@@ -1146,6 +1146,136 @@ def _macro(deadline: float) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------------- HEADLINE
+#: The directive's CHINA LATENT STATES (PART XXXIX), each with the file that would carry it.
+#: P5 publishes the first four through the axis door; a state no organ publishes yet is listed by
+#: name and renders MISSING with that fact, never dropped from the panel.
+ASIA_LATENT_STATES: tuple[tuple[str, str], ...] = (
+    ("industrial state", "desks/mt5/data/axes/latent_cn_industrial.json"),
+    ("physical gold state", "desks/mt5/data/axes/latent_cn_physical_gold.json"),
+    ("FX-flow state", "desks/mt5/data/axes/latent_cn_fx_flow.json"),
+    ("liquidity / funding state", "desks/mt5/data/axes/latent_asia_funding.json"),
+    ("commodity-demand / export state", "desks/mt5/data/axes/latent_asia_export.json"),
+)
+#: The directive's region list against the audit's country groups and the ROI organ's forests.
+ASIA_REGIONS: tuple[tuple[str, str, str], ...] = (
+    ("China", "CN", "china"), ("Japan", "JP", "japan"), ("Korea", "KR", "korea"),
+    ("HK", "HK", ""), ("SG", "SG", "asean"), ("Taiwan", "TW", ""),
+    ("other Asia", "ASIA", "south_asia"),
+)
+
+
+def _latest_row(doc: Any) -> dict[str, Any] | None:
+    if not isinstance(doc, dict):
+        return None
+    if isinstance(doc.get("latest"), dict):
+        return doc["latest"]
+    rows = doc.get("rows")
+    if isinstance(rows, list) and rows and isinstance(rows[-1], dict):
+        return rows[-1]
+    return None
+
+
+def _asia_intelligence() -> dict[str, Any]:
+    """THE ASIA INTELLIGENCE PANEL (Asia directive PART XXXIX): sources, regions, China latent
+    states and research economics, each value with its artifact and age.
+
+    It joins what four organs already publish -- the completion audit
+    (`scripts/check_asia_directive.py`), source EVIG, research ROI and the dislocation lab -- plus
+    the latent-state files P5 writes through the axis door. Nothing here is computed that those
+    organs did not measure; a column no artifact attributes to a region (certificates, forward
+    clocks, live sleeves, breadth) is UNMEASURED with that reason, never a zero."""
+    au = Src("desks/mt5/reports/ASIA_COMPLETION_AUDIT.json", 7200,
+             "scripts/check_asia_directive.py")
+    ev = Src("desks/mt5/reports/SOURCE_EVIG.json", 7200, "desks/mt5/research/source_evig.py")
+    ro = Src("desks/mt5/reports/RESEARCH_ROI.json", 7200, "desks/mt5/research/research_roi.py")
+    dl = Src("desks/mt5/reports/DISLOCATION_LAB.json", 7200,
+             "desks/mt5/research/dislocation_lab.py")
+    srcs = _dig(au.doc, "asia_sources", default={}) or {}
+    groups = srcs.get("by_group") if isinstance(srcs, dict) else {}
+    by_region = _dig(au.doc, "by_region", default={}) or {}
+    forests = _dig(ro.doc, "region_roi", "by_region", default={}) or {}
+    no_attr = ("no artifact attributes this to a region yet: the audit carries forward/live per "
+               "requirement as UNMEASURED until source-to-clock lineage is published")
+    regions: list[dict[str, Any]] = []
+    for label, code, forest in ASIA_REGIONS:
+        g = (groups or {}).get(label) if isinstance(groups, dict) else None
+        reg = by_region.get(code) if isinstance(by_region, dict) else None
+        fr = forests.get(forest) if (forest and isinstance(forests, dict)) else None
+
+        def v(d: Any, k: str) -> Any:
+            return d.get(k, UNMEASURED) if isinstance(d, dict) else UNMEASURED
+
+        regions.append({
+            "region": label, "sources": v(g, "registered"), "active": v(g, "active"),
+            "blocked": v(g, "blocked"), "fresh": v(g, "fresh_series"),
+            "stale": v(g, "stale_series"),
+            "requirements": v(reg, "items"), "states": v(reg, "states"),
+            "observations": v(reg, "observations"), "cells": v(reg, "cells_emitted"),
+            "judged": v(reg, "cells_judged"), "survivors": v(reg, "survivors"),
+            "mechanisms": v(fr, "novel_mechanisms"), "compute_h": v(fr, "compute_hours"),
+            "roi": v(fr, "roi"), "roi_forest": forest or UNMEASURED,
+            "certificates": UNMEASURED, "forward": UNMEASURED, "live": UNMEASURED,
+            "breadth_added": UNMEASURED, "why_unmeasured": no_attr})
+    latent: list[dict[str, Any]] = []
+    for label, rel in ASIA_LATENT_STATES:
+        ls = Src(rel, 2 * 86400, "desks/mt5/research/macro_state_engine.py (package P5)")
+        row = _latest_row(ls.doc)
+        latent.append({
+            "state": label, "source": ls.cite(),
+            "as_of": ls.field((row or {}).get("as_of") or (row or {}).get("at")),
+            "level": ls.field((row or {}).get("level")),
+            "surprise": ls.field((row or {}).get("surprise")),
+            "acceleration": ls.field((row or {}).get("acceleration")),
+            "uncertainty": ls.field((row or {}).get("uncertainty")),
+            "contributions": ls.field((row or {}).get("contributions")
+                                      or (row or {}).get("components"))})
+    src_roi = _dig(ro.doc, "source_roi", default={}) or {}
+    econ: list[dict[str, Any]] = []
+    for r in (_dig(ev.doc, "rows", default=[]) or [])[:25]:
+        if not isinstance(r, dict):
+            continue
+        sr = src_roi.get(str(r.get("id"))) if isinstance(src_roi, dict) else None
+        hours = (sr or {}).get("compute_hours")
+        surv = (sr or {}).get("credited_survivors")
+        econ.append({"source": r.get("id"), "evig": r.get("evig"), "rank": r.get("rank"),
+                     "realized_roi": (sr or {}).get("roi", UNMEASURED) if sr else UNMEASURED,
+                     "survivors_per_compute_h": (round(float(surv) / float(hours), 6)
+                                                 if sr and hours and surv is not None
+                                                 else UNMEASURED),
+                     "delta_elogw": (sr or {}).get("credited_delta_elogw", UNMEASURED)
+                     if sr else UNMEASURED,
+                     "certificates": UNMEASURED, "breadth_added": UNMEASURED})
+    proofs = _dig(au.doc, "proofs", default={}) or {}
+    census = _dig(au.doc, "census", default=None)
+    xliv = [{"id": i.get("id"), "title": i.get("title"), "state": i.get("state"),
+             "blocker": i.get("blocker") or "", "next_repair": i.get("next_repair") or ""}
+            for i in (_dig(au.doc, "items", default=[]) or []) if isinstance(i, dict)
+            and i.get("xliv")]
+    return {
+        "status": au.status,
+        "sources": [au.cite(), ev.cite(), ro.cite(), dl.cite()],
+        "census": au.field(census),
+        "n_requirements": au.field(_dig(au.doc, "n_items")),
+        "registered_sources": au.field(srcs.get("registered") if isinstance(srcs, dict) else None),
+        "totals": au.field(srcs.get("totals") if isinstance(srcs, dict) else None),
+        "categories": au.field(srcs.get("by_category") if isinstance(srcs, dict) else None),
+        "regions": regions,
+        "xliv": xliv,
+        "proofs": {k: {"verdict": (v or {}).get("verdict", UNMEASURED),
+                       "why": (v or {}).get("why", "")}
+                   for k, v in (proofs.items() if isinstance(proofs, dict) else [])},
+        "latent_states": latent,
+        "economics": econ,
+        "economics_join": ev.field(len(econ) if econ else None,
+                                   "SOURCE_EVIG.json publishes no priced rows"),
+        "dislocation": {"status": dl.field(_dig(dl.doc, "status")),
+                        "asia_hard_series": dl.field(_dig(dl.doc, "asia_hard_series"),
+                                                     "the dislocation lab publishes no Asia "
+                                                     "hard-series block yet (package P1)")},
+        "summary": au.field(_dig(au.doc, "summary")),
+    }
+
+
 def _headline(sections: dict[str, Any]) -> dict[str, Any]:
     """The six numbers checked at a glance, each keeping the provenance of its own section."""
     ii = Src("desks/mt5/reports/INDEPENDENCE_INTAKE.json", 7200,
@@ -1207,6 +1337,7 @@ def build(budget_s: float = 120.0) -> dict[str, Any]:
     sections["funnel"] = _funnel(deadline)
     sections["bottlenecks"] = _bottlenecks()
     sections["macro"] = _macro(deadline)
+    sections["asia_intelligence"] = _asia_intelligence()
 
     unmeasured: list[dict[str, Any]] = []
     measured_empty: list[dict[str, Any]] = []

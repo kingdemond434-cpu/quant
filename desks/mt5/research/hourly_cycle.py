@@ -973,6 +973,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
     # 48h law-gate rotation and the health check ran on no clock at all.
     "box_state_freshness", "desk_health",
+    # THE ASIA DIRECTIVE'S COMPLETION AUDIT (2026-10-06): an artifact reader, seconds, every hour.
+    "asia_completion_audit",
 })
 
 
@@ -5398,6 +5400,14 @@ def main() -> None:
     # page already fetches. Read-only: it writes no registry row and sizes nothing, so it cannot
     # change what the desk trades. Every value carries its source artifact and that artifact's
     # age; an absent measurement is UNMEASURED with its reason, never a zero.
+    # THE ASIA DIRECTIVE'S COMPLETION AUDIT (PART XXXVII, 2026-10-06): every requirement of the
+    # China-first directive on its 13-state ladder ABSENT..PROVEN, derived from the artifacts the
+    # Asia organs wrote (pack chain, alt-proxy store, free stack, collector, runtime attestation)
+    # and the three before/after decision ledgers (EVIG order, ROI budget, forest rotation). An
+    # absent artifact is UNMEASURED. A reader of JSON, ~3 s; it runs BEFORE desk_dashboard_state,
+    # whose ASIA INTELLIGENCE section reads ASIA_COMPLETION_AUDIT.json on the same pass.
+    aca = _costed("asia_completion_audit", lambda: _producer(
+        "asia_completion_audit", "scripts/check_asia_directive.py", "--once"))
     dds = _costed("desk_dashboard_state", lambda: _producer(
         "desk_dashboard_state", "research/desk_dashboard_state.py",
         "--once", "--budget-s", "120"))
@@ -5797,6 +5807,7 @@ def main() -> None:
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
+                    "asia_completion_audit": aca,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "build_failure_bank": bfb, "trade_pathology": tpa,
                     "experiment_contracts": exc_, "health_board": hbd,

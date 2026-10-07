@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 765,
+  "NEVER": 767,
   "UNMEASURED": 37
  },
  "scope": {
-  "attested": 983,
+  "attested": 985,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -295,6 +295,17 @@
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "leg:committee_ensembles"
+    ]
+   },
+   {
+    "at": "2026-10-07T06:04:45+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "fence:check_asia_directive",
+     "leg:asia_completion_audit"
     ]
    }
   ]
@@ -25364,6 +25375,62 @@
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
    "measured_at": "2026-10-07T01:02:10+00:00"
+  },
+  {
+   "organ": "fence:check_asia_directive",
+   "kind": "task",
+   "code": [
+    "scripts/check_asia_directive.py"
+   ],
+   "clock": "run_law_gate.py",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/law_gate.json",
+   "artifact_declared": "data/law_gate.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "gate_runs",
+   "consumer": "desks/mt5/research/plumbing_watchdog.py",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-07T06:04:45+00:00"
+  },
+  {
+   "organ": "leg:asia_completion_audit",
+   "kind": "leg",
+   "code": [
+    "scripts/check_asia_directive.py"
+   ],
+   "clock": "hourly_cycle:asia_completion_audit",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/ASIA_COMPLETION_AUDIT.json",
+   "artifact_declared": "desks/mt5/reports/ASIA_COMPLETION_AUDIT.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 4,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "desks/mt5/research/desk_dashboard_state.py (sections.asia_intelligence -> web/da",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-07T06:04:45+00:00"
   }
  ],
  "ratchet": {

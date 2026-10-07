@@ -544,7 +544,8 @@ def main(argv: list[str] | None = None) -> int:
     # a missing artifact leaves the order exactly as it was.
     try:
         from research.source_evig import fetch_order
-        _rank = {sid: i for i, sid in enumerate(fetch_order([str(s.get("id")) for s in todo]))}
+        _rank = {sid: i for i, sid in enumerate(fetch_order([str(s.get("id")) for s in todo],
+                                                            record=True))}
         todo.sort(key=lambda s: _rank.get(str(s.get("id")), 10**6))
     except Exception:                                          # absence is never a demotion
         pass
