@@ -347,10 +347,15 @@ def check_survivorship(meta: dict[str, Any], series: pd.DataFrame | pd.Series,
 
 def check_truncation(meta: dict[str, Any], series: pd.DataFrame | pd.Series,
                      now: datetime) -> Check:
-    """Is history truncated -- at the head against the declared start, or by an interior hole?"""
-    idx = _index(series).dropna().sort_values()
+    """Is history truncated -- at the head against the declared start, or by an interior hole?
+
+    Cadence is measured over DISTINCT event times. A vintage-carrying series repeats an event
+    once per revision (that is what the revision check's PASS branch accepts), and those zero
+    steps are not a cadence: counted, they drag the median step to zero and the check to
+    UNMEASURED for exactly the series that did the most to be honest (ARCH-26, 2026-10-07)."""
+    idx = pd.DatetimeIndex(_index(series).dropna().unique()).sort_values()
     n = len(idx)
-    detail: dict[str, Any] = {"rows": n,
+    detail: dict[str, Any] = {"rows": n, "rows_with_repeats": len(series),
                               "first": str(idx[0]) if n else None,
                               "last": str(idx[-1]) if n else None,
                               "declared_history_starts": meta.get("history_starts")}

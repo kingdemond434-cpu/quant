@@ -3,7 +3,8 @@
 One test per organ, on pure functions with fixtures -- no registry, no tracked file, no clock.
 What every one of them asserts beyond its own numbers: the organ NEVER cuts. A bounty is a
 research REQUEST, an auction bid is two-sided and floored above zero, the bottleneck shift is
->= 1 for the department that binds and exactly 1.0 elsewhere, and the monoculture reading is
+>= 1 for the department that binds, raised to the shift's geometric mean for the exploration
+departments (ARCH-26), and never below 1.0 anywhere; the monoculture reading is
 reported with `capped` false (GROWTH_GOVERNANCE Rule 1; the principal's 2026-09-08 order).
 """
 from __future__ import annotations

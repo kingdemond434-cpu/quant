@@ -23,11 +23,21 @@ Stages (in -> out), with the owning department:
     forward     -> live          STANDBY                 -> LIVE                  forward
 A stage whose input count is zero is UNMEASURED, never a bottleneck: absence of flow upstream is
 the upstream stage's finding.
+
+THE DATA HALF OF THE FUNNEL (ARCH-26). The stages above start at a registry discovery. The full
+funnel -- discovery -> acquisition -> usable observations -> tested hypotheses -> qualified
+forecasts -> portfolio decisions -- is measured by the sibling `full_funnel` from the artifacts
+that own each stage, on this same leg. Its shift is merged here (the MAXIMUM per department) so a
+data-side constraint reaches the auction through this one `compute_shift`, and the exploration
+departments are raised to the shift's geometric mean (`full_funnel.exploration_guard`) so no
+shift toward a constraint is paid for by discovery. The full report is FUNNEL_BOTTLENECK.json.
 """
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import math
 import sys
 import time
 from datetime import UTC, datetime
@@ -75,6 +85,18 @@ def _read(path: Path) -> dict[str, Any]:
         return {}
 
 
+def _count(v: Any) -> int:
+    """A count, tolerantly: NaN, None, junk and negatives read 0 here, where 0 already means "no
+    input flow" and marks the transition UNMEASURED -- never an exception that blanks the law."""
+    if isinstance(v, bool):
+        return 0
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return 0
+    return int(f) if math.isfinite(f) and f > 0 else 0
+
+
 def registry_counts(conn: Any | None = None) -> dict[str, int]:
     """The funnel's counts, straight from the registry tables. Missing tables count zero and are
     named in `unmeasured` by the caller."""
@@ -85,7 +107,7 @@ def registry_counts(conn: Any | None = None) -> dict[str, int]:
         def q(sql: str) -> int:
             try:
                 row = c.execute(sql).fetchone()
-                return int(row[0] or 0) if row is not None else 0
+                return _count(row[0]) if row is not None else 0
             except Exception:
                 return 0
         out["discovered"] = q("SELECT COUNT(*) FROM discoveries")
@@ -109,7 +131,7 @@ def roster_counts(sleeves_doc: dict[str, Any], survivors_doc: dict[str, Any]) ->
     rows = _lst(sleeves_doc.get("sleeves"))
     status = [str(r.get("status") or "") for r in rows if isinstance(r, dict)]
     sv = survivors_doc.get("survivors")
-    n_cert = len(sv) if isinstance(sv, (dict, list)) else int(survivors_doc.get("n") or 0)
+    n_cert = len(sv) if isinstance(sv, (dict, list)) else _count(survivors_doc.get("n"))
     return {"certified": n_cert, "forward": status.count("STANDBY") + status.count("LIVE"),
             "live": status.count("LIVE")}
 
@@ -154,9 +176,30 @@ def compute_shift(bind: dict[str, Any] | None) -> dict[str, float]:
     return shift
 
 
+def merge_funnel(shift: dict[str, float], funnel: dict[str, Any] | None,
+                 departments: tuple[str, ...] = ()) -> dict[str, float]:
+    """The law's shift and the full funnel's, the MAXIMUM per department (neither can cut), then
+    the guard over the AUCTION's department list so the merged shift takes compute from no
+    generating department (`full_funnel.generating_departments`: everyone but meta, rest and
+    execution)."""
+    import full_funnel
+    merged = dict(shift)
+    for d, f in _dct((funnel or {}).get("compute_shift")).items():
+        try:
+            x = float(f)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(x):
+            merged[str(d)] = max(float(merged.get(str(d), 1.0)), x)
+    base = tuple(departments) or tuple(merged)
+    return full_funnel.exploration_guard(merged, base,
+                                         full_funnel.generating_departments(base))
+
+
 def build(now: datetime | None = None, conn: Any | None = None,
           sleeves_doc: dict[str, Any] | None = None,
-          survivors_doc: dict[str, Any] | None = None) -> dict[str, Any]:
+          survivors_doc: dict[str, Any] | None = None,
+          funnel: dict[str, Any] | bool | None = True) -> dict[str, Any]:
     at = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
     unmeasured: list[str] = []
     try:
@@ -170,6 +213,23 @@ def build(now: datetime | None = None, conn: Any | None = None,
     unmeasured.extend(f"{t['stage']}: no input flow" for t in trans if not t["measured"])
     bind = binding(trans)
     shift = compute_shift(bind)
+    if funnel is True:
+        t_f = time.perf_counter()
+        try:
+            import full_funnel
+            funnel = full_funnel.build(now=now, conn=conn)
+        except Exception as exc:  # the full funnel is a second measurement, never a blocker
+            why = f"full funnel not measured: {type(exc).__name__}: {exc}"
+            unmeasured.append(why)
+            # PUBLISHED AS UNMEASURED, NOT SKIPPED: skipping left the last good file on disk
+            # reading as current. The stub is stamped now and carries the reason.
+            funnel = _funnel_unmeasured(now, why, t_f)
+    if isinstance(funnel, dict):
+        departments: tuple[str, ...] = ()
+        with contextlib.suppress(Exception):
+            import full_funnel
+            departments = tuple(full_funnel.leg_departments()[1])
+        shift = merge_funnel(shift, funnel, departments)
     conv = _read(CONVERSION)
     lat = _read(LATENCY)
     doc: dict[str, Any] = {
@@ -181,6 +241,9 @@ def build(now: datetime | None = None, conn: Any | None = None,
             "research_latency_slowest": (lat.get("slowest") if isinstance(lat, dict) else None),
         },
         "unmeasured": unmeasured,
+        "funnel": funnel if isinstance(funnel, dict) else None,
+        "funnel_headline": (funnel.get("headline") if isinstance(funnel, dict)
+                            else "UNMEASURED: full funnel not built"),
         "consumer": "research_auction (bid bonus for the binding department) -> "
                     "research_budget.budget_s next epoch; RESEARCH_DASHBOARD",
         "rule": ("the binding transition is the measured stage with the lowest out/in ratio; "
@@ -193,9 +256,42 @@ def build(now: datetime | None = None, conn: Any | None = None,
     return doc
 
 
-def publish(doc: dict[str, Any], out: Path = OUT) -> None:
+def _funnel_unmeasured(now: datetime | None, why: str, t0: float) -> dict[str, Any]:
+    when = now or datetime.now(tz=UTC)
+    try:
+        import full_funnel
+        return full_funnel.unmeasured_doc(when, why, t0)
+    except Exception:
+        return {"at": when.isoformat(timespec="seconds"), "stages": {}, "transitions": [],
+                "limiting": None, "compute_shift": {}, "unmeasured": [why],
+                "headline": f"UNMEASURED: {why}",
+                "cost": {"wall_s": round(time.perf_counter() - t0, 3)}}
+
+
+def failed_doc(now: datetime | None, exc: BaseException) -> dict[str, Any]:
+    """What the leg publishes when the law itself could not be built: both files, stamped now,
+    UNMEASURED with the reason -- and no shift, so nothing downstream acts on a ghost."""
+    why = f"bottleneck law not built: {type(exc).__name__}: {exc}"
+    at = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    return {"at": at, "counts": {}, "transitions": [], "binding": None, "compute_shift": {},
+            "unmeasured": [why], "funnel": _funnel_unmeasured(now, why, time.perf_counter()),
+            "funnel_headline": f"UNMEASURED: {why}", "headline": f"UNMEASURED: {why}"}
+
+
+def _peak_mb() -> float | str:
+    try:
+        import full_funnel
+        return full_funnel._peak_mb()
+    except Exception:
+        return "UNMEASURED"
+
+
+def publish(doc: dict[str, Any], out: Path = OUT, funnel_out: Path | None = None) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    if isinstance(doc.get("funnel"), dict):
+        import full_funnel
+        full_funnel.publish(doc["funnel"], funnel_out or out.parent / full_funnel.OUT.name)
     try:
         from libs.moat import registry
         b = doc.get("binding") or {}
@@ -215,11 +311,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=OUT)
     a = ap.parse_args(argv)
     t0 = time.monotonic()
-    doc = build()
+    try:
+        doc = build()
+    except Exception as exc:  # the leg ALWAYS publishes: an absent file reads as yesterday's
+        doc = failed_doc(None, exc)
     doc["elapsed_s"] = round(time.monotonic() - t0, 3)
     doc["budget_s"] = a.budget_s
+    # THE LEG'S OWN PRICE, IN ITS ARTIFACT, so the box reports what the hour paid for it.
+    doc["cost"] = {"wall_s": doc["elapsed_s"], "peak_rss_mb": _peak_mb(),
+                   "basis": "time.monotonic around build(); process peak RSS"}
     publish(doc, a.out)
     print(f"bottleneck law: {doc['headline']}")
+    print(f"full funnel: {doc['funnel_headline']}")
     return 0
 
 

@@ -170,7 +170,8 @@ def build(now: datetime | None = None, conn: Any | None = None,
           bounty: dict[str, Any] | None = None, bottleneck: dict[str, Any] | None = None,
           replenish: dict[str, Any] | None = None, hours: dict[str, float] | None = None,
           yields: dict[str, int] | None = None,
-          departments: tuple[str, ...] | None = None) -> dict[str, Any]:
+          departments: tuple[str, ...] | None = None,
+          attack: dict[str, Any] | None = None) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     legs, depts = leg_departments()
     departments = departments or depts
@@ -194,7 +195,7 @@ def build(now: datetime | None = None, conn: Any | None = None,
     # the MAXIMUM per department is taken and never the minimum: a department two organs both
     # call starved is not funded less because one of them is more cautious about it, and neither
     # organ can cut, because both emit factors at or above 1.0 by construction.
-    _attack = _read(ATTACK)
+    _attack = _read(ATTACK) if attack is None else attack
     if _attack.get("compute_shift"):
         _merged = dict(_dct(bottleneck.get("compute_shift")))
         for _d, _f in _dct(_attack.get("compute_shift")).items():
@@ -202,6 +203,19 @@ def build(now: datetime | None = None, conn: Any | None = None,
                 _merged[_d] = max(float(_merged.get(_d, 1.0) or 1.0), float(_f))
         bottleneck = {**bottleneck, "compute_shift": _merged,
                       "blended_from": ["BOTTLENECK_LAW.json", "BOTTLENECK_ATTACK.json"]}
+    # MINING IS NEVER REDUCED, RE-HELD AFTER THE BLEND (ARCH-26; audit of #272). `bottleneck_law`
+    # publishes its shift already guarded, but the attacker's maximum above can lift the
+    # geometric mean again -- measured, that cleared mathlab, macro, data and japan at 0.87-0.96
+    # of their no-shift factor. Every GENERATING department (all but meta, rest and execution, by
+    # role) is raised to the mean of THIS auction's departments, the exact amount that keeps its
+    # cleared factor at or above its no-shift factor. Only the three non-generating roles pay;
+    # a judging backlog's shift lands on validate alone and is paid for by them too.
+    if _dct(bottleneck.get("compute_shift")):
+        with contextlib.suppress(Exception):
+            import full_funnel
+            bottleneck = {**bottleneck, "compute_shift": full_funnel.exploration_guard(
+                _dct(bottleneck.get("compute_shift")), departments,
+                full_funnel.generating_departments(departments))}
     replenish = replenish if replenish is not None else _read(REPLENISH)
     for name, d in (("PORTFOLIO_BOUNTY", bounty), ("BOTTLENECK_LAW", bottleneck),
                     ("ALPHA_REPLENISHMENT", replenish)):
