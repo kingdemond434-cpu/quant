@@ -800,14 +800,16 @@ def emit_world(row: dict[str, Any], *, dry_run: bool = False,
             "claims_read": len(claims), "errors": errors[:3]}
 
 
-#: VERDICTS UNDER WHICH THE RAW-PACK LANE MAY MINT FROM A PACK'S LAKE FRAME. `confirmed` is a
-#: terms row read and quoted; `ungoverned` is a URL on a host no terms row governs, which is the
-#: verdict asia_collector already FETCHES under (`collect_one`), so a frame on disk for such a pack
-#: is one the desk was allowed to hold. Measured on this registry 2026-10-07: 224 of 242 packs are
-#: ungoverned, so excluding it would close this lane for every country but China; that is a
-#: principal's call, made by deleting it here. Everything else -- refused, to_confirm, an unknown
-#: terms id, a pack with no terms_ref and no URL -- mints nothing (fail closed).
-PACK_MINT_VERDICTS: frozenset[str] = frozenset({"confirmed", "ungoverned"})
+#: VERDICTS UNDER WHICH THE RAW-PACK LANE MAY MINT FROM A PACK'S LAKE FRAME: `confirmed` ONLY,
+#: a terms row read and its permitting clause quoted (coordinator's ruling on #229, 2026-10-07).
+#: Terms fail closed and need a quoted clause; `ungoverned` (a URL on a host no terms row governs)
+#: has none, so it mints nothing. asia_collector may still FETCH such a pack -- raw collection
+#: neither mints nor trades -- but its frame is HELD here until its host has a confirmed row.
+#: Measured on this registry 2026-10-07: 224 of 242 packs are ungoverned; the lane comes back
+#: host by host as terms rows land in alt_proxies, never by widening this set. Everything else
+#: -- ungoverned, refused, to_confirm, an unknown terms id, a pack with no terms_ref and no URL --
+#: mints nothing (fail closed).
+PACK_MINT_VERDICTS: frozenset[str] = frozenset({"confirmed"})
 _VERDICT_RANK = {"refused": 0, "to_confirm": 1, "ungoverned": 2, "confirmed": 3}
 
 
