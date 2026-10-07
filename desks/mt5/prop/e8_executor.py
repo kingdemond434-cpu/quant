@@ -596,7 +596,8 @@ def outstanding_stop_risk(venue: Any, positions: list[dict[str, Any]],
 
 
 def manage_breakeven(venue: Any, *, armed: bool = False,
-                     exclude_symbols: set[str] | None = None) -> list[dict[str, Any]]:
+                     exclude_symbols: set[str] | None = None,
+                     positions: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     """Move every E8 stop to costed break-even once it has earned it. SHADOW unless armed.
 
     THE GAP THIS CLOSES. The principal's order of 2026-09-24 is that the gold sleeves "must carry
@@ -643,13 +644,17 @@ def manage_breakeven(venue: Any, *, armed: bool = False,
     rows: list[dict[str, Any]] = []
     live_ids: set[str] = set()
 
-    positions = venue.positions()
+    if positions is None:
+        positions = venue.positions()
     # Live TradeLocker positions commonly carry only stopLossId. Resolve those ids against the
     # protective-order book once per pass, and only when a live row needs it: an unnecessary
     # order-book request consumes the same rate budget that already returned HTTP 429 in live.
     order_by_id: dict[int, dict[str, Any]] = {}
     order_read_error: str | None = None
     needs_order_join = any(
+        _iid_to_sym.get(int(p.get("tradableInstrumentId") or p.get("instrumentId") or 0),
+                        "").upper() not in excluded
+        and
         _pos_field(p, "stopLoss", "stopLossPrice", "sl") is None
         and (p.get("stopLossId") or p.get("stopOrderId")) is not None
         for p in positions)
@@ -815,14 +820,20 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     # and a stop that should be at break-even, and a stood-down account is exactly when that
     # matters most. The MT5 gateway runs `manage_open_positions` first for the same reason. The
     # one case where it is skipped is a flatten, where the positions are about to cease existing.
+    open_positions: list[dict[str, Any]] | None = None
+    position_read_error = ""
     if not decision.flatten:
         try:
+            open_positions = venue.positions()
             doc["breakeven"] = manage_breakeven(
-                venue, armed=armed, exclude_symbols={"XAUUSD"})
+                venue, armed=armed, exclude_symbols={"XAUUSD"},
+                positions=open_positions)
         except Exception as exc:                    # broad on purpose: never take the pass down
             # Management must never take the lane down: a pass that cannot ratchet a stop still
             # has to reach the guard and the ledger. Mirrors gateway.py's own management guard.
             doc["breakeven_error"] = f"{type(exc).__name__}: {exc}"
+            if open_positions is None:
+                position_read_error = doc["breakeven_error"]
 
     if not decision.may_open:
         doc["status"] = decision.verdict.value
@@ -837,6 +848,14 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     if not entry_enabled:
         doc["status"] = "MANAGEMENT_ONLY"
         doc["why"] = "certified non-gold entries are disabled for this invocation"
+        doc["n_considered"] = 0
+        doc["n_sent" if armed else "n_would_send"] = 0
+        return doc
+
+    if open_positions is None:
+        doc["status"] = "NO_BROKER_SNAPSHOT"
+        doc["why"] = ("position read failed; new entries require a current broker snapshot "
+                      f"({position_read_error})")
         doc["n_considered"] = 0
         doc["n_sent" if armed else "n_would_send"] = 0
         return doc
@@ -880,7 +899,6 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     doc["cert_book"] = cert or None
     committed_usd = 0.0
     try:
-        open_positions = venue.positions()
         resting_orders = venue.orders()
         outstanding_usd, outstanding_why = outstanding_stop_risk(
             venue, open_positions, resting_orders)
@@ -958,7 +976,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             row["status"] = "BANNED_FAMILY"
             row["why"] = _ban_reason(fam)
             closed: list[int] = []
-            for p in venue.positions():
+            for p in open_positions:
                 _iid = p.get("tradableInstrumentId") or p.get("instrumentId")
                 if _iid is None or _iid_to_sym.get(int(_iid)) != sym:
                     continue
