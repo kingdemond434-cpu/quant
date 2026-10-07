@@ -154,7 +154,11 @@
         "alt_us_tsa_throughput__travelers"
       ],
       "consumer": "research/alt_equity_handoff.py (event lane + class books)",
-      "provenance": "desks/mt5/research/alt_proxies.py equity_handoff()"
+      "provenance": "desks/mt5/research/alt_proxies.py equity_handoff()",
+      "pit": {
+        "publication_lag_days": 0,
+        "valid": "the hand-off is a static series-to-share mapping known when written; every value it points at is read from its PIT lake series, which carries its own pit_stamp available_at"
+      }
     }
   }
 }
