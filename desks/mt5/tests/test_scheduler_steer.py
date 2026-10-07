@@ -82,9 +82,10 @@ def _isolate_pricing(tmp_path: Path, monkeypatch: Any, steer_doc: dict[str, Any]
     monkeypatch.setattr(cp, "_bandit_prices", dict)
     monkeypatch.setattr(cp, "_researcher_prices", dict)
     monkeypatch.setattr(cp, "_policy_factors", lambda: ({}, False))
-    # judge0 is a validation (judge-side) leg; every other leg is generation / rest
+    # judge0 is a validation (judge-side) leg AND in the judge-only set; every other leg is rest
     monkeypatch.setattr(cp, "_department_of",
                         lambda leg: "validate" if leg.startswith("judge") else "rest")
+    monkeypatch.setattr(cp, "JUDGE_LEGS", frozenset({"judge0"}))
 
 
 BASES = {"alpha_evolution": 600, "deepen": 600, "judge0": 600,
@@ -517,3 +518,192 @@ def test_outcomes_are_credited_to_the_weights_actually_applied(
     assert never["applied_from"] == "never_spent"
     assert never["legs"]["alpha_evolution"]["applied"] == 1.0, \
         "a plan cycle_pricing never spent was credited as treated"
+
+
+# ------------------------------------------------- audit #235 round 4: L1, L2 and the e-process
+
+#: one leg per role: generation in four departments (two siblings in discovery and intel so an
+#: up-weight has someone to take from), a judge leg and a generation leg inside the validation
+#: department, and one leg in each payer department
+_DEPTS = {"d0": "discovery", "d1": "discovery", "d2": "discovery", "i0": "intel", "i1": "intel",
+          "a0": "data", "mc0": "macro", "backtest": "validate", "model_search": "validate",
+          "falsifier_run": "validate", "m0": "meta", "r0": "rest", "x0": "execution"}
+
+
+def _isolate_l1(tmp_path: Path, monkeypatch: Any, weights: dict[str, float] | None) -> None:
+    _isolate_pricing(tmp_path, monkeypatch, None if weights is None else {
+        "generated_utc": datetime.now(UTC).isoformat(), "hour": "h", "weights": weights,
+        "withdrawn": False})
+    monkeypatch.setattr(cp, "_department_of", lambda leg: _DEPTS.get(leg, "rest"))
+    monkeypatch.setattr(cp, "JUDGE_LEGS", tour.JUDGE_LEGS)
+    # a SPREAD of unsteered prices so legs above the median ask for spare even unsteered ...
+    prices = {lg: float(i) for i, lg in enumerate(sorted(_DEPTS))}
+    monkeypatch.setattr(cp, "_meta_prices", lambda: (prices, "isolated"))
+    # ... and a spare that BINDS in every department, so sharing is pro rata and a steer that
+    # raised one leg's ask would take seconds from its siblings
+    monkeypatch.setattr(cp, "spare_capacity", lambda: {
+        "status": "MEASURED", "spare_s": dict.fromkeys(set(_DEPTS.values()), 150.0)})
+
+
+def _generation(leg: str) -> bool:
+    return not cp.steer_may_pay(leg, _DEPTS[leg])
+
+
+def _steer_space() -> list[dict[str, float]]:
+    """Every way a steer can move the hour: each leg alone at every grid weight, every pair at the
+    extremes, everything up, everything down, and a seeded random sample of whole vectors."""
+    import itertools
+    import random
+    legs = sorted(_DEPTS)
+    grid = (0.5, 0.75, 1.25, 1.5)
+    space: list[dict[str, float]] = [{lg: w} for lg in legs for w in grid]
+    space += [{a: wa, b: wb} for a, b in itertools.combinations(legs, 2)
+              for wa in (0.5, 1.5) for wb in (0.5, 1.5)]
+    space += [dict.fromkeys(legs, 1.5), dict.fromkeys(legs, 0.5)]
+    rng = random.Random(235)  # noqa: S311 - a seeded test sample
+    space += [{lg: rng.choice((0.5, 0.75, 1.0, 1.25, 1.5)) for lg in legs} for _ in range(150)]
+    return space
+
+
+def test_no_steer_ever_takes_seconds_from_a_generation_leg(
+        tmp_path: Path, monkeypatch: Any) -> None:
+    """L1. Up-weighting one generation leg used to take seconds from its sibling generation legs
+    because spare is shared pro rata within a department. Whatever the steer -- every leg alone
+    at every weight, every pair, all up, all down, random whole vectors -- no mining, information
+    or research-generation leg's seconds fall below their unsteered value; only judge legs and the
+    meta, rest and execution departments may pay, and no department exceeds its spare."""
+    legs = dict.fromkeys(_DEPTS, 600)
+    _isolate_l1(tmp_path, monkeypatch, None)
+    base = cp.build_plan(dict(legs))["legs"]
+    assert any(base[lg]["extra_s"] > 0 for lg in base if _generation(lg)), "vacuous: no grant"
+    payers_paid = False
+    for weights in _steer_space():
+        _isolate_l1(tmp_path, monkeypatch, weights)
+        plan = cp.build_plan(dict(legs))
+        for lg, row in plan["legs"].items():
+            if _generation(lg):
+                assert row["extra_s"] >= base[lg]["extra_s"], (lg, weights)
+                assert row["planned_s"] >= base[lg]["planned_s"], (lg, weights)
+                assert row["factor"] >= base[lg]["factor"], (lg, weights)
+            elif row["planned_s"] < base[lg]["planned_s"]:
+                payers_paid = True
+            assert row["planned_s"] >= row["base_s"], "a leg was cut below its base"
+        used: dict[str, int] = {}
+        for lg, row in plan["legs"].items():
+            used[_DEPTS[lg]] = used.get(_DEPTS[lg], 0) + int(row["extra_s"])
+        assert all(v <= 150 + len(_DEPTS) for v in used.values()), (used, weights)
+    assert payers_paid, "vacuous: no steer ever made a payer pay"
+
+
+def test_the_sibling_cut_is_real_without_the_protection(tmp_path: Path, monkeypatch: Any) -> None:
+    """The test above is not vacuous: with the generation floor switched off, up-weighting d0
+    takes seconds from its discovery siblings (the round-4 audit's defect, reproduced)."""
+    legs = dict.fromkeys(_DEPTS, 600)
+    _isolate_l1(tmp_path, monkeypatch, None)
+    base = cp.build_plan(dict(legs))["legs"]
+    _isolate_l1(tmp_path, monkeypatch, {"d0": 1.5})
+    monkeypatch.setattr(cp, "_protect_generation", lambda steered, _u, _l: steered)
+    naive = cp.build_plan(dict(legs))["legs"]
+    assert any(naive[lg]["extra_s"] < base[lg]["extra_s"] for lg in ("d1", "d2")), \
+        "the fixture does not bind: a sibling cut cannot be observed"
+
+
+def test_the_judge_only_set_is_explicit_and_narrower_than_the_department(
+        tmp_path: Path, monkeypatch: Any) -> None:
+    """L2. The legs a steer may push below 1.0, and that fund its ups, are `JUDGE_LEGS` -- a
+    named judge-only set -- never the whole validation department, which also holds research
+    generation."""
+    import hourly_cycle as hc  # type: ignore[import-not-found]
+    validate = {k for k, v in hc.LEG_DEPARTMENT.items() if v == "validate"}
+    assert tour.JUDGE_LEGS, "the judge-only set is empty"
+    assert validate >= tour.JUDGE_LEGS, tour.JUDGE_LEGS - validate
+    generation_in_validate = {"model_search", "adversary_evolution", "synthetic_regimes",
+                              "research_diversity_archive", "frontier_map", "market_ecology",
+                              "evaluator_lab", "science_controller", "null_lab"}
+    assert not tour.JUDGE_LEGS & generation_in_validate
+    assert validate > tour.JUDGE_LEGS
+    # tier_s hands the steer only judge legs the pricer prices inside a pass
+    down_ok = set(ts.steer_down_ok())
+    assert down_ok and down_ok <= tour.JUDGE_LEGS
+    assert not down_ok & set(getattr(hc, "OWN_CLOCK_LEGS", ()))
+    # the steer floors a validation-department GENERATION leg at 1.0 by default, and funds its ups
+    # only from judge legs
+    props = {"researcher_market": {"model_search": 0.5, "backtest": 0.5, "deepen": 1.5}}
+    doc = tour.steer(props, {}, _warm(props), "h")
+    assert doc["legs"]["model_search"]["due"] == 1.0
+    assert doc["legs"]["backtest"]["due"] < 1.0
+    assert all(lg in tour.JUDGE_LEGS for lg, r in doc["legs"].items()
+               if r["applied"] < 1.0), doc["legs"]
+    # and the pricer enforces it again where the weight is spent
+    _isolate_pricing(tmp_path, monkeypatch, {"generated_utc": datetime.now(UTC).isoformat(),
+                                             "weights": {"model_search": 0.5, "backtest": 0.5}})
+    monkeypatch.setattr(cp, "JUDGE_LEGS", tour.JUDGE_LEGS)
+    w, _why = cp._steer_weights()
+    assert w["model_search"] == 1.0 and w["backtest"] == 0.5
+
+
+def _ep_hist(diffs: list[float], t0: datetime) -> list[dict[str, Any]]:
+    return [{"at": (t0 + timedelta(hours=h)).isoformat(),
+             "outcomes": {"a": 5.0 + d, "b": 5.0},
+             "legs": {"a": {"due": 1.3, "applied": 1.3, "arm": "trial"},
+                      "b": {"due": 1.3, "applied": 1.0, "arm": "holdout"}}}
+            for h, d in enumerate(diffs)]
+
+
+def test_the_e_process_accumulates_over_its_whole_run_and_never_slides() -> None:
+    """Should-fix. The e-process is persisted and folds each scored hour in once; pruning the
+    assignment list to any window forgets nothing, so the persisted e-values equal the test run
+    over EVERY hour since the start -- which a sliding window does not."""
+    t0 = NOW - timedelta(hours=600)
+    diffs = [1.0 + 0.1 * (h % 5) for h in range(400)] + [(-1) ** h * 0.3 for h in range(150)]
+    hist = _ep_hist(diffs, t0)
+    st: dict[str, Any] | None = None
+    for h in range(len(hist)):
+        now = t0 + timedelta(hours=h + 1)
+        window = [a for a in hist[: h + 1]
+                  if datetime.fromisoformat(a["at"]) >= now - timedelta(hours=tour.WINDOW_H)]
+        st = tour.eprocess_advance(st, window)
+        # looking twice in one hour folds nothing twice
+        assert tour.eprocess_advance(st, window)["channels"] == st["channels"]
+    assert st is not None
+    whole = tour.sequential_test(diffs)
+    persisted = tour.eprocess_comparison(st)["up"]
+    assert persisted["verdict"] == whole["verdict"] == "ADMITTED"
+    assert persisted["e_up"] == whole["e_up"] and persisted["blocks"] == whole["blocks"]
+    # the descriptive window is published beside it and decides nothing
+    cmp_ = tour.holdout_comparison(hist[-tour.WINDOW_H:], st)
+    assert cmp_["primary"] == "ADMITTED"
+    win = cmp_["up"]["window"]
+    assert win["descriptive_only"] is True and win["blocks"] < persisted["blocks"]
+    assert win["verdict"] != "ADMITTED", "fixture: the window alone would have forgotten it"
+
+
+def test_the_e_process_restarts_only_through_a_recorded_reset() -> None:
+    t0 = NOW - timedelta(hours=60)
+    hist = _ep_hist([-2.0] * 30, t0)
+    doc = tour.steer(ALT, {}, hist + _warm(ALT, start=NOW - timedelta(hours=8)), "h0",
+                     down_ok=LEGS20, now=NOW)
+    assert doc["mode"] == "REJECTED"
+    ep = doc["eprocess"]
+    assert ep["started_at"] == NOW.isoformat()
+    assert len(ep["resets"]) == 1
+    rec = ep["resets"][0]
+    assert rec["at"] == NOW.isoformat() and "REJECTED" in rec["reason"]
+    assert rec["final"]["up"]["verdict"] == "REJECTED"
+    # the persisted state carried forward keeps the reset and folds nothing from before it
+    later = NOW + timedelta(hours=tour.COOLDOWN_H + 1)
+    again = tour.steer(ALT, {}, hist, "h99", down_ok=LEGS20, rejected_at=doc["rejected_at"],
+                       now=later, eprocess=ep)
+    assert again["eprocess"]["resets"] == ep["resets"]
+    assert again["comparison"]["up"]["verdict"] == "UNMEASURED"
+    # an explicit reset is the only other way to restart, and it too is recorded
+    r2 = tour.eprocess_reset(again["eprocess"], later, "operator reset")
+    assert [r["reason"] for r in r2["resets"]][-1] == "operator reset"
+    assert r2["cursor"] == again["eprocess"]["cursor"]
+
+
+def test_organ_steer_persists_the_e_process(tmp_path: Path, monkeypatch: Any) -> None:
+    _isolate_tier_s(tmp_path, monkeypatch, arena=_arena({"mutate_survivor": "LEADS"}))
+    ts.organ_steer()
+    st = json.loads((tmp_path / "state" / "scheduler_steer.json").read_text("utf-8"))
+    assert isinstance(st.get("eprocess"), dict) and "channels" in st["eprocess"]

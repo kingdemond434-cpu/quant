@@ -2849,6 +2849,21 @@ def _steer_outcomes(pending: list[dict[str, Any]], producer_leg: Mapping[str, st
         a["scored_at"] = NOW.isoformat()
 
 
+def steer_down_ok() -> list[str]:
+    """The legs the steer may weight below 1.0 and that fund its ups: `JUDGE_LEGS` (the explicit
+    judge-only set) that the pricer prices inside a pass, minus the legs on a clock of their own.
+    Empty when the cycle cannot be read -- every leg is then up-only."""
+    from libs.tiers import scheduler_tournament as tour
+    try:
+        import cycle_pricing as _cp
+        import hourly_cycle as _hc
+        priced = set(_cp._bases())
+        own = set(getattr(_hc, "OWN_CLOCK_LEGS", ()))
+    except Exception:
+        return []
+    return sorted(k for k in tour.JUDGE_LEGS if k in priced and k not in own)
+
+
 def organ_steer() -> dict[str, Any]:
     """AC13 + I12: method competition WRITES the real scheduler's weights.
 
@@ -2921,6 +2936,8 @@ def organ_steer() -> dict[str, Any]:
     suspended = {c: authority.suspended(tour.CONTESTANT_ORGAN[c]) for c in tour.CONTESTANTS}
     # the tournament's memory: past assignments, their tilts and (once elapsed) their outcomes
     st = _state("scheduler_steer")
+    # the window bounds the tournament's memory (Hedge authority) and the descriptive window
+    # statistic only; the sequential test's e-process is persisted separately (st["eprocess"])
     keep_after = NOW - timedelta(hours=tour.WINDOW_H)
     assignments = [a for a in (st.get("assignments") or []) if isinstance(a, dict)
                    and (replay.parse_t(a.get("at")) or NOW) >= keep_after and a.get("hour") != hour]
@@ -2930,23 +2947,18 @@ def organ_steer() -> dict[str, Any]:
     legs_known = {lg for p in proposals.values() for lg in p} | set(producer_leg.values()) - {None}
     forward_r_now = _leg_forward_r(producer_leg, {str(x) for x in legs_known if x})
     _steer_outcomes(pending, producer_leg, elogw_now, forward_r_now)
-    # BACKPRESSURE GOES TO THE JUDGE ONLY: only the validation department's legs may be weighted
-    # below 1.0; every mining / research-generation leg is up-only (the leg departments are
-    # hourly_cycle's own classification, never restated here)
-    # The judge legs are also the ones that PAY for the steer's ups (zero-sum, backpressure to the
-    # judge), so only those the pricer actually prices inside a pass count: a leg on its own
-    # clock (OWN_CLOCK_LEGS) is not shortened by a weight here and could pay nothing.
-    try:
-        import cycle_pricing as _cp
-        import hourly_cycle as _hc
-        priced = set(_cp._bases())
-        own = set(getattr(_hc, "OWN_CLOCK_LEGS", ()))
-        judge_legs = sorted(k for k, v in _hc.LEG_DEPARTMENT.items()
-                            if v == "validate" and k in priced and k not in own)
-    except Exception as exc:
-        judge_legs, inputs["down_ok"] = [], f"hourly_cycle unavailable ({exc}): every leg up-only"
+    # BACKPRESSURE GOES TO THE JUDGE ONLY: only a leg in `tour.JUDGE_LEGS` -- the explicit
+    # judge-only set, NOT the validation department, which also holds research generation and
+    # the judge's own instruments (audit #235 round 4) -- may be weighted below 1.0; every other
+    # leg is up-only. The judge legs are also the ones that PAY for the steer's ups (zero-sum), so
+    # only those the pricer actually prices inside a pass count: a leg on its own clock
+    # (OWN_CLOCK_LEGS) is not shortened by a weight here and could pay nothing.
+    judge_legs = steer_down_ok()
+    if not judge_legs:
+        inputs["down_ok"] = "no judge leg is priced inside a pass: every leg up-only"
+    ep_state = st.get("eprocess") if isinstance(st.get("eprocess"), dict) else None
     doc = tour.steer(proposals, suspended, assignments, hour, down_ok=judge_legs,
-                     rejected_at=st.get("rejected_at"), now=NOW)
+                     rejected_at=st.get("rejected_at"), now=NOW, eprocess=ep_state)
     assignments.append({"hour": hour, "at": NOW.isoformat(),
                         "legs": {lg: {k: r[k] for k in ("due", "applied", "arm")}
                                  for lg, r in doc["legs"].items()},
@@ -2957,8 +2969,11 @@ def organ_steer() -> dict[str, Any]:
                         "forward_r_at": {lg: forward_r_now[lg] for lg in doc["legs"]
                                          if lg in forward_r_now},
                         "outcomes": None})
+    # the e-process is PERSISTED beside the (windowed) assignments: it accumulates over its whole
+    # run and restarts only through a recorded reset, never by the window sliding
     _save_state("scheduler_steer", {"assignments": assignments, "at": NOW.isoformat(),
-                                    "rejected_at": doc["rejected_at"]})
+                                    "rejected_at": doc["rejected_at"],
+                                    "eprocess": doc["eprocess"]})
     cmp_ = doc["comparison"]
     scored = sum(1 for a in assignments if isinstance(a.get("outcomes"), dict))
     return {**doc, "inputs": inputs, "assignments_scored": scored,

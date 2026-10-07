@@ -38,8 +38,9 @@ and the order the legs run in. This module produces the per-leg WEIGHTS it reads
 
 THE LAWS IT KEEPS, pinned by tests:
 
-  * BACKPRESSURE GOES TO THE JUDGE ONLY. Only a leg in `down_ok` (the validation department) may
-    sit below 1.0; every mining, information and generation leg is floored at 1.0 here AND in
+  * BACKPRESSURE GOES TO THE JUDGE ONLY. Only a leg in `down_ok` -- drawn from `JUDGE_LEGS`, an
+    explicit judge-only set, never the whole validation department -- may sit below 1.0; every
+    mining, information and generation leg is floored at 1.0 here AND in
     cycle_pricing, and cycle_pricing orders legs by their UNSTEERED price except to push a
     down-weighted judge leg later -- a steer can never move a generation leg back in a short pass.
   * ZERO-SUM IN WEIGHT SPACE, PAID BY THE JUDGE. The APPLIED weights average exactly 1.0: the
@@ -48,6 +49,11 @@ THE LAWS IT KEEPS, pinned by tests:
     cycle_pricing's par floor and never-reduced total still hold.
   * A SUSPENDED ORGAN CARRIES NO AUTHORITY (`libs.tiers.authority.suspended`, the arena included
     through its own contract): its contestant is dropped before anything is combined.
+  * THE E-PROCESS ACCUMULATES OVER ITS WHOLE RUN. Its state (`eprocess_advance`) is persisted and
+    folds each scored hour in exactly once; it restarts only through `eprocess_reset`, which is
+    recorded with its time, reason and the final values it discarded (a REJECTED verdict is the
+    one reset the steer makes itself). WINDOW_H bounds only the tournament's memory and a
+    DESCRIPTIVE window statistic published beside the test, which decides nothing.
   * INCONCLUSIVE IS NEUTRAL, except the seeded non-authoritative trial slice that produces the
     evidence; credit goes to the weights cycle_pricing actually APPLIED in that hour.
 
@@ -92,8 +98,25 @@ TRIAL_SALT = "scheduler_steer_trial"
 COOLDOWN_H = 72
 #: scored hours below which a contestant has NO authority
 MIN_HOURS = 3
-#: the rolling window the test and the tournament scores are re-derived over
+#: the rolling window the TOURNAMENT's scores (Hedge authority) are re-derived over, and the span of
+#: the DESCRIPTIVE window statistic. NEVER the sequential test's: an e-process that slides forgets
+#: the evidence against it and is no longer anytime-valid, so it lives in `eprocess_advance` and
+#: restarts only through a recorded `eprocess_reset` (audit #235 round 4, 2026-10-07)
 WINDOW_H = 14 * 24
+#: THE JUDGE-ONLY SET (audit #235 round 4, 2026-10-07). BACKPRESSURE GOES TO THE JUDGE ONLY, and the
+#: validation DEPARTMENT is not the judge: it also holds research generation (model_search,
+#: adversary_evolution, synthetic_regimes, research_diversity_archive, frontier_map, market_ecology,
+#: evaluator_lab, science_controller, null_lab) and the judge's own instruments and reports
+#: (judging_throughput sizes the judge, judging_burndown / rejection_throughput count it,
+#: certificate_truth / canon_publication / forward_enrolment / duty_cycle / loop_liveness audit and
+#: file its output). Only the legs below -- the ones that pass a verdict on a candidate or
+#: certificate -- may be weighted below 1.0 or fund the steer's ups. Named here once; tier_s and
+#: cycle_pricing read it, and a test pins every member to hourly_cycle's validation department.
+JUDGE_LEGS: frozenset[str] = frozenset({
+    "external_gauntlet", "backtest", "fast_admission", "counterexample_agent", "falsifier_run",
+    "adversaries", "orthogonality", "blind_reviewer", "lead_replication",
+    "replication_civilization", "placebo_audit", "residual_gate", "lockbox_recert", "committees",
+})
 #: the sequential test's level and its betting fractions (a fixed mixture: an average of
 #: e-processes is an e-process, so no tuning is fitted on the data it judges)
 ALPHA = 0.05
@@ -375,6 +398,41 @@ def blocks(assignments: Sequence[Mapping[str, Any]], key: str = "outcomes",
     return out
 
 
+def _ep_fresh() -> dict[str, Any]:
+    """One channel's e-process at its start: no scale yet, every betting component at 1."""
+    return {"c": 0.0, "up": [1.0] * len(LAMBDAS), "dn": [1.0] * len(LAMBDAS),
+            "best_up": 1.0, "best_dn": 1.0, "blocks": 0, "sum_x": 0.0}
+
+
+def _ep_step(ch: dict[str, Any], d: float) -> None:
+    """Fold ONE hourly block difference into a channel's e-process, in place. The block is scaled
+    by the PREDICTABLE bound c = 2 x the largest |d| of EARLIER blocks and clipped to [-1, 1]; the
+    first block only sets the scale."""
+    c = float(ch["c"])
+    if c > EPS:
+        x = max(-1.0, min(1.0, float(d) / c))
+        ch["up"] = [u * (1.0 + lam * x) for u, lam in zip(ch["up"], LAMBDAS, strict=True)]
+        ch["dn"] = [v * (1.0 - lam * x) for v, lam in zip(ch["dn"], LAMBDAS, strict=True)]
+        ch["best_up"] = max(float(ch["best_up"]), sum(ch["up"]) / len(ch["up"]))
+        ch["best_dn"] = max(float(ch["best_dn"]), sum(ch["dn"]) / len(ch["dn"]))
+        ch["blocks"] = int(ch["blocks"]) + 1
+        ch["sum_x"] = float(ch["sum_x"]) + x
+    ch["c"] = max(c, 2.0 * abs(float(d)))
+
+
+def _ep_verdict(ch: Mapping[str, Any], alpha: float = ALPHA) -> dict[str, Any]:
+    n = int(ch.get("blocks") or 0)
+    if n < MIN_BLOCKS:
+        return {"verdict": "UNMEASURED", "blocks": n, "e_up": None, "e_down": None,
+                "why": f"{n} usable hourly block(s) < {MIN_BLOCKS}"}
+    bar = 1.0 / alpha
+    best_up, best_dn = float(ch["best_up"]), float(ch["best_dn"])
+    verdict = ("ADMITTED" if best_up >= bar else "REJECTED" if best_dn >= bar else "UNDECIDED")
+    return {"verdict": verdict, "blocks": n, "e_up": round(best_up, 4),
+            "e_down": round(best_dn, 4), "bar": bar,
+            "mean_x": round(float(ch["sum_x"]) / n, 6)}
+
+
 def sequential_test(diffs: Sequence[float], alpha: float = ALPHA) -> dict[str, Any]:
     """A sequentially valid, always-valid test on hourly block differences.
 
@@ -384,47 +442,117 @@ def sequential_test(diffs: Sequence[float], alpha: float = ALPHA) -> dict[str, A
     <= 0) and E- with -x_h, are supermartingales under their nulls, so by Ville's inequality the
     running maximum crosses 1/alpha with probability at most alpha however often it is looked at.
     ADMITTED when max E+ >= 1/alpha, REJECTED when max E- >= 1/alpha, UNMEASURED below MIN_BLOCKS
-    usable blocks, UNDECIDED otherwise."""
-    xs: list[float] = []
-    c = 0.0
+    usable blocks, UNDECIDED otherwise. The same arithmetic as the persisted `eprocess_advance`,
+    applied to `diffs` from their first element."""
+    ch = _ep_fresh()
     for d in diffs:
-        if c > EPS:
-            xs.append(max(-1.0, min(1.0, float(d) / c)))
-        c = max(c, 2.0 * abs(float(d)))
-    if len(xs) < MIN_BLOCKS:
-        return {"verdict": "UNMEASURED", "blocks": len(xs), "e_up": None, "e_down": None,
-                "why": f"{len(xs)} usable hourly block(s) < {MIN_BLOCKS}"}
-    up = [1.0] * len(LAMBDAS)
-    dn = [1.0] * len(LAMBDAS)
-    best_up = best_dn = 1.0
-    for x in xs:
-        up = [u * (1.0 + lam * x) for u, lam in zip(up, LAMBDAS, strict=True)]
-        dn = [v * (1.0 - lam * x) for v, lam in zip(dn, LAMBDAS, strict=True)]
-        best_up = max(best_up, sum(up) / len(up))
-        best_dn = max(best_dn, sum(dn) / len(dn))
-    bar = 1.0 / alpha
-    verdict = ("ADMITTED" if best_up >= bar else "REJECTED" if best_dn >= bar else "UNDECIDED")
-    return {"verdict": verdict, "blocks": len(xs), "e_up": round(best_up, 4),
-            "e_down": round(best_dn, 4), "bar": bar, "mean_x": round(sum(xs) / len(xs), 6)}
+        _ep_step(ch, float(d))
+    return _ep_verdict(ch, alpha)
 
 
-def holdout_comparison(assignments: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-    """The experiment's verdict and its evidence. `primary` is the sequential test on the
+#: the experiment's channels: (published name, outcome key on an assignment, side of the due weight)
+TEST_CHANNELS: tuple[tuple[str, str, str], ...] = (
+    ("up", "outcomes", "up"), ("down", "outcomes", "down"), ("all", "outcomes", "all"),
+    ("forward_r", "pnl_outcomes", "all"), ("elogw", "elogw_outcomes", "all"))
+
+
+def _scored(a: Mapping[str, Any]) -> bool:
+    """An assignment's outcomes are final once any channel's map is on it."""
+    return any(isinstance(a.get(key), Mapping) for _n, key, _s in TEST_CHANNELS)
+
+
+def eprocess_new(started_at: Any = None, reason: str = "first run") -> dict[str, Any]:
+    """A fresh e-process state. `started_at` None means from the first scored hour on record."""
+    st = _t(started_at)
+    return {"started_at": st.isoformat() if st else None, "start_reason": reason,
+            "cursor": None, "channels": {n: _ep_fresh() for n, _k, _s in TEST_CHANNELS},
+            "resets": []}
+
+
+def eprocess_advance(state: Mapping[str, Any] | None,
+                     assignments: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Fold every scored assignment not yet seen into the e-process, EXACTLY ONCE, and return the
+    new state (the input is not mutated).
+
+    THE E-PROCESS ACCUMULATES OVER ITS WHOLE RUN. The state carries its own products and running
+    maxima; the caller's assignment list may be pruned to any window and nothing already folded in
+    is forgotten, which is what keeps Ville's bound valid under repeated hourly looks. A `cursor`
+    (the `at` of the last folded assignment) makes each hour count once; folding stops at the first
+    assignment whose outcomes are not yet scored, so a late-scored hour is never skipped. Hours at
+    or before `started_at` (the last recorded reset) are passed over without being folded in."""
+    import copy
+    st = copy.deepcopy(dict(state)) if state else eprocess_new()
+    st.setdefault("resets", [])
+    chans = st.setdefault("channels", {})
+    for n, _k, _s in TEST_CHANNELS:
+        chans.setdefault(n, _ep_fresh())
+    cursor, start = _t(st.get("cursor")), _t(st.get("started_at"))
+    for a in sorted(assignments, key=lambda r: str(r.get("at") or "")):
+        at = _t(a.get("at"))
+        if at is None or (cursor is not None and at <= cursor):
+            continue
+        if not _scored(a):
+            break
+        cursor = at
+        if start is not None and at <= start:
+            continue
+        for n, key, side in TEST_CHANNELS:
+            for b in blocks([a], key, side):
+                _ep_step(chans[n], float(b["d"]))
+    st["cursor"] = cursor.isoformat() if cursor else st.get("cursor")
+    return st
+
+
+def eprocess_reset(state: Mapping[str, Any], at: Any, reason: str) -> dict[str, Any]:
+    """The ONLY way the e-process restarts: an explicit reset, RECORDED with its time, its reason
+    and the final verdicts it discarded. The cursor is kept, so no hour is folded in twice and the
+    new run begins with the first hour scored after `at`."""
+    import copy
+    old = copy.deepcopy(dict(state))
+    t = _t(at)
+    rec = {"at": t.isoformat() if t else None, "reason": str(reason),
+           "previous_started_at": old.get("started_at"),
+           "final": {n: _ep_verdict(ch) for n, ch in (old.get("channels") or {}).items()}}
+    new = eprocess_new(t, reason)
+    new["cursor"] = old.get("cursor")
+    new["resets"] = [*(old.get("resets") or []), rec]
+    return new
+
+
+def eprocess_comparison(state: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
+    """{channel: verdict} of the persisted e-process -- the numbers that DECIDE."""
+    chans = state.get("channels") or {}
+    return {n: {**_ep_verdict(chans.get(n) or _ep_fresh()),
+                "started_at": state.get("started_at")} for n, _k, _s in TEST_CHANNELS}
+
+
+def holdout_comparison(assignments: Sequence[Mapping[str, Any]],
+                       eprocess: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """The experiment's verdict and its evidence. `primary` is the PERSISTED e-process on the
     up-weighted legs' births blocks (where a reallocation must pay); the down side, all steered
-    legs and the forward-R (P&L) channel are published beside it, each with the same test, and the
-    Welch comparison of the pooled leg-hours is kept for reference only (it is not sequentially
-    valid and decides nothing)."""
+    legs, the forward-R (P&L) and the credited dE[log W] channels are published beside it from the
+    same e-process. `eprocess` is that persisted state; without one, the e-process is run over
+    `assignments` from their first hour (the whole run the caller holds).
+
+    `window` is DESCRIPTIVE ONLY: the same block arithmetic over the last WINDOW_H of
+    `assignments`, plus the block counts and mean block delta there. It decides nothing -- a
+    sliding sequential statistic is not anytime-valid. The Welch comparison of the pooled
+    leg-hours is kept for reference only for the same reason."""
+    ep = eprocess if eprocess is not None else eprocess_advance(None, assignments)
+    decided = eprocess_comparison(ep)
+    ats = [t for t in (_t(a.get("at")) for a in assignments) if t is not None]
+    lo = (max(ats) - timedelta(hours=WINDOW_H)) if ats else None
+    recent = [a for a in assignments if lo is None or (_t(a.get("at")) or lo) > lo]
     out: dict[str, Any] = {}
-    for name, key, side in (("up", "outcomes", "up"), ("down", "outcomes", "down"),
-                            ("all", "outcomes", "all"), ("forward_r", "pnl_outcomes", "all"),
-                            ("elogw", "elogw_outcomes", "all")):
-        bl = blocks(assignments, key, side)
-        seq = sequential_test([b["d"] for b in bl])
-        out[name] = {**seq, "n_treated": sum(b["n_treated"] for b in bl),
+    for name, key, side in TEST_CHANNELS:
+        bl = blocks(recent, key, side)
+        win = sequential_test([b["d"] for b in bl])
+        out[name] = {**decided[name], "n_treated": sum(b["n_treated"] for b in bl),
                      "n_control": sum(b["n_holdout"] for b in bl),
-                     "mean_block_delta": _mean([b["d"] for b in bl]) if bl else None}
+                     "mean_block_delta": _mean([b["d"] for b in bl]) if bl else None,
+                     "window": {**win, "window_h": WINDOW_H, "descriptive_only": True}}
     pooled: dict[str, list[float]] = {"treated": [], "holdout": []}
-    for a in assignments:
+    for a in recent:
         o = a.get("outcomes")
         if isinstance(o, Mapping):
             for leg, row in (a.get("legs") or {}).items():
@@ -433,11 +561,16 @@ def holdout_comparison(assignments: Sequence[Mapping[str, Any]]) -> dict[str, An
                     pooled[arm].append(float(o[leg]))
     out["welch_reference"] = control_arm.compare(pooled["treated"], pooled["holdout"])
     return {**out, "primary": out["up"]["verdict"],
+            "eprocess_started_at": ep.get("started_at"),
+            "eprocess_resets": len(ep.get("resets") or []),
             "basis": "hourly blocks of (mean treated - mean held-out) outcome, arms by APPLIED "
                      "weight; outcome = novelty-deflated unique births per CPU-hour (a lost run "
                      "scores as harm); forward_r = change in the leg's forward R; elogw = change "
                      "in credited dE[log W]; mixture betting e-process, alpha "
-                     f"{ALPHA}, always valid under repeated hourly looks"}
+                     f"{ALPHA}, PERSISTED over its whole run (restarted only by a recorded "
+                     "reset), always valid under repeated hourly looks; each channel's `window`, "
+                     "the block counts, mean_block_delta and welch_reference cover the last "
+                     f"{WINDOW_H}h and are descriptive only"}
 
 
 def _mean(xs: Sequence[float]) -> float:
@@ -453,12 +586,18 @@ def novelty_credit(local_count: int) -> float:
 def steer(proposals: Mapping[str, Mapping[str, float]],
           suspended: Mapping[str, bool],
           history: Sequence[Mapping[str, Any]],
-          hour_key: str, down_ok: Iterable[str] = (), rejected_at: Any = None,
-          now: datetime | None = None) -> dict[str, Any]:
+          hour_key: str, down_ok: Iterable[str] = JUDGE_LEGS, rejected_at: Any = None,
+          now: datetime | None = None,
+          eprocess: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """One hour's steer: drop suspended contestants, score the rest on `history` (past assignments
     carrying `tilts` and outcomes), weight them by Hedge, combine, floor every leg outside
     `down_ok` at 1.0, draw the holdout and the trial slice, pick the mode from the sequential test
-    and make the APPLIED weights zero-sum. Returns the artifact body."""
+    and make the APPLIED weights zero-sum. Returns the artifact body, whose `eprocess` is the
+    state the caller persists and hands back next hour.
+
+    `eprocess` is the persisted test state (`eprocess_advance`). Without one the test starts at
+    `rejected_at` when given (that rejection was a reset) and otherwise at the first hour of
+    `history`; either start is recorded as the state's `start_reason`."""
     may_fall = set(down_ok)
     dropped = sorted(c for c in proposals if suspended.get(c))
     live = {c: dict(p) for c, p in proposals.items() if not suspended.get(c)}
@@ -479,13 +618,23 @@ def steer(proposals: Mapping[str, Mapping[str, float]],
     trial_legs = trial(sorted(set(movable) - set(held)), hour_key, len(held))
     now = now or datetime.now(UTC)
     rejected = _t(rejected_at)
-    fresh = [a for a in history if rejected is None or (_t(a.get("at")) or now) > rejected]
-    comparison = holdout_comparison(fresh)
+    if eprocess is None:
+        ep0 = (eprocess_new(rejected, "no persisted state: started at the recorded rejection")
+               if rejected is not None else
+               eprocess_new(None, "no persisted state: started at the first hour on record"))
+    else:
+        ep0 = dict(eprocess)
+    ep = eprocess_advance(ep0, history)
+    comparison = holdout_comparison(history, ep)
     v = comparison["primary"]
     if rejected is not None and now < rejected + timedelta(hours=COOLDOWN_H):
         mode = "COOLDOWN"
     elif v == "REJECTED":
         mode, rejected = "REJECTED", now
+        # THE ONE RESET THE STEER MAKES, AND IT IS RECORDED: the retry after the cool-down is
+        # judged on evidence scored after this moment only
+        ep = eprocess_reset(ep, now, "REJECTED by the sequential holdout test: cool-down, then "
+                                     "the trial retries on post-rejection evidence")
     elif v == "ADMITTED":
         mode = "ADMITTED"
     else:
@@ -537,12 +686,15 @@ def steer(proposals: Mapping[str, Mapping[str, float]],
         "legs": legs, "holdout": held, "trial": trial_legs, "mode": mode,
         "holdout_share": HOLDOUT_SHARE, "salt": SALT, "trial_salt": TRIAL_SALT,
         "comparison": comparison,
+        "eprocess": ep,
         "rejected_at": rejected.isoformat() if rejected else None,
         "authoritative": mode == "ADMITTED" and moved,
         "withdrawn": mode in ("REJECTED", "COOLDOWN"),
         "why": why,
         "parameters": {"max_tilt": MAX_TILT, "arena_step": ARENA_STEP, "min_hours": MIN_HOURS,
-                       "window_h": WINDOW_H, "down_ok_legs": len(may_fall),
+                       "window_h": WINDOW_H, "window_scope": "tournament authority and the "
+                       "descriptive window statistic only; the e-process is persisted",
+                       "down_ok_legs": len(may_fall),
                        "cooldown_h": COOLDOWN_H, "alpha": ALPHA, "lambdas": list(LAMBDAS),
                        "trial_size": "equal to the holdout's",
                        "hedge_eta": "sqrt(8 ln K / T)"},
