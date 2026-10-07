@@ -41,6 +41,12 @@ _KILL = re.compile(
     r"|terminate|\.kill\(|closemainwindow")
 
 
+def _boundary(source: str, i: int) -> bool:
+    """PowerShell opens a comment only where a token can start: line start, after whitespace or
+    a separator. `a#b` is one bare word, so `Write-Host a#b; kill 1` must still show the kill."""
+    return i == 0 or source[i - 1] in " \t\r\n;|&(){}"
+
+
 def _code(source: str) -> str:
     """The script lower-cased with its comments removed, and ONLY its comments.
 
@@ -75,10 +81,10 @@ def _code(source: str) -> str:
                 j += 1
             out.append(source[i:j + 1])
             i = j + 1
-        elif two == "<#":
+        elif two == "<#" and _boundary(source, i):
             j = source.find("#>", i + 2)
             i = n if j < 0 else j + 2
-        elif c == "#":
+        elif c == "#" and _boundary(source, i):
             j = source.find("\n", i)
             i = n if j < 0 else j
         else:
@@ -110,7 +116,8 @@ def test_the_kill_pin_catches_every_spelling() -> None:
 def test_a_hash_inside_a_string_does_not_hide_the_code_after_it() -> None:
     for src in ("Write-Host '#'; kill 1", 'Write-Host "a#b"; Stop-Process -Id 1',
                 "$s = 'it''s #1'; spps 1", 'Write-Host "`"#"; taskkill /PID 1',
-                "$h = @'\n# not a comment\n'@\nStop-Process -Id 1"):
+                "$h = @'\n# not a comment\n'@\nStop-Process -Id 1",
+                "Write-Host a#b; kill 1", "Write-Host a<#b; kill 1 #>"):
         assert _KILL.findall(_code(src)), src
     assert _code("$x = 1 # Stop-Process here is a comment") == "$x = 1 "
 
@@ -143,3 +150,7 @@ def test_an_unreadable_terminal_in_our_own_session_blocks_a_launch() -> None:
     guard = source.index("$unreadableLocal.Count -gt 0")
     assert guard < source.index("Start-Process -FilePath $exe")
     assert "refusing to launch a second terminal" in source
+    # ...but it asks the read-only probe first: an answering terminal is healthy, not refused
+    branch = source[guard:source.index("refusing to launch a second terminal")]
+    assert "Invoke-ReadOnlyProbe" in branch and "Write-BootHealth" in branch
+    assert "exit 0" in branch
