@@ -216,21 +216,23 @@ def test_the_cache_stamp_moves_only_when_a_row_that_matters_arrives(tape, monkey
 # ------------------------------------------------------------- the other readers of the swap
 def test_the_carry_side_is_the_side_knowable_at_each_bar(tape):
     tape["hist"] = {"TESTFX": _hist([("2026-09-03 00:00", 2.0, -5.0),
-                                     ("2026-09-08 00:00", -5.0, 3.0)])}
+                                     ("2026-09-06 00:00", -5.0, 3.0)])}
     t = pd.date_range("2026-09-01", periods=24 * 12, freq="h")
-    side = families_carry.carry_side_asof("TESTFX", t.asi8)
+    side = families_carry.carry_side_asof("TESTFX", t.as_unit("ns").asi8)
     k1 = pd.Timestamp("2026-09-03 03:00")
-    k2 = pd.Timestamp("2026-09-08 03:00")
+    k2 = pd.Timestamp("2026-09-06 03:00")
+    gone = pd.Timestamp("2026-09-10 03:00")          # 96 h after the last row: stale
     assert (side[t < k1] == 0).all()                       # never today's side backdated
     assert (side[(t >= k1) & (t < k2)] == 1).all()
-    assert (side[t >= k2] == -1).all()
+    assert (side[(t >= k2) & (t <= gone)] == -1).all()
+    assert (side[t > gone] == 0).all()                    # a stale row names no side
 
 
 def test_mass_screen_charges_and_sides_point_in_time(tape):
     from research import mass_screen as ms
     tape["hist"] = {"TESTFX": _hist([("2026-09-05 00:00", 2.0, -30.0)])}
     t = pd.date_range("2026-09-01", periods=24 * 20, freq="h")
-    rate, side = ms.swap_pit_arrays("TESTFX", t.asi8, np.ones(t.size), 10.0e-5)
+    rate, side = ms.swap_pit_arrays("TESTFX", t.as_unit("ns").asi8, np.ones(t.size), 10.0e-5)
     knowable = t >= pd.Timestamp("2026-09-05 03:00")
     stale = t > pd.Timestamp("2026-09-09 03:00")
     assert np.allclose(rate[~knowable], 10.0e-5)                         # today's floor
@@ -239,7 +241,7 @@ def test_mass_screen_charges_and_sides_point_in_time(tape):
     assert (side[~knowable] == 0).all() and (side[knowable & ~stale] == 1).all()
 
     class _P:
-        cut = int(np.searchsorted(t.asi8, pd.Timestamp("2026-09-04").value))
+        cut = int(np.searchsorted(t.as_unit("ns").asi8, pd.Timestamp("2026-09-04").value))
         carry_pit = side
     assert ms.carry_sides(_P()) == []           # the training window never saw a paying side
     _P.cut = t.size
