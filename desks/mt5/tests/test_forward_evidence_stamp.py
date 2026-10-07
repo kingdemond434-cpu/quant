@@ -84,6 +84,40 @@ def test_no_skip_after_the_row_is_bound_leaves_a_stale_stamp() -> None:
         "forward_evidence UNMEASURED")
 
 
+def test_a_failed_evaluation_blocks_a_promotion_candidate() -> None:
+    """Audit 2026-10-07: reverting the failed-evaluation fix must fail a test. A candidate in
+    either spelling whose pass raised loses the status and its promotion authority."""
+    for spelling in ("PROMOTION CANDIDATE", "PROMOTION_CANDIDATE"):
+        st = {"status": spelling, "promotion_authority": True,
+              "forward_evidence": {"status": "MEASURED", "at": "2026-10-01T00:00:00+00:00"}}
+        detail = sf._fail_row(st, ValueError("session-window migration"))
+        assert detail == "ValueError: session-window migration"
+        assert st["status"] == "BLOCKED_SLEEVE_ERROR"
+        assert st["promotion_authority"] is False
+        assert st["forward_evidence"]["status"] == "UNMEASURED"
+        assert st["last_error"] == detail
+
+
+def test_a_failed_evaluation_blocks_an_active_row_and_keeps_a_final_verdict() -> None:
+    st = {"status": "ACTIVE", "promotion_authority": True}
+    sf._fail_row(st, RuntimeError("x"))
+    assert st["status"] == "BLOCKED_SLEEVE_ERROR" and st["promotion_authority"] is False
+    for final in ("KILL", "PROMOTED", "KILL_DD"):
+        st = {"status": final}
+        sf._fail_row(st, RuntimeError("x"))
+        assert st["status"] == final and "promotion_authority" not in st
+        assert st["forward_evidence"]["status"] == "UNMEASURED"
+
+
+def test_the_main_loop_routes_every_sleeve_failure_through_fail_row() -> None:
+    tree = ast.parse(SRC)
+    main = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "main")
+    handlers = [h for n in ast.walk(main) if isinstance(n, ast.Try) for h in n.handlers
+                if "isolate ONE sleeve" in SRC.splitlines()[h.lineno - 1]]
+    assert len(handlers) == 1
+    assert "_fail_row(st, exc)" in ast.unparse(handlers[0])
+
+
 def test_the_guard_sees_break_return_and_match() -> None:
     """The walker reaches every exit kind, so a new `break`/`return`/`case` skip cannot slip by."""
     probe = (

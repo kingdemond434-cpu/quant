@@ -114,6 +114,30 @@ def _unmeasured(st: dict, why: str) -> None:
     st["forward_evidence"] = {"status": "UNMEASURED", "why": why,
                               "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
+
+def _fail_row(st: dict, exc: BaseException) -> str:
+    """Record one sleeve's failed evaluation ON its row and return the detail line.
+
+    SURFACED, NOT SWALLOWED (audit 2026-10-06): a terminal row keeps its status, so without the
+    stamp its evidence froze with nothing on the row saying it was not measured.
+
+    A PROMOTION CANDIDATE IS NOT KEPT THROUGH A FAILED EVALUATION (audit 2026-10-06). The promoter
+    writes LIVE on that status alone, so a candidate whose pass raised -- a session-window
+    migration among them -- would go live on evidence this pass could not confirm. It is blocked
+    like any non-final row and re-earns the status on the next clean pass (the block clears
+    itself when the sleeve evaluates). Final verdicts (KILL, PROMOTED, RETIRED...) are still never
+    overwritten."""
+    detail = f"{type(exc).__name__}: {exc}"
+    st["last_error"] = detail
+    st["last_error_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+    st["forward_evidence"] = {"status": "UNMEASURED", "why": detail, "at": st["last_error_at"]}
+    cand = str(st.get("status") or "").upper().replace("_", " ").startswith("PROMOTION CANDIDATE")
+    if cand or not _is_terminal(st.get("status")):
+        st["status"] = "BLOCKED_SLEEVE_ERROR"
+        st["promotion_authority"] = False
+    return detail
+
+
 WINDOWS = {
     "asia": {"range_start": 7, "wait_bars": 12, "rr": 2.0, "ttl_bars": 12},
     "london_am": {"range_start": 10, "range_end": 13, "signal_at": 13, "wait_bars": 8,
@@ -1509,24 +1533,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                  f"exp={st['exp_r']:+.3f}R maxDD={st['max_dd_r']:.1f}R "
                  f"days={days_active} [{st['status']}]")
         except Exception as exc:  # deliberate: isolate ONE sleeve, never the book
-            detail = f"{type(exc).__name__}: {exc}"
-            st["last_error"] = detail
-            st["last_error_at"] = datetime.now(UTC).isoformat(timespec="seconds")
-            # SURFACED, NOT SWALLOWED (audit 2026-10-06): a terminal row keeps its status, so
-            # without this its evidence froze with nothing on the row saying it was not measured.
-            st["forward_evidence"] = {"status": "UNMEASURED", "why": detail,
-                                      "at": st["last_error_at"]}
-            # A PROMOTION CANDIDATE IS NOT KEPT THROUGH A FAILED EVALUATION (audit 2026-10-06).
-            # The promoter writes LIVE on that status alone, so a candidate whose pass raised --
-            # a session-window migration among them -- would go live on evidence this pass could
-            # not confirm. It is blocked like any non-final row and re-earns the status on the
-            # next clean pass (the block clears itself when the sleeve evaluates). Final verdicts
-            # (KILL, PROMOTED, RETIRED...) are still never overwritten.
-            _cand = str(st.get("status") or "").upper().replace("_", " ").startswith(
-                "PROMOTION CANDIDATE")
-            if _cand or not _is_terminal(st.get("status")):
-                st["status"] = "BLOCKED_SLEEVE_ERROR"
-                st["promotion_authority"] = False
+            detail = _fail_row(st, exc)
             state[key] = st
             slog(f"{key}: SLEEVE BLOCKED -- {detail}; this row is not evaluated this pass and "
                  f"every other sleeve continues")
