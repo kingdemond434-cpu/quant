@@ -749,7 +749,11 @@ sources:
      language: en, licence: "YouTube API Services terms; descriptions mined for mechanisms only",
      source_culture: US/en, participant_structure: mixed, crowding_prior: medium,
      failure_mode_hypothesis: "teaching material on liquid US assets; the mechanism, not the example, is what translates to MT5",
-     config: {channel_id: UCW1svfGxG4ADnbc1HCH6dqA, pages_per_run: 4}}
+     config: {channel_id: UCW1svfGxG4ADnbc1HCH6dqA, pages_per_run: 4,
+              terms: {status: PERMITTED, url: "https://developers.google.com/youtube/terms/developer-policies",
+                      clause: "API Clients may temporarily store limited amounts of Non-Authorized Data for as long as is necessary for the purposes of the API Client but not longer than 30 calendar days.",
+                      why: "read 2026-10-07; API access only (the same policies forbid any other technology for API data), stored text expires after 30 days",
+                      retention_days: 30}}}
   - {id: civ_qg_papers, civilization: quant_guild, url: "https://api.crossref.org/works?query.author=Roman%20Paolucci", owner: civilizations/quant_guild,
      consumer: libs/civilizations/resident.py, lane: qg_papers, priority: 2,
      name: "Roman Paolucci papers: SSRN (DOI prefix 10.2139) and every other indexed work, via Crossref",
@@ -761,7 +765,11 @@ sources:
      config: {urls: ["https://api.crossref.org/works?query.author={q}&filter=prefix:10.2139&sort=published&order=desc&rows=50",
                      "https://api.crossref.org/works?query.author={q}&sort=published&order=desc&rows=50"],
               queries: ["Roman Paolucci"], items_path: message.items,
-              fields: {uri: URL, title: title.0, body: abstract, time: created.timestamp}}}
+              fields: {uri: URL, title: title.0, body: abstract, time: created.timestamp},
+              match_any: {path: author, fields: {family: "^Paolucci$", given: "^Roman\\b"}},
+              terms: {status: PERMITTED, url: "https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+                      clause: "No sign-up is required to use the REST API, and almost none of the metadata is subject to copyright, and you may use it for any purpose.",
+                      why: "read 2026-10-07; the same page notes some abstracts may be publishers' or authors' copyright, so abstracts are mined for mechanisms, never republished"}}}
   - {id: civ_qg_letters, civilization: quant_guild, url: "https://quantguild.com/letters", owner: civilizations/quant_guild,
      consumer: libs/civilizations/resident.py, lane: qg_letters, priority: 2,
      name: "Quant Guild letters: the public archive listing (titles and previews; full letters need sign-in)",
@@ -803,7 +811,10 @@ sources:
      config: {search: repositories, discover_regex: "github\\.com/([\\w.-]+/[\\w.-]+)$",
               discover_into: civ_qg_holder,
               queries: ["\"quant guild\" in:name,description,readme", "quantguild in:name,description",
-                        "org:quantguild", "org:QuantGuild"]}}
+                        "org:quantguild", "org:QuantGuild"],
+              terms: {status: PERMITTED, url: "https://docs.github.com/en/site-policy/acceptable-use-policies/github-acceptable-use-policies",
+                      clause: "Scraping does not refer to the collection of information through our API. Researchers may use public, non-personal information from the Service for research purposes, only if any publications resulting from that research are open access.",
+                      why: "read 2026-10-07; public repositories through the API and git, research use, nothing published; code reuse is the licence module's (permissive kept with notice, else metadata only)"}}}
   - {id: civ_qg_holder, civilization: quant_guild, lane: qg_github, priority: 2,
      name: "Quant Guild holder: repositories the org search discovered (promoted to git_mirror rows)",
      kind: code, fetcher: owned, owner: civilizations/quant_guild, cadence_minutes: 1440,
@@ -815,20 +826,28 @@ sources:
      consumer: libs/civilizations/resident.py, lane: qg_github, priority: 2,
      name: "Roman Paolucci's public repositories (fallback until the federation's seeds run)",
      kind: code, fetcher: github_search, auth: optional, auth_env: GITHUB_TOKEN,
-     mode: fallback, owner_feed: "desks/mt5/data/external_packets/quant_guild_cards_*.json",
+     mode: fallback, owner_feed: "desks/mt5/reports/GITHUB_RESIDENT_MINER.json",
      cadence_minutes: 1440, cadence_class: daily, uses: [direct_cells, indirect_cells],
      ontology_hint: [ALPHA_MECHANISM, INFRASTRUCTURE_PATTERN], region: us, language: en,
      source_culture: US/en, participant_structure: mixed, crowding_prior: medium,
      failure_mode_hypothesis: "as civ_qg_github_org",
-     config: {search: repositories, queries: ["user:romanmichaelpaolucci"]}}
+     config: {search: repositories, queries: ["user:romanmichaelpaolucci"],
+              owner_feed_must_contain: paolucci_github_account, owner_feed_max_age_h: 48,
+              terms: {status: PERMITTED, url: "https://docs.github.com/en/site-policy/acceptable-use-policies/github-acceptable-use-policies",
+                      clause: "Scraping does not refer to the collection of information through our API. Researchers may use public, non-personal information from the Service for research purposes, only if any publications resulting from that research are open access.",
+                      why: "read 2026-10-07; public repositories through the API and git, research use, nothing published; code reuse is the licence module's (permissive kept with notice, else metadata only)"}}}
   - {id: civ_qg_library, civilization: quant_guild, url: "https://github.com/romanmichaelpaolucci/Quant-Guild-Library", owner: external_federation,
      consumer: libs/civilizations/resident.py, lane: qg_library, priority: 1,
      name: "Quant-Guild-Library: every lecture notebook and source file, delta-scanned (fallback until the federation's seed runs)",
      kind: code, fetcher: git_mirror, mode: fallback,
-     owner_feed: "desks/mt5/data/external_packets/quant_guild_cards_*.json",
+     owner_feed: "desks/mt5/reports/GITHUB_RESIDENT_MINER.json",
      cadence_minutes: 1440, cadence_class: daily, uses: [direct_cells, indirect_cells],
      ontology_hint: [ALPHA_MECHANISM, RESEARCH_METHOD, VALIDATION_IDEA], region: us,
      language: en, source_culture: US/en, participant_structure: mixed, crowding_prior: medium,
      failure_mode_hypothesis: "lecture code on US examples; mechanisms only",
      config: {repo: "https://github.com/romanmichaelpaolucci/Quant-Guild-Library",
-              files_per_run: 40, paths: ["*.py", "*.ipynb", "*.md", "*.java"]}}
+              files_per_run: 40, paths: ["*.py", "*.ipynb", "*.md", "*.java"],
+              owner_feed_must_contain: quant_guild_library, owner_feed_max_age_h: 48,
+              terms: {status: PERMITTED, url: "https://docs.github.com/en/site-policy/acceptable-use-policies/github-acceptable-use-policies",
+                      clause: "Scraping does not refer to the collection of information through our API. Researchers may use public, non-personal information from the Service for research purposes, only if any publications resulting from that research are open access.",
+                      why: "read 2026-10-07; public repositories through the API and git, research use, nothing published; code reuse is the licence module's (permissive kept with notice, else metadata only)"}}}

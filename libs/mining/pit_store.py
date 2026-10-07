@@ -251,6 +251,21 @@ class PitStore:
                           (state, reason, stage, iso(now or utcnow()), int(n_cells),
                            record_id))
 
+    def expire_bodies(self, source_id: str, older_than: datetime, *,
+                      now: datetime | None = None) -> int:
+        """Blank the title and body of `source_id`'s records acquired before `older_than` (a
+        source whose terms bound how long its raw text may be stored, e.g. the YouTube API's 30
+        days). The row, its URI, clocks, content hash and state stay, so provenance, dedup and
+        the cells already built from it survive; only the stored text goes. Returns the count."""
+        with self._conn() as c:
+            cur = c.execute(
+                "UPDATE records SET title='', body='', "
+                "flags=CASE WHEN flags='' THEN ? ELSE flags || ',' || ? END "
+                "WHERE source_id=? AND acquisition_time < ? AND (body != '' OR title != '')",
+                (f"text_expired_by_terms@{iso(now or utcnow())}",
+                 f"text_expired_by_terms@{iso(now or utcnow())}", source_id, iso(older_than)))
+            return int(cur.rowcount or 0)
+
     def log_run(self, source_id: str, outcome: str, fetched: int, new: int, detail: str = "",
                 now: datetime | None = None) -> None:
         with self._conn() as c:

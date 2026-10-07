@@ -57,14 +57,15 @@ from typing import Any
 SCREEN_DEPTH = 20
 SCREEN_MIN = 2_000
 EXPLORATION_EVERY = 10          # 1 near-duplicate per 10 released (the exploration floor)
-#: THE SCREEN IS NOT A TRIAL, AND THE CODE MAKES THAT TRUE RATHER THAN SAYING IT (coordinator's
-#: ruling 2026-10-07 under charge-once: a screen that sees any returns or P&L is a trial and is
-#: charged exactly once; one that only compiles and compares structure carries no charge). It
-#: compiles rules and compares specs with the published canon and this producer's own released
-#: keys, and it calls docket_keff with `no_returns` as its loader, so the instrument-correlation
-#: term (the only part of docket_keff that reads a return series) sits at par here and is
-#: measured by the judge downstream. No candidate's returns, P&L or backtest is ever computed or
-#: read, so nothing is charged; the cells it releases are charged once, when judged.
+#: THE SCREEN IS NOT A TRIAL (coordinator's ruling 2026-10-07, under charge-once). It never
+#: evaluates the candidate's own returns: no backtest, P&L or signal of the rule is computed or
+#: read. It reads no past fails either. It reads the certified canon, this producer's released
+#: structural keys and docket_keff's priority for the candidate's (family, symbol) pair -- which
+#: does read the instrument's own price series to measure how correlated it is with the held book,
+#: a property of the symbol shared by every rule on it, not of the candidate. And it only moves
+#: already-certified (family, symbol) ground down the queue: nothing is dropped. So it adds no
+#: selection on the candidate, and nothing is charged here; the cells it releases are charged
+#: once, when judged.
 H1 = "H1"
 
 
@@ -91,11 +92,6 @@ def _desk_module(root: Path, name: str) -> Any:
     sys.modules[name] = mod
     spec.loader.exec_module(mod)
     return mod
-
-
-def no_returns(sym: str) -> None:
-    """The screen's return loader: none, for every symbol (see the charge rule above)."""
-    return None
 
 
 def structural_key(spec: Mapping[str, Any]) -> str:
@@ -172,14 +168,10 @@ class BreadthMap:
         if want:
             rows = [{"family": f, "symbol": s} for f, s in want]
             try:
-                if self._keff_fn is not None:
-                    doc = self._keff_fn(rows)
-                    self.keff_status = str((doc.get("instrument") or {}).get("status")
-                                           or "MEASURED")
-                else:
-                    _desk_module(self.root, "docket_keff").score(rows, loader=no_returns)
-                    # cluster and class terms measured; the instrument term is the judge's
-                    self.keff_status = "STRUCTURE_ONLY"
+                fn = self._keff_fn or _desk_module(self.root, "docket_keff").score
+                doc = fn(rows)
+                self.keff_status = str((doc.get("instrument") or {}).get("status")
+                                       or "MEASURED")
                 for r, (f, s) in zip(rows, want, strict=True):
                     self._keff_cache[(f, s)] = float(r.get("_keff") or 0.0)
             except Exception as exc:

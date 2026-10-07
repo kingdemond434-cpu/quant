@@ -16,10 +16,12 @@
               new public video descriptions/transcripts when accessible"). With the YouTube
               Data API key the box holds, the uploads playlist is walked newest page first and
               then backwards by `pageToken` until the whole back catalogue is read, each video
-              with its FULL description; without the key, the channel's public RSS feed (the
-              latest uploads) keeps the delta alive. Transcripts are recorded per video as NOT
-              ACCESSIBLE and why: the Data API's captions.download needs the channel owner's
-              OAuth grant, and the unofficial caption endpoint is not a published API.
+              with its FULL description. API ONLY: the Developer Policies forbid any other
+              technology for API data, so without the key the lane is blocked, never scraped,
+              and the row's terms record bounds stored text to 30 days (the acquirer blanks
+              older bodies; the cards built from them stay). Transcripts are recorded per video
+              as NOT ACCESSIBLE and why: the Data API's captions.download needs the channel
+              owner's OAuth grant, and the unofficial caption endpoint is not a published API.
 """
 from __future__ import annotations
 
@@ -259,12 +261,10 @@ def fetch_sitemap(src: acq.Source, cursor: dict[str, Any], ctx: acq.FetchContext
 
 
 YT_API = "https://www.googleapis.com/youtube/v3"
-YT_FEED = "https://www.youtube.com/feeds/videos.xml?channel_id="
 #: what each video record says about its transcript (the directive's "when accessible")
 TRANSCRIPT_STATUS = ("NOT_ACCESSIBLE: the YouTube Data API's captions.download requires OAuth "
                      "authorisation from the channel owner, and the unofficial timedtext "
                      "endpoint is not a published API; the full description is mined instead")
-_YT_ENTRY = re.compile(r"(?is)<entry\b.*?</entry>")
 
 
 def youtube_key(src: acq.Source, ctx: acq.FetchContext) -> str:
@@ -301,19 +301,10 @@ def fetch_youtube_channel(src: acq.Source, cursor: dict[str, Any], ctx: acq.Fetc
         raise ValueError(f"youtube_channel needs a UC... channel_id, got {channel!r}")
     seen = acq._seen(cursor)
     key = youtube_key(src, ctx)
-    if not key:                                    # keyless: the public feed's latest uploads
-        r = ctx.fetch(YT_FEED + channel)
-        if not r.ok:
-            return
-        for m in _YT_ENTRY.finditer(r.text):
-            b = m.group(0)
-            vid = acq._feed_field(b, "yt:videoId")
-            if not vid or vid in seen:
-                continue
-            seen.add(vid)
-            yield _yt_item(vid, acq._feed_field(b, "title"),
-                           acq._feed_field(b, "media:description"),
-                           acq._feed_field(b, "published"), cursor, channel, "rss")
+    if not key:
+        # API ONLY: YouTube's Developer Policies forbid retrieving API data by any technology
+        # other than the YouTube API Services, so there is no keyless feed or page path
+        ctx.blocked.append("YOUTUBE_API_KEY absent (environment and data/secrets/youtube.json)")
         return
     hdr = {"Accept": "application/json", "X-Goog-Api-Key": key}
     uploads = "UU" + channel[2:]

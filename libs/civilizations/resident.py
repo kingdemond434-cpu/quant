@@ -555,17 +555,31 @@ class Resident:
                 specs = []
             return bmap.assess(specs, released)
 
-        # the exploration floor's fractional slot carries between passes (and processes)
+        # the exploration floor's fractional slot carries between passes AND between the two
+        # processes, so its read-order-write runs under a lock and the write is atomic; a lock
+        # that cannot be had orders without the credit and leaves the file to its holder
         credit_path = self.data / "exploration_credit.json"
+        lock = BP.FileLock(self.data / "exploration_credit.lock")
+        held = lock.acquire(wait_s=30.0)
         try:
-            credit = float(json.loads(credit_path.read_text("utf-8")).get("credit") or 0.0)
-        except (OSError, ValueError, AttributeError):
             credit = 0.0
-        chosen, self.last_screen = B.order(pend, cap, assess=assess, base_key=base_key,
-                                           credit=credit)
-        self.last_screen["keff_status"] = bmap.keff_status
-        credit_path.write_text(json.dumps({"credit": self.last_screen["exploration_credit"],
+            if held:
+                try:
+                    credit = float(json.loads(credit_path.read_text("utf-8")).get("credit")
+                                   or 0.0)
+                except (OSError, ValueError, AttributeError):
+                    credit = 0.0
+            chosen, self.last_screen = B.order(pend, cap, assess=assess, base_key=base_key,
+                                               credit=credit)
+            self.last_screen["keff_status"] = bmap.keff_status
+            self.last_screen["credit_lock"] = "held" if held else "busy: credit not carried"
+            if held:
+                tmp = credit_path.with_suffix(".tmp")
+                tmp.write_text(json.dumps({"credit": self.last_screen["exploration_credit"],
                                            "at": _iso(_now())}), "utf-8")
+                tmp.replace(credit_path)
+        finally:
+            lock.release()
         return chosen
 
     def saturated_areas(self, pipeline: Any) -> set[str]:

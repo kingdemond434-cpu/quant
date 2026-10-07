@@ -25,8 +25,14 @@ SC = ROOT / "desks" / "mt5" / "research" / "source_civilizations.py"
 ROSTER = ROOT / "desks" / "mt5" / "data" / "source_rosters" / "civilizations.yaml"
 #: every place a source lane can be declared
 ROSTER_GLOBS = ("libs/mining/sources.yaml", "libs/mining/rosters/**/*",
-                "desks/mt5/data/source_rosters/**/*")
-WEB_FETCHERS = {"html_listing", "rss", "page_snapshot", "sitemap", "search_route"}
+                "desks/mt5/data/source_rosters/**/*",
+                # the other organs' own source lists (audit 2026-10-07)
+                "desks/mt5/data/deep_forest_sources.json", "desks/mt5/data/asia_sources.json",
+                "desks/mt5/data/free_stack_sources.json",
+                "desks/mt5/data/event_consensus_sources.json")
+#: every fetcher that reaches the network; only `owned` holders fetch nothing
+FETCHING = {"html_listing", "rss", "page_snapshot", "sitemap", "search_route",
+            "youtube_channel", "json_api", "github_search", "git_mirror"}
 
 
 def _sc() -> Any:
@@ -71,10 +77,11 @@ def test_every_named_lane_exists_and_every_quant_guild_lane_is_named() -> None:
             "qg_posts"} <= lanes
 
 
-def test_every_quant_guild_web_surface_is_behind_the_terms_gate() -> None:
-    for r in _rows():
-        if r.get("civilization") != "quant_guild" or r.get("fetcher") not in WEB_FETCHERS:
-            continue
+def test_every_quant_guild_lane_that_fetches_is_behind_the_terms_gate() -> None:
+    fetching = [r for r in _rows() if r.get("civilization") == "quant_guild"
+                and r.get("fetcher") != "owned"]
+    assert {r["fetcher"] for r in fetching} <= FETCHING and len(fetching) == 8
+    for r in fetching:
         terms = (r.get("config") or {}).get("terms")
         assert isinstance(terms, dict) and terms.get("url"), r["id"]
         src = acq.normalise_row(r, origin="t")
@@ -93,7 +100,9 @@ def test_no_lane_in_any_roster_follows_a_named_author() -> None:
     allowed = {k.lower() for k in _sc().MONITORED_AUTHOR_EXCEPTIONS}
     files = sorted({p for g in ROSTER_GLOBS for p in ROOT.glob(g) if p.is_file()
                     and p.suffix in (".yaml", ".yml", ".json", ".jsonl")})
-    assert ROSTER in files and len(files) > 1
+    assert ROSTER in files
+    for g in ROSTER_GLOBS[3:]:
+        assert ROOT / g in files, g
     hits = [(str(p.relative_to(ROOT)), au)
             for p in files for au in re.findall(r"(?<![\w])au:([\w%.-]+)",
                                                 p.read_text("utf-8", errors="replace"))

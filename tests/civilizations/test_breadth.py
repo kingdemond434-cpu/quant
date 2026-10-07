@@ -147,28 +147,30 @@ def test_one_slot_budget_never_hands_the_slot_to_a_duplicate_while_fresh_waits()
     assert [c["candidate_id"] for c in out] == ["f"] and st["exploration_credit"] == 0.1
 
 
-def test_the_screen_reads_no_returns_so_it_is_not_a_trial(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Coordinator's ruling under charge-once: a screen that sees any returns or P&L is a
-    trial. This one calls docket_keff with a loader that returns nothing, and its verdict is a
-    function of (family, symbol) structure alone: two rules on one slot score identically."""
-    calls: list[Any] = []
+def test_the_screen_never_sees_the_candidates_returns_so_it_is_not_a_trial(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Coordinator's ruling under charge-once: the screen is no trial because it never evaluates
+    the candidate's own returns. Pinned on the REAL docket_keff path: the only thing the screen
+    hands docket_keff is the (family, symbol) pair, so two different rules on one slot get the
+    same verdict, and no P&L, Sharpe or return series of the rule exists anywhere in it."""
+    root = Path(__file__).resolve().parents[2]
+    real = B._desk_module(root, "docket_keff").score
+    seen: list[list[dict[str, Any]]] = []
 
-    def score(rows: list[dict[str, Any]], **kw: Any) -> dict[str, Any]:
-        calls.append(kw.get("loader"))
-        assert kw["loader"]("XAUUSD") is None
-        for r in rows:
-            r["_keff"] = 0.2
-        return {"instrument": {"status": "MEASURED"}}
+    def spy(rows: list[dict[str, Any]], **kw: Any) -> dict[str, Any]:
+        seen.append([dict(r) for r in rows])
+        out: dict[str, Any] = real(rows, **kw)
+        return out
 
-    import types
-    monkeypatch.setattr(B, "_desk_module", lambda root, name: types.SimpleNamespace(score=score))
-    m = B.BreadthMap(tmp_path, asset_class_of=CLASSES, shares=SHARES, slots=SLOTS)
+    real_mod = B._desk_module(root, "docket_keff")
+    monkeypatch.setattr(real_mod, "score", spy)
+    m = B.BreadthMap(root, asset_class_of=CLASSES, shares=SHARES, slots=SLOTS)
     a = m.assess([spec("carry", "EURUSD", hold_bars=24)], set())
     b = m.assess([spec("carry", "EURUSD", hold_bars=6, side="short")], set())
-    assert calls == [B.no_returns] and m.keff_status == "STRUCTURE_ONLY"
+    assert seen and all(set(r) == {"family", "symbol"} for rows in seen for r in rows)
+    assert not any("docket_keff unavailable" in u for u in m.unmeasured)   # real path ran
     assert a["keff"] == b["keff"] and a["breadth_score"] == b["breadth_score"]
-    assert not any("pnl" in k or "return" in k or "sharpe" in k for k in a)
+    assert not any(w in k for k in a for w in ("pnl", "return", "sharpe"))
 
 
 def test_ledger_report_counts_duplicate_share_and_keff_per_hour(tmp_path: Path) -> None:

@@ -371,3 +371,95 @@ def test_youtube_channel_walks_the_back_catalogue_and_records_transcripts(
 def _vid(v: str) -> dict[str, Any]:
     return {"snippet": {"resourceId": {"videoId": v}, "title": v,
                         "description": f"{v} full description", "publishedAt": "2026-10-01"}}
+
+
+def test_youtube_without_a_key_is_blocked_never_scraped(tmp_path: Path,
+                                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    import time
+
+    from libs.civilizations import fetchers as F
+    from libs.mining import acquirer as acq
+    monkeypatch.delenv("YOUTUBE_API_KEY", raising=False)
+    asked: list[str] = []
+
+    def http_get(url: str, headers: Mapping[str, str]) -> acq.HttpResult:
+        asked.append(url)
+        return acq.HttpResult(200, "")
+
+    ctx = acq.FetchContext(http_get=http_get, deadline=time.monotonic() + 60, root=tmp_path)
+    src = acq.Source(id="yt", fetcher="youtube_channel", auth_env="YOUTUBE_API_KEY",
+                     config={"channel_id": "UCabc"})
+    assert list(F.fetch_youtube_channel(src, {}, ctx)) == [] and asked == []
+    assert ctx.blocked and "YOUTUBE_API_KEY absent" in ctx.blocked[0]
+
+
+def test_fallback_defers_only_to_a_fresh_owner_that_names_the_seed(tmp_path: Path) -> None:
+    import os
+    from datetime import timedelta
+
+    from libs.mining import acquirer as acq
+    from libs.mining.pit_store import iso, utcnow
+    src = acq.Source(id="f", fetcher="github_search", mode="fallback",
+                     owner_feed="reports/RESIDENT.json",
+                     config={"owner_feed_must_contain": "paolucci_github_account",
+                             "owner_feed_max_age_h": 48})
+    assert not acq.owner_feed_present(src, tmp_path)                 # no owner feed
+    (tmp_path / "reports").mkdir()
+    feed = tmp_path / "reports" / "RESIDENT.json"
+    now = utcnow()
+    feed.write_text(json.dumps({"generated_at": iso(now), "cursors": {"other": {}}}))
+    assert not acq.owner_feed_present(src, tmp_path, now)            # does not scan the seed
+    feed.write_text(json.dumps({"generated_at": iso(now - timedelta(hours=1)),
+                                "cursors": {"paolucci_github_account": {}}}))
+    assert acq.owner_feed_present(src, tmp_path, now)                # fresh and named
+    feed.write_text(json.dumps({"generated_at": iso(now - timedelta(hours=72)),
+                                "cursors": {"paolucci_github_account": {}}}))
+    os.utime(feed)
+    assert not acq.owner_feed_present(src, tmp_path, now)            # quiet owner: lane back
+
+
+def test_error_details_never_carry_a_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.mining import acquirer as acq
+    monkeypatch.setenv("MY_KEY", "s3cr3t-value-123")
+    src = acq.Source(id="s", fetcher="json_api", auth_env="MY_KEY")
+    raw = ("HTTPError https://x/y?api_key=abc123&q=1 Bearer ghp_" + "a" * 36 +
+           " {'X-Goog-Api-Key': 'AIza" + "b" * 35 + "'} s3cr3t-value-123 token=zz9")
+    out = acq.redact(raw, src)
+    for secret in ("abc123", "ghp_" + "a" * 36, "AIza" + "b" * 35, "s3cr3t-value-123", "zz9"):
+        assert secret not in out, secret
+    assert "q=1" in out and out.count("***") >= 5
+
+
+def test_json_api_keeps_only_the_exact_author() -> None:
+    from libs.mining import acquirer as acq
+    m = {"path": "author", "fields": {"family": "^Paolucci$", "given": "^Roman\\b"}}
+    assert acq._matches_any({"author": [{"given": "A", "family": "B"},
+                                        {"given": "Roman M.", "family": "Paolucci"}]}, m)
+    assert not acq._matches_any({"author": [{"given": "Romano", "family": "Paolucci"}]}, m)
+    assert not acq._matches_any({"author": [{"given": "Roman", "family": "Paoluccis"}]}, m)
+    assert not acq._matches_any({"title": ["no authors"]}, m)
+
+
+def test_terms_retention_blanks_old_text_and_keeps_the_record(tmp_path: Path) -> None:
+    from datetime import timedelta
+
+    from libs.mining import acquirer as acq
+    from libs.mining.pit_store import PitStore, RawRecord, iso, utcnow
+    store = PitStore(tmp_path / "pit.sqlite")
+    now = utcnow()
+    old = store.put(RawRecord(source_id="yt", source_uri="u1", body="old description",
+                              title="t1", acquisition_time=iso(now - timedelta(days=40))),
+                    now=now)
+    new = store.put(RawRecord(source_id="yt", source_uri="u2", body="new description",
+                              title="t2", acquisition_time=iso(now - timedelta(days=2))),
+                    now=now)
+    src = acq.Source(id="yt", fetcher="owned", config={"terms": {
+        "status": "PERMITTED", "clause": "30 days", "url": "u", "retention_days": 30}})
+    cursors = acq.CursorStore(tmp_path / "cursors")
+    ctx = acq.FetchContext(http_get=lambda u, h: acq.HttpResult(200, ""),
+                           deadline=float("inf"), now=now, root=tmp_path)
+    acq.acquire(src, store, cursors, ctx, force=True)
+    a, b = store.get(old.record_id), store.get(new.record_id)
+    assert a is not None and b is not None
+    assert a["body"] == "" and a["title"] == "" and "text_expired_by_terms" in a["flags"]
+    assert b["body"] == "new description" and a["source_uri"] == "u1"
