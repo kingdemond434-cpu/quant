@@ -40,6 +40,9 @@ REQUIRED_REPORTS = (
     "desks/mt5/reports/TIER1_SCORECARD.json",
     "desks/mt5/reports/ALT_DATA_YIELD.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
+    # the reusable holdout's budget: register (the ledger) and state (its cache)
+    "desks/mt5/data/reusable_holdout.json",
+    "desks/mt5/data/reusable_holdout_studies.jsonl",
 )
 
 

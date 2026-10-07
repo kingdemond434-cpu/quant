@@ -17,14 +17,29 @@ must stop selecting on these rows (rotate in fresh ones), never quietly keep goi
 STATE IS PER STUDY and persistent, so the budget is charged across passes, not per pass: a study
 that reset its budget every hour would be a lockbox with the lock removed.
 
-IT FAILS CLOSED (audit, 2026-10-06). A missing, unreadable or malformed state file reads as
-EXHAUSTED -- deleting the file must never refill the budget -- and a pass whose charge cannot be
-saved answers nothing. The file is created once, explicitly (`init_state`), and is tracked. The
-noise is drawn from OS entropy: seeding it from the committed state made a repeated question
+IT FAILS CLOSED (audit, 2026-10-06). A malformed state file reads EXHAUSTED, a missing one is
+rebuilt from the register (never refilled), and a pass whose charge cannot be written answers
+nothing. THE REGISTER IS THE LEDGER: an append-only file beside the state
+(`register_path`, tracked, on the box's state wire) records every study opened, every charge
+and every epoch rotated, and a study's budget is the SMALLER of what the state and the register
+say -- so restoring either file from git, deleting the state, or an older snapshot of it can
+never refill a study. A missing or unreadable register answers nothing. The register has an
+untracked twin under the gitignored `data/` (`mirror_path`), and the register read is the union
+of both: restoring the state AND the tracked register to their stubs together still cannot
+refill a study, because no git operation touches the mirror.
+The noise is drawn from OS entropy: seeding it from the committed state made a repeated question
 get an identical answer, which is exactly the leak the noise is there to close.
+
+WHAT IT DOES NOT PROMISE. The paper's bound holds for rows drawn independently, for a statistic
+of bounded sensitivity, and with an error that grows as the budget grows relative to the holdout's
+size. Certificate rows are neither independent nor identically distributed (they arrive in time,
+from shared families), and a few dozen holdout rows is far from the paper's thousands. So a VALID
+status means "the budget is not spent", which is necessary for the guarantee and not sufficient:
+it is a brake on adaptive reuse, never a certificate that the answers are unbiased.
 
 ROTATION, NOT A PERMANENT FREEZE. `rotate` retires the row keys an exhausted study was asked
 about and opens the next epoch of the same study on rows it has never seen, with a fresh budget.
+Epochs and retired keys live in the register too, so no restore can rewind them.
 """
 from __future__ import annotations
 
@@ -39,8 +54,16 @@ from typing import Any
 import numpy as np
 
 STATE = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / "reusable_holdout.json"
+#: THE UNTRACKED WITNESS (audit, 2026-10-07). Under the repo's gitignored `data/`, so no git
+#: checkout, adoption or stub restore touches it: with the tracked register AND the state both
+#: restored to their stubs, this copy still holds every charge, and the budget stays spent.
+MIRROR_DIR = Path(__file__).resolve().parents[2] / "data" / "reusable_holdout"
 
-#: Defaults from the paper's worked setting, as fractions of the quantity's own scale.
+#: FALLBACK parameters only: the paper's illustrative setting (T=0.04, sigma=0.01, budget 64 for a
+#: [0,1] statistic over a large holdout), as fractions of the quantity's own scale. They are NOT
+#: calibrated to any statistic here; a caller that can measure its statistic's sampling noise
+#: passes `threshold`/`sigma` derived from it (meta_rnd.guarded_winner does), and the result
+#: says which basis was used.
 THRESHOLD = 0.04
 SIGMA = 0.01
 BUDGET = 64
@@ -70,13 +93,81 @@ def _load(path: Path) -> dict[str, Any] | None:
     return doc
 
 
+def register_path(state_path: Path) -> Path:
+    """The append-only register beside the state file: every study opened, every charge, every
+    epoch rotated. Tracked (a stub ships) and under desks/mt5/data/, so it rides the box's state
+    wire; the state file is only a cache of what the register already proves."""
+    return state_path.with_name(state_path.stem + "_studies.jsonl")
+
+
+def mirror_path(state_path: Path) -> Path:
+    """The untracked copy of the register: under the gitignored `data/` for the desk's own state,
+    beside the state for any other (tests, scratch) so each study set keeps its own witness."""
+    name = state_path.stem + "_studies.mirror.jsonl"
+    return MIRROR_DIR / name if state_path.resolve() == STATE.resolve() \
+        else state_path.with_name(name)
+
+
+def _rows(path: Path) -> list[dict[str, Any]]:
+    rows = [json.loads(ln) for ln in path.read_text("utf-8").splitlines() if ln.strip()]
+    return [r for r in rows if isinstance(r, dict)]
+
+
+def _register(state_path: Path) -> list[dict[str, Any]] | None:
+    """The UNION of the tracked register and its untracked mirror, each row once; None when the
+    tracked register is missing or either copy is unreadable (callers fail closed). A mirror that
+    does not exist yet is an empty witness, never an error."""
+    try:
+        tracked = _rows(register_path(state_path))
+    except (OSError, ValueError):
+        return None
+    mirror = mirror_path(state_path)
+    try:
+        extra = _rows(mirror) if mirror.exists() else []
+    except (OSError, ValueError):
+        return None
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for r in tracked + extra:
+        key = str(r.get("id") or json.dumps(r, sort_keys=True, default=str))
+        if key not in seen:
+            seen.add(key)
+            out.append(r)
+    return out
+
+
+def _append(state_path: Path, row: Mapping[str, Any]) -> None:
+    """Append to BOTH witnesses. Each row carries a unique id so the union counts it once."""
+    line = json.dumps({**row, "id": os.urandom(8).hex(),
+                       "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}) + "\n"
+    for p in (register_path(state_path), mirror_path(state_path)):
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("a", encoding="utf-8") as fh:
+            fh.write(line)
+
+
+def _register_left(rows: list[dict[str, Any]], study: str, budget: int) -> tuple[int, bool]:
+    """(budget left by the register's own charges, whether the study was ever opened)."""
+    opened = [r for r in rows if r.get("study") == study]
+    b = next((int(r["budget"]) for r in opened if isinstance(r.get("budget"), int)), budget)
+    spent = sum(int(r.get("spent") or 0) for r in rows if r.get("charge") == study)
+    return b - spent, bool(opened)
+
+
 def init_state(path: Path | None = None) -> bool:
-    """Create the state file once. Never overwrites: an existing file, valid or not, stays."""
+    """Create the state file and its register once. Never overwrites an existing file."""
     p = path or STATE
-    if p.exists():
-        return False
-    _save(p, {"_created": datetime.now(tz=UTC).isoformat(timespec="seconds")})
-    return True
+    made = False
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    if not p.exists():
+        _save(p, {"_created": stamp})
+        made = True
+    reg = register_path(p)
+    if not reg.exists():
+        reg.parent.mkdir(parents=True, exist_ok=True)
+        reg.write_text(json.dumps({"_created": stamp}) + "\n", encoding="utf-8")
+        made = True
+    return made
 
 
 def _save(path: Path, doc: Mapping[str, Any]) -> None:
@@ -94,15 +185,29 @@ def thresholdout(study: str, queries: Mapping[str, tuple[float, float]], *, scal
     `scale` puts the threshold and noise in the quantity's own units (e.g. the mean of the train
     values). Returns {answers, overfit, budget_left, status} and charges the persistent budget."""
     path = state_path or STATE
-    loaded = _load(path)
-    if loaded is None:
+
+    def closed(why: str, asked: int | None = None) -> dict[str, Any]:
         return {"study": study, "answers": dict.fromkeys(queries), "overfit": [],
-                "budget_left": 0, "budget": budget, "questions_total": None,
-                "status": "EXHAUSTED", "state_error": f"{path.name} missing or malformed: "
-                "the budget fails closed (a deleted file never refills it)"}
-    doc = loaded
+                "budget_left": 0, "budget": budget, "questions_total": asked,
+                "status": "EXHAUSTED", "state_error": why}
+    reg = _register(path)
+    if reg is None:
+        return closed(f"{register_path(path).name} missing or unreadable: the budget fails "
+                      "closed (the register, not the state file, proves what was spent)")
+    loaded = _load(path)
+    if loaded is None and path.exists():
+        return closed(f"{path.name} malformed: the budget fails closed")
+    doc = loaded or {}                      # a missing state file is recreated from the register
+    reg_left, opened = _register_left(reg, study, budget)
+    if not opened:
+        try:
+            _append(path, {"study": study, "budget": budget})
+        except OSError as exc:
+            return closed(f"register unwritable ({type(exc).__name__}): not opened blind")
     st = dict(doc.get(study) or {})
-    left = int(st.get("budget_left", budget))
+    # THE SMALLER OF THE TWO WITNESSES: an older state snapshot cannot refill what the register
+    # recorded as spent, and a register restored to its stub cannot refill what the state holds.
+    left = min(int(st.get("budget_left", budget)), reg_left)
     asked = int(st.get("questions", 0))
     rng = np.random.default_rng(seed)               # None -> OS entropy
     s = abs(float(scale)) or 1.0
@@ -126,42 +231,39 @@ def thresholdout(study: str, queries: Mapping[str, tuple[float, float]], *, scal
               last_at=datetime.now(tz=UTC).isoformat(timespec="seconds"))
     doc[study] = st
     try:
+        # The charge lands in the register FIRST: an uncharged answer is a free look at the
+        # holdout, so a pass whose charge cannot be written answers nothing.
+        _append(path, {"charge": study, "spent": len(overfit), "asked": len(queries)})
         _save(path, doc)
     except OSError as exc:
-        # An uncharged answer is a free look at the holdout: the pass answers nothing.
-        return {"study": study, "answers": dict.fromkeys(queries), "overfit": [],
-                "budget_left": 0, "budget": budget, "questions_total": asked,
-                "status": "EXHAUSTED", "state_error": f"{type(exc).__name__}: {exc}"}
+        return closed(f"{type(exc).__name__}: {exc}", asked)
     return {"study": study, "answers": answers, "overfit": overfit, "budget_left": left,
             "budget": budget, "questions_total": asked,
+            "threshold_abs": round(threshold * s, 6), "sigma_abs": round(sigma * s, 6),
             "status": "EXHAUSTED" if left <= 0 else "VALID", "state_error": None}
 
 
 def epoch(base: str, state_path: Path | None = None) -> tuple[str, set[str]]:
-    """(the current study name for `base`, the row keys earlier epochs retired)."""
-    doc = _load(state_path or STATE) or {}
-    ep = (doc.get("_epochs") or {}).get(base) or {}
-    n = int(ep.get("epoch", 0)) if isinstance(ep.get("epoch", 0), int) else 0
-    return f"{base}@{n}", {str(k) for k in ep.get("retired_keys") or []}
+    """(the current study name for `base`, the row keys earlier epochs retired). Read from the
+    append-only register, so restoring the state file cannot rewind an epoch or un-retire a row."""
+    rows = _register(state_path or STATE) or []
+    rot = [r for r in rows if r.get("rotate") == base and isinstance(r.get("epoch"), int)]
+    n = max((int(r["epoch"]) for r in rot), default=0)
+    return f"{base}@{n}", {str(k) for r in rot for k in r.get("retired_keys") or []}
 
 
 def rotate(base: str, used_keys: set[str], state_path: Path | None = None) -> str | None:
-    """Retire `used_keys` and open the next epoch. Returns the new study name, or None when the
-    state cannot be read or saved (the study then stays exhausted -- closed, not reopened)."""
+    """Retire `used_keys` and open the next epoch, appended to the register. Returns the new
+    study name, or None when the register cannot be read or written (the study then stays
+    exhausted -- closed, never reopened)."""
     path = state_path or STATE
-    doc = _load(path)
-    if doc is None:
+    if _register(path) is None:
         return None
-    eps = dict(doc.get("_epochs") or {})
-    ep = dict(eps.get(base) or {})
-    n = int(ep.get("epoch", 0)) + 1
-    ep.update(epoch=n, retired_keys=sorted({str(k) for k in ep.get("retired_keys") or []}
-                                           | {str(k) for k in used_keys}),
-              rotated_at=datetime.now(tz=UTC).isoformat(timespec="seconds"))
-    eps[base] = ep
-    doc["_epochs"] = eps
+    name, _retired = epoch(base, path)
+    n = int(name.rsplit("@", 1)[1]) + 1
     try:
-        _save(path, doc)
+        _append(path, {"rotate": base, "epoch": n,
+                       "retired_keys": sorted(str(k) for k in used_keys)})
     except OSError:
         return None
     return f"{base}@{n}"

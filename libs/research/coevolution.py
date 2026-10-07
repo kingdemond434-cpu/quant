@@ -130,7 +130,10 @@ def evaluate(df: pd.DataFrame, fset: list[int], model: str, store: FeatureStore,
 
 def evolve(df: pd.DataFrame, *, store: FeatureStore | None = None, pop: int = 12,
            gens: int = 3, budget_s: float = 300.0, seed: int = 0, horizon: int = 6,
-           models: tuple[str, ...] = tuple(TAX), symbol: str | None = None) -> dict[str, Any]:
+           models: tuple[str, ...] = tuple(TAX), symbol: str | None = None,
+           progress: dict[str, int] | None = None) -> dict[str, Any]:
+    """`progress["evals"]`, when given, counts every evaluation as it STARTS, so a run that
+    raises mid-search is charged what it actually spent."""
     rng = np.random.default_rng(seed)
     store = store or FeatureStore()
     vocab, dropped = live_vocab(store)
@@ -155,6 +158,8 @@ def evolve(df: pd.DataFrame, *, store: FeatureStore | None = None, pop: int = 12
                 break
             k = _key(fset, model)
             if k not in seen:
+                if progress is not None:
+                    progress["evals"] = progress.get("evals", 0) + 1
                 try:
                     seen[k] = evaluate(df, fset, model, store, horizon, symbol, vocab)
                 except Exception as exc:
@@ -193,8 +198,8 @@ def evolve(df: pd.DataFrame, *, store: FeatureStore | None = None, pop: int = 12
 
 def sequential(df: pd.DataFrame, *, store: FeatureStore | None = None, n_evals: int = 36,
                budget_s: float = 300.0, horizon: int = 6,
-               models: tuple[str, ...] = tuple(TAX), symbol: str | None = None
-               ) -> dict[str, Any]:
+               models: tuple[str, ...] = tuple(TAX), symbol: str | None = None,
+               progress: dict[str, int] | None = None) -> dict[str, Any]:
     """THE CHALLENGER'S BASELINE: features first, model afterwards -- the conventional pipeline
     `evolve` claims to beat. Greedy forward selection of a feature set under ONE reference model
     (the cheapest by tax), then every model tried on the chosen set. It is given exactly
@@ -213,6 +218,8 @@ def sequential(df: pd.DataFrame, *, store: FeatureStore | None = None, n_evals: 
     def _eval(fset: list[int], model: str) -> float | None:
         k = _key(fset, model)
         if k not in seen:
+            if progress is not None:
+                progress["evals"] = progress.get("evals", 0) + 1
             try:
                 seen[k] = evaluate(df, fset, model, store, horizon, symbol, vocab)
             except Exception as exc:
@@ -267,9 +274,11 @@ def head_to_head(df: pd.DataFrame, *, store: FeatureStore | None = None, pop: in
     tail, which neither arm saw while choosing. One run is one paired trial; the verdict across
     runs is the arena's (`libs/research/arena.judge`), never this function's.
 
-    `progress`, when given, holds an upper bound on the evaluations spent so far at every point,
-    so a run that raises is still charged (`spent_bound`): the stage in flight at its cap."""
+    `progress`, when given, counts the evaluations ACTUALLY started (`evals`), so a run that
+    raises is charged exactly what it spent (audit, 2026-10-07); `spent_bound` stays beside it
+    as the stage's cap, for reading only."""
     prog = progress if progress is not None else {}
+    prog["evals"] = 0
     prog["spent_bound"] = pop * gens                    # the joint stage's most, before it runs
     store = store or FeatureStore()
     cut = int(len(df) * dev_frac)
@@ -277,13 +286,13 @@ def head_to_head(df: pd.DataFrame, *, store: FeatureStore | None = None, pop: in
     vocab, _dropped = live_vocab(store)
     t0 = time.monotonic()
     joint = evolve(dev, store=store, pop=pop, gens=gens, budget_s=budget_s / 2, seed=seed,
-                   horizon=horizon, models=models, symbol=symbol)
+                   horizon=horizon, models=models, symbol=symbol, progress=prog)
     t_joint = time.monotonic() - t0
     n = int(joint.get("pairings_evaluated") or 0)
     prog["spent_bound"] = n + max(n, 1)                 # the sequential stage at its cap
     t1 = time.monotonic()
     seq = sequential(dev, store=store, n_evals=max(n, 1), budget_s=budget_s / 2,
-                     horizon=horizon, models=models, symbol=symbol)
+                     horizon=horizon, models=models, symbol=symbol, progress=prog)
     t_seq = time.monotonic() - t1
 
     def _oos(best: dict[str, Any] | None) -> dict[str, Any]:
@@ -306,6 +315,7 @@ def head_to_head(df: pd.DataFrame, *, store: FeatureStore | None = None, pop: in
     def _scored(best: dict[str, Any] | None) -> dict[str, Any]:
         if best and best.get("fset") is not None:
             tail[0] += 1                    # each tail scoring is an evaluation: charged
+            prog["evals"] = prog.get("evals", 0) + 1
         return _oos(best)
     a, b = _scored(jb), _scored(seq.get("best"))
     ga, gb = a.get("net_gain"), b.get("net_gain")
