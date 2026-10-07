@@ -1,5 +1,5 @@
 {
- "note": "Active owner threads (2026-10-07). session = the Claude-Session id whose link a thread's PR bodies carry; thread_id links the brief to its thread. Add a row when a thread is started; a title must match the owner_thread the audits use.",
+ "note": "Active owner threads (2026-10-07). session = the Claude-Session id whose link a thread's PR bodies carry; thread_id links the brief to its thread. Add a row when a thread is started; a title must match the owner_thread the audits use. prs pins PRs whose body has no session link (desktop sessions).",
  "threads": [
   {
    "title": "Schedule the twice-daily CRO cycle",
@@ -79,7 +79,10 @@
   {
    "title": "Growth allocator overhaul",
    "session": "cse_01RfekcD7Dtc3GZqKVgstUJZ",
-   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8pr1MN2sNT71JLQt7kxitSqhK"
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8pr1MN2sNT71JLQt7kxitSqhK",
+   "prs": [
+    261
+   ]
   },
   {
    "title": "Every API key in one list",

@@ -79,18 +79,26 @@ def fetch_prs(timeout: float = 60.0) -> list[dict[str, Any]] | None:
     """Open PRs with the session that wrote each (from the body's session link). None = unreachable."""
     if shutil.which("gh") is None:
         return None
-    try:
-        out = subprocess.run(
-            ["gh", "api", f"repos/{REPO}/pulls?state=open&per_page=100", "--paginate", "--jq",
-             ".[] | {n: .number, sha: .head.sha[0:9], draft: .draft, title: .title, "
-             "updated: .updated_at, body: (.body // \"\")}"],
-            capture_output=True, text=True, timeout=timeout, check=False)
-    except (OSError, subprocess.SubprocessError):
-        return None
-    if out.returncode != 0:
-        return None
+    # Pages by number: --paginate follows GitHub's numeric-id `repositories/{id}` links, which
+    # the cloud proxy refuses, so page 2 failed the whole fetch.
+    lines: list[str] = []
+    for page in range(1, 11):
+        try:
+            out = subprocess.run(
+                ["gh", "api", f"repos/{REPO}/pulls?state=open&per_page=100&page={page}", "--jq",
+                 ".[] | {n: .number, sha: .head.sha[0:9], draft: .draft, title: .title, "
+                 "updated: .updated_at, body: (.body // \"\")}"],
+                capture_output=True, text=True, timeout=timeout, check=False)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        if out.returncode != 0:
+            return None
+        got = out.stdout.splitlines()
+        lines += got
+        if len(got) < 100:
+            break
     prs = []
-    for line in out.stdout.splitlines():
+    for line in lines:
         try:
             p = json.loads(line)
         except ValueError:
@@ -123,7 +131,9 @@ def thread_view(title: str, rows: list[dict[str, Any]], pm: list[dict[str, Any]]
                and (p.get("delivery") or {}).get("verdict") in OPEN_VERDICTS]
     pm_open.sort(key=lambda p: (OPEN_VERDICTS.index(p["delivery"]["verdict"]), p["id"]))
     sess = str(meta.get("session") or "").removeprefix("cse_").removeprefix("session_")
-    my_prs = None if prs is None else [p for p in prs if sess and p.get("session") == sess]
+    pinned = {int(n) for n in meta.get("prs") or []}     # PRs whose body carries no session link
+    my_prs = None if prs is None else [p for p in prs if (sess and p.get("session") == sess)
+                                       or p["n"] in pinned]
     open_nums = None if prs is None else {p["n"] for p in prs}
     gone: list[str] = []
     for p in pm_open:

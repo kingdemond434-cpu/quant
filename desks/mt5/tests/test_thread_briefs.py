@@ -75,6 +75,12 @@ def test_prs_matched_by_session_and_closed_pr_flagged(tmp_path: Path) -> None:
     assert "RE-CHECK: DATA-41 cites #204" in text
 
 
+def test_pinned_pr_without_session_link_is_listed(tmp_path: Path) -> None:
+    threads = {T: {**THREADS[T], "prs": [300]}}
+    tb.write(_audit(), tmp_path, now=NOW, prs=PRS, pm=_pm(), threads=threads)
+    assert "#300 head def" in (tmp_path / f"{tb.slug(T)}.md").read_text("utf-8")
+
+
 def test_unreachable_github_is_unmeasured_not_empty(tmp_path: Path) -> None:
     idx, text = _write(tmp_path, prs=None)
     assert "UNMEASURED: GitHub was not reachable" in text and "RE-CHECK" not in text
