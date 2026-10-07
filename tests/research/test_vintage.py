@@ -249,6 +249,11 @@ def test_the_collector_records_a_vintage_before_overwriting(
     monkeypatch.setattr(collector, "_ARCHIVE", tmp_path / "data" / "fred_macro.json")
     monkeypatch.setattr(collector, "_WEB", tmp_path / "web" / "fred_macro.json")
     monkeypatch.setattr(collector, "_SERIES", ("M2SL",))
+    monkeypatch.setattr(collector, "_STATE_SERIES", ())
+    monkeypatch.setattr(collector, "_ARCHIVE_LONG", tmp_path / "data" / "fred_macro_long.json")
+    monkeypatch.setattr(collector, "_STATE_ARCHIVE", tmp_path / "data" / "fred_state.json")
+    # the terms gate admits a FRED series only with a recorded label; this test records one
+    monkeypatch.setattr(collector, "fred_display_terms", lambda sid: (True, "test label"))
     monkeypatch.setattr(collector, "_key", lambda: "fake-key-never-used")
     monkeypatch.setattr(collector, "_fetch", lambda key, sid: [("2026-06-01", 21500.0)])
     collector.main()
@@ -262,3 +267,28 @@ def test_the_collector_records_a_vintage_before_overwriting(
     log = read_log(tmp_path, "M2SL")
     assert len(log) == 2, "the revision must be appended, not overwrite the first publication"
     assert log[0]["value"] == 21500.0 and log[1]["value"] == 21987.3
+
+
+def test_the_collector_fetches_nothing_without_a_recorded_label(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FRED labels are VERBATIM_PENDING (coordinator 2026-10-07): with no label recorded the
+    collector touches the network for no series, and the archives it writes carry no held data."""
+    collector = _load_collector()
+    monkeypatch.setattr(collector, "_ROOT", tmp_path)
+    for name, rel in (("_ARCHIVE", "fred_macro.json"), ("_ARCHIVE_LONG", "fred_macro_long.json"),
+                      ("_STATE_ARCHIVE", "fred_state.json")):
+        monkeypatch.setattr(collector, name, tmp_path / "data" / rel)
+    monkeypatch.setattr(collector, "_WEB", tmp_path / "web" / "fred_macro.json")
+    monkeypatch.setattr(collector, "fred_display_terms",
+                        lambda sid: (False, "HELD_TERMS: no recorded label"))
+    monkeypatch.setattr(collector, "_key", lambda: "fake-key-never-used")
+
+    def never(key: str, sid: str) -> list[tuple[str, float]]:
+        raise AssertionError(f"fetched held series {sid}")
+
+    monkeypatch.setattr(collector, "_fetch", never)
+    collector.main()
+    for rel in ("fred_macro.json", "fred_macro_long.json", "fred_state.json"):
+        doc = json.loads((tmp_path / "data" / rel).read_text())
+        assert doc["series"] == {} and "VIXCLS" in doc["held"] and "DGS10" in doc["held"]

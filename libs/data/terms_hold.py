@@ -32,20 +32,15 @@ ROOT = Path(__file__).resolve().parents[2]
 #: the source id, its provider (the part before ":"), or the TERMS_HELD key that holds it.
 CLEARANCES = ROOT / "desks" / "mt5" / "data" / "terms_clearances.json"
 
-_FRED_Q3 = ("Series with a copyright notice are owned by third parties and have special "
-            "restrictions ... you must contact the data owner to obtain permission. "
-            "Unfortunately, the Federal Reserve Bank of St. Louis cannot give you such "
-            "permission.")
-_FRED_BASIS = {
-    "terms_url": "https://fred.stlouisfed.org/legal/",
-    "terms_quote": _FRED_Q3,
-    "quote_source": "FRED ToU FAQ Q3, read verbatim on the box (data/data_universe_map.json, "
-                    "imf_pcps provenance: 'https://fred.stlouisfed.org/legal/ (200, 117020 b -- "
-                    "ToU FAQ Q3 read verbatim)')",
-    "scope": "series WITHOUT a third-party copyright notice; the copyrighted ones are held "
-             "(fred_third_party). The general permitting clause for un-noticed series is NOT "
-             "yet quoted here: the cloud proxy refuses fred.stlouisfed.org, so it is owed a "
-             "verbatim read on the box",
+#: FRED's terms, CITED NOT QUOTED (coordinator, 2026-10-07): no verbatim text could be captured --
+#: the cloud proxy refuses fred.stlouisfed.org and summaries are not quotes -- so nothing here
+#: quotes FRED, and the hold below does not rest on a quote. Section headings per unverified
+#: summaries; /mnt/project-files/terms/fred_tou_sec_iv_2026-10-07.md marks both clauses NOT FOUND.
+FRED_TERMS_CITATION: dict[str, str] = {
+    "terms_url": "https://fred.stlouisfed.org/legal/terms/",
+    "sections": "II. Prohibited Use (ML/AI training ban; letter unresolved between (f) and (k)); "
+                "III. Use of Data with Copyright Restrictions (the per-series labels)",
+    "verbatim": "VERBATIM_PENDING",
     "checked_at": "2026-10-07"}
 
 #: Recorded terms bases. A key with ":" admits that exact id; a bare provider key admits
@@ -75,35 +70,38 @@ TERMS_HELD: dict[str, str] = {
     "tradingeconomics": "Trading Economics calendar: commercial terms, machine use not cleared",
     "yahoo": "Yahoo Finance chart API: its terms restrict automated use; machine use UNCLEARED",
     "cboe": "CBOE index values (VIX family): CBOE copyright; machine use for trading UNCLEARED "
-            "(on FRED too: FAQ Q3, FRED cannot grant the permission)",
+            "(on FRED too: third-party copyright, FRED ToU section III, VERBATIM_PENDING)",
     "taifex": "TAIFEX statistics (TXO put/call): site terms unread (the cloud proxy refuses the "
               "host); machine use UNCLEARED",
-    "ice_bofa": "ICE BofA indices republished on FRED: third-party copyright (FAQ Q3)",
+    "ice_bofa": "ICE BofA indices republished on FRED: third-party copyright (FRED ToU section "
+                "III, VERBATIM_PENDING)",
     "fred_index": "an equity index FRED republishes under its owner's copyright (S&P Dow Jones "
-                  "Indices, Nasdaq, Nikkei, Wilshire): FAQ Q3, FRED cannot grant the permission",
-    "fred_label": "a FRED series whose terms label is not on the display register: only series "
-                  "owned by a US federal agency (public domain, 17 USC 105) are fetched",
+                  "Indices, Nasdaq, Nikkei, Wilshire; FRED ToU section III, VERBATIM_PENDING)",
+    "fred_label": "a FRED series with no recorded per-series terms label (FRED ToU section "
+                  "III, VERBATIM_PENDING): labels are captured outside the cloud into "
+                  "desks/mt5/data/fred_series_labels.json; until one is recorded the series is "
+                  "neither fetched nor displayed",
 }
 
 #: Why every FRED/ALFRED id is held from the gauntlet (coordinator ruling on prohibition (j),
 #: 2026-10-07): FRED is not an input to fitted models. The fitted inputs move to the owners' own
 #: feeds (Treasury H.15, BLS, BEA, the Fed board's H.10/G.19, EIA). A quoted clearance under the
 #: exact id or under "fred"/"alfred" is the only way back in.
-FRED_FITTED_HOLD = ("FRED/ALFRED is held as an input to fitted models (ruling on prohibition "
-                    "(j), 2026-10-07); read the public-domain owner's own feed instead")
+FRED_FITTED_HOLD = ("FRED/ALFRED is held as an input to fitted models (FRED ToU section II, "
+                    "Prohibited Use, VERBATIM_PENDING; ruling 2026-10-07); read the "
+                    "public-domain owner's own feed instead")
 
 #: Equity indices FRED republishes under a third party's copyright. Held from every use.
 FRED_INDEX_SERIES = frozenset({"SP500", "DJIA", "DJCA", "DJTA", "DJUA", "NASDAQCOM", "NASDAQ100",
                                "NIKKEI225", "WILL5000IND", "WILL5000INDFC", "WILL5000PR",
                                "WILL5000PRFC", "WILLLRGCAP", "WILLSMLCAP"})
 
-#: THE DISPLAY REGISTER: the FRED series the desk may fetch for display and cross-check, each with
-#: the US federal owner whose work it is (public domain under 17 USC 105). A series not named here
-#: is never fetched (fails closed). FRED's own per-series label ("Public Domain: Citation
-#: requested") is owed a verbatim read on the box: the cloud proxy refuses fred.stlouisfed.org.
-FRED_DISPLAY: dict[str, str] = {
+#: THE OWNER MAP: the public-domain owner each FRED series the desk used comes from. It admits
+#: NOTHING (the swap to the owners' own feeds reads it); FRED fetch/display is decided by the
+#: recorded per-series label alone (`fred_display_terms`).
+FRED_OWNERS: dict[str, str] = {
     **dict.fromkeys(("DGS3MO", "DGS2", "DGS5", "DGS10", "DGS30", "DFII10"),
-                    "Board of Governors, H.15 Selected Interest Rates"),
+                    "Board of Governors, H.15 Selected Interest Rates (Treasury curves)"),
     "T10Y2Y": "St. Louis Fed calculation from H.15 (DGS10 - DGS2)",
     "T5YIE": "St. Louis Fed calculation from H.15 nominal and TIPS yields",
     "T10YIE": "St. Louis Fed calculation from H.15 nominal and TIPS yields",
@@ -115,6 +113,14 @@ FRED_DISPLAY: dict[str, str] = {
     "CPIAUCSL": "U.S. Bureau of Labor Statistics, CPI-U",
     "PCEPI": "U.S. Bureau of Economic Analysis, PCE price index",
 }
+
+#: THE LABEL REGISTER (built, empty until labels are captured outside the cloud):
+#: {"<SERIES>": {"label": "<FRED's per-series label, verbatim>", "url": "<series page>",
+#:               "captured_at": "...", "by": "..."}}. A series is fetched or displayed only when
+#: its recorded label is one of ADMITTED_LABELS; the labels' own wording is VERBATIM_PENDING.
+FRED_LABELS = ROOT / "desks" / "mt5" / "data" / "fred_series_labels.json"
+ADMITTED_LABELS = frozenset({"public domain: citation requested",
+                             "copyrighted: citation required"})
 
 
 def fred_third_party(series: str) -> str | None:
@@ -129,21 +135,38 @@ def fred_third_party(series: str) -> str | None:
     return None
 
 
-def fred_display_terms(series: str, clearances: Path | None = None) -> tuple[bool, str]:
+def _label(series: str, labels: Path | None) -> str | None:
+    """The recorded, admitted FRED label for `series`, else None (absent file, absent row, no
+    url or capture time, or a label outside ADMITTED_LABELS all fail closed)."""
+    try:
+        doc: Any = json.loads((labels or FRED_LABELS).read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    row = doc.get(series) if isinstance(doc, dict) else None
+    if not (isinstance(row, dict) and str(row.get("url") or "").strip()
+            and str(row.get("captured_at") or "").strip()):
+        return None
+    label = " ".join(str(row.get("label") or "").split())
+    return label if label.lower() in ADMITTED_LABELS else None
+
+
+def fred_display_terms(series: str, clearances: Path | None = None,
+                       labels: Path | None = None) -> tuple[bool, str]:
     """(may the desk FETCH this FRED series for display or cross-check?, why). Never a licence
-    for a fitted model -- `gauntlet_terms` holds every FRED id. Fails closed: a series off the
-    display register, a third-party index or a copyrighted close is not fetched unless a quoted
-    clearance names it."""
+    for a fitted model -- `gauntlet_terms` holds every FRED id. Fails closed: only a series whose
+    per-series label is recorded and admitted is fetched, and a third-party index or copyrighted
+    close additionally needs its owner's quoted clearance."""
     s = str(series or "").strip().upper()
+    label = _label(s, labels) if s else None
+    if label is None:
+        return False, f"HELD_TERMS: {TERMS_HELD['fred_label']}"
+    key = fred_third_party(s) or ("fred_index" if s in FRED_INDEX_SERIES else None)
+    if key is None:
+        return True, f"FRED label recorded: {label}"
     try:
         doc: Any = json.loads((clearances or CLEARANCES).read_text("utf-8"))
     except (OSError, ValueError):
         doc = {}
-    key = fred_third_party(s) or ("fred_index" if s in FRED_INDEX_SERIES else None)
-    if key is None and s not in FRED_DISPLAY:
-        key = "fred_label"
-    if key is None:
-        return True, f"public domain: {FRED_DISPLAY[s]}"
     cleared = _clearance(doc, [f"fred:{s.lower()}", key])
     return (True, cleared) if cleared else (False, f"HELD_TERMS: {TERMS_HELD[key]}")
 
@@ -234,5 +257,6 @@ def gauntlet_terms(source_id: str, clearances: Path | None = None) -> tuple[bool
     return True, "; ".join(whys)
 
 
-__all__ = ["CLEARANCES", "FRED_DISPLAY", "FRED_FITTED_HOLD", "FRED_INDEX_SERIES", "TERMS_EVIDENCE",
-           "TERMS_HELD", "fred_display_terms", "fred_third_party", "gauntlet_terms"]
+__all__ = ["ADMITTED_LABELS", "CLEARANCES", "FRED_FITTED_HOLD", "FRED_INDEX_SERIES", "FRED_LABELS",
+           "FRED_OWNERS", "FRED_TERMS_CITATION", "TERMS_EVIDENCE", "TERMS_HELD",
+           "fred_display_terms", "fred_third_party", "gauntlet_terms"]
