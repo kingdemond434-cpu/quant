@@ -983,12 +983,12 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:desks/mt5/research/dormant_components.py` | `invoked:ops/run_frontier_audit.cmd` | UNMEASURED UNMEASURED | `desks/mt5/reports/DORMANT_COMPONENTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:libs/ops/intelligence_inputs.py` | `import:scripts/run_intelligence_cycle.py` | UNMEASURED UNMEASURED | `web/intelligence_cycle.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/lessons.py` | `invoked:libs/ops/agent_denials.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/NIGHTLY_CATCHUP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:alt_proxies` | `hourly_cycle:alt_proxies` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALT_PROXIES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:recovery_drills` | `hourly_cycle:recovery_drills` | UNMEASURED UNMEASURED | `desks/mt5/reports/RECOVERY_DRILLS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:E8-Book` | `E8-Book` | UNMEASURED UNMEASURED | `desks/mt5/reports/E8_BOOK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `battery:scripts/check_keys.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:alt_proxies` | `hourly_cycle:alt_proxies` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALT_PROXIES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:credential_coverage` | `hourly_cycle:credential_coverage` | UNMEASURED UNMEASURED | `desks/mt5/reports/CREDENTIAL_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:keyed_sources` | `hourly_cycle:keyed_sources` | UNMEASURED UNMEASURED | `desks/mt5/reports/KEYED_SOURCES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:recovery_drills` | `hourly_cycle:recovery_drills` | UNMEASURED UNMEASURED | `desks/mt5/reports/RECOVERY_DRILLS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (37)
 
