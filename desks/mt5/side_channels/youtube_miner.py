@@ -11,6 +11,7 @@ import json
 import time
 import os
 import re
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -24,15 +25,22 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 
 def _load_api_key() -> str:
-    """The YouTube Data API key: env YOUTUBE_API_KEY, else data/secrets/youtube.json.
+    """The YouTube Data API key: `read_key('YOUTUBE_API_KEY')`, else data/secrets/youtube.json.
 
-    Never hard-code the key in source (it leaked that way once).
-    The secrets file is ``{"api_key": "..."}`` and lives only on the box that runs this.
+    Never hard-code the key in source (it leaked that way once). `read_key` reads the
+    machine/user registry and then the process env, so a `setx /M` key reaches a resident
+    started before it was set. The secrets file is ``{"api_key": "..."}`` and lives only on
+    the box that runs this.
     """
-    env = os.environ.get("YOUTUBE_API_KEY", "").strip()
-    if env:
-        return env
-    secret = BASE.parent.parent / "data" / "secrets" / "youtube.json"
+    root = BASE.parent.parent
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from libs.ops.env_keys import read_key
+
+    key = read_key("YOUTUBE_API_KEY").strip()
+    if key:
+        return key
+    secret = root / "data" / "secrets" / "youtube.json"
     try:
         return str(json.loads(secret.read_text(encoding="utf-8")).get("api_key", "")).strip()
     except (OSError, ValueError, AttributeError):
