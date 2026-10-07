@@ -947,7 +947,9 @@ def build(*, max_rows: int = MAX_ROWS, store_path: Path | None = None,
           cursor_path: Path | None = None, roots: Sequence[Path] | None = None,
           graph_path: Path | None = None, frontier: Path | None = None,
           events_path: Path | None = None,
-          asset_class_of: Mapping[str, str] | None = None) -> tuple[dict[str, Any],
+          asset_class_of: Mapping[str, str] | None = None,
+          story_archive: Path | None = None,
+          archive_stories: bool = True) -> tuple[dict[str, Any],
                                                                     dict[str, Any],
                                                                     dict[str, Any]]:
     """One pass: new intelligence rows in, new hypothesis-graph rows in, report out.
@@ -955,6 +957,10 @@ def build(*, max_rows: int = MAX_ROWS, store_path: Path | None = None,
     Paths default to None and resolve against the module global HERE: a default bound at
     definition time cannot be redirected, and a test that thought it had redirected the desk's
     real graph, cursor and report but had not would write over all three.
+
+    `story_archive` defaults to `story_archive.jsonl` beside the store, so a redirected store
+    redirects its archive too. `archive_stories=False` is the dry run's: the store it evicts from
+    is never saved, so nothing leaves the desk and nothing may be written.
     """
     store_path = store_path or STORE
     cursor_path = cursor_path or CURSOR
@@ -1023,10 +1029,17 @@ def build(*, max_rows: int = MAX_ROWS, store_path: Path | None = None,
                           "longer compared against new ones")
     if len(news_rows) >= MAX_EVENT_LINES:
         unmeasured.append(f"event log bound {MAX_EVENT_LINES} hit: the rest is read next pass")
-    evicted_stories = sg.evict_stories(store)
+    archive = (story_archive or store_path.parent / sg.STORY_ARCHIVE_NAME) if archive_stories \
+        else None
+    archive_failures = int(store["counts"].get("story_archive_failures", 0))
+    evicted_stories = sg.evict_stories(store, archive=archive)
     if evicted_stories:
         unmeasured.append(f"{evicted_stories} stalest stor(ies) evicted at the "
-                          f"{sg.MAX_DOCUMENTS} document cap")
+                          f"{sg.MAX_DOCUMENTS} document cap, archived whole to "
+                          f"{archive.name if archive else 'nothing (dry run)'}")
+    if int(store["counts"].get("story_archive_failures", 0)) > archive_failures:
+        unmeasured.append(f"story archive {archive} refused the write: no story was evicted and "
+                          f"the store is over the {sg.MAX_DOCUMENTS} document cap")
     evicted = evict_leads(store)
     if evicted:
         unmeasured.append(f"{evicted} oldest claim node(s) evicted at the {MAX_LEAD_NODES} cap")
@@ -1102,7 +1115,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(answer, ensure_ascii=False, indent=1, default=str))
         return 0
 
-    store, cursor, report = build(max_rows=max(1, int(args.max_rows)))
+    store, cursor, report = build(max_rows=max(1, int(args.max_rows)),
+                                  archive_stories=not args.dry_run)
     print(json.dumps({k: v for k, v in report.items()
                       if k not in ("unconverted_leads_sample", "top_sources_by_yield",
                                    "mechanisms_with_leads_but_no_cells")},

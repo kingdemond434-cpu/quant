@@ -178,3 +178,57 @@ def test_stale_stories_leave_whole_at_the_cap(desk: Path) -> None:
     assert len(left) == 4
     assert all(e["src"] in store["nodes"] and e["dst"] in store["nodes"]
                for e in store["edges"].values())
+
+
+def _six_stories(desk: Path) -> dict[str, Any]:
+    rows = [_doc(i, f"Story {i} about Iran", src="s", eid=f"ev{i}", ents=(f"X{i}",))
+            for i in range(6)]
+    for i, r in enumerate(rows):
+        r["at"] = f"2026-10-0{i + 1}T00:00:00+00:00"
+    _log(desk / "events.jsonl", rows)
+    store, _cursor, _report = kg.build()
+    return store
+
+
+def test_evicted_stories_are_preserved_whole_in_the_archive(desk: Path) -> None:
+    store = _six_stories(desk)
+    before_nodes = dict(store["nodes"])
+    before_edges = dict(store["edges"])
+    archive = desk / "data" / sg.STORY_ARCHIVE_NAME
+    assert sg.evict_stories(store, keep=4, archive=archive) == 2
+    lines = [json.loads(x) for x in archive.read_text(encoding="utf-8").splitlines()]
+    assert len(lines) == 2
+    archived_nodes = {nid: n for row in lines for nid, n in row["nodes"].items()}
+    archived_edges = {k: e for row in lines for k, e in row["edges"].items()}
+    # Nothing left the store that the archive does not hold, node for node and edge for edge.
+    gone_nodes = set(before_nodes) - set(store["nodes"])
+    gone_edges = set(before_edges) - set(store["edges"])
+    assert gone_nodes and gone_nodes == set(archived_nodes)
+    assert all(archived_nodes[n] == before_nodes[n] for n in gone_nodes)
+    assert gone_edges and gone_edges <= set(archived_edges)
+    # The two stalest stories are the ones archived, each with its documents and its event.
+    kinds = sorted(n["type"] for row in lines for n in row["nodes"].values())
+    assert kinds.count("story") == 2 and kinds.count("document") == 2
+    assert kinds.count("event") == 2
+    assert all(row["index"]["story_of_event"] for row in lines)
+
+
+def test_a_refused_archive_write_evicts_nothing(desk: Path) -> None:
+    store = _six_stories(desk)
+    n_nodes, n_edges = len(store["nodes"]), len(store["edges"])
+    blocker = desk / "not_a_dir"
+    blocker.write_text("x", encoding="utf-8")
+    assert sg.evict_stories(store, keep=4, archive=blocker / "archive.jsonl") == 0
+    assert (len(store["nodes"]), len(store["edges"])) == (n_nodes, n_edges)
+    assert store["counts"]["story_archive_failures"] == 1
+
+
+def test_build_archives_beside_the_store_and_a_dry_run_writes_nothing(
+        desk: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sg, "MAX_DOCUMENTS", 4)
+    _six_stories(desk)  # build() with the real default: archive beside the redirected store
+    archive = desk / "data" / sg.STORY_ARCHIVE_NAME
+    assert len(archive.read_text(encoding="utf-8").splitlines()) == 2
+    archive.unlink()
+    kg.build(cursor_path=desk / "data" / "other_cursor.json", archive_stories=False)
+    assert not archive.exists()

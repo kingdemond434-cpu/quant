@@ -35,8 +35,10 @@ under `stories`.
 from __future__ import annotations
 
 import hashlib
+import json
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from libs.research import event_ontology as eo
@@ -56,8 +58,12 @@ STORY_GAP_H = 7 * 24.0
 #: work is quadratic, and hitting the bound is counted in the report.
 MAX_EVENT_DOCS = 60
 #: Document nodes the store holds. Past it the stalest STORIES leave whole, with their events,
-#: documents and edges, and the eviction is counted.
+#: documents and edges, and the eviction is counted. They leave the STORE, not the desk: each one
+#: is appended whole to the story archive first (`STORY_ARCHIVE_NAME`, next to graph.json), and a
+#: story that cannot be archived is not evicted.
 MAX_DOCUMENTS = 40_000
+#: The append-only archive evicted stories go to, beside the store it was evicted from.
+STORY_ARCHIVE_NAME = "story_archive.jsonl"
 #: Rise over the story's running peak severity that counts as an escalation.
 ESCALATION_STEP = 0.1
 #: Story rows the report names (the counts cover every story).
@@ -304,8 +310,17 @@ def ingest_document(store: dict[str, Any], row: Mapping[str, Any], *, add_node: 
     return made
 
 
-def evict_stories(store: dict[str, Any], keep: int | None = None) -> int:
-    """The stalest stories out whole when documents pass the cap. Counted, never silent."""
+def evict_stories(store: dict[str, Any], keep: int | None = None, *,
+                  archive: Path | None = None) -> int:
+    """The stalest stories out of the store whole when documents pass the cap. Counted, never
+    silent, and NEVER LOST: with `archive` set, every doomed story is appended to it as one JSON
+    line (the story, its events, its documents, every edge touching them and its index rows)
+    BEFORE anything is popped, and if that write fails nothing is evicted (the failure is
+    counted in `story_archive_failures`; the store stays over the cap until the archive takes it).
+
+    The trigger is POSITIVE evidence only: the document count of the store in hand, over a
+    capacity cap. An empty or unreadable store has no documents and evicts nothing.
+    `archive=None` is for in-memory callers (a dry run whose store is never saved)."""
     keep = MAX_DOCUMENTS if keep is None else keep
     nodes = store["nodes"]
     n_docs = sum(1 for n in nodes.values() if n["type"] == NODE_DOCUMENT)
@@ -329,6 +344,12 @@ def evict_stories(store: dict[str, Any], keep: int | None = None) -> int:
     doomed = set(doomed_stories) | {f"{NODE_EVENT}:{e}" for e in doomed_events}
     for sid in doomed_stories:
         doomed.update(by_story.get(sid, []))
+    if (archive is not None and doomed_stories
+            and not _archive_stories(store, index, doomed_stories, doomed_events, by_story,
+                                     archive)):
+        store["counts"]["story_archive_failures"] = int(
+            store["counts"].get("story_archive_failures", 0)) + 1
+        return 0
     for nid in doomed:
         nodes.pop(nid, None)
     store["edges"] = {k: e for k, e in store["edges"].items()
@@ -342,6 +363,42 @@ def evict_stories(store: dict[str, Any], keep: int | None = None) -> int:
     store["counts"]["evicted_stories"] = int(store["counts"]["evicted_stories"]) + len(
         doomed_stories)
     return len(doomed_stories)
+
+
+def _archive_stories(store: Mapping[str, Any], index: Mapping[str, Any],
+                     doomed_stories: set[str], doomed_events: set[str],
+                     by_story: Mapping[str, list[str]], archive: Path) -> bool:
+    """Append each doomed story whole to `archive`. True only when every line was written."""
+    nodes = store["nodes"]
+    at = str(store.get("at") or datetime.now(tz=UTC).isoformat(timespec="seconds"))
+    lines: list[str] = []
+    for sid in sorted(doomed_stories):
+        events = sorted(e for e in doomed_events if index["story_of_event"].get(e) == sid)
+        members = {sid, *by_story.get(sid, []), *(f"{NODE_EVENT}:{e}" for e in events)}
+        lines.append(json.dumps({
+            "evicted_at": at,
+            "reason": f"document cap {MAX_DOCUMENTS}: stalest story out of the live store",
+            "story_id": sid,
+            "nodes": {nid: nodes[nid] for nid in sorted(members) if nid in nodes},
+            "edges": {k: e for k, e in store["edges"].items()
+                      if e["src"] in members or e["dst"] in members},
+            "index": {
+                "story_of_event": dict.fromkeys(events, sid),
+                "event_docs": {e: index["event_docs"][e] for e in events
+                               if e in index["event_docs"]},
+                "entity_stories": {k: s for k, s in index["entity_stories"].items()
+                                   if s == sid},
+                "doc_fps": {k: d for k, d in index["doc_fps"].items() if d in members},
+            },
+        }, ensure_ascii=False, default=str))
+    try:
+        archive.parent.mkdir(parents=True, exist_ok=True)
+        with archive.open("a", encoding="utf-8") as fh:
+            fh.write("\n".join(lines) + "\n")
+            fh.flush()
+    except OSError:
+        return False
+    return True
 
 
 _COUNTS = ("documents", "evidence_units", "copies", "events", "follow_ups", "corroborations",
@@ -383,5 +440,7 @@ def story_report(store: Mapping[str, Any], made: Mapping[str, int], *, rows_read
         "copy_collapse": round(docs / units, 3) if units else eo.UNMEASURED,
         "edges_made_this_pass": {k: int(v) for k, v in made.items()},
         "evicted_stories": int(store["counts"].get("evicted_stories", 0)),
+        "evicted_to": STORY_ARCHIVE_NAME,
+        "story_archive_failures": int(store["counts"].get("story_archive_failures", 0)),
         "stories": stories[:REPORT_STORIES],
     }
