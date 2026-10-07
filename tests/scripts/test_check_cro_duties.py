@@ -293,6 +293,14 @@ def test_a_citation_must_resolve_to_a_timestamped_artifact_a_ledger_row_or_a_com
     assert not ok("reports/JUDGE_COVERAGE.json", tmp_path)            # no timestamp
     assert not ok("reports/ABSENT.json@2026-10-07T11:58:00Z", tmp_path)  # not on this host
     assert not ok("../etc/passwd@2026-10-07T11:58:00Z", tmp_path)
+    assert not ok("/etc/passwd@2026-10-07T11:58:00Z", tmp_path)           # absolute escapes
+    assert not ok(f"{tmp_path}/desks/mt5/reports/JUDGE_COVERAGE.json@2026-10-07T11:58:00Z",
+                  tmp_path)
+    assert not ok("reports@2026-10-07T11:58:00Z", tmp_path)                 # a directory
+    future = (datetime.now(UTC) + timedelta(days=1)).isoformat()
+    assert not ok(f"reports/JUDGE_COVERAGE.json@{future}", tmp_path)       # not yet measured
+    (tmp_path / "desks" / "mt5" / "reports" / "LINK.json").symlink_to("/etc/hostname")
+    assert not ok("reports/LINK.json@2026-10-07T11:58:00Z", tmp_path)       # symlink escape
     assert ok("ledger:noon-2026-10-07", tmp_path) and ok("ledger:noon-1007-01", tmp_path)
     assert not ok("ledger:noon-2026-10-08", tmp_path)
     head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True,

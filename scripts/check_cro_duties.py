@@ -27,7 +27,7 @@ import re
 import subprocess
 import sys
 from collections.abc import Iterable, Mapping
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -342,9 +342,21 @@ def citation_resolves(ev: Any, root: Path = ROOT, ledger: set[str] | None = None
     if m:
         return _sha_resolves(m.group(1), root)
     path, sep, stamp = ev.rpartition("@")
-    if not sep or not path or _parse_ts(stamp) is None or ".." in Path(path).parts:
-        return False
-    return (root / path).is_file() or resolve(path, root).is_file()
+    when = _parse_ts(stamp)
+    if not sep or not path or when is None or when > datetime.now(UTC) + timedelta(minutes=5):
+        return False                    # no stamp, or one from the future, is not evidence
+    rel = Path(path)
+    if rel.is_absolute() or rel.drive or ".." in rel.parts:
+        return False                    # evidence lives in the repo, never outside it
+    top = root.resolve()
+    for cand in (root / rel, resolve(path, root)):
+        try:
+            real = cand.resolve()
+        except OSError:
+            continue
+        if real.is_relative_to(top) and real.is_file():
+            return True
+    return False
 
 
 def _entry_miss(q: Any, text_key: str, root: Path = ROOT,
