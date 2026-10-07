@@ -888,11 +888,13 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/data/strategy_paths.json", "desks/mt5/reports/STRATEGY_PATHS.json",)),
     Node("swap_rejudge", "desks/mt5/research/swap_rejudge.py",
          writes=("desks/mt5/reports/SWAP_REJUDGE.json",)),
+    # Queues look-ahead carry certificates for the judge's re-mint (carry_pit, 2026-10-07). Every
+    # re-judge it causes is an ordinary gauntlet cell, so the gauntlet's own rent line prices it.
     Node("carry_rejudge", "desks/mt5/scripts/queue_carry_rejudge.py",
-         writes=("desks/mt5/data/hypotheses/priority_remint.json",
-                 "desks/mt5/reports/CARRY_REJUDGE.json",),
+         writes=("desks/mt5/data/hypotheses/priority_remint.json",),
          reads=("desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
-                "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json")),
+                "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json"),
+         billed_as=("external_gauntlet",)),
     Node("weak_signals", "desks/mt5/research/weak_signal_compiler.py",
          writes=("desks/mt5/reports/weak_signal_compiler.json",)),
     # The two cycle records `completion` joins onto this graph. Both were read by a node and
