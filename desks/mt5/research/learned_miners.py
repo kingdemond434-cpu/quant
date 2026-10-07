@@ -39,10 +39,9 @@ configuration of both models against ridge on the same features, the naive last-
 and the zero forecast, plus a time-shuffled falsification control, and writes
 `reports/learned_miners_contract.json`. Whatever it shows is what it reports.
 
-SCHEDULING, stated rather than implied: this organ is NOT on the hourly roster. Adding it to
-`hourly_discovery.ORGANS` would divide the same hour among one more organ and shrink every other
-miner's share, which the desk's standing order forbids; the roster change is left to whoever owns
-that budget. It runs once per invocation (`--once`).
+SCHEDULING: this organ runs DAILY as a `daily_cycle` proposer (`daily_cycle._proposers`, which
+calls `run(budget_s=...)`), on its own budget. It is deliberately not on the hourly roster, so it
+takes no share of any hourly miner's time. `--once` runs one pass by hand.
 """
 from __future__ import annotations
 
@@ -457,15 +456,20 @@ def run(budget_s: float = BUDGET_S, models: Sequence[str] = ("gnn", "attention")
                                 n_effective=res["effective_trials"])
                  for r in res["proposals"]]
         res["candidates"] = len(cands)
+        donated_file = False
         if donate and cands:
-            res["donated"] = str(pc.donate(res["source"], cands, res["tests_attempted"]))
+            door = pc.donate(res["source"], cands, res["tests_attempted"])
+            res["donated"] = str(door)
+            # The door can refuse every candidate (lane, blinding, pre-registration) and write no
+            # discovery file; then nothing charged the trials there, so the side ledger must.
+            donated_file = door is not None
             res["donation"] = pc.donation_counts()
         res["rows"] = res["rows"][:200]
         total_proposed += len(cands)
         led = _append_trials([{"generated_utc": out["generated_at"], "source": res["source"],
                                "trial_id": t.trial_id, "family": t.family,
                                "descriptors": dict(t.descriptors),
-                               "donated": bool(donate and cands)} for t in trials],
+                               "donated": donated_file} for t in trials],
                              trials_path or TRIALS)
         res["trial_ledger_error"] = led
         out["miners"][model] = res
@@ -520,19 +524,41 @@ def _cell_screen(bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any],
     for model in MINERS:
         res = mine(model, bars, meta, deadline=time.monotonic() + 3600.0)
         rows = [{k: r.get(k) for k in keep} for r in res["rows"]]
+        tried: dict[str, int] = {}
+        for t in res["_trials"]:
+            sym = str(t.trial_id).split(":", 1)[0]
+            tried[sym] = tried.get(sym, 0) + 1
+        got: dict[str, int] = {}
+        for r in rows:
+            got[str(r.get("symbol"))] = got.get(str(r.get("symbol")), 0) + 1
+        unscreened = {sym: k - got.get(sym, 0) for sym, k in sorted(tried.items())
+                      if k > got.get(sym, 0)}
         rows.sort(key=lambda r: -abs(float(r.get("t_gross") or 0.0)))
         best = rows[0] if rows else None
         n = int(res["tests_attempted"])
         out[model] = {
             "tests_attempted": n, "tests_screened": len(rows),
             "not_screened": n - len(rows), "effective_trials": res["effective_trials"],
+            "not_screened_by_symbol": unscreened,
+            "not_screened_reason": ("tried and CHARGED, but too few forecast signals cleared the "
+                                    "entry threshold on the walk-forward window for the screen to "
+                                    "score them (the symbol's bar history in git is shorter than "
+                                    "the panel's)"),
             "best": best,
             "best_t_deflated_by_attempted": (round(float(deflate_t(float(best["t_gross"]), n)), 3)
                                              if best and best.get("t_gross") is not None
                                              else None),
             "proposed": sum(1 for r in rows if r.get("proposed")),
             "rows": rows}
+    m_union = sum(int(v["tests_attempted"]) for v in out.values())
+    out["union_headline"] = {
+        "m": m_union,
+        "rule": "each miner's best t deflated over the UNION of every test both miners ran",
+        **{model: (round(float(deflate_t(float(v["best"]["t_gross"]), m_union)), 3)
+                   if v.get("best") and v["best"].get("t_gross") is not None else None)
+           for model, v in out.items() if isinstance(v, dict) and "best" in v}}
     return out
+
 
 def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dict[str, Any]:
     """Walk-forward OOS metrics for both miners against their baselines on the bars in git."""
