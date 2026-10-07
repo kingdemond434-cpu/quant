@@ -331,8 +331,9 @@ def _jq_signals(d: Any, pts: list[tuple[datetime, float]], direction: int, hold:
     """One signal per print whose |z| clears the threshold, on the first bar at or after its
     publication + the broker-clock pad (bars carry broker time under a UTC tzinfo)."""
     import pandas as pd
-    from libs.research.release_gain import CLOCK_PAD_H
     from mt5desk.engine import Signal
+
+    from libs.research.release_gain import CLOCK_PAD_H
     idx = d.index
     close = d["close"].to_numpy(dtype=float)
     out: list[Any] = []
