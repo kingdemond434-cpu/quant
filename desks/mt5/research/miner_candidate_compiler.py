@@ -286,6 +286,21 @@ def _seat_of(path: Path, row: dict) -> str:
     return str(row.get("source") or path.parent.name or "unknown")
 
 
+def _intel_seat(path: Path) -> str | None:
+    """The seat directory a donation file sits in under an intelligence root, else None.
+
+    Unlike `_seat_of` this never falls back to the row's `source`: it is the PROVENANCE the
+    candidate carries as `source_seat`, so only the directory the seat door wrote into counts."""
+    for root in INTEL_ROOTS:
+        try:
+            parts = path.relative_to(root).parts
+        except ValueError:
+            continue
+        if len(parts) > 1:
+            return parts[0]
+    return None
+
+
 def _prefix_sha256(path: Path, size: int) -> str:
     """Hash exactly the bytes whose row offset was checkpointed.
 
@@ -529,6 +544,13 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
             if digest in seen:
                 continue
             seen.add(digest)
+            # THE DONATING SEAT RIDES WITH THE ROW (audit 2026-10-07, #139): stamped after the
+            # dedup hash so the same finding from two seats is still one finding, and never over
+            # a seat the row declared itself.
+            if isinstance(row, dict) and not row.get("source_seat"):
+                seat = _intel_seat(path)
+                if seat:
+                    row = {**row, "source_seat": seat}
             source = str(row.get("source") or path.parent.name or "unknown")
             found.append((source, row))
             _POSITIONS.append((str(path), row_index))
@@ -755,6 +777,10 @@ def _candidate_core(symbol: str, family: str, params: dict, source: str, row: di
         # carry the id cannot be counted as the mission's yield, and the acceptance property
         # "the portfolio creates research missions" is measured on exactly that count.
         **({"mission_id": row["mission_id"]} if row.get("mission_id") else {}),
+        # THE SEAT THAT DONATED THE ROW (audit 2026-10-07, #139). discovery_compiler.provenance
+        # carries `source_seat` from intake, and cell_culture_index's lineage walk reads it off the
+        # docket; this door dropped it, so a compiled cell could not name the seat behind it.
+        **({"source_seat": str(row["source_seat"])} if row.get("source_seat") else {}),
         # AND SO DOES THE DONOR'S LINEAGE (2026-09-17). `descendants` donates rows carrying
         # `lineage.root` -- a real `hypothesis_graph` node id -- with the `operator` that made
         # the step, and this function dropped both, so `record_candidates` saw a candidate with
