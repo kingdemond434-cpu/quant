@@ -109,5 +109,6 @@ def test_requested_keys_are_dated_and_resurface_when_stale(tmp_path: Path) -> No
     assert stale and any(r.startswith("REQUESTED_STALE") for r in stale[0]["reasons"])
     assert [i["name"] for i in run("ENTSOE_API_TOKEN")["items"]] == ["ENTSOE_API_TOKEN"]
     # A future date would park the key until then: it is not parked at all (re-audit of #252).
-    assert [i["name"] for i in run("ENTSOE_API_TOKEN@2099-01-01")["items"]] == [
-        "ENTSOE_API_TOKEN"]
+    future = run("ENTSOE_API_TOKEN@2099-01-01")["items"]
+    assert [i["name"] for i in future] == ["ENTSOE_API_TOKEN"]
+    assert any(r.startswith("REQUESTED_FUTURE_DATE") for r in future[0]["reasons"])

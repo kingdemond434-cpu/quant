@@ -160,9 +160,42 @@ def test_a_key_in_a_redirect_path_or_nested_value_is_refused() -> None:
 
 def test_every_gzip_member_and_trailing_bytes_are_scrubbed() -> None:
     import gzip
+    import zlib
     raw = gzip.compress(b'{"ok":1}') + gzip.compress(f'{{"echo":"{KEY}"}}'.encode())
     out = ks.scrub_body(raw, [KEY])
     assert KEY.encode() not in gzip.decompress(out)
     trailing = gzip.compress(b'{"ok":1}') + f"tail {KEY}".encode()
-    out = ks.scrub_body(trailing, [KEY])
-    assert KEY.encode() not in out and KEY.encode() not in gzip.decompress(out)
+    out = ks.scrub_body(trailing, [KEY])          # the text tail stays text, scrubbed
+    assert KEY.encode() not in out and KEY.encode() not in zlib.decompressobj(31).decompress(out)
+
+
+def test_mixed_and_nested_streams_are_each_scrubbed() -> None:
+    """gzip then zlib, zlib then zlib, and a gzip INSIDE a later member (re-audit of #252)."""
+    import gzip
+    import zlib
+    leak = f'{{"echo":"{KEY}"}}'.encode()
+
+    def readable(blob: bytes) -> bytes:
+        """Everything a tolerant reader could decode out of `blob`, recursively."""
+        out, rest = b"", blob
+        while rest:
+            wbits = 31 if rest[:2] == b"\x1f\x8b" else 15 if ks._is_zlib(rest) else 0
+            if not wbits:
+                return out + rest
+            d = zlib.decompressobj(wbits)
+            inner = d.decompress(rest)
+            out += readable(inner) if inner[:2] == b"\x1f\x8b" or ks._is_zlib(inner) else inner
+            rest = d.unused_data
+        return out
+
+    bodies = [gzip.compress(b"ok") + zlib.compress(leak),
+              zlib.compress(b"ok") + zlib.compress(leak),
+              gzip.compress(b"ok") + gzip.compress(gzip.compress(leak))]
+    for body in bodies:
+        assert KEY.encode() in readable(body)
+        assert KEY.encode() not in readable(ks.scrub_body(body, [KEY]))
+
+
+def test_zlib_looking_plain_text_is_scrubbed_as_text() -> None:
+    body = b"x\x9c" + f" plain {KEY}".encode()           # zlib magic, not a zlib stream
+    assert KEY.encode() not in ks.scrub_body(body, [KEY])
