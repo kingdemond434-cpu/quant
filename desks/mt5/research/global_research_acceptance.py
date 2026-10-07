@@ -22,6 +22,12 @@ MAX_RUNTIME_AGE_H = 26.0
 MAX_FUTURE_SKEW_S = 300
 FAIL_STATUSES = {"FAILED", "FAIL", "ERROR", "DEGRADED", "BROKEN", "STALE"}
 PASS_STATUSES = {"OK", "PASS", "PASSED", "SUCCESS", "HEALTHY", "COMPLETE", "COMPLETED"}
+#: Tier-3 rails (LAWS section 4): a spec may NAME these by reference, never declare them as work.
+TIER3_NEVER_EDIT = frozenset({"scripts/run_deadman_switch.py"})
+#: An owner a later session cannot resolve is no owner: "this thread" means whoever reads it.
+_UNRESOLVABLE_OWNER = re.compile(
+    r"^\s*$|\bthis (thread|session|pass)\b|^\s*(tbd|todo|unknown|none|n/?a|\?+)\s*$", re.I)
+_COMMIT = re.compile(r"[0-9a-fA-F]{7,40}")
 
 
 def _atomic(path: Path, doc: dict[str, Any]) -> None:
@@ -113,6 +119,33 @@ def _runtime_proof(path: Path, *, instant: datetime,
             "claimed_release": claimed_release or None, "proof_errors": reasons}, reasons
 
 
+def blocker_state(blocker: dict[str, Any], root: Path) -> tuple[str, list[str]]:
+    """Effective status of one spec blocker: OPEN, CLOSED, or INVALID_CLOSE, plus its defects.
+
+    A declared CLOSED counts only with proof -- the commit that closed it, an artifact path that
+    exists, and the after-metric that artifact shows. Anything less is INVALID_CLOSE, which the
+    scorer treats exactly like OPEN: saying a gap is shut is not evidence that it is.
+    """
+    problems: list[str] = []
+    if _UNRESOLVABLE_OWNER.search(str(blocker.get("owner") or "")):
+        problems.append("owner_missing")
+    if str(blocker.get("status") or "OPEN").upper() != "CLOSED":
+        return "OPEN", problems
+    raw = blocker.get("proof")
+    proof: dict[str, Any] = raw if isinstance(raw, dict) else {}
+    if not _COMMIT.fullmatch(str(proof.get("commit") or "")):
+        problems.append("proof_commit")
+    artifact = str(proof.get("artifact") or "")
+    if not artifact:
+        problems.append("proof_artifact")
+    elif not (root / artifact).exists():
+        problems.append("proof_artifact_absent")
+    if proof.get("after_metric") in (None, "", {}, []):
+        problems.append("proof_after_metric")
+    proven = not any(p.startswith("proof_") for p in problems)
+    return ("CLOSED" if proven else "INVALID_CLOSE"), problems
+
+
 def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT,
           now: datetime | None = None) -> dict[str, Any]:
     instant = now or datetime.now(tz=UTC)
@@ -120,6 +153,9 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
     spec = json.loads(manifest.read_text("utf-8"))
     requirements = list(spec["requirements"])
     loaded_addenda: list[str] = []
+    # Gaps a spec says must stay declared as blockers on named requirements until closed WITH
+    # proof: deleting the blocker line cannot turn the requirement green.
+    required_gaps: dict[str, list[str]] = {}
     for rel in spec.get("addenda") or []:
         addendum_path = root / str(rel)
         if not addendum_path.exists():
@@ -134,6 +170,12 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
         requirements.extend({**r, "specification": name}
                             for r in addendum.get("requirements") or [])
         loaded_addenda.append(str(rel))
+        for gap in addendum.get("tracked_gaps") or []:
+            if isinstance(gap, dict) and gap.get("gap"):
+                for rid in gap.get("requirements") or []:
+                    required_gaps.setdefault(str(rid), []).append(str(gap["gap"]))
+    ownerless: list[str] = []
+    open_blockers = 0
     rows: list[dict[str, Any]] = []
     for req in requirements:
         checks: dict[str, Any] = {}
@@ -161,16 +203,44 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
             runtime_rows.append(proof)
             missing.extend(f"runtime:{rel}:{reason}" for reason in errors)
         checks["runtime"] = runtime_rows
+        for kind in ("implementation", "tests", "consumers", "runtime"):
+            missing.extend(f"tier3_declared:{kind}:{p}" for p in req.get(kind) or []
+                           if str(p) in TIER3_NEVER_EDIT)
+        references = [{"path": str(r.get("path")), "note": r.get("note"),
+                       "exists": (root / str(r.get("path"))).exists()}
+                      for r in req.get("reference_only") or [] if isinstance(r, dict)]
         # A named, still-open defect keeps the requirement PARTIAL however complete its files
         # look: four kinds of evidence present is not proof that the handoff they serve works.
-        blockers = [b for b in req.get("blockers") or [] if isinstance(b, dict)
-                    and str(b.get("status") or "OPEN").upper() != "CLOSED"]
-        missing.extend(f"blocker:{b.get('id')}" for b in blockers)
+        blockers: list[dict[str, Any]] = []
+        closed: list[dict[str, Any]] = []
+        for b in req.get("blockers") or []:
+            if not isinstance(b, dict):
+                continue
+            state, problems = blocker_state(b, root)
+            row_b = {**b, "effective_status": state, "problems": problems}
+            if "owner_missing" in problems:
+                missing.append(f"blocker_owner:{b.get('id')}")
+                ownerless.append(f"{req['id']}:{b.get('id')}")
+            if state == "CLOSED":
+                closed.append(row_b)
+                continue
+            blockers.append(row_b)
+            open_blockers += 1
+            if state == "INVALID_CLOSE":
+                why = ",".join(p for p in problems if p.startswith("proof_"))
+                missing.append(f"blocker:{b.get('id')}:closed_without_proof:{why}")
+            else:
+                missing.append(f"blocker:{b.get('id')}")
+        declared_gaps = {str(b.get("gap")) for b in req.get("blockers") or []
+                         if isinstance(b, dict) and b.get("gap")}
+        missing.extend(f"untracked_gap:{g}" for g in required_gaps.get(str(req["id"]), [])
+                       if g not in declared_gaps)
         rows.append({"id": req["id"], "title": req["title"], "priority": req["priority"],
                      "specification": req.get("specification") or spec["specification"],
                      "lane": req.get("lane") or "UNDECLARED",
                      "status": "CURRENT_VERIFIED" if not missing else "PARTIAL",
-                     "missing_evidence": missing, "blockers": blockers, "checks": checks})
+                     "missing_evidence": missing, "blockers": blockers,
+                     "closed_blockers": closed, "references": references, "checks": checks})
     counts = {status: sum(r["status"] == status for r in rows)
               for status in ("CURRENT_VERIFIED", "PARTIAL")}
     by_spec: dict[str, dict[str, int]] = {}
@@ -185,6 +255,7 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
            # "complete against spec version X" is said only of a version with nothing PARTIAL
            "by_specification": by_spec,
            "complete_against": sorted(k for k, v in by_spec.items() if v["PARTIAL"] == 0),
+           "open_blockers": open_blockers, "ownerless_blockers": ownerless,
            "rows": rows, "unresolved": [r["id"] for r in rows if r["status"] != "CURRENT_VERIFIED"],
            "rule": spec["completion_rule"], "frontier_rule": spec["frontier_rule"]}
     _atomic(report, doc)

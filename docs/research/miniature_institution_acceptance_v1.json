@@ -3,6 +3,23 @@
  "status": "ARCHITECTURAL_ACCEPTANCE",
  "scope": "architecture only: correctness, connection and separation of the institution's functions. It is never evidence of profitable alpha; investment performance is assessed separately.",
  "source": "principal directive 2026-10-06 11:08Z, 12:35Z and 13:20Z; function map /mnt/project-files/reports/acceptance/function_map.json at 2d61e69a1",
+ "blocker_rule": "Every blocker carries a durable owner (a named thread or lane, never 'this thread'). A blocker is CLOSED only with proof {commit, artifact, after_metric}; a CLOSED without it scores as OPEN. A gap listed in tracked_gaps must stay declared as a blocker (by its gap id) on each named requirement until it is closed with proof; removing the line does not turn the requirement green.",
+ "tracked_gaps": [
+  {
+   "gap": "function_map:V5",
+   "requirements": [
+    "MI10"
+   ],
+   "what": "promoter.py writes LIVE rows into data/sleeves.json with no separate eligibility service; a spec missing from the day's validation authority set is recorded as drift, blocking nothing"
+  },
+  {
+   "gap": "function_map:V6",
+   "requirements": [
+    "MI11"
+   ],
+   "what": "6 of 40 LIVE gold sleeves (gold_london_am_v2..v4, gold_afternoon_v2..v4) carry no certificate; validation does not gate the gold book"
+  }
+ ],
  "requirements": [
   {
    "id": "MI01",
@@ -70,8 +87,9 @@
    "blockers": [
     {
      "id": "forecast_unconnected",
-     "owner": "this thread (publisher) + desktop \"Growth allocator overhaul\" session (money path) (consumer)",
-     "why": "forecast_contract.publish() has no production caller and pf_allocator reads no beliefs"
+     "owner": "\"Institutional flow in country packs\" thread (publisher) + desktop \"Growth allocator overhaul\" session (money path) (consumer)",
+     "why": "forecast_contract.publish() has no production caller and pf_allocator reads no beliefs",
+     "status": "OPEN"
     }
    ]
   },
@@ -99,7 +117,8 @@
     {
      "id": "book_key_not_sleeve",
      "owner": "desktop \"Growth allocator overhaul\" session (money path)",
-     "why": "the book is keyed symbol_family_selector; gateway._book_key gives every variant sharing a key the fraction solved for one sleeve"
+     "why": "the book is keyed symbol_family_selector; gateway._book_key gives every variant sharing a key the fraction solved for one sleeve",
+     "status": "OPEN"
     }
    ]
   },
@@ -123,11 +142,18 @@
    "runtime": [
     "desks/mt5/data/fusion_deadman_state.json"
    ],
+   "reference_only": [
+    {
+     "path": "scripts/run_deadman_switch.py",
+     "note": "Tier-3 deadman rail, named by reference only. It is NEVER edited from this lane or by any acceptance organ: modifying or repointing it is principal-gated (LAWS section 4). The scorer refuses any requirement that declares it as implementation, test, consumer or runtime."
+    }
+   ],
    "blockers": [
     {
      "id": "risk_not_independent",
      "owner": "desktop \"Growth allocator overhaul\" session (money path)",
-     "why": "the enforced heat ceiling is the allocator's own heat.envelope; the flatten rail runs dry-run; principal decision required for any new cap (growth governance)"
+     "why": "the enforced heat ceiling is the allocator's own heat.envelope; the flatten rail runs dry-run; principal decision required for any new cap (growth governance)",
+     "status": "OPEN"
     }
    ]
   },
@@ -156,7 +182,8 @@
     {
      "id": "comment_tag_truncation",
      "owner": "desktop \"Growth allocator overhaul\" session (money path)",
-     "why": "the venue tag 'DW'+name is cut to 29 chars; 34/40 LIVE names are longer, so promoter.sleeve_forward_stats sees no trades and five name groups collide"
+     "why": "the venue tag 'DW'+name is cut to 29 chars; 34/40 LIVE names are longer, so promoter.sleeve_forward_stats sees no trades and five name groups collide",
+     "status": "OPEN"
     }
    ]
   },
@@ -182,7 +209,8 @@
     {
      "id": "recovery_drills_unproven",
      "owner": "\"Live control room layer\" thread",
-     "why": "backup restoration, outage and rollback drills have no recorded pass"
+     "why": "backup restoration, outage and rollback drills have no recorded pass",
+     "status": "OPEN"
     }
    ]
   },
@@ -230,17 +258,20 @@
     {
      "id": "cert_no_input_identity",
      "owner": "desktop pass \"Fix the deflated-Sharpe gate\" (external_gauntlet.py is sealed)",
-     "why": "certificates record no data digest, parameters or code release (0/58)"
+     "why": "certificates record no data digest, parameters or code release (0/58)",
+     "status": "OPEN"
     },
     {
      "id": "intent_no_decision_id",
      "owner": "desktop \"Growth allocator overhaul\" session (money path)",
-     "why": "order intents carry no allocation decision id or risk approval id, and are written after order_send"
+     "why": "order intents carry no allocation decision id or risk approval id, and are written after order_send",
+     "status": "OPEN"
     },
     {
      "id": "credit_fuzzy_join",
-     "owner": "this thread",
-     "why": "credit_assignment joins live deals to certificates by substring and drops unmatched deals uncounted"
+     "owner": "\"Institutional flow in country packs\" thread",
+     "why": "credit_assignment joins live deals to certificates by substring and drops unmatched deals uncounted",
+     "status": "OPEN"
     }
    ]
   },
@@ -264,8 +295,16 @@
    "blockers": [
     {
      "id": "raw_terminal_in_research",
-     "owner": "desktop \"Growth allocator overhaul\" session (money path) + this thread (fence)",
-     "why": "about 11 research modules call mt5.initialize() with the raw module, which exposes order_send; libs/execution/broker.py sends outside the door; the fence skips libs/ and side_channels/"
+     "owner": "desktop \"Growth allocator overhaul\" session (money path) + \"Institutional flow in country packs\" thread (fence)",
+     "why": "about 11 research modules call mt5.initialize() with the raw module, which exposes order_send; libs/execution/broker.py sends outside the door; the fence skips libs/ and side_channels/",
+     "status": "OPEN"
+    },
+    {
+     "id": "cert_drift_blocks_nothing",
+     "gap": "function_map:V5",
+     "status": "OPEN",
+     "owner": "desktop \"Growth allocator overhaul\" session (money path)",
+     "why": "function map hop 4 / V5: desks/mt5/research/promoter.py:2053-2077 writes LIVE roster rows from the research tree with no separate eligibility service, and a spec absent from the day's validation authority set is 'recorded as drift, blocking nothing'"
     }
    ]
   },
@@ -292,17 +331,27 @@
     {
      "id": "lockbox_not_evaluate_once",
      "owner": "desktop pass \"Fix the deflated-Sharpe gate\"",
-     "why": "the gauntlet's lockbox is a rolling tail with no evaluate-once ledger"
+     "why": "the gauntlet's lockbox is a rolling tail with no evaluate-once ledger",
+     "status": "OPEN"
     },
     {
      "id": "prescreen_trials_uncharged",
-     "owner": "this thread",
-     "why": "alpha_evolution IC screen and LLM ideation are not charged to the trial ledger"
+     "owner": "\"Institutional flow in country packs\" thread",
+     "why": "alpha_evolution IC screen and LLM ideation are not charged to the trial ledger",
+     "status": "OPEN"
     },
     {
      "id": "replication_fails_open",
      "owner": "desktop pass \"Fix the deflated-Sharpe gate\"",
-     "why": "promotion blocks only on a replication mismatch; blind review fails open"
+     "why": "promotion blocks only on a replication mismatch; blind review fails open",
+     "status": "OPEN"
+    },
+    {
+     "id": "gold_sleeves_uncertified",
+     "gap": "function_map:V6",
+     "status": "OPEN",
+     "owner": "desktop \"Growth allocator overhaul\" session (money path)",
+     "why": "function map hop 4 / V6: 6 of 40 LIVE rows in desks/mt5/data/sleeves.json (gold_london_am_v2..v4, gold_afternoon_v2..v4) have no certificate key; the gold book is hard-coded in the gateway roster (promoter.py:866 GOLD_SLEEVE_NAMES), not certificate-gated"
     }
    ]
   },
@@ -328,8 +377,9 @@
    "blockers": [
     {
      "id": "economics_unjoined",
-     "owner": "this thread",
-     "why": "desk_costs.yaml declares VPS and LLM costs null, run_desk_economics has no live clock, owner attention is unrecorded"
+     "owner": "\"Institutional flow in country packs\" thread",
+     "why": "desk_costs.yaml declares VPS and LLM costs null, run_desk_economics has no live clock, owner attention is unrecorded",
+     "status": "OPEN"
     }
    ]
   }
