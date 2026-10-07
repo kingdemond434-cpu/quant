@@ -424,7 +424,7 @@ def test_a_later_alfred_vintage_does_not_leak_backwards(tmp_path):
 
 
 def test_alfred_is_cross_checked_against_the_publisher(tmp_path):
-    days, vint, pub = _fixture(40)
+    days, vint, pub = _fixture(200)      # 1 bad in 200 is 99.5%: over the 99% bar
     bad = pub.copy()
     bad.iloc[5] += 0.25                                   # one date disagrees: excluded, recorded
     rep = acquisition.ingest_alfred(tmp_path / "a.parquet", bad, _alfred_rows(days, vint),

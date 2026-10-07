@@ -287,3 +287,14 @@ def test_a_certificate_ages_out(tmp_path: Path) -> None:
     cert = pc.certify(_meta(df), df, now=NOW)
     assert not pc.stale(cert, now=NOW + timedelta(days=1))
     assert pc.stale(cert, now=NOW + timedelta(days=200))
+
+
+def test_truncation_measures_cadence_over_distinct_event_times() -> None:
+    """A vintage-carrying series repeats each revised event; the repeats are not a cadence."""
+    days = pd.bdate_range("2025-01-01", periods=60, tz="UTC")
+    idx = days.repeat(2)                                   # every event revised once
+    frame = pd.DataFrame({"value": range(120), "vintage": idx + pd.Timedelta(days=3),
+                          "available_time": idx + pd.Timedelta(days=3)}, index=idx)
+    chk = pc.check_truncation({}, frame, datetime(2026, 1, 1, tzinfo=UTC))
+    assert chk.verdict == pc.VERDICT_PASS, chk.why
+    assert chk.detail["rows"] == 60 and chk.detail["rows_with_repeats"] == 120
