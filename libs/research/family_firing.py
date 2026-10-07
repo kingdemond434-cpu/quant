@@ -21,6 +21,14 @@ every verdict is taken on both, and DEAD needs BOTH to be empty:
   SESSION_TZ_MISMATCH  the market session holds signals and only today's server-hour window
                        misses them -- counted apart and never remapped (pass 2 fixes the filter);
   DEAD                 NEITHER clock holds a signal: the only class a stand-in answers.
+PASS 2 (2026-10-06): THE FILTER MOVED TO THE MARKET CLOCK, SO THE TWO CLOCKS ARE ONE. The shared
+filter (`family_call.session_filter`, sealed patch session_clock_live.v3) now keeps a signal when
+it lies in the market's own session (`session_clock.in_session`), or -- for an ANCHOR-CLOCKED
+family (open, close, gap, rollover: `session_clock.anchor_clocked`) -- between the prior close and
+that market's session end (`session_clock.in_anchored_session`). The oracle measures exactly that
+filter (`filter_sessions` on every record) and a verdict is LIVE or DEAD on it alone.
+LIVE_FILTER_ONLY and SESSION_TZ_MISMATCH are no longer produced; the names stay for the readers
+that count them (they read 0). The old server-hour windows are not consulted by any verdict.
 THE AUDIT OF #145 (2026-09-30) is why: DEAD was first judged on the market clock alone and so
 marked variants dead that fire under the live filter, certified sleeves among them. A guard now
 reads the certificate canon and the verdict evidence (`protected`) and never lets a certified,
@@ -78,24 +86,36 @@ CACHE = DESK / "data" / "family_firing_hours.json"
 #: reads), so a change to the conversion re-measures every key, while an edit to the clock
 #: module's prose, tests or helpers does not void a cache that is still right.
 #: 5: keys carry the symbol and its asset class, and a key is measured on its own symbol only.
-SCHEMA_VERSION = 5
+#: 6: pass 2 -- records carry `filter_sessions` (the shared filter's own count, anchor clock
+#:    included) and `anchor_clocked`; a verdict reads that count alone.
+#: 7: records carry `filter_digest`, a fingerprint of the exact signals the filter keeps per
+#:    session (and of every signal, as `all`), so identical anchored masks are one cell.
+SCHEMA_VERSION = 7
 UNMEASURED = "UNMEASURED"
 LIVE = "LIVE"
 DEAD = "DEAD"
-#: Fires under the filter the desk applies TODAY (`family_call.SESSIONS`, server hours) and never
-#: in the market's own session. It trades as it stands, so it is kept, never remapped, never
-#: written to the dead sidecar and never sorted last.
+#: PRE-PASS-2 CLASS, NO LONGER PRODUCED (2026-10-06): "fires under the old server-hour filter,
+#: never in the market session". The filter is the market clock now (anchor-clocked families keep
+#: their anchor), so a verdict is LIVE or DEAD on it alone. Kept for the readers that count it.
 LIVE_FILTER_ONLY = "LIVE_FILTER_ONLY"
 #: The oracle's hours alone would say DEAD, but the cell holds a ten-gate certificate, a passed
 #: gate verdict or a net-positive verdict. Evidence of trading outranks a measured firing set:
 #: kept exactly as it is and counted, so a nonzero count is a defect in the oracle to chase.
 PROTECTED = "PROTECTED_BY_EVIDENCE"
-#: Dead ONLY because of the clock: the market's own session holds signals, the server-hour
-#: window the shared filter applies today (`family_call.SESSIONS`) holds none. Not remapped --
-#: the fix to the shared filter (desk pass 2) makes it live -- and counted apart.
+#: PRE-PASS-2 CLASS, NO LONGER PRODUCED (2026-10-06): "the market session holds signals, the old
+#: server-hour window none". Pass 2 moved the filter to the market clock, which makes it LIVE.
 TZ_MISMATCH = "SESSION_TZ_MISMATCH"
 #: The family's signals never land in the market's session at all: the cause a remap answers.
 NEVER_FIRES = "NEVER_FIRES_IN_SESSION"
+#: ONE ANCHOR, ONE CELL (coordinator, 2026-10-06). An anchor-clocked family's anchored windows
+#: nest (asia inside london inside ny, all from the prior close), so a once-a-day gap family keeps
+#: the SAME signals in every session: three cells, one set of trades, three trial charges. Session
+#: variants of an anchor-clocked family whose kept signals are identical on the tape
+#: (`filter_digest`) are one cell, keyed by the session its anchor belongs to -- the first, in
+#: `ANCHOR_ORDER`, whose window holds them. A variant whose mask differs is never collapsed, an
+#: UNMEASURED one never, and a protected one (certificate, passed, net-positive) never.
+DUPLICATE = "DUPLICATE_ANCHORED_MASK"
+ANCHOR_ORDER = ("asia", "london", "ny", "all")
 
 #: Signals needed before an empty window is called DEAD. Below it the answer is
 #: UNMEASURED: thirty signals all outside a window is a structure, five is an anecdote.
@@ -151,7 +171,13 @@ def clock_hash(settings: dict[str, Any] | None = None) -> str:
 
 def clock_settings() -> dict[str, Any]:
     return {"server_tz": session_clock.SERVER_TZ, "server_shift_h": session_clock.SERVER_SHIFT_H,
-            "market_sessions": {k: list(v) for k, v in session_clock.MARKET_SESSIONS.items()}}
+            "market_sessions": {k: list(v) for k, v in session_clock.MARKET_SESSIONS.items()},
+            # The anchor rule decides which window a family's count is taken in, so a change to
+            # it re-measures every key.
+            "anchor_families": sorted(session_clock.ANCHOR_FAMILIES),
+            "anchor_name_rule": session_clock.ANCHOR_NAME_RULE,
+            "anchor_params": "never: the judge reads the signal's tag only",
+            "anchor_rule": "prior close (server 00:00) through the market's session end"}
 
 
 #: The cache version: schema + the clock's conversion settings. A cache written under any other
@@ -197,6 +223,26 @@ def market_masks(times: Any) -> dict[str, Any]:
     """Per session, whether each broker-stamped time lies in that market's own session --
     `session_clock.in_session`, the desk's one conversion."""
     return {s: session_clock.in_session(times, s) for s in MARKET_SESSIONS}
+
+
+def _digest(times: Any) -> str:
+    """Order-free fingerprint of a set of signal times: equal digests, equal masks.
+
+    UNIT-FREE: the instants are read as nanoseconds whatever resolution the index carries
+    (pandas 3 builds microsecond and second indexes), so the same signals give the same digest
+    from any bar file -- a bare `.asi8` would hash the resolution, not the times."""
+    import hashlib
+
+    import numpy as np
+    import pandas as pd
+    raw = np.sort(np.asarray(pd.DatetimeIndex(times).as_unit("ns").asi8, dtype=np.int64))
+    return hashlib.sha256(raw.tobytes()).hexdigest()[:20]
+
+
+def filter_masks(times: Any, *, anchored: bool) -> dict[str, Any]:
+    """Per session, whether the shared filter keeps each time: the market session, or the
+    anchored window for an anchor-clocked family (`session_clock.filter_mask`)."""
+    return {s: session_clock.filter_mask(times, s, anchored=anchored) for s in MARKET_SESSIONS}
 
 
 # ------------------------------------------------------------------------------ plumbing
@@ -454,7 +500,13 @@ def _bars(symbol: str, chart: str) -> Any:
 
 
 def _signal_hours(family: str, symbol: str, bars: Any,
-                  params: dict[str, Any]) -> tuple[Counter[int], Counter[str], str]:
+                  params: dict[str, Any]) -> tuple[Counter[int], Counter[str], Counter[str], str]:
+    hrs, market, kept, _dig, why = _signal_profile(family, symbol, bars, params)
+    return hrs, market, kept, why
+
+
+def _signal_profile(family: str, symbol: str, bars: Any, params: dict[str, Any]
+                    ) -> tuple[Counter[int], Counter[str], Counter[str], dict[str, str], str]:
     """Hours of the family's signals on `bars`, called as `external_gauntlet.build_cell` calls
     it: inputs rebuilt by `family_inputs.resolve`, identity keys and the session stripped, the
     cell's modifiers split out and applied. The SESSION FILTER IS NOT APPLIED -- the point is to
@@ -463,10 +515,10 @@ def _signal_hours(family: str, symbol: str, bars: Any,
     from mt5desk import cell_modifiers, family_inputs
     fn = family_fn(family)
     if fn is None:
-        return Counter(), Counter(), "no constructor"
+        return Counter(), Counter(), Counter(), {}, "no constructor"
     extra, why = family_inputs.resolve(symbol, family, params, bars)
     if extra is None:
-        return Counter(), Counter(), f"inputs: {why}"
+        return Counter(), Counter(), Counter(), {}, f"inputs: {why}"
     call = family_inputs.strip_identity_keys(family, params)
     call.pop("session", None)
     call.update(extra)
@@ -492,10 +544,18 @@ def _signal_hours(family: str, symbol: str, bars: Any,
             hrs[int(h)] += 1
             times.append(t)
     market: Counter[str] = Counter()
+    kept: Counter[str] = Counter()
+    digest: dict[str, str] = {}
     if times:
         for s, mask in market_masks(times).items():
             market[s] += int(mask.sum()) if mask is not None else 0
-    return hrs, market, "ok"
+        anchored = session_clock.anchor_clocked(family, params)
+        for s, mask in filter_masks(times, anchored=anchored).items():
+            kept[s] += int(mask.sum()) if mask is not None else 0
+            if mask is not None:
+                digest[s] = _digest([t for t, m in zip(times, mask, strict=True) if m])
+        digest["all"] = _digest(times)
+    return hrs, market, kept, digest, "ok"
 
 
 #: An UNMEASURED answer is retried after this long, or at once on another host: the build box
@@ -540,6 +600,8 @@ def measure(family: str, params: dict[str, Any] | None,
                 "host": _host(), "measured_at": time.time()}
     pooled: Counter[int] = Counter()
     market: Counter[str] = Counter()
+    kept: Counter[str] = Counter()
+    digests: list[dict[str, str]] = []
     used: list[str] = []
     whys: list[str] = []
     for sym in ([own] if _source_chart(own, chart) else []):
@@ -547,15 +609,18 @@ def measure(family: str, params: dict[str, Any] | None,
         if bars is None:
             continue
         try:
-            hrs, mkt, why = _signal_hours(family, sym, bars, p)
+            hrs, mkt, filt, dig, why = _signal_profile(family, sym, bars, p)
         except Exception as exc:
-            hrs, mkt, why = Counter(), Counter(), f"{type(exc).__name__}: {str(exc)[:120]}"
+            hrs, mkt, filt, dig, why = (Counter(), Counter(), Counter(), {},
+                                        f"{type(exc).__name__}: {str(exc)[:120]}")
         if why != "ok":
             whys.append(f"{sym}: {why}")
             continue
         used.append(sym)
         pooled.update(hrs)
         market.update(mkt)
+        kept.update(filt)
+        digests.append(dig)
     n = int(sum(pooled.values()))
     rec: dict[str, Any] = {"chart": chart, "n": n, "symbols": used, "symbol": own,
                            "asset_class": asset_class(own), "per_symbol": True,
@@ -564,6 +629,12 @@ def measure(family: str, params: dict[str, Any] | None,
                            "hours": {str(h): int(c) for h, c in sorted(pooled.items())},
                            "market_sessions": {s: int(market.get(s, 0))
                                                for s in MARKET_SESSIONS},
+                           "anchor_clocked": session_clock.anchor_clocked(family, p),
+                           "filter_sessions": {s: int(kept.get(s, 0)) for s in MARKET_SESSIONS},
+                           # One symbol per key, so one digest set; were there several, the
+                           # per-symbol digests are joined in order and still compare exactly.
+                           "filter_digest": {s: "|".join(d.get(s, "") for d in digests)
+                                             for s in (*MARKET_SESSIONS, "all")},
                            "elapsed_s": round(time.monotonic() - started, 3)}
     if not used:
         rec.update(status=UNMEASURED, why=("; ".join(whys[:3]) or f"no {chart} bars cached"))
@@ -596,23 +667,30 @@ def market_count(rec: dict[str, Any] | None, session: str) -> int | None:
     return int(got) if got is not None else None
 
 
-def verdict(rec: dict[str, Any] | None, session: str) -> str:
-    """LIVE / LIVE_FILTER_ONLY / SESSION_TZ_MISMATCH / DEAD / UNMEASURED for one session.
+def filter_count(rec: dict[str, Any] | None, session: str) -> int | None:
+    """Signals the shared filter keeps in `session`: the record's own `filter_sessions` count
+    (anchor clock included), else -- a record with no such field -- its market-session count."""
+    if not rec or rec.get("status") != "MEASURED":
+        return None
+    got = (rec.get("filter_sessions") or {}).get(session)
+    return int(got) if got is not None else market_count(rec, session)
 
-    DEAD only when NEITHER clock holds a signal: never on today's server-hour filter and never in
-    the market's own session. Filter-only is LIVE_FILTER_ONLY (it trades today); market-only is
-    SESSION_TZ_MISMATCH. The evidence guard (`protected`) is applied by the callers that know the
-    cell's symbol, on top of this."""
+
+def verdict(rec: dict[str, Any] | None, session: str) -> str:
+    """LIVE / DEAD / UNMEASURED for one session, on the filter the desk applies (pass 2).
+
+    DEAD when the shared filter keeps none of the family's signals in that session: the market's
+    own session, or the anchored window for an anchor-clocked family. The evidence guard
+    (`protected`) is applied by the callers that know the cell's symbol, on top of this."""
     s = str(session or "all").lower()
     if s == "all" or s not in sessions():
         return LIVE if rec and rec.get("status") == "MEASURED" else UNMEASURED
-    naive = window_count(rec, s)
-    market = market_count(rec, s) if s in MARKET_SESSIONS else naive
-    if naive is None or market is None:
+    if s not in MARKET_SESSIONS:
         return UNMEASURED
-    if market > 0:
-        return LIVE if naive > 0 else TZ_MISMATCH
-    return LIVE_FILTER_ONLY if naive > 0 else DEAD
+    kept = filter_count(rec, s)
+    if kept is None:
+        return UNMEASURED
+    return LIVE if kept > 0 else DEAD
 
 
 def lookup(family: str, params: dict[str, Any] | None,
@@ -779,6 +857,51 @@ def guarded_verdict(rec: dict[str, Any] | None, session: str, *, symbol: Any = N
     return v
 
 
+# ------------------------------------------------------------------------- one anchor, one cell
+
+
+def mask_digest(rec: dict[str, Any] | None, session: str) -> str | None:
+    """The fingerprint of the signals the filter keeps in `session` (`all`: every signal), or
+    None when unmeasured, unrecorded or empty."""
+    if not rec or rec.get("status") != "MEASURED":
+        return None
+    s = str(session or "all").lower()
+    if s != "all" and not filter_count(rec, s):
+        return None
+    got = (rec.get("filter_digest") or {}).get(s)
+    return str(got) if got else None
+
+
+def anchor_keys(family: str, params: dict[str, Any] | None, sessions_: Iterable[str], *,
+                cache: dict[str, Any] | None = None, symbol: str | None = None,
+                guard: dict[str, Any] | None = None) -> dict[str, str]:
+    """{session: the session whose cell it IS} for an anchor-clocked family: each session maps to
+    the first session in `ANCHOR_ORDER` that keeps the identical signals; itself when its mask is
+    unique, unmeasured or empty, when the family is not anchor-clocked, or when the cell is
+    protected by evidence. Only these mappings ever collapse a cell."""
+    want = [str(x or "all").lower() for x in sessions_]
+    out = {x: x for x in want}
+    base = {k: v for k, v in dict(params or {}).items() if k != "session"}
+    if not session_clock.anchor_clocked(family, base):
+        return out
+    rec = firing(family, base, cache=cache, symbol=symbol)
+    digs = {x: mask_digest(rec, x) for x in ANCHOR_ORDER}
+    for x in want:
+        d = digs.get(x)
+        if d is None or (guard and symbol and protected(guard, symbol, family, base, x)):
+            continue
+        out[x] = next(y for y in ANCHOR_ORDER if digs.get(y) == d)
+    return out
+
+
+def same_cell(family: str, params: dict[str, Any] | None, a: str, b: str, *,
+              cache: dict[str, Any] | None = None, symbol: str | None = None) -> bool:
+    """Are the `a` and `b` variants of an anchor-clocked family one cell (identical masks)?"""
+    keys = anchor_keys(family, params, (a, b), cache=cache, symbol=symbol)
+    sa, sb = str(a or "all").lower(), str(b or "all").lower()
+    return sa != sb and keys[sa] == keys[sb]
+
+
 # ------------------------------------------------------------------------------ remapping
 
 
@@ -823,23 +946,22 @@ def anchor_deltas(rec: dict[str, Any], session: str) -> list[int]:
 
 
 def _predicted_live(rec: dict[str, Any], delta: int, session: str) -> bool:
-    """Would the shifted firing set be LIVE on both clocks? Counted only on the server hours
-    that lie in the market session in every week of the year, so a prediction never leans on
-    a DST edge."""
+    """Would the shifted firing set be LIVE on the shared filter? Counted only on the server hours
+    that lie in the market session in every week of the year -- inside the anchored window too --
+    so a prediction never leans on a DST edge."""
     moved = {(int(h) + delta) % 24: int(c) for h, c in (rec.get("hours") or {}).items()}
     in_market = sum(c for h, c in moved.items() if h in MARKET_SERVER_HOURS.get(session, ()))
-    naive = window_count({**rec, "hours": {str(h): c for h, c in moved.items()}}, session)
-    return bool(in_market and naive)
+    return bool(in_market)
 
 
 def rehome_session(rec: dict[str, Any]) -> str | None:
-    """The session LIVE on both clocks whose market window holds most of the family's signals;
-    None when no named session is live on both (the caller re-homes to `all`)."""
+    """The LIVE session whose filter holds most of the family's signals; None when no named
+    session is live (the caller re-homes to `all`)."""
     best, best_n = None, 0
     for s in SESSION_NAMES:
         if verdict(rec, s) != LIVE:
             continue
-        c = market_count(rec, s) or 0
+        c = filter_count(rec, s) or 0
         if c > best_n:
             best, best_n = s, c
     return best
@@ -895,16 +1017,30 @@ def replacements(family: str, params: dict[str, Any] | None, session: str, *,
 
 def session_cells(family: str, base: dict[str, Any] | None, session_axis: Iterable[str], *,
                   cache: dict[str, Any] | None = None, taken: set[str] | None = None,
-                  symbol: str | None = None) -> list[Slot]:
-    """The producers' door: (session label, params, remap note) for each slot of the axis.
+                  symbol: str | None = None, held: Iterable[str] = ()) -> list[Slot]:
+    """The producers' door: (session label, params, remap note) per DISTINCT cell of the axis.
 
-    ONE CELL PER SLOT, ALWAYS -- the count a producer mints never falls. A LIVE or UNMEASURED
-    slot is minted as it always was. A DEAD slot is minted as its first stand-in that is not
-    already on the axis (or in `taken`); when every stand-in is taken the dead variant itself is
-    minted, marked, exactly as before. Cache-only: a producer never measures at mint time."""
+    ONE CELL PER SLOT -- the count a producer mints never falls -- EXCEPT where two slots of an
+    anchor-clocked family keep identical signals (`anchor_keys`): those are one cell, minted once
+    under the session its anchor belongs to, and a slot identical to a session the caller already
+    holds (`held`) is not minted again. A LIVE or UNMEASURED slot is minted as it always was. A
+    DEAD slot is minted as its first stand-in that is not already on the axis (or in `taken`);
+    when every stand-in is taken the dead variant itself is minted, marked, exactly as before.
+    Cache-only: a producer never measures at mint time."""
     doc = cache if cache is not None else current_cache()
     b = {k: v for k, v in dict(base or {}).items() if k != "session"}
-    axis = list(session_axis)
+    held_s = [str(x or "all").lower() for x in held]
+    raw_axis = [str(x) for x in session_axis]
+    keys = anchor_keys(family, b, [*raw_axis, *held_s], cache=doc, symbol=symbol,
+                       guard=_safe_guard() if symbol else None)
+    kept_keys = {keys[x] for x in held_s}
+    axis = []
+    for x in raw_axis:
+        k = keys[x.lower()]
+        if k in kept_keys:
+            continue                    # the same cell as one already minted or held
+        kept_keys.add(k)
+        axis.append(k if k in raw_axis else x)
     seen: set[str] = set(taken or ())
     planned: list[dict[str, Any]] = []
     for s in axis:
@@ -919,11 +1055,6 @@ def session_cells(family: str, base: dict[str, Any] | None, session_axis: Iterab
         v = "all" if s == "all" else guarded_verdict(
             firing(family, b, cache=doc, symbol=symbol), s, symbol=symbol, family=family, params=b,
             guard=_safe_guard() if symbol else None)
-        if v == TZ_MISMATCH:
-            out.append((s, p, {"dead_session": s, "remapped": False, "cause": TZ_MISMATCH,
-                               "why": "the market session holds signals; only the server-hour "
-                                      "filter applied today misses them (pass 2 fixes it)"}))
-            continue
         if v != DEAD:
             out.append((s, p, None))
             continue
