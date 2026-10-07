@@ -203,7 +203,8 @@ def test_heating_a_c_and_d_funds_their_real_legs() -> None:
     f, rec = bl.split_budget("world_crawler", doc)              # A and C
     assert f > 1.0 and rec["category"] == "C"
     assert bl.split_budget("deep_forest_miner", doc)[1]["category"] == "C"   # producer alias
-    doc_d = {"factors": {}, "budget_split": bl.budget_split({"fired": ["new_clusters_not_surviving"]})}
+    doc_d = {"factors": {},
+             "budget_split": bl.budget_split({"fired": ["new_clusters_not_surviving"]})}
     assert bl.split_budget("falsifier_run", doc_d)[0] > 1.0
     # and the hourly cycle raises the organ's own --budget-s, never lowers it
     assert hc._scale_budget_arg(("--once", "--budget-s", "900"), 1.5) == ("--once", "--budget-s",
@@ -259,8 +260,8 @@ def test_empty_cluster_prior_decay_is_continuous() -> None:
         out = cs._empty_priors([], {("EURUSD", fam): effort}, gy, {})
         vals.append(out[key]["decay"])
     assert vals[0] == 1.0
-    assert all(b <= a + 1e-12 for a, b in zip(vals, vals[1:], strict=False))
-    assert max(a - b for a, b in zip(vals, vals[1:], strict=False)) < 0.05   # no cliff
+    assert all(b <= a + 1e-12 for a, b in itertools.pairwise(vals))
+    assert max(a - b for a, b in itertools.pairwise(vals)) < 0.05   # no cliff
 
 
 def test_rho_is_shrunk_and_c_is_repaired_to_psd() -> None:

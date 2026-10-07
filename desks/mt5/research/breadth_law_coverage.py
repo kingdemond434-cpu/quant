@@ -38,6 +38,7 @@ import ast
 import io
 import json
 import re
+import subprocess
 import tokenize
 from collections import Counter
 from datetime import UTC, datetime
@@ -168,7 +169,7 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0088", COVERED, (f"{CS}::exc.append\\(\"F\"\\)",), ""),
     ("0089", COVERED, (f"{CS}::exc.append\\(\"G\"\\)",), ""),
     ("0090", COVERED, (f"{CS}::exc.append\\(\"H\"\\)",), ""),
-    ("0091", COVERED, (f"{CS}::breadth_exception",),
+    ("0091", COVERED, (f"{CS}::row.get\\(\"breadth_exception\"\\)",),
      "a declared exception is read from the row before any evidence"),
     ("0092", COVERED, (f"{CS}::^INDEPENDENT_RHO", f"{CS}::^def fisher_bounds"),
      "distinctness needs the upper 95% bound within 0.3, never a point difference"),
@@ -187,9 +188,10 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0111", COVERED, (f"{CS}::\"timeframe\": 0.25",),
      "session 1.0 and chart 0.25 of the similarity: neither is assumed independent"),
     ("0112", COVERED, (f"{CS}::\"n_effective_certificates\": round",), ""),
-    ("0113", COVERED, (f"{CS}::nominal certificates ->",), "the funnel line in the map"),
+    ("0113", COVERED, (f"{CS}::\"line\": \\(f\"\\{{n_cert\\}} nominal certificates ->",),
+     "the funnel line in the map"),
     ("0114", COVERED, (f"{CS}::\"n_effective_certificates\": round",
-                       "scripts/check_breadth_mandate.py::NOMINAL_ALONE"), ""),
+                       "scripts/check_breadth_mandate.py::\"status\": \"NOMINAL_ALONE\""), ""),
     ("0115", COVERED, (f"{CS}::def expected_dk",), ""),
     ("0116-0119", COVERED, (f"{BD}::^def boost_for", f"{BD}::unrepresented_asset_factor"),
      "breadth-constrained mode boosts empty payer / info / factor / clock rows"),
@@ -197,7 +199,7 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
      f"value stamped and ordered on the docket; the judge consumes it only once {PATCH}"),
     ("0121", COVERED, (f"{JC}::^def quality_share", f"{JC}::^QUALITY_SHARE_BOUNDS"), ""),
     ("0122-0126", COVERED, (f"{BL}::^def budget_split", f"{BL}::^def split_budget"), ""),
-    ("0127", COVERED, (f"{BL}::quality_degrading",), ""),
+    ("0127", COVERED, (f"{BL}::fired.append\\(\"quality_degrading\"\\)",), ""),
     ("0128", COVERED, (f"{JC}::^QUALITY_SHARE_BOUNDS", f"{BL}::^def budget_split"), ""),
     ("0129", COVERED, (f"{CS}::^def _empty_priors",), "continuous decay with effort"),
     ("0130-0131", COVERED, (f"{CS}::^def novelty_credit", f"{CS}::preregistered"), ""),
@@ -302,7 +304,7 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
      "survived AND a LIVE sleeve on its symbol x family (read-only)"),
     ("0274", PARTIAL, (f"{CS}::\"provisional_breadth_credit\"",),
      "provisional credit published; realised credit needs forward streams"),
-    ("0276", COVERED, (f"{CS}::forward_adjusted_C",), ""),
+    ("0276", COVERED, (f"{CS}::nearest_psd\\(C, \"forward_adjusted_C\"\\)",), ""),
     ("0277", COVERED, (f"{CS}::out\\[\"k_eff_stress\"\\] = keff",), ""),
     ("0278", COVERED, (f"{CS}::n_f = float\\(n_book\\)",
                        f"{CS}::\"expected_delta_k_eff_future_book\""), ""),
@@ -352,7 +354,7 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0363", COVERED, (f"{CS}::\"expected_delta_k_eff\": \\(round",), ""),
     ("0364-0365", COVERED, (f"{BFN}::failures\\[producer\\]\\[gate\\] \\+= 1",
                             f"{CS}::own.setdefault\\(k, \\{{\\}}\\)\\[\"failures\"\\]",
-                            f"{CS}::your candidates failed at"),
+                            f"{CS}::out.append\\(f\"your candidates failed at"),
      "the funnel records each producer's failed cells and the judge's terminal gate; the "
      "published brief carries them into that producer's own record and its prompt lines"),
     ("0441-0448", COVERED, (f"{QD}::^def niche_records", f"{QD}::^NICHE_RECORDS",
@@ -361,7 +363,7 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
      "marginal delta E[log W], local saturation, effective trial spend and remaining "
      "uncertainty; an absent input reads None with its reason (records_unmeasured)"),
     ("0449", COVERED, (f"{CS}::^def _repertoire", f"{CS}::desk_out\\[\"repertoire\"\\]",
-                       f"{CS}::repertoire: "),
+                       f"{CS}::out.append\\(f\"repertoire: "),
      "the QD repertoire map rides the desk brief every producer receives before proposing"),
     ("0366-0375", COVERED, (f"{CS}::\"economic_rationale\"", f"{CS}::\"current_nearest_exposure\"",
                             f"{CS}::\"failure_history\"", f"{CS}::\"reopen_trigger\": \\("),
@@ -393,7 +395,7 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
                             f"{QD}::\"information_source_measured\":"),
      "measured on forward pairs beside the structural share"),
     ("0549", COVERED, (f"{BD}::\"missing_payoff_shapes\": shapes.get",
-                       f"{CS}::missing payoff shapes"),
+                       f"{CS}::out.append\\(\"missing payoff shapes"),
      "published in the mode's priority targets and every producer's brief lines"),
     ("0560", COVERED_SHADOW, (f"{EP}::out\\[\"capacity\"\\] = ", f"{EP}::^def dominated_mask",
                               f"{AB}::pdoc = ep.build\\(\\)"),
@@ -498,7 +500,8 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0340", COVERED, (f"{RA}::^def clear", f"{RA}::^def producer_scores"),
      "two-sided clearing over every department's measured bid; the clip floor is the only "
      "guarantee"),
-    ("0347", COVERED, (f"{BL}::^def exploration_floor", f"{HC}::research/unknown_unknowns.py"),
+    ("0347", COVERED, (f"{BL}::^def exploration_floor",
+                       f"{HC}::_producer\\(\"exogenous_search\", \"research/unknown_u"),
      ""),
     ("0378", COVERED, (f"{CS}::\"n_certificates\": n_cert",), ""),
     ("0381", COVERED, (f"{AB}::cert\\[\"robust_k_eff_book\"\\] = book.get",), ""),
@@ -512,9 +515,11 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0398", COVERED, (f"{CAP}::^def terms",
                        f"{CS}::credit \\*= float\\(base.get\\(\"capacity_factor\""),
      "cost/turnover/capacity terms multiply breadth credit; the judge's cost stages are sealed"),
-    ("0401", COVERED, (f"{HC}::research/unknown_unknowns.py", f"{BL}::^def budget_split"),
+    ("0401", COVERED, (f"{HC}::_producer\\(\"exogenous_search\", \"research/unknown_u",
+                       f"{BL}::^def budget_split"),
      "the D budget (unknown frontier) is never below its floor"),
-    ("0402", COVERED, (f"{HC}::research/world_dataset_hunter.py", f"{BL}::^def budget_split"), ""),
+    ("0402", COVERED, (f"{HC}::\"world_dataset_hunt\", \"research/world_dataset_h",
+                       f"{BL}::^def budget_split"), ""),
     ("0403", COVERED, (f"{HC}::_costed\\(\"representation_forge\"", f"{BL}::^def budget_split"),
      ""),
     ("0412", COVERED, (f"{QD}::^def build_niches", f"{QD}::^def merge_map",
@@ -544,7 +549,7 @@ CLASSIFICATION: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("0525", COVERED, (f"{HC}::_costed\\(\"alpha_recombination\"",), ""),
     ("0531", COVERED, (f"{DE}::out\\[\"exit\"\\].append",), ""),
     ("0541-0543", COVERED, (f"{FRE}::^def residual_z", f"{FRE}::^def run",
-                            f"{HC}::research/factor_residual_engine.py"),
+                            f"{HC}::_producer\\(\"residual_factors\", \"research/factor_r"),
      "residual-first engine over book driver sets (USD/real yield/risk/energy)"),
     ("0544", COVERED, (f"{DAM}::^def mine", f"{DAM}::^def missions"), ""),
     ("0567", COVERED, (f"{MS}::^def routing_table", f"{MS}::^def posterior"), ""),
@@ -574,16 +579,160 @@ def _index() -> dict[int, tuple[str, tuple[str, ...], str]]:
 
 
 _FILES: dict[str, list[str] | None] = {}
-#: Per .py file: line -> the column where a comment starts (or None), and the set of lines that
-#: lie inside a code node (a def/class header, a call, an assignment or a return). None when the
-#: file does not parse -- then no anchor in it can resolve.
-_CODE: dict[str, tuple[dict[int, int], frozenset[int]] | None] = {}
+#: Per .py file: line -> the column where a comment starts, the set of lines that lie inside a
+#: LIVE code node (a def/class header, a call, an assignment or a return), and per line the
+#: column spans of string literals. None when the file does not parse -- then no anchor in it
+#: can resolve.
+_CODE: dict[str, CodeMap | None] = {}
 #: The node kinds an anchor may land on (the audit of 2026-10-07: a comment or a string stub
 #: never satisfies COVERED; the anchor must be a node in the syntax tree).
 CODE_NODES = (ast.Call, ast.Assign, ast.AnnAssign, ast.AugAssign, ast.Return)
+#: A name with at most this many textual occurrences in the repository is checked for a real
+#: (AST, Load) reference; above it the name is plainly in use.
+FEW_OCCURRENCES = 8
 
 
-def _code_map(text: str) -> tuple[dict[int, int], frozenset[int]] | None:
+class CodeMap:
+    """What in one parsed .py file can carry an anchor (the audit of 2026-10-07, second pass):
+
+    comments      line -> the column a comment starts at
+    lines         lines inside a LIVE code node
+    strings       line -> [(start, end)] of string-literal spans: a docstring, an assigned
+                  string, a returned string, an f-string or a call's string argument. A string
+                  used as a dict KEY or a SUBSCRIPT (`r["retarget_to"] = ...`) is a field name,
+                  i.e. code, and is not listed.
+    An anchor match that lies wholly inside a string span is text, not code. DEAD code never
+    counts: a module-level function, class or assigned name nothing in the repository loads,
+    and any statement after a return / raise in the same block."""
+
+    __slots__ = ("comments", "lines", "strings")
+
+    def __init__(self, comments: dict[int, int], lines: frozenset[int],
+                 strings: dict[int, list[tuple[int, int]]]) -> None:
+        self.comments, self.lines, self.strings = comments, lines, strings
+
+    def is_code(self, n: int, start: int, end: int) -> bool:
+        if n not in self.lines or (n in self.comments and start >= self.comments[n]):
+            return False
+        return not any(a <= start and end <= b for a, b in self.strings.get(n, ()))
+
+
+_REFS: dict[str, Any] = {}
+
+
+def _repo_words(root: Path) -> tuple[Counter[str], dict[str, set[str]]]:
+    """Textual occurrences of every identifier across the repository's .py files, and for the
+    rare ones (<= FEW_OCCURRENCES) the files they occur in. Built once per root."""
+    key = str(root)
+    if key in _REFS:
+        return _REFS[key]  # type: ignore[no-any-return]
+    words: Counter[str] = Counter()
+    where: dict[str, set[str]] = {}
+    word = re.compile(r"[A-Za-z_]\w*")
+    files = _py_files(root)
+    for f in files:
+        try:
+            text = f.read_text("utf-8", errors="replace")
+        except OSError:
+            continue
+        for w, c in Counter(word.findall(text)).items():
+            words[w] += c
+            if words[w] <= FEW_OCCURRENCES:
+                where.setdefault(w, set()).add(str(f))
+            else:
+                where.pop(w, None)
+    _REFS[key] = (words, where)
+    return words, where
+
+
+def _py_files(root: Path) -> list[Path]:
+    """The repository's tracked .py files (git), else every .py under the root."""
+    try:
+        r = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "*.py"],
+                           capture_output=True, timeout=60, check=False)
+        names = [n for n in r.stdout.decode("utf-8", "replace").split("\0") if n]
+    except (OSError, subprocess.SubprocessError):
+        names = []
+    if names:
+        return [root / n for n in names]
+    return [p for p in root.rglob("*.py")
+            if not ({"__pycache__", ".git", "node_modules"} & set(p.parts))]
+
+
+def _loaded(name: str, root: Path) -> bool:
+    """Does anything in the repository LOAD `name` (a Name read or an attribute access)?"""
+    words, where = _repo_words(root)
+    if words.get(name, 0) > FEW_OCCURRENCES:
+        return True
+    for f in where.get(name, ()):
+        try:
+            tree = ast.parse(Path(f).read_text("utf-8", errors="replace"))
+        except (OSError, SyntaxError, ValueError):
+            continue
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Name) and node.id == name
+                    and isinstance(node.ctx, ast.Load)) \
+                    or (isinstance(node, ast.Attribute) and node.attr == name):
+                return True
+    return False
+
+
+def _dead_spans(tree: ast.Module, root: Path | None) -> set[int]:
+    """Lines of dead code: unreferenced module-level defs / classes / assigned names (when the
+    repository can be read), and every statement after a return or raise in its block."""
+    dead: set[int] = set()
+
+    def span(n: ast.stmt) -> range:
+        first = min([n.lineno] + [d.lineno for d in getattr(n, "decorator_list", [])])
+        return range(first, (getattr(n, "end_lineno", None) or n.lineno) + 1)
+    if root is not None:
+        for n in tree.body:
+            names: list[str] = []
+            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                names = [n.name]
+            elif isinstance(n, (ast.Assign, ast.AnnAssign)):
+                tg = n.targets if isinstance(n, ast.Assign) else [n.target]
+                names = [t.id for t in tg if isinstance(t, ast.Name)]
+            if names and not any(x.startswith("__") for x in names) \
+                    and not any(_loaded(x, root) for x in names):
+                dead.update(span(n))
+    for node in ast.walk(tree):
+        for field in ("body", "orelse", "finalbody", "handlers"):
+            block = getattr(node, field, None)
+            if not isinstance(block, list):
+                continue
+            for i, st in enumerate(block):
+                if isinstance(st, (ast.Return, ast.Raise)):
+                    for after in block[i + 1:]:
+                        dead.update(span(after))
+                    break
+    return dead
+
+
+def _string_spans(tree: ast.Module, text: str) -> dict[int, list[tuple[int, int]]]:
+    keep: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Dict):
+            keep.update(id(k) for k in node.keys if k is not None)
+        elif isinstance(node, ast.Subscript):
+            keep.add(id(node.slice))
+    lines = text.splitlines()
+    out: dict[int, list[tuple[int, int]]] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Constant, ast.JoinedStr)) \
+                or (isinstance(node, ast.Constant) and not isinstance(node.value, str)) \
+                or id(node) in keep or node.end_lineno is None:
+            continue
+        a, b = node.lineno, node.end_lineno
+        for n in range(a, b + 1):
+            width = len(lines[n - 1]) if n - 1 < len(lines) else 0
+            lo = node.col_offset if n == a else 0
+            hi = (node.end_col_offset or width) if n == b else width
+            out.setdefault(n, []).append((lo, hi))
+    return out
+
+
+def _code_map(text: str, root: Path | None = None) -> CodeMap | None:
     try:
         tree = ast.parse(text)
     except (SyntaxError, ValueError):
@@ -596,6 +745,7 @@ def _code_map(text: str) -> tuple[dict[int, int], frozenset[int]] | None:
             lines.update(range(first, max(body0, node.lineno + 1)))
         elif isinstance(node, CODE_NODES):
             lines.update(range(node.lineno, (node.end_lineno or node.lineno) + 1))
+    lines -= _dead_spans(tree, root)
     comments: dict[int, int] = {}
     try:
         for tok in tokenize.generate_tokens(io.StringIO(text).readline):
@@ -603,7 +753,7 @@ def _code_map(text: str) -> tuple[dict[int, int], frozenset[int]] | None:
                 comments[tok.start[0]] = tok.start[1]
     except (tokenize.TokenError, IndentationError):                     # pragma: no cover
         return None
-    return comments, frozenset(lines)
+    return CodeMap(comments, frozenset(lines), _string_spans(tree, text))
 
 
 def is_code_anchor(anchor: str) -> bool:
@@ -631,7 +781,7 @@ def resolve(anchor: str, root: Path | None = None) -> str | None:
         else:
             _FILES[key] = text.splitlines()
             if path.endswith(".py"):
-                _CODE[key] = _code_map(text)
+                _CODE[key] = _code_map(text, base)
     lines = _FILES[key]
     if lines is None:
         return None
@@ -645,10 +795,9 @@ def resolve(anchor: str, root: Path | None = None) -> str | None:
         m = rx.search(line)
         if not m:
             continue
-        if code is not None:
-            comments, ok = code
-            if n not in ok or (n in comments and m.start() >= comments[n]):
-                continue
+        if code is not None and not any(code.is_code(n, x.start(), x.end())
+                                        for x in rx.finditer(line)):
+            continue
         return f"{path}:{n}"
     return None
 

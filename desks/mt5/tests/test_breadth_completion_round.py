@@ -431,3 +431,58 @@ def test_qd_distance_reads_the_forward_profile() -> None:
     assert c["turnover"]["value"] == 0.3 and c["holding_time_distribution"]["value"] == 0.4
     assert c["spectral_signature"]["value"] is None
     assert c["pnl_correlation"]["value"] is None
+
+
+# ------------------------------------------------------------------ anchors must be live code
+def _stub_tree(root: Path, kind: str) -> int:
+    """Every anchored .py file replaced by its own text held as a string: an assigned
+    triple-quoted `_STUB`, or a dead function returning one string per line."""
+    paths = {a.partition("::")[0] for _s, _st, anchors, _n in blc.CLASSIFICATION
+             for a in anchors if a.partition("::")[0].endswith(".py")}
+    for rel in paths:
+        src = (ROOT / rel).read_text("utf-8", errors="replace")
+        dst = root / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if kind == "stub":
+            body = src.replace("\\", "/").replace('"""', "'''")
+            dst.write_text(f'_STUB = """\n{body}\n"""\n', "utf-8")
+        else:
+            lines = "".join(f"        {ln!r},\n" for ln in src.splitlines())
+            dst.write_text(f"def _never_called():\n    return (\n{lines}    )\n", "utf-8")
+    return len(paths)
+
+
+def test_a_string_stub_recovers_no_row(tmp_path: Path) -> None:
+    assert _stub_tree(tmp_path, "stub") > 10
+    doc = blc.build(root=tmp_path)
+    got = [r["id"] for r in doc["rows"] if r["status"] in (blc.COVERED, blc.COVERED_SHADOW)]
+    assert got == []
+
+
+def test_a_dead_function_returning_anchor_strings_recovers_no_row(tmp_path: Path) -> None:
+    _stub_tree(tmp_path, "dead")
+    doc = blc.build(root=tmp_path)
+    got = [r["id"] for r in doc["rows"] if r["status"] in (blc.COVERED, blc.COVERED_SHADOW)]
+    assert got == []
+
+
+def test_dead_code_and_strings_never_resolve_but_live_code_does(tmp_path: Path) -> None:
+    (tmp_path / "m.py").write_text(
+        'X = "breadth_marker_alpha"\n'
+        "def _unused():\n"
+        "    return compute_marker_beta()\n"
+        "def used():\n"
+        "    return 1\n"
+        "    compute_marker_gamma()\n"
+        "def compute_marker_delta():\n"
+        "    return used()\n"
+        "VALUE = compute_marker_delta()\n"
+        'R = {"field_marker": 1}\n'
+        "print(VALUE, R, X)\n", "utf-8")
+    blc._FILES.clear()
+    blc._CODE.clear()
+    assert blc.resolve("m.py::breadth_marker_alpha", tmp_path) is None     # assigned string
+    assert blc.resolve("m.py::compute_marker_beta", tmp_path) is None      # dead function
+    assert blc.resolve("m.py::compute_marker_gamma", tmp_path) is None     # after return
+    assert blc.resolve("m.py::VALUE = compute_marker_delta", tmp_path) == "m.py:9"
+    assert blc.resolve("m.py::\"field_marker\"", tmp_path) == "m.py:10"    # a dict key
