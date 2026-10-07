@@ -105,6 +105,27 @@ def test_row_without_module_keeps_audit(tmp_path: Path) -> None:
     assert _run(t, [_row(state="BLOCKED")])["rows"][0]["state"] == "BLOCKED"
 
 
+def test_blocked_and_unmeasured_never_move_on_a_shared_fresh_artifact(tmp_path: Path) -> None:
+    t = _tree(tmp_path, {"libs/fx.py": "def f(): pass\n",
+                         "desks/mt5/reports/FX.json": _stamped(NOW)})
+    for st in ("BLOCKED", "UNMEASURED"):
+        row = _row(state=st, module=["libs/fx.py"], audit_legs=["fx_leg"],
+                   output_artifacts=["desks/mt5/reports/FX.json"])
+        assert _run(t, [row])["rows"][0]["state"] == st
+
+
+def test_atomic_write_never_follows_a_planted_tmp_symlink(tmp_path: Path) -> None:
+    victim = tmp_path / "victim.txt"
+    victim.write_text("keep")
+    out = tmp_path / "OUT.json"
+    (tmp_path / "OUT.json.tmp").symlink_to(victim)
+    (tmp_path / ".OUT.json.tmp").symlink_to(victim)
+    ma.atomic_write(out, "new")
+    assert out.read_text() == "new" and victim.read_text() == "keep"
+    assert not [p for p in tmp_path.iterdir() if p.name.startswith(".OUT.json.") and
+                not p.is_symlink()]
+
+
 def test_claim_moves_row_only_as_far_as_it_verifies(tmp_path: Path) -> None:
     t = _tree(tmp_path, {"libs/fx.py": "def build():\n    pass\n",
                          "tests/test_fx.py": "from libs import fx\n",

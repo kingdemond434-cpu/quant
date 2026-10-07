@@ -194,7 +194,7 @@
   "mandate_audit": {
    "hypothesis": "Re-grading every audited mandate row hourly from the tree and the box's own artifacts makes progress and regressions on the three standing mandates visible without a hand re-audit, so owners close ABSENT and CODED rows faster and a deleted module is caught the hour it goes.",
    "metric": {
-    "gain": "COVERAGE",
+    "gain": "PRODUCTIVITY",
     "metric": "share_at_least_scheduled",
     "better": "up",
     "organ": "report:MANDATE_AUDIT.json"

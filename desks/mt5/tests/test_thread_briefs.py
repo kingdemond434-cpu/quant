@@ -103,6 +103,16 @@ def test_blockers_counted_once_per_row(tmp_path: Path) -> None:
     assert "- (2) no vol feed" in text
 
 
+def test_titles_that_slug_alike_get_separate_files(tmp_path: Path) -> None:
+    a, b = "Live control room", "Live control-room"
+    threads = {a: {"title": a}, b: {"title": b}}
+    idx = tb.write({"rows": []}, tmp_path, now=NOW, prs=None, pm=[], threads=threads)
+    files = {t["title"]: t["file"] for t in idx["threads"]}
+    assert files[a] != files[b]
+    assert (tmp_path / files[a]).read_text().startswith(f"# {a}:")
+    assert (tmp_path / files[b]).read_text().startswith(f"# {b}:")
+
+
 def test_committed_inputs_load_and_cover_every_owner() -> None:
     pm = tb.load_pm()
     threads = tb.load_threads()

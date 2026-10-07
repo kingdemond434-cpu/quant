@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import hashlib
 import json
 import re
 import shutil
@@ -38,6 +39,11 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+try:
+    from research.mandate_audit import atomic_write
+except ImportError:                      # run as a script from research/
+    from mandate_audit import atomic_write  # type: ignore[no-redef]
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
@@ -229,19 +235,24 @@ def write(audit: dict[str, Any], out_dir: Path = OUT_DIR, notes_dir: Path | None
     titles = sorted({r.get("owner_thread") or "UNOWNED" for r in rows}
                     | {p.get("owner_thread") or "UNOWNED" for p in pm} | set(threads))
     out_dir.mkdir(parents=True, exist_ok=True)
+    slugs: dict[str, str] = {}
+    for title in titles:                 # two titles that slug alike never share one file
+        s = slug(title)
+        if s in slugs.values():
+            s = f"{s}-{hashlib.sha1(title.encode()).hexdigest()[:6]}"
+        slugs[title] = s
     index = []
     for title in titles:
         v = thread_view(title, rows, pm, pr_list if isinstance(pr_list, list) else None,
                         threads.get(title, {}), now)
+        v["slug"] = slugs[title]
         note_p = notes_dir / f"{v['slug']}.md"
         try:
             note = note_p.read_text("utf-8")
         except OSError:
             note = None
         text = render(v, str(audit.get("generated_utc")), now, note)
-        tmp = out_dir / f".{v['slug']}.md.tmp"
-        tmp.write_text(text, "utf-8")
-        tmp.replace(out_dir / f"{v['slug']}.md")
+        atomic_write(out_dir / f"{v['slug']}.md", text)
         index.append({"title": title, "file": f"{v['slug']}.md", "open_rows": v["open_rows"],
                       "pm_open": len(v["pm_open"]),
                       "prs": None if v["prs"] is None else len(v["prs"]),
@@ -249,9 +260,7 @@ def write(audit: dict[str, Any], out_dir: Path = OUT_DIR, notes_dir: Path | None
     doc = {"generated_utc": now.isoformat(timespec="seconds"),
            "audit_generated_utc": audit.get("generated_utc"),
            "prs_measured": isinstance(pr_list, list), "threads": index}
-    tmp = out_dir / ".INDEX.json.tmp"
-    tmp.write_text(json.dumps(doc, indent=1), "utf-8")
-    tmp.replace(out_dir / "INDEX.json")
+    atomic_write(out_dir / "INDEX.json", json.dumps(doc, indent=1))
     return doc
 
 

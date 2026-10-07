@@ -5564,7 +5564,8 @@ def main() -> None:
         "recovery_drills", "research/recovery_drills.py"))
     # THE MANDATE AUDIT (ASIA-0931, 2026-10-06): the 3,601 audited mandate rows re-graded from
     # the tree and this host's artifacts -- ABSENT/CODED/SCHEDULED/RUNNING measured, evidence
-    # stages kept and flagged stale. Read by the CRO pass (STEP 4B D13/D41).
+    # stages kept and flagged stale. Read by the CRO pass (STEP 4B D13/D41). The same pass writes
+    # one brief per owner thread (research/thread_briefs.py, MISC-18/MISC-22).
     mda = _costed("mandate_audit", lambda: _producer(
         "mandate_audit", "research/mandate_audit.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(

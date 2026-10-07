@@ -37,7 +37,8 @@ and moves a row only on evidence about THAT row:
 WHAT IT NEVER DOES. It does not promote a row past RUNNING: PRODUCING_DATA, PRODUCING_CELLS,
 JUDGED, FORWARD, LIVE and PROVEN need evidence (cells, verdicts, fills) a file cannot show, so
 those audited states are KEPT and marked `evidence_stale` when none of their output artifacts is
-fresh here. BLOCKED and UNMEASURED stay unless their own artifact runs. A row that names no
+fresh here. BLOCKED and UNMEASURED stay: their artifacts are shared with other rows, so a fresh
+one says nothing about the blocker. A row that names no
 module keeps its audited state with `measured: UNMEASURED` (L1.28a).
 
 Writes desks/mt5/reports/MANDATE_AUDIT.json, then one brief per owner thread
@@ -47,10 +48,13 @@ the unfinished-work tracker.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import gzip
 import json
+import os
 import re
 import subprocess
+import tempfile
 from collections import Counter
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -83,6 +87,23 @@ EVIDENCE_STAGES: tuple[str, ...] = (
 _STAMPS = ("generated_utc", "generated_at", "at", "checked_at", "measured_at", "ts")
 _LEG_RE = re.compile(r'_costed\(\s*"([A-Za-z0-9_]+)"')
 _WORD_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{2,}")
+
+
+def atomic_write(path: Path, text: str) -> None:
+    """Write via a fresh O_EXCL temp file beside `path`, then rename over it.
+
+    A fixed `<name>.tmp` let a symlink planted at that name redirect the write, and let two
+    concurrent passes interleave in one temp file; mkstemp's name is new and exclusive."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(text)
+        os.replace(tmp, path)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp)
+        raise
 
 
 def load_baseline(path: Path = BASELINE) -> dict[str, Any]:
@@ -259,8 +280,9 @@ def grade(audited: str, m: dict[str, Any], claim_stage: str | None) -> tuple[str
         state, why = "CODED", "regressed: no leg the audit credited still runs"
     if state == "SCHEDULED" and m["artifacts_fresh"]:
         state, why = "RUNNING", f"scheduled and {m['artifacts_fresh']} output artifact(s) fresh"
-    if audited in ("BLOCKED", "UNMEASURED") and m["legs_running"] and m["artifacts_fresh"]:
-        state, why = "RUNNING", "its leg runs and its output artifact is fresh"
+    # BLOCKED and UNMEASURED never move on a fresh artifact: the artifacts they name are shared
+    # with other rows (ASIA-0358/0390/0391/0465 named reports that run for other reasons), so a
+    # fresh one says nothing about the blocker. A re-audit or the owner's evidence moves them.
     if claim_stage and state in CODE_STAGES and (
             CODE_STAGES.index(claim_stage) > CODE_STAGES.index(state)):
         state, why = claim_stage, "verified claim"
@@ -342,9 +364,7 @@ def main(argv: list[str] | None = None) -> int:
     doc = build()
     if not a.dry_run:
         OUT.parent.mkdir(parents=True, exist_ok=True)
-        tmp = OUT.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
-        tmp.replace(OUT)
+        atomic_write(OUT, json.dumps(doc, indent=1, default=str))
         try:                             # the briefs never cost the audit its publish
             try:
                 from research import thread_briefs
