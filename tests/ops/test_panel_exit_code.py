@@ -46,6 +46,9 @@ def _fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, providers: list[di
     # No network: the credit pre-check degrades through its own except and prints "unavailable".
     monkeypatch.setattr(panel.urllib.request, "urlopen",
                         lambda *a, **k: (_ for _ in ()).throw(OSError("no network in tests")))
+    from libs.data import keyed_sources   # the keyed calls go through the redirect guard
+    monkeypatch.setattr(keyed_sources, "keyed_urlopen",
+                        lambda *a, **k: (_ for _ in ()).throw(OSError("no network in tests")))
     # Absolute-path live stores -- see the module docstring.
     monkeypatch.setattr(bac, "MANIFEST", tmp_path / "audit_coverage.json")
     monkeypatch.setattr(bac, "audit_payload", lambda: ("", []))
