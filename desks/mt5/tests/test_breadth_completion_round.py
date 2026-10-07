@@ -182,7 +182,7 @@ def test_funnel_names_each_producers_failures_by_terminal_gate() -> None:
 def test_qd_niche_records_best_of_each_kind_and_unmeasured_with_reason() -> None:
     import qd_frontier as qd
     a = {"instrument": "EURUSD", "family": "carry", "exp_r": 0.2, "n": 25, "gate_depth": 0.6}
-    b = {"instrument": "GBPUSD", "family": "carry", "exp_r": 0.1, "n": 100, "gate_depth": 0.9}
+    b = {"instrument": "GBPUSD", "family": "carry", "exp_r": 0.05, "n": 100, "gate_depth": 0.9}
     key = qd.niche_key(qd.niche_of(a))
     assert key == qd.niche_key(qd.niche_of(b))
     niches = {key: {"elite": None, "n_cells_tried": 2}, "empty": {"elite": None,
