@@ -213,6 +213,11 @@ LEG_LAYER: dict[str, str] = {
     "ws_regime_probabilities": "information",
     "ws_news_hawkes": "information",
     "ws_latent_states": "information",
+    "ws_implied_move": "information",
+    "ws_taiwan_options": "information",
+    "ws_fetch_alfred": "information",
+    # whether every data path carries its time facts measures the desk itself: meta
+    "ws_pit_audit": "meta",
     # Whether the desk has stopped placing without saying so is a measurement of its own
     # execution wiring, not an act on the book: meta.
     "placement_interlock": "meta",

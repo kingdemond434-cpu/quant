@@ -246,8 +246,22 @@ def hourly_leg_specs() -> list[ComponentSpec]:
     dept = dict(getattr(mod, "LEG_DEPARTMENT", {}) or {})
     budget = dict(getattr(mod, "LEG_BUDGET_SEC", {}) or {})
     default_budget = int(getattr(mod, "SEARCH_BUDGET_SEC", 720) or 720)
-    producers = _producer_calls()
-    ledger = _ledger_outputs()
+    producers = dict(_producer_calls())
+    ledger = dict(_ledger_outputs())                      # a copy: the cached one stays clean
+    ws_cadence: dict[str, int] = {}
+    # World-sensor legs run through ONE helper (`world_sensor(name)`) whose `_producer` call the
+    # AST cannot resolve, so their script, args and report are read from the table itself
+    # (audit #15: without this every ws_* leg read code-less and its script unclocked).
+    for leg, row in dict(getattr(mod, "WORLD_SENSOR_LEGS", {}) or {}).items():
+        try:
+            w_script, w_args, _every_h, w_report = row
+        except (TypeError, ValueError):
+            continue
+        producers.setdefault(leg, (str(w_script), tuple(str(a) for a in w_args)))
+        # the helper skips the leg while its report is younger than `every_h`: that IS its cadence
+        ws_cadence[leg] = max(3600, int(float(_every_h) * 3600))
+        ledger.setdefault(leg, {"artifacts": (f"desks/mt5/reports/{w_report}",),
+                                "declared": f"desks/mt5/reports/{w_report}"})
     specs: list[ComponentSpec] = []
     for leg in leg_names():
         department = dept.get(leg, "rest")
@@ -269,7 +283,7 @@ def hourly_leg_specs() -> list[ComponentSpec]:
             outputs=tuple(decl.get("artifacts") or ()),
             consumers=(str(decl["consumer"]),) if decl.get("consumer") else (),
             dependencies=(f"resident:dept_{department}",),
-            cadence_s=3600, timeout_s=timeout,
+            cadence_s=ws_cadence.get(leg, 3600), timeout_s=timeout,
             progress_metric="leg_completions",
             production_args=args,
             expected_artifact_schema=str(decl.get("declared") or UNMEASURED),
@@ -287,7 +301,7 @@ def hourly_leg_specs() -> list[ComponentSpec]:
             criticality="optional",
             resource_budget={"budget_s": timeout, "cpu": "below_normal"},
             schedule=LEG_TASK_CLOCK.get(leg, f"hourly_cycle:{leg}"),
-            artifact_class="hourly",
+            artifact_class=_class_for_cadence(ws_cadence.get(leg, 3600)),
             notes=(f"department {department}; clocked by box task {LEG_TASK_CLOCK[leg]} "
                    f"(also costed as hourly leg {leg})" if leg in LEG_TASK_CLOCK
                    else f"department {department}")))

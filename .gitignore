@@ -485,6 +485,13 @@ desks/mt5/data/vol_archive/reference/
 !desks/mt5/reports/REGIME_PROBABILITIES.json
 !desks/mt5/reports/NEWS_HAWKES.json
 !desks/mt5/reports/LATENT_STATES.json
+!desks/mt5/reports/IMPLIED_MOVE.json
+!desks/mt5/reports/TAIWAN_OPTIONS.json
+!desks/mt5/reports/PIT_AUDIT.json
+!desks/mt5/reports/alfred_vintages.json
+!desks/mt5/reports/WORLD_CAUSAL_GRAPH.json
+# TAIFEX put/call history: box-local raw input (terms unread); TAIWAN_OPTIONS.json carries it.
+desks/mt5/data/taifex/
 # Option-chain snapshots (gzip per-expiry summaries), the feature history and the 6h fetch state
 # are box-local and grow every six hours; the lake series and reports/OPTION_CHAINS.json carry them.
 desks/mt5/data/option_chains/

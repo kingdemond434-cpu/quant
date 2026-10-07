@@ -884,6 +884,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries", "sensor_ledger",
     "ws_vol_conditioner", "ws_option_chains", "ws_priced_in", "ws_name_sentiment",
     "ws_model_disagreement", "ws_regime_probabilities", "ws_news_hawkes", "ws_latent_states",
+    "ws_implied_move", "ws_taiwan_options", "ws_fetch_alfred", "ws_pit_audit",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -2199,7 +2200,9 @@ def causal_graph() -> dict:
     most: `beta(rates -> gold)` is state-dependent, so a graph fitted weeks ago describes a world
     the book is no longer being held in.
     """
-    return _producer("world_causal_graph", "research/world_causal_graph.py")
+    # the producer name IS the leg name: the component registry maps a leg to its script by it,
+    # and under "world_causal_graph" the leg read as code-less and the script as unclocked (#15)
+    return _producer("causal_graph", "research/world_causal_graph.py")
 
 
 #: The worker name this cycle claims under. One name, so a lease abandoned by a crashed pass is
@@ -2910,9 +2913,19 @@ WORLD_SENSOR_LEGS: dict[str, tuple[str, tuple[str, ...], float, str]] = {
     "ws_model_disagreement": ("macro/model_disagreement.py",
                               ("--budget-s", "900", "--heavy-every", "5", "--days", "750"), 20.0,
                               "MODEL_DISAGREEMENT.json"),
-    "ws_regime_probabilities": ("macro/regime_probabilities.py", ("--budget-s", "600", "--days", "1500"), 20.0, "REGIME_PROBABILITIES.json"),
+    "ws_regime_probabilities": ("macro/regime_probabilities.py",
+                                ("--budget-s", "600", "--days", "1500"), 20.0,
+                                "REGIME_PROBABILITIES.json"),
     "ws_news_hawkes": ("macro/news_hawkes.py", (), 20.0, "NEWS_HAWKES.json"),
     "ws_latent_states": ("macro/latent_states.py", (), 20.0, "LATENT_STATES.json"),
+    "ws_implied_move": ("macro/implied_move.py", (), 20.0, "IMPLIED_MOVE.json"),
+    "ws_taiwan_options": ("macro/taiwan_options.py", (), 20.0, "TAIWAN_OPTIONS.json"),
+    # audit #15 (2026-10-06): ALFRED vintages and the PIT audit were executables on no clock.
+    # fetch_alfred re-reads a series file older than a day (ALFRED never deletes a vintage, so
+    # the new file holds every old one); pit_audit commits its verdict with --apply.
+    "ws_fetch_alfred": ("research/fetch_alfred.py", ("--max-age-h=24",), 20.0,
+                        "alfred_vintages.json"),
+    "ws_pit_audit": ("research/pit_audit.py", ("--apply",), 20.0, "PIT_AUDIT.json"),
 }
 
 
@@ -3829,7 +3842,14 @@ def main() -> None:
            "ws_news_hawkes": _costed("ws_news_hawkes",
                           lambda: world_sensor("ws_news_hawkes")),
            "ws_latent_states": _costed("ws_latent_states",
-                          lambda: world_sensor("ws_latent_states"))}
+                          lambda: world_sensor("ws_latent_states")),
+           "ws_implied_move": _costed("ws_implied_move",
+                                      lambda: world_sensor("ws_implied_move")),
+           "ws_taiwan_options": _costed("ws_taiwan_options",
+                                        lambda: world_sensor("ws_taiwan_options")),
+           "ws_fetch_alfred": _costed("ws_fetch_alfred",
+                                      lambda: world_sensor("ws_fetch_alfred")),
+           "ws_pit_audit": _costed("ws_pit_audit", lambda: world_sensor("ws_pit_audit"))}
     pil = _costed("placement_interlock", placement_interlock)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back

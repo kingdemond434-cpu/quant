@@ -26,6 +26,8 @@ TERMS_HELD: dict[str, str] = {
     "tradingeconomics": "Trading Economics calendar: commercial terms, machine use not cleared",
     "yahoo": "Yahoo Finance chart API: its terms restrict automated use; machine use UNCLEARED",
     "cboe": "CBOE index values (VIX family): CBOE copyright; machine use for trading UNCLEARED",
+    "taifex": "TAIFEX statistics (TXO put/call): site terms unread (the cloud proxy refuses the "
+              "host); machine use UNCLEARED",
 }
 
 
