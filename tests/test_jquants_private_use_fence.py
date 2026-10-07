@@ -198,11 +198,14 @@ def _leaks_in(text: str) -> list[str]:
     return [s for s in PLANTED if s in text]
 
 
-def _run_hourly_leg(monkeypatch: pytest.MonkeyPatch, C: Any) -> dict[str, Any]:
+def _run_hourly_leg(monkeypatch: pytest.MonkeyPatch, C: Any,
+                    streams: list[str] | None = None) -> dict[str, Any]:
     """hourly_cycle's REAL `asia_collector` leg, with its subprocess replaced by the collector run
     in-process (so the planted transport and scratch paths apply) and its stdout and stderr
     captured exactly as `_producer` captures a child's. Returns the leg's result dict -- the
-    thing hourly_cycle writes into sync_marker.json."""
+    thing hourly_cycle writes into sync_marker.json -- and appends the FULL stdout and stderr to
+    `streams`: the tail is only the last few hundred characters, so a fence on the tail alone
+    passes a value printed early in the pass."""
     import contextlib
     import io
 
@@ -216,6 +219,8 @@ def _run_hourly_leg(monkeypatch: pytest.MonkeyPatch, C: Any) -> dict[str, Any]:
                 rc = C.main([str(a) for a in argv[script + 1:]] + ["--id", "jpx_jquants"])
             except SystemExit as exc:                          # pragma: no cover
                 rc = int(exc.code or 0)
+        if streams is not None:
+            streams.extend((out.getvalue(), err.getvalue()))
         return subprocess.CompletedProcess(argv, rc, out.getvalue(), err.getvalue())
 
     monkeypatch.setattr(H, "_run_tree", fake_run)
@@ -237,9 +242,12 @@ def test_hourly_leg_tail_carries_no_private_value(monkeypatch: pytest.MonkeyPatc
                                                   scratch_repo: Path) -> None:
     """(a) The hourly leg that runs the pass keeps its stdout/stderr tail in sync_marker.json."""
     C = _plant(monkeypatch, scratch_repo)
-    leg = _run_hourly_leg(monkeypatch, C)
+    streams: list[str] = []
+    leg = _run_hourly_leg(monkeypatch, C, streams)
     assert leg.get("exit_code") == 0 and "jpx_jquants" in str(leg.get("tail"))
+    assert streams and "jpx_jquants" in streams[0]
     assert not _leaks_in(json.dumps(leg)), "a private value reached the leg's recorded tail"
+    assert not _leaks_in("\n".join(streams)), "a private value reached the leg's stdout/stderr"
 
 
 def test_a_planted_print_is_caught(monkeypatch: pytest.MonkeyPatch,
@@ -249,14 +257,23 @@ def test_a_planted_print_is_caught(monkeypatch: pytest.MonkeyPatch,
     C = _plant(monkeypatch, scratch_repo)
     real = C._print_summary
 
-    def planted(rows: list[dict[str, Any]], *a: Any) -> int:
+    def planted_early(rows: list[dict[str, Any]], *a: Any) -> int:
         print(json.dumps(rows, default=str))
         for p in (C.PRIVATE / "series").glob("*.json"):
             print(p.read_text("utf-8"))
         return real(rows, *a)
-    monkeypatch.setattr(C, "_print_summary", planted)
+    monkeypatch.setattr(C, "_print_summary", planted_early)
+    streams: list[str] = []
+    _run_hourly_leg(monkeypatch, C, streams)
+    assert _leaks_in("\n".join(streams)), "the fence missed a planted print in the stream"
+
+    def planted_last(rows: list[dict[str, Any]], *a: Any) -> int:
+        rc = real(rows, *a)
+        print(f"  {SENTINEL}")
+        return rc
+    monkeypatch.setattr(C, "_print_summary", planted_last)
     leg = _run_hourly_leg(monkeypatch, C)
-    assert _leaks_in(json.dumps(leg)), "the fence missed a planted print"
+    assert _leaks_in(json.dumps(leg)), "the fence missed a planted print in the leg tail"
 
 
 def _unignored_files(repo: Path) -> list[str]:
