@@ -1,0 +1,102 @@
+ARCH-05 -- decision_core.py: close the five LATENT cases the adversarial risk battery found.
+
+decision_core.py is money path and is not edited from a research session; this is the patch for
+the desktop pass. Apply from the repository root with:
+
+    git apply context/patches/arch05_decision_core_nonfinite.patch
+
+What it changes (each line names the battery case in desks/mt5/research/adversarial_risk.py):
+  * implementable_lot: a non-finite target is no target (0.0), and the live handle's
+    volume_max bounds the lot                                    -> volume_max_desk_side
+  * book_from_allocation: non-finite weights are dropped on both paths -> book_weight_inf
+  * cap_by_heat: a non-finite / non-positive allocation is treated as unusable (derived
+    budget), and an unreadable venue daily-loss bar admits nothing
+                               -> cap_by_heat_direct_nan, cap_by_heat_direct_inf, venue_loss_bar_nan
+
+None of the five is reachable on today's live path (each case names the proof), so none is a
+bypass; the patch makes each control's own contract say what the caller already guarantees.
+No cap, veto or shrink is added on a finite, well-formed input: every branch fires only on NaN,
+infinity, a non-number, or a lot the venue would refuse. Validated 2026-10-07 by running the
+battery against a patched copy of mt5desk: PASS, 68 HELD, 0 LATENT.
+
+--- a/desks/mt5/mt5desk/decision_core.py	2026-10-07 06:13:40.674515803 +0000
++++ b/desks/mt5/mt5desk/decision_core.py	2026-10-07 06:14:00.969253895 +0000
+@@ -590,9 +590,24 @@
+     Snapped DOWN to the 0.01 grain first (never up), then refused -- not lifted -- when under the
+     symbol's own `volume_min`. `min` last, so nothing passes the per-order ceiling.
+     """
+-    lot = _lot_steps(max(float(raw_lot), 0.0))
++    # A NON-FINITE TARGET IS NO TARGET (ARCH-05 battery, 2026-10-07): `max(nan, 0.0)` is nan and
++    # `math.floor(nan)` raises, so a poisoned fraction surfaced as a ValueError at the call site.
++    raw = float(raw_lot)
++    if not math.isfinite(raw):
++        return 0.0
++    lot = _lot_steps(max(raw, 0.0))
+     if not (lot > 0.0) or lot + 1e-9 < venue_min_lot(symbol, info):
+         return 0.0
++    # THE VENUE'S OWN MAXIMUM BINDS TOO (ARCH-05 battery case `volume_max_desk_side`). The desk
++    # read `volume_min` and never `volume_max`, so a lot above it reached the broker and was
++    # refused there (10014) -- a rejected order, counted toward the auto-pause, where the
++    # largest order the venue accepts was available. Read from the live handle when it has one.
++    try:
++        vmax = float(getattr(info, "volume_max", 0.0) or 0.0)
++    except (TypeError, ValueError):
++        vmax = 0.0
++    if math.isfinite(vmax) and vmax > 0.0:
++        ceiling = min(ceiling, _lot_steps(vmax))
+     return float(min(lot, ceiling))
+ 
+ 
+@@ -1074,7 +1089,7 @@
+         fb = book_fallback or {}
+         try:
+             book_ = {str(k): float(v) for k, v in (fb.get("book") or {}).items()
+-                     if float(v) > 0.0}
++                     if math.isfinite(float(v)) and float(v) > 0.0}
+         except (TypeError, ValueError):
+             book_ = {}
+         if not book_:
+@@ -1136,7 +1151,13 @@
+         return book_, (f"floor deployed with baseline {fb.get('name', '?')} "
+                        f"({len(book_)} sleeve(s)); dynamic weights withheld: {why}")
+     try:
+-        book_ = {str(k): float(v) for k, v in (book or {}).items() if float(v) > 0.0}
++        # FINITE WEIGHTS ONLY (ARCH-05 battery case `book_weight_inf`). An infinite weight passed
++        # `> 0`, made the solve sum infinite, scaled every weight by `total / inf = 0` and came
++        # back as {poisoned: nan, honest: 0.0} reported "authoritative" -- one corrupt entry
++        # zeroed the whole book. A non-finite weight is not an allocation; it is dropped and
++        # the rest of the book is judged as usual.
++        book_ = {str(k): float(v) for k, v in (book or {}).items()
++                 if math.isfinite(float(v)) and float(v) > 0.0}
+     except Exception as exc:
+         return None, f"pf_allocation book unreadable ({type(exc).__name__})"
+     if not book_:
+@@ -1267,6 +1288,13 @@
+     if equity <= 0 or not sleeves:
+         return list(sleeves), None
+     solved, why = allocation if allocation is not None else (None, "no allocator verdict given")
++    # A NON-FINITE BUDGET IS AN UNUSABLE ONE (ARCH-05 battery cases `cap_by_heat_direct_*`).
++    # `budget + HEAT_SLIDE` with a NaN budget makes `limit` NaN, every `used + q > limit` False,
++    # and the whole roster admitted; an infinite one does the same. `allocator_heat` cannot
++    # produce either today -- this makes the cap's own contract say so rather than trust it.
++    if solved is not None and not (isinstance(solved, (int, float))
++                                   and math.isfinite(float(solved)) and float(solved) > 0.0):
++        solved, why = None, f"allocation {solved!r} is not a finite positive budget ({why})"
+     budget_src = why if solved is not None else f"derived (allocator unusable: {why})"
+     # ORDERED BY WHAT EACH SLEEVE IS WORTH, not by where the caller put it. See allocator_order.
+     sleeves = allocator_order(sleeves, rank)
+@@ -1364,6 +1392,14 @@
+     # and `limit` is exactly what it was. A box with no declaration file passes None too. This
+     # can only ever narrow an account whose venue was declared to have a hard daily limit.
+     vcap, vwhy = venue_cap if venue_cap is not None else (None, "")
++    # AN UNREADABLE VENUE BAR OPENS NOTHING (ARCH-05 battery case `venue_loss_bar_nan`). `nan <
++    # limit` is False, so a NaN bar was silently ignored and a prop account whose daily-loss
++    # bar could not be read was sized as if it had none. A venue bar exists only for an account
++    # declared to sit where a daily loss ENDS it, so the doubt resolves to no new exposure.
++    if vcap is not None and not (isinstance(vcap, (int, float))
++                                 and math.isfinite(float(vcap)) and float(vcap) >= 0.0):
++        return [], (f"PORTFOLIO HEAT CAP: the venue's daily-loss bar is unreadable ({vcap!r}: "
++                    f"{vwhy}); admitting none on an account declared to have one")
+     if vcap is not None and vcap < limit:
+         limit = float(vcap)
+ 

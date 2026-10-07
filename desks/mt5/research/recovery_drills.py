@@ -45,6 +45,7 @@ PIT = REPORTS / "PIT_CENSUS.json"
 FORECAST = REPORTS / "FORECAST_CONTRACT.json"
 REPLAY = REPORTS / "STATE_REPLAY_PARITY.json"
 RELEASE = DATA / "release_identity.json"
+ADVERSARIAL = REPORTS / "ADVERSARIAL_RISK.json"
 ACCOUNT = DATA / "account_state.json"
 STALL = (DATA / "stall_watch.json", ROOT / "data" / "stall_watch.json")
 
@@ -271,6 +272,26 @@ def _replay(now: datetime) -> dict[str, Any]:
                     "cannot yet be recomputed from frozen inputs")
 
 
+def _independent_controls(now: datetime) -> dict[str, Any]:
+    """ARCH-05: the adversarial battery's verdict on the independent risk controls."""
+    doc, miss = _artifact(ADVERSARIAL, 3.0, now)
+    if miss:
+        return miss
+    d = doc or {}
+    counts = d.get("counts") or {}
+    ev = "reports/ADVERSARIAL_RISK.json"
+    if d.get("bypasses"):
+        return _row(FAIL, ev, f"poisoned input bypassed a control on the live path: "
+                              f"{d['bypasses'][:6]}", fix=d.get("patch"))
+    if str(d.get("verdict")) != "PASS":
+        return _row(UNMEASURED, ev, f"battery {d.get('verdict')}: {counts}")
+    latent = [x.get("case") for x in d.get("latent") or [] if isinstance(x, dict)]
+    return _row(PASS, ev, f"{counts.get('HELD', 0)} poisoned cases held on the real sizing, "
+                          f"heat ceiling, order door and margin switch",
+                gap=(f"{len(latent)} latent defence-in-depth gap(s) {latent}, unreachable on the "
+                     f"live path; patch {d.get('patch')}") if latent else None)
+
+
 def _ci(test: str, why: str) -> Callable[[datetime], dict[str, Any]]:
     def f(now: datetime) -> dict[str, Any]:
         exists = (ROOT / test).exists()
@@ -314,6 +335,8 @@ DRILLS: tuple[tuple[str, str, Callable[[datetime], dict[str, Any]]], ...] = (
     ("stale_data", "stale data / stale source", _stale),
     ("revision_leakage", "revision leakage (point in time)", _pit),
     ("malformed_forecast", "malformed forecast", _forecast),
+    ("independent_controls", "malformed forecast / optimizer / agent output cannot bypass "
+     "exposure, margin, loss and operational limits", _independent_controls),
     ("disk_pressure", "disk pressure / reserved resources", _resources),
     ("failed_deployment", "failed deployment and rollback", _deploy),
     ("backup_restore", "backup restoration (restore and test, not a script)", _backup),

@@ -962,7 +962,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
-    "ops_redundancy", "recovery_drills", "forward_evidence_tracker",
+    # THE ADVERSARIAL RISK BATTERY (ARCH-05, 2026-10-07) runs just before the scorecard that
+    # grades it (`recovery_drills` row `independent_controls`): ~3 s, temp dirs only.
+    "ops_redundancy", "adversarial_risk", "recovery_drills", "forward_evidence_tracker",
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
@@ -5558,6 +5560,10 @@ def main() -> None:
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
         "ops_redundancy", "research/ops_redundancy.py"))
+    # ARCH-05: poisoned optimizer/agent/forecast output through the real sizing, heat ceiling,
+    # order door and margin switch; recovery_drills grades it as `independent_controls`.
+    adv = _costed("adversarial_risk", lambda: _producer(
+        "adversarial_risk", "research/adversarial_risk.py"))
     rcd = _costed("recovery_drills", lambda: _producer(
         "recovery_drills", "research/recovery_drills.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(
@@ -5804,7 +5810,7 @@ def main() -> None:
                     "kelly_survival": kls,
                     "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
-                    "recovery_drills": rcd,
+                    "adversarial_risk": adv, "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,
