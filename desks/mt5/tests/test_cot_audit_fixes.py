@@ -27,7 +27,7 @@ for p in (str(_DESK), str(_ROOT)):
 
 from mt5desk import (  # noqa: E402
     cot_frames,
-    cot_refetch,
+    fetch_cot_latest,
     fetch_tff,
 )
 from mt5desk import families_orthogonal as fo  # noqa: E402
@@ -252,7 +252,7 @@ def test_verdicts_join_on_prereg_hash_cell_and_graph_id(tmp_path, monkeypatch):
 
 # ------------------------------------------------------------------------ the refetch step
 def _store(data: Path, family: str, slug: str, dates: list[str]) -> Path:
-    path = data / cot_refetch.DIRS[family] / f"{slug}.parquet"
+    path = data / fetch_cot_latest.DIRS[family] / f"{slug}.parquet"
     path.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame({"report_date": pd.to_datetime(dates, utc=True), "x": range(len(dates))}
                  ).to_parquet(path, index=False)
@@ -270,7 +270,7 @@ def test_refetch_fetches_only_a_family_behind_the_release_schedule(tmp_path):
         calls.append(fam)
         _store(data, fam, "gold", ["2026-08-11", "2026-08-18"])
         return {"gold": "WRITTEN"}
-    doc = cot_refetch.run(now=now, data=tmp_path, fetch=fetch)
+    doc = fetch_cot_latest.run(now=now, data=tmp_path, fetch=fetch)
     assert calls == ["legacy"]
     assert doc["due_week"] == "2026-08-21"
     fams = doc["families"]
@@ -286,11 +286,11 @@ def test_refetch_waits_out_its_retry_window_and_never_raises(tmp_path):
     def boom(fam, _data, _deadline):
         calls.append(fam)
         raise OSError("cftc.gov unreachable")
-    first = cot_refetch.run(now=now, data=tmp_path, fetch=boom)
+    first = fetch_cot_latest.run(now=now, data=tmp_path, fetch=boom)
     assert first["families"]["legacy"]["files"]["_error"].startswith("OSError")
-    again = cot_refetch.run(now=now + pd.Timedelta(hours=1), data=tmp_path, fetch=boom)
+    again = fetch_cot_latest.run(now=now + pd.Timedelta(hours=1), data=tmp_path, fetch=boom)
     assert again["families"]["legacy"]["action"] == "WAITING_RETRY"
-    later = cot_refetch.run(now=now + pd.Timedelta(hours=7), data=tmp_path, fetch=boom)
+    later = fetch_cot_latest.run(now=now + pd.Timedelta(hours=7), data=tmp_path, fetch=boom)
     assert later["families"]["legacy"]["action"] == "FETCHED"
     assert calls.count("legacy") == 2
 
@@ -298,10 +298,10 @@ def test_refetch_waits_out_its_retry_window_and_never_raises(tmp_path):
 def test_refetch_holds_a_holiday_delayed_report_until_its_release(tmp_path):
     # Thanksgiving 2024: the Nov 26 report is released Mon Dec 2 15:30 ET, not Fri Nov 29.
     _store(tmp_path, "legacy", "gold", ["2024-11-19"])
-    doc = cot_refetch.run(now=_ts("2024-12-02 12:00"), data=tmp_path,
+    doc = fetch_cot_latest.run(now=_ts("2024-12-02 12:00"), data=tmp_path,
                           fetch=lambda *_a: {})
     assert doc["families"]["legacy"]["action"] == "CURRENT"
-    doc = cot_refetch.run(now=_ts("2024-12-02 22:00"), data=tmp_path,
+    doc = fetch_cot_latest.run(now=_ts("2024-12-02 22:00"), data=tmp_path,
                           fetch=lambda *_a: {})
     assert doc["families"]["legacy"]["action"] == "FETCHED"
 
@@ -309,11 +309,11 @@ def test_refetch_holds_a_holiday_delayed_report_until_its_release(tmp_path):
 def test_write_if_not_less(tmp_path):
     path = _store(tmp_path, "legacy", "gold", ["2026-08-04", "2026-08-11"])
     short = pd.DataFrame({"report_date": pd.to_datetime(["2026-08-11", "2026-08-18"], utc=True)})
-    assert cot_refetch.write_if_not_less(path, short) == "KEPT_STORED_HAS_MORE"
+    assert fetch_cot_latest.write_if_not_less(path, short) == "KEPT_STORED_HAS_MORE"
     full = pd.DataFrame({"report_date": pd.to_datetime(
         ["2026-08-04", "2026-08-11", "2026-08-18"], utc=True)})
-    assert cot_refetch.write_if_not_less(path, full) == "WRITTEN"
-    assert cot_refetch.write_if_not_less(path, None) == "NO_ROWS"
+    assert fetch_cot_latest.write_if_not_less(path, full) == "WRITTEN"
+    assert fetch_cot_latest.write_if_not_less(path, None) == "NO_ROWS"
 
 
 def test_the_leg_runs_the_refetch_step(monkeypatch, tmp_path):
@@ -323,7 +323,7 @@ def test_the_leg_runs_the_refetch_step(monkeypatch, tmp_path):
     def fake_run(**kw):
         seen.update(kw)
         return {"families": {}}
-    monkeypatch.setattr(cot_refetch, "run", fake_run)
+    monkeypatch.setattr(fetch_cot_latest, "run", fake_run)
     assert cpf.refetch(budget_s=5.0, dry_run=False)["status"] == "RAN" and seen["budget_s"] == 5.0
     assert cpf.refetch(budget_s=5.0, dry_run=True)["status"] == "SKIPPED_DRY_RUN"
 

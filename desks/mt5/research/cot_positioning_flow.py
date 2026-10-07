@@ -391,14 +391,14 @@ def report(seeded: dict[str, Any]) -> dict[str, Any]:
 def refetch(*, budget_s: float, dry_run: bool) -> dict[str, Any]:
     """THE REFETCH STEP (2026-10-07): bring the in-git CFTC files up to the newest RELEASED
     report before measuring. Every file had stopped at the 2026-08-11 report because nothing ran
-    a fetcher after the first hand run; `mt5desk.cot_refetch` fetches only a report family that is
-    behind the release schedule, at most once per its retry window, and never writes less than
-    the stored file holds. A failure is recorded in the report, never raised."""
+    a fetcher after the first hand run; `mt5desk.fetch_cot_latest` fetches only a report family
+    that is behind the release schedule, at most once per its retry window, and never writes
+    less than the stored file holds. A failure is recorded in the report, never raised."""
     if dry_run:
         return {"status": "SKIPPED_DRY_RUN"}
     try:
-        from mt5desk import cot_refetch
-        return {"status": "RAN", **cot_refetch.run(budget_s=budget_s)}
+        from mt5desk import fetch_cot_latest
+        return {"status": "RAN", **fetch_cot_latest.run(budget_s=budget_s)}
     except Exception as exc:
         return {"status": "FAILED", "why": f"{type(exc).__name__}: {exc}"[:300]}
 

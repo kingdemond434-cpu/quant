@@ -1,6 +1,9 @@
 """Keep the in-git CFTC files current: refetch when a released report is missing from them.
 
-    python mt5desk/cot_refetch.py [--force] [--json]
+    python mt5desk/fetch_cot_latest.py [--force] [--json]
+
+A FETCHER (it writes the CFTC datasets and joins nothing to bars), named `fetch_*` like its
+three siblings; it reads no report except to compare its newest week with the schedule.
 
 THE DEFECT (2026-10-07 audit). `cot/`, `cot_tff/` and `cot_disagg/` were written once by hand
 and nothing ever ran their fetchers again: every file stopped at the 2026-08-11 report, so the
@@ -17,7 +20,7 @@ file holds -- never overwritten with less -- so a partial or failed download lea
 it was. Network failure is recorded, never raised: this runs inside the hourly
 `cot_positioning_flow` leg and must not cost it its pass.
 
-State: `data/cot_refetch_state.json` (last attempt per family, and what it found).
+State: `data/cot_latest_state.json` (last attempt per family, and what it found).
 """
 from __future__ import annotations
 
@@ -37,7 +40,7 @@ if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 from mt5desk.config import DATA  # noqa: E402
 
-STATE = DATA / "cot_refetch_state.json"
+STATE = DATA / "cot_latest_state.json"
 RETRY_HOURS = 6.0
 FAMILIES = ("legacy", "tff", "disagg")
 DIRS = {"legacy": "cot", "tff": "cot_tff", "disagg": "cot_disagg"}
