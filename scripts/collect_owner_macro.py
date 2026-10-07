@@ -34,6 +34,10 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.data import owner_feeds as of  # noqa: E402
 
+#: This organ's artifact (the same path as `owner_feeds.ARCHIVE`, bound here so the component
+#: registry reads it from the source): box-local and gitignored, like data/fred_macro.json.
+OUT = _ROOT / "data" / "owner_macro.json"
+
 _UA = {"User-Agent": "quant-owner-macro/1.0 (public-domain statistics; contact via repository)"}
 Fetch = Callable[[str, dict[str, Any] | None], bytes]
 
@@ -167,7 +171,7 @@ def collect(fetch: Fetch, keys: dict[str, str | None], now: datetime,
 
 
 def main(fetch: Fetch = _http, path: Path | None = None) -> int:
-    target = Path(path or of.ARCHIVE)
+    target = Path(path or OUT)
     try:
         prev_doc = json.loads(target.read_text("utf-8"))
     except (OSError, ValueError):
