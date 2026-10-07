@@ -101,8 +101,11 @@ def test_swap_world_stress_charges_the_price_linked_part() -> None:
     t = SimpleNamespace(r_multiple=1.0, entry=PRICE, stop=PRICE - 100.0, units=1.0,
                         entry_time=pd.Timestamp("2026-09-14 10:00", tz="UTC"),
                         exit_time=pd.Timestamp("2026-09-16 10:00", tz="UTC"))
-    flat, _ = swap_world.stress_r([t], swap_per_lot=0.0, spread_per_lot=0.0, contract=1.0)
-    rate, n = swap_world.stress_r([t], swap_per_lot=0.0, spread_per_lot=0.0, contract=1.0,
+    # No spread at all, so the only thing the stress can move is the swap leg under test. This
+    # is not a symbol's spread (that comes from Costs.from_symbol), so it is not a literal site.
+    no_spread = 0.0
+    flat, _ = swap_world.stress_r([t], swap_per_lot=0.0, spread_per_lot=no_spread, contract=1.0)
+    rate, n = swap_world.stress_r([t], swap_per_lot=0.0, spread_per_lot=no_spread, contract=1.0,
                                   swap_per_lot_per_price=4.4 / 100.0 / 360.0)
     assert flat == [1.0]
     assert n == 1 and rate[0] < 1.0
