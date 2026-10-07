@@ -3,7 +3,32 @@
  "status": "ARCHITECTURAL_ACCEPTANCE",
  "scope": "architecture only: correctness, connection and separation of the institution's functions. It is never evidence of profitable alpha; investment performance is assessed separately.",
  "source": "principal directive 2026-10-06 11:08Z, 12:35Z and 13:20Z; function map /mnt/project-files/reports/acceptance/function_map.json at 2d61e69a1",
- "blocker_rule": "Every blocker carries a durable owner (a named thread or lane, never 'this thread'). A blocker is CLOSED only with proof {commit, artifact, after_metric}; a CLOSED without it scores as OPEN. A gap listed in tracked_gaps must stay declared as a blocker (by its gap id) on each named requirement until it is closed with proof; removing the line does not turn the requirement green.",
+ "blocker_rule": "Every blocker carries a durable owner: \"thread:<name>\", or a list of them for joint ownership, where <name> is listed in owner_registry. Free text ('this thread', a lane, a description) is not an owner and scores blocker_owner:<id>; role notes go in owner_note. A blocker is CLOSED only with checked proof {commit, artifact, after_metric}: commit must resolve as a commit in this repo (git cat-file -e <sha>^{commit}; git unavailable fails closed); artifact must be a repo-relative regular file inside the repo after resolving symlinks (no absolute path, no '..', no directory); after_metric must be {\"metric\": <name>, \"before\": <finite number>, \"after\": <finite number>} (bools, NaN, bare strings or bare numbers are rejected). A CLOSED without valid proof scores as OPEN (INVALID_CLOSE). A gap listed in tracked_gaps must stay declared as a blocker (by its gap id) on each named requirement until it is closed with proof; removing the line does not turn the requirement green. cross_cutting_blockers apply to every requirement in this specification.",
+ "owner_registry_note": "Project thread titles (reports/thread_briefs/INDEX.json, 2026-10-07) plus the desktop pass 'Fix the deflated-Sharpe gate'. Add a name here before using it as an owner.",
+ "owner_registry": [
+  "Asian quant practices gap check",
+  "Breadth and tier assessment",
+  "Desktop sealed patch pass",
+  "Every API key in one list",
+  "Finish all paused work",
+  "Finish the old committees work",
+  "Global data discovery and use",
+  "Growth allocator overhaul",
+  "Independent blueprint completion audit",
+  "Institutional flow in country packs",
+  "Institutional truth discipline fixes",
+  "Live control room layer",
+  "MT5 global mining pipeline v1",
+  "Max-growth certified sleeve book",
+  "Mine the EliteQuant list",
+  "QuantConnect, WorldQuant and fund miners",
+  "Release signing and canon hashes",
+  "Schedule the twice-daily CRO cycle",
+  "Stalled PR sweep",
+  "Tier S research institution build",
+  "World sensor and macro surprise",
+  "Fix the deflated-Sharpe gate"
+ ],
  "tracked_gaps": [
   {
    "gap": "function_map:V5",
@@ -18,6 +43,15 @@
     "MI11"
    ],
    "what": "6 of 40 LIVE gold sleeves (gold_london_am_v2..v4, gold_afternoon_v2..v4) carry no certificate; validation does not gate the gold book"
+  }
+ ],
+ "cross_cutting_blockers": [
+  {
+   "id": "runtime_receipts_unwritten",
+   "owner": "thread:Institutional truth discipline fixes",
+   "owner_note": "ARCH-18: per-requirement runtime identity and evidence timestamp in global_research_acceptance.py",
+   "status": "OPEN",
+   "why": "the fourth kind of evidence, a fresh runtime receipt bound to the running release (status, completed_work, tests_passed, release sha, internal timestamp), is written by no producer: no organ outside the scorer emits tests_passed, so every runtime row stays PARTIAL and, until now, no one owned closing it"
   }
  ],
  "requirements": [
@@ -87,9 +121,13 @@
    "blockers": [
     {
      "id": "forecast_unconnected",
-     "owner": "\"Institutional flow in country packs\" thread (publisher) + desktop \"Growth allocator overhaul\" session (money path) (consumer)",
+     "owner": [
+      "thread:Institutional flow in country packs",
+      "thread:Growth allocator overhaul"
+     ],
      "why": "forecast_contract.publish() has no production caller and pf_allocator reads no beliefs",
-     "status": "OPEN"
+     "status": "OPEN",
+     "owner_note": "Institutional flow in country packs: publisher; Growth allocator overhaul (desktop, money path): consumer"
     }
    ]
   },
@@ -116,9 +154,10 @@
    "blockers": [
     {
      "id": "book_key_not_sleeve",
-     "owner": "desktop \"Growth allocator overhaul\" session (money path)",
+     "owner": "thread:Growth allocator overhaul",
      "why": "the book is keyed symbol_family_selector; gateway._book_key gives every variant sharing a key the fraction solved for one sleeve",
-     "status": "OPEN"
+     "status": "OPEN",
+     "owner_note": "desktop session, money path"
     }
    ]
   },
@@ -151,9 +190,10 @@
    "blockers": [
     {
      "id": "risk_not_independent",
-     "owner": "desktop \"Growth allocator overhaul\" session (money path)",
+     "owner": "thread:Growth allocator overhaul",
      "why": "the enforced heat ceiling is the allocator's own heat.envelope; the flatten rail runs dry-run; principal decision required for any new cap (growth governance)",
-     "status": "OPEN"
+     "status": "OPEN",
+     "owner_note": "desktop session, money path"
     }
    ]
   },
@@ -181,9 +221,10 @@
    "blockers": [
     {
      "id": "comment_tag_truncation",
-     "owner": "desktop \"Growth allocator overhaul\" session (money path)",
+     "owner": "thread:Growth allocator overhaul",
      "why": "the venue tag 'DW'+name is cut to 29 chars; 34/40 LIVE names are longer, so promoter.sleeve_forward_stats sees no trades and five name groups collide",
-     "status": "OPEN"
+     "status": "OPEN",
+     "owner_note": "desktop session, money path"
     }
    ]
   },
@@ -208,7 +249,7 @@
    "blockers": [
     {
      "id": "recovery_drills_unproven",
-     "owner": "\"Live control room layer\" thread",
+     "owner": "thread:Live control room layer",
      "why": "backup restoration, outage and rollback drills have no recorded pass",
      "status": "OPEN"
     }
@@ -257,19 +298,21 @@
    "blockers": [
     {
      "id": "cert_no_input_identity",
-     "owner": "desktop pass \"Fix the deflated-Sharpe gate\" (external_gauntlet.py is sealed)",
+     "owner": "thread:Fix the deflated-Sharpe gate",
      "why": "certificates record no data digest, parameters or code release (0/58)",
-     "status": "OPEN"
+     "status": "OPEN",
+     "owner_note": "desktop pass; external_gauntlet.py is sealed"
     },
     {
      "id": "intent_no_decision_id",
-     "owner": "desktop \"Growth allocator overhaul\" session (money path)",
+     "owner": "thread:Growth allocator overhaul",
      "why": "order intents carry no allocation decision id or risk approval id, and are written after order_send",
-     "status": "OPEN"
+     "status": "OPEN",
+     "owner_note": "desktop session, money path"
     },
     {
      "id": "credit_fuzzy_join",
-     "owner": "\"Institutional flow in country packs\" thread",
+     "owner": "thread:Institutional flow in country packs",
      "why": "credit_assignment joins live deals to certificates by substring and drops unmatched deals uncounted",
      "status": "OPEN"
     }
@@ -295,16 +338,21 @@
    "blockers": [
     {
      "id": "raw_terminal_in_research",
-     "owner": "desktop \"Growth allocator overhaul\" session (money path) + \"Institutional flow in country packs\" thread (fence)",
+     "owner": [
+      "thread:Growth allocator overhaul",
+      "thread:Institutional flow in country packs"
+     ],
      "why": "about 11 research modules call mt5.initialize() with the raw module, which exposes order_send; libs/execution/broker.py sends outside the door; the fence skips libs/ and side_channels/",
-     "status": "OPEN"
+     "status": "OPEN",
+     "owner_note": "Growth allocator overhaul (desktop, money path): order path; Institutional flow in country packs: fence"
     },
     {
      "id": "cert_drift_blocks_nothing",
      "gap": "function_map:V5",
      "status": "OPEN",
-     "owner": "desktop \"Growth allocator overhaul\" session (money path)",
-     "why": "function map hop 4 / V5: desks/mt5/research/promoter.py:2053-2077 writes LIVE roster rows from the research tree with no separate eligibility service, and a spec absent from the day's validation authority set is 'recorded as drift, blocking nothing'"
+     "owner": "thread:Growth allocator overhaul",
+     "why": "function map hop 4 / V5: desks/mt5/research/promoter.py:2053-2077 writes LIVE roster rows from the research tree with no separate eligibility service, and a spec absent from the day's validation authority set is 'recorded as drift, blocking nothing'",
+     "owner_note": "desktop session, money path"
     }
    ]
   },
@@ -330,28 +378,31 @@
    "blockers": [
     {
      "id": "lockbox_not_evaluate_once",
-     "owner": "desktop pass \"Fix the deflated-Sharpe gate\"",
+     "owner": "thread:Fix the deflated-Sharpe gate",
      "why": "the gauntlet's lockbox is a rolling tail with no evaluate-once ledger",
-     "status": "OPEN"
+     "status": "OPEN",
+     "owner_note": "desktop pass"
     },
     {
      "id": "prescreen_trials_uncharged",
-     "owner": "\"Institutional flow in country packs\" thread",
+     "owner": "thread:Institutional flow in country packs",
      "why": "alpha_evolution IC screen and LLM ideation are not charged to the trial ledger",
      "status": "OPEN"
     },
     {
      "id": "replication_fails_open",
-     "owner": "desktop pass \"Fix the deflated-Sharpe gate\"",
+     "owner": "thread:Fix the deflated-Sharpe gate",
      "why": "promotion blocks only on a replication mismatch; blind review fails open",
-     "status": "OPEN"
+     "status": "OPEN",
+     "owner_note": "desktop pass"
     },
     {
      "id": "gold_sleeves_uncertified",
      "gap": "function_map:V6",
      "status": "OPEN",
-     "owner": "desktop \"Growth allocator overhaul\" session (money path)",
-     "why": "function map hop 4 / V6: 6 of 40 LIVE rows in desks/mt5/data/sleeves.json (gold_london_am_v2..v4, gold_afternoon_v2..v4) have no certificate key; the gold book is hard-coded in the gateway roster (promoter.py:866 GOLD_SLEEVE_NAMES), not certificate-gated"
+     "owner": "thread:Growth allocator overhaul",
+     "why": "function map hop 4 / V6: 6 of 40 LIVE rows in desks/mt5/data/sleeves.json (gold_london_am_v2..v4, gold_afternoon_v2..v4) have no certificate key; the gold book is hard-coded in the gateway roster (promoter.py:866 GOLD_SLEEVE_NAMES), not certificate-gated",
+     "owner_note": "desktop session, money path"
     }
    ]
   },
@@ -377,7 +428,7 @@
    "blockers": [
     {
      "id": "economics_unjoined",
-     "owner": "\"Institutional flow in country packs\" thread",
+     "owner": "thread:Institutional flow in country packs",
      "why": "desk_costs.yaml declares VPS and LLM costs null, run_desk_economics has no live clock, owner attention is unrecorded",
      "status": "OPEN"
     }
