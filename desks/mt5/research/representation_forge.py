@@ -147,11 +147,10 @@ MIN_GAIN_NATS = 0.005
 MIN_CONTROL_ROWS = 30
 MAX_CONTROL_ROWS = 1_500
 MAX_BASIS = 12
-#: THE SHARED TRIAL COUNT. Not a second counter: `libs.research.experiment_ledger.lifetime` already
-#: reads this side ledger into `lifetime_trials` and `by_family`, which `proposer_common.deflate`
-#: and the deflated-Sharpe charge read. A forge pass writes no discovery file with `tests_run` (its
-#: donations are a list), so a kept representation is charged here exactly once.
-NULL_TRIALS = DESK / "data" / "null_pass_trials.jsonl"
+#: NO TRIAL IS CHARGED HERE (principal, 2026-10-07: never inflated, extra or lifetime trial
+#: penalties; trial counts stay as originally set). A representation is an INPUT, not a tested
+#: cell: the trial is charged once, on the cell that uses it, by the judge. The forge reports how
+#: many new representations it kept and writes nothing to any trial ledger.
 
 # ---------------------------------------------------------------------------- DATA-45: vintages
 #: The desk's existing revision log (`libs/research/vintage`, `data/vintages/` at the repo root).
@@ -530,7 +529,7 @@ def control(candidate: R.Series, primary: R.Series | None, basis: list[R.Series]
 
     UNMEASURED IS NOT ZERO. Fewer than MIN_CONTROL_ROWS aligned rows, or no input to measure a
     gain against, reads UNMEASURED and the representation is ADMITTED -- the control could not be
-    run, which is different from the representation having failed it -- and it is still charged.
+    run, which is different from the representation having failed it.
     """
     import math
 
@@ -621,28 +620,16 @@ def stored_basis(input_key: str, manifest: dict[str, dict[str, Any]],
     return cache[input_key]
 
 
-def charge_trials(new_records: list[dict[str, Any]], n_effective: float, *,
-                  dry_run: bool) -> dict[str, Any]:
-    """Charge every NEWLY kept representation to the desk's one lifetime trial count, once."""
+def count_new(new_records: list[dict[str, Any]], n_effective: float) -> dict[str, Any]:
+    """How many representations this pass kept for the first time, by family. A report only:
+    nothing is written to a trial ledger (see the note above `VINTAGE_ROOT`)."""
     by_family: dict[str, int] = {}
     for row in new_records:
         fam = f"representation:{row.get('family') or 'unknown'}"
         by_family[fam] = by_family.get(fam, 0) + 1
-    out: dict[str, Any] = {"tests_run": len(new_records), "by_family": by_family,
-                           "n_effective": round(n_effective, 3), "ledger": str(NULL_TRIALS),
-                           "read_by": "libs.research.experiment_ledger.lifetime (null-pass side "
-                                      "ledger) -> lifetime_trials, by_family, deflated Sharpe"}
-    if dry_run or not new_records:
-        out["written"] = False
-        return out
-    row = {"at": now_iso(), "source": "representation_forge", "tests_run": len(new_records),
-           "by_family": dict(sorted(by_family.items())), "n_effective": round(n_effective, 3),
-           "why": "kept representations charged to the lifetime trial count, once per new id"}
-    NULL_TRIALS.parent.mkdir(parents=True, exist_ok=True)
-    with NULL_TRIALS.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(row, sort_keys=True) + "\n")
-    out["written"] = True
-    return out
+    return {"new": len(new_records), "by_family": by_family,
+            "n_effective": round(n_effective, 3), "trials_charged": 0,
+            "why": "an input, not a tested cell: the judge charges the cell that uses it, once"}
 
 
 # ---------------------------------------------------------------------------- DATA-45: vintages
@@ -1222,8 +1209,7 @@ def run(*, budget_s: float = 900.0, dry_run: bool = False, max_new: int = MAX_NE
 
     all_rows = {**manifest, **{r["id"]: r for r in minted}}
     new_records = [r for r in minted if r["id"] not in manifest]
-    charged = charge_trials(new_records, _n_effective([_trial(r) for r in new_records]),
-                            dry_run=dry_run)
+    new_kept = count_new(new_records, _n_effective([_trial(r) for r in new_records]))
     registry_status: dict[str, Any] = {"status": "SKIPPED_DRY_RUN"}
     donation_path: str | None = None
     donations = donation_rows(minted[:MAX_DONATIONS])
@@ -1270,8 +1256,8 @@ def run(*, budget_s: float = 900.0, dry_run: bool = False, max_new: int = MAX_NE
         "world_model_credit": credit,
         "control": {"rule": "keep a representation only if it adds information gain per "
                             "marginal effective trial and is not near-collinear with what was "
-                            "kept for the same input; charge every new one to the lifetime "
-                            "trial count",
+                            "kept for the same input; no trial is charged here (the cell that "
+                            "uses it is charged once by the judge)",
                     "max_r2": MAX_R2, "min_gain_nats": MIN_GAIN_NATS,
                     "kept": len(minted), "refused": len(controlled),
                     "refused_by_status": _count(controlled, "status"),
@@ -1279,7 +1265,7 @@ def run(*, budget_s: float = 900.0, dry_run: bool = False, max_new: int = MAX_NE
                                                if r["control"].get("status") == "UNMEASURED"),
                     "n_effective_kept": round(n_eff, 3),
                     "refused_sample": controlled[:20],
-                    "charged": charged},
+                    "new_kept": new_kept},
         "vintages": {"recorded": vintages_recorded, "lags": list(_lags()),
                      "candidates": len(vint_rows), "unmeasured": vint_unmeasured[:20]},
         "disagreement": {**agree_status, "candidates": len(agree_rows)},

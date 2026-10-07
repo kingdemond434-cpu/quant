@@ -86,8 +86,7 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     monkeypatch.setattr(rf, "MANIFEST", forge / "manifest.json")
     monkeypatch.setattr(rf, "DONATIONS", tmp_path / "intel" / "representation_forge")
     monkeypatch.setattr(rf, "OUT", tmp_path / "REPRESENTATION_FORGE.json")
-    for name, path in {"NULL_TRIALS": tmp_path / "null_pass_trials.jsonl",
-                       "VINTAGE_ROOT": tmp_path / "vintage_root",
+    for name, path in {"VINTAGE_ROOT": tmp_path / "vintage_root",
                        "EQUIVALENCE": tmp_path / "series_equivalence.json",
                        "CAUSAL_GRAPH": tmp_path / "world_causal_graph.json",
                        "ASIA_TRANSMISSION": tmp_path / "ASIA_TRANSMISSION.json",

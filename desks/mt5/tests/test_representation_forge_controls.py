@@ -2,8 +2,8 @@
 by, and what it never deletes.
 
     control      a near-collinear copy is refused, noise is refused for no gain, an informative
-                 representation is kept, and every NEW kept one is charged once to the null-pass
-                 trial ledger the lifetime experiment ledger already reads (no second counter);
+                 representation is kept, and nothing is charged to any trial ledger (a
+                 representation is an input; the judge charges the cell that uses it, once);
     vintages     each pass records its inputs' vintages, and forecast revisions at 1h/6h/1d/3d
                  plus their momentum reach the store as representations;
     disagreement two sources of one quantity publish spread, z and a conditioned cell;
@@ -118,38 +118,20 @@ def test_too_few_rows_is_unmeasured_and_admitted_never_a_zero_gain() -> None:
     assert verdict["status"] == "UNMEASURED" and verdict["admit"] and verdict["measured_by"]
 
 
-def test_kept_representations_are_charged_once_to_the_shared_lifetime_count(desk, monkeypatch):
+def test_kept_representations_charge_no_trial_ledger(desk):
+    """Principal 2026-10-07: no extra or lifetime trial penalties. The forge counts what it kept
+    for the first time and writes nothing to the null-pass trial ledger."""
     series = [_series("in:a", "axis:a", _ar1(200, 0.6, 4)),
               _series("in:b", "fred_macro", _ar1(200, 0.3, 5))]
+    ledger = rf.DESK / "data" / "null_pass_trials.jsonl"
+    before = ledger.read_text("utf-8") if ledger.exists() else None
     report = rf.run(budget_s=60.0, max_new=40, inputs=_inputs(series))
-    charged = report["control"]["charged"]
-    assert report["minted"] >= 1 and charged["written"]
-    assert charged["tests_run"] == report["minted"]
-    rows = [json.loads(x) for x in rf.NULL_TRIALS.read_text("utf-8").splitlines()]
-    assert len(rows) == 1 and rows[0]["source"] == "representation_forge"
-    assert sum(rows[0]["by_family"].values()) == rows[0]["tests_run"]
-    # THE ONE COUNTER: the lifetime experiment ledger reads exactly this row.
-    from libs.research import experiment_ledger as el
-    fake = desk / "fake_desk"
-    (fake / "data").mkdir(parents=True)
-    (fake / "data" / "null_pass_trials.jsonl").write_text(
-        rf.NULL_TRIALS.read_text("utf-8"), "utf-8")
-    monkeypatch.setattr(el, "DESK", fake)
-    total, by_fam = el._proposer_counts()
-    assert total == charged["tests_run"]
-    assert all(k.startswith("representation:") for k in by_fam)
-    # A second pass charges only ids the store did not already hold: across both passes the
-    # charged total equals the number of distinct stored representations, never more.
-    first_ids = {r["id"] for r in json.loads(rf.MANIFEST.read_text("utf-8"))["representations"]}
+    new_kept = report["control"]["new_kept"]
+    assert report["minted"] >= 1 and new_kept["new"] == report["minted"]
+    assert new_kept["trials_charged"] == 0
+    assert (ledger.read_text("utf-8") if ledger.exists() else None) == before
     again = rf.run(budget_s=60.0, max_new=40, inputs=_inputs(series))
-    stored = json.loads(rf.MANIFEST.read_text("utf-8"))["representations"]
-    assert again["control"]["charged"]["tests_run"] == len({r["id"] for r in stored} - first_ids)
-    rows = [json.loads(x) for x in rf.NULL_TRIALS.read_text("utf-8").splitlines()]
-    assert sum(r["tests_run"] for r in rows) == len(stored)
-    third = rf.run(budget_s=60.0, max_new=400, inputs=_inputs(series))
-    fourth = rf.run(budget_s=60.0, max_new=400, inputs=_inputs(series))
-    assert third["minted"] >= 0 and fourth["control"]["charged"]["tests_run"] == 0, \
-        "the whole grammar re-run over the same tree is nothing new and charges nothing"
+    assert again["control"]["new_kept"]["trials_charged"] == 0
 
 
 def test_the_new_structure_transforms_are_proposed_for_every_series(desk):
