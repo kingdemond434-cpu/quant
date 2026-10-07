@@ -350,9 +350,13 @@ def test_direct_cell_series_is_readable_by_the_family_that_judges_it(tmp_path: P
     pts = A.build_points(src, _synthetic_store(src, "daily_avg_yoy", vals, date(2025, 1, 10),
                                                10))
     A.write_lake_series(paths, src, pts)
+    # judged at the series' own last release (a 2025 synthetic series is STALE by today's clock)
+    last_avail = pd.Timestamp(pts["daily_avg_yoy"][-1]["available_time"])
     s = conditioner(A.lake_file(src, "daily_avg_yoy"), "surprise_z", "level_z",
-                    root=paths.series)
+                    root=paths.series, as_of=last_avail)
     assert s is not None and len(s) > 10
+    assert conditioner(A.lake_file(src, "daily_avg_yoy"), "surprise_z", "level_z",
+                       root=paths.series) is None              # never served as current
     first_avail = pd.Timestamp(pts["daily_avg_yoy"][0]["available_time"])
     assert s.index.min() >= first_avail                          # lagged, never early
 

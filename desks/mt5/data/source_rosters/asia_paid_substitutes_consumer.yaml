@@ -212,6 +212,10 @@ sources:
   failure_mode_hypothesis: fails when the January-February combined print and base effects dominate, and
     when stimulus is already announced
   crowding_prior: high
+  attribution:
+    credit: '引自国家统计局网站 www.stats.gov.cn (Source: National Bureau of Statistics of China, www.stats.gov.cn)'
+    terms_url: https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html
+    terms_ref: cn_nbs_retail
   substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
   fetcher: owned
   owner: asia_gap_thread
