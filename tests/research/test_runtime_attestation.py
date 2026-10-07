@@ -580,7 +580,11 @@ def test_the_law_gate_stays_green_hours_after_a_cloud_attest(tmp_path: Path, mon
     shutil.copy(ROOT / "scripts" / "check_runtime_attestation.py", tmp_path / "scripts")
     shutil.copy(ROOT / "desks" / "mt5" / "research" / "runtime_attestation.py",
                 tmp_path / "desks" / "mt5" / "research")
-    arms = [f for f in gate._LAW_FENCES + gate._STATE_FENCES
+    # the one shared hostname key (libs/ops/host_identity) the attestation compares through
+    (tmp_path / "libs" / "ops").mkdir(parents=True)
+    for rel in ("libs/__init__.py", "libs/ops/__init__.py", "libs/ops/host_identity.py"):
+        shutil.copy(ROOT / rel, tmp_path / rel)
+    arms =[f for f in gate._LAW_FENCES + gate._STATE_FENCES
             if f[0] == "check_runtime_attestation.py"]
     assert [a for _, a in arms] == [(), ("--require-state",)]
     monkeypatch.setattr(gate, "_LAW_FENCES", [arms[0]])
