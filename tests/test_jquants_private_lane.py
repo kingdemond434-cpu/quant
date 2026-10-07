@@ -149,13 +149,19 @@ def test_cells_are_screened_deflated_and_donated_privately(scratch: dict[str, An
     # 2 investor types x 4 features x 2 directions x 2 holds on the one instrument with bars
     assert lane["looks"] == 2 * 4 * 2 * 2 and lane["trials_charged"] == lane["looks"]
     assert lane["proposed"] >= 1 and lane["donated"] == lane["proposed"]
-    assert isinstance(lane["private_ref"], str) and len(lane["private_ref"]) == 16
+    # no digest of private content on the tracked side (audit of #251): it sits beside the file
+    assert "private_ref" not in lane
     root = scratch["desk"] / "data" / "intelligence_private" / "jquants"
     (disc,) = sorted(root.glob("discoveries_*.json"))
+    (ref,) = sorted(root.glob("ref_discoveries_*.json"))
+    assert len(json.loads(ref.read_text("utf-8"))["private_ref"]) == 16
     doc = json.loads(disc.read_text("utf-8"))
     assert doc["tests_run"] == lane["looks"]
+    from libs.ops import token_refresh as T
     for c in doc["discoveries"]:
         assert c["data_source"] == "jquants:investor_types" and c["private_use"] is True
+        # the lineage the E8 book refuses on survives the donation door
+        assert c["lineage"] == T.PRIVATE_LINEAGE and c["e8_ineligible"] is True
         assert c["family"] == "exogenous_conditioner" and c["available_time"]
         assert c["evidence"]["n_tests_sweep"] == lane["looks"]
     feats = {c["params"]["signal"] for c in doc["discoveries"]}
@@ -281,3 +287,217 @@ def test_fence_every_written_file_is_ignored_or_free_of_jquants(scratch: dict[st
         assert set(json.loads(ln)) == {"at", "source", "tests_run", "by_family", "why"}
     section = json.loads(tracked_out.read_text("utf-8"))["private_intake"]
     assert set(section) <= set(M.PRIVATE_SUMMARY_KEYS)
+
+
+
+# ------------------------------------------------------------------------------ audit of #251
+def test_two_private_passes_in_one_minute_never_overwrite(scratch: dict[str, Any]) -> None:
+    root = scratch["desk"] / "data" / "intelligence_private" / "jquants"
+    rows = [{"symbol": "USDJPY", "family": "exogenous_conditioner", "params": {"a": 1},
+             "kind": "hypothesis", "symbols": ["USDJPY"], "available_time": NOW.isoformat(),
+             "event_time": NOW.isoformat()}]
+    a = pc.donate("jquants", [dict(r) for r in rows], 1, private_root=root)
+    b = pc.donate("jquants", [dict(r) for r in rows], 1, private_root=root)
+    assert a and b and a != b and Path(a).exists() and Path(b).exists()
+
+
+def test_private_summary_carries_bare_counts_only(scratch: dict[str, Any]) -> None:
+    from countries.jp import official_plane as J
+
+    from research import miner_candidate_compiler as M
+    assert "private_ref" not in M.PRIVATE_SUMMARY_KEYS
+    assert "private_ref" not in J.JQ_PUBLIC_KEYS
+    J.jquants_cells(scratch["paths"], NOW)
+    out = scratch["desk"] / "data" / "hypotheses_private" / "miner_candidates_private.json"
+    summary = M.compile_private(datetime.now(UTC),
+                                roots=(scratch["desk"] / "data" / "intelligence_private",),
+                                out=out, universe={"USDJPY", "EURJPY", "JPN225"})
+    section = M.private_intake_section(summary)
+    for k, v in section.items():
+        assert k == "status" or k == "rule" or isinstance(v, int), (k, v)
+    assert json.loads(out.with_name(out.stem + ".ref.json").read_text("utf-8"))["private_ref"]
+    from libs.ops import token_refresh as T
+    for h in json.loads(out.read_text("utf-8"))["hypotheses"]:
+        assert T.has_private_lineage(h) and h["e8_ineligible"] is True
+
+
+_NUM = __import__("re").compile(r"-?\d[\d,]*(?:\.\d+)?")
+
+
+def _text_carries_a_value(text: str) -> bool:
+    """Any number token in free text (stdout) that is one of the synthetic J-Quants values."""
+    for tok in _NUM.findall(text):
+        try:
+            x = abs(float(tok.replace(",", "")))
+        except ValueError:
+            continue
+        if SENTINEL * 100 <= x < (SENTINEL + 1) * 1000:
+            return True
+    return False
+
+
+def _leaks(text: str) -> list[str]:
+    out = [m for m in PRIVATE_MARKERS if m in text]
+    if _carries_a_value(text) or _text_carries_a_value(text):
+        out.append("<a J-Quants value>")
+    return out
+
+
+def _captured(fn: Any) -> tuple[Any, str]:
+    import contextlib
+    import io
+    o, e = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(o), contextlib.redirect_stderr(e):
+        res = fn()
+    return res, o.getvalue() + "\n" + e.getvalue()
+
+
+def _tracked_status() -> str:
+    return subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain",
+                           "--untracked-files=no"], capture_output=True, text=True,
+                          check=False).stdout
+
+
+def _files_that_reach_git(repo: Path) -> list[str]:
+    """Unignored files of the scratch repo, plus files whose path THIS repository tracks even
+    though .gitignore names it (sync_marker.json, runtime_state.json-style force-adds)."""
+    r = _git(repo, "ls-files", "--cached", "--others", "--exclude-standard", "-z")
+    out = {x for x in r.stdout.split("\0") if x}
+    for p in repo.rglob("*"):
+        rel = p.relative_to(repo).as_posix()
+        if p.is_file() and not rel.startswith(".git/") and rel not in out:
+            t = subprocess.run(["git", "-C", str(ROOT), "ls-files", "--", rel],
+                               capture_output=True, text=True, check=False)
+            if t.stdout.strip():
+                out.add(rel)
+    return sorted(out)
+
+
+def test_fence_the_whole_private_chain_prints_and_publishes_nothing_private(
+        scratch: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    """(a) stdout/stderr of EVERY organ the private lane passes through -- the Japan plane, the
+    compiler's main pass, global_research_os's Japan department and runtime attestation -- and
+    the results each returns; (c) a downstream grep over every file of the scratch repository
+    that git would carry (force-tracked paths included); (d) the private candidates are refused
+    by the E8 book; and this repository's own tracked files are untouched."""
+    from countries.jp import official_plane as J
+
+    from research import miner_candidate_compiler as M
+    repo, desk, paths = scratch["repo"], scratch["desk"], scratch["paths"]
+    before = _tracked_status()
+    texts: list[str] = []
+
+    # 1. the Japan plane, J-Quants lane included
+    doc, out = _captured(lambda: J.run(paths=paths, now=NOW,
+                                       report_default=desk / "reports" / "JP_OFFICIAL_PLANE.json"))
+    texts += [out, json.dumps(doc, default=str)]
+    jq = {r["dataset"]: r for r in doc["lanes"]}["jp_jquants_investor_types"]
+    assert jq["status"] == "PRIVATE_USE:CELLS_BUILT" and jq["donated"] >= 1
+
+    # 2. the compiler's MAIN pass, every write pointed into the scratch desk
+    hyp = desk / "data" / "hypotheses"
+    for name, target in (("OUT", hyp / "miner_candidates.json"),
+                         ("DEEPEN", hyp / "miner_deepening_queue.json"),
+                         ("DEEPEN_WORKED", hyp / "deepening_worked.jsonl"),
+                         ("DEEPENED", hyp / "deepened_candidates.json"),
+                         ("CURSOR", hyp / "miner_compiler_cursor.json"),
+                         ("FACTORY_RECEIPTS", desk / "data" / "factory_federation" / "r"),
+                         ("PRIVATE_OUT", desk / "data" / "hypotheses_private"
+                          / "miner_candidates_private.json")):
+        monkeypatch.setattr(M, name, target)
+    monkeypatch.setattr(M, "INTEL_ROOTS", (desk / "data" / "intelligence",))
+    monkeypatch.setattr(M, "PRIVATE_INTEL_ROOTS", (desk / "data" / "intelligence_private",))
+    monkeypatch.setattr(M, "_graph_snapshot", lambda *a, **k: (_ for _ in ()).throw(
+        RuntimeError("graph stubbed in the fence")))
+    import research.build_failure_bank as bfb
+
+    class _NoBank:
+        def __init__(self, *a: Any, **k: Any) -> None:
+            raise RuntimeError("bank stubbed in the fence")
+    monkeypatch.setattr(bfb, "Bank", _NoBank)
+    _rc, out = _captured(M.main)
+    texts.append(out)
+    compiled = json.loads((hyp / "miner_candidates.json").read_text("utf-8"))
+    intake = compiled["private_intake"]
+    assert intake["status"] == "COMPILED_PRIVATE" and intake["candidates"] >= 1, intake
+    assert set(intake) <= set(M.PRIVATE_SUMMARY_KEYS)
+
+    # 3. global_research_os's Japan department, over the same private store
+    from research import alt_proxies as A_
+    from research import global_research_os as G
+    monkeypatch.setattr(A_, "DEFAULT_PATHS", paths)
+    rows, out = _captured(lambda: G.department_rows(dry_run=True, codes=["jp"]))
+    texts += [out, json.dumps(rows, default=str)]
+    assert rows and rows[0]["miner_dispositions"][0]["outcome"] == "RAN"
+
+    # 4. runtime attestation over the scratch tree (its runtime_state.json is a TRACKED path)
+    from research import runtime_attestation as RA
+    _rc, out = _captured(lambda: RA.main(["--once", "--root", str(repo), "--budget-s", "20"]))
+    texts.append(out)
+
+    leaks = {i: _leaks(t) for i, t in enumerate(texts) if _leaks(t)}
+    assert not leaks, f"a private value reached an organ's stdout/stderr or result: {leaks}"
+
+    # (c) every file git would carry from the scratch tree
+    files = _files_that_reach_git(repo)
+    assert "desks/mt5/data/hypotheses/miner_candidates.json" in files
+    assert "desks/mt5/reports/JP_OFFICIAL_PLANE.json" in files
+    assert not any(d in f for f in files for d in ("private_use", "intelligence_private",
+                                                     "hypotheses_private"))
+    bad = [f for f in files
+           if _leaks((repo / f).read_text("utf-8", errors="replace"))]
+    assert not bad, f"J-Quants content on a path git carries: {bad}"
+
+    # (d) E8: a survivor built from a private candidate is refused, a public one is not
+    from prop import e8_book as B
+    priv = json.loads((desk / "data" / "hypotheses_private"
+                       / "miner_candidates_private.json").read_text("utf-8"))["hypotheses"][0]
+    surv = repo.parent / "SURV.json"
+    surv.write_text(json.dumps({"survivors": {
+        "priv": {"shadow_spec": {**priv, "selector": "asia"}, "days": 300,
+                 "gates": {"expected_value": {"ev": 0.9}}},
+        "pub": {"shadow_spec": {"symbol": "EURUSD", "family": "carry", "selector": "asia"},
+                "days": 300, "gates": {"expected_value": {"ev": 0.1}}}}}), "utf-8")
+    monkeypatch.setattr(B, "SURVIVORS", surv)
+    monkeypatch.setattr(B, "_family_banned", lambda fam: False)
+    book = B.select(tradeable=None)
+    assert {r["key"] for r in book["refused_private_lineage"]} == {"priv"}
+    assert {r["key"] for r in book["sleeves"]} == {"pub"}
+
+    assert _tracked_status() == before, "the fence run wrote into this repository's tracked files"
+
+
+def test_only_compile_private_reads_the_private_intake_roots() -> None:
+    """STATIC. Inside a function, the private intake/compile roots (intelligence_private,
+    hypotheses_private and the constants naming them) are referenced ONLY by
+    `miner_candidate_compiler.compile_private` (the one reader) and by the two writers that put
+    rows there (`proposer_common.donate`, `jp.official_plane._private_root`). Module-level
+    declarations of the constants are allowed; any other function is a new reader."""
+    import ast
+    names = {"PRIVATE_INTEL", "PRIVATE_INTEL_ROOTS", "PRIVATE_OUT", "PRIVATE_REF"}
+    dirs = ("intelligence_private", "hypotheses_private")
+    allowed = {("desks/mt5/research/miner_candidate_compiler.py", "compile_private"),
+               ("desks/mt5/research/proposer_common.py", "donate"),
+               ("desks/mt5/research/countries/jp/official_plane.py", "_private_root")}
+    r = subprocess.run(["git", "-C", str(ROOT), "grep", "-l", "-E",
+                        "|".join((*dirs, *sorted(names))), "--", "*.py"],
+                       capture_output=True, text=True, check=False)
+    found: set[tuple[str, str]] = set()
+    for rel in r.stdout.split():
+        if "tests" in Path(rel).parts or Path(rel).name.startswith("test_"):
+            continue
+        tree = ast.parse((ROOT / rel).read_text("utf-8"))
+        for fn in ast.walk(tree):
+            if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for node in ast.walk(fn):
+                hit = ((isinstance(node, ast.Name) and node.id in names)
+                       or (isinstance(node, ast.Attribute) and node.attr in names)
+                       or (isinstance(node, ast.Constant) and isinstance(node.value, str)
+                           and any(d in node.value for d in dirs)
+                           and " " not in node.value))
+                if hit:
+                    found.add((rel, fn.name))
+    extra = found - allowed
+    assert not extra, f"functions reading the private intake roots outside the allowlist: {extra}"
+    assert ("desks/mt5/research/miner_candidate_compiler.py", "compile_private") in found
