@@ -127,6 +127,43 @@ CLUSTER_PROPOSER = {
 }
 
 
+#: CLUSTERS HELD ON TERMS (audit of #234, 2026-10-07). Reachable by family and by proposer, and
+#: still not minted, because every source of the input is held by its own terms: the register
+#: says BLOCKED_PENDING_TERMS with the reason, never UNREACHABLE (no family is missing) and never
+#: PROPOSER_OWNED (no proposer can run). Each entry names the record that lifts it: the hold
+#: lifts on its own the day that record admits a source, and an unreadable record keeps it held.
+TERMS_HELD: dict[str, dict[str, str]] = {
+    "options_implied": {
+        "reason": ("vol sources held pending a licensed source (FRED FAQ Q3, CBOE licence, "
+                   "Yahoo ToS 2.4(i))"),
+        "record": "desks/mt5/recorders/vol_archive.py TERMS_EVIDENCE",
+        "unblocks_when": ("a quoted clause that clearly permits this use, or a signed licence, "
+                          "sets permits_use on one of TERMS_EVIDENCE's sources"),
+    },
+}
+
+
+def _terms_admitted(cluster: str) -> bool:
+    """True when the terms record behind a held cluster admits at least one source. Fails
+    closed: a record that cannot be read admits nothing."""
+    if cluster != "options_implied":
+        return False
+    try:
+        from recorders import vol_archive as va
+        return any(bool((ev or {}).get("permits_use"))
+                   for ev in dict(va.TERMS_EVIDENCE).values())
+    except Exception:
+        return False
+
+
+def terms_hold(cluster: str) -> dict[str, str] | None:
+    """The hold on `cluster` while its sources are held by their terms, else None."""
+    held = TERMS_HELD.get(cluster)
+    if held is None or _terms_admitted(cluster):
+        return None
+    return held
+
+
 def _families_by_cluster() -> tuple[dict[str, list[str]], dict[str, list[str]]]:
     """(donatable, registered) families per cluster.
 
@@ -212,10 +249,24 @@ def plan() -> dict[str, Any]:
 
     rows: list[dict[str, Any]] = []
     cells: list[dict[str, Any]] = []
-    for c in empty:
+    # A terms-held cluster is reported whether or not breadth lists it as empty, so its register
+    # entry always says why it is not being reached.
+    for c in sorted(set(empty) | {k for k in TERMS_HELD if terms_hold(k)}):
         n = int(counts.get(c, 0))
         fams = by_cluster.get(c) or []
         reg = registered.get(c) or []
+        hold = terms_hold(c)
+        if hold:
+            rows.append({"cluster": c, "cells_in_docket": n, "verdict": "BLOCKED_PENDING_TERMS",
+                         "status": "BLOCKED_PENDING_TERMS", "families": reg,
+                         "owner": CLUSTER_PROPOSER.get(c, ""),
+                         "reason": hold["reason"], "record": hold["record"],
+                         "unblocks_when": hold["unblocks_when"],
+                         "why": (f"reachable by {len(reg)} registered famil(ies) and owned by a "
+                                 f"proposer, but every source of its input is held by its own "
+                                 f"terms: {hold['reason']}. Nothing is minted and nothing is "
+                                 f"fetched until a source is admitted.")})
+            continue
         testable, untestable = _testable(reg)
         if reg and not testable:
             # REGISTERED, AND NOT ONE OF THEM TESTABLE BY THE SEALED JUDGE. Every cell any
@@ -293,7 +344,9 @@ def plan() -> dict[str, Any]:
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "rule": ("an empty cluster is one of three things and they need three different "
                  "remedies: ATTACKED (the gates or the mechanism), REACHABLE-BUT-UNMINTED (a "
-                 "wiring gap, closed here), or UNREACHABLE (a missing family module, named)."),
+                 "wiring gap, closed here), or UNREACHABLE (a missing family module, named). "
+                 "A cluster whose every input source is held by its terms is "
+                 "BLOCKED_PENDING_TERMS, with the reason and the record that lifts it."),
         "n_empty": len(empty),
         "census": dict(census),
         "cells_per_cluster": CELLS_PER_CLUSTER,
@@ -328,12 +381,15 @@ def main(argv: list[str] | None = None) -> int:
     for r in doc["clusters"]:
         mark = {"FORCED": "  FORCED ", "UNREACHABLE": "  NO FAM ",
                 "PROPOSER_OWNED": "  propsr ", "BLOCKED_BY_SEALED_GAUNTLET": "  SEALED ",
-                "ALREADY_ATTACKED": "  attackd"}.get(str(r["verdict"]), "  ?      ")
+                "ALREADY_ATTACKED": "  attackd",
+                "BLOCKED_PENDING_TERMS": "  TERMS  "}.get(str(r["verdict"]), "  ?      ")
         print(f"{mark} {r['cluster']!s:24} {r['cells_in_docket']:6} in docket  "
               f"{','.join(r['families'])[:34]}")
     for r in doc["clusters"]:
         if r["verdict"] == "UNREACHABLE":
             print(f"\n  {r['cluster']}: {str(r['missing_artifact'])[:150]}")
+        if r["verdict"] == "BLOCKED_PENDING_TERMS":
+            print(f"\n  {r['cluster']}: BLOCKED_PENDING_TERMS -- {r['reason']}")
     if doc.get("donated_to"):
         print(f"\n  {doc['n_cells_minted']} cell(s) donated -> {doc['donated_to']}")
     print(f"  -> {OUT}")

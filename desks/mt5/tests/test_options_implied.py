@@ -438,3 +438,38 @@ def test_the_forcer_no_longer_calls_the_cluster_unreachable() -> None:
     assert {"implied_vol_state", "implied_vol_conditioned"} <= set(registered["options_implied"])
     assert "options_implied" in ecf.CLUSTER_PROPOSER
     assert "UNREACHABLE BY VENUE" not in ecf.MISSING_ARTIFACT["options_implied"]
+
+
+def test_the_cluster_register_reads_blocked_pending_terms_while_every_vol_source_is_held(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    import empty_cluster_forcer as ecf
+    from recorders import vol_archive as va
+
+    assert not any(ev.get("permits_use") for ev in va.TERMS_EVIDENCE.values())
+    hold = ecf.terms_hold("options_implied")
+    assert hold and hold["reason"] == (
+        "vol sources held pending a licensed source (FRED FAQ Q3, CBOE licence, "
+        "Yahoo ToS 2.4(i))")
+    # The register: options_implied is listed (empty or not) and reads BLOCKED_PENDING_TERMS,
+    # never UNREACHABLE, PROPOSER_OWNED or FORCED, and no cell is minted for it.
+    for empty in ([], ["options_implied"]):
+        (tmp_path / "b.json").write_text(json.dumps({"clusters": {"empty_in_both": empty}}))
+        monkeypatch.setattr(ecf, "BREADTH", tmp_path / "b.json")
+        monkeypatch.setattr(ecf, "MANDATE", tmp_path / "missing.json")
+        doc = ecf.plan()
+        row = next(r for r in doc["clusters"] if r["cluster"] == "options_implied")
+        assert row["verdict"] == row["status"] == "BLOCKED_PENDING_TERMS"
+        assert row["reason"] == hold["reason"]
+        assert not [c for c in doc["cells"] if c.get("alpha_cluster") == "options_implied"]
+
+
+def test_the_terms_hold_lifts_only_when_the_record_admits_a_source(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    import empty_cluster_forcer as ecf
+    from recorders import vol_archive as va
+
+    ev = {k: dict(v) for k, v in va.TERMS_EVIDENCE.items()}
+    ev["fred"]["permits_use"] = True
+    monkeypatch.setattr(va, "TERMS_EVIDENCE", ev)
+    assert ecf.terms_hold("options_implied") is None
+    assert ecf.terms_hold("news_reaction") is None
