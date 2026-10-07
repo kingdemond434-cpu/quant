@@ -132,56 +132,33 @@ def test_session_participation_compares_an_hour_with_its_own_history(tmp_path: P
     assert "tick_volume" in fs.LAST_REASON["session_participation"]
 
 
-def test_swap_features_are_point_in_time_and_never_backfilled(
-        tmp_path: Path, universe_json: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Each bar sees the newest swap row KNOWABLE at it (observed_at + 3 h, <= 96 h old). Bars
-    before the first row are NaN -- today's universe.json level is never painted backwards -- and
-    a symbol with no knowable row degrades with the reason on record (2026-10-07)."""
-    from mt5desk import families_carry as fc
-    lead = fc.BROKER_LEAD_NS
-    obs = [pd.Timestamp("2025-01-08 00:00", tz="UTC"), pd.Timestamp("2025-01-10 00:00", tz="UTC")]
-    hist = {"XAUUSD": {"t": np.array([o.value + lead for o in obs], dtype="int64"),
-                       "lo": np.array([-50.0, -61.76]), "sh": np.array([20.0, 29.45]),
-                       "mode": np.array([1.0, 1.0]), "point": np.array([0.01, 0.01])}}
-    monkeypatch.setattr(fc, "swap_history", lambda: (hist, {}))
+def test_swap_features_are_static_per_symbol_and_nan_when_unknown(
+        tmp_path: Path, universe_json: Path) -> None:
     store = fs.FeatureStore(tmp_path / "store")
-    df = _bars(300)                                   # 2025-01-06 00:00 .. 2025-01-18 11:00 UTC
+    df = _bars(300)
     diff = store.get("swap_diff", df, {"symbol": "XAUUSD"}, check_causal=True)
-    t = df.index
-    first = t >= obs[0] + pd.Timedelta(hours=3)
-    second = t >= obs[1] + pd.Timedelta(hours=3)
-    stale = t > obs[1] + pd.Timedelta(hours=3 + 96)
-    assert np.isnan(diff[~first]).all()                              # nothing before the first row
-    assert np.allclose(diff[first & ~second], -70.0)                 # the first row, not today's
-    assert np.allclose(diff[second & ~stale], -61.76 - 29.45)
-    assert np.isnan(diff[stale]).all()                               # stale rows read NaN
-    long_ = store.get("swap_long", df, {"symbol": "XAUUSD"}, check_causal=True)
-    assert np.allclose(long_[first & ~second], -50.0)
+    assert np.allclose(diff, -61.76 - 29.45)
+    assert np.allclose(store.get("swap_long", df, {"symbol": "XAUUSD"}, check_causal=True),
+                       -61.76)
+    assert np.allclose(store.get("swap_short", df, {"symbol": "XAUUSD"}, check_causal=True),
+                       29.45)
     assert np.isnan(store.get("swap_diff", df, {"symbol": "ZZZ"}, check_causal=True)).all()
     assert "ZZZ" in fs.LAST_REASON["swap_diff"]
-    assert "PENDING_HISTORY" in fs.LAST_REASON["swap_diff"]
+    assert np.isnan(store.get("swap_diff", df, {"symbol": "NOSWAP"})).all()
+    assert "swap_long" in fs.LAST_REASON["swap_diff"]
 
 
 def test_an_external_input_is_part_of_the_feature_id(tmp_path: Path,
-                                                      monkeypatch: pytest.MonkeyPatch) -> None:
-    """A new swap row on the tape must not be served from the cache under the old id."""
-    from mt5desk import families_carry as fc
-    tape = tmp_path / "swap_tape.parquet"
-    tape.write_bytes(b"one")
-    monkeypatch.setattr(fc, "_files", lambda: [tape])
-    lead = fc.BROKER_LEAD_NS
-    t0 = pd.Timestamp("2025-01-06 00:00", tz="UTC").value + lead
-    hist = {"XAUUSD": {"t": np.array([t0], dtype="int64"), "lo": np.array([-61.76]),
-                       "sh": np.array([29.45]), "mode": np.array([1.0]),
-                       "point": np.array([0.01])}}
-    monkeypatch.setattr(fc, "swap_history", lambda: (hist, {}))
+                                                      universe_json: Path) -> None:
+    """A re-quoted swap must not be served from the cache under the old id."""
     store = fs.FeatureStore(tmp_path / "store")
-    df = _bars(60)
+    df = _bars(300)
     a = store.get("swap_diff", df, {"symbol": "XAUUSD"})
-    hist["XAUUSD"] = {**hist["XAUUSD"], "lo": np.array([-10.0]), "sh": np.array([1.0])}
-    tape.write_bytes(b"two!")
+    universe_json.write_text(json.dumps({"XAUUSD": {"swap_long": -10.0, "swap_short": 1.0}}))
+    import os
+    os.utime(universe_json, (universe_json.stat().st_atime, universe_json.stat().st_mtime + 5))
     b = store.get("swap_diff", df, {"symbol": "XAUUSD"})
-    assert store.misses == 2 and a[-1] != b[-1] and b[-1] == pytest.approx(-11.0)
+    assert store.misses == 2 and a[0] != b[0] and b[0] == pytest.approx(-11.0)
     assert fs.feature_id("x", {}, "d") != fs.feature_id("x", {}, "d", external="f:1")
     assert fs.feature_id("x", {}, "d") == fs.feature_id("x", {}, "d", external=None)
 

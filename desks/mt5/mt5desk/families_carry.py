@@ -231,15 +231,6 @@ def swap_asof(symbol: str, stamps: np.ndarray, price: Any = None,
     return out
 
 
-def carry_side_asof(symbol: str, stamps: np.ndarray) -> np.ndarray:
-    """+1 / -1 for the side whose KNOWABLE swap pays at each stamp, 0 when neither pays or no
-    fresh row is knowable -- never today's side backdated."""
-    s = swap_asof(symbol, stamps)
-    lo, sh = s["lo"], s["sh"]
-    ok = np.isfinite(lo) & np.isfinite(sh) & (np.maximum(lo, sh) > 0)
-    return np.where(ok, np.where(lo >= sh, 1, -1), 0).astype("int64")
-
-
 def _yield(swap: np.ndarray, mode: np.ndarray, point: np.ndarray,
            price: np.ndarray) -> np.ndarray:
     """Annual financing yield on notional for one side; NaN where the unit is unknown."""
