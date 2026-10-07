@@ -447,6 +447,15 @@ def cot_contract(symbol: str) -> tuple[str, int] | None:
     return None
 
 
+#: The COT publication lag on the BAR clock, applied to the report's Tuesday as-of date: the
+#: CFTC releases Friday 15:30 ET (= 22:30 broker, broker = ET + 7h all year), so a report is
+#: usable from Friday 23:00 broker. Named for `scripts/check_known_by_date.py` (the cot_fx
+#: source's declared lag, `data_os.PUBLICATION_LAGS["cot_fx"]`, is the coarser 4-day bound that
+#: holds on any clock; this one is exact on the broker clock the bars are labelled in). Releases
+#: the shutdowns pushed later are dropped by `COT_DELAYED`, never mis-dated.
+COT_RELEASE_LAG = pd.Timedelta(days=3, hours=23)
+
+
 @lru_cache(maxsize=32)
 def _cot_cached(path: str, mtime_ns: int) -> pd.DataFrame | None:
     try:
@@ -472,8 +481,7 @@ def _cot_cached(path: str, mtime_ns: int) -> pd.DataFrame | None:
                  - f["comm_positions_short_all"].astype(float)) / oi,
     })
     # Tuesday as-of -> Friday 15:30 ET release = 22:30 broker -> usable from Friday 23:00 broker.
-    out.index = pd.DatetimeIndex(f["report_date"].dt.normalize()
-                                 + pd.Timedelta(days=3, hours=23))
+    out.index = pd.DatetimeIndex(f["report_date"].dt.normalize() + COT_RELEASE_LAG)
     return out.dropna()
 
 
