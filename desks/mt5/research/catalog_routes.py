@@ -1517,6 +1517,34 @@ def _register_portals(table: dict[str, Any], portals: list[dict[str, Any]]) -> i
     return n
 
 
+#: The most a measured prior can move a portal in the staleness order, in hours. Bounded so no
+#: portal is ever starved: at worst it waits this much longer than pure stalest-first.
+PRIOR_CREDIT_H = 24.0
+
+
+def _loop_priors() -> dict[str, Any]:
+    """The discovery loop's measured priors (research/discovery_loop.py); {} when unreadable."""
+    try:
+        import discovery_loop as DL
+        return DL.load_priors()
+    except Exception:  # noqa: BLE001 - advice only; the pass runs stalest-first without it
+        return {}
+
+
+def _loop_lift(portal: Mapping[str, Any], priors: Mapping[str, Any]) -> float:
+    """prior - base for a portal, in [-1, 1]. 0 when the loop has no evidence about it."""
+    try:
+        import discovery_loop as DL
+        feats = DL.features_of(host_of(str(portal.get("base") or "")),
+                               country=str(portal.get("country") or ""),
+                               language=str(portal.get("language") or ""),
+                               producer_type=str(portal.get("producer_type") or ""),
+                               text=str(portal.get("producer") or ""))
+        return DL.prior_for(feats, priors) - float(priors.get("base", 0.5))
+    except Exception:  # noqa: BLE001
+        return 0.0
+
+
 def run(budget_s: float = DEFAULT_BUDGET_S, *, fetch: Fetch | None = None,
         now: datetime | None = None, roster_path: Path | None = None,
         only_routes: set[str] | None = None, max_requests: int = MAX_REQUESTS_PER_RUN,
@@ -1537,8 +1565,18 @@ def run(budget_s: float = DEFAULT_BUDGET_S, *, fetch: Fetch | None = None,
                if isinstance(p, dict) and p.get("id") and p.get("route")
                and (not only_routes or p["route"] in only_routes)]
 
+    loop_priors = _loop_priors()
+
     def stale(p: Mapping[str, Any]) -> str:
-        return str((pstate.get(str(p["id"])) or {}).get("last_visit_at") or "")
+        """Stalest first, with the DISCOVERY LOOP'S PRIOR as a bounded staleness credit: a portal
+        whose host/producer/country/language resembles sources that proved USEFUL is treated as
+        up to PRIOR_CREDIT_H hours staler (one resembling LIMITED/REJECTED ones, fresher). A
+        reorder only: never-visited portals still go first and every portal is still visited."""
+        last = str((pstate.get(str(p["id"])) or {}).get("last_visit_at") or "")
+        when = _parse_iso(last)
+        if when is None or not loop_priors:
+            return last
+        return _iso(when - timedelta(hours=PRIOR_CREDIT_H * _loop_lift(p, loop_priors)))
 
     rows_all: list[dict[str, Any]] = []
     table: dict[str, Any] = {}

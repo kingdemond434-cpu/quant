@@ -51,7 +51,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from libs.ops.org import HUMAN_INBOX, desk_org  # noqa: E402
-from libs.ops.task_queue import TaskQueue  # noqa: E402
+from libs.ops.task_queue import INFORMATION, TaskQueue  # noqa: E402
 
 #: The desk's one queue. Relative to the repo root so a worktree, the box and CI each get their
 #: own rather than sharing one across checkouts -- the journal records leases held by processes
@@ -64,7 +64,7 @@ OUT_REL = "desks/mt5/reports/QUEUE.json"
 #: Producers, in the order they run. Each is (name, callable(root, queue) -> dict). A producer
 #: that raises is recorded by name and the pass continues: the sweep in step 2 is what tells a
 #: person about failures, so it must not be skipped because a producer was broken.
-PRODUCERS = ("wiring_campaign", "coverage_governor", "cost_evidence")
+PRODUCERS = ("wiring_campaign", "coverage_governor", "cost_evidence", "lanes")
 
 
 def queue_path(root: Path) -> Path:
@@ -131,8 +131,148 @@ def _cost_evidence(root: Path, queue: TaskQueue) -> dict[str, Any]:
                     "were fine")}
 
 
+#: Data versions the `lanes` producer has already turned into information work.
+VERSIONS_REL = "desks/mt5/data/queue_data_versions.json"
+#: Information tasks the `lanes` producer may execute in one pass (its own bookkeeping only).
+LANE_DRAIN_MAX = 500
+
+
+def lineage_rows(root: Path) -> list[dict[str, Any]]:
+    """Every lineage record that names an input, from BOTH lineage stores, in one shape
+    (`artifact_id`, `input_artifact_ids`): the control plane's `lineage.sqlite` and the feature
+    compiler's `feature_genome/lineage.jsonl` (feature <- dataset)."""
+    rows: list[dict[str, Any]] = []
+    db = root / "desks" / "mt5" / "data" / "lineage.sqlite"
+    if db.exists():
+        import sqlite3
+        try:
+            conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=5)
+            try:
+                for aid, inputs in conn.execute(
+                        "SELECT artifact_id, input_artifact_ids FROM lineage_artifacts "
+                        "WHERE input_artifact_ids IS NOT NULL AND input_artifact_ids != ''"):
+                    rows.append({"artifact_id": str(aid), "input_artifact_ids": str(inputs)})
+            finally:
+                conn.close()
+        except sqlite3.Error:
+            pass
+    fl = root / "desks" / "mt5" / "data" / "feature_genome" / "lineage.jsonl"
+    try:
+        lines = fl.read_text("utf-8").splitlines()
+    except OSError:
+        lines = []
+    for line in lines:
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(r, dict) and r.get("feature_id") and r.get("dataset_id"):
+            rows.append({"artifact_id": f"feature:{r['feature_id']}",
+                         "input_artifact_ids": [f"dataset:{r['dataset_id']}"]})
+    return rows
+
+
+def data_versions(root: Path) -> dict[str, dict[str, Any]]:
+    """dataset artifact id -> {version, host, release_at} for every acquired series."""
+    reg_p = root / "desks" / "mt5" / "data" / "acquired" / "registry.json"
+    try:
+        reg = json.loads(reg_p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out: dict[str, dict[str, Any]] = {}
+    for name, meta in (reg.get("series") or {}).items():
+        if not isinstance(meta, dict):
+            continue
+        ver = "|".join(str(meta.get(k) or "") for k in ("rows", "last", "sha256", "revisions"))
+        out[f"dataset:{name}"] = {
+            "version": ver, "host": str(meta.get("host") or ""),
+            # THE RELEASE TIME: when the version became available to the desk -- the series'
+            # own availability stamp when it carries one, else the time it was acquired.
+            "release_at": str(meta.get("available_at") or meta.get("acquired_at") or "")}
+    return out
+
+
+def _lanes(root: Path, queue: TaskQueue) -> dict[str, Any]:
+    """DATA-50: the two linked lanes, release timing, per-host rate limits, targeted invalidation.
+
+    1. LINKS: an `acquire_class` mission's completion queues `screen_class` (strategy).
+    2. RATE LIMITS: one token bucket per catalogue host at the roster's own minimum gap.
+    3. VERSIONS: every new data version is an INFORMATION task `ingest_version`, not claimable
+       before its release time, on its host's bucket.
+    4. DRAIN, NO IDLE GAP: claim the information lane until nothing is eligible; each
+       `ingest_version` invalidates ONLY the features and cells whose lineage names that dataset
+       (STRATEGY tasks), then completes. Everything else is counted as untouched.
+    """
+    queue.link("acquire_class", "screen_class")
+    roster_p = root / "desks" / "mt5" / "data" / "catalog_routes" / "roster.json"
+    limited = 0
+    try:
+        roster = json.loads(roster_p.read_text("utf-8"))
+        gap = float((roster.get("defaults") or {}).get("min_gap_s") or 1.0)
+        have = queue.rate_limits()
+        for p in roster.get("portals") or []:
+            host = str(p.get("base") or "").split("//", 1)[-1].split("/", 1)[0].lower()
+            if host and host not in have:
+                queue.set_rate_limit(host, per_s=1.0 / max(gap, 0.01), burst=1.0)
+                limited += 1
+    except (OSError, ValueError, AttributeError):
+        pass
+    vpath = root / Path(*VERSIONS_REL.split("/"))
+    try:
+        seen = json.loads(vpath.read_text("utf-8"))
+    except (OSError, ValueError):
+        seen = {}
+    seen = seen if isinstance(seen, dict) else {}
+    versions = data_versions(root)
+    submitted = []
+    for aid, v in sorted(versions.items()):
+        if seen.get(aid) == v["version"]:
+            continue
+        # NO HOST ON THIS TASK: ingesting a version reads the local registry and lineage and
+        # sends nothing to the publisher, so it must not spend the publisher's token. The
+        # buckets above govern tasks that FETCH (a mission's acquisition, a catalogue page).
+        got = queue.submit("ingest_version", lane=INFORMATION,
+                           payload={"artifact_id": aid, "version": v["version"],
+                                    "publisher_host": v["host"]},
+                           dedupe_key=f"ingest_version|{aid}@{v['version']}",
+                           not_before=v["release_at"] or None)
+        if got is not None:
+            submitted.append(aid)
+        seen[aid] = v["version"]
+    vpath.parent.mkdir(parents=True, exist_ok=True)
+    vpath.write_text(json.dumps(seen, indent=1, sort_keys=True), "utf-8")
+    rows = lineage_rows(root)
+    invalidated: list[dict[str, Any]] = []
+    drained = 0
+    while drained < LANE_DRAIN_MAX:
+        task = queue.claim(QUEUE_WORKER, kinds=("ingest_version",), lane=INFORMATION)
+        if task is None:
+            break
+        drained += 1
+        res = queue.invalidate(str(task.payload.get("artifact_id")),
+                               str(task.payload.get("version")), lineage_rows=rows,
+                               parent=task.id)
+        queue.complete(task.id, QUEUE_WORKER, why=f"{len(res['affected'])} dependent(s)",
+                       produced={"artifact_id": res["artifact_id"], "version": res["version"]})
+        invalidated.append({k: res[k] for k in ("artifact_id", "affected", "untouched")})
+    return {"queued": submitted, "skipped": [],
+            "rate_limits_added": limited, "lineage_rows": len(rows),
+            "drained_information": drained,
+            "invalidations": invalidated[:50],
+            "affected_total": sum(len(x["affected"]) for x in invalidated),
+            "untouched_total": sum(int(x["untouched"]) for x in invalidated),
+            "next_eligible_at": queue.next_eligible_at(),
+            "why": ("a new data version re-queues only the features and cells whose lineage "
+                    "names it; information work drains before strategy work and a throttled "
+                    "host is skipped, never waited on")}
+
+
+#: The worker name the lanes producer claims under (the hourly cycle's own).
+QUEUE_WORKER = "hourly_cycle"
+
+
 _IMPL = {"wiring_campaign": _wiring_campaign, "coverage_governor": _coverage_governor,
-         "cost_evidence": _cost_evidence}
+         "cost_evidence": _cost_evidence, "lanes": _lanes}
 
 
 def human_inbox(queue: TaskQueue) -> list[dict[str, Any]]:

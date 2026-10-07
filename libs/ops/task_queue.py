@@ -38,6 +38,26 @@ implied by the existence of a queue.
 It also never RUNS anything. The queue hands out work and records outcomes; the caller executes.
 A queue that imported its handlers would make every producer a dependency of every consumer, and
 this desk has had that shape before.
+
+TWO LINKED LANES, RELEASE TIMING, RATE LIMITS, TARGETED INVALIDATION (DATA-50, 2026-10-07)
+
+One journal still, because one journal is what makes the queue durable; a task now names its
+LANE. `information` is acquisition work (fetch a release, ingest a version, hunt a class);
+`strategy` is everything that consumes data (rebuild a feature, re-judge a cell). The lanes are
+LINKED: `link(info_kind, strategy_kind)` says that completing an information task queues the
+dependent strategy task, so new data reaches its consumers the moment it lands rather than at
+whatever hour the next consumer happens to run.
+
+  * `not_before` -- a task is not claimable before its RELEASE TIME. A statistics office that
+    publishes at 08:30 is fetched at 08:30, not polled every hour before it.
+  * a per-host TOKEN BUCKET (`set_rate_limit`) -- a claim skips a task whose host has no token
+    and takes the NEXT eligible one, so a slow host never idles a worker.
+  * `claim_next` -- tries the lanes in order and falls through, so a worker is idle only when
+    NOTHING in any lane is eligible; `next_eligible_at` says exactly when that ends.
+  * `invalidate` -- a new data version queues re-work ONLY for the artifacts whose lineage names
+    it (transitively). Everything else is left alone and counted as untouched.
+
+A task written before lanes existed has lane "" and behaves exactly as it always did.
 """
 from __future__ import annotations
 
@@ -52,11 +72,20 @@ from typing import Any
 
 __all__ = [
     "DEFAULT_LEASE_S",
+    "INFORMATION",
+    "LANES",
     "MAX_ATTEMPTS",
     "STATES",
+    "STRATEGY",
     "Task",
     "TaskQueue",
+    "lineage_dependents",
 ]
+
+#: The two linked lanes. Information completions enqueue dependent strategy tasks.
+INFORMATION = "information"
+STRATEGY = "strategy"
+LANES: tuple[str, ...] = (INFORMATION, STRATEGY)
 
 #: A task's states. DEAD is terminal and deliberately not "failed": a task that has exhausted
 #: its attempts is a task nobody may retry, and the word has to say so.
@@ -79,6 +108,55 @@ def _iso(t: datetime) -> str:
     return t.isoformat()
 
 
+def _when(value: Any) -> datetime | None:
+    """A datetime from an ISO string or a datetime; None when absent or unreadable."""
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=UTC)
+    if not value:
+        return None
+    try:
+        got = datetime.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
+    return got if got.tzinfo else got.replace(tzinfo=UTC)
+
+
+def _ids(value: Any) -> list[str]:
+    """`input_artifact_ids` as the lineage store writes it (comma string) or as a list."""
+    if isinstance(value, str):
+        return [x.strip() for x in value.split(",") if x.strip()]
+    if isinstance(value, (list, tuple, set)):
+        return [str(x) for x in value if str(x)]
+    return []
+
+
+def lineage_dependents(artifact_id: str, rows: Iterable[dict[str, Any]]) -> list[str]:
+    """Every artifact whose lineage names `artifact_id`, directly or through other artifacts.
+
+    `rows` are lineage records (`artifact_id`, `input_artifact_ids`) -- the shape the lineage
+    store (`libs/ops/control_plane/edges.py`, `lineage_artifacts`) holds. Breadth-first, cycle
+    safe, sorted. The artifact itself is not its own dependent.
+    """
+    children: dict[str, set[str]] = {}
+    for r in rows:
+        aid = str(r.get("artifact_id") or "")
+        if not aid:
+            continue
+        for parent in _ids(r.get("input_artifact_ids")):
+            children.setdefault(parent, set()).add(aid)
+    seen: set[str] = set()
+    frontier = [str(artifact_id)]
+    while frontier:
+        nxt: list[str] = []
+        for node in frontier:
+            for child in children.get(node, ()):
+                if child not in seen and child != str(artifact_id):
+                    seen.add(child)
+                    nxt.append(child)
+        frontier = nxt
+    return sorted(seen)
+
+
 @dataclass
 class Task:
     """One unit of work and everything needed to decide whether to hand it out."""
@@ -97,10 +175,26 @@ class Task:
     updated_at: str = ""
     why: str = ""
     source_event: str = ""
+    #: "" (pre-lane task), INFORMATION or STRATEGY.
+    lane: str = ""
+    #: The release time: not claimable before it. "" = now.
+    not_before: str = ""
+    #: The host the work touches, for the per-host token bucket. "" = no limit.
+    host: str = ""
+    #: The information task whose completion queued this one (linked lanes).
+    parent: str = ""
+
+    def released(self, now: datetime) -> bool:
+        """False while `now` is before the task's release time."""
+        at = _when(self.not_before)
+        return at is None or at <= now
 
     def is_ready(self, now: datetime) -> bool:
         """READY, or LEASED to a worker that stopped renewing. The second half IS the durability:
-        a task whose holder died is available again without anyone noticing the death."""
+        a task whose holder died is available again without anyone noticing the death.
+        Either way, never before its release time."""
+        if not self.released(now):
+            return False
         if self.state == "READY":
             return True
         if self.state != "LEASED":
@@ -131,6 +225,11 @@ class TaskQueue:
         self.events_path = Path(events_path) if events_path else None
         self.subs_path = self.path.with_suffix(".subs.json")
         self.watermark_path = self.path.with_suffix(".watermark")
+        self.links_path = self.path.with_suffix(".links.json")
+        self.limits_path = self.path.with_suffix(".limits.json")
+        self.buckets_path = self.path.with_suffix(".buckets.json")
+        #: Strategy tasks the last `complete` queued through a link (read by the caller).
+        self.last_spawned: list[Task] = []
 
     # ------------------------------------------------------------------ the journal
     def _rows(self) -> list[dict[str, Any]]:
@@ -177,7 +276,9 @@ class TaskQueue:
     # ------------------------------------------------------------------ submitting
     def submit(self, kind: str, *, payload: dict[str, Any] | None = None,
                priority: float = 0.0, dedupe_key: str = "",
-               max_attempts: int = MAX_ATTEMPTS, source_event: str = "") -> Task | None:
+               max_attempts: int = MAX_ATTEMPTS, source_event: str = "",
+               lane: str = "", not_before: datetime | str | None = None, host: str = "",
+               parent: str = "") -> Task | None:
         """Queue one task, or None when `dedupe_key` names work already live.
 
         DEDUPE IS AGAINST LIVE WORK ONLY. A key collapses a submission while the earlier task is
@@ -189,31 +290,53 @@ class TaskQueue:
             for t in self.tasks().values():
                 if t.dedupe_key == key and t.state in ("READY", "LEASED"):
                     return None
+        if lane and lane not in LANES:
+            raise ValueError(f"unknown lane {lane!r}; lanes are {LANES}")
         now = _iso(_now())
+        release = _when(not_before)
         task = Task(id=uuid.uuid4().hex[:16], kind=str(kind), payload=dict(payload or {}),
                     priority=float(priority), state="READY", dedupe_key=key,
                     max_attempts=int(max_attempts), created_at=now, updated_at=now,
-                    source_event=str(source_event))
+                    source_event=str(source_event), lane=str(lane),
+                    not_before=_iso(release) if release else "", host=str(host or ""),
+                    parent=str(parent or ""))
         self._append(task.to_dict())
         return task
 
     # ------------------------------------------------------------------ claiming
     def claim(self, worker: str, *, kinds: Sequence[str] | None = None,
-              lease_s: int = DEFAULT_LEASE_S, now: datetime | None = None) -> Task | None:
+              lease_s: int = DEFAULT_LEASE_S, now: datetime | None = None,
+              lane: str | None = None) -> Task | None:
         """The most valuable ready task, leased to `worker`. None when there is nothing to do.
 
         ORDERED BY PRIORITY, then by age. Priority is the caller's number -- on this desk it is
         the EVSI the research queue already computes -- and age breaks ties so a task is never
         starved by a stream of equals.
+
+        RELEASE TIME AND RATE LIMIT. A task before its `not_before` is not ready; a task whose
+        host bucket is empty is SKIPPED and the next one is taken, so one throttled host never
+        idles the worker. `lane` restricts the claim to one lane.
         """
         at = now or _now()
         want = {str(k) for k in kinds} if kinds else None
         ready = [t for t in self.tasks().values()
-                 if t.is_ready(at) and (want is None or t.kind in want)]
+                 if t.is_ready(at) and (want is None or t.kind in want)
+                 and (lane is None or t.lane == lane)]
         if not ready:
             return None
         ready.sort(key=lambda t: (-float(t.priority), str(t.created_at)))
-        task = ready[0]
+        limits = self.rate_limits()
+        buckets = self._buckets() if limits else {}
+        task = None
+        for cand in ready:
+            if cand.host and cand.host in limits:
+                if not self._take(buckets, cand.host, limits[cand.host], at):
+                    continue
+                self._save_buckets(buckets)
+            task = cand
+            break
+        if task is None:
+            return None
         task.state = "LEASED"
         task.worker = str(worker)
         task.attempts = int(task.attempts) + 1
@@ -221,6 +344,164 @@ class TaskQueue:
         task.updated_at = _iso(at)
         self._append(task.to_dict())
         return task
+
+    def claim_next(self, worker: str, *, lanes: Sequence[str] = LANES,
+                   lease_s: int = DEFAULT_LEASE_S, now: datetime | None = None) -> Task | None:
+        """The next task from the first lane that has one: NO IDLE GAP while any lane has work.
+
+        Lanes are tried in order (information first by default, because strategy work waits on
+        it); an empty or throttled lane falls through to the next.
+        """
+        for lane in lanes:
+            got = self.claim(worker, lane=str(lane), lease_s=lease_s, now=now)
+            if got is not None:
+                return got
+        return None
+
+    def next_eligible_at(self, *, lanes: Sequence[str] | None = None,
+                         now: datetime | None = None) -> str:
+        """When the earliest waiting task becomes claimable: its release time, or its host's
+        next token. "" when nothing is waiting. A worker sleeps until exactly this, no longer."""
+        at = now or _now()
+        limits = self.rate_limits()
+        buckets = self._buckets() if limits else {}
+        best: datetime | None = None
+        for t in self.tasks().values():
+            if t.state not in ("READY", "LEASED") or (lanes is not None and t.lane not in lanes):
+                continue
+            if t.state == "LEASED" and not t.is_ready(at) and t.released(at):
+                continue                     # held by a live worker: not waiting, working
+            when = _when(t.not_before) or at
+            if t.host and t.host in limits:
+                when = max(when, self._refill_at(buckets, t.host, limits[t.host], at))
+            if best is None or when < best:
+                best = when
+        return _iso(best) if best else ""
+
+    # ------------------------------------------------------------------ rate limits
+    def set_rate_limit(self, host: str, *, per_s: float, burst: float = 1.0) -> dict[str, Any]:
+        """A token bucket for `host`: `per_s` tokens a second, at most `burst` saved up."""
+        if per_s <= 0 or burst < 1:
+            raise ValueError("a rate limit needs per_s > 0 and burst >= 1")
+        limits = self.rate_limits()
+        limits[str(host)] = {"per_s": float(per_s), "burst": float(burst)}
+        self.limits_path.parent.mkdir(parents=True, exist_ok=True)
+        self.limits_path.write_text(json.dumps(limits, indent=1, sort_keys=True), "utf-8")
+        return limits[str(host)]
+
+    def rate_limits(self) -> dict[str, dict[str, float]]:
+        try:
+            got = json.loads(self.limits_path.read_text("utf-8"))
+        except (OSError, ValueError):
+            return {}
+        return {str(h): v for h, v in got.items() if isinstance(v, dict)} \
+            if isinstance(got, dict) else {}
+
+    def _buckets(self) -> dict[str, dict[str, Any]]:
+        try:
+            got = json.loads(self.buckets_path.read_text("utf-8"))
+        except (OSError, ValueError):
+            return {}
+        return got if isinstance(got, dict) else {}
+
+    def _save_buckets(self, buckets: dict[str, dict[str, Any]]) -> None:
+        self.buckets_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.buckets_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(buckets, sort_keys=True), "utf-8")
+        os.replace(tmp, self.buckets_path)
+
+    @staticmethod
+    def _level(buckets: dict[str, dict[str, Any]], host: str, lim: dict[str, float],
+               at: datetime) -> float:
+        b = buckets.get(host) or {}
+        burst = float(lim.get("burst", 1.0))
+        last = _when(b.get("at"))
+        if last is None:
+            return burst
+        tokens = float(b.get("tokens", burst))
+        return min(burst, tokens + max(0.0, (at - last).total_seconds()) * float(lim["per_s"]))
+
+    def _take(self, buckets: dict[str, dict[str, Any]], host: str, lim: dict[str, float],
+              at: datetime) -> bool:
+        level = self._level(buckets, host, lim, at)
+        if level < 1.0:
+            return False
+        buckets[host] = {"tokens": level - 1.0, "at": _iso(at)}
+        return True
+
+    def _refill_at(self, buckets: dict[str, dict[str, Any]], host: str, lim: dict[str, float],
+                   at: datetime) -> datetime:
+        level = self._level(buckets, host, lim, at)
+        if level >= 1.0:
+            return at
+        return at + timedelta(seconds=(1.0 - level) / float(lim["per_s"]))
+
+    # ------------------------------------------------------------------ linked lanes
+    def link(self, info_kind: str, strategy_kind: str, *, priority: float = 0.0) -> dict[str, Any]:
+        """Completing an information task of `info_kind` queues a strategy `strategy_kind`.
+        Idempotent: the same pair is stored once."""
+        links = [x for x in self.links()
+                 if not (x["info_kind"] == str(info_kind)
+                         and x["strategy_kind"] == str(strategy_kind))]
+        row = {"info_kind": str(info_kind), "strategy_kind": str(strategy_kind),
+               "priority": float(priority)}
+        links.append(row)
+        self.links_path.parent.mkdir(parents=True, exist_ok=True)
+        self.links_path.write_text(json.dumps(links, indent=1), "utf-8")
+        return row
+
+    def links(self) -> list[dict[str, Any]]:
+        try:
+            got = json.loads(self.links_path.read_text("utf-8"))
+        except (OSError, ValueError):
+            return []
+        return [x for x in got if isinstance(x, dict) and x.get("info_kind")
+                and x.get("strategy_kind")] if isinstance(got, list) else []
+
+    def _spawn(self, task: Task, produced: dict[str, Any] | None) -> list[Task]:
+        out: list[Task] = []
+        if task.lane != INFORMATION:
+            return out
+        for ln in self.links():
+            if ln["info_kind"] != task.kind:
+                continue
+            got = self.submit(
+                str(ln["strategy_kind"]),
+                payload={**task.payload, "produced": dict(produced or {}),
+                         "from_task": task.id},
+                priority=float(ln.get("priority", 0.0)) or float(task.priority),
+                dedupe_key=f"{ln['strategy_kind']}|{task.dedupe_key or task.id}",
+                lane=STRATEGY, parent=task.id, source_event=task.id)
+            if got is not None:
+                out.append(got)
+        return out
+
+    # ------------------------------------------------------------------ invalidation
+    def invalidate(self, artifact_id: str, version: str, *,
+                   lineage_rows: Iterable[dict[str, Any]], kind: str = "invalidate",
+                   priority: float = 0.0, parent: str = "") -> dict[str, Any]:
+        """A new `version` of `artifact_id` queues re-work for ONLY its lineage dependents.
+
+        One strategy task per affected artifact, deduped on (artifact, data version) so a replay
+        of the same version queues nothing. Every artifact the lineage does not connect is left
+        alone and counted, because "invalidate everything" is the cheap answer this exists to
+        refuse.
+        """
+        rows = list(lineage_rows)
+        affected = lineage_dependents(artifact_id, rows)
+        known = {str(r.get("artifact_id")) for r in rows if r.get("artifact_id")}
+        queued: list[str] = []
+        for aid in affected:
+            got = self.submit(kind, payload={"artifact_id": aid, "because": str(artifact_id),
+                                             "version": str(version)},
+                              priority=priority, lane=STRATEGY, parent=parent,
+                              dedupe_key=f"{kind}|{aid}|{artifact_id}@{version}")
+            if got is not None:
+                queued.append(aid)
+        return {"artifact_id": str(artifact_id), "version": str(version),
+                "affected": affected, "queued": queued,
+                "untouched": len(known - set(affected) - {str(artifact_id)}),
+                "lineage_rows": len(rows)}
 
     def renew(self, task_id: str, worker: str, *, lease_s: int = DEFAULT_LEASE_S,
               now: datetime | None = None) -> bool:
@@ -234,8 +515,14 @@ class TaskQueue:
         self._append(t.to_dict())
         return True
 
-    def complete(self, task_id: str, worker: str = "", *, why: str = "") -> bool:
-        """Mark a task DONE. Idempotent: completing a DONE task is True and writes nothing."""
+    def complete(self, task_id: str, worker: str = "", *, why: str = "",
+                 produced: dict[str, Any] | None = None) -> bool:
+        """Mark a task DONE. Idempotent: completing a DONE task is True and writes nothing.
+
+        An INFORMATION task's completion queues every linked strategy task (`link`), carrying
+        `produced` (e.g. the data version it landed); they are in `self.last_spawned`.
+        """
+        self.last_spawned = []
         t = self.tasks().get(str(task_id))
         if t is None:
             return False
@@ -245,6 +532,7 @@ class TaskQueue:
             return False
         t.state, t.why, t.updated_at = "DONE", str(why), _iso(_now())
         self._append(t.to_dict())
+        self.last_spawned = self._spawn(t, produced)
         return True
 
     def fail(self, task_id: str, worker: str = "", *, why: str = "") -> Task | None:
@@ -366,7 +654,17 @@ class TaskQueue:
             if t.state == "LEASED" and t.is_ready(at):
                 expired += 1
         oldest = min((t.created_at for t in tasks if t.state == "READY"), default="")
+        by_lane: dict[str, dict[str, int]] = {}
+        waiting_release = 0
+        for t in tasks:
+            lane_row = by_lane.setdefault(t.lane or "unlaned", dict.fromkeys(STATES, 0))
+            lane_row[t.state] = lane_row.get(t.state, 0) + 1
+            if t.state == "READY" and not t.released(at):
+                waiting_release += 1
         return {"total": len(tasks), "by_state": by_state, "expired_leases": expired,
+                "by_lane": by_lane, "waiting_release": waiting_release,
+                "linked": len(self.links()), "rate_limited_hosts": sorted(self.rate_limits()),
+                "next_eligible_at": self.next_eligible_at(now=at),
                 "oldest_ready": oldest, "dead": [t.id for t in tasks if t.state == "DEAD"][:20],
                 "subscriptions": len(self.subscriptions()), "watermark": self.watermark(),
                 "rule": ("a LEASED task whose lease has expired is READY: a worker that dies "

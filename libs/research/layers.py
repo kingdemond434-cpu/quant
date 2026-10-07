@@ -606,7 +606,7 @@ LEG_LAYER: dict[str, str] = {
     "source_experiment_census": "information", "world_dataset_hunt": "information",
     # CRO D18 measured on recorded consumer reads: a measurement of the desk's own wiring, meta.
     "dataset_use_census": "meta",
-    "catalog_routes": "information", "discovery_audit": "meta",
+    "catalog_routes": "information", "discovery_audit": "meta", "discovery_loop": "meta",
     "world_macro_proposer": "prediction",
     "cross_asset_graph": "information", "transmission_engine": "information",
     "excursions": "exit", "exit_accounts": "exit",

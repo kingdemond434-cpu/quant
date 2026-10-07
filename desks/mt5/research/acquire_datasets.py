@@ -492,6 +492,8 @@ def _endpoints(limit: int, *, now: datetime | None = None,
     # in a 40-endpoint pass. A quarter of the pass is theirs whenever they have work; packs keep
     # the rest, and either side's unused share flows to the other.
     found: list[tuple[str, str]] = []
+    found_feats: list[dict[str, str]] = []
+    found_ages: list[str] = []
     for f in sorted(glob.glob(str(WORLD / "discoveries_*.json")), reverse=True):
         try:
             rows = json.loads(Path(f).read_text("utf-8"))
@@ -511,8 +513,25 @@ def _endpoints(limit: int, *, now: datetime | None = None,
                 if _fenced_pick(u):
                     continue
                 found.append((u, str(r.get("host") or "")))
+                found_feats.append({
+                    "host": urllib.parse.urlparse(str(u)).netloc,
+                    "country": str(r.get("country") or ""), "language": str(
+                        r.get("lang") or r.get("language") or ""),
+                    "producer_type": str(r.get("producer_type") or ""),
+                    "text": " ".join(str(r.get(k) or "") for k in
+                                     ("title", "observable", "dataset_class"))})
+                found_ages.append(str(r.get("first_discovered_at") or r.get("published") or ""))
+    # THE LOOP'S MEASURED PRIOR (research/discovery_loop.py): discovered endpoints are REORDERED
+    # by what sources sharing their host, producer type, country, language or data type turned
+    # out to be (USEFUL / REJECTED / LIMITED). A reorder only -- same endpoints, same count -- and
+    # when the loop's backlog alarm is up, the discovered share of the pass doubles (1/4 -> 1/2)
+    # so ingestion catches discovery up without one fewer thing being mined.
+    share = 4
+    found, loop_info = _loop_reorder(found, found_feats, found_ages)
+    if loop_info.get("backlog_alarm"):
+        share = 2
     room = limit - len(out)
-    reserve = min(len(found), max(room // 4, 1 if room > 0 else 0))
+    reserve = min(len(found), max(room // share, 1 if room > 0 else 0))
     active = deque(sorted(region for region, rows in buckets.items() if rows))
     while active and len(out) < limit - reserve:
         region = active.popleft()
@@ -531,6 +550,32 @@ def _endpoints(limit: int, *, now: datetime | None = None,
     return out
 
 ASIA_SOURCES = DESK / "data" / "asia_sources.json"
+
+#: What the last `_endpoints` call did with the loop's prior; published as `loop_prior`.
+_LOOP_PRIOR: dict[str, Any] = {}
+
+
+def _loop_reorder(found: list[tuple[str, str]], feats: list[dict[str, str]],
+                  ages: list[str]) -> tuple[list[tuple[str, str]], dict[str, Any]]:
+    """Reorder discovered endpoints by the discovery loop's prior. Fails OPEN to the old order:
+    an unreadable prior changes nothing and says why."""
+    _LOOP_PRIOR.clear()
+    try:
+        if str(DESK / "research") not in sys.path:
+            sys.path.insert(0, str(DESK / "research"))
+        import discovery_loop as DL
+        priors = DL.load_priors()
+        rows = [DL.features_of(f["host"], country=f["country"], language=f["language"],
+                               producer_type=f["producer_type"], text=f["text"]) for f in feats]
+        out, info = DL.order_by_prior(found, rows, priors, ages=ages)
+    except Exception as exc:  # noqa: BLE001 - the prior is advice; the acquirer must still run
+        _LOOP_PRIOR.update({"applied": False, "why": f"{type(exc).__name__}: {exc}"[:200]})
+        return found, dict(_LOOP_PRIOR)
+    if len(out) != len(found):                      # never drops: refuse a reorder that did
+        _LOOP_PRIOR.update({"applied": False, "why": "reorder changed the count; ignored"})
+        return found, dict(_LOOP_PRIOR)
+    _LOOP_PRIOR.update(info)
+    return out, dict(_LOOP_PRIOR)
 
 
 _CREDENTIAL_PARAM = re.compile(
@@ -844,6 +889,8 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
         "members_remaining": sum(int((reg["by_url"][u] or {}).get("members_remaining") or 0)
                                  for u in open_cursors),
         "access_states": access_counts,
+        # THE DISCOVERY LOOP'S PRIOR as applied to this pass's discovered share (a reorder).
+        "loop_prior": dict(_LOOP_PRIOR) or {"applied": False, "why": "no discovered endpoints"},
         "refusals": refusals,
         # FENCED ENDPOINTS, COUNTED (libs/data/terms_fence.py): refused before any request.
         "terms_fenced": {"by_platform": terms_fenced, "total": sum(terms_fenced.values()),

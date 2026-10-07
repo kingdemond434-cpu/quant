@@ -1180,6 +1180,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     # world that would be mined seventeen times over if each region hunted them itself.
     **dict.fromkeys(("global_research_os", "acquire_datasets", "source_experiment_census",
                      "dataset_use_census", "catalog_routes", "discovery_audit",
+                     "discovery_loop",
                      *GLOBAL_FOREST_LEGS), "regions"),
     # the free stack (2026-09-30): app rankings, CN forums, JP IR, JP patents, trends, congress,
     # CoinPaprika (crypto CFDs only), Reddit/Telegram, AKShare/TuShare/BaoStock, catalogues --
@@ -1746,6 +1747,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "acquire_datasets": 1_100,
     # catalog_routes stops itself at DEFAULT_BUDGET_S=600 and writes its cursors; cap above it.
     "catalog_routes": 720,
+    # The discovery loop reads the discoveries, the registry and streams the gate verdict ledger
+    # once (3.3 s on the cloud checkout's 265 discovery files); the box's ledger is larger.
+    "discovery_loop": 600,
     # THE WORLD DATASET HUNTER stops itself at --budget-s 900 and writes its catalog, registry
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
@@ -4536,6 +4540,12 @@ def main() -> None:
     # found, fetched and fed. Benchmark coverage, never world coverage.
     dau = _costed("discovery_audit", lambda: _producer(
         "discovery_audit", "research/discovery_audit.py"))
+    # THE DISCOVERY LOOP (ARCH-22/23, DATA-51, 2026-10-07): every UNSEEDED source carried from
+    # discovery through acquisition and gauntlet-judged uses to USEFUL / REJECTED / LIMITED; the
+    # outcomes become the measured prior the acquirer and catalog routes reorder by next hour,
+    # plus per-cohort loop performance and the discovery-vs-ingestion balance with its alarm.
+    dlp = _costed("discovery_loop", lambda: _producer(
+        "discovery_loop", "research/discovery_loop.py"))
     # THE FREE STACK (2026-09-30, asia gap rows 14-17, 20): every free alt source the gap report
     # measured MISSING, point-in-time, cursor-based, one yield row per source in
     # reports/FREE_STACK_YIELD.json; series land in data/lake/series/fs_<id>, catalogue finds
@@ -5754,6 +5764,7 @@ def main() -> None:
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "acquire_datasets": acq, "free_stack_hunt": fsh,
                     "catalog_routes": ctr, "discovery_audit": dau,
+                    "discovery_loop": dlp,
                     "free_stack_proposer": fsp, "factory_throughput": fxt,
                     "world_dataset_hunt": wdh,
                     "world_macro_proposer": wmp,
