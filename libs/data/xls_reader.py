@@ -576,3 +576,94 @@ def read_xls(src: Path | bytes) -> list[Sheet]:
         if name in streams:
             return _parse_biff(streams[name])
     raise XlsError(f"no Workbook stream; found {sorted(streams) or 'no streams'}")
+
+
+# ------------------------------------------------------------------------------- OOXML .xlsx ---
+#: An .xlsx member larger than this uncompressed is refused (a zip bomb, not a statistics table).
+_XLSX_MAX_MEMBER: Final = 64 * 1024 * 1024
+_XLSX_NS: Final = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+_XLSX_REL_NS: Final = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+_PKG_REL_NS: Final = "{http://schemas.openxmlformats.org/package/2006/relationships}"
+
+
+def _xlsx_col(ref: str) -> int:
+    col = 0
+    for ch in ref:
+        if not ch.isalpha():
+            break
+        col = col * 26 + (ord(ch.upper()) - 64)
+    return col - 1
+
+
+def read_xlsx(src: Path | bytes) -> list[Sheet]:
+    """Read an OOXML ``.xlsx`` into sheets, in workbook order, with the stdlib only.
+
+    THE SAME CONTRACT AS :func:`read_xls`, for the format that replaced it. The box has no
+    ``openpyxl`` (installs are frozen), and statistics publishers that moved off ``.xls`` -- the
+    World Bank Pink Sheet among them -- now serve ``.xlsx``: a zip of XML parts, readable with
+    ``zipfile`` and ``ElementTree``. Cached values only (formulas are never evaluated); a numeric
+    cell is returned as ``float``, a shared or inline string as ``str``. Sheet names come from
+    ``xl/workbook.xml`` through its relationship part, so a sheet is found by NAME, never by
+    position. Raises :class:`XlsError` on anything it cannot decode, never a partial workbook.
+    """
+    import io
+    import xml.etree.ElementTree as ET
+    import zipfile
+
+    data = src.read_bytes() if isinstance(src, Path) else src
+    try:
+        z = zipfile.ZipFile(io.BytesIO(data))
+    except (zipfile.BadZipFile, ValueError) as exc:
+        raise XlsError(f"not an xlsx zip: {exc}") from exc
+    if any(i.file_size > _XLSX_MAX_MEMBER for i in z.infolist()):
+        raise XlsError("an xlsx member exceeds the uncompressed size bound")
+    names = set(z.namelist())
+    try:
+        book = ET.fromstring(z.read("xl/workbook.xml"))
+        rels = ET.fromstring(z.read("xl/_rels/workbook.xml.rels"))
+        shared: list[str] = []
+        if "xl/sharedStrings.xml" in names:
+            for si in ET.fromstring(z.read("xl/sharedStrings.xml")).iter(f"{_XLSX_NS}si"):
+                shared.append("".join(t.text or "" for t in si.iter(f"{_XLSX_NS}t")))
+        target = {r.get("Id"): str(r.get("Target") or "") for r in rels.iter(f"{_PKG_REL_NS}"
+                                                                           "Relationship")}
+        out: list[Sheet] = []
+        for sh in book.iter(f"{_XLSX_NS}sheet"):
+            rid = sh.get(f"{_XLSX_REL_NS}id")
+            tgt = target.get(rid, "").lstrip("/")
+            part = tgt if tgt.startswith("xl/") else f"xl/{tgt}"
+            if part not in names:
+                raise XlsError(f"sheet {sh.get('name')!r} points at a missing part {part!r}")
+            grid: dict[tuple[int, int], object] = {}
+            for row in ET.fromstring(z.read(part)).iter(f"{_XLSX_NS}row"):
+                r_idx = int(row.get("r") or 0) - 1
+                for c in row.findall(f"{_XLSX_NS}c"):
+                    ref = str(c.get("r") or "")
+                    col = _xlsx_col(ref)
+                    if col < 0 or r_idx < 0:
+                        continue
+                    kind = c.get("t")
+                    v = c.find(f"{_XLSX_NS}v")
+                    value: object
+                    if kind == "s" and v is not None:
+                        k = int(v.text or 0)
+                        if k >= len(shared):
+                            raise XlsError(f"shared-string index {k} out of range at {ref}")
+                        value = shared[k]
+                    elif kind == "inlineStr":
+                        value = "".join(t.text or "" for t in c.iter(f"{_XLSX_NS}t"))
+                    elif kind in ("str", "e"):
+                        value = v.text or "" if v is not None else ""
+                    elif kind == "b":
+                        value = bool(int(v.text or 0)) if v is not None else None
+                    elif v is not None and v.text is not None:
+                        value = float(v.text)
+                    else:
+                        continue
+                    grid[(r_idx, col)] = value
+            out.append(Sheet(name=str(sh.get("name") or ""), cells=grid))
+        return out
+    except (KeyError, ET.ParseError, ValueError) as exc:
+        if isinstance(exc, XlsError):
+            raise
+        raise XlsError(f"unreadable xlsx part: {type(exc).__name__}: {exc}") from exc

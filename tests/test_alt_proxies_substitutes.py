@@ -348,9 +348,13 @@ def test_reviewed_terms_carry_evidence() -> None:
     assert set(A.TERMS_EVIDENCE) <= set(A.TERMS)
     for sid, ev in A.TERMS_EVIDENCE.items():
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
-        assert ev["robots"] and ev["checked_at"] == "2026-09-30", sid
+        assert ev["robots"] and ev["checked_at"] in ("2026-09-30", "2026-10-06",
+                                                     "2026-10-07"), sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
-    assert reviewed == {"cn_nbs_retail", *NEW_SUBSTITUTES}
+    # 2026-10-06/07: the Asia OTHER rows (SingStat trade tables, World Bank Pink Sheet) and the
+    # SingStat port table, whose ODL evidence they share
+    assert reviewed == {"cn_nbs_retail", *NEW_SUBSTITUTES, "sg_merch_trade",
+                        "sg_nodx_electronics", "wb_pink_sheet_asia", "sg_port_throughput"}
 
 
 def test_a_to_confirm_source_is_never_fetched(tmp_path: Path) -> None:
