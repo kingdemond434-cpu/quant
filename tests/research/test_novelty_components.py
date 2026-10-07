@@ -189,3 +189,14 @@ def test_causal_channel_is_new_when_the_entity_reaches_a_market_it_had_not() -> 
     assert rep["score"] == 0.0
     other = _c(_row("unclassified", kind="other", ents=("copper",)), window, "causal_channel")
     assert other["score"] is None
+
+
+def test_a_near_verbatim_line_with_a_changed_figure_is_a_revision_not_a_copy() -> None:
+    window = [_row("Q2 GDP grew 2.1% says the statistics office", kind="labour_surprise",
+                   src="reuters")]
+    moved = _row("Q2 GDP grew 1.6% says the statistics office", kind="labour_surprise",
+                 src="afp")
+    conf = _c(moved, window, "confirmation")
+    assert "copy" not in conf["basis"]
+    assert eo.is_copy(0.99, [(2.1, "%")], [(2.1, "%")])
+    assert not eo.is_copy(0.99, [(1.6, "%")], [(2.1, "%")])

@@ -98,6 +98,7 @@ __all__ = [
     "event_id",
     "event_key",
     "figures_in",
+    "is_copy",
     "novelty",
     "novelty_components",
     "novelty_of",
@@ -1307,6 +1308,13 @@ def semantic_similarity(a: str, b: str) -> float:
     return _tfidf_sims(a, [b])[0] if a and b else 0.0
 
 
+def is_copy(similarity: float, figures: Sequence[tuple[float, str]],
+            prior_figures: Sequence[tuple[float, str]]) -> bool:
+    """A near-verbatim telling with the SAME figures. "GDP grew 2.1%" and "GDP grew 1.6%" are
+    one character apart and are a revision, not a copy: changed figures always break a copy."""
+    return similarity >= COPY_SIMILARITY and set(figures) == set(prior_figures)
+
+
 def _channels(kind: str, entities: Iterable[str], affected_rows: Any = None) -> set[str]:
     spec = ONTOLOGY.get(kind)
     names: set[str] = set()
@@ -1464,7 +1472,7 @@ def novelty_components(event: Mapping[str, Any],
         sim_of = {id(r): s for r, s in zip(near, sims, strict=True)} if sims else {}
         sources = {str(r.get("source_id") or "") for r in story} - {""}
         copy_of = [(_row_ref(r), sim_of[id(r)]) for r in story
-                   if sim_of.get(id(r), 0.0) >= COPY_SIMILARITY]
+                   if is_copy(sim_of.get(id(r), 0.0), figs, _figures(r))]
         if src in sources:
             out["confirmation"] = _comp(0.0, "this source already carried the story: an echo",
                                         independent_sources=len(sources))
