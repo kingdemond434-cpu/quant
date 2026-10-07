@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.research.alpha_frontier import (  # noqa: E402
     alpha_reproduction,
     crowding_hazard,
@@ -157,7 +158,8 @@ def build() -> dict[str, Any]:
 
 
 def main() -> int:
-    report = build()
+    # Practitioner items are scraped text; scrub leaked keys before the artifact is written.
+    report = scrub(build())
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(report, indent=1, default=str), "utf-8")
     print(

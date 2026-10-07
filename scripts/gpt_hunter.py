@@ -21,6 +21,7 @@ if str(ROOT) not in sys.path:
 
 from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
 from libs.llm.effort import reasoning_payload  # noqa: E402
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.research.public_strategy_hunter import load_sources, run  # noqa: E402
 
 SOURCES = ROOT / "docs" / "research" / "GPT_HUNTER_SOURCES.json"
@@ -90,7 +91,8 @@ def main() -> int:
     state = _read(STATE, {})
     state = state if isinstance(state, dict) else {}
     sources = load_sources(SOURCES, state.get("discovered_sources", []))
-    report = run(sources, state, _ask)
+    # Scraped pages carry other people's leaked keys; none reaches a tracked artifact.
+    report = scrub(run(sources, state, _ask))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(report, indent=1, default=str), "utf-8")
     STATE.write_text(json.dumps(report["state"], indent=1), "utf-8")

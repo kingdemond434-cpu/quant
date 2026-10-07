@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.research.external_intelligence import (  # noqa: E402
     cross_universe_fusion,
     deep_forest_intelligence,
@@ -438,8 +439,9 @@ def publish_gaps(report: dict[str, Any], injected: int) -> None:
 
 
 def main() -> int:
-    report = build()
-    items = _rows("data/intelligence/public_strategy_items.json", "items")
+    # Scraped evidence carries other people's leaked keys; scrub before anything is written.
+    report = scrub(build())
+    items = scrub(_rows("data/intelligence/public_strategy_items.json", "items"))
     deep_candidates = report["deep_forest_intelligence"].get("hypothesis_candidates", [])
     injected = inject_hypotheses(items + [row for row in deep_candidates if isinstance(row, dict)])
     mt5_intake = inject_mt5_experiments(items)
