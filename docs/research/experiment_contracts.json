@@ -190,6 +190,21 @@
     "threshold": 20,
     "after": "30 days in which 20 or more of the drill rows stay UNMEASURED on the box: the scorecard grades nothing and the drills it reads are not running"
    }
+  },
+  "adversarial_risk": {
+   "hypothesis": "Driving poisoned optimizer, agent and forecast output (NaN/inf/negative/huge/wrong-sign fractions, stale or corrupt allocations, unknown symbols, lots above volume_max, margin above free margin) through the real sizing, heat ceiling, order door and margin switch every hour keeps any bypass of the independent controls from reaching the live book unseen.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "counts.BYPASS",
+    "better": "down",
+    "organ": "report:ADVERSARIAL_RISK.json"
+   },
+   "falsifier": {
+    "metric": "counts.UNMEASURED",
+    "op": ">=",
+    "threshold": 10,
+    "after": "30 days in which 10 or more cases stay UNMEASURED on the box: the battery no longer reaches the controls it claims to test"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
