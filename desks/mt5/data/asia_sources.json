@@ -622,7 +622,8 @@
     "nbs_industrial",
     "pboc_survey_stats"
    ],
-   "why_no_cells": "a TRANSPORT, not a mechanism. It carries other sources' series and mints no hypothesis of its own; the rule it answers to is that every source it serves must be named here, and a transport serving nothing is the same defect as a ground reaching no cell."
+   "why_no_cells": "a TRANSPORT, not a mechanism. It carries other sources' series and mints no hypothesis of its own; the rule it answers to is that every source it serves must be named here, and a transport serving nothing is the same defect as a ground reaching no cell.",
+   "terms_ref": "asia_tushare"
   },
   {
    "id": "rqdata",
@@ -734,13 +735,17 @@
    "url": "https://ecos.bok.or.kr/api/",
    "expect": "any",
    "access": "key",
-   "key_env": "BOK_API_KEY",
+   "key_env": "ECOS_API_KEY",
+   "key_env_aliases": [
+    "BOK_API_KEY"
+   ],
    "cadence": "daily",
    "targets": [
     "AUDUSD",
     "USDJPY"
    ],
-   "mechanism": "Korean macro is the cleanest high-frequency read on Asian industrial demand"
+   "mechanism": "Korean macro is the cleanest high-frequency read on Asian industrial demand",
+   "terms_ref": "kr_bok_card_spend"
   },
   {
    "id": "krx_open_api",
@@ -760,7 +765,15 @@
     "USDJPY",
     "JP225"
    ],
-   "mechanism": "derivatives OI, investor type, foreign trading, program trading and short selling -- a full participant picture on a market that opens before Europe"
+   "mechanism": "derivatives OI, investor type, foreign trading, program trading and short selling -- a full participant picture on a market that opens before Europe",
+   "terms_note": "KRX Data Marketplace OPEN API terms (https://openapi.krx.co.kr/contents/OPP/INFO/OPPINFO005.jsp, read 2026-10-06): Art. 6(2) 'API Users may only use the API Service for non-commercial purposes'; Art. 11(2) 'The API User may not provide the data provided by the KRX to any third parties.' REFUSED (audit of PR #239, 2026-10-06): the collector sends this host nothing; alt_proxies.terms_gate holds the decision (TERMS_HOSTS krx.co.kr -> kr_krx_market_data).",
+   "terms": "refused",
+   "terms_ref": "kr_krx_market_data",
+   "directive_rows": {
+    "ASIA-0465": "BLOCKED: program trading -- KRX terms refused, no lawful substitute",
+    "ASIA-0466": "BLOCKED: short selling -- KRX terms refused, no lawful substitute",
+    "ASIA-0467": "BLOCKED: derivatives OI -- KRX terms refused, no lawful substitute"
+   }
   },
   {
    "id": "kr_exports_20d",
@@ -821,7 +834,10 @@
     "HK50",
     "USDCNH"
    ],
-   "mechanism": "Northbound/Southbound flow is mainland money crossing a border, which is the CN/HK transmission measured directly"
+   "mechanism": "Northbound/Southbound flow is mainland money crossing a border, which is the CN/HK transmission measured directly",
+   "terms_note": "HKEX website Terms of Use (https://www.hkex.com.hk/Global/Exchange/Terms-of-Use, read 2026-10-06): 'You are not permitted to ... create or compile derivative works (including ... through framing or systematic retrieval to create collections, compilations, databases or directories) from the Information' and no 'text or data mining or web scraping in relation to this Website'. REFUSED (audit of PR #239, 2026-10-06): the collector sends this host nothing; alt_proxies.terms_gate holds the decision (TERMS_HOSTS hkex.com.hk -> hk_hkex_stock_connect).",
+   "terms": "refused",
+   "terms_ref": "hk_hkex_stock_connect"
   },
   {
    "id": "mas_api",
@@ -921,7 +937,8 @@
    "mechanism": "THE GRAVEYARD IS THE DATASET. The historical API returns dead, killed and archived strategies alongside live ones, which is the only way to ask what structure predicts DEATH rather than what a survivor looks like",
    "why": "a leaderboard of survivors answers a question nobody asked. This is the one public source that escapes survivorship bias by construction",
    "role": "genome",
-   "why_targets": "the genome asks a STRUCTURAL question -- what predicts persistence after costs across thousands of public strategies -- and its answer conditions cells on the instruments this account actually trades, rather than on whatever instrument a given public trader chose."
+   "why_targets": "the genome asks a STRUCTURAL question -- what predicts persistence after costs across thousands of public strategies -- and its answer conditions cells on the instruments this account actually trades, rather than on whatever instrument a given public trader chose.",
+   "terms_ref": "asia_collective2"
   },
   {
    "id": "darwinex",
@@ -945,7 +962,8 @@
    ],
    "mechanism": "investment attributes are an already-computed structural decomposition of thousands of strategies -- risk stability, timing, market correlation -- which is exactly the feature set the genome wants",
    "role": "genome",
-   "why_targets": "the genome asks a STRUCTURAL question -- what predicts persistence after costs across thousands of public strategies -- and its answer conditions cells on the instruments this account actually trades, rather than on whatever instrument a given public trader chose."
+   "why_targets": "the genome asks a STRUCTURAL question -- what predicts persistence after costs across thousands of public strategies -- and its answer conditions cells on the instruments this account actually trades, rather than on whatever instrument a given public trader chose.",
+   "terms_ref": "asia_darwinex"
   },
   {
    "id": "fxblue_public",
@@ -1098,7 +1116,8 @@
     "USDCAD",
     "USDNOK"
    ],
-   "mechanism": "the western half of the crude balance, which the Shanghai premium is measured against"
+   "mechanism": "the western half of the crude balance, which the Shanghai premium is measured against",
+   "terms_ref": "asia_eia_energy"
   },
   {
    "id": "mot_port_throughput",
@@ -1278,7 +1297,8 @@
     "AUDUSD",
     "XTIUSD"
    ],
-   "mechanism": "air cargo separates from sea container, and commodity separates from country. Air freight moves first and is the high-frequency half of a monthly number"
+   "mechanism": "air cargo separates from sea container, and commodity separates from country. Air freight moves first and is the high-frequency half of a monthly number",
+   "terms_ref": "jp_estat_immigration"
   },
   {
    "id": "cn_customs_detail",
@@ -1419,7 +1439,8 @@
     "AUDUSD"
    ],
    "mechanism": "thermal hotspots at refineries, flares and smelters. Flaring is throughput; an outage is its absence",
-   "caution": "a fire is not a factory. Only detections inside a declared industrial footprint are read, and the rest are discarded rather than averaged in"
+   "caution": "a fire is not a factory. Only detections inside a declared industrial footprint are read, and the rest are discarded rather than averaged in",
+   "terms_ref": "asia_nasa_firms"
   },
   {
    "id": "baidu_index",
@@ -1441,7 +1462,9 @@
     "AUDUSD"
    ],
    "mechanism": "ACCELERATION of attention on a fixed keyword basket -- gold, buy gold, RMB, USD, copper price, steel, house price, rate cut -- not the level. Chinese household attention to gold is a retail bid with a lag",
-   "boundary": "the published index product accessed as published; nothing that works around an access control"
+   "boundary": "the published index product accessed as published; nothing that works around an access control",
+   "terms_ref": "asia_baidu_index",
+   "terms": "refused"
   },
   {
    "id": "tfx_swap_points",
@@ -1637,7 +1660,8 @@
     "USDMXN",
     "GBPMXN"
    ],
-   "mechanism": "policy rate and the FX commission's hedge programme for a currency carrying two live sleeves, one of which (GBPMXN) measured cost exceeding its entire edge"
+   "mechanism": "policy rate and the FX commission's hedge programme for a currency carrying two live sleeves, one of which (GBPMXN) measured cost exceeding its entire edge",
+   "terms_ref": "asia_banxico_series"
   },
   {
    "id": "sarb_series",
@@ -3500,7 +3524,15 @@
     "KS11",
     "USDKRW"
    ],
-   "mechanism": "investor-category trading value separates the foreign book from the domestic retail one, the same member-positioning observation mined on SHFE, CFFEX and now CFTC"
+   "mechanism": "investor-category trading value separates the foreign book from the domestic retail one, the same member-positioning observation mined on SHFE, CFFEX and now CFTC",
+   "terms_note": "KRX Data Marketplace OPEN API terms (https://openapi.krx.co.kr/contents/OPP/INFO/OPPINFO005.jsp, read 2026-10-06): Art. 6(2) 'API Users may only use the API Service for non-commercial purposes'; Art. 11(2) 'The API User may not provide the data provided by the KRX to any third parties.' REFUSED (audit of PR #239, 2026-10-06): the collector sends this host nothing; alt_proxies.terms_gate holds the decision (TERMS_HOSTS krx.co.kr -> kr_krx_market_data).",
+   "terms": "refused",
+   "terms_ref": "kr_krx_market_data",
+   "directive_rows": {
+    "ASIA-0465": "BLOCKED: program trading -- KRX terms refused, no lawful substitute",
+    "ASIA-0466": "BLOCKED: short selling -- KRX terms refused, no lawful substitute",
+    "ASIA-0467": "BLOCKED: derivatives OI -- KRX terms refused, no lawful substitute"
+   }
   },
   {
    "id": "moex_derivatives",

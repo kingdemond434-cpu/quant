@@ -106,6 +106,19 @@
    "evidence": "jp_estat_immigration: https://www.e-stat.go.jp/terms-of-use"
   },
   {
+   "class": "card",
+   "paid": "BOK ECOS card spending (Korea, one configured item) [kr_bok_card_spend]",
+   "free": "",
+   "region": "KR",
+   "measure": "card_spend",
+   "frequency": "monthly",
+   "status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms": "to_confirm",
+   "blocked_because": "BOK ECOS Open API: a documented free-key API is not a licence; the terms of use were never read or quoted (re-audited 2026-10-06, see KR_HK_TERMS_EVIDENCE)",
+   "unsubstituted_because": "the BOK ECOS terms of use could not be read: ecos.bok.or.kr/api is a client-side single-page app and the box's fetch returned only the page title (2026-10-07), so the row is fenced to_confirm; no other free source publishes this BOK series under quoted reuse terms (BIS WS_CBPOL carries the policy rate only). Box action: read the ECOS 이용약관 in a browser and quote the permitting clause",
+   "evidence": ""
+  },
+  {
    "class": "satellite (port / AIS activity)",
    "paid": "Busan Port Authority monthly container throughput [kr_busan_port]",
    "free": "MOF import/export container TEU by month (Korea, data.go.kr) [kr_mof_container_teu]; IMF PortWatch daily port calls [imf_portwatch_ports]",
@@ -117,6 +130,60 @@
    "blocked_because": "BPA copyright policy / KOGL mark not found; robots.txt only names Yeti and Googlebot",
    "unsubstituted_because": "",
    "evidence": "kr_mof_container_teu: https://www.data.go.kr/data/15059131/openapi.do"
+  },
+  {
+   "class": "",
+   "paid": "Bank of Korea base rate (ECOS 722Y001, daily) [kr_ecos_base_rate]",
+   "free": "",
+   "region": "KR",
+   "measure": "base_rate",
+   "frequency": "daily",
+   "status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms": "to_confirm",
+   "blocked_because": "BOK ECOS Open API: terms of use not read, no permitting clause quoted (2026-10-06)",
+   "unsubstituted_because": "candidate bis_kr_policy_rate UNMEASURED (identity_by_publisher): COVERED only at corr >= 0.5 with n >= 12 against the original",
+   "evidence": "",
+   "candidates": "bis_kr_policy_rate: UNMEASURED (identity_by_publisher; corr=UNMEASURED, n=UNMEASURED)"
+  },
+  {
+   "class": "",
+   "paid": "Korea interbank call rate, overnight (ECOS 817Y002) [kr_ecos_call_rate]",
+   "free": "",
+   "region": "KR",
+   "measure": "call_rate_1d",
+   "frequency": "daily",
+   "status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms": "to_confirm",
+   "blocked_because": "BOK ECOS Open API: terms of use not read, no permitting clause quoted (2026-10-06)",
+   "unsubstituted_because": "candidate bis_kr_policy_rate UNMEASURED (nearest_lawful_proxy): COVERED only at corr >= 0.5 with n >= 12 against the original",
+   "evidence": "",
+   "candidates": "bis_kr_policy_rate: UNMEASURED (nearest_lawful_proxy; corr=UNMEASURED, n=UNMEASURED)"
+  },
+  {
+   "class": "",
+   "paid": "Korea export price index, won basis (ECOS 402Y014) [kr_ecos_export_prices]",
+   "free": "",
+   "region": "KR",
+   "measure": "export_price_index",
+   "frequency": "monthly",
+   "status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms": "to_confirm",
+   "blocked_because": "BOK ECOS Open API: terms of use not read, no permitting clause quoted (2026-10-06)",
+   "unsubstituted_because": "the BOK ECOS terms of use could not be read: ecos.bok.or.kr/api is a client-side single-page app and the box's fetch returned only the page title (2026-10-07), so the row is fenced to_confirm; no other free source publishes this BOK series under quoted reuse terms (BIS WS_CBPOL carries the policy rate only). Box action: read the ECOS 이용약관 in a browser and quote the permitting clause",
+   "evidence": ""
+  },
+  {
+   "class": "",
+   "paid": "Korea official FX reserves (ECOS 732Y001, monthly) [kr_ecos_fx_reserves]",
+   "free": "",
+   "region": "KR",
+   "measure": "fx_reserves_usd_k",
+   "frequency": "monthly",
+   "status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms": "to_confirm",
+   "blocked_because": "BOK ECOS Open API: terms of use not read, no permitting clause quoted (2026-10-06)",
+   "unsubstituted_because": "the BOK ECOS terms of use could not be read: ecos.bok.or.kr/api is a client-side single-page app and the box's fetch returned only the page title (2026-10-07), so the row is fenced to_confirm; no other free source publishes this BOK series under quoted reuse terms (BIS WS_CBPOL carries the policy rate only). Box action: read the ECOS 이용약관 in a browser and quote the permitting clause",
+   "evidence": ""
   },
   {
    "class": "card",

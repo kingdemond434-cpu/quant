@@ -1,6 +1,18 @@
-"""THE KOREA MINER REGISTRY -- the twelve agents, the lattice, the interaction miner and credit.
+"""THE KOREA MINER REGISTRY -- the official plane, plus the box-built agents when they exist.
 
-FIFTEEN MINERS, FOUR MODULES, ONE TABLE. `MINERS` maps a miner name to `callable(ctx) -> dict`,
+WHAT IS COMMITTED AND WHAT IS NOT (measured 2026-10-06). The sixteen miners below `BOX_SPECS`
+live in `agents.py`, `lattice.py` and `moat.py`, which were built on the trading box and NEVER
+committed (`git log --all -S` finds no commit that ever carried their functions; Tier-1 K1/K2).
+In this repository they resolved MISSING, sixteen of sixteen. They are now registered ONLY when
+their module file is present beside this one: on a tree without them nothing is declared that
+cannot run, and on the box (if the untracked files are still there) they run exactly as before.
+What this repository itself owns is `SPECS`: the official plane (`official_plane.py`), which
+reads the alt-data factory's KR series (BOK ECOS, customs 10/20-day prints) and must ALWAYS
+resolve. `NOT_IN_REPO` names every box-only miner that is absent here, so the absence is a
+reported fact and never a silent shrink.
+
+THE BOX-ONLY TABLE, AS ORIGINALLY WRITTEN: fifteen miners, four modules, one table.
+`MINERS` maps a miner name to `callable(ctx) -> dict`,
 which is the contract `region_department.load_region` and `country_lab.run_lab` both read. The
 twelve agents come from `agents.py`, the lattice expansion from `lattice.py`, and the interaction
 miner and delayed source credit from `moat.py`.
@@ -64,10 +76,16 @@ def _import(module: str) -> Any:
     raise ImportError(f"{module}: {last}")
 
 
-#: THE FIFTEEN, as (miner name, module, attribute). The twelve agents are named by their agent
-#: name so `generator = "kr:<name>"` and the miner name are THE SAME STRING -- a department whose
-#: budget table and whose yield table key on different names cannot pay its own miners.
+#: THE COMMITTED MINERS, as (miner name, module, attribute). These must always resolve.
 SPECS: tuple[tuple[str, str, str], ...] = (
+    ("official_plane", "official_plane", "run"),
+)
+
+#: THE BOX-BUILT FIFTEEN (+ moat_stores), as (miner name, module, attribute). The twelve agents
+#: are named by their agent name so `generator = "kr:<name>"` and the miner name are THE SAME
+#: STRING -- a department whose budget table and whose yield table key on different names cannot
+#: pay its own miners. Registered only when the module file exists beside this one.
+BOX_SPECS: tuple[tuple[str, str, str], ...] = (
     ("macro_brain", "agents", "agent_macro_brain"),
     ("derivatives_brain", "agents", "agent_derivatives_brain"),
     ("trade_nowcaster", "agents", "agent_trade_nowcaster"),
@@ -90,12 +108,26 @@ SPECS: tuple[tuple[str, str, str], ...] = (
     # counted like the others.
     ("moat_stores", "moat", "build"),
 )
-NAMES: tuple[str, ...] = tuple(name for name, _m, _a in SPECS)
+
+
+def _box_module_present(module: str) -> bool:
+    return (_HERE.parent / f"{module}.py").exists()
+
+
+#: Box-built miners whose module is absent from this tree: named, not registered.
+NOT_IN_REPO: dict[str, str] = {
+    name: (f"{module}.py was built on the trading box and never committed (Tier-1 K1/K2); "
+           "absent from this tree, so the miner is not registered here")
+    for name, module, _a in BOX_SPECS if not _box_module_present(module)}
+ACTIVE_SPECS: tuple[tuple[str, str, str], ...] = (
+    *SPECS, *(s for s in BOX_SPECS if s[0] not in NOT_IN_REPO))
+NAMES: tuple[str, ...] = tuple(name for name, _m, _a in ACTIVE_SPECS)
 
 #: Which loop step each miner runs under, in `region_department.MINER_STEP`'s vocabulary. A miner
 #: that belongs to no step is a miner the loop never schedules, which is the quiet way a lane
 #: dies; this table is what a test can assert is total.
 MINER_KIND: dict[str, str] = {
+    "official_plane": "data",
     "macro_brain": "mechanism", "derivatives_brain": "mechanism",
     "trade_nowcaster": "data", "corporate_event_brain": "mechanism",
     "retail_ecology_brain": "mechanism", "quant_code_hunter": "scout",
@@ -176,7 +208,8 @@ def _wrap_moat(fn: Callable[..., dict[str, Any]]) -> Callable[[Any], dict[str, A
     def mine_moat_stores(ctx: Any) -> dict[str, Any]:
         dry = bool(getattr(ctx, "dry_run", False))
         report = fn(ctx, getattr(ctx, "conn", None), write=not dry)
-        stores = report.get("stores") if isinstance(report.get("stores"), dict) else {}
+        raw = report.get("stores")
+        stores: dict[str, Any] = raw if isinstance(raw, dict) else {}
         return {"agent": "moat_stores", "region": REGION, "discoveries": [], "n_discoveries": 0,
                 "unmeasured": list(report.get("unmeasured") or []),
                 "why": (f"{len(stores)} moat store(s) built"
@@ -189,9 +222,29 @@ def _wrap_moat(fn: Callable[..., dict[str, Any]]) -> Callable[[Any], dict[str, A
     return mine_moat_stores
 
 
+def _wrap_official(fn: Callable[..., dict[str, Any]]) -> Callable[[Any], dict[str, Any]]:
+    """`official_plane.run` in miner shape, through the shared country data-plane adapter."""
+    dpm: Any = None
+    for root in ("countries", "research.countries", "desks.mt5.research.countries"):
+        with contextlib.suppress(ImportError):
+            dpm = importlib.import_module(f"{root}._data_plane_miner")
+            break
+    if dpm is None:
+        raise ImportError("countries._data_plane_miner is not importable under any root")
+    plane = _import("official_plane")
+    mine = dpm.data_plane_miner(REGION, fn, plane.LANES, plane.REPORT)
+
+    def mine_official_plane(ctx: Any) -> dict[str, Any]:
+        out = dict(mine(ctx))
+        out["agent"] = "official_plane"
+        return out
+
+    return mine_official_plane
+
+
 _WRAPPERS: dict[str, Callable[[Callable[..., dict[str, Any]]], Callable[[Any], dict[str, Any]]]]
 _WRAPPERS = {"lattice": _wrap_lattice, "interaction": _wrap_interaction, "credit": _wrap_credit,
-             "moat_stores": _wrap_moat}
+             "moat_stores": _wrap_moat, "official_plane": _wrap_official}
 
 
 def _context(ctx: Any) -> tuple[Any, str]:
@@ -205,6 +258,10 @@ def _context(ctx: Any) -> tuple[Any, str]:
     running against half a context and reporting a clean pass is worse than one that did not run.
     """
     if hasattr(ctx, "record_discovery") and hasattr(ctx, "claims") and hasattr(ctx, "keys"):
+        return ctx, ""
+    if not _box_module_present("agents"):
+        # No KR agent context exists on this tree: the committed miners take any context that
+        # carries conn / budget_s / dry_run, so there is nothing to adapt and nothing to hide.
         return ctx, ""
     adapted = make_ctx(getattr(ctx, "conn", None),
                        float(getattr(ctx, "budget_s", BUDGET_S) or BUDGET_S),
@@ -258,7 +315,7 @@ def refresh() -> tuple[dict[str, Callable[[Any], dict[str, Any]]], dict[str, str
     """
     MINERS.clear()
     MISSING.clear()
-    for name, module, attribute in SPECS:
+    for name, module, attribute in ACTIVE_SPECS:
         globals().pop(f"mine_{name}", None)
         try:
             mod = _import(module)
@@ -293,8 +350,13 @@ def make_ctx(conn: Any = None, budget_s: float = BUDGET_S, **kwargs: Any) -> Any
     Re-exported here because the region framework reaches for `miners.make_ctx` and the agents
     own the context's shape; two `make_ctx` implementations would be two departments.
     """
-    agents = _import("agents")
-    return agents.make_ctx(conn, budget_s, **kwargs)
+    if _box_module_present("agents"):
+        agents = _import("agents")
+        return agents.make_ctx(conn, budget_s, **kwargs)
+    from types import SimpleNamespace
+    return SimpleNamespace(conn=conn, budget_s=float(budget_s),
+                           dry_run=bool(kwargs.get("dry_run", False)), agent="",
+                           started_at_monotonic=0.0)
 
 
 def run_miner(name: str, ctx: Any) -> dict[str, Any]:
@@ -304,8 +366,8 @@ def run_miner(name: str, ctx: Any) -> dict[str, Any]:
         refresh()
     fn = MINERS.get(name)
     if fn is None:
-        why = MISSING.get(name) or (f"{name!r} is not a KR miner name; the fifteen are "
-                                    f"{', '.join(NAMES)}")
+        why = MISSING.get(name) or NOT_IN_REPO.get(name) or (
+            f"{name!r} is not a KR miner name; the registered ones are {', '.join(NAMES)}")
         return {"miner": name, "region": REGION, "seconds": 0.0, "discoveries": [],
                 "unmeasured": [{"what": f"miner:{name}", "verdict": UNMEASURED, "why": why}],
                 "why": why, "status": "MISSING"}
@@ -351,6 +413,7 @@ def run_all(ctx: Any, only: Iterable[str] | None = None) -> dict[str, Any]:
     return {"region": REGION, "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
             "seconds": round(time.monotonic() - started, 3), "n_miners": len(results),
             "resolved": sorted(MINERS), "missing": dict(MISSING),
+            "not_in_repo": dict(NOT_IN_REPO),
             "by_status": {s: sum(1 for r in results if r["status"] == s)
                           for s in ("RAN", "OVERRAN", "RAISED", "MISSING")},
             "n_discoveries": sum(len(r["discoveries"]) for r in results),
@@ -361,7 +424,7 @@ def run_all(ctx: Any, only: Iterable[str] | None = None) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="the Korea department's fifteen miners")
+    ap = argparse.ArgumentParser(description="the Korea department's miners")
     ap.add_argument("--list", action="store_true", help="print the resolution table and exit")
     ap.add_argument("--run", default="", help="one miner by name")
     ap.add_argument("--run-all", action="store_true")
@@ -371,7 +434,8 @@ def main(argv: list[str] | None = None) -> int:
     refresh()
     if a.list or not (a.run or a.run_all):
         print(json.dumps({"names": list(NAMES), "resolved": sorted(MINERS),
-                          "missing": MISSING, "kinds": MINER_KIND}, indent=1))
+                          "missing": MISSING, "not_in_repo": NOT_IN_REPO,
+                          "kinds": MINER_KIND}, indent=1))
         return 0
     conn = None
     if not a.dry_run:
@@ -385,8 +449,9 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-__all__ = ["CUSTOM_MINER_ENTRIES", "MINERS", "MINER_KIND", "MISSING", "NAMES", "SPECS", "main",
-           "make_ctx", "refresh", "run_all", "run_miner"]
+__all__ = ["ACTIVE_SPECS", "BOX_SPECS", "CUSTOM_MINER_ENTRIES", "MINERS", "MINER_KIND", "MISSING",
+           "NAMES", "NOT_IN_REPO", "SPECS", "main", "make_ctx", "refresh", "run_all",
+           "run_miner"]
 
 
 if __name__ == "__main__":

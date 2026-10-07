@@ -132,8 +132,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: BLOCKED_ON_KEY:ECOS_API_KEY
-  terms: confirmed
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   mechanism: Korean card use is near-universal, so the BOK's card-spending series is household consumption
     itself, printed a month before the national accounts
   payer: won holders and Korea-exposed books waiting for GDP and retail surveys
