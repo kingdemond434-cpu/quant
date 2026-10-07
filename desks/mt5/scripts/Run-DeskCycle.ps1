@@ -386,7 +386,7 @@ eleven-line COMPACT REPORT). The launcher marks DONE only on a clean exit.
 
 THIS IS AN ACTION CYCLE, NOT A REPORTING CYCLE.
 STEP 4B (the daily tier-1 breadth review) runs every pass: answer from live data whether breadth, production and global ingestion are maxed out at tier-1 level and what tier the quant is today, rank the gaps, act on the biggest, and write desks/mt5/reports/TIER1_BREADTH_REVIEW.json.
-Duties D15-D26 (judging rate, UNKNOWN by cause, box state freshness, unfed datasets, paid substitutes, cross-culture orthogonality, live code drift, decay and markout, confident kills, credentials, pass-2 queue age, six-event trend) are checked every pass with their artifacts; an absent artifact is UNMEASURED, which is MISSED.
+Duties D15-D44 (judging rate, UNKNOWN by cause, box state freshness, unfed datasets, paid substitutes, cross-culture orthogonality, live code drift, decay and markout, confident kills, credentials, pass-2 queue age, six-event trend, committee health, global coverage tensor, never-attempted, stranded, silent, empty clusters, source ROI, backpressure, GitHub resident miner, QuantConnect/WorldQuant/fund lanes, institutional coverage, judge efficiency, effective breadth, timeframe and session breadth, nothing is a museum, ontology never closed, allocator integrity, self-evolution) are checked every pass with their artifacts; an absent artifact is UNMEASURED, which is MISSED. Start from desks/mt5/reports/CRO_DUTIES.json, which the launcher measured from this host before you started; it re-checks after you finish and turns any MET it cannot back with an artifact into MISSED.
 REFUSED TOOLS ARE RECORDED. A tool call outside this lane's allowlist is refused, and the launcher records each refusal in the CRO ledger as UNMEASURED (counts_as MISSED) and marks the duty that step served MISSED in TIER1_BREADTH_REVIEW.json. Never score a duty MET when a step it needed was refused; name the refused step and its disposition instead. WebFetch is granted only for the hosts in ops/agent_webfetch_domains.json.
 "@
 
@@ -415,6 +415,19 @@ Add-LedgerRow @{
     head = $startIdentity.head; branch = $startIdentity.branch
     release_code_sha = $(if ($startIdentity.release) { $startIdentity.release.code_sha } else { $null })
 }
+
+# THE DUTY TABLE IS MEASURED BEFORE THE AGENT READS IT. check_cro_duties.py reads every artifact
+# each STEP 4B row names and writes reports/CRO_DUTIES.json, so the pass starts from what is on
+# this host rather than from what the table says should be. Its failure is logged, never fatal.
+function Invoke-DutyCheck([string[]]$extra) {
+    $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    Push-Location $RepoRoot
+    $out = (& $Python scripts\check_cro_duties.py --json @extra 2>&1 | Out-String)
+    Pop-Location
+    $ErrorActionPreference = $prevEap
+    Write-Cycle ("duty artifacts: {0}" -f ($out.Trim() -split "`n")[-1])
+}
+Invoke-DutyCheck @()
 
 $started = Get-Date
 try {
@@ -478,6 +491,9 @@ if ($streamJson) {
         Write-Cycle ("permission denials UNMEASURED: recorder failed ({0})" -f $recJson.Trim())
     }
 }
+
+# AND AFTER IT: a duty the pass scored MET whose artifacts this host cannot show is MISSED.
+Invoke-DutyCheck @("--review", $Review, "--started-at", $started.ToUniversalTime().ToString("o"))
 
 $mins = [math]::Round(((Get-Date) - $started).TotalMinutes, 1)
 

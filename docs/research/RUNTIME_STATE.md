@@ -14,7 +14,7 @@
 | **LIVE** | 90 | artifact present and newer than the organ's derived max silence |
 | **STALE** | 46 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 47 | artifact absent while this host recorded the organ running |
-| **NEVER** | 766 | no artifact and no run record on this host |
+| **NEVER** | 767 | no artifact and no run record on this host |
 | **UNMEASURED** | 37 | artifact present, cadence undeclared -- nothing here may call it late |
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
@@ -217,7 +217,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (766)
+## NEVER (767)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -987,6 +987,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `task:E8-Book` | `E8-Book` | UNMEASURED UNMEASURED | `desks/mt5/reports/E8_BOOK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:committee_ensembles` | `hourly_cycle:committee_ensembles` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMMITTEES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:regional_parity` | `hourly_cycle:regional_parity` | UNMEASURED UNMEASURED | `desks/mt5/reports/REGIONAL_PARITY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:scripts/check_cro_duties.py` | `invoked:desks/mt5/scripts/Run-DeskCycle.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/CRO_DUTIES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (37)
 

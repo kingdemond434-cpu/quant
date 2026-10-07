@@ -26,7 +26,7 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 766,
+  "NEVER": 767,
   "UNMEASURED": 37
  },
  "scope": {
@@ -295,6 +295,16 @@
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "leg:committee_ensembles"
+    ]
+   },
+   {
+    "at": "2026-10-07T06:42:46+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:scripts/check_cro_duties.py"
     ]
    },
    {
@@ -3609,7 +3619,7 @@
     "_": "UNMEASURED (not a readable JSON object)"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/miner_candidate_compiler.py \u2192 desks/mt5/data/hypotheses/miner"
+   "consumer": "desks/mt5/research/miner_candidate_compiler.py → desks/mt5/data/hypotheses/miner"
   },
   {
    "organ": "leg:state_admission",
@@ -4078,7 +4088,7 @@
     "outcome": "exit_code=1"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning \u2192 StateVector.co"
+   "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning → StateVector.co"
   },
   {
    "organ": "leg:dead_architecture",
@@ -4238,7 +4248,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "libs/research/bandit SOURCE_ARM \u2192 exit_improvement budget share; nothing reads e"
+   "consumer": "libs/research/bandit SOURCE_ARM → exit_improvement budget share; nothing reads e"
   },
   {
    "organ": "leg:experiment_cache",
@@ -4531,7 +4541,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "ML_LAYER.json is read by scripts/build_zentech_state.py (dashboard) \u2014 the repres"
+   "consumer": "ML_LAYER.json is read by scripts/build_zentech_state.py (dashboard) — the repres"
   },
   {
    "organ": "leg:model_league",
@@ -4556,7 +4566,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/issue_board.py:74 tracks MODEL_ZOO.json freshness (3600s) \u2014 a"
+   "consumer": "desks/mt5/research/issue_board.py:74 tracks MODEL_ZOO.json freshness (3600s) — a"
   },
   {
    "organ": "leg:model_skill",
@@ -4689,7 +4699,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "promoter.allocation_view \u2192 admission_of \u2192 capital_verdict \u2192 reconcile_capital \u2192 "
+   "consumer": "promoter.allocation_view → admission_of → capital_verdict → reconcile_capital → "
   },
   {
    "organ": "leg:promoter",
@@ -25374,6 +25384,34 @@
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
    "measured_at": "2026-10-07T01:02:10+00:00"
+  },
+  {
+   "organ": "executable:scripts/check_cro_duties.py",
+   "kind": "executable",
+   "code": [
+    "scripts/check_cro_duties.py"
+   ],
+   "clock": "invoked:desks/mt5/scripts/Run-DeskCycle.ps1",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CRO_DUTIES.json",
+   "artifact_declared": "desks/mt5/reports/CRO_DUTIES.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-07T06:42:46+00:00"
   },
   {
    "organ": "leg:regional_parity",
