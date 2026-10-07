@@ -270,8 +270,30 @@ def _install_read_probe() -> None:
     Path._maxaudit_probed = True
 
 
+def _git_owns_root() -> bool:
+    """True only when ROOT is ITSELF the top of a git work tree.
+
+    `git` run with cwd=ROOT answers for whichever repository ENCLOSES that directory. When ROOT
+    is not a repo root -- a test tree under a pytest basetemp that sits inside a checkout, which
+    is where builders are told to keep it -- the enclosing repo answered instead: `ls-files`
+    named none of ROOT's files, and `check-ignore` called every one of them ignored whenever the
+    basetemp sat in an ignored directory (`.pytest_tmp/`), so the governance check judged
+    nothing and passed. An answer about a different tree is no answer: the callers then judge
+    the filesystem, exactly as they do with no git at all."""
+    try:
+        out = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=ROOT,
+                             capture_output=True, text=True, timeout=20, check=False)
+        top = out.stdout.strip()
+        return out.returncode == 0 and bool(top) and Path(top).resolve() == Path(ROOT).resolve()
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 def _tracked_set() -> set[str]:
-    """Every path git tracks, repo-relative. One subprocess, cached by the caller."""
+    """Every path git tracks, repo-relative. One subprocess, cached by the caller. Empty when
+    ROOT is not itself a git work-tree root (`_git_owns_root`)."""
+    if not _git_owns_root():
+        return set()
     try:
         out = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True,
                              text=True, timeout=60, check=False)
@@ -5207,6 +5229,8 @@ def check_artifact_governance(defects) -> None:
     # the scratch, green on a runner that never did. A gate whose verdict depends on which machine
     # ran it cannot be trusted in either direction. Governance applies to what is COMMITTED.
     with contextlib.suppress(OSError, subprocess.SubprocessError):
+        if not _git_owns_root():           # an ENCLOSING repo's ignore rules are not this tree's
+            raise subprocess.SubprocessError("ROOT is not a git work-tree root")
         ig = subprocess.run(["git", "check-ignore", "--stdin"], cwd=ROOT, input="\n".join(cands),
                             capture_output=True, text=True, timeout=20)
         if ig.returncode in (0, 1):        # 0 = some ignored, 1 = none ignored; 128 = no git

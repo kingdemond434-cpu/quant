@@ -91,9 +91,14 @@ def _tier_s_state_stays_out_of_the_checkout(monkeypatch: pytest.MonkeyPatch,
     sink = tmp_path_factory.mktemp("tier_s_sink")
     real_record = blinding.record
 
+    # A test's OWN tmp_path is never redirected, even when the basetemp sits inside the checkout
+    # (builders keep `--basetemp` in their worktree). Redirecting it sent the test's write to the
+    # sink while the test read its tmp_path: FileNotFoundError on blinding_runtime.jsonl.
+    base = tmp_path_factory.getbasetemp().resolve()
+
     def record(root: Path, rep: Any, ledger: str = blinding.RUNTIME_LEDGER) -> None:
         target = (Path(root) / ledger).resolve()
-        if target.is_relative_to(repo):
+        if target.is_relative_to(repo) and not target.is_relative_to(base):
             root, ledger = sink, str(target.relative_to(repo))
         real_record(root, rep, ledger)
 

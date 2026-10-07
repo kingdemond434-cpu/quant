@@ -58,6 +58,25 @@ class TestFenceRefuses:
         m.check_artifact_governance(out)
         assert "artifact-ungoverned" in [d[0] for d in out]
 
+    def test_an_enclosing_repos_ignore_rules_do_not_hide_the_tree(self, tmp_path,
+                                                                    monkeypatch) -> None:
+        """ROOT inside an IGNORED directory of some other checkout (a pytest basetemp under
+        `.pytest_tmp/`): that repo's `check-ignore` called every file ignored and its `ls-files`
+        named none, so the fence judged nothing. Only ROOT's own git may narrow the scope."""
+        import subprocess
+        outer = tmp_path / "outer"
+        outer.mkdir()
+        subprocess.run(["git", "init", "-q", str(outer)], check=True)
+        (outer / ".gitignore").write_text("scratch/\n", "utf-8")
+        root = outer / "scratch" / "tree"
+        (root / "docs").mkdir(parents=True)
+        (root / "docs/zz_unclaimed.md").write_text("# scratch\n", "utf-8")
+        monkeypatch.setattr(m, "ROOT", root)
+        assert not m._git_owns_root() and m._tracked_set() == set()
+        out: list[tuple[str, str]] = []
+        m.check_artifact_governance(out)
+        assert "artifact-ungoverned" in [d[0] for d in out]
+
 
 class TestGovernanceAppliesToWhatIsCommitted:
     """A shared checkout means another worker's scratch must not trip this desk's gate --
