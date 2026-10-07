@@ -74,6 +74,7 @@ sizes, routes capital or mints a cell; the hypothesis doors stay where they are.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import math
@@ -921,10 +922,8 @@ def write_report(report: Path, doc: Mapping[str, Any]) -> str:
     except OSError as exc:
         return f"WRITE_FAILED: {type(exc).__name__}: {str(exc)[:160]}"
     finally:
-        try:
+        with contextlib.suppress(OSError):
             tmp.unlink(missing_ok=True)
-        except OSError:
-            pass
 
 
 def main(argv: list[str] | None = None) -> int:
