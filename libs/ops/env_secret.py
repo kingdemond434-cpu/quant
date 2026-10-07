@@ -108,20 +108,36 @@ SECRET_SUFFIXES = ("_KEY", "_TOKEN", "_SECRET")
 #: and alias. When it is present it is the WHOLE carried set -- catalog names only, minus the
 #: refused groups (paid data, banned sources) and the names whose source is blocked on terms.
 CATALOG = Path(__file__).with_name("env_keys_catalog.json")
-REFUSED_GROUPS = frozenset({"paid_blocked", "banned"})
+#: Catalog groups never carried: paid data, banned sources, and keys with no admitted reader.
+REFUSED_GROUPS = frozenset({"paid_blocked", "banned", "unavailable"})
 #: Sources whose machine use is held on terms: their logins stay on the box, never in a child.
 BLOCKED_ON_TERMS = frozenset({"MYFXBOOK_EMAIL", "MYFXBOOK_PASSWORD", "MYFXBOOK_SESSION"})
+#: HARD REFUSALS, with or without a catalog (audit #204, 2026-10-07): the fenced platforms
+#: (libs/data/terms_fence.py) by prefix, and the paid sources by name. A suffix-mode resident
+#: would otherwise hand X_BEARER_TOKEN or a paid vendor's token to every child it starts.
+REFUSED_PREFIXES: tuple[str, ...] = ("X_", "TWITTER_", "REDDIT_", "STOCKTWITS_", "DISCORD_")
+PAID_BLOCKED = frozenset({"TIANYANCHA_TOKEN", "BAIDU_INDEX_COOKIE", "CLOUDFLARE_API_TOKEN",
+                          "GFW_API_TOKEN", "XUEQIU_COOKIE", "WIND_KEY"})
+
+
+def _hard_refused(up: str) -> bool:
+    return up in BLOCKED_ON_TERMS or up in PAID_BLOCKED or up.startswith(REFUSED_PREFIXES)
 
 
 def _catalog_names() -> tuple[set[str], set[str]] | None:
-    """(allowed, refused) upper-cased names from the catalog, or None when it is absent."""
+    """(allowed, refused) upper-cased names from the catalog; None when there is NO catalog file.
+    A catalog that exists and cannot be read is ({}, {}): it carries nothing (fail closed)."""
+    if not CATALOG.exists():
+        return None
     allowed: set[str] = set()
     refused: set[str] = set(BLOCKED_ON_TERMS)
     try:
-        rows = json.loads(CATALOG.read_text(encoding="utf-8")).get("keys", [])
+        rows = json.loads(CATALOG.read_text(encoding="utf-8")).get("keys")
     except (OSError, ValueError, AttributeError):
-        return None
-    for r in rows if isinstance(rows, list) else []:
+        return set(), set()
+    if not isinstance(rows, list):
+        return set(), set()
+    for r in rows:
         if not isinstance(r, dict):
             continue
         names = {str(n).upper() for n in [r.get("name"), *(r.get("aliases") or [])] if n}
@@ -133,11 +149,12 @@ def _catalog_names() -> tuple[set[str], set[str]] | None:
 
 def is_secret_name(name: str,
                    catalog: tuple[set[str], set[str]] | bool | None = True) -> bool:
-    """A variable a resident should carry to its children. With the catalog: a catalogued name
-    that no refused group or terms block covers. Without it: an API-key-shaped name."""
+    """A variable a resident should carry to its children. Never a hard-refused name. With the
+    catalog: a catalogued name no refused group or terms block covers. Without it: an
+    API-key-shaped name."""
     cat = _catalog_names() if catalog is True else catalog
     up = name.upper()
-    if up in BLOCKED_ON_TERMS:
+    if _hard_refused(up):
         return False
     if isinstance(cat, tuple):
         allowed, refused = cat
