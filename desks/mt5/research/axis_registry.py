@@ -202,7 +202,11 @@ _FAMILY_GROUPS: dict[str, str] = {
     "volatility_shock price_only stop": "d1_inside volatility_squeeze",
     "regime_transition price_only market": "drawdown_conditional regime_split"
                                            " regime_transition vol_transition",
-    "execution_microstructure microstructure market": "liquidity_regime orderflow_imbalance",
+    # The execution-entry operators (2026-10-06): the payer is the liquidity provider the desk
+    # pays the spread to, and the information is the bars' own spread on the session clock.
+    "execution_microstructure microstructure market": "liquidity_regime orderflow_imbalance"
+                                                      " entry_alpha_spread_session_median"
+                                                      " entry_alpha_post_open_normalised",
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
                                                      " spread_state",
     "gamma_hedging_state microstructure market": "liquidity_gamma_reversal",
