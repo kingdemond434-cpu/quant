@@ -52,6 +52,9 @@ ROSTER = DESK / "data" / "free_stack_sources.json"
 CURSOR = DESK / "data" / "free_stack" / "proposer_cursor.json"
 SERIES = DESK / "data" / "lake" / "series"
 REPORT = DESK / "reports" / "FREE_STACK_PROPOSER.json"
+#: DATA-24: the hunter's licence report. A column a fenced upstream produced is never minted, even
+#: when an older pass archived it; no report fences every source it governs (fail closed).
+LICENCE = DESK / "reports" / "CN_AGGREGATOR_LICENCE.json"
 #: Rows donated per pass. NOT A BRAKE ON BREADTH: the ring cursor walks the whole grid, so every
 #: cell is minted within `passes_to_cover_grid` hours; the bound keeps the registry write inside
 #: the hour (measured on the box: ~4 rows/s before batching; see
@@ -104,20 +107,37 @@ def _row(sid: str, src: dict[str, Any], col: str, meta: dict[str, Any], sym: str
     return c
 
 
-def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]]
+def licence_fence(report: Any = None) -> dict[str, list[str]]:
+    """{source id: fenced columns ("*" = all)} from reports/CN_AGGREGATOR_LICENCE.json."""
+    from libs.data.free_stack import fenced_columns
+    return fenced_columns(_read(LICENCE, None) if report is None else report)
+
+
+def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]],
+               fence: dict[str, list[str]] | None = None
                ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """The full grid, in a stable order (source, column, symbol, chart, arm)."""
+    """The full grid, in a stable order (source, column, symbol, chart, arm). Columns the
+    licence report fences (DATA-24) are left out and named in `skipped`."""
     out: list[dict[str, Any]] = []
     skipped: dict[str, str] = {}
+    fence = licence_fence() if fence is None else fence
     for sid in sorted(columns):
         src = roster.get(sid)
         if src is None:
             skipped[sid] = "no roster row"
             continue
+        shut = set(fence.get(sid) or ())
+        if "*" in shut:
+            skipped[sid] = "BLOCKED_ON_TERMS: fenced by reports/CN_AGGREGATOR_LICENCE.json"
+            continue
         if not series_exists(sid):
             skipped[sid] = "no data/lake/series/fs_<id> frame on this host yet"
             continue
-        for col in sorted(columns[sid]):
+        held = sorted(shut & set(columns[sid]))
+        if held:
+            skipped[sid] = (f"BLOCKED_ON_TERMS: columns {','.join(held)} fenced by "
+                            "reports/CN_AGGREGATOR_LICENCE.json")
+        for col in sorted(c for c in columns[sid] if c not in shut):
             meta = columns[sid][col] or {}
             for sym, chart in product(meta.get("hypothesis") or [], CHARTS):
                 base = {"source": f"fs_{sid}", "signal": col}

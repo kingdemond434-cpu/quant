@@ -241,7 +241,12 @@ def test_hunter_pass_on_fixtures_writes_yield_series_catalogue_and_state(store, 
     for sid in ("tushare", "jp_patents", "baostock"):
         assert per[sid]["status"] == "REFUSED_HARD_BOUNDARY", sid
         assert per[sid]["attempts"] == 0 and per[sid]["last_error"], sid
-    assert per["akshare"]["status"] == "OK"
+    # DATA-24: AKShare's upstreams pass the terms gate first. Eastmoney is refused and Sina
+    # unread, so the route sends nothing and says why -- never a silent empty, never a fixture yield
+    assert per["akshare"]["status"].startswith("BLOCKED_ON_TERMS:"), per["akshare"]["status"]
+    assert per["akshare"]["requests"] == 0 and "eastmoney" in per["akshare"]["last_error"]
+    lic = json.loads(store.licence.read_text("utf-8"))
+    assert {u["source_id"] for u in lic["upstreams"]} >= {"akshare", "tushare", "baostock"}
     assert per["congress_trades"]["status"] == "OK"
     assert per["coinpaprika"]["status"] == "OK"
     assert per["dataset_catalogues"]["status"] == "OK"
