@@ -753,7 +753,8 @@ def _control_room() -> None:
         raise RuntimeError(f"every control-room artifact failed: {failed}")
 
 
-STEPS = (("research_gap_map", _research_gap_map),
+STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
+         ("research_gap_map", _research_gap_map),
          ("refresh_bars", _refresh_bars), ("deepen_bars", _deepen_bars),
          ("cost_fields", _cost_fields),
          ("factor_residual", _factor_residual), ("research_bandit", _research_bandit),
@@ -772,7 +773,6 @@ STEPS = (("research_gap_map", _research_gap_map),
          ("module_rent_research", _module_rent_research), ("build_allocator", _build_allocator),
          ("simplifier", _simplifier), ("capacity_watch", _capacity_watch),
          ("six_event_trace", _six_event_trace),
-         ("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
 
 def main(argv: list[str] | None = None) -> int:
