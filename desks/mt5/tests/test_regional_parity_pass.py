@@ -4,9 +4,12 @@
 
 What is fenced here:
 
-  * ONE PASS WRITES THREE THINGS: reports/REGIONAL_PARITY.json, the committed digest under
-    data/digests/, and a `discoveries_parity_<date>.json` in the exact shape
-    `acquire_datasets._endpoints` reads (a list of rows with `endpoints` and `host`);
+  * ONE PASS WRITES FIVE THINGS, all gitignored box state: reports/REGIONAL_PARITY.json, the
+    digest under data/digests/, the candidate-class ledger, the dataset hunter's parity targets,
+    and a `discoveries_parity_<date>.json` in the exact shape `acquire_datasets._endpoints` reads
+    (rows with `endpoints`, `host` and the parity `lane` marker);
+  * AN UNMATCHED DECLARATION IS A PERSISTED CANDIDATE CLASS, never dropped, even once absent;
+  * EVERY UNMEASURED CELL REACHES THE DATASET HUNTER as a parity target;
   * --dry-run WRITES NO BYTE;
   * WITH NO LEDGER ON DISK NOTHING IS COVERED and the absence is named UNMEASURED;
   * THE DIGEST IS SMALL AND CARRIES ITS SHAPE (totals, by_group, by_region, queue head);
@@ -47,6 +50,8 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(RPP, "WORLD", data / "intelligence" / "world")
     monkeypatch.setattr(RPP, "DIGEST", data / "digests" / "regional_parity_digest.json")
     monkeypatch.setattr(RPP, "OUT", reports / "REGIONAL_PARITY.json")
+    monkeypatch.setattr(RPP, "CANDIDATES", data / "equivalence_candidates.json")
+    monkeypatch.setattr(RPP, "HUNT_TARGETS", data / "parity_hunt_targets.json")
     monkeypatch.setattr(RPP, "BASE", tmp_path)
     return tmp_path
 
@@ -63,7 +68,10 @@ def doc_and_files(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
                             ("DEPTH_REPORT", tmp / "reports" / "regional_parity.json"),
                             ("WORLD", tmp / "data" / "intelligence" / "world"),
                             ("DIGEST", tmp / "data" / "digests" / "regional_parity_digest.json"),
-                            ("OUT", tmp / "reports" / "REGIONAL_PARITY.json"), ("BASE", tmp)):
+                            ("OUT", tmp / "reports" / "REGIONAL_PARITY.json"),
+                            ("CANDIDATES", tmp / "data" / "equivalence_candidates.json"),
+                            ("HUNT_TARGETS", tmp / "data" / "parity_hunt_targets.json"),
+                            ("BASE", tmp)):
             mp.setattr(RPP, name, value)
         doc = RPP.build()
     finally:
@@ -84,6 +92,8 @@ def test_one_pass_writes_report_digest_and_discoveries(doc_and_files: dict[str, 
         assert r["kind"] == "dataset" and r["url"].startswith(("http://", "https://"))
         assert isinstance(r["endpoints"], list) and r["host"]
         assert r["parity"]["countries"] and r["parity"]["classes"]
+        assert r["lane"] == RPP.PARITY_LANE
+        assert all(EQ.terms_verdict(u) == EQ.PERMITTED for u in r["endpoints"])
     assert any(r["endpoints"] for r in rows), "known endpoints reach the acquirer"
     assert rows[0]["endpoints"], "rows with an endpoint are ranked first"
 
@@ -137,3 +147,26 @@ def test_the_leg_is_wired() -> None:
     from desks.mt5.ops import components
     assert components.own_artifact("desks/mt5/research/regional_parity_pass.py") == (
         "desks/mt5/reports/REGIONAL_PARITY.json",)
+
+
+def test_unmeasured_cells_reach_the_hunter_and_candidates_persist(
+        doc_and_files: dict[str, Any]) -> None:
+    tmp: Path = doc_and_files["tmp"]
+    doc = doc_and_files["doc"]
+    targets = json.loads((tmp / "data" / "parity_hunt_targets.json").read_text("utf-8"))
+    assert targets["n_cells"] == doc["totals"]["counts"][EQ.UNMEASURED]
+    assert all(v["terms"] and v["countries"] for v in targets["classes"].values())
+    ledger = json.loads((tmp / "data" / "equivalence_candidates.json").read_text("utf-8"))
+    assert ledger["n"] == ledger["n_present"] == len(
+        {c["candidate_id"] for c in doc["candidate_classes"]})
+    assert doc["totals"]["parity"] == EQ.UNMEASURED, "nothing measured -> headline UNMEASURED"
+
+
+def test_candidate_ledger_never_drops_a_row() -> None:
+    row = {"candidate_id": "a" * 16, "pack": "kr", "kind": "release", "id": "x", "text": "x"}
+    first = RPP.merge_candidates(None, [row], "2026-10-06T00:00:00+00:00")
+    second = RPP.merge_candidates(first, [], "2026-10-07T00:00:00+00:00")
+    kept = second["rows"]["a" * 16]
+    assert second["n"] == 1 and second["n_present"] == 0
+    assert kept["present"] is False and kept["first_seen"] == "2026-10-06T00:00:00+00:00"
+    assert kept["last_seen"] == "2026-10-06T00:00:00+00:00"

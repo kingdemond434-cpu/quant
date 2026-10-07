@@ -9,7 +9,11 @@ regulatory-position or open-interest dataset in that market?" -- and the same fo
 physical premium and SAFE's bank FX settlement. Every class is searched for FUNCTIONAL
 equivalents, never brand names.
 
-WHAT THIS MODULE IS. Pure data and pure functions: it opens no file, no socket and no registry.
+WHAT THIS MODULE IS. Data and pure functions. It opens no socket and no registry, and exactly one
+file: the EXTENSION (`desks/mt5/data/equivalence_ontology_ext.json`), merged at import so a new
+class or a new named equivalent is data, not a code change. The lists below are the directive's
+FLOOR; the ontology is open above it (`load_extension`, and the candidate-class rows
+`regional_parity` emits for every declaration no class matches).
 
   * ``CLASSES`` -- the information classes, copied VERBATIM from the directive's PART II ("FULL
     GLOBAL HARD-DATA TAXONOMY": twelve classes, 86 sub-classes, ASIA-1207..ASIA-1292 in the
@@ -44,12 +48,16 @@ an unreadable proof source is UNMEASURED by name rather than a clean "not fed".
 """
 from __future__ import annotations
 
+import json
+import os
 import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 __all__ = [
+    "BASE_CLASS_COUNT",
     "CLASSES",
     "CLASS_KEYS",
     "CLASS_SOURCE",
@@ -58,13 +66,18 @@ __all__ = [
     "DISPOSITIONS",
     "DOLLARIZED",
     "EURO_MEMBERS",
+    "EXT_PATH",
+    "EXT_REPORT",
     "FUNCTIONS",
+    "HELD",
     "KNOWN",
     "LANDLOCKED_NO_SEAPORT",
     "MEASURED_OUTCOME_STATES",
+    "PERMITTED",
     "PUBLISHERS",
     "ROLE_STANDARD",
     "SHARED_COMPETENCE",
+    "TERMS_EVIDENCE",
     "TRANSNATIONAL",
     "UNMEASURED",
     "Cell",
@@ -73,9 +86,13 @@ __all__ = [
     "class_of",
     "dispose",
     "equivalents_for",
+    "load_extension",
     "match_classes",
     "names_country",
     "no_equivalent_reason",
+    "terms_for",
+    "terms_verdict",
+    "terms_why",
 ]
 
 UNMEASURED = "UNMEASURED"
@@ -628,17 +645,116 @@ class Equivalent:
     url: str
     endpoints: tuple[str, ...] = ()
     tier: str = "named"            # named | transnational | role | pack
-    access: str = "PUBLIC"
+    #: NEVER "PUBLIC" BY DEFAULT. Whether an endpoint may be fetched is decided per URL by
+    #: `TERMS_EVIDENCE` (a verbatim permitting clause from the publisher's own terms page); this
+    #: label only describes a row that carries no endpoint.
+    access: str = "UNVERIFIED"
     note: str = ""
 
     def to_json(self) -> dict[str, Any]:
+        permitted = [u for u in self.endpoints if terms_verdict(u) == PERMITTED]
+        held = [{"url": u, "verdict": terms_verdict(u), "why": terms_why(u)}
+                for u in self.endpoints if terms_verdict(u) != PERMITTED]
+        access = self.access
+        if self.endpoints:
+            access = PERMITTED if not held else (HELD if not permitted else "PARTIAL")
+        terms: list[dict[str, str]] = []
+        for u in self.endpoints:
+            for t in terms_for(u):
+                if dict(t) not in terms:
+                    terms.append(dict(t))
         return {"source_id": self.source_id, "series": self.series, "cadence": self.cadence,
-                "publisher": self.publisher, "url": self.url, "endpoints": list(self.endpoints),
-                "tier": self.tier, "access": self.access, "note": self.note}
+                "publisher": self.publisher, "url": self.url, "endpoints": permitted,
+                "held_endpoints": held, "terms": terms[:4],
+                "tier": self.tier, "access": access, "note": self.note}
+
+
+# ------------------------------------------------------------------------------- terms
+PERMITTED = "PERMITTED"
+HELD = "HELD"
+
+#: THE TERMS EVIDENCE. An endpoint is handed to the acquirer ONLY when every rule whose `prefix`
+#: it starts with quotes, VERBATIM, a clause from the publisher's own terms page that permits the
+#: use, and says PERMITTED. A URL no rule covers is HELD -- fail closed: "it is a government site"
+#: or "it is a central bank" is an inference, and no inference opens a fetch. Read 2026-10-06.
+TERMS_EVIDENCE: tuple[Mapping[str, str], ...] = (
+    {"prefix": "https://data.bis.org/",
+     "terms_url": "https://data.bis.org/help/legal",
+     "terms_quote": ("The use of the statistics is unrestricted, provided that: [...] if the "
+                     "statistics are reproduced, the BIS must be cited in your publication or "
+                     "product as the source of the statistics [...] if the statistics will be "
+                     "used in a commercial publication or product, their inclusion in the "
+                     "publication or product will not result in any additional charge to "
+                     "subscribers or other users"),
+     "verdict": PERMITTED, "checked_at": "2026-10-06"},
+    {"prefix": "https://data-api.ecb.europa.eu/",
+     "terms_url": ("https://www.ecb.europa.eu/stats/ecb_statistics/governance_and_quality_"
+                   "framework/html/usage_policy.en.html"),
+     "terms_quote": ("The ESCB subscribes to a policy of free access and free reuse regarding "
+                     "its publicly released statistics, subject to the conditions described "
+                     "below. [...] All publicly available ESCB statistics may be reused free of "
+                     "charge on the condition that the source is quoted (e.g. \"Source: ECB "
+                     "statistics.\") and that the statistics (including metadata) are not "
+                     "modified."),
+     "verdict": PERMITTED, "checked_at": "2026-10-06"},
+    # The same policy: "The right of free reuse does not apply to third-party data without a prior
+    # permission from the originator." HICP is Eurostat's, so it also needs Eurostat's own clause.
+    {"prefix": "https://data-api.ecb.europa.eu/service/data/ICP/",
+     "terms_url": "https://ec.europa.eu/eurostat/about-us/policies/copyright",
+     "terms_quote": ("Eurostat has a policy of encouraging free re-use of its data, both for "
+                     "non-commercial and commercial purposes. All statistical data, metadata, "
+                     "content of web pages or other dissemination tools, official publications "
+                     "and other documents published on its website, with the exceptions listed "
+                     "below, can be reused without any payment or written licence provided "
+                     "that: - the source is indicated as Eurostat;"),
+     "verdict": PERMITTED, "checked_at": "2026-10-06"},
+    {"prefix": "https://www.cftc.gov/",
+     "terms_url": "https://www.cftc.gov/webpolicy/index.htm",
+     "terms_quote": ("Government information at the CFTC website is in the public domain. "
+                     "Public domain information may be freely distributed and copied, but it is "
+                     "requested that in any subsequent use the CFTC be given appropriate "
+                     "acknowledgement."),
+     "verdict": PERMITTED, "checked_at": "2026-10-06"},
+    {"prefix": "https://www.eia.gov/",
+     "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+     "terms_quote": ("U.S. government publications are in the public domain and are not subject "
+                     "to copyright protection. [...] You may use and/or distribute any of our "
+                     "data, files, databases, reports, graphs, charts, and other information "
+                     "products that are on our website or that you receive through our email "
+                     "distribution service."),
+     "verdict": PERMITTED, "checked_at": "2026-10-06"},
+    {"prefix": "https://home.treasury.gov/",
+     "terms_url": "https://home.treasury.gov/subfooter/site-policies-and-notices",
+     "terms_quote": ("(none found: the site-policies page and the linked privacy policy carry no "
+                     "copyright, public-domain or reuse sentence, and /subfooter/site-policies-"
+                     "and-notices/copyright-and-use-information returns 404)"),
+     "verdict": HELD, "checked_at": "2026-10-06"},
+)
+
+
+def terms_for(url: str) -> list[Mapping[str, str]]:
+    """Every terms rule that governs `url`; all of them must permit."""
+    u = str(url or "")
+    return [t for t in TERMS_EVIDENCE if u.startswith(t["prefix"])]
+
+
+def terms_verdict(url: str) -> str:
+    """PERMITTED only when at least one rule covers the URL and every covering rule permits."""
+    rules = terms_for(url)
+    return PERMITTED if rules and all(t["verdict"] == PERMITTED for t in rules) else HELD
+
+
+def terms_why(url: str) -> str:
+    rules = terms_for(url)
+    if not rules:
+        return "no terms evidence on file for this URL: HELD (fail closed, never inferred)"
+    bad = [t for t in rules if t["verdict"] != PERMITTED]
+    return ("held by " + "; ".join(f"{t['terms_url']}: {t['terms_quote']}" for t in bad)
+            if bad else "permitted by " + ", ".join(t["terms_url"] for t in rules))
 
 
 def _k(cc: str, key: str, sid: str, series: str, cadence: str, publisher: str, url: str,
-       *endpoints: str, access: str = "PUBLIC", note: str = "") -> Equivalent:
+       *endpoints: str, access: str = "UNVERIFIED", note: str = "") -> Equivalent:
     return Equivalent(country=cc, key=key, source_id=sid, series=series, cadence=cadence,
                       publisher=publisher, url=url, endpoints=tuple(endpoints), tier="named",
                       access=access, note=note)
@@ -932,7 +1048,7 @@ class Transnational:
     endpoints: tuple[str, ...] = ()
     #: ISO-2 -> extra endpoints that only serve that country (the ECB's per-member HICP keys).
     per_country: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
-    access: str = "PUBLIC"
+    access: str = "UNVERIFIED"
 
 
 def _bis(flow: str) -> str:
@@ -1243,3 +1359,97 @@ def dispose(cc: str, key: str, *, declared: Sequence[Mapping[str, Any]] = (),
                     "declares it", decl, eqs, None, proof_state)
     return Cell(cc, key, UNMEASURED, "no pack declares it and no equivalent is known: nobody "
                 "has looked", decl, eqs, None, proof_state)
+
+
+# ------------------------------------------------------------------------------- the extension
+#: THE ONTOLOGY IS OPEN. The classes above are the directive's floor, never its ceiling: a class
+#: the directive did not name (or a named equivalent nobody wrote into this file) is added as DATA
+#: in this JSON file and merged at import, with no code change. A declaration no class matches is
+#: never dropped either -- `regional_parity` reports it as a CANDIDATE CLASS, and promoting a
+#: candidate means adding it here. Path override: QUANT_EQUIVALENCE_EXT (the tests use it).
+EXT_PATH = Path(os.environ.get("QUANT_EQUIVALENCE_EXT") or (
+    Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" /
+    "equivalence_ontology_ext.json"))
+BASE_CLASS_COUNT = len(CLASSES)
+#: What the last load did: the file read, the rows merged, and every row REFUSED with its reason.
+EXT_REPORT: dict[str, Any] = {}
+
+
+def _ext_class(row: Mapping[str, Any]) -> DataClass:
+    group, name = str(row.get("group") or "").strip(), str(row.get("name") or "").strip()
+    terms = str(row.get("terms") or "").strip()
+    if not group or not name or not terms:
+        raise ValueError("a class needs group, name and terms")
+    re.compile(terms, re.IGNORECASE)
+    return DataClass(key=f"{group}:{name}", group=group, name=name,
+                     layer=str(row.get("layer") or "official"), terms=terms,
+                     cadence=str(row.get("cadence") or "monthly"),
+                     mandate_id=str(row.get("mandate_id") or "EXT"),
+                     part=str(row.get("part") or "ext"))
+
+
+def _ext_known(row: Mapping[str, Any], keys: set[str]) -> Equivalent:
+    key = str(row.get("key") or "")
+    if key not in keys:
+        raise ValueError(f"unknown class {key!r}")
+    url = str(row.get("url") or "")
+    eps = tuple(str(u) for u in row.get("endpoints") or ())
+    if not url.startswith(("http://", "https://")) or not all(
+            u.startswith("https://") for u in eps):
+        raise ValueError("url must be http(s) and every endpoint https")
+    cc, sid = str(row.get("country") or "").lower(), str(row.get("source_id") or "")
+    if not cc or not sid:
+        raise ValueError("a known equivalent needs country and source_id")
+    return Equivalent(country=cc, key=key, source_id=sid, series=str(row.get("series") or sid),
+                      cadence=str(row.get("cadence") or "monthly"),
+                      publisher=str(row.get("publisher") or ""), url=url, endpoints=eps,
+                      tier="named", note=str(row.get("note") or "ext"))
+
+
+def load_extension(path: Path | None = None) -> dict[str, Any]:
+    """Merge the extension file into CLASSES / KNOWN. Idempotent; a bad row is refused BY NAME
+    (never silently skipped) and the base ontology always survives an unreadable file."""
+    global CLASSES, CLASS_KEYS, _BY_KEY, _COMPILED, KNOWN
+    p = Path(path) if path is not None else EXT_PATH
+    base_classes, base_known = CLASSES[:BASE_CLASS_COUNT], _BASE_KNOWN
+    report: dict[str, Any] = {"path": str(p), "classes_added": [], "known_added": 0,
+                              "refused": [], "state": "ABSENT"}
+    doc: Any = None
+    if p.exists():
+        try:
+            doc = json.loads(p.read_text(encoding="utf-8-sig"))
+            report["state"] = "READ"
+        except (OSError, ValueError) as exc:
+            report["state"] = f"{UNMEASURED}: {type(exc).__name__}: {exc}"
+    classes, known = list(base_classes), list(base_known)
+    if isinstance(doc, Mapping):
+        keys = {c.key for c in classes}
+        for i, row in enumerate(doc.get("classes") or ()):
+            try:
+                dc = _ext_class(row)
+                if dc.key in keys:
+                    raise ValueError(f"duplicate class {dc.key!r}")
+            except (ValueError, re.error, AttributeError) as exc:
+                report["refused"].append({"row": f"classes[{i}]", "why": str(exc)})
+                continue
+            classes.append(dc)
+            keys.add(dc.key)
+            report["classes_added"].append(dc.key)
+        for i, row in enumerate(doc.get("known") or ()):
+            try:
+                known.append(_ext_known(row, keys))
+                report["known_added"] += 1
+            except (ValueError, AttributeError) as exc:
+                report["refused"].append({"row": f"known[{i}]", "why": str(exc)})
+    CLASSES = tuple(classes)
+    CLASS_KEYS = tuple(c.key for c in CLASSES)
+    _BY_KEY = {c.key: c for c in CLASSES}
+    _COMPILED = {c.key: re.compile(c.terms, re.IGNORECASE) for c in CLASSES}
+    KNOWN = tuple(known)
+    EXT_REPORT.clear()
+    EXT_REPORT.update(report)
+    return report
+
+
+_BASE_KNOWN: tuple[Equivalent, ...] = KNOWN
+load_extension()

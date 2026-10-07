@@ -312,6 +312,13 @@ desks/mt5/data/text_store/
 # The committed Asian/alt-data digest's writer lock and temp file (the digest itself is tracked).
 desks/mt5/data/digests/*.lock
 desks/mt5/data/digests/*.tmp
+# Regional parity (`research/regional_parity_pass.py`, hourly leg `regional_parity`): every file it
+# writes is the measuring box's state, never a committed fact -- a digest measured on a build VM
+# and committed once described the wrong machine (audit of #242, 2026-10-06).
+desks/mt5/data/digests/regional_parity_digest.json
+desks/mt5/data/intelligence/world/discoveries_parity_*.json
+desks/mt5/data/equivalence_candidates.json
+desks/mt5/data/parity_hunt_targets.json
 
 # THE BOX'S OWN REPORT, ALLOWLISTED LAST SO IT WINS (2026-09-06). `sync_shadow_to_git.ps1` lists
 # every path here in $relPaths and its header warns that an ignored path makes `git add` a SILENT

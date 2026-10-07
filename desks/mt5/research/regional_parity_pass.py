@@ -18,16 +18,23 @@ regional_parity.json was never committed. This organ is that object's hourly pro
     only evidence that lifts a cell to COVERED (a unit past AWAITING_EXPERIMENT).
 
 `libs.research.regional_parity.equivalence_parity` does the projection; this file only reads,
-writes and wires. It writes THREE things:
+writes and wires. It writes FIVE things, ALL of them the box's measured state and ALL
+gitignored (a digest measured on a build VM and committed is a fact about the wrong machine):
 
   reports/REGIONAL_PARITY.json            the whole table, metrics per class and region, the
-                                          ranked work queue (gitignored, the box's state)
-  data/digests/regional_parity_digest.json  the small committed digest (tracked, so GitHub sees
-                                          what the last pass measured)
+                                          ranked work queue, the candidate classes
+  data/digests/regional_parity_digest.json  the small digest
   data/intelligence/world/discoveries_parity_<YYYYMMDD>.json
                                           the known-but-undeclared equivalents as discovery rows
-                                          in the shape `acquire_datasets._endpoints` reads, so the
-                                          acquirer fetches the ones with a known endpoint
+                                          (marked `lane: regional_parity`); acquire_datasets gives
+                                          them their own additive lane. Only endpoints whose
+                                          publisher's terms PERMIT the use are listed; the rest
+                                          ride as `held_endpoints` and are never fetched
+  data/equivalence_candidates.json        every pack declaration NO class matches, persisted and
+                                          never dropped (promote one through
+                                          data/equivalence_ontology_ext.json)
+  data/parity_hunt_targets.json           the UNMEASURED cells by class, for the dataset hunter's
+                                          parity lane (world_dataset_hunter._fetch_order)
 
 It decides nothing about capital and caps no compute; it names work.
 
@@ -69,12 +76,16 @@ INGESTION_LEDGER = DATA / "ingestion_ledger.jsonl"
 DEPTH_REPORT = REPORTS / "regional_parity.json"
 WORLD = DATA / "intelligence" / "world"
 DIGEST = DATA / "digests" / "regional_parity_digest.json"
+CANDIDATES = DATA / "equivalence_candidates.json"
+HUNT_TARGETS = DATA / "parity_hunt_targets.json"
 OUT = REPORTS / "REGIONAL_PARITY.json"
 
 UNMEASURED = EQ.UNMEASURED
 #: Lines read from the END of the ingestion ledger (it is append-only and grows every hour).
 LEDGER_TAIL_BYTES = 24 * 1024 * 1024
 MAX_DISCOVERIES = 200
+#: The marker on every parity discovery row; acquire_datasets gives rows carrying it their own lane.
+PARITY_LANE = "regional_parity"
 DIGEST_QUEUE = 40
 DIGEST_LIST = 60
 #: Packs that are not a country: the global and institutional grounds answer no jurisdiction.
@@ -178,11 +189,14 @@ def discovery_rows(doc: Mapping[str, Any], at: str) -> list[dict[str, Any]]:
             continue
         sid = str(eq.get("source_id") or "")
         g = groups.setdefault(sid, {"eq": eq, "countries": set(), "classes": set(),
-                                    "endpoints": set(), "regions": set()})
+                                    "endpoints": set(), "held": set(), "regions": set()})
         g["countries"].add(str(c["country"]))
         g["classes"].add(str(c["class"]))
         g["regions"].add(str(c.get("region") or UNMEASURED))
+        # Only endpoints whose publisher's own terms PERMIT the use reach the acquirer; the rest
+        # ride along as `held_endpoints` and are never fetched (fail closed).
         g["endpoints"].update(str(u) for u in eq.get("endpoints") or ())
+        g["held"].update(str(h.get("url")) for h in eq.get("held_endpoints") or ())
     rows: list[dict[str, Any]] = []
     for sid, g in groups.items():
         eq = g["eq"]
@@ -203,8 +217,12 @@ def discovery_rows(doc: Mapping[str, Any], at: str) -> list[dict[str, Any]]:
             "available_time": at, "ingested_time": at,
             "source_hash": hashlib.sha1(sid.encode("utf-8")).hexdigest()[:20],
             "claims": [], "n_claims": 0,
+            # THE PRIORITY-LANE MARKER `acquire_datasets._parity_lane` keys on.
+            "lane": PARITY_LANE,
+            "held_endpoints": sorted(g["held"]),
             "parity": {"source_id": sid, "tier": eq.get("tier"), "cadence": eq.get("cadence"),
-                       "access": eq.get("access"), "classes": sorted(g["classes"]),
+                       "access": eq.get("access"), "terms": list(eq.get("terms") or []),
+                       "classes": sorted(g["classes"]),
                        "countries": countries,
                        "why": "a public functional equivalent no country pack declares "
                               "(directive CORE LAW / PART III)"},
@@ -214,9 +232,60 @@ def discovery_rows(doc: Mapping[str, Any], at: str) -> list[dict[str, Any]]:
     return rows[:MAX_DISCOVERIES]
 
 
+# ------------------------------------------------------------------------------- candidates
+def merge_candidates(previous: Any, rows: Sequence[Mapping[str, Any]], at: str
+                     ) -> dict[str, Any]:
+    """The persisted candidate-class ledger: every unmatched declaration ever seen, keyed by id.
+
+    NOTHING LEAVES IT. A row the packs no longer declare stays with `present: false` and its
+    `last_seen`; a row now matched by a class (after an extension) is still kept, so promoting a
+    candidate is visible in the ledger rather than a silent disappearance."""
+    old = previous.get("rows") if isinstance(previous, Mapping) else None
+    book: dict[str, dict[str, Any]] = {str(k): dict(v) for k, v in dict(old or {}).items()
+                                       if isinstance(v, Mapping)}
+    for kept in book.values():
+        kept["present"] = False
+    for r in rows:
+        cid = str(r["candidate_id"])
+        prior = book.get(cid) or {"first_seen": at}
+        book[cid] = {**prior, **dict(r), "last_seen": at, "present": True}
+    return {"at": at, "organ": "regional_parity", "n": len(book),
+            "n_present": sum(1 for r in book.values() if r.get("present")),
+            "promote_by": "desks/mt5/data/equivalence_ontology_ext.json",
+            "rows": dict(sorted(book.items()))}
+
+
+# ------------------------------------------------------------------------------- the hunter
+def hunt_targets(doc: Mapping[str, Any], at: str) -> dict[str, Any]:
+    """UNMEASURED cells, grouped by class, for `world_dataset_hunter`'s parity lane.
+
+    An UNMEASURED cell has no known equivalent and no endpoint, so the acquirer can do nothing
+    with it; the dataset hunter's catalogue (DBnomics: ~80 providers, national offices and central
+    banks among them) is where an unknown equivalent is found. Each class carries its own match
+    terms and the names of the countries still unmeasured on it, so the hunter can recognise a
+    catalogue dataset that answers it without importing the ontology."""
+    per: dict[str, set[str]] = {}
+    for c in doc.get("cells") or ():
+        if c.get("disposition") == UNMEASURED:
+            per.setdefault(str(c["class"]), set()).add(str(c["country"]))
+    classes: dict[str, Any] = {}
+    for key, ccs in sorted(per.items()):
+        dc = EQ.class_of(key)
+        if dc is None:
+            continue
+        classes[key] = {"terms": dc.terms, "n_unmeasured": len(ccs),
+                        "countries": sorted(ccs),
+                        "country_names": sorted({n.lower() for cc in ccs
+                                                 for n in EQ.COUNTRY_NAMES.get(cc, ())
+                                                 if len(n) >= 4})}
+    return {"at": at, "organ": "regional_parity", "lane": PARITY_LANE,
+            "n_cells": sum(len(v) for v in per.values()), "classes": classes}
+
+
 # ------------------------------------------------------------------------------- digest
 def digest(doc: Mapping[str, Any], *, discoveries_file: str, n_discoveries: int) -> dict[str, Any]:
-    """The small committed digest: counts, parity per class group and region, the queue head."""
+    """The small digest: counts, parity per class group and region, the queue head. Written on the
+    box and gitignored: it is the box's measured state, never a committed fact."""
     groups: dict[str, dict[str, int]] = {}
     for _key, row in (doc.get("by_class") or {}).items():
         g = groups.setdefault(str(row.get("group")), dict.fromkeys(EQ.DISPOSITIONS, 0))
@@ -230,9 +299,13 @@ def digest(doc: Mapping[str, Any], *, discoveries_file: str, n_discoveries: int)
         "n_cells": doc.get("n_cells"), "totals": doc.get("totals"),
         "by_group": dict(sorted(groups.items())),
         "by_region": {r: {"n_countries": v.get("n_countries"), "parity": v.get("parity"),
+                          "measured": v.get("measured"), "unmeasured": v.get("unmeasured"),
                           "counts": v.get("counts")}
                       for r, v in sorted((doc.get("by_region") or {}).items())},
+        "parity_definition": doc.get("parity_definition"),
         "parity_spread": doc.get("parity_spread"),
+        "n_candidate_classes": doc.get("n_candidate_classes"),
+        "ontology_extension": doc.get("ontology_extension"),
         "work_queue_total": doc.get("work_queue_total"),
         "work_queue_head": [{k: q.get(k) for k in ("country", "class", "disposition",
                                                    "source_id", "score")}
@@ -272,11 +345,21 @@ def build(*, dry_run: bool = False, now: datetime | None = None) -> dict[str, An
     disc_path = WORLD / f"discoveries_parity_{when:%Y%m%d}.json"
     doc["discoveries"] = {"file": str(disc_path.relative_to(BASE)) if disc else None,
                           "rows": len(disc),
-                          "with_endpoints": sum(1 for r in disc if r["n_endpoints"])}
+                          "with_endpoints": sum(1 for r in disc if r["n_endpoints"]),
+                          "held_endpoints": sorted({u for r in disc
+                                                    for u in r["held_endpoints"]})}
+    cand = merge_candidates(_read_json(CANDIDATES), doc["candidate_classes"], at)
+    targets = hunt_targets(doc, at)
+    doc["candidate_ledger"] = {"file": str(CANDIDATES.relative_to(BASE)), "n": cand["n"],
+                               "n_present": cand["n_present"]}
+    doc["hunt_targets"] = {"file": str(HUNT_TARGETS.relative_to(BASE)),
+                           "classes": len(targets["classes"]), "cells": targets["n_cells"]}
     doc["elapsed_s"] = round(time.monotonic() - t0, 2)
     doc["dry_run"] = bool(dry_run)
     if not dry_run:
         _write_atomic(OUT, doc)
+        _write_atomic(CANDIDATES, cand)
+        _write_atomic(HUNT_TARGETS, targets)
         if disc:
             _write_atomic(disc_path, disc)
         _write_atomic(DIGEST, digest(doc, discoveries_file=disc_path.name if disc else "",
@@ -289,10 +372,13 @@ def summary(doc: Mapping[str, Any]) -> str:
     spread = doc.get("parity_spread") or {}
     lines = [f"regional parity @ {doc.get('at')}: {doc.get('n_countries')} countries x "
              f"{doc.get('n_classes')} classes = {doc.get('n_cells')} cells; "
-             f"parity {t.get('parity')} (median region {spread.get('median')})",
+             f"parity {t.get('parity')} = fed {t.get('fed')} / measured {t.get('measured')} "
+             f"(unmeasured {t.get('unmeasured')}; median region {spread.get('median')})",
              "  " + ", ".join(f"{k}={v}" for k, v in dict(t.get("counts") or {}).items()),
              f"  work queue {doc.get('work_queue_total')}; discoveries "
-             f"{(doc.get('discoveries') or {}).get('rows')}"]
+             f"{(doc.get('discoveries') or {}).get('rows')}; candidate classes "
+             f"{doc.get('n_candidate_classes')}; hunt-target cells "
+             f"{(doc.get('hunt_targets') or {}).get('cells')}"]
     for note in list(doc.get("unmeasured") or [])[:6]:
         lines.append(f"  UNMEASURED: {note}")
     return "\n".join(lines)

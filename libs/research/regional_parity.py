@@ -43,6 +43,7 @@ rather than of the country.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import re
@@ -956,19 +957,67 @@ def _tensor_layers(tensor: Mapping[str, Any] | None) -> dict[str, dict[str, str]
     return out
 
 
+#: The dispositions whose FED question a readable ledger answers. UNMEASURED never is (nobody
+#: looked), NO_EQUIVALENT is out of scope, and any cell whose proof_state is UNMEASURED (no ledger
+#: was readable) is unmeasured whatever its disposition.
+_FED_MEASURABLE = frozenset({"COVERED", "DECLARED", "ABSENT_KNOWN_EQUIVALENT"})
+
+
+def _fed_measured(cell: Mapping[str, Any]) -> bool:
+    return (str(cell["disposition"]) in _FED_MEASURABLE
+            and str(cell.get("proof_state") or UNMEASURED) != UNMEASURED)
+
+
 def _counts(cells: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
+    """Counts and THE HEADLINE. Parity = fed / measured, where FED means EVALUATED -- a ledger
+    verdict past AWAITING_EXPERIMENT (COVERED) -- and never merely declared; and MEASURED excludes
+    every cell whose fed state nobody measured, which is published as its own count instead of
+    sitting in the denominator as a zero. Nothing measured -> the headline is UNMEASURED."""
     c = dict.fromkeys(EQ.DISPOSITIONS, 0)
-    n = 0
+    n = measured = 0
     for cell in cells:
         c[str(cell["disposition"])] += 1
         n += 1
-    eligible = n - c["NO_EQUIVALENT"]
-    fed = c["COVERED"] + c["DECLARED"]
+        measured += _fed_measured(cell)
+    in_scope = n - c["NO_EQUIVALENT"]
+    unmeasured = in_scope - measured
     return {"n": n, "counts": c,
-            "parity": (round(fed / eligible, 6) if eligible > 0 else None),
-            "covered_share": (round(c["COVERED"] / eligible, 6) if eligible > 0 else None),
+            "parity": (round(c["COVERED"] / measured, 6) if measured > 0 else UNMEASURED),
+            "fed": c["COVERED"], "measured": measured, "unmeasured": unmeasured,
+            "declared_share": (round((c["COVERED"] + c["DECLARED"]) / in_scope, 6)
+                               if in_scope > 0 else None),
             "known_gap": c["ABSENT_KNOWN_EQUIVALENT"],
-            "unmeasured_share": (round(c[UNMEASURED] / n, 6) if n else None)}
+            "unmeasured_share": (round(unmeasured / in_scope, 6) if in_scope > 0 else None)}
+
+
+def _num(value: Any) -> float | None:
+    return float(value) if isinstance(value, int | float) else None
+
+
+def candidate_class_rows(rows: Iterable[Mapping[str, Any]], code: str,
+                         jurisdictions: Sequence[str]) -> list[dict[str, Any]]:
+    """Every declaration NO class matches, as a CANDIDATE CLASS row -- never dropped.
+
+    The ontology is the directive's floor, not its ceiling: a source a pack declares that answers
+    none of the classes is either a class the ontology lacks or a class whose terms are too
+    narrow. Either way it is work, so it is reported and persisted; promoting one means adding
+    it to `desks/mt5/data/equivalence_ontology_ext.json`."""
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        if row.get("forced") or EQ.match_classes(str(row.get("text") or "").replace("_", " ")):
+            continue
+        raw = f"{row.get('id')} {row.get('text')}"
+        named = [cc for cc in jurisdictions if EQ.names_country(raw, cc)]
+        ident = f"{code}|{row.get('kind')}|{row.get('id')}"
+        out.append({"candidate_id": hashlib.sha1(ident.encode("utf-8")).hexdigest()[:16],
+                    "pack": code, "kind": row.get("kind"), "id": row.get("id"),
+                    "text": row.get("text"),
+                    "countries": (list(jurisdictions) if len(jurisdictions) == 1 else named),
+                    "status": "CANDIDATE_CLASS",
+                    "next_move": "add a class (or widen an existing class's terms) in "
+                                 "desks/mt5/data/equivalence_ontology_ext.json, or record why "
+                                 "this declaration is not an information class"})
+    return out
 
 
 def _queue_row(c: Mapping[str, Any], below: Sequence[str]) -> dict[str, Any] | None:
@@ -984,7 +1033,9 @@ def _queue_row(c: Mapping[str, Any], below: Sequence[str]) -> dict[str, Any] | N
     return {"country": c["country"], "region": c["region"], "class": c["class"],
             "disposition": d, "score": round(score, 4), "source_id": eq.get("source_id"),
             "publisher": eq.get("publisher"), "url": eq.get("url"),
-            "endpoints": list(eq.get("endpoints") or []), "tier": eq.get("tier"),
+            "endpoints": list(eq.get("endpoints") or []),
+            "held_endpoints": [h.get("url") for h in eq.get("held_endpoints") or []],
+            "tier": eq.get("tier"),
             "next_move": _NEXT_MOVE[d]}
 
 
@@ -1001,6 +1052,7 @@ def equivalence_parity(*, packs: Mapping[str, Any], jurisdictions: Mapping[str, 
     unmeasured: list[str] = []
     declared: dict[str, dict[str, list[dict[str, Any]]]] = {}
     unattributed: dict[str, int] = {}
+    candidates: list[dict[str, Any]] = []
     pack_of: dict[str, list[str]] = {}
     for code, pack in sorted(packs.items()):
         juris = [str(c).lower() for c in (jurisdictions.get(code) or (code,))]
@@ -1011,6 +1063,7 @@ def equivalence_parity(*, packs: Mapping[str, Any], jurisdictions: Mapping[str, 
             continue
         rows = pack_declarations(code, pack)
         got = classes_declared(rows, code, juris)
+        candidates.extend(candidate_class_rows(rows, code, juris))
         if len(juris) > 1:
             hit_ids = {d["id"] for per in got.values() for ds in per.values() for d in ds}
             missed = sum(1 for r in rows
@@ -1072,12 +1125,20 @@ def equivalence_parity(*, packs: Mapping[str, Any], jurisdictions: Mapping[str, 
                             g: _counts(c for c in mine
                                        if str(c["class"]).startswith(g + ":"))["parity"]
                             for g in groups}}
-    region_parity = [float(v["parity"]) for k, v in by_region.items()
-                     if k != "UNASSIGNED" and v["parity"] is not None]
-    med = median(region_parity)
-    below = sorted(k for k, v in by_region.items() if k != "UNASSIGNED" and med is not None
-                   and v["parity"] is not None and float(v["parity"]) < med)
-    queue = [q for q in (_queue_row(c, below) for c in cells) if q is not None]
+    # THE HEADLINE SPREAD: only regions whose parity was MEASURED; an UNMEASURED region is named,
+    # never read as zero and never as the median.
+    measured_parity = {k: p for k, v in by_region.items()
+                       if k != "UNASSIGNED" and (p := _num(v["parity"])) is not None}
+    med = median(measured_parity.values())
+    below = sorted(k for k, p in measured_parity.items() if med is not None and p < med)
+    # The QUEUE's region boost reads declaration coverage, a different and explicitly named
+    # quantity: it orders work toward thin regions even while no ledger is readable, and it is
+    # never published as parity.
+    declared_by_region = {k: float(v["declared_share"]) for k, v in by_region.items()
+                          if k != "UNASSIGNED" and v["declared_share"] is not None}
+    dmed = median(declared_by_region.values())
+    thin = sorted(k for k, p in declared_by_region.items() if dmed is not None and p < dmed)
+    queue = [q for q in (_queue_row(c, thin) for c in cells) if q is not None]
     queue.sort(key=lambda q: (-float(q["score"]), str(q["country"]), str(q["class"])))
     core: dict[str, dict[str, str]] = {}
     for anchor, key in EQ.CORE_LAW_ANCHORS.items():
@@ -1093,13 +1154,27 @@ def equivalence_parity(*, packs: Mapping[str, Any], jurisdictions: Mapping[str, 
         "n_countries": len(roster), "n_classes": len(EQ.CLASSES), "n_cells": len(cells),
         "totals": _counts(cells),
         "by_class": by_class, "by_region": by_region, "by_country": by_country,
-        "parity_spread": {"median": (round(med, 6) if med is not None else None),
-                          "min": min(region_parity) if region_parity else None,
-                          "max": max(region_parity) if region_parity else None,
+        "parity_definition": ("fed / measured: FED = COVERED (an ingestion-ledger verdict past "
+                              "AWAITING_EXPERIMENT), never DECLARED; MEASURED = in-scope cells "
+                              "whose fed state a readable ledger answered; UNMEASURED cells are "
+                              "excluded from the denominator and counted in `unmeasured`; with "
+                              "nothing measured the headline is UNMEASURED"),
+        "parity_spread": {"median": (round(med, 6) if med is not None else UNMEASURED),
+                          "min": min(measured_parity.values()) if measured_parity else UNMEASURED,
+                          "max": max(measured_parity.values()) if measured_parity else UNMEASURED,
+                          "regions_measured": sorted(measured_parity),
+                          "regions_unmeasured": sorted(k for k in by_region
+                                                       if k != "UNASSIGNED"
+                                                       and k not in measured_parity),
                           "regions_below_median": below},
+        "declaration_spread": {"median": (round(dmed, 6) if dmed is not None else None),
+                               "regions_below_median": thin,
+                               "note": "declared_share orders the work queue; it is NOT parity"},
         "core_law": core,
         "work_queue": queue[:queue_cap], "work_queue_total": len(queue),
         "unattributed_declarations": dict(sorted(unattributed.items())),
+        "candidate_classes": candidates, "n_candidate_classes": len(candidates),
+        "ontology_extension": dict(EQ.EXT_REPORT),
         "proof": {"readable": readable, "measured_tokens": len(idx),
                   "states": sorted(EQ.MEASURED_OUTCOME_STATES)},
         "cells": cells,
