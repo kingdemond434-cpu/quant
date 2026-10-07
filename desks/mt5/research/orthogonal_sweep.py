@@ -571,6 +571,22 @@ NOT_SOURCED_HERE = {
                     "research/cross_sectional_breadth enumerates the class x family x params "
                     "grid, measures each cell's firing against the gauntlet's 60-day floor and "
                     "charges its own trials; sweeping it here would charge them twice"),
+    # The six empty clusters' families (mt5desk/families_empty_clusters.py). Each loads its own
+    # implied series, COT contract, Fed calendar, driver bars or base family from what the cell
+    # names, and research/empty_cluster_breadth enumerates (symbol x family x params), measures
+    # every cell's firing against the gauntlet's floor and charges it.
+    **dict.fromkeys(("implied_vol_risk_premium", "implied_vol_shock_fade",
+                     "positioning_crowding_unwind",
+                     "positioning_hedging_pressure", "positioning_flow_momentum",
+                     "entry_alpha_limit_pullback", "entry_alpha_spread_gate",
+                     "entry_alpha_open_offset", "cb_tone_speech_reaction",
+                     "news_reaction_unscheduled_shock", "event_surprise_impact_drift",
+                     "event_surprise_consensus", "cross_asset_lead_lag",
+                     "lead_lag_session_handoff"),
+                    "research/empty_cluster_breadth enumerates the symbol x family x params grid "
+                    "from its declared input maps, measures each cell's firing against the "
+                    "gauntlet's 60-day floor and charges its own trials; sweeping it here would "
+                    "charge them twice"),
 }
 
 

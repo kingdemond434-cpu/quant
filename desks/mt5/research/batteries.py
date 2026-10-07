@@ -105,6 +105,9 @@ FENCES: tuple[Entry, ...] = (
     _e("scripts/check_blueprint_coverage.py", "a capability's claim may not outrun its evidence"),
     _e("scripts/check_breadth_mandate.py", "an alpha cluster that received NO attempt is a defect"),
     _e("scripts/check_cert_yield.py", "when the pipeline certifies nothing, say WHICH nothing"),
+    # The principal's six empty clusters (2026-09-30): RED when any got zero cells in 24 hours.
+    _e("scripts/check_empty_cluster_minting.py",
+       "every empty alpha cluster the principal named gets cells minted every 24 hours"),
     # Sole importer of libs.ops.completion and invoked by nothing until 2026-09-29, so the
     # undeclared-work ratchet it owns was never read. Read-only without --accept.
     _e("scripts/check_completion.py", "a leg may not join the cycles without declaring output"),

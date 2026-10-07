@@ -50,7 +50,10 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
 BREADTH = BASE / "reports" / "EFFECTIVE_BREADTH.json"
 MANDATE = BASE / "reports" / "BREADTH_MANDATE.json"
 UNIVERSE = BASE / "data" / "universe" / "universe.json"
-SEAT = BASE / "data" / "intelligence" / "breadth"
+#: The seat the forced cells are donated to, through `proposer_common.donate` -- the two-lane
+#: filter, the point-in-time stamp, preregistration and the registry -- so the compiler reads them
+#: as it reads every miner's, rather than as a bare list dropped beside the intake (2026-09-30).
+SEAT_SOURCE = "empty_cluster_forcer"
 OUT = BASE / "reports" / "EMPTY_CLUSTER_FORCER.json"
 
 #: Cells minted per reachable empty cluster per pass. Small on purpose -- the point is that the
@@ -67,25 +70,23 @@ PREFERRED = ("EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "EURJPY", "GBPJPY
 #: What must EXIST for a cluster with no family to become reachable. Named per cluster, because
 #: "write a family" is not a remedy and `desks/mt5/mt5desk/family_news_reaction.py` is.
 MISSING_ARTIFACT = {
-    "execution_entry": ("desks/mt5/mt5desk/family_execution_entry.py -- a family whose signal is "
-                        "the ENTRY MECHANICS rather than the direction: the same directional "
-                        "thesis entered on a pullback, at a level, or on a retest, scored "
-                        "against entering at market. The desk already measures the raw material "
-                        "(unfilled_fork splits TOUCHED from NEVER_REACHED, and markout prices "
-                        "the entry) and no family consumes it."),
-    "news_reaction": ("desks/mt5/mt5desk/family_news_reaction.py -- distinct from "
-                      "`event_reaction`, which classifies into event_surprise: that family "
-                      "trades the SCHEDULED release, this one trades the UNSCHEDULED headline, "
-                      "whose arrival time is itself the signal. The 3,854 STRUCTURED_CB_SPEECH "
-                      "cells minted on 2026-09-15 are its input and currently route to "
-                      "event_reaction, which is the wrong clock."),
-    "options_implied": ("NO ARTIFACT MAKES THIS REACHABLE ON THIS ACCOUNT. Fusion quotes no "
-                        "options on any instrument in the universe registry, so there is no "
-                        "implied surface to trade and no implied series to condition on. This "
-                        "cluster is UNREACHABLE BY VENUE, not unattempted, and the honest "
-                        "disposition is to say so rather than to leave it looking like a gap "
-                        "somebody forgot. Reaching it needs a venue change, which is the "
-                        "principal's decision and not a research task."),
+    # All three became REACHABLE on 2026-09-30 through `mt5desk/families_empty_clusters.py`
+    # (entry operators, the Fed-calendar reaction families, the CBOE implied-vol families), minted
+    # by `research/empty_cluster_breadth.py`. These lines are what the forcer reports should that
+    # module ever be unimportable -- the family that must exist, named.
+    "execution_entry": ("desks/mt5/mt5desk/families_empty_clusters.py (entry_alpha_limit_pullback, "
+                        "entry_alpha_spread_gate, entry_alpha_open_offset): an operator over a "
+                        "price-only base cell's ENTRY, scored against the base entered at market."),
+    "news_reaction": ("desks/mt5/mt5desk/families_empty_clusters.py (cb_tone_speech_reaction, "
+                      "news_reaction_unscheduled_shock): the reaction to a headline no calendar "
+                      "scheduled, distinct from event_reaction's scheduled release."),
+    "options_implied": ("desks/mt5/mt5desk/families_empty_clusters.py (implied_vol_risk_premium, "
+                        "implied_vol_shock_fade; the term-structure question is PR #234's "
+                        "implied_vol_state). Fusion quotes no "
+                        "options, so the implied state is read from the CBOE indices (VIX, OVX, "
+                        "GVZ, EVZ: free, historical, scripts/fetch_free_observables.py) "
+                        "and traded on the MT5 underlying -- the cluster is reachable by proxy, "
+                        "not by venue."),
 }
 
 
@@ -106,10 +107,20 @@ CLUSTER_PROPOSER = {
                           "row with family defaults cannot supply",
     "relative_value": "cross_asset_graph and anomaly_factory (correlation_regime, pca_residual, "
                       "cross_asset_residual, triangle) -- 1,596 cells already built",
-    "cross_asset_lead_lag": "cross_asset_graph and asia_transmission -- 206 cells already built",
-    "positioning_flow": "the COT families (cot_positioning, cot_change_fade, cot_net_fade), which "
-                        "need a COT print per bar",
-    "event_surprise": "event_reaction, fed by the calendar -- 113 cells already built",
+    "cross_asset_lead_lag": "research/empty_cluster_breadth (cross_asset_lead_lag, "
+                            "lead_lag_session_handoff -- the driver is loaded by the family, so "
+                            "the sealed gauntlet builds them; `lead_lag` itself gets driver=None "
+                            "there) and cross_sectional_breadth (lead_lag_class_catchup)",
+    "positioning_flow": "research/empty_cluster_breadth (positioning_crowding_unwind, "
+                        "positioning_hedging_pressure, positioning_flow_momentum -- each loads "
+                        "its own CFTC contract); cot_positioning via the gauntlet's COT branch",
+    "event_surprise": "research/empty_cluster_breadth (event_surprise_impact_drift, "
+                      "event_surprise_consensus); event_reaction's gauntlet branch hands it a "
+                      "bare index and builds nothing (a sealed defect, patch filed)",
+    "execution_entry": "research/empty_cluster_breadth (the entry operators over price-only bases)",
+    "news_reaction": "research/empty_cluster_breadth (cb_tone_speech_reaction, "
+                     "news_reaction_unscheduled_shock)",
+    "options_implied": "research/empty_cluster_breadth (the CBOE implied-vol families)",
 }
 
 
@@ -292,6 +303,23 @@ def plan() -> dict[str, Any]:
     }
 
 
+def donate(cells: list[dict[str, Any]]) -> tuple[Path | None, dict[str, Any]]:
+    """The forced cells through the one door every miner uses, as exact recipes at the family's
+    defaults, each carrying its `alpha_cluster` and the four culture fields."""
+    from libs.research import cell_culture as CC
+
+    from research import proposer_common as pc
+    rows = []
+    for c in cells:
+        for sym in c.get("symbols") or []:
+            row = pc.candidate(SEAT_SOURCE, str(sym), str(c["family"]), {}, str(c.get("text")),
+                               str(c.get("title")), {"forced_cluster": c.get("alpha_cluster")})
+            row["alpha_cluster"] = c.get("alpha_cluster")
+            rows.append(CC.carry(row))
+    path = pc.donate(SEAT_SOURCE, rows, len(rows))
+    return path, pc.donation_counts()
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--donate", action="store_true", help="write the minted cells to the seat")
@@ -300,13 +328,9 @@ def main(argv: list[str] | None = None) -> int:
     doc = plan()
     cells = doc.pop("cells")
     if args.donate and cells:
-        SEAT.mkdir(parents=True, exist_ok=True)
-        stamp = datetime.now(UTC).strftime("%Y%m%dT%H")
-        out = SEAT / f"empty_cluster_{stamp}.json"
-        tmp = out.with_suffix(".tmp")
-        tmp.write_text(json.dumps(cells, indent=1), encoding="utf-8")
-        tmp.replace(out)
-        doc["donated_to"] = str(out)
+        path, counts = donate(cells)
+        doc["donated_to"] = str(path) if path else None
+        doc["donation"] = counts
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
 

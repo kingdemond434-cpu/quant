@@ -212,7 +212,11 @@ _FAMILY_GROUPS: dict[str, str] = {
     # constructors. All map to UNKNOWN so the count is visible rather than assumed away.
     # `mass_screen_thresh` / `_cond` are statistical finds of the mass screen (2026-09-30): a
     # feature-threshold rule names no payer, so the mechanism is UNKNOWN and counted, not guessed.
-    f"{UNKNOWN} price_only market": "discovered mass_screen_cond mass_screen_thresh",
+    f"{UNKNOWN} price_only market": "discovered mass_screen_cond mass_screen_thresh"
+                                    " uu_unary uu_binary uu_cond uu_gp",
+    # The unknown-unknown grammars (`mt5desk.uu_grammar`, 2026-09-30): expressions nobody named,
+    # so no payer is named either -- UNKNOWN and counted. `uu_cross` names a cross-asset leaf.
+    f"{UNKNOWN} cross_asset market": "uu_cross",
     f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated"
                                        " alt_conditioned",
     # Registered 2026-09-23/24 in `families_orthogonal`. `exit_operated` is an OPERATOR over any
@@ -225,7 +229,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     # `alt_conditioned` is an operator over a base family's entries, like `exit_operated`.
     # `world_macro_state` (2026-09-30) conditions on one hunted world series named on the recipe,
     # the same shape as `exogenous_conditioner`: the series is named, the payer is not.
-    f"{UNKNOWN} macro market": "exogenous_conditioner world_macro_state alt_series_momentum",
+    f"{UNKNOWN} macro market": "exogenous_conditioner world_macro_state alt_series_momentum"
+                               " dataset_conditioned",
 }
 FAMILY_TABLE: dict[str, tuple[str, str, str]] = {}
 for _key, _fams in _FAMILY_GROUPS.items():

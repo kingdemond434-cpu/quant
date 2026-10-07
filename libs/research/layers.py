@@ -131,6 +131,8 @@ LEG_LAYER: dict[str, str] = {
     "asia_parser": "information",
     "index_discovery": "information",
     "empty_cluster_forcer": "prediction",
+    # Mints cells into the six empty alpha clusters: a new-hypothesis producer, like the forcer.
+    "empty_cluster_breadth": "prediction",
     "asia_transmission": "information",
     # Whether a data endpoint still serves what it claims is an INFORMATION property -- it decides
     # whether any input exists at all, before any signal is derived from it.
@@ -193,6 +195,11 @@ LEG_LAYER: dict[str, str] = {
     # The mass screen generates and screens rule cells by the million and forwards the FDR
     # survivors to the judge -- a predictor search at scale: prediction.
     "mass_screen": "prediction",
+    # The producer swarm mints breadth cells for every buildable family on every class, chart,
+    # session and transform, and the unknown-unknown miner searches expressions nobody named:
+    # both are predictor searches.
+    "producer_swarm": "prediction",
+    "unknown_unknown": "prediction",
     # The dead-session remap turns asia/london/ny variants that can never fire into stand-in
     # cells that can -- a predictor search on the session axis: prediction.
     "session_variant_remap": "prediction",
