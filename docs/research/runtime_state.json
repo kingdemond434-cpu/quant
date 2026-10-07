@@ -27,10 +27,10 @@
   "STALE": 46,
   "MISSING": 47,
   "NEVER": 764,
-  "UNMEASURED": 37
+  "UNMEASURED": 38
  },
  "scope": {
-  "attested": 982,
+  "attested": 983,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -285,6 +285,16 @@
      "executable:scripts/lessons.py",
      "leg:recovery_drills",
      "task:E8-Book"
+    ]
+   },
+   {
+    "at": "2026-10-07T02:22:49+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "fence:check_order_authority"
     ]
    }
   ]
@@ -25326,6 +25336,36 @@
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
    "measured_at": "2026-10-06T15:32:32+00:00"
+  },
+  {
+   "organ": "fence:check_order_authority",
+   "kind": "task",
+   "code": [
+    "scripts/check_order_authority.py"
+   ],
+   "clock": "run_law_gate.py",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/law_gate.json",
+   "artifact_declared": "data/law_gate.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 30,
+   "artifact_bytes": 10218,
+   "artifact_sha256": "080fd339c82a38c25c4ff76ecb0afbe737d1a9e35d243ba9a78d5783e2732c46",
+   "summary": {
+    "ok": false
+   },
+   "progress_metric": "gate_runs",
+   "consumer": "desks/mt5/research/plumbing_watchdog.py",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-07T02:22:49+00:00"
   }
  ],
  "ratchet": {
