@@ -1,0 +1,77 @@
+ROMAN-0972 -- control variates on the gauntlet's SPA gate (sealed file: external_gauntlet.py).
+Uses libs/validation/control_variates.py (#245); v3 imports it inside the try, so this applies safely
+in either order (before #245 the stage records UNMEASURED).
+
+What it does: re-runs Hansen's SPA on the same 1,000 stationary-bootstrap draws (seed 0) with
+exact-expectation control variates (u_k, u_k^2 for the top 8 strategies; cross-fitted beta and
+an out-of-fold use decision, so the estimate is exactly unbiased) and RECORDS it beside the raw
+verdict. v2 (audit 2026-10-07): RECORD-ONLY. The controlled p never changes spa_ok, in either
+direction; `would_change` marks where it disagrees, so no veto is added without a missed-growth
+line. Any error in the control-variate path is recorded as UNMEASURED. The raw p_value is unchanged and is
+asserted reproduced bit-for-bit before the controlled side is allowed to act. The stage gains a
+"control_variate" record (absent for a single-strategy matrix, so that stage is byte-identical).
+
+Measured effect on the sealed trap suite (run_sealed_suite_lockbox.py 0 1000, union ledger
+234,977 trials, tree 2d61e69a19):
+    unpatched  genuine 52/600, traps 0/1500
+    patched    genuine 52/600, traps 0/1500, 0 of 2,100 verdicts differ (v1; v2 cannot differ)
+Every one of the 33 docket matrices has raw SPA p <= 0.001 (32 at 0.000), so the controlled
+estimate has nothing to resolve there: no fold measures a gain out of fold, p_controlled is
+None and the raw number stands. The patch is inert on this suite and only acts on dockets whose SPA p sits near
+0.05. Tests run with the patch loaded: tests/research/test_adversary.py,
+desks/mt5/tests/test_gauntlet_annotations.py, desks/mt5/tests/test_hourly_frontier_search.py
+(all pass). ruff and mypy error counts on the file are unchanged.
+
+--- a/desks/mt5/scripts/external_gauntlet.py
++++ b/desks/mt5/scripts/external_gauntlet.py
+@@ -3058,6 +3058,7 @@
+         # candidate remains visible and the authority file is still published intact.
+         pbo_val, pbo_ok = 1.0, False
+         spa_p, spa_ok = 1.0, False
++        spa_cv: dict[str, Any] | None = None   # no bootstrap ran, so there is nothing to control
+         print("  PBO: 1.0000 (FAIL: requires >=2 strategies)")
+         print("  SPA: p=1.0000 (FAIL: requires >=2 strategies)")
+     else:
+@@ -3069,7 +3070,31 @@
+         spa = hansen_spa(matrix)
+         spa_p = float(spa.p_value)
+         spa_ok = spa_p < SPA_ALPHA
+-        print(f"  SPA: p={spa_p:.4f} ({'PASS' if spa_ok else 'FAIL'})")
++        # ROMAN-0972: the same 1,000 draws with exact-expectation control variates, RECORDED
++        # beside the raw verdict and never acting on it (audit 2026-10-07: a stricter-only guard
++        # flipped 23 of 400 correct passes at p~0.048 with no missed-growth line). `would_change`
++        # marks every disagreement in EITHER direction, so a would-pass is missed-growth evidence
++        # and a would-fail is measured before any authority is proposed. The import sits inside
++        # the try, so the patch is safe before libs/validation/control_variates.py lands; any
++        # failure here is a diagnostic and the raw decision stands.
++        try:
++            from libs.validation.control_variates import bootstrap_pvalue_cv
++            _cv = bootstrap_pvalue_cv(matrix)
++            _d = _cv.decision(SPA_ALPHA)
++            _pc = _cv.p_controlled
++            _reproduced = bool(_cv.p_raw == spa_p)
++            spa_cv = {k: v for k, v in _d.items() if k != "passed"}
++            spa_cv["guarded_passed"] = _d.get("passed")
++            spa_cv["raw_reproduced"] = _reproduced
++            spa_cv["variance_ratio"] = (None if _cv.estimate is None
++                                        else _num(_cv.estimate.variance_ratio))
++            spa_cv["would_change"] = bool(_reproduced and _pc is not None
++                                          and ((_pc < SPA_ALPHA) != spa_ok))
++            spa_cv["authority"] = "record-only"
++        except Exception as _cv_exc:  # a diagnostic: the raw decision stands
++            spa_cv = _unmeasured(f"control variate: {type(_cv_exc).__name__}: {_cv_exc}")
++        print(f"  SPA: p={spa_p:.4f} ({'PASS' if spa_ok else 'FAIL'}; "
++              f"controlled p={spa_cv.get('p_controlled')})")
+ 
+     # 3x cost series
+     daily_x3 = _cell_series_x3(cells)
+@@ -3122,7 +3147,8 @@
+ 
+         # PBO + SPA (program-level)
+         stages["pbo"] = {"passed": pbo_ok, "pbo": round(pbo_val, 4)}
+-        stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(spa_p, 4)}
++        stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(spa_p, 4),
++                                       **({} if spa_cv is None else {"control_variate": spa_cv})}
+ 
+         # CPCV, walk-forward, stress costs (cell-local)
+         for _k in CELL_LOCAL_MID:

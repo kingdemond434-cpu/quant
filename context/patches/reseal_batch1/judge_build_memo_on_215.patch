@@ -1,0 +1,399 @@
+diff --git a/desks/mt5/scripts/external_gauntlet.py b/desks/mt5/scripts/external_gauntlet.py
+index a24bae6d..e3d52567 100644
+--- a/desks/mt5/scripts/external_gauntlet.py
++++ b/desks/mt5/scripts/external_gauntlet.py
+@@ -1948,6 +1948,9 @@ def _warm_one(spec: dict, meta: dict) -> dict:
+         obj = build_cell(sym, family, params, meta)
+         if not obj:
+             out["status"] = "NOT_RUN_BUILD_FAILED"
++            # THE REASON CROSSES BACK (2026-10-07): the parent memoises it per cache key so the
++            # same inputs are not rebuilt only to fail again (`_fail_memo_record`).
++            out["why"] = str(LAST_BUILD_FAILURE or "build_cell returned no cell")[:240]
+             return out
+         ds1 = _series_trim_partial(daily_series(obj["df"], obj["sigs"], obj["costs"]), last_day)
+         try:
+@@ -1965,6 +1968,135 @@ def _warm_one(spec: dict, meta: dict) -> dict:
+         return out
+ 
+ 
++
++# ------------------------------------------------------------- build-failure memo and triage
++#: THE LOSS THESE HELPERS CLOSE, MEASURED ON THE TRADING BOX (2026-09-24, `MT5-Gauntlet.log`):
++#:
++#:     PRE-WARM: 15 worker(s) warmed 0 cell(s) in 1108s (52890 already cached, 73756 failed ...)
++#:     PRE-WARM: 15 worker(s) warmed 0 cell(s) in 1195s (52890 already cached, 73756 failed ...)
++#:
++#: Two sweeps in a row spent the build budget WARMING NOTHING. The pool sent every cached cell
++#: through a worker only to hear HIT, and rebuilt every cell whose build had failed on the last
++#: pass only to fail it again -- 73,756 identical failures a sweep, at the FRONT of the order,
++#: because a cell that never reached a verdict stays never-judged. The cells behind them (the
++#: 1.3M-cell backlog) were never reached, however many workers the box gave the pool.
++#:
++#: TWO CORRECTIONS, NEITHER A GATE:
++#:   * a cell whose cache file already exists is answered in the parent by one directory scan,
++#:     never by a worker round-trip;
++#:   * a cell whose build failed for a NON-TRANSIENT reason is recorded under its cache key --
++#:     the content address of its exact inputs (symbol, family, params, chart, data-day) -- and
++#:     the same key is not rebuilt for `FAIL_RETRY_SEC`. It is RECORDED blocked with the reason,
++#:     `NOT_RUN_BUILD_FAILED`, which is exactly the row the serial build loop writes for the same
++#:     failure when its budget reaches the cell. Nothing is dropped: a new data-day is a new key
++#:     and is built again, and the retry window re-tries the same key in case a peer's bars or
++#:     a calendar arrived. Transient failures (memory, I/O, a dead worker) are never memoised.
++BUILD_FAILURE_MEMO = CACHE_DIR / "build_failures.json"
++FAIL_RETRY_SEC = float(os.environ.get("GAUNTLET_FAIL_RETRY_SEC", str(6 * 3600)))
++_TRANSIENT_FAILURE_MARKS = ("MemoryError", "OSError", "PermissionError", "TimeoutError",
++                            "BrokenProcessPool", "input load failed", "ConnectionError")
++_FAIL_MEMO: dict[str, dict] | None = None
++
++
++def _fail_memo() -> dict[str, dict]:
++    """The memo, loaded once per process. Unreadable reads as EMPTY: every cell is then built,
++    as it was before the memo existed -- never a cell held on a record nobody could read."""
++    global _FAIL_MEMO
++    if _FAIL_MEMO is None:
++        try:
++            doc = json.loads(BUILD_FAILURE_MEMO.read_text("utf-8"))
++            _FAIL_MEMO = {str(k): v for k, v in (doc.get("rows") or {}).items()
++                          if isinstance(v, dict)}
++        except (OSError, ValueError, AttributeError):
++            _FAIL_MEMO = {}
++    return _FAIL_MEMO
++
++
++def _fail_memo_held(ckey: str, now: float | None = None) -> dict | None:
++    """The recorded failure for these exact inputs, while it is inside the retry window."""
++    rec = _fail_memo().get(str(ckey))
++    if not rec:
++        return None
++    age = (time.time() if now is None else now) - float(rec.get("at") or 0.0)
++    return rec if 0.0 <= age < FAIL_RETRY_SEC else None
++
++
++def _fail_memo_record(ckey: str | None, why: str) -> None:
++    """Remember a deterministic build failure. A transient one is never remembered."""
++    if not ckey or any(m in str(why) for m in _TRANSIENT_FAILURE_MARKS):
++        return
++    _fail_memo()[str(ckey)] = {"why": str(why)[:240], "at": time.time()}
++
++
++def _fail_memo_save() -> None:
++    """Persist the memo, pruned to the retry window. Only the sweep's own process writes it."""
++    if _FAIL_MEMO is None:
++        return
++    now = time.time()
++    rows = {k: v for k, v in _FAIL_MEMO.items()
++            if 0.0 <= now - float(v.get("at") or 0.0) < FAIL_RETRY_SEC}
++    try:
++        BUILD_FAILURE_MEMO.parent.mkdir(parents=True, exist_ok=True)
++        tmp = BUILD_FAILURE_MEMO.with_name(f"{BUILD_FAILURE_MEMO.name}.{os.getpid()}.tmp")
++        tmp.write_text(json.dumps({"retry_sec": FAIL_RETRY_SEC, "n": len(rows), "rows": rows}),
++                       encoding="utf-8")
++        os.replace(tmp, BUILD_FAILURE_MEMO)
++    except OSError as exc:
++        print(f"  build-failure memo NOT saved ({exc}); the next sweep rebuilds those cells")
++
++
++def _blocked_row(spec: dict, why: str) -> dict:
++    """The row the serial build loop writes for a failed build, with the same status rule."""
++    return {**spec, "downstream_status": ("NOT_RUN_MODIFIER" if str(why).startswith(
++                "NOT_RUN_MODIFIER") else "NOT_RUN_BUILD_FAILED"),
++            "why": why or "signal construction returned no executable cell"}
++
++
++def _cached_keys() -> set[str]:
++    """Every content address with a series pair on disk, from ONE directory scan."""
++    try:
++        return {e.name[:-4] for e in os.scandir(CACHE_DIR)
++                if e.name.endswith(".npz") and e.is_file()}
++    except OSError:
++        return set()
++
++
++def _triage(specs: list) -> list[tuple[str, str | None, str]]:
++    """Route each spec WITHOUT building it: (route, cache key, why), in the given order.
++
++    route is `missing` (no bars on the cell's own chart -- the build loop's NOT_RUN_DATA_MISSING),
++    `held` (a memoised failure of these exact inputs), `cached` (the series pair is on disk) or
++    `build`. The key is computed exactly as `_warm_one` and `_build_specs` compute it -- the
++    cell's own chart, its last bar's day -- so a parent answer and a worker answer agree; a key
++    computed here that ever disagreed could only send a cached cell to `build`, where the worker
++    answers HIT, never the reverse.
++    """
++    last_days: dict[tuple[str, str], object] = {}
++    have = _cached_keys()
++    out: list[tuple[str, str | None, str]] = []
++    now = time.time()
++    for sp in specs:
++        sym, family = str(sp.get("sym") or ""), str(sp.get("family") or "")
++        params = sp.get("params") or {}
++        tf = timeframe_of(params, family)
++        k = (sym, tf)
++        if k not in last_days:
++            frame = _bars_for(sym, tf)
++            last_days[k] = (None if frame is None or len(frame) == 0
++                            else frame.index[-1].normalize())
++        last_day = last_days[k]
++        if last_day is None:
++            out.append(("missing", None, f"point-in-time {tf} parquet is missing or empty"))
++            continue
++        ckey = _cache_key(sym, family, params, str(last_day.date()), tf)
++        if ckey in have:
++            out.append(("cached", ckey, ""))
++            continue
++        held = _fail_memo_held(ckey, now)
++        out.append(("held", ckey, str(held.get("why") or "")) if held else ("build", ckey, ""))
++    return out
++
++
+ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
+     """Warm the cell cache for `specs` in parallel, in their given order, until `deadline`.
+ 
+@@ -1992,8 +2124,17 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
+     # every hour and never reach the tail") and guards the pool's ORDER, which was never the
+     # problem: the pool built in the right order and nothing recorded that it had.
+     summary = {"workers": WORKERS, "submitted": 0, "warmed": 0, "hit": 0, "failed": 0,
+-               "unreached": 0, "seconds": 0.0, "failures": {}, "built_symbols": set()}
++               "unreached": 0, "seconds": 0.0, "failures": {}, "built_symbols": set(),
++               "held_failed": 0, "data_missing": 0, "triage_seconds": 0.0}
+     t0 = time.time()
++    # TRIAGE IN THE PARENT (2026-10-07): cached and memoised-failed cells never reach a worker.
++    # The pool's order is the docket's order with those cells removed -- nothing is reordered.
++    _routes = _triage(specs)
++    summary["hit"] = sum(1 for r in _routes if r[0] == "cached")
++    summary["held_failed"] = sum(1 for r in _routes if r[0] == "held")
++    summary["data_missing"] = sum(1 for r in _routes if r[0] == "missing")
++    specs = [sp for sp, r in zip(specs, _routes, strict=True) if r[0] == "build"]
++    summary["triage_seconds"] = round(time.time() - t0, 1)
+     it = iter(specs)
+     pending: dict = {}
+     #: future -> spec, kept past the `pending.pop` so the completion handler can still name the
+@@ -2042,15 +2183,20 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
+                 elif st == "HIT":
+                     summary["hit"] += 1
+                 else:
++                    if st == "NOT_RUN_BUILD_FAILED":
++                        _fail_memo_record(r.get("ckey"), str(r.get("why") or ""))
+                     summary["failed"] += 1
+                     summary["failures"][st] = summary["failures"].get(st, 0) + 1
+                 if time.time() <= deadline:
+                     _submit_next()
+     summary["unreached"] += sum(1 for _ in it)
+     summary["seconds"] = round(time.time() - t0, 1)
++    _fail_memo_save()
+     print(f"PRE-WARM: {summary['workers']} worker(s) warmed {summary['warmed']} cell(s) in "
+           f"{summary['seconds']:.0f}s ({summary['hit']} already cached, {summary['failed']} "
+-          f"failed, {summary['unreached']} not reached before the build budget)"
++          f"failed, {summary['unreached']} not reached before the build budget; triage "
++          f"{summary['triage_seconds']:.0f}s held {summary['held_failed']} memoised failure(s), "
++          f"{summary['data_missing']} without bars)"
+           + (f"; failures by kind {summary['failures']}" if summary["failures"] else ""))
+     return summary
+ 
+@@ -3921,6 +4067,7 @@ def main():
+         cell_objs, deferred = _b["cell_objs"], _b["deferred"]
+         cache_hits, built_fresh, _mem_deferred = (_b["cache_hits"], _b["built_fresh"],
+                                                   _b["mem_deferred"])
++        _fail_memo_save()
+     if cache_hits:
+         print(f"Cell cache: {cache_hits}/{len(eligible_specs)} loaded (same data-day), "
+               f"{len(eligible_specs) - cache_hits} to compute")
+@@ -5213,6 +5360,12 @@ def _build_specs(eligible_specs: list, meta: dict, _build_t0: float, _stage0: di
+             })
+             cache_hits += 1
+             continue
++        _held = _fail_memo_held(ckey)
++        if _held:
++            # THE SAME INPUTS FAILED THIS BUILD INSIDE THE RETRY WINDOW: record the failure the
++            # build would record, without rebuilding it (`_fail_memo_record`).
++            blocked_build.append(_blocked_row(spec, str(_held.get("why") or "")))
++            continue
+         if time.time() - _build_t0 > FRESH_BUILD_BUDGET_SEC:
+             # Out of build budget: defer, never drop. The next sweep finds everything this run
+             # cached and starts from here, so the docket converges instead of restarting.
+@@ -5243,6 +5396,8 @@ def _build_specs(eligible_specs: list, meta: dict, _build_t0: float, _stage0: di
+         else:
+             _why = LAST_BUILD_FAILURE or "parquet missing or build failed"
+             print(f"  SKIP {key}: {_why}")
++            if LAST_BUILD_FAILURE:
++                _fail_memo_record(ckey, LAST_BUILD_FAILURE)
+             blocked_build.append({**spec, "downstream_status": (
+                                       "NOT_RUN_MODIFIER" if _why.startswith("NOT_RUN_MODIFIER")
+                                       else "NOT_RUN_BUILD_FAILED"),
+diff --git a/desks/mt5/tests/test_gauntlet_build_failure_memo.py b/desks/mt5/tests/test_gauntlet_build_failure_memo.py
+new file mode 100644
+index 00000000..f8382b4d
+--- /dev/null
++++ b/desks/mt5/tests/test_gauntlet_build_failure_memo.py
+@@ -0,0 +1,172 @@
++"""The judge stops re-failing the same builds and stops re-checking cached cells through workers.
++
++MEASURED ON THE TRADING BOX (2026-09-24, `MT5-Gauntlet.log`): two sweeps in a row warmed ZERO new
++cells -- the pool re-checked 52,890 cached cells through workers and rebuilt 73,756 cells whose
++build had failed on the previous pass, at the front of the order, until the budget was gone. Each
++failed cell was then DEFERRED by its shard rather than recorded, so it stayed never-judged and
++went straight back to the front of the next sweep.
++
++These tests pin the correction: cached cells are answered in the parent, a deterministic failure
++is memoised under the content address of its exact inputs and recorded as the same
++NOT_RUN_BUILD_FAILED row the serial loop writes (in a shard too), transient failures are never
++memoised, and nothing is dropped. The per-shard plan slices are #215's own, pinned by
++`test_judge_streaming_resume.py`.
++"""
++from __future__ import annotations
++
++import sys
++import time
++from pathlib import Path
++
++import numpy as np
++import pandas as pd
++import pytest
++
++DESK = Path(__file__).resolve().parents[1]
++for _p in (str(DESK.parent.parent), str(DESK)):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
++
++from scripts import external_gauntlet as G  # noqa: E402
++
++DAY = pd.Timestamp("2026-10-06")
++
++
++def _frame() -> pd.DataFrame:
++    idx = pd.date_range(DAY - pd.Timedelta(days=400), DAY, freq="D")
++    return pd.DataFrame({"close": np.linspace(1.0, 2.0, len(idx))}, index=idx)
++
++
++@pytest.fixture()
++def box(tmp_path, monkeypatch):
++    monkeypatch.setattr(G, "CACHE_DIR", tmp_path / "cache")
++    monkeypatch.setattr(G, "BUILD_FAILURE_MEMO", tmp_path / "cache" / "build_failures.json")
++    monkeypatch.setattr(G, "_FAIL_MEMO", None)
++    (tmp_path / "cache").mkdir()
++    frame = _frame()
++    monkeypatch.setattr(G, "_bars_for", lambda sym, tf="H1": None if sym == "NOBARS" else frame)
++    return tmp_path
++
++
++def _spec(sym: str, n: int, family: str = "session_range_breakout") -> dict:
++    return {"sym": sym, "family": family, "params": {"n": n}}
++
++
++def _key(sp: dict) -> str:
++    tf = G.timeframe_of(sp["params"], sp["family"])
++    return G._cache_key(sp["sym"], sp["family"], sp["params"], str(DAY.date()), tf)
++
++
++def _warm(sp: dict, seed: int = 0) -> None:
++    rng = np.random.default_rng(seed)
++    idx = pd.date_range(DAY - pd.Timedelta(days=330), DAY - pd.Timedelta(days=1), freq="D")
++    ds = pd.Series(rng.normal(0.0005, 0.01, len(idx)), index=idx)
++    G.cache_save(_key(sp), ds, ds * 0.9)
++
++
++# ------------------------------------------------------------------------------------ triage
++def test_triage_routes_every_cell_without_building_it(box) -> None:
++    cached, failed, fresh, nobars = (_spec("EURUSD", 1), _spec("EURUSD", 2),
++                                     _spec("EURUSD", 3), _spec("NOBARS", 1))
++    _warm(cached)
++    G._fail_memo_record(_key(failed), "no implementation of family 'x'")
++    routes = G._triage([cached, failed, fresh, nobars])
++    assert [r[0] for r in routes] == ["cached", "held", "build", "missing"]
++    assert routes[1][2] == "no implementation of family 'x'"
++    assert routes[3][1] is None and "parquet is missing" in routes[3][2]
++
++
++def test_the_parent_key_is_the_workers_key(box) -> None:
++    """A parent key that disagreed would route a cached cell to `build` -- harmless -- but it
++    must be the same address `_warm_one` and `_build_specs` use."""
++    import inspect
++
++    sp = _spec("EURUSD", 7)
++    _warm(sp)
++    assert G._triage([sp])[0] == ("cached", _key(sp), "")
++    want = "_cache_key(sym, family, params, str(last_day.date()), tf)"
++    assert want in inspect.getsource(G._warm_one) and want in inspect.getsource(G._triage)
++
++
++# -------------------------------------------------------------------------------------- memo
++def test_transient_failures_are_never_memoised(box) -> None:
++    for why in ("input load failed: OSError: disk", "ArrayMemoryError: unable to allocate",
++                "BrokenProcessPool"):
++        G._fail_memo_record("k-" + why[:5], why)
++    assert G._fail_memo() == {}
++
++
++def test_a_failure_is_held_only_inside_the_retry_window(box, monkeypatch) -> None:
++    G._fail_memo_record("k1", "no peer_symbol on the candidate")
++    assert G._fail_memo_held("k1")
++    later = time.time() + G.FAIL_RETRY_SEC + 1
++    assert G._fail_memo_held("k1", now=later) is None
++
++
++def test_the_memo_survives_a_process_and_is_pruned(box, monkeypatch) -> None:
++    G._fail_memo_record("fresh", "no implementation of family 'x'")
++    G._fail_memo()["stale"] = {"why": "old", "at": time.time() - G.FAIL_RETRY_SEC - 5}
++    G._fail_memo_save()
++    monkeypatch.setattr(G, "_FAIL_MEMO", None)
++    assert set(G._fail_memo()) == {"fresh"}
++
++
++def test_an_unreadable_memo_holds_nothing(box) -> None:
++    G.BUILD_FAILURE_MEMO.write_text("{not json", encoding="utf-8")
++    assert G._fail_memo() == {}
++
++
++# ------------------------------------------------------------------------- the build loop
++def test_build_loop_records_a_held_cell_as_the_failure_it_would_build(box, monkeypatch) -> None:
++    sp = _spec("EURUSD", 9)
++    G._fail_memo_record(_key(sp), "no implementation of family 'x'")
++    calls: list = []
++    monkeypatch.setattr(G, "build_cell", lambda *a, **k: calls.append(a))
++    blocked: list = []
++    out = G._build_specs([sp], {}, time.time(), G.stage0_new_summary(), {}, set(), blocked)
++    assert not calls and not out["cell_objs"] and not out["deferred"]
++    assert blocked[0]["downstream_status"] == "NOT_RUN_BUILD_FAILED"
++    assert blocked[0]["why"] == "no implementation of family 'x'"
++
++
++def test_build_loop_memoises_a_deterministic_failure(box, monkeypatch) -> None:
++    sp = _spec("EURUSD", 10)
++
++    def _fail(*_a, **_k):
++        G.LAST_BUILD_FAILURE = "lead_lag: no driver_symbol on the cell"
++        return None
++
++    monkeypatch.setattr(G, "build_cell", _fail)
++    blocked: list = []
++    G._build_specs([sp], {}, time.time(), G.stage0_new_summary(), {}, set(), blocked)
++    assert blocked[0]["downstream_status"] == "NOT_RUN_BUILD_FAILED"
++    assert G._fail_memo_held(_key(sp))
++
++
++# ------------------------------------------------------------------------- inside a shard
++def test_a_shard_records_a_held_cell_as_blocked_never_deferred(box, monkeypatch) -> None:
++    """On top of the resumable epochs (#215): a memoised failure that reaches a shard after the
++    pool spent the budget leaves as the NOT_RUN_BUILD_FAILED row, not as an eternal DEFERRED --
++    the deferral is what kept 73,756 failing cells at the front of every sweep. Every planned cell
++    still comes back exactly once."""
++    specs = [_spec("EURUSD", i) for i in range(9)] + [_spec("NOBARS", 1)]
++    for i in (0, 3, 5):
++        _warm(specs[i], seed=i)
++    G._fail_memo_record(_key(specs[1]), "no implementation of family 'x'")
++    G._fail_memo_save()
++
++    def dispatch(shard_dir, n, phase, *_a):
++        for k in range(n):
++            monkeypatch.setattr(G, "_FAIL_MEMO", None)   # a shard is a fresh process
++            G.shard_worker(shard_dir, k, phase)
++
++    monkeypatch.setattr(G, "_SHARD", {"n": 3, "dispatch": dispatch,
++                                      "dir": box / "cache" / "shards"})
++    monkeypatch.setattr(G, "_cell_local_stages", lambda c, arr, x3, meta: {"stub": True})
++    spent = time.time() - G.FRESH_BUILD_BUDGET_SEC - 1     # the pool spent the budget
++    got = G._run_shards(specs, {}, spent)
++    assert [c["params"]["n"] for c in got["cell_objs"]] == [0, 3, 5]
++    assert [d["params"]["n"] for d in got["deferred"]] == [2, 4, 6, 7, 8]
++    by = {(b["sym"], b["params"]["n"]): b["downstream_status"] for b in got["blocked"]}
++    assert by == {("EURUSD", 1): "NOT_RUN_BUILD_FAILED", ("NOBARS", 1): "NOT_RUN_DATA_MISSING"}
++    assert len(got["cell_objs"]) + len(got["deferred"]) + len(got["blocked"]) == len(specs)

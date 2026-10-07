@@ -1,0 +1,26 @@
+diff --git a/desks/mt5/scripts/external_gauntlet.py b/desks/mt5/scripts/external_gauntlet.py
+index a7abb4246..6071d93a5 100644
+--- a/desks/mt5/scripts/external_gauntlet.py
++++ b/desks/mt5/scripts/external_gauntlet.py
+@@ -1906,7 +1906,7 @@ def cache_save(key: str, ds1, ds3) -> None:
+         tmp = CACHE_DIR / f"{key}.{os.getpid()}.tmp"
+         with open(tmp, "wb") as fh:
+             _np.savez_compressed(fh,
+-                                 dates=pd.to_datetime(common).astype("int64").to_numpy(),
++                                 dates=pd.to_datetime(common).as_unit("ns").asi8,
+                                  v1=ds1.reindex(common).to_numpy(float),
+                                  v3=ds3.reindex(common).to_numpy(float))
+         os.replace(tmp, final)
+diff --git a/libs/data/pit_certificate.py b/libs/data/pit_certificate.py
+index b58de37c6..8df7121d7 100644
+--- a/libs/data/pit_certificate.py
++++ b/libs/data/pit_certificate.py
+@@ -265,7 +265,7 @@ def check_timestamps(meta: dict[str, Any], series: pd.DataFrame | pd.Series,
+         return Check("timestamps", VERDICT_UNMEASURED, "the series is empty", {"rows": 0})
+     ok = int(idx.notna().sum())
+     frac = ok / n
+-    monotonic = bool(pd.Series(idx.dropna().astype("int64")).is_monotonic_increasing)
++    monotonic = bool(pd.Series(idx.dropna().as_unit("ns").asi8).is_monotonic_increasing)
+     detail = {"rows": n, "parseable": ok, "parseable_frac": round(frac, 6),
+               "monotonic": monotonic, "timezone": "UTC"}
+     if frac < MIN_TIMESTAMP_FRAC:
