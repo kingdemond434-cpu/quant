@@ -1,0 +1,2019 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPAUD/",
+  "published": "2026-10-07T21:13:39+00:00",
+  "symbols": [
+   "GBPAUD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "656c683d5009cd4e91f9",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Canadian Dollar (GBPCAD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPCAD/",
+  "published": "2026-10-07T21:13:40+00:00",
+  "symbols": [
+   "GBPCAD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ca86c2ace8b066c18958",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "20 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7ffead9246f1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Swiss Franc (GBPCHF) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPCHF/",
+  "published": "2026-10-07T21:13:42+00:00",
+  "symbols": [
+   "GBPCHF",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "af2b86463235855f3bdc",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "70 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cf1d7fb95463"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Japanese Yen (GBPJPY) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPJPY/",
+  "published": "2026-10-07T21:13:44+00:00",
+  "symbols": [
+   "GBPJPY",
+   "GBPUSD",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "51eda9e6582e2305bf18",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "40 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD",
+      "USDJPY",
+      "GBPJPY"
+     ],
+     "mentioned": [
+      "pound",
+      "yen",
+      "gbpjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "851739d13eed"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs New Zealand Dollar (GBPNZD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPNZD/",
+  "published": "2026-10-07T21:13:46+00:00",
+  "symbols": [
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "593f7011a171785aeb84",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "80 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "204ea0441382"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs US Dollar (GBPUSD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPUSD/",
+  "published": "2026-10-07T21:13:48+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "68179a270701d7c87e02",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "30 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "485ba5bac7ba"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Australian Dollar (EURAUD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURAUD/",
+  "published": "2026-10-07T21:13:50+00:00",
+  "symbols": [
+   "EURAUD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f9bd2274daf1451d1317",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Dollar vs Japanese Yen (USDJPY.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/USDJPY.p/",
+  "published": "2026-10-07T21:13:51+00:00",
+  "symbols": [
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "adfc078a5a4a43f307be",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 14.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "66c5801231df"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "BitCoin vs US Dollar (BTCUSD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/BTCUSD.p/",
+  "published": "2026-10-07T21:13:52+00:00",
+  "symbols": [
+   "BTCUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8336bcd4d81df076a045",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "01 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:00-24:00 Term currency USD 3-days swap Friday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 16.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7a3ff6e862dd"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ethereum vs US Dollar (ETHUSD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/ETHUSD.p/",
+  "published": "2026-10-07T21:13:54+00:00",
+  "symbols": [
+   "ETHUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ae4e69cb6b6360dca2bc",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "01 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:00-24:00 Term currency USD 3-days swap Friday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 16.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7a3ff6e862dd"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ripple vs US Dollar (XRPUSD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/XRPUSD.p/",
+  "published": "2026-10-07T21:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f753f2fd479411d79b25",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Solana vs US Dollar (SOLUSD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/SOLUSD.p/",
+  "published": "2026-10-07T21:13:59+00:00",
+  "symbols": [
+   "SOLUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1950b0fc46e407473824",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Doge vs US Dollar (DOGEUSD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/DOGEUSD.p/",
+  "published": "2026-10-07T21:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d42f17605a4629c79edb",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cardano vs US Dollar (ADAUSD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/ADAUSD.p/",
+  "published": "2026-10-07T21:14:03+00:00",
+  "symbols": [
+   "ADAUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9840a0f46543e4af700e",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0388\u03ba\u03b4\u03bf\u03c3\u03b7 \u03ba\u03b1\u03b9 \u03ba\u03c5\u03ba\u03bb\u03bf\u03c6\u03bf\u03c1\u03af\u03b1",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.el.html",
+  "published": "2026-10-07T21:14:04+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "el",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.el.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ad33a2e0708cf780ae51",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Emisi\u00f3n y circulaci\u00f3n",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.es.html",
+  "published": "2026-10-07T21:14:05+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.es.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "55f0dd23ebe448d6939d",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Emiteerimine ja ringlus",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.et.html",
+  "published": "2026-10-07T21:14:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "et",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.et.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f50c9b822075dbe8f11b",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Liikkeeseenlasku ja kierto",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.fi.html",
+  "published": "2026-10-07T21:14:10+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bba0cda99490faa671e9",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "L\u2019\u00e9mission et la circulation",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.fr.html",
+  "published": "2026-10-07T21:14:12+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2030eab3bb5c4205bacd",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Issuance and circulation",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.ga.html",
+  "published": "2026-10-07T21:14:14+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ga",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ga.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e490842fa717bb8cfd09",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Izdavanje i distribucija",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.hr.html",
+  "published": "2026-10-07T21:14:15+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0cf2a70069e89faee3ea",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/60686",
+  "published": "2026-10-07T21:14:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f7da4339c67d06c9d4a8",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/60756",
+  "published": "2026-10-07T21:14:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8ce149a278cab57de806",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/60617",
+  "published": "2026-10-07T21:14:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "12e9c8f854a9f685ef71",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/59862",
+  "published": "2026-10-07T21:14:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "980ff02d34d87ae7e4c1",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/59756",
+  "published": "2026-10-07T21:14:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "96aa09f9c8418844a6ce",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/59665",
+  "published": "2026-10-07T21:14:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8816dd5d737a3c19a0bd",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/56939",
+  "published": "2026-10-07T21:14:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a9ceaf8d28ad0fa7b426",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u805a\u7126 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://forex.eastmoney.com/a/cwhxw.html",
+  "published": "2026-10-07T21:14:30+00:00",
+  "symbols": [
+   "XTIUSD",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4c5465dba9a9c76967d4",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "5 \u56fd\u9645\u8d27\u5e01\u57fa\u91d1\u7ec4\u7ec7\uff1a\u5bf9\u51b2\u57fa\u91d1\u5feb\u901f\u6269\u5f20\u6216\u653e\u5927\u5e02\u573a\u98ce\u9669 6 \u5fb7\u56fd8\u6708\u5de5\u4e1a\u65b0\u8ba2\u5355\u73af\u6bd4\u5927\u5e45\u4e0b\u964d 7 \u7f8e\u4f0a\u6218\u4e89\u6301\u7eed\u6d88\u8017\u5168\u7403\u77f3\u6cb9\u5e93\u5b58 EIA\u518d\u5ea6\u4e0a\u8c03\u6cb9\u4ef7\u9884\u6d4b 8 \u56fd\u5bb6\u5916\u6c47\u5c40\u516c\u5e03\u91cd\u8981\u6570\u636e \u4e13\u5bb6\u89e3\u8bfb 9 \u7a81\u53d1\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u5e93\u5b58",
+     "\u5916\u6c47"
+    ],
+    "direction": [
+     "\u9884\u6d4b"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u77f3\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4205bc3194cb"
+   },
+   {
+    "claim": "25 2026-09-18 \u8bc4\u8bba\u7cbe\u534e \u66f4\u591a \u673a\u6784\uff1a\u79d1\u6280\u4e3b\u7ebf\u6216\u91cd\u65b0\u5360\u4f18 \u8dc3\u5347\u66f4\u9ad8\u80fd\u7ea7 \u51b2\u523a\u4e00\u6d41\u6295\u884c \u5b58\u91cf\u653f\u7b56\u63d0\u8d28\u589e\u6548\u3001\u589e\u91cf\u653f\u7b56\u7cbe\u51c6\u52a0\u7801 \u7ecf\u6d4e\u589e\u957f\u52a8\u80fd\u6709\u671b\u6301\u7eed\u79ef\u805a \u6253\u597d\u653f\u7b56\u201c\u7ec4\u5408\u62f3\u201d \u52a9\u63a8\u7ecf\u6d4e\u5411\u65b0\u5411\u4f18\u5411\u597d \u4eceETF\u52df\u96c6\u51b7\u70ed\u5206\u5316\u770b\u516c\u52df\u884c\u4e1a\u8f6c\u578b \u8d44\u8baf\u7cbe\u534e \u66f4\u591a \u5047\u671f\u8981\u95fb\u6c47\u603b\uff1a\u975e\u519c\u6570\u636e\u610f\u5916\u201c\u7206\u51b7\u201d \u7f8e\u8054\u50a810\u6708\u52a0\u606f\u6982\u7387\u9aa4\u964d \u7f8e\u80a1\u4e09\u5927\u6307\u6570\u96c6\u4f53\u6536\u8dcc \u70ed\u95e8\u79d1\u6280\u80a1\u6da8\u8dcc\u4e0d\u4e00 \u7f8e\u5149\u79d1\u6280\u6da8\u8d854% \u5341\u5927\u673a\u6784\u8bba\u5e02\uff1a\u8282\u540eA\u80a1\u6709\u671b\u201c\u91cf\u4ef7\u9f50\u5347\u201d \u8d2d\u91d1\u529b\u5ea6\u521b\u65b0\u9ad8\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u975e\u519c",
+     "\u52a0\u606f",
+     "\u91cf\u4ef7"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "\u7f8e\u80a1",
+      "a\u80a1"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "9c28fe64cc73"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u8bc4\u8bba _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://forex.eastmoney.com/a/cwhpl.html",
+  "published": "2026-10-07T21:14:32+00:00",
+  "symbols": [
+   "XTIUSD",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "370aaf4bc69e1e934449",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "5 \u56fd\u9645\u8d27\u5e01\u57fa\u91d1\u7ec4\u7ec7\uff1a\u5bf9\u51b2\u57fa\u91d1\u5feb\u901f\u6269\u5f20\u6216\u653e\u5927\u5e02\u573a\u98ce\u9669 6 \u5fb7\u56fd8\u6708\u5de5\u4e1a\u65b0\u8ba2\u5355\u73af\u6bd4\u5927\u5e45\u4e0b\u964d 7 \u7f8e\u4f0a\u6218\u4e89\u6301\u7eed\u6d88\u8017\u5168\u7403\u77f3\u6cb9\u5e93\u5b58 EIA\u518d\u5ea6\u4e0a\u8c03\u6cb9\u4ef7\u9884\u6d4b 8 \u56fd\u5bb6\u5916\u6c47\u5c40\u516c\u5e03\u91cd\u8981\u6570\u636e \u4e13\u5bb6\u89e3\u8bfb 9 \u7a81\u53d1\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u5e93\u5b58",
+     "\u5916\u6c47"
+    ],
+    "direction": [
+     "\u9884\u6d4b"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u77f3\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4205bc3194cb"
+   },
+   {
+    "claim": "25 2026-09-18 \u8bc4\u8bba\u7cbe\u534e \u66f4\u591a \u673a\u6784\uff1a\u79d1\u6280\u4e3b\u7ebf\u6216\u91cd\u65b0\u5360\u4f18 \u8dc3\u5347\u66f4\u9ad8\u80fd\u7ea7 \u51b2\u523a\u4e00\u6d41\u6295\u884c \u5b58\u91cf\u653f\u7b56\u63d0\u8d28\u589e\u6548\u3001\u589e\u91cf\u653f\u7b56\u7cbe\u51c6\u52a0\u7801 \u7ecf\u6d4e\u589e\u957f\u52a8\u80fd\u6709\u671b\u6301\u7eed\u79ef\u805a \u6253\u597d\u653f\u7b56\u201c\u7ec4\u5408\u62f3\u201d \u52a9\u63a8\u7ecf\u6d4e\u5411\u65b0\u5411\u4f18\u5411\u597d \u4eceETF\u52df\u96c6\u51b7\u70ed\u5206\u5316\u770b\u516c\u52df\u884c\u4e1a\u8f6c\u578b \u8d44\u8baf\u7cbe\u534e \u66f4\u591a \u5047\u671f\u8981\u95fb\u6c47\u603b\uff1a\u975e\u519c\u6570\u636e\u610f\u5916\u201c\u7206\u51b7\u201d \u7f8e\u8054\u50a810\u6708\u52a0\u606f\u6982\u7387\u9aa4\u964d \u7f8e\u80a1\u4e09\u5927\u6307\u6570\u96c6\u4f53\u6536\u8dcc \u70ed\u95e8\u79d1\u6280\u80a1\u6da8\u8dcc\u4e0d\u4e00 \u7f8e\u5149\u79d1\u6280\u6da8\u8d854% \u5341\u5927\u673a\u6784\u8bba\u5e02\uff1a\u8282\u540eA\u80a1\u6709\u671b\u201c\u91cf\u4ef7\u9f50\u5347\u201d \u8d2d\u91d1\u529b\u5ea6\u521b\u65b0\u9ad8\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u975e\u519c",
+     "\u52a0\u606f",
+     "\u91cf\u4ef7"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "\u7f8e\u80a1",
+      "a\u80a1"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "9c28fe64cc73"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u592e\u884c\u52a8\u6001 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://forex.eastmoney.com/a/cyhdt.html",
+  "published": "2026-10-07T21:14:34+00:00",
+  "symbols": [
+   "XTIUSD",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dbf455c28e653192e617",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "5 \u56fd\u9645\u8d27\u5e01\u57fa\u91d1\u7ec4\u7ec7\uff1a\u5bf9\u51b2\u57fa\u91d1\u5feb\u901f\u6269\u5f20\u6216\u653e\u5927\u5e02\u573a\u98ce\u9669 6 \u5fb7\u56fd8\u6708\u5de5\u4e1a\u65b0\u8ba2\u5355\u73af\u6bd4\u5927\u5e45\u4e0b\u964d 7 \u7f8e\u4f0a\u6218\u4e89\u6301\u7eed\u6d88\u8017\u5168\u7403\u77f3\u6cb9\u5e93\u5b58 EIA\u518d\u5ea6\u4e0a\u8c03\u6cb9\u4ef7\u9884\u6d4b 8 \u56fd\u5bb6\u5916\u6c47\u5c40\u516c\u5e03\u91cd\u8981\u6570\u636e \u4e13\u5bb6\u89e3\u8bfb 9 \u7a81\u53d1\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u5e93\u5b58",
+     "\u5916\u6c47"
+    ],
+    "direction": [
+     "\u9884\u6d4b"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u77f3\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4205bc3194cb"
+   },
+   {
+    "claim": "25 2026-09-18 \u8bc4\u8bba\u7cbe\u534e \u66f4\u591a \u673a\u6784\uff1a\u79d1\u6280\u4e3b\u7ebf\u6216\u91cd\u65b0\u5360\u4f18 \u8dc3\u5347\u66f4\u9ad8\u80fd\u7ea7 \u51b2\u523a\u4e00\u6d41\u6295\u884c \u5b58\u91cf\u653f\u7b56\u63d0\u8d28\u589e\u6548\u3001\u589e\u91cf\u653f\u7b56\u7cbe\u51c6\u52a0\u7801 \u7ecf\u6d4e\u589e\u957f\u52a8\u80fd\u6709\u671b\u6301\u7eed\u79ef\u805a \u6253\u597d\u653f\u7b56\u201c\u7ec4\u5408\u62f3\u201d \u52a9\u63a8\u7ecf\u6d4e\u5411\u65b0\u5411\u4f18\u5411\u597d \u4eceETF\u52df\u96c6\u51b7\u70ed\u5206\u5316\u770b\u516c\u52df\u884c\u4e1a\u8f6c\u578b \u8d44\u8baf\u7cbe\u534e \u66f4\u591a \u5047\u671f\u8981\u95fb\u6c47\u603b\uff1a\u975e\u519c\u6570\u636e\u610f\u5916\u201c\u7206\u51b7\u201d \u7f8e\u8054\u50a810\u6708\u52a0\u606f\u6982\u7387\u9aa4\u964d \u7f8e\u80a1\u4e09\u5927\u6307\u6570\u96c6\u4f53\u6536\u8dcc \u70ed\u95e8\u79d1\u6280\u80a1\u6da8\u8dcc\u4e0d\u4e00 \u7f8e\u5149\u79d1\u6280\u6da8\u8d854% \u5341\u5927\u673a\u6784\u8bba\u5e02\uff1a\u8282\u540eA\u80a1\u6709\u671b\u201c\u91cf\u4ef7\u9f50\u5347\u201d \u8d2d\u91d1\u529b\u5ea6\u521b\u65b0\u9ad8\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u975e\u519c",
+     "\u52a0\u606f",
+     "\u91cf\u4ef7"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "\u7f8e\u80a1",
+      "a\u80a1"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "9c28fe64cc73"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u805a\u7126 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/cwhxw.html",
+  "published": "2026-10-07T21:14:38+00:00",
+  "symbols": [
+   "XTIUSD",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8634a660e039c7170d9c",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "5 \u56fd\u9645\u8d27\u5e01\u57fa\u91d1\u7ec4\u7ec7\uff1a\u5bf9\u51b2\u57fa\u91d1\u5feb\u901f\u6269\u5f20\u6216\u653e\u5927\u5e02\u573a\u98ce\u9669 6 \u5fb7\u56fd8\u6708\u5de5\u4e1a\u65b0\u8ba2\u5355\u73af\u6bd4\u5927\u5e45\u4e0b\u964d 7 \u7f8e\u4f0a\u6218\u4e89\u6301\u7eed\u6d88\u8017\u5168\u7403\u77f3\u6cb9\u5e93\u5b58 EIA\u518d\u5ea6\u4e0a\u8c03\u6cb9\u4ef7\u9884\u6d4b 8 \u56fd\u5bb6\u5916\u6c47\u5c40\u516c\u5e03\u91cd\u8981\u6570\u636e \u4e13\u5bb6\u89e3\u8bfb 9 \u7a81\u53d1\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u5e93\u5b58",
+     "\u5916\u6c47"
+    ],
+    "direction": [
+     "\u9884\u6d4b"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u77f3\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4205bc3194cb"
+   },
+   {
+    "claim": "25 2026-09-18 \u8bc4\u8bba\u7cbe\u534e \u66f4\u591a \u673a\u6784\uff1a\u79d1\u6280\u4e3b\u7ebf\u6216\u91cd\u65b0\u5360\u4f18 \u8dc3\u5347\u66f4\u9ad8\u80fd\u7ea7 \u51b2\u523a\u4e00\u6d41\u6295\u884c \u5b58\u91cf\u653f\u7b56\u63d0\u8d28\u589e\u6548\u3001\u589e\u91cf\u653f\u7b56\u7cbe\u51c6\u52a0\u7801 \u7ecf\u6d4e\u589e\u957f\u52a8\u80fd\u6709\u671b\u6301\u7eed\u79ef\u805a \u6253\u597d\u653f\u7b56\u201c\u7ec4\u5408\u62f3\u201d \u52a9\u63a8\u7ecf\u6d4e\u5411\u65b0\u5411\u4f18\u5411\u597d \u4eceETF\u52df\u96c6\u51b7\u70ed\u5206\u5316\u770b\u516c\u52df\u884c\u4e1a\u8f6c\u578b \u8d44\u8baf\u7cbe\u534e \u66f4\u591a \u5047\u671f\u8981\u95fb\u6c47\u603b\uff1a\u975e\u519c\u6570\u636e\u610f\u5916\u201c\u7206\u51b7\u201d \u7f8e\u8054\u50a810\u6708\u52a0\u606f\u6982\u7387\u9aa4\u964d \u7f8e\u80a1\u4e09\u5927\u6307\u6570\u96c6\u4f53\u6536\u8dcc \u70ed\u95e8\u79d1\u6280\u80a1\u6da8\u8dcc\u4e0d\u4e00 \u7f8e\u5149\u79d1\u6280\u6da8\u8d854% \u5341\u5927\u673a\u6784\u8bba\u5e02\uff1a\u8282\u540eA\u80a1\u6709\u671b\u201c\u91cf\u4ef7\u9f50\u5347\u201d \u8d2d\u91d1\u529b\u5ea6\u521b\u65b0\u9ad8\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u975e\u519c",
+     "\u52a0\u606f",
+     "\u91cf\u4ef7"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "\u7f8e\u80a1",
+      "a\u80a1"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "9c28fe64cc73"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u8bc4\u8bba _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/cwhpl.html",
+  "published": "2026-10-07T21:14:39+00:00",
+  "symbols": [
+   "XTIUSD",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7543730e24bd069d6fe1",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "5 \u56fd\u9645\u8d27\u5e01\u57fa\u91d1\u7ec4\u7ec7\uff1a\u5bf9\u51b2\u57fa\u91d1\u5feb\u901f\u6269\u5f20\u6216\u653e\u5927\u5e02\u573a\u98ce\u9669 6 \u5fb7\u56fd8\u6708\u5de5\u4e1a\u65b0\u8ba2\u5355\u73af\u6bd4\u5927\u5e45\u4e0b\u964d 7 \u7f8e\u4f0a\u6218\u4e89\u6301\u7eed\u6d88\u8017\u5168\u7403\u77f3\u6cb9\u5e93\u5b58 EIA\u518d\u5ea6\u4e0a\u8c03\u6cb9\u4ef7\u9884\u6d4b 8 \u56fd\u5bb6\u5916\u6c47\u5c40\u516c\u5e03\u91cd\u8981\u6570\u636e \u4e13\u5bb6\u89e3\u8bfb 9 \u7a81\u53d1\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u5e93\u5b58",
+     "\u5916\u6c47"
+    ],
+    "direction": [
+     "\u9884\u6d4b"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u77f3\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4205bc3194cb"
+   },
+   {
+    "claim": "25 2026-09-18 \u8bc4\u8bba\u7cbe\u534e \u66f4\u591a \u673a\u6784\uff1a\u79d1\u6280\u4e3b\u7ebf\u6216\u91cd\u65b0\u5360\u4f18 \u8dc3\u5347\u66f4\u9ad8\u80fd\u7ea7 \u51b2\u523a\u4e00\u6d41\u6295\u884c \u5b58\u91cf\u653f\u7b56\u63d0\u8d28\u589e\u6548\u3001\u589e\u91cf\u653f\u7b56\u7cbe\u51c6\u52a0\u7801 \u7ecf\u6d4e\u589e\u957f\u52a8\u80fd\u6709\u671b\u6301\u7eed\u79ef\u805a \u6253\u597d\u653f\u7b56\u201c\u7ec4\u5408\u62f3\u201d \u52a9\u63a8\u7ecf\u6d4e\u5411\u65b0\u5411\u4f18\u5411\u597d \u4eceETF\u52df\u96c6\u51b7\u70ed\u5206\u5316\u770b\u516c\u52df\u884c\u4e1a\u8f6c\u578b \u8d44\u8baf\u7cbe\u534e \u66f4\u591a \u5047\u671f\u8981\u95fb\u6c47\u603b\uff1a\u975e\u519c\u6570\u636e\u610f\u5916\u201c\u7206\u51b7\u201d \u7f8e\u8054\u50a810\u6708\u52a0\u606f\u6982\u7387\u9aa4\u964d \u7f8e\u80a1\u4e09\u5927\u6307\u6570\u96c6\u4f53\u6536\u8dcc \u70ed\u95e8\u79d1\u6280\u80a1\u6da8\u8dcc\u4e0d\u4e00 \u7f8e\u5149\u79d1\u6280\u6da8\u8d854% \u5341\u5927\u673a\u6784\u8bba\u5e02\uff1a\u8282\u540eA\u80a1\u6709\u671b\u201c\u91cf\u4ef7\u9f50\u5347\u201d \u8d2d\u91d1\u529b\u5ea6\u521b\u65b0\u9ad8\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u975e\u519c",
+     "\u52a0\u606f",
+     "\u91cf\u4ef7"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "\u7f8e\u80a1",
+      "a\u80a1"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "9c28fe64cc73"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u592e\u884c\u52a8\u6001 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/cyhdt.html",
+  "published": "2026-10-07T21:14:42+00:00",
+  "symbols": [
+   "XTIUSD",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dbf455c28e653192e617",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "5 \u56fd\u9645\u8d27\u5e01\u57fa\u91d1\u7ec4\u7ec7\uff1a\u5bf9\u51b2\u57fa\u91d1\u5feb\u901f\u6269\u5f20\u6216\u653e\u5927\u5e02\u573a\u98ce\u9669 6 \u5fb7\u56fd8\u6708\u5de5\u4e1a\u65b0\u8ba2\u5355\u73af\u6bd4\u5927\u5e45\u4e0b\u964d 7 \u7f8e\u4f0a\u6218\u4e89\u6301\u7eed\u6d88\u8017\u5168\u7403\u77f3\u6cb9\u5e93\u5b58 EIA\u518d\u5ea6\u4e0a\u8c03\u6cb9\u4ef7\u9884\u6d4b 8 \u56fd\u5bb6\u5916\u6c47\u5c40\u516c\u5e03\u91cd\u8981\u6570\u636e \u4e13\u5bb6\u89e3\u8bfb 9 \u7a81\u53d1\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u5e93\u5b58",
+     "\u5916\u6c47"
+    ],
+    "direction": [
+     "\u9884\u6d4b"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u77f3\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4205bc3194cb"
+   },
+   {
+    "claim": "25 2026-09-18 \u8bc4\u8bba\u7cbe\u534e \u66f4\u591a \u673a\u6784\uff1a\u79d1\u6280\u4e3b\u7ebf\u6216\u91cd\u65b0\u5360\u4f18 \u8dc3\u5347\u66f4\u9ad8\u80fd\u7ea7 \u51b2\u523a\u4e00\u6d41\u6295\u884c \u5b58\u91cf\u653f\u7b56\u63d0\u8d28\u589e\u6548\u3001\u589e\u91cf\u653f\u7b56\u7cbe\u51c6\u52a0\u7801 \u7ecf\u6d4e\u589e\u957f\u52a8\u80fd\u6709\u671b\u6301\u7eed\u79ef\u805a \u6253\u597d\u653f\u7b56\u201c\u7ec4\u5408\u62f3\u201d \u52a9\u63a8\u7ecf\u6d4e\u5411\u65b0\u5411\u4f18\u5411\u597d \u4eceETF\u52df\u96c6\u51b7\u70ed\u5206\u5316\u770b\u516c\u52df\u884c\u4e1a\u8f6c\u578b \u8d44\u8baf\u7cbe\u534e \u66f4\u591a \u5047\u671f\u8981\u95fb\u6c47\u603b\uff1a\u975e\u519c\u6570\u636e\u610f\u5916\u201c\u7206\u51b7\u201d \u7f8e\u8054\u50a810\u6708\u52a0\u606f\u6982\u7387\u9aa4\u964d \u7f8e\u80a1\u4e09\u5927\u6307\u6570\u96c6\u4f53\u6536\u8dcc \u70ed\u95e8\u79d1\u6280\u80a1\u6da8\u8dcc\u4e0d\u4e00 \u7f8e\u5149\u79d1\u6280\u6da8\u8d854% \u5341\u5927\u673a\u6784\u8bba\u5e02\uff1a\u8282\u540eA\u80a1\u6709\u671b\u201c\u91cf\u4ef7\u9f50\u5347\u201d \u8d2d\u91d1\u529b\u5ea6\u521b\u65b0\u9ad8\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u975e\u519c",
+     "\u52a0\u606f",
+     "\u91cf\u4ef7"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "\u7f8e\u80a1",
+      "a\u80a1"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "9c28fe64cc73"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7f8e\u5143 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/aUSD.html",
+  "published": "2026-10-07T21:14:43+00:00",
+  "symbols": [
+   "XTIUSD",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0b525c8c8d19c318bdd4",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "5 \u56fd\u9645\u8d27\u5e01\u57fa\u91d1\u7ec4\u7ec7\uff1a\u5bf9\u51b2\u57fa\u91d1\u5feb\u901f\u6269\u5f20\u6216\u653e\u5927\u5e02\u573a\u98ce\u9669 6 \u5fb7\u56fd8\u6708\u5de5\u4e1a\u65b0\u8ba2\u5355\u73af\u6bd4\u5927\u5e45\u4e0b\u964d 7 \u7f8e\u4f0a\u6218\u4e89\u6301\u7eed\u6d88\u8017\u5168\u7403\u77f3\u6cb9\u5e93\u5b58 EIA\u518d\u5ea6\u4e0a\u8c03\u6cb9\u4ef7\u9884\u6d4b 8 \u56fd\u5bb6\u5916\u6c47\u5c40\u516c\u5e03\u91cd\u8981\u6570\u636e \u4e13\u5bb6\u89e3\u8bfb 9 \u7a81\u53d1\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u5e93\u5b58",
+     "\u5916\u6c47"
+    ],
+    "direction": [
+     "\u9884\u6d4b"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u77f3\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4205bc3194cb"
+   },
+   {
+    "claim": "25 2026-09-18 \u8bc4\u8bba\u7cbe\u534e \u66f4\u591a \u673a\u6784\uff1a\u79d1\u6280\u4e3b\u7ebf\u6216\u91cd\u65b0\u5360\u4f18 \u8dc3\u5347\u66f4\u9ad8\u80fd\u7ea7 \u51b2\u523a\u4e00\u6d41\u6295\u884c \u5b58\u91cf\u653f\u7b56\u63d0\u8d28\u589e\u6548\u3001\u589e\u91cf\u653f\u7b56\u7cbe\u51c6\u52a0\u7801 \u7ecf\u6d4e\u589e\u957f\u52a8\u80fd\u6709\u671b\u6301\u7eed\u79ef\u805a \u6253\u597d\u653f\u7b56\u201c\u7ec4\u5408\u62f3\u201d \u52a9\u63a8\u7ecf\u6d4e\u5411\u65b0\u5411\u4f18\u5411\u597d \u4eceETF\u52df\u96c6\u51b7\u70ed\u5206\u5316\u770b\u516c\u52df\u884c\u4e1a\u8f6c\u578b \u8d44\u8baf\u7cbe\u534e \u66f4\u591a \u5047\u671f\u8981\u95fb\u6c47\u603b\uff1a\u975e\u519c\u6570\u636e\u610f\u5916\u201c\u7206\u51b7\u201d \u7f8e\u8054\u50a810\u6708\u52a0\u606f\u6982\u7387\u9aa4\u964d \u7f8e\u80a1\u4e09\u5927\u6307\u6570\u96c6\u4f53\u6536\u8dcc \u70ed\u95e8\u79d1\u6280\u80a1\u6da8\u8dcc\u4e0d\u4e00 \u7f8e\u5149\u79d1\u6280\u6da8\u8d854% \u5341\u5927\u673a\u6784\u8bba\u5e02\uff1a\u8282\u540eA\u80a1\u6709\u671b\u201c\u91cf\u4ef7\u9f50\u5347\u201d \u8d2d\u91d1\u529b\u5ea6\u521b\u65b0\u9ad8\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u975e\u519c",
+     "\u52a0\u606f",
+     "\u91cf\u4ef7"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "\u7f8e\u80a1",
+      "a\u80a1"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "9c28fe64cc73"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Support Center - Forex Tester Online",
+  "url": "https://forextester.com/support/",
+  "published": "2026-10-07T21:14:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e53d8db4cc06574a70d7",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Advanced Backtesting Software - Forex Tester Online",
+  "url": "https://forextester.com/?s=lifetime",
+  "published": "2026-10-07T21:14:47+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY",
+   "M1"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0865ce1a945abda3ec04",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Advanced Backtesting Software - Forex Tester Online",
+  "url": "https://forextester.com/?s=free",
+  "published": "2026-10-07T21:14:49+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "M1"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1bb9f5ee2908676a3fe9",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Terms and conditions - Forex Tester Online",
+  "url": "https://forextester.com/terms-of-agreement/",
+  "published": "2026-10-07T21:14:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2ddc40d6dd5a0ba54a92",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Privacy Policy - Forex Tester Online",
+  "url": "https://forextester.com/privacy/",
+  "published": "2026-10-07T21:14:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "48cbf47088402a0538f7",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Online Features | FTO - Forex Tester Online",
+  "url": "https://forextester.com/en/features/",
+  "published": "2026-10-07T21:14:55+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2e84e35c6499ac52535",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Traders on YouTube about Forex Tester Online",
+  "url": "https://forextester.com/reviews/",
+  "published": "2026-10-07T21:14:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2f304a89a6a0b84df9fb",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FIX API :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+  "published": "2026-10-07T21:14:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/french/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/deutsch/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/russian/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/spanish/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/pl/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/cz/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/pt/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/it/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/sk/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/chinese/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/arabic/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "025ec337de173000a566",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Dukascopy Support Board &bull; Index page",
+  "url": "https://www.dukascopy.com/swiss/english/forex/jforex/forum/",
+  "published": "2026-10-07T21:14:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-gb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a76ee362ef763a703360",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Webinars :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/webinars/",
+  "published": "2026-10-07T21:15:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "731800a6e697b5ae8c32",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "SMS notification service fees :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/forex-trading-accounts/sms-notification/",
+  "published": "2026-10-07T21:15:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "d0e16e61e34c445cfcb3",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Open Forex/CFD Demo Account | Practice Forex Trading for Free with Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/demo-fx-account/",
+  "published": "2026-10-07T21:15:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "64d8fa7b9bdb6c5436d6",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Open Forex/CFD Demo Account | Practice Forex Trading for Free with Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/demo-fx-account/?richCFD",
+  "published": "2026-10-07T21:15:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "21b306ae688084b556af",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Binary Trading Platforms :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/binary-options/trading-platforms/",
+  "published": "2026-10-07T21:15:09+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "8ea1580baae946df719a",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "For call/put binary options the strike price is the price at the start of the option contract Tick pricing and charts directly from SWFX Detailed logs and reporting Customizable charts area, interface and default contract conditions Binary Mobile Platform Binary Mobile Platform brings options to your mobile device.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3de56cd07fef"
+   },
+   {
+    "claim": "You choose an underlying asset - like stocks, currencies, or commodities - and predict whether its price will rise or fall by a predetermined expiration time, which can range from minutes to hours.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "range"
+    ],
+    "direction": [
+     "predict",
+     "rise"
+    ],
+    "horizon": [
+     "minutes",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d31b6c9e5eca"
+   }
+  ],
+  "n_claims": 2
+ }
+]
