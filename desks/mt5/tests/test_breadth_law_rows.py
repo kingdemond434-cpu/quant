@@ -306,7 +306,8 @@ def test_feedback_publishes_each_producers_duplicate_budget(sat: dict, tmp_path:
 # ------------------------------------------------------------------ the coverage table
 def test_coverage_table_resolves_anchors_and_downgrades_a_dead_one(tmp_path: Path,
                                                                     monkeypatch) -> None:
-    (tmp_path / "m.py").write_text("x = 1\ndef alive():\n    pass\n", "utf-8")
+    # `alive` is called: an unreferenced def is dead code and never carries an anchor
+    (tmp_path / "m.py").write_text("x = 1\ndef alive():\n    pass\nalive()\n", "utf-8")
     rows = {"rows": [
         {"id": "BREADTH-9001", "section": "S §1", "requirement": "r", "audit_state": "ABSENT"},
         {"id": "BREADTH-9002", "section": "S §1", "requirement": "r", "audit_state": "ABSENT"},
@@ -346,7 +347,8 @@ def test_a_comment_or_string_stub_never_satisfies_covered(tmp_path: Path, monkey
         "def real():\n"
         '    """implemented_law, again only words."""\n'
         "    return compute_law(1)\n"
-        "TABLE = {'law_key': 1}\n", "utf-8")
+        "TABLE = {'law_key': 1}\n"
+        "print(real(), TABLE)\n", "utf-8")   # referenced: dead code never carries an anchor
     (tmp_path / "doc.md").write_text("STEP 9 reads implemented_law\n", "utf-8")
     assert blc.resolve("s.py::implemented_law", tmp_path) is None
     assert blc.resolve("s.py::^def real", tmp_path) == "s.py:5"
