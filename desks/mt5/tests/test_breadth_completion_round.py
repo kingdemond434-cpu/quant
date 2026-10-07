@@ -194,7 +194,8 @@ def test_qd_niche_records_best_of_each_kind_and_unmeasured_with_reason() -> None
                                                                  "turnover": 1.0,
                                                                  "liquidity": 0.5}})
     r = niches[key]["records"]
-    assert n == 1
+    assert n == 2  # the empty niche still records its trial spend (cells tried, labelled)
+    assert niches["empty"]["records"]["effective_trial_spend_basis"].startswith("cells tried")
     assert r["best_robustness"] == 0.9 and r["best_capacity"] == 2.0
     assert r["best_execution"] == 0.5 and r["best_marginal_delta_elogw"] == 0.0004
     assert r["best_forward_evidence"] == 1.0 and r["remaining_uncertainty"] == 0.2
