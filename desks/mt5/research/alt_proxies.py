@@ -2595,16 +2595,17 @@ def _tls() -> Any:
 def _redact(url: str, src: Source) -> str:
     """The key out of `url` (or any text), raw AND url-encoded: a key holding `+`, `/` or `=`
     travels encoded, and only the raw form used to be replaced (re-audit of #201)."""
-    from libs.data.keyed_sources import secret_forms
+    from libs.data.keyed_sources import redact
     key = read_key(src.key_env) if src.key_env else ""
-    for form in secret_forms((key,)):
-        url = url.replace(form, f"<{src.key_env}>")
-    return url
+    return redact(url, (key,)).replace("<redacted>", f"<{src.key_env}>") if key else url
 
 
 def http_get(url: str) -> tuple[bytes, str]:
+    from libs.data.keyed_sources import keyed_opener
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
-    with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
+    # The key rides in this url's query: the opener strips it from, or refuses, any redirect
+    # that would carry it to another host (audit of #252).
+    with keyed_opener(_tls()).open(req, timeout=TIMEOUT) as r:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
 

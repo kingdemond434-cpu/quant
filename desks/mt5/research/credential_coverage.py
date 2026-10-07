@@ -27,6 +27,7 @@ placeholder values only).
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import platform
@@ -277,7 +278,13 @@ def main(argv: list[str] | None = None) -> int:
         keys_needed.write(need)
         needed = f"{need['n']} key(s) needed"
     except Exception as exc:
-        needed = f"KEYS_NEEDED not written ({type(exc).__name__})"
+        needed = f"KEYS_NEEDED UNMEASURED ({type(exc).__name__})"
+        # A stub, never the last good list: the daily alert must not read stale content.
+        with contextlib.suppress(Exception):
+            from libs.ops import keys_needed
+            keys_needed.write({"generated_at": doc["generated_at"], "status": "UNMEASURED",
+                               "why": f"{type(exc).__name__} building the list", "n": None,
+                               "digest": "UNMEASURED", "items": []})
     print(f"credential_coverage: {doc['status_counts']}; {len(doc['name_mismatches'])} name "
           f"mismatches; {needed}")
     return 0

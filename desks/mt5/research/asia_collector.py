@@ -433,7 +433,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     # cross-host redirect target, so the bearer / declared key header is dropped there.
     from libs.data.keyed_sources import keyed_opener, redact, scrub_body
     place, _, hname = str(src.get("key_in") or "").partition(":")
-    opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else ())
+    opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else (), (_key,))
               if _key else None)
     try:
         with (opener.open(req, timeout=timeout) if opener else
@@ -442,6 +442,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")
             last_mod = r.headers.get("Last-Modified")
+            cenc = str(r.headers.get("Content-Encoding") or "")
             body = r.read(MAX_BYTES)
     except urllib.error.HTTPError as e:
         code = int(getattr(e, "code", 0) or 0)
@@ -467,7 +468,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                     "why": f"{type(e).__name__}: {redact(e, (_key,))[:90]}"})
         return rec
     if _key:
-        body = scrub_body(body, (_key,))
+        body = scrub_body(body, (_key,), cenc)
 
     rec.update({"http": status, "content_type": ctype, "bytes": len(body)})
     accept = _ACCEPT.get(expect, ())
