@@ -67,6 +67,18 @@ DEFAULT_BASE = "overnight_gap_decay"
 #: themselves operators. Read from that module so the two lists cannot drift.
 _SELF: frozenset[str] = frozenset(FAMILY_NAMES)
 
+#: WHAT THESE FAMILIES DO NOT YET MEASURE (HOLD review, 2026-10-07). The gauntlet's judge charges
+#: ONE modal spread per cell, so an operator that moves an entry off a wide-spread bar onto a
+#: normal one is charged the same cost either way: the spread SAVING that is the families' whole
+#: payer cannot show up in a verdict. It is UNMEASURED by name, never claimed and never zero, until
+#: the judge charges the per-fill-bar spread. A verdict on these cells measures the price path of
+#: the delayed entry only.
+UNMEASURED: dict[str, str] = {
+    "spread_saving": "UNMEASURED: the judge charges one modal spread per cell, not the fill "
+                     "bar's spread, so the saving from entering off a normal-spread bar is not "
+                     "in any verdict",
+}
+
 #: Bars of the SAME session a trailing median is taken over, and the minimum before it speaks.
 MIN_WINDOW = 10
 
@@ -167,14 +179,26 @@ def base_signals(d: pd.DataFrame, base_family: str,
 
 def _rebased(s: Signal, t: Any, ref_old: float, ref_new: float, tag: str) -> Signal | None:
     """`s` re-stamped at `t` with its stop and target kept at the same distance from the new
-    reference close -- the entry moves, the trade's geometry does not."""
+    reference close -- the entry moves, the trade's geometry does not.
+
+    DISTANCES ARE SIGNED BY THE SIDE (HOLD fix, 2026-10-07). A long's stop must sit below and its
+    target above the reference close it was decided on (mirrored for a short). When the base's
+    stop or target is already CROSSED at `ref_old` -- the base fired with an exit the decision
+    bar's close had passed -- there is no geometry to carry: `abs()` used to flip that exit to the
+    other side of the new entry (a long's crossed target became a target below it). Measured on
+    the 99 committed H1 stores with the family defaults: 4,046 of 28,405 delayed signals (14.2%)
+    -- spread_session_median 3,136 / 18,761 (16.7%), post_open_normalised 910 / 9,644 (9.4%).
+    Such a signal is DROPPED, never mirrored."""
     if not (math.isfinite(ref_old) and math.isfinite(ref_new) and ref_new > 0):
         return None
-    dist_stop = abs(ref_old - float(s.stop))
-    dist_tgt = abs(float(s.target) - ref_old)
-    if not (dist_stop > 0 and math.isfinite(dist_stop) and math.isfinite(dist_tgt)):
-        return None
     side = int(s.side)
+    if side not in (1, -1):
+        return None
+    dist_stop = side * (ref_old - float(s.stop))
+    dist_tgt = side * (float(s.target) - ref_old)
+    if not (math.isfinite(dist_stop) and math.isfinite(dist_tgt)
+            and dist_stop > 0 and dist_tgt > 0):
+        return None                        # an exit already crossed at the decision close
     return Signal(time=t, side=side, stop=ref_new - side * dist_stop,
                   target=ref_new + side * dist_tgt, ttl_bars=int(s.ttl_bars),
                   tag=f"{tag}<{s.tag}", trigger=None, wait_bars=1)

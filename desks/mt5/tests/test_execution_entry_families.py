@@ -56,7 +56,8 @@ def _key(sigs: list[Signal]) -> list[tuple]:
 
 # ------------------------------------------------------------------------------- registered ---
 def test_both_families_are_in_the_registry_the_gauntlet_reads_and_read_buildable() -> None:
-    from mt5desk import families, families_orthogonal as fo
+    from mt5desk import families
+    from mt5desk import families_orthogonal as fo
     from research.gauntlet_buildability import BUILDABLE, family_verdict
     for name in NAMES:
         assert fo.ORTHOGONAL_FAMILIES[name] is fee.FAMILIES[name]
@@ -182,9 +183,47 @@ def test_a_wide_spread_decision_waits_for_the_normal_bar_and_keeps_its_geometry(
     for s in moved:
         src = max(t for t in base if t < s.time)
         ref_old, ref_new = float(d["close"][src]), float(d["close"][s.time])
-        assert abs(ref_new - s.stop) == pytest.approx(abs(ref_old - base[src].stop))
-        assert abs(s.target - ref_new) == pytest.approx(abs(base[src].target - ref_old))
+        sd = s.side
+        assert sd * (ref_new - s.stop) == pytest.approx(sd * (ref_old - base[src].stop))
+        assert sd * (s.target - ref_new) == pytest.approx(sd * (base[src].target - ref_old))
         assert s.side == base[src].side and s.trigger is None
+
+
+@pytest.mark.parametrize("side", [1, -1])
+def test_a_crossed_exit_is_dropped_never_mirrored(side: int) -> None:
+    """HOLD fix (2026-10-07). A base whose target or stop the decision close had already passed
+    has no geometry to carry; `abs()` used to flip that exit to the other side of the new entry.
+    The rebase must return None for either crossed exit and keep the side for a sound one."""
+    t0, t1 = pd.Timestamp("2024-01-01 07:00", tz="UTC"), pd.Timestamp("2024-01-01 08:00", tz="UTC")
+    ref_old, ref_new = 1.1000, 1.1010
+
+    def sig(stop_off: float, tgt_off: float) -> Signal:
+        return Signal(time=t0, side=side, stop=ref_old - side * stop_off,
+                      target=ref_old + side * tgt_off, ttl_bars=5, tag="b")
+
+    sound = fee._rebased(sig(0.002, 0.004), t1, ref_old, ref_new, "x")
+    assert sound is not None
+    assert side * (ref_new - sound.stop) == pytest.approx(0.002)
+    assert side * (sound.target - ref_new) == pytest.approx(0.004)
+    assert fee._rebased(sig(0.002, -0.001), t1, ref_old, ref_new, "x") is None  # target crossed
+    assert fee._rebased(sig(-0.001, 0.004), t1, ref_old, ref_new, "x") is None  # stop crossed
+    assert fee._rebased(sig(0.002, 0.0), t1, ref_old, ref_new, "x") is None     # target AT close
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_every_moved_signal_keeps_its_exits_on_the_right_side_of_its_entry(name: str) -> None:
+    d = _bars(wide_hour=7)
+    close = d["close"]
+    out = fee.FAMILIES[name](d, base_family="asia_momentum")
+    moved = [s for s in out if s.tag.startswith(f"{name}<")]
+    assert moved
+    for s in moved:
+        ref = float(close[s.time])
+        assert s.side * (ref - s.stop) > 0 and s.side * (s.target - ref) > 0, s
+
+
+def test_the_spread_saving_is_recorded_unmeasured_by_name_and_never_claimed() -> None:
+    assert fee.UNMEASURED["spread_saving"].startswith("UNMEASURED")
 
 
 def test_post_open_moves_only_open_window_fills_and_lands_past_the_window() -> None:
