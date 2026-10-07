@@ -2449,11 +2449,11 @@ def family_hunt16_cell(
     day_state: str | None = None,
 ) -> list[Signal]:
     try:
-        from research.run_hunt16 import FAMILIES as _H16  # noqa: PLC0415
-        from research.run_hunt12 import day_states as _day_states  # noqa: PLC0415
+        from research.run_hunt12 import day_states as _day_states
+        from research.run_hunt16 import FAMILIES as _H16
     except ImportError:                                           # pragma: no cover - path only
-        from run_hunt12 import day_states as _day_states  # type: ignore[no-redef]  # noqa: PLC0415
-        from run_hunt16 import FAMILIES as _H16  # type: ignore[no-redef]  # noqa: PLC0415
+        from run_hunt12 import day_states as _day_states  # type: ignore[no-redef]
+        from run_hunt16 import FAMILIES as _H16  # type: ignore[no-redef]
     fn = _H16.get(str(base_family))
     if fn is None:
         return []

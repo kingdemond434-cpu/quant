@@ -264,7 +264,7 @@ def requeue_for_rejudge() -> dict[str, Any]:
         doc = rejudge_evicted.run(apply_changes=True)
         return {"cells": len(doc.get("cells") or []), "refused": len(doc.get("refused") or []),
                 "applied": doc.get("applied"), "report": str(rejudge_evicted.OUT)}
-    except Exception as exc:                                      # noqa: BLE001
+    except Exception as exc:
         return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
 
