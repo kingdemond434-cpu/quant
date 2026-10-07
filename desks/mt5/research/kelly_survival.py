@@ -342,11 +342,350 @@ def solve(*, seed: int = 0) -> dict[str, Any]:
     return doc
 
 
+# ====================================================================== THE WHOLE CERTIFIED BOOK
+#: The same rule over every certified sleeve the desk may trade, not only the gold windows
+#: (principal 2026-10-06: "all promising max uncorrelated pf sleeves out of current certis ... put
+#: them on mt5 n e8 early, the max growth n promising sleeve book"). Same objective, same death
+#: line, same EPS_DEATH, on the allocator's own worlds. Two additions, both from measurement:
+#:
+#: SURVIVAL MUST SURVIVE BEING WRONG. The worlds' levels read high (shrunk but in-sample means), so
+#: the death constraint is held on the as-estimated worlds AND on worlds whose positive edges are
+#: halved; growth is maximised on the as-estimated ones. A book that only survives if its edges are
+#: exactly right is not inside survival.
+#:
+#: AN EXACT SEARCH, NOT A GRADIENT. The smooth projected-gradient solve stalled 4x below the exact
+#: optimum on this roster (measured 2026-10-06), and the allocator's own robust_elog can report
+#: converged at a worse point while its redundancy penalty is non-PSD. The book is therefore found
+#: by multi-start pattern search on the exact ruin-counted objective (coordinate steps plus pairwise
+#: heat transfers, which escape the coordinate traps), and its P(death) is re-measured on an
+#: independent path sample before it is published.
+#: The canonical certificate store (certificate_truth.CANONICAL_CERTIFICATE_STORE) first; the
+#: sealed canon copy only when the store is unreadable. On 2026-10-06 the box's store held 847
+#: certificates while git's canon held 52, so reading the canon first would solve a stale world.
+CERT_STORE = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
+CERT_CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+#: Certificates the allocator never priced are priced here by the gauntlet's own replay
+#: (`pf_allocator.certified_evidence`), cached for a day, and the strongest decorrelated ones join
+#: the search. The pairwise search is O(n^2), so the newcomers are pre-screened: positive mean,
+#: correlation <= BOOK_MAX_CORR to every column already in, best daily Sharpe first.
+CERT_REPLAY_CACHE = BASE / "data" / "pf_allocator_cache" / "cert_book_r.parquet"
+CERT_REPLAY_MAX_AGE_S = 86_400
+BOOK_MAX_NEW = 24
+BOOK_MAX_CORR = 0.7
+BOOK_HAIRCUT = 0.5
+BOOK_MARGIN = 0.04            # solve against 4% so an independent sample still reads <= EPS_DEATH
+BOOK_STEPS = (0.04, 0.02, 0.01, 0.005, 0.0025)
+BOOK_STARTS = 6
+BOOK_PATHS = 2000
+#: Terms fence (PR #162): a cell only Reddit/StockTwits proposed never enters the book. The merge's
+#: published index wins; until it exists, the docket's own genealogy decides (every row naming the
+#: cell came from a fenced platform). USDJPY.session_range_breakout is the case that put this here.
+TERMS_FENCED_CELLS = BASE / "data" / "hypotheses" / "terms_fenced_cells.json"
+RESEARCH_QUEUE = BASE / "data" / "research_queue.json"
+FENCED_GENEALOGY = ("ext_reddit_", "ext_stocktwits_")
+
+
+def _world_column(cell: str, sym: str, family: str, selector: str, names: list[str]) -> str | None:
+    """The worlds column a certificate trades: `<SYM>_<family>_<selector>`, the allocator's own
+    naming. rr/wait variants of one cell share the column -- they are one bet bought twice."""
+    col = f"{sym}_{family}_{selector}"
+    return col if col in names else None
+
+
+def terms_fenced_cells() -> tuple[set[str], str]:
+    """(fenced `SYM.family` cells, where the verdict came from)."""
+    idx = _read_json(TERMS_FENCED_CELLS)
+    if isinstance(idx, dict) and idx.get("cells") is not None:
+        return {str(c) for c in idx["cells"]}, TERMS_FENCED_CELLS.name
+    q = _read_json(RESEARCH_QUEUE)
+    rows = q if isinstance(q, list) else next(
+        (v for v in (q or {}).values() if isinstance(v, list)), [])
+    seen: dict[str, bool] = {}
+    for r in rows:
+        gid = str((r or {}).get("geneology_id") or "")
+        tail = gid.split(":", 1)[-1]
+        parts = tail.split("_", 2)
+        if not tail.startswith("ext_") or len(parts) < 3:
+            continue
+        cell = f"{parts[2].split('_', 1)[0]}.{parts[2].split('_', 1)[-1]}"
+        seen[cell] = seen.get(cell, True) and tail.startswith(FENCED_GENEALOGY)
+    return {c for c, only in seen.items() if only}, f"{RESEARCH_QUEUE.name} genealogy"
+
+
+def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]:
+    """(world columns, one screening row per certificate) for the non-banned certified sleeves."""
+    doc = _read_json(CERT_STORE) or {}
+    source = CERT_STORE.name
+    if not doc.get("survivors"):
+        doc, source = _read_json(CERT_CANON) or {}, CERT_CANON.name
+    try:
+        from family_policy import family_banned
+    except ImportError:                                   # pragma: no cover - box path only
+        def family_banned(_f: str) -> bool:
+            return _f == "discovered"
+    cols: list[str] = []
+    rows: list[dict[str, Any]] = []
+    policy = str((doc.get("gate_policy") or {}).get("version") or "")
+    fenced, fence_src = terms_fenced_cells()
+    for key, c in (doc.get("survivors") or {}).items():
+        spec = c.get("shadow_spec") or {}
+        parts = str(key).split(".")
+        # Store rows may carry no family field; the key is `external.SYM.family.p=...`.
+        fam = str(spec.get("family") or (parts[2] if len(parts) > 2 else ""))
+        sym = str(c.get("sym") or spec.get("symbol") or (parts[1] if len(parts) > 1 else ""))
+        sel = str(spec.get("selector") or "")
+        tf = str(spec.get("timeframe") or "H1").upper()
+        g = c.get("gates") or {}
+        row = {"certificate": key, "store": source, "symbol": sym, "family": fam,
+               "selector": sel,
+               "policy": policy, "v4": "v4" in policy,
+               "edge_x3_costs": (g.get("stress_costs") or {}).get("exp_x3"),
+               "wf_oos_sharpe": (g.get("walk_forward") or {}).get("oos_sharpe"),
+               "dsr": (g.get("deflated_sharpe") or {}).get("dsr")}
+        if family_banned(fam):
+            row["excluded"] = "banned family"
+        elif tf == "M15":
+            row["excluded"] = "M15 banned"
+        elif f"{sym.upper()}.{fam}" in fenced:
+            row["excluded"] = f"TERMS_FENCED: proposed only by Reddit/StockTwits ({fence_src})"
+        else:
+            col = _world_column(str(c.get("cell") or ""), sym, fam, sel, names)
+            row["column"] = col
+            if col is None:
+                row["excluded"] = "UNPRICED: the allocator's worlds carry no column for it"
+            elif col not in cols:
+                cols.append(col)
+        rows.append(row)
+    return cols, rows
+
+
+def _replayed_certificates() -> tuple[dict[str, Any], str]:
+    """Daily-R series for every certificate, replayed the gauntlet's way, cached for a day."""
+    import pandas as pd
+    try:
+        if CERT_REPLAY_CACHE.exists() and \
+                (datetime.now(tz=UTC).timestamp() - CERT_REPLAY_CACHE.stat().st_mtime
+                 < CERT_REPLAY_MAX_AGE_S):
+            df = pd.read_parquet(CERT_REPLAY_CACHE)
+            return {c: df[c].dropna() for c in df.columns}, "replay cache"
+    except (OSError, ValueError):
+        pass
+    try:
+        from pf_allocator import certified_evidence
+        series, acct = certified_evidence()
+    except Exception as exc:                              # the box path; fail closed, named
+        return {}, f"replay unavailable ({type(exc).__name__}: {exc})"
+    if series:
+        try:
+            CERT_REPLAY_CACHE.parent.mkdir(parents=True, exist_ok=True)
+            pd.DataFrame(series).to_parquet(CERT_REPLAY_CACHE)
+        except (OSError, ValueError):
+            pass
+    return series, (f"replayed {acct.get('priced')}/{acct.get('certificates')} certificates, "
+                    f"{len(acct.get('refused') or {})} refused")
+
+
+def _extend_worlds(r: np.ndarray, cols: list[str], screen: list[dict[str, Any]],
+                   seed: int) -> tuple[np.ndarray, list[str], str]:
+    """Add the strongest decorrelated UNPRICED certificates to the world tensor.
+
+    The newcomers are drawn as their own joint population from their replayed daily R
+    (`robust_elog.sample_worlds`, the allocator's sampler) and paired world-for-world, row-for-row
+    with the allocator's tensor. Pairing two populations drawn apart keeps each side's internal
+    co-movement and treats new-vs-old as independent: it UNDERSTATES their correlation with the
+    priced book, so the pre-screen below admits only newcomers decorrelated among themselves,
+    and the allocator pricing them properly supersedes this on its next pass.
+    """
+    wanted = sorted({f"{row['symbol']}_{row['family']}_{row['selector']}"
+                     for row in screen if str(row.get("excluded", "")).startswith("UNPRICED")})
+    if not wanted:
+        return r, cols, "every certificate already priced"
+    series, why = _replayed_certificates()
+    have = {k: v for k, v in series.items() if k in wanted and len(v) >= 60}
+    if not have:
+        return r, cols, f"{len(wanted)} unpriced; none replayable ({why})"
+    import pandas as pd
+    df = pd.DataFrame(have).sort_index().fillna(0.0)
+    mu, sd = df.mean(), df.std()
+    rank = [c for c in (mu / sd.replace(0, np.nan)).dropna().sort_values(ascending=False).index
+            if mu[c] > 0]
+    corr = df.corr()
+    pick: list[str] = []
+    for c in rank:
+        if all(abs(corr.loc[c, p]) <= BOOK_MAX_CORR for p in pick):
+            pick.append(c)
+        if len(pick) >= BOOK_MAX_NEW:
+            break
+    if not pick:
+        return r, cols, f"{len(have)} replayed; none with a positive mean"
+    from libs.portfolio.robust_elog import SleeveEvidence, WorldConfig, sample_worlds
+    ev = [SleeveEvidence(name=c, daily_r=df[c].to_numpy(float),
+                         family=c.split("_", 1)[-1].rsplit("_", 1)[0], symbol=c.split("_")[0])
+          for c in pick]
+    w = sample_worlds(ev, WorldConfig(seed=seed, n_worlds=r.shape[0], n_rows=r.shape[1]))
+    new = np.asarray(w.r, dtype=float)
+    n_w, n_t = min(new.shape[0], r.shape[0]), min(new.shape[1], r.shape[1])
+    r2 = np.concatenate([r[:n_w, :n_t, :], new[:n_w, :n_t, :]], axis=2)
+    for row in screen:
+        name = f"{row['symbol']}_{row['family']}_{row['selector']}"
+        if name in pick:
+            row["column"] = name
+            row["excluded"] = None
+            row["priced_by"] = "replay (independent of the allocator's worlds)"
+    return r2, cols + pick, (f"{len(wanted)} unpriced, {len(have)} replayed, {len(pick)} joined "
+                             f"({why})")
+
+
+def _book_eval(paths: np.ndarray, h: np.ndarray) -> dict[str, float]:
+    el, p_dead, p_dd = ruin_counted_elog(paths, h)
+    return {"elog_per_day": round(el, 6), "p_death": round(p_dead, 4), "p_dd35": round(p_dd, 4)}
+
+
+def _pattern_search(paths: np.ndarray, paths_h: np.ndarray, mask: np.ndarray, cap: float,
+                    rng: np.random.Generator, starts: int | None = None
+                    ) -> tuple[np.ndarray, float]:
+    starts = BOOK_STARTS if starts is None else starts
+    n = mask.size
+    idx = np.flatnonzero(mask)
+
+    def val(h: np.ndarray) -> float:
+        if np.any(h[~mask] > 0) or np.any(h > cap + 1e-12):
+            return -math.inf
+        el, p_dead, _ = ruin_counted_elog(paths, h)
+        if p_dead > BOOK_MARGIN or ruin_counted_elog(paths_h, h)[1] > BOOK_MARGIN:
+            return -math.inf
+        return el
+
+    best_h, best_v = np.zeros(n), val(np.zeros(n))
+    for s in range(starts):
+        h = np.zeros(n)
+        h[idx] = 0.01 if s == 0 else rng.dirichlet(np.ones(idx.size)) * rng.uniform(0.1, 0.8)
+        h = np.minimum(h, cap)
+        while val(h) == -math.inf and h.sum() > 1e-4:
+            h *= 0.9
+        cur = val(h)
+        for step in BOOK_STEPS:
+            moved = True
+            while moved:
+                moved = False
+                for i in idx:
+                    for d in (step, -step):
+                        t = h.copy()
+                        t[i] = max(0.0, t[i] + d)
+                        v = val(t)
+                        if v > cur + 1e-9:
+                            h, cur, moved = t, v, True
+                for i in idx:
+                    for j in idx:
+                        if i != j and h[i] >= step:
+                            t = h.copy()
+                            t[i] -= step
+                            t[j] += step
+                            v = val(t)
+                            if v > cur + 1e-9:
+                                h, cur, moved = t, v, True
+        if cur > best_v:
+            best_h, best_v = h, cur
+    return best_h, best_v
+
+
+def solve_book(*, seed: int = 0) -> dict[str, Any]:
+    """The max-growth book over the certified roster, per venue, inside survival (see above)."""
+    out: dict[str, Any] = {"status": "OK", "haircut_for_survival": BOOK_HAIRCUT,
+                           "margin": BOOK_MARGIN}
+    try:
+        z = np.load(WORLDS, allow_pickle=True)
+    except (OSError, ValueError) as exc:
+        return {"status": f"UNMEASURED: worlds unreadable ({type(exc).__name__})"}
+    names = [str(x) for x in z["names"]]
+    gold = [f"gold_{w}" for w in WINDOWS if f"gold_{w}" in names]
+    cert_cols, screen = certified_roster(names)
+    cols = gold + [c for c in cert_cols if c not in gold]
+    r = np.asarray(z["r"], dtype=float)[:, :, [names.index(c) for c in cols]]
+    r, cols, out["unpriced"] = _extend_worlds(r, cols, screen, seed)
+    if not cols:
+        return {"status": "UNMEASURED: no certified sleeve is priced", "screen": screen}
+    deals: list[dict[str, Any]] = []
+    try:
+        with LEDGER.open(encoding="utf-8") as fh:
+            deals = [json.loads(t) for t in (ln.strip() for ln in fh) if t.startswith("{")]
+    except (OSError, ValueError):
+        deals = []
+    ev = live_evidence(deals)
+    post: dict[str, Any] = {}
+    for k, c in enumerate(cols):
+        if c.startswith("gold_"):
+            live_r = ev.get(c[len("gold_"):], {}).get("r", [])
+        else:
+            pre = "_".join(c.lower().split("_")[:-1])           # the column minus its selector
+            live_r = [x for d in deals if str(d.get("sleeve") or "").lower().startswith(pre)
+                      and str(d.get("account_kind") or "live") == "live"
+                      for x in [deal_r(d)] if x is not None]
+        prior = float(r[:, :, k].mean())
+        mean, weight = posterior_shift(prior, live_r)
+        r[:, :, k] += mean - prior
+        post[c] = {"prior_r": round(prior, 4), "live_n": len(live_r),
+                   "posterior_r": round(mean, 4), "live_weight": round(weight, 3)}
+    mu = r.mean(axis=(0, 1))
+    r_h = r - BOOK_HAIRCUT * np.maximum(mu, 0.0)
+    rng = np.random.default_rng(seed)
+
+    def draw(t: np.ndarray, m: int, g: np.random.Generator) -> np.ndarray:
+        wi = g.integers(0, t.shape[0], m)
+        st = g.integers(0, t.shape[1] - HORIZON + 1, m)
+        return t[wi[:, None], st[:, None] + np.arange(HORIZON)[None, :], :]
+
+    g1, g2 = np.random.default_rng(seed + 1), np.random.default_rng(seed + 2)
+    p_s, ph_s = draw(r, BOOK_PATHS, g1), draw(r_h, BOOK_PATHS, np.random.default_rng(seed + 1))
+    p_v = draw(r, 2 * BOOK_PATHS, g2)
+    ph_v = draw(r_h, 2 * BOOK_PATHS, np.random.default_rng(seed + 2))
+    flat = r.reshape(-1, len(cols))
+    corr = np.corrcoef(flat.T)
+    sd = flat.std(0)
+
+    def k_eff(h: np.ndarray) -> float:
+        x = h * sd
+        v = float(x @ corr @ x)
+        return round(float(x.sum()) ** 2 / v, 3) if v > 0 else 0.0
+
+    from mt5desk.sizing import MAX_RISK_FRAC
+    live_mix = flat[:, :len(gold)].sum(1) if gold else np.zeros(flat.shape[0])
+    out.update({"columns": cols, "posterior": post, "screen": screen,
+                "per_sleeve_cap": MAX_RISK_FRAC,
+                "corr_to_live_gold": {c: round(float(np.corrcoef(live_mix, flat[:, i])[0, 1]), 3)
+                                      for i, c in enumerate(cols)} if gold else {}})
+    try:
+        from prop.e8_book import _cached_catalogue
+        e8_symbols = _cached_catalogue()
+    except Exception:                                     # optional on any host
+        e8_symbols = None
+    venues = {"fusion": np.ones(len(cols), dtype=bool)}
+    if e8_symbols:
+        venues["e8"] = np.array([c.startswith("gold_") or c.split("_")[0] in e8_symbols
+                                 for c in cols])
+    for venue, mask in venues.items():
+        h, v = _pattern_search(p_s, ph_s, mask, MAX_RISK_FRAC, rng)
+        out[venue] = {"status": "OK" if v > -math.inf else "NO_SURVIVING_BOOK",
+                      "heat": {c: round(float(h[i]), 4) for i, c in enumerate(cols) if h[i] > 0},
+                      "total_heat": round(float(h.sum()), 4), "k_eff": k_eff(h),
+                      "as_estimated": _book_eval(p_v, h), "edges_halved": _book_eval(ph_v, h)}
+        if out[venue]["as_estimated"]["p_death"] > EPS_DEATH:
+            out[venue]["status"] = "VALIDATION_FAILED: independent sample breaches EPS_DEATH"
+    if "e8" not in venues:
+        out["e8"] = {"status": "UNMEASURED: no cached E8 catalogue (prop/e8_book.py)"}
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=OUT)
+    ap.add_argument("--book", action="store_true",
+                    help="also solve the whole certified book (the `book` block; readers that "
+                         "size the gold windows ignore it)")
     a = ap.parse_args(argv)
     doc = solve()
+    if a.book:
+        doc["book"] = solve_book()
     a.out.parent.mkdir(parents=True, exist_ok=True)
     tmp = a.out.with_suffix(".tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=float), encoding="utf-8")

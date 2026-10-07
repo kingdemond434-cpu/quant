@@ -542,7 +542,7 @@ def _book_key(s: dict, book: dict[str, float] | None) -> str | None:
     return folded.get(derived.lower())
 
 
-def allocator_book() -> tuple[dict[str, float] | None, str]:
+def _allocator_book() -> tuple[dict[str, float] | None, str]:
     """The optimiser's PER-SLEEVE target risk fractions, or None with the reason.
 
     THE GATEWAY READS, THE CORE DECIDES. Three inputs come off disk here -- the certified total
@@ -620,6 +620,28 @@ def allocator_book() -> tuple[dict[str, float] | None, str]:
                                 certified=(cert is not None and src == "dynamic"),
                                 why=(f"{cwhy}; {swhy}" if cert is not None else cwhy),
                                 zeroed=art.get("book_zeroed"))
+
+
+def allocator_book() -> tuple[dict[str, float] | None, str]:
+    """The allocator's book (`_allocator_book`), with the principal's certified sleeve book laid
+    over it (data/CERT_BOOK_LIVE.json, principal 2026-10-06/07).
+
+    ONE PLACE, SO BOTH READERS AGREE. The sizing loop and the decision-context memo both call
+    this; overlaying at a call site instead would leave decision rows showing the allocator's h
+    while orders went out at the certified fraction. A key the file names replaces the
+    allocator's; every other key is the allocator's, untouched, including 0. A disabled, absent or
+    invalid file returns the allocator's answer exactly. `MAX_RISK_FRAC` still caps every
+    fraction downstream, and the heat cap still runs after this.
+    """
+    book, why = _allocator_book()
+    try:
+        from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
+        cert = load_cert_book(CERT_BOOK_FILE, "fusion")
+    except Exception as exc:
+        return book, f"{why}; cert book unreadable ({type(exc).__name__}: {exc})"
+    if not cert:
+        return book, why
+    return {**(book or {}), **cert}, f"{why}; cert book sets {len(cert)}"
 
 
 def cap_by_heat(sleeves: list[dict], equity: float,

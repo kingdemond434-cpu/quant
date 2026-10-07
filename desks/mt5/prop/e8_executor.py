@@ -782,6 +782,13 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         return doc
 
     risk_usd = float(book["risk_frac"]) * e8_guard.START_BALANCE
+    # THE PRINCIPAL'S CERTIFIED BOOK SIZES THE KEYS IT NAMES (data/CERT_BOOK_LIVE.json,
+    # 2026-10-07), keyed the allocator's way: SYMBOL_family_selector. Every other sleeve keeps the
+    # book's RISK_FRAC. Absent, disabled or invalid -> None, and nothing changes.
+    from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
+    cert = load_cert_book(CERT_BOOK_FILE, "e8") or {}
+    doc["cert_book"] = cert or None
+    committed_usd = 0.0
     # THE DEDUPE KEY IS THE INSTRUMENT AND SIDE, BECAUSE THIS VENUE HAS NO COMMENTS.
     #
     # MEASURED 2026-09-15, and it cost the account 0.85% in half an hour. This read
@@ -1018,7 +1025,17 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             doc["sleeves"].append(row)
             _record(row, now, armed)
             continue
-        lot, basis = lot_for_risk(venue, sym, stop_dist, risk_usd)
+        _ckey = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
+        row_risk_usd = (float(cert[_ckey]) * e8_guard.START_BALANCE if _ckey in cert
+                        else risk_usd)
+        row["risk_usd"] = round(row_risk_usd, 2)
+        row["risk_source"] = "cert_book" if _ckey in cert else "book RISK_FRAC"
+        if not row_risk_usd > 0:
+            row["status"] = "STANDS_ASIDE"
+            row["why"] = f"the certified book funds {_ckey} at 0 risk"
+            doc["sleeves"].append(row)
+            continue
+        lot, basis = lot_for_risk(venue, sym, stop_dist, row_risk_usd)
         # THE MT5 LANE'S LIVE VERDICT ON THE SAME MECHANISM, applied here too (2026-09-16).
         _fm, _fw = twin_fade(sym, str(fam or ""), now=now)
         if _fm != 1.0:
@@ -1068,9 +1085,10 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         # THE DAILY FLOOR IS CHECKED AGAINST THE WHOLE BOOK, not one order at a time. Twenty
         # sleeves firing together is twenty simultaneous risks, and a per-order check would wave
         # each one through on its own merits into a floor none of them breaches alone.
-        if (sent + 1) * risk_usd > decision.room_to_daily_floor:
+        if committed_usd + row_risk_usd > decision.room_to_daily_floor:
             row["status"] = "WOULD_BREACH_DAILY"
-            row["why"] = (f"{sent + 1} open risks x ${risk_usd:.0f} exceeds the "
+            row["why"] = (f"{sent + 1} open risks totalling "
+                          f"${committed_usd + row_risk_usd:.0f} exceed the "
                           f"${decision.room_to_daily_floor:.0f} left to today's floor")
             doc["sleeves"].append(row)
             continue
@@ -1096,6 +1114,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         else:
             row["status"] = "WOULD_SEND"
         sent += 1
+        committed_usd += row_risk_usd
         doc["sleeves"].append(row)
         _record(row, now, armed)
 
