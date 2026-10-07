@@ -314,3 +314,12 @@ def test_a_null_run_is_charged_to_the_lifetime_ledger(tmp_path, monkeypatch):
     total, by_fam = EL._proposer_counts()
     assert total == 5
     assert by_fam == {"gnn_propagation": 5}
+
+
+def test_the_donated_flag_comes_from_what_the_door_wrote():
+    """A door that refuses every candidate writes no discovery file, so its trials must still be
+    charged through the side ledger: the flag is the door's return, never `donate and cands`."""
+    import learned_miners as LM
+    src = inspect.getsource(LM.run)
+    assert "donated_file = door is not None" in src
+    assert "bool(donate and cands)" not in src
