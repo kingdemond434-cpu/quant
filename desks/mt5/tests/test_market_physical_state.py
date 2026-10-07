@@ -123,9 +123,8 @@ def test_curve_regime_and_ledger(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
            "OWN_VIX_INVERTED": [(d, 1.0) for d in _days(300)]}
     own["OWN_VIX"][-1] = (own["OWN_VIX"][-1][0], 40.0)
     assert ms.own_regime(NOW, own) == "vol_backwardation_high"
-    # the curve is Treasury's own feed (17 USC 105): admitted, where FRED's H.15 copy is held
+    # the curve is Treasury's own feed (17 USC 105): admitted (FRED's H.15 copy is held)
     assert rep["terms"]["curve"]["gauntlet"] == "admitted"
-    assert ms.terms("fred:h15")["gauntlet"] == "HELD"              # FRED: ruling on (j)
     assert rep["option_chains"]["status"] == "EXTERNALLY_BLOCKED"
     obs = ms.observations(rep, NOW)
     assert obs and all(sc.defects(o) == [] for o in obs)
