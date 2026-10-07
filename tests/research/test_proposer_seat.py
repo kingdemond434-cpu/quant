@@ -374,3 +374,66 @@ def test_every_registered_organ_is_reported_even_with_no_proposals(
 
 def test_the_factories_are_a_subset_of_the_organs() -> None:
     assert set(ps.FACTORIES) <= set(ps.ORGANS)
+
+
+# ------------------------------------------------- the caller's meter (analyst panel audit)
+class _Exhausted(RuntimeError):
+    def __init__(self, attempts: int) -> None:
+        super().__init__("tier exhausted")
+        self.attempts = attempts
+
+
+def _transports(monkeypatch: pytest.MonkeyPatch, paid: list[str], *, rotations: int = 3) -> None:
+    class _Panel:
+        @staticmethod
+        def ask(role: str, system: str, user: str, **kw: Any) -> Any:
+            cap = kw.get("max_attempts")
+            raise _Exhausted(rotations if cap is None else min(rotations, cap))
+
+    class _Seat:
+        @staticmethod
+        def chat(prompt: str, **kw: Any) -> tuple[str, str]:
+            paid.append(prompt)
+            return '{"x": 1}', ""
+
+    monkeypatch.setattr(ps, "_panel_module", lambda: _Panel)
+    monkeypatch.setattr(ps, "_seat_module", lambda: _Seat)
+
+
+def test_every_rotated_request_is_metered_and_the_paid_seat_needs_a_budget(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    paid: list[str] = []
+    _transports(monkeypatch, paid)
+    with ps.seat_policy(http_budget=10) as meter:
+        text, _, err = ps._ask("generation", "p", timeout=1)
+        assert meter["http_calls"] == 3                 # three rotations, one ask
+    assert not text and err and "paid seat refused" in err and not paid
+    assert ps._POLICY["last_meter"]["refused_paid"] == 1
+    with ps.seat_policy(http_budget=10, paid_budget=1) as meter:
+        text, _, err = ps._ask("generation", "p", timeout=1)
+        assert text and err is None and meter["paid_calls"] == 1 and meter["http_calls"] == 4
+        text, _, err = ps._ask("generation", "p", timeout=1)
+        assert not text and "paid seat refused" in str(err)
+    assert len(paid) == 1
+
+
+def test_a_spent_budget_makes_no_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    paid: list[str] = []
+    _transports(monkeypatch, paid, rotations=5)
+    with ps.seat_policy(http_budget=2, paid_budget=5) as meter:
+        _, _, err = ps._ask("generation", "p", timeout=1)
+        assert meter["http_calls"] == 2 and "budget spent" in str(err)
+        _, _, err = ps._ask("generation", "p", timeout=1)
+        assert meter["http_calls"] == 2 and "no HTTP request made" in str(err)
+    assert not paid
+
+
+def test_a_seat_that_never_answered_is_unmeasured_not_ran(
+        lit: None, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(ps, "QUEUE_DIR", tmp_path / "q")
+    monkeypatch.setattr(ps, "INLINE_LOG", tmp_path / "q" / "inline.jsonl")
+    monkeypatch.setattr(ps, "_ask", lambda role, prompt, *, timeout: ("", "", "exhausted"))
+    organ = next(iter(ps.ORGANS))
+    got = ps.ask(organ, "candidates", task="t", grammar="g", n=2)
+    assert got.verdict == "UNMEASURED" and not got.measured
+    assert got.discarded == 0 and "no reply" in got.why

@@ -1,0 +1,38 @@
+{
+ "system_id": "paolucci_quant_dev",
+ "run_id": "cards_2026-10-06_paolucci_quant_dev",
+ "commit": "card_translation",
+ "candidates": [
+  {
+   "symbol": "NAS100",
+   "family": "jump",
+   "params": {},
+   "mechanism": "Tick-to-tick last-price jump filter: if the newest LAST tick differs from the previous by more than 3 index points on NQ, place a bracket order.",
+   "title": "NAS100 jump (QG-QDEV-001)",
+   "card_id": "QG-QDEV-001",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "no net edge after spread at 30 s"
+  },
+  {
+   "symbol": "US500",
+   "family": "jump",
+   "params": {},
+   "mechanism": "Tick-to-tick last-price jump filter: if the newest LAST tick differs from the previous by more than 3 index points on NQ, place a bracket order.",
+   "title": "US500 jump (QG-QDEV-001)",
+   "card_id": "QG-QDEV-001",
+   "source_culture": "US/en",
+   "participant_structure": "retail_education",
+   "crowding_prior": "medium",
+   "failure_mode_hypothesis": "no net edge after spread at 30 s"
+  }
+ ],
+ "trials_charged": 2,
+ "provenance": {
+  "cards": "/mnt/project-files/mining/quant_guild/",
+  "translated_by": "thread Mine the EliteQuant list",
+  "licence_note": "ideas only where upstream has no licence; no code copied",
+  "dedup": "one candidate per (symbol, family, params) across the three packets; QG25-08 and QG26-19 shared four pca_residual cells"
+ }
+}

@@ -1,0 +1,619 @@
+{
+ "system_id": "gh_quant_science_sunday_quant_scientist",
+ "run_id": "queued_repo_cards_2026-10-06_gh_quant_science_sunday_quant_scientist",
+ "commit": "card_translation",
+ "candidates": [
+  {
+   "symbol": "UST10Y",
+   "family": "turn_of_month",
+   "params": {
+    "side_bias": 1,
+    "days_before": 10,
+    "days_after": -1,
+    "ttl_bars": 168,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Month-boundary bond flow: SHORT long-duration Treasuries for the first 5 trading days of each month, LONG them from 7 trading days before month end until 1 trading day before month end.",
+   "title": "UST10Y turn_of_month (B-SQS-01)",
+   "card_id": "B-SQS-01",
+   "licence": "NONE",
+   "falsifier": "Mean R of the long cell <= 0 or deflated t < 1.0 over 2018-2026; or short cell not separable from the long cell's inverse."
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "turn_of_month",
+   "params": {
+    "side_bias": 1,
+    "days_before": 10,
+    "days_after": -1,
+    "ttl_bars": 168,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Month-boundary bond flow: SHORT long-duration Treasuries for the first 5 trading days of each month, LONG them from 7 trading days before month end until 1 trading day before month end.",
+   "title": "UST05Y turn_of_month (B-SQS-01)",
+   "card_id": "B-SQS-01",
+   "licence": "NONE",
+   "falsifier": "Mean R of the long cell <= 0 or deflated t < 1.0 over 2018-2026; or short cell not separable from the long cell's inverse."
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "turn_of_month",
+   "params": {
+    "side_bias": 1,
+    "days_before": 10,
+    "days_after": -1,
+    "ttl_bars": 168,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Month-boundary bond flow: SHORT long-duration Treasuries for the first 5 trading days of each month, LONG them from 7 trading days before month end until 1 trading day before month end.",
+   "title": "UKGILT turn_of_month (B-SQS-01)",
+   "card_id": "B-SQS-01",
+   "licence": "NONE",
+   "falsifier": "Mean R of the long cell <= 0 or deflated t < 1.0 over 2018-2026; or short cell not separable from the long cell's inverse."
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "turn_of_month",
+   "params": {
+    "side_bias": -1,
+    "days_before": -1,
+    "days_after": 7,
+    "ttl_bars": 120,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Month-boundary bond flow: SHORT long-duration Treasuries for the first 5 trading days of each month, LONG them from 7 trading days before month end until 1 trading day before month end.",
+   "title": "UST10Y turn_of_month (B-SQS-01)",
+   "card_id": "B-SQS-01",
+   "licence": "NONE",
+   "falsifier": "Mean R of the long cell <= 0 or deflated t < 1.0 over 2018-2026; or short cell not separable from the long cell's inverse."
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "turn_of_month",
+   "params": {
+    "side_bias": -1,
+    "days_before": -1,
+    "days_after": 7,
+    "ttl_bars": 120,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Month-boundary bond flow: SHORT long-duration Treasuries for the first 5 trading days of each month, LONG them from 7 trading days before month end until 1 trading day before month end.",
+   "title": "UST05Y turn_of_month (B-SQS-01)",
+   "card_id": "B-SQS-01",
+   "licence": "NONE",
+   "falsifier": "Mean R of the long cell <= 0 or deflated t < 1.0 over 2018-2026; or short cell not separable from the long cell's inverse."
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "turn_of_month",
+   "params": {
+    "side_bias": -1,
+    "days_before": -1,
+    "days_after": 7,
+    "ttl_bars": 120,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Month-boundary bond flow: SHORT long-duration Treasuries for the first 5 trading days of each month, LONG them from 7 trading days before month end until 1 trading day before month end.",
+   "title": "UKGILT turn_of_month (B-SQS-01)",
+   "card_id": "B-SQS-01",
+   "licence": "NONE",
+   "falsifier": "Mean R of the long cell <= 0 or deflated t < 1.0 over 2018-2026; or short cell not separable from the long cell's inverse."
+  },
+  {
+   "symbol": "Apple",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "Apple cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "Amazon",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "Amazon cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "Alphabet-A",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "Alphabet-A cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "Boeing",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "Boeing cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "Caterpillar",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "Caterpillar cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "AmericanExpress",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "AmericanExpress cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "Amgen",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "Amgen cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "Accenture",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "Accenture cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "Adobe",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "Adobe cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "BankofAmericaCorp",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "BankofAmericaCorp cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "BlackRock",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "BlackRock cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "Broadcom",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "Broadcom cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "CVSHealth",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "CVSHealth cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "Berkshire",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "Berkshire cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "Booking",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "Booking cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "EURUSD cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "GBPUSD cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "USDJPY cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "AUDUSD",
+   "family": "cross_sectional_class_reversal",
+   "params": {
+    "lookback_d": 21,
+    "hold_d": 21,
+    "quantile": 0.2,
+    "dispersion": "any",
+    "decision_hour": 22
+   },
+   "mechanism": "Cross-sectional monthly mean reversion: rank assets by the z-score of the latest 21-day return against that asset's own last 21 rolling 21-day returns; buy the 5 most negative, (intended) short the 5 most positive, rebalance month end.",
+   "title": "AUDUSD cross_sectional_class_reversal (B-SQS-03)",
+   "card_id": "B-SQS-03",
+   "licence": "NONE",
+   "falsifier": "Long-minus-short spread <= 0 or not distinguishable from the existing 3-day reversal cell."
+  },
+  {
+   "symbol": "US500",
+   "family": "pca_residual",
+   "params": {
+    "window": 720,
+    "refit_stride": 24,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
+   },
+   "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
+   "title": "US500 pca_residual (B-SQS-13)",
+   "card_id": "B-SQS-13",
+   "licence": "NONE",
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
+  },
+  {
+   "symbol": "NAS100",
+   "family": "pca_residual",
+   "params": {
+    "window": 720,
+    "refit_stride": 24,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
+   },
+   "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
+   "title": "NAS100 pca_residual (B-SQS-13)",
+   "card_id": "B-SQS-13",
+   "licence": "NONE",
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
+  },
+  {
+   "symbol": "US2000",
+   "family": "pca_residual",
+   "params": {
+    "window": 720,
+    "refit_stride": 24,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
+   },
+   "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
+   "title": "US2000 pca_residual (B-SQS-13)",
+   "card_id": "B-SQS-13",
+   "licence": "NONE",
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
+  },
+  {
+   "symbol": "EUSTX50",
+   "family": "pca_residual",
+   "params": {
+    "window": 720,
+    "refit_stride": 24,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
+   },
+   "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
+   "title": "EUSTX50 pca_residual (B-SQS-13)",
+   "card_id": "B-SQS-13",
+   "licence": "NONE",
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
+  },
+  {
+   "symbol": "HK50",
+   "family": "pca_residual",
+   "params": {
+    "window": 720,
+    "refit_stride": 24,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
+   },
+   "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
+   "title": "HK50 pca_residual (B-SQS-13)",
+   "card_id": "B-SQS-13",
+   "licence": "NONE",
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "pca_residual",
+   "params": {
+    "window": 720,
+    "refit_stride": 24,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
+   },
+   "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
+   "title": "UST10Y pca_residual (B-SQS-13)",
+   "card_id": "B-SQS-13",
+   "licence": "NONE",
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "pca_residual",
+   "params": {
+    "window": 720,
+    "refit_stride": 24,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
+   },
+   "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
+   "title": "XAUUSD pca_residual (B-SQS-13)",
+   "card_id": "B-SQS-13",
+   "licence": "NONE",
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
+  },
+  {
+   "symbol": "XTIUSD",
+   "family": "pca_residual",
+   "params": {
+    "window": 720,
+    "refit_stride": 24,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "factor_symbols": [
+     "US500",
+     "NAS100",
+     "US2000",
+     "EUSTX50",
+     "HK50",
+     "UST10Y",
+     "XAUUSD",
+     "XTIUSD"
+    ]
+   },
+   "mechanism": "PCA on a cross-asset ETF panel (SPY, QQQ, IWM, EFA, EEM, TLT, LQD, GLD, USO, VNQ); regress the equal-weight basket on 3 PCs and hedge the betas.",
+   "title": "XTIUSD pca_residual (B-SQS-13)",
+   "card_id": "B-SQS-13",
+   "licence": "NONE",
+   "falsifier": "Mean R <= 0 or residual reversion not faster than a single-factor (US500) residual."
+  }
+ ],
+ "trials_charged": 33,
+ "provenance": {
+  "cards": "/mnt/project-files/mining/queued_repos/",
+  "translated_by": "thread Mine the EliteQuant list",
+  "licence_note": "ideas only where upstream has no licence or is copyleft; no code copied"
+ }
+}

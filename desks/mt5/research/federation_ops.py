@@ -74,6 +74,10 @@ REGISTRY_PATH = DESK / "data" / "federation_registry.json"
 REPORT = DESK / "reports" / "FEDERATION.json"
 DONATIONS = DESK / "data" / "intelligence" / "federation_ops"
 ROI_REPORT = DESK / "reports" / "RESEARCH_ROI.json"
+#: CRO D35's artifact. The 24/7 GitHub resident miner IS this pass's delta scan over every
+#: forge-hosted upstream; this file is its cursor table and its per-day yield, read by the CRO.
+RESIDENT_REPORT = DESK / "reports" / "GITHUB_RESIDENT_MINER.json"
+RESIDENT_DAYS = 14
 # THE COMPILER'S OWN PATH, RE-POINTED (measured 2026-09-24). `miner_candidate_compiler` writes
 # `data/hypotheses/miner_candidates.json` -- the path ten other readers use -- and this constant
 # named `data/miner_candidates.json`, which NOTHING in the tree writes and which has never existed.
@@ -168,10 +172,21 @@ def desk_fetch(url: str) -> tuple[str, int, str]:
     return mc.fetch_text(url)
 
 
+#: `forge:owner/repo` -> the forge's host, for the roster ids that name an upstream that way.
+_FORGE_HOSTS = {"github": "github.com", "gitlab": "gitlab.com", "gitee": "gitee.com",
+                "codeberg": "codeberg.org", "bitbucket": "bitbucket.org"}
+
+
 def surfaces_for(upstream: str) -> dict[str, str]:
     """surface -> url for one upstream. GitHub gets the API record, the commit feed, the release
     feed and the README; another forge or a website gets its page as `websites`."""
     url = str(upstream or "")
+    # THE ROSTER'S OWN SPELLING (2026-10-06). 36 seeds name their upstream `github:owner/repo`
+    # (the registry id form), which has no scheme and no dot, so every one of them was refused
+    # here as "not a URL a delta scan can hash" and no seed repository was ever delta-watched.
+    forge, _, rest = url.partition(":")
+    if rest and "://" not in url and forge in _FORGE_HOSTS and rest.strip("/"):
+        url = f"https://{_FORGE_HOSTS[forge]}/{rest.strip('/')}"
     if not url or url == UNMEASURED or ("://" not in url and "." not in url):
         return {}
     full = url if "://" in url else "https://" + url
@@ -184,6 +199,20 @@ def surfaces_for(upstream: str) -> dict[str, str]:
                 "commits": f"https://github.com/{owner}/{repo}/commits.atom",
                 "releases": f"https://github.com/{owner}/{repo}/releases.atom",
                 "docs": f"https://raw.githubusercontent.com/{owner}/{repo}/HEAD/README.md"}
+    # AN ACCOUNT, NOT A REPOSITORY (2026-10-06): the owner's public activity feed carries every
+    # push, new repository and release across all of their repos, so one hash watches the person's
+    # whole public GitHub output -- used only where an author-monitoring exception is recorded
+    # (`source_civilizations.MONITORED_AUTHOR_EXCEPTIONS`).
+    if host in ("github.com", "www.github.com") and len(parts) == 1 and parts[0]:
+        # FAIL CLOSED: an account is watched only when the exception register names it; an
+        # unreadable register watches nobody.
+        try:
+            from research.source_civilizations import MONITORED_AUTHOR_EXCEPTIONS
+        except Exception:                                  # pragma: no cover - import guard
+            return {}
+        if parts[0].lower() not in {a.lower() for a in MONITORED_AUTHOR_EXCEPTIONS}:
+            return {}
+        return {"commits": f"https://github.com/{parts[0]}.atom"}
     if host in ("arxiv.org", "export.arxiv.org"):
         return {"papers": full}
     if host.endswith(("gitlab.com", "gitee.com", "codeberg.org", "bitbucket.org")):
@@ -639,6 +668,67 @@ def delta_scan_step(reg: FR.Registry, *, fetch: Fetcher, max_scan: int, deadline
         if meta:
             out["meta"][sid] = meta
     return out
+
+
+def _is_forge(upstream: Any) -> bool:
+    url = str(upstream or "")
+    forge, _, rest = url.partition(":")
+    if rest and "://" not in url and forge in _FORGE_HOSTS:
+        return True
+    return _host(url if "://" in url else "https://" + url).endswith(
+        tuple(_FORGE_HOSTS.values()))
+
+
+def resident_miner_doc(reg: FR.Registry, delta: Mapping[str, Any],
+                       records: Sequence[Mapping[str, Any]], prev: Any, *, at: str
+                       ) -> dict[str, Any]:
+    """CRO D35: the resident GitHub miner's cursors and per-day yield, from THIS pass's scan.
+
+    repos_mined_per_day is the distinct forge upstreams hashed that UTC day (carried across the
+    day's passes from the previous file); cells_extracted_per_day is the candidate rows the
+    sandboxed runs of forge-hosted systems handed back, bucketed by run day. A day with no scan
+    is absent, never zero, and a pass that fetched nothing reads UNMEASURED by name."""
+    forge = {sid: r for sid, r in reg.rows.items() if _is_forge(r.get("upstream_repo"))}
+    hashes = reg.delta.snapshot()
+    cursors = {sid: {"upstream": r.get("upstream_repo"),
+                     "last_scan": r.get("last_upstream_delta_scan") or UNMEASURED,
+                     "next_scan": r.get("next_upstream_delta_scan") or UNMEASURED,
+                     "fingerprint_state": r.get("fingerprint_state") or UNMEASURED,
+                     "surfaces_hashed": sorted(hashes.get(sid) or {})}
+               for sid, r in sorted(forge.items())}
+    today = at[:10]
+    floor = (datetime.fromisoformat(at) - timedelta(days=RESIDENT_DAYS)).date().isoformat()
+    old = prev.get("repos_by_day") if isinstance(prev, Mapping) else None
+    by_day: dict[str, set[str]] = {
+        d: set(v) for d, v in (old or {}).items()
+        if isinstance(v, list) and str(d) >= floor}
+    scanned = [s for s in delta.get("scanned") or [] if s in forge]
+    by_day.setdefault(today, set()).update(scanned)
+    cells: dict[str, int] = {}
+    for rec in records:
+        day = str(rec.get("at") or "")[:10]
+        if rec.get("system_id") in forge and len(day) == 10 and day >= floor:
+            cells[day] = cells.get(day, 0) + int(rec.get("candidates") or 0)
+    unmeasured = list(delta.get("unmeasured") or [])
+    status = "RAN" if scanned else UNMEASURED
+    if not scanned:
+        unmeasured.append("no forge upstream was hashed this pass (none due, or every fetch "
+                          "refused): today's repo count carries the earlier passes only")
+    never = sorted(sid for sid, c in cursors.items() if not c["surfaces_hashed"])
+    return {
+        "at": at, "duty": "CRO D35", "status": status, "organ": "federation_ops.delta_scan_step",
+        "clock": "the hourly federation_ops leg (no separate scheduler)",
+        "forge_upstreams": len(forge), "never_hashed": never,
+        "scanned_this_pass": scanned,
+        "reopened_this_pass": [s for s in delta.get("reopened") or [] if s in forge],
+        "refused_this_pass": {s: v for s, v in (delta.get("refused") or {}).items()
+                              if s in forge},
+        "repos_mined_per_day": {d: len(v) for d, v in sorted(by_day.items())},
+        "repos_by_day": {d: sorted(v) for d, v in sorted(by_day.items())},
+        "cells_extracted_per_day": dict(sorted(cells.items())) or UNMEASURED,
+        "delta_cursors": cursors, "unmeasured": unmeasured,
+        "consumers": ["CRO D35 (docs/cro/CRO_CYCLE.md)", "discovery_compiler (delta_reopen)"],
+    }
 
 
 # --------------------------------------------------------------------------- 3. spawn signals
@@ -1143,6 +1233,11 @@ def run_pass(*, budget_s: float = 600.0, dry_run: bool = False, no_fetch: bool =
         if registry_ok:
             reg.save(reg_path, at=at)
         _write(report_path or REPORT, doc)
+        if "delta" in steps:
+            res_path = (report_path.parent / RESIDENT_REPORT.name if report_path
+                        else RESIDENT_REPORT)
+            _write(res_path, resident_miner_doc(reg, steps["delta"], records,
+                                                _read(res_path, None), at=at))
     return doc
 
 

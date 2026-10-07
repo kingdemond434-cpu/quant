@@ -62,7 +62,8 @@ import os
 import re
 import sys
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -130,6 +131,10 @@ ORGANS: dict[str, str] = {
     # experiments that separate them.
     "scientific_committee": "competing explanations for a bank hypothesis, one failure class "
                             "each, for the judge to separate by experiment",
+    # TradingAgents' analysts as cell generators (desks/mt5/research/analyst_panel.py): a cell in
+    # the registered price-only grammar with a falsifier, and the bear's attack on each one.
+    "analyst_panel": "cells (registered family + params + falsifier) from four analyst lenses, "
+                     "and the bear's failure-class attack on each; screened and donated",
     "forensic_committee": "competing mechanisms (registered SARES branches) for an extreme "
                           "record, each donated as a candidate",
 }
@@ -448,6 +453,42 @@ def verdict_leak(obj: Any) -> str:
 
 
 # ------------------------------------------------------------------------------ the call
+#: THE CALLER'S METER (2026-10-01, audit of the analyst panel). One `ask` is not one HTTP call:
+#: the free panel rotates its tier on every rate limit (six or more requests in a bad hour), and
+#: when the tier is exhausted `_ask` falls back to the PAID seat. An organ that caps "calls" by
+#: counting asks therefore under-counts its traffic and can spend money it never budgeted. Inside
+#: `seat_policy(...)` every HTTP request is counted, the free panel is never asked for more than
+#: the budget has left, and the paid fallback is refused unless the caller named a paid budget.
+#: Outside it nothing changes (the default policy is the one every organ had before).
+_POLICY: dict[str, Any] = {"http_budget": None, "paid_budget": None, "http_calls": 0,
+                           "paid_calls": 0, "refused_paid": 0}
+
+
+@contextmanager
+def seat_policy(*, http_budget: int | None = None, paid_budget: int = 0
+                ) -> Iterator[dict[str, Any]]:
+    """Meter every HTTP request made by `ask` in this block; yield the live meter.
+
+    `http_budget` caps the requests (free and paid together); `paid_budget` is how many paid-seat
+    requests are allowed, 0 by default -- a metered caller never reaches the paid seat unless it
+    said so."""
+    saved = dict(_POLICY)
+    _POLICY.update({"http_budget": http_budget, "paid_budget": int(paid_budget),
+                    "http_calls": 0, "paid_calls": 0, "refused_paid": 0})
+    try:
+        yield _POLICY
+    finally:
+        meter = {k: _POLICY[k] for k in ("http_calls", "paid_calls", "refused_paid")}
+        _POLICY.clear()
+        _POLICY.update(saved)
+        _POLICY["last_meter"] = meter
+
+
+def _http_left() -> int | None:
+    b = _POLICY.get("http_budget")
+    return None if b is None else max(0, int(b) - int(_POLICY.get("http_calls") or 0))
+
+
 def _ask(role: str, prompt: str, *, timeout: float) -> tuple[str, str, str | None]:
     """One completion. Returns (text, model, error). NEVER raises -- a scheduled organ survives it.
 
@@ -459,22 +500,37 @@ def _ask(role: str, prompt: str, *, timeout: float) -> tuple[str, str, str | Non
     here would drift from on exactly the properties that must not drift.
     """
     panel = _panel_module()
+    left = _http_left()
+    if left == 0:
+        return "", "", "call budget spent: no HTTP request made"
     if panel is not None:
         try:
+            kw: dict[str, Any] = {} if left is None else {"max_attempts": left}
             reply = panel.ask(role, "Propose candidates. Shapes and names only.", prompt,
-                              max_tokens=1600, temperature=0.9)
+                              max_tokens=1600, temperature=0.9, **kw)
+            _POLICY["http_calls"] += len(getattr(reply, "attempts", None) or [None])
             text = str(getattr(reply, "text", "") or "")
             if text.strip():
                 return text, str(getattr(reply, "model", "") or "free_panel"), None
         except Exception as exc:                          # includes PanelExhausted
+            _POLICY["http_calls"] += int(getattr(exc, "attempts", 0) or 0)
             last = f"free_panel: {type(exc).__name__}: {str(exc)[:160]}"
         else:
             last = "free_panel: empty completion"
     else:
         last = "free_panel: unimportable"
+    paid = _POLICY.get("paid_budget")
+    if paid is not None and int(_POLICY.get("paid_calls") or 0) >= int(paid):
+        _POLICY["refused_paid"] += 1
+        return "", "", f"{last}; paid seat refused: no paid budget named by the caller"
+    if _http_left() == 0:
+        return "", "", f"{last}; call budget spent before the paid seat"
     seat = _seat_module()
     if seat is None:
         return "", "", last
+    if paid is not None:
+        _POLICY["paid_calls"] += 1
+    _POLICY["http_calls"] += 1
     try:
         text, err = seat.chat(prompt, system="Propose candidates. Shapes and names only.",
                               max_tokens=1600, timeout=timeout, temperature=0.8)
@@ -893,21 +949,24 @@ def ask(organ: str, kind: str, *, options: Sequence[str] = (),
                        validate=validate or _valid_term, timeout=timeout)
         terms = [str(p.payload["term"]) for p in props
                  if p.accepted and isinstance(p.payload, dict)]
-        return SeatReply(organ, kind, "RAN" if props else UNMEASURED, ordered=opts, terms=terms,
+        dark = _dark(props)
+        return SeatReply(organ, kind, "RAN" if props and not dark else UNMEASURED, ordered=opts,
+                         terms=terms,
                          trials_charged=charge_trials(props),
-                         discarded=sum(1 for p in props if not p.accepted),
+                         discarded=sum(1 for p in props if not p.accepted and not dark),
                          reasons=_reasons(props),
-                         why=("a term is a SEARCH STRING, never a permission: the organ's own "
-                              "source registry and legality router still decide what may be "
-                              "fetched"))
+                         why=dark or ("a term is a SEARCH STRING, never a permission: the "
+                                      "organ's own source registry and legality router still "
+                                      "decide what may be fetched"))
 
     props = _asked(organ, role="generation", task=task, grammar=grammar, context=context, n=n,
                    label="candidate", validate=validate, timeout=timeout)
-    return SeatReply(organ, kind, "RAN" if props else UNMEASURED, ordered=opts,
+    dark = _dark(props)
+    return SeatReply(organ, kind, "RAN" if props and not dark else UNMEASURED, ordered=opts,
                      items=[p.payload for p in props if p.accepted],
                      trials_charged=charge_trials(props),
-                     discarded=sum(1 for p in props if not p.accepted),
-                     reasons=_reasons(props))
+                     discarded=sum(1 for p in props if not p.accepted and not dark),
+                     reasons=_reasons(props), why=dark)
 
 
 def _asked(organ: str, *, role: str, task: str, grammar: str, context: Sequence[str], n: int,
@@ -919,6 +978,23 @@ def _asked(organ: str, *, role: str, task: str, grammar: str, context: Sequence[
     if props:
         _log_inline(organ, props)
     return props
+
+
+#: The reasons `propose` gives when NOTHING came back from a model: no HTTP reply, an empty
+#: completion, a spent call budget, a refused paid seat, or a prompt the guard refused to send.
+DARK_REASONS = ("no reply:", "prompt refused:")
+
+
+def _dark(props: Sequence[Proposal]) -> str:
+    """Why this batch is DARK, or "" when a model actually answered.
+
+    A DARK SEAT IS NOT A RUN (2026-10-01, audit of the analyst panel). `propose` returns one
+    placeholder Proposal carrying "no reply: ..." when the transport failed, and `ask` used to read
+    any non-empty list as RAN -- so a panel whose every seat was exhausted reported OK with zero
+    cells, and its placeholder counted as a discarded proposal. Such a batch is UNMEASURED."""
+    if props and all(not p.accepted and p.reason.startswith(DARK_REASONS) for p in props):
+        return props[0].reason[:200]
+    return ""
 
 
 def _reasons(props: Sequence[Proposal]) -> list[str]:

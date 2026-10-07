@@ -204,6 +204,9 @@ CROSS_SECTIONAL_FAMILIES = frozenset({
     "cross_sectional_class_momentum", "cross_sectional_class_reversal",
     "cross_sectional_class_value", "cross_sectional_class_low_vol",
     "crisis_only_class_defensive", "lead_lag_class_catchup",
+    # The alpha zoo's class books (mt5desk/family_zoo_alpha.py, 2026-09-30): a published alpha
+    # ranked within the peer class on each date, one member's leg per cell -- the same shape.
+    "zoo_alpha_class",
 })
 
 

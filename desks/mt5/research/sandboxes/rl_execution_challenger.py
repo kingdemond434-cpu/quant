@@ -77,6 +77,7 @@ def q_learning(cases: list[dict[str, Any]], *, seed: int) -> dict[str, Any]:
     v_cut = float(np.median(vols)) if vols else 0.0
     by_state: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
     baseline: dict[str, list[float]] = defaultdict(list)
+    controls: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
     for c in cases:
         session = str(c.get("session") or "other")
         session = session if session in SESSIONS else "other"
@@ -94,8 +95,23 @@ def q_learning(cases: list[dict[str, Any]], *, seed: int) -> dict[str, Any]:
             else float(vol or 0.0)  # a miss costs the measured adverse move
         by_state[state][action].append(cost)
         baseline[state].append(cost)
+        spread = c.get("spread_frac")
+        controls[state][action].append(float(spread) if isinstance(spread, (int, float))
+                                       else float("nan"))
     if not by_state:
         return {"status": "UNMEASURED", "why": "no resolved, unrejected cases"}
+    # CONTROL VARIATES ON THE SAMPLED REWARDS (ROMAN-0973). Each pool's cost is adjusted by the
+    # case's measured spread around the pool's own exact mean spread: sampling the adjusted pool
+    # has the same expected cost and a variance smaller by the squared cost-spread correlation,
+    # so the Q-values converge on fewer episodes. The plain pools are kept for the baseline.
+    from libs.research.variance_reduction import adjusted_pool
+    sampled: dict[str, dict[str, list[float]]] = defaultdict(dict)
+    ratios: list[float] = []
+    for st, acts in by_state.items():
+        for act, pool in acts.items():
+            adj, ratio = adjusted_pool(np.asarray(pool), np.asarray(controls[st][act]))
+            sampled[st][act] = adj.tolist()
+            ratios.append(ratio)
     states = sorted(by_state)
     Q = np.zeros((len(states), len(ACTIONS)))
     counts = np.zeros_like(Q)
@@ -103,7 +119,7 @@ def q_learning(cases: list[dict[str, Any]], *, seed: int) -> dict[str, Any]:
     for _ in range(EPISODES):
         si = int(rng.integers(len(states)))
         ai = int(rng.integers(len(ACTIONS))) if rng.random() < eps else int(np.argmax(Q[si]))
-        pool = by_state[states[si]].get(ACTIONS[ai])
+        pool = sampled[states[si]].get(ACTIONS[ai])
         if pool:
             reward = -float(rng.choice(pool))
         elif ACTIONS[ai] == "wait_one_bar":
@@ -122,7 +138,12 @@ def q_learning(cases: list[dict[str, Any]], *, seed: int) -> dict[str, Any]:
     gain = float(np.mean([p["baseline_cost_frac"] - p["expected_cost_frac"]
                           for p in policy.values()]))
     return {"status": "MEASURED", "states": len(states), "episodes": EPISODES, "policy": policy,
-            "mean_cost_reduction_frac": gain, "n_cases": sum(len(v) for v in baseline.values())}
+            "mean_cost_reduction_frac": gain, "n_cases": sum(len(v) for v in baseline.values()),
+            # the ratio is var(adjusted pool) / var(pool): the dispersion of ONE draw, not the
+            # variance of a mean estimate (audit PR166_v3)
+            "control_variate": {"control": "spread_frac", "pools": len(ratios),
+                                "mean_draw_dispersion_ratio": float(np.mean(ratios)) if ratios
+                                else None}}
 
 
 def qubo_slicing(vol: float, spread: float, *, seed: int) -> dict[str, Any]:

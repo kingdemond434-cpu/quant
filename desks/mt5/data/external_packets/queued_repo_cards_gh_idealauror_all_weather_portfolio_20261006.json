@@ -1,0 +1,135 @@
+{
+ "system_id": "gh_idealauror_all_weather_portfolio",
+ "run_id": "queued_repo_cards_2026-10-06_gh_idealauror_all_weather_portfolio",
+ "commit": "card_translation",
+ "candidates": [
+  {
+   "symbol": "XCUUSD",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     75
+    ],
+    "min_agreement": 1.0,
+    "hold_days": 21,
+    "vol_window": 21
+   },
+   "mechanism": "Long-or-flat SMA75 trend filter on inflation/growth assets: if yesterday's close < SMA75 (shift 1), weight -> 0 and park in short credit; else hold the risk-parity weight. Applied to non-ferrous metals, gold, S&P 500 and WTI (75d) and CSI300 (30d).",
+   "title": "XCUUSD multi_speed_trend (B-AWP-01)",
+   "card_id": "B-AWP-01",
+   "licence": "AGPL-3.0-only",
+   "falsifier": "Filtered sleeve log-growth <= always-long, or the gain disappears at SMA50/SMA100 (fragility).",
+   "translation_note": "card params adapted to the registered family: side"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     75
+    ],
+    "min_agreement": 1.0,
+    "hold_days": 21,
+    "vol_window": 21
+   },
+   "mechanism": "Long-or-flat SMA75 trend filter on inflation/growth assets: if yesterday's close < SMA75 (shift 1), weight -> 0 and park in short credit; else hold the risk-parity weight. Applied to non-ferrous metals, gold, S&P 500 and WTI (75d) and CSI300 (30d).",
+   "title": "XAUUSD multi_speed_trend (B-AWP-01)",
+   "card_id": "B-AWP-01",
+   "licence": "AGPL-3.0-only",
+   "falsifier": "Filtered sleeve log-growth <= always-long, or the gain disappears at SMA50/SMA100 (fragility).",
+   "translation_note": "card params adapted to the registered family: side"
+  },
+  {
+   "symbol": "XTIUSD",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     75
+    ],
+    "min_agreement": 1.0,
+    "hold_days": 21,
+    "vol_window": 21
+   },
+   "mechanism": "Long-or-flat SMA75 trend filter on inflation/growth assets: if yesterday's close < SMA75 (shift 1), weight -> 0 and park in short credit; else hold the risk-parity weight. Applied to non-ferrous metals, gold, S&P 500 and WTI (75d) and CSI300 (30d).",
+   "title": "XTIUSD multi_speed_trend (B-AWP-01)",
+   "card_id": "B-AWP-01",
+   "licence": "AGPL-3.0-only",
+   "falsifier": "Filtered sleeve log-growth <= always-long, or the gain disappears at SMA50/SMA100 (fragility).",
+   "translation_note": "card params adapted to the registered family: side"
+  },
+  {
+   "symbol": "US500",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     75
+    ],
+    "min_agreement": 1.0,
+    "hold_days": 21,
+    "vol_window": 21
+   },
+   "mechanism": "Long-or-flat SMA75 trend filter on inflation/growth assets: if yesterday's close < SMA75 (shift 1), weight -> 0 and park in short credit; else hold the risk-parity weight. Applied to non-ferrous metals, gold, S&P 500 and WTI (75d) and CSI300 (30d).",
+   "title": "US500 multi_speed_trend (B-AWP-01)",
+   "card_id": "B-AWP-01",
+   "licence": "AGPL-3.0-only",
+   "falsifier": "Filtered sleeve log-growth <= always-long, or the gain disappears at SMA50/SMA100 (fragility).",
+   "translation_note": "card params adapted to the registered family: side"
+  },
+  {
+   "symbol": "CHINAH",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     75
+    ],
+    "min_agreement": 1.0,
+    "hold_days": 21,
+    "vol_window": 21
+   },
+   "mechanism": "Long-or-flat SMA75 trend filter on inflation/growth assets: if yesterday's close < SMA75 (shift 1), weight -> 0 and park in short credit; else hold the risk-parity weight. Applied to non-ferrous metals, gold, S&P 500 and WTI (75d) and CSI300 (30d).",
+   "title": "CHINAH multi_speed_trend (B-AWP-01)",
+   "card_id": "B-AWP-01",
+   "licence": "AGPL-3.0-only",
+   "falsifier": "Filtered sleeve log-growth <= always-long, or the gain disappears at SMA50/SMA100 (fragility).",
+   "translation_note": "card params adapted to the registered family: side"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "drawdown_conditional",
+   "params": {
+    "lookback": 2400,
+    "dd_pct": 0.15,
+    "stop_atr": 2.5,
+    "rr": 2.0,
+    "ttl_bars": 480
+   },
+   "mechanism": "FALSIFIED PRIOR from the donor: gold dip-buy (gold drawdown >= 15% from peak -> 2.5x weight) was grid-searched to look optimal, then vetoed in their own later backtest ('gold-dip-negative') and removed from live.",
+   "title": "XAUUSD drawdown_conditional (B-AWP-03)",
+   "card_id": "B-AWP-03",
+   "licence": "AGPL-3.0-only",
+   "falsifier": "Mean R > 0 with deflated t > 2 overturns the donor's veto."
+  },
+  {
+   "symbol": "XAUEUR",
+   "family": "drawdown_conditional",
+   "params": {
+    "lookback": 2400,
+    "dd_pct": 0.15,
+    "stop_atr": 2.5,
+    "rr": 2.0,
+    "ttl_bars": 480
+   },
+   "mechanism": "FALSIFIED PRIOR from the donor: gold dip-buy (gold drawdown >= 15% from peak -> 2.5x weight) was grid-searched to look optimal, then vetoed in their own later backtest ('gold-dip-negative') and removed from live.",
+   "title": "XAUEUR drawdown_conditional (B-AWP-03)",
+   "card_id": "B-AWP-03",
+   "licence": "AGPL-3.0-only",
+   "falsifier": "Mean R > 0 with deflated t > 2 overturns the donor's veto."
+  }
+ ],
+ "trials_charged": 7,
+ "provenance": {
+  "cards": "/mnt/project-files/mining/queued_repos/",
+  "translated_by": "thread Mine the EliteQuant list",
+  "licence_note": "ideas only where upstream has no licence or is copyleft; no code copied"
+ }
+}

@@ -1,0 +1,426 @@
+# OpenBB-finance/OpenBB (Apache-2.0) provider extensions, absorbed 2026-10-01. Every provider in
+# the repo is free (bls, cboe, cftc, ecb, eia, famafrench, federal_reserve, finra, fred,
+# government_us, imf, jodi, nasdaq, oecd, sec, tmx). FRED, EIA, CFTC COT, the SEC EDGAR basics and
+# ECB FX reference rates were already on the desk and are not repeated. deribit is a crypto venue
+# and is fenced. The first row is FED HOURLY; the rest wait on the roster acquirer (#133) or a
+# Breadth shaper. Read by libs/mining/acquirer.load_roster.
+sources:
+- id: obb_dtcc_fx_options
+  name: DTCC CFTC public price dissemination, FX options (cumulative daily slices)
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  fed_by: acquire_datasets
+  auth: none
+  cadence_minutes: 60
+  region: global
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://pddata.dtcc.com/ppd/api/cumulative/CFTC/FX
+  note: 'FED HOURLY: libs/data/dtcc_fx_options.py via acquire_datasets. ATM-vol proxy, call share, OTM
+    call share, notional per MT5 FX pair'
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider cftc
+- id: obb_dtcc_rates_ois
+  name: 'DTCC CFTC public dissemination, rates: OIS (SOFR, ESTR, SONIA, TONA, CORRA, SARON) trades'
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://pddata.dtcc.com/ppd/api/cumulative/CFTC/IR
+  note: 'Market-implied policy paths per central bank (OpenBB ois_policy_path/ois_curve); rate-differential
+    repricing for the USD crosses. Build ask: Breadth'
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider cftc
+- id: obb_dtcc_fx_forwards
+  name: DTCC public dissemination, FX forwards and NDFs (forward points)
+  priority: 2
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://pddata.dtcc.com/ppd/api/cumulative/CFTC/FX
+  note: Forward points as implied carry for USDCNH, USDINR-linked crosses and the EM pairs; same slices
+    the option tape already downloads
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider cftc
+- id: obb_central_bank_fixings
+  name: 'Central-bank fixings and rates the OpenBB cftc provider reads: BCB, HKMA, Bundesbank, SNB, BoK
+    ECOS, BoI, MAS, BNM, SARB, NY Fed'
+  priority: 2
+  kind: mechanics
+  uses: &id001
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://markets.newyorkfed.org/
+  note: Official fixings per currency as fix-window and rate-differential inputs; BNM and Bundesbank are
+    new to the desk
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider cftc
+- id: obb_atlanta_market_probability
+  name: Atlanta Fed market probability tracker (FOMC path implied by SOFR options)
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://www.atlantafed.org/cenfis/market-probability-tracker
+  note: Event-day priors for USD pairs, gold and US indices around FOMC
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider federal_reserve
+- id: obb_fed_nowcasts
+  name: Atlanta GDPNow, Cleveland inflation nowcast and median CPI, NY Fed staff nowcast
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://www.atlantafed.org/cqer/research/gdpnow
+  note: Nowcast revisions as macro-surprise conditioners for USD and US indices
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider federal_reserve
+- id: obb_chicago_nfci
+  name: Chicago Fed NFCI / ANFCI and CFNAI (api.data.chicagofed.org)
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://api.data.chicagofed.org/
+  note: Weekly financial-conditions regime for every risk asset
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider federal_reserve
+- id: obb_dallas_fed
+  name: Dallas Fed energy survey, trimmed-mean PCE, breakevens, real-time indicators
+  priority: 2
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://www.dallasfed.org/research
+  note: Energy survey stamps for XTI/XBR; inflation breakevens for gold
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider federal_reserve
+- id: obb_ny_fed_markets
+  name: 'NY Fed markets data: SOFR, EFFR, repo operations, SOMA holdings'
+  priority: 2
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://markets.newyorkfed.org/api/
+  note: Funding-stress and balance-sheet liquidity for USD and indices
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider federal_reserve
+- id: obb_jodi
+  name: 'JODI oil and gas database: production, demand, stocks by country, monthly'
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://api.publisher.jodidata.org/
+  note: Supply-demand surprises for XTIUSD, XBRUSD, XNGUSD and the petrocurrencies
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider jodi
+- id: obb_imf_portwatch
+  name: 'IMF PortWatch: daily maritime chokepoint transits and port calls (Hormuz, Suez, Malacca, Panama)'
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://portwatch.imf.org/
+  note: Daily shipping disruption as an oil, freight and commodity-currency shock sensor
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider imf
+- id: obb_imf_sdmx
+  name: 'IMF SDMX 3 API (api.imf.org): CPI, BOP, direction of trade, monthly trade'
+  priority: 2
+  kind: mechanics
+  uses:
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://api.imf.org/
+  note: Country macro for the culture packs where no national source exists
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider imf
+- id: obb_oecd_sdmx
+  name: 'OECD SDMX (sdmx.oecd.org): composite leading indicators, CPI, rates, house prices, share prices'
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://sdmx.oecd.org/public/rest/
+  note: CLI turning points as growth-regime conditioners for indices and commodity currencies
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider oecd
+- id: obb_cboe_futures_curve
+  name: 'CBOE: VIX futures curve and settlements, index historical, index snapshots'
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://cdn.cboe.com/api/global/
+  note: VIX term-structure slope as a risk-regime state for every index and carry book
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider cboe
+- id: obb_finra_short_interest
+  name: FINRA equity short interest and OTC aggregate (api.finra.org)
+  priority: 2
+  kind: mechanics
+  uses:
+  - direct_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://api.finra.org/
+  note: Short-interest ranks for the US share CFD class books
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider finra
+- id: obb_treasury_fiscaldata
+  name: 'US Treasury fiscal data: daily treasury statement (TGA), auctions, debt to the penny'
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://api.fiscaldata.treasury.gov/services/api/fiscal_service/
+  note: TGA swings as a dollar-liquidity conditioner; auction tails as US yield shocks for gold and USDJPY
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider government_us
+- id: obb_usda_psd
+  name: USDA FAS production, supply and distribution (PSD) and ERS data
+  priority: 2
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://apps.fas.usda.gov/psdonline/
+  note: Stock-to-use for the soft and grain CFDs
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider government_us
+- id: obb_bls
+  name: 'BLS API v2 and release documents: CPI, PPI, payrolls, JOLTS, import/export prices, release calendar'
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://api.bls.gov/publicAPI/v2/
+  note: Release-day stamps and component surprises for USD and US indices (keyless at 25 queries/day)
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider bls
+- id: obb_ecb
+  name: 'ECB data portal: yield curve, ESTR, MFI rates, BOP, economic calendar'
+  priority: 2
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: eu
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://data-api.ecb.europa.eu/
+  note: Euro-area curve slope and ESTR for EUR crosses; FX reference rates already held
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider ecb
+- id: obb_famafrench
+  name: 'Ken French data library: factors, country and regional portfolios'
+  priority: 2
+  kind: mechanics
+  uses:
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html
+  note: Country-index factor returns to decompose the index CFD book
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider famafrench
+- id: obb_nasdaq_calendars
+  name: 'Nasdaq API: earnings, dividends, IPO, splits and economic calendars; Nordic bond yields'
+  priority: 1
+  kind: text
+  uses:
+  - indirect_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://api.nasdaq.com/api/calendar/
+  note: Earnings dates for the US share CFD news lane; macro calendar stamps
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider nasdaq
+- id: obb_tmx
+  name: 'TMX: Canadian treasury and bond prices, Montreal Exchange futures'
+  priority: 3
+  kind: mechanics
+  uses:
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: ca
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://money.tmx.com/
+  note: CAD curve for USDCAD and the Canadian index
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider tmx
+- id: obb_sec_ftd
+  name: SEC fails-to-deliver and 13F/N-PORT filings via OpenBB's sec provider
+  priority: 3
+  kind: mechanics
+  uses:
+  - indirect_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: public government / exchange data, keyless; terms confirmed by the owner thread before fetch
+    (terms gate fails closed)
+  config:
+    url: https://www.sec.gov/data-research/sec-markets-data/fails-deliver-data
+  note: FTD spikes for US share CFDs (13F already rostered)
+  owner: elitequant_thread
+  origin: github.com/OpenBB-finance/OpenBB (Apache-2.0) provider sec
