@@ -197,3 +197,26 @@ def test_pass_questions_q1_to_q7_are_in_the_cycle_and_not_duty_rows() -> None:
     for baseline in ("equal-risk", "inverse-vol", "best-single-sleeve",
                      "after lot rounding and costs"):
         assert baseline in q4
+
+
+def test_pass_questions_are_scored_from_the_review(tmp_path: Path) -> None:
+    """ARCH-30 is not doc-only: an absent, UNMEASURED or uncited answer is rewritten MISSED
+    and counted in pass_questions_missed; a cited answer stands."""
+    good = {"answer": "re-judge the COT backlog", "evidence": ["reports/X.json@2026-10-07"]}
+    review = tmp_path / "review.json"
+    review.write_text(json.dumps({"latest": {"at": datetime.now(UTC).isoformat(), "duties": {},
+        "pass_questions": {"Q1": good, "Q2": dict(good), "Q3": {**good, "evidence": []},
+                           "Q4": {"answer": "UNMEASURED: no baseline artifact",
+                                  "evidence": ["x"], "status": "ANSWERED"},
+                           "Q5": dict(good), "Q6": dict(good)}}}))
+    measured = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)
+    res = ccd.apply_to_review(review, measured, (datetime.now(UTC) - timedelta(minutes=1))
+                              .isoformat())
+    assert res["pass_questions_missed"] == ["Q3", "Q4", "Q7"]
+    latest = json.loads(review.read_text())["latest"]
+    assert latest["pass_questions_missed"] == ["Q3", "Q4", "Q7"]
+    pq = latest["pass_questions"]
+    assert pq["Q1"]["status"] == "ANSWERED"
+    assert pq["Q3"]["reason"] == "no_evidence"
+    assert pq["Q4"]["status"] == "MISSED" and pq["Q4"]["status_claimed"] == "ANSWERED"
+    assert pq["Q7"] == {"status": "MISSED", "reason": "absent"}

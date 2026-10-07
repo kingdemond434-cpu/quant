@@ -274,11 +274,57 @@ def apply_to_review(review: Path, measured: Mapping[str, Any],
         return out
     for duty in _changed(duties, measured.get("duties") or {}):
         out["changed"].append(duty)
+    missed_q = score_pass_questions(latest)
+    out["pass_questions_missed"] = missed_q
     latest["artifact_check"] = {"at": measured.get("at"), "missed": measured.get("missed"),
                                 "source": "scripts/check_cro_duties.py"}
     write_text_resilient(review, json.dumps(doc, indent=1, ensure_ascii=False))
     out["applied"] = True
     return out
+
+
+#: ARCH-30 pass questions every pass must answer (CRO_CYCLE.md STEP 4B, PASS QUESTIONS)
+PASS_QUESTIONS = tuple(f"Q{i}" for i in range(1, 8))
+
+
+def _question_miss(q: Any) -> str | None:
+    """Why a pass-question entry counts as MISSED, or None when it is a cited answer."""
+    if not isinstance(q, Mapping):
+        return "absent"
+    answer = q.get("answer")
+    if not isinstance(answer, str) or not answer.strip():
+        return "no_answer"
+    if "UNMEASURED" in answer.upper() or str(q.get("status") or "").upper() == "UNMEASURED":
+        return "unmeasured"
+    ev = q.get("evidence")
+    if not ev or (isinstance(ev, str) and not ev.strip()):
+        return "no_evidence"
+    return None
+
+
+def score_pass_questions(latest: dict[str, Any]) -> list[str]:
+    """Rewrite `pass_questions` so an absent, unanswered, UNMEASURED or uncited answer reads
+    MISSED (claim kept under `status_claimed`); set `pass_questions_missed`. Returns the misses."""
+    raw = latest.get("pass_questions")
+    qs: dict[str, Any] = dict(raw) if isinstance(raw, Mapping) else {}
+    missed: list[str] = []
+    for key in PASS_QUESTIONS:
+        why = _question_miss(qs.get(key))
+        cur = qs.get(key)
+        entry: dict[str, Any] = dict(cur) if isinstance(cur, Mapping) else {}
+        if why is None:
+            entry.setdefault("status", "ANSWERED")
+        else:
+            missed.append(key)
+            prior = str(entry.get("status") or "")
+            if prior and prior != "MISSED":
+                entry["status_claimed"] = prior
+            entry["status"] = "MISSED"
+            entry["reason"] = why
+        qs[key] = entry
+    latest["pass_questions"] = qs
+    latest["pass_questions_missed"] = missed
+    return missed
 
 
 def _changed(duties: dict[str, Any], measured: Mapping[str, Any]) -> Iterable[str]:
