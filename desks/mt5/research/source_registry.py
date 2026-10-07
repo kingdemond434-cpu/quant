@@ -887,11 +887,9 @@ def _summary(registry: dict[str, Any], report: dict[str, Any], wrote: bool) -> l
         f"  UNMEASURED: {un['n_sources_without_a_ground']} without a ground, "
         f"{un['n_sources_without_a_cost']} without a cost, "
         f"{un['n_sources_unscheduled']} unscheduled; quality measured share "
-        + " ".join(f"{k}={v}" for k, v in report["quality_coverage"].items()),
-        f"  source x event class: {seq.get('n_cells', 0)} cell(s) from "
-        f"{seq.get('n_claims', 0)} claim(s); measured "
-        + " ".join(f"{k}={v}" for k, v in (seq.get("measured_cells") or {}).items())
-        + (f" [{seq.get('status')}: {seq.get('why')}]" if seq.get("status") else ""),
+        + " ".join(f"{k}={v}" for k, v in report["quality_coverage"].items())
+        + f"; source x event class {seq.get('n_cells', 0)} cell(s)"
+        + (f" {seq.get('status')}" if seq.get("status") else ""),
         f"  {'wrote' if wrote else 'DRY RUN, wrote nothing:'} {REGISTRY}  {REPORT}",
     ]
 
