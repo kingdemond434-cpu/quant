@@ -840,12 +840,34 @@ def expand_axes(cands: list[dict]) -> list[dict]:
                 if remap:
                     v["session_remap"] = remap
                 v["priority"] = (1 if tf == "H1" else 0) + demote
+                # THE SOURCE'S OWN WINDOW (DATA-46): a chart outside the state's declared
+                # horizon sorts later, and a source with a release session names each session
+                # cell's transfer path. Queue order only; nothing is removed.
+                v["priority"] += _horizon_demotion(v, tf, sess)
                 if inv:
                     v["causal_invariance"] = {"verdict": inv.get("verdict"),
                                               "broken_axes": inv.get("broken_axes") or [],
                                               "why": str(inv.get("why") or "")[:200]}
                 out.append(v)
     return out
+
+
+def _horizon_demotion(cell: dict, chart: str, session: str) -> int:
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.mining import source_horizon
+        return source_horizon.annotate(cell, chart, session)
+    except Exception:                  # an unreadable table leaves the cell exactly as it was
+        return 0
+
+
+def _horizon_tally(cells: list[dict]) -> dict:
+    try:
+        from libs.mining import source_horizon
+        return source_horizon.tally(cells)
+    except Exception as exc:
+        return {"state": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
 
 def _registered_family(name: str) -> bool:
@@ -1920,6 +1942,7 @@ def main() -> int:
         "per_source": per_source,
         "seats": seats,
         "seats_dark": seats_dark,
+        "source_horizon": _horizon_tally(emitted),
         "agreement": {"candidates_with_2plus_sources": agreement},
         "disagreement": disagreement,
         "intake": {"max_rows_per_pass": MAX_ROWS_PER_PASS, **_LAST_INTAKE},

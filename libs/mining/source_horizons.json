@@ -1,0 +1,231 @@
+{
+ "schema": "source_horizons/1",
+ "what": "Per producing seat: the window (min_h..max_h, hours) a state it reports can plausibly move an MT5 price over, its decay half-life, and the session it is released into. Read by libs/mining/source_horizon.py in the miner compiler's expand_axes: a chart outside the window is DEMOTED in queue order (never dropped), and every session cell of a source with a release_session is labelled own/transfer. Declared priors, to be revised by measured decay; a row may override any key. A seat absent here reads UNDECLARED, never INSIDE. kind=strategy marks a strategy record, whose horizon lives in its own params.",
+ "seats": {
+  "aaii": {
+   "min_h": 24,
+   "max_h": 504,
+   "decay_half_life_h": 120,
+   "release_session": "ny",
+   "why": "weekly AAII survey, Thursday US"
+  },
+  "bis_speeches": {
+   "min_h": 1,
+   "max_h": 120,
+   "decay_half_life_h": 24,
+   "release_session": "london",
+   "why": "Basel-published speeches, read in the European session"
+  },
+  "broker_swaps": {
+   "min_h": 24,
+   "max_h": 2160,
+   "decay_half_life_h": 720,
+   "why": "overnight financing accrues per night; a reprice moves carry for weeks"
+  },
+  "central_banks": {
+   "min_h": 1,
+   "max_h": 240,
+   "decay_half_life_h": 48,
+   "why": "policy decisions/statements: repricing over the first days"
+  },
+  "china": {
+   "min_h": 1,
+   "max_h": 168,
+   "decay_half_life_h": 24,
+   "release_session": "asia",
+   "why": "Chinese releases land in the Asian session"
+  },
+  "collective2": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "cot": {
+   "min_h": 24,
+   "max_h": 720,
+   "decay_half_life_h": 168,
+   "release_session": "ny",
+   "why": "weekly CFTC print, Friday 15:30 ET; positioning mean-reverts over weeks"
+  },
+  "darwinex": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "duplitrade": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "earnings": {
+   "min_h": 1,
+   "max_h": 120,
+   "decay_half_life_h": 24,
+   "release_session": "ny",
+   "why": "US earnings reactions, post-announcement drift over days"
+  },
+  "equiti_copy": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "fear_greed": {
+   "min_h": 24,
+   "max_h": 336,
+   "decay_half_life_h": 72,
+   "why": "daily sentiment index"
+  },
+  "ff_calendar_vintage": {
+   "min_h": 0.25,
+   "max_h": 72,
+   "decay_half_life_h": 6,
+   "why": "scheduled macro releases: minutes-to-days surprise response"
+  },
+  "followme_cn": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "forexfactory": {
+   "min_h": 0.25,
+   "max_h": 72,
+   "decay_half_life_h": 6,
+   "why": "scheduled macro releases"
+  },
+  "fxblue": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "google_trends": {
+   "min_h": 24,
+   "max_h": 720,
+   "decay_half_life_h": 168,
+   "why": "weekly attention series"
+  },
+  "hfm_pamm": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "instaforex_copy": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "investing": {
+   "min_h": 0.25,
+   "max_h": 72,
+   "decay_half_life_h": 6,
+   "why": "scheduled macro releases"
+  },
+  "korea": {
+   "min_h": 1,
+   "max_h": 168,
+   "decay_half_life_h": 24,
+   "release_session": "asia",
+   "why": "Korean releases land in the Asian session"
+  },
+  "litefinance": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "microstructure": {
+   "min_h": 0.05,
+   "max_h": 8,
+   "decay_half_life_h": 1,
+   "why": "order-flow/quote states fade within the session"
+  },
+  "minfx_jp": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "mql5": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "mql5_signals": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "mql5_survivors": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "myfxbook_outlook": {
+   "min_h": 1,
+   "max_h": 72,
+   "decay_half_life_h": 12,
+   "why": "retail positioning snapshot"
+  },
+  "mylivefx_br": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "octa_masters": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "plumbing": {
+   "min_h": 24,
+   "max_h": 720,
+   "decay_half_life_h": 168,
+   "why": "funding/plumbing states move over weeks"
+  },
+  "propfirm_boards": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "quantconnect": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "readitrades_africa": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "regional_survivors": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "roboforex_copyfx": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "seasonality": {
+   "min_h": 24,
+   "max_h": 720,
+   "decay_half_life_h": 336,
+   "why": "calendar effects span days to weeks"
+  },
+  "sec_edgar": {
+   "min_h": 1,
+   "max_h": 240,
+   "decay_half_life_h": 48,
+   "release_session": "ny",
+   "why": "US filings, read after the New York open"
+  },
+  "share4you": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "shipping": {
+   "min_h": 24,
+   "max_h": 720,
+   "decay_half_life_h": 168,
+   "why": "freight/shipping states move over weeks"
+  },
+  "trading_latam": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "tradingview_scripts": {
+   "kind": "strategy",
+   "why": "a trader/strategy record: the horizon is the strategy's own, carried in its params"
+  },
+  "weather": {
+   "min_h": 6,
+   "max_h": 336,
+   "decay_half_life_h": 72,
+   "why": "weather states act on energy/softs over days"
+  },
+  "world": {
+   "min_h": 0.25,
+   "max_h": 168,
+   "decay_half_life_h": 24,
+   "why": "world-sensor news states: hours to a week"
+  }
+ }
+}
