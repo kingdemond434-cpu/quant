@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 768,
+  "NEVER": 769,
   "UNMEASURED": 37
  },
  "scope": {
-  "attested": 986,
+  "attested": 987,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -288,7 +288,17 @@
     ]
    },
    {
-    "at": "2026-10-07T02:02:49+00:00",
+    "at": "2026-10-07T01:02:10+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:committee_ensembles"
+    ]
+   },
+   {
+    "at": "2026-10-07T06:35:25+00:00",
     "host": "vm",
     "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
     "on_attesting_host": false,
@@ -15129,8 +15139,8 @@
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/COMMITTEES.json",
-   "artifact_declared": "desks/mt5/reports/COMMITTEES.json",
+   "artifact": "desks/mt5/reports/COMMITTEE_IDEA_MINER.json",
+   "artifact_declared": "desks/mt5/reports/COMMITTEE_IDEA_MINER.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -25341,6 +25351,34 @@
    "measured_at": "2026-10-06T15:32:32+00:00"
   },
   {
+   "organ": "leg:committee_ensembles",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/committee_ensembles.py"
+   ],
+   "clock": "hourly_cycle:committee_ensembles",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/COMMITTEES.json",
+   "artifact_declared": "desks/mt5/reports/COMMITTEES.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-07T01:02:10+00:00"
+  },
+  {
    "organ": "battery:scripts/check_keys.py",
    "kind": "executable",
    "code": [
@@ -25366,7 +25404,7 @@
    "consumer": "desks/mt5/research/wiring_ceo.py",
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-   "measured_at": "2026-10-07T02:02:49+00:00"
+   "measured_at": "2026-10-07T06:35:25+00:00"
   },
   {
    "organ": "leg:alt_proxies",
@@ -25394,7 +25432,7 @@
    "consumer": "desks/mt5/research/global_research_os.py _load_extra (kr and hk miners.py MINERS",
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-   "measured_at": "2026-10-07T02:02:49+00:00"
+   "measured_at": "2026-10-07T06:35:25+00:00"
   },
   {
    "organ": "leg:credential_coverage",
@@ -25422,7 +25460,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-   "measured_at": "2026-10-07T02:02:49+00:00"
+   "measured_at": "2026-10-07T06:35:25+00:00"
   },
   {
    "organ": "leg:keyed_sources",
@@ -25450,7 +25488,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-   "measured_at": "2026-10-07T02:02:49+00:00"
+   "measured_at": "2026-10-07T06:35:25+00:00"
   }
  ],
  "ratchet": {
