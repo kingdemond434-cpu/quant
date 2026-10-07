@@ -1,0 +1,784 @@
+# Sources built by thread "Asian quant practices gap check", for the "MT5 global mining pipeline v1" roster (sources.yaml).
+# One row per source; fields: id, name, url, region, language, cadence, auth, licence, cursor, pit, uses, consumer, status.
+# Live yield is UNMEASURED until the trading box runs them (the cloud container cannot reach these hosts).
+sources:
+# alpha_capture
+  - id: yahoo_upgrades
+    name: Yahoo Finance upgrade/downgrade history
+    url: https://query2.finance.yahoo.com/v10/finance/quoteSummary/{ticker}?modules=upgradeDowngradeHistory
+    region: US
+    language: en
+    cadence: 60m
+    auth: cookie
+    licence: 'Yahoo terms: personal/non-commercial display of public quote data; a session cookie + crumb
+      (no login) is required; per-host 1.1s spacing'
+    cursor: round-robin over the 103 tickers (35 per pass); dedupe by event_id (ticker|firm|epochGradeDate|toGrade|fromGrade)
+    pit: published_at = epochGradeDate (date precision when it is a UTC midnight); first_seen_at = this
+      pass's clock
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alpha_capture.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: US/en
+    participant_structure:
+    - institutional
+    - broker_specific
+    failure_mode_hypothesis: 'the most arbitraged version of revision drift: it should fail when US attention
+      is saturated (earnings season, mega-cap coverage) and revision-momentum quant books are crowded, not
+      on Asian policy or flow calendars'
+    crowding_prior: high
+  - id: sec_8k_guidance
+    name: SEC EDGAR 8-K full-text search for guidance changes
+    url: https://efts.sec.gov/LATEST/search-index?q=%22raises%20guidance%22&forms=8-K
+    region: US
+    language: en
+    cadence: 360m
+    auth: none
+    licence: US federal public record; SEC fair access (<=10 req/s) with a declared User-Agent from QUANT_EDGAR_UA
+      -- unconfigured means not fetched
+    cursor: dateRange startdt = last pass minus 3 days; dedupe by accession (adsh)
+    pit: published_at = file_date (date precision); first_seen_at = this pass's clock
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alpha_capture.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: US/en
+    participant_structure:
+    - institutional
+    failure_mode_hypothesis: company guidance language is machine-read by every headline vendor within seconds;
+      it should fail whenever news-parsing algos are active and survive only in thinly covered names, on
+      the US disclosure calendar
+    crowding_prior: high
+  - id: eastmoney_reports
+    name: eastmoney research report list (stock and industry)
+    url: https://reportapi.eastmoney.com/report/list
+    region: CN
+    language: zh
+    cadence: 60m
+    auth: none
+    licence: public list API behind data.eastmoney.com/report; no key; list metadata only (the PDFs are
+      not fetched); polite spacing
+    cursor: beginTime = last pass minus 3 days, pages until an empty page (<= 3 per qType); dedupe by infoCode
+    pit: published_at = publishDate in CST (date precision when 00:00:00); first_seen_at = this pass's clock
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alpha_capture.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: CN/zh
+    participant_structure:
+    - retail_heavy
+    - policy_driven
+    - broker_specific
+    failure_mode_hypothesis: A-share sell-side ratings are structurally optimistic and retail-read, so the
+      information is in the rare downgrade and the target move; it should fail around policy shifts (state-fund
+      support, CSRC windows, Golden Week) rather than at US earnings-season crowding
+    crowding_prior: low
+  - id: naver_research
+    name: Naver Finance research (company, industry, economy lists)
+    url: https://finance.naver.com/research/company_list.naver
+    region: KR
+    language: ko
+    cadence: 60m
+    auth: none
+    licence: public research index pages; broker PDFs are not fetched; target and opinion read from the
+      public detail page; polite spacing
+    cursor: list pages until a seen nid (<= 3 pages); detail pages for up to 40 new company nids per pass,
+      the rest queued in collector_state
+    pit: published_at = list date yy.mm.dd (date precision, KST); first_seen_at = this pass's clock; the
+      previous target comes from the same broker's earlier row
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alpha_capture.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: KR/ko
+    participant_structure:
+    - retail_heavy
+    - broker_specific
+    - institutional
+    failure_mode_hypothesis: Korean brokers rate almost everything Buy, so the signal is the target change;
+      it should fail when foreign flow (MSCI rebalances, won funding stress, export data) dominates the
+      tape, not when US attention does
+    crowding_prior: low
+  - id: tdnet_revisions
+    name: TDnet timely disclosures (forecast and dividend revisions) via yanoshin
+    url: https://webapi.yanoshin.jp/webapi/tdnet/list/recent.json?limit=300
+    region: JP
+    language: ja
+    cadence: 60m
+    auth: none
+    licence: public exchange disclosures mirrored by a keyless community API; titles only (PDFs not fetched);
+      polite spacing
+    cursor: the recent list each pass; dedupe by the mirror's id
+    pit: published_at = pubdate JST -> UTC (datetime precision); first_seen_at = this pass's clock
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alpha_capture.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: JP/ja
+    participant_structure:
+    - institutional
+    - policy_driven
+    failure_mode_hypothesis: Japanese guidance is conservative by custom and revised up through the year,
+      so the drift should fail at fiscal-year-end and when the BoJ/yen regime reprices exporters -- a calendar
+      that differs from the US guidance cycle
+    crowding_prior: low
+# nlp_blog_social
+  - id: hatena_bookmark_search_rss
+    name: Hatena Bookmark keyword search (RSS)
+    url: https://b.hatena.ne.jp/search/text?q={kw}&mode=rss
+    region: JP
+    language: ja
+    cadence: hourly
+    auth: none
+    licence: public RSS; Hatena ToS permits feed reading, 6s pacing per foreign_sources
+    cursor: (source, ident) seen-set with first_seen_at
+    pit: first_seen_at = the fetch pass's clock (published_at kept for audit only); day d uses posts first
+      seen by d, available at d+1 00:00 UTC; bot filter (burst accounts, exact and MinHash near-duplicates)
+      runs before any count
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/blog_social_mining.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: JP/ja
+    participant_structure:
+    - retail_heavy
+    failure_mode_hypothesis: JP retail attention peaks around the March tax-year end and NISA flows, not
+      the US calendar, so its overreactions cluster on different dates than an English-news attention index
+    crowding_prior: low
+  - id: hatena_hotentry_economics_rss
+    name: Hatena Bookmark hot entries, economics
+    url: https://b.hatena.ne.jp/hotentry/economics.rss
+    region: JP
+    language: ja
+    cadence: hourly
+    auth: none
+    licence: public category RSS
+    cursor: (source, ident) seen-set with first_seen_at
+    pit: first_seen_at = the fetch pass's clock (published_at kept for audit only); day d uses posts first
+      seen by d, available at d+1 00:00 UTC; bot filter (burst accounts, exact and MinHash near-duplicates)
+      runs before any count
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/blog_social_mining.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: JP/ja
+    participant_structure:
+    - retail_heavy
+    failure_mode_hypothesis: hot-entry ranking is crowd-voted by JP readers, so it lags Tokyo-session moves
+      by hours and fails when a move is US-session led
+    crowding_prior: low
+  - id: ameblo_user_rss
+    name: Ameblo public blog feeds (configured ids)
+    url: https://rssblog.ameba.jp/{id}/rss20.xml
+    region: JP
+    language: ja
+    cadence: hourly
+    auth: none
+    licence: public per-blog RSS; ids listed in desks/mt5/data/blog_social_feeds.json
+    cursor: (source, ident) seen-set with first_seen_at
+    pit: first_seen_at = the fetch pass's clock (published_at kept for audit only); day d uses posts first
+      seen by d, available at d+1 00:00 UTC; bot filter (burst accounts, exact and MinHash near-duplicates)
+      runs before any count
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/blog_social_mining.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: JP/ja
+    participant_structure:
+    - retail_heavy
+    failure_mode_hypothesis: Ameblo's investor bloggers are small-account Nikkei/FX retail, whose loss-driven
+      capitulation posts come after the move, the opposite timing to institutional commentary
+    crowding_prior: low
+  - id: livedoor_user_rss
+    name: livedoor Blog public feeds (configured ids)
+    url: https://blog.livedoor.jp/{id}/index.rdf
+    region: JP
+    language: ja
+    cadence: hourly
+    auth: none
+    licence: public per-blog RDF; ids listed in desks/mt5/data/blog_social_feeds.json
+    cursor: (source, ident) seen-set with first_seen_at
+    pit: first_seen_at = the fetch pass's clock (published_at kept for audit only); day d uses posts first
+      seen by d, available at d+1 00:00 UTC; bot filter (burst accounts, exact and MinHash near-duplicates)
+      runs before any count
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/blog_social_mining.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: JP/ja
+    participant_structure:
+    - retail_heavy
+    failure_mode_hypothesis: livedoor 'matome' blogs aggregate 5ch market threads, so they measure the most
+      leveraged JP retail crowd with a lag of a few hours
+    crowding_prior: low
+  - id: note_search
+    name: note.com keyword search (foreign_sources.note)
+    url: https://note.com/api/v3/searchs?q={kw}
+    region: JP
+    language: ja
+    cadence: hourly
+    auth: none
+    licence: public page; titles and snippets only, no bodies archived
+    cursor: (source, ident) seen-set with first_seen_at
+    pit: first_seen_at = the fetch pass's clock (published_at kept for audit only); day d uses posts first
+      seen by d, available at d+1 00:00 UTC; bot filter (burst accounts, exact and MinHash near-duplicates)
+      runs before any count
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/blog_social_mining.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: JP/ja
+    participant_structure:
+    - retail_heavy
+    failure_mode_hypothesis: note writers are self-selected 'botter'/FX retail who post post-mortems after
+      losses, so their mood lags drawdowns
+    crowding_prior: low
+  - id: dcinside_stock_gallery
+    name: DCInside stock gallery list (neostock)
+    url: https://gall.dcinside.com/board/lists/?id=neostock
+    region: KR
+    language: ko
+    cadence: hourly
+    auth: none
+    licence: public forum list page; titles, nick and timestamp only
+    cursor: (source, ident) seen-set with first_seen_at
+    pit: first_seen_at = the fetch pass's clock (published_at kept for audit only); day d uses posts first
+      seen by d, available at d+1 00:00 UTC; bot filter (burst accounts, exact and MinHash near-duplicates)
+      runs before any count
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/blog_social_mining.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: KR/ko
+    participant_structure:
+    - retail_heavy
+    failure_mode_hypothesis: KR retail is the majority of KOSPI turnover and trades with leveraged ETFs
+      and margin, so its herding peaks on KRX limit days and foreign-selling days, not on US data
+    crowding_prior: low
+  - id: dcinside_search
+    name: DCInside post search (foreign_sources.dcinside)
+    url: https://search.dcinside.com/post/q/{kw}
+    region: KR
+    language: ko
+    cadence: hourly
+    auth: none
+    licence: public page; titles and snippets only, no bodies archived
+    cursor: (source, ident) seen-set with first_seen_at
+    pit: first_seen_at = the fetch pass's clock (published_at kept for audit only); day d uses posts first
+      seen by d, available at d+1 00:00 UTC; bot filter (burst accounts, exact and MinHash near-duplicates)
+      runs before any count
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/blog_social_mining.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: KR/ko
+    participant_structure:
+    - retail_heavy
+    failure_mode_hypothesis: keyword search surfaces KR retail threads across galleries; semis talk tracks
+      Samsung/Hynix retail flows that front-run or lag US semis on KRX hours
+    crowding_prior: low
+  - id: juejin_search
+    name: Juejin search (cn_sources.juejin)
+    url: https://api.juejin.cn/search_api/v1/search?query={kw}
+    region: CN
+    language: zh
+    cadence: hourly
+    auth: none
+    licence: public page; titles and snippets only, no bodies archived
+    cursor: (source, ident) seen-set with first_seen_at
+    pit: first_seen_at = the fetch pass's clock (published_at kept for audit only); day d uses posts first
+      seen by d, available at d+1 00:00 UTC; bot filter (burst accounts, exact and MinHash near-duplicates)
+      runs before any count
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/blog_social_mining.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: CN/zh
+    participant_structure:
+    - retail_heavy
+    - policy_driven
+    failure_mode_hypothesis: A-share retail trades under T+1 and daily limits, so a mood extreme cannot
+      be unwound same-day and reverses on a different clock than a T+0 market
+    crowding_prior: low
+  - id: sogou_weixin_search
+    name: Sogou WeChat article search (cn_sources.sogou_weixin)
+    url: https://weixin.sogou.com/weixin?type=2&query={kw}
+    region: CN
+    language: zh
+    cadence: hourly
+    auth: none
+    licence: public page; titles and snippets only, no bodies archived
+    cursor: (source, ident) seen-set with first_seen_at
+    pit: first_seen_at = the fetch pass's clock (published_at kept for audit only); day d uses posts first
+      seen by d, available at d+1 00:00 UTC; bot filter (burst accounts, exact and MinHash near-duplicates)
+      runs before any count
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/blog_social_mining.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: CN/zh
+    participant_structure:
+    - retail_heavy
+    - policy_driven
+    failure_mode_hypothesis: WeChat public accounts amplify policy signals (State Council, national team)
+      that retail then chases, so attention spikes follow policy days, not earnings
+    crowding_prior: low
+  - id: weibo_mobile_search
+    name: Weibo mobile search JSON
+    url: https://m.weibo.cn/api/container/getIndex?containerid=100103type%3D1%26q%3D{kw}
+    region: CN
+    language: zh
+    cadence: hourly
+    auth: none
+    licence: public mobile endpoint; often requires login -- WALLED is the expected posture
+    cursor: (source, ident) seen-set with first_seen_at
+    pit: first_seen_at = the fetch pass's clock (published_at kept for audit only); day d uses posts first
+      seen by d, available at d+1 00:00 UTC; bot filter (burst accounts, exact and MinHash near-duplicates)
+      runs before any count
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/blog_social_mining.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: CN/zh
+    participant_structure:
+    - retail_heavy
+    - policy_driven
+    failure_mode_hypothesis: Weibo attention is censored and policy-steered, so negative mood is under-expressed
+      and reversals follow policy support announcements
+    crowding_prior: low
+  - id: xueqiu_status_search
+    name: Xueqiu status search JSON
+    url: https://xueqiu.com/query/v1/search/status.json?q={kw}
+    region: CN
+    language: zh
+    cadence: hourly
+    auth: cookie behind WAF
+    licence: public site behind a WAF; cn_sources recorded it unsolved 2026-08-01
+    cursor: (source, ident) seen-set with first_seen_at
+    pit: first_seen_at = the fetch pass's clock (published_at kept for audit only); day d uses posts first
+      seen by d, available at d+1 00:00 UTC; bot filter (burst accounts, exact and MinHash near-duplicates)
+      runs before any count
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/blog_social_mining.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: CN/zh
+    participant_structure:
+    - retail_heavy
+    failure_mode_hypothesis: Xueqiu is the CN/HK retail stock-picker crowd; its mood extremes on HK names
+      reverse with southbound-flow days
+    crowding_prior: low
+  - id: nlp_news_event_stream_intake
+    name: news_event_stream intake (moat store, news captures, 12 news seats)
+    url: desks/mt5/data/intelligence/<seat>/
+    region: GLOBAL
+    language: en/ja/zh/ko
+    cadence: hourly
+    auth: none (already collected in git)
+    licence: desk-internal store of public headlines/titles already collected by other organs
+    cursor: whole store per pass; news items keyed by id in first_seen.json (never moved)
+    pit: 'news: first_seen_at stamped once; CB press: published + 1 day; BIS: rYYMMDD URL date + 1 day;
+      a day''s panel row is available at d+1 00:00 UTC'
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/nlp_event_factors.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: GLOBAL/multi
+    participant_structure:
+    - institutional
+    - policy_driven
+    failure_mode_hypothesis: English wire headlines are read by every news algo within seconds, so policy-tone
+      drift from them should fail when headline-trading books are crowded; the JA/ZH/KO seat items fail
+      on their own policy calendars instead
+    crowding_prior: high
+  - id: nlp_cb_press_rss
+    name: central-bank press RSS titles
+    url: desks/mt5/data/intelligence/central_banks/cb_documents.jsonl
+    region: G10
+    language: en
+    cadence: hourly
+    auth: none (already collected in git)
+    licence: desk-internal store of public headlines/titles already collected by other organs
+    cursor: whole store per pass; news items keyed by id in first_seen.json (never moved)
+    pit: 'news: first_seen_at stamped once; CB press: published + 1 day; BIS: rYYMMDD URL date + 1 day;
+      a day''s panel row is available at d+1 00:00 UTC'
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/nlp_event_factors.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: G10/en
+    participant_structure:
+    - policy_driven
+    - institutional
+    failure_mode_hypothesis: press-release tone is priced at the release by rates desks; any drift survives
+      only where the release is in a language or on a calendar (BoJ, PBOC, BoK) the standard US-centred
+      tone literature does not cover
+    crowding_prior: high
+  - id: nlp_bis_review_titles
+    name: BIS central bankers' speeches (titles)
+    url: https://www.bis.org/review/
+    region: GLOBAL
+    language: en
+    cadence: daily
+    auth: none (already collected in git)
+    licence: desk-internal store of public headlines/titles already collected by other organs
+    cursor: whole store per pass; news items keyed by id in first_seen.json (never moved)
+    pit: 'news: first_seen_at stamped once; CB press: published + 1 day; BIS: rYYMMDD URL date + 1 day;
+      a day''s panel row is available at d+1 00:00 UTC'
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/nlp_event_factors.py -> nlp_social_cells.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: GLOBAL/en
+    participant_structure:
+    - policy_driven
+    failure_mode_hypothesis: BIS posts reviews weeks after the speech, so the title is stale news and should
+      fail as a shock; it can only work as a slow regime-tone drift, and fails at policy turns
+    crowding_prior: high
+  - id: nlp_llm_event_tier
+    name: LLM second reader for event/policy factors
+    url: libs/ops/llm_seat.py (desk seat, free tier by default)
+    region: GLOBAL
+    language: en/ja/zh/ko
+    cadence: daily (<= --llm-max docs per pass)
+    auth: API key on the box only (data/secrets/**, never printed)
+    licence: seat provider's API terms; titles only are sent
+    cursor: llm_cache.jsonl keyed by doc_hash; a title is never paid for twice
+    pit: inherits the tagged document's available time; published as tier=llm beside the lexicon
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: libs/research/event_factors_llm.py via desks/mt5/research/nlp_event_factors.py
+    status: UNMEASURED_LIVE_YIELD
+    source_culture: GLOBAL/multi
+    participant_structure:
+    - institutional
+    - policy_driven
+    failure_mode_hypothesis: a model trained on Western financial text reads Asian policy idiom through
+      a US lens, so it should disagree with the JA/ZH/KO lexicon exactly where the local reading matters
+    crowding_prior: high
+
+  # alt_proxies
+  - id: kr_exports_early
+    name: Korea Customs Service 1-10 / 1-20 day exports
+    url: https://www.customs.go.kr/kcs/na/ntt/selectNttList.do
+    region: KR
+    language: ko
+    cadence: 10-daily
+    auth: none
+    licence: Korea Customs Service public press releases (KOGL public-sector open licence, attribution);
+      no login, no key
+    cursor: vintage store keyed series|period (append-only)
+    pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+      = vault fetch instant
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alt_proxies.py
+    status: UNMEASURED_LIVE_YIELD
+    mechanism: Korea's customs office prints exports for the first 10 and 20 days of the month, weeks before
+      any other country's monthly trade figure; semiconductor exports are the global chip cycle read at
+      the dock
+    payer: slow repricers of Asian trade and chip-cycle risk who wait for the monthly MOTIE/customs totals
+      and the chipmakers' own guidance
+    constraint: institutional FX and equity books rebalance on month-end official data and earnings calendars,
+      not on a partial-month Korean press release
+    source_culture: KR/ko
+    participant_structure:
+    - institutional
+    - physical_flow
+    failure_mode_hypothesis: fails when working-day and holiday shifts (Chuseok, Lunar New Year) distort
+      a partial month, which does not coincide with US data-surprise regimes
+    crowding_prior: medium
+  - id: us_tsa_throughput
+    name: US TSA checkpoint travel numbers
+    url: https://www.tsa.gov/travel/passenger-volumes
+    region: US
+    language: en
+    cadence: daily
+    auth: none
+    licence: US federal government work (public domain)
+    cursor: vintage store keyed series|period (append-only)
+    pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+      = vault fetch instant
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alt_proxies.py
+    status: UNMEASURED_LIVE_YIELD
+    mechanism: daily airport screenings are a same-week count of discretionary travel spending, published
+      the next morning, weeks before airline or card data
+    payer: travel-exposed equity and jet-fuel holders who price on quarterly reports
+    constraint: sell-side travel estimates move on earnings calendars, not daily counts
+    source_culture: US/en
+    participant_structure:
+    - retail_heavy
+    - physical_flow
+    failure_mode_hypothesis: fails around holiday-date misalignment (Thanksgiving, Easter shifting against
+      the 364-day comparison) and weather groundings
+    crowding_prior: high
+  - id: us_census_marts_ex_autos
+    name: US Census advance retail sales, ex-autos cuts
+    url: https://api.census.gov/data/timeseries/eits/marts
+    region: US
+    language: en
+    cadence: monthly
+    auth: none
+    licence: US Census public API (public domain; keyless below the daily query limit)
+    cursor: vintage store keyed series|period (append-only)
+    pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+      = vault fetch instant
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alt_proxies.py
+    status: UNMEASURED_LIVE_YIELD
+    mechanism: the receipts-based advance retail survey's ex-autos-and-gas cut is the consumption input
+      to GDP; its month-on-month change against its own run-rate reprices the Fed path
+    payer: rates and USD holders positioned on the prior consumption run-rate
+    constraint: policy-path positioning adjusts only at data releases
+    source_culture: US/en
+    participant_structure:
+    - institutional
+    - policy_driven
+    failure_mode_hypothesis: fails when the headline and control group disagree and when revisions to the
+      prior month dominate the new print
+    crowding_prior: high
+  - id: jp_jnto_arrivals
+    name: JNTO monthly visitor arrivals (estimate)
+    url: https://www.jnto.go.jp/news/press/
+    region: JP
+    language: ja
+    cadence: monthly
+    auth: none
+    licence: JNTO public press releases (free to cite with attribution)
+    cursor: vintage store keyed series|period (append-only)
+    pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+      = vault fetch instant
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alt_proxies.py
+    status: UNMEASURED_LIVE_YIELD
+    mechanism: 'inbound visitors convert foreign currency into yen at the till: tourism receipts are a services-export
+      flow the goods trade balance does not show'
+    payer: yen shorts funding carry who ignore services-account flows
+    constraint: carry books are sized on rate differentials, not tourism receipts
+    source_culture: JP/ja
+    participant_structure:
+    - physical_flow
+    - retail_heavy
+    failure_mode_hypothesis: fails when policy (visa rules, China group-tour bans) moves arrivals for reasons
+      the FX market already priced
+    crowding_prior: low
+  - id: jp_tokyo_cpi
+    name: Tokyo ku-area CPI early print (e-Stat API)
+    url: https://api.e-stat.go.jp/rest/3.0/app/json/getStatsData
+    region: JP
+    language: ja
+    cadence: monthly
+    auth: free_key:ESTAT_APP_ID
+    licence: e-Stat API terms (free application ID; attribution to the Statistics Bureau)
+    cursor: vintage store keyed series|period (append-only)
+    pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+      = vault fetch instant
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alt_proxies.py
+    status: BLOCKED_ON_KEY:ESTAT_APP_ID
+    mechanism: Tokyo's ex-fresh-food CPI prints three weeks before the national figure and leads BoJ normalisation
+      pricing
+    payer: JGB and yen positions leaning on a slow BoJ
+    constraint: BoJ-path positioning only reprices at data and meeting dates
+    source_culture: JP/ja
+    participant_structure:
+    - policy_driven
+    - institutional
+    failure_mode_hypothesis: fails when energy-subsidy and education-fee policy moves the print mechanically,
+      a Japan-specific calendar
+    crowding_prior: medium
+  - id: cn_firms_industrial
+    name: NASA FIRMS thermal detections over Chinese heavy industry
+    url: https://firms.modaps.eosdis.nasa.gov/api/area/csv/<key>/{product}/{bbox}/{days}/{day}
+    region: CN
+    language: en
+    cadence: daily
+    auth: free_key:FIRMS_MAP_KEY
+    licence: NASA open data (free MAP_KEY; no restriction on use; cite FIRMS)
+    cursor: firms_backfill_to (10 days/cluster/pass, archive product)
+    pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+      = vault fetch instant
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alt_proxies.py
+    status: BLOCKED_ON_KEY:FIRMS_MAP_KEY
+    mechanism: VIIRS thermal detections inside declared steel, coke and smelter footprints are blast-furnace
+      and coke-oven activity, observed daily from orbit before any NBS output print
+    payer: iron-ore, copper and AUD holders who wait for monthly Chinese activity data
+    constraint: China's official industrial data arrive monthly and three weeks late
+    source_culture: CN/zh
+    participant_structure:
+    - physical_flow
+    - policy_driven
+    failure_mode_hypothesis: fails under output curbs ordered for air-quality events and winter heating
+      season, and under persistent cloud cover
+    crowding_prior: low
+  - id: imf_portwatch_ports
+    name: IMF PortWatch daily port calls
+    url: https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Ports_Data/FeatureServer/0/query
+    region: GLOBAL
+    language: en
+    cadence: daily
+    auth: none
+    licence: IMF PortWatch open data (free, attribution required)
+    cursor: resultOffset paging; 800-day window
+    pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+      = vault fetch instant
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alt_proxies.py
+    status: UNMEASURED_LIVE_YIELD
+    mechanism: AIS-counted port calls are physical trade volume by port, weekly and public, ahead of customs
+      values
+    payer: commodity-FX and metals holders pricing monthly trade and PMI releases
+    constraint: monthly customs data and PMIs lag the ships by weeks
+    source_culture: GLOBAL/en
+    participant_structure:
+    - physical_flow
+    failure_mode_hypothesis: fails when AIS coverage gaps or port-calling pattern changes (larger ships,
+      fewer calls) move counts without volume
+    crowding_prior: low
+  - id: imf_portwatch_chokepoints
+    name: IMF PortWatch daily chokepoint transits
+    url: https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query
+    region: GLOBAL
+    language: en
+    cadence: daily
+    auth: none
+    licence: IMF PortWatch open data (free, attribution required)
+    cursor: resultOffset paging; 800-day window
+    pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+      = vault fetch instant
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alt_proxies.py
+    status: UNMEASURED_LIVE_YIELD
+    mechanism: fewer transits through oil chokepoints is supply friction; the tanker count moves before
+      any inventory report
+    payer: short-dated crude holders pricing weekly inventories
+    constraint: EIA and OPEC data are weekly/monthly, the ships are daily
+    source_culture: GLOBAL/en
+    participant_structure:
+    - physical_flow
+    failure_mode_hypothesis: fails when rerouting is already priced by freight markets before the transit
+      counts publish
+    crowding_prior: low
+  - id: in_gold_imports
+    name: India monthly gold and silver imports (PIB trade release)
+    url: https://pib.gov.in/PressReleasePage.aspx
+    region: IN
+    language: en
+    cadence: monthly
+    auth: none
+    licence: Press Information Bureau releases (Government of India, public)
+    cursor: vintage store keyed series|period (append-only)
+    pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+      = vault fetch instant
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alt_proxies.py
+    status: UNMEASURED_LIVE_YIELD
+    mechanism: India imports nearly all its gold; the monthly import bill is physical jewellery and investment
+      demand at a price, reported by the government
+    payer: London/NY paper-gold positioning that ignores physical Asian offtake
+    constraint: import duty changes and festival calendars bind Indian demand, not the COMEX
+    source_culture: IN/en
+    participant_structure:
+    - physical_flow
+    - tax_driven
+    - retail_heavy
+    failure_mode_hypothesis: fails around import-duty changes and wedding/festival seasons, which move Indian
+      demand off the Western cycle
+    crowding_prior: low
+  - id: cn_sge_premium
+    name: Shanghai gold premium (read from fetch_sge_premium)
+    url: file:data/lake/sge_premium.parquet
+    region: CN
+    language: zh
+    cadence: daily
+    auth: none
+    licence: read from the desk's own recorded SGE series (fetch_sge_premium provenance)
+    cursor: vintage store keyed series|period (append-only)
+    pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+      = vault fetch instant
+    uses:
+    - direct_cells
+    - indirect_cells
+    - allocation_intel
+    consumer: desks/mt5/research/alt_proxies.py
+    status: UNMEASURED_LIVE_YIELD
+    mechanism: licensed import quotas stop the SGE price arbitraging to London; a widening premium is Chinese
+      physical demand the Western tape has not seen
+    payer: Western gold holders pricing on real yields and the dollar only
+    constraint: PBoC import licences cap how fast the premium can close
+    source_culture: CN/zh
+    participant_structure:
+    - physical_flow
+    - policy_driven
+    - settlement_constrained
+    failure_mode_hypothesis: fails when PBoC quota decisions, not demand, move the premium -- a policy clock
+      unrelated to the Fed
+    crowding_prior: low
