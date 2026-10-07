@@ -184,8 +184,9 @@ def test_protection_is_by_role_so_japan_and_every_region_are_covered() -> None:
 
 def _auction(shift: dict, attack: dict, monkeypatch: pytest.MonkeyPatch) -> dict:
     monkeypatch.setattr(research_auction, "leg_departments", lambda: ({}, AUCTION_DEPTS))
-    hours = {d: 1.0 + i for i, d in enumerate(AUCTION_DEPTS)}
-    yields = {d: 3 * (len(AUCTION_DEPTS) - i) for i, d in enumerate(AUCTION_DEPTS)}
+    # unequal but inside the clip, so a rise or a fall is visible in the cleared factor
+    hours = {d: 1.0 + 0.05 * i for i, d in enumerate(AUCTION_DEPTS)}
+    yields = {d: 20 + (i % 3) for i, d in enumerate(AUCTION_DEPTS)}
     return research_auction.build(
         now=NOW, bounty={}, replenish={}, hours=hours, yields=yields,
         departments=AUCTION_DEPTS, bottleneck={"compute_shift": shift}, attack=attack)
@@ -225,7 +226,9 @@ def test_one_nan_cell_never_blanks_the_funnel(tmp_path: Path,
     # a measurement that raises anyway is that stage's UNMEASURED; the other five stand
     monkeypatch.setattr(ff, "measure_tested",
                         lambda *a, **k: (_ for _ in ()).throw(ValueError("boom")))
-    doc2 = _build(tmp_path, acquired=_acquired(5, 4), conn=conn)
+    second = tmp_path / "second"
+    second.mkdir()
+    doc2 = _build(second, acquired=_acquired(5, 4), conn=conn)
     t = doc2["stages"]["tested_hypotheses"]
     assert t["measured"] is False and "ValueError: boom" in t["reason"]
     assert all(doc2["stages"][s]["measured"] for s in ff.STAGES if s != "tested_hypotheses")
