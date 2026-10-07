@@ -576,7 +576,7 @@ NOT_SOURCED_HERE = {
     # names, and research/empty_cluster_breadth enumerates (symbol x family x params), measures
     # every cell's firing against the gauntlet's floor and charges it.
     **dict.fromkeys(("implied_vol_risk_premium", "implied_vol_shock_fade",
-                     "implied_vol_term_inversion", "positioning_crowding_unwind",
+                     "positioning_crowding_unwind",
                      "positioning_hedging_pressure", "positioning_flow_momentum",
                      "entry_alpha_limit_pullback", "entry_alpha_spread_gate",
                      "entry_alpha_open_offset", "cb_tone_speech_reaction",

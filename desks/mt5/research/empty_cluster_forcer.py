@@ -81,9 +81,10 @@ MISSING_ARTIFACT = {
                       "news_reaction_unscheduled_shock): the reaction to a headline no calendar "
                       "scheduled, distinct from event_reaction's scheduled release."),
     "options_implied": ("desks/mt5/mt5desk/families_empty_clusters.py (implied_vol_risk_premium, "
-                        "implied_vol_shock_fade, implied_vol_term_inversion). Fusion quotes no "
+                        "implied_vol_shock_fade; the term-structure question is PR #234's "
+                        "implied_vol_state). Fusion quotes no "
                         "options, so the implied state is read from the CBOE indices (VIX, OVX, "
-                        "GVZ, EVZ, VIX3M: free, historical, scripts/fetch_free_observables.py) "
+                        "GVZ, EVZ: free, historical, scripts/fetch_free_observables.py) "
                         "and traded on the MT5 underlying -- the cluster is reachable by proxy, "
                         "not by venue."),
 }

@@ -24,8 +24,9 @@ classified by `libs.research.alpha_clusters.classify_family`):
 
 So none of the six was "attacked and nothing survived" in the sense the gates would mean: the
 SEALED judge never saw a signal from any of them. The remedy that does not touch the sealed file
-is `mt5desk/families_empty_clusters.py` -- fifteen families that load their own input from what
-the cell names -- and this organ, which mints them.
+is `mt5desk/families_empty_clusters.py` -- fourteen families that load their own input from
+what the cell names (implied_vol_term_inversion was dropped 2026-10-07 for PR #234's
+implied_vol_state) -- and this organ, which mints them.
 
 WHAT A PASS DOES, in order:
   0. Refreshes the free observables (`scripts/fetch_free_observables.py`: CBOE implied indices,
@@ -201,7 +202,7 @@ def plan() -> tuple[list[tuple[str, str, dict[str, Any]]], dict[str, list[str]]]
         for g in _grid(fam):
             cells.append((sym, fam, {"symbol": sym, **(extra or {}), **g}))
 
-    indices = sorted({v[0] for v in ec.IMPLIED_MAP.values()} | {"vix3m"})
+    indices = sorted({v[0] for v in ec.IMPLIED_MAP.values()})
     for idx in indices:
         if ec.implied_series(idx) is None:
             missing["options_implied"].append(_rel(ec.implied_file(idx)))
@@ -210,8 +211,6 @@ def plan() -> tuple[list[tuple[str, str, dict[str, Any]]], dict[str, list[str]]]
             continue
         add(sym, "implied_vol_risk_premium")
         add(sym, "implied_vol_shock_fade")
-        if idx == "vix":
-            add(sym, "implied_vol_term_inversion")
 
     cot_syms = sorted({p.stem.rpartition("_")[0] for p in UNIVERSE_DIR.glob("*_H1.parquet")})
     have: set[str] = set()

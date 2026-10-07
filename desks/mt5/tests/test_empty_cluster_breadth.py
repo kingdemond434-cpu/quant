@@ -123,13 +123,12 @@ def _params(fam: str, sym: str) -> dict:
     return p
 
 
-#: Families with a synthetic input in `world`. The term-structure and consensus families need a
-#: second index / a consensus store and are pinned to REFUSE without them below.
+#: Families with a synthetic input in `world`. The consensus family needs a consensus store and
+#: is pinned to REFUSE without it below.
 #: `entry_alpha_limit_pullback` waits on the declared limit order type (PR #222) and is pinned
 #: to REFUSE until the engine has one (`test_limit_pullback_waits_for_the_limit_engine`).
 WAITING = set() if ec.limit_engine_ready() else {"entry_alpha_limit_pullback"}
-FIRING = sorted(set(ec.EMPTY_CLUSTER_FAMILIES) - {"implied_vol_term_inversion",
-                                                  "event_surprise_consensus"} - WAITING)
+FIRING = sorted(set(ec.EMPTY_CLUSTER_FAMILIES) - {"event_surprise_consensus"} - WAITING)
 ENTRY_ALPHA = sorted(f for f in ec.EMPTY_CLUSTER_FAMILIES if f.startswith("entry_alpha"))
 
 
@@ -150,7 +149,6 @@ def test_symbol_is_required_so_a_bare_cell_fails_loudly(family):
 
 def test_refuses_without_its_input(world):
     d = world["frames"]["AUDJPY"]
-    assert ec.family_implied_vol_term_inversion(d, symbol="AUDJPY") == []    # no VIX3M
     assert ec.family_event_surprise_consensus(d, symbol="AUDJPY") == []      # no store
     assert ec.family_implied_vol_risk_premium(d, symbol="NOPE12") == []       # no mapping
     assert ec.family_positioning_flow_momentum(d, symbol="EURGBP") == []      # no eur/gbp file

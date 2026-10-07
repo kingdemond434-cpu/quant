@@ -261,7 +261,6 @@ FAMILY_CLUSTER: dict[str, str] = {
     # 2026-09-30), declared EXACTLY. Each names its payer in that module's docstring.
     "implied_vol_risk_premium": "options_implied",
     "implied_vol_shock_fade": "options_implied",
-    "implied_vol_term_inversion": "options_implied",
     "positioning_crowding_unwind": "positioning_flow",
     "positioning_hedging_pressure": "positioning_flow",
     "positioning_flow_momentum": "positioning_flow",

@@ -27,19 +27,25 @@ does not carry it fails to build (a named failure), it never silently returns []
 
 THE FAMILIES, BY CLUSTER, WITH THE PAYER EACH ONE NAMES (priors written before any data was read):
 
-  options_implied   (CBOE implied-vol indices: VIX, and OVX/GVZ/EVZ/VIX3M when fetched)
+  options_implied   (CBOE implied-vol indices: VIX, and OVX/GVZ/EVZ when fetched)
     implied_vol_risk_premium    Implied minus the instrument's own realised volatility, z-scored
-        on its own trailing history. A rich premium is what option sellers are paid to warehouse
+        on its own trailing history (mean and dispersion of the trailing `z_days`, both lagged a
+        day). The z-SCORED variant of the VRP question: PR #234's `implied_vol_state` asks it on
+        `vrp` / `vrp_pct_1y`, a PERCENTILE of the premium, fires once per episode onset and takes
+        its direction from the cell; this one holds while the z-score is beyond `z_thr`, one
+        position at a time, with its side from `IMPLIED_MAP`'s risk orientation. A rich premium is what option sellers are paid to warehouse
         crash risk; the underlying's risk-on drift is that premium's other face (Bollerslev,
         Tauchen & Zhou 2009). `harvest` holds the risk-on side while it is rich; `stress` holds
         the risk-off side while realised exceeds implied. Payer: the insurance buyer.
     implied_vol_shock_fade      A one-day jump in the implied index against its own trailing
         dispersion. Dealers short gamma hedge INTO the move and over-shoot; the underlying's
         risk-on side recovers as the hedges come off (`fade`), or keeps falling while they are
-        still being put on (`follow`). Payer: the short-gamma dealer.
-    implied_vol_term_inversion  The front implied index above the back (VIX > VIX3M): hedging
-        demand is concentrated at the front. `unwind` trades risk-on on the day the curve
-        returns to contango. Refuses without the back-month series.
+        still being put on (`follow`). Its statistic -- the ONE-day log change in the index over
+        its own trailing dispersion -- is not one PR #234 publishes (iv_chg_1d is unscaled,
+        iv_chg_5d_z is five-day). Payer: the short-gamma dealer.
+    (implied_vol_term_inversion was DROPPED 2026-10-07: VIX > VIX3M onset / exit is PR #234's
+        `implied_vol_state` on `term_inverted`, whose source carries an `available_time` and the
+        broker-offset hold. One owner per question, so its trials are not charged twice.)
 
   positioning_flow  (CFTC COT, desks/mt5/data/cot/<contract>.parquet, lagged to its release)
     positioning_crowding_unwind Speculative net at a multi-year extreme AND price already moving
@@ -144,7 +150,6 @@ ET_TO_BROKER_H = 7
 TARGETS: dict[str, str] = {
     "implied_vol_risk_premium": "options_implied",
     "implied_vol_shock_fade": "options_implied",
-    "implied_vol_term_inversion": "options_implied",
     "positioning_crowding_unwind": "positioning_flow",
     "positioning_hedging_pressure": "positioning_flow",
     "positioning_flow_momentum": "positioning_flow",
@@ -161,9 +166,8 @@ TARGETS: dict[str, str] = {
 
 #: What each family reads beyond the cell's own bars -- FAMILY_INPUTS' text and source.
 INPUTS: dict[str, tuple[str, str]] = {
-    **dict.fromkeys(("implied_vol_risk_premium", "implied_vol_shock_fade",
-                     "implied_vol_term_inversion"),
-                    ("the CBOE implied-vol index mapped to the symbol (VIX/OVX/GVZ/EVZ/VIX3M), "
+    **dict.fromkeys(("implied_vol_risk_premium", "implied_vol_shock_fade"),
+                    ("the CBOE implied-vol index mapped to the symbol (VIX/OVX/GVZ/EVZ), "
                      "daily closes lagged to the next broker day",
                      "desks/mt5/data/observables/cboe_<index>_history.json")),
     **dict.fromkeys(("positioning_crowding_unwind", "positioning_hedging_pressure",
@@ -321,7 +325,13 @@ def family_implied_vol_risk_premium(
     rv_days: int = 20, z_days: int = 252, hold_d: int = 5, decision_hour: int = 10,
     atr_n: int = 20, stop_atr: float = 2.5, rr: float = 1.5,
 ) -> list[Signal]:
-    """`harvest`: risk-on side while VRP z >= z_thr. `stress`: risk-off side while VRP z <= -z_thr."""
+    """`harvest`: risk-on side while VRP z >= z_thr. `stress`: risk-off side while VRP z <= -z_thr.
+
+    The z-SCORED VRP variant. PR #234's `implied_vol_state` owns implied-vol STATE and asks the
+    VRP question on `vrp` / `vrp_pct_1y` -- a percentile of the premium against its own year,
+    one signal per episode onset, direction from the cell. This one standardises the premium by
+    its trailing mean and dispersion (both lagged a day), holds while it stays beyond `z_thr`
+    (one position at a time), and takes its side from `IMPLIED_MAP`'s risk orientation."""
     spec = IMPLIED_MAP.get(str(symbol))
     if spec is None or mode not in ("harvest", "stress") or float(z_thr) <= 0:
         return []
@@ -381,39 +391,6 @@ def family_implied_vol_shock_fade(
     for p, s in _one_at_a_time([(int(pos[k]), side) for k in fire], hold):
         sig = _signal(d, p, s, atr, stop_atr=stop_atr, rr=rr, ttl_bars=hold,
                       tag=f"implied_vol_shock_fade:{spec[0]}:{mode}")
-        if sig is not None:
-            out.append(sig)
-    return out
-
-
-def family_implied_vol_term_inversion(
-    df: pd.DataFrame, *, symbol: str, front: str = "vix", back: str = "vix3m",
-    mode: str = "unwind", hold_d: int = 5, decision_hour: int = 10,
-    atr_n: int = 20, stop_atr: float = 2.5, rr: float = 1.5,
-) -> list[Signal]:
-    """`unwind`: risk-on on the first day the curve is back in contango after an inversion.
-    `stress`: risk-off on the first inverted day. Refuses without the back-month series."""
-    spec = IMPLIED_MAP.get(str(symbol))
-    if spec is None or spec[0] != "vix" or mode not in ("unwind", "stress"):
-        return []
-    fs, bs = implied_series(front), implied_series(back)
-    if fs is None or bs is None:
-        return []
-    d, pos = _decision_frame(df, decision_hour)
-    if pos.size < 30:
-        return []
-    st = _stamps(d)[pos]
-    ratio = _asof(st, fs) / _asof(st, bs)
-    inv = ratio > 1.0
-    prev = np.r_[False, inv[:-1]]
-    fire = (inv & ~prev) if mode == "stress" else (~inv & prev & np.isfinite(ratio))
-    side = -spec[1] if mode == "stress" else spec[1]
-    hold = int(hold_d) * bars_per_day(d)
-    atr = _atr(d, int(atr_n)).to_numpy()
-    out: list[Signal] = []
-    for p, s in _one_at_a_time([(int(pos[k]), side) for k in np.flatnonzero(fire)], hold):
-        sig = _signal(d, p, s, atr, stop_atr=stop_atr, rr=rr, ttl_bars=hold,
-                      tag=f"implied_vol_term_inversion:{mode}")
         if sig is not None:
             out.append(sig)
     return out
@@ -1136,7 +1113,6 @@ def family_lead_lag_session_handoff(
 EMPTY_CLUSTER_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
     "implied_vol_risk_premium": family_implied_vol_risk_premium,
     "implied_vol_shock_fade": family_implied_vol_shock_fade,
-    "implied_vol_term_inversion": family_implied_vol_term_inversion,
     "positioning_crowding_unwind": family_positioning_crowding_unwind,
     "positioning_hedging_pressure": family_positioning_hedging_pressure,
     "positioning_flow_momentum": family_positioning_flow_momentum,
@@ -1160,8 +1136,7 @@ EMPTY_CLUSTER_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
 #: read an hour-wide event bar, a session's opening stamp-hour or an H1 driver panel, so they stay
 #: pinned to H1 with that reason (families_orthogonal.FAMILY_TIMEFRAMES).
 ALL_CHART_FAMILIES: frozenset[str] = frozenset({
-    "implied_vol_risk_premium", "implied_vol_shock_fade", "implied_vol_term_inversion",
-    "positioning_crowding_unwind", "positioning_hedging_pressure", "positioning_flow_momentum",
+    "implied_vol_risk_premium", "implied_vol_shock_fade", "positioning_crowding_unwind", "positioning_hedging_pressure", "positioning_flow_momentum",
     "event_surprise_consensus"})
 #: Bar-count parameters that mean a WALL-CLOCK span (rescaled from their H1 defaults).
 WALL_CLOCK: dict[str, tuple[str, ...]] = {"event_surprise_consensus": ("hold_bars",)}
@@ -1174,7 +1149,6 @@ PARAM_GRID: dict[str, dict[str, list]] = {
                                  "hold_d": [1, 5]},
     "implied_vol_shock_fade": {"mode": ["fade", "follow"], "z_thr": [2.0, 3.0],
                                "hold_d": [1, 3]},
-    "implied_vol_term_inversion": {"mode": ["unwind", "stress"], "hold_d": [3, 10]},
     "positioning_crowding_unwind": {"extreme_q": [0.8, 0.9], "turn_d": [10, 20],
                                     "hold_d": [5, 15]},
     "positioning_hedging_pressure": {"extreme_q": [0.8, 0.9], "hold_d": [5, 15]},

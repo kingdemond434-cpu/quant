@@ -1065,7 +1065,6 @@ CONSTRUCTION_CLASS: dict[str, str] = {
     # than to UNCLASSIFIED (five of the fifteen had no census vocabulary at all).
     "implied_vol_risk_premium": "volatility_risk_premium",
     "implied_vol_shock_fade": "volatility_risk_premium",
-    "implied_vol_term_inversion": "volatility_risk_premium",
     "positioning_crowding_unwind": "positioning_crowding_unwind",
     "positioning_hedging_pressure": "producer_hedging_flow",
     "positioning_flow_momentum": "informed_order_flow",
