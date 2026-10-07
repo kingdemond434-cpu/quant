@@ -9,19 +9,23 @@ THE CLOCK. One row per broker trading day d of XAUUSD, available at A_d = d+1 01
 law's earliest instant for a daily close). Every input enters at the first A_d at or after the
 instant it became knowable:
   broker closes            close of day d at A_d (declared lag, CONVENTIONS)
-  FRED daily market series `market_state.knowable` (H.15 / next-day 09:00 ET), so at A_d the
-                           desk holds day d-1's DFII10 / T10YIE / T5YIE, never day d's
-  CPI / PCE monthly prints ALFRED FIRST PRINTS at the agency's scheduled release instant when the
-                           lake holds them (calendar basis); otherwise FRED's REVISED series at a
-                           DECLARED conservative lag (CPI 45 days, PCE 62 days after the
-                           reference month's first day, 13:30 UTC) -- named in the report,
-                           because a revised value is a look-ahead the first-print path avoids
+  Treasury daily yields    THE OWNER'S OWN FEED (`libs.data.owner_feeds`, Treasury's daily real
+                           and par curves; T10YIE/T5YIE computed from them): the earlier of the
+                           instant the desk first held the point and next-day 09:00 ET, so at A_d
+                           the desk holds day d-1's DFII10 / T10YIE / T5YIE, never day d's
+  CPI monthly prints       BLS's own CPI-U (CUSR0000SA0, the series FRED republished as CPIAUCSL)
+                           at the earlier of first-held and a DECLARED conservative lag (45 days
+                           after the reference month's first day, 13:30 UTC; the 2025 shutdown
+                           releases overridden) -- revised history, named in the report
+  FRED / ALFRED            NOT A FITTED INPUT (coordinator ruling on FRED prohibition (j),
+                           2026-10-07). ALFRED's first prints are reported as STATE only
+                           (`alfred_state`); PCE (BEA) is held: no BEA key, BEA terms unquoted
 HYPERPARAMETERS (noise variances, loadings, standardisation) are fitted by MLE on a TRAINING
 window (the first TRAIN_DAYS rows) and frozen; every contract is measured on rows after it.
 
 THE STATES.
   ws_latent_inflation  local-level latent inflation pressure pi_t observed through standardised
-                       CPI m/m, PCE m/m (annualised) and breakevens T5YIE/T10YIE (each with its
+                       CPI m/m (annualised) and breakevens T5YIE/T10YIE (each with its
                        own noise variance, missing on days without a new print). Published: the
                        state, its sd, the state's update z (its own surprise) and the CPI print's
                        innovation z on release days.
@@ -60,6 +64,7 @@ import math
 import sys
 from collections.abc import Mapping, Sequence
 from datetime import UTC, date, datetime, timedelta
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -92,9 +97,12 @@ POST_TRAIN_DAYS = 260
 GATE_Z = 1.0
 RESID_EWMA = 20
 CPI_MIN_N = 60
-#: Declared lags for REVISED monthly FRED series (reference-month first day -> knowable).
-MONTHLY_LAG_D = {"CPIAUCSL": 45, "PCEPI": 62}
-DAILY_FRED = ("T5YIE", "T10YIE", "DFII10")
+#: The fitted daily inputs, from Treasury's own curves (`libs.data.owner_feeds`).
+DAILY_OWNER = ("T5YIE", "T10YIE", "DFII10")
+#: The fitted monthly print: BLS CPI-U, seasonally adjusted.
+CPI_SERIES = "CUSR0000SA0"
+#: Held owners: named in the report, never fitted.
+HELD_INPUTS = {"pce": "bea:PCEPI -- no BEA key is held and BEA's terms are unquoted"}
 CLOSE_LAG = timedelta(days=1, hours=1)
 
 
@@ -193,43 +201,65 @@ def load_closes(symbols: Sequence[str], now: datetime) -> dict[str, list[tuple[s
     return out
 
 
-def fred_daily(series: Mapping[str, list[tuple[str, float]]], sid: str
-               ) -> list[tuple[datetime, float]]:
-    from macro.market_state import knowable
-    return [(knowable(d, sid), v) for d, v in series.get(sid, [])]
+def owner_daily(series: Mapping[str, Sequence[Sequence[Any]]], sid: str
+                ) -> list[tuple[datetime, float]]:
+    """[(knowable, value)] for one owner series: rows (date, value[, first_seen])."""
+    from libs.data import owner_feeds
+    return owner_feeds.observations(series, sid)
 
 
-def inflation_prints(now: datetime, series: Mapping[str, list[tuple[str, float]]],
-                     alfred: Path | None = None) -> dict[str, Any]:
-    """{"cpi"/"pce": {"rows": [(knowable, annualised m/m %)], "basis": ...}}."""
-    from macro import release_vintages as rv
-    out: dict[str, Any] = {}
-    for name, title, sid in (("cpi", "USD CPI m/m", "CPIAUCSL"),
-                             ("pce", "USD Core PCE Price Index m/m", "PCEPI")):
-        spec = rv.BY_TITLE[title]
-        df = rv.load_alfred(spec.series, alfred or rv.ALFRED)
-        rows: list[tuple[datetime, float]] = []
-        if df is not None:
-            for p in rv.release_vintage(df, spec):
-                at = rv.scheduled_utc(spec, date.fromisoformat(p["vintage"]))
-                if at <= now:
-                    rows.append((at, 12.0 * float(p["actual"])))
-            if rows:
-                out[name] = {"rows": rows, "basis": "calendar",
-                             "source": f"alfred:{spec.series} first prints"}
-                continue
-        lvl = series.get(sid) or []
-        for (_d0, v0), (d1, v1) in zip(lvl, lvl[1:], strict=False):
-            if v0 > 0:
-                ref = date.fromisoformat(d1[:10])
-                at = datetime(ref.year, ref.month, ref.day, 13, 30, tzinfo=UTC) + timedelta(
-                    days=MONTHLY_LAG_D[sid])
-                if at <= now:
-                    rows.append((at, 1200.0 * (v1 / v0 - 1.0)))
-        if rows:
-            out[name] = {"rows": rows, "basis": "declared_lag",
-                         "source": f"fred:{sid} REVISED, lag {MONTHLY_LAG_D[sid]}d (look-ahead "
-                                   "in revisions; ALFRED first prints preferred)"}
+def load_owner_series() -> dict[str, list[tuple[str, float, str]]]:
+    from libs.data import owner_feeds
+    return owner_feeds.load_archive()
+
+
+def inflation_prints(now: datetime, series: Mapping[str, Sequence[Sequence[Any]]]
+                     ) -> dict[str, Any]:
+    """{"cpi": {"rows": [(knowable, annualised m/m %)], "basis", "source", "source_id"}} from
+    BLS's own CPI-U. A month BLS did not publish is absent (its neighbours give no m/m)."""
+    from libs.data import owner_feeds
+    lvl = sorted(series.get(CPI_SERIES) or [], key=lambda r: str(r[0]))
+    rows: list[tuple[datetime, float]] = []
+    for r0, r1 in pairwise(lvl):
+        d0, d1 = date.fromisoformat(str(r0[0])[:10]), date.fromisoformat(str(r1[0])[:10])
+        if (d1.year * 12 + d1.month) - (d0.year * 12 + d0.month) != 1 or float(r0[1]) <= 0:
+            continue
+        at = max(owner_feeds.available(CPI_SERIES, r0), owner_feeds.available(CPI_SERIES, r1))
+        if at <= now:
+            rows.append((at, 1200.0 * (float(r1[1]) / float(r0[1]) - 1.0)))
+    if not rows:
+        return {}
+    return {"cpi": {"rows": rows, "basis": "declared_lag",
+                    "source": f"bls:{CPI_SERIES} (owner feed; REVISED history at a declared "
+                              f"{owner_feeds.BLS_LAG_D}d lag, first-held instant when earlier)",
+                    "source_id": f"bls:{CPI_SERIES}"}}
+
+
+def alfred_state(now: datetime, alfred: Path | None = None) -> dict[str, Any]:
+    """ALFRED's CPI/PCE FIRST PRINTS as STATE ONLY: counted and reported, never fitted (FRED is
+    held from fitted models under the ruling on prohibition (j)). First prints have no owner
+    equivalent; the owner CPI captured going forward with its own release instant (the vintage
+    store, `libs.research.vintage`) is what will carry that information into a fit."""
+    try:
+        from macro import release_vintages as rv
+    except Exception as exc:                             # pragma: no cover - import context
+        return {"status": UNMEASURED, "why": type(exc).__name__}
+    out: dict[str, Any] = {"role": "state only -- never a fitted input (ruling (j))"}
+    for name, title in (("cpi", "USD CPI m/m"), ("pce", "USD Core PCE Price Index m/m")):
+        try:
+            spec = rv.BY_TITLE[title]
+            df = rv.load_alfred(spec.series, alfred or rv.ALFRED)
+            got = [] if df is None else [
+                p for p in rv.release_vintage(df, spec)
+                if rv.scheduled_utc(spec, date.fromisoformat(p["vintage"])) <= now]
+        except Exception as exc:
+            out[name] = {"status": UNMEASURED, "why": type(exc).__name__}
+            continue
+        out[name] = ({"status": UNMEASURED, "why": "no ALFRED first prints in the lake"}
+                     if not got else {"status": "MEASURED", "n": len(got),
+                                      "last_vintage": got[-1]["vintage"],
+                                      "last_actual": got[-1]["actual"],
+                                      "source_id": f"alfred:{spec.series}"})
     return out
 
 
@@ -402,7 +432,7 @@ def cpi_contract(infl: Mapping[str, Any], start: int, min_n: int = CPI_MIN_N) ->
         col = infl["Y"][:, j]
         days = np.flatnonzero(np.isfinite(col))
         ys, ms, bs = [], [], []
-        for a, b in zip(days, days[1:], strict=False):
+        for a, b in pairwise(days):
             if b < start:
                 continue
             ys.append(col[b])
@@ -419,17 +449,19 @@ def build(now: datetime, *, closes: Mapping[str, list[tuple[str, float]]] | None
           series: Mapping[str, list[tuple[str, float]]] | None = None,
           prints: Mapping[str, Any] | None = None, train: int = TRAIN_DAYS,
           cpi_min_n: int = CPI_MIN_N) -> dict[str, Any]:
-    from macro.market_state import load_series
     syms = list(USD_PAIRS) + list(METALS)
     cl = dict(load_closes(syms, now) if closes is None else closes)
-    fred = dict(load_series() if series is None else series)
-    pr = dict(inflation_prints(now, fred) if prints is None else prints)
+    owner = dict(load_owner_series() if series is None else series)
+    pr = dict(inflation_prints(now, owner) if prints is None else prints)
     rep: dict[str, Any] = {"engine": ENGINE, "at": now.isoformat(timespec="seconds"),
                            "authority": "NONE", "train_days": train,
-                           "inputs": {"closes": sorted(cl), "fred": sorted(
-                               s for s in DAILY_FRED if fred.get(s)),
+                           "inputs": {"closes": sorted(cl), "owner": sorted(
+                               s for s in DAILY_OWNER if owner.get(s)),
                                "prints": {k: {"n": len(v["rows"]), "basis": v["basis"],
-                                              "source": v["source"]} for k, v in pr.items()}}}
+                                              "source": v["source"]} for k, v in pr.items()},
+                               "held": dict(HELD_INPUTS),
+                               "alfred_state_only": (alfred_state(now) if prints is None
+                                                     else {"status": "not read (injected)"})}}
     gold = cl.get("XAUUSD") or []
     dates = [date.fromisoformat(d[:10]) for d, _ in gold if avail(date.fromisoformat(d[:10]))
              <= now]
@@ -491,8 +523,8 @@ def build(now: datetime, *, closes: Mapping[str, list[tuple[str, float]]] | None
                          | {"label": "USD:pair_resid"})
 
     # ---- gold fair value
-    dfii = asof(fred_daily(fred, "DFII10"), clock)
-    be10 = asof(fred_daily(fred, "T10YIE"), clock)
+    dfii = asof(owner_daily(owner, "DFII10"), clock)
+    be10 = asof(owner_daily(owner, "T10YIE"), clock)
     cols = [np.ones(n), dfii]
     names = ["const", "DFII10"]
     if usd["status"] == "MEASURED":
@@ -532,8 +564,8 @@ def build(now: datetime, *, closes: Mapping[str, list[tuple[str, float]]] | None
     # ---- inflation
     obs = {k: on_clock(v["rows"], clock) for k, v in pr.items()}
     for sid in ("T5YIE", "T10YIE"):
-        if fred.get(sid):
-            obs[sid] = on_clock(fred_daily(fred, sid), clock)
+        if owner.get(sid):
+            obs[sid] = on_clock(owner_daily(owner, sid), clock)
     infl = inflation_state(obs, train)
     rep["inflation"] = {k: v for k, v in infl.items() if not isinstance(v, np.ndarray)}
     contracts.append(cpi_contract(infl, train, cpi_min_n))
@@ -547,6 +579,15 @@ def build(now: datetime, *, closes: Mapping[str, list[tuple[str, float]]] | None
             if cpi_j is not None:
                 row["cpi_print_z"] = _r(infl["innov_z"][i, cpi_j])
             series_out[S_INFL].append(row)
+    # WHERE EACH PUBLISHED STATE'S NUMBERS CAME FROM, for the terms gate: every component of
+    # the id must pass, so a fit that used an input with no admitted owner cannot emit a cell
+    gold_src = ["treasury:DFII10"] + (["treasury:T10YIE"] if "T10YIE" in names else []) + (
+        ["mt5:bars"] if "dollar_factor" in names else [])
+    infl_src = [str(pr[k].get("source_id") or f"bls:{CPI_SERIES}") if k in pr
+                else f"treasury:{k}" for k in (infl.get("inputs") or [])]
+    rep["data_sources"] = {S_GOLD: "+".join(gold_src),
+                           S_INFL: "+".join(dict.fromkeys(infl_src)) or "treasury:T10YIE",
+                           S_USD: "mt5:bars"}
     rep.update({"status": "MEASURED", "series": series_out, "contracts": contracts,
                 "rows": {k: len(v) for k, v in series_out.items()}})
     return rep
@@ -578,7 +619,8 @@ def ledger_observations(rep: Mapping[str, Any], received_at: datetime) -> list[A
                 event_time=last["event_time"], knowable_at=last["available_time"],
                 knowable_basis="declared_lag", received_at=received_at,
                 parse_complete_at=received_at, surprise_z=last.get(zcol),
-                licence="derived: broker bars, FRED public data",
+                licence="derived: broker bars; US Treasury and BLS statistics (public domain, "
+                        "17 U.S.C. 105, read from the owners' own feeds)",
                 attributes={"filter": "kalman filtered, hyperparameters frozen on training"}))
     return out
 
@@ -587,16 +629,17 @@ def publish_all(rep: Mapping[str, Any], received_at: datetime) -> dict[str, Any]
     out: dict[str, Any] = {}
     for sid, rows in (rep.get("series") or {}).items():
         out[sid] = se.write_lake_series(sid, rows)
+    src = dict(rep.get("data_sources") or {})
     cells = [
         se.emit_conditioner_cells(
             S_GOLD, ["gold_residual_z"], METALS, sides=(-1,), generator=ENGINE,
-            data_source="fred:DFII10",
+            data_source=src.get(S_GOLD) or "treasury:DFII10",
             mechanism=("gold above its filtered macro fair value (real yield, dollar factor, "
                        "breakevens) is rich and mean-reverts toward it"),
             falsifier="gated residual-reversion gain <= 0 or p >= 0.05 (ROMAN-0841)"),
         se.emit_conditioner_cells(
             S_INFL, ["infl_state", "infl_innovation_z"], METALS, sides=(1, -1),
-            generator=ENGINE, data_source="fred:T10YIE",
+            generator=ENGINE, data_source=src.get(S_INFL) or "treasury:T10YIE",
             mechanism="latent inflation pressure and its surprise reprice the metals' hedge",
             falsifier="the latent state does not forecast CPI (ROMAN-0839)"),
         se.emit_conditioner_cells(

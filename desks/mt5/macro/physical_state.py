@@ -3,8 +3,10 @@ for the sensor ledger and as SURPRISES for the event-reaction gauntlet.
 
 WHY (principal 2026-10-05, "PHYSICAL COMMODITY STATES"): the desk trades USOIL and UKOIL and read
 no physical inventory at all. The EIA's Weekly Petroleum Status Report is public, weekly and
-point-in-time by its release, and FRED carries its headline stocks. China and Asia physical
-states are the Asia thread's; this is the US balance.
+point-in-time by its release, and the EIA's own API (api.eia.gov v2) serves its headline stocks:
+read from the OWNER (`libs.data.owner_feeds`, archive `data/owner_macro.json`), never from FRED,
+which is held from every fitted input under the ruling on prohibition (j), 2026-10-07. China and
+Asia physical states are the Asia thread's; this is the US balance.
 
 WHAT A WEEK CARRIES, per series (crude ex SPR, SPR, gasoline, distillate; refinery utilisation as
 a level):
@@ -17,7 +19,7 @@ a level):
 A licensed analyst consensus for the weekly print is not free; it is UNMEASURED and the
 seasonal expectation is written under its own release id so the two can never be mixed.
 
-THE CLOCK (audit #211 item 1). FRED dates a week by its END (Friday); the EIA publishes it the
+THE CLOCK (audit #211 item 1). The EIA dates a week by its END (Friday); the EIA publishes it the
 following Wednesday at 10:30 ET. A federal holiday on the Monday, Tuesday or Wednesday of the
 release week moves the report to Thursday 11:00 ET; a Christmas-week Wednesday holiday has moved it
 to Friday, stamped Friday 12:00 ET. Holidays are computed by rule (`us_federal_holidays`), and a
@@ -42,14 +44,15 @@ from zoneinfo import ZoneInfo
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
-ARCHIVE = ROOT / "data" / "fred_market_state.json"
+#: The owners' own archive (EIA rows written by scripts/collect_owner_macro.py).
+ARCHIVE = ROOT / "data" / "owner_macro.json"
 REPORT = DESK / "reports" / "PHYSICAL_STATE.json"
 UNMEASURED = "UNMEASURED"
 ET = ZoneInfo("America/New_York")
 SEASON_YEARS = 5
 OIL = ["USOIL", "UKOIL"]
 
-#: FRED id -> (release name, unit, instruments, is_stock)
+#: EIA series id -> (release name, unit, instruments, is_stock)
 SERIES: dict[str, tuple[str, str, list[str], bool]] = {
     "WCESTUS1": ("EIA crude oil stocks ex SPR", "kbbl", OIL, True),
     "WCSSTUS1": ("EIA SPR crude stocks", "kbbl", OIL, True),
@@ -63,9 +66,10 @@ SERIES: dict[str, tuple[str, str, list[str], bool]] = {
 #: rule below does not describe. Empty until the EIA announces one.
 RELEASE_OVERRIDES: dict[str, str] = {}
 #: Stamped on every store row. Rows written under an earlier clock (the +1 day stamp, the ISO-week
-#: norm) are superseded: `event_surprise.store_pairs` reads only this clock's inventory rows, and
-#: every week is regenerated from FRED on each pass, so nothing is lost.
-CLOCK = "eia_wpsr_calendar_v3"
+#: norm, and v3's FRED-sourced rows, held from the gauntlet since the ruling on (j)) are
+#: superseded: `event_surprise.store_pairs` reads only this clock's inventory rows, and every week
+#: is regenerated from the owner's archive on each pass, so nothing is lost.
+CLOCK = "eia_wpsr_calendar_v4"
 
 
 def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
@@ -221,7 +225,8 @@ def build(*, now: datetime | None = None,
         rows = [r for r in ser.get(sid, []) if knowable(r[0]) <= when]
         if len(rows) < 2:
             report["series"][sid] = {"name": name, "status": UNMEASURED,
-                                     "why": "absent from fred_market_state.json as of now"}
+                                     "why": "absent from owner_macro.json as of now (the EIA "
+                                            "feed has not run, has no key, or failed)"}
             continue
         wk = weeks(rows)
         last = wk[-1]
@@ -247,7 +252,7 @@ def build(*, now: datetime | None = None,
                 "consensus": round(w["seasonal_expected"] / 1000.0, 4),
                 "provides": "both", "kind": "inventory_surprise", "instruments": instruments,
                 "expectation_kind": f"seasonal_{SEASON_YEARS}y", "unit": "mbbl",
-                "source_id": f"fred:{sid}", "consensus_median": UNMEASURED,
+                "source_id": f"eia:{sid}", "consensus_median": UNMEASURED,
                 "clock": CLOCK, "clock_why": release_at(w["week_end"])[1]})
     measured = [s for s in report["series"].values() if s.get("status") == "MEASURED"]
     report["status"] = "present" if measured else UNMEASURED
@@ -274,7 +279,7 @@ def observations(report: Mapping[str, Any], received_at: datetime) -> list[Any]:
             continue
         exp = row.get("seasonal_expected")
         out.append(sc.make(
-            sensor_id="physical:eia_wpsr", source_id=f"fred:{sid}", dataset_id="eia_wpsr",
+            sensor_id="physical:eia_wpsr", source_id=f"eia:{sid}", dataset_id="eia_wpsr",
             metric=row["name"], entity="US", geography="US", asset_domain="energy",
             sensor_class="physical_commodity", kind="state", value=row["level"],
             unit=row["unit"], event_time=row["week_end"], scheduled_time=row["knowable_at"],
@@ -285,7 +290,7 @@ def observations(report: Mapping[str, Any], received_at: datetime) -> list[Any]:
             delta=row["change"], seasonal_expected=exp,
             expected_value=exp, surprise_z=row.get("surprise_z"),
             percentile=row.get("level_percentile_5y"),
-            licence="EIA: US government public domain (via FRED)",
+            licence="EIA: US government public domain (17 U.S.C. 105), read from api.eia.gov",
             commercial_rights="public domain", attributes={"surprise": row.get("surprise"),
                                                            "level_vs_norm": row.get(
                                                                "level_vs_norm")}))

@@ -3452,6 +3452,10 @@ def time_joins() -> dict:
 #: (VIX and the 10-year in the evening, the dollar index with a lag), so six hours keeps the
 #: macro state at most a print behind without asking the API for the same file 24 times.
 FRED_REFRESH_S = 6 * 3600
+#: The owners' own feeds (`scripts/collect_owner_macro.py`, ruling on FRED prohibition (j)) are
+#: refreshed when older than this: Treasury posts the curve once each evening, BLS and EIA on
+#: their release days, so three hours keeps a fitted input at most one pass behind the owner.
+OWNER_REFRESH_S = 3 * 3600
 
 
 def fred_macro() -> dict:
@@ -3475,6 +3479,16 @@ def fred_macro() -> dict:
     else:
         out = _producer("fred_macro", "scripts/collect_fred_macro.py")
         out["age_h_before"] = (round(age / 3600.0, 2) if age != float("inf") else None)
+    # THE FITTED INPUTS FROM THEIR OWNERS (ruling on FRED prohibition (j), 2026-10-07): FRED is
+    # held from every fitted model, so the latent states, the curve state, the inventory
+    # surprises and the macro-region rate miners read `data/owner_macro.json` (Treasury, BLS,
+    # EIA), written here before the engines below run. FRED above stays display/cross-check.
+    own = REPO / "data" / "owner_macro.json"
+    own_age = time.time() - own.stat().st_mtime if own.exists() else float("inf")
+    if own_age < OWNER_REFRESH_S:
+        out["owner_macro"] = {"status": "FRESH", "age_h": round(own_age / 3600.0, 2)}
+    else:
+        out["owner_macro"] = _producer("owner_macro", "scripts/collect_owner_macro.py")
     try:
         if str(BASE) not in sys.path:
             sys.path.insert(0, str(BASE))

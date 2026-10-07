@@ -121,3 +121,31 @@ def test_acquisition_gate_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     broken.fenced_source = lambda sid: (_ for _ in ()).throw(OSError("x"))  # type: ignore
     monkeypatch.setitem(sys.modules, "libs.data.terms_fence", broken)
     assert "fence failed" in str(se.acquisition_gate({"id": "ok", "machine_use_allowed": True}))
+
+
+@pytest.mark.parametrize("sid", ["treasury:DGS10", "treasury:DFII10", "treasury:T10YIE",
+                                 "treasury:par_yield_curve", "bls:CUSR0000SA0",
+                                 "eia:WCESTUS1", "eia:WPULEUS3",
+                                 "treasury:DFII10+treasury:T10YIE+mt5:bars"])
+def test_the_public_domain_owners_are_admitted(sid: str, none: Path) -> None:
+    """Ruling on FRED prohibition (j): the fitted inputs move to the owners' own feeds, admitted
+    on 17 U.S.C. 105, quoted verbatim."""
+    assert th.gauntlet_terms(sid, none) == (True, "")
+
+
+def test_the_owner_basis_is_the_statute_verbatim() -> None:
+    for owner in ("treasury", "bls", "eia"):
+        row = th.TERMS_EVIDENCE[owner]
+        assert row["terms_url"] == "https://www.law.cornell.edu/uscode/text/17/105"
+        assert row["terms_quote"] == ("Copyright protection under this title is not available "
+                                      "for any work of the United States Government")
+        assert "on the box" in row["note"]
+
+
+@pytest.mark.parametrize("sid", ["fred:DGS10", "fred:DFII10", "fred:T10YIE", "fred:CPIAUCSL",
+                                 "fred:WCESTUS1", "alfred:CPIAUCSL", "treasury:", "bls:",
+                                 "bea:PCEPI", "frb:DTWEXBGS", "frb:G19",
+                                 "treasury:DGS10+fred:T10YIE", "treasury:DFII10+bea:PCEPI"])
+def test_fred_and_the_unquoted_owners_stay_held(sid: str, none: Path) -> None:
+    ok, why = th.gauntlet_terms(sid, none)
+    assert ok is False and why.startswith("HELD_TERMS")
