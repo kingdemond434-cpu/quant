@@ -525,7 +525,10 @@ def test_the_stop_doors_are_nine_and_all_behind_the_door() -> None:
     # Fifth prop write (2026-10-01, PR #132): `e8_gold._retry_failed_legs` re-sends a dropped
     # bracket leg with its stop. It is called from `run` with the venue `run` already wrapped in
     # `order_door.guard_venue`, so it sits behind the same door as the first send.
-    assert (mt5_stop_sends, prop_stop_writes) == (5, 5)
+    # Sixth MT5 send (2026-10-07): `_net_market_intents` sends ONE order for the net of opposing
+    # same-pass market intents, carrying the anchor sleeve's stop. It calls the same module-level
+    # `mt5` the other five do -- `_door.guard(mt5, caller="gateway")` -- so it is behind the door.
+    assert (mt5_stop_sends, prop_stop_writes) == (6, 5)
 
 
 def test_the_in_doubt_memory_expires() -> None:

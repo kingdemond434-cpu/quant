@@ -42,6 +42,7 @@ for p in (str(BASE), str(BASE / "research"), str(ROOT)):
 from libs.portfolio.rails import CALIBRATION, RAILS, calibration  # noqa: E402
 
 LEDGER = BASE / "data" / "missed_growth.jsonl"
+HEAT_CONTRADICTION_RAIL = "heat_ceiling_contradiction"  # decision_core.verify_heat_ceiling bills it
 OUT = BASE / "reports" / "MISSED_GROWTH.json"
 ALLOC = BASE / "reports" / "pf_allocation.json"
 PROOF = BASE / "reports" / "ALLOCATOR_PROOF.json"

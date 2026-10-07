@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 766,
+  "NEVER": 769,
   "UNMEASURED": 37
  },
  "scope": {
-  "attested": 984,
+  "attested": 987,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -305,6 +305,18 @@
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "leg:regional_parity"
+    ]
+   },
+   {
+    "at": "2026-10-07T11:34:31+00:00",
+    "host": "DESKTOP-R5I548F",
+    "machine_id": "f3bf6346-a8dc-4861-8ebe-da82844c7fa3",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:alt_proxies",
+     "leg:drift_monitor",
+     "leg:forecast_scoring"
     ]
    }
   ]
@@ -25402,6 +25414,90 @@
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
    "measured_at": "2026-10-07T06:15:09+00:00"
+  },
+  {
+   "organ": "leg:alt_proxies",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "clock": "hourly_cycle:alt_proxies",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on DESKTOP-R5I548F (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+   "artifact_declared": "desks/mt5/reports/ALT_PROXIES.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "desks/mt5/data/digests/asia_alt_data_digest.json (written by libs/research/asia_",
+   "measured_on": "DESKTOP-R5I548F",
+   "measured_on_machine_id": "f3bf6346-a8dc-4861-8ebe-da82844c7fa3",
+   "measured_at": "2026-10-07T11:34:31+00:00"
+  },
+  {
+   "organ": "leg:drift_monitor",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/drift_monitor.py"
+   ],
+   "clock": "hourly_cycle:drift_monitor",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on DESKTOP-R5I548F (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/DRIFT.json",
+   "artifact_declared": "desks/mt5/reports/DRIFT.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "DESKTOP-R5I548F",
+   "measured_on_machine_id": "f3bf6346-a8dc-4861-8ebe-da82844c7fa3",
+   "measured_at": "2026-10-07T11:34:31+00:00"
+  },
+  {
+   "organ": "leg:forecast_scoring",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/forecast_scoring.py"
+   ],
+   "clock": "hourly_cycle:forecast_scoring",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on DESKTOP-R5I548F (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/FORECAST_SCORES.json",
+   "artifact_declared": "desks/mt5/reports/FORECAST_SCORES.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "DESKTOP-R5I548F",
+   "measured_on_machine_id": "f3bf6346-a8dc-4861-8ebe-da82844c7fa3",
+   "measured_at": "2026-10-07T11:34:31+00:00"
   }
  ],
  "ratchet": {

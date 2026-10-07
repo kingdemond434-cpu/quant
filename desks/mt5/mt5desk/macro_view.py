@@ -91,6 +91,12 @@ def _rank(values: list[float], window: int = RANK_WINDOW) -> float | None:
     return below / (len(tail) - 1) if len(tail) > 1 else None
 
 
+try:
+    from libs.portfolio.macro_state import TERMS_HOLD as _TERMS_HOLD
+except Exception:                                             # the desk package without libs
+    _TERMS_HOLD = frozenset({"VIXCLS"})
+
+
 def _load() -> tuple[dict[str, list[float]], str | None, float | None]:
     """(series -> values, newest print date, age in days). Empty on any failure."""
     try:
@@ -100,7 +106,8 @@ def _load() -> tuple[dict[str, list[float]], str | None, float | None]:
     out: dict[str, list[float]] = {}
     newest = None
     for k, pts in (doc.get("series") or {}).items():
-        if not isinstance(pts, list):
+        # A series on a terms hold is not read at all (see `macro_state.TERMS_HOLD`).
+        if not isinstance(pts, list) or str(k) in _TERMS_HOLD:
             continue
         vals = []
         for p in pts:
@@ -162,7 +169,13 @@ def view() -> dict[str, Any]:
             "why": why, "lean": {k: round(v, 3) for k, v in lean.items()},
             "confidence": conf, "freshness": round(fresh, 3), "strength": round(strength, 3),
             "ranks": {k: round(v, 3) for k, v in ranks.items()},
-            "newest_print": newest, "age_days": age}
+            "newest_print": newest, "age_days": age,
+            # THE RISK LEGS SAY WHY THEY ARE SILENT: with VIXCLS on a terms hold the risk-on,
+            # haven and gold-vs-risk leans carry no risk driver (vix centred at 0), by name.
+            "risk_driver": ("UNMEASURED: VIXCLS on a terms hold; risk-on, haven and gold legs "
+                            "lean on the dollar alone until the permitted replacement lands"
+                            if "VIXCLS" in _TERMS_HOLD else
+                            ("MEASURED" if "VIXCLS" in ranks else "UNMEASURED: no VIXCLS"))}
 
 
 def _legs(symbol: str) -> tuple[str, str] | None:

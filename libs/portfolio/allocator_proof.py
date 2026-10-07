@@ -311,6 +311,55 @@ def held_book_still_wins(scores: Mapping[str, Mapping[str, float]],
             f"held {held:.6f} vs best baseline {best_name} {best:.6f} (needs > {need:.6f})")
 
 
+#: Relative size of each weight perturbation, and how many perturbed books are scored.
+PERTURB_EPS = 0.10
+PERTURB_N = 16
+
+
+def perturbation_stability(ev: Sequence[SleeveEvidence], book: Mapping[str, float], *,
+                           cfg: WorldConfig | None = None, worlds: Worlds | None = None,
+                           eps: float = PERTURB_EPS, n: int = PERTURB_N,
+                           seed: int = 0) -> dict[str, Any]:
+    """How much robust E[log W] the book loses when its weights are jittered (QG26-11, audit #7).
+
+    Each sleeve's heat is multiplied by (1 + eps * z), z ~ N(0,1) clipped to [-2, 2], and the
+    book is rescaled to the same total, so only the COMPOSITION moves. A book whose score falls
+    off a cliff under 10% jitter is sitting on a knife edge of its own estimates -- exactly the
+    estimation-error fragility a robust allocator should not have. REPORTED, never binding: it
+    is evidence for the reader and the challenger contest, not a new gate.
+    """
+    names = [k for k, v in book.items() if float(v) > 0]
+    total = float(sum(float(book[k]) for k in names))
+    if not names or total <= 0:
+        return {"status": "UNMEASURED", "why": "empty book"}
+    base = float(score_book(ev, book, cfg=cfg, worlds=worlds)["robust_score"])
+    rng = np.random.default_rng(seed)
+    deltas: list[float] = []
+    moves: list[float] = []
+    for _ in range(max(1, int(n))):
+        z = np.clip(rng.standard_normal(len(names)), -2.0, 2.0)
+        w = np.array([float(book[k]) for k in names]) * np.clip(1.0 + eps * z, 0.0, None)
+        if w.sum() <= 0:
+            continue
+        w = w * total / w.sum()
+        pert = dict(zip(names, (float(x) for x in w), strict=True))
+        s = float(score_book(ev, pert, cfg=cfg, worlds=worlds)["robust_score"])
+        if math.isfinite(s) and math.isfinite(base):
+            deltas.append(s - base)
+        moves.append(0.5 * float(np.abs(w - np.array([float(book[k]) for k in names])).sum()))
+    if not deltas:
+        return {"status": "UNMEASURED", "why": "no finite perturbed score"}
+    d = np.asarray(deltas)
+    return {"status": "MEASURED", "eps": eps, "n": len(deltas),
+            "base_robust": round(base, 10),
+            "mean_delta": round(float(d.mean()), 10), "worst_delta": round(float(d.min()), 10),
+            "share_better": round(float((d > 0).mean()), 4),
+            "worst_rel_loss": (round(float(-d.min() / abs(base)), 6) if base else None),
+            "mean_turnover": round(float(np.mean(moves)), 6),
+            "why": ("share_better near zero and a small worst_rel_loss: a stable local optimum; "
+                    "a large share_better means the published book is not even locally best")}
+
+
 def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
             incumbent: Mapping[str, float] | None = None, *,
             cfg: WorldConfig | None = None,
@@ -420,8 +469,14 @@ def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
                 "n_worlds": len(idx),
                 "scores": {k: round(float(v["robust_score"]), 8) for k, v in s_scored.items()},
             }
+    try:
+        stability = perturbation_stability(ev, dynamic, cfg=cfg, worlds=worlds)
+    except (ValueError, IndexError, KeyError) as exc:
+        stability = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
     return {"passed": bool(passed), "why": why, "best_baseline": best_name,
             "scores": scored, "total_heat_equalised": total,
+            # QG26-11 / audit #7: does the dynamic book survive 10% weight jitter? Reported only.
+            "perturbation_stability": stability,
             "posterior_certificate": posterior_cert,
             # THE BAND THE VERDICT WAS JUDGED IN: earned above the margin, lost below it.
             "hysteresis": {"holding_global": bool(prev["global"]),

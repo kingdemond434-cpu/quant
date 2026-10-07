@@ -46,6 +46,17 @@ RETIREMENT IS STILL SOMEBODY ELSE'S DECISION. This publishes `hazard_by_sleeve` 
 reports/DRIFT.json. The principal's "allocation changes BEFORE the formal retirement threshold"
 is the ALLOCATOR's move to make on this number; nothing here shrinks, fades or retires anything.
 
+ONE HAZARD PER CAUSE, AND ONE CAUSE IS DECAY (2026-10-06). The nine channels used to average into
+ONE hazard that became each sleeve's decay probability -- so a cost blow-out, a vol regime that
+will revert and a stopped ledger all deepened the same edge-decay draw, while cost was also
+charged through the cost surface and regime through the regime posterior. `hazard` is now the
+MECHANISM hazard alone (with signal expiry, where declared, as a separate event joined by
+union); cost/fill/crowding, feature/factor/relationship drift and staleness ride beside it under
+`causes` with the route each is allowed (`perishability.ROUTE_OF_CAUSE`). The scale is the
+history-calibrated one (`hazard_calibration` on the report), and every pass's hazards are
+APPENDED to data/edge_hazard_history.jsonl, never rewritten, so a recovered sleeve keeps its
+past breaks on its row.
+
 DEGRADES WITH A REASON, NEVER SILENTLY. Off-box (measured 2026-09-04) the canon still names 14
 book instruments but the shadow ledgers hold 14 days of 50 sleeves against the 90 rows structure
 drift needs, so the verdict was WATCH on EURGBP's range forecast (z = -1.06) with structure
@@ -57,6 +68,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import os
 import sys
 import time
 from datetime import UTC, datetime
@@ -84,6 +97,17 @@ CANON = _DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 STATE_ADMISSION = _DESK / "reports" / "STATE_ADMISSION.json"
 EXECUTION_TWIN = _DESK / "reports" / "EXECUTION_TWIN.json"
 CROSS_ASSET = _DESK / "reports" / "CROSS_ASSET_GRAPH.json"
+#: THE HAZARD'S OWN HISTORY, APPEND-ONLY (2026-10-06). One line per pass: every sleeve's decay
+#: hazard and verdict as this pass measured them, funded or not -- an unfunded sleeve's shadow
+#: ledger keeps being read, so its hazard keeps being measured. Nothing here ever rewrites or
+#: drops a line, so a sleeve that broke and recovered carries its past breaks forever
+#: (`past_breaks` on its row); a recovery is a new reading beside the old one, never an erasure.
+HAZARD_HISTORY = _DESK / "data" / "edge_hazard_history.jsonl"
+#: A sleeve whose newest trade is this many days older than the book's newest is a STALE ledger:
+#: its clock stopped (the RETIRED_ORPHAN failure), so its channels describe a sleeve that is no
+#: longer being watched. That is the DATA_FAILURE cause -- an integrity condition, never decay.
+#: 30 days is RECENT_DAYS, the window the structure drift already calls "now".
+STALE_LEDGER_DAYS = 30
 #: The family whose shadow ledgers are named `<sym>_<window>` rather than `<sym>_<fam>_<window>`
 #: (shadow_forward.py:647). Declared here so the canon-to-ledger join is one named exception
 #: rather than a guess repeated at every call site.
@@ -123,7 +147,7 @@ def _n_bars(path: Path) -> int:
     """Row count from the parquet footer, so choosing a fallback set does not load 24 frames."""
     try:
         import pyarrow.parquet as pq
-        return int(pq.read_metadata(path).num_rows)
+        return int(pq.read_metadata(path).num_rows)  # type: ignore[no-untyped-call]
     except Exception:
         d = pc.bars(path.stem.removesuffix("_H1"))
         return 0 if d is None else len(d)
@@ -495,7 +519,10 @@ def crowding(sym: str, twin: dict[str, dict[str, Any]],
 def hazard_by_sleeve(per_symbol: dict[str, dict[str, Any]], structure: dict[str, Any],
                      trades: list[Any], claims: dict[str, float] | None = None,
                      twin: dict[str, dict[str, Any]] | None = None,
-                     shared: list[ph.Pressure] | None = None) -> dict[str, Any]:
+                     shared: list[ph.Pressure] | None = None, *,
+                     scale_days: float = ph.HAZARD_SCALE_DAYS,
+                     expiry: dict[str, tuple[float, float]] | None = None,
+                     past: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     """hazard_i(t) = P(edge breaks next horizon | history), one row per sleeve with a ledger.
 
     Three channels are the BOOK's and shared by every sleeve (state, factor and relationship
@@ -503,6 +530,15 @@ def hazard_by_sleeve(per_symbol: dict[str, dict[str, Any]], structure: dict[str,
     sleeve); the rest are the sleeve's own. Shared channels are still listed per sleeve with
     their n, so a reader never has to hold two tables in their head to know what a hazard stands
     on. Every ledger is injectable so the combination can be tested without a desk tree.
+
+    BY CAUSE SINCE 2026-10-06 (`perishability.hazard_by_cause`). `hazard` is the MECHANISM-decay
+    hazard (union signal expiry where a lifetime is declared) and nothing else; cost, fill and
+    crowding are reported under `causes.execution_cost_decay` for the allocator to charge as
+    COST, feature/factor/relationship drift under `causes.regime_mismatch` as transient, and a
+    stopped ledger under `causes.data_failure`. `scale_days` is the history-calibrated scale
+    (`perishability.calibrate_from_history`), defaulting to the declared prior. `past` is the
+    append-only hazard history, so a sleeve's earlier breaks stay on its row after it recovers.
+    Every sleeve with a shadow ledger is scored, funded or not.
     """
     claims = certified_expectancy() if claims is None else claims
     twin = twin_symbols() if twin is None else twin
@@ -513,22 +549,133 @@ def hazard_by_sleeve(per_symbol: dict[str, dict[str, Any]], structure: dict[str,
     # 52.8% BREAKING -- one fact about the conditioning wearing 23 per-edge costumes.
     shared = [ph.book_scope(p) for p in shared]
     by_sleeve = trades_by_sleeve(trades)
+    last = last_trade_by_sleeve(trades)
+    book_last = max(last.values(), default=None)
+    expiry = expiry or {}
+    past = past or {}
     out: dict[str, Any] = {}
     for sleeve, rs in sorted(by_sleeve.items()):
         sym = symbol_of(sleeve)
         parts = [prediction_decay(sleeve, rs, claims), pnl_decay(rs),
                  shared[0], cost_drift(sym, twin), fill_drift(sym, twin), shared[1],
                  feature_drift(sym, per_symbol), shared[2], crowding(sym, twin, per_symbol)]
-        row = ph.edge_hazard(parts)
-        row.update({"symbol": sym, "n_trades": len(rs)})
+        stale_why = ""
+        if book_last is not None and sleeve in last:
+            lag = (book_last - last[sleeve]).total_seconds() / 86400.0
+            if lag > STALE_LEDGER_DAYS:
+                stale_why = (f"newest trade {lag:.0f} days behind the book's newest (> "
+                             f"{STALE_LEDGER_DAYS}): the clock stopped, so these channels "
+                             "describe a sleeve nobody is watching")
+        row = ph.hazard_by_cause(parts, expiry=expiry.get(sleeve), stale_why=stale_why,
+                                 scale_days=scale_days)
+        prev = past.get(sleeve) or {}
+        row.update({"symbol": sym, "n_trades": len(rs),
+                    "past_breaks": int(prev.get("breaks") or 0),
+                    "last_break_at": prev.get("last_break_at")})
         out[sleeve] = row
     return out
 
 
-def hazard_summary(rows: dict[str, Any]) -> dict[str, Any]:
+def last_trade_by_sleeve(trades: list[Any]) -> dict[str, pd.Timestamp]:
+    """Per sleeve, the UTC time of its newest trade -- what the staleness test reads."""
+    out: dict[str, pd.Timestamp] = {}
+    for t in trades:
+        try:
+            when = pd.Timestamp(t.when)
+            when = when.tz_localize("UTC") if when.tzinfo is None else when.tz_convert("UTC")
+        except (TypeError, ValueError, AttributeError):
+            continue
+        k = str(getattr(t, "sleeve", ""))
+        if k and (k not in out or when > out[k]):
+            out[k] = when
+    return out
+
+
+def measured_mean_pressure(path: Path = REPORT) -> tuple[float | None, int]:
+    """The desk's mean MECHANISM pressure as last measured, for the scale calibration.
+
+    Read from the previous DRIFT report's per-sleeve rows (`mean_pressure`, the mechanism
+    channels' average). Returns (mean, n_rows); (None, 0) when no row carries a measured value,
+    which the calibration reports as UNMEASURED rather than assuming full pressure (re-audit of
+    PR #261: production was silently running at mp=1.0).
+    """
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None, 0
+    rows = (doc.get("hazard_by_sleeve") or {}) if isinstance(doc, dict) else {}
+    vals = []
+    for row in rows.values() if isinstance(rows, dict) else []:
+        v = row.get("mean_pressure") if isinstance(row, dict) else None
+        if isinstance(v, (int, float)) and math.isfinite(float(v)) and 0.0 <= float(v) <= 1.0:
+            vals.append(float(v))
+    return (sum(vals) / len(vals), len(vals)) if vals else (None, 0)
+
+
+def read_hazard_history(path: Path = HAZARD_HISTORY) -> dict[str, dict[str, Any]]:
+    """Per sleeve, how many past passes called it BREAKING and when last. Read-only.
+
+    A torn or unparseable line is skipped, never repaired: this reader must not be the reason a
+    line of history changes.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    try:
+        lines = path.read_text("utf-8").splitlines()
+    except OSError:
+        return out
+    for line in lines:
+        try:
+            doc = json.loads(line)
+        except ValueError:
+            continue
+        at = doc.get("at") if isinstance(doc, dict) else None
+        for name, r in ((doc.get("rows") or {}).items() if isinstance(doc, dict) else []):
+            if isinstance(r, dict) and r.get("verdict") == ph.BREAKING:
+                row = out.setdefault(str(name), {"breaks": 0, "last_break_at": None,
+                                                 "_days": set()})
+                day = str(at or "")[:10]
+                if day not in row["_days"]:
+                    row["_days"].add(day)
+                    row["breaks"] += 1
+                row["last_break_at"] = at
+    for row in out.values():
+        row.pop("_days", None)
+    return out
+
+
+def append_hazard_history(rows: dict[str, Any], calibration: dict[str, Any] | None,
+                          path: Path = HAZARD_HISTORY) -> None:
+    """Append this pass's per-sleeve hazards. APPEND ONLY: opened with "a", never rewritten.
+
+    EVERY RUN IS APPENDED; BREAKS ARE COUNTED PER UTC DAY (2026-10-07). The monitor now also
+    runs hourly. Skipping later runs of a day (the first version) dropped a BREAKING verdict that
+    arrived after that day's first append -- undercounting past breaks and so granting heat.
+    `read_hazard_history` counts a sleeve's BREAKING at most once per UTC day instead, so hourly
+    runs neither inflate the count nor lose a later break.
+    """
+    doc = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+           "scale_days": (calibration or {}).get("scale_days", ph.HAZARD_SCALE_DAYS),
+           "rows": {k: {"hazard": v.get("hazard"), "verdict": v.get("verdict"),
+                        "cost_pressure": ((v.get("causes") or {})
+                                          .get(ph.EXECUTION_COST_DECAY) or {}).get("pressure"),
+                        "regime_pressure": ((v.get("causes") or {})
+                                            .get(ph.REGIME_MISMATCH) or {}).get("pressure"),
+                        "data_failure": ((v.get("causes") or {})
+                                         .get(ph.DATA_FAILURE) or {}).get("flag")}
+                    for k, v in sorted(rows.items())}}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(doc, default=str) + "\n")
+
+
+def hazard_summary(rows: dict[str, Any],
+                   calibration: dict[str, Any] | None = None) -> dict[str, Any]:
     """The compact answer a consumer reads: who is breaking, on how much evidence."""
     scored = {k: v for k, v in rows.items() if v.get("hazard") is not None}
     top = max(scored.items(), key=lambda kv: kv[1]["hazard"], default=None)
+    flagged = {c: sorted(k for k, v in rows.items()
+                         if ((v.get("causes") or {}).get(c) or {}).get("flag"))
+               for c in (ph.DATA_FAILURE,)}
     return {
         "n_sleeves": len(rows), "n_measured": len(scored),
         "n_unmeasured": len(rows) - len(scored),
@@ -540,10 +687,18 @@ def hazard_summary(rows: dict[str, Any]) -> dict[str, Any]:
         "horizon_days": ph.HAZARD_HORIZON_DAYS,
         "channels": list(ph.HAZARD_COMPONENTS),
         "lines": {"at_risk": ph.HAZARD_AT_RISK, "breaking": ph.HAZARD_BREAKING,
-                  "scale_days": ph.HAZARD_SCALE_DAYS, "min_n": ph.HAZARD_MIN_N},
-        "rule": ("hazard_i(t) = 1 - exp(-(mean measured pressure / scale_days) x horizon_days); "
-                 "an unmeasured channel is named, never averaged in as zero. This NAMES the "
-                 "hazard; the allocator shrinks on it and retirement stays a separate decision."),
+                  "scale_days": (calibration or {}).get("scale_days", ph.HAZARD_SCALE_DAYS),
+                  "prior_scale_days": ph.HAZARD_SCALE_DAYS, "min_n": ph.HAZARD_MIN_N,
+                  "mechanism_min_channels": ph.MECHANISM_MIN_CHANNELS},
+        "causes": list(ph.CAUSES), "decay_causes": list(ph.DECAY_CAUSES),
+        "routes": dict(ph.ROUTE_OF_CAUSE),
+        "data_failure": flagged[ph.DATA_FAILURE],
+        "rule": ("hazard_i(t) = 1 - (1 - P_mech)(1 - P_expiry), P_mech = 1 - exp(-(mean measured "
+                 "MECHANISM pressure / scale_days) x horizon_days); cost, regime and data "
+                 "channels are reported under `causes` with their own routes and never enter "
+                 "the hazard; an unmeasured channel is named, never averaged in as zero. This "
+                 "NAMES the hazard; the allocator draws decay on it and retirement stays a "
+                 "separate decision."),
     }
 
 
@@ -579,7 +734,8 @@ def verdict(per_symbol: dict[str, dict[str, Any]], structure: dict[str, Any]) ->
     return STABLE
 
 
-def run(symbols: list[str] | None = None, budget_s: float = 300.0, write: bool = True) -> dict:
+def run(symbols: list[str] | None = None, budget_s: float = 300.0,
+        write: bool = True) -> dict[str, Any]:
     todo, chosen = _symbols(symbols)
     per_symbol: dict[str, dict[str, Any]] = {}
     skipped: dict[str, str] = {}
@@ -606,12 +762,25 @@ def run(symbols: list[str] | None = None, budget_s: float = 300.0, write: bool =
     structure = structure_drift(m, sleeves, why)
     if structure.get("verdict") == UNMEASURED or structure.get("z") is None:
         degraded.append(f"structure drift unmeasured: {structure.get('why') or 'no z'}")
+    # THE SCALE, CALIBRATED AGAINST THE DESK'S OWN RETIREMENTS (2026-10-06). The declared 120 days
+    # is the prior; the history updates it and the block says by how much and on what count.
     try:
-        haz = hazard_by_sleeve(per_symbol, structure, trades)
+        _mp, _mp_n = measured_mean_pressure()
+        calibration = ph.calibrate_from_history(mean_pressure=_mp)
+        calibration["mean_pressure_rows"] = _mp_n
+    except Exception as exc:                    # an unreadable history is the prior, said so
+        calibration = {"status": "UNMEASURED", "scale_days": ph.HAZARD_SCALE_DAYS,
+                       "why": f"calibration failed ({type(exc).__name__}: {exc}); the declared "
+                              f"{ph.HAZARD_SCALE_DAYS:g}d prior is used"}
+        degraded.append(calibration["why"])
+    try:
+        haz = hazard_by_sleeve(per_symbol, structure, trades,
+                               scale_days=float(calibration["scale_days"]),
+                               past=read_hazard_history())
     except Exception as exc:                    # a broken ledger is a reading, not a failed pass
         haz = {}
         degraded.append(f"hazard_by_sleeve failed: {type(exc).__name__}: {exc}")
-    hz_sum = hazard_summary(haz)
+    hz_sum = hazard_summary(haz, calibration)
     if not haz:
         degraded.append("no sleeve carries a realised ledger: hazard_by_sleeve is empty")
     elif not hz_sum["n_measured"]:
@@ -627,6 +796,7 @@ def run(symbols: list[str] | None = None, budget_s: float = 300.0, write: bool =
            "hazard_max": (round(max(sym_hz), 3) if sym_hz else None),
            "per_symbol": per_symbol, "structure": structure,
            "hazard_by_sleeve": haz, "hazard_summary": hz_sum,
+           "hazard_calibration": calibration,
            "what_changed": what_changed(per_symbol, structure),
            "symbols": {**chosen, "n": len(todo)}, "skipped": skipped, "degraded": degraded,
            "lines": {"watch_z": WATCH_Z, "drift_z": DRIFT_Z, "window_bars": WINDOW,
@@ -641,7 +811,15 @@ def run(symbols: list[str] | None = None, budget_s: float = 300.0, write: bool =
                     "pre-retirement shrink.")}
     if write:
         REPORT.parent.mkdir(parents=True, exist_ok=True)
-        REPORT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        # ATOMIC: the allocator and the trigger read this report while it is written.
+        _tmp = REPORT.with_name(f".{REPORT.name}.{os.getpid()}.tmp")
+        _tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        os.replace(_tmp, REPORT)
+        if haz:
+            try:
+                append_hazard_history(haz, calibration)
+            except OSError as exc:              # the report stands; the gap is named
+                degraded.append(f"hazard history not appended: {exc}")
     return doc
 
 
@@ -662,7 +840,8 @@ def main() -> int:
     hs = doc["hazard_summary"]
     print(f"HAZARD  {hs['n_measured']}/{hs['n_sleeves']} sleeve(s) measured over "
           f"{hs['horizon_days']:g}d  breaking={hs['breaking']}  at_risk={hs['at_risk']}")
-    ranked = sorted(((k, v) for k, v in doc["hazard_by_sleeve"].items()
+    print(f"SCALE   {doc['hazard_calibration'].get('why', '')}")
+    ranked =sorted(((k, v) for k, v in doc["hazard_by_sleeve"].items()
                      if v.get("hazard") is not None), key=lambda kv: -kv[1]["hazard"])
     for name, h in ranked[:10]:
         print(f"  {name[:34]:34s} P={h['hazard']:.1%} {h['verdict']:9s} "

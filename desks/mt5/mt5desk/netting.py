@@ -31,8 +31,14 @@ identity is the netting rule:
 
 which is why opposite theoretical positions across sleeves net at the account while the ledger
 keeps each sleeve whole. `route` turns the delta into the ONE order the venue should see; the
-book never sends anything, and today the gateway still sends per sleeve -- so the book measures
-(net target against what per-sleeve orders actually built) before it is ever allowed to route.
+book never sends anything.
+
+ROUTING ONE PASS (2026-10-06). `plan_net` and `net_fill_shares` are the pure half of the
+gateway's `_net_market_intents`: opposing family/scalp ENTRIES on one symbol in one pass become
+one order for the net, and each sleeve is booked its own fill so attribution survives. Armed
+only by `data/NETTING_ENABLED` (principal-gated); without it the gateway sends per sleeve
+exactly as before and this module only measures. Brackets (resting stops) and declared hedges
+(`is_hedge`) are never netted.
 """
 from __future__ import annotations
 
@@ -523,3 +529,105 @@ def book_savings(book: TheoreticalBook, *, window_h: float = 24.0, write: bool =
         REPORT_BOOK.parent.mkdir(parents=True, exist_ok=True)
         REPORT_BOOK.write_text(json.dumps(doc, indent=1), "utf-8")
     return doc
+
+
+# --------------------------------------------------------------------------- routing one pass
+#: Keys on a sleeve row that DECLARE it a hedge. No sleeve on this desk declares one today
+#: (measured 2026-10-07: "hedge" appears in none of data/sleeves.json, sleeve_registry.json,
+#: sleeve_registry_archive.json, live_sleeve_policy.json), so the rule binds nothing yet; it
+#: exists so the first sleeve that IS a hedge is never netted away by a book that cannot tell.
+HEDGE_KEYS: tuple[str, ...] = ("hedge", "hedge_of", "is_hedge")
+
+
+def is_hedge(row: Mapping[str, Any] | None) -> bool:
+    """A sleeve whose order is a DECLARED hedge: `hedge`/`is_hedge` truthy, `hedge_of` naming
+    what it protects, `role == "hedge"`, or "hedge" in its family or selector. A hedge exists to
+    hold exposure AGAINST another position at the venue; crossing it internally against an
+    opposite intent would leave the account unprotected while the book said it was protected,
+    so a hedge is never netted -- it is sent on its own, exactly as today."""
+    if not isinstance(row, Mapping):
+        return False
+    if any(bool(row.get(k)) for k in HEDGE_KEYS):
+        return True
+    if str(row.get("role") or "").lower() == "hedge":
+        return True
+    return any("hedge" in str(row.get(k) or "").lower() for k in ("family", "selector"))
+
+
+def plan_net(legs: Iterable[Mapping[str, Any]], *, lot_step: float = 0.01,
+             lot_min: float = 0.01) -> dict[str, Any] | None:
+    """The ONE order for a symbol's same-pass market intents, or None when nothing nets.
+
+    `legs` are {"sleeve", "side" (+1/-1), "lots" (>0), "dist" (stop distance), "hedge"}. Only
+    OPPOSING non-hedge legs net: same-side intents alone save nothing (summing them would only
+    merge stops that are certified apart), and a hedge is never netted (`is_hedge`). Returns
+    None when there is no opposing pair, so the caller sends per sleeve exactly as before.
+
+    THE NET IS ROUNDED DOWN, never to nearest: the venue must never see more than the sleeves
+    asked for net. Under `lot_min` it is zero -- nothing is sent and the opposing legs cross
+    internally; the rounding remainder is CANCELLED, never carried (a carried remainder is an
+    order the heat cap of a later pass never priced).
+
+    THE ANCHOR is the majority-side leg with the TIGHTEST stop (ties: more lots, then name). The
+    one order carries the anchor's stop and target, so the venue's loss at that stop is
+    net_lots x min(dist) <= SUM(majority lots x own dist) -- never more than the risk the heat
+    cap already charged the majority legs, before the opposing legs reduce it further.
+    """
+    legs = [dict(x) for x in legs]
+    core = [x for x in legs if not x.get("hedge") and float(x.get("lots") or 0.0) > 0.0
+            and int(x.get("side") or 0) in (1, -1)]
+    if not (any(x["side"] > 0 for x in core) and any(x["side"] < 0 for x in core)):
+        return None
+    raw = round(sum(int(x["side"]) * float(x["lots"]) for x in core), 8)
+    side = 1 if raw > 0 else (-1 if raw < 0 else 0)
+    step = float(lot_step) if lot_step and lot_step > 0 else 0.01
+    lots = round(int(abs(raw) / step + 1e-9) * step, 8)
+    why = None
+    if side == 0:
+        why = "opposing intents cancel exactly: nothing to send"
+    elif lots + 1e-12 < float(lot_min):
+        why = (f"net {raw:+.6g} rounds down to {lots} lots, under lot_min {lot_min}: nothing "
+               f"sent, the opposing legs cross internally and the remainder is cancelled")
+        lots = 0.0
+    majority = [x for x in core if side != 0 and int(x["side"]) == side]
+    anchor = None
+    if majority and lots > 0:
+        anchor = sorted(majority, key=lambda x: (float(x.get("dist") or float("inf")),
+                                                 -float(x["lots"]), str(x["sleeve"])))[0]
+    gross = round(sum(float(x["lots"]) for x in core), 8)
+    return {"side": side, "lots": lots if side else 0.0, "raw_net": raw, "gross_lots": gross,
+            "netted_lots": round(gross - lots, 8), "anchor": anchor["sleeve"] if anchor else None,
+            "legs": core, "passthrough": [x for x in legs if x not in core], "why": why}
+
+
+def net_fill_shares(plan: Mapping[str, Any], venue_filled: float) -> dict[str, float]:
+    """Each netted leg's SIGNED fill once the venue filled `venue_filled` lots of the net order.
+
+    The minority side crosses internally in full: every opposing leg is filled at its whole
+    size against the majority. The majority receives that crossed volume plus what the venue
+    filled, pro rata to its lots and never above any leg's own lots. So the shares sum EXACTLY
+    to side x venue_filled -- the book's account position moves by what the venue did and
+    nothing else -- while each sleeve is attributed what it wanted, crossed or sent.
+    """
+    side = int(plan.get("side") or 0)
+    legs = list(plan.get("legs") or [])
+    out: dict[str, float] = {}
+    crossed = 0.0
+    for x in legs:
+        if side == 0 or int(x["side"]) != side:
+            out[str(x["sleeve"])] = round(int(x["side"]) * float(x["lots"]), 8)
+            if side != 0:
+                crossed += float(x["lots"])
+    if side == 0:
+        return out
+    maj = [x for x in legs if int(x["side"]) == side]
+    total = sum(float(x["lots"]) for x in maj)
+    give = min(round(crossed + max(0.0, float(venue_filled)), 8), round(total, 8))
+    left = give
+    for k, x in enumerate(maj):
+        cap = float(x["lots"])
+        share = left if k == len(maj) - 1 else min(cap, round(give * cap / total, 8))
+        share = round(min(share, cap, left), 8)
+        out[str(x["sleeve"])] = round(side * share, 8)
+        left = round(left - share, 8)
+    return out
