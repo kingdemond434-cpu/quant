@@ -446,6 +446,11 @@ def swap_cache_stamp(symbol: str, until: Any = None) -> str:
 
 
 _DAY_NS = 86_400_000_000_000
+#: The staleness the engine's cost side charges by: a knowable row older than this at a rollover
+#: leaves the night UNMEASURED. The lookup itself lives in `families_carry.swap_rows_at`, whose
+#: `PIT_MAX_AGE_H` must equal this (pinned by test_mass_screen_carry_pit); it is restated here
+#: only because this module cannot import that one at load time.
+SWAP_MAX_AGE_H = 96.0
 
 
 def rollover_instants(t0: pd.Timestamp, t1: pd.Timestamp) -> tuple[np.ndarray, np.ndarray]:
