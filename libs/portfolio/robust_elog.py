@@ -787,7 +787,14 @@ def sample_worlds(ev: Sequence[SleeveEvidence], cfg: WorldConfig | None = None) 
     # They are different statements and only the second can make a sleeve unprofitable, which is
     # exactly what it is for. Deterministic, not drawn: it is a measurement, so treating it as
     # noise would let half the worlds pretend it is not there.
-    cost_bias = np.array([max(0.0, float(getattr(e, "cost_bias_r", 0.0))) for e in ev])
+    # A NON-FINITE UNDER-CHARGE IS NOT A FREE FILL (decision_replay finding, 2026-10-07):
+    # `max(0.0, nan)` returned 0.0, so a broken cost measurement priced the sleeve as costless.
+    # Unknown is charged one more modelled cost (|cost_r|) -- missing information is never a
+    # favourable zero.
+    def _bias(e: SleeveEvidence) -> float:
+        v = float(getattr(e, "cost_bias_r", 0.0) or 0.0)
+        return max(0.0, v) if math.isfinite(v) else abs(float(e.cost_r or 0.0))
+    cost_bias = np.array([_bias(e) for e in ev])
     cost_draw = (cost_draw + cost_bias[None, :]) * activity[None, :]
 
     crisis = rng.random(n_worlds) < cfg.crisis_prob
@@ -1262,6 +1269,10 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
         ub = np.array([float(max_per_sleeve.get(k, np.inf)) for k in names])
     else:
         ub = np.full(n, float(max_per_sleeve))
+    # A SLEEVE WITH NO MEASURED HISTORY IS NOT RISKLESS (decision_replay finding, 2026-10-07): its
+    # all-NaN column is zero-filled at portfolio level, which made it look like a flat, riskless
+    # asset that soaked up heat. Fewer than two finite days of its own -> it holds nothing.
+    ub = np.where(np.array([e.own_r.size >= 2 for e in ev]), ub, 0.0)
 
     if warm_start:
         h = np.array([float(warm_start.get(k, 0.0)) for k in names])

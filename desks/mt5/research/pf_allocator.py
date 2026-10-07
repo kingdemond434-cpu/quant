@@ -5088,6 +5088,24 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
 
     _decided = datetime.now(UTC)
     _trace = decision_identity(world_cache, _decided)
+    # ARCH-04/19: FREEZE THIS DECISION'S FULL SOLVER INPUTS under its own decision_id, so it can
+    # be replayed from exactly what it saw and compared with holding (`decision_replay`). The
+    # record is evidence; failing to write it never fails the pass.
+    _frozen: dict[str, Any] = {"status": "SKIPPED"}
+    if worlds is not None and verdict.total_heat > 0:
+        try:
+            from libs.portfolio.decision_replay import freeze as _freeze_decision
+            _fpath = _freeze_decision(
+                CACHE / "decisions", ev=ev, cfg=cfg, worlds=worlds, held_book=prev_book,
+                solve_kwargs={"hard_cap": max(CURVE_SAMPLE_MAX, verdict.total_heat),
+                              "target": verdict.total_heat, "max_per_sleeve": ub or None,
+                              "warm_start": prev_book or None},
+                decision_id=_trace["decision_id"], result=book,
+                meta={"mode": mode, "binding": verdict.binding, "note": book.note})
+            _frozen = {"status": "FROZEN", "path": str(_fpath)}
+        except Exception as exc:
+            _frozen = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+    _trace["frozen_inputs"] = _frozen
     art: dict[str, Any] = {
         "generated_utc": _decided.isoformat(),
         **_trace,

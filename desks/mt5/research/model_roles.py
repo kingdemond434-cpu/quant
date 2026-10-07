@@ -361,7 +361,8 @@ def combine(estimates: Sequence[Estimate], role: Role | str = Role.DIRECTION_MEA
 
     1. ROLE: an estimate whose family does not hold `role`, or that speaks in another role, is
        EXCLUDED with its reason -- it cannot move the pooled quantity at all.
-    2. WEIGHTS: precision, w_i = 1/var_i, normalised to a_i.
+    2. WEIGHTS: precision discounted by shared correlation, w_i = (1/var_i) / sum_j rho_ij,
+       normalised to a_i -- so a copy of a source splits that source's weight, never doubles it.
     3. CORRELATION: pooled variance = a' S a with S_ij = rho_ij sd_i sd_j. Independent sources
        give the familiar 1/sum(w); two identical sources give one source's variance, not half.
        n_effective = 1 / (a' R a) is reported so a reader sees how many votes there really were.
@@ -402,12 +403,21 @@ def combine(estimates: Sequence[Estimate], role: Role | str = Role.DIRECTION_MEA
                       tuple(excluded), "every estimate excluded: UNMEASURED")
     n = len(used)
     w = [1.0 / e.variance for e in used]
-    sw = sum(w)
-    a = [x / sw for x in w]
-    mu = sum(ai * e.mean for ai, e in zip(a, used, strict=True))
     sd = [math.sqrt(e.variance) for e in used]
     rho = [[source_rho(used[i], used[j], measured_rho) if i != j else 1.0 for j in range(n)]
            for i in range(n)]
+    # CORRELATION-DISCOUNTED WEIGHTS (2026-10-07, found by forecast_scoring's leave-one-source-
+    # out test). Plain precision weights counted correlation in the VARIANCE but not in the MEAN:
+    # a verbatim copy of a source doubled that source's pull on the pooled mean, so a twin was
+    # still two votes exactly where it mattered. Each precision is now divided by the correlation
+    # mass the source shares with the pool, sum_j rho_ij (rho_ii = 1): independent sources keep
+    # plain precision weights; k identical copies share ONE source's weight between them. Unlike
+    # GLS weights (Sigma^-1 1) these are never negative and never blow up on a singular matrix --
+    # a pooled mean that shorts one model to buy its twin is not a belief anyone stated.
+    w = [w[i] / sum(max(0.0, rho[i][j]) for j in range(n)) for i in range(n)]
+    sw = sum(w)
+    a = [x / sw for x in w]
+    mu = sum(ai * e.mean for ai, e in zip(a, used, strict=True))
     var = sum(a[i] * a[j] * rho[i][j] * sd[i] * sd[j] for i in range(n) for j in range(n))
     ara = sum(a[i] * a[j] * rho[i][j] for i in range(n) for j in range(n))
     n_eff = 1.0 / ara if ara > 0 else float(n)

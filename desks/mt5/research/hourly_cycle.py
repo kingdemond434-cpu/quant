@@ -967,7 +967,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
-    "decay_monitor", "fill_markout", "drift_monitor",
+    "decay_monitor", "fill_markout", "drift_monitor", "forecast_scoring",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
     # and the plain-English desk health check, each seconds, each writing a report that the
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
@@ -5209,6 +5209,11 @@ def main() -> None:
     # monitor's hazard-history append is once per UTC day, so running hourly counts nothing twice.
     drm = _costed("drift_monitor", lambda: _producer(
         "drift_monitor", "research/drift_monitor.py", "--budget-s", "300"))
+    # FORECASTS SCORED AGAINST OUTCOMES, HOURLY (DATA-36 / ARCH-03): the allocator's own forecast
+    # log and every resolvable forecast-contract belief, by proper scoring rule, with pooled
+    # forecasts and each source's leave-one-out incremental value. Measures; adapts nothing.
+    fsc = _costed("forecast_scoring", lambda: _producer(
+        "forecast_scoring", "research/forecast_scoring.py"))
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
@@ -5810,6 +5815,7 @@ def main() -> None:
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls,
                     "decay_monitor": dmo, "fill_markout": fmk, "drift_monitor": drm,
+                    "forecast_scoring": fsc,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,

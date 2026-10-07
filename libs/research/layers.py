@@ -233,6 +233,7 @@ LEG_LAYER: dict[str, str] = {
     "live_calibration_posterior": "prediction", "constrained_book": "sizing",
     "kelly_survival": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution", "drift_monitor": "portfolio",
+    "forecast_scoring": "meta",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "recovery_drills": "meta",
     "forward_evidence_tracker": "meta",
