@@ -95,6 +95,9 @@ FLOW_DAYS = 28
 HISTORY_KEEP = 24 * 120
 #: How far a mission (a promoted ontology class) lifts a matching source's prior.
 MISSION_LIFT = 0.15
+#: Weight of the gauntlet useful rate in a prior; the rest is acquirability. Usefulness leads,
+#: so a source that is easy to fetch and judged useless (REJECTED) still ranks below the base.
+W_USEFUL = 0.75
 #: The features a prior is kept on, i.e. what "similar sources" means.
 FEATURES = ("host", "producer_type", "country", "language", "data_type")
 
@@ -103,18 +106,16 @@ FEATURES = ("host", "producer_type", "country", "language", "data_type")
 #: (`frontier_intel/unknowns.promote_recurring`), never forced into the nearest type.
 DATA_TYPES: dict[str, str] = {
     "weather_climate": r"weather|climat|temperatur|rainfall|precipitat|drought|meteo|wetter",
-    "energy": r"energy|electric|power|oil|petrol|gas\b|lng|coal|fuel|crude|refin|nuclear|solar",
-    "agriculture": r"agri|crop|harvest|grain|wheat|corn|maize|soy|rice|sugar|coffee|cocoa|cattle|"
+    "energy": r"energy|electric|power\b|\boil\b|petrol|\bgas\b|\blng\b|\bcoal|fuel|crude|refiner|nuclear|solar",
+    "agriculture": r"agri|\bcrops?\b|harvest|grain|wheat|\bcorn\b|maize|\bsoy|\brice\b|sugar|coffee|cocoa|cattle|"
                    r"livestock|fertili",
     "shipping_trade": r"shipping|freight|port\b|ports\b|vessel|container|cargo|export|import|"
                       r"trade|customs|tariff",
     "labour": r"labou?r|employ|unemploy|payroll|wage|job|vacanc|hiring",
     "prices": r"price|inflation|cpi\b|ppi\b|consumer price|cost of living|deflator",
     "fiscal": r"fiscal|budget|tax|revenue|expenditure|treasury|public debt|deficit",
-    "monetary_rates": r"interest rate|policy rate|monetary|yield|bond|money supply|exchange rate|"
-                      r"\bfx\b|currency|central bank|repo\b",
-    "markets_finance": r"stock|equity|share price|index|futures|option|credit|loan|bank|"
-                      r"financial|securit|fund",
+    "monetary_rates": r"interest rate|policy rate|monetary|yield|\bbonds?\b|money supply|exchange rate|"
+                      r"\bfx\b|currency|central bank|\brepo\b",
     "satellite_eo": r"satellite|sentinel|landsat|modis|earth observation|imagery|ndvi|nightlight|"
                     r"stac|raster",
     "procurement": r"procure|tender|contract award|purchas",
@@ -123,9 +124,13 @@ DATA_TYPES: dict[str, str] = {
                            r"steel|cement",
     "housing_construction": r"housing|house price|construction|building permit|real estate|"
                             r"dwelling|rent\b",
-    "transport_mobility": r"traffic|transport|mobility|flight|airline|rail|vehicle|road",
+    "transport_mobility": r"traffic|transport|mobility|flight|airline|\brail|vehicle|\broads?\b",
     "health_population": r"health|hospital|mortality|population|census|demograph|birth",
     "environment": r"emission|pollut|air quality|co2|carbon|waste|water quality|biodivers",
+    # BROADEST LAST: "index", "bank" and "fund" appear in half of all statistical titles, so
+    # every specific type above gets the first claim on a source.
+    "markets_finance": r"stock|equity|share price|index|futures|option|credit|loan|bank|"
+                       r"financial|securit|fund",
 }
 _TYPE_RE = {k: re.compile(v, re.IGNORECASE) for k, v in DATA_TYPES.items()}
 _STOP = frozenset("""data dataset datasets table tables series statistics statistical annual
@@ -645,7 +650,7 @@ def build_priors(recs: Mapping[str, Mapping[str, Any]], *, now: datetime,
     n = len(scored)
     base_u = sum(s[0] for _, s in scored) / n if n else 0.0
     base_a = sum(s[1] for _, s in scored) / n if n else 0.0
-    base = round(0.5 * base_u + 0.5 * base_a, 6) if n else 0.5
+    base = round(W_USEFUL * base_u + (1 - W_USEFUL) * base_a, 6) if n else 0.5
     acc: dict[str, dict[str, list[float]]] = {f: defaultdict(lambda: [0.0, 0.0, 0.0])
                                               for f in FEATURES}
     for r, (u, a) in scored:
@@ -663,7 +668,7 @@ def build_priors(recs: Mapping[str, Mapping[str, Any]], *, now: datetime,
         for v, (k, u, a) in vals.items():
             pu = (u + PRIOR_STRENGTH * base_u) / (k + PRIOR_STRENGTH)
             pa = (a + PRIOR_STRENGTH * base_a) / (k + PRIOR_STRENGTH)
-            score = 0.5 * pu + 0.5 * pa
+            score = W_USEFUL * pu + (1 - W_USEFUL) * pa
             table[f][v] = {"n": int(k), "useful": round(pu, 4), "acquirable": round(pa, 4),
                            "lift": round(score - base, 6)}
     return {"generated_at": _iso(now), "base": base, "evidence": n, "features": table,
