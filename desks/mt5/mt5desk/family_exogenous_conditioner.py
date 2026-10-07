@@ -26,10 +26,28 @@ series is therefore lagged by `lag_hours` -- a full publication day by default -
 forward fill, so the three-hour clock offset cannot reach the bar it conditions. This is the same
 property `family_macro_conditional` depends on; there it was a property of its producer, and here
 it is enforced in the family itself because this family loads its own input.
+
+A HELD OR STALE SERIES IS NOT SERVED AS CURRENT (#229 audit, 2026-10-07). A frame on disk is not
+evidence that its publisher still publishes it, nor that the desk may still use it. Two cases
+read None from `series_path`, by this module's own convention (absence is UNMEASURED and emits
+nothing), and `series_state` names which one it was:
+
+  HELD   a writer put the series on hold (`hold_series`): its terms stopped reading `confirmed`,
+         so the last frame it wrote stays on disk as a record and is never read as an input.
+  STALE  its newest `available_time` is past its freshness horizon at the instant it would
+         condition (`as_of`: the last bar a family is asked about, else the wall clock). The
+         horizon is the series' own cadence -- STALE_GAP_MULTIPLE publication gaps, never less
+         than STALE_FLOOR_DAYS -- so a monthly print is not stale a week after it lands and a
+         daily one that stopped a fortnight ago is. A forward fill would otherwise carry its
+         last value into every later bar as though it had just been published.
 """
 from __future__ import annotations
 
+import contextlib
+import json
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -60,14 +78,117 @@ DEFAULT_Z_WINDOW = 250
 MIN_OBSERVATIONS = 30
 
 
-def series_path(source: str, root: Path | None = None) -> Path | None:
-    """The pack's canonical frame, or None. Absence is UNMEASURED and emits nothing."""
+#: The hold marker a writer leaves beside a series whose terms no longer read `confirmed`.
+HELD_SUFFIX = ".held.json"
+
+#: The freshness horizon: STALE_GAP_MULTIPLE of the series' median publication gap, floored at
+#: STALE_FLOOR_DAYS so a weekend, a holiday week or one late print never reads as stale.
+STALE_FLOOR_DAYS = 10.0
+STALE_GAP_MULTIPLE = 3.0
+
+FRESH, STALE, HELD, ABSENT, UNMEASURED = "FRESH", "STALE", "HELD", "ABSENT", "UNMEASURED"
+
+
+def _frame_path(source: str, root: Path | None = None) -> Path | None:
     base = root or SERIES_DIR
     for suffix in (".parquet", ".csv"):
         p = base / f"{source!s}{suffix}"
         if p.exists():
             return p
     return None
+
+
+def hold_marker(source: str, root: Path | None = None) -> Path:
+    return (root or SERIES_DIR) / f"{source!s}{HELD_SUFFIX}"
+
+
+def hold_series(source: str, why: str, root: Path | None = None) -> bool:
+    """Put a written series on hold: it stays on disk and `series_path` stops serving it. Only a
+    series that exists is marked (no frame, nothing to hold). True when a marker is in place."""
+    if _frame_path(source, root) is None:
+        return False
+    m = hold_marker(source, root)
+    try:
+        m.write_text(json.dumps({"source": str(source), "why": str(why)[:300],
+                                 "held_at": datetime.now(UTC).isoformat(timespec="seconds")},
+                                sort_keys=True) + "\n", encoding="utf-8")
+    except OSError:
+        return False
+    return True
+
+
+def release_series(source: str, root: Path | None = None) -> None:
+    """Lift a hold: the writer has just written the series again under confirmed terms."""
+    with contextlib.suppress(OSError):
+        hold_marker(source, root).unlink(missing_ok=True)
+
+
+def freshness_horizon(stamps: pd.Series) -> pd.Timedelta:
+    """STALE_GAP_MULTIPLE x the median gap between distinct availability stamps, floored."""
+    floor = pd.Timedelta(days=STALE_FLOOR_DAYS)
+    s = pd.Series(pd.to_datetime(stamps, errors="coerce", utc=True)).dropna()
+    s = s.drop_duplicates().sort_values()
+    gaps = s.diff().dropna()
+    gaps = gaps[gaps > pd.Timedelta(0)]
+    if gaps.empty:
+        return floor
+    return max(floor, gaps.median() * STALE_GAP_MULTIPLE)
+
+
+def _as_utc(when: Any) -> pd.Timestamp | None:
+    try:
+        t = pd.Timestamp(when)
+    except (TypeError, ValueError):
+        return None
+    if pd.isna(t):
+        return None
+    return t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
+
+
+def series_state(source: str, root: Path | None = None, *,
+                 as_of: Any = None) -> tuple[str, str, Path | None]:
+    """(state, why, path) of a pack's canonical frame at `as_of` (default: the wall clock).
+
+    FRESH is the only state `series_path` serves. ABSENT and UNMEASURED (no readable stamp)
+    are what they say; HELD and STALE name a frame that is on disk and must not be read as
+    current -- see the module docstring."""
+    path = _frame_path(source, root)
+    if path is None:
+        return ABSENT, f"{source}: no canonical frame on this host", None
+    marker = hold_marker(source, root)
+    if marker.exists():
+        why = ""
+        try:
+            why = str(json.loads(marker.read_text(encoding="utf-8")).get("why") or "")
+        except (OSError, ValueError, AttributeError):
+            why = "unreadable hold marker"
+        return HELD, f"{source}: held by its writer ({why or 'no reason recorded'})", path
+    try:
+        if path.suffix == ".parquet":
+            stamps = pd.read_parquet(path, columns=["available_time"])["available_time"]
+        else:
+            stamps = pd.read_csv(path, usecols=["available_time"])["available_time"]
+    except Exception as exc:
+        return UNMEASURED, f"{path.name}: no readable available_time ({type(exc).__name__})", path
+    s = pd.Series(pd.to_datetime(stamps, errors="coerce", utc=True)).dropna()
+    if s.empty:
+        return UNMEASURED, f"{path.name}: no available_time stamp", path
+    now = _as_utc(as_of) if as_of is not None else pd.Timestamp(datetime.now(UTC))
+    if now is None:
+        return UNMEASURED, f"{source}: as_of {as_of!r} is not an instant", path
+    last, horizon = s.max(), freshness_horizon(s)
+    if now - last > horizon:
+        return STALE, (f"{path.name}: newest available_time {last.isoformat()} is "
+                       f"{(now - last).days}d before {now.isoformat()}, past its "
+                       f"{horizon.days}d freshness horizon"), path
+    return FRESH, "", path
+
+
+def series_path(source: str, root: Path | None = None, *, as_of: Any = None) -> Path | None:
+    """The pack's canonical frame, or None. Absence is UNMEASURED and emits nothing, and so is
+    a HELD or STALE frame: it is never served as current (`series_state` names which)."""
+    state, _why, path = series_state(source, root, as_of=as_of)
+    return path if state == FRESH else None
 
 
 def _load(path: Path) -> pd.DataFrame | None:
@@ -78,15 +199,17 @@ def _load(path: Path) -> pd.DataFrame | None:
 
 
 def conditioner(source: str, signal: str, transform: str, *, lag_hours: int = DEFAULT_LAG_HOURS,
-                z_window: int = DEFAULT_Z_WINDOW, root: Path | None = None) -> pd.Series | None:
+                z_window: int = DEFAULT_Z_WINDOW, root: Path | None = None,
+                as_of: Any = None) -> pd.Series | None:
     """The pack's column as a lagged, transformed series on its own `available_time` clock.
 
-    None whenever the pack, the column, the stamp or the transform is unavailable -- every one of
-    which is UNMEASURED and none of which is a reason to fall back to price.
+    None whenever the pack, the column, the stamp or the transform is unavailable, or the frame
+    is HELD or STALE at `as_of` -- every one of which is UNMEASURED and none of which is a
+    reason to fall back to price.
     """
     if not source or not signal or str(signal) in STAMP_COLUMNS:
         return None
-    path = series_path(source, root)
+    path = series_path(source, root, as_of=as_of)
     if path is None:
         return None
     df = _load(path)
@@ -144,12 +267,14 @@ def family_exogenous_conditioner(
     interpreted directly; `level_z` and `delta_z` are standard deviations of the column's own
     history. Nothing here reads price except to size the stop and to place the order.
     """
-    cond = conditioner(source, signal, transform, lag_hours=lag_hours, z_window=z_window,
-                       root=series_root)
-    if cond is None or len(cond) < MIN_OBSERVATIONS:
-        return []
     d = _h1(df)
     if d.empty:
+        return []
+    # Freshness is judged at the LAST bar this call conditions: on a live tape that is now, on a
+    # historical replay it is the replay's own end, so a series is never carried past its horizon.
+    cond = conditioner(source, signal, transform, lag_hours=lag_hours, z_window=z_window,
+                       root=series_root, as_of=d.index[-1])
+    if cond is None or len(cond) < MIN_OBSERVATIONS:
         return []
     try:
         m = cond.reindex(cond.index.union(d.index)).ffill().reindex(d.index)

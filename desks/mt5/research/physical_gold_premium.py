@@ -236,6 +236,10 @@ def record_physical_premiums(fetched_at: str, *, fetch: Callable[..., Any] | Non
         report[mid] = row
         if state != "confirmed":
             row.update({"status": "BLOCKED_ON_TERMS", "why": why[:300]})
+            # a premium series an earlier confirmed pass wrote is HELD, never read as current
+            from mt5desk.family_exogenous_conditioner import hold_series
+            row["held_series"] = hold_series(f"physical_premium_{mid}",
+                                             f"BLOCKED_ON_TERMS:{state}", out_dir)
             continue
         url = market_url(m)
         if not url:
@@ -264,6 +268,8 @@ def record_physical_premiums(fetched_at: str, *, fetch: Callable[..., Any] | Non
             feats["source_id"] = f"physical_premium_{mid}"
             out_dir.mkdir(parents=True, exist_ok=True)
             feats.to_parquet(out_dir / f"physical_premium_{mid}.parquet", index=False)
+            from mt5desk.family_exogenous_conditioner import release_series
+            release_series(f"physical_premium_{mid}", out_dir)
         row["premium"] = {"status": "OK" if not feats.empty else "INSUFFICIENT_HISTORY",
                           "rows": len(feats), "dropped_unplaceable": dropped}
     return report

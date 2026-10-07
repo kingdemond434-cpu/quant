@@ -97,18 +97,19 @@ def alt_conditioner(value: Any) -> tuple[str, str, str, float] | None:
     return parts[0], parts[1], parts[2], thr
 
 
-def _alt_series(file: str, column: str, root: Path | None = None) -> Any:
-    """The PIT conditioning series (lagged, on its availability clock), or None when absent."""
+def _alt_series(file: str, column: str, root: Path | None = None, as_of: Any = None) -> Any:
+    """The PIT conditioning series (lagged, on its availability clock), or None when absent --
+    or HELD or STALE at `as_of` (the last bar filtered; the wall clock when there is none)."""
     from mt5desk.family_exogenous_conditioner import SERIES_DIR, conditioner, series_path
 
-    path = series_path(file, root)
+    path = series_path(file, root, as_of=as_of)
     if path is None:
         return None
     key = (f"{root or SERIES_DIR}/{file}", column, path.stat().st_mtime)
     if key not in _ALT_CACHE:
         if len(_ALT_CACHE) > 64:
             _ALT_CACHE.clear()
-        _ALT_CACHE[key] = conditioner(file, column, "raw", root=root)
+        _ALT_CACHE[key] = conditioner(file, column, "raw", root=root, as_of=as_of)
     return _ALT_CACHE[key]
 ENTRY_TIMINGS = frozenset({"", "instant", "delayed"})
 MARKET_STYLES = frozenset({"", "market"})
@@ -252,7 +253,8 @@ def _alt_filter(sigs: list[Any], bars: pd.DataFrame, spec: tuple[str, str, str, 
                 root: Path | None = None) -> list[Any]:
     """Keep a signal only where the PIT series, as last known at its bar, meets the condition.
     A bar before the series' first availability knows nothing and keeps nothing."""
-    series = _alt_series(spec[0], spec[1], root)
+    series = _alt_series(spec[0], spec[1], root,
+                         as_of=bars.index[-1] if len(bars.index) else None)
     if series is None or len(series) == 0:
         return []
     try:

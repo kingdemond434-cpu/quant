@@ -41,6 +41,11 @@ from mt5desk.family_exogenous_conditioner import (
 REGIMES: tuple[str, ...] = ("high", "low", "mid")
 
 
+def _last_bar(df: pd.DataFrame) -> Any:
+    """The last bar the family is asked about: the instant a series' freshness is judged at."""
+    return df.index[-1] if df is not None and len(df.index) else None
+
+
 def _z(s: pd.Series, window: int) -> pd.Series:
     w = max(5, int(window))
     mu = s.rolling(w, min_periods=5).mean()
@@ -49,10 +54,12 @@ def _z(s: pd.Series, window: int) -> pd.Series:
 
 
 def momentum_z(source: str, signal: str, *, lookback: int = 4, z_window: int = DEFAULT_Z_WINDOW,
-               lag_hours: int = DEFAULT_LAG_HOURS, root: Path | None = None
-               ) -> pd.Series | None:
-    """The series' `lookback`-observation change, z-scored, on its lagged availability clock."""
-    raw = conditioner(source, signal, "raw", lag_hours=lag_hours, z_window=z_window, root=root)
+               lag_hours: int = DEFAULT_LAG_HOURS, root: Path | None = None,
+               as_of: Any = None) -> pd.Series | None:
+    """The series' `lookback`-observation change, z-scored, on its lagged availability clock.
+    None when the series is HELD or STALE at `as_of` (family_exogenous_conditioner)."""
+    raw = conditioner(source, signal, "raw", lag_hours=lag_hours, z_window=z_window, root=root,
+                      as_of=as_of)
     if raw is None or len(raw) < MIN_OBSERVATIONS:
         return None
     mom = raw - raw.shift(max(1, int(lookback)))
@@ -79,7 +86,7 @@ def family_alt_series_momentum(
     """One signal per CROSSING of |momentum z| over `threshold`, at the first bar at or after
     the crossing became available. Rising series -> `side_when_up`; falling -> the opposite."""
     z = momentum_z(source, signal, lookback=lookback, z_window=z_window, lag_hours=lag_hours,
-                   root=series_root)
+                   root=series_root, as_of=_last_bar(df))
     if z is None:
         return []
     d = _h1(df)
@@ -150,7 +157,7 @@ def family_alt_conditioned(
     if not wrappable(base_family) or regime not in REGIMES or not source or not signal:
         return []
     cond = conditioner(source, signal, transform, lag_hours=lag_hours, z_window=z_window,
-                       root=series_root)
+                       root=series_root, as_of=_last_bar(df))
     if cond is None or len(cond) < MIN_OBSERVATIONS:
         return []
     fn = get_family_func(base_family)

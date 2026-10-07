@@ -1493,6 +1493,11 @@ def hard_dislocations(paths: Paths, *, dry_run: bool = False, budget_s: float = 
             row["terms"] = state
             if state != "confirmed":
                 row.update({"status": "BLOCKED_ON_TERMS", "why": why[:240]})
+                if not dry_run:
+                    # the spread a confirmed pass published stays on disk, HELD, never current
+                    from mt5desk.family_exogenous_conditioner import hold_series
+                    row["held_series"] = hold_series(f"dislocation_{name}",
+                                                     f"BLOCKED_ON_TERMS:{state}", series_dir)
                 continue
         if spec["kind"] == "return_basis":
             f, status, why = _return_basis(series_dir, spec, load, clock_root)
@@ -1512,6 +1517,8 @@ def hard_dislocations(paths: Paths, *, dry_run: bool = False, budget_s: float = 
             continue
         series_dir.mkdir(parents=True, exist_ok=True)
         f.to_parquet(series_dir / f"{sid}.parquet", index=False)
+        from mt5desk.family_exogenous_conditioner import release_series
+        release_series(sid, series_dir)
         row["series"] = f"{sid}.parquet"
         targets = list(PK.resolve_targets(list(spec["targets"])))
         row["routed_targets"] = targets
@@ -1526,6 +1533,7 @@ def hard_dislocations(paths: Paths, *, dry_run: bool = False, budget_s: float = 
                         sid, "basis", sym, float(thr), int(side), bars_fn,
                         seat=HARD_SEAT, series_root=series_dir,
                         data_source=str(spec["data_source"]),
+                        terms_ref=str(spec.get("terms_ref") or ""),
                         mechanism=(f"{name}: onshore/offshore basis at an extreme reverts or "
                                    f"transmits into {sym}"))
                     tests_here += 1

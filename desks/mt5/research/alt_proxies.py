@@ -2666,19 +2666,61 @@ GATE_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
 }
 
 
-def terms_gate(ref_or_url: str) -> tuple[str, str]:
-    """(state, why) for a TERMS id or a URL. `confirmed` / `to_confirm` / `refused` for a governed
-    id or host, `ungoverned` for a URL on no governed host. FAIL CLOSED: an id this table does not
-    know is `to_confirm`, never permission."""
+#: THE CREDIT A TERMS ROW OBLIGES, CARRIED ON EVERY CELL BUILT FROM THAT SOURCE (#229 audit,
+#: 2026-10-07). NBS's terms page grants use on condition that a reuse names the bureau's site and
+#: its address (quoted in GATE_TERMS_EVIDENCE["cn_nbs_official"]). A cell is the desk's reuse of
+#: the statistic, so the credit and the terms link ride on the cell itself (`attribution`), not
+#: in a document nobody downstream reads. SAFE's statement names its own credit line; it is
+#: recorded here so that the day its row reads `confirmed` its cells carry it from the first one.
+#: Keyed by terms id; a URL resolves through TERMS_HOSTS exactly as `terms_gate` does.
+_NBS_CREDIT = {
+    "credit": ("引自国家统计局网站 www.stats.gov.cn (Source: National Bureau of Statistics of "
+               "China, www.stats.gov.cn)"),
+    "terms_url": TERMS_EVIDENCE["cn_nbs_retail"]["terms_url"],
+}
+ATTRIBUTION: dict[str, dict[str, str]] = {
+    "cn_nbs_retail": dict(_NBS_CREDIT),
+    "cn_nbs_official": dict(_NBS_CREDIT),
+    "cn_safe_official": {
+        "credit": "信息来源：国家外汇管理局网站 (Source: State Administration of Foreign Exchange)",  # noqa: RUF001
+        "terms_url": GATE_TERMS_EVIDENCE["cn_safe_official"]["terms_url"]},
+}
+#: The China official terms ids whose cells must carry a credit once they read `confirmed`.
+CN_OFFICIAL_TERMS: tuple[str, ...] = ("cn_nbs_retail", "cn_nbs_official", "cn_safe_official",
+                                      "cn_pboc_official", "cn_customs_official",
+                                      "cn_cfets_chinamoney", "cn_sge_premium")
+
+
+def _terms_id(ref_or_url: str) -> str | None:
+    """The terms id for an id or URL; None for a URL on no governed host."""
     ref = str(ref_or_url or "")
     if "://" in ref or ref.startswith("//"):
         host = urllib.parse.urlsplit(ref if "://" in ref else "https:" + ref).netloc.lower()
         host = host.split(":")[0]
-        sid = next((v for k, v in TERMS_HOSTS.items() if host == k or host.endswith("." + k)),
-                   None)
-        if sid is None:
-            return "ungoverned", ""
-        ref = sid
+        return next((v for k, v in TERMS_HOSTS.items() if host == k or host.endswith("." + k)),
+                    None)
+    return ref
+
+
+def attribution_for(ref_or_url: str) -> dict[str, str] | None:
+    """{credit, terms_url, terms_ref} a cell from this source must carry, or None when its terms
+    row obliges no credit. Every candidate built from an attributed source carries it as the
+    field `attribution` (pack_cells._screen_one / emit_for, alt_proxies._meta)."""
+    sid = _terms_id(ref_or_url)
+    row = ATTRIBUTION.get(sid or "")
+    if not row:
+        return None
+    return {"credit": row["credit"], "terms_url": row["terms_url"], "terms_ref": str(sid)}
+
+
+def terms_gate(ref_or_url: str) -> tuple[str, str]:
+    """(state, why) for a TERMS id or a URL. `confirmed` / `to_confirm` / `refused` for a governed
+    id or host, `ungoverned` for a URL on no governed host. FAIL CLOSED: an id this table does not
+    know is `to_confirm`, never permission."""
+    sid = _terms_id(ref_or_url)
+    if sid is None:
+        return "ungoverned", ""
+    ref = sid
     state, why = TERMS.get(ref) or GATE_TERMS.get(
         ref, ("to_confirm", f"{ref}: no terms row -- fail closed"))
     ev = TERMS_EVIDENCE.get(ref) or GATE_TERMS_EVIDENCE.get(ref) or {}
@@ -3228,11 +3270,17 @@ def _bars_close(paths: Paths, sym: str) -> Any:
 
 
 def _meta(src: Source) -> dict[str, Any]:
-    return {"mechanism": src.mechanism, "payer": src.payer, "constraint": src.constraint,
-            "source_culture": src.source_culture,
-            "participant_structure": list(src.participant_structure),
-            "failure_mode_hypothesis": src.failure_mode_hypothesis,
-            "crowding_prior": src.crowding_prior}
+    meta: dict[str, Any] = {
+        "mechanism": src.mechanism, "payer": src.payer, "constraint": src.constraint,
+        "source_culture": src.source_culture,
+        "participant_structure": list(src.participant_structure),
+        "failure_mode_hypothesis": src.failure_mode_hypothesis,
+        "crowding_prior": src.crowding_prior}
+    # the credit the source's terms oblige (NBS: cite the bureau's site), on every cell from it
+    att = attribution_for(src.id) or attribution_for(src.url)
+    if att:
+        meta["attribution"] = att
+    return meta
 
 
 DIRECT_FAMILY = "exogenous_conditioner"
@@ -3400,7 +3448,8 @@ def _parent_signal_returns(paths: Paths, par: dict[str, Any]) -> Any:
 def _regime_mask(paths: Paths, src: Source, series: str, op: str, idx: Any) -> Any:
     """The child's regime on every bar, exactly as `cell_modifiers._alt_filter` applies it."""
     from mt5desk import cell_modifiers as cm
-    s = cm._alt_series(lake_file(src, series), "pace", root=paths.series)
+    s = cm._alt_series(lake_file(src, series), "pace", root=paths.series,
+                       as_of=idx[-1] if len(idx) else None)
     if s is None or len(s) == 0:
         return None
     known = s.reindex(s.index.union(idx)).ffill().reindex(idx)

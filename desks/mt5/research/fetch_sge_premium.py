@@ -536,6 +536,8 @@ def record_benchmark_and_features(fetched_at: str) -> dict[str, Any]:
     if not feats.empty:
         FEATURES.parent.mkdir(parents=True, exist_ok=True)
         feats.to_parquet(FEATURES, index=False)
+        from mt5desk.family_exogenous_conditioner import release_series
+        release_series(FEATURES.stem, FEATURES.parent)
     out["premium"] = {"status": "OK" if not feats.empty else "INSUFFICIENT_HISTORY",
                       "rows": len(feats), "dropped_unplaceable": dropped,
                       "path": str(FEATURES)}
@@ -561,6 +563,10 @@ def main() -> int:
                                   "permission; flip alt_proxies.TERMS['cn_sge_premium'] only on "
                                   "a held licence"),
                        "history_rows": "UNMEASURED", "premium": "UNMEASURED"})
+        # a features frame written under an earlier reading stays on disk, HELD, never current
+        from mt5desk.family_exogenous_conditioner import hold_series
+        report["held_series"] = hold_series(FEATURES.stem, f"BLOCKED_ON_TERMS:{state}",
+                                            FEATURES.parent)
         (REPORTS / "sge_premium.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
         print(f"SGE PREMIUM BLOCKED_ON_TERMS ({state}): nothing fetched")
         return 0

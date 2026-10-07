@@ -823,6 +823,8 @@ def emit_for(pack: dict[str, Any], signals: list[str], targets: list[str], *,
                     "error": f"record_discovery: {type(exc).__name__}: {str(exc)[:70]}"}
     made = created = 0
     errors: list[str] = []
+    att = pack_attribution(pack)
+    extra: dict[str, Any] = {"lineage": {"attribution": att}} if att else {}
     for sig in take:
         for tf in TRANSFORMS:
             for sym in targets:
@@ -843,7 +845,8 @@ def emit_for(pack: dict[str, Any], signals: list[str], targets: list[str], *,
                             pit_status="STAMPED",
                             causal_rationale=mech,
                             falsifier=(f"the {tf} of {pid}.{sig} has no measurable relation to "
-                                       f"{sym} at {chart} out of sample"))
+                                       f"{sym} at {chart} out of sample"),
+                            **extra)
                         created += int(bool(was_new))
                     except Exception as exc:
                         errors.append(f"{sig}/{tf}/{sym}/{chart}: "
@@ -1646,6 +1649,12 @@ def semantic_lane(budget_s: float = 80.0, *, dry_run: bool = False,
             # read, no cell screened, nothing donated and no look charged (there was none).
             row.update({"status": f"BLOCKED_ON_TERMS:{gate['terms']}",
                         "why": str(gate["why"])[:300], "tests": 0})
+            if not dry_run:
+                # A frame this builder wrote while its terms read `confirmed` stays on disk as a
+                # record, HELD: the conditioner family never serves it as a current input.
+                from mt5desk.family_exogenous_conditioner import hold_series
+                row["held_series"] = hold_series(f"{builder}__sem",
+                                                 f"BLOCKED_ON_TERMS:{gate['terms']}", SERIES)
             continue
         df, why = _sem_frame(members)
         if df is None:
@@ -1658,8 +1667,10 @@ def semantic_lane(budget_s: float = 80.0, *, dry_run: bool = False,
             continue
         sid = f"{builder}__sem"
         if not dry_run:
+            from mt5desk.family_exogenous_conditioner import release_series
             SERIES.mkdir(parents=True, exist_ok=True)
             feats.to_parquet(SERIES / f"{sid}.parquet", index=False)
+            release_series(sid, SERIES)
         cols = [c for c in feats.columns if c not in ("event_time", "available_time",
                                                        "source_id")]
         targets: list[str] = []
@@ -1711,8 +1722,8 @@ def semantic_lane(budget_s: float = 80.0, *, dry_run: bool = False,
 
 def _screen_one(sid: str, sig: str, sym: str, thr: float, side: int,
                 bars_fn: Any = None, *, seat: str = SEM_SEAT, series_root: Path | None = None,
-                mechanism: str | None = None, data_source: str | None = None
-                ) -> dict[str, Any] | None:
+                mechanism: str | None = None, data_source: str | None = None,
+                terms_ref: str | None = None) -> dict[str, Any] | None:
     """One cell through `proposer_common.screen`. None = not measurable (too few trades).
 
     `seat` / `series_root` / `mechanism` let another organ (the dislocation lab's hard-series
@@ -1747,9 +1758,32 @@ def _screen_one(sid: str, sig: str, sym: str, thr: float, side: int,
     # `<provider>:<dataset>`: the caller's, else the semantic builder's; never left blank.
     cand["data_source"] = (data_source or SEM_DATA_SOURCE.get(sid.split("__")[0])
                            or f"desk:{sid}")
+    # The credit the publisher's terms oblige (NBS: cite 国家统计局网站 and www.stats.gov.cn),
+    # with the terms link, carried as a field on the cell itself.
+    att = attribution_of(terms_ref or SEM_TERMS_REF.get(sid.split("__")[0], ""))
+    if att:
+        cand["attribution"] = att
     cand["falsifier"] = (f"{sid}.{sig} at |z| >= {thr} carries no measurable relation to "
                          f"{sym}'s forward return out of sample")
     return {**res, "cell": cell, "candidate": cand}
+
+
+def attribution_of(ref_or_url: str) -> dict[str, str] | None:
+    """`alt_proxies.attribution_for`, or None when the terms table is unimportable (a missing
+    table never invents a credit, and the terms gate has already failed such a source closed)."""
+    if not ref_or_url:
+        return None
+    try:
+        from research.alt_proxies import attribution_for
+    except Exception:
+        return None
+    return attribution_for(ref_or_url)
+
+
+def pack_attribution(pack: dict[str, Any]) -> dict[str, str] | None:
+    """The credit a registry pack's cells carry: its own `terms_ref`, else its URL's host."""
+    return attribution_of(str(pack.get("terms_ref") or "")) or attribution_of(
+        str(pack.get("url") or ""))
 
 
 def _sem_donate(cands: list[dict[str, Any]], tests_run: int, *, seat: str = SEM_SEAT,

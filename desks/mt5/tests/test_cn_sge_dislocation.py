@@ -162,6 +162,9 @@ def test_sge_main_fetches_nothing_while_terms_are_refused(
         raise AssertionError("SGE was requested with its terms refused")
     monkeypatch.setattr(S.requests, "get", _no_net)
     monkeypatch.setattr(S, "REPORTS", tmp_path)
+    monkeypatch.setattr(S, "FEATURES", tmp_path / "series" / "sge_premium_features.parquet")
+    from research import physical_gold_premium as P
+    monkeypatch.setattr(P, "SERIES", tmp_path / "series")
     assert S.main() == 0
     rep = json.loads((tmp_path / "sge_premium.json").read_text("utf-8"))
     assert rep["status"] == "BLOCKED_ON_TERMS" and rep["premium"] == "UNMEASURED"
@@ -632,3 +635,338 @@ def test_usdcnh_fixing_window_studies_read_only_broker_tape_and_still_run() -> N
         end = h * 60 + m + max(5, int(fx.window_minutes))
         res = CL.window_effect(bars, hhmm, f"{end // 60:02d}:{end % 60:02d}")
         assert res["verdict"] == "MEASURED" and res["symbol"] == "USDCNH", res
+
+
+# ================================================= #229 audit should-fixes (2026-10-07)
+# ---- 1. the NBS credit rides on every cell built from NBS / official China sources
+NBS_TERMS_URL = "https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html"
+
+
+def _assert_nbs_credit(att: Any) -> None:
+    assert isinstance(att, dict), att
+    assert "国家统计局" in att["credit"] and "www.stats.gov.cn" in att["credit"], att
+    assert att["terms_url"] == NBS_TERMS_URL and att["terms_ref"] in (
+        "cn_nbs_official", "cn_nbs_retail"), att
+
+
+def test_every_confirmed_cn_official_terms_row_obliges_a_credit() -> None:
+    """A China official source that reads `confirmed` carries a credit row; the NBS one quotes
+    the terms page's own condition and links it."""
+    for ref in A.CN_OFFICIAL_TERMS:
+        if A.terms_gate(ref)[0] == "confirmed":
+            assert A.attribution_for(ref) is not None, ref
+    _assert_nbs_credit(A.attribution_for("cn_nbs_official"))
+    _assert_nbs_credit(A.attribution_for("https://data.stats.gov.cn/easyquery.htm?m=QueryData"))
+    assert "注明" in A.GATE_TERMS_EVIDENCE["cn_nbs_official"]["judgement"]
+    assert A.attribution_for("kr_krx_gold") is None
+    assert A.attribution_for("https://example.org/x") is None
+
+
+def test_nbs_cells_carry_the_credit_on_every_donation_path(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    from mt5desk import family_exogenous_conditioner as FX
+
+    from research import proposer_common as pc
+    bars = _bars("2026-05-01", 30, 7.2, seed=3)
+    monkeypatch.setattr(FX, "family_exogenous_conditioner", lambda *_a, **_k: [])
+    monkeypatch.setattr(pc, "cost_frac", lambda *_a, **_k: 0.0001)
+    monkeypatch.setattr(pc, "universe_meta", lambda: {})
+    monkeypatch.setattr(pc, "screen", lambda *_a, **_k: {"n": 50, "mean": 0.001})
+    # (a) the semantic lane: every stats.gov.cn builder's cell carries the credit
+    for b, ref in PK.SEM_TERMS_REF.items():
+        res = PK._screen_one(f"{b}__sem", "x", "USDCNH", 1.0, 1, lambda _s: bars)
+        assert res is not None
+        if ref == "cn_nbs_official":
+            _assert_nbs_credit(res["candidate"].get("attribution"))
+        elif A.attribution_for(ref) is None:
+            assert "attribution" not in res["candidate"], b
+    # (b) a hard pair's cell carries its own pair's credit (none for a KRX premium)
+    hard = PK._screen_one("dislocation_kr_gold_london", "basis", "XAUUSD", 1.0, 1,
+                          lambda _s: bars, seat=DL.HARD_SEAT, data_source="krx:gold",
+                          terms_ref=DL.HARD_PAIRS["kr_gold_london"]["terms_ref"])
+    assert hard is not None and "attribution" not in hard["candidate"]
+    # (c) alt_proxies' direct and indirect cells: NBS retail sales carries it through _meta
+    _assert_nbs_credit(A._meta(A.BY_ID["cn_nbs_retail"]).get("attribution"))
+    assert "attribution" not in A._meta(A.BY_ID["us_tsa_throughput"])
+    # (d) the registry lane (pack_cells.emit_for): the NBS pack's every cell, in its lineage
+    import libs.moat.registry as REG
+    seen: list[dict[str, Any]] = []
+    monkeypatch.setattr(REG, "record_discovery", lambda **_k: ("disc_x", True))
+    monkeypatch.setattr(REG, "enqueue_candidate", lambda **k: seen.append(k) or ("c", True))
+    pack = next(p for p in PK.packs() if p.get("id") == "nbs_pmi")
+    res = PK.emit_for(pack, ["pmi|x"], ["USDCNH"])
+    assert res["emitted"] == len(seen) > 0
+    for k in seen:
+        _assert_nbs_credit(k["lineage"]["attribution"])
+    seen.clear()
+    PK.emit_for({"id": "plain", "url": "https://example.org/a"}, ["x"], ["USDCNH"])
+    assert seen and all("lineage" not in k for k in seen)
+
+
+# ---- 2. the USDCNH fixing cell, collector -> parser -> proposer -> door, end to end
+class _Clock(datetime):
+    """The collector's wall clock, set per simulated fetch."""
+    at = datetime(2026, 1, 1, tzinfo=UTC)
+
+    @classmethod
+    def now(cls, tz: Any = None) -> Any:          # type: ignore[override]
+        return cls.at
+
+
+class _Resp:
+    def __init__(self, body: bytes) -> None:
+        self.body, self.status = body, 200
+        self.headers = {"Content-Type": "application/json"}
+
+    def __enter__(self) -> _Resp:
+        return self
+
+    def __exit__(self, *_a: Any) -> None:
+        return None
+
+    def read(self, _n: int = -1) -> bytes:
+        return self.body
+
+
+class _RecordingDoor:
+    """Records what the production door hands the registry and the pre-registration ledger, so
+    the run touches neither on the build host; everything up to them is the real code."""
+
+    def __init__(self) -> None:
+        self.registry: list[tuple[str, list[dict[str, Any]]]] = []
+        self.prereg: list[tuple[str, int]] = []
+
+    def record(self, source: str, cands: list[dict[str, Any]]) -> None:
+        self.registry.append((source, [dict(c) for c in cands]))
+
+    def preregister(self, source: str, cands: list[dict[str, Any]]) -> dict[str, Any]:
+        self.prereg.append((source, len(cands)))
+        return {"preregistered": len(cands), "failed": 0, "already": 0, "reasons": {},
+                "failures": []}
+
+
+def _ccpr_body(day: pd.Timestamp, usd: float) -> bytes:
+    doc = json.loads((FIX / "ccpr.json").read_text(encoding="utf-8"))
+    doc["data"]["lastDate"] = f"{day.strftime('%Y-%m-%d')} 9:15"
+    doc["records"][0]["price"] = f"{usd:.4f}"
+    return json.dumps(doc, ensure_ascii=False).encode()
+
+
+def test_usdcnh_fixing_cell_runs_the_production_loop(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The CCPR is COLLECTED (asia_collector.collect_one, one simulated fetch a day), PARSED into
+    the append-only ledger (asia_parser.parse_all), modelled, SCREENED on USDCNH, DEFLATED and
+    DONATED by pack_cells.semantic_lane through proposer_common.donate. Production CFETS terms
+    read `refused`; this run sets them `confirmed` as if a licence were held, which is the only
+    state in which the loop may run at all."""
+    import libs.research.bar_clock as BC
+    from research import asia_parser as AP
+    from research import proposer_common as pc
+    root = _clock(tmp_path)
+    monkeypatch.setattr(BC, "_ROOT", root)
+    monkeypatch.setitem(A.GATE_TERMS, "cn_cfets_chinamoney", ("confirmed", "test: licence held"))
+    lake = tmp_path / "lake"
+    for mod in (AC, AP):
+        monkeypatch.setattr(mod, "VAULT", lake / "vault")
+        monkeypatch.setattr(mod, "SERIES", lake / "series")
+    monkeypatch.setattr(AP, "HISTORY", lake / "series" / "history")
+    monkeypatch.setattr(AP, "FOUND", tmp_path / "endpoints")
+    monkeypatch.setattr(PK, "SERIES", lake / "series")
+    monkeypatch.setattr(PK, "SEM_CURSOR", tmp_path / "cursor.json")
+    monkeypatch.setattr(PK, "NULL_TRIALS", tmp_path / "null.jsonl")
+    monkeypatch.setattr(pc, "INTEL", tmp_path / "intel")
+    monkeypatch.setattr(pc, "cost_frac", lambda *_a, **_k: 0.0001)
+    monkeypatch.setattr(pc, "universe_meta", lambda: {})
+    door = _RecordingDoor()
+    monkeypatch.setattr(pc, "_record_in_registry", door.record)
+    monkeypatch.setattr(pc, "_preregister", door.preregister)
+
+    cnh = _bars("2025-12-01", 290, 7.20, seed=21)
+    usdx = _bars("2025-12-01", 290, 98.0, seed=22)
+    bars = {"USDCNH": cnh, "USDX": usdx}
+    # one fetch per fixing day, inside the measured clock's seasons (shoulders are dropped)
+    days = [d for d in pd.bdate_range("2025-12-01", "2026-09-14", tz="UTC")
+            if (d.month * 100 + d.day) <= 213 or (d.month * 100 + d.day) >= 1201
+            or 501 <= (d.month * 100 + d.day) <= 914]
+    src = next(r for r in _registry() if r["id"] == "cfets_fixing")
+    monkeypatch.setattr(AC, "datetime", _Clock)
+    monkeypatch.setattr(AC, "_robots_allows", lambda _u, *_a: (True, "test"))
+    body: dict[str, bytes] = {}
+    monkeypatch.setattr(AC.urllib.request, "urlopen", lambda *_a, **_k: _Resp(body["now"]))
+    rng = np.random.default_rng(23)
+    for i, d in enumerate(days):
+        _Clock.at = d.to_pydatetime().replace(hour=1, minute=20)
+        body["now"] = _ccpr_body(d, 7.10 + 0.0004 * i + rng.normal(0, 0.0002))
+        rec = AC.collect_one(src)
+        assert rec["status"] in ("COLLECTED", "NEEDS_PARSER") and rec.get("vault"), rec
+    monkeypatch.setattr(AC, "datetime", datetime)
+    AP.parse_all(only=["cfets_fixing"])
+    assert len(AP.read_ledger("cfets_fixing")) >= len(days)
+
+    rep = PK.semantic_lane(budget_s=600.0, bars_fn=bars.get)
+    row = rep["packs"]["cfets_fix"]
+    assert row["status"] == "BUILT" and row["terms"] == "confirmed", row
+    assert "USDCNH" in row["targets"] and row["tests"] > 0, row
+    # SCREENED and DEFLATED: measured cells on USDCNH, every look charged into the deflation
+    assert rep["screened_measurable"] > 0 and rep["proposed"] > 0, rep
+    # DONATED through the door, and CHARGED: the contract carries the pass's every look
+    files = sorted((tmp_path / "intel" / PK.SEM_SEAT).glob("discoveries_*.json"))
+    assert len(files) == 1, files
+    doc = json.loads(files[0].read_text(encoding="utf-8"))
+    assert doc["tests_run"] == rep["tests_run"] >= row["tests"]
+    assert not (tmp_path / "null.jsonl").exists()        # one of the two carries it, never both
+    cells = doc["discoveries"]
+    usdcnh = [c for c in cells if c["symbol"] == "USDCNH"
+              and c["params"]["source"] == "cfets_fix__sem"]
+    assert usdcnh, [c["symbol"] for c in cells]
+    for c in cells:
+        assert c["data_source"] == "cfets:ccpr" and c["family"] == "exogenous_conditioner"
+        assert c["available_time"] and c["required_data"] == [
+            "desks/mt5/data/lake/series/cfets_fix__sem.parquet"]
+        assert "attribution" not in c                    # CFETS obliges no credit row
+    assert door.registry and door.registry[0][0] == PK.SEM_SEAT
+    assert len(door.registry[0][1]) == len(cells) and door.prereg == [(PK.SEM_SEAT, len(cells))]
+
+
+# ---- 3. two terms tables over one source never disagree
+def _verdict(ref: str) -> str:
+    return A.terms_gate(ref)[0]
+
+
+def test_every_terms_table_agrees_where_two_cover_one_source() -> None:
+    """alt_proxies' TERMS / GATE_TERMS are the decision; every other table this branch reads
+    that names a decision for the same source must read the same verdict."""
+    from research import cn_official_tables as C
+    from research import physical_gold_premium as P
+    disagree: list[str] = []
+    # (a) a TERMS source on a governed host == the host's row (one decision per host)
+    for s in A.SOURCES:
+        host_ref = A._terms_id(s.url)
+        if host_ref and host_ref != s.id and _verdict(host_ref) != _verdict(s.id):
+            disagree.append(f"source {s.id} {_verdict(s.id)} vs host {host_ref} "
+                            f"{_verdict(host_ref)}")
+    # (b) a GATE_TERMS row that aliases a TERMS row keeps its verdict
+    assert A.GATE_TERMS["cn_nbs_official"] == A.TERMS["cn_nbs_retail"]
+    # (c) the paid-substitute roster's per-source `terms` column == TERMS
+    roster = json.loads((_DESK / "data" / "paid_data_substitutes_asia_blocked.json"
+                         ).read_text(encoding="utf-8"))
+    for r in roster["rows"]:
+        sid = str(r.get("paid", "")).rsplit("[", 1)[-1].rstrip("]")
+        if sid in A.TERMS and r.get("terms") and r["terms"] != A.TERMS[sid][0]:
+            disagree.append(f"roster {sid} {r['terms']} vs TERMS {A.TERMS[sid][0]}")
+    # (d) asia_sources rows: own terms_ref == its host's row == its adapter's row
+    for r in _registry():
+        ref = str(r.get("terms_ref") or "")
+        if not ref:
+            continue
+        host_ref = A._terms_id(str(r.get("url") or ""))
+        if host_ref and _verdict(host_ref) != _verdict(ref):
+            disagree.append(f"row {r['id']} {ref} vs host {host_ref}")
+        ad = C.ADAPTER_TERMS.get(str(r.get("adapter") or ""))
+        if ad and _verdict(ad) != _verdict(ref):
+            disagree.append(f"row {r['id']} {ref} vs adapter {r.get('adapter')} {ad}")
+    # (e) pack_cells' builder table == its member rows' and adapters' rows
+    reg = {str(p.get("id")): p for p in PK.packs()}
+    for b, ref in PK.SEM_TERMS_REF.items():
+        for pid in PK.SEMANTIC_PACKS[b]:
+            mref = str((reg.get(pid) or {}).get("terms_ref") or "")
+            if mref and _verdict(mref) != _verdict(ref):
+                disagree.append(f"builder {b} {ref} vs member {pid} {mref}")
+        assert PK.sem_terms(b, reg)["terms"] == _verdict(ref), b
+    # (f) a hard pair reading a semantic builder's series == that builder's row
+    for name, spec in DL.HARD_PAIRS.items():
+        b = str(spec.get("series") or "").split("__sem")[0]
+        if b in PK.SEM_TERMS_REF and _verdict(PK.SEM_TERMS_REF[b]) != _verdict(
+                str(spec["terms_ref"])):
+            disagree.append(f"pair {name} {spec['terms_ref']} vs builder {b}")
+    # (g) the physical premium markets == the hard pairs that read their series
+    for mid in P.MARKETS:
+        for name, spec in DL.HARD_PAIRS.items():
+            if spec.get("series") == f"physical_premium_{mid}" and _verdict(
+                    str(spec["terms_ref"])) != _verdict(mid):
+                disagree.append(f"pair {name} {spec['terms_ref']} vs market {mid}")
+    # (h) a recorded judgement that NAMES a verdict names the row's own
+    for table in (A.TERMS_EVIDENCE, A.GATE_TERMS_EVIDENCE):
+        for ref, ev in table.items():
+            head = str(ev.get("judgement") or "").split(":")[0].split(" ")[0].strip(",").upper()
+            named = {"REFUSED": "refused", "TO_CONFIRM": "to_confirm",
+                     "CONFIRMED": "confirmed"}.get(head)
+            if named and named != _verdict(ref):
+                disagree.append(f"evidence {ref} says {named}, row reads {_verdict(ref)}")
+    assert not disagree, disagree
+
+
+# ---- 4. a held or stale series is never served as current
+def _daily_series(root: Path, name: str, start: str, n: int, freq: str = "D") -> pd.DatetimeIndex:
+    t = pd.date_range(start, periods=n, freq=freq, tz="UTC")
+    pd.DataFrame({"available_time": t, "x": np.sin(np.arange(n) / 3.0)}).to_parquet(
+        root / f"{name}.parquet", index=False)
+    return t
+
+
+def test_a_stale_series_is_not_served_past_its_freshness_horizon(tmp_path: Path) -> None:
+    from mt5desk import family_exogenous_conditioner as FX
+    t = _daily_series(tmp_path, "daily_sem", "2026-01-01", 120)
+    last = t[-1]
+    assert FX.series_path("daily_sem", tmp_path, as_of=last + pd.Timedelta(days=2)) is not None
+    later = last + pd.Timedelta(days=FX.STALE_FLOOR_DAYS + 1)
+    assert FX.series_path("daily_sem", tmp_path, as_of=later) is None
+    state, why, path = FX.series_state("daily_sem", tmp_path, as_of=later)
+    assert state == FX.STALE and path is not None and "freshness horizon" in why
+    assert FX.conditioner("daily_sem", "x", "level_z", root=tmp_path, as_of=later) is None
+    # the wall clock is the default instant: a 2026-04 series is stale today
+    assert FX.series_state("daily_sem", tmp_path)[0] == FX.STALE
+    # the family judges at its own last bar: a replay ending inside the horizon trades, a tape
+    # running months past the series' last print does not carry it forward
+    inside = _bars("2026-01-01", 120, 7.2)
+    assert FX.family_exogenous_conditioner(inside, source="daily_sem", signal="x", z_window=30,
+                                           series_root=tmp_path)
+    past = _bars("2026-01-01", 200, 7.2)
+    assert FX.family_exogenous_conditioner(past, source="daily_sem", signal="x", z_window=30,
+                                           series_root=tmp_path) == []
+    # the horizon is the series' own cadence: a monthly print is fresh 40 days on
+    _daily_series(tmp_path, "monthly_sem", "2023-01-31", 40, freq="ME")
+    m_last = pd.Timestamp("2023-01-31", tz="UTC") + pd.offsets.MonthEnd(39)
+    assert FX.series_state("monthly_sem", tmp_path,
+                           as_of=m_last + pd.Timedelta(days=40))[0] == FX.FRESH
+    assert FX.series_state("monthly_sem", tmp_path,
+                           as_of=m_last + pd.Timedelta(days=120))[0] == FX.STALE
+
+
+def test_a_held_series_is_never_served_and_writers_hold_it(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from mt5desk import cell_modifiers as CM
+    from mt5desk import family_exogenous_conditioner as FX
+    t = _daily_series(tmp_path, "cfets_fix__sem", "2026-01-01", 120)
+    as_of = t[-1]
+    assert FX.series_path("cfets_fix__sem", tmp_path, as_of=as_of) is not None
+    assert FX.hold_series("cfets_fix__sem", "BLOCKED_ON_TERMS:refused", tmp_path)
+    assert FX.series_path("cfets_fix__sem", tmp_path, as_of=as_of) is None
+    state, why, path = FX.series_state("cfets_fix__sem", tmp_path, as_of=as_of)
+    assert state == FX.HELD and "BLOCKED_ON_TERMS:refused" in why and path is not None
+    assert path.exists()                                   # kept as a record, never deleted
+    assert FX.conditioner("cfets_fix__sem", "x", "level_z", root=tmp_path, as_of=as_of) is None
+    assert CM._alt_series("cfets_fix__sem", "x", tmp_path, as_of=as_of) is None
+    assert FX.family_exogenous_conditioner(_bars("2026-01-01", 120, 7.2),
+                                           source="cfets_fix__sem", signal="x", z_window=30,
+                                           series_root=tmp_path) == []
+    FX.release_series("cfets_fix__sem", tmp_path)
+    assert FX.series_path("cfets_fix__sem", tmp_path, as_of=as_of) is not None
+    assert not FX.hold_series("never_written", "x", tmp_path)   # nothing on disk, nothing held
+
+    # the semantic lane holds a frame written before its builder's terms stopped reading
+    # `confirmed` (CFETS: refused), and a confirmed rebuild releases it
+    series = tmp_path / "series"
+    series.mkdir()
+    _daily_series(series, "cfets_fix__sem", "2026-01-01", 120)
+    rep, _read, _scr = _sem_lane(monkeypatch, tmp_path, {}, dry_run=False)
+    assert rep["packs"]["cfets_fix"]["held_series"] is True
+    assert FX.series_state("cfets_fix__sem", series, as_of=as_of)[0] == FX.HELD
+    # ... and the dislocation lab holds its CNY-fix spread the same way
+    desk = tmp_path / "desk"
+    dseries = desk / "data" / "lake" / "series"
+    dseries.mkdir(parents=True)
+    _daily_series(dseries, "dislocation_cny_fix_cnh", "2026-01-01", 120)
+    lab = DL.hard_dislocations(DL.Paths(desk), dry_run=False, bars_fn=lambda _s: None)
+    assert lab["pairs"]["cny_fix_cnh"]["held_series"] is True
+    assert FX.series_path("dislocation_cny_fix_cnh", dseries, as_of=as_of) is None
