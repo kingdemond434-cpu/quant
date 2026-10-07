@@ -191,10 +191,10 @@ def _swap_history_for(symbol: str) -> dict[str, np.ndarray] | None:
     h = hist.get(want) or hist.get(want.upper())
     if h is None:
         h = next((v for k, v in hist.items() if str(k).upper() == want.upper()), None)
-    return h
+    return h if isinstance(h, dict) else None
 
 
-def carry_history_status(symbol: str, floor_days: int | None = None) -> dict:
+def carry_history_status(symbol: str, floor_days: int | None = None) -> dict[str, object]:
     """READY or PENDING_HISTORY for ONE symbol's carry cell, with the count; UNMEASURED if the
     gauntlet's lockbox floor cannot be read.
 
@@ -254,7 +254,7 @@ def _decision_ns(d: pd.DataFrame) -> np.ndarray:
         idx = idx.tz_convert("UTC").tz_localize(None)
     stamps = idx.as_unit("ns").asi8
     minutes = bar_minutes(d) or 60
-    return stamps + int(minutes) * 60_000_000_000
+    return np.asarray(stamps + int(minutes) * 60_000_000_000, dtype="int64")
 
 
 def family_carry(

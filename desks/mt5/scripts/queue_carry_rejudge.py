@@ -68,7 +68,8 @@ def carry_certificates(files: tuple[Path, ...] = SURVIVOR_FILES,
         for key, row in rows.items():
             if not isinstance(row, dict):
                 continue
-            spec = row.get("shadow_spec") if isinstance(row.get("shadow_spec"), dict) else {}
+            raw = row.get("shadow_spec")
+            spec: dict[str, Any] = raw if isinstance(raw, dict) else {}
             if spec.get("family") != "carry" and ".carry.p=" not in str(key):
                 continue
             gated = row.get("gated_at")
