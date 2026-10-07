@@ -273,7 +273,8 @@ def test_attribution_rides_on_the_axis_doc_the_lake_csv_and_every_cell(tmp_path:
         assert credit in doc["attribution"]["credit"] and doc["attribution"]["licence_url"] == url
         assert "{accessed}" not in doc["attribution"]["credit"]
         lake = next(paths.series.glob(f"alt_{sid}__*.csv"))
-        rows = list(csv.DictReader(lake.open(encoding="utf-8")))
+        with lake.open(encoding="utf-8") as fh:
+            rows = list(csv.DictReader(fh))
         assert rows and all(credit in r["credit"] and r["licence_url"] == url for r in rows)
     assert "Singapore Open Data Licence version 1.0" in A.attribution_of(
         A.BY_ID["sg_merch_trade"], NOW)["credit"]                              # type: ignore[index]
