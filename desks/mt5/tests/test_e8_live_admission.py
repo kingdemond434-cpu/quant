@@ -76,8 +76,10 @@ class _RiskVenue:
 def test_broker_risk_reserves_open_stop_and_both_resting_gold_legs() -> None:
     venue = _RiskVenue()
     positions = [{"tradableInstrumentId": 6102, "side": "buy", "qty": 0.1,
-                  "stopLossId": 7}]
+                  "stopLossId": 7, "stopLoss": 0}]
     orders = [{"id": 7, "tradableInstrumentId": 6102, "stopPrice": 4050.0},
+              {"id": 10, "tradableInstrumentId": 6102, "stopPrice": 4200.0,
+               "stopLoss": 0, "qty": 0.1},
               {"id": 8, "tradableInstrumentId": 6102, "qty": 0.08,
                "stopPrice": 4120.0, "stopLoss": 4070.0},
               {"id": 9, "tradableInstrumentId": 6102, "qty": 0.08,

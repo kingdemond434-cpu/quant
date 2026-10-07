@@ -561,12 +561,13 @@ def outstanding_stop_risk(venue: Any, positions: list[dict[str, Any]],
         symbol = iid_to_sym.get(int(iid)) if iid is not None else None
         qty = _pos_field(p, "qty", "quantity")
         stop = _pos_field(p, "stopLoss", "stopLossPrice", "sl")
-        if stop is None:
+        if stop is None or stop <= 0:
             stop_id = p.get("stopLossId") or p.get("stopOrderId")
             order = by_id.get(int(stop_id)) if stop_id is not None else None
             stop = _pos_field(order or {}, "stopPrice", "stopLoss")
         side = str(p.get("side") or "").lower()
-        if symbol is None or qty is None or stop is None or side not in ("buy", "sell"):
+        if (symbol is None or qty is None or stop is None or stop <= 0
+                or side not in ("buy", "sell")):
             return None, "an open position has no measurable protective stop or instrument"
         bid, ask = venue.quote(symbol)
         distance = ((bid - stop) if side == "buy" else (stop - ask))
@@ -580,12 +581,12 @@ def outstanding_stop_risk(venue: Any, positions: list[dict[str, Any]],
         # entry does, and can fill while the FX lane is evaluating its next order.
         trigger = _pos_field(o, "stopPrice", "limitPrice", "price")
         stop = _pos_field(o, "stopLoss", "stopLossPrice", "sl")
-        if stop is None:
+        if stop is None or stop <= 0:
             continue
         iid = o.get("tradableInstrumentId") or o.get("instrumentId")
         symbol = iid_to_sym.get(int(iid)) if iid is not None else None
         qty = _pos_field(o, "qty", "quantity")
-        if symbol is None or trigger is None or qty is None:
+        if symbol is None or trigger is None or trigger <= 0 or qty is None:
             return None, "a resting entry has no measurable instrument, trigger, or size"
         risk = dollars(symbol, abs(trigger - stop), abs(qty))
         if risk is None:
