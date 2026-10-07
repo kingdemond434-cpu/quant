@@ -4,6 +4,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from libs.civilizations import breadth as B
 
 SLOTS = [{"mechanism": "session_range_breakout", "instrument": "XAUUSD", "asset_class": "metal"},
@@ -111,16 +113,62 @@ def test_few_fresh_many_duplicates_fills_budget_and_keeps_the_floor() -> None:
     assert sum(c["dup"] for c in out) == 45
 
 
-def test_floor_holds_with_one_to_nine_fresh() -> None:
-    for n_fresh in range(1, 10):
-        pend = [{"candidate_id": f"f{i}", "parked_at": f"a{i}", "dup": False, "score": 1.0}
-                for i in range(n_fresh)] + [{"candidate_id": "d0", "parked_at": "b0",
-                                             "dup": True, "score": 0.0}]
-        out, _ = B.order(pend, n_fresh, assess=_assess, base_key=lambda c: c["parked_at"])
-        assert len(out) == n_fresh and sum(c["dup"] for c in out) == 1, n_fresh
-    # and at least one in every ten released, wherever there are near-duplicates waiting
-    out, _ = B.order(_cands(400, 4), 100, assess=_assess, base_key=lambda c: c["parked_at"])
-    assert len(out) == 100 and sum(c["dup"] for c in out) >= 10
+def test_floor_is_one_in_ten_at_every_budget_and_never_starves() -> None:
+    """Audit 2026-10-07: "at least one per pass" gave a 1-4 slot budget 25-100% near-duplicates.
+    The floor is now exactly one in ten, carried between passes as credit."""
+    for budget in range(1, 25):
+        credit, released, dups_out, first_dup = 0.0, 0, 0, None
+        for pass_no in range(40):
+            pend = [{"candidate_id": f"f{i}", "parked_at": f"a{i:03d}", "dup": False,
+                     "score": 1.0} for i in range(budget)] + [
+                {"candidate_id": f"d{i}", "parked_at": f"b{i:03d}", "dup": True, "score": 0.0}
+                for i in range(50)]
+            out, st = B.order(pend, budget, assess=_assess, base_key=lambda c: c["parked_at"],
+                              credit=credit)
+            credit = st["exploration_credit"]
+            assert len(out) == budget and 0.0 <= credit <= 1.0
+            n = sum(c["dup"] for c in out)
+            assert n == st["near_duplicates_released"]
+            assert n <= max(1, budget // B.EXPLORATION_EVERY + 1), (budget, n)
+            if n and first_dup is None:
+                first_dup = pass_no
+            released += len(out)
+            dups_out += n
+        # never more than one in ten over the run, and saturated ground is still sampled
+        assert dups_out * B.EXPLORATION_EVERY <= released + B.EXPLORATION_EVERY, budget
+        assert dups_out >= released // B.EXPLORATION_EVERY - 1, budget
+        assert first_dup is not None and first_dup < B.EXPLORATION_EVERY, budget
+
+
+def test_one_slot_budget_never_hands_the_slot_to_a_duplicate_while_fresh_waits() -> None:
+    out, st = B.order([{"candidate_id": "f", "parked_at": "a", "dup": False, "score": 1.0},
+                       {"candidate_id": "d", "parked_at": "b", "dup": True, "score": 0.0}],
+                      1, assess=_assess, base_key=lambda c: c["parked_at"])
+    assert [c["candidate_id"] for c in out] == ["f"] and st["exploration_credit"] == 0.1
+
+
+def test_the_screen_reads_no_returns_so_it_is_not_a_trial(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Coordinator's ruling under charge-once: a screen that sees any returns or P&L is a
+    trial. This one calls docket_keff with a loader that returns nothing, and its verdict is a
+    function of (family, symbol) structure alone: two rules on one slot score identically."""
+    calls: list[Any] = []
+
+    def score(rows: list[dict[str, Any]], **kw: Any) -> dict[str, Any]:
+        calls.append(kw.get("loader"))
+        assert kw["loader"]("XAUUSD") is None
+        for r in rows:
+            r["_keff"] = 0.2
+        return {"instrument": {"status": "MEASURED"}}
+
+    import types
+    monkeypatch.setattr(B, "_desk_module", lambda root, name: types.SimpleNamespace(score=score))
+    m = B.BreadthMap(tmp_path, asset_class_of=CLASSES, shares=SHARES, slots=SLOTS)
+    a = m.assess([spec("carry", "EURUSD", hold_bars=24)], set())
+    b = m.assess([spec("carry", "EURUSD", hold_bars=6, side="short")], set())
+    assert calls == [B.no_returns] and m.keff_status == "STRUCTURE_ONLY"
+    assert a["keff"] == b["keff"] and a["breadth_score"] == b["breadth_score"]
+    assert not any("pnl" in k or "return" in k or "sharpe" in k for k in a)
 
 
 def test_ledger_report_counts_duplicate_share_and_keff_per_hour(tmp_path: Path) -> None:

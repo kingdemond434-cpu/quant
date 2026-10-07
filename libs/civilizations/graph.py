@@ -143,6 +143,7 @@ FIRM_WORDS: dict[str, re.Pattern[str]] = {
     "ubiquant": re.compile(r"Ubiquant|九坤", re.I),
     "jpx": re.compile(r"\bJPX\b|Japan Exchange Group", re.I),
     "g_research": re.compile(r"G-Research", re.I),
+    "quant_guild": re.compile(r"Quant Guild|QuantGuild|Paolucci", re.I),
     "worldquant": re.compile(r"WorldQuant|\bBRAIN\b|Alpha\s?#?101|101 Formulaic", re.I),
     "quantconnect": re.compile(r"QuantConnect|\bLEAN\b", re.I),
 }

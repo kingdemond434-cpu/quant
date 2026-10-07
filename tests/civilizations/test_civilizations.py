@@ -47,7 +47,7 @@ def test_roster_lanes_load_through_the_spine_with_culture_and_known_fetchers() -
     civs = {r["civilization"] for r in rows}
     assert civs == {"quantconnect", "worldquant", "man_ahl", "bridgewater", "aqr", "two_sigma",
                     "deshaw", "winton", "market_makers", "renaissance", "ubiquant", "jpx",
-                    "g_research", "frontier"}
+                    "g_research", "frontier", "quant_guild"}
     lanes = {r["lane"] for r in rows if r["civilization"] == "quantconnect"}
     for lane in ("qc_strategy_library", "qc_shared_strategies", "qc_research", "qc_forum",
                  "lean_algorithms", "lean_framework", "lean_indicators",

@@ -58,7 +58,8 @@ FRONTIER_SEARCH = "civ_ontology_frontier"
 #: holder cursor -> (civilization, lane, lane-id prefix) of the git_mirror lanes it promotes
 FRONTIER_HOLDERS: dict[str, tuple[str, str, str]] = {
     "wq_repo_frontier": ("worldquant", "wq_repository_civilization", "wqf_"),
-    "civ_frontier_holder": ("frontier", "frontier_repository", "frf_")}
+    "civ_frontier_holder": ("frontier", "frontier_repository", "frf_"),
+    "civ_qg_holder": ("quant_guild", "qg_github", "qgf_")}
 HANDBACK_SOURCE = "brain_llm_handback"
 CRYPTO_VENUE = re.compile(r"(?<![a-z])(binance|bybit|okx|hyperliquid|kraken|coinbase|bitfinex|"
                           r"gdax|ftx|dydx|kucoin|huobi|deribit|bitmex)", re.I)
@@ -529,8 +530,9 @@ class Resident:
         """The anti-saturation law at the producer (zuck 2026-10-05): before any cell is built,
         each candidate's compiled specs are checked against the certified canon, docket_keff's
         marginal k_eff and this producer's own released ground; independent ground goes first
-        and near-duplicates ride at the 1-in-10 exploration floor. An unloadable map falls back
-        to the backpressure order (and says so) -- the screen never blocks a release."""
+        and near-duplicates ride at the exploration floor (one in ten, carried as credit). An
+        unloadable map falls back to the backpressure order (and says so) -- the screen never
+        blocks a release."""
         from libs.mining import compiler
         base_key = lambda c: BP.priority(c, saturated=c.get("area") in sat)  # noqa: E731
         try:
@@ -553,7 +555,17 @@ class Resident:
                 specs = []
             return bmap.assess(specs, released)
 
-        chosen, self.last_screen = B.order(pend, cap, assess=assess, base_key=base_key)
+        # the exploration floor's fractional slot carries between passes (and processes)
+        credit_path = self.data / "exploration_credit.json"
+        try:
+            credit = float(json.loads(credit_path.read_text("utf-8")).get("credit") or 0.0)
+        except (OSError, ValueError, AttributeError):
+            credit = 0.0
+        chosen, self.last_screen = B.order(pend, cap, assess=assess, base_key=base_key,
+                                           credit=credit)
+        self.last_screen["keff_status"] = bmap.keff_status
+        credit_path.write_text(json.dumps({"credit": self.last_screen["exploration_credit"],
+                                           "at": _iso(_now())}), "utf-8")
         return chosen
 
     def saturated_areas(self, pipeline: Any) -> set[str]:
@@ -656,7 +668,10 @@ class Resident:
         # after-pass, the other skips it (and says so) rather than both releasing
         lock = BP.FileLock(self.data / "after_pass.lock")
         if not lock.acquire(wait_s=0):
-            out = {"skipped": "after_pass lock held by the other process"}
+            # the routing this process did still counts: its lexicon observations are merged
+            # (or spooled) now rather than dying with the process
+            out = {"skipped": "after_pass lock held by the other process",
+                   "lexicon": self.emergent.flush()}
             self._write("AFTER_PASS_SKIPPED.json", {"generated_at": _iso(_now()), **out})
             return out
         try:
@@ -816,10 +831,11 @@ class Resident:
     def ontology_frontier(self, pipeline: Any) -> dict[str, Any]:
         """Promote recurring unknown concepts to emergent classes and point the frontier
         search at them and at the coverage tensor's missions (ONTOLOGY_FRONTIER.json)."""
-        self.emergent.sync()
-        born = self.emergent.promote()
-        pruned = self.emergent.prune()
-        self.emergent.save()
+        with BP.FileLock(self.emergent.lock_path):
+            self.emergent.sync()
+            born = self.emergent.promote()
+            pruned = self.emergent.prune()
+            self.emergent.save()
         try:
             miss = json.loads((self.reports / "MISSIONS.json").read_text("utf-8")
                               ).get("missions") or []

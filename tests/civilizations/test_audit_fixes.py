@@ -12,6 +12,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from libs.civilizations import backpressure as BP
 from libs.civilizations import expression as E
@@ -314,3 +315,59 @@ def test_github_search_readme_follows_the_licence_and_reads_extra_queries() -> N
     assert "must not be stored" in mit.body and "[README of a/mit, licence MIT]" in mit.body
     assert "must not be stored" not in gpl.body and "metadata only" in gpl.body
     assert "RSI(14)" in gpl.body                              # the facts survive the rewrite
+
+
+def test_terms_gate_fails_closed() -> None:
+    from libs.mining import acquirer as acq
+
+    def src(terms: Any) -> acq.Source:
+        return acq.Source(id="t", fetcher="rss", config={} if terms is None else {"terms": terms})
+
+    assert acq.terms_refusal(src(None)) is None                    # outside the gate
+    assert acq.terms_refusal(src({"status": "PERMITTED", "clause": "you may", "url": "u"})) \
+        is None
+    for bad in ({"status": "PERMITTED", "url": "u"},              # no quoted clause
+                {"status": "PERMITTED", "clause": "you may"},     # no source of the clause
+                {"status": "REFUSED", "clause": "no robots", "url": "u"},
+                {"status": "UNVERIFIED", "url": "u"}, {}, "yes"):
+        assert acq.terms_refusal(src(bad)), bad
+
+
+def test_youtube_channel_walks_the_back_catalogue_and_records_transcripts(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import json as _json
+
+    from libs.civilizations import fetchers as F
+    from libs.mining import acquirer as acq
+    pages = {"": {"items": [_vid("v3")], "nextPageToken": "p2"},
+             "p2": {"items": [_vid("v2")], "nextPageToken": "p3"},
+             "p3": {"items": [_vid("v1")]}}
+    asked: list[Mapping[str, str]] = []
+
+    def http_get(url: str, headers: Mapping[str, str]) -> acq.HttpResult:
+        asked.append(headers)
+        tok = url.split("pageToken=")[1] if "pageToken=" in url else ""
+        return acq.HttpResult(200, _json.dumps(pages[tok]))
+
+    monkeypatch.setenv("YOUTUBE_API_KEY", "k")
+    src = acq.Source(id="yt", fetcher="youtube_channel", auth="optional",
+                     auth_env="YOUTUBE_API_KEY",
+                     config={"channel_id": "UCabc", "pages_per_run": 1})
+    import time
+    ctx = acq.FetchContext(http_get=http_get, deadline=time.monotonic() + 60, root=tmp_path)
+    cursor: dict[str, Any] = {}
+    got: list[acq.Item] = []
+    for _ in range(4):
+        for it in F.fetch_youtube_channel(src, dict(cursor), ctx):
+            cursor.update(it.cursor_update)
+            got.append(it)
+    vids = [i.uri.rsplit("=", 1)[1] for i in got if i.uri]
+    assert vids == ["v3", "v2", "v1"] and cursor["backfill_done"] is True
+    assert all(i.meta["transcript"].startswith("NOT_ACCESSIBLE") for i in got if i.uri)
+    assert all(h.get("X-Goog-Api-Key") == "k" for h in asked)
+    assert "full description" in next(i.body for i in got if i.uri)
+
+
+def _vid(v: str) -> dict[str, Any]:
+    return {"snippet": {"resourceId": {"videoId": v}, "title": v,
+                        "description": f"{v} full description", "publishedAt": "2026-10-01"}}

@@ -56,9 +56,15 @@ from typing import Any
 #: budget. The rest keeps its backpressure order; it is screened when it nears the head.
 SCREEN_DEPTH = 20
 SCREEN_MIN = 2_000
-EXPLORATION_EVERY = 10          # >= 1 near-duplicate per 10 released (the exploration floor)
-#: the screen reads no returns (compiled specs and published canon only), so it is not a trial
-#: under the once-over-the-union charge; the cells it releases are charged when judged
+EXPLORATION_EVERY = 10          # 1 near-duplicate per 10 released (the exploration floor)
+#: THE SCREEN IS NOT A TRIAL, AND THE CODE MAKES THAT TRUE RATHER THAN SAYING IT (coordinator's
+#: ruling 2026-10-07 under charge-once: a screen that sees any returns or P&L is a trial and is
+#: charged exactly once; one that only compiles and compares structure carries no charge). It
+#: compiles rules and compares specs with the published canon and this producer's own released
+#: keys, and it calls docket_keff with `no_returns` as its loader, so the instrument-correlation
+#: term (the only part of docket_keff that reads a return series) sits at par here and is
+#: measured by the judge downstream. No candidate's returns, P&L or backtest is ever computed or
+#: read, so nothing is charged; the cells it releases are charged once, when judged.
 H1 = "H1"
 
 
@@ -85,6 +91,11 @@ def _desk_module(root: Path, name: str) -> Any:
     sys.modules[name] = mod
     spec.loader.exec_module(mod)
     return mod
+
+
+def no_returns(sym: str) -> None:
+    """The screen's return loader: none, for every symbol (see the charge rule above)."""
+    return None
 
 
 def structural_key(spec: Mapping[str, Any]) -> str:
@@ -161,10 +172,14 @@ class BreadthMap:
         if want:
             rows = [{"family": f, "symbol": s} for f, s in want]
             try:
-                fn = self._keff_fn or _desk_module(self.root, "docket_keff").score
-                doc = fn(rows)
-                self.keff_status = str((doc.get("instrument") or {}).get("status")
-                                       or "MEASURED")
+                if self._keff_fn is not None:
+                    doc = self._keff_fn(rows)
+                    self.keff_status = str((doc.get("instrument") or {}).get("status")
+                                           or "MEASURED")
+                else:
+                    _desk_module(self.root, "docket_keff").score(rows, loader=no_returns)
+                    # cluster and class terms measured; the instrument term is the judge's
+                    self.keff_status = "STRUCTURE_ONLY"
                 for r, (f, s) in zip(rows, want, strict=True):
                     self._keff_cache[(f, s)] = float(r.get("_keff") or 0.0)
             except Exception as exc:
@@ -218,10 +233,11 @@ class BreadthMap:
 
 
 def order(pending: list[dict[str, Any]], budget: int, *, assess: Callable[
-        [dict[str, Any]], dict[str, Any]], base_key: Callable[[dict[str, Any]], Any]
-          ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        [dict[str, Any]], dict[str, Any]], base_key: Callable[[dict[str, Any]], Any],
+          credit: float = 0.0) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Choose `budget` candidates: screen the head of the backpressure order, put independent
-    ground first by breadth score, sample near-duplicates at the exploration floor."""
+    ground first by breadth score, sample near-duplicates at the exploration floor. `credit` is
+    the floor carried from earlier passes (returned as `exploration_credit` for the next)."""
     ranked = sorted(pending, key=base_key)
     depth = max(SCREEN_MIN, SCREEN_DEPTH * max(1, budget))
     head, tail = ranked[:depth], ranked[depth:]
@@ -232,7 +248,7 @@ def order(pending: list[dict[str, Any]], budget: int, *, assess: Callable[
     fresh = [c for c in head if not c["_breadth"]["near_duplicate"]]
     dups = [c for c in head if c["_breadth"]["near_duplicate"]]
     fresh.sort(key=lambda c: -float(c["_breadth"]["breadth_score"]))
-    out = interleave(fresh, dups, budget)
+    out, credit = interleave(fresh, dups, budget, credit)
     for c in tail:                     # head exhausted: fall back to the backpressure order
         if len(out) >= budget:
             break
@@ -245,20 +261,31 @@ def order(pending: list[dict[str, Any]], budget: int, *, assess: Callable[
             break
         if id(c) not in used:
             out.append(c)
+            used.add(id(c))
+            credit = 0.0               # saturated ground was sampled anyway: nothing owed
+    dup_ids = {id(c) for c in dups}
     return out, {"screened": len(head), "screen_seconds": round(screen_s, 3),
                  "near_duplicates_in_head": len(dups),
                  "duplicate_share_head": round(len(dups) / len(head), 4) if head else None,
-                 "unscreened_tail": len(tail)}
+                 "unscreened_tail": len(tail),
+                 "near_duplicates_released": sum(1 for c in out if id(c) in dup_ids),
+                 "exploration_credit": round(credit, 6)}
 
 
-def interleave(fresh: list[dict[str, Any]], dups: list[dict[str, Any]], budget: int
-               ) -> list[dict[str, Any]]:
-    """Independent candidates first, with the exploration floor ENFORCED: when any
-    near-duplicate is waiting, at least one in every EXPLORATION_EVERY released is one (and at
-    least one per pass), so saturated ground is sampled however few fresh candidates exist."""
+def interleave(fresh: list[dict[str, Any]], dups: list[dict[str, Any]], budget: int,
+               credit: float = 0.0) -> tuple[list[dict[str, Any]], float]:
+    """Independent candidates first, with the exploration floor at EXACTLY one in
+    EXPLORATION_EVERY released, never more (audit 2026-10-07: a floor of "at least one per pass"
+    handed 25-100% of a 1-4 slot budget to near-duplicates). Each pass EARNS budget/10 of a
+    near-duplicate slot while any is waiting; whole slots are spent, the fraction carries to the
+    next pass (capped at one slot), so a budget of 3 samples saturated ground every fourth pass
+    and the long-run share is one in ten whatever the budget. Returns (chosen, credit left)."""
     if budget <= 0:
-        return []
-    floor = min(len(dups), max(1, budget // EXPLORATION_EVERY)) if dups else 0
+        return [], credit
+    if not dups:
+        return fresh[:budget], credit
+    earned = credit + budget / EXPLORATION_EVERY
+    floor = min(len(dups), int(earned + 1e-9))
     take = fresh[:budget - floor]
     out: list[dict[str, Any]] = []
     di = 0
@@ -268,7 +295,7 @@ def interleave(fresh: list[dict[str, Any]], dups: list[dict[str, Any]], budget: 
             out.append(dups[di])
             di += 1
     out.extend(dups[di:floor])
-    return out[:budget]
+    return out[:budget], min(1.0, earned - floor)
 
 
 class BreadthLedger:

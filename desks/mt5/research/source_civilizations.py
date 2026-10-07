@@ -9,11 +9,14 @@ falsifiers -- there is no crawler pointed at a person, no feed of anybody's post
 this module fetches a named individual's output on a schedule.
 
 ONE SCOPED EXCEPTION, 2026-10-06 (principal's Roman Paolucci / Quant Guild directive: "monitor
-Roman's public GitHub"). That later, specific order wins over the general rule for that author
-ONLY, and only as `MONITORED_AUTHOR_EXCEPTIONS` records it: his public GitHub repositories and
-account feed, delta-hashed by the existing federation scan (`federation_ops`), each change
-reopening a fingerprint that is re-mined into translator cards. What comes in is still a
-mechanism with a falsifier, judged by the same ten gates; nothing follows a post, and the rule
+Roman's public GitHub / monitor Quant Guild library updates / monitor new public video
+descriptions/transcripts when accessible / monitor public research/papers / monitor public Quant
+Guild letters/posts"). That later, specific order wins over the general rule for that author
+ONLY, and only as `MONITORED_AUTHOR_EXCEPTIONS` records it: his PUBLIC output on the five named
+surfaces, each a lane in desks/mt5/data/source_rosters/civilizations.yaml, every web surface
+behind the acquirer's terms gate (which fails closed). Each new item is hashed into the PIT store
+and re-mined into translator cards. What comes in is still a mechanism with a falsifier, judged
+by the same ten gates; nothing follows a post, and the rule
 above stands for every other author. This is not a repeal.
 
 WHY THE DISTINCTION MATTERS AND IS NOT A FORMALITY. A desk that tracks an author inherits the
@@ -135,8 +138,16 @@ ACCESS_LABELS: tuple[str, ...] = ("PUBLIC", "PUBLIC_WITH_TERMS", "LICENSED", "OP
 MONITORED_AUTHOR_EXCEPTIONS: dict[str, dict[str, str]] = {
     "romanmichaelpaolucci": {
         "order": "principal 2026-10-06, Roman Paolucci / Quant Guild directive",
-        "scope": "public GitHub repositories and the account activity feed only",
-        "how": "federation_ops delta scan of the paolucci_* and quant_guild_library seeds",
+        "scope": ("public output only, on the directive's five surfaces: public GitHub "
+                  "repositories and any Quant Guild GitHub organisation, the Quant Guild "
+                  "library, the @QuantGuild YouTube descriptions (transcripts where an official "
+                  "API permits), public papers (SSRN and indexed), and public Quant Guild "
+                  "letters/Medium/LinkedIn posts; every web surface through the terms gate, "
+                  "which fails closed"),
+        "how": ("lanes civ_qg_youtube, civ_qg_papers, civ_qg_letters, civ_qg_medium, "
+                "civ_qg_linkedin, civ_qg_github_org, civ_qg_holder, civ_qg_github_account, "
+                "civ_qg_library in desks/mt5/data/source_rosters/civilizations.yaml; the two "
+                "GitHub fallbacks defer to the external federation's seeds once they run"),
         "output": "translator cards -> canonical compiler -> ten gates; nothing follows a post",
     },
 }

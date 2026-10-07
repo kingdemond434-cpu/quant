@@ -25,13 +25,16 @@ from __future__ import annotations
 
 import functools
 import json
+import os
 import re
+import time
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
+from libs.civilizations import backpressure as BP
 from libs.civilizations import ontology as O
 
 MIN_DF = 5
@@ -107,6 +110,8 @@ class EmergentLexicon:
     """The residue lexicon and the classes it has given birth to (both durable JSON)."""
 
     def __init__(self, data_dir: Path, *, exclude: re.Pattern[str] | None = None) -> None:
+        self.data_dir = Path(data_dir)
+        self.lock_path = self.data_dir / "emergent_lexicon.lock"
         self.lex_path = Path(data_dir) / "emergent_lexicon.json"
         self.cls_path = Path(data_dir) / "emergent_classes.json"
         self.exclude = exclude
@@ -116,6 +121,7 @@ class EmergentLexicon:
         # what THIS process observed since its last sync: the resident and the hourly leg each
         # hold a lexicon, so a save merges its delta into the file instead of overwriting it
         self.delta: dict[str, dict[str, Any]] = {}
+        self._merged_spools: list[Path] = []
 
     @staticmethod
     def _load(p: Path) -> dict[str, dict[str, Any]]:
@@ -136,14 +142,41 @@ class EmergentLexicon:
                 _bump(book, t, at=at, source_id=source_id, uri=uri)
 
     def sync(self) -> None:
-        """Re-read the files, add this process's delta, keep every class either side holds."""
+        """Re-read the files, add this process's delta and every spooled delta, keep every class
+        either side holds. Call it under the lexicon lock (`flush`, the ontology step)."""
         disk = self._load(self.lex_path)
-        for t, d in self.delta.items():
-            _bump(disk, t, at=str(d["first_seen"]), df=int(d["df"]), sources=d["sources"],
-                  examples=d["examples"])
+        spools = sorted(self.data_dir.glob("emergent_delta.*.json"))
+        for book in [self.delta, *(self._load(sp) for sp in spools)]:
+            for t, d in book.items():
+                _bump(disk, t, at=str(d["first_seen"]), df=int(d["df"]),
+                      sources=d["sources"], examples=d["examples"])
         self.lex = disk
         self.classes = {**self.classes, **self._load(self.cls_path)}
         self.delta = {}
+        self._merged_spools = spools
+
+    def flush(self, wait_s: float = 30.0) -> str:
+        """Put this process's observations on disk NOW (the after-pass that would have merged
+        them may be skipped under its lock, and the hourly leg exits after one pass). Under the
+        lexicon lock the delta is merged into the files; when that lock cannot be had the delta
+        is spooled to its own file, which the next `sync` merges. Nothing observed is lost."""
+        if not self.delta:
+            return "nothing"
+        lock = BP.FileLock(self.lock_path)
+        if lock.acquire(wait_s=wait_s):
+            try:
+                self.sync()
+                self.save()
+                return "merged"
+            finally:
+                lock.release()
+        spool = self.data_dir / f"emergent_delta.{os.getpid()}.{time.time_ns()}.json"
+        spool.parent.mkdir(parents=True, exist_ok=True)
+        tmp = spool.with_suffix(".tmp")
+        tmp.write_text(json.dumps(self.delta, ensure_ascii=False), "utf-8")
+        tmp.replace(spool)
+        self.delta = {}
+        return "spooled"
 
     def match(self, text: str) -> list[str]:
         """Emergent classes whose term appears in `text` (the ROUTE step)."""
@@ -183,6 +216,9 @@ class EmergentLexicon:
             tmp = p.with_suffix(".tmp")
             tmp.write_text(json.dumps(doc, ensure_ascii=False), "utf-8")
             tmp.replace(p)
+        for sp in self._merged_spools:              # merged and saved: the spool is spent
+            sp.unlink(missing_ok=True)
+        self._merged_spools = []
 
     def queries(self, missions: Iterable[Mapping[str, Any]], *, n: int = MAX_QUERIES
                 ) -> list[str]:

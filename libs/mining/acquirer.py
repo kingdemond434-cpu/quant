@@ -9,9 +9,10 @@ nothing is doubled, which is `test_cursor_resume`.
 
 EVERY SOURCE LEAVES AN OUTCOME, every run. `ok`, `empty`, `BLOCKED_AUTH` (a login or paid key the
 box does not hold; the keyless path runs where one exists), `BLOCKED_FETCH` (403/WAF/DNS: the
-host refused, recorded with its status), `DEFERRED_TO_OWNER` (another lane owns this fetcher and
-its feed is present, so this one does not fetch twice), `NOT_DUE` or `ERROR`. A source that
-silently produced nothing is not a state this module can reach.
+host refused, recorded with its status), `BLOCKED_TERMS` (the row carries a `terms` record that
+is not PERMITTED with a quoted clause: the gate fails closed), `DEFERRED_TO_OWNER` (another
+lane owns this fetcher and its feed is present, so this one does not fetch twice), `NOT_DUE` or
+`ERROR`. A source that silently produced nothing is not a state this module can reach.
 
 FETCHERS ARE DATA-DRIVEN. Nine generic kinds cover the roster (html_listing, rss, reddit_json,
 github_search, telegram_preview, json_api, search_route, page_snapshot, external_feed); a new
@@ -1066,6 +1067,25 @@ def auth_missing(src: Source) -> bool:
     return not (src.auth_env and os.environ.get(src.auth_env))
 
 
+def terms_refusal(src: Source) -> str | None:
+    """THE TERMS GATE, which FAILS CLOSED. A row that carries `config.terms` is fetched only when
+    that record says PERMITTED and quotes the permitting clause and where it was read; anything
+    else (REFUSED, UNVERIFIED, a missing clause, an unreadable record) blocks the fetch and says
+    why. A row without a `terms` record is outside this gate (the robots and licence rules
+    above still apply to it)."""
+    t = src.config.get("terms")
+    if t is None:
+        return None
+    if not isinstance(t, Mapping):
+        return "UNVERIFIED: terms record unreadable"
+    status = str(t.get("status") or "UNVERIFIED").upper()
+    if status == "PERMITTED" and str(t.get("clause") or "").strip() \
+            and str(t.get("url") or "").strip():
+        return None
+    why = str(t.get("why") or t.get("clause") or "no permitting clause recorded")
+    return f"{status}: {why}"[:300]
+
+
 def owner_feed_present(src: Source, root: Path) -> bool:
     return bool(src.mode == "fallback" and src.owner_feed
                 and glob.glob(str(root / src.owner_feed), recursive=True))
@@ -1084,6 +1104,8 @@ def acquire(src: Source, store: PitStore, cursors: CursorStore, ctx: FetchContex
     elif not force and not is_due(src, cursor, ctx.now):
         rep.outcome = "NOT_DUE"
         return rep                                     # not a run; nothing to log
+    elif (refusal := terms_refusal(src)) is not None:
+        rep.outcome, rep.detail = "BLOCKED_TERMS", refusal
     elif auth_missing(src):
         rep.outcome, rep.detail = "BLOCKED_AUTH", f"needs {src.auth} ({src.auth_env or '?'})"
     elif root is not None and owner_feed_present(src, root):

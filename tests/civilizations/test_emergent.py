@@ -68,3 +68,32 @@ def test_two_processes_merge_their_observations(tmp_path: Path) -> None:
     row = c.lex["monsoon rainfall"]
     assert row["df"] == 6 and set(row["sources"]) == {"la", "lb"}
     assert "monsoon rainfall" in b.promote()               # 6 items, 2 lanes: born
+
+
+def test_observations_survive_a_skipped_after_pass(tmp_path: Path) -> None:
+    """Audit 2026-10-07: a process whose after-pass is skipped under the lock (and which then
+    exits) used to lose everything it observed. `flush` merges it now, or spools it when the
+    lexicon lock is held, and the next sync merges the spool exactly once."""
+    a = EM.EmergentLexicon(tmp_path)
+    a.observe("monsoon rainfall moves sugar futures", source_id="la", uri="a0")
+    assert a.flush() == "merged" and a.flush() == "nothing"
+    assert EM.EmergentLexicon(tmp_path).lex["monsoon rainfall"]["df"] == 1
+    b = EM.EmergentLexicon(tmp_path)
+    b.observe("monsoon rainfall moves sugar futures", source_id="lb", uri="b0")
+    from libs.civilizations import backpressure as BP
+    held = BP.FileLock(b.lock_path)
+    assert held.acquire()
+    try:
+        assert b.flush(wait_s=0) == "spooled"
+    finally:
+        held.release()
+    assert list(tmp_path.glob("emergent_delta.*.json"))
+    c = EM.EmergentLexicon(tmp_path)
+    c.sync()
+    c.save()
+    assert c.lex["monsoon rainfall"]["df"] == 2 and set(c.lex["monsoon rainfall"]["sources"]) \
+        == {"la", "lb"}
+    assert not list(tmp_path.glob("emergent_delta.*.json"))      # merged once, then spent
+    d = EM.EmergentLexicon(tmp_path)
+    d.sync()
+    assert d.lex["monsoon rainfall"]["df"] == 2

@@ -60,6 +60,7 @@ EXPECTED: dict[str, tuple[str, ...]] = {
     "ubiquant": ("validation_method", "ontology"),
     "jpx": ("validation_method", "ontology"),
     "g_research": ("validation_method", "ontology"),
+    "quant_guild": ("source_type", "representation", "validation_method", "ontology"),
 }
 #: values a civilization cannot be expected to hold (nobody publishes Bridgewater GP code).
 NOT_EXPECTED: dict[str, frozenset[str]] = {

@@ -8,6 +8,7 @@
 #
 #   civilization     worldquant | quantconnect | man_ahl | bridgewater | aqr | two_sigma | deshaw
 #                    | winton | market_makers | renaissance | ubiquant | jpx | g_research
+#                    | quant_guild | frontier
 #   lane             the lane name the principal's blueprint uses
 #   ontology_hint    the outcomes this lane is FOR (a prior, never a verdict: libs/civilizations/
 #                    ontology.py decides per item and only ALPHA_MECHANISM reaches the gauntlet)
@@ -730,3 +731,104 @@ sources:
      region: uk, language: en, source_culture: UK/en, participant_structure: institutional,
      crowding_prior: medium, failure_mode_hypothesis: "validation and online-learning methods only; the crypto venue is outside the MT5 mandate",
      config: {search: repositories, queries: ["g-research-crypto-forecasting", "g-research-crypto-forecasting solution"]}}
+
+  # ================================================================ QUANT GUILD (Roman Paolucci)
+  # The ONE monitored author (source_civilizations.MONITORED_AUTHOR_EXCEPTIONS, principal
+  # 2026-10-06): "monitor Roman's public GitHub / Quant Guild library updates / new public video
+  # descriptions/transcripts when accessible / public research/papers / public Quant Guild
+  # letters/posts". Every web surface carries a `terms` record; the acquirer's terms gate fetches
+  # only a PERMITTED record with its quoted clause, so an unverified surface is BLOCKED_TERMS,
+  # never crawled. The two GitHub rows are FALLBACKS: the external federation (#166) owns those
+  # seeds, and once its Quant Guild cards are on disk these rows defer to it.
+  - {id: civ_qg_youtube, civilization: quant_guild, url: "https://www.youtube.com/@QuantGuild", owner: civilizations/quant_guild,
+     consumer: libs/civilizations/resident.py, lane: qg_video, priority: 1,
+     name: "Quant Guild YouTube: every upload's full description (Data API back catalogue + RSS delta)",
+     kind: text, fetcher: youtube_channel, auth: optional, auth_env: YOUTUBE_API_KEY,
+     cadence_minutes: 360, cadence_class: daily, uses: [direct_cells, indirect_cells],
+     ontology_hint: [ALPHA_MECHANISM, RESEARCH_METHOD, VALIDATION_IDEA], region: us,
+     language: en, licence: "YouTube API Services terms; descriptions mined for mechanisms only",
+     source_culture: US/en, participant_structure: mixed, crowding_prior: medium,
+     failure_mode_hypothesis: "teaching material on liquid US assets; the mechanism, not the example, is what translates to MT5",
+     config: {channel_id: UCW1svfGxG4ADnbc1HCH6dqA, pages_per_run: 4}}
+  - {id: civ_qg_papers, civilization: quant_guild, url: "https://api.crossref.org/works?query.author=Roman%20Paolucci", owner: civilizations/quant_guild,
+     consumer: libs/civilizations/resident.py, lane: qg_papers, priority: 2,
+     name: "Roman Paolucci papers: SSRN (DOI prefix 10.2139) and every other indexed work, via Crossref",
+     kind: text, fetcher: json_api, cadence_minutes: 1440, cadence_class: daily,
+     uses: [direct_cells, indirect_cells], ontology_hint: [ALPHA_MECHANISM, RESEARCH_METHOD],
+     region: us, language: en, licence: "Crossref open metadata (titles, abstracts, DOIs)",
+     source_culture: US/en, participant_structure: mixed, crowding_prior: low,
+     failure_mode_hypothesis: "pricing and volatility research; a paper's mechanism is a hypothesis the gates judge",
+     config: {urls: ["https://api.crossref.org/works?query.author={q}&filter=prefix:10.2139&sort=published&order=desc&rows=50",
+                     "https://api.crossref.org/works?query.author={q}&sort=published&order=desc&rows=50"],
+              queries: ["Roman Paolucci"], items_path: message.items,
+              fields: {uri: URL, title: title.0, body: abstract, time: created.timestamp}}}
+  - {id: civ_qg_letters, civilization: quant_guild, url: "https://quantguild.com/letters", owner: civilizations/quant_guild,
+     consumer: libs/civilizations/resident.py, lane: qg_letters, priority: 2,
+     name: "Quant Guild letters: the public archive listing (titles and previews; full letters need sign-in)",
+     kind: text, fetcher: html_listing, cadence_minutes: 1440, cadence_class: weekly,
+     uses: [indirect_cells], ontology_hint: [ALPHA_MECHANISM, RESEARCH_METHOD], region: us,
+     language: en, source_culture: US/en, participant_structure: mixed, crowding_prior: medium,
+     failure_mode_hypothesis: "weekly commentary; a named mechanism is a hypothesis, the market view is not",
+     config: {listing: "https://quantguild.com/letters", listing_only: true,
+              item_regex: "/letters/\\d{4}-\\d{2}-\\d{2}",
+              terms: {status: UNVERIFIED, url: "https://quantguild.com/robots.txt",
+                      why: "no terms page (quantguild.com/terms 404 on 2026-10-07); robots.txt carries a Cloudflare content-signals policy whose values were not recorded; full letters are behind sign-in, so only the public listing could ever be read. Record the permitting clause here to open the lane."}}}
+  - {id: civ_qg_medium, civilization: quant_guild, url: "https://quantguild.medium.com/feed", owner: civilizations/quant_guild,
+     consumer: libs/civilizations/resident.py, lane: qg_posts, priority: 3,
+     name: "Quant Guild on Medium (RSS)", kind: text, fetcher: rss, cadence_minutes: 1440,
+     cadence_class: weekly, uses: [indirect_cells], ontology_hint: [ALPHA_MECHANISM, RESEARCH_METHOD],
+     region: us, language: en, source_culture: US/en, participant_structure: mixed,
+     crowding_prior: medium, failure_mode_hypothesis: "as the letters",
+     config: {feeds: ["https://quantguild.medium.com/feed"],
+              terms: {status: REFUSED, url: "https://policy.medium.com/medium-rules-30e5502c4eb4",
+                      clause: "use any software, script, robot, spider or other automatic device, process or means (including crawlers, browser plugins and add-ons or any other technology) to access the Services for any purpose, including without limitation to scrape or otherwise copy any of the data or content on the Services",
+                      why: "Medium Rules forbid automated access without Medium's express written consent (read 2026-10-07)"}}}
+  - {id: civ_qg_linkedin, civilization: quant_guild, url: "https://www.linkedin.com/company/quant-guild/", owner: civilizations/quant_guild,
+     consumer: libs/civilizations/resident.py, lane: qg_posts, priority: 3,
+     name: "Quant Guild LinkedIn technical posts", kind: text, fetcher: page_snapshot,
+     cadence_minutes: 1440, cadence_class: weekly, uses: [indirect_cells],
+     ontology_hint: [ALPHA_MECHANISM], region: us, language: en, source_culture: US/en,
+     participant_structure: mixed, crowding_prior: medium, failure_mode_hypothesis: "as the letters",
+     config: {pages: [{url: "https://www.linkedin.com/company/quant-guild/", label: company_posts}],
+              terms: {status: REFUSED, url: "https://www.linkedin.com/robots.txt",
+                      why: "linkedin.com/robots.txt disallows the user-agreement page itself to a robots-honouring fetcher (2026-10-07), and the User Agreement forbids scraping; no permitting clause exists"}}}
+  - {id: civ_qg_github_org, civilization: quant_guild, url: "https://github.com/search?q=%22quant+guild%22", owner: civilizations/quant_guild,
+     consumer: libs/civilizations/resident.py, lane: qg_github, priority: 2,
+     name: "Any Quant Guild GitHub organisation or repository (search; new ones promoted to git mirrors)",
+     kind: code, fetcher: github_search, auth: optional, auth_env: GITHUB_TOKEN,
+     cadence_minutes: 1440, cadence_class: daily, uses: [direct_cells, indirect_cells],
+     ontology_hint: [ALPHA_MECHANISM, INFRASTRUCTURE_PATTERN], region: us, language: en,
+     source_culture: US/en, participant_structure: mixed, crowding_prior: medium,
+     failure_mode_hypothesis: "course code; the mechanism translates, the US-equity example does not",
+     config: {search: repositories, discover_regex: "github\\.com/([\\w.-]+/[\\w.-]+)$",
+              discover_into: civ_qg_holder,
+              queries: ["\"quant guild\" in:name,description,readme", "quantguild in:name,description",
+                        "org:quantguild", "org:QuantGuild"]}}
+  - {id: civ_qg_holder, civilization: quant_guild, lane: qg_github, priority: 2,
+     name: "Quant Guild holder: repositories the org search discovered (promoted to git_mirror rows)",
+     kind: code, fetcher: owned, owner: civilizations/quant_guild, cadence_minutes: 1440,
+     cadence_class: daily, uses: [direct_cells], ontology_hint: [ALPHA_MECHANISM],
+     region: us, language: en, source_culture: US/en, participant_structure: mixed,
+     crowding_prior: medium, failure_mode_hypothesis: "as civ_qg_github_org",
+     consumer: libs/civilizations/resident.py}
+  - {id: civ_qg_github_account, civilization: quant_guild, url: "https://github.com/romanmichaelpaolucci", owner: external_federation,
+     consumer: libs/civilizations/resident.py, lane: qg_github, priority: 2,
+     name: "Roman Paolucci's public repositories (fallback until the federation's seeds run)",
+     kind: code, fetcher: github_search, auth: optional, auth_env: GITHUB_TOKEN,
+     mode: fallback, owner_feed: "desks/mt5/data/external_packets/quant_guild_cards_*.json",
+     cadence_minutes: 1440, cadence_class: daily, uses: [direct_cells, indirect_cells],
+     ontology_hint: [ALPHA_MECHANISM, INFRASTRUCTURE_PATTERN], region: us, language: en,
+     source_culture: US/en, participant_structure: mixed, crowding_prior: medium,
+     failure_mode_hypothesis: "as civ_qg_github_org",
+     config: {search: repositories, queries: ["user:romanmichaelpaolucci"]}}
+  - {id: civ_qg_library, civilization: quant_guild, url: "https://github.com/romanmichaelpaolucci/Quant-Guild-Library", owner: external_federation,
+     consumer: libs/civilizations/resident.py, lane: qg_library, priority: 1,
+     name: "Quant-Guild-Library: every lecture notebook and source file, delta-scanned (fallback until the federation's seed runs)",
+     kind: code, fetcher: git_mirror, mode: fallback,
+     owner_feed: "desks/mt5/data/external_packets/quant_guild_cards_*.json",
+     cadence_minutes: 1440, cadence_class: daily, uses: [direct_cells, indirect_cells],
+     ontology_hint: [ALPHA_MECHANISM, RESEARCH_METHOD, VALIDATION_IDEA], region: us,
+     language: en, source_culture: US/en, participant_structure: mixed, crowding_prior: medium,
+     failure_mode_hypothesis: "lecture code on US examples; mechanisms only",
+     config: {repo: "https://github.com/romanmichaelpaolucci/Quant-Guild-Library",
+              files_per_run: 40, paths: ["*.py", "*.ipynb", "*.md", "*.java"]}}

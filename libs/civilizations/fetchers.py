@@ -1,4 +1,4 @@
-"""Two fetchers the civilizations need that the #133 spine did not have, registered into
+"""Three fetchers the civilizations need that the #133 spine did not have, registered into
 `libs.mining.acquirer.FETCHERS` at import (same signature, same cursor contract).
 
   git_mirror  a PUBLIC git repository mirrored with a blob-less partial clone. The durable
@@ -12,10 +12,19 @@
               makes it a new vintage). This is how a client-rendered listing (the QuantConnect
               Strategy Library's first-30-titles stub) is replaced by the full article set:
               the article pages are server-rendered even when the listing is not.
+  youtube_channel  one public channel's uploads (the 2026-10-06 Quant Guild directive: "monitor
+              new public video descriptions/transcripts when accessible"). With the YouTube
+              Data API key the box holds, the uploads playlist is walked newest page first and
+              then backwards by `pageToken` until the whole back catalogue is read, each video
+              with its FULL description; without the key, the channel's public RSS feed (the
+              latest uploads) keeps the delta alive. Transcripts are recorded per video as NOT
+              ACCESSIBLE and why: the Data API's captions.download needs the channel owner's
+              OAuth grant, and the unofficial caption endpoint is not a published API.
 """
 from __future__ import annotations
 
 import fnmatch
+import json
 import os
 import re
 import subprocess
@@ -249,5 +258,103 @@ def fetch_sitemap(src: acq.Source, cursor: dict[str, Any], ctx: acq.FetchContext
                                                                           - per_run)})
 
 
+YT_API = "https://www.googleapis.com/youtube/v3"
+YT_FEED = "https://www.youtube.com/feeds/videos.xml?channel_id="
+#: what each video record says about its transcript (the directive's "when accessible")
+TRANSCRIPT_STATUS = ("NOT_ACCESSIBLE: the YouTube Data API's captions.download requires OAuth "
+                     "authorisation from the channel owner, and the unofficial timedtext "
+                     "endpoint is not a published API; the full description is mined instead")
+_YT_ENTRY = re.compile(r"(?is)<entry\b.*?</entry>")
+
+
+def youtube_key(src: acq.Source, ctx: acq.FetchContext) -> str:
+    """The Data API key from the environment, else the box's own secrets file
+    (data/secrets/youtube.json, which never leaves the box). Never logged or stored."""
+    key = os.environ.get(src.auth_env or "YOUTUBE_API_KEY", "").strip()
+    if key:
+        return key
+    try:
+        doc = json.loads((ctx.root / "data" / "secrets" / "youtube.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return ""
+    if isinstance(doc, Mapping):
+        for k in ("YOUTUBE_API_KEY", "api_key", "key"):
+            if str(doc.get(k) or "").strip():
+                return str(doc[k]).strip()
+    return ""
+
+
+def _yt_item(vid: str, title: str, body: str, when: str | None, cursor: dict[str, Any],
+             channel: str, via: str) -> acq.Item:
+    return acq.Item(uri=f"https://www.youtube.com/watch?v={vid}", title=title,
+                    body=body, publication_time=when or None,
+                    cursor_update=acq._seen_add(cursor, vid),
+                    meta={"item_kind": "video", "channel": channel, "via": via,
+                          "transcript": TRANSCRIPT_STATUS})
+
+
+def fetch_youtube_channel(src: acq.Source, cursor: dict[str, Any], ctx: acq.FetchContext
+                          ) -> Iterator[acq.Item]:
+    cfg = src.config
+    channel = str(cfg.get("channel_id") or "")
+    if not channel.startswith("UC"):
+        raise ValueError(f"youtube_channel needs a UC... channel_id, got {channel!r}")
+    seen = acq._seen(cursor)
+    key = youtube_key(src, ctx)
+    if not key:                                    # keyless: the public feed's latest uploads
+        r = ctx.fetch(YT_FEED + channel)
+        if not r.ok:
+            return
+        for m in _YT_ENTRY.finditer(r.text):
+            b = m.group(0)
+            vid = acq._feed_field(b, "yt:videoId")
+            if not vid or vid in seen:
+                continue
+            seen.add(vid)
+            yield _yt_item(vid, acq._feed_field(b, "title"),
+                           acq._feed_field(b, "media:description"),
+                           acq._feed_field(b, "published"), cursor, channel, "rss")
+        return
+    hdr = {"Accept": "application/json", "X-Goog-Api-Key": key}
+    uploads = "UU" + channel[2:]
+
+    def walk(token: str, pages: int, backfill: bool) -> Iterator[acq.Item]:
+        for _ in range(pages):
+            if ctx.expired():
+                return
+            r = ctx.fetch(f"{YT_API}/playlistItems?part=snippet&maxResults=50"
+                          f"&playlistId={uploads}" + (f"&pageToken={token}" if token else ""),
+                          hdr)
+            if not r.ok:
+                return
+            try:
+                doc = json.loads(r.text)
+            except ValueError:
+                return
+            for it in doc.get("items") or []:
+                sn = it.get("snippet") or {}
+                vid = str((sn.get("resourceId") or {}).get("videoId") or "")
+                if not vid or vid in seen:
+                    continue
+                seen.add(vid)
+                yield _yt_item(vid, str(sn.get("title") or ""), str(sn.get("description") or ""),
+                               str(sn.get("publishedAt") or "") or None, cursor, channel, "api")
+            token = str(doc.get("nextPageToken") or "")
+            if backfill:
+                cursor["page_token"] = token
+                yield acq.Item(uri="", body="", cursor_update={"page_token": token,
+                                                               "backfill_done": not token})
+            if not token:
+                return
+
+    # page one every run (new uploads), then the backfill walk from where the last run stopped,
+    # until the oldest upload has been read
+    yield from walk("", 1, False)
+    if not cursor.get("backfill_done"):
+        yield from walk(str(cursor.get("page_token") or ""),
+                        max(1, acq._as_int(cfg.get("pages_per_run"), 4)), True)
+
+
 acq.FETCHERS.setdefault("git_mirror", fetch_git_mirror)
+acq.FETCHERS.setdefault("youtube_channel", fetch_youtube_channel)
 acq.FETCHERS.setdefault("sitemap", fetch_sitemap)
