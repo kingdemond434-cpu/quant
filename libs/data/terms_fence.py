@@ -37,8 +37,12 @@ and it is the cost of trading on data the publisher forbids.
 """
 from __future__ import annotations
 
+import importlib
+import re
+import sys
 import urllib.parse
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 #: The status prefix, character for character the one `alt_proxies.status_of` and #229's
@@ -53,34 +57,58 @@ CFETS_CLAUSE = ("CFETS market-data terms (https://www.chinamoney.com.cn/english/
                 "institution or individual shall copy, transmit, save, use, publish, sell, "
                 "permit others to use or process CFETS market data, nor develop or produce work "
                 "derived therefrom in any form without written permission from CFETS.' Covers "
-                "the CNY central parity, the CFETS closes and SHIBOR")
-SAFE_CLAUSE = ("SAFE legal statement (https://www.safe.gov.cn/safe/flsm/index.html): commercial "
-               "reprint barred; non-commercial reprint only by permitted media with attribution; "
-               "no grant to use the data. Held to_confirm and FAIL-CLOSED until a written SAFE "
-               "grant or a clearer reuse clause is quoted")
+                "the CNY central parity, the CFETS closes, SHIBOR and the LPR")
 
-#: FAIL-CLOSED APPLIES TO EVERY to_confirm ROW (coordinator ruling, 2026-10-06). The PBOC and
-#: customs hosts were read for terms on that date and neither could be read, so both are fenced.
-PBOC_CLAUSE = ("pbc.gov.cn: no site statement readable (2026-10-06: the fetcher is "
-               "robots-disallowed on http://www.pbc.gov.cn/ and its English site, and #229 "
-               "found no route from the container proxy). Held to_confirm and FAIL-CLOSED "
-               "until the footer's site statement is read and quoted")
-CUSTOMS_CLAUSE = ("customs.gov.cn: no statement readable (2026-10-06: "
-                  "http://english.customs.gov.cn/statement.html and the Chinese site fail on a "
-                  "self-signed certificate chain before robots.txt can be read). Held "
-                  "to_confirm and FAIL-CLOSED until the STATEMENT page is read and quoted")
+# ------------------------------------------------------------------ the one source of truth
+# THE VERDICTS ARE #229's, NOT A PARALLEL TABLE. `alt_proxies.TERMS_HOSTS` maps a host to a
+# terms id and `alt_proxies.terms_gate` answers confirmed / to_confirm / refused for it; this
+# module only applies the rule that `to_confirm` and `refused` are both HELD (fail-closed). If
+# alt_proxies cannot be imported, the hosts below are held to_confirm: a missing module is never
+# permission. That set names hosts only, carries no verdict of its own, and a test pins it to
+# alt_proxies' held hosts.
+HELD_STATES: tuple[str, ...] = ("refused", "to_confirm")
+FAIL_CLOSED_HOSTS: tuple[str, ...] = ("chinamoney.com.cn", "shibor.org", "safe.gov.cn",
+                                      "pbc.gov.cn", "customs.gov.cn", "sge.com.cn")
+_AP: list[Any] = []
 
-#: Terms ids (#229's `terms_ref` vocabulary) -> (state, clause).
-TERMS_REFS: dict[str, tuple[str, str]] = {
-    "cn_cfets_chinamoney": ("refused", CFETS_CLAUSE),
-    "cn_safe_official": ("to_confirm", SAFE_CLAUSE),
-    "cn_pboc_official": ("to_confirm", PBOC_CLAUSE),
-    "cn_customs_official": ("to_confirm", CUSTOMS_CLAUSE),
-}
+
+def alt_proxies() -> Any:
+    """#229's `research.alt_proxies`, imported once; None when it cannot be imported."""
+    if not _AP:
+        mod: Any = None
+        try:
+            desk = Path(__file__).resolve().parents[2] / "desks" / "mt5"
+            if str(desk) not in sys.path:
+                sys.path.append(str(desk))
+            mod = importlib.import_module("research.alt_proxies")
+            if not callable(getattr(mod, "terms_gate", None)):
+                mod = None
+        except Exception:
+            mod = None
+        _AP.append(mod)
+    return _AP[0]
+
+
+def terms_hosts() -> dict[str, str]:
+    """host suffix -> terms id, from alt_proxies (fail-closed placeholder ids without it)."""
+    ap = alt_proxies()
+    if ap is None:
+        return dict.fromkeys(FAIL_CLOSED_HOSTS, "unreadable_alt_proxies")
+    return dict(ap.TERMS_HOSTS)
+
+
+def ref_verdict(ref_or_url: str) -> tuple[str, str]:
+    """(state, why) from `alt_proxies.terms_gate`; to_confirm when it cannot be asked."""
+    ap = alt_proxies()
+    if ap is None:
+        return "to_confirm", "alt_proxies unimportable: fail closed"
+    state, why = ap.terms_gate(ref_or_url)
+    return str(state), str(why)
+
 
 #: WHAT WAS READ, per terms id: the URL tried, when, and what came back. A host leaves the fence
-#: only when its entry here quotes a PERMITTING clause verbatim with its URL and fetch date; an
-#: unreadable page is never permission.
+#: only when alt_proxies' verdict for it turns `confirmed`, which needs a PERMITTING clause
+#: quoted verbatim with its URL and fetch date; an unreadable page is never permission.
 TERMS_EVIDENCE: dict[str, dict[str, str]] = {
     "cn_cfets_chinamoney": {
         "terms_url": "https://www.chinamoney.com.cn/english/svcmds/",
@@ -106,15 +134,33 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                    "self-signed certificate in certificate chain' on both pages")},
 }
 
-#: Registrable host suffix -> terms id. Matched on the suffix so www./en./any sub-host is held
-#: together with its root, as #229's `TERMS_HOSTS` does.
-TERMS_HOSTS: dict[str, str] = {
-    "chinamoney.com.cn": "cn_cfets_chinamoney",
-    "shibor.org": "cn_cfets_chinamoney",
-    "safe.gov.cn": "cn_safe_official",
-    "pbc.gov.cn": "cn_pboc_official",
-    "customs.gov.cn": "cn_customs_official",
+# ------------------------------------------------------------------ provenance, not hosts
+# A RELAY IS THE SAME DATA. SHIBOR fetched through api.tushare.pro, the parity through akshare or
+# any other API, is still CFETS market data, and the clause forbids using it "in any form". A host
+# gate never sees a relay, so a series is ALSO held by WHO ORIGINALLY PUBLISHES IT. Each entry is
+# a terms id and the series names that publisher originates; the verdict is still alt_proxies'.
+_NB = r"(?<![a-z0-9])"
+_NE = r"(?![a-z0-9])"
+PUBLISHER_SERIES: dict[str, re.Pattern[str]] = {
+    "cn_cfets_chinamoney": re.compile(
+        rf"{_NB}(?:shibor|lpr|ccpr|cfets|chinamoney|loan[ _-]?prime[ _-]?rate|"
+        rf"central[ _-]?parity|cny[ _-]?fix(?:ing)?)(?:_|{_NE})"
+        r"|中间价|中間價|贷款市场报价利率|上海银行间同业拆放利率|中国外汇交易中心|全国银行间同业拆借中心",
+        re.IGNORECASE),
 }
+
+
+def provenance_hold(*names: str) -> tuple[str, str]:
+    """(state, reason) when any of `names` (a series key, an API name, a dataset or publisher
+    label) is a series a held publisher ORIGINATES, whatever host relays it; else ("", "")."""
+    blob = " ".join(str(n or "") for n in names)
+    for ref, pat in PUBLISHER_SERIES.items():
+        if pat.search(blob):
+            state, why = ref_verdict(ref)
+            if state in HELD_STATES:
+                return state, reason(state, f"{why} [relayed series, originating publisher: {ref}]")
+    return "", ""
+
 
 #: The fields a pack row or registry row may carry its hold in, checked in this order.
 _ROW_FIELDS: tuple[str, ...] = ("terms_status", "status", "licence", "how_to_fetch", "notes",
@@ -147,13 +193,16 @@ def _host(text: str) -> str:
 def host_hold(url_or_host: str) -> tuple[str, str]:
     """(state, reason) for a URL or bare host on a held ground, else ("", "")."""
     host = _host(url_or_host)
-    if not host:
+    if not host or " " in host:
         return "", ""
-    ref = next((v for k, v in TERMS_HOSTS.items() if host == k or host.endswith("." + k)), None)
+    ref = next((v for k, v in terms_hosts().items() if host == k or host.endswith("." + k)),
+               None)
     if ref is None:
         return "", ""
-    state, clause = TERMS_REFS[ref]
-    return state, reason(state, clause)
+    state, why = ref_verdict(ref) if alt_proxies() is not None else ("to_confirm", ref)
+    if state not in HELD_STATES:
+        return "", ""
+    return state, reason(state, why)
 
 
 def _get(row: Any, name: str) -> str:
@@ -182,9 +231,10 @@ def row_hold(row: Any) -> tuple[str, str]:
         head = text.split(" ", 1)[0]
         return (head.split(":", 1)[1] if ":" in head else "to_confirm") or "to_confirm", text
     ref = _get(row, "terms_ref")
-    if ref in TERMS_REFS:
-        state, clause = TERMS_REFS[ref]
-        return state, reason(state, clause)
+    if ref:
+        state, why = ref_verdict(ref)
+        if state in HELD_STATES:
+            return state, reason(state, why)
     # A row is held by its hosts only when EVERY host it names is held: a source with one held
     # root among several open ones stays open, and the per-URL gate (`host_hold`, asked by every
     # fetching organ) skips just the held root. Otherwise one mirror root on customs.gov.cn would

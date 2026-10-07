@@ -98,9 +98,11 @@ def test_safe_rows_are_to_confirm_and_name_cot_as_the_lawful_positioning_read() 
 def test_the_pack_and_the_fence_carry_the_same_ruling() -> None:
     assert CN.TERMS_BLOCKED == TF.TERMS_BLOCKED
     assert CN.TERMS_RULING == TF.RULING
-    for ref, (state, clause) in TF.TERMS_REFS.items():
-        assert CN.TERMS_RULINGS[ref]["terms"] == state
-        assert CN.TERMS_RULINGS[ref]["clause"] == clause
+    # The pack's states are #229's verdicts (alt_proxies.terms_gate), not a second opinion.
+    for ref, rule in CN.TERMS_RULINGS.items():
+        assert TF.ref_verdict(ref)[0] == rule["terms"], ref
+    assert CLAUSE_WORDS in CN.TERMS_RULINGS["cn_cfets_chinamoney"]["clause"]
+    assert CLAUSE_WORDS in TF.CFETS_CLAUSE
 
 
 # ------------------------------------------------------------------------------- the fence
@@ -356,13 +358,17 @@ def test_pboc_and_customs_hosts_are_fenced_to_confirm(url: str, ref: str) -> Non
 
 
 def test_a_host_leaves_the_fence_only_on_a_quoted_permitting_clause() -> None:
-    for ref in TF.TERMS_REFS:
+    for ref in TF.TERMS_EVIDENCE:
+        assert TF.ref_verdict(ref)[0] in TF.HELD_STATES, ref
         ev = TF.TERMS_EVIDENCE[ref]
         assert ev["terms_url"] and ev["checked_at"].startswith("2026-10-06"), ref
         # Every fenced id carries no permitting clause; an unreadable page is never permission.
         assert ev["permitting_clause"] == "", ref
-    for host, ref in TF.TERMS_HOSTS.items():
-        assert ref in TF.TERMS_REFS and ref in TF.TERMS_EVIDENCE, host
+    ap = TF.alt_proxies()
+    for host, ref in TF.terms_hosts().items():
+        if TF.ref_verdict(ref)[0] in TF.HELD_STATES:      # a held host names its evidence
+            assert (ref in TF.TERMS_EVIDENCE or ref in ap.GATE_TERMS_EVIDENCE
+                    or ref in ap.TERMS_EVIDENCE), host
     assert TF.TERMS_EVIDENCE["cn_pboc_official"]["result"].startswith("UNREADABLE")
     assert TF.TERMS_EVIDENCE["cn_customs_official"]["result"].startswith("UNREADABLE")
 
@@ -380,8 +386,9 @@ def test_pboc_and_customs_rows_read_to_confirm_and_no_substitute_names_pbc_as_la
     open_roots = {r for sc in CN.SOURCE_CLASSES if not CN.is_terms_blocked(sc)
                   and not str(sc["licence"]).startswith("BLOCKED_ON_TERMS")
                   for r in sc["roots"]}
-    for host in TF.TERMS_HOSTS:
-        assert not any(host in r for r in open_roots), host
+    for host in TF.terms_hosts():
+        if TF.host_hold(host)[0]:
+            assert not any(host in r for r in open_roots), host
     for d in CN.DATASETS:
         sub = str(d.get("lawful_substitute") or "").lower()
         assert "once its terms are read" not in sub and "once their own terms" not in sub
@@ -426,3 +433,113 @@ def test_one_held_root_among_open_roots_does_not_silence_the_whole_source() -> N
     assert TF.hold_of("http://stats.customs.gov.cn")[0] == "to_confirm"   # the URL itself is
     assert TF.row_hold({"id": "y", "roots": ["pbc.gov.cn", "safe.gov.cn"]})[0] == "to_confirm"
     assert TF.row_hold({"id": "z", "roots": ["chinamoney.com.cn", "safe.gov.cn"]})[0] == "refused"
+
+
+# ------------------------------------------------------------- one source of truth: #229's table
+def test_every_fence_host_gets_the_same_verdict_as_alt_proxies() -> None:
+    ap = TF.alt_proxies()
+    assert ap is not None, "terms_fence must read #229's alt_proxies, not a parallel table"
+    assert TF.terms_hosts() == dict(ap.TERMS_HOSTS)
+    for host in ap.TERMS_HOSTS:
+        for url in (f"https://{host}/", f"https://www.{host}/some/page"):
+            state = ap.terms_gate(url)[0]
+            got = TF.host_hold(url)[0]
+            assert got == (state if state in TF.HELD_STATES else ""), (url, state, got)
+
+
+def test_the_fail_closed_host_list_is_exactly_alt_proxies_held_hosts() -> None:
+    ap = TF.alt_proxies()
+    held = {h for h, ref in ap.TERMS_HOSTS.items() if ap.terms_gate(ref)[0] in TF.HELD_STATES}
+    assert set(TF.FAIL_CLOSED_HOSTS) == held
+
+
+# ------------------------------------------------------------- provenance: a relay is the same data
+@pytest.mark.parametrize(("names", "state"), [
+    (("shibor_on", "shibor"), "refused"),
+    (("shibor_3m",), "refused"),
+    (("lpr_1y",), "refused"),
+    (("cny central parity",), "refused"),
+    (("人民币汇率中间价",), "refused"),
+    (("ccpr",), "refused"),
+    (("csi300", "index_daily"), ""),
+    (("nbs_pmi",), ""),
+    (("help", "slpr", "shiborx"), ""),
+])
+def test_provenance_holds_cfets_series_whatever_relays_them(names: tuple[str, ...],
+                                                            state: str) -> None:
+    assert TF.provenance_hold(*names)[0] == state
+
+
+def test_tushare_with_a_token_never_requests_shibor(monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.data import free_stack as FS
+    monkeypatch.setenv("TUSHARE_TOKEN", "test-token-not-real")
+    bodies: list[dict[str, Any]] = []
+
+    def _fetch(url: str, headers: Any, body: bytes | None) -> bytes:
+        import json
+        bodies.append(json.loads(body or b"{}"))
+        return b'{"code": 0, "data": {"fields": ["trade_date", "close"], "items": []}}'
+
+    h = FS.fetch_tushare(_fetch, {"id": "tushare", "key_env": "TUSHARE_TOKEN"}, {},
+                         __import__("datetime").datetime.now())
+    apis = [b.get("api_name") for b in bodies]
+    assert "shibor" not in apis and apis == ["index_daily"]
+    assert h.failures["BLOCKED_ON_TERMS:refused"] == 2
+    assert not any(k.startswith("shibor") for k in h.columns)
+
+
+def test_free_stack_never_requests_a_held_host() -> None:
+    from libs.data import free_stack as FS
+    called: list[str] = []
+    h = FS.Harvest("x")
+    got = FS._get(lambda u, hd, b: called.append(u) or b"x", h,
+                  "https://www.chinamoney.com.cn/r/cms/www/chinamoney/data/fx/ccpr.json")
+    assert got is None and called == [] and h.requests == 0
+    assert h.failures["BLOCKED_ON_TERMS:refused"] == 1
+
+
+# ------------------------------------------------------------- the two crawlers
+def test_the_deep_forest_grounds_file_keeps_the_held_grounds_and_names_the_hold() -> None:
+    import json
+    doc = json.loads((DESK / "data" / "deep_forest_sources.json").read_text("utf-8"))
+    grounds = doc["grounds"] if isinstance(doc, dict) else doc
+    cfets = [g for g in grounds if "chinamoney.com.cn" in str(g.get("url") or "")]
+    assert cfets, "the CFETS ground is kept, never deleted"
+    assert all(g["terms_status"] == "BLOCKED_ON_TERMS:refused" for g in cfets)
+    for g in grounds:
+        if TF.host_hold(str(g.get("url") or ""))[0]:
+            assert str(g.get("terms_status") or "").startswith("BLOCKED_ON_TERMS"), g["name"]
+
+
+def test_the_deep_forest_miner_never_requests_a_held_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import deep_forest_miner as DF
+    asked: list[str] = []
+    monkeypatch.setattr(DF.pf, "get", lambda url, **k: asked.append(url))
+    with pytest.raises(DF.urllib.error.HTTPError) as exc:
+        DF._http("https://www.chinamoney.com.cn/chinese/bkccpr/")
+    assert exc.value.code == 451 and asked == []
+    run = DF._Run(budget_s=5.0, fetch=True, only=None)
+    monkeypatch.setattr(run, "page", lambda *a, **k: asked.append("page") or "")
+    run.work({"name": "外汇交易中心 中间价公告", "region": "cn", "language": "zh",
+              "route": "http", "kind": "macro",
+              "url": "https://www.chinamoney.com.cn/chinese/bkccpr/"})
+    run.work({"name": "PBoC search", "region": "cn", "language": "zh", "route": "search",
+              "kind": "macro", "site": "pbc.gov.cn"})
+    assert asked == []
+    st = [s for s in run.status if "ground" in s]
+    assert [s["status"] for s in st] == ["BLOCKED_ON_TERMS:refused",
+                                         "BLOCKED_ON_TERMS:to_confirm"]
+    assert run.counts["blocked_on_terms"] == 2
+
+
+def test_the_world_crawler_never_requests_a_held_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    sys.path.insert(0, str(DESK / "side_channels"))
+    import world_crawler as WC  # type: ignore[import-not-found]
+    opened: list[Any] = []
+    monkeypatch.setattr(WC.urllib.request, "urlopen", lambda *a, **k: opened.append(a))
+    for url, state in (("https://www.chinamoney.com.cn/chinese/bkccpr/", "refused"),
+                       ("https://www.safe.gov.cn/safe/whcb/index.html", "to_confirm"),
+                       ("http://www.customs.gov.cn/customs/302249/index.html", "to_confirm")):
+        raw, why = WC.fetch(url)
+        assert raw is None and why == f"BLOCKED_ON_TERMS:{state}"
+    assert opened == []

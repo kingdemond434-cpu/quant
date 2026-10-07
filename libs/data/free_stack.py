@@ -62,6 +62,8 @@ from datetime import UTC, date, datetime, timedelta
 from itertools import pairwise
 from typing import Any
 
+from libs.data import terms_fence
+
 UNMEASURED = "UNMEASURED"
 UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
       "Chrome/124.0.0.0 Safari/537.36 quant-desk-free-stack/1.0 (research)")
@@ -137,6 +139,13 @@ class Harvest:
 
 def _get(fetch: Fetch, h: Harvest, url: str, headers: Mapping[str, str] | None = None,
          body: bytes | None = None) -> bytes | None:
+    # Every free-stack request passes the terms fence first: a held host (CFETS refused; SAFE,
+    # PBOC, customs to_confirm -- PR #229) is never requested, and the hold is counted.
+    t_state = terms_fence.host_hold(url)[0]
+    if t_state:
+        h.failures[terms_fence.status(t_state)] += 1
+        h.notes.append(f"{terms_fence.status(t_state)}: {url[:120]}")
+        return None
     h.requests += 1
     try:
         return fetch(url, headers, body)
@@ -1458,6 +1467,13 @@ def fetch_tushare(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
         h.detail = f"{row.get('key_env') or 'TUSHARE_TOKEN'} is not set on this host"
         return h
     for key, api, params, field_, targets in TUSHARE_CALLS:
+        # A RELAY IS THE SAME DATA: SHIBOR through tushare is CFETS market data, refused on
+        # CFETS's own terms (PR #229). Gated on the series' PROVENANCE before any request.
+        t_state, t_why = terms_fence.provenance_hold(key, api)
+        if t_state:
+            h.notes.append(f"{key}: {t_why[:240]}")
+            h.failures[terms_fence.status(t_state)] += 1       # counted blocked, never fed
+            continue
         body = json.dumps({"api_name": api, "token": token, "params": params,
                            "fields": ""}).encode()
         pts = parse_tushare(_get(fetch, h, TUSHARE_API, {"Content-Type": "application/json"},

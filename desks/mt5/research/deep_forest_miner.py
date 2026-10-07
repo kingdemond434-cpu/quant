@@ -97,6 +97,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "side_channels"), str
         sys.path.insert(0, p)
 
 from libs.data import polite_fetch as pf  # noqa: E402
+from libs.data import terms_fence  # noqa: E402
 from libs.research import mechanism_claims as mc  # noqa: E402
 
 SOURCE = "deep_forest"
@@ -270,6 +271,13 @@ def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "")
     """One polite GET (per-host spacing, bounded retry on 429/5xx/transport, certifi-backed TLS,
     charset-aware decoding). Raises `urllib.error.HTTPError` on an HTTP failure and `OSError`
     on a transport one, exactly the two shapes `_Run.page` and the route helpers expect."""
+    # A HELD HOST IS NEVER REQUESTED (PR #229: CFETS refused; SAFE, PBOC, customs to_confirm).
+    # 451 Unavailable For Legal Reasons, raised as the HTTP shape callers already handle, so a
+    # hold is never mistaken for a transport failure (which would trip the no-network verdict).
+    t_state = terms_fence.host_hold(url)[0]
+    if t_state:
+        raise urllib.error.HTTPError(url, 451, terms_fence.status(t_state), None,
+                                     None)  # type: ignore[arg-type]
     hdr = {**_UA, "Accept-Language": accept_language(lang)}
     if referer:
         hdr["Referer"] = referer
@@ -747,7 +755,7 @@ class _Run:
         self.counts = {"queries": 0, "pages": 0, "transcripts": 0, "rendered": 0,
                        "dropped_venue": 0, "dropped_unmappable": 0, "duplicate_mechanisms": 0,
                        "claims_seen_before": 0, "net_failures": 0, "dataset_pages": 0,
-                       "dataset_endpoints": 0, "feeds": 0}
+                       "dataset_endpoints": 0, "feeds": 0, "blocked_on_terms": 0}
         #: Shared by every fork of this run: the network verdict and its failure streak.
         self._shared: dict[str, Any] = {"network": None, "fails": 0}
         self._lock = threading.RLock()
@@ -812,8 +820,16 @@ class _Run:
     def lang(self) -> str:
         return str(self.ground.get("language") or "en")
 
+    def _held(self, url: str) -> bool:
+        """A URL on a host held on terms: counted, recorded, never requested."""
+        t_state = terms_fence.host_hold(url)[0]
+        if t_state:
+            self.counts["blocked_on_terms"] += 1
+            self.status.append({"url": url, "terms": terms_fence.status(t_state)})
+        return bool(t_state)
+
     def page(self, url: str, referer: str = "") -> str:
-        if not self._net_ok():
+        if not self._net_ok() or self._held(url):
             return ""
         try:
             body = _http(url, referer=referer, lang=self.lang)
@@ -830,6 +846,8 @@ class _Run:
             return ""
 
     def rendered(self, url: str) -> str:
+        if self._held(url):
+            return ""
         try:
             from libs.data.render_fetch import render
             page, err = render(url, timeout_s=25.0, lang=locale_of(self.lang)[0])
@@ -1344,6 +1362,16 @@ class _Run:
             self.status.append({**row, "status": "NO_ADDRESS",
                                 "why": f"no site and no url to reach for: {g.get('why')}"})
             return
+        # A GROUND ON A HELD HOST (its url, its site, or its own `terms_status`) is counted
+        # BLOCKED_ON_TERMS and not worked; the row stays in the grounds file, named (PR #229).
+        t_state, t_why = terms_fence.row_hold(g)
+        if not t_state and g.get("site"):
+            t_state, t_why = terms_fence.host_hold(str(g.get("site")))
+        if t_state:
+            self.counts["blocked_on_terms"] += 1
+            self.status.append({**row, "status": terms_fence.status(t_state),
+                                "why": t_why[:240]})
+            return
         if not self.fetch:
             self.status.append({**row, "status": "SKIPPED", "why": "--no-fetch"})
             return
@@ -1770,11 +1798,12 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         b = by_region.get(str(s.get("region") or "?"))
         if not b:
             continue
-        if s.get("status") not in ("BUDGET_EXHAUSTED", "SKIPPED"):
+        held = str(s.get("status") or "").startswith(terms_fence.TERMS_BLOCKED)
+        if s.get("status") not in ("BUDGET_EXHAUSTED", "SKIPPED") and not held:
             b["worked"] += 1
         if s.get("status") == "PRODUCTIVE":
             b["productive"] += 1
-        if s.get("status") in ("BLOCKED", "NO_NETWORK", "UNREACHABLE"):
+        if s.get("status") in ("BLOCKED", "NO_NETWORK", "UNREACHABLE") or held:
             b["blocked"] += 1
         b["claims"] += int(s.get("claims") or 0)
         b["datasets"] += int(s.get("datasets") or 0)
