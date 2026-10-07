@@ -158,8 +158,6 @@ def _promote() -> None:
 
 def _weekly_hunt_refresh() -> None:
     """Keep the existing six-day research sweep off the gateway's order lock."""
-    import importlib
-
     marker = BASE / "data" / "hunt7_state.json"
     try:
         last = float(json.loads(marker.read_text(encoding="utf-8")).get("last_sweep", 0))
@@ -168,9 +166,19 @@ def _weekly_hunt_refresh() -> None:
     now = datetime.now(UTC).timestamp()
     if now - last <= 6 * 86400:
         return
-    for module in ("fetch_universe", "run_hunt7", "run_hunt8", "run_hunt9",
-                   "free_shadows", "run_hunt10", "run_hunt12"):
-        runner = importlib.import_module(module).main
+    # Explicit imports make every member visible to the canonical wiring census.
+    import fetch_universe
+    import run_hunt7
+    import run_hunt8
+    import run_hunt9
+    import free_shadows
+    import run_hunt10
+    import run_hunt12
+    jobs = (("fetch_universe", fetch_universe.main), ("run_hunt7", run_hunt7.main),
+            ("run_hunt8", run_hunt8.main), ("run_hunt9", run_hunt9.main),
+            ("free_shadows", free_shadows.main), ("run_hunt10", run_hunt10.main),
+            ("run_hunt12", run_hunt12.main))
+    for module, runner in jobs:
         # These two CLIs parse sys.argv when called without an explicit argument list.
         # The daily step's own --step flag must never become a hunt argument.
         result = runner([]) if module in {"fetch_universe", "run_hunt12"} else runner()

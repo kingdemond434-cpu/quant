@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import ast
-import importlib
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -40,12 +39,12 @@ def test_weekly_hunts_have_a_six_day_stamp_outside_gateway(tmp_path, monkeypatch
     monkeypatch.setattr(daily_cycle, "BASE", tmp_path)
     monkeypatch.setattr(daily_cycle, "dlog", lambda _: None)
     calls: list[tuple[str, tuple[object, ...]]] = []
-    real_import = importlib.import_module
     names = {"fetch_universe", "run_hunt7", "run_hunt8", "run_hunt9",
              "free_shadows", "run_hunt10", "run_hunt12"}
-    monkeypatch.setattr(importlib, "import_module", lambda name: (
-        SimpleNamespace(main=lambda *args: calls.append((name, args))) if name in names
-        else real_import(name)))
+    for name in names:
+        monkeypatch.setitem(sys.modules, name,
+                            SimpleNamespace(main=lambda *args, _name=name:
+                                            calls.append((_name, args))))
 
     daily_cycle._weekly_hunt_refresh()
     assert calls == [("fetch_universe", ([],)), ("run_hunt7", ()),
