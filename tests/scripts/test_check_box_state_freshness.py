@@ -33,6 +33,7 @@ needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="git required
 
 _SCRIPT = '''$relPaths = @(
     "desks/mt5/reports/shadow/shadow_health.json",
+    "desks/mt5/data/RELEASE.json",
     "desks/mt5/data/live_ledger.jsonl"
 )
 '''
@@ -101,6 +102,23 @@ def test_no_box_evidence_is_unmeasured_and_fails(tmp_path: Path) -> None:
     now = datetime.now(UTC)
     doc = fence.measure(_repo(tmp_path, None, now, author="Someone Else"), ref="HEAD")
     assert doc["verdict"] == "UNMEASURED", doc
+
+
+@needs_git
+def test_a_fresh_stamp_written_by_ci_does_not_make_the_box_fresh(tmp_path: Path) -> None:
+    """2026-10-06: CI's release seal rewrote RELEASE.json (a published path) with a fresh
+    generated_utc, and the fence read the box FRESH while its last own write was 12 days old."""
+    now = datetime.now(UTC)
+    repo = _repo(tmp_path, now - timedelta(days=12), now - timedelta(days=12))
+    rel = repo / "desks/mt5/data/RELEASE.json"
+    rel.parent.mkdir(parents=True, exist_ok=True)
+    rel.write_text(json.dumps({"generated_utc": now.isoformat()}), "utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "-c", "user.name=quant-ci", "commit", "-q", "-m", "seal release")
+    doc = fence.measure(repo, ref="HEAD")
+    assert doc["verdict"] == "STALE", doc
+    assert doc["stamps_ignored_not_box_written"] == {"desks/mt5/data/RELEASE.json": "quant-ci"}
+    assert doc["age_h"] > 200
 
 
 def test_it_is_a_state_fence_on_the_box_clock_never_a_push_gate() -> None:
