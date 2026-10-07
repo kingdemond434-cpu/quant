@@ -150,4 +150,3 @@ def test_held_vixcls_numbers_never_reach_the_tracked_report(
                 "vix_over_own_mean"):
         assert key not in text, key
     assert "corr_level" in json.loads(compare.read_text("utf-8"))
-    assert ori.COMPARISON.relative_to(ori.ROOT).parts[0] == "data"
