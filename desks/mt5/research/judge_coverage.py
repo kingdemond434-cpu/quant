@@ -1890,9 +1890,9 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
         doc["priority_order"] = {
             "rows_ranked": sum(1 for r in judgeable if docket_priority(r) > 0),
             "capacity": _cap_n,
-            "demoted_in_capacity_with": sum(1 for r in ordered_j[:_cap_n]
+            "ranked_later_in_capacity_with": sum(1 for r in ordered_j[:_cap_n]
                                             if docket_priority(r) > 0),
-            "demoted_in_capacity_without": sum(1 for r in _flat[:_cap_n]
+            "ranked_later_in_capacity_without": sum(1 for r in _flat[:_cap_n]
                                                if docket_priority(r) > 0),
             "rule": ("inside each family's own stream, after the never-judged test, rows rank by "
                      "the compiler's priority (0 first); no row is removed and no family's share "
