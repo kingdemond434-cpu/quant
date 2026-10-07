@@ -108,7 +108,8 @@ CLUSTER_PROPOSER = {
                       "cross_asset_residual, triangle) -- 1,596 cells already built",
     "cross_asset_lead_lag": "cross_asset_graph and asia_transmission -- 206 cells already built",
     "positioning_flow": "the COT families (cot_positioning, cot_change_fade, cot_net_fade), which "
-                        "need a COT print per bar",
+                        "need a COT print per bar; research/cot_positioning_flow.py proposes "
+                        "cot_positioning_flow cells, which load their own frame by cot_symbol",
     "event_surprise": "event_reaction, fed by the calendar -- 113 cells already built",
 }
 

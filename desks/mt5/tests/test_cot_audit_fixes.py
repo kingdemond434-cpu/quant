@@ -154,8 +154,9 @@ def test_frame_carries_report_week_and_the_family_ignores_it_as_a_series():
     f = cot_frames.frame("USDJPY")
     assert f is not None and cot_frames.REPORT_WEEK in f.columns
     assert f.index.is_monotonic_increasing and f.index.is_unique
-    sigs = fo.family_cot_positioning(_bars(), cot=f, series="lev_net", transform="change",
-                                     extreme_pct=0.8)
+    # the flow family loads this same frame itself, by the cell's cot_symbol
+    sigs = fo.family_cot_positioning_flow(_bars(), cot_symbol="USDJPY", series="lev_net",
+                                          transform="change", extreme_pct=0.8)
     assert isinstance(sigs, list)
     assert cot_frames.REPORT_WEEK not in cot_frames.available("USDJPY")
 
@@ -220,25 +221,25 @@ def test_verdicts_join_on_prereg_hash_cell_and_graph_id(tmp_path, monkeypatch):
     from research import cot_positioning_flow as cpf
     seat = tmp_path / "seat"
     seat.mkdir()
-    pa = {**cpf.PARAMS, "series": "mm_net", "mode": "fade"}
-    pb = {**cpf.PARAMS, "series": "mm_net", "mode": "follow"}
-    pc = {**cpf.PARAMS, "series": "swap_net", "mode": "fade"}
+    pa = {**cpf.PARAMS, "cot_symbol": "XAUUSD", "series": "mm_net", "mode": "fade"}
+    pb = {**cpf.PARAMS, "cot_symbol": "XAUUSD", "series": "mm_net", "mode": "follow"}
+    pc = {**cpf.PARAMS, "cot_symbol": "XAGUSD", "series": "swap_net", "mode": "fade"}
     (seat / "discoveries_20261006_0000.json").write_text(json.dumps({"discoveries": [
-        {"symbol": "XAUUSD", "family": "cot_positioning", "params": pa, "prereg_hash": "abc123"},
-        {"symbol": "XAUUSD", "family": "cot_positioning", "params": pb},
-        {"symbol": "XAGUSD", "family": "cot_positioning", "params": pc}]}))
+        {"symbol": "XAUUSD", "family": cpf.FAMILY, "params": pa, "prereg_hash": "abc123"},
+        {"symbol": "XAUUSD", "family": cpf.FAMILY, "params": pb},
+        {"symbol": "XAGUSD", "family": cpf.FAMILY, "params": pc}]}))
     monkeypatch.setattr(cpf, "SEAT", seat)
     ledger = tmp_path / "ledger.jsonl"
-    spec_b = {"sym": "XAUUSD", "family": "cot_positioning", "params": pb}
-    spec_c = {"sym": "XAGUSD", "family": "cot_positioning", "params": pc}
+    spec_b = {"sym": "XAUUSD", "family": cpf.FAMILY, "params": pb}
+    spec_c = {"sym": "XAGUSD", "family": cpf.FAMILY, "params": pc}
     rows = [
-        {"family": "cot_positioning", "cell": "docket-name", "prereg_hash": "abc123",
+        {"family": cpf.FAMILY, "cell": "docket-name", "prereg_hash": "abc123",
          "terminal_gate": "in_sample_screen", "passed": False},
-        {"family": "cot_positioning", "cell": cell_id(spec_b), "terminal_gate":
+        {"family": cpf.FAMILY, "cell": cell_id(spec_b), "terminal_gate":
          "deflated_sharpe", "passed": False},
-        {"family": "cot_positioning", "cell": "other", "graph_id": node_id_for_spec(spec_c),
+        {"family": cpf.FAMILY, "cell": "other", "graph_id": node_id_for_spec(spec_c),
          "terminal_gate": "deflated_sharpe", "passed": False},
-        {"family": "cot_positioning", "cell": "XAUUSD.cot_positioning.p=deadbeef",
+        {"family": cpf.FAMILY, "cell": "XAUUSD.cot_positioning_flow.p=deadbeef",
          "terminal_gate": "lockbox", "passed": True},           # not a donated cell
     ]
     ledger.write_text("".join(json.dumps(r) + "\n" for r in rows))
@@ -266,7 +267,7 @@ def test_refetch_fetches_only_a_family_behind_the_release_schedule(tmp_path):
     _store(tmp_path, "disagg", "gold", ["2026-08-18"])     # current
     calls: list[str] = []
 
-    def fetch(fam, data, _deadline):
+    def fetch(fam, data, _deadline, _plan=None):
         calls.append(fam)
         _store(data, fam, "gold", ["2026-08-11", "2026-08-18"])
         return {"gold": "WRITTEN"}
@@ -283,7 +284,7 @@ def test_refetch_waits_out_its_retry_window_and_never_raises(tmp_path):
     _store(tmp_path, "legacy", "gold", ["2026-08-11"])
     calls: list[str] = []
 
-    def boom(fam, _data, _deadline):
+    def boom(fam, _data, _deadline, _plan=None):
         calls.append(fam)
         raise OSError("cftc.gov unreachable")
     first = fetch_cot_latest.run(now=now, data=tmp_path, fetch=boom)
@@ -326,6 +327,146 @@ def test_the_leg_runs_the_refetch_step(monkeypatch, tmp_path):
     monkeypatch.setattr(fetch_cot_latest, "run", fake_run)
     assert cpf.refetch(budget_s=5.0, dry_run=False)["status"] == "RAN" and seen["budget_s"] == 5.0
     assert cpf.refetch(budget_s=5.0, dry_run=True)["status"] == "SKIPPED_DRY_RUN"
+
+
+def _weekly(start: str, end: str, drop: tuple[str, ...] = ()) -> list[str]:
+    """Tuesday report dates from `start` to `end`, minus `drop`."""
+    days = pd.date_range(start, end, freq="W-TUE")
+    return [str(d.date()) for d in days if str(d.date()) not in drop]
+
+
+def test_freshness_is_per_file_not_per_family(tmp_path):
+    now = _ts("2026-08-25 12:00")                         # due: the Aug 18 report
+    _store(tmp_path, "disagg", "gold", ["2026-08-11", "2026-08-18"])     # current
+    _store(tmp_path, "disagg", "silver", ["2026-08-04", "2026-08-11"])   # one week behind
+    assert fetch_cot_latest.stored_weeks("disagg", tmp_path) == {
+        "gold": _ts("2026-08-21"), "silver": _ts("2026-08-14")}
+    # the family reads as its STALEST file, so one current file cannot hide a stale sibling
+    assert fetch_cot_latest.stored_week("disagg", tmp_path) == _ts("2026-08-14")
+    plans: list[dict] = []
+
+    def fetch(fam, data, _deadline, plan):
+        plans.append(plan)
+        _store(data, fam, "silver", ["2026-08-04", "2026-08-11", "2026-08-18"])
+        return {"silver": "WRITTEN"}
+    doc = fetch_cot_latest.run(now=now, data=tmp_path, fetch=fetch)
+    row = doc["families"]["disagg"]
+    assert row["files_behind"] == ["silver"] and plans == [{"slugs": ["silver"], "years": []}]
+    assert row["action"] == "FETCHED" and row["caught_up"]
+
+
+def test_a_dead_contract_stalls_instead_of_refetching_every_six_hours(tmp_path):
+    now = _ts("2026-08-25 12:00")
+    _store(tmp_path, "legacy", "gold", ["2026-08-11", "2026-08-18"])
+    _store(tmp_path, "legacy", "sp500", ["2021-09-14"])    # the CFTC stopped reporting it
+    calls: list[dict] = []
+
+    def fetch(_fam, _data, _deadline, plan):
+        calls.append(plan)
+        return {"sp500": "KEPT_STORED_HAS_MORE"}           # a clean fetch that adds nothing
+    first = fetch_cot_latest.run(now=now, data=tmp_path, fetch=fetch)
+    assert first["families"]["legacy"]["files_behind"] == ["sp500"]
+    again = fetch_cot_latest.run(now=now + pd.Timedelta(hours=7), data=tmp_path, fetch=fetch)
+    row = again["families"]["legacy"]
+    assert row["files_stalled"] == ["sp500"] and row["action"] == "CURRENT"
+    assert len(calls) == 1
+    later = fetch_cot_latest.run(now=now + pd.Timedelta(days=8), data=tmp_path, fetch=fetch)
+    assert later["families"]["legacy"]["action"] == "FETCHED" and len(calls) == 2
+
+
+def test_tff_holes_are_found_per_file_and_per_year_offline(tmp_path):
+    due = fetch_cot_latest.latest_released_week(_ts("2026-08-25 12:00"))
+    full = _weekly("2018-01-02", "2026-08-18")
+    _store(tmp_path, "tff", "cad", full)                                 # complete
+    _store(tmp_path, "tff", "eur", _weekly("2018-01-02", "2026-08-18",
+                                           drop=("2019-03-05", "2019-03-12", "2023-06-06")))
+    _store(tmp_path, "tff", "nzd", _weekly("2018-01-02", "2022-02-01"))  # ended at the rename
+    holes = fetch_cot_latest.tff_hole_years(due, tmp_path)
+    assert holes == {"eur": [2019, 2023], "nzd": [2022, 2023, 2024, 2025, 2026]}
+    # a year already proven unfillable for a file is not asked for again
+    assert fetch_cot_latest.tff_hole_years(due, tmp_path, {"eur": [2023]})["eur"] == [2019]
+
+
+def test_tff_backfill_fetches_the_hole_years_from_the_annual_files(tmp_path, monkeypatch):
+    """The real `_tff` path with the annual-file loader replaced by fixtures: the hole years, and
+    only those, are downloaded, merged into the stored file, and the hole closes."""
+    now = _ts("2026-08-25 12:00")
+    have = _weekly("2018-01-02", "2026-08-18", drop=("2019-03-05", "2019-03-12"))
+    path = tmp_path / "cot_tff" / "eur.parquet"
+    path.parent.mkdir(parents=True)
+    pd.DataFrame({"report_date": pd.to_datetime(have, utc=True),
+                  "market": "EURO FX - CHICAGO MERCANTILE EXCHANGE", "cftc_code": "099741",
+                  "oi": 100.0, "dealer_l": 0.0, "dealer_s": 0.0, "am_l": 0.0, "am_s": 0.0,
+                  "lm_l": 1.0, "lm_s": 0.0}).to_parquet(path, index=False)
+    asked: list[int] = []
+
+    def load_year(year: int):
+        asked.append(year)
+        if year != 2019:
+            return None
+        return _raw([("2019-03-05", "EURO FX - CHICAGO MERCANTILE EXCHANGE", "099741", 7),
+                     ("2019-03-12", "EURO FX - CHICAGO MERCANTILE EXCHANGE", "099741", 8),
+                     ("2019-03-12", XGBP, "299741", 999)])
+    monkeypatch.setattr(fetch_tff, "load_year", load_year)
+    monkeypatch.setattr(fetch_tff, "TARGETS", [t for t in fetch_tff.TARGETS if t[0] == "eur"])
+    doc = fetch_cot_latest.run(now=now, data=tmp_path)
+    row = doc["families"]["tff"]
+    assert row["hole_years"] == {"eur": [2019]} and asked == [2019]
+    assert row["hole_years_after"] == {}
+    got = pd.read_parquet(path)
+    assert len(got) == len(have) + 2 and got["report_date"].is_unique
+    assert set(got["cftc_code"].astype(str)) == {"099741"}
+
+
+def test_a_tff_year_that_cannot_fill_its_hole_is_recorded_not_refetched(tmp_path, monkeypatch):
+    now = _ts("2026-08-25 12:00")
+    _store(tmp_path, "tff", "eur", _weekly("2018-01-02", "2026-08-18", drop=("2019-03-05",)))
+    plans: list[dict] = []
+
+    def fetch(_fam, _data, _deadline, plan):
+        plans.append(plan)
+        return {"eur": "WRITTEN", "_years_fetched": "2019"}   # downloaded, week still absent
+    monkeypatch.setattr(fetch_tff, "TARGETS", [t for t in fetch_tff.TARGETS if t[0] == "eur"])
+    first = fetch_cot_latest.run(now=now, data=tmp_path, fetch=fetch)
+    assert plans == [{"slugs": ["eur"], "years": [2019]}]
+    assert first["families"]["tff"]["hole_years_after"] == {"eur": [2019]}
+    state = json.loads((tmp_path / fetch_cot_latest.STATE.name).read_text("utf-8"))
+    assert state["tff"]["unfillable"] == {"eur": [2019]}
+    later = fetch_cot_latest.run(now=now + pd.Timedelta(hours=7), data=tmp_path, fetch=fetch)
+    assert later["families"]["tff"]["action"] == "CURRENT" and len(plans) == 1
+
+
+# ------------------------------------------------------------- release labels fail closed
+def test_release_labels_fail_closed_without_the_schedule(tmp_path, monkeypatch):
+    """No release schedule -> no labels, no frame, no tradable row, and a recorded reason --
+    never the nominal lag, which reads every holiday- or shutdown-delayed report early."""
+    import mt5desk
+
+    from research import orthogonal_sweep
+    monkeypatch.delattr(mt5desk, "cot_frames", raising=False)
+    monkeypatch.setitem(sys.modules, "mt5desk.cot_frames", None)     # import -> ImportError
+    fridays = pd.date_range("2024-01-05", periods=60, freq="W-FRI", tz=UTC)
+    assert orthogonal_sweep._release_labels(fridays) is None
+    why = orthogonal_sweep.COT_LABEL_REFUSALS["release_labels"]
+    assert ("ImportError" in why or "ModuleNotFoundError" in why) and "nominal lag" in why
+
+    desk = tmp_path / "desks" / "mt5"
+    (tmp_path / "data").mkdir()
+    idx = pd.date_range("2020-01-01", periods=900, freq="D", tz=UTC)
+    pd.DataFrame({"XAUUSD": np.sin(np.arange(len(idx)) / 40)}, index=idx).to_parquet(
+        tmp_path / "data" / "cot_zcache.parquet")
+    monkeypatch.setattr(orthogonal_sweep, "BASE", desk)
+    orthogonal_sweep._cot_frame.cache_clear()
+    try:
+        assert orthogonal_sweep._cot_frame("XAUUSD") is None
+        # and no cache at all: the in-git reader is the same schedule, so it refuses too
+        (tmp_path / "data" / "cot_zcache.parquet").unlink()
+        orthogonal_sweep._cot_frame.cache_clear()
+        assert orthogonal_sweep._cot_frame("XAUUSD") is None
+        assert "in_git_frame" in orthogonal_sweep.COT_LABEL_REFUSALS
+    finally:
+        orthogonal_sweep._cot_frame.cache_clear()
+        orthogonal_sweep.COT_LABEL_REFUSALS.clear()
 
 
 # --------------------------------------------------------------------------- birth row

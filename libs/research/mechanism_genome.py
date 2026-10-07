@@ -276,6 +276,11 @@ FAMILY_GENOME: dict[str, dict[str, str]] = {
         "observable": "cot_net_position", "trigger": "positioning", "catalyst": "cot_release",
         "transmission": "risk_premium", "entry": "market_on_signal", "exit": "signal_flip",
         "holding": "multiweek", "capacity": "depth_bound", "decay_risk": "reporting_change"},
+    "cot_positioning_flow": {
+        "actor": "speculators", "constraint": "position_limits",
+        "observable": "cot_net_change", "trigger": "positioning", "catalyst": "cot_release",
+        "transmission": "information", "entry": "market_on_signal", "exit": "time_stop",
+        "holding": "multiday", "capacity": "depth_bound", "decay_risk": "reporting_change"},
     "event_reaction": {
         "actor": "macro_traders", "constraint": "information_processing_speed",
         "observable": "release_surprise", "trigger": "surprise", "catalyst": "macro_release",

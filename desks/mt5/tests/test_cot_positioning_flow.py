@@ -1,8 +1,10 @@
 """CFTC positioning-change cells: point-in-time, signed right, buildable, wired, seeded once.
 
 WHAT THIS PINS:
-  * the family's DEFAULT construction is unchanged by the new columns (box cells keep their
-    verdicts), and an unknown series/transform/mode refuses rather than substituting;
+  * the LIVE level family `cot_positioning` is unchanged by the new columns (box cells keep their
+    verdicts); the change/flow logic lives in its own family, `cot_positioning_flow`, which loads
+    its frame from `cot_symbol` and refuses an unknown series/transform/mode or a missing frame
+    rather than substituting (the hash pin is `test_cot_positioning_live_identity`);
   * the release clock: a Tuesday report is labelled no earlier than the following Monday, the
     same label the box's cache path uses, and no signal precedes its label;
   * the sign: a long JPY future is a SHORT USDJPY position; TFF cross-rate contracts are not
@@ -47,6 +49,13 @@ def _cot(weeks: int = 300, seed: int = 5) -> pd.DataFrame:
                          "lev_net": np.cumsum(rng.normal(0, 1000, weeks))}, index=idx)
 
 
+def _flow(monkeypatch, d: pd.DataFrame, cot: pd.DataFrame | None, **kw):
+    """The flow family on a synthetic frame: its loader is the one seam, exactly as the sealed
+    gauntlet reaches it (bars + the cell's params, nobody handing a frame over)."""
+    monkeypatch.setattr(fo, "_flow_cot_frame", lambda _sym: cot)
+    return fo.family_cot_positioning_flow(d, cot_symbol="EURUSD", **kw)
+
+
 def test_default_construction_is_unchanged_by_extra_columns():
     d, cot = _bars(), _cot()
     a = fo.family_cot_positioning(d, cot=cot)
@@ -54,17 +63,33 @@ def test_default_construction_is_unchanged_by_extra_columns():
     assert a and [(s.time, s.side, s.stop) for s in a] == [(s.time, s.side, s.stop) for s in b]
 
 
-@pytest.mark.parametrize("kw", [{"series": "absent"}, {"transform": "zscore"},
-                                {"mode": "sideways"}])
-def test_unknown_construction_refuses(kw):
-    assert fo.family_cot_positioning(_bars(), cot=_cot(), **kw) == []
+@pytest.mark.parametrize("kw", [{"series": "absent"},
+                                {"series": "lev_net", "transform": "zscore"},
+                                {"series": "lev_net", "mode": "sideways"}])
+def test_unknown_construction_refuses(kw, monkeypatch):
+    assert _flow(monkeypatch, _bars(), _cot(), **kw) == []
 
 
-def test_follow_mirrors_fade():
+def test_flow_family_refuses_without_its_frame(monkeypatch):
+    assert _flow(monkeypatch, _bars(), None, series="lev_net") == []
+    # no cot_symbol on the cell: nothing to load, so nothing is traded
+    monkeypatch.setattr(fo, "_flow_cot_frame", lambda _sym: _cot())
+    assert fo.family_cot_positioning_flow(_bars(), series="lev_net") == []
+
+
+def test_flow_family_ignores_input_source_as_identity(monkeypatch):
+    d, cot = _bars(), _cot()
+    kw = {"series": "lev_net", "transform": "change", "extreme_pct": 0.8}
+    a = _flow(monkeypatch, d, cot, **kw)
+    b = _flow(monkeypatch, d, cot, input_source="cot_point_in_time", **kw)
+    assert a and [(s.time, s.side) for s in a] == [(s.time, s.side) for s in b]
+
+
+def test_follow_mirrors_fade(monkeypatch):
     d, cot = _bars(), _cot()
     kw = {"series": "lev_net", "transform": "change", "extreme_pct": 0.8, "ttl_bars": 110}
-    fade = fo.family_cot_positioning(d, cot=cot, mode="fade", **kw)
-    follow = fo.family_cot_positioning(d, cot=cot, mode="follow", **kw)
+    fade = _flow(monkeypatch, d, cot, mode="fade", **kw)
+    follow = _flow(monkeypatch, d, cot, mode="follow", **kw)
     assert fade and [s.time for s in fade] == [s.time for s in follow]
     assert all(a.side == -b.side for a, b in zip(fade, follow, strict=True))
 
@@ -78,10 +103,9 @@ def test_release_clock_is_the_monday_after_the_report():
     assert label > pd.Timestamp("2026-08-14 20:30", tz="UTC")
 
 
-def test_no_signal_precedes_its_release_label():
+def test_no_signal_precedes_its_release_label(monkeypatch):
     d, cot = _bars(), _cot()
-    sigs = fo.family_cot_positioning(d, cot=cot, series="lev_net", transform="change",
-                                     extreme_pct=0.8)
+    sigs = _flow(monkeypatch, d, cot, series="lev_net", transform="change", extreme_pct=0.8)
     labels = cot.index
     for s in sigs:
         assert any(lab <= s.time for lab in labels)
@@ -135,6 +159,10 @@ def test_cluster_and_sealed_buildability():
     from libs.research.alpha_clusters import classify_family
     assert classify_family("cot_positioning") == "positioning_flow"
     assert family_verdict("cot_positioning")[0] == BUILDABLE
+    # the flow family reads no injected data input (it loads its own frame by cot_symbol), so
+    # the sealed build_cell can build it with no branch of its own
+    assert classify_family("cot_positioning_flow") == "positioning_flow"
+    assert family_verdict("cot_positioning_flow")[0] == BUILDABLE
 
 
 def test_grid_covers_fx_and_metals_from_git():
@@ -143,7 +171,8 @@ def test_grid_covers_fx_and_metals_from_git():
     syms = {s for s, _p in cells}
     assert {"XAUUSD", "XAGUSD", "EURUSD", "USDJPY"} <= syms
     assert all(p["transform"] == "change" and p["mode"] in ("fade", "follow")
-               for _s, p in cells)
+               and p["cot_symbol"] == s for s, p in cells)
+    assert cpf.FAMILY == "cot_positioning_flow"
     assert {p["series"] for _s, p in cells} <= set(cot_frames.COLUMNS)
 
 
@@ -151,11 +180,11 @@ def test_seat_is_the_record_of_donation(tmp_path, monkeypatch):
     from research import cot_positioning_flow as cpf
     monkeypatch.setattr(cpf, "SEAT", tmp_path / "seat")
     monkeypatch.setattr(cpf, "STATE", tmp_path / "state.json")
-    params = {**cpf.PARAMS, "series": "mm_net", "mode": "fade"}
+    params = {**cpf.PARAMS, "cot_symbol": "XAUUSD", "series": "mm_net", "mode": "fade"}
     (tmp_path / "seat").mkdir()
     (tmp_path / "seat" / "discoveries_20261006_0000.json").write_text(json.dumps({
         "generated_at": "2026-10-06T00:00:00+00:00",
-        "discoveries": [{"symbol": "XAUUSD", "family": "cot_positioning", "params": params}]}))
+        "discoveries": [{"symbol": "XAUUSD", "family": cpf.FAMILY, "params": params}]}))
     state = cpf._load_state()
     assert state["cells"][cpf.identity("XAUUSD", params)]["donated_at"].startswith("2026-10-06")
 
@@ -167,9 +196,9 @@ def test_verdicts_unmeasured_without_a_ledger(tmp_path, monkeypatch):
     # The pre-2026-10-07 reader matched this literal inside `cell`; no real cell name holds it,
     # so a row shaped like it must NOT read as a verdict on a donated cell.
     ledger = tmp_path / "ledger.jsonl"
-    ledger.write_text(json.dumps({"family": "cot_positioning", "passed": False,
+    ledger.write_text(json.dumps({"family": cpf.FAMILY, "passed": False,
                                   "terminal_gate": "deflated_sharpe",
-                                  "cell": 'XAUUSD.cot_positioning.{"transform": "change"}'})
+                                  "cell": 'XAUUSD.cot_positioning_flow.{"transform": "change"}'})
                       + "\n")
     monkeypatch.setattr(cpf, "VERDICTS", ledger)
     assert cpf.verdicts()["status"] == "UNMEASURED"

@@ -13,13 +13,24 @@ a COT argument `build_cell` never loads (`gauntlet_buildability`: INPUT_NOT_SUPP
 positioning-change hypothesis on any trader class could ever be judged. `empty_cluster_forcer`
 names this cluster PROPOSER_OWNED; this is that proposer.
 
+ITS OWN FAMILY (#238 audit, 2026-10-07). The cells are `cot_positioning_flow`
+(`families_orthogonal.family_cot_positioning_flow`), NOT `cot_positioning`. Widening the level
+family to carry change/flow logic moved its code and behaviour hashes, which the LIVE
+`EURUSD.cot_positioning` sleeve's forward clock froze; that function is byte-identical to LIVE
+and this organ never calls it. The new family loads its own point-in-time frame from the cell's
+`cot_symbol` (the sealed `build_cell` has a COT branch for `cot_positioning` only), so the
+gauntlet, the forward clock and this proposer rebuild the same frame with nobody supplying it.
+Its trials are this organ's own: the whole grid is the donation's `tests_run`, and the orthogonal
+sweep does not enumerate the family (`orthogonal_sweep.NOT_SOURCED_HERE`).
+
 WHAT A PASS DOES:
   1. For every MT5 symbol with a CFTC contract (`mt5desk.cot_frames.SOURCES`: the seven USD
      majors and gold/silver) and every trader-class column the reports carry for it, form the
-     cell `cot_positioning(series=<column>, transform="change", mode=fade|follow)` -- the weekly
-     net change at an extreme, faded (crowding) and followed (flow).
-  2. Build the cell's signals with the SAME frame the sealed gauntlet hands the family
-     (`orthogonal_sweep._cot_frame`, point-in-time: a Tuesday report is first usable on the
+     cell `cot_positioning_flow(cot_symbol=<sym>, series=<column>, transform="change",
+     mode=fade|follow)` -- the weekly net change at an extreme, faded (crowding) and followed
+     (flow).
+  2. Build the cell's signals exactly as the sealed gauntlet will: the family loads its own frame
+     (`mt5desk.cot_frames.frame(cot_symbol)`, point-in-time: a Tuesday report is first usable on the
      Monday after its Friday 15:30 ET release, or after its TRUE release when a holiday or a
      shutdown delayed it -- `mt5desk.cot_frames.release_schedule`) and count its firing. A
      cell under SEED_FLOOR trade days is HELD BACK and counted -- the gauntlet would drop it
@@ -53,7 +64,7 @@ for _p in (str(BASE), str(ROOT)):
         sys.path.insert(0, _p)
 
 SOURCE = "cot_positioning_flow"
-FAMILY = "cot_positioning"
+FAMILY = "cot_positioning_flow"
 CLUSTER = "positioning_flow"
 OUT = BASE / "reports" / "COT_POSITIONING_FLOW.json"
 STATE = BASE / "data" / "cot_positioning_flow_state.json"
@@ -117,7 +128,7 @@ def grid() -> list[tuple[str, dict[str, Any]]]:
     for sym in sorted(cot_frames.SOURCES):
         for col in cot_frames.available(sym):
             for mode in MODES:
-                out.append((sym, {**PARAMS, "series": col, "mode": mode}))
+                out.append((sym, {**PARAMS, "cot_symbol": sym, "series": col, "mode": mode}))
     return out
 
 
@@ -157,19 +168,17 @@ def _save_state(state: dict[str, Any]) -> None:
 
 
 def _build(sym: str, params: dict[str, Any], bars_cache: dict[str, Any]) -> list:
-    """The family's signals on the gauntlet's own inputs: its COT frame, these H1 bars."""
+    """The family's signals exactly as `build_cell` calls it: these H1 bars and the cell's own
+    params (the family loads its COT frame from `cot_symbol`; nobody hands it one)."""
     from mt5desk import families_orthogonal as fo
 
-    from research import orthogonal_sweep as inputs
     from research.proposer_common import bars
     if sym not in bars_cache:
         bars_cache[sym] = bars(sym)
     d = bars_cache[sym]
-    cot = inputs._cot_frame(sym)
-    if d is None or cot is None:
+    if d is None:
         return []
-    call = {k: v for k, v in params.items() if k != "input_source"}
-    return list(fo.family_cot_positioning(d, cot=cot, **call) or [])
+    return list(fo.family_cot_positioning_flow(d, **params) or [])
 
 
 def seed(*, budget_s: float = 300.0, dry_run: bool = False) -> dict[str, Any]:
@@ -278,8 +287,8 @@ def donated_keys() -> dict[str, dict[str, str]]:
     THE JOIN KEYS THE DONATION AND THE BOX'S VERDICT LEDGER SHARE (traced 2026-10-07). The
     compiler keeps a donated row's params EXACTLY (`miner_candidate_compiler.compile_row`,
     EXACT_RECIPE), and `external_gauntlet` writes each verdict row with
-      * `cell`     = `frontier_identity.cell_id({sym, family, params})` -- `<SYM>.cot_positioning.
-                     p=<sha256(params)[:16]>`, the name the off-box judge also printed;
+      * `cell`     = `frontier_identity.cell_id({sym, family, params})` --
+                     `<SYM>.cot_positioning_flow.p=<sha256(params)[:16]>`;
       * `graph_id` = `hypothesis_graph.node_id_for_spec(...)` of the same spec;
       * `prereg_hash` -- when that sweep stamped the verdict: the content hash of the registered
                      card (`preregistration.row_hash`), so the SAME spec registered by this
@@ -383,8 +392,9 @@ def report(seeded: dict[str, Any]) -> dict[str, Any]:
         "offbox_reproduction": _offbox(),
         "consumer": ("data/intelligence/cot_positioning_flow/ -> "
                      "research/miner_candidate_compiler.py (EXACT_RECIPE) -> the docket -> "
-                     "scripts/external_gauntlet.py build_cell (sealed; its cot_positioning branch "
-                     "loads orthogonal_sweep._cot_frame, which now carries every in-git column)"),
+                     "scripts/external_gauntlet.py build_cell (sealed; it finds "
+                     "cot_positioning_flow in ORTHOGONAL_FAMILIES and the family loads its own "
+                     "point-in-time frame from the cell's cot_symbol)"),
     }
 
 

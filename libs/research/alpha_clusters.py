@@ -231,6 +231,7 @@ FAMILY_CLUSTER: dict[str, str] = {
     "anti_momentum": "mean_reversion",
     # -- positioning and crowding
     "cot_positioning": "positioning_flow",
+    "cot_positioning_flow": "positioning_flow",
     "positioning": "positioning_flow",
     "crowding": "positioning_flow",
     # -- options-implied state

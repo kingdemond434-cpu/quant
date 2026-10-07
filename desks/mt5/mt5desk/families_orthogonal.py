@@ -402,6 +402,63 @@ def family_liquidity_regime(
     return signals
 
 
+def family_cot_positioning(
+    df: pd.DataFrame,
+    *,
+    cot: pd.DataFrame | None = None,
+    lookback_weeks: int = 156,
+    extreme_pct: float = 0.90,
+    atr_n: int = 20,
+    stop_atr: float = 3.0,
+    rr: float = 2.0,
+    ttl_bars: int = 240,
+) -> list[Signal]:
+    """Fade crowded speculative positioning at multi-year extremes.
+
+    THE MECHANISM. When non-commercial net positioning reaches a multi-year extreme, the marginal
+    buyer is exhausted: everyone who wanted the trade has it, so the asymmetry favours the other
+    side. It runs on a WEEKLY clock off a report, which makes it structurally uncorrelated with an
+    intraday range sleeve -- different information, different horizon, different failure mode (a
+    genuine regime shift that keeps positioning extreme for months).
+
+    REFUSES WITHOUT COT DATA rather than substituting a price-based crowding proxy, which would
+    be a momentum sleeve with a misleading name.
+    """
+    if cot is None or cot.empty or "net" not in cot.columns:
+        return []
+    d = _h1(df)
+    net = cot["net"].astype(float)
+    hi = net.rolling(lookback_weeks, min_periods=26).quantile(extreme_pct)
+    lo = net.rolling(lookback_weeks, min_periods=26).quantile(1 - extreme_pct)
+    atr = _atr(d, atr_n)
+    signals: list[Signal] = []
+    for ts, value in net.items():
+        try:
+            idx = d.index.searchsorted(pd.Timestamp(ts))
+        except (TypeError, ValueError):
+            continue
+        if idx <= 0 or idx >= len(d) - 1:
+            continue
+        h, low = hi.get(ts, np.nan), lo.get(ts, np.nan)
+        if not (np.isfinite(h) and np.isfinite(low)):
+            continue
+        side = 0
+        if value >= h:
+            side = -1
+        elif value <= low:
+            side = 1
+        if side == 0:
+            continue
+        a = float(atr.iloc[idx])
+        if not np.isfinite(a) or a <= 0:
+            continue
+        px = float(d["close"].iloc[idx])
+        signals.append(Signal(time=d.index[idx], side=side, stop=px - side * stop_atr * a,
+                              target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
+                              tag="cot_positioning", trigger=None, wait_bars=1))
+    return signals
+
+
 def _adjacent_change(cot: pd.DataFrame, series: str, weeks: int) -> pd.Series:
     """The `weeks`-report change of `cot[series]`, NaN wherever the two reports are not exactly
     `weeks` report weeks apart -- never a difference taken across a gap.
@@ -424,58 +481,82 @@ def _adjacent_change(cot: pd.DataFrame, series: str, weeks: int) -> pd.Series:
     return r.diff(weeks).where(gap <= pd.Timedelta(days=7 * weeks + 2)).dropna()
 
 
-def family_cot_positioning(
+def _flow_cot_frame(symbol: str) -> pd.DataFrame | None:
+    """The point-in-time positioning frame for `symbol`: every in-git CFTC column
+    (`mt5desk.cot_frames.frame`) on the TRUE release clock, with its `report_week` key.
+
+    THE FAMILY LOADS ITS OWN INPUT, BY NAME, because the sealed gauntlet's `build_cell` has a
+    COT branch for `cot_positioning` only and is never edited from a producer's side. The input
+    is named on the cell (`cot_symbol`), so the gauntlet, the forward clock and the proposer all
+    rebuild the SAME frame from the same in-git files with no caller supplying it. A failure is
+    None, and the family then refuses ([]) -- never a substituted series."""
+    try:
+        from mt5desk import cot_frames
+        return cot_frames.frame(str(symbol or "").upper())
+    except Exception:
+        return None
+
+
+def family_cot_positioning_flow(
     df: pd.DataFrame,
     *,
-    cot: pd.DataFrame | None = None,
+    cot_symbol: str = "",
+    series: str = "noncomm_net",
+    transform: str = "change",
+    mode: str = "fade",
+    change_weeks: int = 1,
     lookback_weeks: int = 156,
-    extreme_pct: float = 0.90,
+    extreme_pct: float = 0.80,
     atr_n: int = 20,
     stop_atr: float = 3.0,
     rr: float = 2.0,
-    ttl_bars: int = 240,
-    series: str = "net",
-    transform: str = "level",
-    mode: str = "fade",
-    change_weeks: int = 1,
+    ttl_bars: int = 110,
+    input_source: str | None = None,
 ) -> list[Signal]:
-    """Fade crowded speculative positioning at multi-year extremes.
+    """CFTC positioning FLOW, any trader class: trade a weekly positioning change at an extreme,
+    faded or followed.
 
-    THE MECHANISM. When non-commercial net positioning reaches a multi-year extreme, the marginal
-    buyer is exhausted: everyone who wanted the trade has it, so the asymmetry favours the other
-    side. It runs on a WEEKLY clock off a report, which makes it structurally uncorrelated with an
-    intraday range sleeve -- different information, different horizon, different failure mode (a
-    genuine regime shift that keeps positioning extreme for months).
+    A SEPARATE FAMILY FROM `cot_positioning`, ON PURPOSE (#238 audit, 2026-10-07). The level
+    family carries a LIVE sleeve (`EURUSD.cot_positioning`) whose forward clock froze the code and
+    behaviour hashes of `family_cot_positioning`; widening that function's signature to carry
+    the change and flow logic moved both hashes and would have read IDENTITY_BROKEN and reset its
+    window. That function stays byte-identical; everything new lives here, under its own name,
+    its own registry rows and its own trial accounting (the proposer
+    `research/cot_positioning_flow.py` charges its whole symbol x column x mode grid as
+    `tests_run`; the orthogonal sweep does not enumerate this family -- `NOT_SOURCED_HERE`).
 
-    REFUSES WITHOUT COT DATA rather than substituting a price-based crowding proxy, which would
-    be a momentum sleeve with a misleading name.
+    THE MECHANISM. `series` names a column of the COT frame (`mt5desk.cot_frames.COLUMNS`: legacy
+    non-commercial/commercial, TFF leveraged money/asset managers/dealers, disaggregated managed
+    money/swap dealers -- all oriented so positive is long THIS symbol). `transform="change"`
+    reads its `change_weeks`-report change (never across a missing report: `_adjacent_change`),
+    `transform="level"` the column itself. An extreme is the top/bottom `1 - extreme_pct` of the
+    last `lookback_weeks` readings; `mode="fade"` trades against it (crowding: a class that has
+    just done that much of its buying is closer to done than not), `mode="follow"` with it (flow:
+    a class re-positioning that hard is acting on something that does not finish in a week).
 
-    POSITIONING CHANGE, ANY TRADER CLASS (2026-10-06). `series` names the column of the COT
-    frame (`mt5desk.cot_frames.COLUMNS`: legacy non-commercial/commercial, TFF leveraged money/
-    asset managers/dealers, disaggregated managed money/swap dealers -- all oriented so positive
-    is long THIS symbol), `transform="change"` reads its `change_weeks`-week change instead of
-    its level, and `mode="follow"` trades WITH an extreme instead of against it: the flow
-    hypothesis (a class still adding is not yet done) beside the crowding one. The defaults are
-    the original construction exactly; a column the frame does not carry, or an unknown
-    transform or mode, refuses ([]) rather than substituting another series.
-
-    A CHANGE NEVER SPANS A MISSING REPORT (2026-10-07): see `_adjacent_change`.
+    THE INPUT. The frame is loaded from `cot_symbol` by `_flow_cot_frame` (point-in-time: a
+    report is first usable at the later of the Monday after its nominal release and its TRUE
+    release). `input_source` is identity only (it names that loader on the cell) and is ignored.
+    No `cot_symbol`, no frame, a column the frame does not carry, or an unknown transform or mode
+    refuses ([]) rather than substituting another series.
     """
-    if cot is None or cot.empty or series not in cot.columns:
-        return []
+    del input_source
     if transform not in ("level", "change") or mode not in ("fade", "follow"):
+        return []
+    cot = _flow_cot_frame(cot_symbol) if cot_symbol else None
+    if cot is None or cot.empty or series not in cot.columns:
         return []
     d = _h1(df)
     if transform == "change":
-        net = _adjacent_change(cot, series, max(1, int(change_weeks)))
+        val = _adjacent_change(cot, series, max(1, int(change_weeks)))
     else:
-        net = cot[series].astype(float).dropna()
+        val = cot[series].astype(float).dropna()
     toward = 1 if mode == "follow" else -1
-    hi = net.rolling(lookback_weeks, min_periods=26).quantile(extreme_pct)
-    lo = net.rolling(lookback_weeks, min_periods=26).quantile(1 - extreme_pct)
+    hi = val.rolling(lookback_weeks, min_periods=26).quantile(extreme_pct)
+    lo = val.rolling(lookback_weeks, min_periods=26).quantile(1 - extreme_pct)
     atr = _atr(d, atr_n)
     signals: list[Signal] = []
-    for ts, value in net.items():
+    for ts, value in val.items():
         try:
             idx = d.index.searchsorted(pd.Timestamp(ts))
         except (TypeError, ValueError):
@@ -498,7 +579,7 @@ def family_cot_positioning(
         px = float(d["close"].iloc[idx])
         signals.append(Signal(time=d.index[idx], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
-                              tag="cot_positioning", trigger=None, wait_bars=1))
+                              tag="cot_positioning_flow", trigger=None, wait_bars=1))
     return signals
 
 
@@ -702,6 +783,7 @@ ORTHOGONAL_FAMILIES = {
     "vol_transition": family_vol_transition,
     "liquidity_regime": family_liquidity_regime,
     "cot_positioning": family_cot_positioning,
+    "cot_positioning_flow": family_cot_positioning_flow,
     "lvc_asia_london": family_lvc_asia_london,
 }
 
@@ -1317,6 +1399,8 @@ FAMILY_INPUTS = {
     "liquidity_regime": ("spread series from the tick tape", "data/tape/ticks/<SYM>"),
     "orderflow_imbalance": ("tick-derived flow imbalance", "data/tape/ticks/<SYM>"),
     "cot_positioning": ("COT net positioning", "data/cot*"),
+    "cot_positioning_flow": ("COT positioning per trader class, loaded from cot_symbol",
+                             "data/cot*"),
     "cross_asset_residual": ("2+ factor instruments, on this cell's own chart",
                              "data/universe/*_<TF>.parquet"),
     "correlation_regime": ("a peer instrument, on this cell's own chart",
@@ -2082,6 +2166,7 @@ WALL_CLOCK_PARAMS: dict[str, tuple[str, ...]] = {
     "calendar_month": ("ttl_bars",),
     # A weekly report's positioning extreme unwinds over days, not over N bars of any chart.
     "cot_positioning": ("ttl_bars",),
+    "cot_positioning_flow": ("ttl_bars",),
     # A daily macro regime persists for days; the hold is stated in that clock.
     "macro_conditional": ("ttl_bars",),
     # The hours either side of a named clock moment. Each of these is a genuine BAR OFFSET in its
