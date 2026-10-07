@@ -268,3 +268,41 @@ def test_deferral_depth_and_oldest_age_are_published_per_writer(tmp_path):
     assert got['local_converter']['oldest_age_s'] >= 7190
     assert got['breadth_sweep'] == {'depth': 0, 'files': 0, 'oldest_age_s': None,
                                     'unaged_rows': 0}
+
+
+def test_a_claim_file_is_deleted_only_after_its_rows_land(tmp_path):
+    """merge_hypotheses._drop is a declared POSITIVE destructive path: the claim file survives
+    until the locked merge returns, and a failed merge puts its rows back before the claim goes."""
+    writer = 'local_converter'
+    row = {'symbol': 'GBPUSD', 'family': 'carry'}
+    ident = (lambda r: f"{r['symbol']}:{r['family']}")
+    seen: list[bool] = []
+
+    def failing(rows):
+        seen.append(bool(mh._claims(writer)))           # the claim is still on disk mid-merge
+        raise RuntimeError('docket unreadable')
+
+    mh._write_deferred(writer, [row])
+    with pytest.raises(RuntimeError):
+        mh.merge_or_defer(writer, [], failing, ident)
+    assert seen == [True]
+    assert mh.read_deferred(writer) == [row] and not mh._claims(writer)    # restored, not lost
+
+    landed: list[dict] = []
+
+    def ok(rows):
+        assert mh._claims(writer)                       # not dropped before the rows land
+        landed.extend(rows)
+        return len(rows), len(rows)
+
+    assert mh.merge_or_defer(writer, [], ok, ident) == (1, 1)
+    assert landed == [row]
+    assert not mh._claims(writer) and mh.read_deferred(writer) == []
+
+
+def test_the_claim_drop_is_declared_to_the_destructive_path_fence():
+    from libs.ops import reference_freshness as rf
+
+    spec = rf.by_id('merge_hypotheses.drop_claims')
+    assert spec is not None and spec.status == 'positive'
+    assert (spec.module, spec.function) == ('desks/mt5/research/merge_hypotheses.py', '_drop')

@@ -1081,6 +1081,20 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
         note="SEALED and CLEARED: zero removal acts in the file. Recorded so the audit is a "
              "measurement rather than an absence.",
     ),
+    DestructivePath(
+        path_id="merge_hypotheses.drop_claims",
+        module="desks/mt5/research/merge_hypotheses.py",
+        function="_drop",
+        removes="`.claimed.*` deferral files under desks/mt5/data/deferred (the claim/rename "
+                "protocol's own scratch copies of waiting docket rows)",
+        reference="the locked merge's own successful return on the claimed rows in this pass",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY: called only after `locked_merge` / a drainer RETURNED on "
+             "the claimed rows (the docket write is atomic), or for a claim that held no rows. "
+             "Every failure path goes through `_unclaim`, which appends the rows back to the "
+             "waiting file BEFORE deleting the claim; a pass that dies leaves the claim, which "
+             "the next `_claim` takes back after CLAIM_STALE_S. No row leaves on an absence.",
+    ),
 )
 
 
