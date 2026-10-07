@@ -424,3 +424,51 @@ def test_chain_state_is_published_for_another_fence(tmp_path: Path, monkeypatch)
     assert sd.chain_state()["a"]["stops_at"] == "ingested"
     monkeypatch.setattr(sd, "CHAIN_STATE", tmp_path / "missing.json")
     assert sd.chain_state() == {}, "absence is UNMEASURED, never a pass"
+
+
+def test_evig_tells_information_novelty_from_instrument_novelty() -> None:
+    """Principal 2026-10-06 11:14: a new OBSERVABLE about a covered instrument is new information;
+    a second copy of the same observable is not, whatever instruments it names."""
+    base = {"cadence": "monthly", "pit": {"publication_lag_days": 20}}
+    sources = [
+        {**base, "id": "safe_settlement", "country": "cn", "plane": "cn_hard",
+         "mechanism": "corporate FX settlement imbalance pressures the offshore renminbi",
+         "targets": ["USDCNH", "XAUUSD"]},
+        {**base, "id": "aggregator_copy", "country": "cn", "plane": "cn_hard",
+         "mechanism": "corporate FX settlement imbalance pressures the offshore renminbi",
+         "targets": ["AUDUSD"]},
+        {"id": "kr_customs_gold", "country": "kr", "plane": "customs_micro",
+         "cadence": "daily", "pit": {"publication_lag_days": 1},
+         "mechanism": "ten-day customs export volumes of semiconductors and bullion",
+         "targets": ["XAUUSD"]},
+        {"id": "unlabelled"},
+    ]
+    state = {"safe_settlement": {"last_status": "COLLECTED"}}
+    rows = {r["id"]: r for r in se.price(sources, state, {})}
+    copy, kr = rows["aggregator_copy"], rows["kr_customs_gold"]
+    assert copy["instrument_novelty"] == 1.0 and copy["information_novelty"]["value"] == 0.0
+    assert copy["information_novelty"]["nearest"] == "safe_settlement"
+    assert kr["instrument_novelty"] == 0.0 and kr["information_novelty"]["value"] == 1.0
+    assert kr["novelty_used"] == copy["novelty_used"] == 0.5
+    assert rows["unlabelled"]["information_novelty"]["status"] == "UNMEASURED"
+    assert rows["unlabelled"]["novelty_basis"].startswith("instrument only")
+
+
+def test_evig_a_new_observable_on_a_covered_instrument_outscores_a_mirror() -> None:
+    """The audit's finding 9 (2026-10-06): options skew on gold is new information while a
+    mirror of the collected COT feed is not, though both name only XAUUSD."""
+    sources = [
+        {"id": "cot_gold", "targets": ["XAUUSD"], "observable": "cftc_net_positioning",
+         "mechanism": "positioning", "cadence": "weekly"},
+        {"id": "cot_gold_mirror", "targets": ["XAUUSD"], "observable": "cftc_net_positioning",
+         "mechanism": "positioning", "cadence": "weekly"},
+        {"id": "gold_options_skew", "targets": ["XAUUSD"],
+         "observable": "options_25d_risk_reversal", "mechanism": "options_skew",
+         "cadence": "weekly"},
+    ]
+    rows = {r["id"]: r for r in se.price(sources, {"cot_gold": {"last_status": "COLLECTED"}},
+                                         {})}
+    skew, mirror = rows["gold_options_skew"], rows["cot_gold_mirror"]
+    assert skew["instrument_novelty"] == mirror["instrument_novelty"] == 0.0
+    assert skew["novelty"] > mirror["novelty"] == 0.0
+    assert skew["evig"] > mirror["evig"]

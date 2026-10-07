@@ -17,9 +17,21 @@ THE RATIO, and every term is measured or declared, never invented:
            Absent -> 1.0 and the row is stamped UNMEASURED_PRIOR: a flat prior is the honest
            default for a source about an instrument the desk has no posterior for, and it is
            marked so nobody reads the ranking as more measured than it is.
-    N(s)   NOVELTY: the share of s's declared targets that NO successfully-collected source
-           already covers. A second feed of a number the desk already has is worth its
-           redundancy, not its content.
+    N(s)   NOVELTY, in two kinds that are NEVER the same thing (principal 2026-10-06 11:14):
+           instrument  the share of s's declared targets that NO successfully-collected source
+                       already covers. A second feed of a number the desk already has is worth
+                       its redundancy, not its content.
+           information 1 - the closest similarity of s to any collected source on the four
+                       axes of independence: OBSERVABLE (what is measured: the declared
+                       `observable` and the mechanism's content words), ORIGIN (country), MEASUREMENT (the plane: official,
+                       exchange, physical, flow ...) and TIMING (cadence and publication-lag
+                       bucket). A Korean customs print about gold is NEW INFORMATION about an
+                       instrument the desk already covers; a second Chinese aggregator copying
+                       the same SAFE table is NOT, whatever instruments it names. Only axes both
+                       rows declare are compared; with none it is UNMEASURED and N falls back to
+                       the instrument share alone.
+           N = mean(instrument, information), declared, floored at 0.05; published as
+           `novelty`, with both parts beside it.
     P      P(usable): Beta(1+ok, 1+fail) posterior mean from the source's OWN collection history
            in `lake/collector_state.json`. A portal that has answered every time is worth more
            per attempt than one that has never parsed.
@@ -173,13 +185,90 @@ def _lag_weight(row: dict[str, Any]) -> float:
     return round(math.exp(-max(lag, 0.0) / 30.0), 6)
 
 
+#: Weights of the four independence axes in information similarity. DECLARED, not fitted.
+INFO_AXES: dict[str, float] = {"observable": 0.5, "origin": 0.2, "measurement": 0.15,
+                               "timing": 0.15}
+_STOP = frozenset(("the", "and", "that", "this", "with", "from", "into", "than", "they", "their",
+                   "there", "which", "when", "what", "where", "only", "every", "before", "after",
+                   "over", "under", "about", "desk", "trades", "trade", "price", "prices", "data",
+                   "public", "read", "number", "carry", "carries", "move", "moves", "signal"))
+
+
+def _tokens(text: Any) -> frozenset[str]:
+    words = "".join(ch.lower() if ch.isalnum() else " " for ch in str(text or "")).split()
+    return frozenset(w for w in words if len(w) >= 4 and w not in _STOP)
+
+
+def _lag_bucket(row: dict[str, Any]) -> str | None:
+    pit = row.get("pit") if isinstance(row.get("pit"), dict) else None
+    if not pit or pit.get("publication_lag_days") is None:
+        return None
+    try:
+        lag = float(pit["publication_lag_days"])
+    except (TypeError, ValueError):
+        return None
+    return "0" if lag <= 0.5 else "le7" if lag <= 7 else "le30" if lag <= 30 else "gt30"
+
+
+def info_axes(row: dict[str, Any]) -> dict[str, Any]:
+    """The four independence axes of one source, each None when the row does not declare it."""
+    obs = _tokens(f"{row.get('observable') or ''} {row.get('mechanism') or ''} "
+                  f"{row.get('name') or ''}")
+    cad = str(row.get("cadence") or "").strip().lower()
+    lag = _lag_bucket(row)
+    return {"observable": obs or None,
+            "origin": str(row.get("country") or "").strip().lower() or None,
+            "measurement": str(row.get("plane") or "").strip().lower() or None,
+            "timing": ((f"{cad}|{lag}" if lag is not None else cad) if cad else None)}
+
+
+def info_similarity(a: dict[str, Any], b: dict[str, Any]) -> tuple[float | None, dict[str, Any]]:
+    """Weighted similarity over the axes BOTH rows declare (weights renormalised), or None."""
+    parts: dict[str, float] = {}
+    for axis in INFO_AXES:
+        x, y = a.get(axis), b.get(axis)
+        if x is None or y is None:
+            continue
+        if axis == "observable":
+            parts[axis] = len(x & y) / len(x | y) if (x | y) else 0.0
+        else:
+            parts[axis] = 1.0 if x == y else 0.0
+    if not parts:
+        return None, {}
+    w = sum(INFO_AXES[k] for k in parts)
+    return sum(INFO_AXES[k] * v for k, v in parts.items()) / w, parts
+
+
+def information_novelty(row: dict[str, Any], collected: list[dict[str, Any]]
+                        ) -> dict[str, Any]:
+    """1 - max similarity to any OTHER successfully-collected source, with the nearest named."""
+    me = info_axes(row)
+    if not any(v is not None for v in me.values()):
+        return {"value": None, "status": "UNMEASURED",
+                "why": "the row declares none of observable, origin, measurement, timing"}
+    best, nearest, parts_best = None, None, {}
+    for c in collected:
+        if str(c.get("id")) == str(row.get("id")):
+            continue
+        sim, parts = info_similarity(me, info_axes(c))
+        if sim is not None and (best is None or sim > best):
+            best, nearest, parts_best = sim, str(c.get("id")), parts
+    if best is None:
+        return {"value": 1.0, "status": "MEASURED", "nearest": None,
+                "why": "no collected source shares a declared axis: nothing it could repeat"}
+    return {"value": round(1.0 - best, 4), "status": "MEASURED", "nearest": nearest,
+            "axes": {k: round(v, 4) for k, v in parts_best.items()}}
+
+
 def price(sources: list[dict[str, Any]], state: dict[str, Any],
           sd: dict[str, float]) -> list[dict[str, Any]]:
     """One priced row per source, highest EVIG first. Pure: no I/O, so the test can drive it."""
     covered: dict[str, int] = {}
+    collected: list[dict[str, Any]] = []
     for s in sources:
         ok, _f, _s = _history(state, str(s.get("id")))
         if ok > 0:
+            collected.append(s)
             for t in s.get("targets") or []:
                 key = str(t).upper()
                 covered[key] = covered.get(key, 0) + 1
@@ -195,6 +284,10 @@ def price(sources: list[dict[str, Any]], state: dict[str, Any],
         # unlabelled CDN URL before a central bank release it has a mechanism for.
         n_share = ((len(novel) / len(targets)) if targets
                    else (0.1 if s.get("derived") else 0.5))
+        info = information_novelty(s, collected)
+        n_instrument = n_share
+        if info["value"] is not None:
+            n_share = 0.5 * n_instrument + 0.5 * float(info["value"])
         prior: list[float] = [float(sd[t]) for t in targets if sd.get(t)]
         u = (sum(prior) / len(prior)) if prior else 1.0
         p_usable = (1.0 + ok) / (2.0 + ok + fail)
@@ -210,7 +303,11 @@ def price(sources: list[dict[str, Any]], state: dict[str, Any],
             "targets": targets, "novel_targets": novel,
             "u_prior_sd": round(u, 6), "u_status": ("MEASURED" if prior
                                                     else "UNMEASURED_PRIOR"),
-            "novelty": round(n_share, 4), "p_usable": round(p_usable, 4),
+            "novelty": round(n_share, 4), "instrument_novelty": round(n_instrument, 4),
+            "information_novelty": info, "novelty_used": round(n_share, 4),
+            "novelty_basis": ("mean(instrument, information)" if info["value"] is not None
+                              else "instrument only: information novelty UNMEASURED"),
+            "p_usable": round(p_usable, 4),
             "lag_weight": w, "cost_s": round(cost, 3),
             "cost_basis": ("measured seconds" if secs is not None else "declared cadence"),
             "ok": ok, "fail": fail,
@@ -263,8 +360,10 @@ def build(budget_s: float = 120.0) -> dict[str, Any]:
                         else f"flat prior 1.0: {sd_why}"),
         "n_priors": len(sd),
         "formula": ("EVIG(s) = U(s) x novelty(s) x P(usable|s) x exp(-lag/30) / cost_s; U is the "
-                    "desk's posterior sd on the instruments s declares, novelty the share of "
-                    "those the collector has never successfully read from another source"),
+                    "desk's posterior sd on the instruments s declares; novelty is the mean of "
+                    "INSTRUMENT novelty (share of targets no collected source covers) and "
+                    "INFORMATION novelty (1 - max similarity to a collected source on observable, "
+                    "origin, measurement and timing)"),
         "unit": "posterior sd x usable share per second of collector attention",
         "rows": rows,
         "proposals": proposals,
@@ -299,7 +398,8 @@ def main(argv: list[str] | None = None) -> int:
           f"prior basis: {doc['prior_basis']}")
     for r in doc["rows"][:8]:
         print(f"  {r['rank']:>3} {r['id'][:34]:<34} evig={r['evig']:.6g} "
-              f"novelty={r['novelty']:.2f} p_usable={r['p_usable']:.2f} cost={r['cost_s']:.0f}s")
+              f"novelty instr={r['instrument_novelty']:.2f} used={r['novelty_used']:.2f} "
+              f"p_usable={r['p_usable']:.2f} cost={r['cost_s']:.0f}s")
     print(f"written: {OUT}")
     return 0
 
