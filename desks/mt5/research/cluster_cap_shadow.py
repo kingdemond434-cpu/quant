@@ -19,9 +19,10 @@ it writes the missed-growth line in research/missed_growth.py's ledger conventio
 (`{day, rail, value, at}`, value in log-wealth per day, NEGATIVE when the rail would have cost
 growth): -admission.delta_elogw_per_day where the allocator measured it, otherwise UNMEASURED with
 the undeployed risk fraction published (the E8 duplicate-guard convention: risk, not profit).
-The lines accumulate in the shadow's own ledger, so the cap's Rule-1 verdict can be read off
-its own evidence; nothing is appended to the live missed-growth ledger, whose rails are the
-sealed registry's.
+The lines accumulate in the shadow's own ledger with one day-level sample per day, and the
+cap's Rule-1 verdict is read off them with research/missed_growth.py's own statistic
+(`_verdict_from_samples`, the one every registered rail is billed with). Nothing is appended to
+the live data/missed_growth.jsonl, whose rails are the sealed registry's (libs/portfolio/rails).
 
 READ-ONLY BY CONSTRUCTION: this module opens sleeves.json for reading and writes only
 reports/CLUSTER_CAP_SHADOW.json and reports/cluster_cap_shadow_ledger.jsonl.
@@ -162,25 +163,76 @@ def build(*, sat: Mapping[str, Any], sleeves: Any = None,
     }
 
 
+DAY_ROW = "__day__"
+
+
+def _mg() -> Any:
+    try:
+        from research import missed_growth as mg
+    except ImportError:                                                  # pragma: no cover
+        import missed_growth as mg  # type: ignore[import-not-found,no-redef]
+    return mg
+
+
+def day_sample(doc: Mapping[str, Any]) -> float | None:
+    """The day's log-wealth sample for the rail: 0.0 when the cap would have blocked nothing
+    (it cost and earned nothing), the summed measured lines when every blocked promotion was
+    measured, None (no sample: UNMEASURED never becomes a zero) when any was not."""
+    if doc.get("status") != MEASURED:
+        return None
+    lines = [b["missed_growth"] for b in doc.get("would_block") or []]
+    if not lines:
+        return 0.0
+    if any(ln.get("value") is None for ln in lines):
+        return None
+    return float(sum(float(ln["value"]) for ln in lines))
+
+
+def rule1_verdict(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
+    """Growth governance Rule 1, read off the shadow's own day samples with the SAME statistic
+    research/missed_growth.py bills every registered rail with (`_verdict_from_samples`):
+    EARNS_GROWTH / COSTS_GROWTH at |t| > 2 over >= MIN_N days, NOT_BINDING when every day is 0,
+    UNMEASURED otherwise. Only EARNS would ever admit the cap; the shadow never enforces."""
+    samples = [float(r["value"]) for r in rows
+               if r.get("sleeve") == DAY_ROW and _num(r.get("value")) is not None]
+    try:
+        verdict, stats = _mg()._verdict_from_samples(samples)
+    except Exception as exc:                                             # pragma: no cover
+        return {"verdict": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:200],
+                "n": len(samples)}
+    return {"verdict": verdict, **stats, "statistic": "research.missed_growth."
+            "_verdict_from_samples"}
+
+
 def publish(doc: Mapping[str, Any], path: Path | None = None,
             ledger: Path | None = None) -> Path:
+    """Write the shadow report and append the day's lines (once per day per sleeve) to the
+    shadow's ledger in research/missed_growth.py's convention, plus one day-level sample row;
+    the report carries the Rule-1 verdict read off that ledger."""
     p = path or OUT
     p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
-    tmp.replace(p)
     lp = ledger or p.with_name(LEDGER.name)
-    seen: set[tuple[str, str]] = set()
+    rows: list[dict[str, Any]] = []
     try:
         for ln in lp.read_text("utf-8").splitlines():
             if ln.strip():
-                r = json.loads(ln)
-                seen.add((str(r.get("day")), str(r.get("sleeve"))))
+                rows.append(json.loads(ln))
     except (OSError, ValueError):
-        pass
+        rows = []
+    seen = {(str(r.get("day")), str(r.get("sleeve"))) for r in rows}
     new = [b["missed_growth"] for b in doc.get("would_block") or []
            if (str(b["missed_growth"].get("day")), str(b["missed_growth"].get("sleeve")))
            not in seen]
+    sample = day_sample(doc)
+    day = str(doc.get("at") or "")[:10]
+    if sample is not None and day and (day, DAY_ROW) not in seen:
+        new.append({"day": day, "rail": RAIL, "sleeve": DAY_ROW, "value": sample,
+                    "at": doc.get("at"), "n_would_block": doc.get("n_would_block")})
+    out = dict(doc)
+    out["rule1"] = rule1_verdict(rows + new)
+    tmp = p.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(out, indent=1, default=str), "utf-8")
+    tmp.replace(p)
     if new:
         with lp.open("a", encoding="utf-8") as fh:
             for row in new:
@@ -188,5 +240,5 @@ def publish(doc: Mapping[str, Any], path: Path | None = None,
     return p
 
 
-__all__ = ["OUT", "RAIL", "REASON", "build", "cluster_of", "live_rows", "missed_growth_line",
-           "publish"]
+__all__ = ["DAY_ROW", "OUT", "RAIL", "REASON", "build", "cluster_of", "day_sample", "live_rows",
+           "missed_growth_line", "publish", "rule1_verdict"]

@@ -266,8 +266,44 @@ def test_shadow_cap_counts_match_a_synthetic_book_and_never_change_a_promotion(
     assert "AUTOMATIC PROMOTION" in doc["reason"] and "Rule 1" in doc["reason"]
     p = ccs.publish(doc, tmp_path / "CLUSTER_CAP_SHADOW.json")
     ccs.publish(doc, p)
-    ledger = (tmp_path / ccs.LEDGER.name).read_text("utf-8").splitlines()
-    assert len(ledger) == expect, "one ledger line per blocked promotion per day"
+    ledger = [json.loads(x) for x in
+              (tmp_path / ccs.LEDGER.name).read_text("utf-8").splitlines()]
+    lines = [x for x in ledger if x["sleeve"] != ccs.DAY_ROW]
+    assert len(lines) == expect, "one ledger line per blocked promotion per day"
+    days = [x for x in ledger if x["sleeve"] == ccs.DAY_ROW]
+    # a day with an UNMEASURED blocked promotion has no sample: never a zero
+    assert len(days) == (1 if mg["unmeasured"] == 0 else 0)
+    assert json.loads(p.read_text("utf-8"))["rule1"]["verdict"] == "UNMEASURED"
+
+
+def test_shadow_rule1_verdict_uses_the_missed_growth_statistic(tmp_path: Path) -> None:
+    """The cap's Rule-1 verdict is research.missed_growth._verdict_from_samples over the
+    shadow's day samples: a cap that would have cost growth every day reads COSTS_GROWTH, one
+    that never binds reads NOT_BINDING, and fewer than MIN_N days read UNMEASURED."""
+    import missed_growth as mgm
+    led = tmp_path / ccs.LEDGER.name
+
+    def doc(day: int, value: float | None) -> dict:
+        at = f"2026-09-{day:02d}T12:00:00+00:00"
+        blocked = [] if value == 0.0 else [{"sleeve": "s", "missed_growth": {
+            "day": at[:10], "rail": ccs.RAIL, "sleeve": "s", "value": value, "at": at}}]
+        return {"status": "MEASURED", "at": at, "would_block": blocked,
+                "n_would_block": len(blocked)}
+
+    out = tmp_path / "CLUSTER_CAP_SHADOW.json"
+    for d in range(1, mgm.MIN_N):
+        ccs.publish(doc(d, -1e-4 * (1 + d % 3)), out, led)
+    assert json.loads(out.read_text("utf-8"))["rule1"]["verdict"] == mgm.UNMEASURED
+    ccs.publish(doc(mgm.MIN_N, -2e-4), out, led)
+    r1 = json.loads(out.read_text("utf-8"))["rule1"]
+    assert r1["verdict"] == mgm.COSTS and r1["n"] == mgm.MIN_N
+    ccs.publish(doc(mgm.MIN_N, -2e-4), out, led)          # same day again: no second sample
+    assert json.loads(out.read_text("utf-8"))["rule1"]["n"] == mgm.MIN_N
+    led2 = tmp_path / "quiet.jsonl"
+    for d in range(1, mgm.MIN_N + 1):
+        ccs.publish(doc(d, 0.0), out, led2)
+    assert json.loads(out.read_text("utf-8"))["rule1"]["verdict"] == mgm.NOT_BINDING
+    assert ccs.day_sample(doc(1, None)) is None
 
 
 def test_shadow_reads_the_promoter_file_read_only(sat: dict, tmp_path: Path,
