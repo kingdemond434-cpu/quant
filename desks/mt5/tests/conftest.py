@@ -60,6 +60,7 @@ def fresh_tier_s_door(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterat
     for attr, path in paths.items():
         monkeypatch.setattr(pa, attr, path)
     monkeypatch.setattr(pa, "LEDGER", desk / "data" / "tier_s" / "promotion_blocks.jsonl")
+    monkeypatch.setattr(pa, "SUSPENDED_LEDGER", desk / "data" / "tier_s" / "door_suspended.jsonl")
     monkeypatch.setattr(pa, "LIVE_DOOR", desk / "data" / "tier_s" / "live_door.json")
     # the constitution and ratifications keep their repo-relative names; absent = sealed default
     monkeypatch.setattr(pa, "CONSTITUTION", root / "docs" / "research" / "tier_s_constitution.json")
@@ -99,6 +100,8 @@ def _tier_s_state_stays_out_of_the_checkout(monkeypatch: pytest.MonkeyPatch,
     monkeypatch.setattr(blinding, "record", record)
     if Path(pa.LEDGER).resolve().is_relative_to(repo):
         monkeypatch.setattr(pa, "LEDGER", sink / "promotion_blocks.jsonl")
+    if Path(pa.SUSPENDED_LEDGER).resolve().is_relative_to(repo):
+        monkeypatch.setattr(pa, "SUSPENDED_LEDGER", sink / "door_suspended.jsonl")
 
 
 def write_measured_dsr_inputs(root: Path, *, variance: float = 0.0002, n: int = 200,
