@@ -276,13 +276,24 @@ def test_a_planted_print_is_caught(monkeypatch: pytest.MonkeyPatch,
     assert _leaks_in(json.dumps(leg)), "the fence missed a planted print in the leg tail"
 
 
-def _unignored_files(repo: Path) -> list[str]:
+def _files_that_reach_git(repo: Path) -> list[str]:
+    """Every file in the scratch repository that git would carry: unignored ones, AND ones this
+    repository TRACKS although .gitignore names them (sync_marker.json is force-added: ignored by
+    pattern, tracked by fact -- a fence on "unignored" alone would skip exactly that file)."""
     r = _git(repo, "ls-files", "--cached", "--others", "--exclude-standard", "-z")
     assert r.returncode == 0, r.stderr
-    return [x for x in r.stdout.split("\0") if x]
+    out = {x for x in r.stdout.split("\0") if x}
+    for p in repo.rglob("*"):
+        rel = p.relative_to(repo).as_posix()
+        if p.is_file() and not rel.startswith(".git/") and rel not in out:
+            t = subprocess.run(["git", "-C", str(ROOT), "ls-files", "--", rel],
+                               capture_output=True, text=True, check=False)
+            if t.stdout.strip():
+                out.add(rel)
+    return sorted(out)
 
 
-def test_downstream_grep_finds_no_planted_value_on_any_unignored_file(
+def test_downstream_grep_finds_no_planted_value_on_any_file_git_carries(
         monkeypatch: pytest.MonkeyPatch, scratch_repo: Path) -> None:
     """(c) After a planted run through the hourly leg, the leg result is written where
     hourly_cycle writes it (desks/mt5/data/sync_marker.json, a TRACKED file), and every
@@ -300,7 +311,7 @@ def test_downstream_grep_finds_no_planted_value_on_any_unignored_file(
                if p.suffix == ".json")
     assert any(p.name.endswith(".attribution.json") for p in priv)
 
-    files = _unignored_files(scratch_repo)
+    files = _files_that_reach_git(scratch_repo)
     assert "desks/mt5/data/sync_marker.json" in files, "sync_marker.json must be checked"
     assert not any("private_use" in f for f in files), files
     leaks = [f for f in files
