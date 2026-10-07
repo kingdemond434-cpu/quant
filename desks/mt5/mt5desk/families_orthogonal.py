@@ -194,35 +194,63 @@ def _swap_history_for(symbol: str) -> dict[str, np.ndarray] | None:
     return h if isinstance(h, dict) else None
 
 
-def carry_history_status(symbol: str, floor_days: int | None = None) -> dict[str, object]:
-    """READY or PENDING_HISTORY for ONE symbol's carry cell, with the count; UNMEASURED if the
-    gauntlet's lockbox floor cannot be read.
+#: The oldest swap observation a bar may still use, in hours. 72 h spans a weekend, when the FX
+#: venue prints no bars and the tape may hold no new row; past it the swap is no longer a fact
+#: about this bar and the bar emits nothing (audit PR269 should-fix: a staleness bound).
+MAX_SWAP_AGE_H = 72.0
 
-    The count is distinct UTC dates holding an honest swap observation for THIS symbol; the
-    floor is `research.gate_policy.LOCKBOX_MIN_DAYS`, the same floor `families_carry`'s
-    class-level gate uses, never lowered here. A cell below it reads PENDING_HISTORY by name at
-    the judging boundary (the orthogonal sweep, and the gauntlet's carry build with the
-    `carry_pit` patch), so it is never judged on a history its lockbox could not hold, and it
-    enters on its own the hour the history is long enough.
+
+def carry_history_status(symbol: str, floor_days: int | None = None,
+                         max_swap_age_h: float = MAX_SWAP_AGE_H) -> dict[str, object]:
+    """READY or PENDING_HISTORY for ONE symbol's carry cell, with the count; UNMEASURED if the
+    gauntlet's floor cannot be derived.
+
+    THE FLOOR IS THE GAUNTLET'S JUDGEABLE MINIMUM, `families_carry.judgeable_floor()` (#166):
+    60 development days plus the held-out tail (max(LOCKBOX_MIN_DAYS, LOCKBOX_FRAC * n)), which
+    is 100 today. It used to be LOCKBOX_MIN_DAYS (40) alone, which let a 40-day cell into a
+    judge that cannot judge it: the verdict would have been UNMEASURED, and an UNMEASURED
+    verdict must never reach a certificate (audit PR269 M1). One derivation, imported.
+
+    THE COUNT IS STRICT. A day counts only if it is a weekday (the cell's daily series holds
+    trading days, never weekends) whose OPENING instant already had a swap row knowable
+    (`observed_at + 3 h`) and no older than `max_swap_age_h`. So the first, partial day never
+    counts, nor does a day after the tape went stale. And the cell is READY only STRICTLY ABOVE
+    the floor, `honest_days > floor_days`: a history sitting exactly on the boundary is the case
+    a one-day disagreement between this calendar and the judge's would turn into an UNMEASURED
+    verdict, so it waits one more day.
+
+    A cell below it reads PENDING_HISTORY by name at the judging boundary (the orthogonal sweep,
+    and the gauntlet's carry build with the `carry_pit` patch). It is never judged on a history
+    the judge could not hold, and it enters on its own the day the history is long enough.
     """
     from mt5desk import families_carry as fc
 
     if floor_days is None:
         try:
-            from research.gate_policy import LOCKBOX_MIN_DAYS
-            floor_days = int(LOCKBOX_MIN_DAYS)
+            floor_days = int(fc.judgeable_floor())
         except Exception as exc:                     # pragma: no cover - import guard
             return {"status": "UNMEASURED", "ready": False, "symbol": symbol,
-                    "why": f"lockbox floor unreadable: {type(exc).__name__}"}
+                    "why": f"judgeable floor unreadable: {type(exc).__name__}"}
     h = _swap_history_for(symbol)
-    stamps = [] if h is None else [int(t) - fc.BROKER_LEAD_NS for t in h["t"]]
-    days = sorted({pd.Timestamp(t, unit="ns", tz="UTC").date().isoformat() for t in stamps})
-    ready = len(days) >= int(floor_days)
+    t = np.asarray([] if h is None else h["t"], dtype="int64")
+    days: list[str] = []
+    if t.size:
+        first = pd.Timestamp(int(t[0]), unit="ns", tz="UTC").normalize()
+        last = pd.Timestamp(int(t[-1]) - fc.BROKER_LEAD_NS, unit="ns", tz="UTC").normalize()
+        opens = pd.bdate_range(first + pd.Timedelta(days=1), last, tz="UTC")
+        if len(opens):
+            o = opens.as_unit("ns").asi8
+            j = np.searchsorted(t, o, side="right") - 1
+            ok = (j >= 0) & ((o - t[np.maximum(j, 0)]) <= float(max_swap_age_h) * 3_600e9)
+            days = [d.date().isoformat() for d, k in zip(opens, ok, strict=True) if k]
+    ready = len(days) > int(floor_days)
     return {"status": "READY" if ready else "PENDING_HISTORY", "ready": ready, "symbol": symbol,
             "honest_days": len(days), "floor_days": int(floor_days),
+            "max_swap_age_h": float(max_swap_age_h),
             "first_day": days[0] if days else None, "last_day": days[-1] if days else None,
-            "why": ("carry is judged only on swap observations knowable at each bar; below the "
-                    "lockbox floor the cell waits, and no earlier bar is ever filled")}
+            "why": ("carry is judged only on swap observations knowable at each bar; until the "
+                    "honest weekday count is strictly above the gauntlet's judgeable floor the "
+                    "cell waits, and no earlier bar is ever filled")}
 
 
 def _contract_size(symbol: str) -> float | None:
@@ -267,6 +295,7 @@ def family_carry(
     stop_atr: float = 2.0,
     rr: float = 1.5,
     require_quiet: bool = True,
+    max_swap_age_h: float = MAX_SWAP_AGE_H,
 ) -> list[Signal]:
     """Hold the positive-swap side while the market is QUIET; stand aside when it trends.
 
@@ -283,10 +312,11 @@ def family_carry(
     `days: 1120` (CHFNOK carry) was judged on three years of bars carrying a swap nobody could
     have known. Each bar now uses only the newest swap row whose `observed_at + 3 h` is at or
     before the bar's decision instant (its close); a bar before the first such row emits
-    nothing -- no backfill. Side and edge can therefore change bar by bar as the venue's swap
-    does. Whether the cell may be JUDGED yet is a separate question, answered by
-    `carry_history_status` at the judging boundary; live and forward use are unaffected,
-    because a bar printed now always has a knowable swap.
+    nothing -- no backfill -- and so does a bar whose newest knowable row is older than
+    `max_swap_age_h`: a stale swap is not a fact about that bar. Side and edge can therefore
+    change bar by bar as the venue's swap does. Whether the cell may be JUDGED yet is a
+    separate question, answered by `carry_history_status` at the judging boundary; live and
+    forward use are unaffected, because a bar printed now always has a fresh, knowable swap.
 
     REFUSES WITHOUT SWAP DATA. With no observation knowable at a bar, or a unit that cannot be
     established (`swap_money_per_lot` is None), that bar emits nothing rather than degrading
@@ -303,7 +333,12 @@ def family_carry(
         return []
     # THE AS-OF JOIN. h["t"] is already observed_at + 3 h; side="right" admits a row knowable
     # exactly at the decision instant and nothing later.
-    row_at = np.searchsorted(h["t"], _decision_ns(d), side="right") - 1
+    dec = _decision_ns(d)
+    row_at = np.searchsorted(h["t"], dec, side="right") - 1
+    # THE STALENESS BOUND: a row older than `max_swap_age_h` at the decision instant is no row.
+    stale = (row_at >= 0) & ((dec - h["t"][np.maximum(row_at, 0)])
+                             > float(max_swap_age_h) * 3_600e9)
+    row_at = np.where(stale, -1, row_at)
     # Resolve each distinct row ONCE. The unit lives in a different field from the number (see
     # swap_money_per_lot) and is resolved per row, so a mode change mid-history is honoured.
     side_of: dict[int, int] = {}

@@ -2545,13 +2545,15 @@ def swap_rejudge() -> dict:
 
 
 def carry_rejudge() -> dict:
-    """`carry_rejudge`: queue every carry certificate the look-ahead `family_carry` minted.
+    """`carry_rejudge`: hold every look-ahead carry certificate in force until its real verdict.
 
-    `family_carry` applied TODAY's swap to every past bar until 2026-10-07 (carry_pit). Each
-    hour this leg merges any carry certificate gated before the fix that is still in the
-    survivor set into `priority_remint.json`, so the judge re-judges the exact spec under the
-    point-in-time family first and its own `remint_partition` retires, replaces or holds it
-    outside the survivor set. Idempotent: once none remains it writes only its report.
+    `family_carry` applied the newest recorded swap to every past bar until 2026-10-07
+    (carry_pit). Each hour this leg writes every carry certificate gated before the fix was
+    adopted on this host (survivor files plus every non-terminal carry sleeve) into
+    `priority_remint.json`: its cell is judged first, and its key is VERDICT-BOUND, never stale.
+    It stays in the survivor set, still backing its forward clock, until a real ten-gate
+    verdict lands (with the sealed carry_pit patch): PASS replaces it, FAIL retires it,
+    anything else keeps it. An UNMEASURED or PENDING_HISTORY verdict never retires one.
     """
     return _producer("carry_rejudge", "scripts/queue_carry_rejudge.py", "--write")
 
