@@ -7,6 +7,13 @@ double-count trades.
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import json
 import os
 import re
@@ -140,7 +147,8 @@ def _refresh_scalp_bars() -> None:
     from datetime import datetime as _datetime
 
     import h1_source
-    import MetaTrader5 as mt5
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
     import pandas as pd
     from fetch_gold_scalp import _paged_rates
 

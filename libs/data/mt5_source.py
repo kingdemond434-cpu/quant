@@ -46,7 +46,8 @@ class MT5BarSource:  # pragma: no cover - requires a live Windows MT5 terminal
 
     def __init__(self) -> None:
         try:
-            import MetaTrader5 as mt5
+            from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+            mt5 = readonly_mt5()
         except ImportError as exc:
             raise MT5Error("the MetaTrader5 package is not installed") from exc
         self._mt5 = mt5

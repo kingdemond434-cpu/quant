@@ -27,6 +27,13 @@ tree it belongs to, and the timeframes are a list rather than a literal.
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import argparse
 import json
 import os
@@ -34,7 +41,8 @@ import shutil
 import sys
 from pathlib import Path
 
-import MetaTrader5 as mt5
+from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+mt5 = readonly_mt5()
 import pandas as pd
 
 #: DERIVED, NEVER TYPED. `scripts/` -> `desks/mt5/` -> `data/universe`, the one directory

@@ -673,7 +673,10 @@ def _mt5_snapshot() -> dict[str, Any]:
     principal means by "today's gain".
     """
     try:
-        import MetaTrader5 as mt5  # type: ignore[import-not-found, import-untyped]
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        mt5 = readonly_mt5()
         if mt5.terminal_info() is None and not mt5.initialize():
             return {}
         info = mt5.account_info()

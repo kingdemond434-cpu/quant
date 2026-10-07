@@ -34,7 +34,8 @@ _OUT = Path("reports/campaign1")
 
 
 def _connect_demo() -> object:
-    import MetaTrader5 as mt5
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
 
     if not mt5.initialize():
         raise SystemExit(f"MT5 initialize failed: {mt5.last_error()}")

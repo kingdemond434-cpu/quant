@@ -11,6 +11,13 @@ see `DERIVED` below for what its absence cost. Derivation needs no terminal, so 
 VPS pass too, where the terminal is absent and the honest return code is 2.
 """
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import json
 import os
 import sys
@@ -18,7 +25,8 @@ import time
 from pathlib import Path
 
 try:
-    import MetaTrader5 as mt5
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
 except ImportError:
     # NOT THE WINDOWS BOX. This used to be a bare top-level import, so the module could not even
     # be LOADED anywhere else -- and `daily_cycle._refresh_bars` does `import refresh_tail`

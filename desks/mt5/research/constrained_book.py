@@ -32,6 +32,13 @@ There is no hand switch: `constrained_elog.FEEDS_LIVE` is the fiat switch and st
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import argparse
 import json
 import math
@@ -108,7 +115,8 @@ def _terminal_account() -> tuple[dict[str, float | None], str]:
     """(margin, equity, stop_out_level) straight from the terminal, or Nones with the reason."""
     none: dict[str, float | None] = {"margin": None, "equity": None, "stop_out_level": None}
     try:
-        import MetaTrader5 as mt5  # type: ignore[import-not-found,unused-ignore]
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        mt5 = readonly_mt5()
     except ImportError:
         return none, "MetaTrader5 is not importable on this host"
     opened = False

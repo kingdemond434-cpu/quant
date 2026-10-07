@@ -17,6 +17,13 @@ higher, sleeves must be re-approved before pointing the gateway at Fusion.
 
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import json
 import sys
 import time
@@ -50,7 +57,8 @@ FUSION_COMMISSION = 2.25
 
 
 def connect() -> bool:
-    import MetaTrader5 as mt5  # noqa: PLC0415
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
     if mt5.terminal_info() is None:
         from mt5_session import attach_or_initialize
         if not attach_or_initialize(mt5, path=terminal_path()):
@@ -65,7 +73,8 @@ def connect() -> bool:
 
 
 def live_spreads() -> dict:
-    import MetaTrader5 as mt5  # noqa: PLC0415
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
     meta = json.loads(META_FILE.read_text(encoding="utf-8"))
     out = {}
     for sym in meta:
@@ -172,7 +181,8 @@ def gold_battery(h1: pd.DataFrame, sigs: list, costs: Costs) -> dict:
 
 
 def validate() -> None:
-    import MetaTrader5 as mt5  # noqa: PLC0415
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
     if not connect():
         sys.exit(2)
     profile = live_spreads()

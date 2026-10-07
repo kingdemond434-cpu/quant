@@ -24,6 +24,13 @@ RETIRE (fully automatic):
 The armed gold book is NOT managed here (hunt5 authority, armed by human).
 """
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import json
 import sys
 from datetime import UTC, datetime
@@ -108,7 +115,8 @@ def load_ledger() -> list[dict]:
     except Exception:
         return []
     try:
-        import MetaTrader5 as mt5  # noqa: PLC0415
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        mt5 = readonly_mt5()
         acc = provenance.current_account(mt5.account_info())
     except Exception:
         acc = provenance.current_account(None)

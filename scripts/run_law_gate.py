@@ -138,6 +138,10 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # robust forward E[log W]; every strong opportunity may raise capital above normal; the
     # 20% floor is flat and filled, growth free above it to 30%; the gateway deploys the book.
     ("check_growth_governance.py", ()),
+    # ORDER AUTHORITY (ARCH-12, 2026-10-07): only the order path may hold a MetaTrader5 module
+    # that can send. Research and recorders read through libs.ops.mt5_readonly, an allowlist
+    # proxy that refuses order_send/order_delete/Buy/Sell/Close and terminal credentials.
+    ("check_order_authority.py", ()),
     # NO QUOTA ON FORWARD EVIDENCE SLOTS, EVER (principal 2026-09-23). The portable half:
     # AST-walks the enrolment path and fails when a cap comes back -- a quota constant, a slice
     # of the certificate roster, a `len(enrolled) >= n` gate, or `forward_reconcile.family_budget`

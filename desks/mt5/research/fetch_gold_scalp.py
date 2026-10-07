@@ -6,6 +6,13 @@ column because a one-minute gold backtest without the contemporaneous spread is 
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import argparse
 import json
 import sys
@@ -39,7 +46,8 @@ def _paged_rates(mt5, symbol: str, timeframe: int, bars: int):  # type: ignore[n
 
 
 def fetch(terminal: str, symbol: str, out_dir: Path, bars: int = 90_000) -> dict[str, int]:
-    import MetaTrader5 as mt5
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
     from mt5_session import attach_or_initialize
     if not attach_or_initialize(mt5, path=terminal, timeout=15_000):
         raise RuntimeError(f"MT5 initialize failed: {mt5.last_error()}")

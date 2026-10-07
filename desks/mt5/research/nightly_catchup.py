@@ -23,6 +23,13 @@ from the artifacts rather than from a checkpoint that may not describe them.
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import argparse
 import json
 import subprocess
@@ -186,7 +193,8 @@ def bar_coverage() -> dict[str, Any]:
     charts = {p.stem.rpartition("_")[0].upper()
               for p in (BASE / "data" / "universe").glob("*_*.parquet")}
     try:
-        import MetaTrader5  # noqa: F401
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        readonly_mt5()
         terminal = True
     except Exception:                             # noqa: BLE001 - absence is the answer here
         terminal = False

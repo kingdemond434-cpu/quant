@@ -3,6 +3,13 @@ universe.json. Runs on Windows where MetaTrader5 is installed. Then SCP to VPS.
 
 Was H1-only, and not by choice -- see the TIMEFRAME_DEPTH block below.
 """
+
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
 import atexit
 import json
 import os
@@ -141,7 +148,8 @@ if _accounted:
 # Heavy imports and Fusion ownership happen ONLY when a cell is genuinely due. MetaTrader5 can
 # block while resolving IPC and Arrow/NumPy reserve substantial commit; importing either before
 # the current-ledger fast path made a no-op hourly task consume resources and sometimes hang.
-import MetaTrader5 as mt5  # noqa: E402
+from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+mt5 = readonly_mt5()
 import pandas as pd  # noqa: E402
 import pyarrow.parquet as pq  # noqa: E402
 from research.expand_universe import _pull_bars  # noqa: E402

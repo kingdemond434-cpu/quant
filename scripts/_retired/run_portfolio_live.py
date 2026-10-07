@@ -111,11 +111,10 @@ def _send(mt5, symbol: str, delta: float, *, dry: bool) -> dict[str, object]:  #
         "deviation": 50, "magic": _MAGIC, "comment": "quant_portfolio",
         "type_time": mt5.ORDER_TIME_GTC, "type_filling": _filling(mt5, symbol),
     }
-    res = mt5.order_send(req)
-    ok = res is not None and res.retcode == mt5.TRADE_RETCODE_DONE
-    return {"symbol": symbol, "side": side, "lots": round(abs(delta), 3),
-            "status": "FILLED" if ok else f"REJ {getattr(res, 'retcode', '?')}",
-            "comment": getattr(res, "comment", "")}
+    # RETIRED WITHOUT ORDER AUTHORITY (ARCH-12, 2026-10-07): this script sent market orders
+    # straight to the terminal, past the gateway's order door. Orders go through the gateway.
+    raise RuntimeError(f"retired: no order authority outside the gateway ({req['symbol']})")
+
 
 
 def _rebalance(mt5, weights: dict[str, float], gross_leverage: float,  # type: ignore
@@ -150,7 +149,8 @@ def _rebalance(mt5, weights: dict[str, float], gross_leverage: float,  # type: i
 
 
 def main() -> None:
-    import MetaTrader5 as mt5
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--minutes", type=float, default=120.0)

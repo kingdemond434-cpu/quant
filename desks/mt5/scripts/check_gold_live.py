@@ -27,6 +27,13 @@ Exit 0 when every step that can be checked is clear, 1 when something refuses th
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import json
 import sys
 from datetime import UTC, datetime
@@ -208,7 +215,8 @@ def main(argv: list[str] | None = None) -> int:
     # -- 5. the terminal ---------------------------------------------------------------------
     broker_hour = None
     try:
-        import MetaTrader5 as mt5
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        mt5 = readonly_mt5()
         if not mt5.initialize():
             say(BAD, f"MetaTrader5 will not initialize: {mt5.last_error()}")
             blocking.append("MT5 not connected")

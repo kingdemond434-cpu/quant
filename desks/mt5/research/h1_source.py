@@ -39,6 +39,13 @@ a quiet market.
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import json
 import os
 from collections.abc import Callable
@@ -300,7 +307,8 @@ def _normalise(df: pd.DataFrame) -> pd.DataFrame:
 def from_mt5(sym: str, start: datetime, timeframe: str = "H1") -> Bars | None:
     """The broker's own bars, on `timeframe`. Best evidence, least available."""
     try:
-        import MetaTrader5 as mt5
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        mt5 = readonly_mt5()
     except ImportError:
         return None
     tf_code = getattr(mt5, f"TIMEFRAME_{str(timeframe).upper()}", None)

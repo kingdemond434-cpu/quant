@@ -44,6 +44,13 @@ TWO RULES MAKE THIS SAFE TO RUN BESIDE A LIVE TERMINAL:
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import argparse
 import json
 import sys
@@ -356,7 +363,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"standing down: {now:%H:%M}Z is inside the {window} placement window")
         return 0
 
-    import MetaTrader5 as mt5
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
     if mt5.terminal_info() is None and not mt5.initialize():
         print(f"initialize failed: {mt5.last_error()}")
         return 1

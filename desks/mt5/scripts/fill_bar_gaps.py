@@ -39,6 +39,13 @@ under `desks/mt5/data/`, and removes nothing under any circumstance.
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import argparse
 import json
 import os
@@ -146,7 +153,8 @@ def undeclared(root: Path | None = None) -> list[str]:
 
 def _terminal() -> tuple[Any, str]:
     try:
-        import MetaTrader5 as mt5
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        mt5 = readonly_mt5()
     except Exception as exc:                             # pragma: no cover - box-only import
         return None, f"MetaTrader5 is not importable on this host: {type(exc).__name__}: {exc}"
     if not mt5.initialize():

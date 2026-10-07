@@ -33,6 +33,13 @@ when it says so; management of what is already open never stands down.
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import argparse
 import contextlib
 import json
@@ -1072,7 +1079,8 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     armed = bool(args.armed or ARMED_MARKER.exists())
     try:
-        import MetaTrader5 as mt5
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        mt5 = readonly_mt5()
         from mt5desk.config import terminal_path
         from research.mt5_session import attach_or_initialize
         ok, _tries = connect_terminal(mt5, attach_or_initialize, terminal_path())

@@ -37,12 +37,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "desks" / "mt5" / "data" / "account_state.json"
 sys.path.insert(0, str(ROOT / "desks" / "mt5"))
+if str(ROOT) not in sys.path:  # libs.ops.mt5_readonly (ARCH-12)
+    sys.path.insert(0, str(ROOT))
 from research.mt5_session import attach_or_initialize  # noqa: E402
 
 
 def main() -> int:
     try:
-        import MetaTrader5 as mt5
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        mt5 = readonly_mt5()
     except Exception as exc:  # the research box has no terminal; absence is not an error
         print(f"MetaTrader5 unavailable: {type(exc).__name__}: {exc}")
         return 0

@@ -38,6 +38,13 @@ prohibition is enforced by a test walking this module's AST, not by intent.
 
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import json
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -96,7 +103,8 @@ def _is_producing_host(root: Path, rel_dir: str) -> bool:
     future check with a different producer can override per-artifact.
     """
     try:
-        import MetaTrader5  # noqa: F401
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        readonly_mt5()
         return True
     except Exception:
         return False

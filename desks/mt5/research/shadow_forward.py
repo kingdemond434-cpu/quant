@@ -14,6 +14,13 @@ XAUUSD sleeves here are challengers (hunt6 generic params) vs the armed
 hunt5-param gold book.
 """
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import contextlib
 import json
 import os
@@ -1207,7 +1214,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                  for t in all_trades],
                 indent=2), encoding="utf-8")
             try:
-                import MetaTrader5 as _mt5
+                from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+                _mt5 = readonly_mt5()
                 from h1_source import broker_utc_offset_hours
                 st["broker_offset_h"] = broker_utc_offset_hours(_mt5)
             except Exception:

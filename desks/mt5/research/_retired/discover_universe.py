@@ -58,6 +58,13 @@ went missing for the life of this desk.
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[4])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import argparse
 import json
 import sys
@@ -129,7 +136,8 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     try:
-        import MetaTrader5 as mt5                                    # noqa: PLC0415
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        mt5 = readonly_mt5()
     except ImportError:
         print("REFUSED: MetaTrader5 is not installed here. This must run on the box with the "
               "terminal -- it is the only place that can be asked what the broker offers.")

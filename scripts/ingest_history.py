@@ -51,7 +51,8 @@ def _connect(
     portable: bool = False,
     allow_readonly_live: bool = False,
 ):  # type: ignore[no-untyped-def]
-    import MetaTrader5 as mt5
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
 
     initialized = (
         mt5.initialize(terminal_path, portable=portable) if terminal_path else mt5.initialize()

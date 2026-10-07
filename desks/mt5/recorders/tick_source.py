@@ -45,6 +45,13 @@ empty array, which is a different fact and is recorded differently.
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import time
 from contextlib import suppress
 from dataclasses import dataclass
@@ -131,7 +138,8 @@ class Mt5TickSource:
         self._initialised = False
 
     def _mt5(self) -> Any:
-        import MetaTrader5 as mt5  # the vendor's own casing
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        mt5 = readonly_mt5()
         return mt5
 
     def initialize(self) -> bool:

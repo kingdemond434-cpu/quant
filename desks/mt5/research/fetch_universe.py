@@ -23,6 +23,13 @@ Two rules now hold here, and both are the anti-hardcode law (LAWS §1) rather th
     a missing row is not "no data", it is an uncostable symbol that kills a pass.
 """
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import argparse
 import json
 import sys
@@ -30,7 +37,8 @@ import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-import MetaTrader5 as mt5
+from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+mt5 = readonly_mt5()
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

@@ -23,6 +23,13 @@ CONSTRUCTION for a CFD book and the report carries that sentence rather than a r
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import argparse
 import json
 import math
@@ -148,7 +155,8 @@ def read_account() -> dict[str, Any]:
                            "margin": None, "leverage": None, "stop_out_pct": None,
                            "positions": [], "source": "", "unmeasured": []}
     try:
-        import MetaTrader5 as mt5  # type: ignore[import-not-found,unused-ignore]
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        mt5 = readonly_mt5()
     except ImportError:
         mt5 = None
     if mt5 is not None:

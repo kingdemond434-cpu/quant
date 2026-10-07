@@ -7,6 +7,13 @@ sleeve immediately; after fourteen calendar days at least twenty trades are stil
 """
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import json
 import sys
 from datetime import UTC, datetime
@@ -84,7 +91,8 @@ def _source() -> dict:
 def _broker_offset_h() -> float:
     """Measured broker-vs-UTC offset, so the forward boundary converts instead of guessing."""
     try:
-        import MetaTrader5 as _mt5
+        from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+        _mt5 = readonly_mt5()
         from h1_source import broker_utc_offset_hours
         return float(broker_utc_offset_hours(_mt5))
     except Exception:

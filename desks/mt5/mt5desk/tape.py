@@ -58,6 +58,13 @@ ONE_SIDED line in `tick_integrity` so a locked FX day can never again sit unmeas
 
 from __future__ import annotations
 
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_REPO_ROOT = str(_Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in _sys.path:  # libs.ops.mt5_readonly must be importable
+    _sys.path.insert(0, _REPO_ROOT)
+
 import json
 import sys
 from contextlib import suppress
@@ -159,7 +166,8 @@ def contract_terms_row(symbol: str, info: object, at: datetime) -> dict:
 
 def record_contract_terms(symbols: list[str]) -> dict:
     """Accrue the missing point-in-time swap history from the connected Fusion terminal."""
-    import MetaTrader5 as mt5
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
 
     at = datetime.now(UTC)
     rows, failures = [], {}
@@ -200,7 +208,8 @@ def probe_depth(symbols: list[str]) -> dict:
     book the tick tape already carries, and treating it as an order book would produce imbalance
     and refill features computed from a single quote.
     """
-    import MetaTrader5 as mt5
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
 
     out: dict[str, dict] = {}
     for sym in symbols:
@@ -531,7 +540,8 @@ def record_ticks(symbols: list[str]) -> dict:
     starts recording a one-sided feed says so on the cycle it happens rather than being found
     months later by whoever notices a zero median spread.
     """
-    import MetaTrader5 as mt5
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
 
     state = _load(STATE, {})
     now = datetime.now(UTC)
@@ -780,7 +790,8 @@ def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     if "--dry-run" in argv:
         return _dry_run(argv)
-    import MetaTrader5 as mt5
+    from libs.ops.mt5_readonly import readonly_mt5  # read-only terminal (ARCH-12)
+    mt5 = readonly_mt5()
     from mt5desk.config import terminal_path
 
     if mt5.terminal_info() is None and not mt5.initialize(path=terminal_path()):
