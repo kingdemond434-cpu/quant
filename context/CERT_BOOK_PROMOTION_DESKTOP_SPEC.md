@@ -33,8 +33,8 @@ exception). Each value is risk per trade as a fraction of equity, keyed the allo
 
 No `USDJPY_session_range_breakout_*` key in either account: its certificates were judged on a Reddit
 card and are lineage-quarantined (#162) until the cell is re-certified on its central_bank /
-forexfactory proposals. Apply `context/patches/pr162_usdjpy_lineage_quarantine_v2.patch` (after #162),
-NOT the superseded `USDJPY: []` patch; see `context/patches/README.md`.
+forexfactory proposals. Apply `context/patches/pr162_usdjpy_lineage_quarantine_v3.patch` with the promoter and
+allocator v2 patches (after #162), NOT v2 or the superseded `USDJPY: []` patch; see `context/patches/README.md`.
 Every key NOT in this table keeps whatever the allocator set, including 0 (no order).
 
 - `mt5desk/kelly_sizing.py`: add `load_kelly_book(path, venue)`, mirroring `load_kelly_survival`.
