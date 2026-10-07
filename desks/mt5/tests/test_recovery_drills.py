@@ -122,3 +122,15 @@ def test_the_rollback_drill_runs_in_a_sandbox_and_passes() -> None:
     row = rd._rollback(NOW)
     assert row["verdict"] == rd.PASS, row
     assert all(row["checks"].values())
+
+
+def test_disk_pressure_falls_back_to_the_limits_census(tmp_path: Path,
+                                                        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(rd, "STALL", (tmp_path / "absent.json",))
+    lim = tmp_path / "LIMITS_CENSUS.json"
+    monkeypatch.setattr(rd, "LIMITS", lim)
+    assert rd._resources(NOW)["verdict"] == rd.UNMEASURED
+    _put(lim, {"generated_at": NOW.isoformat(), "rows": [
+        {"name": "disk@box", "binding": True, "evidence": "2.0 GB free (floor 10.0)"}]})
+    row = rd._resources(NOW)
+    assert row["verdict"] == rd.FAIL and "LIMITS_CENSUS" in row["evidence"]

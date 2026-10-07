@@ -45,6 +45,7 @@ PIT = REPORTS / "PIT_CENSUS.json"
 FORECAST = REPORTS / "FORECAST_CONTRACT.json"
 REPLAY = REPORTS / "STATE_REPLAY_PARITY.json"
 RELEASE = DATA / "release_identity.json"
+LIMITS = REPORTS / "LIMITS_CENSUS.json"
 ACCOUNT = DATA / "account_state.json"
 STALL = (DATA / "stall_watch.json", ROOT / "data" / "stall_watch.json")
 
@@ -262,7 +263,16 @@ def _resources(now: datetime) -> dict[str, Any]:
     p = next((x for x in STALL if x.exists()), STALL[0])
     doc, miss = _artifact(p, 1.0, now)
     if miss:
-        return miss
+        # The limits census measures this host's disk with psutil on its own clock, so a stopped
+        # stall watch does not leave disk pressure ungraded.
+        lim, lmiss = _artifact(LIMITS, 3.0, now)
+        disk = next((r for r in (lim or {}).get("rows") or []
+                     if str(r.get("name", "")).startswith("disk@")
+                     and r.get("binding") is not None), None)
+        if lmiss or disk is None:
+            return miss
+        return _row(FAIL if disk["binding"] else PASS, "reports/LIMITS_CENSUS.json",
+                    f"{disk['name']}: {disk['evidence']} (stall watch silent: {miss['why']})")
     free = (doc or {}).get("free_gb")
     try:
         disk_ok = float(str(free)) >= DISK_FLOOR_GB
