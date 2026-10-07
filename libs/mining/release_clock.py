@@ -101,10 +101,11 @@ def broker_wall(utc: datetime) -> datetime:
     if z is not None:
         ny = u.astimezone(z).replace(tzinfo=None)
     else:
-        naive = u.astimezone(UTC).replace(tzinfo=None)
-        ny = naive - timedelta(hours=4)
-        if not _us_dst(ny):
-            ny = naive - timedelta(hours=5)
+        # Decide on STANDARD time: DST runs from 02:00 standard (second Sunday of March) to
+        # 01:00 standard (02:00 daylight, first Sunday of November).
+        std = u.astimezone(UTC).replace(tzinfo=None) - timedelta(hours=5)
+        dst = _us_dst(std) and _us_dst(std + timedelta(hours=1))
+        ny = std + timedelta(hours=1) if dst else std
     return ny + timedelta(hours=BROKER_OFFSET_H)
 
 
