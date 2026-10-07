@@ -207,3 +207,43 @@ def test_an_authorised_series_with_no_recorded_lag_is_withheld(tmp_path, monkeyp
     monkeypatch.setattr(pd, "read_parquet", lambda path: reads.append(path))
     assert acquisition.acquired_series() == {}
     assert reads == []
+
+
+# ---- ARCH-26: the Treasury, BIS and EIA seeds, declared from each publisher's own practice
+from libs.data.pit_certificate import certify  # noqa: E402
+
+_DECLARED = (
+    # (url attribute, host fragment, declared lag in days)
+    ("TREASURY_CURVE", "home.treasury.gov", 2),
+    ("BIS_POLICY_RATES", "data.bis.org", 9),
+    ("EIA_WTI_SPOT", "www.eia.gov", 9),
+)
+
+
+@pytest.mark.parametrize(("attr", "host", "lag_days"), _DECLARED)
+def test_declared_publisher_sources_fail_revision_honestly(attr, host, lag_days):
+    """Each publisher restates or documents no final-at-publication policy, and none carries a
+    vintage: the certificate FAILS revision and withholds authority, while availability and
+    survivorship -- the parts the publisher's release practice does answer -- PASS."""
+    url = getattr(acquisition, attr)
+    assert host in url and url in acquisition._SEED_ENDPOINTS
+    assert acquisition._SELECTION[url] == "all_rows_as_published"
+    assert acquisition._REVISED[url] is True
+    assert acquisition._PUBLICATION_LAG_S[url] == lag_days * 86400
+    meta = {"dataset": attr.lower(), "url": url, "host": host, "provider": host,
+            "selection": acquisition._SELECTION[url], "revised": acquisition._REVISED[url],
+            "publication_lag_s": acquisition._PUBLICATION_LAG_S[url],
+            "history_starts": None, "schema_hash": None}
+    cert = certify(meta, _ecb_frame(), now=pd.Timestamp("2026-10-07", tz="UTC").to_pydatetime())
+    verdict = {c.name: c.verdict for c in cert.checks}
+    assert verdict["revision"] == "FAIL"
+    assert verdict["availability"] == "PASS" and verdict["survivorship"] == "PASS"
+    assert cert.authority is False and "revision" in cert.failures()
+
+
+def test_reordering_the_seeds_cannot_misattach_a_declaration():
+    """Declarations are looked up by host, never by position in the seed tuple."""
+    for attr, host, _ in _DECLARED:
+        assert [u for u in acquisition._SEED_ENDPOINTS if host in u] == [getattr(acquisition, attr)]
+    with pytest.raises(ValueError):
+        acquisition._seed("no-such-publisher.example")

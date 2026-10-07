@@ -140,9 +140,14 @@ _SEED_ENDPOINTS: tuple[str, ...] = (
 #:   CFTC TFF positioning: the CFTC restates prior weeks (see `_REVISED` above), declared so the
 #:   revision check FAILS a series with no vintage -- the correct verdict.
 #:
-#: Everything else (Treasury curve, BIS policy rates, EIA, every crawler-found URL) stays
-#: undeclared and therefore UNMEASURED: nobody has read its revision policy, and a guess is not a
-#: declaration.
+#:   The Treasury par curve, BIS policy rates and EIA WTI spot are declared below, each from its
+#:   publisher's own release documentation (read 2026-10-07). All three come out REVISED with no
+#:   vintage column, so the revision check FAILS and authority is withheld honestly; their lag
+#:   and selection are declared anyway, so the day a vintage-carrying feed replaces them the only
+#:   thing left to prove is the vintage.
+#:
+#: Every crawler-found URL stays undeclared and therefore UNMEASURED: nobody has read its
+#: revision policy, and a guess is not a declaration.
 _ECB_REFERENCE_LAG_S = 24 * 3600
 for _ccy in _ECB_CROSSES:
     _u = f"https://data-api.ecb.europa.eu/service/data/EXR/D.{_ccy}.EUR.SP00.A?format=csvdata"
@@ -150,6 +155,69 @@ for _ccy in _ECB_CROSSES:
     _REVISED[_u] = False
     _PUBLICATION_LAG_S[_u] = _ECB_REFERENCE_LAG_S
 _REVISED["https://www.cftc.gov/dea/newcot/FinFutWk.txt"] = True
+
+def _seed(fragment: str) -> str:
+    """The one seed URL containing `fragment`. Looked up, never indexed, so reordering the seeds
+    cannot attach one publisher's declaration to another's URL; a missing seed fails at import."""
+    (url,) = [u for u in _SEED_ENDPOINTS if fragment in u]
+    return url
+
+
+#: US TREASURY DAILY PAR YIELD CURVE. Source: Treasury, "Treasury Yield Curve Methodology"
+#: (home.treasury.gov/policy-issues/financing-the-government/interest-rate-statistics/
+#: treasury-yield-curve-methodology): inputs are bid-side quotations taken "at or near 3:30 PM
+#: each trading day", and "Yield curve rates are usually available at Treasury's interest rate
+#: website by 6:00 PM Eastern Time each trading day, but may be delayed due to system problems
+#: or other issues."
+#:   selection  every trading day's curve as published; no row is kept or dropped on anything
+#:              later than its own date.
+#:   revised    TRUE. The same page: "Treasury reserves the option to make changes to the yield
+#:              curve as appropriate and in its sole discretion", and the Federal Reserve's H.15
+#:              notice "Corrections to several historical Treasury rates"
+#:              (federalreserve.gov/releases/h15/historical-data-correction.htm) records
+#:              Treasury-sourced history corrected after publication. The CSV carries no vintage.
+#:   lag        TWO days. 6:00 PM ET is 22:00-23:00 UTC on a row stamped 00:00 UTC, so the next
+#:              midnight clears the usual release by an hour at most; the second day covers the
+#:              "may be delayed" Treasury itself documents.
+TREASURY_CURVE = _seed("home.treasury.gov/")
+_SELECTION[TREASURY_CURVE] = "all_rows_as_published"
+_REVISED[TREASURY_CURVE] = True
+_PUBLICATION_LAG_S[TREASURY_CURVE] = 2 * 24 * 3600
+
+#: BIS CENTRAL BANK POLICY RATES (WS_CBPOL). Source: BIS, "Central bank policy rates"
+#: documentation (bis.org/statistics/cbpol/cbpol_doc.pdf) and the data portal's topic page
+#: (data.bis.org/topics/CBPOL): "Daily data are reported directly to the BIS by the member
+#: central banks" and "Daily data are released around mid-week"; the series "show the sequence
+#: of policy instruments used to conduct monetary policy in consecutive periods", with breaks
+#: identified per country.
+#:   selection  each central bank's full daily history as published (the panel is the central
+#:              banks that worked with the BIS on it, not one filtered on later survival).
+#:   revised    TRUE. The BIS documents no revision policy and no vintage; the bulk file is the
+#:              current compilation of a spliced, central-bank-reported series whose instrument
+#:              sequence the BIS amends per country. A compiled series nobody has documented as
+#:              final-at-publication is not declared final here.
+#:   lag        NINE days. A weekly mid-week release means a value can wait a full week for the
+#:              next one; "around mid-week" can slip a day, and the row is stamped at 00:00 UTC.
+BIS_POLICY_RATES = _seed("data.bis.org/static/bulk/WS_CBPOL")
+_SELECTION[BIS_POLICY_RATES] = "all_rows_as_published"
+_REVISED[BIS_POLICY_RATES] = True
+_PUBLICATION_LAG_S[BIS_POLICY_RATES] = 9 * 24 * 3600
+
+#: EIA CUSHING WTI SPOT (RWTCd). Source: EIA, "Spot Prices for Crude Oil and Petroleum Products"
+#: (eia.gov/dnav/pet/pet_pri_spt_s1_d.htm): a WEEKLY release -- the table read 2026-10-07 showed
+#: "Release Date: 9/30/2026", "Next Release Date: 10/7/2026", latest data 09/29/26 -- and its
+#: Definitions, Sources & Notes (eia.gov/dnav/pet/TblDefs/pet_pri_spt_tbldef2.asp) name the
+#: source as "Refinitiv, an LSEG business".
+#:   selection  the full daily history as published.
+#:   revised    TRUE. EIA republishes a licensed vendor price, documents no revision policy for
+#:              it and keeps no vintage; nothing the publisher says makes it final-at-publication.
+#:   lag        NINE days. Wednesday's release covers through Tuesday, so Wednesday's price waits
+#:              seven days for the next one; a holiday-shifted release and the release's own
+#:              time of day are the other two.
+EIA_WTI_SPOT = _seed("www.eia.gov/dnav/pet/hist_xls/RWTCd")
+_SELECTION[EIA_WTI_SPOT] = "all_rows_as_published"
+_REVISED[EIA_WTI_SPOT] = True
+_PUBLICATION_LAG_S[EIA_WTI_SPOT] = 9 * 24 * 3600
 
 
 def _fetch(url: str) -> tuple[bytes | None, str]:
