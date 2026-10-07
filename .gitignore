@@ -252,6 +252,16 @@ desks/mt5/data/task_queue.jsonl
 desks/mt5/data/dsr_trial_sharpes.jsonl
 desks/mt5/data/task_queue.subs.json
 desks/mt5/data/task_queue.watermark
+# The lanes' sidecars (DATA-50): links, per-host rate limits and token-bucket levels are as
+# box-local as the leases, and the data versions the lanes producer has already queued.
+desks/mt5/data/task_queue.links.json
+desks/mt5/data/task_queue.limits.json
+desks/mt5/data/task_queue.buckets.json
+desks/mt5/data/task_queue.buckets.tmp
+desks/mt5/data/queue_data_versions.json
+# The discovery loop's per-box state (ledger, priors, flow stamps, pass history); its fold is
+# desks/mt5/reports/DISCOVERY_LOOP.json.
+desks/mt5/data/discovery_loop/
 
 # CREDENTIALS. Never tracked. secrets/ was NOT ignored until 2026-08-17 -- a FRED API key
 # landed there and `git check-ignore` returned no match, meaning one `git add -A` would have
