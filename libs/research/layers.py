@@ -50,6 +50,9 @@ LEG_LAYER: dict[str, str] = {
     # That is information, not prediction: neither one scores anything.
     "proposer_seat": "information", "kimi_hunt": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
+    # Published strategy CODE read into family cells: what the desk knows (a rule someone
+    # wrote), not a prediction -- the gauntlet does the predicting.
+    "cell_emitter": "information",
     "archive_tape": "information", "refresh_bars": "information",
     "timeframe_coverage": "information", "frontier": "information",
     "frontier_ontology": "information", "frontier_unknowns": "information",
@@ -80,6 +83,7 @@ LEG_LAYER: dict[str, str] = {
     # places an order, neither sizes one, and both exist only so the prediction layer's verdict
     # is fed the right population and published the moment it exists.
     "fast_admission": "prediction", "canon_publication": "prediction",
+    "attestation_remint": "prediction",
     "lockbox_recert": "prediction",
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
@@ -491,6 +495,8 @@ LEG_LAYER: dict[str, str] = {
     # against the instrument's own market-implied state: a claim about returns, prediction.
     "dislocation_lab": "prediction",
     "ingestion_exploitation": "meta",
+    # the deep-forest attempt ledger and its daily-floor fence measure the miner itself
+    "forest_attempts": "meta",
     # INDEPENDENCE AT INTAKE measures how much independent ground an hour of judge bought, and
     # moves intake order, operator mix and generation targets accordingly: the machine measuring
     # and scheduling itself, which is meta.
@@ -608,6 +614,7 @@ LEG_LAYER: dict[str, str] = {
     "state_replay_audit": "execution", "why_not_report": "execution",
     "forward_calibration": "prediction",
     "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
+    "clock_accrual": "meta",
     "tier5_acceptance": "meta",
 }
 
