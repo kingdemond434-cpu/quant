@@ -49,8 +49,9 @@ def _reqs(root: Path, rows: list[dict[str, Any]]) -> None:
 
 
 def _tree(root: Path) -> None:
-    """A tiny repo: one hourly leg, one owner module."""
+    """A tiny repo: one hourly leg that imports its owner module (so the owner is REACHED)."""
     _w(root, "desks/mt5/research/hourly_cycle.py",
+       'import alt_proxies\n'
        'alt = _costed("alt_proxies", lambda: 0)\nsev = _costed("research_roi", lambda: 0)\n')
     _w(root, "desks/mt5/research/alt_proxies.py", "# fixture owner\nPLACEBO = 'release_gain'\n")
 
@@ -187,12 +188,36 @@ def test_missing_owner_or_marker_is_absent(tmp_path: Path) -> None:
     assert _item(tmp_path)["state"] == "ABSENT"
 
 
-def test_unscheduled_code_is_coded_or_wired(tmp_path: Path) -> None:
-    _tree(tmp_path)
-    _reqs(tmp_path, [_row(scheduler=["daily:book_forensics"])])
-    assert _item(tmp_path)["state"] == "CODED"
+def test_wired_is_reachability_from_a_scheduler_not_any_importer(tmp_path: Path) -> None:
+    """Item 3: an importer that no clock runs does not wire a module; a partial clock is not
+    SCHEDULED; an audit-named clock is never taken on the audit's word."""
+    _w(tmp_path, "desks/mt5/research/hourly_cycle.py", 'x = _costed("other_leg", f)\n')
+    _w(tmp_path, "desks/mt5/research/alt_proxies.py", "PLACEBO = 1\n")
     _w(tmp_path, "desks/mt5/research/other.py", "from research import alt_proxies\n")
+    _reqs(tmp_path, [_row(scheduler=["daily:book_forensics"])])
+    it = _item(tmp_path)
+    assert it["state"] == "CODED", it["why"]                  # imported, but by nothing on a clock
+    assert "not reachable from any scheduler root" in " ".join(it["why"])
+    # the importer becomes reachable from hourly_cycle: now the owner is WIRED, not SCHEDULED
+    _w(tmp_path, "desks/mt5/research/hourly_cycle.py", 'import other\nx = _costed("o", f)\n')
     assert _item(tmp_path)["state"] == "WIRED"
+    # a box task that runs the owner is a scheduler root too
+    _w(tmp_path, "desks/mt5/research/hourly_cycle.py", 'x = _costed("o", f)\n')
+    _w(tmp_path, CAD.BOX_TASKS_REL,
+       'TASK name="MT5-Alt" trigger="hourly" runs="desks/mt5/research/alt_proxies.py"\n')
+    assert _item(tmp_path)["static_rung"] == "WIRED"
+    # a partial clock (one of two declared clocks confirmed) is WIRED, never SCHEDULED
+    _w(tmp_path, "desks/mt5/research/hourly_cycle.py",
+       'import alt_proxies\nx = _costed("alt_proxies", f)\n')
+    _reqs(tmp_path, [_row(scheduler=["hourly:alt_proxies", "hourly:missing_leg"])])
+    it = _item(tmp_path)
+    assert it["static_rung"] == "WIRED" and "PARTIAL clock" in " ".join(it["why"])
+    # an audit clock that names nothing this tree confirms is not a clock ...
+    _reqs(tmp_path, [_row(scheduler=["audit:hourly_cycle legs / department residents"])])
+    assert _item(tmp_path)["static_rung"] == "WIRED"
+    # ... and one that names a box task the manifest holds is
+    _reqs(tmp_path, [_row(scheduler=["audit:MT5-Alt task"])])
+    assert _item(tmp_path)["static_rung"] == "SCHEDULED"
 
 
 def test_runtime_rungs_follow_the_artifact(tmp_path: Path) -> None:
@@ -280,7 +305,10 @@ def test_evig_is_proven_only_when_it_changed_what_was_fetched(tmp_path: Path) ->
     assert proof["verdict"] == "PROVEN"
     assert proof["measures"]["fetched_because_of_evig"] == ["c", "d"]
     assert proof["measures"]["deferred_because_of_evig"] == ["a", "b"]
-    assert it["state"] == "PROVEN"
+    # Item 2: the proof holds, but the row has no data, cells, judgements or forward/live
+    # lineage of its own -- a proof never lifts a row past the rungs below it.
+    assert it["state"] == "RUNNING" and it["rungs_held"]["PROVEN"] is True
+    assert "every lower rung must hold" in " ".join(it["why"])
     # the budget never bound: positions moved, no fetch differed
     coll["rows"] = [{"id": i, "status": "COLLECTED"} for i in ("d", "c", "a", "b")]
     _w(tmp_path, CAD.COLLECTOR_REL, coll)
@@ -457,3 +485,165 @@ def test_dashboard_reads_the_audit(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert ind["surprise"]["value"] == -1.2
     fx = next(x for x in sec["latent_states"] if x["state"] == "FX-flow state")
     assert fx["level"]["status"] == "MISSING"
+
+
+# ------------------------------------------------------- PR #232 audit HOLD: no rung rounds up
+CLAIMS = "desks/mt5/data/deep_forest_claims.jsonl"
+
+
+def _lang_row(rid: str, lang: str, **kw: Any) -> dict[str, Any]:
+    return _row(id=rid, region="GLOBAL", owner=["desks/mt5/research/alt_proxies.py"],
+                title=f"Native-language practitioner-forest search in {lang}.",
+                scheduler=["hourly:alt_proxies"],
+                inputs=["desks/mt5/data/deep_forest_sources.json"],
+                outputs=[CLAIMS], probes=[{"kind": "artifact", "artifact": CLAIMS}], **kw)
+
+
+def test_a_shared_artifact_credits_each_requirement_only_its_own_rows(tmp_path: Path) -> None:
+    """Item 1, the ASIA-1639 / ASIA-1643 case: one claims ledger, named by the German and the
+    Dutch requirement, used to give BOTH its whole row count with zero de/nl rows in it."""
+    _tree(tmp_path)
+    _reqs(tmp_path, [_lang_row("ASIA-1639", "German"), _lang_row("ASIA-1643", "Dutch"),
+                     _row(id="ASIA-1700", region="GLOBAL", title="Practitioner claims, any ground.",
+                          probes=[{"kind": "artifact", "artifact": CLAIMS}])])
+    _jl(tmp_path, CLAIMS, [{"language": "zh", "claim": "a"}, {"lang": "ja", "claim": "b"},
+                           {"language": "en", "claim": "c"}])
+    items = {i["id"]: i for i in CAD.audit(tmp_path, NOW)["items"]}
+    for rid in ("ASIA-1639", "ASIA-1643"):
+        assert items[rid]["state"] == "RUNNING", items[rid]       # ran; zero rows in its language
+        assert items[rid]["observations"] == 0
+        assert items[rid]["state"] != "PRODUCING_DATA"
+    # a requirement no filter can be built for proves nothing from a shared artifact
+    assert items["ASIA-1700"]["state"] == "UNMEASURED"
+    _jl(tmp_path, CLAIMS, [{"language": "de", "claim": "a"}, {"language": "de-CH", "claim": "b"},
+                           {"language": "zh", "claim": "c"}])
+    items = {i["id"]: i for i in CAD.audit(tmp_path, NOW)["items"]}
+    assert (items["ASIA-1639"]["state"], items["ASIA-1639"]["observations"]) == \
+        ("PRODUCING_DATA", 2)
+    assert items["ASIA-1643"]["state"] == "RUNNING"
+    # rows carrying no language field cannot be attributed: UNMEASURED, never the whole count
+    _jl(tmp_path, CLAIMS, [{"claim": "a"}, {"claim": "b"}])
+    items = {i["id"]: i for i in CAD.audit(tmp_path, NOW)["items"]}
+    assert items["ASIA-1639"]["state"] == "UNMEASURED"
+
+
+def test_the_real_language_rows_filter_by_their_own_language() -> None:
+    rows = {r["id"]: r for r in CAD.load_requirements(CAD.Reader(_ROOT))[0]}
+    assert CAD.requirement_filter(rows["ASIA-1639"])["values"] == ["de"]
+    assert CAD.requirement_filter(rows["ASIA-1643"])["values"] == ["nl"]
+    claims = CAD.claimants_by_probe(list(rows.values()))
+    key = CAD._probe_key({"kind": "artifact", "artifact": CLAIMS})
+    assert {"row:ASIA-1639", "row:ASIA-1643"} <= claims[key]
+
+
+def test_proven_needs_every_lower_rung(tmp_path: Path) -> None:
+    """Item 2: data, cells, judgements and a PROVEN proof still stop at JUDGED while no
+    per-requirement FORWARD / LIVE lineage is published."""
+    _tree(tmp_path)
+    _reqs(tmp_path, [_row(probes=[
+        {"kind": "alt_proxies", "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+         "ids": ["cn_nbs_retail"]},
+        {"kind": "proof", "proof": "evig_order",
+         "artifact": "desks/mt5/data/evig_order_decisions.jsonl"}])])
+    _w(tmp_path, "desks/mt5/reports/ALT_PROXIES.json",
+       {"sources": [{"id": "cn_nbs_retail", "status": "OK", "store_rows": 40}],
+        "gain_tests": {"cn_nbs_retail|a|USDCNH": {"verdict": "PASS"}}})
+    _jl(tmp_path, "desks/mt5/data/evig_order_decisions.jsonl",
+        [{"at": (NOW - timedelta(minutes=30)).isoformat(), "moved": 2,
+          "before": ["a", "b"], "after": ["b", "a"]}])
+    _w(tmp_path, CAD.COLLECTOR_REL, {"generated_utc": NOW.isoformat(),
+                                     "rows": [{"id": "b", "status": "COLLECTED"},
+                                              {"id": "a", "status": "DEFERRED"}]})
+    it = _item(tmp_path)
+    assert it["proofs"][0]["verdict"] == "PROVEN"
+    assert it["state"] == "JUDGED" and it["rungs_held"]["FORWARD"] is False
+
+
+def test_freshness_is_the_in_file_stamp_never_mtime(tmp_path: Path) -> None:
+    """Item 4: a file touched a second ago with no stamp is UNMEASURED; an old generated_at is
+    STALE however new the file's mtime."""
+    _tree(tmp_path)
+    _reqs(tmp_path, [_row()])
+    ap = "desks/mt5/reports/ALT_PROXIES.json"
+    _w(tmp_path, ap, {"sources": [{"id": "cn_nbs_retail", "status": "OK", "store_rows": 4}]})
+    it = _item(tmp_path)
+    assert it["freshness"]["status"] == "UNMEASURED"
+    assert it["last_successful_run"] == "UNMEASURED"
+    _w(tmp_path, ap, {"generated_at": (NOW - timedelta(days=5)).isoformat(),
+                      "sources": [{"id": "cn_nbs_retail", "status": "OK", "store_rows": 4}]})
+    assert _item(tmp_path)["freshness"]["status"] == "STALE"
+    _w(tmp_path, ap, {"generated_at": (NOW - timedelta(minutes=10)).isoformat(),
+                      "sources": [{"id": "cn_nbs_retail", "status": "OK", "store_rows": 4}]})
+    assert _item(tmp_path)["freshness"]["status"] == "FRESH"
+
+
+def test_underpowered_is_emitted_not_judged(tmp_path: Path) -> None:
+    """Item 6a."""
+    _tree(tmp_path)
+    _reqs(tmp_path, [_row()])
+    _w(tmp_path, "desks/mt5/reports/ALT_PROXIES.json",
+       {"sources": [{"id": "cn_nbs_retail", "status": "OK", "store_rows": 40}],
+        "gain_tests": {"cn_nbs_retail|a|USDCNH": {"verdict": "UNDERPOWERED"},
+                       "cn_nbs_retail|b|AUDUSD": {"verdict": "UNDERPOWERED"}}})
+    it = _item(tmp_path)
+    assert it["state"] == "PRODUCING_CELLS"
+    assert (it["cells_emitted"], it["cells_judged"]) == (2, 0)
+
+
+def test_an_input_artifact_is_not_evidence(tmp_path: Path) -> None:
+    """Item 6b: the organ's INPUT existing says nothing about the organ having run."""
+    _tree(tmp_path)
+    src = "desks/mt5/data/deep_forest_sources.json"
+    _w(tmp_path, src, [{"id": "g1", "language": "de"}])
+    _reqs(tmp_path, [_row(inputs=[src], outputs=[],
+                          probes=[{"kind": "artifact", "artifact": src}])])
+    assert _item(tmp_path)["state"] == "UNMEASURED"
+    audit_doc = {"requirements": [_audit_row(output_artifacts=[], input_artifacts=[src])]}
+    doc = CAD.import_audit(audit_doc, {"ladder": list(CAD.LADDER), "overlays": []},
+                           'a = _costed("alt_proxies", f)\n')
+    assert doc["requirements"][0]["probes"] == []
+
+
+def test_ledgers_rotate_whole_and_proofs_read_the_archives(tmp_path: Path,
+                                                           monkeypatch: pytest.MonkeyPatch) -> None:
+    """Item 5: past the bound a decision ledger moves whole to <stem>.<stamp>.jsonl; no row is
+    discarded and a proof whose rows sit in the archive still reads them."""
+    from libs.ops import ledger_rotation as lr
+    from research import source_evig as se
+    led = tmp_path / "desks/mt5/data/evig_order_decisions.jsonl"
+    led.parent.mkdir(parents=True)
+    monkeypatch.setattr(se, "DECISIONS", led)
+    monkeypatch.setattr(se, "DECISIONS_ROTATE_BYTES", 200)
+    recs = [{"at": (NOW - timedelta(minutes=30)).isoformat(), "moved": 2, "n": i,
+             "before": ["a", "b"], "after": ["b", "a"]} for i in range(6)]
+    for r in recs:
+        se._record_decision(r)
+    files = lr.ledger_files(led)
+    assert len(lr.archives(led)) >= 1
+    assert all(a.name.startswith("evig_order_decisions.2") for a in lr.archives(led))
+    kept = [json.loads(line)["n"] for f in files for line in f.read_text("utf-8").splitlines()]
+    assert kept == list(range(6)), "a rotation never discards a row"
+    # everything in archives, nothing live: the proof still reads it
+    if led.exists():
+        lr.rotate_if_over(led, 0)
+    assert not led.exists()
+    _tree(tmp_path)
+    _reqs(tmp_path, [_evig_row()])
+    _w(tmp_path, CAD.COLLECTOR_REL, {"generated_utc": NOW.isoformat(),
+                                     "rows": [{"id": "b", "status": "COLLECTED"},
+                                              {"id": "a", "status": "DEFERRED"}]})
+    proof = _item(tmp_path)["proofs"][0]
+    assert proof["verdict"] == "PROVEN", proof
+    assert proof["ledger_read"]["complete"] is True
+    # the other two organs rotate the same way
+    from research import deep_forest_miner as dfm
+    from research import research_roi as rr
+    assert dfm.ROTATION_ROTATE_BYTES == rr.BUDGET_DECISIONS_ROTATE_BYTES == 2 * 1024 * 1024
+    monkeypatch.setattr(rr, "FOREST_OUT", tmp_path / "forest_allocation.json")
+    monkeypatch.setattr(rr, "BUDGET_DECISIONS_ROTATE_BYTES", 10)
+    rr._append_budget_decision({"at": "t1"})
+    rr._append_budget_decision({"at": "t2"})
+    bpath = rr.budget_decisions_path()
+    got = [json.loads(line)["at"] for f in lr.ledger_files(bpath)
+           for line in f.read_text("utf-8").splitlines()]
+    assert got == ["t1", "t2"]
