@@ -290,9 +290,17 @@ def _fetched(tmp_path: Path) -> tuple[e5.Paths, FakeClient, dict[str, Any]]:
     paths = _desk(tmp_path)
     _confirm(paths)
     client = FakeClient()
-    rep = e5.run(paths, now=NOW, budget_s=600, client_factory=_factory(client),
-                 key_reader=lambda n: None, mint=lambda s: True,
-                 donor=lambda *a, **k: {"donated": 0})
+    # a pass advances each cursor by at most one chunk (400 days here), so the backfill takes
+    # several hourly passes; run them until the cursors stop moving, as the box would
+    rep: dict[str, Any] = {}
+    seen: dict[str, Any] | None = None
+    for _ in range(8):
+        rep = e5.run(paths, now=NOW, budget_s=600, client_factory=_factory(client),
+                     key_reader=lambda n: None, mint=lambda s: True,
+                     donor=lambda *a, **k: {"donated": 0})
+        if rep.get("cursors") == seen:
+            break
+        seen = rep.get("cursors")
     return paths, client, rep
 
 
