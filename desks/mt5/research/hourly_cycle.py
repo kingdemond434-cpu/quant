@@ -1180,6 +1180,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     # world that would be mined seventeen times over if each region hunted them itself.
     **dict.fromkeys(("global_research_os", "acquire_datasets", "source_experiment_census",
                      "dataset_use_census", "catalog_routes", "discovery_audit",
+                     "measurer_registry", "research_only_fence",
                      *GLOBAL_FOREST_LEGS), "regions"),
     # the free stack (2026-09-30): app rankings, CN forums, JP IR, JP patents, trends, congress,
     # CoinPaprika (crypto CFDs only), Reddit/Telegram, AKShare/TuShare/BaoStock, catalogues --
@@ -1746,6 +1747,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "acquire_datasets": 1_100,
     # catalog_routes stops itself at DEFAULT_BUDGET_S=600 and writes its cursors; cap above it.
     "catalog_routes": 720,
+    # Both read files only (packs + roster; sleeves + survivors + contracts), ~1 s here.
+    "measurer_registry": 120,
+    "research_only_fence": 120,
     # THE WORLD DATASET HUNTER stops itself at --budget-s 900 and writes its catalog, registry
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
@@ -5248,6 +5252,16 @@ def main() -> None:
     # pass so the hour's readers have recorded; reports/DATASET_USE.json + a committed digest.
     duc = _costed("dataset_use_census", lambda: _producer(
         "dataset_use_census", "research/dataset_use_census.py"))
+    # DATA-10 (2026-10-07): who directly measures activity per country, national to facility --
+    # packs + catalogue roster + data/measurer_registry.json, a subnational coverage metric per
+    # country; no network. reports/MEASURER_REGISTRY.json + a committed digest.
+    mrg = _costed("measurer_registry", lambda: _producer(
+        "measurer_registry", "research/measurer_registry.py"))
+    # DATA-38 (2026-10-07): every LIVE/STANDBY sleeve's conditioner lineage against the dataset
+    # contracts; a dataset without a live_signal permission feeding one is a named violation in
+    # reports/RESEARCH_ONLY_DATA.json (scripts/check_research_only_data.py fails the box gate).
+    rof = _costed("research_only_fence", lambda: _producer(
+        "research_only_fence", "research/research_only_fence.py"))
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
     ad = _costed("adversaries", adversaries)
@@ -5759,6 +5773,7 @@ def main() -> None:
                     "world_macro_proposer": wmp,
                     "source_experiment_census": sxc,
                     "dataset_use_census": duc,
+                    "measurer_registry": mrg, "research_only_fence": rof,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
                     "coevolution": cev, "model_search": mds, "cross_asset_graph": cag,
