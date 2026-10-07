@@ -228,8 +228,10 @@ def _parse(raw: bytes, url: str) -> pd.DataFrame | None:
                 return None
             raw = body
         elif raw[:2] == b"\x1f\x8b":
-            import gzip
-            raw = gzip.decompress(raw)
+            body = _gunzip(raw)
+            if body is None:
+                return None
+            raw = body
         # SEPARATOR SNIFFED, NOT ASSUMED. European statistical offices ship semicolon CSV, and
         # reading it as comma yields one column and a silent refusal downstream.
         sample = raw[:8192].decode("utf-8", errors="replace")
@@ -376,6 +378,52 @@ def _numeric_series(df: pd.DataFrame, stem: str) -> dict[str, pd.Series]:
     return out
 
 
+def _gunzip(raw: bytes, limit: int = MAX_BYTES) -> bytes | None:
+    """A gzip body inflated to at most `limit` bytes, or None when it would inflate past it.
+
+    `gzip.decompress` has no ceiling: a 0.5 MB member that inflates a thousandfold would sit in
+    memory whole before anything could refuse it. Inflating through a bounded decompressor
+    stops at the limit, the same rule `_read_member` applies to zip members.
+    """
+    import zlib
+    d = zlib.decompressobj(wbits=31)
+    try:
+        out = d.decompress(raw, limit + 1)
+    except zlib.error:
+        return None
+    if len(out) > limit or d.unconsumed_tail:
+        return None
+    return out
+
+
+#: Terms evidence for catalogue-discovered endpoints (catalog_routes/terms_evidence.json): a
+#: discovered URL takes a seat only on a host whose own terms page was read, quoted and permits.
+_TERMS_PERMITTED: frozenset[str] | None = None
+
+
+def _terms_permitted() -> frozenset[str]:
+    global _TERMS_PERMITTED
+    if _TERMS_PERMITTED is None:
+        try:
+            here = str(Path(__file__).resolve().parent)
+            if here not in sys.path:
+                sys.path.insert(0, here)
+            import catalog_routes as _cr
+            _TERMS_PERMITTED = _cr.permitted_hosts(_cr.load_terms_evidence())
+        except Exception:                      # unreadable evidence admits nothing
+            _TERMS_PERMITTED = frozenset()
+    return _TERMS_PERMITTED
+
+
+def _terms_unverified(url: str) -> bool:
+    """True (and counted) when a discovered URL's host has no quoted permitting terms."""
+    host = (urllib.parse.urlparse(str(url)).hostname or "").lower().rstrip(".")
+    if host and any(host == h or host.endswith("." + h) for h in _terms_permitted()):
+        return False
+    _ENDPOINT_FENCED["TERMS_UNVERIFIED"] = _ENDPOINT_FENCED.get("TERMS_UNVERIFIED", 0) + 1
+    return True
+
+
 #: Endpoints the last `_endpoints` pass left unselected because they sit on a terms-fenced
 #: platform, by platform. A fenced URL never takes an hourly seat, and the count says so.
 _ENDPOINT_FENCED: dict[str, int] = {}
@@ -508,7 +556,7 @@ def _endpoints(limit: int, *, now: datetime | None = None,
                 if u in seen or u in fresh:
                     continue
                 seen.add(u)
-                if _fenced_pick(u):
+                if _fenced_pick(u) or _terms_unverified(str(u)):
                     continue
                 found.append((u, str(r.get("host") or "")))
     room = limit - len(out)

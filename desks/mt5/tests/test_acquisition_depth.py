@@ -226,6 +226,7 @@ def test_discovered_endpoints_hold_a_reserved_share_of_the_pass(tmp_path, monkey
     monkeypatch.setattr(A, "REGISTRY", tmp_path / "missing.json")
     monkeypatch.setattr(A, "WORLD", tmp_path / "world")
     monkeypatch.setattr(A, "_SEED_ENDPOINTS", ())
+    monkeypatch.setattr(A, "_TERMS_PERMITTED", frozenset({"catalog.test"}))
     (tmp_path / "world").mkdir()
     rows = [{"host": "catalog.test", "endpoints": [f"https://catalog.test/d{i}.csv"
                                                    for i in range(30)]}]
@@ -233,6 +234,32 @@ def test_discovered_endpoints_hold_a_reserved_share_of_the_pass(tmp_path, monkey
     out = A._endpoints(40, now=datetime(2026, 10, 6, tzinfo=UTC))
     assert len(out) == 40
     assert sum(1 for _u, h in out if h == "catalog.test") == 10      # a quarter, packs the rest
+
+
+def test_a_discovered_endpoint_without_quoted_terms_takes_no_seat(tmp_path, monkeypatch):
+    """Catalogue-discovered URLs pass the same terms evidence the catalogue walk does."""
+    monkeypatch.setattr(A, "REGISTRY", tmp_path / "missing.json")
+    monkeypatch.setattr(A, "WORLD", tmp_path / "world")
+    monkeypatch.setattr(A, "_SEED_ENDPOINTS", ())
+    monkeypatch.setattr(A, "_TERMS_PERMITTED", frozenset({"catalog.test"}))
+    (tmp_path / "world").mkdir()
+    rows = [{"host": "unread.test", "endpoints": [f"https://unread.test/d{i}.csv"
+                                                  for i in range(5)]},
+            {"host": "catalog.test", "endpoints": ["https://data.catalog.test/x.csv"]}]
+    (tmp_path / "world" / "discoveries_catalog_20261006.json").write_text(json.dumps(rows))
+    out = A._endpoints(40, now=datetime(2026, 10, 6, tzinfo=UTC))
+    assert not any(h == "unread.test" for _u, h in out)
+    assert ("https://data.catalog.test/x.csv", "catalog.test") in out
+    assert A._ENDPOINT_FENCED["TERMS_UNVERIFIED"] == 5
+
+
+def test_a_gzip_bomb_is_refused_without_inflating_it_whole():
+    import gzip
+    bomb = gzip.compress(b"0" * (4 * 1024 * 1024))
+    assert A._gunzip(bomb, limit=1024 * 1024) is None
+    small = gzip.compress(b"date,v\n2026-01-01,1\n")
+    assert A._gunzip(small) == b"date,v\n2026-01-01,1\n"
+    assert A._gunzip(b"\x1f\x8bnot gzip") is None
 
 
 def test_information_value_prices_novelty_per_fetch_second_without_reading_a_return(tmp_path):

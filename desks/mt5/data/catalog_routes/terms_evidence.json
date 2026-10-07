@@ -590,9 +590,9 @@
   "open.africa": {
    "terms_url": "https://open.africa/about/terms-and-conditions",
    "terms_quote": "The data and information available through openAFRICA are available under terms described in the 'licence' or 'constraints' field of individual dataset records (meta-data). Except where otherwise noted this is Open Government License.",
-   "gloss": "",
+   "gloss": "HELD 2026-10-07 (audit): the quote defers to each dataset's own licence field and grants nothing for automated access; no permitting clause, so not PERMITS.",
    "licence": "per-dataset; default Open Government Licence",
-   "verdict": "PERMITS",
+   "verdict": "UNREAD",
    "prohibiting_quote": "",
    "checked_at": "2026-10-06"
   },
