@@ -50,6 +50,9 @@ LEG_LAYER: dict[str, str] = {
     # That is information, not prediction: neither one scores anything.
     "proposer_seat": "information", "kimi_hunt": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
+    # Published strategy CODE read into family cells: what the desk knows (a rule someone
+    # wrote), not a prediction -- the gauntlet does the predicting.
+    "cell_emitter": "information",
     "archive_tape": "information", "refresh_bars": "information",
     "timeframe_coverage": "information", "frontier": "information",
     "frontier_ontology": "information", "frontier_unknowns": "information",
@@ -80,6 +83,7 @@ LEG_LAYER: dict[str, str] = {
     # places an order, neither sizes one, and both exist only so the prediction layer's verdict
     # is fed the right population and published the moment it exists.
     "fast_admission": "prediction", "canon_publication": "prediction",
+    "attestation_remint": "prediction",
     "lockbox_recert": "prediction",
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
@@ -169,6 +173,13 @@ LEG_LAYER: dict[str, str] = {
     "alpha_rl": "prediction",
     "regime_monitor": "prediction",
     "orthogonality": "portfolio",
+    # THE BASKET JUDGE asks the portfolio question directly: does one family, held as many
+    # near-zero-correlated legs at once, clear a bar no single leg clears? It builds the summed
+    # daily series, measures the realised correlation and the effective independent bets, and
+    # hands it to the sealed gauntlet. That is portfolio construction being tested, not a new
+    # prediction -- the legs' signals were minted elsewhere and are not touched here.
+    "srb_basket_judge": "portfolio",
+    "srb_uncorrelated_sweep": "portfolio",
     "lake_promote": "information",
     "research_exchange_score": "information",
     # The FRED archive and the macro view it feeds are inputs about the world, refreshed hourly
@@ -234,6 +245,7 @@ LEG_LAYER: dict[str, str] = {
     "kelly_survival": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
+    "recovery_drills": "meta",
     "forward_evidence_tracker": "meta",
     # The box-state freshness fence and the desk health report, hourly before publication.
     "box_state_freshness": "meta", "desk_health": "meta",
@@ -251,7 +263,8 @@ LEG_LAYER: dict[str, str] = {
     "model_role_benchmark": "meta", "research_departments": "meta",
     "qd_frontier": "information", "blind_reviewer": "meta",
     "evaluator_lab": "meta", "value_of_data": "information", "research_api_status": "meta",
-    "artifact_chain": "meta", "residual_queue": "information", "unseen_frontier": "information",
+    "artifact_chain": "meta", "residual_queue": "information",
+    "residual_search": "information", "unseen_frontier": "information",
     "attribution_reconcile": "meta",
     "macro_state_engine": "information",
     "research_artifacts": "meta",
@@ -260,6 +273,7 @@ LEG_LAYER: dict[str, str] = {
     "trend_core": "prediction",
     # the within-class rank legs are claims about relative returns: prediction, like trend_core
     "cross_sectional_breadth": "prediction",
+    "specialist_cell": "prediction",
     "event_surprise": "information",
     # public analyst views collected and stamped at first sighting: information
     "alpha_capture": "information",
@@ -317,6 +331,10 @@ LEG_LAYER: dict[str, str] = {
     # being reached: what fraction of the day the desk actually mints and judges, against the best
     # hour this box has ever done. It buys no prediction; it finds the hours nothing was produced.
     "duty_cycle": "meta",
+    # META as well: the judge's environment (commit headroom, torn universe frames, the pass
+    # ledger read off the judge's own log). It buys no prediction; it says whether the judge can
+    # reach its epilogue at all (recovered box patch 08).
+    "gauntlet_guard": "meta",
     "analyst_pipeline": "information", "knowledge_graph": "information",
     "card_explosion": "prediction", "alpha_lineage": "prediction",
     "graveyard_resurrection": "prediction", "shadow_discovery": "information",
@@ -490,6 +508,8 @@ LEG_LAYER: dict[str, str] = {
     # against the instrument's own market-implied state: a claim about returns, prediction.
     "dislocation_lab": "prediction",
     "ingestion_exploitation": "meta",
+    # the deep-forest attempt ledger and its daily-floor fence measure the miner itself
+    "forest_attempts": "meta",
     # INDEPENDENCE AT INTAKE measures how much independent ground an hour of judge bought, and
     # moves intake order, operator mix and generation targets accordingly: the machine measuring
     # and scheduling itself, which is meta.
@@ -608,6 +628,7 @@ LEG_LAYER: dict[str, str] = {
     "state_replay_audit": "execution", "why_not_report": "execution",
     "forward_calibration": "prediction",
     "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
+    "clock_accrual": "meta",
     "tier5_acceptance": "meta",
 }
 

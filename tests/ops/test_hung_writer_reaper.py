@@ -152,15 +152,65 @@ def test_a_live_parent_keeps_an_active_stdin_index_pack_safe(
     assert any(r["pid"] == 208 and "slow, not stopped" in r["why"] for r in rep["spared"])
 
 
-def test_a_writer_inside_its_own_window_is_never_a_candidate(
+def test_a_writer_still_waiting_for_the_mutex_is_never_a_candidate(
         monkeypatch: pytest.MonkeyPatch, _no_sleep: Any) -> None:
-    """The adoption waits 540 s for the mutex and the shadow sync's limit is 600 s, so a writer
-    that has not finished in nine minutes is merely slow -- the bar is 30."""
-    young = _FakeProc(303, "git.exe", 600.0, [(0.0, 0), (0.0, 0)])
-    _install(monkeypatch, [young])
+    """THE ONE REAL JOB OF THE AGE FLOOR, and it is not "slow writers are legitimate" -- the delta
+    proof already handles those. A writer BLOCKED WAITING for the mutex burns no CPU and moves no
+    bytes either, so it is indistinguishable from a wedge by movement alone. Adopt-And-Seal waits
+    540 s before giving up, so a motionless writer at 500 s may simply be queued and about to do
+    real work. Killing it is the trigger-happy failure that gets a reaper switched off."""
+    waiting = _FakeProc(303, "git.exe", 500.0, [(0.0, 0), (0.0, 0)])
+    _install(monkeypatch, [waiting])
     rep = gwl.hung_writers(sleep=_no_sleep)
     assert rep["hung"] == []
     assert any(r["pid"] == 303 for r in rep["spared"])
+
+
+def test_the_floor_clears_the_longest_legitimate_wait_and_no_more(
+        monkeypatch: pytest.MonkeyPatch, _no_sleep: Any) -> None:
+    """MEASURED 2026-09-24: at 1800 s, with the reaper on a 15-minute clock, a wedge was invisible
+    for up to 45 minutes -- and one was, through five consecutive CLEAR reports, while the seal
+    could not take the lock and `allows_new_risk` stayed False into the approach of a placement
+    window. The floor now sits just past the 540 s mutex wait, so a motionless writer past every
+    legitimate queue is reaped on the evidence rather than waited out."""
+    assert 540.0 < gwl.HUNG_MIN_AGE_S <= 900.0, (
+        "the floor must clear Adopt-And-Seal's 540 s mutex wait and nothing beyond it")
+    wedged = _FakeProc(404, "git.exe", 620.0, [(1.5, 900), (1.5, 900)])
+    _install(monkeypatch, [wedged])
+    rep = gwl.hung_writers(sleep=_no_sleep)
+    assert [r["pid"] for r in rep["hung"]] == [404]
+
+
+def test_a_writer_moving_only_bytes_is_spared(monkeypatch: pytest.MonkeyPatch,
+                                              _no_sleep: Any) -> None:
+    """A chunked push blocked on the network burns almost no CPU while still transferring. If the
+    proof were CPU alone this would be killed mid-push, which is one lane's legitimate work
+    destroyed by the fence meant to protect it. I/O movement alone must spare."""
+    pushing = _FakeProc(505, "git.exe", 5_000.0, [(2.0, 1_000), (2.0, 4_500_000)])
+    _install(monkeypatch, [pushing])
+    rep = gwl.hung_writers(sleep=_no_sleep)
+    assert rep["hung"] == []
+    assert any("slow, not stopped" in r["why"] for r in rep["spared"])
+
+
+def test_a_writer_moving_only_cpu_is_spared(monkeypatch: pytest.MonkeyPatch,
+                                            _no_sleep: Any) -> None:
+    """The mirror case: `git gc` on a 22 GB repository burns CPU for a long time and may report
+    no per-process I/O at all on some platforms. Killing it mid-repack is how a repository gets
+    corrupted."""
+    packing = _FakeProc(606, "git.exe", 9_000.0, [(11.0, 0), (48.0, 0)])
+    _install(monkeypatch, [packing])
+    rep = gwl.hung_writers(sleep=_no_sleep)
+    assert rep["hung"] == []
+    assert any("slow, not stopped" in r["why"] for r in rep["spared"])
+
+
+def test_the_sample_window_is_long_enough_to_see_a_working_writer() -> None:
+    """The other half of lowering the floor: the proof that replaces it is made stronger, not
+    weaker. One `sleep` covers every candidate, so this costs sixty seconds per RUN and not per
+    process, and a longer window makes this strictly LESS likely to kill live work."""
+    assert gwl.HUNG_SAMPLE_S >= 60.0
+    assert gwl.HUNG_SAMPLE_S < 540.0, "the sample must sit well inside the mutex wait"
 
 
 def test_sshd_is_not_a_writer() -> None:
