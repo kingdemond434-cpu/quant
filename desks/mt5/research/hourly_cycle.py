@@ -908,6 +908,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
+    # THE FUNCTION MAP (ARCH-09): every essential function's ladder rung, derived from the tree
+    # and this host's artifacts. Reads the registry and a few file stats; seconds.
+    "function_registry",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
@@ -1941,6 +1944,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # PRODUCER BREADTH reads the registry with one grouped query and at most 384 MB of seat files
     # (its own MAX_SEAT_BYTES_TOTAL); measured 0.6 s on a tree without the registry. Generous.
     "producer_breadth": 300,
+    # THE FUNCTION MAP reads one registry and stats a few dozen files; seconds. The cap is
+    # protection against a wedged git call, not a budget.
+    "function_registry": 120,
     # THE ANCHOR/EXIT PROPOSER measures its bind census under 240 s and then registers a
     # 1,200-row slice, which the first pass measured at roughly four rows a second; the cap sits
     # above census + registration so the slice lands rather than being cut at the same prefix.
@@ -5577,6 +5583,12 @@ def main() -> None:
     # disabled, masked or deleted -- organs are retired by a person, on this evidence.
     dac = _costed("dead_architecture", lambda: _producer(
         "dead_architecture", "scripts/check_dead_architecture.py"))
+    # THE FUNCTION MAP (ARCH-09): owner, inputs, outputs, contracts, clock, consumers, authority,
+    # failure behaviour and verification per essential function, each rung of the ladder
+    # declared -> implemented -> connected -> running -> behaviour_verified DERIVED, never
+    # asserted. `scripts/check_function_registry.py` (law fence) reads what this publishes.
+    fnm = _costed("function_registry", lambda: _producer(
+        "function_registry", "libs/ops/function_registry.py"))
     # NO PRODUCER IS DARK (LAWS 7). Every seat, miner and organ the component registry knows,
     # with its clock, its last production and its verdict -- and the RELIGHT of every dark row
     # in the same pass, judged by the producer's own output moving, never by a zero exit code.
@@ -5807,7 +5819,8 @@ def main() -> None:
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "dead_architecture": dac, "producer_census": prdc,
+                    "dead_architecture": dac, "function_registry": fnm,
+                    "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,

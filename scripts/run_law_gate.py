@@ -142,6 +142,12 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # that can send. Research and recorders read through libs.ops.mt5_readonly, an allowlist
     # proxy that refuses order_send/order_delete/Buy/Sell/Close and terminal credentials.
     ("check_order_authority.py", ()),
+    # THE FUNCTION MAP (ARCH-09, 2026-10-07): every essential function's owner, inputs, outputs,
+    # contracts, clock, consumers, authority, failure behaviour and verification, with each rung
+    # of declared -> implemented -> connected -> running -> behaviour_verified DERIVED. Fails on
+    # a rung the registry asserts, on a static rung the tree contradicts, and on a published map
+    # that has gone false. Runtime rungs read UNMEASURED off the box, so it is portable.
+    ("check_function_registry.py", ()),
     # NO QUOTA ON FORWARD EVIDENCE SLOTS, EVER (principal 2026-09-23). The portable half:
     # AST-walks the enrolment path and fails when a cap comes back -- a quota constant, a slice
     # of the certificate roster, a `len(enrolled) >= n` gate, or `forward_reconcile.family_budget`

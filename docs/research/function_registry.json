@@ -1,0 +1,684 @@
+{
+ "doc": "ARCH-09 function registry. One row per ESSENTIAL function: owner, inputs, outputs, contracts, runtime_process, consumers, decision_authority, failure_behaviour, verification. DATA ONLY: no row may assert a rung -- libs/ops/function_registry.py derives declared -> implemented -> connected -> running -> behaviour_verified from the tree and this host's artifacts, publishes desks/mt5/reports/FUNCTION_MAP.json (hourly leg function_registry), and scripts/check_function_registry.py (law fence) fails on a false rung. Token kinds in inputs/outputs: a filename literal the owner names, api:<def> (a function or class the owner defines), exit:status (the owner's exit code is its product). runtime_process clocks: leg:<hourly_cycle leg>, task:<box task>, fence:<law fence script>, timer:<VPS unit>; via is the declared chain from the clock's target to the owner, each hop must name the next.",
+ "schema": "function_registry/1",
+ "functions": [
+  {
+   "id": "research.seat_compilation",
+   "domain": "research",
+   "function": "compile every seat's donated evidence into source-faithful executable candidates",
+   "owner": "desks/mt5/research/miner_candidate_compiler.py",
+   "inputs": [
+    "deepened_candidates.json",
+    "failure_prior.json"
+   ],
+   "outputs": [
+    "miner_candidates.json"
+   ],
+   "contracts": [
+    "desks/mt5/tests/test_miner_candidate_compiler.py"
+   ],
+   "runtime_process": [
+    "leg:miner_candidate_compiler"
+   ],
+   "consumers": [
+    "desks/mt5/research/merge_hypotheses.py",
+    "desks/mt5/research/experiment_spine.py"
+   ],
+   "decision_authority": {
+    "level": "proposes",
+    "scope": "which candidates exist to be judged; no eligibility, no capital"
+   },
+   "failure_behaviour": {
+    "mode": "unmeasured",
+    "marker": "UNMEASURED",
+    "says": "an unreadable seat or frontier reads UNMEASURED and the row is carried, never silently dropped"
+   },
+   "verification": [
+    "desks/mt5/tests/test_miner_candidate_compiler.py"
+   ]
+  },
+  {
+   "id": "research.deep_forest",
+   "domain": "research",
+   "function": "mine the deep CJK/RU web for verbatim trader claims mapped to MT5 analogues",
+   "owner": "desks/mt5/research/deep_forest_miner.py",
+   "inputs": [
+    "deep_forest_sources.json"
+   ],
+   "outputs": [
+    "frontier.json"
+   ],
+   "contracts": [
+    "desks/mt5/data/deep_forest_sources.json"
+   ],
+   "runtime_process": [
+    "leg:deep_forest_miner"
+   ],
+   "consumers": [
+    "desks/mt5/research/hourly_cycle.py"
+   ],
+   "decision_authority": {
+    "level": "proposes",
+    "scope": "claims and mechanisms for the gauntlet; never a verdict"
+   },
+   "failure_behaviour": {
+    "mode": "unmeasured",
+    "marker": "UNMEASURED",
+    "says": "a walled or failed fetch is UNMEASURED for that ground, never an empty success"
+   },
+   "verification": [
+    "desks/mt5/tests/test_deep_forest.py"
+   ]
+  },
+  {
+   "id": "forecasting.forecast_contract",
+   "domain": "forecasting",
+   "function": "publish scoreable beliefs (model, time, subject, kind, value, uncertainty) that own no positions",
+   "owner": "desks/mt5/research/forecast_contract.py",
+   "inputs": [
+    "api:Belief"
+   ],
+   "outputs": [
+    "FORECAST_CONTRACT.json",
+    "forecast_register.jsonl"
+   ],
+   "contracts": [
+    "tests/research/test_forecast_contract_and_league.py"
+   ],
+   "runtime_process": [
+    "leg:forecast_contract"
+   ],
+   "consumers": [
+    "desks/mt5/research/recovery_drills.py"
+   ],
+   "decision_authority": {
+    "level": "publishes",
+    "scope": "beliefs with stated uncertainty; no lot size, no direction to act on"
+   },
+   "failure_behaviour": {
+    "mode": "fail_closed",
+    "marker": "REFUSED",
+    "says": "a belief missing a field is REFUSED with its defects named and never enters the register"
+   },
+   "verification": [
+    "tests/research/test_forecast_contract_and_league.py"
+   ]
+  },
+  {
+   "id": "validation.gauntlet",
+   "domain": "validation",
+   "function": "judge candidate cells through the sequential ten-gate gauntlet and mint certificates",
+   "owner": "desks/mt5/scripts/external_gauntlet.py",
+   "inputs": [
+    "universe.json",
+    "cost_surface.json"
+   ],
+   "outputs": [
+    "UNIVERSAL_SURVIVORS.json",
+    "gate_verdict_ledger.jsonl"
+   ],
+   "contracts": [
+    "desks/mt5/policy/gate_spec.yaml"
+   ],
+   "runtime_process": [
+    "task:MT5-Gauntlet",
+    "leg:external_gauntlet"
+   ],
+   "consumers": [
+    "desks/mt5/research/canon_publication.py",
+    "desks/mt5/research/alpha_rank.py"
+   ],
+   "decision_authority": {
+    "level": "decides",
+    "scope": "eligibility: which exact specs hold a ten-gate certificate"
+   },
+   "failure_behaviour": {
+    "mode": "fail_closed",
+    "marker": "DSR fails closed",
+    "says": "an unknown trial charge fails the deflated-Sharpe gate closed; nothing is certified on an unmeasured bar"
+   },
+   "verification": [
+    "tests/scripts/test_reconcile_external_queue.py"
+   ]
+  },
+  {
+   "id": "validation.canon_publication",
+   "domain": "validation",
+   "function": "atomically republish the judge's certificates as the sealed canon the gateway reads",
+   "owner": "desks/mt5/research/canon_publication.py",
+   "inputs": [
+    "UNIVERSAL_SURVIVORS.json",
+    "gate_verdict_ledger.jsonl"
+   ],
+   "outputs": [
+    "external_survivors.json"
+   ],
+   "contracts": [
+    "desks/mt5/tests/test_certificate_single_writer.py"
+   ],
+   "runtime_process": [
+    "leg:canon_publication"
+   ],
+   "consumers": [
+    "desks/mt5/mt5desk/gateway.py"
+   ],
+   "decision_authority": {
+    "level": "publishes",
+    "scope": "carries the judge's verdicts forward; never re-judges and never adds a certificate"
+   },
+   "failure_behaviour": {
+    "mode": "hold",
+    "marker": "os.replace",
+    "says": "publishes by atomic replace; a refused or partial sweep leaves the previous canon standing"
+   },
+   "verification": [
+    "desks/mt5/tests/test_canon_publication.py",
+    "desks/mt5/tests/test_canon_recovers_a_killed_sweep.py"
+   ]
+  },
+  {
+   "id": "validation.promotion_door",
+   "domain": "validation",
+   "function": "promote certified, matured forward clocks to LIVE and retire what no longer qualifies",
+   "owner": "desks/mt5/research/promoter.py",
+   "inputs": [
+    "pf_allocation.json",
+    "universe.json",
+    "live_ledger.jsonl"
+   ],
+   "outputs": [
+    "GOLD_RETIRED.json",
+    "shadow_state.json"
+   ],
+   "contracts": [
+    "desks/mt5/tests/test_promoter_identity_and_alpha_state.py"
+   ],
+   "runtime_process": [
+    "leg:promoter"
+   ],
+   "consumers": [
+    "desks/mt5/mt5desk/gateway.py"
+   ],
+   "decision_authority": {
+    "level": "decides",
+    "scope": "LIVE / STANDBY / RETIRED per sleeve, automatically, on a certificate and a matured clock"
+   },
+   "failure_behaviour": {
+    "mode": "fail_closed",
+    "marker": "fail closed",
+    "says": "a certificate key without its exact published spec is not promoted (exact policy only)"
+   },
+   "verification": [
+    "desks/mt5/tests/test_promoter_identity_and_alpha_state.py",
+    "desks/mt5/tests/test_promoter_retires_unrunnable.py"
+   ]
+  },
+  {
+   "id": "allocator.pf_allocator",
+   "domain": "allocator",
+   "function": "solve the canonical robust E[log W] book over every eligible sleeve",
+   "owner": "desks/mt5/research/pf_allocator.py",
+   "inputs": [
+    "STATE_ADMISSION.json",
+    "sleeves.json",
+    "live_ledger.jsonl",
+    "cost_surface.json"
+   ],
+   "outputs": [
+    "pf_allocation.json",
+    "ALLOCATOR_STANDDOWN.json"
+   ],
+   "contracts": [
+    "tests/ops/test_allocator_stack.py"
+   ],
+   "runtime_process": [
+    "task:MT5-AllocatorFast",
+    "leg:pf_allocator"
+   ],
+   "consumers": [
+    "desks/mt5/mt5desk/decision_core.py",
+    "desks/mt5/mt5desk/gateway.py"
+   ],
+   "decision_authority": {
+    "level": "proposes",
+    "scope": "per-sleeve fractions and the resolved heat; controls and execution enforce and place"
+   },
+   "failure_behaviour": {
+    "mode": "stand_down",
+    "marker": "ALLOCATOR_STANDDOWN.json",
+    "says": "a cycle that cannot complete writes a NAMED stand-down instead of a silent stale book"
+   },
+   "verification": [
+    "tests/ops/test_allocator_stack.py"
+   ]
+  },
+  {
+   "id": "controls.heat_law",
+   "domain": "controls",
+   "function": "resolve the book's heat inside the fixed envelope: 20% floor, growth chooses above it",
+   "owner": "desks/mt5/research/heat_policy.py",
+   "inputs": [
+    "api:resolve"
+   ],
+   "outputs": [
+    "api:resolve",
+    "api:catastrophe_override"
+   ],
+   "contracts": [
+    "desks/mt5/tests/test_heat_floor_is_not_negotiable.py"
+   ],
+   "runtime_process": [
+    "task:MT5-AllocatorFast"
+   ],
+   "via": [
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "decision_authority": {
+    "level": "enforces",
+    "scope": "the heat envelope; never sizes below the floor"
+   },
+   "failure_behaviour": {
+    "mode": "fail_closed",
+    "marker": "catastrophe_override",
+    "says": "only a broker or price-feed catastrophe overrides the floor; uncertainty alone never shrinks it"
+   },
+   "verification": [
+    "desks/mt5/tests/test_heat_policy.py",
+    "desks/mt5/tests/test_heat_floor_is_not_negotiable.py"
+   ]
+  },
+  {
+   "id": "controls.release_identity",
+   "domain": "controls",
+   "function": "open new risk only while the code running is the code that was sealed and tested",
+   "owner": "desks/mt5/mt5desk/release_identity.py",
+   "inputs": [
+    "api:running_sha"
+   ],
+   "outputs": [
+    "api:verdict"
+   ],
+   "contracts": [
+    "docs/research/PLUMBING_INVARIANTS.md"
+   ],
+   "runtime_process": [
+    "task:MT5-GatewayResident"
+   ],
+   "via": [
+    "desks/mt5/research/gateway_resident.py",
+    "desks/mt5/research/run_gateway_loop.py",
+    "desks/mt5/mt5desk/gateway.py"
+   ],
+   "consumers": [
+    "desks/mt5/mt5desk/gateway.py"
+   ],
+   "decision_authority": {
+    "level": "enforces",
+    "scope": "whether the gateway may open new risk this pass"
+   },
+   "failure_behaviour": {
+    "mode": "fail_closed",
+    "marker": "allows_new_risk",
+    "says": "an unverifiable or mismatched identity refuses new risk; closes still run"
+   },
+   "verification": [
+    "desks/mt5/tests/test_release_identity.py"
+   ]
+  },
+  {
+   "id": "controls.order_authority",
+   "domain": "controls",
+   "function": "only the order path may hold order authority over the trading terminal",
+   "owner": "scripts/check_order_authority.py",
+   "inputs": [
+    "api:main"
+   ],
+   "outputs": [
+    "exit:status"
+   ],
+   "contracts": [
+    "tests/scripts/test_check_order_authority.py"
+   ],
+   "runtime_process": [
+    "fence:check_order_authority"
+   ],
+   "consumers": [
+    "scripts/run_law_gate.py"
+   ],
+   "decision_authority": {
+    "level": "enforces",
+    "scope": "which code may import MetaTrader5 or call order_send"
+   },
+   "failure_behaviour": {
+    "mode": "fail_loud",
+    "marker": "PENDING_DESKTOP",
+    "says": "any offence outside ORDER_PATH exits 1; the pending list may only shrink"
+   },
+   "verification": [
+    "tests/scripts/test_check_order_authority.py"
+   ]
+  },
+  {
+   "id": "execution.gateway",
+   "domain": "execution",
+   "function": "place, manage and close orders on the live account from the allocator's fractions",
+   "owner": "desks/mt5/mt5desk/gateway.py",
+   "inputs": [
+    "pf_allocation.json",
+    "sleeves.json",
+    "external_survivors.json"
+   ],
+   "outputs": [
+    "gateway_state.json",
+    "order_intents.jsonl",
+    "live_ledger.jsonl"
+   ],
+   "contracts": [
+    "desks/mt5/tests/test_gateway_state_persistence.py"
+   ],
+   "runtime_process": [
+    "task:MT5-GatewayResident"
+   ],
+   "via": [
+    "desks/mt5/research/gateway_resident.py",
+    "desks/mt5/research/run_gateway_loop.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/fill_attribution.py",
+    "desks/mt5/research/forward_reconcile.py"
+   ],
+   "decision_authority": {
+    "level": "executes",
+    "scope": "orders: entry, management and exit; it decides no eligibility and no fraction"
+   },
+   "failure_behaviour": {
+    "mode": "fail_closed",
+    "marker": "refused_orders.jsonl",
+    "says": "every refused order is recorded with its reason; a refused pass places nothing"
+   },
+   "verification": [
+    "desks/mt5/tests/test_gateway_state_persistence.py"
+   ]
+  },
+  {
+   "id": "accounting.forward_reconcile",
+   "domain": "accounting",
+   "function": "reconcile every forward clock: certified and enrolled, or retired with its reason",
+   "owner": "desks/mt5/research/forward_reconcile.py",
+   "inputs": [
+    "shadow_state.json",
+    "universe.json"
+   ],
+   "outputs": [
+    "forward_reconcile.json"
+   ],
+   "contracts": [
+    "tests/scripts/test_check_forward_enrolment.py"
+   ],
+   "runtime_process": [
+    "leg:forward_reconcile",
+    "task:MT5-ForwardReconcile"
+   ],
+   "consumers": [
+    "desks/mt5/research/daily_cycle.py"
+   ],
+   "decision_authority": {
+    "level": "reconciles",
+    "scope": "clock status; retires orphans and uncertified enrolments, never deletes"
+   },
+   "failure_behaviour": {
+    "mode": "unmeasured",
+    "marker": "RETIRED_ORPHAN",
+    "says": "a clock no engine enrols is retired with its reason recorded, never silently"
+   },
+   "verification": [
+    "tests/scripts/test_check_forward_enrolment.py"
+   ]
+  },
+  {
+   "id": "accounting.fill_attribution",
+   "domain": "accounting",
+   "function": "attribute every order to its fill, refusal or decline from the broker's own retcodes",
+   "owner": "desks/mt5/research/fill_attribution.py",
+   "inputs": [
+    "order_intents.jsonl",
+    "fill_corpus.jsonl"
+   ],
+   "outputs": [
+    "FILL_ATTRIBUTION.json"
+   ],
+   "contracts": [
+    "desks/mt5/tests/test_residual_queue.py"
+   ],
+   "runtime_process": [
+    "leg:fill_attribution"
+   ],
+   "consumers": [
+    "desks/mt5/research/residual_map.py",
+    "desks/mt5/research/residual_queue.py"
+   ],
+   "decision_authority": {
+    "level": "reconciles",
+    "scope": "the binding order-to-fill stage, named"
+   },
+   "failure_behaviour": {
+    "mode": "unmeasured",
+    "marker": "UNMEASURED: no decision prices",
+    "says": "an intent with no recorded decision price is UNMEASURED, never a zero slippage"
+   },
+   "verification": [
+    "desks/mt5/tests/test_residual_queue.py"
+   ]
+  },
+  {
+   "id": "data.universe",
+   "domain": "data",
+   "function": "publish the tradable Fusion universe and its specifications",
+   "owner": "desks/mt5/research/expand_universe.py",
+   "inputs": [
+    "sleeves.json"
+   ],
+   "outputs": [
+    "universe.json",
+    "universe_expansion.json"
+   ],
+   "contracts": [
+    "desks/mt5/tests/test_universe_producers_merge.py"
+   ],
+   "runtime_process": [
+    "task:MT5-Universe"
+   ],
+   "consumers": [
+    "desks/mt5/mt5desk/risk_units.py",
+    "desks/mt5/research/forward_reconcile.py"
+   ],
+   "decision_authority": {
+    "level": "publishes",
+    "scope": "the instrument registry; it hunts nothing and decides no eligibility"
+   },
+   "failure_behaviour": {
+    "mode": "hold",
+    "marker": "refuses",
+    "says": "it refuses to overwrite a strictly better producer's row; the merge is atomic"
+   },
+   "verification": [
+    "desks/mt5/tests/test_expand_universe_atomic.py",
+    "desks/mt5/tests/test_universe_producers_merge.py"
+   ]
+  },
+  {
+   "id": "data.spread_provenance",
+   "domain": "data",
+   "function": "repair each symbol's spread from measured tape, widening only, with provenance",
+   "owner": "desks/mt5/scripts/repair_universe_spreads.py",
+   "inputs": [
+    "universe.json"
+   ],
+   "outputs": [
+    "SPREAD_PROVENANCE.json"
+   ],
+   "contracts": [
+    "desks/mt5/tests/test_spread_repair_widening_only.py"
+   ],
+   "runtime_process": [
+    "leg:spread_provenance"
+   ],
+   "consumers": [
+    "desks/mt5/research/cost_truth.py"
+   ],
+   "decision_authority": {
+    "level": "publishes",
+    "scope": "cost inputs; may only widen a spread"
+   },
+   "failure_behaviour": {
+    "mode": "hold",
+    "marker": "UNMEASURED",
+    "says": "a symbol with no measured tape keeps its declared spread and reads UNMEASURED"
+   },
+   "verification": [
+    "desks/mt5/tests/test_spread_repair_widening_only.py"
+   ]
+  },
+  {
+   "id": "ops.hourly_cycle",
+   "domain": "ops",
+   "function": "run every research and ops leg on the core clock under per-leg budgets",
+   "owner": "desks/mt5/research/hourly_cycle.py",
+   "inputs": [
+    "pf_allocation.json",
+    "tier1_program.json"
+   ],
+   "outputs": [
+    "sync_marker.json"
+   ],
+   "contracts": [
+    "docs/research/experiment_contracts.json"
+   ],
+   "runtime_process": [
+    "task:MT5-HourlyCore"
+   ],
+   "consumers": [
+    "desks/mt5/mt5desk/release_identity.py",
+    "desks/mt5/research/tier1_scorecard.py"
+   ],
+   "decision_authority": {
+    "level": "schedules",
+    "scope": "which legs run this hour and for how long; no research verdict, no capital"
+   },
+   "failure_behaviour": {
+    "mode": "fail_loud",
+    "marker": "LEG_BUDGET_SEC",
+    "says": "a leg past its budget is killed and recorded as a timeout; the cycle continues"
+   },
+   "verification": [
+    "desks/mt5/tests/test_hourly_cycle_runs_the_promoter_after_the_allocator.py"
+   ]
+  },
+  {
+   "id": "ops.runtime_attestation",
+   "domain": "ops",
+   "function": "attest what actually ran on this host: clock, last run, artifact age and hash",
+   "owner": "desks/mt5/research/runtime_attestation.py",
+   "inputs": [
+    "gateway_state.json",
+    "compute_ledger.jsonl"
+   ],
+   "outputs": [
+    "runtime_state.json",
+    "api:Paths"
+   ],
+   "contracts": [
+    "tests/research/test_runtime_attestation.py"
+   ],
+   "runtime_process": [
+    "leg:runtime_attestation"
+   ],
+   "consumers": [
+    "scripts/check_runtime_attestation.py"
+   ],
+   "decision_authority": {
+    "level": "observes",
+    "scope": "runtime evidence only"
+   },
+   "failure_behaviour": {
+    "mode": "unmeasured",
+    "marker": "UNMEASURED",
+    "says": "an organ whose cadence is undeclared reads UNMEASURED; nothing may call it late"
+   },
+   "verification": [
+    "tests/research/test_runtime_attestation.py"
+   ]
+  },
+  {
+   "id": "ops.dead_architecture",
+   "domain": "ops",
+   "function": "census which organs have a clock, an artifact and a consumer",
+   "owner": "scripts/check_dead_architecture.py",
+   "inputs": [
+    "box_tasks.manifest"
+   ],
+   "outputs": [
+    "dead_architecture.json"
+   ],
+   "contracts": [
+    "tests/scripts/test_check_dead_architecture.py"
+   ],
+   "runtime_process": [
+    "leg:dead_architecture"
+   ],
+   "consumers": [
+    "desks/mt5/research/module_rent.py",
+    "desks/mt5/research/frontier_ceo.py"
+   ],
+   "decision_authority": {
+    "level": "observes",
+    "scope": "organ census and its ratchets"
+   },
+   "failure_behaviour": {
+    "mode": "fail_loud",
+    "marker": "MAX_BURNING",
+    "says": "BURNING and CONTESTED may only fall; a rise exits 1 under --ratchet"
+   },
+   "verification": [
+    "tests/scripts/test_check_dead_architecture.py"
+   ]
+  },
+  {
+   "id": "ops.function_map",
+   "domain": "ops",
+   "function": "derive and publish every essential function's ladder rung",
+   "owner": "libs/ops/function_registry.py",
+   "inputs": [
+    "function_registry.json"
+   ],
+   "outputs": [
+    "FUNCTION_MAP.json"
+   ],
+   "contracts": [
+    "docs/research/function_registry.json"
+   ],
+   "runtime_process": [
+    "leg:function_registry",
+    "fence:check_function_registry"
+   ],
+   "consumers": [
+    "scripts/check_function_registry.py"
+   ],
+   "decision_authority": {
+    "level": "observes",
+    "scope": "rungs, derived; it asserts none"
+   },
+   "failure_behaviour": {
+    "mode": "unmeasured",
+    "marker": "UNMEASURED",
+    "says": "no output written on this host reads running UNMEASURED, never TRUE"
+   },
+   "verification": [
+    "tests/ops/test_function_registry.py"
+   ]
+  }
+ ]
+}
