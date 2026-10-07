@@ -128,8 +128,14 @@ def one_pass(*, ledger: EventLedger | None = None, fetch: bool = True,
     n_new = 0
     n_seen = 0
     failures: list[str] = []
+    held: list[dict[str, str]] = []
     scored: list[Any] = []
     for s in srcs:
+        if getattr(s, "terms_status", "CLEARED") != "CLEARED":
+            # Fail closed (#262): a feed without a quoted CLEARED terms row is never requested.
+            held.append({"id": str(getattr(s, "source_id", "?")), "url": str(getattr(s, "url", "")),
+                         "status": "HOLD", "why": str(getattr(s, "terms_reason", ""))})
+            continue
         try:
             items = s.fetch()
         except Exception as ex:
@@ -190,6 +196,7 @@ def one_pass(*, ledger: EventLedger | None = None, fetch: bool = True,
         "ledger": led.summary(),
         "items_seen": n_seen, "rows_written": n_new,
         "source_failures": failures,
+        "feeds_cleared": len(srcs) - len(held), "feeds_held": len(held), "terms_held": held,
         "categories_minted": [c.label for c in minted],
         "taxonomy": tax.report(),
         "credibility": cred.report(),

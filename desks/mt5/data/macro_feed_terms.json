@@ -1,0 +1,283 @@
+{
+  "_about": "Macro event ledger RSS feeds (desks/mt5/macro/sources.py _OFFICIAL_FEEDS). Keyed by source_id, the id terms_hold (#211) reads. Fail closed: a feed is fetched only when its row is CLEARED with a terms_url, a verbatim terms_quote from the publisher's own terms page, and a feed_url equal to the configured URL. '[...]' marks an elision between two verbatim sentences of the same page.",
+  "FED": {
+    "status": "CLEARED",
+    "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+    "terms_quote": "Unless otherwise indicated, information on Board's website is in the public domain and may be copied and distributed without permission. Please cite to the Board as the source of the information.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "Board of Governors of the Federal Reserve System",
+    "feed_url": "https://www.federalreserve.gov/feeds/press_all.xml",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "BLS": {
+    "status": "CLEARED",
+    "terms_url": "https://www.bls.gov/opub/copyright-information.htm",
+    "terms_quote": "The Bureau of Labor Statistics (BLS) is a Federal government agency and everything that we publish, both in hard copy and electronically, is in the public domain, except for previously copyrighted photographs and illustrations. You are free to use our public domain material without specific permission, although we do ask that you cite the Bureau of Labor Statistics as the source.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "U.S. Bureau of Labor Statistics",
+    "feed_url": "https://www.bls.gov/feed/news_release_all.xml",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "ECB": {
+    "status": "CLEARED",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "terms_quote": "Users of this website may make free use of the information obtained directly from it subject to the following conditions: When such information is distributed or reproduced, it must appear accurately and the ECB must be cited as the source.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "European Central Bank",
+    "feed_url": "https://www.ecb.europa.eu/rss/press.html",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "BOJ": {
+    "status": "HOLD",
+    "terms_url": "https://www.boj.or.jp/en/about/copyright.htm",
+    "terms_quote": "",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "Bank of Japan",
+    "feed_url": "https://www.boj.or.jp/en/announcements/rss.rdf",
+    "reason": "terms read: copying permitted EXCEPT 'The copying or reproduction of the content for commercial purposes.' -- a trading desk's use is commercial; no permitting clause"
+  },
+  "BOE": {
+    "status": "HOLD",
+    "terms_url": "https://www.bankofengland.co.uk/legal",
+    "terms_quote": "",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "Bank of England",
+    "feed_url": "https://www.bankofengland.co.uk/rss/news",
+    "reason": "terms read: 'You may download, display or print the Resources for personal use or internal use within an individual organisation for non-commercial purposes.' -- non-commercial only; the OGL clause covers the statistical Database, not the news feed"
+  },
+  "SNB": {
+    "status": "HOLD",
+    "terms_url": "https://www.snb.ch/en/srv/disclaimer_copyright",
+    "terms_quote": "",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "Swiss National Bank",
+    "feed_url": "https://www.snb.ch/en/node/10532/rss",
+    "reason": "terms read: '... used in other ways, for non-commercial purposes, compatible with the purpose of such information or data.' -- non-commercial only"
+  },
+  "EIA": {
+    "status": "CLEARED",
+    "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+    "terms_quote": "You may use and/or distribute any of our data, files, databases, reports, graphs, charts, and other information products that are on our website or that you receive through our email distribution service.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "U.S. Energy Information Administration",
+    "feed_url": "https://www.eia.gov/rss/todayinenergy.xml",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "OPEC": {
+    "status": "HOLD",
+    "terms_url": "",
+    "terms_quote": "",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "Organization of the Petroleum Exporting Countries",
+    "feed_url": "https://www.opec.org/opec_web/en/press_room/28.htm",
+    "reason": "terms page not read: opec.org terms URL returned HTTP 402 and the configured feed URL is a 2006 speech page, not a feed"
+  },
+  "USTR": {
+    "status": "HOLD",
+    "terms_url": "https://ustr.gov/privacy-legal",
+    "terms_quote": "",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "Office of the U.S. Trade Representative",
+    "feed_url": "https://ustr.gov/rss.xml",
+    "reason": "clause not found: the Privacy & Legal page as read carries no reuse/copyright/automated-access sentence (read may be truncated)"
+  },
+  "TREASURY_OFAC": {
+    "status": "HOLD",
+    "terms_url": "https://home.treasury.gov/subfooter/site-policies-and-notices",
+    "terms_quote": "",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "U.S. Treasury, Office of Foreign Assets Control",
+    "feed_url": "https://ofac.treasury.gov/system/files/126/ofac.xml",
+    "reason": "clause not found: Treasury's site policies and privacy pages carry no reuse/copyright statement"
+  },
+  "USDA_WASDE": {
+    "status": "CLEARED",
+    "terms_url": "https://www.usda.gov/policies-and-links",
+    "terms_quote": "Most information presented on the USDA Web site is considered public domain information. Public domain information may be freely distributed or copied, but use of appropriate byline/photo/image credits is requested.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "U.S. Department of Agriculture",
+    "feed_url": "https://www.usda.gov/rss/home.xml",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "EUROSTAT": {
+    "status": "CLEARED",
+    "terms_url": "https://ec.europa.eu/eurostat/about-us/policies/copyright",
+    "terms_quote": "All statistical data, metadata, content of web pages or other dissemination tools, official publications and other documents published on its website, with the exceptions listed below, can be reused without any payment or written licence provided that: - the source is indicated as Eurostat; - when re-use involves modifications to the data or text, this must be stated clearly to the end user of the information.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "Eurostat (European Commission)",
+    "feed_url": "https://ec.europa.eu/eurostat/web/main/news/euro-indicators/rss",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "ONS": {
+    "status": "CLEARED",
+    "terms_url": "https://www.ons.gov.uk/help/termsandconditions",
+    "terms_quote": "We make most of the content on this website available through feeds for other websites and applications to use. [...] Most content on this website is subject to Crown copyright protection and is published under the Open Government Licence (OGL).",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "UK Office for National Statistics",
+    "feed_url": "https://www.ons.gov.uk/releasecalendar?rss",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "US_TREASURY": {
+    "status": "HOLD",
+    "terms_url": "https://home.treasury.gov/subfooter/site-policies-and-notices",
+    "terms_quote": "",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "U.S. Department of the Treasury",
+    "feed_url": "https://home.treasury.gov/rss/press.xml",
+    "reason": "clause not found: Treasury's site policies and privacy pages carry no reuse/copyright statement"
+  },
+  "IMF": {
+    "status": "HOLD",
+    "terms_url": "https://www.imf.org/external/terms.htm",
+    "terms_quote": "",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "International Monetary Fund",
+    "feed_url": "https://www.imf.org/en/News/RSS?Language=ENG",
+    "reason": "terms read: content may be copied 'for personal, noncommercial usage only'; 'The IMF reserves the right to terminate access to its Sites or Content by automated technology'. The commercial grant covers 'Data', not news content"
+  },
+  "NOAA_NHC": {
+    "status": "CLEARED",
+    "terms_url": "https://www.nhc.noaa.gov/disclaimer.shtml",
+    "terms_quote": "The information on government servers are in the public domain, unless specifically annotated otherwise, and may be used freely by the public. This information shall not be modified in content and then presented as offical government material.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "NOAA / National Weather Service, National Hurricane Center",
+    "feed_url": "https://www.nhc.noaa.gov/index-at.xml",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "UN_NEWS": {
+    "status": "HOLD",
+    "terms_url": "https://www.un.org/en/about-us/copyright",
+    "terms_quote": "",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "United Nations (UN News)",
+    "feed_url": "https://news.un.org/feed/subscribe/en/news/region/all/feed/rss.xml",
+    "reason": "terms read: 'News-related material can be used as long as the appropriate credit is given and the United Nations is advised.' -- conditional on advising the UN (not done); Terms of Use limit to 'personal, non-commercial use'"
+  },
+  "IEA": {
+    "status": "CLEARED",
+    "terms_url": "https://www.iea.org/terms",
+    "terms_quote": "Unless one of the below exceptions to the Open Use Terms applies, all text content, reports, articles, commentaries, standalone graphs, figures and infographics produced by and/or sourced to the IEA and hosted on the IEA Websites are licensed under a Creative Commons Attribution 4.0 International (CC BY 4.0) licence.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "International Energy Agency",
+    "feed_url": "https://www.iea.org/rss/news",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "CFTC": {
+    "status": "CLEARED",
+    "terms_url": "https://www.cftc.gov/webpolicy/index.htm",
+    "terms_quote": "Government information at the CFTC website is in the public domain. Public domain information may be freely distributed and copied, but it is requested that in any subsequent use the CFTC be given appropriate acknowledgement.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "U.S. Commodity Futures Trading Commission",
+    "feed_url": "https://www.cftc.gov/RSS/RSSGP/rssgp.xml",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "SEC": {
+    "status": "CLEARED",
+    "terms_url": "https://www.sec.gov/about/privacy-information",
+    "terms_quote": "Information presented on sec.gov is considered public information and may be copied or further distributed by users of the web site without the SEC's permission. [...] Current guidelines limit users to a total of no more than 10 requests per second, regardless of the number of machines used to submit requests.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "U.S. Securities and Exchange Commission",
+    "feed_url": "https://www.sec.gov/news/pressreleases.rss",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "ESMA": {
+    "status": "CLEARED",
+    "terms_url": "https://www.esma.europa.eu/legal-notice",
+    "terms_quote": "Reproduction of all information on this site (ESMA Library) is authorised except as otherwise stated, provided the source is acknowledged and: 1. where the original material is incorporated in documents that are sold (regardless of the medium), the publisher must inform buyers that it may be obtained free of charge through ESMA website; 2. if the original material is transformed by the user (e.g. by making a summary of it or by translating it) and republished, this must be stated explicitly through the following disclaimer: [...] 3. when linking to the ESMA website from business sites or for promotional purposes, the ESMA website content and its source must be clearly identifiable separately from any other content; 4. any document in which this material is displayed does not: [...]",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "European Securities and Markets Authority",
+    "feed_url": "https://www.esma.europa.eu/rss.xml",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "STATCAN": {
+    "status": "CLEARED",
+    "terms_url": "https://www.statcan.gc.ca/en/reference/licence",
+    "terms_quote": "Subject to this licence, Statistics Canada grants you a worldwide, royalty-free, non-exclusive licence to: use, reproduce, publish, freely distribute, or sell the Information;",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "Statistics Canada",
+    "feed_url": "https://www150.statcan.gc.ca/n1/dai-quo/rss/'daily-quotidien-eng.xml",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "ABS_RBA": {
+    "status": "CLEARED",
+    "terms_url": "https://www.rba.gov.au/copyright/",
+    "terms_quote": "With exception of the Excluded Material, all RBA Material is provided under a Creative Commons Attribution 4.0 International License (CC BY 4.0 Licence) and may be used in accordance with the terms of that licence. The materials covered by this licence may be reproduced, published, communicated to the public and adapted provided that the RBA is properly attributed in accordance with Section 3 below.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "Reserve Bank of Australia",
+    "feed_url": "https://www.rba.gov.au/rss/rss-cb-media-releases.xml",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "JAPAN_STAT": {
+    "status": "CLEARED",
+    "terms_url": "https://www.stat.go.jp/english/info/riyou.html",
+    "terms_quote": "Information made available on this website (hereinafter referred to as \"Content\") may be freely used, copied, publicly transmitted, translated or otherwise modified on condition that the user complies with provisions 1) to 4) below. Commercial use of Content is also permitted.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "Statistics Bureau of Japan (MIC)",
+    "feed_url": "https://www.stat.go.jp/english/rss/index.xml",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "ILO": {
+    "status": "CLEARED",
+    "terms_url": "https://www.ilo.org/rights-and-permissions",
+    "terms_quote": "Press releases and press kit material from the ILO website may be reproduced freely. Kindly cite the ILO as the original source.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "International Labour Organization",
+    "feed_url": "https://www.ilo.org/rss/news.xml",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  },
+  "IMO_SHIPPING": {
+    "status": "HOLD",
+    "terms_url": "",
+    "terms_quote": "",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "International Maritime Organization",
+    "feed_url": "https://www.imo.org/en/MediaCentre/PressBriefings/_vti_bin/RSS.svc/news",
+    "reason": "terms page not read: imo.org refused the fetch (robots.txt redirect loop)"
+  },
+  "SP_INDICES": {
+    "status": "HOLD",
+    "terms_url": "https://www.spglobal.com/en/terms-of-use",
+    "terms_quote": "",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "S&P Dow Jones Indices (S&P Global)",
+    "feed_url": "https://www.spglobal.com/spdji/en/rss/index-announcements/",
+    "reason": "terms read: 'You shall not distribute, transfer, sub-license, ... copy, ... or change all or any portion of the Content.' -- restrictive; page also only partly read (100000 of 116843 chars)"
+  },
+  "SEC_EDGAR": {
+    "status": "CLEARED",
+    "terms_url": "https://www.sec.gov/about/privacy-information",
+    "terms_quote": "Information presented on sec.gov is considered public information and may be copied or further distributed by users of the web site without the SEC's permission. [...] Current guidelines limit users to a total of no more than 10 requests per second, regardless of the number of machines used to submit requests.",
+    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
+    "checked_at": "2026-10-07",
+    "publisher": "U.S. Securities and Exchange Commission (EDGAR)",
+    "feed_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&type=8-K&dateb=&owner=include&count=40&output=atom",
+    "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
+  }
+}
