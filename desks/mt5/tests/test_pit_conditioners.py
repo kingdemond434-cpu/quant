@@ -195,15 +195,22 @@ def test_every_pit_axis_has_a_builder(axis: str) -> None:
     assert axis in pc.BUILDERS
 
 
-def _swap_fixture(tmp_path: Path, monkeypatch: Any, *, mode: int, long_: float,
-                  short: float, bis_rows: list[dict] | None = None) -> Any:
-    import pit_conditioners as pc
+_USABLE_FEED = {"status": "FRESH", "usable": True, "why": "captured 1.0h ago"}
 
+
+def _swap_fixture(tmp_path: Path, monkeypatch: Any, *, mode: int, long_: float,
+                  short: float, bis_rows: list[dict] | None = None,
+                  feed: dict | None = None, caps: list[dict] | None = None) -> Any:
+    import pit_conditioners as pc
+    from research import carry_state
+
+    monkeypatch.setattr(carry_state, "swap_feed", lambda *a, **k: dict(feed or _USABLE_FEED))
     swaps = tmp_path / "broker_swaps"
     swaps.mkdir()
-    caps = [{"kind": "swap_table", "symbols": ["XAUUSD"], "swap_long": long_,
-             "swap_short": short, "found_at": f"2026-08-{d:02d}T06:00:00+00:00"}
-            for d in (26, 27)]
+    caps = caps if caps is not None else [
+        {"kind": "swap_table", "symbols": ["XAUUSD"], "swap_long": long_,
+         "swap_short": short, "found_at": f"2026-08-{d:02d}T06:00:00+00:00"}
+        for d in (26, 27)]
     (swaps / "discoveries_20260827_0600.json").write_text(json.dumps(caps), "utf-8")
     (tmp_path / "carry_state.json").write_text(json.dumps(
         {"symbols": {"XAUUSD": {"swap_mode": mode}}}), "utf-8")
@@ -269,3 +276,51 @@ def test_a_broker_swap_carry_cell_is_applied_not_refused(tmp_path, monkeypatch) 
     inside = _sig(pd.Timestamp("2026-08-28T00:00:00Z"))
     before = _sig(pd.Timestamp("2026-08-25T00:00:00Z"))       # before the first capture
     assert [s.time for s in cm.apply([before, inside], pd.DataFrame(), mods)] == [inside.time]
+
+
+def test_an_unusable_swap_feed_makes_the_whole_broker_swap_axis_unmeasured_by_name(
+        tmp_path, monkeypatch) -> None:
+    """#244's gate: a feed the box cannot show is live emits no swap row at all, and says why."""
+    dead = {"status": "STALE", "usable": False, "why": "captured 40.0h ago (stale past 26h)"}
+    pc = _swap_fixture(tmp_path, monkeypatch, mode=1, long_=-61.76, short=29.45, feed=dead)
+    swaps, smeta = pc.swap_carry(None)
+    assert swaps == [] and smeta == {"unmeasured": {
+        "_feed": "STALE: captured 40.0h ago (stale past 26h)"}}
+    got, meta = pc.carry()
+    assert not got and meta["state"] == "UNMEASURED"
+    assert meta["unmeasured"]["_feed"].startswith("STALE")
+
+
+def _one_cap(evidence: str | None) -> list[dict]:
+    row = {"kind": "swap_table", "symbols": ["XAUUSD"], "swap_long": -61.76,
+           "swap_short": 29.45, "found_at": "2026-08-20T06:00:00+00:00"}
+    return [{**row, "last_evidence_at": evidence}] if evidence else [row]
+
+
+def _carry_cell_keeps(pc: Any, tmp_path: Path, monkeypatch: Any, at: str) -> bool:
+    out = tmp_path / "pit.parquet"
+    pd.concat(pc.carry()[0]).to_parquet(out, index=False)
+    monkeypatch.setattr(cm, "PIT_FILE", out)
+    sig = _sig(pd.Timestamp(at))
+    return [s.time for s in cm.apply([sig], pd.DataFrame(), {"conditioner": "pit:carry:XAUUSD"})
+            ] == [sig.time]
+
+
+def test_last_evidence_keeps_an_unchanged_swap_fresh_past_the_stale_window(
+        tmp_path, monkeypatch) -> None:
+    """found_at 08-20 alone is stale after 08-25 (1d cadence + 4d); evidence on 08-27 is a second
+    knowable point at the evidence time, so 08-28 is still inside the window."""
+    pc = _swap_fixture(tmp_path, monkeypatch, mode=1, long_=-61.76, short=29.45,
+                       caps=_one_cap("2026-08-27T05:00:00"))
+    rows = next(f for f in pc.carry()[0] if f["key"].iloc[0] == "XAUUSD")
+    assert list(rows["knowable_at"]) == [pd.Timestamp("2026-08-20T06:00:00Z"),
+                                         pd.Timestamp("2026-08-27T05:00:00Z")]
+    assert _carry_cell_keeps(pc, tmp_path, monkeypatch, "2026-08-28T00:00:00Z")
+
+
+def test_without_evidence_an_unchanged_swap_goes_stale(tmp_path, monkeypatch) -> None:
+    pc = _swap_fixture(tmp_path, monkeypatch, mode=1, long_=-61.76, short=29.45,
+                       caps=_one_cap(None))
+    rows = next(f for f in pc.carry()[0] if f["key"].iloc[0] == "XAUUSD")
+    assert list(rows["stale_after"]) == [pd.Timestamp("2026-08-25T06:00:00Z")]
+    assert not _carry_cell_keeps(pc, tmp_path, monkeypatch, "2026-08-28T00:00:00Z")

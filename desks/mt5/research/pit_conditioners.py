@@ -167,7 +167,19 @@ def swap_carry(missing: set[str] | None = None) -> tuple[list[pd.DataFrame], dic
     """The broker-swap-implied carry, % p.a. of notional, (long - short) -- the same differential
     `family_carry` trades on -- for every symbol in `missing` (None = all). Each row's
     `knowable_at` is the capture's own `found_at`. A symbol whose unit cannot be established, or
-    whose POINTS swap has no price to scale against, is named in `unmeasured`, never guessed."""
+    whose POINTS swap has no price to scale against, is named in `unmeasured`, never guessed.
+
+    THE FEED GATE FIRST (#244). A swap the box cannot show is live is not a rate the desk holds:
+    when `carry_state.swap_feed()` is not usable (STALE, UNMEASURED, MISSING) the whole broker-swap
+    axis reads UNMEASURED under `_feed`, by name, and no row is emitted. A row's
+    `last_evidence_at` (the terminal's quote time for an UNCHANGED value) is a second knowable
+    point, so a swap stays fresh while the terminal keeps evidencing it and goes stale when that
+    evidence stops; a point never precedes the capture's own `found_at`."""
+    from research.carry_state import swap_feed
+
+    feed = swap_feed()
+    if not feed["usable"]:
+        return [], {"unmeasured": {"_feed": f"{feed['status']}: {feed['why']}"}}
     modes = {k.upper(): v.get("swap_mode") for k, v in
              (_json(CARRY_STATE).get("symbols") or {}).items() if isinstance(v, dict)}
     uni = _json(UNIVERSE_JSON)
@@ -186,6 +198,15 @@ def swap_carry(missing: set[str] | None = None) -> tuple[list[pd.DataFrame], dic
             continue
         t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
         by_sym.setdefault(sym, []).append((t, lo, sh))
+        ev = r.get("last_evidence_at")
+        if ev:
+            try:
+                e = pd.Timestamp(str(ev))
+            except (TypeError, ValueError):
+                continue
+            e = e.tz_localize("UTC") if e.tzinfo is None else e.tz_convert("UTC")
+            if e > t:                     # knowable at the evidence itself, never before found_at
+                by_sym[sym].append((e, lo, sh))
     out: list[pd.DataFrame] = []
     unmeasured: dict[str, str] = {}
     for sym, obs in sorted(by_sym.items()):
