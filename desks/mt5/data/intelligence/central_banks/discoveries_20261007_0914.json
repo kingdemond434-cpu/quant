@@ -1,0 +1,20 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "BoE",
+    "currency": "GBP",
+    "feed": "https://www.bankofengland.co.uk/rss/news",
+    "published_utc": "2026-10-07T09:00:00+00:00",
+    "title": "Regulatory thresholds set to shift to automatic increases",
+    "link": "https://www.bankofengland.co.uk/news/2026/october/regulatory-thresholds-set-to-shift-to-automatic-increases",
+    "policy_signals": [
+      "hold"
+    ],
+    "instruments": [
+      "GBPUSD",
+      "GBPJPY",
+      "EURGBP",
+      "GBPAUD"
+    ]
+  }
+]
