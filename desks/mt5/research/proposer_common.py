@@ -99,6 +99,27 @@ def charge_union(source: str, identities: list[str], charged: Path, family: str,
     return len(new), len(union)
 
 
+def screened_identity(row: dict) -> str:
+    """What one screened cell IS: its cell name and the exact params the screen traded.
+
+    Two rows with this identity are the same trial whatever pass screened them; a changed
+    param (a re-measured lag, another hold) is a different cell and a new trial."""
+    return f"{row.get('cell')}|{json.dumps(row.get('params') or {}, sort_keys=True, default=str)}"
+
+
+def charge_screened(source: str, rows: list[dict], charged: Path, family: str) -> tuple[int, int]:
+    """Charge the cells a pass ACTUALLY screened, each once over the lifetime union.
+
+    An hour that screened nothing charges 0; a re-screen of a charged cell charges nothing new;
+    new cells charge exactly their count. Because the charge lands in the side ledger whether or
+    not the pass donates, the discovery file of a proposer that uses this door must carry
+    `tests_run=0`, or the same cells would be counted a second time from there."""
+    return charge_union(source, [screened_identity(r) for r in rows], charged, family,
+                        "screened cells charged the first pass they are screened; each "
+                        "(cell, params) identity is charged once over the lifetime union",
+                        kind="screened_cell_union")
+
+
 def bars(sym: str) -> pd.DataFrame | None:
     path = UNI / f"{sym}_H1.parquet"
     if not path.exists():

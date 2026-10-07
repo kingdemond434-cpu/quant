@@ -57,6 +57,7 @@ def test_the_cursor_walks_the_whole_space_and_the_graph_keeps_every_edge(
     monkeypatch.setattr(cag, "REPORT", tmp_path / "r.json")
     monkeypatch.setattr(cag, "CURSOR", tmp_path / "c.json")
     monkeypatch.setattr(cag, "CHARGED", tmp_path / "charged.json")
+    monkeypatch.setattr(cag, "CELLS_CHARGED", tmp_path / "cells_charged.json")
     monkeypatch.setattr(cag.pc, "NULL_PASS_TRIALS", tmp_path / "null.jsonl")
     monkeypatch.setattr(cag, "_book_symbols", lambda: syms)
     monkeypatch.setattr(cag, "_universe", lambda book, have: list(book))
@@ -128,7 +129,7 @@ def test_execution_state_is_swept_in_both_modes_on_surface_symbols_only(
 def _graph_world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, syms: list[str]) -> Path:
     null = tmp_path / "null.jsonl"
     for name, path in (("GRAPH", "g.json"), ("REPORT", "r.json"), ("CURSOR", "c.json"),
-                       ("CHARGED", "charged.json")):
+                       ("CHARGED", "charged.json"), ("CELLS_CHARGED", "cells_charged.json")):
         monkeypatch.setattr(cag, name, tmp_path / path)
     monkeypatch.setattr(cag.pc, "NULL_PASS_TRIALS", null)
     monkeypatch.setattr(cag.pc, "universe_meta", lambda: {})
@@ -192,28 +193,72 @@ def test_an_unmeasured_pair_was_never_searched_and_is_not_charged(
     assert rep["pairs_newly_charged"] == 0 and not null.exists()
 
 
-def test_an_asia_pass_that_donates_nothing_is_still_charged(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def _asia_world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     import asia_transmission as atx
 
     from research import proposer_common as pc
     null = tmp_path / "null.jsonl"
     monkeypatch.setattr(pc, "NULL_PASS_TRIALS", null)
     monkeypatch.setattr(atx, "OUT", tmp_path / "ASIA.json")
+    monkeypatch.setattr(atx, "CELLS_CHARGED", tmp_path / "asia_cells_charged.json")
     monkeypatch.setattr(atx, "measure", lambda budget_s=600.0: {"rows": [], "bars": {},
                                                                 "meta": {}})
+    return null
+
+
+def _cell_charges(null: Path) -> list[int]:
+    if not null.exists():
+        return []
+    rows = [json.loads(x) for x in null.read_text("utf-8").splitlines() if x.strip()]
+    return [r["tests_run"] for r in rows if r.get("kind") == "screened_cell_union"]
+
+
+def _screened(cells: list[tuple[str, int]]) -> list[dict]:
+    return [{"cell": c, "symbol": c.split(".")[0], "chain": "x",
+             "params": {"driver_symbol": "D", "lag": lag, "direction": "same", "entry_z": 1.5,
+                        "norm": 240, "hold_bars": 4}} for c, lag in cells]
+
+
+def test_an_asia_hour_that_screens_nothing_charges_zero(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The audit's HOLD (2026-10-07): a constant len(CHAINS) x 2 x 2 = 40 was charged every hour,
+    ~960 a day, whether or not a single cell was screened. An empty hour now charges 0."""
+    import asia_transmission as atx
+
+    from research import proposer_common as pc
+    null = _asia_world(tmp_path, monkeypatch)
     donated: list[int] = []
     monkeypatch.setattr(pc, "donate", lambda *a, **k: donated.append(1) or None)
-    assert atx.main(["--propose", "--budget", "5"]) == 0
-    rows = [json.loads(x) for x in null.read_text("utf-8").splitlines()]
-    want = len(atx.CHAINS) * len(atx.ENTRY_Z) * len(atx.HOLDS)
-    assert [(r["source"], r["tests_run"], r["by_family"]) for r in rows] == [
-        ("asia_transmission", want, {"lead_lag": want})]
-    assert donated == []                                          # nothing to donate
-    assert json.loads((tmp_path / "ASIA.json").read_text("utf-8"))["null_trials_charged"] == want
-    # a pass WITHOUT --propose screened nothing and charges nothing
-    assert atx.main(["--budget", "5"]) == 0
-    assert len(null.read_text("utf-8").splitlines()) == 1
+    for _ in range(24):
+        assert atx.main(["--propose", "--budget", "5"]) == 0
+    assert not null.exists() and donated == []
+    doc = json.loads((tmp_path / "ASIA.json").read_text("utf-8"))
+    assert doc["cells_screened"] == 0 and doc["cells_newly_charged"] == 0
+    assert atx.main(["--budget", "5"]) == 0                     # no --propose: nothing screened
+    assert not null.exists()
+
+
+def test_asia_screened_cells_are_charged_once_by_identity(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The same cells re-screened charge nothing new; new cells charge exactly their count."""
+    import asia_transmission as atx
+
+    from research import proposer_common as pc
+    null = _asia_world(tmp_path, monkeypatch)
+    batch = {"rows": _screened([("AUDUSD.lead_lag.D.asia", 1), ("XAUUSD.lead_lag.D.asia", 2)])}
+    monkeypatch.setattr(atx, "propose", lambda m, budget_s=600.0: list(batch["rows"]))
+    monkeypatch.setattr(pc, "donate", lambda *a, **k: None)
+    atx.main(["--propose"])
+    atx.main(["--propose"])
+    assert _cell_charges(null) == [2]
+    batch["rows"] = _screened([("AUDUSD.lead_lag.D.asia", 1), ("XAUUSD.lead_lag.D.asia", 2),
+                               ("AUDUSD.lead_lag.D.asia", 3), ("NZDUSD.lead_lag.D.asia", 1),
+                               ("USDCAD.lead_lag.D.asia", 1)])   # 3 new, 2 already charged
+    atx.main(["--propose"])
+    assert _cell_charges(null) == [2, 3]
+    doc = json.loads((tmp_path / "ASIA.json").read_text("utf-8"))
+    assert (doc["cells_screened"], doc["cells_newly_charged"], doc["cells_lifetime_union"]) == \
+        (5, 3, 5)
 
 
 def test_an_asia_pass_whose_donation_lands_is_not_charged_twice(
@@ -221,21 +266,78 @@ def test_an_asia_pass_whose_donation_lands_is_not_charged_twice(
     import asia_transmission as atx
 
     from research import proposer_common as pc
-    null = tmp_path / "null.jsonl"
-    monkeypatch.setattr(pc, "NULL_PASS_TRIALS", null)
-    monkeypatch.setattr(atx, "OUT", tmp_path / "ASIA.json")
-    monkeypatch.setattr(atx, "measure", lambda budget_s=600.0: {"rows": [], "bars": {},
-                                                                "meta": {}})
-    monkeypatch.setattr(atx, "propose", lambda m, budget_s=600.0: [])
+    null = _asia_world(tmp_path, monkeypatch)
+    monkeypatch.setattr(atx, "propose", lambda m, budget_s=600.0: _screened(
+        [("AUDUSD.lead_lag.D.asia", 1)]))
     monkeypatch.setattr(pc, "best_per_cell", lambda rows: [
         {"symbol": "AUDUSD", "params": {"lag": 1}, "chain": "x"}])
-    sent: list[list[dict]] = []
-    monkeypatch.setattr(pc, "donate", lambda src, cands, tests_run: sent.append(cands)
+    sent: list[tuple[list[dict], int]] = []
+    monkeypatch.setattr(pc, "donate", lambda src, cands, tests_run: sent.append((cands, tests_run))
                         or tmp_path / "discoveries_x.json")
     assert atx.main(["--propose"]) == 0
-    assert not null.exists()
+    assert _cell_charges(null) == [1]                             # charged once, in the union
+    assert sent[0][1] == 0                                        # and never again from the file
     # the candidate is built with its title and evidence (five arguments raised TypeError)
-    assert sent[0][0]["title"].startswith("AUDUSD.lead_lag.") and "evidence" in sent[0][0]
+    assert sent[0][0][0]["title"].startswith("AUDUSD.lead_lag.") and "evidence" in sent[0][0][0]
+
+
+def _edge_world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, syms: list[str]) -> Path:
+    from libs.research import experiment_ledger as el
+    null = _graph_world(tmp_path, monkeypatch, syms)
+    monkeypatch.setattr(el, "OUT", tmp_path / "EXPERIMENT_LEDGER.json")
+    monkeypatch.setattr(el, "family_trials", lambda family, **k: 0)
+    monkeypatch.setattr(cag.lead_lag, "edge", lambda d, t, plausible_role=None: {
+        "verdict": "EDGE", "t": 5.0, "lag": 1, "direction": "same", "plausibility": "stat"})
+    monkeypatch.setattr(cag.pc, "cost_frac", lambda *a: 1e-4)
+    monkeypatch.setattr(cag.pc, "artifact_hours", lambda t: set())
+    monkeypatch.setattr(cag, "family_lead_lag", lambda *a, **k: [])
+    monkeypatch.setattr(cag.pc, "screen", lambda *a, **k: {
+        "t_gross": 0.5, "n_independent": 40, "clears_cost": False, "gross_per_trade": 0.0,
+        "net_per_trade": 0.0, "cost_frac": 1e-4})
+    return null
+
+
+def test_the_same_edges_across_two_passes_charge_their_cells_once(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The audit's HOLD (2026-10-07): every pass re-measures the same EDGE pairs and used to
+    re-charge len(rows) for them. Now the second pass over the same edges charges nothing, and a
+    new symbol's edges charge exactly their new cells."""
+    null = _edge_world(tmp_path, monkeypatch, ["A", "B", "C"])
+    per_edge = len(cag.ENTRY_Z) * len(cag.HOLDS)
+    rep = cag.run(symbols=["A", "B"], budget_s=1e6)              # 2 EDGE pairs
+    assert rep["tests_run"] == 2 * per_edge and rep["cells_newly_charged"] == 2 * per_edge
+    rep = cag.run(symbols=["A", "B"], budget_s=1e6)              # the same 2 edges
+    assert rep["tests_run"] == 2 * per_edge and rep["cells_newly_charged"] == 0
+    assert _cell_charges(null) == [2 * per_edge]
+    rep = cag.run(symbols=["A", "B", "C"], budget_s=1e6)         # 6 edges, 4 of them new
+    assert rep["cells_newly_charged"] == 4 * per_edge
+    assert rep["cells_lifetime_union"] == 6 * per_edge
+    assert _cell_charges(null) == [2 * per_edge, 4 * per_edge]
+
+
+def test_the_ledger_counts_a_union_charged_cell_once(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """End to end through `experiment_ledger._proposer_counts`: two passes over the same edges,
+    one donating, add each pair look and each screened cell exactly once."""
+    from libs.research import experiment_ledger as el
+    desk = tmp_path / "desk"
+    (desk / "data").mkdir(parents=True)
+    monkeypatch.setattr(el, "DESK", desk)
+    _edge_world(tmp_path, monkeypatch, ["A", "B"])
+    monkeypatch.setattr(cag.pc, "NULL_PASS_TRIALS", desk / "data" / "null_pass_trials.jsonl")
+    monkeypatch.setattr(cag.pc, "INTEL", desk / "data" / "intelligence")
+    cag.run(symbols=["A", "B"], budget_s=1e6)
+    monkeypatch.setattr(cag.pc, "screen", lambda *a, **k: {
+        "t_gross": 9.0, "n_independent": 40, "clears_cost": True, "gross_per_trade": 1e-3,
+        "net_per_trade": 9e-4, "cost_frac": 1e-4})
+    sent: list[int] = []
+    monkeypatch.setattr(cag.pc, "donate", lambda src, cands, tests_run: sent.append(tests_run)
+                        or tmp_path / "d.json")
+    cag.run(symbols=["A", "B"], budget_s=1e6)
+    assert sent == [0]
+    total, by_fam = el._proposer_counts()
+    per_edge = len(cag.ENTRY_Z) * len(cag.HOLDS)
+    assert total == 2 + 2 * per_edge and by_fam.get("lead_lag") == total
 
 
 _PROFILE_UP = {"15m": 4.0, "1h": 9.0, "4h": 20.0, "1d": 6.0}       # peaks at 4h, decays by 1d

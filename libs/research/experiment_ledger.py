@@ -8,7 +8,14 @@ only as honest as the trial count they are given, and a count that forgets last 
 is a count that manufactures survivors. The ledger is not a new file -- it is a JOIN of the
 three places trials already leave a trace: the hypothesis graph (judged cells), every proposer's
 `tests_run` on its discovery files (screened cells, including the culled), and the
-pre-registration cards. Deduplicated by identity where the same cell appears in more than one.
+pre-registration cards.
+
+IT SUMS; IT DOES NOT DEDUPLICATE. Every discovery file's `tests_run` and every side-ledger row is
+added as written, so the ledger is exactly as honest as its writers: a proposer that re-charges
+the same cells every pass is counted every pass. Charging each cell ONCE is the writer's job,
+done through `proposer_common.charge_union` / `charge_screened`, which persist the identities
+already charged and append only the new ones -- and a proposer that charges that way donates
+with `tests_run=0`, so its cells are not counted a second time from the discovery file.
 
 CONSUMERS. `proposer_common.deflate` reports `t_deflated_lifetime` beside the sweep-deflated t;
 `pf_allocator.search_trials` takes the larger of the gate report's count and the lifetime
@@ -73,9 +80,12 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             by_fam["model_pairing"] = by_fam.get("model_pairing", 0) + k
     except (OSError, ValueError, TypeError):
         pass
-    # NULL PASSES ARE TRIALS TOO. A proposer pass that tested cells and donated none writes no
-    # discovery file, so it appends its `tests_run` here instead (alt_proxies._donate). A pass
-    # writes one or the other, never both, so nothing is counted twice.
+    # NULL PASSES AND UNION CHARGES ARE TRIALS TOO. A proposer pass that tested cells and donated
+    # none writes no discovery file, so it appends its `tests_run` here instead
+    # (alt_proxies._donate). The union doors (`proposer_common.charge_union`) also write here,
+    # one row per pass carrying only identities never charged before, and their proposers donate
+    # with tests_run=0. Nothing here deduplicates: a writer that appended the same cells twice
+    # would be counted twice, which is why the once-only rule lives in the writers.
     try:
         for ln in (DESK / "data" / "null_pass_trials.jsonl").read_text("utf-8").splitlines():
             if not ln.strip():

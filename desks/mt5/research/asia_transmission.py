@@ -61,6 +61,8 @@ OUT = BASE / "reports" / "ASIA_TRANSMISSION.json"
 #: identity is charged one `lead_lag` trial the first pass it is measured, once over the
 #: lifetime, through the same union door `cross_asset_graph` uses for its pairs.
 CHARGED = BASE / "reports" / "asia_transmission_charged.json"
+#: The screened (cell, params) identities ever charged, through `proposer_common.charge_screened`.
+CELLS_CHARGED = BASE / "reports" / "asia_transmission_cells_charged.json"
 EDGE_METHOD = "ols_t_nonoverlap"
 
 #: Asian trading hours in UTC. Tokyo opens 00:00 UTC and Shanghai's afternoon session ends around
@@ -337,9 +339,17 @@ def main(argv: list[str] | None = None) -> int:
     rows = measured["rows"]
     proposals: list[dict[str, Any]] = []
     donated: str | None = None
-    null_charged = 0
+    screened: list[dict[str, Any]] = []
+    cells_new = cells_union = 0
     if args.propose:
-        proposals = pc.best_per_cell(propose(measured, budget_s=args.budget))
+        screened = propose(measured, budget_s=args.budget)
+        # ONLY THE CELLS ACTUALLY SCREENED ARE CHARGED, EACH ONCE (2026-10-07). This used to
+        # charge len(CHAINS) x 2 x 2 = 40 every hour whether or not any chain survived to be
+        # screened -- ~960 a day of trials nobody ran. An hour that screens nothing charges 0;
+        # re-screening the same (cell, params) charges nothing new.
+        cells_new, cells_union = pc.charge_screened("asia_transmission", screened,
+                                                    CELLS_CHARGED, "lead_lag")
+        proposals = pc.best_per_cell(screened)
         # `candidate` takes title and evidence too; called with five arguments it raised
         # TypeError on the first hour a chain survived, so the organ could never donate.
         cands = [pc.candidate("asia_transmission", p["symbol"], "lead_lag", p["params"],
@@ -352,18 +362,10 @@ def main(argv: list[str] | None = None) -> int:
                                   "gross_per_trade", "net_per_trade", "cost_frac", "t_gross",
                                   "t_deflated_sweep", "n_tests_sweep")})
                  for p in proposals]
-        tests_run = len(CHAINS) * len(ENTRY_Z) * len(HOLDS)
         if cands:
-            path = pc.donate("asia_transmission", cands, tests_run=tests_run)
+            # tests_run=0: the screened cells were charged above, once, in the side ledger.
+            path = pc.donate("asia_transmission", cands, tests_run=0)
             donated = str(path) if path else None
-        if donated is None:
-            # A PASS THAT DONATES NOTHING STILL RAN ITS TESTS (2026-10-06). The organ is on the
-            # hourly clock now, so a quiet hour is the common case, and with no discovery file
-            # its trials never reached the lifetime ledger. They go through the same null-pass
-            # door `alt_proxies._donate` uses; a pass writes one or the other, never both.
-            null_charged = pc.charge_side_trials(
-                "asia_transmission", tests_run, {"lead_lag": tests_run},
-                "tested cells charged; no discovery file carried them this pass")
 
     census = Counter(str(r.get("verdict")) for r in rows)
     doc = {
@@ -378,7 +380,9 @@ def main(argv: list[str] | None = None) -> int:
                                  "measures as empty in both the traded and certified books",
         "n_proposals": len(proposals),
         "donated_to": donated,
-        "null_trials_charged": null_charged,
+        "cells_screened": len(screened),
+        "cells_newly_charged": cells_new,
+        "cells_lifetime_union": cells_union,
         "chain_looks": measured.get("chain_looks"),
         "chains": rows,
         "proposals": proposals,

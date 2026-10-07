@@ -67,6 +67,8 @@ CURSOR = _DESK / "reports" / "cross_asset_graph_cursor.json"
 #: charge once-only. A re-measure of a charged pair costs nothing new; a changed lag grid or
 #: method is a new identity and is charged again.
 CHARGED = _DESK / "reports" / "cross_asset_graph_charged.json"
+#: The screened (cell, params) identities ever charged, through `proposer_common.charge_screened`.
+CELLS_CHARGED = _DESK / "reports" / "cross_asset_graph_cells_charged.json"
 EDGE_METHOD = "ols_t_nonoverlap"
 FAMILY = "lead_lag"
 #: Share of the pass budget spent measuring edges; the rest sweeps the EDGE ones into cells.
@@ -263,13 +265,15 @@ def run(symbols: list[str] | None = None, budget_s: float = 900.0) -> dict:
            "tests_run": len(rows), "cells_proposed": len(proposals), "skipped": skipped,
            "pairs_looked": len(looked), "pairs_newly_charged": pairs_new,
            "pairs_lifetime_union": pairs_union, "proposals": proposals}
-    path = pc.donate(SOURCE, cands, len(rows)) if cands else None
+    # THE SCREENED CELLS, CHARGED ONCE BY IDENTITY (2026-10-07). This used to charge len(rows)
+    # every pass, and the EDGE pairs are re-measured every pass, so the same (z, hold) cells of
+    # the same edges were charged again each hour. Now each (cell, params) identity is charged
+    # the first pass it is screened; the discovery file carries tests_run=0 so nothing is
+    # counted twice.
+    cells_new, cells_union = pc.charge_screened(SOURCE, rows, CELLS_CHARGED, FAMILY)
+    rep["cells_newly_charged"], rep["cells_lifetime_union"] = cells_new, cells_union
+    path = pc.donate(SOURCE, cands, 0) if cands else None
     rep["donated"] = str(path) if path else None
-    if not path:
-        # NO DISCOVERY FILE, SO THE SCREENED ROWS RIDE THE SIDE LEDGER (the null-pass door).
-        rep["null_trials_charged"] = pc.charge_side_trials(
-            SOURCE, len(rows), {FAMILY: len(rows)},
-            "tested cells charged; no discovery file carried them this pass")
     REPORT.write_text(json.dumps(rep, indent=1, default=str), "utf-8")
     return rep
 
