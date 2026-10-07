@@ -471,7 +471,9 @@ def build(now: datetime, *, closes: Mapping[str, list[tuple[str, float]]] | None
                 usd["resid_z"][pr_name], nxt, cards=[CARD_USD], start=train,
                 label=f"{pr_name}:resid_vs_dollar_factor",
                 falsifier=f"{pr_name} residual against the dollar factor does not revert"))
-        for i in range(n):
+        # OUT OF SAMPLE ONLY (audit #211 v3): the filter's parameters are fitted on the first
+        # `train` days, so a row inside that window would carry the future; none is published
+        for i in range(train, n):
             if not math.isfinite(usd["factor"][i]):
                 continue
             row = {"available_time": clock[i].isoformat(), "event_time": dates[i].isoformat(),
@@ -508,7 +510,7 @@ def build(now: datetime, *, closes: Mapping[str, list[tuple[str, float]]] | None
             z, r_next, cards=[CARD_GOLD], start=start, label="XAUUSD:gold_resid_vs_fair_value",
             falsifier="gold rich/cheap against its filtered macro fair value does not revert"))
         contracts.append(week_forecast_contract(logp, gfv["fair_value"], start))
-        for i in range(n):
+        for i in range(start, n):                       # out of sample only (audit #211 v3)
             if not math.isfinite(gfv["fair_value"][i]):
                 continue
             series_out[S_GOLD].append({
@@ -537,7 +539,7 @@ def build(now: datetime, *, closes: Mapping[str, list[tuple[str, float]]] | None
     contracts.append(cpi_contract(infl, train, cpi_min_n))
     if infl["status"] == "MEASURED":
         cpi_j = infl["inputs"].index("cpi") if "cpi" in infl["inputs"] else None
-        for i in range(n):
+        for i in range(train, n):                       # out of sample only (audit #211 v3)
             row = {"available_time": clock[i].isoformat(), "event_time": dates[i].isoformat(),
                    "source_id": S_INFL, "infl_state": round(float(infl["state"][i]), 8),
                    "infl_state_sd": round(float(infl["state_sd"][i]), 8),
