@@ -45,8 +45,11 @@ _SERIES = ("DGS10", "T10Y2Y", "VIXCLS", "DTWEXBGS", "WALCL", "M2SL", "DFII10")
 #:   Treasury curve:   DGS3MO DGS2 DGS5 DGS10 DGS30
 #:   EIA weekly petroleum: WCESTUS1 (crude ex SPR) WCSSTUS1 (SPR) WGTSTUS1 (gasoline)
 #:                         WDISTUS1 (distillate) WPULEUS3 (refinery utilisation %)
-#:   CBOE implied vol as FRED republishes it (the terms-admitted substitute for the Yahoo copy
-#:   `recorders/vol_archive.py` reads): VIX, VIX3M, VXN, VXD, OVX, GVZ, EVZ, RVX, VXFXI, VXEEM
+#:   CBOE implied vol as FRED republishes it: VIX, VIX3M, VXN, VXD, OVX, GVZ, EVZ, RVX, VXFXI,
+#:   VXEEM. HELD ON TERMS (2026-10-07): each carries CBOE's copyright notice and FRED's ToU FAQ
+#:   Q3 says FRED cannot license it, so these are archived as state and reach no cell or
+#:   consumer until a quoted CBOE clearance exists; the permitted risk level is
+#:   `libs.data.own_risk` (OWN_VIX, from our own bars)
 #:   Inflation (2026-10-06, desks/mt5/macro/latent_states.py, ROMAN-0839/0841): T5YIE T10YIE
 #:                     (breakevens, daily) CPIAUCSL PCEPI (monthly, REVISED -- the engine
 #:                     prefers ALFRED first prints and uses these only at a declared lag)

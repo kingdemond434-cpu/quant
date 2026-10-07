@@ -90,20 +90,35 @@ def test_beta_from_bars() -> None:
     assert b["symbols"]["USOIL"]["status"] == "UNMEASURED"
 
 
-def test_curve_regime_and_ledger() -> None:
+def test_curve_regime_and_ledger(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.data import own_risk
+    from macro import release_vintages as rv
+    monkeypatch.setattr(own_risk, "ARCHIVE", tmp_path / "own_risk_index.json")
+    monkeypatch.setattr(rv, "CLEARANCES", tmp_path / "clear.json")
     rep = ms.build(now=NOW, series=_series(), charts={}, vol_rows=_vol_rows())
     gc = rep["curve"]
     assert gc["slope_10y3m"] == pytest.approx(4.1 - 4.5, abs=1e-6)
     assert gc["inverted_10y3m"] is True
     assert gc["curvature"] == pytest.approx(2 * 3.9 - 4.0 - 4.1, abs=1e-6)
-    # the vol indices come through Yahoo's chart API: held; FRED's VIX/VIX3M carry the key
+    # the vol indices come through Yahoo's chart API: held; FRED's copy is held too (FAQ Q3),
+    # so the permitted own-bars risk state carries the key (UNMEASURED with no archive here)
     assert rep["terms"]["vol"]["gauntlet"] == "HELD"
-    assert rep["regime"] == "UNMEASURED" and rep["regime_source"] == "fred:VIXCLS+VXVCLS"
+    assert rep["regime"] == "UNMEASURED" and rep["regime_source"] == "mt5:bars:OWN_VIX"
     ser = {**_series(), "VIXCLS": [(d, 15.0 + (i % 7)) for i, d in enumerate(_days(300))],
            "VXVCLS": [(d, 18.0) for d in _days(300)]}
     ser["VIXCLS"][-2] = (ser["VIXCLS"][-2][0], 30.0)
+    held = ms.build(now=NOW, series=ser, charts={}, vol_rows=_vol_rows())
+    assert held["regime_source"] == "mt5:bars:OWN_VIX"          # a held copy is never the key
+    (tmp_path / "clear.json").write_text(json.dumps({"cboe": {
+        "status": "CLEARED", "terms_url": "https://example.test/terms",
+        "terms_quote": "machine use permitted"}}), "utf-8")
     fr = ms.build(now=NOW, series=ser, charts={}, vol_rows=_vol_rows())
+    assert fr["regime_source"] == "fred:VIXCLS+VXVCLS"
     assert fr["regime"] == "vol_backwardation_high"
+    own = {"OWN_VIX": [(d, 15.0 + (i % 7)) for i, d in enumerate(_days(300))],
+           "OWN_VIX_INVERTED": [(d, 1.0) for d in _days(300)]}
+    own["OWN_VIX"][-1] = (own["OWN_VIX"][-1][0], 40.0)
+    assert ms.own_regime(NOW, own) == "vol_backwardation_high"
     assert rep["terms"]["curve"]["gauntlet"] == "admitted"
     assert rep["option_chains"]["status"] == "EXTERNALLY_BLOCKED"
     obs = ms.observations(rep, NOW)

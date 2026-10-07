@@ -6,8 +6,11 @@ WHY (completion audit #9, Quant Guild card QG25-06 "IV crush"): the desk measure
 surprises (event_surprise) but never what the market PRICED for the event before it, so it could
 not say whether a CPI/NFP/FOMC/ECB/BoJ print moved its CFD more or less than options implied.
 
-THE NUMBERS, per (event, CFD), all from FRED's republication of the CBOE indices (terms-admitted;
-the Yahoo copy is held) and the desk's own broker closes:
+THE NUMBERS, per (event, CFD), from FRED's republication of the CBOE indices and the desk's own
+broker closes. TERMS (2026-10-07): those FRED series carry CBOE's copyright notice and FRED's ToU
+FAQ Q3 says FRED cannot license them, so they are HELD like the Yahoo copy: the engine measures
+state and emits no cell until a quoted CBOE clearance exists (libs/data/terms_hold.py). The
+permitted risk level is `libs.data.own_risk` (OWN_VIX, from our own bars):
 
     iv_pre          the 30-day index on the last trading day BEFORE the event day (the event is
                     inside its window); implied_move_pre = iv_pre / 100 / sqrt(252), the 1-day

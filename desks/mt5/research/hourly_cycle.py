@@ -885,6 +885,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "ws_vol_conditioner", "ws_option_chains", "ws_priced_in", "ws_name_sentiment",
     "ws_model_disagreement", "ws_regime_probabilities", "ws_news_hawkes", "ws_latent_states",
     "ws_implied_move", "ws_taiwan_options", "ws_fetch_alfred", "ws_pit_audit",
+    "ws_own_risk_index",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -2923,6 +2924,9 @@ WORLD_SENSOR_LEGS: dict[str, tuple[str, tuple[str, ...], float, str]] = {
     "ws_implied_move": ("macro/implied_move.py", (), 20.0, "IMPLIED_MOVE.json"),
     "ws_taiwan_options": ("macro/taiwan_options.py", ("--no-fetch",), 20.0,
                           "TAIWAN_OPTIONS.json"),
+    # coordinator 2026-10-07: the permitted risk state (libs.data.own_risk), the drop-in for the
+    # held VIXCLS/BAML series on the allocator and gateway paths, from our own bars only
+    "ws_own_risk_index": ("macro/own_risk_index.py", (), 2.0, "OWN_RISK_INDEX.json"),
     # audit #15 (2026-10-06): ALFRED vintages and the PIT audit were executables on no clock.
     # fetch_alfred re-reads a series file older than a day (ALFRED never deletes a vintage, so
     # the new file holds every old one); pit_audit commits its verdict with --apply.
@@ -3848,6 +3852,8 @@ def main() -> None:
                           lambda: world_sensor("ws_latent_states")),
            "ws_implied_move": _costed("ws_implied_move",
                                       lambda: world_sensor("ws_implied_move")),
+           "ws_own_risk_index": _costed("ws_own_risk_index",
+                                        lambda: world_sensor("ws_own_risk_index")),
            "ws_taiwan_options": _costed("ws_taiwan_options",
                                         lambda: world_sensor("ws_taiwan_options")),
            "ws_fetch_alfred": _costed("ws_fetch_alfred",

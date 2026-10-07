@@ -56,6 +56,13 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                  "terms_quote": "(own data: bars from the desk's own MT5 terminal on its own "
                                 "broker account, used for its own trading, never redistributed)",
                  "scope": "exact id", "checked_at": "2026-10-07"},
+    "forced_flow_calendar": {"terms_url": "",
+                             "terms_quote": "(own data: dated windows computed from published "
+                                            "RULES -- month-ends, quarterly expiries, inventory "
+                                            "weeks, central-bank meeting dates -- by "
+                                            "research/forced_flow_calendar.py; no vendor feed)",
+                             "scope": "exact id (event_response_atlas source)",
+                             "checked_at": "2026-10-07"},
     "desk:sensor_ledger": {"terms_url": "",
                            "terms_quote": "(own data: the desk's derived ledger of sensor rows)",
                            "scope": "exact id", "checked_at": "2026-10-07"},

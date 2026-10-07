@@ -60,10 +60,11 @@ from libs.research import sensor_engines as se  # noqa: E402
 
 REPORT = DESK / "reports" / "VOL_CONDITIONER.json"
 #: vol_archive reads the CBOE indices through Yahoo's chart API: the terms gate holds that source
-#: (audit #211, J sources). THE LAWFUL SUBSTITUTE (coordinator, 2026-10-06): FRED republishes the
-#: CBOE indices, FRED is admitted, so a ground reads FRED first and its cells go through under
-#: data_source "fred:<series>"; the Yahoo history is used only where FRED has no series (held, no
-#: cells) and to MEASURE the substitute (level correlation >= 0.5 where both exist).
+#: (audit #211, J sources). FRED's republication of the same indices is HELD TOO (2026-10-07):
+#: each carries CBOE's copyright notice and FRED's ToU FAQ Q3 says FRED cannot license it. A
+#: ground still reads FRED first and measures the substitute, but its cells emit only once
+#: "fred:<series>" clears the gate; the permitted ground is the broker's own vol CFD and the bar
+#: vol state below (BAR_SOURCE).
 VOL_SOURCE = "yahoo:cboe_indices"
 FRED_IDS: dict[str, str] = {
     "^VIX": "VIXCLS", "^VIX3M": "VXVCLS", "^VXN": "VXNCLS", "^VXD": "VXDCLS",

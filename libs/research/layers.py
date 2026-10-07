@@ -214,6 +214,7 @@ LEG_LAYER: dict[str, str] = {
     "ws_news_hawkes": "information",
     "ws_latent_states": "information",
     "ws_implied_move": "information",
+    "ws_own_risk_index": "information",
     "ws_taiwan_options": "information",
     "ws_fetch_alfred": "information",
     # whether every data path carries its time facts measures the desk itself: meta
