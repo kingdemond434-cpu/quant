@@ -416,6 +416,27 @@ def _sleeve(**over) -> dict:
             "selector": "asia", "side": "LONG", "risk_frac": 0.03, "lot": "auto_ramp", **over}
 
 
+@pytest.mark.parametrize("bid,expected_retry", [(1.1110, True), (1.1160, False)])
+def test_rollover_spread_waits_for_quote_but_expired_signal_is_consumed(
+        tmp_path, monkeypatch, bid, expected_retry) -> None:
+    rows = _rows()
+    mt5 = _fake_mt5(rows)
+    quote = SimpleNamespace(bid=bid, ask=1.1170)
+    mt5.symbol_info_tick = lambda symbol: quote
+    ns = _family_ns(tmp_path, mt5, monkeypatch, armed_file=True,
+                    sig_hour=_sig_hour(rows))
+    state = {"armed": True}
+    _run_family(ns, state, [_sleeve()], 10_000.0)
+    assert mt5.sent == []
+    marked = state.get("generic", {}).get(_NAME, {}).get("last_signal_bar")
+    assert bool(marked) is not expected_retry
+    quote.bid, quote.ask = 1.1100, 1.1102
+    _run_family(ns, state, [_sleeve()], 10_000.0)
+    assert len(mt5.sent) == int(expected_retry)
+    _run_family(ns, state, [_sleeve()], 10_000.0)
+    assert len(mt5.sent) == int(expected_retry), "same signal must never send twice"
+
+
 def test_unarmed_the_family_executor_logs_the_exact_order_and_marks_the_bar(tmp_path,
                                                                           monkeypatch) -> None:
     rows = _rows()
@@ -517,13 +538,17 @@ def test_an_entry_that_drifted_from_the_signal_close_is_bracketed_from_the_entry
 def test_a_signal_the_market_has_already_played_out_is_refused_as_stale(tmp_path,
                                                                         monkeypatch) -> None:
     """A short whose certified target sat half a pip below its bar's close, with the bid now a
-    further half pip lower: the replay's trade has already taken its profit. Opening one here is
+    further half pip lower on both quote sides: the replay's trade has already taken its profit. Opening one here is
     not the certified trade, so it is refused, journaled, and the bar is consumed."""
     rows = _rows()
     mt5 = _fake_mt5(rows)
     frame = dc.h1_frame(rows)
     bar = frame.index[-2]
     px = float(frame["close"].loc[bar])
+    # A short exits at ask. Both quote sides must cross the target for this to
+    # model an expired trade rather than a temporarily untradeable wide spread.
+    mt5.symbol_info_tick = lambda symbol: SimpleNamespace(bid=px - 0.0001,
+                                                        ask=px - 0.000075)
     ns = _family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows),
                     signals=lambda closed, side: [_signal(bar, stop=px + 0.0010,
                                                           target=px - 0.00005)])
