@@ -1,5 +1,5 @@
 {
- "at": "2026-10-08T08:42:23+00:00",
+ "at": "2026-10-08T09:17:28+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,16 +9,16 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-08T08:42:09+00:00",
+   "at": "2026-10-08T09:17:12+00:00",
    "bandit_at": "2026-10-02T23:17:53.389831+00:00",
-   "hour": "2026-10-08T08",
+   "hour": "2026-10-08T09",
    "arm": "treated",
    "wanted_s": 480,
    "floor_s": 240,
    "extra_wanted_s": 240,
    "extra_due_s": 240,
    "extra_s": 240,
-   "surplus_s": 660.4,
+   "surplus_s": 660.3,
    "surplus_why": "department 'discovery' measured spare 660s/hour",
    "contract": {
     "n_treated": 6,
@@ -42,7 +42,7 @@
    "engine_factor": 1.0,
    "engine_why": "engine registry: no share for leg 'alpha_evolution'; par",
    "meta_factor": 2.0,
-   "meta_why": "meta controller: leg 'alpha_evolution' serves kind(s) ['new_hypothesis', 'evolve_family'] priced 0.1931 on the info_per_cell board vs median 0.04912 = x3.93 -> x2.00 (one-sided: it may fund above par and never below it)",
+   "meta_why": "meta controller: leg 'alpha_evolution' serves kind(s) ['new_hypothesis', 'evolve_family'] priced 0.1931 on the info_per_cell board vs median 0.04933 = x3.92 -> x2.00 (one-sided: it may fund above par and never below it)",
    "graveyard_factor": 1.0,
    "graveyard_why": "graveyard: no survival row for source 'alpha_evolution'; par",
    "paradigm_factor": 1.0,
