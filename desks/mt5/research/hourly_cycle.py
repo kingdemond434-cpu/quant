@@ -3658,7 +3658,7 @@ def main() -> None:
     h = _costed("health", health)
     # E8 reads this fail-closed input every five minutes. The full Tier S research pass
     # runs much later and can hit its budget before reaching the review/door organs.
-    _costed("tier_s_door", tier_s_door)
+    tdoor = _costed("tier_s_door", tier_s_door)
     # Drain existing intake before the long research legs. The later pipeline still
     # compiles and merges discoveries generated during this pass.
     _costed("intake_catchup", catch_up_intake)
@@ -5785,7 +5785,7 @@ def main() -> None:
                     "orthogonality": orth,
                     "null_lab": nlab, "research_live_identity": rlid,
                     "macro_conditioned_sweep": mcsw, "unknown_census": ucen,
-                    "tier_s": tiers, "adversary_evolution": advx,
+                    "tier_s_door": tdoor, "tier_s": tiers, "adversary_evolution": advx,
                     "execution_science": exsci, "frontier_map": fmap,
                     "market_ecology": meco, "research_diversity_archive": rdar,
                     "session_allocation": sess,
