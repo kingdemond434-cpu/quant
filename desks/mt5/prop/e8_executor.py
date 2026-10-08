@@ -283,9 +283,10 @@ def _frame(api: Any, instrument_id: int, timeframe: str = "H1") -> Any:
 
     THE COLUMN NAMES AND THE CLOCK ARE THE WHOLE JOB. The venue returns `t,o,h,l,c,v` with `t` in
     epoch MILLISECONDS; every family reads `open/high/low/close` off a tz-aware UTC DatetimeIndex
-    and several of them branch on `index.hour`. A silent mismatch here would not raise -- it
-    would compute a real-looking signal on the wrong hour, which on an all-asia book is the one
-    error that would look like a strategy.
+    and several of them branch on `index.hour`. The certificates use broker wall time (Fusion's
+    H1 epochs carry that clock), not UTC calendar days. E8 history is physical UTC, so translate
+    each bar to the E8 server clock used by the guard before invoking a certified family.
+    The offset is evaluated per bar, including historical DST; prices and bar order are unchanged.
     """
     try:
         import pandas as pd
@@ -312,8 +313,15 @@ def _frame(api: Any, instrument_id: int, timeframe: str = "H1") -> Any:
     if "t" not in df.columns:
         return None
     idx = pd.to_datetime(df["t"], unit="ms", utc=True)
+    from prop.e8_guard import server_offset_hours
+
+    offsets = pd.to_timedelta(
+        [server_offset_hours(t.to_pydatetime()) for t in idx], unit="h")
+    idx = idx + offsets
     out = df.drop(columns=[c for c in ("t",) if c in df.columns]).set_index(idx)
     out.index.name = "time"
+    out.attrs["source_clock"] = "UTC"
+    out.attrs["strategy_clock"] = "broker_wall_time/E8_server_day"
     for col in ("open", "high", "low", "close"):
         if col not in out.columns:
             return None
@@ -358,7 +366,8 @@ def twin_fade(symbol: str, family: str, *, now: datetime | None = None) -> tuple
         rows = doc.get("sleeves") if isinstance(doc, dict) else doc
         rows = list(rows.values()) if isinstance(rows, dict) else (rows or [])
         for r in rows:
-            if isinstance(r, dict) and str(r.get("name", "")).lower().startswith(stem)                     and r.get("decay_faded"):
+            if (isinstance(r, dict) and str(r.get("name", "")).lower().startswith(stem)
+                    and r.get("decay_faded")):
                 faded.append(str(r.get("name"))[:30])
     except (OSError, ValueError):
         pass
@@ -386,11 +395,13 @@ def twin_fade(symbol: str, family: str, *, now: datetime | None = None) -> tuple
     n, wins = len(rs), sum(1 for x in rs if x > 0)
     exp = (sum(rs) / n) if n else 0.0
     if faded:
-        return TWIN_FADE_FACTOR, (f"twin fade {TWIN_FADE_FACTOR:.2f}: MT5 twin(s) faded by the decay "
-                                  f"monitor ({', '.join(faded[:3])}); pooled live n={n} exp={exp:+.2f}R")
+        return TWIN_FADE_FACTOR, (
+            f"twin fade {TWIN_FADE_FACTOR:.2f}: MT5 twin(s) faded by the decay "
+            f"monitor ({', '.join(faded[:3])}); pooled live n={n} exp={exp:+.2f}R")
     if n >= TWIN_FADE_N and (wins == 0 or exp <= -TWIN_FADE_R):
-        return TWIN_FADE_FACTOR, (f"twin fade {TWIN_FADE_FACTOR:.2f}: MT5 twins {wins}-for-{n} live, "
-                                  f"exp={exp:+.2f}R (bar n>={TWIN_FADE_N}, no wins or exp<=-{TWIN_FADE_R}R)")
+        return TWIN_FADE_FACTOR, (
+            f"twin fade {TWIN_FADE_FACTOR:.2f}: MT5 twins {wins}-for-{n} live, "
+            f"exp={exp:+.2f}R (bar n>={TWIN_FADE_N}, no wins or exp<=-{TWIN_FADE_R}R)")
     return 1.0, f"twin fade 1.00: MT5 twins n={n} wins={wins} exp={exp:+.2f}R"
 
 
@@ -800,6 +811,7 @@ def manage_breakeven(venue: Any, *, armed: bool = False,
 def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         entry_enabled: bool = False) -> dict[str, Any]:
     from mt5desk import order_door
+
     from prop import e8_guard
 
     # ONE DOOR FOR MONEY: every place / modify_stop / close / close_all this pass sends is
@@ -878,9 +890,10 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
 
     entry_authority_error = ""
     try:
-        from admission_integrity import IntegrityGate, REPLICATED
-        from libs.tiers import promotion_authority
+        from admission_integrity import REPLICATED, IntegrityGate
         from mt5desk.kelly_sizing import CERT_BOOK_FILE
+
+        from libs.tiers import promotion_authority
         exclusions = json.loads(CERT_BOOK_FILE.read_text(encoding="utf-8"))["excluded"]
         if not isinstance(exclusions, dict):
             raise ValueError("principal exclusion map is not an object")
@@ -1078,6 +1091,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             doc["sleeves"].append(row)
             continue
         closed = _last_closed(frame)
+        row["bar_clock"] = frame.attrs.get("strategy_clock", "UNMEASURED")
         params = _call_params(s, s.get("symbol") or "", closed)
         if params is None:
             row["status"] = "NO_INPUTS"
@@ -1104,6 +1118,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             # lose it: E8 must apply the same post-constructor window as the gauntlet and
             # Fusion. Both flat and {condition, params} certificate envelopes occur here.
             from mt5desk.family_call import certified_session_filter
+            row["n_raw_signals"] = len(signals or [])
             signals = certified_session_filter(list(signals or []), s)
         except Exception as exc:
             row["status"] = "SIGNAL_ERROR"
@@ -1157,13 +1172,15 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         # is stale and not opened. Unmeasurable keeps the levels as they are.
         try:
             from mt5desk.decision_core import family_bracket, signal_with_levels
-            _close = float(closed["close"].iloc[-1])
+            from mt5desk.family_call import signal_reference_price, spread_blocks_entry
+            _close = signal_reference_price(fam, frame, g)
             _sgn = 1 if side == "buy" else -1
             _e, _stop, _target, _d, _note, _drift, _verdict = family_bracket(
                 g, _sgn, float(bid), float(ask), _close)
             row["entry_drift"], row["entry_drift_note"] = _drift, _note
             if _verdict == "stale":
-                row["status"] = "STALE_SIGNAL"
+                row["status"] = ("QUOTE_SPREAD" if spread_blocks_entry(g, _sgn, bid, ask)
+                                 else "STALE_SIGNAL")
                 row["why"] = _note
                 doc["sleeves"].append(row)
                 _record(row, now, armed)
