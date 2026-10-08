@@ -1,11 +1,14 @@
 {
-  "at": "2026-09-08T18:45:46+00:00",
-  "usable": false,
-  "n_matched": 0,
-  "n_unfilled_intents": 28,
-  "n_unmatched_deals": 13,
-  "mean_slip_quote": 0.0,
-  "mean_slip_r": 0.0,
-  "edge_share": null,
-  "why": "no matched intent/deal pairs yet. Nothing has filled, or the gateway predates intent recording. This is NOT a clean bill of health -- execution is UNMEASURED until a fill exists."
+  "at": "2026-10-08T04:19:51+00:00",
+  "usable": true,
+  "n_matched": 224,
+  "n_unfilled_intents": 42,
+  "n_unmatched_deals": 28,
+  "n_deals": 252,
+  "attributed_deals": 224,
+  "attributed_share": 0.8888888888888888,
+  "mean_slip_quote": 0.293145803571437,
+  "mean_slip_r": -0.20689180002987784,
+  "edge_share": -1.301206289496087,
+  "why": "matched on the position id (entry order == intent ticket), and legacy key-less deals on the exact stop/target echo; slip against the ENTRY fill, signed by the intent's side (the ledger's `side` is the closing deal's) so a bad buy and a bad sell do not cancel"
 }

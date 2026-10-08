@@ -1,0 +1,50 @@
+{
+  "schema": "box_state_freshness/1",
+  "measured_at": "2026-10-08T05:40:04+00:00",
+  "threshold_h": 6.0,
+  "box_author": "Contabo",
+  "age_h": 354.97,
+  "box_state_age_hours": 354.97,
+  "box_state_flow": null,
+  "alerts": null,
+  "box_state_flow_local": {
+    "verdict": "STALLED",
+    "why": "local state is 0.0h old but origin's newest box-published state is 904.4h old -- delivery is broken, the desk is not idle",
+    "measured_at": "2026-10-07T05:55:36+00:00",
+    "published_age_h": 904.45,
+    "alerts_armed": 0,
+    "alerts_line": "ALERTS NOT ARMED: STALLED pages reach no one"
+  },
+  "stall_watch_alerts": {
+    "status": "MEASURED",
+    "checked_at": "2026-10-08T05:29:20.0558401Z",
+    "state_flow": "STALLED",
+    "state_flow_watch": "METER_SILENT",
+    "alerts_armed": 0,
+    "alerts_line": "ALERTS NOT ARMED: STALLED pages reach no one"
+  },
+  "ref": "refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3",
+  "published_paths": 56,
+  "newest_box_commit": {
+    "sha": "1095ad5ece",
+    "author": "Contabo MT5 Desk",
+    "at": "2026-09-23T10:50:04+00:00"
+  },
+  "stamps_inside_state": {
+    "desks/mt5/reports/shadow/shadow_health.json": "2026-09-16T16:37:33+00:00",
+    "desks/mt5/reports/shadow/scalp_shadow_state.json": "2026-09-16T16:37:29+00:00",
+    "desks/mt5/reports/shadow/qquant_shadow_state.json": "2026-09-16T16:37:32+00:00",
+    "desks/mt5/reports/shadow/external_shadow_state.json": "2026-09-12T11:55:05+00:00",
+    "desks/mt5/reports/shadow/shadow_state.json": "2026-09-16T16:37:29+00:00",
+    "desks/mt5/data/account_state.json": "2026-09-12T12:15:02+00:00",
+    "desks/mt5/data/research_budget.json": "2026-09-23T10:41:50+00:00"
+  },
+  "stamps_ignored_not_box_written": {
+    "desks/mt5/data/RELEASE.json": "quant-ci"
+  },
+  "newest_stamp_inside_state": "2026-09-23T10:41:50+00:00",
+  "basis": "stamp_inside_state",
+  "verdict": "STALE",
+  "why": "the box's newest state on refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3 is 355.0h old (threshold 6h): every reader off the box is measuring a frozen copy. On the box: BOX_STATE_FLOW.json and desks\\mt5\\logs\\sync_shadow_to_git.log name why.",
+  "alerts_line": "ALERTS NOT ARMED: STALLED pages reach no one"
+}

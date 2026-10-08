@@ -1,0 +1,25 @@
+{
+ "at": "2026-10-08T03:16:15+00:00",
+ "status": "OK",
+ "n_clocks": 845,
+ "n_live": 845,
+ "n_closed_by_identity": 0,
+ "n_refused_moves": 0,
+ "n_earlier_starts_accepted": 0,
+ "verification": {
+  "n_checked": 0,
+  "n_unledgered": 0,
+  "churn_outside_the_door": [],
+  "rule": "a live forward_start LATER than the ledger's means something wrote the clock without passing through stamp(); the ledger's start is the truth"
+ },
+ "ledger": "C:\\opt\\quant\\desks\\mt5\\data\\forward_clock_ledger.json",
+ "oldest_live": "2026-09-17T22:57:31.928261+00:00",
+ "rule": "start = min(recorded, proposed) for an unchanged identity; a new identity opens a NEW clock and keeps the old one. A later start is impossible at the writer, not merely reported after it happened.",
+ "consumers": [
+  "desks/mt5/research/shadow_forward.py -> stamp(): the only line that writes forward_start now returns the ledger's start",
+  "desks/mt5/research/promoter.py (sealed, unchanged) reads forward_start downstream, so days_active is computed on a window that cannot be rebased",
+  "desks/mt5/research/quantbench.py case QB003 replays the monotonicity every hour"
+ ],
+ "boundary": "NOTHING IS CAPPED, REFUSED OR SLOWED. The only refusal this organ can make is of a LATER start, which destroys pre-registered days; an EARLIER start is always accepted. Enrolment is untouched: every sleeve that would have been enrolled is still enrolled, on a clock that can only be the same age or older.",
+ "seconds": 0.103
+}

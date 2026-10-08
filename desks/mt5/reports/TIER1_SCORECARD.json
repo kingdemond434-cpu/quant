@@ -1,0 +1,172 @@
+{
+ "generated_utc": "2026-10-07T23:04:50+00:00",
+ "authority": "MEASUREMENT ONLY -- sizes nothing, gates nothing, certifies nothing. It reports where the fourteen Tier-1 dimensions stand, read from the artifacts that own them.",
+ "n_rows": 14,
+ "rows": [
+  {
+   "dimension": "effective_breadth_n_eff",
+   "current": 2.514,
+   "unit": "bets",
+   "first_target": 15.0,
+   "max_solo_direction": "25-40",
+   "basis": "desks/mt5/reports/EFFECTIVE_BREADTH.json effective.effective_breadth (n_nominal=452, binding=realised_returns)",
+   "verdict": "BELOW",
+   "measured_at": "2026-10-07T10:47:16.260281+00:00",
+   "lower_is_better": false
+  },
+  {
+   "dimension": "certified_chart_session_axes",
+   "current": 7.0,
+   "unit": "cells",
+   "first_target": 20.0,
+   "max_solo_direction": "majority measured",
+   "basis": "desks/mt5/reports/TIMEFRAME_COVERAGE.json + desks/mt5/reports/SESSION_CHART_EXPANSION.json + desks/mt5/data/sleeves.json + desks/mt5/reports/UNIVERSAL_SURVIVORS.json: distinct (timeframe, session) over certified rows; charts_hunted=7, cells_without_both_axes=1057",
+   "verdict": "BELOW",
+   "measured_at": "2026-10-07T15:54:53+00:00",
+   "lower_is_better": false
+  },
+  {
+   "dimension": "mechanism_clusters_occupied",
+   "current": 9.0,
+   "unit": "clusters",
+   "first_target": 10.0,
+   "max_solo_direction": "persistent expansion",
+   "basis": "desks/mt5/reports/BREADTH_MANDATE.json occupied (declared_clusters=15)",
+   "verdict": "BELOW",
+   "measured_at": "2026-10-06T19:18:58+00:00",
+   "lower_is_better": false
+  },
+  {
+   "dimension": "asset_classes_producing_survivors",
+   "current": 8.0,
+   "unit": "classes",
+   "first_target": 5.0,
+   "max_solo_direction": "whole executable universe",
+   "basis": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json survivors[*].shadow_spec.symbol -> universe_policy.asset_class_of (unclassified=0)",
+   "verdict": "ABOVE",
+   "measured_at": "2026-10-07T21:31:58.246600+00:00",
+   "lower_is_better": false
+  },
+  {
+   "dimension": "pit_compliance_pct",
+   "current": 0.0,
+   "unit": "pct",
+   "first_target": 100.0,
+   "max_solo_direction": "100% and held",
+   "basis": "desks/mt5/reports/PIT_CENSUS.json canaries.green=True, census.stamped/sidecars + desks/mt5/reports/LAKE_PROMOTION.json silver_share; binding=lake silver_share",
+   "verdict": "BELOW",
+   "measured_at": "2026-10-07T23:03:18+00:00",
+   "lower_is_better": false
+  },
+  {
+   "dimension": "live_trade_attribution_pct",
+   "current": 80.95,
+   "unit": "pct",
+   "first_target": 99.0,
+   "max_solo_direction": "100",
+   "basis": "desks/mt5/reports/ATTRIBUTION_RECONCILE.json attributed_pct (204/252 by exact name, unique prefix or tp/sl geometry); the exact-name join alone reads 17.86%",
+   "verdict": "BELOW",
+   "measured_at": "2026-10-07T03:46:20+00:00",
+   "lower_is_better": false
+  },
+  {
+   "dimension": "silent_scheduled_failures",
+   "current": 71.0,
+   "unit": "organs",
+   "first_target": 0.0,
+   "max_solo_direction": "0",
+   "basis": "desks/mt5/reports/process_health.json counts.FAILING+NOT_SCHEDULED + desks/mt5/data/sync_marker.json legs LEG_FAILED/TIMEOUT (legs=0)",
+   "verdict": "BELOW",
+   "measured_at": "2026-10-07T23:00:08+00:00",
+   "lower_is_better": true
+  },
+  {
+   "dimension": "backtest_forward_lineage_pct",
+   "current": 100.0,
+   "unit": "pct",
+   "first_target": 100.0,
+   "max_solo_direction": "100",
+   "basis": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json survivors x desks/mt5/reports/shadow/shadow_state.json clock keys (symbol+selector, credit_assignment join): 847/847",
+   "verdict": "AT",
+   "measured_at": "2026-10-07T21:31:58.246600+00:00",
+   "lower_is_better": false
+  },
+  {
+   "dimension": "cost_model_maturity",
+   "current": 1.0,
+   "unit": "ordinal 0-3",
+   "first_target": 2.0,
+   "max_solo_direction": "3",
+   "basis": "desks/mt5/data/cost_surface.json symbols[*].hours=True, size/regime/order_type dims=ABSENT, per-alpha distribution=ABSENT",
+   "verdict": "BELOW",
+   "measured_at": "2026-10-07T02:27:52+00:00",
+   "lower_is_better": false
+  },
+  {
+   "dimension": "cross_asset_intelligence",
+   "current": 3.0,
+   "unit": "ordinal 0-3",
+   "first_target": 2.0,
+   "max_solo_direction": "3",
+   "basis": "desks/mt5/reports/WORLD_CAUSAL_GRAPH.json edges=95 carrying ['conditional_partial', 'event_propagation', 'lag', 'regime_dependence', 'stability']; edges_admitted=0",
+   "verdict": "ABOVE",
+   "measured_at": "2026-10-04T02:16:02.858631+00:00",
+   "lower_is_better": false
+  },
+  {
+   "dimension": "macro_intelligence",
+   "current": 1.0,
+   "unit": "ordinal 0-3",
+   "first_target": 2.0,
+   "max_solo_direction": "3",
+   "basis": "desks/mt5/data/macro_state.json series=22, per-country blocks=False (differentials=1), desks/mt5/data/state_vector.json sensitivities=True",
+   "verdict": "BELOW",
+   "measured_at": "2026-10-07T22:58:39.640222+00:00",
+   "lower_is_better": false
+  },
+  {
+   "dimension": "allocator_maturity",
+   "current": 1.0,
+   "unit": "ordinal 0-3",
+   "first_target": 2.0,
+   "max_solo_direction": "3",
+   "basis": "desks/mt5/reports/pf_allocation.json proof: passed=False, hysteresis=True, desks/mt5/reports/pf_allocation.json posterior fields=True",
+   "verdict": "BELOW",
+   "measured_at": "2026-10-07T20:43:44.239471+00:00",
+   "lower_is_better": false
+  },
+  {
+   "dimension": "proprietary_moat_days",
+   "current": 50.0,
+   "unit": "days",
+   "first_target": 365.0,
+   "max_solo_direction": "years",
+   "basis": "desks/mt5/data/tape/ticks/*/YYYY-MM-DD.parquet distinct dates over 249 symbol dir(s); desks/mt5/data/moat_coverage.json newest_tape_write=2026-10-07T22:50:21+00:00, desks/mt5/reports/TAPE_RECORDER.json state=RECORDING",
+   "verdict": "BELOW",
+   "measured_at": "2026-10-07T22:50:09+00:00",
+   "lower_is_better": false
+  },
+  {
+   "dimension": "research_conversion_backlog",
+   "current": 686821.0,
+   "unit": "candidates",
+   "first_target": 0.0,
+   "max_solo_direction": "near-zero useful backlog",
+   "basis": "desks/mt5/reports/CANDIDATE_CONSERVATION.json n_waiting=662917 + n_lost=23904",
+   "verdict": "BELOW",
+   "measured_at": "2026-10-05T13:49:30+00:00",
+   "lower_is_better": true
+  }
+ ],
+ "overall": {
+  "at_or_above": 3,
+  "below": 11,
+  "unmeasured": 0,
+  "weakest_measured": [
+   "pit_compliance_pct",
+   "research_conversion_backlog",
+   "silent_scheduled_failures"
+  ],
+  "why": "3 of 14 dimensions are AT or ABOVE their first target, 11 are BELOW and 0 are UNMEASURED -- which would be a verdict and never a zero, and today there are none -- every row below was read from an artifact that exists. The three weakest MEASURED rows are pit_compliance_pct at 0.0 pct against a first target of 100.0; research_conversion_backlog at 686821.0 candidates against a first target of 0.0; silent_scheduled_failures at 71.0 organs against a first target of 0.0. Those buy the most next hour, because the rest of the board is read through them: breadth that is not point-in-time clean cannot be trusted, a live trade that cannot be attributed cannot feed credit assignment, and a backlog that does not shrink is a claim the desk cannot cash. Nothing here is asserted -- a number moves when an organ writes a better artifact, never when this file is edited."
+ }
+}

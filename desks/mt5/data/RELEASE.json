@@ -1,11 +1,11 @@
 {
- "generated_utc": "2026-10-08T06:35:27.874990+00:00",
- "live_sha": "373fe2baf68f4a79ba3cc867c3c6edf8480d71b0",
- "code_sha": "373fe2baf68f4a79ba3cc867c3c6edf8480d71b0",
- "parent_sha": "a59b0bbd9625c08c2e87f91fbdfaa361c79951c5",
- "tree_sha": "d0731de800cd0b6ec00acbb6ab809c06e2423ebb",
+ "generated_utc": "2026-10-08T07:13:53.342584+00:00",
+ "live_sha": "721a4affcaa7c0e0f6315b1ea109c8da4d0816b8",
+ "code_sha": "721a4affcaa7c0e0f6315b1ea109c8da4d0816b8",
+ "parent_sha": "caac3b637d6b9ec0e7cc981ff42a36551d77307f",
+ "tree_sha": "23de993fe4b14d44ec24062d442fb7edc67388c4",
  "config_hash": "e0d1bfe75cb0d2c3",
- "survivor_registry_hash": "86be58b6bd9aa141",
+ "survivor_registry_hash": "d3f308039b71e195",
  "allocator_hash": "84d4443c0cffc97d",
  "money_path_hash": "30d19cf1e6505db6",
  "data_schema_version": "pit-1;features-2026-09-04.1",
@@ -57,7 +57,7 @@
   "libs/portfolio/rails.py": "cef11ebb9d4e4ffc",
   "libs/portfolio/capital_modifiers.py": "91794462504a3e96"
  },
- "canon_sha256": "b31f05a63ac55c09fb739f5bb1dd698a0a746defaef8139c710cc4c5743f5bcc",
+ "canon_sha256": "355aa79b27c15a1ef43273f5278fadf18fedea571f0704d4c32bf78a866c1e81",
  "immutable_manifest": {
   "sha256_16": "ee30fcbab3080850",
   "signed_utc": "2026-10-07T14:16:11.662059+00:00",
@@ -108,15 +108,16 @@
   "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json"
  ],
  "immutable_hash": "ee30fcbab3080850",
- "release_id": "446a9c62e04d",
+ "release_id": "fcbcdd0c981d",
  "sealed": true,
- "sealed_at": "2026-10-08T06:35:27.874990+00:00",
- "sealed_by": "ci:37734936221",
- "ci_run_id": "37734936221",
- "tested_sha": "373fe2baf68f4a79ba3cc867c3c6edf8480d71b0",
+ "sealed_at": "2026-10-08T07:13:53.342584+00:00",
+ "sealed_by": "Adopt-And-Seal",
+ "ci_run_id": null,
+ "tested_sha": null,
  "worktree_dirty": [],
  "worktree_dirty_scope": "release_code_paths",
- "previous_code_sha": "3a9ab6c689d6d1b46fa75b192a2111cae4d43b90",
- "previous_release_id": "b6ba8cef9913",
- "signature_note": "no signing key at data/secrets/release_signing.key and QUANT_RELEASE_SIGNING_KEY unset"
+ "previous_code_sha": "8e42947db3c507fb95ac069fdf62a23032416f10",
+ "previous_release_id": "14d9ad1145a6",
+ "signature_algo": "hmac-sha256-v1",
+ "signature": "7258aa9bbedde31acf7c8a60d6ba052e3b88eb414bf3fccf38287a1e3e3ee9c6"
 }

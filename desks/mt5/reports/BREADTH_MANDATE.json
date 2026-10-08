@@ -1,0 +1,110 @@
+{
+ "generated_utc": "2026-10-06T19:18:58+00:00",
+ "law": "BREADTH IS MANDATORY. Every empty alpha cluster must receive at least 3 cells per sweep. ATTEMPTED AND FAILED is a measurement and is fine; NEVER ATTEMPTED is a defect. n_eff ratchets UP only.",
+ "why_the_existing_floors_miss_it": "the bandit floors EXPLORATION at 40% of compute, and exploration inside an OCCUPIED cluster is still exploration -- a sweep can satisfy the floor entirely on its four-hundredth session-liquidity variant while eleven clusters get nothing. And bandit.breadth_credit prices new_mechanism at 1.2491 against combine_survivors at 0.8295, a 1.5x spread that cannot outbid a 3x declared cost difference.",
+ "declared_clusters": 15,
+ "occupied": [
+  "crisis_drawdown",
+  "cross_sectional_fx",
+  "fixing_roll_calendar",
+  "macro_rates",
+  "mean_reversion",
+  "relative_value",
+  "session_liquidity",
+  "trend",
+  "volatility_transition"
+ ],
+ "empty": [
+  "cross_asset_lead_lag",
+  "event_surprise",
+  "execution_entry",
+  "news_reaction",
+  "options_implied",
+  "positioning_flow"
+ ],
+ "cluster_cell_counts": {
+  "macro_rates": 39684,
+  "UNCLASSIFIED": 873540,
+  "session_liquidity": 210466,
+  "fixing_roll_calendar": 29918,
+  "mean_reversion": 25242,
+  "trend": 47560,
+  "volatility_transition": 99996,
+  "cross_sectional_fx": 22686,
+  "relative_value": 154200,
+  "crisis_drawdown": 19947,
+  "cross_asset_lead_lag": 51737,
+  "event_surprise": 30950,
+  "positioning_flow": 7283
+ },
+ "counts_basis": "1613209 docket cell(s) classified",
+ "min_cells_per_empty_cluster": 3,
+ "census": {
+  "ATTEMPTED": 3,
+  "NEVER_ATTEMPTED": 3
+ },
+ "never_attempted": [
+  {
+   "cluster": "execution_entry",
+   "cells_in_docket": 0,
+   "verdict": "NEVER_ATTEMPTED",
+   "why": "ZERO cells have ever targeted this cluster. The desk cannot say the market has nothing here when it has never looked."
+  },
+  {
+   "cluster": "news_reaction",
+   "cells_in_docket": 0,
+   "verdict": "NEVER_ATTEMPTED",
+   "why": "ZERO cells have ever targeted this cluster. The desk cannot say the market has nothing here when it has never looked."
+  },
+  {
+   "cluster": "options_implied",
+   "cells_in_docket": 0,
+   "verdict": "NEVER_ATTEMPTED",
+   "why": "ZERO cells have ever targeted this cluster. The desk cannot say the market has nothing here when it has never looked."
+  }
+ ],
+ "ratchet": {
+  "n_eff": 2.509,
+  "floor": null,
+  "status": "FLOOR_SET",
+  "why": "first measurement becomes the floor"
+ },
+ "clusters": [
+  {
+   "cluster": "cross_asset_lead_lag",
+   "cells_in_docket": 51737,
+   "verdict": "ATTEMPTED",
+   "why": "51737 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
+  },
+  {
+   "cluster": "event_surprise",
+   "cells_in_docket": 30950,
+   "verdict": "ATTEMPTED",
+   "why": "30950 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
+  },
+  {
+   "cluster": "execution_entry",
+   "cells_in_docket": 0,
+   "verdict": "NEVER_ATTEMPTED",
+   "why": "ZERO cells have ever targeted this cluster. The desk cannot say the market has nothing here when it has never looked."
+  },
+  {
+   "cluster": "news_reaction",
+   "cells_in_docket": 0,
+   "verdict": "NEVER_ATTEMPTED",
+   "why": "ZERO cells have ever targeted this cluster. The desk cannot say the market has nothing here when it has never looked."
+  },
+  {
+   "cluster": "options_implied",
+   "cells_in_docket": 0,
+   "verdict": "NEVER_ATTEMPTED",
+   "why": "ZERO cells have ever targeted this cluster. The desk cannot say the market has nothing here when it has never looked."
+  },
+  {
+   "cluster": "positioning_flow",
+   "cells_in_docket": 7283,
+   "verdict": "ATTEMPTED",
+   "why": "7283 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
+  }
+ ]
+}

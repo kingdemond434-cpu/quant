@@ -1,0 +1,29 @@
+{
+ "generated_utc": "2026-10-07T06:46:51+00:00",
+ "status": "UNMEASURED: no LIVE row in data/sleeves.json",
+ "inputs": {
+  "sleeves": "desks/mt5/data/sleeves.json",
+  "survivors": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
+  "survivor_rows": 847,
+  "registry_rows": 1708,
+  "docket_cells": 1619731
+ },
+ "fields": [
+  "family",
+  "symbol",
+  "selector",
+  "params",
+  "code"
+ ],
+ "n_live": 0,
+ "counts": {
+  "MATCH": 0,
+  "MISMATCH": 0,
+  "UNMEASURED": 0
+ },
+ "mismatched": [],
+ "unmeasured": [],
+ "defects": [],
+ "rows": [],
+ "consumer": "libs/tiers/promotion_authority._identity_mismatches (via review_live, run by research/tier_s.py door -> data/tier_s/live_door.json; that file's reader, promoter.retire_tier_s_live, is the unapplied sealed patch T4)"
+}

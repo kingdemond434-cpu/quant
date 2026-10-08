@@ -1,0 +1,120 @@
+{
+  "generated": "2026-10-08T05:41:14+00:00",
+  "root": "C:\\opt\\quant",
+  "thresholds": {
+    "trailing_refusals_max": 30,
+    "trailing_hours_max": 1.0,
+    "ledger_live_hours": 24.0,
+    "run_max_age_hours": 24.0,
+    "identity_max_age_hours": 3.0
+  },
+  "problems": [],
+  "notes": [
+    "gold_afternoon: 4x 'margin_guard' is history, not a current halt (last row 2026-09-29T14:57:32+00:00 is older than 24h)",
+    "gold_asia_v4: 307x 'release_identity_refused' is history, not a current halt (last row 2026-09-25T09:59:17+00:00 is older than 24h)",
+    "gold_london_am_v3: 37x 'release_identity_refused' is history, not a current halt (last row 2026-09-23T10:32:03+00:00 is older than 24h)"
+  ],
+  "runs": {
+    "gold_afternoon": {
+      "reason": "margin_guard",
+      "count": 4,
+      "first_at": "2026-09-28T14:49:57+00:00",
+      "last_at": "2026-09-29T14:57:32+00:00",
+      "span_h": 24.126,
+      "age_h": 206.728,
+      "venue_reason": true,
+      "current": false,
+      "not_current_because": "last row 2026-09-29T14:57:32+00:00 is older than 24h"
+    },
+    "gold_london_am_v2": {
+      "reason": "margin_guard",
+      "count": 2,
+      "first_at": "2026-09-28T11:17:44+00:00",
+      "last_at": "2026-09-28T11:17:44+00:00",
+      "span_h": 0.0,
+      "age_h": 234.392,
+      "venue_reason": true,
+      "current": false,
+      "not_current_because": "last row 2026-09-28T11:17:44+00:00 is older than 24h"
+    },
+    "gold_london_am_v3": {
+      "reason": "release_identity_refused",
+      "count": 37,
+      "first_at": "2026-09-11T10:26:59+00:00",
+      "last_at": "2026-09-23T10:32:03+00:00",
+      "span_h": 288.084,
+      "age_h": 355.153,
+      "venue_reason": false,
+      "current": false,
+      "not_current_because": "last row 2026-09-23T10:32:03+00:00 is older than 24h"
+    },
+    "gold_london_am_v4": {
+      "reason": "release_identity_refused",
+      "count": 4,
+      "first_at": "2026-09-11T10:26:59+00:00",
+      "last_at": "2026-09-11T10:38:46+00:00",
+      "span_h": 0.196,
+      "age_h": 643.041,
+      "venue_reason": false,
+      "current": false,
+      "not_current_because": "last row 2026-09-11T10:38:46+00:00 is older than 24h"
+    },
+    "gold_asia_v2": {
+      "reason": "margin_guard",
+      "count": 2,
+      "first_at": "2026-09-28T06:41:57+00:00",
+      "last_at": "2026-09-28T06:41:57+00:00",
+      "span_h": 0.0,
+      "age_h": 238.988,
+      "venue_reason": true,
+      "current": false,
+      "not_current_because": "last row 2026-09-28T06:41:57+00:00 is older than 24h"
+    },
+    "gold_asia_v3": {
+      "reason": "margin_guard",
+      "count": 2,
+      "first_at": "2026-09-28T06:41:57+00:00",
+      "last_at": "2026-09-28T06:41:57+00:00",
+      "span_h": 0.0,
+      "age_h": 238.988,
+      "venue_reason": true,
+      "current": false,
+      "not_current_because": "last row 2026-09-28T06:41:57+00:00 is older than 24h"
+    },
+    "gold_asia_v4": {
+      "reason": "release_identity_refused",
+      "count": 307,
+      "first_at": "2026-09-23T04:00:04+00:00",
+      "last_at": "2026-09-25T09:59:17+00:00",
+      "span_h": 53.987,
+      "age_h": 307.699,
+      "venue_reason": false,
+      "current": false,
+      "not_current_because": "last row 2026-09-25T09:59:17+00:00 is older than 24h"
+    }
+  },
+  "ok": true,
+  "verdict": "OK",
+  "applicable": true,
+  "ledger_newest_at": "2026-10-08T04:00:31+00:00",
+  "ledger_age_h": 1.679,
+  "rows_scanned": 3202,
+  "identity": {
+    "verdict": "OK",
+    "allows_new_risk": true,
+    "at": "2026-10-08T05:40:54+00:00",
+    "reason": "running 33c2b40228b3 is the sealed code 8e42947db3c5 plus seal/state commits only (1 path(s))",
+    "age_h": 0.006
+  },
+  "host": {
+    "verdict": "UNMEASURED",
+    "hostname": "vmi3571445",
+    "machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+    "recorded_machine_id": "UNMEASURED",
+    "trading_hostname": "vmi3571445",
+    "hostname_match": true,
+    "why": "no trading-box id is recorded in config/trading_host.json -- hostname fallback: vmi3571445 matches vmi3571445, reported, never taken as the identity",
+    "confirmed_trading": false,
+    "may_be_trading": true
+  }
+}
