@@ -1,0 +1,227 @@
+[
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "A Hawkes Microfoundation for Multitype Inverse Gaussian Subordinators",
+  "url": "http://arxiv.org/abs/2610.10525v1",
+  "text": "We provide an event-level Hawkes microfoundation for a multitype inverse-Gaussian stochastic clock. We show that the event counts and integrated intensities of nearly critical multivariate linear Hawkes processes converge jointly to a multivariate pure-jump subordinator when reproduction delays have finite mean and immigration is balanced so that rare large families remain visible. The dependence among the limiting coordinates is inherited from microscopic cross-excitation, and the limit admits a Brownian additive-field first-passage representation. We call this process the multitype inverse-Gaussian subordinator. Its diagonal case consists of independent classical inverse-Gaussian subordinators, with the univariate model as a further special case. The square-root specialization recovers t",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "From a Hierarchy of Stochastic Differential Equations to a Hierarchy of Generalized Beta Distributions",
+  "url": "http://arxiv.org/abs/2610.10476v1",
+  "text": "We introduce a mean-reverting stochastic differential equation with a three-component stochastic term and show that it generates a hierarchy of steady-state (stationary) distributions. At the top level, the hierarchy is described by a modified-Beta distribution, while one- and two-parameter reductions produce compact-support, power-law-tailed, and exponential-type limiting families within a single stochastic framework.\n  We then construct two generalized extensions of this hierarchy. In the first, the power transformation is applied directly at the level of the stochastic differential equation; in the second, the same transformation is applied only after the stationary modified-Beta hierarchy has been obtained. While these two procedures agree on important lower branches and limiting cases",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "SOTA: Stock Options Trading Agents Guided by Option-Implied Return Distributions",
+  "url": "http://arxiv.org/abs/2610.10407v1",
+  "text": "As option markets grow and AI advances, agentic systems for option trading are gaining increasing attention. Language-model-based agents can reason over contextual information such as news, but option trading presents a particularly challenging decision problem: a single stock can have thousands of contracts, and the agent must decide both which contracts to trade and how to combine them. Existing approaches often sidestep this complexity by restricting the policy to a fixed strategy structure, such as a straddle, limiting their ability to switch strategies as market conditions change. We present SOTA (Stock Options Trading Agents), an agentic trading framework for structured option-strategy selection. SOTA abstracts the large option universe into strategy-level decisions while determinist",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "OOM-RL II: Reality Is an Oracle, Not a Debugger Provenance-Constrained Diagnosis in Continually Evolving Agent-Engineered Systems",
+  "url": "http://arxiv.org/abs/2610.10256v1",
+  "text": "Reality may establish that an outcome occurred without identifying which evolving procedure produced it or why. This distinction matters in production ML systems whose code, configuration, and artifacts change while external feedback accumulates. We examine it in a human-directed, agent-engineered quantitative trading system, using oracle to mean an external source of realized outcomes rather than a complete correctness specification. Across one year, the account gained and outperformed a broad market index, while annual alpha was not statistically distinguishable from zero under the main retrospective specification. Retrospectively selected subperiods include adverse relative performance and conditional candidate-level weakness under declared approximate references. Engineering records do",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "On Bonart's interpretation of the Square-Root Impact Law",
+  "url": "http://arxiv.org/abs/2610.10053v1",
+  "text": "The square-root impact law (SRIL), $I = Y\u03c3\\sqrt{Q/V}$, bundles two facts that a single mechanism must explain at once: a shape (impact proportional to square-root of traded volume $Q$) and an amplitude ($Y=O(1)$, independent of the participation rate $\\varphi$). Bonart has recently proposed an elegant solution: if realized and counterfactual prices are both diffusive, information-neutral impact must have white increments and the SRIL follows without the wart. We reformulate and simplify his argument, and foreground the ingredient he himself regards as essential --- that the market whitens the stationary stream of each participant's metaorders, not any isolated one. The Lillo--Mike--Farmer model satisfies his premises, yet gives an isolated metaorder the super-square-root impact $\\varphi^{(",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "DSTNet: Dynamic Spectral Trajectory Network for Causal Multi-Horizon Financial Forecasting",
+  "url": "http://arxiv.org/abs/2610.09654v1",
+  "text": "Wavelet-based financial forecasters typically use the transform only to denoise, or reduce it to a single spectral snapshot at the forecast origin, and the convolution that produces the coefficients is usually bilateral, so it can read past the forecast origin. DSTNet instead retains the recent evolution of filter-bank magnitudes as a causal Dynamic Spectral Trajectory, built from seven trailing technical indicators over a twenty-day lookback with a one-sided Morlet-derived filter bank and an explicit burn-in for the left-boundary transient. A factorized Scale-Temporal Spectral Transformer attends along the time and filter-bank axes separately, a learned gate fuses the spectral branch with a CNN-BiLSTM, and horizon-specific gates emit one, three, five, and ten day forecasts in a single pas",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Residual Learning in Empirical Asset Pricing",
+  "url": "http://arxiv.org/abs/2610.09613v1",
+  "text": "Shallow models are special cases of deep models, and deep models theoretically have the potential to outperform the shallow ones. However, the existing empirical asset pricing literature provides strong benchmarks for shallow models. Residual learning allows neural network models in asset pricing to go deeper by preserving and refining their shallow counterparts. The out-of-sample Sharpe ratio for value-weighted long-short portfolios of deep residual models (2.07) is higher than that for the corresponding shallow ones (1.92) and more than twice that of the deep feedforward models (0.89). We show that model depth is a source of additional economic value in asset pricing. Residual learning can be used to deepen other neural-network-based asset pricing models if they contain intermediate laye",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Conditional value-at-risk under reward-penalty mechanism with applications to robust portfolio management",
+  "url": "http://arxiv.org/abs/2610.09246v1",
+  "text": "In this paper, we present robust portfolio selection models by incorporating a reward and penalty mechanism into portfolio management. We assume that the joint distribution of the losses of the underlying risky assets in a portfolio is uncertain but lies within a multivariate distribution set. Our goal is to identify optimal portfolio allocations by minimizing the worst-case conditional value-at-risk (CVaR) of portfolio loss under the reward and penalty mechanism and distribution uncertainty. Our models can also be used to investigate the problem of how to balance portfolio losses with their associated downside risk in portfolio management. We first derive an explicit closed-form expression for the worst-case CVaR under the reward-penalty mechanism, which generalizes several existing model",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Exponential investors with weakly mean-reverting prices",
+  "url": "http://arxiv.org/abs/2610.08631v1",
+  "text": "We investigate a continuous-time financial market where the asset price exhibits weak (sublinear) mean reversion and has a nonzero drift. Complementing earlier work on strong (superlinear) mean reversion, we show that, for an investor maximizing expected exponential utility, the certainty equivalent grows as $O(T^{2\u03b2+1})$ where $0&lt;\u03b2&lt;1$ is the strength of mean reversion. An explicit asymptotically optimal strategy is also given.",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Modelling Regime Shifts in Continuous Intraday Electricity Markets with State-dependent Hawkes Processes",
+  "url": "http://arxiv.org/abs/2610.08169v1",
+  "text": "The growing importance of intraday trading in Europe, driven by the increasing penetration of renewable energy sources, has led to higher volatility and periods of market stress. Understanding how order flow behaves under varying liquidity conditions requires models that adapt to the state of the market. This paper proposes a multivariate state-dependent Hawkes process to model the flow of orders across different liquidity regimes in the intraday continuous electricity market. The observed market states are identified using a proposed Liquidity Stress Index (LSI), which quantifies stress using the bid-ask spread in the limit order book, order book volume, and mid-price volatility. Transitions between states induce changes in the intensity parameters, resulting in piecewise dynamics that re",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "A Finite Bid--Ask Spread from Replenishment Displaced from the Quote",
+  "url": "http://arxiv.org/abs/2610.07985v1",
+  "text": "We give a unified analytic account of a finite bid--ask spread in a two-field reaction--diffusion order book. The model retains separate bid and ask densities in operational time, with diffusion, cancellation, reaction and external order creation. On the symmetric equal-coefficient branch, the imbalance field determines the reaction price, while the total standing density carries the spread geometry. A market-making source is introduced by withholding order placement over a finite interval around the reaction boundary, representing round-trip replenishment displaced from the quote. Under a separated, quasistationary and weak-overlap approximation, transport penetrates inward from the placement edges over the cancellation length, giving the quoted spread as the sub-threshold core of the pla",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Measuring Trade Direction in a Prediction Market: Settlement Ground Truth and Trading-Cost Measurement on Polymarket",
+  "url": "http://arxiv.org/abs/2610.06412v1",
+  "text": "Trade-sign errors can change measured trading costs even when classification accuracy is high. We validate the side of Polymarket's public trade prints against the taker leg of each print's on-chain settlement. On twelve selected days between April and August 2026, spanning both exchange generations, 92.1% to 100.0% of prints match a settled taker leg, with exact side and token agreement on all 24.5 million matched pairs. Mint-and-merge settlement makes that taker leg essential: pooling maker and taker legs changes the measured buy share. Signing the full cached tape before settlement selection yields 16.6 million prints signed by every rule; equal-day balanced accuracy is 0.942 for Lee-Ready, 0.768 for the tick test and 0.670 for retrospective bulk volume classification. On 16.4 million i",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Latent Continuum of Regimes in Limit Order Book Dynamics",
+  "url": "http://arxiv.org/abs/2610.05740v2",
+  "text": "Market-regime models typically assume a finite set of discrete latent states. We examine whether high frequency limit-order-book dynamics exhibit distinct regime separation or apparent regimes result from discretising an underlying continuum, analysing deep limit-order book data for EURO STOXX 50 index futures across 987 clean trading days from 2022 to 2025 using 30, 45 and 60-second aggregation windows. Market states are represented by symmetric positive definite covariance matrices and analysed under Log-Euclidean and affine-invariant geometries; the resulting state cloud has an effective dimension of approximately 1.4. A causal anomaly layer filters statistical, calendar and rollover contamination, while label-free economic validation evaluates market-state separation independently of v",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "STOCK-JEPA: Prior-Anchored Latent Revision Representation Learning in Equity Markets",
+  "url": "http://arxiv.org/abs/2610.07006v1",
+  "text": "Learning effective representations helps characterize the structure and dynamics of equity markets from financial data with a low signal-to-noise ratio. Black-box deep models can capture complex patterns but may overfit sample noise and lack explicit economic structure. Meanwhile, classic linear financial models provide interpretable references, but their oversimplified assumptions leave non-linear signals uncaptured. To combine the strengths of these two directions, we propose Stock-JEPA, a joint-embedding predictive framework that learns predictable incremental revisions relative to a point-in-time financial prior. First, we leverage a low-complexity financial model to produce fixed statistics summarizing multi-horizon return and risk. A prior projector then maps these statistics into th",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Buying at Support: The Entry Problem under Multi-Skew Brownian Motion",
+  "url": "http://arxiv.org/abs/2610.04990v1",
+  "text": "We study when to buy a share that will later be sold optimally, when the price follows a geometric multi-skew Brownian motion whose skew levels model support and resistance. The reward for buying is the exit premium of the liquidation problem solved in a companion paper. This premium is strictly $r$-subharmonic inside the exit continuation region, so buying is optimal only at levels where the price is pushed upward, and the entry problem reduces to a finite one whose value is an upper concave hull of finitely many points. With one support and one resistance, the optimal rule is to buy exactly at the support, in every exit regime, with an explicit value.",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "FactorBench: A Portfolio-Aware Benchmark for Automated Factor Mining",
+  "url": "http://arxiv.org/abs/2610.06947v1",
+  "text": "Factor mining seeks to discover signals from financial data that predict future asset returns and guide portfolio construction. Automated factor mining now spans genetic programming, reinforcement learning, generative models, and large language model agents. Yet it remains unclear whether advances across these paradigms yield more generalizable, distinct, and economically useful financial signals. We introduce FactorBench, a portfolio-aware benchmark comparing roughly five thousand mined factors from nine automated mining methods across five equity markets. A shared data and evaluation contract supports both symbolic expressions and executable Python factors, connecting heterogeneous discovery algorithms to common signal combination and portfolio construction procedures. FactorBench traces",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Robust enhanced index tracking portfolio selection under distributional uncertainty",
+  "url": "http://arxiv.org/abs/2610.04221v1",
+  "text": "The enhanced index tracking (EIT) portfolio selection problem aims to construct a portfolio that is expected to outperform a benchmark index. In practice, investors face uncertainty in the joint distribution of asset and index losses, as the true distribution is typically unknown and only partial information is available. Moreover, portfolio selection requires balancing the trade-off between mean loss and downside risk while targeting higher returns. Effectively modeling and managing these factors in EIT portfolio selection is therefore of both practical and research interest.\n  To address these challenges, this paper proposes robust EIT portfolio selection models under distributional uncertainty, guided by Pareto-optimality theory. The models minimize a convex combination of worst-case me",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Cities of Signals: Compression, Separation, and the Geometry of Novelty",
+  "url": "http://arxiv.org/abs/2610.04122v1",
+  "text": "A cross-sectional signal is a forecast vector over $d$ assets at each date; demeaned and normalized, it is a point on a sphere. Its city is the direction of its time-averaged vector in a common target-aligned frame, a compressed summary. When is the angle between two cities a conservative estimate of the angle between the histories? For independent uniform histories, the probability that the history angle is at least the city angle tends to one when the city angle is at most 90 degrees, with an $O(T^{-1/2})$ error bound uniform in dimension. Selecting for positive average information coefficient (IC) changes the unconditional limit to $\u03b3_q&gt;1/2$, about 56% for 20 assets. The bound extends to independent, rotationally symmetric histories with temporal dependence; summable products of lag",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Agent Policy-Value Audit: Separating Transition Composition from Event Selection in Financial LLM Agents",
+  "url": "http://arxiv.org/abs/2610.04040v1",
+  "text": "Financial LLM agents are often evaluated by comparing their end-to-end returns with those of a baseline and testing the paired difference against zero. This measures whether deploying the agent changes realized performance, but it does not isolate event-selection skill. An agent that frequently changes positions from flat to long can earn a positive paired return from an upward-drifting event pool even when it selects events at random. We propose the Agent Policy-Value Audit, which holds fixed the observed count of each ordered action-change type and randomly reassigns them across eligible events. The average payoff from these reassignments is the composition benchmark; the difference between observed deployment value and this benchmark is selection value. In semi-synthetic benchmarks base",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Priority Gas Auction Cadence and Searcher Competition: Evidence from Flashblocks on Base",
+  "url": "http://arxiv.org/abs/2610.03922v1",
+  "text": "Flashblocks divide a block's priority gas auction into shorter sequential auctions that commit transaction order before the block is complete. We ask how this auction cadence affects bidding and competition among automated arbitrageurs, or searchers. In July 2025 Base replaced a single 2 s auction with ten 200 ms auctions. We use this change to estimate the searcher response from on-chain data alone. On an address-day panel of 3,032 searchers and 8,053 activity-matched controls, a difference-in-differences design estimates a 0.187 gwei fall in the effective priority fee (59% of the searcher pre-period mean). The share of searcher priority-fee value paid in the first tenth of block gas falls from 0.98 to 0.28. This fee compression is the identified effect. The revert-rate response is not (c",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "When a Correct Reward Is Not Enough: Diagnosing and Guiding PPO in an Analytically Solved Broker-Trader Game",
+  "url": "http://arxiv.org/abs/2610.03598v1",
+  "text": "Reinforcement learning (RL) is increasingly used for financial optimal-control problems when complex dynamics make analytical strategies difficult to obtain. There are financial mathematics literactures which provides many solved models whose equations and controls could evaluate and guide learning; we ask whether RL can exploit these results.\n  We place a proximal policy optimisation (PPO) agent in an analytically solved continuous-time broker--trader game. PPO replaces the broker and chooses its trading speed while interacting with an informed trader and stochastic uninformed order flow. We derive a finite-step reward from the broker's continuous-time payoff and verify its discrete implementation through grid refinement and an exact one-step identity. With zero uninformed flow, a validat",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Mixture-of-Experts for Cryptocurrency Order Execution: Training Stability, Tail Risk, and Failure Modes",
+  "url": "http://arxiv.org/abs/2610.03369v1",
+  "text": "Deep reinforcement-learning policies for order execution can vary substantially across training seeds, so apparent architectural gains may reflect favourable training realisations rather than reproducible properties of the architecture. We evaluate vanilla Double Deep Q-Learning (DDQL), K-means-partitioned mixtures of DDQL experts at $K \\in \\{2, 4, 8\\}$, and dense networks parameter-matched to the $K{=}4$ and $K{=}8$ expert budgets on 5-minute mean-aggregated BTC/USDT limit order book data from Binance. No learned configuration significantly improves mean implementation shortfall over DDQL. Under the reported specification, all have higher mean shortfall than TWAP (0.39 bps) and immediate liquidation (0.21 bps) in an environment whose frictionless replay and terminal-urgency penalty make e",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "MintEval: Do LLMs Implement the Trading Strategy You Asked For? A Behavioural-Equivalence Benchmark for Natural-Language-to-Strategy Code",
+  "url": "http://arxiv.org/abs/2610.03080v1",
+  "text": "Large language models are moving from producing trading signals to writing the code that executes them. The failure mode of the second role is silent: generated code runs, a backtest plots, yet the risk logic that the trader described is not the logic being executed. Existing code benchmarks test functional correctness on unit tests and finance benchmarks test forecasting; neither measures whether an implementation behaves like the strategy that was asked for. We introduce MintEval, a benchmark in which reference strategies are generated programmatically from a library of composable building blocks, back-translated into colloquial trader instructions, and re-implemented by the model under test. Generated and reference programs are executed bar by bar on identical market data and frictions,",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Axient: Manifest-Bound Evidence for On-Chain Financial Protocols: Seven-Layer Derivation, Correlation, Tamper Rejection, and Reproducible Claim Promotion",
+  "url": "http://arxiv.org/abs/2610.02838v1",
+  "text": "Hybrid on-chain financial protocols are frequently evaluated with evidence that is individually useful but collectively insufficient: a unit test, transaction receipt, screenshot, service response, or several matching hashes may be presented as proof of a complete workflow even when the layers share one generated source or omit the financial authority that matters. This paper develops a manifest-bound evidence architecture for such systems. A sealed execution manifest binds declared system identities, roles, schemas, and release identity. Seven evidence layers are retained with registered derivations and linked by a common correlation identity. A conjunctive claim-promotion rule requires provenance, predicate-specific root conditions, negative controls, reproducible packaging, historical r",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Axient: Canonical Protocol-Graph Composition for Leveraged Event Markets: Single State Authority, Atomic Composition, Durable Sagas, and Exactly-Once Recovery",
+  "url": "http://arxiv.org/abs/2610.02834v1",
+  "text": "A modular leveraged event-market protocol can contain individually correct contracts for risk approval, positions, debt, settlement evidence, credit pools, junior backstops, reserves, liquidation, and governance while still lacking one authoritative financial execution path. This paper develops a canonical protocol graph in which every financial domain has one storage authority and composition components coordinate transitions without recreating balances, debt, positions, evidence receipts, queues, reserves, pause state, or terminal scenario state. The architecture formalizes atomic position origination, a settlement-confirmed debt saga, trader residual release, an ordered reserve-backstop-Senior loss waterfall, loss-participating withdrawal queues, capability-conditioned execution, protoc",
+  "symbols": [],
+  "found_at": "2026-10-08T02:52:34+00:00"
+ }
+]

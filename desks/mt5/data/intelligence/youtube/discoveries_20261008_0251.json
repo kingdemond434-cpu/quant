@@ -1,0 +1,44 @@
+[
+  {
+    "source": "youtube",
+    "title": "5 AM | 08 OCT 2026 | ASIA SESSION | LIVE TRADING #btc  #XAUUSD |  #tradingpsychology  #ATP-PRO",
+    "channel": "Azad Trading Pathshala",
+    "url": "https://youtube.com/watch?v=WwQ4uhVTxIc",
+    "published": "2026-10-08T01:38:08Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "BEST XAUUSD (GOLD) STRATEGY LIVE 7 OCTOBER 2026 #tradingstrategy #trading #forextrading #xauusd",
+    "channel": "Smart Money Trading academy ",
+    "url": "https://youtube.com/watch?v=cFE_xY6u3d8",
+    "published": "2026-10-07T20:23:55Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "SMA",
+      "smart money"
+    ],
+    "confidence": 0.5
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34\ud83d\udd25 \ud83d\udcc8 GOLD BULL RUN LIVE | Buy Opportunity in XAUUSD 07/10/2026  #gold #liveforextrading,",
+    "channel": "SILENCE TRADER GOLD",
+    "url": "https://youtube.com/watch?v=0OWFy9aRTaE",
+    "published": "2026-10-07T18:00:42Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  }
+]
