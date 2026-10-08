@@ -209,3 +209,20 @@ def test_a_short_history_after_the_cut_is_named_not_never_fires(tmp_path) -> Non
     rows = [_unknown("d.f.p=9", unknown_reason="short_history_after_cut", days=0)]
     named = jc.name_unknowns(_gates(tmp_path, rows))
     assert named["d.f.p=9"]["reason"] == "short_history_after_cut"
+
+
+def test_a_lockbox_span_shortfall_is_named_and_never_counted_too_rare(tmp_path) -> None:
+    """A low-frequency cell judged on >= 60 days whose UNSEEN tail is under the lockbox floor
+    (lockbox_frequency_aware.v2) is named by its own reason, not 'too_rare' at 60+ days."""
+    rows = [_unknown("XAUUSD.cot_positioning.p=1", family="cot_positioning", days=212,
+                     unknown_reason="lockbox_span_exceeds_history",
+                     failed_gates=["lockbox_span"], terminal_gate="UNKNOWN"),
+            _unknown("b.f.p=2", days=30)]
+    gates = _gates(tmp_path, rows)
+    named = jc.name_unknowns(gates)
+    row = named["XAUUSD.cot_positioning.p=1"]
+    assert row["reason"] == "lockbox_span_exceeds_history" and "floor" in row["route"]
+    causes = jc.unknown_breakdown(gates)["causes"]
+    assert causes["lockbox_span_exceeds_history"]["cells"] == 1
+    assert causes["lockbox_span_exceeds_history"]["by_family"] == {"cot_positioning": 1}
+    assert causes["too_rare_1_to_59_days"]["cells"] == 1, "only the 30-day cell is too rare"
