@@ -1,13 +1,13 @@
 {
- "generated_utc": "2026-10-08T07:57:44.954765+00:00",
- "live_sha": "30be07c0cbca046851779d40368eb90b00e57f7e",
- "code_sha": "30be07c0cbca046851779d40368eb90b00e57f7e",
- "parent_sha": "e2c770ae9efe7350baf3e6963dafff5b5e1000b3",
- "tree_sha": "f32b1e7f4f7e9091eb99c06e7fe8d3ed29200bc9",
+ "generated_utc": "2026-10-08T12:12:10.053043+00:00",
+ "live_sha": "e966edf366848b2394729f25b5130d91f6f311e8",
+ "code_sha": "e966edf366848b2394729f25b5130d91f6f311e8",
+ "parent_sha": "39473cf28fc429326678fbc3f28af7bc09ccb64a",
+ "tree_sha": "d8ab10419af5bb6b1c3c3878f85c1ee056e883bf",
  "config_hash": "e0d1bfe75cb0d2c3",
  "survivor_registry_hash": "d3f308039b71e195",
  "allocator_hash": "84d4443c0cffc97d",
- "money_path_hash": "30d19cf1e6505db6",
+ "money_path_hash": "0344df2bd23d7ec7",
  "data_schema_version": "pit-1;features-2026-09-04.1",
  "money_path": [
   "desks/mt5/mt5desk/gateway.py",
@@ -34,7 +34,7 @@
   "libs/portfolio/capital_modifiers.py"
  ],
  "money_path_files": {
-  "desks/mt5/mt5desk/gateway.py": "148c53860943de76",
+  "desks/mt5/mt5desk/gateway.py": "28db04b66212c28b",
   "desks/mt5/mt5desk/decision_core.py": "0a37c7c5402361e6",
   "desks/mt5/mt5desk/sizing.py": "1b00a8466361c3d6",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "510a350593f45297",
@@ -108,16 +108,16 @@
   "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json"
  ],
  "immutable_hash": "ee30fcbab3080850",
- "release_id": "a1525ce84e81",
+ "release_id": "02fa56f291ff",
  "sealed": true,
- "sealed_at": "2026-10-08T07:57:44.954765+00:00",
+ "sealed_at": "2026-10-08T12:12:10.053043+00:00",
  "sealed_by": "Adopt-And-Seal",
  "ci_run_id": null,
  "tested_sha": null,
  "worktree_dirty": [],
  "worktree_dirty_scope": "release_code_paths",
- "previous_code_sha": "721a4affcaa7c0e0f6315b1ea109c8da4d0816b8",
- "previous_release_id": "fcbcdd0c981d",
+ "previous_code_sha": "30be07c0cbca046851779d40368eb90b00e57f7e",
+ "previous_release_id": "a1525ce84e81",
  "signature_algo": "hmac-sha256-v1",
- "signature": "7965c11bd75c0b1054d987cff7ea37d1a5c71ab0a84417cbba2eeb8371be858a"
+ "signature": "fc564284b5c92c36c915e8d97672ea51b1f5ef810bce680ec2590ef23370b6e1"
 }
