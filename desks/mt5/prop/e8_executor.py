@@ -1172,13 +1172,15 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         # is stale and not opened. Unmeasurable keeps the levels as they are.
         try:
             from mt5desk.decision_core import family_bracket, signal_with_levels
-            _close = float(closed["close"].iloc[-1])
+            from mt5desk.family_call import signal_reference_price, spread_blocks_entry
+            _close = signal_reference_price(fam, closed, g)
             _sgn = 1 if side == "buy" else -1
             _e, _stop, _target, _d, _note, _drift, _verdict = family_bracket(
                 g, _sgn, float(bid), float(ask), _close)
             row["entry_drift"], row["entry_drift_note"] = _drift, _note
             if _verdict == "stale":
-                row["status"] = "STALE_SIGNAL"
+                row["status"] = ("QUOTE_SPREAD" if spread_blocks_entry(g, _sgn, bid, ask)
+                                 else "STALE_SIGNAL")
                 row["why"] = _note
                 doc["sleeves"].append(row)
                 _record(row, now, armed)

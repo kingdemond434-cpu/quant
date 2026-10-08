@@ -3094,14 +3094,18 @@ def resolve_family_order(st: dict, s: dict, equity: float,
                         f"and never re-enters a bar after its stop")}
     # THE BRACKET IS LAID FROM THE ENTRY THE VENUE GIVES, NOT FROM A CLOSE IT HAS LEFT: see
     # `family_bracket` for the 0.27-lot, 1.3-pip EURGBP stop this replaces.
-    try:
-        _sig_close = (float(closed["close"].loc[last_bar]) if last_bar in closed.index
-                      else float(closed["close"].iloc[-1]))
-    except Exception:
-        _sig_close = None
+    from mt5desk.family_call import signal_reference_price, spread_blocks_entry
+    _sig_close = signal_reference_price(str(family or ""), closed, g)
     entry_ref, _stop, _target, dist, _drift_note, _drift, _verdict = family_bracket(
         g, side, tick.bid, tick.ask, _sig_close)
     if _verdict == "stale":
+        if spread_blocks_entry(g, side, tick.bid, tick.ask):
+            # Rollover spreads can cross a target while the underlying quote has
+            # not. No order is sent. Retain this current bar for a later eligible
+            # quote; order/deal deduplication and the stale guard still run then.
+            return {"ok": False, "stage": "quote_spread", "considered": True, "sep": " ",
+                    "mark": False, "last_bar": last_bar,
+                    "why": "spread crosses the certified target; awaiting an eligible quote"}
         # The replay's trade already ended at its stop or its target; opening one now is a
         # trade the certificate never made. Journaled so `missed_growth` prices the refusal.
         journal_refusal(name, s["symbol"], side, "stale_signal", _drift_note)

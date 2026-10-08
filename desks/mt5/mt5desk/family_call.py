@@ -43,7 +43,41 @@ and under the second reading it silently re-runs a short certificate long.
 from __future__ import annotations
 
 import inspect
+import math
 from typing import Any
+
+
+def signal_reference_price(family: str, bars: Any, signal: Any) -> float | None:
+    """Price used by the constructor to lay its levels, not always its bar close.
+
+    overnight_gap_decay explicitly anchors levels to the first bar's open. The
+    live venue must preserve those distances when measuring entry drift.
+    """
+    column = "open" if family == "overnight_gap_decay" else "close"
+    try:
+        value = float(bars.loc[signal.time, column])
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return None
+    return value if math.isfinite(value) and value > 0 else None
+
+
+def spread_blocks_entry(signal: Any, side: int, bid: float, ask: float) -> bool:
+    """The executable side crossed the target solely through the quoted spread.
+
+    This permits another quote check on the same still-current signal bar. It
+    grants no order permission and never retries a quote already beyond the
+    original target or stop on both sides.
+    """
+    try:
+        stop, target = float(signal.stop), float(signal.target)
+        bid, ask = float(bid), float(ask)
+    except (AttributeError, TypeError, ValueError):
+        return False
+    if not all(math.isfinite(x) for x in (stop, target, bid, ask)) or bid >= ask:
+        return False
+    if side > 0:
+        return stop < bid < target <= ask
+    return bid <= target < ask < stop
 
 
 def accepts_side(fn: Any) -> bool:
