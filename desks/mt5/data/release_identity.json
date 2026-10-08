@@ -3,7 +3,7 @@
  "running_sha": "db0fd8d3ac69f24d801d6114b95ae41b9262630f",
  "release_sha": "30be07c0cbca046851779d40368eb90b00e57f7e",
  "reason": "running db0fd8d3ac69 is the sealed code 30be07c0cbca plus seal/state commits only (283 path(s))",
- "age_h": 2.372,
+ "age_h": 2.622,
  "stale": false,
  "measured": true,
  "stale_refuses": false,
@@ -14,7 +14,7 @@
  "report": [
   "survivor canon on disk differs from the sealed one (reported only)"
  ],
- "at": "2026-10-08T10:20:03+00:00",
+ "at": "2026-10-08T10:35:03+00:00",
  "tested_sha": "1f62b133cb73e18b3cdd9d5db4926fbc50b3cab2",
  "tested_gates": "fast",
  "allocator_certificate": "b0086f62dc67b042@2026-10-08T07:05:03.454871+00:00 proof=FAILED book=equal_weight",
