@@ -1,6 +1,6 @@
 {
- "signed_utc": "2026-10-07T14:16:11.662059+00:00",
- "signed_by": "principal via Codex 2026-10-07 live sleeve repair",
+ "signed_utc": "2026-10-08T07:03:47.656678+00:00",
+ "signed_by": "owner-approved-codex-2026-10-08",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "d0919bfc921dac2c",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
@@ -10,7 +10,7 @@
   "desks/mt5/research/heat_policy.py": "b31c396980f9971e",
   "desks/mt5/research/promoter.py": "5121ef29cb21bdca",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
-  "libs/portfolio/allocator_proof.py": "09f8f0b9dff5239a",
+  "libs/portfolio/allocator_proof.py": "f3ac6369ee40840e",
   "libs/portfolio/rails.py": "7a678df5ceb7a4b4",
   "libs/portfolio/capital_modifiers.py": "f73e125559423ec0",
   "libs/validation/redteam.py": "bf1c019bfeee360e",
