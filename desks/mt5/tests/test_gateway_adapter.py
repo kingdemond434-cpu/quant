@@ -949,6 +949,55 @@ def test_filled_gold_sibling_cancel_is_shadow_only_when_disarmed() -> None:
     assert sent == []
 
 
+def test_live_ledger_sees_broker_wall_time_close_once_and_filters_other_magic(tmp_path) -> None:
+    """An observed close labelled UTC+3 must be recorded now, rather than three hours late."""
+    observed = datetime(2026, 10, 8, 22, 59, tzinfo=UTC)
+    class FrozenClock:
+        @staticmethod
+        def now(tz=None):
+            return observed
+
+        fromtimestamp = staticmethod(datetime.fromtimestamp)
+
+    own = SimpleNamespace(ticket=209521615, entry=1, magic=341953,
+                          position_id=233700226, comment="[tp 0.57870]", symbol="AUDCHF",
+                          profit=2.57, commission=-0.81, swap=0.0, type=1, volume=0.4,
+                          price=0.57871, time=int((observed+timedelta(hours=3)).timestamp()),
+                          order=233702129)
+    foreign = SimpleNamespace(**{**vars(own), "magic":99, "ticket":88})
+    calls = []
+
+    def history(start, end):
+        calls.append((start,end))
+        return [d for d in (own,foreign) if start.timestamp() <= d.time <= end.timestamp()]
+
+    venue = SimpleNamespace(DEAL_ENTRY_OUT=1, DEAL_ENTRY_OUT_BY=3, POSITION_TYPE_BUY=0,
+                            history_deals_get=history, account_info=lambda:None,
+                            symbol_info=lambda _:SimpleNamespace(trade_contract_size=100000,
+                                                                 trade_tick_value=1,
+                                                                 trade_tick_size=0.00001))
+    ledger = tmp_path/"live_ledger.jsonl"
+    ns = _exec(("record_trades",), {
+        "mt5":venue, "datetime":FrozenClock, "LEDGER":ledger, "log":lambda *_:None,
+        "now":lambda:observed.isoformat(),
+        "_prov":SimpleNamespace(current_account=lambda _:None, stamp=lambda _:{}),
+        "_position_entry":lambda _:{"entry_price":0.57865,"sl":0.577,"tp":0.57870,
+                                   "comment":"DWaudchf_overnight_gap_decay_asia",
+                                   "entry_side":0, "entry_time":observed.isoformat(),
+                                   "entry_order":233700226, "entry_deal":209520348}})
+    ns["record_trades"]({"armed":True}, [])
+    ns["record_trades"]({"armed":True}, [])
+    rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+    assert len(rows) == 1 and rows[0]["deal"] == own.ticket
+    assert rows[0]["position_id"] == 233700226
+    assert rows[0]["timestamp_basis"] == "broker_deal_epoch"
+    assert rows[0]["exit_time"] == datetime.fromtimestamp(own.time,UTC).isoformat()
+    assert rows[0]["time"] == observed.isoformat()
+    assert calls[0] == (observed-timedelta(days=30),observed+timedelta(days=1))
+    ns["record_trades"]({"armed":False}, [])
+    assert len(calls) == 2, "unarmed adapter must not query or write the ledger"
+
+
 def test_close_by_deals_are_closing_fills_not_lost_attribution() -> None:
     deals = [SimpleNamespace(entry=3, volume=0.02, price=4317.5)]
     mt5 = SimpleNamespace(DEAL_ENTRY_OUT=1, DEAL_ENTRY_OUT_BY=3,

@@ -2087,7 +2087,12 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # is not among them; a keyword the binding refuses lands in the `except` below and the
         # ledger is silently never written, which is indistinguishable from a quiet day.
         # Filtering the returned deals costs a list scan and cannot fail.
-        deals = [d for d in (mt5.history_deals_get(since, datetime.now(tz=UTC)) or [])
+        # Fusion stamps deal epochs in broker wall time (currently UTC+3). A UTC-now
+        # upper bound hid an already closed AUDCHF position for three hours. As in
+        # order_door's history reconciliation, include the next broker day: this only
+        # retrieves deals the broker already exposes, and ticket dedupe remains intact.
+        until = datetime.now(tz=UTC) + timedelta(days=1)
+        deals = [d for d in (mt5.history_deals_get(since, until) or [])
                  if int(getattr(d, "magic", 0) or 0) == MAGIC]
     except Exception as exc:
         log(f"ledger: history unreadable ({type(exc).__name__}: {exc}); nothing recorded")
