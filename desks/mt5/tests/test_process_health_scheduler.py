@@ -14,6 +14,22 @@ def _row(doc, name):
     return next(row for row in doc["processes"] if row["name"] == name)
 
 
+def test_e8_live_clock_and_book_have_measured_freshness_contracts(monkeypatch):
+    contracts = ph._contracts()
+    assert contracts["E8-Executor"][1] == 15
+    assert contracts["E8-Book"][1] == 180
+    monkeypatch.setattr(ph, "_tasks", lambda: ([
+        {"TaskName": r"\E8-Executor", "Scheduled Task State": "Ready", "Last Result": "0"},
+        {"TaskName": r"\E8-Book", "Scheduled Task State": "Ready", "Last Result": "0"},
+    ], "OK powershell"))
+    monkeypatch.setattr(ph, "_age_min", lambda path: 16.0 if path.name == "E8_EXEC.json"
+                        else 120.0)
+
+    doc = ph.build()
+    assert _row(doc, "E8-Executor")["verdict"] == "STALE"
+    assert _row(doc, "E8-Book")["verdict"] == "OK"
+
+
 def test_unreadable_scheduler_is_not_empty_scheduler(monkeypatch):
     monkeypatch.setattr(ph, "_tasks", lambda: ([], "UNMEASURED: scheduler timed out"))
     monkeypatch.setattr(ph, "_contracts", lambda: {
