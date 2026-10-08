@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ast
+import importlib.util
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,12 +14,17 @@ for path in (str(DESK), str(DESK / "research")):
 
 
 def test_gateway_wrapper_checks_orders_once_and_releases_lock(tmp_path, monkeypatch) -> None:
-    import run_gateway_loop as loop
+    calls: list[str] = []
+    fake_gateway = SimpleNamespace(main=lambda: calls.append("gateway"), log=lambda _: None)
+    monkeypatch.setitem(sys.modules, "mt5desk", SimpleNamespace(gateway=fake_gateway))
+    wrapper = DESK / "research" / "run_gateway_loop.py"
+    spec = importlib.util.spec_from_file_location("_gateway_wrapper_under_test", wrapper)
+    assert spec is not None and spec.loader is not None
+    loop = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(loop)
 
     lock = tmp_path / "gateway.lock"
     monkeypatch.setattr(loop, "LOCK", lock)
-    calls: list[str] = []
-    monkeypatch.setattr(loop.gateway, "main", lambda: calls.append("gateway"))
     loop.main()
     assert calls == ["gateway"]
     assert not lock.exists()
