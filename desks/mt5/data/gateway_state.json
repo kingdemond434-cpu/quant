@@ -22,53 +22,25 @@
       "orders": []
     }
   },
-  "position": null,
-  "last_bracket_date": "2026-10-08",
-  "last_reconcile": "2026-10-08T21:49:27+00:00",
+  "position": [
+    {
+      "ticket": 233700226,
+      "type": 0,
+      "volume": 0.4,
+      "price_open": 0.57865,
+      "sl": 0.577,
+      "tp": 0.5787,
+      "profit": -4.72,
+      "symbol": "AUDCHF"
+    }
+  ],
+  "last_bracket_date": "2026-10-09",
+  "last_reconcile": "2026-10-08T22:05:18+00:00",
   "bracket_cancelled": true,
   "pending": null,
-  "brackets": {
-    "gold_asia": {
-      "date": "2026-10-08",
-      "hi": 4143.25,
-      "lo": 4103.47,
-      "lot": 0.01,
-      "spec": {
-        "buy_stop": {
-          "price": 4143.25,
-          "sl": 4103.27,
-          "tp": 4222.81
-        },
-        "sell_stop": {
-          "price": 4103.47,
-          "sl": 4143.45,
-          "tp": 4023.9100000000003
-        }
-      },
-      "placed_at": "2026-10-08T04:00:31+00:00",
-      "result": {
-        "shadow": false,
-        "orders": [
-          {
-            "side": "buy_stop",
-            "retcode": 10009,
-            "comment": "Request executed",
-            "door_refused": false,
-            "door_reason": null
-          },
-          {
-            "side": "sell_stop",
-            "retcode": 10009,
-            "comment": "Request executed",
-            "door_refused": false,
-            "door_reason": null
-          }
-        ]
-      }
-    }
-  },
+  "brackets": {},
   "lot": 0.06,
-  "equity": 547.94,
+  "equity": 542.41,
   "placement_health": {
     "consecutive_total_rejections": 0,
     "last_ok": "2026-10-08T04:00:31+00:00",
@@ -92,7 +64,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-08T23:58:58+00:00",
+  "placement_pass": "2026-10-09T01:05:00+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -304,7 +276,9 @@
       "last_signal_bar": "2026-09-30 10:00:00+00:00"
     },
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
-      "last_signal_bar": "2026-10-08 23:00:00+00:00"
+      "last_signal_bar": "2026-10-09 00:00:00+00:00",
+      "open_ttl_until": "2026-10-09T09:00:00+00:00",
+      "trail_k": 0.0
     },
     "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
       "last_signal_bar": "2026-10-08 23:00:00+00:00"
@@ -483,15 +457,24 @@
     "229252805": 5.920000000000073,
     "229250218": 20.63000000000011,
     "229292855": 8.490000000000691,
-    "233203619": 40.8799999999992
+    "233203619": 40.8799999999992,
+    "233700226": 0.0016500000000000403
   },
   "restart_reconcile": {
-    "at": "2026-10-08T21:50:03+00:00",
+    "at": "2026-10-08T22:05:04+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
     "armed": true,
-    "positions": [],
+    "positions": [
+      {
+        "ticket": 233700226,
+        "symbol": "AUDCHF",
+        "comment": "DWaudchf_overnight_gap_decay_",
+        "volume": 0.4,
+        "sl": 0.577
+      }
+    ],
     "orders": [],
     "in_doubt": [],
     "stopless": [],
