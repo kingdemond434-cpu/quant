@@ -62,6 +62,16 @@ PROMOTER_SEAL_ROTATION = {
     "signed_by": "principal via Codex 2026-10-07 live sleeve repair",
 }
 
+# The owner-approved 2026-10-08 allocator proof change reuses the same frozen evidence
+# correlation across rival books. Keep QB-002's original pin and require this exact new hash
+# plus the file-only immutable signature; any later edit still reads REGRESSED.
+ALLOCATOR_PROOF_SEAL_ROTATION = {
+    "path": "libs/portfolio/allocator_proof.py",
+    "from": "09f8f0b9dff5239a1417d31ac6d63ada528f6f4d6ec1700d05b5760f69a5f5b3",
+    "to": "f3ac6369ee40840e076136486deac2f935a76561ad5e4ff75338b3ddfd632fd4",
+    "signed_by": "owner-approved-codex-2026-10-08",
+}
+
 
 def _sha(path: Path) -> str | None:
     # LINE-ENDING NORMALISED: a Windows checkout (autocrlf) and a Linux one hold the same file
@@ -109,18 +119,23 @@ def probe_sealed_files(expect: dict[str, Any]) -> dict[str, Any]:
         return {"verdict": "UNMEASURED", "why": "corpus row carries no pinned hashes",
                 "observed": now}
     rotated: dict[str, dict[str, str]] = {}
-    rotation = PROMOTER_SEAL_ROTATION
-    path = rotation["path"]
-    if pinned.get(path) == rotation["from"] and now.get(path) == rotation["to"]:
-        try:
-            manifest = json.loads((DESK / "data" / "IMMUTABLE_MANIFEST.json").read_text(
-                encoding="utf-8"))
-            if (manifest.get("signed_by") == rotation["signed_by"]
-                    and (manifest.get("files") or {}).get(path) == now[path][:16]):
-                rotated[path] = {"from": rotation["from"], "to": rotation["to"],
-                                 "signed_by": rotation["signed_by"]}
-        except (OSError, ValueError):
-            pass
+    try:
+        manifest = json.loads((DESK / "data" / "IMMUTABLE_MANIFEST.json").read_text(
+            encoding="utf-8"))
+    except (OSError, ValueError):
+        manifest = {}
+    for rotation in (PROMOTER_SEAL_ROTATION, ALLOCATOR_PROOF_SEAL_ROTATION):
+        path = rotation["path"]
+        if pinned.get(path) != rotation["from"] or now.get(path) != rotation["to"]:
+            continue
+        # A later file-only re-sign changes the manifest's global signer. Preserve the prior
+        # per-file authorization instead of silently dropping the signer's equality check.
+        files = manifest.get("files") or {}
+        signed = (manifest.get("signed_by") == rotation["signed_by"]
+                  or (manifest.get("rotation_signers") or {}).get(path) == rotation["signed_by"])
+        if signed and files.get(path) == now[path][:16]:
+            rotated[path] = {"from": rotation["from"], "to": rotation["to"],
+                             "signed_by": rotation["signed_by"]}
     changed = {p: {"pinned": pinned.get(p), "now": now[p]} for p in now
                if pinned.get(p) and pinned[p] != now[p] and p not in rotated}
     return {"verdict": "REGRESSED" if changed else "PASS", "changed": changed,

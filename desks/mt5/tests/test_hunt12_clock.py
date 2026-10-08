@@ -230,6 +230,99 @@ def test_a_corrupt_report_is_a_refusal_not_a_traceback(tmp_path, monkeypatch):
     assert "unreadable" in str(e.value)
 
 
+def _complete_snapshot(tmp_path, monkeypatch, **changes):
+    _reports(tmp_path, monkeypatch,
+             {"complete": False, "done": ["EURUSD"], "n_routed": 2,
+              "all": [{"gate": True, "sym": "EURUSD", "partial_only": True}]})
+    (tmp_path / "data" / "universe").mkdir(parents=True)
+    (tmp_path / "data" / "universe" / "universe.json").write_text(
+        json.dumps({"EURUSD": {}, "XAUUSD": {}}), "utf-8")
+    doc = {"complete": True, "done": ["EURUSD", "XAUUSD"],
+           "routed": ["EURUSD", "XAUUSD"], "n_routed": 2,
+           "started_at": (datetime.now(UTC) - timedelta(hours=12)).isoformat(),
+           "swept_at": datetime.now(UTC).isoformat(),
+           "all": [{"gate": True, "sym": "XAUUSD"},
+                   {"gate": False, "sym": "EURUSD"}]}
+    doc.update(changes)
+    p = tmp_path / "reports" / "hunt12.json"
+    p.write_text(json.dumps(doc), "utf-8")
+    return p
+
+
+@pytest.mark.parametrize("partial", ["incomplete", "absent", "corrupt"])
+def test_refresh_keeps_the_verified_complete_book(tmp_path, monkeypatch, partial):
+    _complete_snapshot(tmp_path, monkeypatch)
+    p = tmp_path / "reports" / "hunt12_partial.json"
+    if partial == "absent":
+        p.unlink()
+    elif partial == "corrupt":
+        p.write_text("{ interrupted", "utf-8")
+    before = p.read_bytes() if p.exists() else None
+    assert [row["sym"] for row in _PP.load_h12_survivors()] == ["XAUUSD"]
+    assert (p.read_bytes() if p.exists() else None) == before
+
+
+@pytest.mark.parametrize("changes", [
+    {"started_at": (datetime.now(UTC) - timedelta(days=8)).isoformat()},
+    {"started_at": (datetime.now(UTC) + timedelta(hours=1)).isoformat()},
+    {"started_at": None},
+    {"complete": False},
+    {"done": ["EURUSD", "EURUSD"]},
+    {"routed": ["EURUSD", "USDJPY"]},
+    {"n_routed": 1},
+    {"all": [{"sym": "USDJPY", "gate": True}]},
+])
+def test_publication_time_never_rescues_invalid_completed_evidence(
+        tmp_path, monkeypatch, changes):
+    _complete_snapshot(tmp_path, monkeypatch, **changes)
+    with pytest.raises(SystemExit, match="unfinished sweep"):
+        _PP.load_h12_survivors()
+
+
+def test_legacy_full_report_cannot_claim_a_fresh_evaluation_age(tmp_path, monkeypatch):
+    p = _complete_snapshot(tmp_path, monkeypatch)
+    doc = json.loads(p.read_text("utf-8"))
+    del doc["started_at"]
+    p.write_text(json.dumps(doc), "utf-8")
+    with pytest.raises(SystemExit, match="unfinished sweep"):
+        _PP.load_h12_survivors()
+
+
+def test_completed_publication_preserves_evaluation_age_on_no_work_pass(tmp_path, monkeypatch):
+    uni = tmp_path / "data" / "universe"
+    uni.mkdir(parents=True)
+    (uni / "universe.json").write_text(json.dumps({"EURUSD": {}}), "utf-8")
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    started = (datetime.now(UTC) - timedelta(hours=12)).isoformat()
+    (reports / "hunt12_partial.json").write_text(json.dumps({
+        "started_at": started, "done": ["EURUSD"], "routed": ["EURUSD"],
+        "all": [{"sym": "EURUSD", "gate": True}], "complete": True,
+    }), "utf-8")
+    monkeypatch.setattr(h12, "BASE", tmp_path)
+    monkeypatch.setattr(h12, "UNI", uni)
+    assert h12._run([]) == 0
+    complete = json.loads((reports / "hunt12.json").read_text("utf-8"))
+    assert complete["complete"] is True
+    assert complete["started_at"] == started
+    assert complete["done"] == complete["routed"] == ["EURUSD"]
+
+
+def test_hunt12_overlapping_writer_cannot_enter_sweep(monkeypatch):
+    from contextlib import contextmanager
+
+    from research import job_lock
+
+    @contextmanager
+    def held(name, **kwargs):
+        assert name == "hunt12"
+        yield False
+
+    monkeypatch.setattr(job_lock, "exclusive_job", held)
+    monkeypatch.setattr(h12, "_run", lambda args: pytest.fail("entered occupied sweep"))
+    assert h12.main([]) == 0
+
+
 # --------------------------------------------------------------- the hourly clock
 
 
