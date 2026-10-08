@@ -369,6 +369,32 @@ function Git-Lines {
     return ,$out
 }
 
+function Git-IndexInfo {
+    param([string[]]$Entries)
+    # Windows PowerShell pipes CRLF to native commands. Git's --index-info treats the CR as
+    # part of the path and silently prints "Ignoring path", even though it exits zero. Write LF
+    # bytes directly so an unchanged tree cannot masquerade as a successful publication.
+    $start = New-Object System.Diagnostics.ProcessStartInfo
+    $start.FileName = "git"
+    $start.Arguments = '-C "' + $RepoRoot + '" update-index --index-info'
+    $start.UseShellExecute = $false
+    $start.CreateNoWindow = $true
+    $start.RedirectStandardInput = $true
+    $start.RedirectStandardError = $true
+    $proc = [System.Diagnostics.Process]::Start($start)
+    try {
+        foreach ($entry in $Entries) { $proc.StandardInput.Write($entry + "`n") }
+        $proc.StandardInput.Close()
+        $err = $proc.StandardError.ReadToEnd()
+        $proc.WaitForExit()
+        if ($proc.ExitCode -ne 0 -or $err -match 'Ignoring path') {
+            Write-SyncLog ("publish: batch index said " + $err.Trim())
+            return 1
+        }
+        return 0
+    } finally { $proc.Dispose() }
+}
+
 # A PUSH THAT FAILS MUST SAY WHY, IN THIS LOG (2026-10-01). Git-In-Repo discards git's output on
 # purpose, so a push refused by ops/githooks/pre-push (gates.sh + the --laws-only law gate run on
 # every push from a clone with core.hooksPath set, this one included), an HTTP 408 on a large pack,
@@ -402,20 +428,24 @@ function Publish-StateOnto {
         Write-SyncLog "publish: allowlist refusal ($($ignored.Count) ignored path(s)); nothing published"
         return $false
     }
-    $entries = @()
-    foreach ($rel in $Paths) {
-        # Every path is an allowlisted regular state file. Hashing it directly captures the box's
-        # current bytes without staging or committing somebody else's shared index entries.
-        $blob = "$(Git-Lines @("hash-object", "-w", "--", $rel) | Select-Object -First 1)".Trim()
-        if ($script:GitLinesRc -ne 0 -or $blob -notmatch '^[0-9a-f]{40}$') {
-            Write-SyncLog "publish: could not hash allowlisted state path $rel; nothing published"
-            return $false
-        }
-        $entries += "100644 blob $blob`t$rel"
+    # One git process hashes the allowlisted snapshot. Starting a separate git process for every
+    # state file exhausted the ten-minute task window on the trading box before any push began.
+    # --stdin-paths emits one hash per input path, in order; reject partial or malformed output.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $blobs = @($Paths | & git -C $RepoRoot hash-object -w --stdin-paths 2>$null)
+        $hashRc = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
     }
-    if ($entries.Count -eq 0) {
-        Write-SyncLog "publish: none of the allowlisted state paths could be hashed"
+    if ($hashRc -ne 0 -or $blobs.Count -ne $Paths.Count -or
+        @($blobs | Where-Object { "$_" -notmatch '^[0-9a-f]{40}$' }).Count -ne 0) {
+        Write-SyncLog "publish: batch hash of allowlisted state failed rc=$hashRc ($($blobs.Count)/$($Paths.Count) blobs); nothing published"
         return $false
+    }
+    $entries = for ($i = 0; $i -lt $Paths.Count; $i++) {
+        "100644 blob $($blobs[$i])`t$($Paths[$i])"
     }
     $idx = Join-Path ([System.IO.Path]::GetTempPath()) ("mt5-state-index-{0}" -f $PID)
     $prevIndex = $env:GIT_INDEX_FILE
@@ -432,23 +462,13 @@ function Publish-StateOnto {
             $env:GIT_INDEX_FILE = $idx
             $rc = Git-In-Repo @("read-tree", $base)
             if ($rc -ne 0) { Write-SyncLog "publish: read-tree $base failed rc=$rc"; return $false }
-            $n = 0
-            foreach ($line in $entries) {
-                # "<mode> blob <sha>`t<path>" -- these hashes were captured before the fetch,
-                # so a retry publishes the same byte-for-byte state snapshot.
-                $meta, $rel = $line -split "`t", 2
-                $f = $meta -split '\s+'
-                if ($f.Count -lt 3 -or $f[1] -ne "blob") {
-                    Write-SyncLog "publish: malformed allowlisted state entry; nothing published"
-                    return $false
-                }
-                $rc = Git-In-Repo @("update-index", "--add", "--cacheinfo", ("{0},{1},{2}" -f $f[0], $f[2], $rel))
-                if ($rc -ne 0) {
-                    Write-SyncLog "publish: could not index allowlisted state path $rel rc=$rc; nothing published"
-                    return $false
-                }
-                $n++
+            # Feed the frozen entries to one private-index process; no shared index is touched.
+            $rc = Git-IndexInfo -Entries $entries
+            if ($rc -ne 0) {
+                Write-SyncLog "publish: could not batch-index allowlisted state rc=$rc; nothing published"
+                return $false
             }
+            $n = $entries.Count
             $tree = (Git-Lines @("write-tree") | Select-Object -First 1)
         } finally {
             if ($null -eq $prevIndex) { Remove-Item Env:GIT_INDEX_FILE -ErrorAction SilentlyContinue }
