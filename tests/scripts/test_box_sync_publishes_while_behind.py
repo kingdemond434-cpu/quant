@@ -201,6 +201,35 @@ def test_batch_index_writer_uses_lf_and_private_index(tmp_path: Path) -> None:
     assert _git(repo, "ls-files", "-s", "--", "state.json").split()[1] != sha
 
 
+@pytest.mark.skipif(os.name != "nt" or shutil.which("powershell") is None,
+                    reason="Windows PowerShell required")
+def test_state_only_fence_compares_flat_git_paths(tmp_path: Path) -> None:
+    """A changed allowlisted state file must not look like one outside-array item."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.email", "b@example.com")
+    _git(repo, "config", "user.name", "box")
+    (repo / "state.json").write_text("old\n", "utf-8")
+    _git(repo, "add", "state.json")
+    _git(repo, "commit", "-qm", "base")
+    old_tree = _git(repo, "rev-parse", "HEAD^{tree}")
+    (repo / "state.json").write_text("new\n", "utf-8")
+    _git(repo, "commit", "-qam", "new state")
+    new_tree = _git(repo, "rev-parse", "HEAD^{tree}")
+    src = _src()
+    git_lines = src[src.index("function Git-Lines"):src.index("function Git-IndexInfo")]
+    fence = src[src.index("$changed = @(Git-Lines @("):src.index("        if ($script:GitLinesRc")]
+    command = (f"$RepoRoot = '{repo}'; $baseTree = '{old_tree}'; "
+               f"$tree = '{new_tree}'; $Paths = @('state.json'); "
+               + git_lines + "\n" + fence + "\n"
+               + "if ($script:GitLinesRc -ne 0 -or $changed.Count -ne 1 "
+               + "-or $outside.Count -ne 0) { exit 1 }")
+    result = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", command],
+                            cwd=repo, capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 @pytest.mark.skipif(shutil.which("git") is None, reason="git required")
 def test_the_plumbing_publishes_state_onto_a_moved_origin(tmp_path: Path) -> None:
     """The function's exact git sequence, end to end: box behind, origin moved, state lands."""
