@@ -1,0 +1,12 @@
+[
+ {
+  "source": "quantconnect",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='www.quantconnect.com', port=443): Max retries exceeded with url: /forum/discussions/1/newest (Caused by NameResolutionError(\"HTTPSConnection(host='www.quantconnect.com', port",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-08T21:40:24+00:00",
+  "needs_selector_work": true
+ }
+]
