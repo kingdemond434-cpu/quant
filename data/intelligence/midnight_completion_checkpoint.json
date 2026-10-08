@@ -1,85 +1,18 @@
 {
- "cycle": "2026-10-07",
+ "cycle": "2026-10-08",
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-10-08T00:31:03.813426+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
-  },
-  "certificate_projection": {
-   "finished_at": "2026-10-08T00:31:46.767291+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "certificate_yield_fence": {
-   "finished_at": "2026-10-08T00:48:23.055553+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "external_queue_projection": {
-   "finished_at": "2026-10-08T00:31:17.105859+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "external_queue_reconciliation": {
-   "finished_at": "2026-10-08T00:31:40.455837+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "forward_clock_fence": {
-   "finished_at": "2026-10-08T00:48:31.798290+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "DONE"
-  },
-  "forward_clock_reconciliation": {
-   "finished_at": "2026-10-08T00:47:22.652529+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
-  },
-  "forward_identity_reconciliation": {
-   "finished_at": "2026-10-08T00:47:11.362952+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "forward_lane_heal": {
-   "finished_at": "2026-10-08T00:47:37.045152+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
-  },
-  "fusion_state_pull": {
-   "finished_at": "2026-10-08T00:46:56.068469+00:00",
-   "passes_completed": 1,
-   "returncode": 124,
-   "status": "FAILED"
-  },
-  "mechanism_independence": {
-   "finished_at": "2026-10-08T00:48:03.929146+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "same_day_fence": {
-   "finished_at": "2026-10-08T00:48:12.617042+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "DONE"
-  },
-  "zero_capital_shadow_forward": {
-   "finished_at": "2026-10-08T00:47:51.845561+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "systemctl",
+    "--user",
+    "start",
+    "quant-external-pipeline.service"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-08T02:25:35.201958+00:00",
+   "status": "RUNNING"
   }
  },
- "updated_at": "2026-10-08T00:48:31.798290+00:00"
+ "updated_at": "2026-10-08T02:25:35.201958+00:00"
 }
