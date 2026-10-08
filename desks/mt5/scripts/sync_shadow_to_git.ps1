@@ -12,11 +12,9 @@
 # "is Contabo healthy, is it armed, what's live" -- never the data lake, never anything under
 # data/secrets. Each is individually allowlisted in .gitignore for exactly this reason.
 #
-# SAFETY (R0423: never share a worktree with another live session). This commits ONLY the exact
-# paths below -- never `git add -A`, never `git commit -a`, never `git stash` -- so any other
-# session's uncommitted work in this same checkout is never touched. A push rejection is resolved
-# by fetch + merge (never rebase, never stash) exactly as docs/AGENTS.md prescribes for a shared
-# tree; a genuine conflict aborts the merge and reports rather than guessing.
+# SAFETY (R0423: never share a worktree with another live session). This hashes ONLY the exact
+# paths below into a private index -- never `git add -A`, `git commit`, or `git stash` on the
+# shared tree. A preexisting staged research path is left staged and cannot enter the state push.
 
 $ErrorActionPreference = "Stop"
 $DeskRoot = Split-Path -Parent $PSScriptRoot
@@ -353,11 +351,11 @@ function Sync-Pull {
 # a frozen git copy and reported the forward engine as silent for a week.
 #
 # The fix keeps both authorities exactly where Codex put them. This function never merges,
-# never touches the working tree, HEAD or the real index: it takes the blobs this box has just
-# committed LOCALLY for its own state paths, lays them over FETCH_HEAD's tree in a PRIVATE index
-# file, and pushes one commit whose only parent is origin's tip -- a fast-forward carrying
-# nothing but state. Inbound code still waits for the adopter; the adopter still finds the box's
-# versions of these paths in its own local commits (so its kept-by-box rule keeps them).
+# never touches the working tree, HEAD or the real index: it hashes only allowlisted box state
+# into blobs, lays them over FETCH_HEAD's tree in a PRIVATE index file, and pushes one commit
+# whose only parent is origin's tip. Inbound code still waits for the adopter. A local commit here
+# swept up unrelated work already staged by other controllers and could hold the live Git mutex
+# for the task's whole ten-minute window.
 function Git-Lines {
     param([string[]] $GitArgs)
     $prev = $ErrorActionPreference
@@ -397,9 +395,26 @@ function Push-Logged {
 function Publish-StateOnto {
     param([string]$RepoRoot, [string]$Branch, [string[]]$Paths)
     if (-not $Paths -or $Paths.Count -eq 0) { Write-SyncLog "publish: no state paths"; return $false }
-    $entries = @(Git-Lines (@("ls-tree", "HEAD", "--") + $Paths) | Where-Object { $_ -match '\S' })
+    # hash-object ignores .gitignore. Retain the state allowlist fence explicitly so an
+    # accidentally listed ignored path cannot publish sensitive box-local bytes.
+    $ignored = @(Git-Lines (@("check-ignore", "--") + $Paths) | Where-Object { $_ -match '\S' })
+    if ($script:GitLinesRc -gt 1 -or $ignored.Count -gt 0) {
+        Write-SyncLog "publish: allowlist refusal ($($ignored.Count) ignored path(s)); nothing published"
+        return $false
+    }
+    $entries = @()
+    foreach ($rel in $Paths) {
+        # Every path is an allowlisted regular state file. Hashing it directly captures the box's
+        # current bytes without staging or committing somebody else's shared index entries.
+        $blob = "$(Git-Lines @("hash-object", "-w", "--", $rel) | Select-Object -First 1)".Trim()
+        if ($script:GitLinesRc -ne 0 -or $blob -notmatch '^[0-9a-f]{40}$') {
+            Write-SyncLog "publish: could not hash allowlisted state path $rel; nothing published"
+            return $false
+        }
+        $entries += "100644 blob $blob`t$rel"
+    }
     if ($entries.Count -eq 0) {
-        Write-SyncLog "publish: HEAD carries none of the state paths yet; nothing to publish"
+        Write-SyncLog "publish: none of the allowlisted state paths could be hashed"
         return $false
     }
     $idx = Join-Path ([System.IO.Path]::GetTempPath()) ("mt5-state-index-{0}" -f $PID)
@@ -419,13 +434,20 @@ function Publish-StateOnto {
             if ($rc -ne 0) { Write-SyncLog "publish: read-tree $base failed rc=$rc"; return $false }
             $n = 0
             foreach ($line in $entries) {
-                # "<mode> blob <sha>`t<path>" -- the blob the box committed, never re-read from
-                # disk, so origin receives byte-for-byte what the box's own history holds.
+                # "<mode> blob <sha>`t<path>" -- these hashes were captured before the fetch,
+                # so a retry publishes the same byte-for-byte state snapshot.
                 $meta, $rel = $line -split "`t", 2
                 $f = $meta -split '\s+'
-                if ($f.Count -lt 3 -or $f[1] -ne "blob") { continue }
+                if ($f.Count -lt 3 -or $f[1] -ne "blob") {
+                    Write-SyncLog "publish: malformed allowlisted state entry; nothing published"
+                    return $false
+                }
                 $rc = Git-In-Repo @("update-index", "--add", "--cacheinfo", ("{0},{1},{2}" -f $f[0], $f[2], $rel))
-                if ($rc -eq 0) { $n++ }
+                if ($rc -ne 0) {
+                    Write-SyncLog "publish: could not index allowlisted state path $rel rc=$rc; nothing published"
+                    return $false
+                }
+                $n++
             }
             $tree = (Git-Lines @("write-tree") | Select-Object -First 1)
         } finally {
@@ -458,9 +480,8 @@ function Publish-StateOnto {
 }
 
 # Desk-relative paths of every state file this sync carries. Each MUST already be individually
-# allowlisted in .gitignore (git add is silently a no-op on an ignored path otherwise, which
-# would look like success while publishing nothing -- exactly the failure mode this script exists
-# to avoid repeating).
+# allowlisted in .gitignore; Publish-StateOnto checks this before hash-object, which by itself
+# would accept ignored files.
 $relPaths = @(
     "desks/mt5/reports/shadow/shadow_health.json",
     "desks/mt5/data/gateway_state.json",
@@ -639,29 +660,16 @@ Sync-Pull -RepoRoot $RepoRoot -Branch $branch
 # INBOUND CODE NO LONGER SILENCES THE BOX. This exited here when origin was ahead, which on a
 # branch that moves every few minutes was nearly every pass, so the box's state stopped reaching
 # the branch at all (see Publish-StateOnto). The adopter still owns the code; the state below is
-# committed locally as always and then published onto origin's tip without a merge.
+# published onto origin's tip without a merge or a local commit.
 
 if ($existing.Count -eq 0) {
     Write-SyncLog "SKIP: none of the tracked state files exist yet on this box"
     exit 0
 }
 
-$addRc = Git-In-Repo (@("add", "--") + $existing)
-if ($addRc -ne 0) { Write-SyncLog "ABORT: git add failed rc=$addRc"; exit 1 }
-
-# Nothing changed since the last cycle -- do not create empty commits every 15 minutes forever.
-& git -C $RepoRoot diff --cached --quiet
-if ($LASTEXITCODE -eq 0) {
-    # NOTHING NEW TO COMMIT IS NOT NOTHING TO DELIVER. A state commit that was made and then
-    # failed to reach origin sits local; delivery must not depend on having something NEW to
-    # say, so this pass still publishes what HEAD carries (Publish-StateOnto is idempotent: when
-    # origin already holds these blobs it says so and succeeds without pushing).
-    Write-SyncLog "no new state since last sync; making sure origin carries the committed state"
-} else {
-    $stamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd_HHmm")
-    $commitRc = Git-In-Repo @("commit", "-m", "mt5 shadow state sync $stamp")
-    if ($commitRc -ne 0) { Write-SyncLog "ABORT: git commit failed rc=$commitRc"; exit 1 }
-}
+# Publish-StateOnto hashes the allowlisted working-tree files without touching the shared index
+# or making a local commit. Its tree equality check is the no-change case; a prior failed push
+# retries the same state on the next pass. Other controllers' staged paths remain staged.
 
 # ONE DELIVERY PATH: THE STATE BLOBS, ONTO ORIGIN'S TIP, NEVER THE BOX'S BRANCH (2026-10-01).
 #
@@ -675,11 +683,11 @@ if ($LASTEXITCODE -eq 0) {
 # commit on any branch is 2026-09-12; nothing the box committed itself has reached origin since.
 #
 # Publish-StateOnto pushes ONE small commit whose only parent is origin's tip and whose only
-# change is the box's committed state blobs. It cannot carry the backlog, never merges and never
-# touches HEAD, the working tree or the real index; inbound code stays MT5-AdoptRelease's.
+# change is the box's allowlisted state blobs. It cannot carry the backlog, never merges and
+# never touches HEAD, the working tree or the real index; inbound code stays MT5-AdoptRelease's.
 # A push refusal (the pre-push hook, a network error, a race) is now quoted in this log.
 if ($script:InboundAdoptionRequired) {
-    Write-SyncLog "local state commit is safe; inbound code is left to MT5-AdoptRelease"
+    Write-SyncLog "state publication is separate; inbound code is left to MT5-AdoptRelease"
 }
 $branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD).Trim()
 $ok = Publish-StateOnto -RepoRoot $RepoRoot -Branch $branch -Paths $existing

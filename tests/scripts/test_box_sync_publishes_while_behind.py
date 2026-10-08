@@ -8,8 +8,8 @@ box deferred at almost every slot, and every reader off the box measured a froze
 called the forward engine silent.
 
 The fix (`Publish-StateOnto`) keeps the code/state split: it never merges and never touches the
-working tree, HEAD or the real index. It lays the box's committed state blobs over FETCH_HEAD's
-tree in a PRIVATE index and pushes a fast-forward whose only parent is origin's tip.
+working tree, HEAD or the real index. It hashes allowlisted box state, lays those blobs over
+FETCH_HEAD's tree in a PRIVATE index and pushes a fast-forward whose only parent is origin's tip.
 
 There is no pwsh on the research host, so this pins the script's structure and proves the exact
 git plumbing sequence the function runs, on a throwaway repository and a bare remote.
@@ -82,14 +82,14 @@ def test_every_report_survives_gitignore() -> None:
     assert not ignored, f"{ignored} are listed in $reportPaths but .gitignore excludes them"
 
 
-def test_being_behind_no_longer_exits_before_staging() -> None:
+def test_being_behind_no_longer_exits_before_publication() -> None:
     src = _src()
     pull = src.index("Sync-Pull -RepoRoot $RepoRoot -Branch $branch")
-    add = src.index("$addRc = Git-In-Repo")
-    between = src[pull:add]
+    publish = src.index("$ok = Publish-StateOnto -RepoRoot")
+    between = src[pull:publish]
     assert "exit 0" not in between.replace('"SKIP: none of the tracked', ""
                                            ).split("if ($existing.Count -eq 0)")[0], (
-        "the publisher exits between the pull and staging again -- a box behind origin "
+        "the publisher exits between the pull and publication again -- a box behind origin "
         "publishes nothing, which is what froze the branch's copy for a week")
 
 
@@ -140,6 +140,20 @@ def test_the_publisher_never_merges_or_touches_the_real_index() -> None:
     assert '"commit-tree", $tree, "-p", $base' in code
 
 
+def test_shared_staged_research_cannot_enter_the_state_commit() -> None:
+    """The scheduled publisher must keep other controllers' staged paths untouched."""
+    src = _src()
+    runtime = src[src.index("Sync-Pull -RepoRoot $RepoRoot -Branch $branch"):]
+    code = _code(runtime)
+    assert '$addRc = Git-In-Repo' not in code
+    assert 'Git-In-Repo @("commit"' not in code
+    publisher = _code(
+        src[src.index("function Publish-StateOnto"):src.index("# Desk-relative paths")]
+    )
+    assert '"hash-object", "-w"' in publisher
+    assert '"check-ignore", "--"' in publisher
+
+
 def _git(cwd: Path, *args: str, env: dict | None = None) -> str:
     return subprocess.run(["git", *args], cwd=str(cwd), capture_output=True, text=True,
                           check=True, env=env).stdout.strip()
@@ -174,21 +188,20 @@ def test_the_plumbing_publishes_state_onto_a_moved_origin(tmp_path: Path) -> Non
     _git(other, "commit", "-qam", "origin moves on")
     _git(other, "push", "-q", "origin", "live")
 
-    # The box writes and commits its state LOCALLY, and is now behind origin.
+    # The box writes state and has unrelated staged work; neither may be committed locally.
     state.write_text('{"rate": 219}\n', "utf-8")
-    _git(box, "add", "desks/mt5/reports/JUDGING_RATE.json")
-    _git(box, "commit", "-q", "-m", "box state")
+    (box / "research.yaml").write_text("work in progress\n", "utf-8")
+    _git(box, "add", "research.yaml")
     head_before = _git(box, "rev-parse", "HEAD")
     _git(box, "fetch", "-q", "origin", "live")
 
     # --- Publish-StateOnto, step for step -------------------------------------------------
-    entries = _git(box, "ls-tree", "HEAD", "--", "desks/mt5/reports/JUDGING_RATE.json")
+    rel = "desks/mt5/reports/JUDGING_RATE.json"
+    sha = _git(box, "hash-object", "-w", "--", rel)
     base = _git(box, "rev-parse", "FETCH_HEAD")
     env = {**os.environ, "GIT_INDEX_FILE": str(tmp_path / "private-index")}
     _git(box, "read-tree", base, env=env)
-    meta, rel = entries.split("\t", 1)
-    mode, _kind, sha = meta.split()
-    _git(box, "update-index", "--add", "--cacheinfo", f"{mode},{sha},{rel}", env=env)
+    _git(box, "update-index", "--add", "--cacheinfo", f"100644,{sha},{rel}", env=env)
     tree = _git(box, "write-tree", env=env)
     commit = _git(box, "commit-tree", tree, "-p", base, "-m", "mt5 box state", env=env)
     _git(box, "push", "-q", "origin", f"{commit}:refs/heads/live")
@@ -196,7 +209,9 @@ def test_the_plumbing_publishes_state_onto_a_moved_origin(tmp_path: Path) -> Non
 
     assert _git(box, "rev-parse", "HEAD") == head_before, "the publisher moved the box's HEAD"
     assert (box / "code.py").read_text("utf-8") == "v1\n", "the publisher touched code on disk"
-    assert _git(box, "status", "--porcelain") == "", "the publisher dirtied the real index"
+    assert _git(box, "diff", "--cached", "--name-only") == "research.yaml", (
+        "the publisher changed unrelated staged research work")
+    assert state.read_text("utf-8") == '{"rate": 219}\n'
     _git(other, "pull", "-q", "--ff-only", "origin", "live")
     assert (other / "code.py").read_text("utf-8") == "v2\n", "origin's code was reverted"
     published = other / "desks" / "mt5" / "reports" / "JUDGING_RATE.json"
