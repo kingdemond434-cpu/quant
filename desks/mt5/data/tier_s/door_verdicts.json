@@ -1,14 +1,14 @@
 {
- "generated_utc": "2026-10-08T04:17:34.255982+00:00",
+ "generated_utc": "2026-10-08T07:39:21.457710+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -17,9 +17,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -28,31 +28,31 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
   "external.CHFNOK.carry.p=98d776f3e210d3e2": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
   "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a": {
-   "verdict": "CLEAR",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -61,64 +61,64 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
   "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
   "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a": {
-   "verdict": "CLEAR",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
   "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a": {
-   "verdict": "CLEAR",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
   "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a": {
-   "verdict": "CLEAR",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
   "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a": {
-   "verdict": "CLEAR",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -127,9 +127,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 19,
-    "confidence": 0.6623,
-    "sd": 0.0752,
+    "n_oos": 24,
+    "confidence": 0.7174,
+    "sd": 0.0657,
     "status": "SUPPORTED"
    }
   },
@@ -138,9 +138,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 19,
-    "confidence": 0.6623,
-    "sd": 0.0752,
+    "n_oos": 24,
+    "confidence": 0.7174,
+    "sd": 0.0657,
     "status": "SUPPORTED"
    }
   },
@@ -149,20 +149,20 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 19,
-    "confidence": 0.6623,
-    "sd": 0.0752,
+    "n_oos": 24,
+    "confidence": 0.7174,
+    "sd": 0.0657,
     "status": "SUPPORTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a": {
-   "verdict": "CHALLENGED",
+   "verdict": "CLEAR",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -171,64 +171,64 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
   "external.XAUUSD.session_range_breakout.rr=1.5_wb=12": {
-   "verdict": "CHALLENGED",
+   "verdict": "CLEAR",
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 19,
-    "confidence": 0.6623,
-    "sd": 0.0752,
+    "n_oos": 24,
+    "confidence": 0.7174,
+    "sd": 0.0657,
     "status": "SUPPORTED"
    }
   },
   "external.XAUUSD.session_range_breakout.rr=1.5_wb=8": {
-   "verdict": "CHALLENGED",
+   "verdict": "CLEAR",
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 19,
-    "confidence": 0.6623,
-    "sd": 0.0752,
+    "n_oos": 24,
+    "confidence": 0.7174,
+    "sd": 0.0657,
     "status": "SUPPORTED"
    }
   },
   "external.XAUUSD.session_range_breakout.rr=2.0_wb=12": {
-   "verdict": "CHALLENGED",
+   "verdict": "CLEAR",
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 19,
-    "confidence": 0.6623,
-    "sd": 0.0752,
+    "n_oos": 24,
+    "confidence": 0.7174,
+    "sd": 0.0657,
     "status": "SUPPORTED"
    }
   },
   "external.XAUUSD.session_range_breakout.rr=2.5_wb=12": {
-   "verdict": "CHALLENGED",
+   "verdict": "CLEAR",
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 19,
-    "confidence": 0.6623,
-    "sd": 0.0752,
+    "n_oos": 24,
+    "confidence": 0.7174,
+    "sd": 0.0657,
     "status": "SUPPORTED"
    }
   },
   "external.USDSGD.overnight_gap_decay.p=44136fa355b3678a": {
-   "verdict": "CHALLENGED",
+   "verdict": "CLEAR",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -237,9 +237,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -248,9 +248,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -259,9 +259,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -270,9 +270,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -281,9 +281,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -292,9 +292,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -303,9 +303,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -314,9 +314,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -325,9 +325,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -336,9 +336,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -347,9 +347,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -358,9 +358,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -369,9 +369,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -380,9 +380,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -391,9 +391,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -402,9 +402,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -413,9 +413,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -424,9 +424,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -435,9 +435,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -446,9 +446,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -457,9 +457,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -468,9 +468,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -479,9 +479,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -490,9 +490,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -1912,9 +1912,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -1923,9 +1923,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -1934,9 +1934,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -1945,9 +1945,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -1956,9 +1956,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -1967,9 +1967,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -1978,9 +1978,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -1989,9 +1989,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2000,9 +2000,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2011,9 +2011,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2022,9 +2022,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2033,9 +2033,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2044,9 +2044,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2055,9 +2055,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2066,9 +2066,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2077,9 +2077,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2088,9 +2088,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2099,9 +2099,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2110,9 +2110,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2121,9 +2121,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2132,9 +2132,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2143,9 +2143,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2154,9 +2154,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2165,9 +2165,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2176,9 +2176,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2187,9 +2187,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2198,9 +2198,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2209,9 +2209,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2220,9 +2220,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2231,9 +2231,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2242,9 +2242,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2253,9 +2253,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2264,9 +2264,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2275,9 +2275,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -2286,9 +2286,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5205,9 +5205,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5216,9 +5216,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5227,9 +5227,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5238,9 +5238,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5249,9 +5249,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5260,9 +5260,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5271,9 +5271,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5282,9 +5282,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5293,9 +5293,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5304,9 +5304,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5315,9 +5315,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5326,9 +5326,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5337,9 +5337,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5348,9 +5348,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5359,9 +5359,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5370,9 +5370,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5381,9 +5381,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5392,9 +5392,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5403,9 +5403,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5414,9 +5414,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5425,9 +5425,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5436,9 +5436,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -5447,9 +5447,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -5458,9 +5458,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -5469,9 +5469,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -5480,9 +5480,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -5491,9 +5491,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -5502,9 +5502,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -5513,9 +5513,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -5524,9 +5524,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -8004,9 +8004,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8015,9 +8015,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8026,9 +8026,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8037,9 +8037,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8048,9 +8048,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8059,9 +8059,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8070,9 +8070,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8081,9 +8081,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8092,9 +8092,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8103,9 +8103,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8114,9 +8114,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8125,9 +8125,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8136,9 +8136,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8147,9 +8147,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8158,9 +8158,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8169,9 +8169,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8180,9 +8180,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8191,9 +8191,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8202,9 +8202,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8213,9 +8213,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8224,9 +8224,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8235,9 +8235,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8246,9 +8246,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8257,9 +8257,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8268,9 +8268,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8279,9 +8279,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8290,9 +8290,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8301,9 +8301,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8312,9 +8312,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8323,9 +8323,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8334,9 +8334,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8345,9 +8345,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8356,9 +8356,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8367,9 +8367,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8378,9 +8378,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8389,9 +8389,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8400,9 +8400,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8411,9 +8411,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8422,9 +8422,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8433,9 +8433,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8444,9 +8444,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8455,9 +8455,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8466,9 +8466,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8477,9 +8477,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8488,9 +8488,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8499,9 +8499,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8510,9 +8510,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8521,9 +8521,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8532,9 +8532,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8543,9 +8543,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8554,9 +8554,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8565,9 +8565,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8576,9 +8576,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8587,9 +8587,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8598,9 +8598,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8609,9 +8609,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8620,9 +8620,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8631,9 +8631,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8642,9 +8642,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8653,9 +8653,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8664,9 +8664,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8675,9 +8675,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8686,9 +8686,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8697,9 +8697,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8708,9 +8708,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8719,9 +8719,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8840,9 +8840,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8851,9 +8851,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -8862,9 +8862,9 @@
    "review_failed": [],
    "family": "carry",
    "theory": {
-    "n_oos": 4,
-    "confidence": 0.32,
-    "sd": 0.127,
+    "n_oos": 3,
+    "confidence": 0.3636,
+    "sd": 0.1389,
     "status": "UNMEASURED"
    }
   },
@@ -9093,9 +9093,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -9258,9 +9258,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -9269,9 +9269,9 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   },
@@ -9280,9 +9280,31 @@
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.575,
-    "sd": 0.1079,
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD.overnight_gap_decay.p=0dfa3f66cade1630": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD.overnight_gap_decay.p=de9ed752775ac9b5": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 5,
+    "confidence": 0.5,
+    "sd": 0.1291,
     "status": "UNMEASURED"
    }
   }
