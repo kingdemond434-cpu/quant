@@ -1,0 +1,21 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "BoJ",
+    "currency": "JPY",
+    "feed": "https://www.boj.or.jp/en/rss/whatsnew.xml",
+    "published_utc": "2026-10-08T05:00:00+00:00",
+    "title": "Regional Economic Report (Summary) (Oct. 2026)",
+    "link": "http://www.boj.or.jp/en/research/brp/rer/rer261008.htm",
+    "policy_signals": [],
+    "instruments": [
+      "USDJPY",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "CADJPY",
+      "CHFJPY",
+      "NZDJPY"
+    ]
+  }
+]
