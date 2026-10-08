@@ -185,8 +185,10 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-NewsDesk":       ("desks/mt5/logs/MT5-NewsDesk.log", 1440,
                            "the news daemon; its log moves when news moves, so a quiet window "
                            "is not a defect and only a silent DAY is"),
-    "MT5-FusionDeadman":  ("desks/mt5/logs/fusion_deadman.log", 1440,
-                           "the Fusion dead-man watch"),
+    # A clean pass writes the state stamp but no log line. Watching the log called the guard
+    # STALE for five days while its checked_at advanced every scheduled pass.
+    "MT5-FusionDeadman":  ("desks/mt5/data/fusion_deadman_state.json", 90,
+                           "the Fusion dead-man watch and its latest safety verdict"),
     # THE ONLY LOSS ON THIS DESK THAT CANNOT BE UNDONE. Every other defect costs time; an
     # unrecorded day costs the thing the time was buying, because 2029 cannot re-record 2026.
     # 90 minutes against a 30-minute clock: this must be noticed inside the window the broker
@@ -211,7 +213,7 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-CertHygiene":    ("desks/mt5/reports/CERTIFICATE_HYGIENE.json", 1560,
                            "certificates the enrolment engine can never run, evicted with their "
                            "evidence kept"),
-    "MT5-ReleaseAuthority": ("desks/mt5/reports/RELEASE_AUTHORITY.json", 45,
+    "MT5-ReleaseAuthority": ("desks/mt5/reports/RELEASE_AUTHORITY_AUDIT.json", 45,
                              "does the running tree match a SIGNED release, and would the hourly "
                              "adopter overwrite unpushed money-path work"),
     "MT5-MoatCapture":    ("desks/mt5/reports/MOAT_CAPTURE.json", 90,

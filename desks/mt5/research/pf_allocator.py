@@ -751,8 +751,13 @@ def search_trials() -> dict[str, int]:
             out[f"family:{fam}"] = max(int(out.get(f"family:{fam}", 0)), int(n))
         out["lifetime_total"] = max(int(out.get("lifetime_total", 0)),
                                     int(life.get("lifetime_trials", 0)))
-    except Exception:
-        pass
+    except Exception as exc:
+        # The lifetime count is a multiplicity input, not optional telemetry. Continuing with
+        # only the current gate count when the graph is unreadable would size a selected winner
+        # as if its earlier searches never happened. The previous book stands instead.
+        raise RuntimeError(
+            f"lifetime trial count unavailable: {type(exc).__name__}: {exc}"
+        ) from exc
     return out
 
 
