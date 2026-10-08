@@ -1,25 +1,25 @@
 {
   "schema": "box_state_freshness/1",
-  "measured_at": "2026-10-08T12:59:05+00:00",
+  "measured_at": "2026-10-08T17:00:45+00:00",
   "threshold_h": 6.0,
   "box_author": "Contabo",
-  "age_h": 362.15,
-  "box_state_age_hours": 362.15,
+  "age_h": 366.18,
+  "box_state_age_hours": 366.18,
   "box_state_flow": null,
   "alerts": null,
   "box_state_flow_local": {
-    "verdict": "STALLED",
-    "why": "local state is 0.0h old but origin's newest box-published state is 904.4h old -- delivery is broken, the desk is not idle",
-    "measured_at": "2026-10-07T05:55:36+00:00",
-    "published_age_h": 904.45,
+    "verdict": "FLOWING",
+    "why": "origin carries box state 0.0h old",
+    "measured_at": "2026-10-08T14:52:17+00:00",
+    "published_age_h": 0.0,
     "alerts_armed": 0,
     "alerts_line": "ALERTS NOT ARMED: STALLED pages reach no one"
   },
   "stall_watch_alerts": {
     "status": "MEASURED",
-    "checked_at": "2026-10-08T12:50:45.9463996Z",
-    "state_flow": "STALLED",
-    "state_flow_watch": "METER_SILENT",
+    "checked_at": "2026-10-08T16:51:39.5469609Z",
+    "state_flow": "FLOWING",
+    "state_flow_watch": "FLOWING",
     "alerts_armed": 0,
     "alerts_line": "ALERTS NOT ARMED: STALLED pages reach no one"
   },
@@ -83,6 +83,6 @@
   "newest_stamp_inside_state": null,
   "basis": "box_commit_date",
   "verdict": "STALE",
-  "why": "the box's newest state on refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3 is 362.2h old (threshold 6h): every reader off the box is measuring a frozen copy. On the box: BOX_STATE_FLOW.json and desks\\mt5\\logs\\sync_shadow_to_git.log name why.",
+  "why": "the box's newest state on refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3 is 366.2h old (threshold 6h): every reader off the box is measuring a frozen copy. On the box: BOX_STATE_FLOW.json and desks\\mt5\\logs\\sync_shadow_to_git.log name why.",
   "alerts_line": "ALERTS NOT ARMED: STALLED pages reach no one"
 }

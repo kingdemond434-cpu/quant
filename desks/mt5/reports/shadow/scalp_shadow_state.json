@@ -22,7 +22,7 @@
     "xau_m5_anti_breakout_overlap": {
       "forward_start": "2026-08-22T18:00:00+00:00",
       "first_trade_at": null,
-      "status": "PROMOTION_CANDIDATE",
+      "status": "RETIRED_NO_CERTIFICATE",
       "timeframe": "M5",
       "choice": {
         "family": "anti_donchian_breakout",
@@ -57,13 +57,17 @@
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
-      "promotion_authority": true,
-      "note": "Fusion-native forward shadow."
+      "promotion_authority": false,
+      "note": "Fusion-native forward shadow.",
+      "status_why": "no canonical certificate backs this clock: CLOCK IF AND ONLY IF CERTIFICATE (principal 2026-09-23). The clock is retired on this pass and its cell keeps the front of the judge's queue; if it certifies it gets a NEW clock from zero, because forward evidence on a cell that never certifies can never be cashed",
+      "status_at": "2026-10-08T16:56:43.646218+00:00",
+      "retired_by": "research/clock_certificate.py (CLOCK IF AND ONLY IF CERTIFICATE, principal 2026-09-23)",
+      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134)."
     },
     "xau_m5_anti_momentum_ny": {
       "forward_start": "2026-08-22T18:00:00+00:00",
       "first_trade_at": null,
-      "status": "KILL",
+      "status": "RETIRED_NO_CERTIFICATE",
       "timeframe": "M5",
       "choice": {
         "family": "anti_three_bar_momentum",
@@ -98,13 +102,17 @@
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
-      "promotion_authority": true,
-      "note": "Fusion-native forward shadow."
+      "promotion_authority": false,
+      "note": "Fusion-native forward shadow.",
+      "status_why": "no canonical certificate backs this clock: CLOCK IF AND ONLY IF CERTIFICATE (principal 2026-09-23). The clock is retired on this pass and its cell keeps the front of the judge's queue; if it certifies it gets a NEW clock from zero, because forward evidence on a cell that never certifies can never be cashed",
+      "status_at": "2026-10-08T16:56:43.646218+00:00",
+      "retired_by": "research/clock_certificate.py (CLOCK IF AND ONLY IF CERTIFICATE, principal 2026-09-23)",
+      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134)."
     },
     "xau_m15_anti_breakout": {
       "forward_start": "2026-08-22T18:00:00+00:00",
       "first_trade_at": null,
-      "status": "KILL",
+      "status": "RETIRED_NO_CERTIFICATE",
       "timeframe": "M15",
       "choice": {
         "family": "anti_donchian_breakout",
@@ -139,13 +147,17 @@
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
-      "promotion_authority": true,
-      "note": "Fusion-native forward shadow."
+      "promotion_authority": false,
+      "note": "Fusion-native forward shadow.",
+      "status_why": "no canonical certificate backs this clock: CLOCK IF AND ONLY IF CERTIFICATE (principal 2026-09-23). The clock is retired on this pass and its cell keeps the front of the judge's queue; if it certifies it gets a NEW clock from zero, because forward evidence on a cell that never certifies can never be cashed",
+      "status_at": "2026-10-08T16:56:43.646218+00:00",
+      "retired_by": "research/clock_certificate.py (CLOCK IF AND ONLY IF CERTIFICATE, principal 2026-09-23)",
+      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134)."
     },
     "xau_m15_anti_momentum": {
       "forward_start": "2026-08-22T18:00:00+00:00",
       "first_trade_at": null,
-      "status": "KILL",
+      "status": "RETIRED_NO_CERTIFICATE",
       "timeframe": "M15",
       "choice": {
         "family": "anti_three_bar_momentum",
@@ -180,8 +192,12 @@
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
-      "promotion_authority": true,
-      "note": "Fusion-native forward shadow."
+      "promotion_authority": false,
+      "note": "Fusion-native forward shadow.",
+      "status_why": "no canonical certificate backs this clock: CLOCK IF AND ONLY IF CERTIFICATE (principal 2026-09-23). The clock is retired on this pass and its cell keeps the front of the judge's queue; if it certifies it gets a NEW clock from zero, because forward evidence on a cell that never certifies can never be cashed",
+      "status_at": "2026-10-08T16:56:43.646218+00:00",
+      "retired_by": "research/clock_certificate.py (CLOCK IF AND ONLY IF CERTIFICATE, principal 2026-09-23)",
+      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134)."
     }
   },
   "quarantined_candidates": {},
