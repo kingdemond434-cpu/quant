@@ -103,6 +103,20 @@ def test_judging_capacity_measurement_cannot_be_rotated_out() -> None:
     assert "judging_throughput" in LR.ALWAYS_RUN
 
 
+def test_promotion_door_refresh_precedes_long_research_work(monkeypatch) -> None:
+    """The short door pass must still run if the full Tier S pass later times out."""
+    roster = LR.legs_in_order(DESK / "research" / "hourly_cycle.py")
+    assert roster.index("tier_s_door") < roster.index("intake_catchup")
+    assert roster.index("tier_s_door") < roster.index("tier_s")
+    assert "tier_s_door" in hourly_cycle.CORE_LEGS
+    assert "tier_s_door" in LR.ALWAYS_RUN
+    calls = []
+    monkeypatch.setattr(hourly_cycle, "_producer", lambda *args: calls.append(args) or
+                        {"status": "OK"})
+    assert hourly_cycle.tier_s_door() == {"status": "OK"}
+    assert calls == [("tier_s_door", "research/tier_s.py", "--only", "review,door")]
+
+
 def test_the_sixteen_that_were_dark_are_on_the_roster() -> None:
     """The legs this whole exercise was about must be rotatable, by name."""
     roster = set(LR.legs_in_order(DESK / "research" / "hourly_cycle.py"))

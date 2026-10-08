@@ -921,7 +921,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE RESEARCH-LIVE IDENTITY JOIN, before the door that lists its mismatches: a reader of
     # four artifacts, seconds, so it rides the core clock with the door (`tier_s`).
     "research_live_identity",
-    "tier_s",
+    "tier_s", "tier_s_door",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
@@ -1149,7 +1149,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # machine measuring its own build path, experiments and organs: meta.
                      "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
-                     "tier5_acceptance", "mission_control", "tier_s",
+                     "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
                      "research_live_identity",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
@@ -1739,6 +1739,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # twin 64 s, world_science 58 s); the cap leaves room for the box's larger ledgers (the
     # gate verdict ledger and hypothesis graph are read in full).
     "tier_s": 1_500,
+    # Review + promotion-door verdicts take seconds on the live box. The full Tier S run can
+    # time out before its final door organ, leaving E8's fail-closed input stale for >6h.
+    "tier_s_door": 180,
     # THE UNKNOWN-SHARE CENSUS, once per UTC day: a fixed 6,000-cell sample took 1,955 s on the
     # box. It stops building at UNKNOWN_CENSUS_BUILD_S (1,800) and then carves and names causes;
     # the cap sits above both and the document is checkpointed, so a kill still publishes.
@@ -2359,6 +2362,11 @@ def tier_s() -> dict:
     is read by sizing, certificates or order flow.
     """
     return _producer("tier_s", "research/tier_s.py")
+
+
+def tier_s_door() -> dict:
+    """Refresh the candidate review and promotion door before long hourly research legs."""
+    return _producer("tier_s_door", "research/tier_s.py", "--only", "review,door")
 
 
 def adversary_evolution() -> dict:
@@ -3648,6 +3656,9 @@ def main() -> None:
     rb = _costed("refresh_bars", refresh_bars)
     smoke = _costed("smoke_release", smoke_release)
     h = _costed("health", health)
+    # E8 reads this fail-closed input every five minutes. The full Tier S research pass
+    # runs much later and can hit its budget before reaching the review/door organs.
+    tdoor = _costed("tier_s_door", tier_s_door)
     # Drain existing intake before the long research legs. The later pipeline still
     # compiles and merges discoveries generated during this pass.
     _costed("intake_catchup", catch_up_intake)
@@ -5774,7 +5785,7 @@ def main() -> None:
                     "orthogonality": orth,
                     "null_lab": nlab, "research_live_identity": rlid,
                     "macro_conditioned_sweep": mcsw, "unknown_census": ucen,
-                    "tier_s": tiers, "adversary_evolution": advx,
+                    "tier_s_door": tdoor, "tier_s": tiers, "adversary_evolution": advx,
                     "execution_science": exsci, "frontier_map": fmap,
                     "market_ecology": meco, "research_diversity_archive": rdar,
                     "session_allocation": sess,

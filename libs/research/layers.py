@@ -601,7 +601,8 @@ LEG_LAYER: dict[str, str] = {
     "desk_dashboard_state": "meta",
     "session_capital": "portfolio",
     # Tier S institution: the machine judging and improving its own research machinery
-    "tier_s": "meta", "adversary_evolution": "prediction", "frontier_map": "information",
+    "tier_s": "meta", "tier_s_door": "meta",
+    "adversary_evolution": "prediction", "frontier_map": "information",
     "market_ecology": "information", "research_diversity_archive": "information",
     "execution_science": "execution",
     # FOURTEEN LEGS THAT RAN WITH NO LAYER (measured 2026-09-30, `unassigned()`): each placed by
