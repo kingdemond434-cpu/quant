@@ -1173,7 +1173,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         try:
             from mt5desk.decision_core import family_bracket, signal_with_levels
             from mt5desk.family_call import signal_reference_price, spread_blocks_entry
-            _close = signal_reference_price(fam, closed, g)
+            _close = signal_reference_price(fam, frame, g)
             _sgn = 1 if side == "buy" else -1
             _e, _stop, _target, _d, _note, _drift, _verdict = family_bracket(
                 g, _sgn, float(bid), float(ask), _close)

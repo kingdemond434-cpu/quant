@@ -11,16 +11,31 @@ from mt5desk.decision_core import family_bracket
 from mt5desk.family_call import signal_reference_price, spread_blocks_entry
 
 
-def test_overnight_distances_use_constructor_open_not_bar_close():
+def test_overnight_distances_match_replay_fill_and_absolute_levels():
     time = pd.Timestamp('2026-10-08T00:00:00Z')
-    bars = pd.DataFrame({'open': [100.0], 'close': [108.0]}, index=[time])
+    bars = pd.DataFrame({'open': [100.0, 109.0], 'close': [108.0, 111.0]},
+                        index=[time, time + pd.Timedelta(hours=1)])
     signal = SimpleNamespace(time=time, stop=90.0, target=120.0)
     reference = signal_reference_price('overnight_gap_decay', bars, signal)
-    assert reference == 100.0
+    assert reference == 109.0
     result = family_bracket(signal, 1, 109.0, 109.0, reference)
-    assert result[-1] == 're_anchored'
-    assert result[1:4] == (99.0, 129.0, 10.0)
+    assert result[-1] == 'certified'
+    assert result[1:4] == (90.0, 120.0, 19.0)
     assert signal_reference_price('range_reversion', bars, signal) == 108.0
+    # A later executable quote retains the replay's 19-point risk and 11-point reward.
+    moved = family_bracket(signal, 1, 114.0, 114.0, reference)
+    assert moved[-1] == 're_anchored'
+    assert moved[1:4] == (95.0, 125.0, 19.0)
+
+
+def test_gap_beyond_certified_levels_does_not_bypass_stale_check():
+    time = pd.Timestamp('2026-10-08T00:00:00Z')
+    bars = pd.DataFrame({'open': [100.0, 125.0], 'close': [108.0, 126.0]},
+                        index=[time, time + pd.Timedelta(hours=1)])
+    signal = SimpleNamespace(time=time, stop=90.0, target=120.0)
+    reference = signal_reference_price('overnight_gap_decay', bars, signal)
+    assert reference == 108.0
+    assert family_bracket(signal, 1, 125.0, 126.0, reference)[-1] == 'stale'
 
 
 @pytest.mark.parametrize('side,stop,target,bid,ask', [

@@ -3095,7 +3095,7 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     # THE BRACKET IS LAID FROM THE ENTRY THE VENUE GIVES, NOT FROM A CLOSE IT HAS LEFT: see
     # `family_bracket` for the 0.27-lot, 1.3-pip EURGBP stop this replaces.
     from mt5desk.family_call import signal_reference_price, spread_blocks_entry
-    _sig_close = signal_reference_price(str(family or ""), closed, g)
+    _sig_close = signal_reference_price(str(family or ""), frame, g)
     entry_ref, _stop, _target, dist, _drift_note, _drift, _verdict = family_bracket(
         g, side, tick.bid, tick.ask, _sig_close)
     if _verdict == "stale":

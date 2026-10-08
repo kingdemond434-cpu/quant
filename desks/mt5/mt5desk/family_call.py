@@ -48,16 +48,28 @@ from typing import Any
 
 
 def signal_reference_price(family: str, bars: Any, signal: Any) -> float | None:
-    """Price used by the constructor to lay its levels, not always its bar close.
+    """Preserve the overnight replay's entry-to-level geometry at next-bar open.
 
-    overnight_gap_decay explicitly anchors levels to the first bar's open. The
-    live venue must preserve those distances when measuring entry drift.
+    The constructor lays absolute levels from its signal-bar open, but engine
+    fills at the following open without moving those levels. The forming bar's
+    open is already observed at decision time. Other families retain their
+    existing signal-close reference. An invalid replay bracket never gains a
+    new reference: the existing close-based stale check still applies.
     """
-    column = "open" if family == "overnight_gap_decay" else "close"
     try:
-        value = float(bars.loc[signal.time, column])
+        value = float(bars.loc[signal.time, "close"])
     except (AttributeError, KeyError, TypeError, ValueError):
         return None
+    if family == "overnight_gap_decay":
+        try:
+            index = int(bars.index.get_loc(signal.time))
+            if index + 1 < len(bars):
+                replay_entry = float(bars.iloc[index + 1]["open"])
+                low, high = sorted((float(signal.stop), float(signal.target)))
+                if math.isfinite(replay_entry) and low < replay_entry < high:
+                    value = replay_entry
+        except (AttributeError, KeyError, TypeError, ValueError):
+            pass
     return value if math.isfinite(value) and value > 0 else None
 
 
