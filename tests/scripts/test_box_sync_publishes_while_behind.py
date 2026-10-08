@@ -150,13 +150,44 @@ def test_shared_staged_research_cannot_enter_the_state_commit() -> None:
     publisher = _code(
         src[src.index("function Publish-StateOnto"):src.index("# Desk-relative paths")]
     )
-    assert '"hash-object", "-w"' in publisher
+    assert 'hash-object -w --stdin-paths' in publisher
+    assert 'Git-IndexInfo -Entries $entries' in publisher
+    assert 'function Git-IndexInfo' in src
     assert '"check-ignore", "--"' in publisher
 
 
 def _git(cwd: Path, *args: str, env: dict | None = None) -> str:
     return subprocess.run(["git", *args], cwd=str(cwd), capture_output=True, text=True,
                           check=True, env=env).stdout.strip()
+
+
+@pytest.mark.skipif(os.name != "nt" or shutil.which("powershell") is None,
+                    reason="Windows PowerShell required")
+def test_batch_index_writer_uses_lf_and_private_index(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.email", "b@example.com")
+    _git(repo, "config", "user.name", "box")
+    (repo / "state.json").write_text("old\n", "utf-8")
+    _git(repo, "add", "state.json")
+    _git(repo, "commit", "-qm", "base")
+    (repo / "state.json").write_text("new\n", "utf-8")
+    sha = _git(repo, "hash-object", "-w", "state.json")
+    private = tmp_path / "private-index"
+    env = {**os.environ, "GIT_INDEX_FILE": str(private)}
+    _git(repo, "read-tree", "HEAD", env=env)
+    src = _src()
+    helper = src[src.index("function Git-IndexInfo"):src.index("# A PUSH")]
+    command = (f"$RepoRoot = '{repo}'; function Write-SyncLog($msg) {{ throw $msg }}; "
+               + helper + "\n"
+               + f'$rc = Git-IndexInfo -Entries @("100644 blob {sha}`tstate.json"); '
+               + "if ($rc -ne 0) { exit 1 }")
+    result = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", command],
+                            cwd=repo, env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert _git(repo, "ls-files", "-s", "--", "state.json", env=env).split()[1] == sha
+    assert _git(repo, "ls-files", "-s", "--", "state.json").split()[1] != sha
 
 
 @pytest.mark.skipif(shutil.which("git") is None, reason="git required")
@@ -197,11 +228,18 @@ def test_the_plumbing_publishes_state_onto_a_moved_origin(tmp_path: Path) -> Non
 
     # --- Publish-StateOnto, step for step -------------------------------------------------
     rel = "desks/mt5/reports/JUDGING_RATE.json"
-    sha = _git(box, "hash-object", "-w", "--", rel)
+    sha = subprocess.run(
+        ["git", "hash-object", "-w", "--stdin-paths"],
+        cwd=box, input=rel + "\n", capture_output=True, text=True, check=True,
+    ).stdout.strip()
     base = _git(box, "rev-parse", "FETCH_HEAD")
     env = {**os.environ, "GIT_INDEX_FILE": str(tmp_path / "private-index")}
     _git(box, "read-tree", base, env=env)
-    _git(box, "update-index", "--add", "--cacheinfo", f"100644,{sha},{rel}", env=env)
+    subprocess.run(
+        ["git", "update-index", "--index-info"], cwd=box,
+        input=f"100644 blob {sha}\t{rel}\n".encode("ascii"),
+        capture_output=True, check=True, env=env,
+    )
     tree = _git(box, "write-tree", env=env)
     commit = _git(box, "commit-tree", tree, "-p", base, "-m", "mt5 box state", env=env)
     _git(box, "push", "-q", "origin", f"{commit}:refs/heads/live")
