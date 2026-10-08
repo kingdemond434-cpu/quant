@@ -22,25 +22,14 @@
       "orders": []
     }
   },
-  "position": [
-    {
-      "ticket": 233700226,
-      "type": 0,
-      "volume": 0.4,
-      "price_open": 0.57865,
-      "sl": 0.577,
-      "tp": 0.5787,
-      "profit": -4.72,
-      "symbol": "AUDCHF"
-    }
-  ],
+  "position": null,
   "last_bracket_date": "2026-10-09",
-  "last_reconcile": "2026-10-08T22:05:18+00:00",
+  "last_reconcile": "2026-10-08T22:19:07+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {},
   "lot": 0.06,
-  "equity": 542.41,
+  "equity": 548.89,
   "placement_health": {
     "consecutive_total_rejections": 0,
     "last_ok": "2026-10-08T04:00:31+00:00",
@@ -64,7 +53,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-09T01:05:00+00:00",
+  "placement_pass": "2026-10-09T01:20:02+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -461,20 +450,12 @@
     "233700226": 0.0016500000000000403
   },
   "restart_reconcile": {
-    "at": "2026-10-08T22:05:04+00:00",
+    "at": "2026-10-08T22:20:03+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
     "armed": true,
-    "positions": [
-      {
-        "ticket": 233700226,
-        "symbol": "AUDCHF",
-        "comment": "DWaudchf_overnight_gap_decay_",
-        "volume": 0.4,
-        "sl": 0.577
-      }
-    ],
+    "positions": [],
     "orders": [],
     "in_doubt": [],
     "stopless": [],
