@@ -6,12 +6,12 @@
   "sample": 6000,
   "overlay": [],
   "complete": false,
-  "stage": "siblings_minted",
+  "stage": "building",
   "utc_day": "2026-10-08",
   "started_at": "2026-10-08T14:10:40+00:00",
-  "written_at": "2026-10-08T14:13:38+00:00",
+  "written_at": "2026-10-08T14:31:53+00:00",
   "cells_planned": 6292,
-  "cells_visited": 0,
+  "cells_visited": 498,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 26367,
     "rss_cap_mb": 6592,
-    "peak_rss_mb": 500
+    "peak_rss_mb": 639
   },
-  "lockbox_cut": null,
-  "lockbox_frac": null,
-  "cells_carved_at_own_tail": null,
-  "elapsed_s": 162.6,
+  "lockbox_cut": "2025-01-17",
+  "lockbox_frac": 0.2,
+  "cells_carved_at_own_tail": 22,
+  "elapsed_s": 1258.2,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 440,
@@ -42,38 +42,138 @@
     }
   },
   "sampled_cells": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "cells": 498,
+    "gate0_rejected": {
+      "symbol_eligibility": 83,
+      "economic_prior": 1
+    },
+    "preflight_refused": 142,
+    "build_failed": 22,
+    "build_failed_by_reason": {
+      "no_peer_symbol_named": 6,
+      "factor_basket_incomplete": 5,
+      "family_raised:TypeError": 5,
+      "no_leg_symbol_named": 4,
+      "no_driver_symbol_named": 2
+    },
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 250,
+    "unknown": 130,
+    "unknown_share_of_judged": 0.52,
+    "wilson95": [
+      0.4582,
+      0.5812
+    ],
+    "unknown_by_reason": {
+      "no_signals": 102,
+      "too_rare": 13,
+      "short_history_after_cut": 10,
+      "lockbox_consumed_history": 4,
+      "signals_no_trades": 1
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 16,
+      "orderflow_imbalance": 11,
+      "overnight_drift": 10,
+      "liquidity_regime": 8,
+      "event_reaction": 7,
+      "joint_genome": 7,
+      "ensemble": 7,
+      "session_range_breakout": 6,
+      "liquidity_gamma_reversal": 4,
+      "forced_flow": 4,
+      "monday_gap": 4,
+      "multi_speed_trend": 4,
+      "lvc_asia_london": 3,
+      "regime_transition": 3,
+      "htf_anchor_trend": 2
+    },
+    "unknown_by_chart": {
+      "M30": 41,
+      "M5": 28,
+      "H1": 25,
+      "M15": 20,
+      "M1": 9,
+      "H4": 5,
+      "D1": 2
+    },
+    "judged_by_chart": {
+      "M30": 71,
+      "H1": 68,
+      "M5": 52,
+      "M15": 41,
+      "M1": 9,
+      "H4": 7,
+      "D1": 2
+    }
   },
   "sampled_plus_siblings": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "cells": 498,
+    "gate0_rejected": {
+      "symbol_eligibility": 83,
+      "economic_prior": 1
+    },
+    "preflight_refused": 142,
+    "build_failed": 22,
+    "build_failed_by_reason": {
+      "no_peer_symbol_named": 6,
+      "factor_basket_incomplete": 5,
+      "family_raised:TypeError": 5,
+      "no_leg_symbol_named": 4,
+      "no_driver_symbol_named": 2
+    },
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 250,
+    "unknown": 130,
+    "unknown_share_of_judged": 0.52,
+    "wilson95": [
+      0.4582,
+      0.5812
+    ],
+    "unknown_by_reason": {
+      "no_signals": 102,
+      "too_rare": 13,
+      "short_history_after_cut": 10,
+      "lockbox_consumed_history": 4,
+      "signals_no_trades": 1
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 16,
+      "orderflow_imbalance": 11,
+      "overnight_drift": 10,
+      "liquidity_regime": 8,
+      "event_reaction": 7,
+      "joint_genome": 7,
+      "ensemble": 7,
+      "session_range_breakout": 6,
+      "liquidity_gamma_reversal": 4,
+      "forced_flow": 4,
+      "monday_gap": 4,
+      "multi_speed_trend": 4,
+      "lvc_asia_london": 3,
+      "regime_transition": 3,
+      "htf_anchor_trend": 2
+    },
+    "unknown_by_chart": {
+      "M30": 41,
+      "M5": 28,
+      "H1": 25,
+      "M15": 20,
+      "M1": 9,
+      "H4": 5,
+      "D1": 2
+    },
+    "judged_by_chart": {
+      "M30": 71,
+      "H1": 68,
+      "M5": 52,
+      "M15": 41,
+      "M1": 9,
+      "H4": 7,
+      "D1": 2
+    }
   },
   "siblings_only": {
     "cells": 0,
