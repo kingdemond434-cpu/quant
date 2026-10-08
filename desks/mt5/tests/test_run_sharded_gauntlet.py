@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 import pytest
 
-from scripts import run_sharded_gauntlet as runner
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts import run_sharded_gauntlet as runner  # noqa: E402
 
 
 def test_shard_count_falls_closed_and_honours_measurement(monkeypatch) -> None:
@@ -35,6 +37,31 @@ def test_parallelism_is_bounded_and_configurable(monkeypatch) -> None:
     assert runner._parallelism(15) == 15
     monkeypatch.setenv("GAUNTLET_SHARD_CONCURRENCY", "broken")
     assert runner._parallelism(15) == 1
+
+
+def test_initial_wave_limits_live_children_without_losing_partitions(monkeypatch, tmp_path):
+    import threading
+    import time
+
+    active = peak = 0
+    completed = []
+    lock = threading.Lock()
+
+    def child(argv, **kwargs):
+        nonlocal active, peak
+        with lock:
+            active += 1
+            peak = max(peak, active)
+        time.sleep(0.03)
+        with lock:
+            completed.append(int(argv[-2]))
+            active -= 1
+
+    monkeypatch.delenv("GAUNTLET_SHARD_CONCURRENCY", raising=False)
+    monkeypatch.setattr(runner, "run", child)
+    runner.dispatch(tmp_path, 7, "build")
+    assert peak == 2
+    assert sorted(completed) == list(range(7))
 
 
 def test_dispatch_runs_every_shard_once(monkeypatch, tmp_path) -> None:
