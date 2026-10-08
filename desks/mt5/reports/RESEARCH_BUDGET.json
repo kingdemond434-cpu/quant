@@ -1,5 +1,5 @@
 {
- "at": "2026-10-08T12:18:30+00:00",
+ "at": "2026-10-08T12:28:58+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,7 +9,7 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-08T12:18:21+00:00",
+   "at": "2026-10-08T12:28:49+00:00",
    "bandit_at": "2026-10-02T23:17:53.389831+00:00",
    "hour": "2026-10-08T12",
    "arm": "control",
@@ -18,8 +18,8 @@
    "extra_wanted_s": 240,
    "extra_due_s": 240,
    "extra_s": 0,
-   "surplus_s": 701.1,
-   "surplus_why": "department 'discovery' measured spare 701s/hour",
+   "surplus_s": 699.3,
+   "surplus_why": "department 'discovery' measured spare 699s/hour",
    "contract": {
     "n_treated": 7,
     "n_control": 0,
@@ -62,9 +62,9 @@
     "alt_data_hypothesis",
     "failure_derived"
    ],
-   "at": "2026-10-08T00:54:10+00:00",
+   "at": "2026-10-08T12:23:41+00:00",
    "bandit_at": "2026-10-02T23:17:53.389831+00:00",
-   "hour": "2026-10-08T00",
+   "hour": "2026-10-08T12",
    "arm": "none",
    "wanted_s": 0,
    "floor_s": 0,
@@ -85,7 +85,7 @@
    "governed_why": "the base is the leg's unlimited sentinel; nothing to govern",
    "share": 0.2902,
    "baseline": 0.3636,
-   "ladder_factor": 1.0,
+   "ladder_factor": 0.866,
    "department_factor": 1.0,
    "department_authoritative": false,
    "department_why": "exchange not authoritative: sample binds but the desk measures no per-department denominator for it (None); reported, never spent; x delayed-credit ROI (delayed-credit ROI shares from research_allocation.json, 15.5h old, floored at 0.02); x compute policy (compute policy MEASURED from compute_policy.json: split {'exploitation': 0.8236, 'exploration': 0.1176, 'frontier': 0.0588} learned from survivors per hour, two-sided)",
@@ -95,16 +95,16 @@
    "engine_factor": 1.0,
    "engine_why": "engine registry: leg share 0.0000 vs equal share 0.1111 = x0.00 -> x1.00 (one-sided: this factor may fund a leg above par and may never take one below it)",
    "meta_factor": 1.0,
-   "meta_why": "meta controller: leg 'deepen' serves kind(s) ['deepen_existing'] priced 0.001024 on the info_per_cell board vs median 0.04912 = x0.02 -> x1.00 (one-sided: it may fund above par and never below it)",
+   "meta_why": "meta controller: leg 'deepen' serves kind(s) ['deepen_existing'] priced 0.001537 on the info_per_cell board vs median 0.04933 = x0.03 -> x1.00 (one-sided: it may fund above par and never below it)",
    "graveyard_factor": 1.0,
    "graveyard_why": "graveyard: no survival row for source 'deepen'; par",
    "paradigm_factor": 1.0,
    "paradigm_why": "paradigm census: leg 'deepen' belongs to no paradigm; par",
-   "factor": 1.596,
+   "factor": 1.382,
    "applied_s": 0,
    "applied": true,
    "granted": false,
-   "why": "share 0.290 of arms ['new_mechanism', 'external_screen', 'alt_data_hypothesis', 'failure_derived'] vs equal-share baseline 0.364 -> x1.60, clipped to [1.0, 2.0]; department factor x1.00 (reported only); the base is the leg's unlimited sentinel; nothing to govern"
+   "why": "share 0.290 of arms ['new_mechanism', 'external_screen', 'alt_data_hypothesis', 'failure_derived'] vs equal-share baseline 0.364 -> x1.38, clipped to [1.0, 2.0]; department factor x1.00 (reported only); the base is the leg's unlimited sentinel; nothing to govern"
   }
  },
  "authoritative": false,
