@@ -486,8 +486,11 @@ function Publish-StateOnto {
         # take longer. This publisher is entitled to skip CODE gates only after an independent
         # tree diff proves that every changed path is in the exact state allowlist above. Code
         # still reaches the box only through CI, production sealing, and MT5-AdoptRelease.
+        # Git-Lines deliberately returns its collected output as one array object. Unroll it
+        # before the membership fence: otherwise a valid list of changed state paths is one
+        # nested-array item, which is never equal to any single allowlisted path.
         $changed = @(Git-Lines @("diff-tree", "--name-only", "-r", $baseTree, $tree) |
-                     Where-Object { $_ -match '\S' })
+                     ForEach-Object { $_ } | Where-Object { $_ -match '\S' })
         $outside = @($changed | Where-Object { $_ -notin $Paths })
         if ($script:GitLinesRc -ne 0 -or $changed.Count -eq 0 -or $outside.Count -gt 0) {
             Write-SyncLog "publish: state-only tree fence refused ($($outside.Count) outside allowlist, diff rc=$($script:GitLinesRc)); nothing published"
