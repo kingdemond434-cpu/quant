@@ -45,6 +45,23 @@ def test_unreadable_scheduler_is_not_empty_scheduler(monkeypatch):
     assert doc["status"] == "ATTENTION"
 
 
+def test_hourly_replication_staleness_is_detected_before_live_door_expiry(monkeypatch):
+    contracts = ph._contracts()
+    name = "MT5-HourlyCore (replication)"
+    assert contracts[name][1] == 180
+    monkeypatch.setattr(ph, "_tasks", lambda: ([{
+        "TaskName": r"\MT5-HourlyCore", "Scheduled Task State": "Running",
+        "Last Result": "267009",
+    }], "OK powershell"))
+    monkeypatch.setattr(ph, "_contracts", lambda: {name: contracts[name]})
+    monkeypatch.setattr(ph, "_age_min", lambda path: 181.0)
+    row = _row(ph.build(), name)
+    assert row["verdict"] == "STALE"
+    assert row["state"] == "COMPONENT"
+    monkeypatch.setattr(ph, "_age_min", lambda path: 1.0)
+    assert _row(ph.build(), name)["verdict"] == "OK"
+
+
 def test_running_gateway_with_overlap_result_and_fresh_artifact_is_healthy(monkeypatch):
     monkeypatch.setattr(ph, "_tasks", lambda: ([{
         "TaskName": r"\MT5-Gateway",

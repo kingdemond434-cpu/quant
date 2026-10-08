@@ -987,7 +987,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE RESEARCH-LIVE IDENTITY JOIN, before the door that lists its mismatches: a reader of
     # four artifacts, seconds, so it rides the core clock with the door (`tier_s`).
     "research_live_identity",
-    "tier_s", "tier_s_door",
+    "tier_s", "tier_s_door", "replication_civilization",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
@@ -3722,6 +3722,13 @@ def main() -> None:
     rb = _costed("refresh_bars", refresh_bars)
     smoke = _costed("smoke_release", smoke_release)
     h = _costed("health", health)
+    # Replication is a required live-door input with a six-hour expiry. Keeping its
+    # writer late in the validation department let E8's entry door go stale even
+    # while core passes ran. Refresh it on the existing core clock, before the door
+    # and long research work; the same bounded rotation and independent replay apply.
+    rpc = _costed("replication_civilization", lambda: _producer(
+        "replication_civilization", "research/replication_civilization.py",
+        "--once", "--budget-s", "900"))
     # E8 reads this fail-closed input every five minutes. The full Tier S research pass
     # runs much later and can hit its budget before reaching the review/door organs.
     tdoor = _costed("tier_s_door", tier_s_door)
@@ -4487,13 +4494,7 @@ def main() -> None:
                                                          "research/lead_replication.py",
                                                          "--max-leads", "10",
                                                          "--budget-s", "240"))
-    # THE INDEPENDENT REPLICATION CIVILIZATION (LAWS 5m): every certificate and every
-    # forward-enrolled row rebuilt in rotation from its WRITTEN specification and the raw bars
-    # only -- no import of the original implementation -- and quarantined by name when fills,
-    # P&L, position state or costs disagree materially. Validate.
-    rpc = _costed("replication_civilization", lambda: _producer(
-        "replication_civilization", "research/replication_civilization.py",
-        "--once", "--budget-s", "900"))
+    # Independent replication already ran before the live door on the core clock.
     # THE ANYTIME-VALID SCIENCE CONTROLLER (LAWS 5k/5m, Tier-1 U19): stamps the research genome
     # and family id on every registry candidate, prices the trial stream at N_effective (the
     # count follows the FAMILY), keeps online-FDR wealth per lineage and records BLOCKED for the
