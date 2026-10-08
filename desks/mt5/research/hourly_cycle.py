@@ -1149,7 +1149,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # machine measuring its own build path, experiments and organs: meta.
                      "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
-                     "tier5_acceptance", "mission_control", "tier_s",
+                     "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
                      "research_live_identity",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
