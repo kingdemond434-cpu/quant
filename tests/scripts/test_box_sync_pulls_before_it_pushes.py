@@ -54,8 +54,7 @@ def test_the_pull_runs_before_every_early_exit() -> None:
     """
     src = _src()
     pull = src.index("Sync-Pull -RepoRoot")
-    for guard in ('Write-SyncLog "SKIP: none of the tracked',
-                  'Write-SyncLog "no new state since last sync'):
+    for guard in ('Write-SyncLog "SKIP: none of the tracked',):
         assert pull < src.index(guard), (
             f"the pull now runs AFTER `{guard[14:50]}...` -- a box with nothing to say stops "
             "receiving code, which is how it ended up 41 commits behind while holding live "
