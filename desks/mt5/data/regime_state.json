@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-08T23:30:06.461005+00:00",
+  "swept_at": "2026-10-08T23:45:09.747005+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1516,7 +1516,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0031,
+      "shadow_exp_r": -0.5491,
       "woke_on_shadow": false
     },
     "EURNOK|overnight_gap_decay_asia": {
@@ -1615,7 +1615,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.53,
+      "shadow_exp_r": -0.5283,
       "woke_on_shadow": false
     },
     "EURSEK|spread_state_continuous": {
@@ -1824,7 +1824,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1959,
+      "shadow_exp_r": -0.198,
       "woke_on_shadow": false
     },
     "GBPAUD|relative_value_continuous": {
@@ -1945,7 +1945,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0543,
+      "shadow_exp_r": -0.0553,
       "woke_on_shadow": false
     },
     "GBPDKK|overnight_gap_decay_continuous": {
