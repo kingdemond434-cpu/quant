@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-08T15:45:11.940357+00:00",
+  "swept_at": "2026-10-08T16:00:16.749400+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -812,7 +812,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2968,
+      "shadow_exp_r": -0.3079,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -4541,7 +4541,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.06,
+      "shadow_exp_r": -0.1408,
       "woke_on_shadow": false
     },
     "XAUAUD|cross_asset_residual_continuous": {
