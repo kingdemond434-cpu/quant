@@ -140,6 +140,20 @@ def test_the_publisher_never_merges_or_touches_the_real_index() -> None:
     assert '"commit-tree", $tree, "-p", $base' in code
 
 
+def test_shared_staged_research_cannot_enter_the_state_commit() -> None:
+    """The scheduled publisher must keep other controllers' staged paths untouched."""
+    src = _src()
+    runtime = src[src.index("Sync-Pull -RepoRoot $RepoRoot -Branch $branch"):]
+    code = _code(runtime)
+    assert '$addRc = Git-In-Repo' not in code
+    assert 'Git-In-Repo @("commit"' not in code
+    publisher = _code(
+        src[src.index("function Publish-StateOnto"):src.index("# Desk-relative paths")]
+    )
+    assert '"hash-object", "-w"' in publisher
+    assert '"check-ignore", "--"' in publisher
+
+
 def _git(cwd: Path, *args: str, env: dict | None = None) -> str:
     return subprocess.run(["git", *args], cwd=str(cwd), capture_output=True, text=True,
                           check=True, env=env).stdout.strip()

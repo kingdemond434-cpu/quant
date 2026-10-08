@@ -395,6 +395,13 @@ function Push-Logged {
 function Publish-StateOnto {
     param([string]$RepoRoot, [string]$Branch, [string[]]$Paths)
     if (-not $Paths -or $Paths.Count -eq 0) { Write-SyncLog "publish: no state paths"; return $false }
+    # hash-object ignores .gitignore. Retain the state allowlist fence explicitly so an
+    # accidentally listed ignored path cannot publish sensitive box-local bytes.
+    $ignored = @(Git-Lines (@("check-ignore", "--") + $Paths) | Where-Object { $_ -match '\S' })
+    if ($script:GitLinesRc -gt 1 -or $ignored.Count -gt 0) {
+        Write-SyncLog "publish: allowlist refusal ($($ignored.Count) ignored path(s)); nothing published"
+        return $false
+    }
     $entries = @()
     foreach ($rel in $Paths) {
         # Every path is an allowlisted regular state file. Hashing it directly captures the box's
@@ -431,9 +438,16 @@ function Publish-StateOnto {
                 # so a retry publishes the same byte-for-byte state snapshot.
                 $meta, $rel = $line -split "`t", 2
                 $f = $meta -split '\s+'
-                if ($f.Count -lt 3 -or $f[1] -ne "blob") { continue }
+                if ($f.Count -lt 3 -or $f[1] -ne "blob") {
+                    Write-SyncLog "publish: malformed allowlisted state entry; nothing published"
+                    return $false
+                }
                 $rc = Git-In-Repo @("update-index", "--add", "--cacheinfo", ("{0},{1},{2}" -f $f[0], $f[2], $rel))
-                if ($rc -eq 0) { $n++ }
+                if ($rc -ne 0) {
+                    Write-SyncLog "publish: could not index allowlisted state path $rel rc=$rc; nothing published"
+                    return $false
+                }
+                $n++
             }
             $tree = (Git-Lines @("write-tree") | Select-Object -First 1)
         } finally {
@@ -466,9 +480,8 @@ function Publish-StateOnto {
 }
 
 # Desk-relative paths of every state file this sync carries. Each MUST already be individually
-# allowlisted in .gitignore (git add is silently a no-op on an ignored path otherwise, which
-# would look like success while publishing nothing -- exactly the failure mode this script exists
-# to avoid repeating).
+# allowlisted in .gitignore; Publish-StateOnto checks this before hash-object, which by itself
+# would accept ignored files.
 $relPaths = @(
     "desks/mt5/reports/shadow/shadow_health.json",
     "desks/mt5/data/gateway_state.json",
