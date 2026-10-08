@@ -156,6 +156,39 @@ def _promote() -> None:
     promoter.main()
 
 
+def _weekly_hunt_refresh() -> None:
+    """Keep the existing six-day research sweep off the gateway's order lock."""
+    marker = BASE / "data" / "hunt7_state.json"
+    try:
+        last = float(json.loads(marker.read_text(encoding="utf-8")).get("last_sweep", 0))
+    except (OSError, ValueError, TypeError):
+        last = 0.0
+    now = datetime.now(UTC).timestamp()
+    if now - last <= 6 * 86400:
+        return
+    # Explicit imports make every member visible to the canonical wiring census.
+    import fetch_universe
+    import free_shadows
+    import run_hunt7
+    import run_hunt8
+    import run_hunt9
+    import run_hunt10
+    import run_hunt12
+    jobs = (("fetch_universe", fetch_universe.main), ("run_hunt7", run_hunt7.main),
+            ("run_hunt8", run_hunt8.main), ("run_hunt9", run_hunt9.main),
+            ("free_shadows", free_shadows.main), ("run_hunt10", run_hunt10.main),
+            ("run_hunt12", run_hunt12.main))
+    for module, runner in jobs:
+        # These two CLIs parse sys.argv when called without an explicit argument list.
+        # The daily step's own --step flag must never become a hunt argument.
+        result = runner([]) if module in {"fetch_universe", "run_hunt12"} else runner()
+        if isinstance(result, int) and result != 0:
+            raise RuntimeError(f"{module} exited {result}; weekly stamp not advanced")
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(json.dumps({"last_sweep": now}), encoding="utf-8")
+    dlog("weekly hunt7-12 + states sweep completed")
+
+
 def _reconcile() -> None:
     import forward_reconcile
     forward_reconcile.main()
@@ -728,7 +761,8 @@ def _control_room() -> None:
         raise RuntimeError(f"every control-room artifact failed: {failed}")
 
 
-STEPS = (("research_gap_map", _research_gap_map),
+STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
+         ("research_gap_map", _research_gap_map),
          ("refresh_bars", _refresh_bars), ("deepen_bars", _deepen_bars),
          ("cost_fields", _cost_fields),
          ("factor_residual", _factor_residual), ("research_bandit", _research_bandit),

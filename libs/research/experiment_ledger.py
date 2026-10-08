@@ -18,7 +18,9 @@ deflate more, never less.
 from __future__ import annotations
 
 import glob
+import hashlib
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -28,18 +30,63 @@ DESK = ROOT / "desks" / "mt5"
 OUT = DESK / "reports" / "EXPERIMENT_LEDGER.json"
 
 
+def _graph_stamp(path: Path) -> dict[str, Any]:
+    """Cheap content fence for an append-only graph; size/mtime alone miss replacements."""
+    st = path.stat()
+    with path.open("rb") as fh:
+        head = fh.read(65536)
+        fh.seek(max(0, st.st_size - 65536))
+        tail = fh.read(65536)
+    return {"size": st.st_size, "mtime_ns": st.st_mtime_ns,
+            "head_sha256": hashlib.sha256(head).hexdigest(),
+            "tail_sha256": hashlib.sha256(tail).hexdigest()}
+
+
 def _graph_counts() -> tuple[int, dict[str, int]]:
+    """Count latest fates with compact state, caching only an exact graph version.
+
+    ``Graph.current()`` retains every nested gates/params blob of a 3.7 GB ledger in memory.
+    The allocator's fifteen-minute fast pass spent 50+ minutes and ~20 GB rebuilding that
+    dictionary before it could price a book. Only id, family and fate are needed here. A new
+    append invalidates the small aggregate cache and triggers one bounded-memory rescan.
+    """
     try:
-        from libs.research.hypothesis_graph import Graph
-        cur = Graph().current()
-    except Exception:
+        from libs.research.hypothesis_graph import LEDGER
+        stamp = _graph_stamp(LEDGER)
+    except OSError:
         return 0, {}
+    cache_path = DESK / "data" / "experiment_graph_counts.json"
+    try:
+        cached = json.loads(cache_path.read_text("utf-8"))
+        counts = cached.get("by_family")
+        if cached.get("graph_stamp") == stamp and isinstance(counts, dict):
+            return int(cached["judged_cells"]), {str(k): int(v) for k, v in counts.items()}
+    except (OSError, ValueError, TypeError, KeyError):
+        pass
+    current: dict[str, tuple[str, str]] = {}
+    with LEDGER.open(encoding="utf-8") as fh:
+        for line in fh:
+            if line.strip():
+                row = json.loads(line)
+                current[str(row.get("id"))] = (str(row.get("fate") or ""),
+                                                str(row.get("family") or "?"))
     by_fam: dict[str, int] = {}
-    for r in cur.values():
-        if r.get("fate") in ("FAILED", "BURIED", "CERTIFIED", "JUDGED"):
-            f = str(r.get("family") or "?")
+    for fate, f in current.values():
+        if fate in ("FAILED", "BURIED", "CERTIFIED", "JUDGED"):
             by_fam[f] = by_fam.get(f, 0) + 1
-    return sum(by_fam.values()), by_fam
+    total = sum(by_fam.values())
+    # If a concurrent judge appended while we scanned, this answer is a dated snapshot. Leave
+    # the cache invalid so the next pass re-reads; never label a partial version exact.
+    try:
+        if _graph_stamp(LEDGER) == stamp:
+            doc = {"graph_stamp": stamp, "judged_cells": total, "by_family": by_fam}
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = cache_path.with_name(f"{cache_path.name}.{os.getpid()}.tmp")
+            tmp.write_text(json.dumps(doc, separators=(",", ":")), encoding="utf-8")
+            os.replace(tmp, cache_path)
+    except OSError:
+        pass  # a missing cache costs time, never a smaller trial count
+    return total, by_fam
 
 
 def _proposer_counts() -> tuple[int, dict[str, int]]:
