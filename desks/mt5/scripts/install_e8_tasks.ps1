@@ -38,7 +38,8 @@ $desk = Join-Path $RepoRoot "desks\mt5"
 
 function Set-E8Task {
     param([string] $Name, [string] $Script, [string] $ScheduleArgs, [string] $Why,
-          [string] $ExtraArgs = "", [switch] $RequiresDesktop)
+          [string] $ExtraArgs = "", [switch] $RequiresDesktop,
+          [int] $Priority = 7, [int] $LimitMinutes = 50)
     $arguments = "`"$Script`""
     if ($ExtraArgs) { $arguments += " $ExtraArgs" }
     $action  = New-ScheduledTaskAction -Execute $Python -Argument $arguments -WorkingDirectory $desk
@@ -56,11 +57,12 @@ function Set-E8Task {
     # own leg budgets sum past that before the network miners are counted, so the run was
     # terminated mid-flight having produced real output all the way to the cut, never wrote its
     # state file, and left 68 artifacts frozen at 49h looking like a dead organ. These E8 tasks
-    # are minutes of work, so 50 minutes is generous here -- but the lesson is that the limit must
-    # be read off the job's own budgets and not chosen for being a round number.
+    # normally take minutes. The five-minute live clocks must finish before the next trigger;
+    # keep their four-minute watchdog, and let the hourly/boot tasks retain their longer budget.
+    # Live execution gets normal CPU priority so a busy research judge cannot starve it.
     $settings  = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
-                    -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 50) `
-                    -MultipleInstances IgnoreNew
+                    -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes $LimitMinutes) `
+                    -MultipleInstances IgnoreNew -Priority $Priority
     $trigger = Invoke-Expression $ScheduleArgs
     if (Get-ScheduledTask -TaskName $Name -ErrorAction SilentlyContinue) {
         Set-ScheduledTask -TaskName $Name -Action $action -Trigger $trigger `
@@ -76,11 +78,13 @@ function Set-E8Task {
 Write-Host "E8 PROP LANE"
 Set-E8Task -Name "E8-Executor" -Script (Join-Path $prop "e8_executor.py") `
     -ExtraArgs "--enable-certified-entries" `
+    -Priority 4 -LimitMinutes 4 `
     -ScheduleArgs "New-ScheduledTaskTrigger -Once -At (Get-Date).Date -RepetitionInterval (New-TimeSpan -Minutes 5)" `
     -Why "canonical certified non-gold book; existing E8 account guards and arming marker"
 
 Set-E8Task -Name "E8-Gold" -Script (Join-Path $prop "e8_gold.py") `
     -RequiresDesktop `
+    -Priority 4 -LimitMinutes 4 `
     -ScheduleArgs "New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)" `
     -Why "mirror the three Fusion gold windows (sends only while data\E8_GOLD_ARMED exists)"
 
