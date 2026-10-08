@@ -110,7 +110,9 @@ def test_the_publisher_never_pushes_the_box_branch() -> None:
     after 2026-09-12. The only push left is Publish-StateOnto's one-commit fast-forward."""
     code = _code(_src())
     pushes = re.findall(r'@\("push"[^)]*\)', code)
-    assert pushes == ['@("push", $remote, ("{0}:refs/heads/{1}" -f $commit, $Branch)'], pushes
+    assert len(pushes) == 1, pushes
+    assert '"push", "--no-verify", $remote' in pushes[0]
+    assert '"{0}:refs/heads/{1}"' in pushes[0]
     assert '"push", "origin", $branch' not in code
     assert '"push", "origin", "HEAD"' not in code
 
@@ -120,7 +122,16 @@ def test_a_refused_push_is_quoted_in_the_log() -> None:
     body = src[src.index("function Push-Logged"):]
     body = body[:body.index("\n}") + 2]
     assert "2>&1" in body and "push said:" in body
-    assert "Push-Logged @(\"push\", $remote" in src
+    assert 'Push-Logged @("push", "--no-verify", $remote' in src
+
+
+def test_state_only_push_is_independently_fenced_before_code_hook_exemption() -> None:
+    body = _src().split("function Publish-StateOnto", 1)[1].split("# Desk-relative paths", 1)[0]
+    diff = body.index('"diff-tree", "--name-only"')
+    push = body.index('Push-Logged @("push", "--no-verify"')
+    assert diff < push
+    assert '$outside = @($changed | Where-Object { $_ -notin $Paths })' in body
+    assert '$script:GitLinesRc -ne 0 -or $changed.Count -eq 0 -or $outside.Count -gt 0' in body
 
 
 def test_a_stale_fetch_head_is_never_trusted() -> None:
@@ -241,6 +252,19 @@ def test_the_plumbing_publishes_state_onto_a_moved_origin(tmp_path: Path) -> Non
         capture_output=True, check=True, env=env,
     )
     tree = _git(box, "write-tree", env=env)
+    base_tree = _git(box, "rev-parse", f"{base}^{{tree}}")
+    changed = _git(box, "diff-tree", "--name-only", "-r", base_tree, tree).splitlines()
+    assert changed == [rel]
+    # A private index with an extra code blob must fail the publisher's exact-path fence.
+    code_sha = subprocess.run(["git", "hash-object", "-w", "--stdin"], cwd=box,
+                              input=b"unexpected code\n", capture_output=True,
+                              check=True).stdout.decode().strip()
+    subprocess.run(["git", "update-index", "--index-info"], cwd=box,
+                   input=f"100644 blob {code_sha}\tcode.py\n".encode("ascii"),
+                   capture_output=True, check=True, env=env)
+    bad_tree = _git(box, "write-tree", env=env)
+    bad_paths = _git(box, "diff-tree", "--name-only", "-r", base_tree, bad_tree).splitlines()
+    assert "code.py" in bad_paths and set(bad_paths) - {rel} == {"code.py"}
     commit = _git(box, "commit-tree", tree, "-p", base, "-m", "mt5 box state", env=env)
     _git(box, "push", "-q", "origin", f"{commit}:refs/heads/live")
     # ---------------------------------------------------------------------------------------
