@@ -147,14 +147,22 @@ def health() -> dict:
     for name, (_, script) in EXPECTED.items():
         alive = script in blob
         res[name] = {"alive": alive}
+        if alive and name == "hunt12":
+            # Command-line presence also includes suspended interpreters. Inspect
+            # the existing writer; never launch a second writer on uncertainty.
+            res[name].update(_hunt12_resident_health())
         if not alive:
+            if (BASE / "data" / f"HOLD_{name}").exists():
+                res[name]["note"] = f"HOLD_{name} pauses the canonical target; no launch attempted"
+                continue
             launch_ok = start(script)
             if launch_ok:
                 # Give the OS a moment to actually create the process before checking for it --
                 # process creation itself is near-instant even for a script whose real work is
                 # slow.
                 time.sleep(5)
-            res[name]["restarted"] = bool(launch_ok and script in procs())
+            after = procs() if launch_ok else None
+            res[name]["restarted"] = bool(after is not None and script in after)
             if not res[name]["restarted"]:
                 res[name]["restart_failed"] = True
     # `str.find` RETURNS -1 WHEN NOT FOUND, AND bool(-1) IS TRUE -- so this read "alive" exactly
@@ -169,6 +177,54 @@ def health() -> dict:
     else:
         res["gateway_cmd"] = {"alive": "MT5Gateway" in cmds}
     return res
+
+
+def _hunt12_resident_health() -> dict:
+    """Recover only a suspended, unused canonical interpreter; honor HOLD.
+
+    A measured box incident left a zero-CPU interpreter stopped for 18 hours.
+    Never resume a stopped active computation or a process owning files/children.
+    Those cases remain visible for an owned operational review.
+    """
+    try:
+        import psutil
+    except ImportError:
+        return {"alive": None, "note": "resident status UNMEASURED: psutil unavailable"}
+    try:
+        target = (BASE / "research" / "run_hunt12.py").resolve()
+        candidates = []
+        for proc in psutil.process_iter(["cmdline"]):
+            argv = proc.info.get("cmdline") or []
+            scripts = [arg for arg in argv[1:] if Path(arg).name == target.name]
+            if not scripts:
+                continue
+            cwd = Path(proc.cwd()).resolve()
+            if cwd != BASE.resolve():
+                continue
+            if any((cwd / arg).resolve() == target for arg in scripts):
+                candidates.append(proc)
+        if len(candidates) != 1:
+            return {"alive": None, "note": "canonical resident count unproven",
+                    "resident_count": len(candidates)}
+        proc = candidates[0]
+        status = proc.status()
+        result = {"alive": status != psutil.STATUS_STOPPED,
+                  "pid": proc.pid, "process_status": status}
+        if status != psutil.STATUS_STOPPED:
+            return result
+        if (BASE / "data" / "HOLD_hunt12").exists():
+            return {**result, "note": "stopped resident preserved by HOLD_hunt12"}
+        cpu = proc.cpu_times()
+        if (time.time() - proc.create_time() < 300 or cpu.user + cpu.system > 0
+                or proc.children() or proc.open_files()):
+            return {**result, "note": "stopped resident requires review; active ownership preserved"}
+        proc.resume()
+        after = proc.status()
+        return {**result, "alive": after != psutil.STATUS_STOPPED,
+                "process_status": after, "resumed": after != psutil.STATUS_STOPPED,
+                "note": "resumed existing unused resident; no new writer launched"}
+    except (OSError, RuntimeError, psutil.Error) as exc:
+        return {"alive": None, "note": f"resident status UNMEASURED: {type(exc).__name__}"}
 
 
 def mine() -> dict:
@@ -678,6 +734,9 @@ ADMISSION_SCAN_MAX_AGE_S = 2 * 3600.0
 #: bars is ~120 rows against the ~54,000 each symbol carries, so this clock exists to stop the
 #: artifact ageing forever, not because the answer moves inside a day.
 HUNT12_MAX_AGE_S = 7 * 24 * 3600.0
+# Start two days before the existing seven-day evidence expiry, leaving the
+# complete snapshot available while the fair compute lane advances a refresh.
+HUNT12_REFRESH_AGE_S = 5 * 24 * 3600.0
 
 def _hunt12_state(art: Path | None = None,
                   now: datetime | None = None) -> tuple[bool, str]:
@@ -703,7 +762,7 @@ def _hunt12_state(art: Path | None = None,
 
         absent        never swept on this box: the condition that has held since 2026-09-04
         incomplete    a resumable sweep part-way through; the next pass advances it
-        stale         past HUNT12_MAX_AGE_S, so it is re-swept from scratch
+        refresh_due   past HUNT12_REFRESH_AGE_S, before the evidence expires
         fresh         complete and inside the age bound -- skipped, and the leg says so
 
     A leg that reports SKIPPED with a reason is not an idle leg (III.16): the artifact it exists
@@ -727,9 +786,12 @@ def _hunt12_state(art: Path | None = None,
     if ts.tzinfo is None:
         ts = ts.replace(tzinfo=UTC)
     age = ((now or datetime.now(UTC)) - ts).total_seconds()
-    if age > HUNT12_MAX_AGE_S:
+    if age < 0:
+        return True, "the carried sweep has a future timestamp"
+    if age >= HUNT12_REFRESH_AGE_S:
         return True, (f"the carried sweep is {age / 3600:.0f}h old "
-                      f"(max {HUNT12_MAX_AGE_S / 3600:.0f}h)")
+                      f"(refresh {HUNT12_REFRESH_AGE_S / 3600:.0f}h; "
+                      f"evidence expiry {HUNT12_MAX_AGE_S / 3600:.0f}h)")
     return False, f"complete and {age / 3600:.0f}h old"
 
 
@@ -747,11 +809,15 @@ def hunt12() -> dict:
     refuses an unfinished one, so a part-swept universe can never be loaded as the whole book.
     """
     run, why = _hunt12_state()
+    if (BASE / "data" / "HOLD_hunt12").exists():
+        return {"status": "SKIPPED", "why": "HOLD_hunt12 pauses the canonical target",
+                "at": datetime.now(UTC).isoformat()}
     if not run:
         return {"status": "SKIPPED", "why": why, "at": datetime.now(UTC).isoformat()}
     print(f"  hunt12: sweeping -- {why}", flush=True)
     return {**_producer("hunt12", "research/run_hunt12.py",
-                        "--deadline-s", str(HUNT12_DEADLINE_S)), "why": why}
+                        "--deadline-s", str(HUNT12_DEADLINE_S),
+                        "--max-age-h", str(HUNT12_REFRESH_AGE_S / 3600)), "why": why}
 
 
 def _admission_scan_age_s(art: Path | None = None, now: datetime | None = None) -> float | None:
