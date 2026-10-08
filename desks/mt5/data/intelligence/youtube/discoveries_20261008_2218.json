@@ -1,0 +1,30 @@
+[
+  {
+    "source": "youtube",
+    "title": "Mit Yen den \u00d6lpreis vorhersagen #trading #usdjpy #brent #wti",
+    "channel": "trading-house | Live-Trading Event",
+    "url": "https://youtube.com/watch?v=_75dPhsrRE8",
+    "published": "2026-10-08T09:50:31Z",
+    "symbols": [
+      "USDJPY"
+    ],
+    "timeframes": [
+      "Swing"
+    ],
+    "patterns": [],
+    "confidence": 0.30000000000000004
+  },
+  {
+    "source": "youtube",
+    "title": "Gold ( XAUUSD ) Trading strategy indicator | Being Trader",
+    "channel": "Being Trader Global",
+    "url": "https://youtube.com/watch?v=bmjx33__FRs",
+    "published": "2026-10-08T15:48:40Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  }
+]
